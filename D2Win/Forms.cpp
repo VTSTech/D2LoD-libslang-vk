@@ -110,7 +110,7 @@ void __fastcall D2WIN_RegisterWindowHandlerArray(int32_t hHandle, void * pHandle
 
     {
       int32_t* pHandlerEntry;
-      if (!nHandlerCount) {
+      if ((uint32_t)nHandlerCount <= 0) {
         return;
       }
 
@@ -134,7 +134,7 @@ void __fastcall D2WIN_UnregisterWindowHandlerArray(int32_t hHandle, void * pHand
 
     {
       int32_t* pHandlerEntry;
-      if (!nHandlerCount) {
+      if ((uint32_t)nHandlerCount <= 0) {
         return;
       }
 

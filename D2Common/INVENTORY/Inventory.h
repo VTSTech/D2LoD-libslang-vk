@@ -237,7 +237,7 @@ BOOL CopyInventory(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUni
 // Determines whether two units can complete a merc-item trade by making temporary inventory copies. Allocates two scratch inventories from pMemory, copies each unit's inventory into them, then calls INVENTORY_CanTransferMercItems in both directions to find which unit is the buyer. Sets *pbMercIsBuyer accordingly (false = pUnit2 buys, true = pUnit buys). Frees both scratch inventories before returning. Returns 1 if a valid transfer direction was found, 0 otherwise.
 // @sourcefile .\INVENTORY\Inventory.cpp
 BOOL __stdcall CreateCopyOfInventoryForTrading(struct D2PoolManagerStrc * pMemory, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, bool * pbMercIsBuyer);
-struct D2UnitStrc * __stdcall GetCurrentItemOnBodyLocation(struct D2UnitStrc * pUnit, struct D2InventoryStrc * pInventory, struct D2UnitStrc * * ppUnit, uint32_t bodyLoc);
+void __stdcall GetCurrentItemOnBodyLocation(struct D2UnitStrc * pUnit, struct D2InventoryStrc * pInventory, struct D2UnitStrc * * ppUnit, uint32_t bodyLoc);
 // Walks pUnit's inventory and builds the visual appearance arrays (pArray1=component gfx indices, pArray2=colors) from equipped items. Handles head/arms (circlet check) and torso (body-component transform loop). Used to snapshot a character's look for encoding into a packet or save record.
 void __stdcall SaveCharAppearance(struct D2UnitStrc * pUnit, char * pArray1, char * pArray2);
 // 26 internal functions (defined in .cpp)

@@ -282,17 +282,17 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize) {
     }
 
     uint8_t byClassByte = (uint8_t)(nAllocSize >> 8);
-    if (byClassByte) {
+    if (byClassByte > 0) {
       return g_SMemSizeClassTable[byClassByte] + 8;
     }
-    if (*(uint8_t*)((char*)&nAllocSize + 2)) {
+    if ((uint8_t)*(uint8_t*)((char*)&nAllocSize + 2) > 0) {
       return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 2)] + 0x10;
     }
-    if (!*(uint8_t*)((char*)&nAllocSize + 3)) {
-      return -1;
+    if ((uint8_t)*(uint8_t*)((char*)&nAllocSize + 3) > 0) {
+      return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 3)] + 0x18;
     }
 
-    return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 3)] + 0x18;
+    return -1;
 }
 
 void __stdcall SMemInitPerfCounters() {
@@ -315,7 +315,7 @@ void __stdcall SMemResetHeapStats() {
     static uint32_t g_SMemHeapStatsCount; D2_STATIC_GUARD_BSS(g_SMemHeapStatsCount, "Fog::SMem::SMemResetHeapStats::g_SMemHeapStatsCount");
 
     int nStatsRemaining;
-    if (g_SMemHeapStatsCount) {
+    if ((uint32_t)g_SMemHeapStatsCount > 0) {
       int* pStatEntry;
       pStatEntry = &gaSMemHeapStats[0].nIntervalStat0;
       nStatsRemaining = g_SMemHeapStatsCount;
@@ -629,13 +629,13 @@ void __stdcall SMEM_TitleCaseString(mcp0x03data * pMcpData) {
     } while (*pcScan != '\0');
 
     int nLength = (int)pScan - (int)(pMcpData->szGameName + 1);
-    if (0 >= nLength) {
+    if (nLength <= 0) {
       return;
     }
 
     do {
       char cCurChar;
-      if (0x3ff < nIndex) {
+      if (nIndex >= 0x400) {
         Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x78);
         exit(-1);
       }
@@ -950,7 +950,16 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
       }
 
       pbWrite = pbDst;
-      if (!byQuoteChar) {
+      if (byQuoteChar) {
+        pbWrite2 = pbDst;
+        nRemaining2 = nRemaining;
+        if (nRemaining > 0) {
+          *pbDst = byQuoteChar;
+          pbWrite = pbDst + 1;
+          nRemaining = nBufSize - 2;
+          goto escape_chars;
+        }
+      } else {
         escape_chars:
         while (true) {
           while (true) {
@@ -959,7 +968,7 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
                 while (true) {
                   pbWrite2 = pbWrite;
                   nRemaining2 = nRemaining;
-                  if (nRemaining < 1 || (bySrcByte = *pbSrc , !bySrcByte)) {
+                  if (nRemaining <= 0 || (bySrcByte = *pbSrc , !bySrcByte)) {
                     goto close_quote_and_terminate;
                   }
 
@@ -1030,19 +1039,10 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
           pbWrite += 4;
           nRemaining += -4;
         }
-      } else {
-        pbWrite2 = pbDst;
-        nRemaining2 = nRemaining;
-        if (0 < nRemaining) {
-          *pbDst = byQuoteChar;
-          pbWrite = pbDst + 1;
-          nRemaining = nBufSize - 2;
-          goto escape_chars;
-        }
       }
 
       close_quote_and_terminate:
-      if (byQuoteChar && 0 < nRemaining2) {
+      if (byQuoteChar && nRemaining2 > 0) {
         *pbWrite2 = byQuoteChar;
         pbWrite2++;
         nRemaining2--;
@@ -1069,7 +1069,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     uint32_t nWidthCopy;
     char* pcSrc;
     uint32_t nClampedWidth = nWidth;
-    if (0x20 < nWidth) {
+    if (nWidth > 0x20) {
       nClampedWidth = 0x20;
     }
 
@@ -1078,7 +1078,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     char* pcWrite2 = pcWrite;
     while (nValueLo || nValueHi) {
       nWidthCopy = nClampedWidth;
-      if (szTempBuf + (nClampedWidth - 1) <= pcWrite2) {
+      if (pcWrite2 >= szTempBuf + (nClampedWidth - 1)) {
         memset(szText, 0x2a, nClampedWidth - 1);
         szText[nWidthCopy - 1] = '\0';
         return szText;
@@ -1104,7 +1104,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     }
 
     pcWrite2 = szText;
-    while (szTempBuf <= pcWrite) {
+    while (pcWrite >= szTempBuf) {
       pcSrc = pcWrite - 1;
       pcWrite--;
       *szText = *pcSrc;

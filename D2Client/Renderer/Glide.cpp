@@ -450,7 +450,7 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     }
 
     (*GLIDEDLL_grGet_12)(0xf, 4, (FxI32*)((char*)&gnGlideSecondaryTMUCount + 4));
-    return (uint32_t)(0 < gnGlideSecondaryTMUCount[1]);
+    return (uint32_t)(gnGlideSecondaryTMUCount[1] > 0);
 }
 
 BOOL CheckCutScene() {

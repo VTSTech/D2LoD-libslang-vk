@@ -82,22 +82,23 @@ bool __fastcall Q09_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return false;
-    }
-    if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
-      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_FinishedInPreviousGame);
-      if (!bQuestState) {
-        return true;
-      }
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (bQuestState != 1) {
-      return false;
+      if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_FinishedInPreviousGame);
+        if (!bQuestState) {
+          return true;
+        }
+      }
+
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        return false;
+      }
+
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // JMP thunk
@@ -363,7 +364,7 @@ BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
       nAdjacentRoomIdx = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (pAdjacentRooms[nAdjacentRoomIdx] == pA1Q1Data->pRadamentRoom) {
             bPlayerNearKill = 1;
@@ -459,7 +460,7 @@ void __fastcall Q09_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
     pQuestArgs->pTarget->dwDropItemCode = 0x20737361;
     int nBookDropCount = 0;
-    if (0 >= pDVar1->nBookOfSkillDropCount) {
+    if (pDVar1->nBookOfSkillDropCount <= 0) {
       return;
     }
 
@@ -509,18 +510,18 @@ bool __fastcall Q09_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pSeqQuestData) {
-      return false;
+    if (pSeqQuestData) {
+      BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
+        exit(-1);
+      }
+
+      bool nStateFlagTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+      return nStateFlagTmp;
     }
 
-    BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
-      exit(-1);
-    }
-
-    bool nStateFlagTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-    return nStateFlagTmp;
+    return false;
 }
 
 // A2Q1 callback[0xd]: on-join-game state reconciliation from the persisted quest record. Branches on the stored record bits for this player: (a) Completed -> if Step0x05 set (book earned) but player no longer holds the Book of Skill item, clears Completed/RewardAwaits/FinishedInPreviousGame/Step0x05 (book was lost, re-allow); then pushes JustCompleted, marks intro done, nStateFlag=0. (b) FinishedInPreviousGame -> if RewardAwaits, sets bRewardPending so Atma still hands over the book this game; nStateFlag=0, intro done. (c) Step0x04 -> nStateFlag=3,prev=2. (d) Step0x03 -> nStateFlag=3,prev=1. (e) Step0x02 -> nStateFlag=2,prev=1. Restores live engine state from saved bits when a player enters.

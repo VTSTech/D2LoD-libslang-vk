@@ -286,7 +286,7 @@ void __stdcall DRLGMAZE_PickRoomPresets(D2RoomExStrc * pRoomEx) {
 
           sNewSeed = D2_SEED_NEXT(pNeighbor->sSeed);
           pNeighbor->sSeed = sNewSeed;
-          if ((int)(sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 1000) * -1000) < pMazeTxt->Merge) {
+          if ((int)(sNewSeed.nSeedLow % 1000) < pMazeTxt->Merge) {
             nDirection = GetDirectionFromCoordinates(&pNeighbor->sCoords, &pRoomEx->sCoords);
             if (nDirection != DIRECTION_INVALID) {
               DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pNeighbor, pRoomEx, nDirection);
@@ -417,7 +417,7 @@ static void __stdcall DRLGMAZE_BuildRoomGrid(int32_t nGridSize, D2DrlgLevelStrc 
     int nRemaining = nGridSize - 1;
     D2RoomExStrc* pRoomEx = pFirstRoom;
     D2RoomExStrc* pNewRoom = pFirstRoom;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       D2LvlMazeTxt* pMazeTxt;
       do {
         pRoomEx = DrlgRoom::DRLGROOMEX_AllocRoomEx(pNewRoom->pLevel, 2);
@@ -442,7 +442,7 @@ static void __stdcall DRLGMAZE_BuildRoomGrid(int32_t nGridSize, D2DrlgLevelStrc 
     }
 
     nRemaining = nGridSize - 1;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       do {
         pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pRoomEx->pLevel, 2);
         pDVar1 = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
@@ -466,7 +466,7 @@ static void __stdcall DRLGMAZE_BuildRoomGrid(int32_t nGridSize, D2DrlgLevelStrc 
     }
 
     nRemaining = nGridSize - 1;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       do {
         pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pRoomEx->pLevel, 2);
         pDVar1 = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
@@ -490,7 +490,7 @@ static void __stdcall DRLGMAZE_BuildRoomGrid(int32_t nGridSize, D2DrlgLevelStrc 
     }
 
     nGridSize += -2;
-    if (0 < nGridSize) {
+    if (nGridSize > 0) {
       do {
         pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pRoomEx->pLevel, 2);
         pDVar1 = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
@@ -522,20 +522,20 @@ D2RoomExStrc * __fastcall GetRandomRoomExFromLevel(D2DrlgLevelStrc * pLevel) {
     uint32_t nSeedLowOld;
     D2SeedStrc sSeed;
     uint32_t nSelectedRoom = pLevel->nRoomExCount;
-    if ((int)nSelectedRoom < 1) {
+    if ((int)nSelectedRoom <= 0) {
       nSelectedRoom = 0;
     } else {
       uint64_t nSeedLowCopy;
       nSeedLowCopy = (uint64_t)pLevel->sSeed.nSeedHigh;
       nSeedLowOld = pLevel->sSeed.nSeedLow;
-      if (!(nSelectedRoom & nSelectedRoom - 1)) {
+      if (nSelectedRoom & nSelectedRoom - 1) {
         sSeed = (D2SeedStrc)((uint64_t)nSeedLowOld * 0x6ac690c5 + nSeedLowCopy);
         pLevel->sSeed = sSeed;
-        nSelectedRoom = nSelectedRoom - 1 & sSeed.nSeedLow;
+        nSelectedRoom = (uint32_t)(sSeed.nSeedLow % nSelectedRoom);
       } else {
         sSeed = (D2SeedStrc)((uint64_t)nSeedLowOld * 0x6ac690c5 + nSeedLowCopy);
         pLevel->sSeed = sSeed;
-        nSelectedRoom = (uint32_t)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) % (uint64_t)nSelectedRoom);
+        nSelectedRoom = nSelectedRoom - 1 & sSeed.nSeedLow;
       }
     }
 
@@ -602,7 +602,7 @@ void __stdcall DRLGMAZE_ExpandRoomsWithPresets(D2DrlgLevelStrc * pLevel, uint32_
     D2RoomExStrc* pRoomIter = pLevel->pRoomExFirst;
     int nRoomCount = pLevel->nRoomExCount;
     int nRoomIdx = 0;
-    if (0 < nRoomCount) {
+    if (nRoomCount > 0) {
       D2RoomExStrc* pExpandedRoom;
       do {
         pRoomPtrArray[nRoomIdx] = pRoomIter;
@@ -611,7 +611,7 @@ void __stdcall DRLGMAZE_ExpandRoomsWithPresets(D2DrlgLevelStrc * pLevel, uint32_
       } while (nRoomIdx < nRoomCount);
 
       pRoomPtr = pRoomPtrArray;
-      if (0 < nRoomCount) {
+      if (nRoomCount > 0) {
         do {
           if (*pRoomPtr != argSkipRoom) {
             nRoomIdx = 0;
@@ -745,17 +745,19 @@ void __stdcall GenerateWolrdstoneAndTombs(D2DrlgLevelStrc * pLevel) {
       nLoopCount--;
     } while (nLoopCount);
 
-    if (pLevel->nLevelType == 0x11) {
+    if (pLevel->nLevelType != 0x11) {
+      if (pLevel->nLevelType == 0x22) {
+        pDVar1 = pRoomExStrc->pRoomExData.pRoomExDataPreset;
+        pDVar1->nLevelPrest = gnMazeRoomCountX[nRollValue].nY;
+        pDVar1->nFlags |= 2;
+        pDVar1->nPickedFile = -1;
+        return;
+      }
+    } else {
       pDVar1 = pRoomExStrc->pRoomExData.pRoomExDataPreset;
       pDVar1->nLevelPrest = gnMazeRoomCountX[nRollValue].nX;
       pDVar1->nFlags |= 2;
       pDVar1->nPickedFile = -1;
-    } else if (pLevel->nLevelType == 0x22) {
-      pDVar1 = pRoomExStrc->pRoomExData.pRoomExDataPreset;
-      pDVar1->nLevelPrest = gnMazeRoomCountX[nRollValue].nY;
-      pDVar1->nFlags |= 2;
-      pDVar1->nPickedFile = -1;
-      return;
     }
 }
 
@@ -840,7 +842,7 @@ D2RoomExStrc * __fastcall DRLGMAZE_FindRightMostRoom(D2DrlgLevelStrc * pLevel) {
     D2RoomExStrc* pRoomEx;
     D2RoomExStrc* pRightMost = 0;
     for (pRoomEx = pLevel->pRoomExFirst; pRoomEx; pRoomEx = pRoomEx->pRoomExNext) {
-      if (!pRightMost || pRightMost->sCoords.WorldPosition.x < pRoomEx->sCoords.WorldPosition.x) {
+      if (!pRightMost || pRoomEx->sCoords.WorldPosition.x > pRightMost->sCoords.WorldPosition.x) {
         bCanPlace = DRLGMAZE_CanPlaceRoomInDirection(DIRECTION_SOUTHWEST, (int*)pRoomEx);
         if (bCanPlace) {
           pRightMost = pRoomEx;
@@ -857,7 +859,7 @@ D2RoomExStrc * __fastcall DRLGMAZE_FindBottomMostRoom(D2DrlgLevelStrc * pLevel) 
     D2RoomExStrc* pRoomEx;
     D2RoomExStrc* pBottomMost = 0;
     for (pRoomEx = pLevel->pRoomExFirst; pRoomEx; pRoomEx = pRoomEx->pRoomExNext) {
-      if (!pBottomMost || pBottomMost->sCoords.WorldPosition.y < pRoomEx->sCoords.WorldPosition.y) {
+      if (!pBottomMost || pRoomEx->sCoords.WorldPosition.y > pBottomMost->sCoords.WorldPosition.y) {
         bCanPlace = DRLGMAZE_CanPlaceRoomInDirection(DIRECTION_NORTHWEST, (int*)pRoomEx);
         if (bCanPlace) {
           pBottomMost = pRoomEx;
@@ -953,7 +955,7 @@ void __fastcall ForAllButDenOfEvil(D2DrlgLevelStrc * pLevel) {
     aShuffleTable[8] = 8;
     D2SeedStrc DVar3 = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = DVar3;
-    aShuffleTable[0xf] = DVar3.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar3) & 0xffffffff) / 0xf) * -0xf;
+    aShuffleTable[0xf] = DVar3.nSeedLow % 0xf;
     int nTargetCount = pLevel->nRoomExCount / 5 + 1;
     aShuffleTable[0] = 0;
     aShuffleTable[1] = 1;
@@ -983,9 +985,9 @@ void __fastcall ForAllButDenOfEvil(D2DrlgLevelStrc * pLevel) {
       pLevel->sSeed = DVar4;
       nSwapTemp = nShuffleCount - 1;
       nShuffleCount = nSwapTemp;
-      nShufflePos = aShuffleTable[DVar3.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar3) & 0xffffffff) / 0xf) * -0xf];
-      aShuffleTable[DVar3.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar3) & 0xffffffff) / 0xf) * -0xf] = aShuffleTable[DVar4.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar4) & 0xffffffff) / 0xf) * -0xf];
-      aShuffleTable[DVar4.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar4) & 0xffffffff) / 0xf) * -0xf] = nShufflePos;
+      nShufflePos = aShuffleTable[DVar3.nSeedLow % 0xf];
+      aShuffleTable[DVar3.nSeedLow % 0xf] = aShuffleTable[DVar4.nSeedLow % 0xf];
+      aShuffleTable[DVar4.nSeedLow % 0xf] = nShufflePos;
       nShufflePos = aShuffleTable[0xf];
     } while (nSwapTemp);
 
@@ -1024,7 +1026,7 @@ static int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, D2DrlgLeve
     nFirstFile = *(int*)pState[2];
     uint32_t nResult;
     nResult = pLevel->nLevelType - 3;
-    if (nResult >= 0x21) {
+    if (nResult > 0x20) {
       return nResult;
     }
 
@@ -1079,7 +1081,7 @@ static int __stdcall DRLGMAZE_SelectRandomPresetFile(int nPresetFile, D2DrlgLeve
         return nResult;
     }
 
-    if ((int)nResult >= nFirstFile) {
+    if (nFirstFile <= (int)nResult) {
       return nResult;
     }
 

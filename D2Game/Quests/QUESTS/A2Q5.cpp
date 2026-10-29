@@ -62,11 +62,11 @@ bool __fastcall Q13_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSummoner, QUESTSTATE_RewardAwaits);
-    if (BVar1 != 1) {
-      return false;
+    if (BVar1 == 1) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A2Q5 "The Summoner" - state-0 gossip handler (sStateFunctions[0]). Picks which gossip line an Arcane Sanctuary NPC speaks based on quest progress. If RewardAwaits is set (Summoner dead, reward pending) -> always message index 1. Otherwise: if this player already participated -> index 2; else require quest introduced + active, bail if already Completed (and not JustCompleted), then index = gdwQ11QuestStateMessages[nStateFlag] (-1/0/1/2). No state mutation; read-only gossip selection.
@@ -87,7 +87,9 @@ void __fastcall Q13_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSummoner, QUESTSTATE_RewardAwaits);
-    if (!BVar1) {
+    if (BVar1) {
+      nMessageIndexMaybe = 1;
+    } else {
       int32_t nPlayerGUID = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       BVar1 = QUEST_HasPlayerParticipated(pQuestData, nPlayerGUID);
       if (BVar1) {
@@ -107,7 +109,7 @@ void __fastcall Q13_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (BVar1 == 1 && !BVar2) {
         return;
       }
-      if (1 < pQuestData->nStateFlag && !BVar2) {
+      if (pQuestData->nStateFlag >= 2 && !BVar2) {
         return;
       }
 
@@ -115,11 +117,9 @@ void __fastcall Q13_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nMessageIndexMaybe == -1) {
         return;
       }
-      if (3 < nMessageIndexMaybe) {
+      if (nMessageIndexMaybe >= 4) {
         return;
       }
-    } else {
-      nMessageIndexMaybe = 1;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nMessageIndexMaybe);
@@ -239,7 +239,7 @@ BOOL __fastcall Q13_CheckSummonerKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pDVar3, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
       iAdjacentRoom = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (ppAdjacentRooms[iAdjacentRoom] == pDVar1->pSummonerRoom) {
             bPlayerNearSummoner = 1;

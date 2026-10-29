@@ -19,8 +19,6 @@
 #include "D2Net/Game/Server.h"
 #include "D2Net/SRC/Client.h"
 #include "D2Win/D2GFX.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
@@ -84,7 +82,7 @@ int32_t __fastcall fAPPMODE_client_ReturnAppMode_Caller(D2IniConfigStrc * pD2Ini
 }
 
 void __fastcall ClientAppModeQueue(eD2ClientAppMode eAppMode) {
-    if (4 < gClientAppModeQueueCounter) {
+    if (gClientAppModeQueueCounter >= 5) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xaa);
       exit(-1);
     }
@@ -343,11 +341,11 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
     gbQuitGame = 1;
     do {
       gdwAppMode = (*pfModes[gdwAppMode])();
-      if (6 < (int)gdwAppMode) {
+      if ((int)gdwAppMode >= 7) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x28e);
         exit(-1);
       }
-      if ((int)gdwAppMode < 1) {
+      if ((int)gdwAppMode <= 0) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x28f);
         exit(-1);
       }
@@ -385,20 +383,22 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
 
 void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     // Static local variables (originally global data)
-    static bool gbScreenResolutionChangeInitInProgress = true; D2_STATIC_GUARD(gbScreenResolutionChangeInitInProgress, "D2Client::ClientModeInGame::CLIENT_SetScreenResolution::gbScreenResolutionChangeInitInProgress");
+    static int gbScreenResolutionChangeInitInProgress = 0x280; D2_STATIC_GUARD(gbScreenResolutionChangeInitInProgress, "D2Client::ClientModeInGame::CLIENT_SetScreenResolution::gbScreenResolutionChangeInitInProgress");
 
     DWORD dwScreenSize = D2gfx::D2GFX::D2GFX_GetResolutionMode();
     if (RequestedScreenModeMaybe == dwScreenSize) {
       return;
     }
-    if (!RequestedScreenModeMaybe) {
+    if (RequestedScreenModeMaybe) {
+      if (RequestedScreenModeMaybe == 2) {
+        ScreenSizeX = 800;
+        ScreenSizeY = 600;
+        nScreenMode = 1;
+      }
+    } else {
       ScreenSizeX = 0x280;
       ScreenSizeY = 0x1e0;
       nScreenMode = 0;
-    } else if (RequestedScreenModeMaybe == 2) {
-      ScreenSizeX = 800;
-      ScreenSizeY = 600;
-      nScreenMode = 1;
     }
 
     WindowSizeY = ScreenSizeY - 0x28;
@@ -424,7 +424,11 @@ uint32_t __stdcall CLIENTMODE_Unused3(uint32_t dwUnused) {
 
     DWORD dwNowTick;
     dwNowTick = GetTickCount();
-    if (dwNowTick - gdwQServerStartTime < 0x2711) {
+    if (dwNowTick - gdwQServerStartTime > 0x2710) {
+      GAME::Game::CLIENT_ConnectionRefused(6);
+      gnClientModeInitValue = 1;
+      D2GS_Connected = 0;
+    } else {
       size_t nSize;
       nState = D2Net::SRC::Client::NET_CLIENT_GetConnectionTimeout();
       if (nState) {
@@ -433,10 +437,6 @@ uint32_t __stdcall CLIENTMODE_Unused3(uint32_t dwUnused) {
         GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_from0xAF(packetBuffer, nSize);
         return (uint32_t)(D2GS_Connected != 0);
       }
-    } else {
-      GAME::Game::CLIENT_ConnectionRefused(6);
-      gnClientModeInitValue = 1;
-      D2GS_Connected = 0;
     }
 
     return 1;
@@ -465,14 +465,14 @@ bool __stdcall GameLoopFuncInitGame(uint32_t dwUnused) {
     }
 
     int nInitResult = D2Net::Game::Server::CreateThreadClientSocketOrSingleplayer();
-    if (nInitResult) {
-      return nInitResult == 2;
+    if (!nInitResult) {
+      GAME::Game::CLIENT_ConnectionRefused(6);
+      gnClientModeInitValue = 1;
+      D2GS_Connected = 0;
+      return true;
     }
 
-    GAME::Game::CLIENT_ConnectionRefused(6);
-    gnClientModeInitValue = 1;
-    D2GS_Connected = 0;
-    return true;
+    return nInitResult == 2;
 }
 
 // pfModes_StartServer: create/init QServer, connect to server, run MessageGameLoop for required user action; sets player count and globals.
@@ -538,11 +538,11 @@ uint32_t __stdcall CLIENTMODE_Unused4(uint32_t dwUnused) {
     size_t nSize = D2Net::SRC::Client::NET_D2GS_CLIENT_ExtractPacketSize_from0xAE((char*)packetBuffer, 0x200);
     GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_from0xAF(packetBuffer, nSize);
     DWORD dwNowTick = GetTickCount();
-    if (10000 >= dwNowTick - gdwLastPacketActivityTick) {
-      return (uint32_t)!D2GS_Connected;
+    if (dwNowTick - gdwLastPacketActivityTick > 10000) {
+      return 1;
     }
 
-    return 1;
+    return (uint32_t)!D2GS_Connected;
 }
 
 // pfModes_ShutdownServer: run MessageGameLoop while shutting down, free QServer, send 0xB0 to clients.

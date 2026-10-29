@@ -94,7 +94,7 @@ static uint32_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID p
 
     pVqResult = (LPCVOID)(mbi.RegionSize + (int)mbi.BaseAddress);
     *ppStackTop = pVqResult;
-    if (pAddress >= pVqResult) {
+    if (pVqResult <= pAddress) {
       return (uint32_t)pVqResult & -256;
     }
 
@@ -313,7 +313,7 @@ bool __fastcall ErrorReportingLaunch(char * szText, D2BlizzardErrorArgument * pA
         }
 
         nAttach = 0;
-        if (pArg->nAttachmentCount) {
+        if ((uint32_t)pArg->nAttachmentCount > 0) {
           ppAttachment = pArg->szAttachment;
           do {
             if (*ppAttachment && **ppAttachment != '\0') {
@@ -346,7 +346,7 @@ void __stdcall SYSTEM_EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0098a6f0);
 }
 
-void __stdcall LeaveCriticalSection_System(LPCRITICAL_SECTION lpCriticalSection) {
+void __stdcall LeaveCriticalSection_System() {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
 }
 

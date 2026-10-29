@@ -88,7 +88,7 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENT
     }
 
     uint32_t uVar1 = ptr->m_link.m_next;
-    return (::TCELENTRY*)((int)uVar1 < 1 ? 0 : uVar1);
+    return (::TCELENTRY*)((int)uVar1 <= 0 ? 0 : uVar1);
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY * ptr) {
@@ -116,11 +116,11 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY 
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::RawNext(::TCELENTRY * ptr) {
-    if (!ptr) {
-      return (::TCELENTRY*)this->m_terminator.m_next;
+    if (ptr) {
+      return (::TCELENTRY*)ptr->m_link.m_next;
     }
 
-    return (::TCELENTRY*)ptr->m_link.m_next;
+    return (::TCELENTRY*)this->m_terminator.m_next;
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
@@ -130,7 +130,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
     while (true) {
       int nNext;
       pNode = (int*)this->m_terminator.m_next;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -186,11 +186,11 @@ template<> TSList<::TCELENTRY, TSGetLink<TCELENTRY>>* TSList<TCELENTRY, TSGetLin
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::NewNode(uint32_t nLinkType, uint32_t nExtraBytes, uint32_t dwFlags) {
     ::TCELENTRY* pNewEntry = (::TCELENTRY*)Storm::SMem::SMemAlloc(nExtraBytes + 0x24, s___AUTCELENTRY___00741f14, -2, dwFlags | 8);
-    if (!pNewEntry) {
-      pNewEntry = 0;
-    } else {
+    if (pNewEntry) {
       pNewEntry->m_link.m_prevlink = 0;
       pNewEntry->m_link.m_next = 0;
+    } else {
+      pNewEntry = 0;
     }
     if (!nLinkType) {
       return pNewEntry;

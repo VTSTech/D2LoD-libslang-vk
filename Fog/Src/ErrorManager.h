@@ -84,7 +84,7 @@ void * __stdcall GetInstructionPointer();
 void OutputDebugStringSimple(char * szText, ...);
 void OutputDebugStringIfCapsLock(char * szText, ...);
 void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg);
-void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg);
+void FormatDebugOutputLogOnly(char * szText, ...);
 // The registered Fog exception filter. Its ABI is measured at the only dispatch,
 // 00403f21 'call dword ptr [gpCurrentExceptionFilter]' with NO pushes: ECX = &crashInfo
 // (00403efd 'lea ecx,[ebp-0x320]') and EDX = the stored context (00403ef5

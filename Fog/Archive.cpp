@@ -95,7 +95,10 @@ static int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * pp
     Storm::Source::SSTR::SStrPack(szText, pszMpqName, 0x7fffffff);
     int bOpenArchiveCdOk;
     bOpenArchiveCdOk = Storm::Source::SFile::SFileOpenArchive(szText, pnPriority, 2, (D2ArchiveStrc**)ppArchive);
-    if (!bOpenArchiveCdOk) {
+    if (bOpenArchiveCdOk) {
+      archive_opened:
+      bOpenArchiveCdOk = 1;
+    } else {
       /* LPSTR lpBuffer for GetLogicalDriveStringsA */ /* DWORD nBufferLength for GetLogicalDriveStringsA */ dwDriveStringsLen = GetLogicalDriveStringsA(0x104, szDriveStrings);
       if (dwDriveStringsLen && dwDriveStringsLen < 0x105) {
         cCurrentChar = *pszMpqName;
@@ -131,9 +134,6 @@ static int __stdcall FindMPQOnCd(char * pszMpqName, int * pnPriority, int * * pp
       }
 
       bOpenArchiveCdOk = 0;
-    } else {
-      archive_opened:
-      bOpenArchiveCdOk = 1;
     }
 
     return bOpenArchiveCdOk;

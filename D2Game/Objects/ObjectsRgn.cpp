@@ -106,8 +106,7 @@ int32_t __fastcall AllocObjectControl(::SGAMEDATA * pGame) {
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pGame->pGameSeed);
     aShrineClassCounts[8] = sSeedNext.nSeedLow;
     pGame->pGameSeed = sSeedNext;
-    pObjectControl->sSeed.nSeedLow = aShrineClassCounts[8];
-    pObjectControl->sSeed.nSeedHigh = 0x29a;
+    D2Common::Seed::InitSeed_Param_666(&pObjectControl->sSeed, aShrineClassCounts[8]);
     pObjectControl->aLevelsRng[0] = 0;
     pObjectControl->pSub0x1110 = 0;
     eD2LevelId eLevel = LEVEL_RogueEncampment;
@@ -146,7 +145,7 @@ int32_t __fastcall AllocObjectControl(::SGAMEDATA * pGame) {
     nShrineClassIdxLoop = 0;
     pShrinesRngIter = &pObjectControl->sShrinesRng;
     do {
-      if (0 < aShrineClassCounts[nShrineClassIdxLoop]) {
+      if (aShrineClassCounts[nShrineClassIdxLoop] > 0) {
         nAllocSize = aShrineClassCounts[nShrineClassIdxLoop] * 4;
         pShrineClassRng = (int*)D2_ALLOC_POOL_AT(pGame->pMemoryPool, nAllocSize, ".\\OBJECTS\\objrgn.cpp", 0x54);
         pShrinesRngIter->aShrinesRng[0] = (uint8_t*)pShrineClassRng;
@@ -160,7 +159,7 @@ int32_t __fastcall AllocObjectControl(::SGAMEDATA * pGame) {
     } while (nShrineClassIdxLoop < 8);
 
     iShrineIdx = 0;
-    if (0 >= nShrinesTxtCount) {
+    if (nShrinesTxtCount <= 0) {
       return aShrineClassCounts[8];
     }
 
@@ -293,22 +292,22 @@ void __fastcall AllocObjectControlSub0x1110(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2ObjectControlStrc* pObjectControl = pGame->pObjectControl;
     D2ObjectControlSub0x1110* pNewSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2ObjectControlSub0x1110, ".\\OBJECTS\\objrgn.cpp", 0x177);
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nCoord = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nCoord = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nCoord = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nCoord = 0;
     }
 
     pNewSub->sCoords.x = nCoord;
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nCoord = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nCoord = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nCoord = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nCoord = 0;
     }
 
     pNewSub->sCoords.y = nCoord;
@@ -330,7 +329,7 @@ void __fastcall Objects_InitFn17(D2ObjectInitFnArg * pInitArg) {
       int32_t dwUnitClassId;
       pRoom = pInitArg->pRoom;
       do {
-        if (pSub0x1110->pRoom == pRoom || pRoom && (nCoord = pSub0x1110->sCoords.x , pRoom->sCoords.dwXStart <= nCoord) && nCoord < pRoom->sCoords.dwXSize + pRoom->sCoords.dwXStart && (nCoord = pSub0x1110->sCoords.y , pRoom->sCoords.dwYStart <= nCoord && nCoord < pRoom->sCoords.dwYSize + pRoom->sCoords.dwYStart)) {
+        if (pSub0x1110->pRoom == pRoom || pRoom && (nCoord = pSub0x1110->sCoords.x , nCoord >= pRoom->sCoords.dwXStart) && nCoord < pRoom->sCoords.dwXSize + pRoom->sCoords.dwXStart && (nCoord = pSub0x1110->sCoords.y , nCoord >= pRoom->sCoords.dwYStart && nCoord < pRoom->sCoords.dwYSize + pRoom->sCoords.dwYStart)) {
           pUnit = pInitArg->pObject;
           if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
             D2Common::Units::SetupUpdateFlag(pUnit, 1);
@@ -370,22 +369,22 @@ int32_t __fastcall QUEST_GetLevelQuestStatus(::SGAMEDATA * pGame, eD2LevelId eLe
 
     int nPoints = pLevelRng->nMinDistance + (pLevelRng->nMinDistance >> 0x1f & 7U);
     pLevelRng = (D2ObjectRngStrc*)(nPoints >> 3);
-    if (*pnPointsSize2 > (int)pLevelRng) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pLevelRng >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    if (*pnPointsSize2 <= (int)pLevelRng) {
+      return (uint32_t)((uint32_t)(nPoints >> 0xb) & 0xffffffu) << 8;
     }
 
-    return (uint32_t)((uint32_t)(nPoints >> 0xb) & 0xffffffu) << 8;
+    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pLevelRng >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
 }
 
 uint32_t __fastcall OBJECTRGN_CheckDensityThreshold(::SGAMEDATA * pGame, eD2LevelId eLevel) {
     D2ObjectControlStrc* pObjectControl = pGame->pObjectControl;
     D2ObjectRngStrc* pLevelRng = pObjectControl->aLevelsRng[eLevel];
-    if (0 >= pLevelRng->nMinDistance) {
+    if (pLevelRng->nMinDistance <= 0) {
       return (uint32_t)pObjectControl & -256;
     }
 
     pObjectControl = (D2ObjectControlStrc*)((pLevelRng->pad_0x4 << 7) / pLevelRng->nMinDistance);
-    if (!(0x60 < (int)pObjectControl && !pLevelRng->pad_0x10)) {
+    if (!((int)pObjectControl > 0x60 && !pLevelRng->pad_0x10)) {
       return (uint32_t)pObjectControl & -256;
     }
 
@@ -401,11 +400,11 @@ int32_t __fastcall OBJECTRGN_CheckPointsCapacity(::SGAMEDATA * pGame, eD2LevelId
 
     int nPoints = pLevelRng->nMinDistance + (pLevelRng->nMinDistance >> 0x1f & 7U);
     pLevelRng = (D2ObjectRngStrc*)(nPoints >> 3);
-    if (*pnPointsSize1 > (int)pLevelRng) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pLevelRng >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    if (*pnPointsSize1 <= (int)pLevelRng) {
+      return (uint32_t)((uint32_t)(nPoints >> 0xb) & 0xffffffu) << 8;
     }
 
-    return (uint32_t)((uint32_t)(nPoints >> 0xb) & 0xffffffu) << 8;
+    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pLevelRng >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
 }
 
 void __fastcall OBJECT_IncrementLevelSpawnCount(::SGAMEDATA * pGame, eD2LevelId eLevel) {
@@ -417,7 +416,7 @@ uint32_t __fastcall OBJECT_IsPositionNearSpawnPoint2(::SGAMEDATA * pGame, eD2Lev
     D2ObjectRngStrc* pRngOrDelta = pGame->pObjectControl->aLevelsRng[eLevel];
     int* pnPointsSize = &pRngOrDelta->nPointsSize2;
     int i = 0;
-    if (0 >= *pnPointsSize) {
+    if (*pnPointsSize <= 0) {
       return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pRngOrDelta >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
@@ -461,7 +460,7 @@ uint32_t __fastcall OBJECT_IsPositionNearSpawnPoint1(::SGAMEDATA * pGame, eD2Lev
     D2ObjectRngStrc* pRngOrDelta = pGame->pObjectControl->aLevelsRng[eLevel];
     int* pnPointsSize = &pRngOrDelta->nPointsSize1;
     int i = 0;
-    if (0 >= *pnPointsSize) {
+    if (*pnPointsSize <= 0) {
       return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pRngOrDelta >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
@@ -519,7 +518,7 @@ int32_t __fastcall OBJECT_HandleObjectMode(D2ObjectModeArg * pObjectModeArg) {
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eAct eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     __frame0.pLevelRng = pObjectModeArg->pGame->pObjectControl->aLevelsRng[eLevel];
-    if (!(__frame0.pLevelRng->nMonClassId < 0 || sgptDataTable->nTxtMonStatsSize <= __frame0.pLevelRng->nMonClassId)) {
+    if (!(__frame0.pLevelRng->nMonClassId < 0 || __frame0.pLevelRng->nMonClassId >= sgptDataTable->nTxtMonStatsSize)) {
       return __frame0.pLevelRng->nMonClassId;
     }
 
@@ -549,7 +548,7 @@ int32_t __fastcall OBJECT_HandleObjectMode(D2ObjectModeArg * pObjectModeArg) {
       nClassIdCandidate = (int)(short int)pMonData->nClassId;
       iActMonIdx = 0;
       do {
-        if (pActMonIdTable[iActMonIdx] <= nClassIdCandidate && nClassIdCandidate < pActMonIdTable[iActMonIdx] + 5) {
+        if (nClassIdCandidate >= pActMonIdTable[iActMonIdx] && nClassIdCandidate < pActMonIdTable[iActMonIdx] + 5) {
           nMonClassIdResult = pActMonIdTable[iActMonIdx];
           __frame0.pLevelRng->nMonClassId = nMonClassIdResult;
           return nMonClassIdResult;
@@ -560,7 +559,7 @@ int32_t __fastcall OBJECT_HandleObjectMode(D2ObjectModeArg * pObjectModeArg) {
 
       iActMonIdx = 0;
       do {
-        if (anActMonIds[iActMonIdx] <= nClassIdCandidate && nClassIdCandidate < anActMonIds[iActMonIdx] + 4) {
+        if (nClassIdCandidate >= anActMonIds[iActMonIdx] && nClassIdCandidate < anActMonIds[iActMonIdx] + 4) {
           nMonClassIdResult = anActMonIds[iActMonIdx];
           __frame0.pLevelRng->nMonClassId = nMonClassIdResult;
           return nMonClassIdResult;

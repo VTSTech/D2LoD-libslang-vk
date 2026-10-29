@@ -344,7 +344,7 @@ static D2UnitStrc * __stdcall PLAYER_CreateRewardItemFromTemplate(int32_t nGameP
       D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pCreatedItem, pStatList);
       D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
     }
-    if (!bNoSkill && -1 < *(short int*)(pTemplateTxt + 0xac) && (int)*(short int*)(pTemplateTxt + 0xac) < sgptDataTable->nTxtSkillsCount) {
+    if (!bNoSkill && *(short int*)(pTemplateTxt + 0xac) >= 0 && (int)*(short int*)(pTemplateTxt + 0xac) < sgptDataTable->nTxtSkillsCount) {
       pStatList = D2Common::Stats::StatsEx::GetStatList(pCreatedItem, STATE_none, 0x40);
       if (!pStatList) {
         pStatList = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pCreatedItem->pMemory, 0x40, 0, UNIT_ITEM, pCreatedItem->nUnitGUID);
@@ -402,46 +402,7 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pNewItem, ITEMFLAG_BEGINNER, 1);
       D2Common::ITEMS::Items::SetBodyLoc(pNewItem, *(eD2BodyLoc*)(pnParam + 1));
       nLine = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_beltable(pNewItem);
-      if (!nLine) {
-        if ((char)pnParam[1] == '\0') {
-          PLAYER_PlaceItemInInventory(__frame0.pGameSaved, 1, pUnit, pNewItem);
-          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
-          nLine = 0;
-          if (!bIsQuiver) {
-            nStatValue = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
-            eUnitStat = UNITSTAT_durability;
-          } else {
-            nStatValue = 0xfa;
-            eUnitStat = UNITSTAT_quantity;
-          }
-
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eUnitStat, nStatValue, nLine);
-          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
-          if (bIsQuiver) {
-            nLine = 100;
-            goto set_quiver_quantity;
-          }
-        } else {
-          nBeltResult = PLAYER_EquipItemToBodyLoc(__frame0.pGameSaved, pUnit, pNewItem);
-          if (!nBeltResult) {
-            PLAYER_PlaceItemInInventory(__frame0.pGameSaved, 1, pUnit, pNewItem);
-          }
-
-          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
-          nStatValue = 0;
-          if (!bIsQuiver) {
-            nLine = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
-            eStatId = UNITSTAT_durability;
-          } else {
-            nLine = 0xfa;
-            set_quiver_quantity:
-            nStatValue = 0;
-            eStatId = UNITSTAT_quantity;
-          }
-
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eStatId, nLine, nStatValue);
-        }
-      } else {
+      if (nLine) {
         if (!pNewItem) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd8);
           exit(-1);
@@ -452,18 +413,57 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
         }
 
         eItemUnitType = pNewItem->eUnitType;
-        if (eItemUnitType == UNIT_OBJECT || 3 < (int)eItemUnitType && (int)eItemUnitType < 6) {
+        if (eItemUnitType == UNIT_OBJECT || (int)eItemUnitType > 3 && (int)eItemUnitType <= 5) {
           bIsQuiver = pNewItem->pPath.pStaticPath->nPosX;
-        } else if (!pNewItem->pPath.pDynamicPath) {
-          bIsQuiver = 0;
-        } else {
+        } else if (pNewItem->pPath.pDynamicPath) {
           bIsQuiver = D2Common::PATH::DynamicPath::GetXPos(pNewItem->pPath.pDynamicPath);
+        } else {
+          bIsQuiver = 0;
         }
 
         pGameLocal = __frame0.pGameSaved;
         nBeltResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(__frame0.pGameSaved, pUnit, pNewItem->nUnitGUID, bIsQuiver, 1, &__frame0.dwBeltSlotOut);
         if (!nBeltResult) {
           PLAYER_PlaceItemInInventory(pGameLocal, 1, pUnit, pNewItem);
+        }
+      } else {
+        if ((char)pnParam[1] != '\0') {
+          nBeltResult = PLAYER_EquipItemToBodyLoc(__frame0.pGameSaved, pUnit, pNewItem);
+          if (!nBeltResult) {
+            PLAYER_PlaceItemInInventory(__frame0.pGameSaved, 1, pUnit, pNewItem);
+          }
+
+          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
+          nStatValue = 0;
+          if (bIsQuiver) {
+            nLine = 0xfa;
+            set_quiver_quantity:
+            nStatValue = 0;
+            eStatId = UNITSTAT_quantity;
+          } else {
+            nLine = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
+            eStatId = UNITSTAT_durability;
+          }
+
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eStatId, nLine, nStatValue);
+        } else {
+          PLAYER_PlaceItemInInventory(__frame0.pGameSaved, 1, pUnit, pNewItem);
+          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
+          nLine = 0;
+          if (bIsQuiver) {
+            nStatValue = 0xfa;
+            eUnitStat = UNITSTAT_quantity;
+          } else {
+            nStatValue = D2Common::Stats::StatsEx::GetTxtMaxDurability(pNewItem);
+            eUnitStat = UNITSTAT_durability;
+          }
+
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, eUnitStat, nStatValue, nLine);
+          bIsQuiver = D2Common::ITEMS::Items::ITEMS_IsA(pNewItem, ITEMTYPE_BowQuiver);
+          if (bIsQuiver) {
+            nLine = 100;
+            goto set_quiver_quantity;
+          }
         }
       }
 
@@ -477,7 +477,7 @@ void __fastcall PLAYER_CreateAllStarterItems(D2UnitStrc * pUnit, ::SGAMEDATA * p
     }
 
     int i = pUnit->nClassId;
-    if (!(-1 < i && i < sgptDataTable->nTxtCharStatsSize)) {
+    if (!(i >= 0 && i < sgptDataTable->nTxtCharStatsSize)) {
       return;
     }
 
@@ -768,7 +768,7 @@ BOOL __fastcall GOLD_DropGoldFromInventory(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
     int i = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
     uint32_t nClampedGold = nGoldAmount;
-    if (!((int)nGoldAmount <= i && -1 < (int)nGoldAmount)) {
+    if (!((int)nGoldAmount <= i && (int)nGoldAmount >= 0)) {
       return 0;
     }
 
@@ -776,19 +776,19 @@ BOOL __fastcall GOLD_DropGoldFromInventory(::SGAMEDATA * pGame, D2UnitStrc * pUn
     if ((int)nClampedGold > (int)nGoldLimit) {
       return 0;
     }
-    if (!nClampedGold) {
+    if (nClampedGold <= 0) {
       return 1;
     }
 
     D2Common::Units::GetCoords(pUnit, &ptCoords);
-    if (2000000000 < nClampedGold) {
+    if (nClampedGold > 2000000000) {
       nClampedGold = 2000000000;
     }
 
     i = 0;
     dwRequesterId = 0;
     ITEMS::Items::Drop::DROP_SpawnGoldPiles(pGame, pUnit, nClampedGold, pGoldPiles, (int*)&dwRequesterId, 0x20);
-    if (!(dwRequesterId && 0 < (int)dwRequesterId)) {
+    if (!(dwRequesterId && (int)dwRequesterId > 0)) {
       return 1;
     }
 
@@ -817,22 +817,17 @@ uint32_t __fastcall CheckItemMovePermission(::SGAMEDATA * pGame, D2UnitStrc * pU
     uint32_t nInteractUnitId;
     eD2UnitType eInteractUnitType;
     BOOL bHasInteraction = UNIT::SUnit::GetInteractInfo(pUnit, &eInteractUnitType, &nInteractUnitId);
-    if (!bHasInteraction) {
-      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      if (!pPlayerData->dwTradeTick) {
-        bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);
-        return bCanMove;
-      }
-    } else {
+    if (bHasInteraction) {
       D2UnitStrc* pInteractUnit;
       pInteractUnit = UNIT::SUnit::FindUnitFromTable(pGame, eInteractUnitType, nInteractUnitId);
       if (pInteractUnit) {
-        if (eInteractUnitType == UNIT_PLAYER) {
+        if (eInteractUnitType != UNIT_PLAYER) {
+          if (eInteractUnitType == UNIT_MONSTER) {
+            bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, (int32_t)pUnit);
+            return bCanMove;
+          }
+
           bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);
-          return bCanMove;
-        }
-        if (eInteractUnitType == UNIT_MONSTER) {
-          bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, (int32_t)pUnit);
           return bCanMove;
         }
 
@@ -841,6 +836,12 @@ uint32_t __fastcall CheckItemMovePermission(::SGAMEDATA * pGame, D2UnitStrc * pU
       }
 
       UNIT::SUnit::ClearInteractInfo(pUnit);
+    } else {
+      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+      if (!pPlayerData->dwTradeTick) {
+        bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);
+        return bCanMove;
+      }
     }
 
     return 0;
@@ -896,7 +897,7 @@ void __fastcall CountModeZeroDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWOR
 }
 
 void __fastcall COMMAND_playersX(DWORD count) {
-    if (count >= 9) {
+    if (count > 8) {
       return;
     }
 
@@ -907,7 +908,7 @@ int32_t __fastcall SERVER_GAME_CountPlayers(::SGAMEDATA * pGame) {
     DWORD PlayerCountFixed;
     DWORD ModeZeroCount = 0;
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)CountModeZeroDeath, &ModeZeroCount);
-    if (!(2 < (uint8_t)(pGame->nGameType - SGAMETYPE_OBNET_HOST) || (PlayerCountFixed = PlayerCountOverride , (int)PlayerCountOverride <= (int)ModeZeroCount))) {
+    if (!((uint8_t)(pGame->nGameType - SGAMETYPE_OBNET_HOST) > 2 || (PlayerCountFixed = PlayerCountOverride , (int)PlayerCountOverride <= (int)ModeZeroCount))) {
       return PlayerCountFixed;
     }
 
@@ -928,7 +929,7 @@ static void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, D2Unit
     nTotalGold = nBankGold + nGold;
     int nLevelCap;
     nLevelCap = nLevel;
-    if (0x13 < nLevel) {
+    if (nLevel >= 0x14) {
       nLevelCap = 0x14;
     }
 
@@ -951,12 +952,18 @@ static void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, D2Unit
           nValue = 0;
         }
       }
-      if ((int)nGold < (int)nValue) {
+      if ((int)nValue > (int)nGold) {
         nValue = nGold;
       }
     }
     if (!bKilledByPlayer) {
-      if ((int)nGold < (int)nValue) {
+      if (!((int)nValue > (int)nGold)) {
+        if (!pUnit2) {
+          GOLD_DropGoldFromInventory(pGame, nullptr, -1, nGold - nValue);
+        } else {
+          GOLD_DropGoldFromInventory(pGame, pUnit2, pUnit2->nUnitGUID, nGold - nValue);
+        }
+      } else {
         if (pGame->nGameType != SGAMETYPE_SINGLEPLAYER) {
           nTotalGold = nBankGold - nValue + nGold;
           if (!pUnit2) {
@@ -964,16 +971,12 @@ static void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, D2Unit
           }
           if (nTotalGold < 0) {
             nTotalGold = 0;
-          } else if (pUnit2->eUnitType == UNIT_PLAYER && (nGold = D2Common::Units::GetStashGoldLimit(pUnit2) , (int)nGold < nTotalGold)) {
+          } else if (pUnit2->eUnitType == UNIT_PLAYER && (nGold = D2Common::Units::GetStashGoldLimit(pUnit2) , nTotalGold > (int)nGold)) {
             nTotalGold = 0;
           }
 
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_goldbank, nTotalGold, 0);
         }
-      } else if (!pUnit2) {
-        GOLD_DropGoldFromInventory(pGame, nullptr, -1, nGold - nValue);
-      } else {
-        GOLD_DropGoldFromInventory(pGame, pUnit2, pUnit2->nUnitGUID, nGold - nValue);
       }
       if (!pUnit2) {
         return;
@@ -985,12 +988,12 @@ static void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, D2Unit
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_gold, 0, 0);
       goto record_gold_lost;
     }
-    if ((int)nGold < (int)nValue) {
+    if ((int)nValue > (int)nGold) {
       nTotalGold = nBankGold - nValue + nGold;
       if (pUnit2) {
         if (nTotalGold < 0) {
           nTotalGold = 0;
-        } else if (pUnit2->eUnitType == UNIT_PLAYER && (nGold = D2Common::Units::GetStashGoldLimit(pUnit2) , (int)nGold < nTotalGold)) {
+        } else if (pUnit2->eUnitType == UNIT_PLAYER && (nGold = D2Common::Units::GetStashGoldLimit(pUnit2) , nTotalGold > (int)nGold)) {
           nTotalGold = 0;
         }
 
@@ -1001,7 +1004,7 @@ static void __stdcall PLAYER_ApplyGoldPenaltyOnDeath(::SGAMEDATA * pGame, D2Unit
           nGold = nValue;
           if (pUnit2->eUnitType == UNIT_PLAYER) {
             nStashLimit = D2Common::Units::GetInventoryGoldLimit(pUnit2);
-            if ((int)nStashLimit < (int)nValue) {
+            if ((int)nValue > (int)nStashLimit) {
               nGold = 0;
             }
           }
@@ -1043,7 +1046,7 @@ static void __stdcall EXP_ApplyDeathExpPenalty(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    if (1 >= nLevel) {
+    if (nLevel <= 1) {
       return;
     }
 
@@ -1151,74 +1154,74 @@ D2UnitStrc * __fastcall PLAYER_GetActiveWeaponForSkill(D2UnitStrc * pUnit) {
     D2UnitStrc* pWeaponSwitch = pUnit;
     D2Common::INVENTORY::Inventory::INVENTORY_GetEquippedWeaponInfo(pInventory, &pEquippedWeapon, &nWeaponSwitch, &bIsDualWieldActive);
     BOOL bCanDualWield = D2Common::Units::CanDualWield(pUnit);
-    if (!bCanDualWield) {
-      return pEquippedWeapon;
-    }
-
-    D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-    if (!pSkill) {
-      return pEquippedWeapon;
-    }
-
-    D2SkillsTxt* pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
-    if (!pSkillsTxt) {
-      return pEquippedWeapon;
-    }
-
-    switch (pSkillsTxt->weapsel) {
-      case '\x02':
-        dwSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
-      pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 5);
-      pWeaponPrimary = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 6);
-      if (!pWeaponResult || (bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon) , !bIsNotBroken) || pWeaponPrimary && (bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponPrimary, ITEMTYPE_Weapon) , bIsNotBroken && dwSkillFlags & 0x2000)) {
-        pWeaponResult = pWeaponPrimary;
+    if (bCanDualWield) {
+      D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
+      if (!pSkill) {
+        return pEquippedWeapon;
       }
 
-      break;
-      case '\x03':
-        dwSkillFlags = (int)pWeaponSwitch->nSeqFrame >> 8 & 0x80000001;
-      bIsWeaponSwitch = !dwSkillFlags;
-      if ((int)dwSkillFlags < 0) {
-        bIsWeaponSwitch = (dwSkillFlags - 1 | -2) == -1;
-      }
-      if (!bIsWeaponSwitch) {
-        bIsNotBroken = 6;
-        pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
-        break;
+      D2SkillsTxt* pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
+      if (!pSkillsTxt) {
+        return pEquippedWeapon;
       }
 
-      bIsNotBroken = 5;
-      pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
-      break;
-      case '\x04':
-        pEquippedWeapon = 0;
-      pWeaponResult = 0;
-      break;
-      default:
+      switch (pSkillsTxt->weapsel) {
+        case '\x02':
+          dwSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
         pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 5);
-      if (pWeaponResult) {
-        bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon);
-        if (bIsNotBroken) {
+        pWeaponPrimary = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 6);
+        if (!pWeaponResult || (bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon) , !bIsNotBroken) || pWeaponPrimary && (bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponPrimary, ITEMTYPE_Weapon) , bIsNotBroken && dwSkillFlags & 0x2000)) {
+          pWeaponResult = pWeaponPrimary;
+        }
+
+        break;
+        case '\x03':
+          dwSkillFlags = (int)pWeaponSwitch->nSeqFrame >> 8 & 0x80000001;
+        bIsWeaponSwitch = !dwSkillFlags;
+        if ((int)dwSkillFlags < 0) {
+          bIsWeaponSwitch = (dwSkillFlags - 1 | -2) == -1;
+        }
+        if (!bIsWeaponSwitch) {
+          bIsNotBroken = 6;
+          pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
           break;
         }
+
+        bIsNotBroken = 5;
+        pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
+        break;
+        case '\x04':
+          pEquippedWeapon = 0;
+        pWeaponResult = 0;
+        break;
+        default:
+          pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, 5);
+        if (pWeaponResult) {
+          bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon);
+          if (bIsNotBroken) {
+            break;
+          }
+        }
+
+        case '\x01':
+          bIsNotBroken = 6;
+        pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
       }
 
-      case '\x01':
-        bIsNotBroken = 6;
-      pWeaponResult = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType(pInventory, bIsNotBroken);
+      bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon);
+      if (!bIsNotBroken) {
+        return pEquippedWeapon;
+      }
+
+      bCanDualWield = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pWeaponResult);
+      if (!bCanDualWield) {
+        return pEquippedWeapon;
+      }
+
+      return pWeaponResult;
     }
 
-    bIsNotBroken = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponResult, ITEMTYPE_Weapon);
-    if (!bIsNotBroken) {
-      return pEquippedWeapon;
-    }
-
-    bCanDualWield = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pWeaponResult);
-    if (!bCanDualWield) {
-      return pEquippedWeapon;
-    }
-
-    return pWeaponResult;
+    return pEquippedWeapon;
 }
 
 // Recalculates active stat-list flags for dual-wield weapon slots on pUnit. If nParam is non-zero, deactivates stat lists for currently equipped and primary weapons (cleanup pass). Then, if the unit can dual-wield, activates the correct weapon's stat list based on the active-weapon-for-skill selection: primary-only, swap-only, or the dual-wield split. Uses STATLIST_SetItemStatActive(1=active, 0=inactive).

@@ -20,12 +20,12 @@ BOOL __stdcall LNG_FormatErrorMessageWithFallback(DWORD dwErrorCode, char * szBu
     }
 
     uint32_t bFormatted = Storm::Source::SErr::SErrGetErrorStr(dwErrorCode, szBuffer, dwBufferSize);
-    if (bFormatted) {
-      return 1;
+    if (!bFormatted) {
+      Storm::Source::SSTR::SStrCopy(szBuffer, "Stupid Lng.cpp error.", dwBufferSize);
+      return 0;
     }
 
-    Storm::Source::SSTR::SStrCopy(szBuffer, "Stupid Lng.cpp error.", dwBufferSize);
-    return 0;
+    return 1;
 }
 
 BOOL __stdcall CLIENT_LoadLNG() {

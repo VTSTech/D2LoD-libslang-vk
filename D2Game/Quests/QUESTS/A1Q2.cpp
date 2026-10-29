@@ -60,7 +60,7 @@ namespace D2Game::Quests::QUESTS::A1Q2 {
 // status flag has advanced past the "boss killed" stage (nStateFlag > 3, i.e.
 // the reward/turn-in stages 4/5). Used to gate whether the quest is finalizable.
 bool __fastcall QuestDataBool(D2QuestDataStrc * pQuestData) {
-    if (!(pQuestData->bIsNotIntroduction && 3 < pQuestData->nStateFlag)) {
+    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlag >= 4)) {
       return false;
     }
 
@@ -313,7 +313,7 @@ BOOL __fastcall Q02_SetRewardForNearbyPlayers(::SGAMEDATA * pGame, D2UnitStrc * 
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pUnitRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
       nRoomIdx = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (pAdjacentRooms[nRoomIdx] == pBloodRavenRoom) {
             bIsNearBloodRaven = 1;
@@ -515,25 +515,26 @@ bool __fastcall Q02_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    /* If  state 0 (Completed): inactive */ if (bIsQuestInState == 1) {
-      return false;
-    }
-    /* If quest has been given by NPC (status 1) and reward is not yet available:
+    /* If  state 0 (Completed): inactive */ if (bIsQuestInState != 1) {
+      /* If quest has been given by NPC (status 1) and reward is not yet available:
                          active */ /* GetQuestState(QUESTSTATE_RewardAwaits=1): quest given & reward not yet
                          awaiting -> active */ if (pQuestData->nStateFlag == 1) {
-      bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      if (!bIsQuestInState) {
-        return true;
+        bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+        if (!bIsQuestInState) {
+          return true;
+        }
       }
-    }
 
-    /* GetQuestState(QUESTSTATE_RewardAwaits=1): reward awaiting -> active (ready to
+      /* GetQuestState(QUESTSTATE_RewardAwaits=1): reward awaiting -> active (ready to
                          turn in) */ /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (bIsQuestInState != 1) {
-      return false;
+      if (bIsQuestInState != 1) {
+        return false;
+      }
+
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A1Q2 sequence filter (Q02_SequenceFilter). Drives the quest's place in the act
@@ -551,18 +552,18 @@ bool __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0x230);
     } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
       pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-      if (!pNextQuestData) {
-        return false;
+      if (pNextQuestData) {
+        /* FARPROC lpfn for IsBadCodePtr */ bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+        if (bBadFnPtr) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23b);
+          exit(-1);
+        }
+
+        bVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+        return bVar1;
       }
 
-      /* FARPROC lpfn for IsBadCodePtr */ bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-      if (bBadFnPtr) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23b);
-        exit(-1);
-      }
-
-      bVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-      return bVar1;
+      return false;
     }
 
     return true;

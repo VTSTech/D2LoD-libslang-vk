@@ -94,7 +94,7 @@ namespace D2Client::GAME::Game {
 void __fastcall GAMEDATA_TimerInitWithTickCount(uint32_t dwDurationMs, uint32_t * pTimerStruct);
 void __fastcall GAMEDATA_SetByteInUshort(uint16_t * pWord, uint8_t byteValue);
 // Setter for gRunKeyDown (run modifier).
-void __fastcall SetRunKeyDown(uint32_t dwParam);
+void __fastcall SetRunKeyDown(BOOL dwParam);
 void __fastcall SetGlobalAlwaysRun(int32_t nValue);
 BOOL __stdcall GetGlobalAlwaysRun();
 void __fastcall GAMEDATA_SetClickModifier(int32_t bModifierDown);

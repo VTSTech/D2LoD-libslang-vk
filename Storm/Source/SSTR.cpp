@@ -428,19 +428,19 @@ uint32_t __stdcall SStrPack(LPSTR szText, char * szSource, uint32_t nBufferLengt
 
 static uint32_t D2vsprintf(char * szFormat, size_t nSize, char * pBuffer, va_list pArgs) {
     uint32_t nWritten;
-    if (!nSize) {
-      nWritten = 0;
-    } else {
+    if (nSize) {
       if (nSize == 0x7fffffff) {
         nWritten = vsprintf(pBuffer, szFormat, pArgs);
         return nWritten;
       }
 
       nWritten = __vsnprintf(pBuffer, nSize, szFormat, pArgs);
-      if (nSize <= nWritten) {
+      if (nWritten >= nSize) {
         pBuffer[nSize - 1] = '\0';
         return nSize - 1;
       }
+    } else {
+      nWritten = 0;
     }
 
     return nWritten;
@@ -471,7 +471,7 @@ size_t SStrPrintf(char * szOutput, size_t nSize, char * Format, ...) {
 // SStrPrintf. The va_list/varargs split is exactly what separates the two API names.
 // @sourcefile-storm .\SOURCE\SSTR.CPP  (first-party: SStrDup's own SMemAlloc call site names it)
 // @wasnamed SSTR_Vsnprintf
-uint32_t __stdcall SStrVPrintf(char * szOutput, size_t nSize, char * szFormatString, va_list vaArgs) {
+uint32_t SStrVPrintf(char * szOutput, size_t nSize, char * szFormatString, va_list vaArgs) {
     if (!szOutput || !szFormatString) {
       SErr::SErrSetLastError(0x57);
       return 0;
@@ -537,7 +537,7 @@ uint32_t __stdcall SStrToUnsigned(char * szText) {
       if (nValue < 10) {
         pScan = szText + 1;
         nDigit = (int)szText[1] - 0x30;
-        if (9 < nDigit) {
+        if (nDigit >= 10) {
           return nValue;
         }
 
@@ -685,46 +685,46 @@ uint32_t __stdcall SStrHash(char * pszText, uint8_t bCaseSensitive, uint32_t nSe
 }; D2_STATIC_GUARD(gnHashLowTable, "Storm::Source::SSTR::SStrHash::gnHashLowTable");
 
     uint32_t nChar;
-    if (pszText) {
-      int nAccum;
-      if (!nSeed) {
-        nSeed = 0x7fed7fed;
+    if (!pszText) {
+      SErr::SErrSetLastError(0x57);
+      return 0;
+    }
+
+    int nAccum;
+    if (!nSeed) {
+      nSeed = 0x7fed7fed;
+    }
+
+    nChar = (uint32_t)(uint8_t)*pszText;
+    nAccum = -0x11111112;
+    if (bCaseSensitive & 1) {
+      while (nChar) {
+        nSeed = nSeed + nAccum ^ gnHashLowTable[nChar >> 4] - gnHashLowTable[nChar & 0xf];
+        pszText++;
+        nAccum = nAccum * 0x21 + nChar + 3 + nSeed;
+        nChar = (uint32_t)(uint8_t)*pszText;
       }
-
-      nChar = (uint32_t)(uint8_t)*pszText;
-      nAccum = -0x11111112;
-      if (!(bCaseSensitive & 1)) {
-        while (nChar) {
-          pszText++;
-          if (nChar - 0x61 < 0x1a) {
-            nChar -= 0x20;
-          }
-          if (nChar == 0x2f) {
-            nChar = 0x5c;
-          }
-
-          nSeed = nSeed + nAccum ^ gnHashLowTable[nChar >> 4] - gnHashLowTable[nChar & 0xf];
-          nAccum = nAccum * 0x21 + nChar + 3 + nSeed;
-          nChar = (uint32_t)(uint8_t)*pszText;
+    } else {
+      while (nChar) {
+        pszText++;
+        if (nChar - 0x61 <= 0x19) {
+          nChar -= 0x20;
         }
-      } else {
-        while (nChar) {
-          nSeed = nSeed + nAccum ^ gnHashLowTable[nChar >> 4] - gnHashLowTable[nChar & 0xf];
-          pszText++;
-          nAccum = nAccum * 0x21 + nChar + 3 + nSeed;
-          nChar = (uint32_t)(uint8_t)*pszText;
+        if (nChar == 0x2f) {
+          nChar = 0x5c;
         }
-      }
-      if (nSeed) {
-        return nSeed;
-      }
 
-      nSeed = 1;
+        nSeed = nSeed + nAccum ^ gnHashLowTable[nChar >> 4] - gnHashLowTable[nChar & 0xf];
+        nAccum = nAccum * 0x21 + nChar + 3 + nSeed;
+        nChar = (uint32_t)(uint8_t)*pszText;
+      }
+    }
+    if (nSeed) {
       return nSeed;
     }
 
-    SErr::SErrSetLastError(0x57);
-    return 0;
+    nSeed = 1;
+    return nSeed;
 }
 
 // Storm 64-bit string hash: hash = (table[c>>4]-table[c&15]) ^ (seed2+hash); seed2 = seed2*33 + c + hash + 3, per char (upper-cased and '/'->'\\' unless bCaseSensitive); qwSeed 0 means 0x7fed7fed7fed7fed; a 0 result becomes 1.
@@ -800,53 +800,53 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
 
     uint32_t nChar;
     int64_t nAccum64;
-    if (pszText) {
-      ULONGLONG UVar1;
-      UVar1 = qwSeed;
-      if (!qwSeed) {
-        UVar1 = 0x7fed7fed7fed7fed;
+    if (!pszText) {
+      SErr::SErrSetLastError(0x57);
+      return 0;
+    }
+
+    ULONGLONG UVar1;
+    UVar1 = qwSeed;
+    if (!qwSeed) {
+      UVar1 = 0x7fed7fed7fed7fed;
+    }
+
+    nChar = (uint32_t)*pszText;
+    qwSeed = 0xeeeeeeeeeeeeeeee;
+    if (bCaseSensitive & 1) {
+      while (nChar) {
+        pszText++;
+        nAccum64 = UVar1 + qwSeed;
+        *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
+        UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
+        nAccum64 = __allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
+        qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
+        nChar = (uint32_t)*pszText;
       }
-
-      nChar = (uint32_t)*pszText;
-      qwSeed = 0xeeeeeeeeeeeeeeee;
-      if (!(bCaseSensitive & 1)) {
-        while (nChar) {
-          pszText++;
-          if (nChar - 0x61 < 0x1a) {
-            nChar -= 0x20;
-          }
-          if (nChar == 0x2f) {
-            nChar = 0x5c;
-          }
-
-          nAccum64 = UVar1 + qwSeed;
-          *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
-          UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
-          nAccum64 = __allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
-          qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
-          nChar = (uint32_t)*pszText;
+    } else {
+      while (nChar) {
+        pszText++;
+        if (nChar - 0x61 <= 0x19) {
+          nChar -= 0x20;
         }
-      } else {
-        while (nChar) {
-          pszText++;
-          nAccum64 = UVar1 + qwSeed;
-          *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
-          UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
-          nAccum64 = __allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
-          qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
-          nChar = (uint32_t)*pszText;
+        if (nChar == 0x2f) {
+          nChar = 0x5c;
         }
-      }
-      if (UVar1) {
-        return UVar1;
-      }
 
-      UVar1 = 1;
+        nAccum64 = UVar1 + qwSeed;
+        *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
+        UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
+        nAccum64 = __allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
+        qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
+        nChar = (uint32_t)*pszText;
+      }
+    }
+    if (UVar1) {
       return UVar1;
     }
 
-    SErr::SErrSetLastError(0x57);
-    return 0;
+    UVar1 = 1;
+    return UVar1;
 }
 
 uint32_t __fastcall SSTR_JenkinsHash(int * pData, uint32_t nLength, uint32_t nInitVal) {
@@ -856,7 +856,7 @@ uint32_t __fastcall SSTR_JenkinsHash(int * pData, uint32_t nLength, uint32_t nIn
     uint32_t nC = 0x9e3779b9;
     uint32_t nC2 = nInitVal;
     uint32_t nRemaining = nLength;
-    if (0xb < nLength) {
+    if (nLength >= 0xc) {
       int nMix;
       nInitVal = nLength / 0xc;
       do {
@@ -929,7 +929,7 @@ int __stdcall SStrHashHT(uint8_t * pszText) {
     uint8_t bChar = *pszText;
     uint8_t* pWrite = szUpper;
     for (nLen = 0; nChar = (uint32_t)bChar , nChar && (pszText++ , nLen < 0x3ff); nLen++) {
-      if (nChar - 0x61 < 0x1a) {
+      if (nChar - 0x61 <= 0x19) {
         bChar -= 0x20;
       } else if (nChar == 0x2f) {
         bChar = 0x5c;
@@ -979,11 +979,11 @@ double __fastcall SSTR_Pow10Helper(uint32_t nValue, double param_1) {
       param_1 *= param_1;
     }
 
-    if ((int)nValue >= 0) {
-      return dVar1;
+    if ((int)nValue < 0) {
+      return 1.0 / dVar1;
     }
 
-    return 1.0 / dVar1;
+    return dVar1;
 }
 
 // Scales dBase by a power of ten. Returns a double in ST(0), not through a hidden return pointer, so dBase sits at Stack[0x4] and nExp at Stack[0xc]. An 80-bit x87 return type would make Ghidra add a __return_storage_ptr__ at Stack[0x4] and shift every argument by four bytes.
@@ -1007,11 +1007,11 @@ double SSTR_PowDoubleInt(double dBase, int nExp) {
       dBase *= dBase;
     }
 
-    if (nExp >= 0) {
-      return dVar1;
+    if (nExp < 0) {
+      return 1.0 / dVar1;
     }
 
-    return 1.0 / dVar1;
+    return dVar1;
 }
 
 void __stdcall SSTR_InitPow10Table() {
@@ -1057,7 +1057,7 @@ void __stdcall SSTR_InitPow10Table() {
       } while (nMantissa < 10);
 
       nExp--;
-    } while (-0x15 < (int)nExp);
+    } while ((int)nExp > -0x15);
 }
 
 // @oracle PPC Mac Storm 1.10b export table (337 named TVector symbols), the authoritative Storm API.
@@ -1139,7 +1139,7 @@ int64_t __stdcall SStrToInt64(char * pStr) {
           nAccumHi = (int)((uint64_t)nAccum64 >> 0x20);
           nAccum = nTmp + nAccum * 10;
           pCursor++;
-          if (0x19999998 < nAccum) {
+          if (nAccum >= 0x19999999) {
             nDigit = (int)pCursor - (int)pStr;
             nTmp = nDigit;
             fVar3 = fVar5;
@@ -1246,7 +1246,7 @@ double __stdcall SStrToDouble(char * pStr) {
           dScale = 1.0;
           nCurDigit = nExp + nCurDigit * 10;
           pCursor++;
-          if (0x19999998 < (uint32_t)nCurDigit) {
+          if ((uint32_t)nCurDigit >= 0x19999999) {
             nAbsExp = (int)pCursor - (int)pStr;
             nExp = nAbsExp;
             if ((int)nAbsExp < 0) {
@@ -1314,9 +1314,7 @@ double __stdcall SStrToDouble(char * pStr) {
         nAbsExp = -1;
         do {
           pCursor++;
-          if (nFracDigits < 0x14) {
-            dAccum = gdPow10Table[nTmp + nExp];
-          } else {
+          if (nFracDigits >= 0x14) {
             nTmp2 = nAbsExp;
             dAccum = 10.0;
             dScale = 1.0;
@@ -1346,6 +1344,8 @@ double __stdcall SStrToDouble(char * pStr) {
             }
 
             dAccum *= dScale;
+          } else {
+            dAccum = gdPow10Table[nTmp + nExp];
           }
 
           dAccumSlot = dAccum + dAccumSlot;
@@ -1445,7 +1445,7 @@ float __stdcall SStrToFloat(char * pStr) {
         do {
           nCurDigit = nExp + nCurDigit * 10;
           pCursor++;
-          if (0x19999998 < (uint32_t)nCurDigit) {
+          if ((uint32_t)nCurDigit >= 0x19999999) {
             nAbsExp = (int)pCursor - (int)pStr;
             nExp = nAbsExp;
             dScale = 1.0;
@@ -1516,9 +1516,7 @@ float __stdcall SStrToFloat(char * pStr) {
         nAbsExp = -1;
         do {
           pCursor++;
-          if (nFracDigits < 0x14) {
-            fFracTerm = (long double)gdPow10Table[nTmp + nExp];
-          } else {
+          if (nFracDigits >= 0x14) {
             nTmp2 = nAbsExp;
             fScale = fPowBase;
             fFracTerm = (long double)10.0;
@@ -1548,6 +1546,8 @@ float __stdcall SStrToFloat(char * pStr) {
             }
 
             fFracTerm *= fScale;
+          } else {
+            fFracTerm = (long double)gdPow10Table[nTmp + nExp];
           }
 
           fParsedValue = fFracTerm + fParsedValue;
@@ -1624,27 +1624,27 @@ int __stdcall UTF16_CalculateUTF8Length(uint16_t * pszUTF16, int nMaxChars, int 
       pCur = pszUTF16;
       while (true) {
         pEnd = pCur;
-        if (pNext <= pCur) {
+        if (pCur >= pNext) {
           nUTF8Len = -1;
           break;
         }
 
         uCodepoint = (uint32_t)*pCur;
         pEnd = pCur + 1;
-        if (uCodepoint - 0xd800 < 0x400) {
-          if (pNext <= pEnd) {
+        if (uCodepoint - 0xd800 <= 0x3ff) {
+          if (pEnd >= pNext) {
             nUTF8Len = -1;
             break;
           }
-          if ((uint32_t)(*pEnd - 0xdc00) < 0x400) {
+          if ((uint32_t)(*pEnd - 0xdc00) <= 0x3ff) {
             uCodepoint = (uCodepoint - 0xd7f7) * 0x400 + (uint32_t)*pEnd;
             pEnd = pCur + 2;
           }
         }
 
         pCur = pEnd;
-        if (0x7f < uCodepoint) {
-          if (0x7ff < uCodepoint) {
+        if (uCodepoint >= 0x80) {
+          if (uCodepoint >= 0x800) {
             if (uCodepoint < 0x10000) {
               nUTF8Len += 3;
               continue;
@@ -1704,13 +1704,13 @@ int __stdcall UTF16_ToUTF8(uint8_t * pbUTF8, int nOutMaxChars, uint16_t * pszUTF
     while (pInCur < pOutEnd) {
       uCodepoint = (uint32_t)*pInCur;
       nPszUTF16Out = (int)(uint16_t*)0x1;
-      if (uCodepoint - 0xd800 < 0x400) {
-        if (pOutEnd <= pInCur + 1) {
+      if (uCodepoint - 0xd800 <= 0x3ff) {
+        if (pInCur + 1 >= pOutEnd) {
           break;
         }
 
         uSurrPair = (uint32_t)pInCur[1];
-        if (uSurrPair - 0xdc00 < 0x400) {
+        if (uSurrPair - 0xdc00 <= 0x3ff) {
           uCodepoint = (uCodepoint - 0xd7f7) * 0x400 + uSurrPair;
           nPszUTF16Out = (int)(uint16_t*)0x2;
         }
@@ -1735,16 +1735,16 @@ int __stdcall UTF16_ToUTF8(uint8_t * pbUTF8, int nOutMaxChars, uint16_t * pszUTF
       } else if (uCodepoint < 0x4000000) {
         iResult = 5;
       } else {
-        if (0x7fffffff < uCodepoint) {
+        if (uCodepoint <= 0x7fffffff) {
+          iResult = 6;
+        } else {
           uCodepoint = 0xfffd;
           iResult = 2;
-        } else {
-          iResult = 6;
         }
       }
 
       pOutCur = pInStart + iResult;
-      if (pbUTF8 + nOutMaxChars < pOutCur) {
+      if (pOutCur > pbUTF8 + nOutMaxChars) {
         goto report_counts;
       }
 
@@ -1814,14 +1814,14 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
     char* pEndInner = szText;
     while (true) {
       int iAccum;
-      if (pCur <= pEndInner) {
+      if (pEndInner >= pCur) {
         nUTF16Len = -1;
         break;
       }
 
       cByte = *pEndInner;
       uCodepoint = (uint32_t)gaUTF8ByteCountTable[cByte];
-      if (pCur <= pEndInner + uCodepoint) {
+      if (pEndInner + uCodepoint >= pCur) {
         nUTF16Len = -1 - uCodepoint;
         break;
       }
@@ -1853,15 +1853,15 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
       }
 
       uByteCount = iAccum - gdwUTF8ConversionTab[uCodepoint];
-      if (uByteCount < 0x10000) {
+      if (uByteCount <= 0xffff) {
         nUTF16Len++;
         if (iAccum == gdwUTF8ConversionTab[uCodepoint]) {
           break;
         }
-      } else if (uByteCount < 0x110000) {
-        nUTF16Len += 2;
-      } else {
+      } else if (uByteCount > 0x10ffff) {
         nUTF16Len++;
+      } else {
+        nUTF16Len += 2;
       }
     }
 
@@ -1895,7 +1895,7 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
       pbUTF8In = (uint8_t*)(pszUTF16Out + 1);
       do {
         uByteCount = (uint32_t)gaUTF8ByteCountTable[*pOutStart];
-        if (pOutCur <= pOutStart + uByteCount) {
+        if (pOutStart + uByteCount >= pOutCur) {
           iAccum = -1 - uByteCount;
           goto report_counts;
         }
@@ -1928,12 +1928,12 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
         }
 
         uByteCount = iAccum - gdwUTF8ConversionTab[uByteCount];
-        if (pszUTF16Out + nOutMaxChars <= (short*)pInStart) {
+        if (pInStart >= (unsigned char*)(pszUTF16Out + nOutMaxChars)) {
           output_full:
           iAccum = 1;
           goto report_counts;
         }
-        if (uByteCount < 0x10000) {
+        if (uByteCount <= 0xffff) {
           pbUTF8In += 2;
           *(short int*)pInStart = (short int)uByteCount;
           pInStart += 2;
@@ -1941,8 +1941,13 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
             iAccum = 0;
             goto report_counts;
           }
-        } else if (uByteCount < 0x110000) {
-          if (pszUTF16Out + nOutMaxChars <= (short*)pbUTF8In) {
+        } else if (uByteCount > 0x10ffff) {
+          pInStart[0] = 0xfd;
+          pInStart[1] = 0xff;
+          pInStart += 2;
+          pbUTF8In += 2;
+        } else {
+          if (pbUTF8In >= (unsigned char*)(pszUTF16Out + nOutMaxChars)) {
             goto output_full;
           }
 
@@ -1950,11 +1955,6 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
           *(uint16_t*)(pInStart + 2) = ((uint16_t)(uByteCount - 0x10000) & 0x3ff) + 0xdc00;
           pInStart += 4;
           pbUTF8In += 4;
-        } else {
-          pInStart[0] = 0xfd;
-          pInStart[1] = 0xff;
-          pInStart += 2;
-          pbUTF8In += 2;
         }
 
         pOutStart += iResult;
@@ -2036,7 +2036,7 @@ uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam) {
 
       dwCodepoint = bByte & 0x3f | dwCodepoint << 6;
       nContinuationCount++;
-      if (nContinuationBytesNeeded <= nContinuationCount) {
+      if (nContinuationCount >= nContinuationBytesNeeded) {
         return dwCodepoint;
       }
     }
@@ -2048,7 +2048,7 @@ void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut) {
     if (!pbOut) {
       return;
     }
-    if (0x7f < uCodepoint) {
+    if (uCodepoint >= 0x80) {
       uint8_t byLeadByte;
       if (uCodepoint < 0x800) {
         byLeadByte = (uint8_t)(uCodepoint >> 6) | 0xc0;
@@ -2098,16 +2098,16 @@ void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut) {
     *pbOut = 0;
 }
 
-static void __fastcall UTF8_AdvanceToCharBoundary(uint32_t pThis, int pszBase, int nPosition, int nDirection) {
-    for (; 0 < nPosition && *(uint8_t*)(pszBase + nPosition) && (*(uint8_t*)(pszBase + nPosition) & 0xc0) == 0x80; nPosition += nDirection) {}
+static void __fastcall UTF8_AdvanceToCharBoundary(int pszBase, int nPosition, int nDirection) {
+    for (; nPosition > 0 && *(uint8_t*)(pszBase + nPosition) && (*(uint8_t*)(pszBase + nPosition) & 0xc0) == 0x80; nPosition += nDirection) {}
 }
 
 void __stdcall UTF8_StepBackOneChar(int str_base, int position, uint32_t ecx_passthru) {
-    UTF8_AdvanceToCharBoundary(ecx_passthru, str_base, position, -1);
+    UTF8_AdvanceToCharBoundary(str_base, position, -1);
 }
 
 void __stdcall UTF8_StepForwardOneChar(int str_base, int position, uint32_t ecx_passthru) {
-    UTF8_AdvanceToCharBoundary(ecx_passthru, str_base, position + 1, 1);
+    UTF8_AdvanceToCharBoundary(str_base, position + 1, 1);
 }
 
 static int __thiscall TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXlatTbl, uint8_t * pbOut, int nCount) {
@@ -2152,7 +2152,7 @@ static int __thiscall TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXla
 
           iSearchIdx += -5;
           pSearchEntry += -5;
-        } while (0 < iSearchIdx);
+        } while (iSearchIdx > 0);
 
         byMapped = (uint8_t)iSearchIdx;
         if (!iSearchIdx) {
@@ -2178,7 +2178,7 @@ static int __thiscall TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXla
     return (int)pOutCur - (int)pbOut;
 }
 
-static int __fastcall TRANSTBL_SingleByteToUnicode(uint32_t pThis, uint8_t * pbSrc, int nCount, uint16_t * pDest, uint16_t * pXlatTbl) {
+static int __fastcall TRANSTBL_SingleByteToUnicode(uint8_t * pbSrc, int nCount, uint16_t * pDest, uint16_t * pXlatTbl) {
     if (!nCount) {
       return 0;
     }
@@ -2218,17 +2218,17 @@ void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int n
     TRANSTBL_UnicodeToSingleByte(pSrcUTF16, gszUnicodeKorean_1, pbOut, nCount);
 }
 
-int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru) {
-    int iVar1 = TRANSTBL_SingleByteToUnicode(ecx_passthru, src, count, dest, gszUnicodeLatin1_1);
+int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count) {
+    int iVar1 = TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeLatin1_1);
     return iVar1;
 }
 
 void __stdcall TRANSTBL_Latin2ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru) {
-    TRANSTBL_SingleByteToUnicode(ecx_passthru, src, count, dest, gszUnicodeLatin2_1);
+    TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeLatin2_1);
 }
 
 void __stdcall TRANSTBL_KoreanToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru) {
-    TRANSTBL_SingleByteToUnicode(ecx_passthru, src, count, dest, gszUnicodeKorean_1);
+    TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeKorean_1);
 }
 
 int __fastcall SSTR_StringLength(char * szText) {

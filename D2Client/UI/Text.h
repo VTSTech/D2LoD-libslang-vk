@@ -123,7 +123,7 @@ void __stdcall TEXT_CloseNpcInteraction();
 int __stdcall TEXT_HandleEscapeKey();
 void __fastcall TEXT_DrawMonsterHoverText(struct D2UnitStrc * pUnit);
 void __fastcall TEXT_DrawObjectHoverText(struct D2UnitStrc * pUnit);
-void __fastcall TEXT_DrawMessageLogAndOverhead(struct D2GameViewStrc * pGameView, void * pScrollCtx);
+void __fastcall TEXT_DrawMessageLogAndOverhead(struct D2GameViewStrc * pGameView);
 void __fastcall TEXT_ShowNpcDialog(struct D2UnitStrc * pUnit, uint16_t nParam, uint32_t dwUnused);
 void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t bShowImage);
 void __fastcall TEXT_ShowStaticTextPopup(uint16_t nParam);

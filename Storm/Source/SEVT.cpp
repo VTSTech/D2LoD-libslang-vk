@@ -44,7 +44,7 @@ void __stdcall SEVT_CopyIdHashTable(uint32_t * * pDstTable, int * pSrcTable) {
     ppDstCursor = (uint32_t*)SMem::SMemAlloc((int)ppDstCursor * 4, ".\\SOURCE\\SEVT.CPP", 0x3e, 0);
     uint32_t nBucket = 0;
     *pDstTable = ppDstCursor;
-    if (!pSrcTable[1]) {
+    if ((uint32_t)pSrcTable[1] <= 0) {
       return;
     }
 
@@ -88,7 +88,7 @@ static void SEVT_DeleteIdHashTable(void * * pTable) {
 }
 
 // @blizzard FindTypeHashEntry (SEVT.CPP)
-static uint32_t * SEVT_FindTypeHashEntry(uint32_t dwUnused, uint32_t nSubId, uint32_t nEventId) {
+static uint32_t * SEVT_FindTypeHashEntry(uint32_t nSubId, uint32_t nEventId) {
     uint32_t* pEvent;
     if (!gpEventHashBuckets || !gaEventRegistryHead) {
       pEvent = 0;
@@ -191,7 +191,6 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
     void* pNewBuckets;
     int* pTailSlot;
     uint32_t* pNode;
-    uint32_t dwUnused;
     void* pvVar1;
     void* nOldBucketCount;
     uint32_t nNewHandlerCapacity;
@@ -206,11 +205,11 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
-    uint32_t* pEvent = SEVT_FindTypeHashEntry(dwUnused, dwSubId, dwEventId);
+    uint32_t* pEvent = SEVT_FindTypeHashEntry(dwSubId, dwEventId);
     if (!pEvent) {
       pNewBuckets = gpEventHashBuckets;
       pvVar1 = gaEventRegistryHead;
-      if ((uint32_t)gaEventRegistryHead >> 1 <= gnSevtRegisteredEventCount) {
+      if (gnSevtRegisteredEventCount >= (uint32_t)gaEventRegistryHead >> 1) {
         nBucketIndex = 1;
         dwReserved = 1;
         if (gnSevtRegisteredEventCount * 2 != -2) {
@@ -267,7 +266,7 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
     }
 
     nBucketIndex = *(uint32_t*)(pEvent[3] + 4);
-    if (nBucketIndex >> 1 <= *(uint32_t*)(pEvent[3] + 8)) {
+    if (*(uint32_t*)(pEvent[3] + 8) >= nBucketIndex >> 1) {
       int* ppNewHandlerTails;
       nNewHandlerCapacity = 1;
       dwEventId = 1;
@@ -280,7 +279,7 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
 
       pNewBuckets = SMem::SMemAlloc(dwEventId * 4, ".\\SOURCE\\SEVT.CPP", 0x16e, 8);
       ppNewHandlerTails = (int*)SMem::SMemAlloc(dwEventId * 4, ".\\SOURCE\\SEVT.CPP", 0x16f, 8);
-      if (dwEventId) {
+      if (dwEventId > 0) {
         pTailSlot = ppNewHandlerTails;
         dwSubId = dwEventId;
         do {
@@ -293,7 +292,7 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
         nOldHandlerCapacity = ((int*)pEvent[3])[1];
         if (nOldHandlerCapacity) {
           dwSubId = 0;
-          if (nOldHandlerCapacity) {
+          if ((uint32_t)nOldHandlerCapacity > 0) {
             do {
               pNode = *(uint32_t**)(*(int*)pEvent[3] + dwSubId * 4);
               while (pNode) {
@@ -492,13 +491,13 @@ int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
     uint32_t uPrevLink;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
     StormBreakCmdStrc* pNode = (StormBreakCmdStrc*)SMem::SMemAlloc(0xc, s___AUBREAKCMD___007088d8, -2, 8);
-    if (!pNode) {
-      pNewNode = 0;
-      pNode = (StormBreakCmdStrc*)&gpSevtBreakCmdListHead.pPrevLink;
-    } else {
+    if (pNode) {
       pNode->link.pPrevLink = 0;
       pNode->link.pNext = 0;
       pNewNode = pNode;
+    } else {
+      pNewNode = 0;
+      pNode = (StormBreakCmdStrc*)&gpSevtBreakCmdListHead.pPrevLink;
     }
 
     StormLinkStrc* nNextNode = pNode->link.pPrevLink;
@@ -550,8 +549,8 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
     uLastPriority = -1;
     do {
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
-      pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext < 1 ? 0 : gpSevtBreakCmdListHead.pNext);
-      if (0 < (int)pBreakCmd) {
+      pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext <= 0 ? 0 : gpSevtBreakCmdListHead.pNext);
+      if ((int)pBreakCmd > 0) {
         do {
           if ((void*)pBreakCmd[2] == pData) {
             nNextNode = *pBreakCmd;
@@ -574,7 +573,7 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
           }
 
           pBreakCmd = (int*)pBreakCmd[1];
-        } while (0 < (int)pBreakCmd);
+        } while ((int)pBreakCmd > 0);
 
         if (false) {
           stop_dispatch:
@@ -584,11 +583,11 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
       }
       if (!pHandlerNode || gnSevtSnapshotActive) {
         pHandlerNode = 0;
-        pEventEntry = SEVT_FindTypeHashEntry(0, dwSubId, dwEventId);
+        pEventEntry = SEVT_FindTypeHashEntry(dwSubId, dwEventId);
         if (pEventEntry) {
           pBreakCmd = (int*)pEventEntry[3];
           if (*pBreakCmd && pBreakCmd[1]) {
-            for (pHandlerNode = *(D2SevtHandlerNodeStrc**)(*pBreakCmd + (pBreakCmd[1] - 1U & dwKey) * 4); pHandlerNode && (pHandlerNode->dwKey != dwKey || uLastPriority <= pHandlerNode->nPriority); pHandlerNode = pHandlerNode->pNext) {}
+            for (pHandlerNode = *(D2SevtHandlerNodeStrc**)(*pBreakCmd + (pBreakCmd[1] - 1U & dwKey) * 4); pHandlerNode && (pHandlerNode->dwKey != dwKey || pHandlerNode->nPriority >= uLastPriority); pHandlerNode = pHandlerNode->pNext) {}
 
             if (lpAddend_007792fc == (LONG*)0x1) {
               gnSevtSnapshotActive = 0;
@@ -617,13 +616,13 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
     } while (pHandlerNode);
 
     /* LONG * lpAddend for InterlockedDecrement */ InterlockedDecrement((LONG*)&lpAddend_007792fc);
-    if (0 >= gpSevtBreakCmdListHead.pNext) {
+    if (gpSevtBreakCmdListHead.pNext <= 0) {
       return bResult;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
-    pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext < 1 ? 0 : gpSevtBreakCmdListHead.pNext);
-    while (0 < (int)pBreakCmd) {
+    pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext <= 0 ? 0 : gpSevtBreakCmdListHead.pNext);
+    while ((int)pBreakCmd > 0) {
       if ((void*)pBreakCmd[2] == pData) {
         pBreakCmd = (int*)SSystem::LINKEDLIST_UnlinkFreeAndGetCount(&gpSevtBreakCmdListHead, pBreakCmd);
       } else {

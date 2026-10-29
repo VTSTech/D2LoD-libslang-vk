@@ -228,17 +228,17 @@ void __stdcall InitializeSystemInfo() {
       }
 
       fGameVersion = (int)(fMajorVersionF + fMinorVersionFrac / 100.0);
-      if (osVersionInfo.dwPlatformId == 2) {
+      if (osVersionInfo.dwPlatformId != 2) {
+        g_eOSType = 0;
+      } else {
         g_eOSType = 1;
-        if (4 < osVersionInfo.dwMajorVersion) {
-          if (osVersionInfo.dwMinorVersion < 2) {
-            g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
-          } else {
+        if (osVersionInfo.dwMajorVersion >= 5) {
+          if (osVersionInfo.dwMinorVersion >= 2) {
             g_eOSType = 4;
+          } else {
+            g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
           }
         }
-      } else {
-        g_eOSType = 0;
       }
     }
 
@@ -386,8 +386,10 @@ void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg)
     FormatDebugOutput(bFlags, (va_list)&firstArg, szText);
 }
 
-void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg) {
-    FormatDebugOutput(1, &firstArg, szText);
+void FormatDebugOutputLogOnly(char * szText, ...) {
+    va_list __va;
+    va_start(__va, szText);
+    FormatDebugOutput(1, __va, szText);
 }
 
 // The registered Fog exception filter. Its ABI is measured at the only dispatch,
@@ -437,10 +439,10 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
             dwDumpFlags += 2;
           }
         }
-        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
-          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
-        } else {
+        if ((D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
           File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01');
+        } else {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
         }
 
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.Assertion>\n");
@@ -453,10 +455,10 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.DebugModules>\n");
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.HashBlock:>\n");
         _3rdparty::crashy::Printf(&crashFile, "[JOIN]  SrvRecvDatabaseCharacter: Didn\'t recv full char from db - CSResult(%d), ClientID(%d)");
-        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
-          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
-        } else {
+        if ((D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
           File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0');
+        } else {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
         }
 
         _3rdparty::crashy::Printf(&crashFile, "DBG-OPTIONS<>\n");
@@ -472,7 +474,7 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
         memset(&errorArg, 0, 0x54);
         errorArg.szProduct = szProduct;
         nAttachIndex = 0;
-        if (0 < crashFile.nAttachmentCount) {
+        if (crashFile.nAttachmentCount > 0) {
           pAttachment = crashFile.aszAttachmentPaths;
           do {
             if (nAttachIndex < 0x10) {
@@ -576,7 +578,7 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
         }
 
         nAttachIndex = 0;
-        if (0 < crashFile.nAttachmentCount) {
+        if (crashFile.nAttachmentCount > 0) {
           pAttachment = crashFile.aszAttachmentPaths;
           do {
             if (nAttachIndex < 0x10) {
@@ -607,13 +609,14 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
 }
 
 BOOL __fastcall CheckErrorDuringError(char * szText, int32_t nLine, char * szReason) {
-    if (!g_dwErrorState) {
-      return 0;
+    if (g_dwErrorState) {
+      char* pszRelativeFile;
+      pszRelativeFile = StripPathPrefixToRelative(szText);
+      LogManager::LOGMANAGER_TraceToModuleLog("", "\n***** ENCOUNTERED ERROR DURING ERROR HANDLING!!!\n%s,%d\n%s\n*****", pszRelativeFile, nLine, szReason);
+      return 1;
     }
 
-    char* pszRelativeFile = StripPathPrefixToRelative(szText);
-    LogManager::LOGMANAGER_TraceToModuleLog("", "\n***** ENCOUNTERED ERROR DURING ERROR HANDLING!!!\n%s,%d\n%s\n*****", pszRelativeFile, nLine, szReason);
-    return 1;
+    return 0;
 }
 
 // Main error handling dispatcher for Fog subsystem. Validates error is not recursive via CheckErrorDuringError, logs the error category, and formats error message with file/line info. For assertion/halt/OOM errors, writes crash report via CRASH_FillupCrashTxt. Uses two 4096-byte buffers: one for vsnprintf formatting the reason (varargs), one for the final "[ErrorType] (reason) failed at file(line)" message. Sets global error state to prevent cascading errors.
@@ -729,17 +732,17 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
 
     __vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
     szFormattedMessageBuffer[0xfff] = '\0';
-    if (!szText) {
+    if (szText) {
+      pScan = szFormattedMessageBuffer;
+      szRelativePath2 = StripPathPrefixToRelative(szText);
+      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[nParam], szRelativePath2, nLine, pScan);
+    } else {
       nCopyIdx = 0;
       do {
         pScan = szFormattedMessageBuffer + nCopyIdx;
         szFinalErrorMessage[nCopyIdx] = *pScan;
         nCopyIdx++;
       } while (*pScan != '\0');
-    } else {
-      pScan = szFormattedMessageBuffer;
-      szRelativePath2 = StripPathPrefixToRelative(szText);
-      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[nParam], szRelativePath2, nLine, pScan);
     }
 
     Storm::Source::SSTR::SStrPrintf(szTitleBuffer, 0x100, "%s Error", "Diablo II");
@@ -4858,7 +4861,7 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     0
 }; D2_STATIC_GUARD(gszFogCrashReportCustomMessage, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogCrashReportCustomMessage");
     static char gszFogVersionString[16] = {}; D2_STATIC_GUARD(gszFogVersionString, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogVersionString");
-    static bool gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
+    static int gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
     static uint64_t gFogMemoryPoolPadding = 0; D2_STATIC_GUARD(gFogMemoryPoolPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gFogMemoryPoolPadding");
 
     // Frame slots -4108..-8 are ONE object: &local_100c is passed out and the callee reaches the rest by byte offset.
@@ -4871,7 +4874,12 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     __frame0_t __frame0;
     uint32_t uCookie;
     void* nBadAddr;
-    if (!gbFogErrorManagerInitialized) {
+    if (gbFogErrorManagerInitialized) {
+      if (bLogGameStrartupInfo) {
+        Source::SFile::LOGFILE_StoreGameStartupInfo();
+        return;
+      }
+    } else {
       int iBitIdx;
       _3rdparty::crashy::thunk_InitializeDebugSubsystem();
       File::CRASH_SetExceptionHandler(DumpLog, nullptr, 0);
@@ -4934,9 +4942,6 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
       atexit(EXIT_AtExit);
       Debug::DEBUG_LoadStackCrawlDbgHelp();
       Storm::Source::SErr::SErrSetBlizzardErrorFunction(CRASH_FillupCrashTxt);
-    } else if (bLogGameStrartupInfo) {
-      Source::SFile::LOGFILE_StoreGameStartupInfo();
-      return;
     }
 }
 

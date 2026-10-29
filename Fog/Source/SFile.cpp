@@ -147,7 +147,7 @@ int __fastcall SFILE_EnsurePathEndsWithBackslash(char * szText1, uint32_t nMaxLe
     }
 
     uint32_t nLength = Storm::Source::SSTR::SStrLen(szText1);
-    if (!(!nLength || szText1[nLength - 1] != '\\')) {
+    if (!(nLength <= 0 || szText1[nLength - 1] != '\\')) {
       return 1;
     }
     if (nLength + 1 == nMaxLen) {
@@ -209,7 +209,7 @@ int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
       return 0;
     }
     uint32_t uVar1 = Storm::Source::SSTR::SStrLen(lpFilename);
-    if (!(!uVar1 || lpFilename[uVar1 - 1] != '\\')) {
+    if (!(uVar1 <= 0 || lpFilename[uVar1 - 1] != '\\')) {
       return 1;
     }
     if (uVar1 + 1 == nSize) {
@@ -225,12 +225,12 @@ int __fastcall SFILE_GetBlizzardAppDataPath(char * szOutPath, uint32_t nMaxLen) 
     uint32_t nDstPathLen;
     char cAppDataPath[260];
     int nFolderResult = SHGetFolderPathA(0, 0x1c, 0, 0, cAppDataPath);
-    if (-1 < nFolderResult) {
+    if (nFolderResult >= 0) {
       uint32_t nSrcPathLen;
       Storm::Source::SSTR::SStrPack(cAppDataPath, "\\Blizzard Entertainment", 0x7fffffff);
       if (nMaxLen) {
         nSrcPathLen = Storm::Source::SSTR::SStrLen(cAppDataPath);
-        if (!nSrcPathLen || cAppDataPath[nSrcPathLen - 1] != '\\') {
+        if (nSrcPathLen <= 0 || cAppDataPath[nSrcPathLen - 1] != '\\') {
           if (nSrcPathLen + 1 == nMaxLen) {
             return 0;
           }
@@ -269,7 +269,10 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     }
 
     uint32_t bKnownFolderOk = Engine::Application::PATH_GetKnownFolderPath(szOutPath, nMaxLen);
-    if ((char)bKnownFolderOk == '\0') {
+    if ((char)bKnownFolderOk != '\0') {
+      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
+      pszSubPath = "Diablo II";
+    } else {
       iVar1 = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
       if (iVar1) {
         return false;
@@ -277,9 +280,6 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
 
       SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
       pszSubPath = "Diablo II\\Save";
-    } else {
-      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
-      pszSubPath = "Diablo II";
     }
 
     Storm::Source::SSTR::SStrPack(szOutPath, pszSubPath, nMaxLen);
@@ -324,7 +324,7 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
           }
 
           uVar1 = Storm::Source::SSTR::SStrLen(szDstDir);
-          if ((!uVar1 || szSrcPath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
+          if ((uVar1 <= 0 || szSrcPath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
             szDstDir[uVar1] = '\\';
             szDstDir[uVar1 + 1] = '\0';
           }
@@ -394,7 +394,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
                 pcLen = szOldSavePath;
               } else {
                 uVar1 = Storm::Source::SSTR::SStrLen(szNewSavePath);
-                if ((!uVar1 || szOldSavePath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
+                if ((uVar1 <= 0 || szOldSavePath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
                   szNewSavePath[uVar1] = '\\';
                   szNewSavePath[uVar1 + 1] = '\0';
                 }
@@ -417,7 +417,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       SFILE_GetSaveGamePath(pBuffer, nSize);
       if (nSize) {
         uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-        if ((!uVar1 || pBuffer[uVar1 - 1] != '\\') && uVar1 + 1 != nSize) {
+        if ((uVar1 <= 0 || pBuffer[uVar1 - 1] != '\\') && uVar1 + 1 != nSize) {
           pBuffer[uVar1] = '\\';
           pBuffer[uVar1 + 1] = '\0';
         }
@@ -429,7 +429,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     }
     if (nSize) {
       uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-      if (!uVar1 || pBuffer[uVar1 - 1] != '\\') {
+      if (uVar1 <= 0 || pBuffer[uVar1 - 1] != '\\') {
         if (uVar1 + 1 == nSize) {
           return;
         }
@@ -480,17 +480,17 @@ int32_t __fastcall SFILE_JulianDayNumber(int32_t nYear, int32_t nMonth, int32_t 
     if (nYear < 0) {
       nYearAdj = nYear + 1;
     }
-    if (nMonth < 3) {
+    if (nMonth > 2) {
+      nJulian = nMonth + 1;
+    } else {
       nYearAdj--;
       nJulian = nMonth + 0xd;
-    } else {
-      nJulian = nMonth + 1;
     }
 
     long double fMonthDays = CRT_Floor((double)nJulian * 30.6001);
     long double fYearDays = CRT_Floor((double)nYearAdj * 365.25);
     nJulian = (int)(fYearDays + (long double)(double)fMonthDays + (long double)nDay + (long double)1720995.0);
-    if (0x8fc1c >= (nMonth + nYear * 0xc) * 0x1f + nDay) {
+    if (!((nMonth + nYear * 0xc) * 0x1f + nDay >= 0x8fc1d)) {
       return nJulian;
     }
 
@@ -507,7 +507,7 @@ void __fastcall SFILE_GregorianCalendarFromJulian(int32_t nJulianDay, int * pYea
     int fpTmp4;
     int uVar2;
     int nTmp2;
-    if (0x8fc1c < nJulianDay) {
+    if (nJulianDay >= 0x8fc1d) {
       nYearsSinceEpoch = (int)(((double)(nJulianDay - 0x1c7dd0) - 0.25) / 36524.25);
       nJulianDay = nYearsSinceEpoch - (int)((double)nYearsSinceEpoch * 0.25) + 1 + nJulianDay;
     }
@@ -517,15 +517,15 @@ void __fastcall SFILE_GregorianCalendarFromJulian(int32_t nJulianDay, int * pYea
     int nMonth = (int)((double)(nJulianDay + 0x5f4 - iVar1) / 30.6001);
     *pDay = nJulianDay + 0x5f4 - (int)((double)nMonth * 30.6001) - iVar1;
     *pMonth = nMonth - 1;
-    if (0xc < nMonth - 1) {
+    if (nMonth - 1 > 0xc) {
       *pMonth = nMonth - 0xd;
     }
 
     *pYear = nYearsSinceEpoch - 0x126b;
-    if (2 < *pMonth) {
+    if (*pMonth > 2) {
       *pYear = nYearsSinceEpoch - 0x126c;
     }
-    if (*pYear >= 1) {
+    if (*pYear > 0) {
       return;
     }
 

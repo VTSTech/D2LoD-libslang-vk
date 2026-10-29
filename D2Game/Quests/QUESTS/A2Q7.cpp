@@ -42,7 +42,6 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Objects/Objects.h"
-#include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -112,38 +111,38 @@ uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestD
     int nDecoysPlaced;
     int nTombsLeft;
     eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pQuestData->pGame->pAct[1]);
-    if (eTombLevel == LEVEL_None) {
-      return 0x133;
+    if (eTombLevel != LEVEL_None) {
+      D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
+      if (pSpecificData->bFalseTombRingInit == '\0') {
+        int iTomb;
+        nDecoysPlaced = 0;
+        pSpecificData->bFalseTombRingInit = '\x01';
+        iTomb = 0;
+        pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
+        nTombsLeft = 7;
+        do {
+          if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
+            iTomb++;
+          } else if (iTomb < 7 && nDecoysPlaced < 6) {
+            *pnDecoyRingEntry = gaArkaneThingIdTable[iTomb];
+            nDecoysPlaced++;
+            pnDecoyRingEntry++;
+            iTomb++;
+          }
+
+          nTombsLeft--;
+        } while (nTombsLeft);
+      }
+      if (pSpecificData->nFalseTombRingIndex == 6) {
+        pSpecificData->nFalseTombRingIndex = 0;
+      }
+
+      uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
+      pSpecificData->nFalseTombRingIndex++;
+      return nClassId;
     }
 
-    D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
-    if (pSpecificData->bFalseTombRingInit == '\0') {
-      int iTomb;
-      nDecoysPlaced = 0;
-      pSpecificData->bFalseTombRingInit = '\x01';
-      iTomb = 0;
-      pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
-      nTombsLeft = 7;
-      do {
-        if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
-          iTomb++;
-        } else if (iTomb < 7 && nDecoysPlaced < 6) {
-          *pnDecoyRingEntry = gaArkaneThingIdTable[iTomb];
-          nDecoysPlaced++;
-          pnDecoyRingEntry++;
-          iTomb++;
-        }
-
-        nTombsLeft--;
-      } while (nTombsLeft);
-    }
-    if (pSpecificData->nFalseTombRingIndex == 6) {
-      pSpecificData->nFalseTombRingIndex = 0;
-    }
-
-    uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
-    pSpecificData->nFalseTombRingIndex++;
-    return nClassId;
+    return 0x133;
 }
 
 // Q14 predicate (used as a quest-display/state filter): true if The Seven Tombs is NOT yet started (no quest record, or introduced and stateFlag < 2). nStateFlag<2 == still in step 0/1.
@@ -225,12 +224,12 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
         if (pDVar1) {
           nObjectsReady = 1;
           if (pDVar1->eAnimMode.ePlayerMode == Death) {
-            if (!pQuestSpecific->nStateResumeFlag) {
+            if (pQuestSpecific->nStateResumeFlag) {
+              D2Common::Units::SetupUpdateFlag(pDVar1, 2);
+            } else {
               D2Common::Units::SetupUpdateFlag(pDVar1, 1);
               pOrificeTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pDVar1->nClassId);
               GAME::Event::SetEvent(pQuestData->pGame, pDVar1, 1, (pOrificeTxt->FrameCnt[1] >> 8) + pQuestData->pGame->dwGameFrame, 0, 0);
-            } else {
-              D2Common::Units::SetupUpdateFlag(pDVar1, 2);
             }
           }
         }
@@ -247,14 +246,14 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
             pUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 100, nOrificeX - 0xd, nOrificeY + 3, pGame, pNearbyRoom, 1, 1, nullptr);
             if (pUnit) {
               nObjectsReady++;
-              if (!pQuestSpecific->nStateResumeFlag) {
+              if (pQuestSpecific->nStateResumeFlag) {
+                D2Common::Units::SetupUpdateFlag(pUnit, 2);
+              } else {
                 D2Common::Units::SetupUpdateFlag(pUnit, 1);
                 bReset = 1;
                 pRoom = D2Common::Units::UNITS_GetRoom(pDVar1);
                 D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bReset);
                 D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pNearbyRoom, 1);
-              } else {
-                D2Common::Units::SetupUpdateFlag(pUnit, 2);
               }
             }
           }
@@ -450,46 +449,47 @@ BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation)
     } else {
       eOrificeAnimMode = pInteractedNpc->eAnimMode.ePlayerMode;
     }
-    if (eOrificeAnimMode == eD2ObjectAnimMode_ns::Neutral) {
-      int32_t bPlayerTradeBusy;
-      bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
-      if (bPlayerTradeBusy == 1) {
-        return 1;
-      }
-
-      pInteractedNpc = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20747368);
-      if (pInteractedNpc) {
-        pInteractedNpc = pOperation->sArg.pVictim;
-        if (!pInteractedNpc) {
-          nOrificeGUID = -1;
-        } else {
-          nOrificeGUID = pInteractedNpc->nUnitGUID;
-        }
-
-        UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
-        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-        pInteractedNpc = pOperation->sArg.pVictim;
-        sPacket.nPacketId = 'X';
-        if (!pInteractedNpc) {
-          sPacket.nUnitGUID = -1;
-        } else {
-          sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
-        }
-
-        sPacket.nUIType = '\0';
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
+    if (eOrificeAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
         return 0;
       }
 
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-      return 1;
-    }
-    if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
+      UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
+      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
       return 0;
     }
 
-    UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
-    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+    int32_t bPlayerTradeBusy;
+    bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
+    if (bPlayerTradeBusy == 1) {
+      return 1;
+    }
+
+    pInteractedNpc = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20747368);
+    if (!pInteractedNpc) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+      return 1;
+    }
+
+    pInteractedNpc = pOperation->sArg.pVictim;
+    if (!pInteractedNpc) {
+      nOrificeGUID = -1;
+    } else {
+      nOrificeGUID = pInteractedNpc->nUnitGUID;
+    }
+
+    UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
+    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
+    pInteractedNpc = pOperation->sArg.pVictim;
+    sPacket.nPacketId = 'X';
+    if (!pInteractedNpc) {
+      sPacket.nUnitGUID = -1;
+    } else {
+      sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
+    }
+
+    sPacket.nUIType = '\0';
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
     return 0;
 }
 
@@ -513,7 +513,7 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     NotifyPlayersAboutEvent(pGame, 3);
-    if (sgptDataTable->nTxtMissilesSize < 0x153) {
+    if (sgptDataTable->nTxtMissilesSize <= 0x152) {
       pMissileTxt = 0;
     } else {
       pMissileTxt = sgptDataTable->pTxtMissiles + 0x152;
@@ -537,21 +537,21 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     eD2UnitType eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit2->pPath.pStaticPath->nPosY;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit2->pPath.pStaticPath->nPosX;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX - 0xd, nPosY + 3);
@@ -588,14 +588,14 @@ BOOL __fastcall Q14_IsNpcStationary(::SGAMEDATA * pGame, D2UnitStrc * pNpc) {
     if (pA2Q6Data->bCompletedPlayerJoined) {
       return 1;
     }
-    if (!pA2Q6Data->bTyraelPortalSpawnLock) {
-      return 0;
+    if (pA2Q6Data->bTyraelPortalSpawnLock) {
+      pA2Q6Data->bTyraelSpawnSpotOccupied = false;
+      pA2Q6Data->pTyraelSpawnAnchor = pNpc;
+      UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q14_CheckUnitDistanceToTyrael, pA2Q6Data);
+      return (uint32_t)!pA2Q6Data->bTyraelSpawnSpotOccupied;
     }
 
-    pA2Q6Data->bTyraelSpawnSpotOccupied = false;
-    pA2Q6Data->pTyraelSpawnAnchor = pNpc;
-    UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q14_CheckUnitDistanceToTyrael, pA2Q6Data);
-    return (uint32_t)!pA2Q6Data->bTyraelSpawnSpotOccupied;
+    return 0;
 }
 
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag < 4 (not yet at the Duriel-killed/Tyrael step).
@@ -624,14 +624,14 @@ BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2
 
     GAME::Server::SetSomeRoomFlags(pGame, pSpawnRoom);
     pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, pPoint, 3, 0xbe11, 7);
-    if (!pSpawnRoom) {
-      return 0;
+    if (pSpawnRoom) {
+      pPoint->x = nSpawnX;
+      pPoint->y = nSpawnY;
+      *pdwParam = pSpawnRoom;
+      return 1;
     }
 
-    pPoint->x = nSpawnX;
-    pPoint->y = nSpawnY;
-    *pdwParam = pSpawnRoom;
-    return 1;
+    return 0;
 }
 
 // Q14: set/clear the Izual(Tyrael) placement flag in A2Q6 data, only while the quest is introduced and field_0x0E unset. cParam==0 -> mark located (bIzualLocationSet=1) and set pIzualUnit sentinel (8 single-player / 9 multiplayer); cParam!=0 -> clear bIzualLocationSet. No quest-record state change.
@@ -752,7 +752,7 @@ void __fastcall Q15_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     pick_random_gossip:
     DVar1 = D2_SEED_NEXT(pPlayer->sSeed);
     pPlayer->sSeed = DVar1;
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x179, DVar1.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) / 3) * -3 + 2);
+    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x179, DVar1.nSeedLow % 3 + 2);
 }
 
 // Q15 (Act2Guard4Gossip) state-8 handler: empty stub. No behavior.

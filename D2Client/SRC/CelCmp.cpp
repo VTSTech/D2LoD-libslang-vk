@@ -30,25 +30,26 @@ void __fastcall GFX_ClearAllModeFlags(D2UnitStrc * pUnit, int32_t nMaxMode) {
 
     eD2UnitType eUnitType = Source::ClientEngine::CLIENT_GetEffectiveUnitType(pUnit);
     if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType == UNIT_MONSTER) {
+      if (eUnitType != UNIT_MONSTER) {
+        if (eUnitType != UNIT_OBJECT) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd3e);
+          exit(-1);
+        }
+
         nComponent = 0;
         do {
           Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
           nComponent++;
-        } while (nComponent < 0x10);
+        } while (nComponent < 8);
 
         return;
-      }
-      if (eUnitType != UNIT_OBJECT) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd3e);
-        exit(-1);
       }
 
       nComponent = 0;
       do {
         Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
         nComponent++;
-      } while (nComponent < 8);
+      } while (nComponent < 0x10);
 
       return;
     }

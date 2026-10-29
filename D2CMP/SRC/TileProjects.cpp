@@ -101,11 +101,11 @@ static D2TileProjectStrc * TILEPROJECT_FindByFilename(char * szFilename) {
 
 int __stdcall TILEPROJECT_GetProjectId(char * szText) {
     D2TileProjectStrc* pTileProjectNode = TILEPROJECT_FindByFilename(szText);
-    if (!pTileProjectNode) {
-      return 0;
+    if (pTileProjectNode) {
+      return (int)pTileProjectNode->pHash;
     }
 
-    return (int)pTileProjectNode->pHash;
+    return 0;
 }
 
 // @sourcefile .\SRC\TileProjects.cpp

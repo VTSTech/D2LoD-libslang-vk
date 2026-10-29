@@ -151,7 +151,7 @@ static void __stdcall D2COMP_ReleaseCOFCacheEntry(int32_t nParam, int * pnParam)
     }
 
     (*pnParam)--;
-    if (*pnParam >= 1) {
+    if (*pnParam > 0) {
       return;
     }
 
@@ -185,49 +185,49 @@ static void __stdcall D2COMP_BuildCOFFilePath(int32_t nAnimMode, uint32_t dwWeap
     char COFhitclass[4];
     uint32_t uAnimCode;
     uint32_t uHitclassCode;
-    if ((uint32_t)nPlayerClassId < 0x19) {
-      uint8_t bHitclassByte3;
-      if (!((uint32_t)nAnimMode < gnD2CompCOFLayerCount)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x489);
-        exit(-1);
-      }
-
-      uHitclassCode = gaCompCharClassTokens[nPlayerClassId];
-      uAnimCode = gaCompAnimModeTokens[nAnimMode];
-      COFhitclass[3] = '\0';
-      COFhitclass[0] = (uint8_t)dwWeaponClassToken == 0x20 ? 0 : (uint8_t)dwWeaponClassToken;
-      COFhitclass[1] = *(uint8_t*)((char*)&dwWeaponClassToken + 1) == 0x20 ? 0 : *(uint8_t*)((char*)&dwWeaponClassToken + 1);
-      COFhitclass[2] = *(uint8_t*)((char*)&dwWeaponClassToken + 2) == 0x20 ? 0 : *(uint8_t*)((char*)&dwWeaponClassToken + 2);
-      *(uint8_t*)(char*)&dwWeaponClassToken = (uint8_t)uHitclassCode == 0x20 ? 0 : (uint8_t)uHitclassCode;
-      bMaskedTokenByte = (uint8_t)(uHitclassCode >> 8);
-      *(uint8_t*)((char*)&dwWeaponClassToken + 1) = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
-      bHitclassByte3 = (uint8_t)(uHitclassCode >> 0x10);
-      *(uint8_t*)((char*)&dwWeaponClassToken + 3) = 0;
-      COFanimation[3] = '\0';
-      *(uint8_t*)((char*)&dwWeaponClassToken + 2) = bHitclassByte3 == 0x20 ? 0 : bHitclassByte3;
-      COFanimation[0] = (uint8_t)uAnimCode == 0x20 ? 0 : (uint8_t)uAnimCode;
-      bMaskedTokenByte = (uint8_t)(uAnimCode >> 8);
-      COFanimation[1] = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
-      bMaskedTokenByte = (uint8_t)(uAnimCode >> 0x10);
-      COFanimation[2] = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
-      pszCOFPathBase = "DATA\\GLOBAL\\CHARS";
-      if (6 < (uint32_t)nPlayerClassId) {
-        pszCOFPathBase = "DATA\\GLOBAL\\MONSTERS";
-      }
-
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pszDestPath, "%s\\%s\\COF\\%s%s%s.COF", pszCOFPathBase, &dwWeaponClassToken, &dwWeaponClassToken, COFanimation, COFhitclass);
-      nOpenResult = Fog::Source::SFile::ARCHIVE_OpenD2FileWrap(pszDestPath, (D2MPQFileStrc**)&pArchiveHandle);
-      if (nOpenResult) {
-        Fog::Source::SFile::ERRORMANAGER_FCloseFile((D2MPQFileStrc*)pArchiveHandle);
-        return;
-      }
-
-      *pszDestPath = '\0';
-      return;
-    } else {
+    if ((uint32_t)nPlayerClassId >= 0x19) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x488);
       exit(-1);
     }
+
+    uint8_t bHitclassByte3;
+    if (!((uint32_t)nAnimMode < gnD2CompCOFLayerCount)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (char*)Fog::Src::ErrorManager::GetInstructionPointer(), 0x489);
+      exit(-1);
+    }
+
+    uHitclassCode = gaCompCharClassTokens[nPlayerClassId];
+    uAnimCode = gaCompAnimModeTokens[nAnimMode];
+    COFhitclass[3] = '\0';
+    COFhitclass[0] = (uint8_t)dwWeaponClassToken == 0x20 ? 0 : (uint8_t)dwWeaponClassToken;
+    COFhitclass[1] = *(uint8_t*)((char*)&dwWeaponClassToken + 1) == 0x20 ? 0 : *(uint8_t*)((char*)&dwWeaponClassToken + 1);
+    COFhitclass[2] = *(uint8_t*)((char*)&dwWeaponClassToken + 2) == 0x20 ? 0 : *(uint8_t*)((char*)&dwWeaponClassToken + 2);
+    *(uint8_t*)(char*)&dwWeaponClassToken = (uint8_t)uHitclassCode == 0x20 ? 0 : (uint8_t)uHitclassCode;
+    bMaskedTokenByte = (uint8_t)(uHitclassCode >> 8);
+    *(uint8_t*)((char*)&dwWeaponClassToken + 1) = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
+    bHitclassByte3 = (uint8_t)(uHitclassCode >> 0x10);
+    *(uint8_t*)((char*)&dwWeaponClassToken + 3) = 0;
+    COFanimation[3] = '\0';
+    *(uint8_t*)((char*)&dwWeaponClassToken + 2) = bHitclassByte3 == 0x20 ? 0 : bHitclassByte3;
+    COFanimation[0] = (uint8_t)uAnimCode == 0x20 ? 0 : (uint8_t)uAnimCode;
+    bMaskedTokenByte = (uint8_t)(uAnimCode >> 8);
+    COFanimation[1] = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
+    bMaskedTokenByte = (uint8_t)(uAnimCode >> 0x10);
+    COFanimation[2] = bMaskedTokenByte == 0x20 ? 0 : bMaskedTokenByte;
+    pszCOFPathBase = "DATA\\GLOBAL\\CHARS";
+    if ((uint32_t)nPlayerClassId >= 7) {
+      pszCOFPathBase = "DATA\\GLOBAL\\MONSTERS";
+    }
+
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pszDestPath, "%s\\%s\\COF\\%s%s%s.COF", pszCOFPathBase, &dwWeaponClassToken, &dwWeaponClassToken, COFanimation, COFhitclass);
+    nOpenResult = Fog::Source::SFile::ARCHIVE_OpenD2FileWrap(pszDestPath, (D2MPQFileStrc**)&pArchiveHandle);
+    if (nOpenResult) {
+      Fog::Source::SFile::ERRORMANAGER_FCloseFile((D2MPQFileStrc*)pArchiveHandle);
+      return;
+    }
+
+    *pszDestPath = '\0';
+    return;
 }
 
 static int * D2COMP_FindCOFEntryByModeAndWeapon(int * * ppCOFList, int32_t nAnimMode, uint32_t dwWeaponClassToken) {
@@ -340,14 +340,14 @@ void __fastcall D2COMP_PopulateComponentFromCOF(int32_t pCOFData, D2GfxDataStrc 
       } else {
         pLayerEntry = pCOFLayerData + 0x1c;
         nLayerIndex = 0;
-        if (*pCOFLayerData) {
+        if (*pCOFLayerData > 0) {
           do {
             if (0xf < nComponentType) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x50e);
               exit(-1);
             }
             if (*pLayerEntry == nComponentType) {
-              pGfxData->eUnitType = (uint32_t)(6 < pGfxData->nClassId);
+              pGfxData->eUnitType = (uint32_t)(pGfxData->nClassId >= 7);
               pGfxData->nModeToken = gaCompAnimModeTokens[pGfxData->nMode];
               if (!pGfxData->nArmorToken) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x51f);
@@ -356,7 +356,7 @@ void __fastcall D2COMP_PopulateComponentFromCOF(int32_t pCOFData, D2GfxDataStrc 
 
               nWeaponClassToken = 0;
               nArgSlot = 0x503841;
-              D2WinFont::D2COMP_PadStringTo4Chars((void*)pGfxData->nMode, (char*)(pLayerEntry + 5), (char*)&nWeaponClassToken);
+              D2WinFont::D2COMP_PadStringTo4Chars((char*)(pLayerEntry + 5), (char*)&nWeaponClassToken);
               pGfxData->nWeaponClass = nWeaponClassToken;
               break;
             }
@@ -395,13 +395,13 @@ static void __stdcall D2COMP_InitComponentEntry(int32_t nAnimMode, int32_t nWeap
 uint8_t * __fastcall D2COMP_GetPaletteTransformTable(uint32_t nPaletteShift) {
     uint32_t nColorIndex = nPaletteShift & 0x1f;
     int nTransformGroup = (int)nPaletteShift >> 5;
-    if (nColorIndex >= 0x15) {
+    if (nColorIndex > 0x14) {
       return nullptr;
     }
     if (!nTransformGroup) {
       return gaItemPaletteTransformData + (nColorIndex + 0x348) * 0x100;
     }
-    if (!(-1 < nTransformGroup && nTransformGroup < 9 && (nTransformGroup < 3 || 4 < nTransformGroup))) {
+    if (!(-1 < nTransformGroup && nTransformGroup < 9 && (nTransformGroup <= 2 || nTransformGroup > 4))) {
       return nullptr;
     }
 
@@ -862,18 +862,18 @@ static uint32_t __stdcall D2COMP_ValidateComponentType(uint32_t dwComponentMask,
 }; D2_STATIC_GUARD(gaComponentValidationData, "D2Win::Src::D2Comp::D2COMP_ValidateComponentType::gaComponentValidationData");
 
     int32_t nLine;
-    if (bComponentType < 0x40) {
-      nLine = D2MEM_FindLowestSetBit(dwComponentMask);
-      if (!(gaComponentValidationData[(uint32_t)bComponentType + nLine * 0x40] < 0x41)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x578);
-        exit(-1);
-      }
-
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(nLine * 0x40) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gaComponentValidationData[(uint32_t)bComponentType + nLine * 0x40]);
-    } else {
+    if (bComponentType >= 0x40) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x576);
       exit(-1);
     }
+
+    nLine = D2MEM_FindLowestSetBit(dwComponentMask);
+    if (!(gaComponentValidationData[(uint32_t)bComponentType + nLine * 0x40] <= 0x40)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x578);
+      exit(-1);
+    }
+
+    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(nLine * 0x40) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gaComponentValidationData[(uint32_t)bComponentType + nLine * 0x40]);
 }
 
 static int32_t __stdcall D2COMP_LoadLayerSpritesAndCalcHeight(uint8_t * pbLayerCount, int32_t nLayerTypeArray, int * pnMaxHeight, uint8_t bPaletteShift, uint32_t nFrameNumber, int32_t nCOFContext) {
@@ -888,7 +888,7 @@ static int32_t __stdcall D2COMP_LoadLayerSpritesAndCalcHeight(uint8_t * pbLayerC
     }
 
     int nLoadedSpriteCount = 0;
-    if (!*pbLayerCount) {
+    if (*pbLayerCount <= 0) {
       return nLoadedSpriteCount;
     }
 
@@ -911,7 +911,7 @@ static int32_t __stdcall D2COMP_LoadLayerSpritesAndCalcHeight(uint8_t * pbLayerC
       if (nLoadedCount && sGfxData.pDC6Block) {
         nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
         nLoadedCount = nOffsetY + *(int*)(nCOFContext + 0x14);
-        if (*pnMaxHeight < nLoadedCount) {
+        if (nLoadedCount > *pnMaxHeight) {
           *pnMaxHeight = nLoadedCount;
         }
 
@@ -964,7 +964,7 @@ void __fastcall D2COMP_DrawUnitShadow(uint32_t * pCompUnit) {
           } else {
             nMaxHeight = 0;
             iVar1 = D2COMP_LoadLayerSpritesAndCalcHeight(pShadowLayerFlags, (int32_t)nErrAddr, &nMaxHeight, (uint8_t)pCompUnit[1], nWeaponClass, (int32_t)pCompUnit);
-            if (iVar1 < 1) {
+            if (iVar1 <= 0) {
               return;
             }
             if (!*pShadowLayerFlags) {
@@ -981,7 +981,7 @@ void __fastcall D2COMP_DrawUnitShadow(uint32_t * pCompUnit) {
               D2COMP_InitComponentEntry((uint32_t)(uint8_t)pCompUnit[1], nWeaponClass, (int32_t)pCompUnit, bVar1, 0, &sGfxData);
               D2gfx::D2GFX::D2GFX_DrawShadow(&sGfxData, nPositionX - 2, nPositionY);
               nLayerIndex++;
-              if (*pShadowLayerFlags <= nLayerIndex) {
+              if (nLayerIndex >= *pShadowLayerFlags) {
                 return;
               }
             }
@@ -1071,7 +1071,7 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
             }
 
             nLayerIndex = 0;
-            if (*pLayerFlags) {
+            if (*pLayerFlags > 0) {
               do {
                 nComponentType = (uint32_t)*(uint8_t*)(nLayerIndex + (int)nLayerTypeListOffset);
                 memset(&sGfxData, 0, 0x48);
@@ -1095,21 +1095,21 @@ void __fastcall D2COMP_DrawCompositeUnit(uint32_t * pCompUnit, int32_t nDrawColo
             }
 
             pCompUnit[2] += pCompUnit[4];
-            if ((int)(pCompUnit[3] - 1) <= (int)pCompUnit[2] >> 8) {
+            if ((int)pCompUnit[2] >> 8 >= (int)(pCompUnit[3] - 1)) {
               pCompUnit[2] = 0;
             }
 
             dwTickCount = GetTickCount();
             pUniqueCursorDC6 = gpUniqueCursorDC6;
-            if (gnUniqueCursorAnimTick < dwTickCount) {
+            if (dwTickCount > gnUniqueCursorAnimTick) {
               gnUniqueCursorAnimTick = dwTickCount + 0x42;
               gnUniqueCursorFrame++;
-              if (gnUniqueCursorMaxFrames <= gnUniqueCursorFrame) {
+              if (gnUniqueCursorFrame >= gnUniqueCursorMaxFrames) {
                 gnUniqueCursorFrame = 0;
               }
 
               gnPentaSpinCursorFrame++;
-              if (gnPentaSpinCursorMaxFrames <= gnPentaSpinCursorFrame) {
+              if (gnPentaSpinCursorFrame >= gnPentaSpinCursorMaxFrames) {
                 gnPentaSpinCursorFrame = 0;
               }
             }
@@ -1153,7 +1153,7 @@ int32_t __stdcall D2COMP_TruncateStringToFitWidth(uint16_t * wszText, int32_t nM
       do {
         nFitCount = nCharIndex + 1;
         nPixelWidth = D2WinFont::D2WINFONT_GetStringPixelWidth(wszText, nFitCount);
-        if (nMaxWidth <= nPixelWidth) {
+        if (nPixelWidth >= nMaxWidth) {
           bTruncatedFlag = 1;
           nFitCount = nCharIndex;
           break;
@@ -1181,7 +1181,7 @@ int32_t __stdcall D2COMP_TruncateStringToFitWidth(uint16_t * wszText, int32_t nM
 
 void __stdcall D2COMP_AddTextLineToLayout(uint16_t * wszText, uint8_t * pLayoutBase, int * pnLineCount, int * pnMaxWidth, int * pnTotalHeight) {
     uint16_t* pLineEntry = (uint16_t*)(pLayoutBase + *pnLineCount * 0x208);
-    if (6 < *pnLineCount) {
+    if (*pnLineCount >= 7) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x738);
       exit(-1);
     }
@@ -1189,7 +1189,7 @@ void __stdcall D2COMP_AddTextLineToLayout(uint16_t * wszText, uint8_t * pLayoutB
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(pLineEntry, wszText);
     D2WinFont::TEXT_CalcTextDimensions(pLineEntry, (int*)(pLineEntry + 0x100), (int*)(pLineEntry + 0x102));
     int nLineWidthPadded = *(int*)(pLineEntry + 0x100) + 6;
-    if (nLineWidthPadded < *pnMaxWidth) {
+    if (*pnMaxWidth > nLineWidthPadded) {
       nLineWidthPadded = *pnMaxWidth;
     }
 
@@ -1217,7 +1217,7 @@ static BOOL D2COMP_ValidateAndLoadCOFForUnit(D2CharSelCompStrc * pCompUnit) {
     int32_t nLine;
     if (pCompUnit) {
       int** ppCOFList;
-      if (gnD2CompLoadedSize0 <= pCompUnit->nPlayerClassId || gnD2CompCOFLayerCount <= (uint32_t)pCompUnit->nAnimMode || gnD2CompCOFBuffer0 <= (uint32_t)pCompUnit->nWeaponClass) {
+      if (pCompUnit->nPlayerClassId >= gnD2CompLoadedSize0 || (uint32_t)pCompUnit->nAnimMode >= gnD2CompCOFLayerCount || (uint32_t)pCompUnit->nWeaponClass >= gnD2CompCOFBuffer0) {
         pCompUnit->nPlayerClassId = 7;
         pCompUnit->nAnimMode = 5;
         pCompUnit->nWeaponClass = 1;
@@ -1373,7 +1373,7 @@ BOOL __fastcall D2COMP_SetAnimationMode(D2CharSelCompStrc * pCompUnit, int32_t n
 // Provenance: 1.14d asm 00504370 (pair scan over gnCompWeaponClassCodeMapCount entries); no callers, the same scan is inlined in D2COMP_AllocTxt_EverythingItems.
 int __stdcall D2COMP_GetWeaponClassCodeIndex(int32_t nWeaponClassCode) {
     uint32_t nIndex = 0;
-    if (!gnCompWeaponClassCodeMapCount) {
+    if ((uint32_t)gnCompWeaponClassCodeMapCount <= 0) {
       return 0;
     }
 
@@ -1409,7 +1409,10 @@ void * __stdcall LoadTxt(D2PoolManagerStrc * pMemory, char * szTxtName, D2BinFie
     D2ArchiveStrc** pRecord;
     char szFilePath[260];
     uint32_t nFileSize = 0;
-    if (!gbLoadBinFiles) {
+    if (gbLoadBinFiles) {
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s%s", "DATA\\GLOBAL\\EXCEL", szTxtName, ".bin");
+      pArchive = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\Src\\D2Comp.cpp", 0x958);
+    } else {
       int bIsCaseLevelDefs;
       bIsCaseLevelDefs = __stricmp(szTxtName, "leveldefs");
       if (!bIsCaseLevelDefs) {
@@ -1417,32 +1420,28 @@ void * __stdcall LoadTxt(D2PoolManagerStrc * pMemory, char * szTxtName, D2BinFie
       }
 
       pArchive = (D2ArchiveStrc*)D2COMP_LoadExcelTxtFile(pMemory, szTxtName, ".txt", &nFileSize);
-    } else {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s%s", "DATA\\GLOBAL\\EXCEL", szTxtName, ".bin");
-      pArchive = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMemory, szFilePath, &nFileSize, ".\\Src\\D2Comp.cpp", 0x958);
     }
-    if (pArchive) {
-      if (!gbLoadBinFiles) {
-        pBinFieldExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchive, nFileSize);
-        pRowCountOrData = (D2ArchiveStrc*)Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinFieldExcel);
-        pRecord = (D2ArchiveStrc**)D2_ALLOC_POOL_AT(nullptr, (int)pRowCountOrData * nLineLength, ".\\Src\\D2Comp.cpp", 0x9fa);
-        memset(pRecord, 0, (int)pRowCountOrData * nLineLength);
-        Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinFieldExcel, pBinFields, (char*)pRecord, (size_t)pRowCountOrData, nLineLength);
-        Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinFieldExcel);
-      } else {
-        pRowCountOrData = pArchive->pPrevLink;
-        pRecord = &pArchive->pNext;
-      }
-      if (!pSize) {
-        return pRecord;
-      }
-
-      *pSize = (size_t)pRowCountOrData;
+    if (!pArchive) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9e3);
+      exit(-1);
+    }
+    if (gbLoadBinFiles) {
+      pRowCountOrData = pArchive->pPrevLink;
+      pRecord = &pArchive->pNext;
+    } else {
+      pBinFieldExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pArchive, nFileSize);
+      pRowCountOrData = (D2ArchiveStrc*)Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinFieldExcel);
+      pRecord = (D2ArchiveStrc**)D2_ALLOC_POOL_AT(nullptr, (int)pRowCountOrData * nLineLength, ".\\Src\\D2Comp.cpp", 0x9fa);
+      memset(pRecord, 0, (int)pRowCountOrData * nLineLength);
+      Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinFieldExcel, pBinFields, (char*)pRecord, (size_t)pRowCountOrData, nLineLength);
+      Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinFieldExcel);
+    }
+    if (!pSize) {
       return pRecord;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9e3);
-    exit(-1);
+    *pSize = (size_t)pRowCountOrData;
+    return pRecord;
 }
 
 void __fastcall D2COMP_AllocTxt_Items(D2PoolManagerStrc * pMemory) {
@@ -1624,7 +1623,7 @@ int32_t __stdcall D2COMP_IsItemTypeDescendant(int32_t nItemType, int32_t nAncest
           nQueueCount = nQueueTail + 1;
         }
       }
-      if (0x3f < nQueueCount) {
+      if (nQueueCount >= 0x40) {
         break;
       }
 
@@ -1776,12 +1775,12 @@ static void D2COMP_ValidateEquippedItemForClass(int32_t nEquipSlot, uint8_t * pb
     int32_t bIsDescendant;
     int nSearchIdx;
     int nMaxCharsLocal;
-    if ((nEquipSlot == 1 || nEquipSlot == 2 || nEquipSlot == 3 || nEquipSlot == 4) && 3 < *pbyItemIndex) {
+    if ((nEquipSlot == 1 || nEquipSlot == 2 || nEquipSlot == 3 || nEquipSlot == 4) && *pbyItemIndex > 3) {
       bIsDescendant = D2COMP_IsItemTypeDescendant(gaCompDefaultCompositeItems[*pbyItemIndex].nItemTypeIndex, 3);
       nMaxCharsLocal = gnMaxCharacters;
       if (bIsDescendant) {
         nSearchIdx = 0;
-        if (0 < gnMaxCharacters) {
+        if (gnMaxCharacters > 0) {
           do {
             if (gaCompCharacterCompositeItems[nSearchIdx].nItemCode == gaCompDefaultCompositeItems[*pbyItemIndex].nItemCode) {
               *pbyItemIndex = (uint8_t)nSearchIdx;
@@ -1804,7 +1803,7 @@ static void D2COMP_ValidateEquippedItemForClass(int32_t nEquipSlot, uint8_t * pb
       nMaxCharsLocal = gnMaxCharacters;
       if (bIsDescendant) {
         nSearchIdx = 0;
-        if (0 < gnMaxCharacters) {
+        if (gnMaxCharacters > 0) {
           do {
             if (gaCompCharacterCompositeItems[nSearchIdx].nItemCode == gaCompDefaultCompositeItems[*pbyItemIndex].nItemCode) {
               *pbyItemIndex = (uint8_t)nSearchIdx;
@@ -1827,7 +1826,7 @@ static void D2COMP_ValidateEquippedItemForClass(int32_t nEquipSlot, uint8_t * pb
       nMaxCharsLocal = gnMaxCharacters;
       if (bIsDescendant) {
         nSearchIdx = 0;
-        if (0 < gnMaxCharacters) {
+        if (gnMaxCharacters > 0) {
           do {
             if (gaCompCharacterCompositeItems[nSearchIdx].nItemCode == gaCompDefaultCompositeItems[*pbyItemIndex].nItemCode) {
               *pbyItemIndex = (uint8_t)nSearchIdx;
@@ -1850,7 +1849,7 @@ static void D2COMP_ValidateEquippedItemForClass(int32_t nEquipSlot, uint8_t * pb
       nMaxCharsLocal = gnMaxCharacters;
       if (bIsDescendant) {
         nSearchIdx = 0;
-        if (0 < gnMaxCharacters) {
+        if (gnMaxCharacters > 0) {
           do {
             if (gaCompCharacterCompositeItems[nSearchIdx].nItemCode == gaCompDefaultCompositeItems[*pbyItemIndex].nItemCode) {
               *pbyItemIndex = (uint8_t)nSearchIdx;
@@ -1875,10 +1874,10 @@ static void D2COMP_ValidateEquippedItemForClass(int32_t nEquipSlot, uint8_t * pb
       nMaxCharsLocal = gnMaxCharacters;
       if (bIsDescendant) {
         nSearchIdx = 0;
-        if (0 < gnMaxCharacters) {
+        if (gnMaxCharacters > 0) {
           while (gaCompCharacterCompositeItems[nSearchIdx].nItemCode != gaCompDefaultCompositeItems[*pbyItemIndex].nItemCode) {
             nSearchIdx++;
-            if (gnMaxCharacters <= nSearchIdx) {
+            if (nSearchIdx >= gnMaxCharacters) {
               *pbyItemIndex = 1;
               return;
             }
@@ -1917,14 +1916,14 @@ void __stdcall D2COMP_CreateCompositeUnit(uint32_t * pCompUnit, uint32_t nPlayer
       *pCofCacheEntry = 0;
       pCompUnit[0x2e] = (uint32_t)pCofCacheEntry;
       pCompUnit[7] = nPlayerClassId;
-      if (nPlayerClassId < 7) {
+      if (nPlayerClassId >= 7) {
+        pCompUnit[9] = 1;
+      } else {
         nWeaponClass = D2COMP_ResolveWeaponClass(nPlayerClassId, pbyEquipSlots);
         pCompUnit[9] = nWeaponClass;
         if (!nWeaponClass) {
           return;
         }
-      } else {
-        pCompUnit[9] = 1;
       }
 
       pCompUnit[8] = nAnimMode;
@@ -1936,7 +1935,7 @@ void __stdcall D2COMP_CreateCompositeUnit(uint32_t * pCompUnit, uint32_t nPlayer
       *pCompUnit = nWeaponClass | 6;
       do {
         pSlotCode[0x10] = 1;
-        if (!*pbyEquipSlots || *pbyEquipSlots == 0xff) {
+        if (*pbyEquipSlots <= 0 || *pbyEquipSlots == 0xff) {
           *pSlotCode = 0;
         } else {
           D2COMP_ValidateEquippedItemForClass(nSlot, pbyEquipSlots);
@@ -2025,13 +2024,13 @@ void __stdcall D2COMP_SetAnimationSpeed(D2CharSelCompStrc * pCompUnit, uint8_t b
     }
 
     uint8_t bySpeedCopy = bySpeed;
-    if (!bySpeed) {
+    if (bySpeed <= 0) {
       bySpeedCopy = 0;
     }
 
     uint8_t byClampedSpeed = pCompUnit->nNumDirections;
     if (bySpeedCopy < byClampedSpeed) {
-      if (bySpeed) {
+      if (bySpeed > 0) {
         pCompUnit->nAnimSpeed = bySpeed;
         return;
       }
@@ -2068,7 +2067,7 @@ void __stdcall D2COMP_SetCurrentFrame(D2CharSelCompStrc * pCompUnit, uint32_t nT
       exit(-1);
     }
 
-    uint32_t nClampedFrame = (int)nTargetFrame < 1 ? 0 : nTargetFrame;
+    uint32_t nClampedFrame = (int)nTargetFrame <= 0 ? 0 : nTargetFrame;
     uint32_t nMaxFrame = pCompUnit->nNumFrames * 0x100;
     if ((int)nClampedFrame < (int)nMaxFrame) {
       nMaxFrame = nClampedFrame;
@@ -2120,19 +2119,19 @@ void __stdcall D2COMP_LoadGuildEmblemIcon(int32_t pCompUnit, uint8_t byEmblemIco
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdb0);
       exit(-1);
     }
-    if ((uint8_t)(byEmblemIcon - 1) >= 0x20) {
+    if ((uint8_t)(byEmblemIcon - 1) > 0x1f) {
       return;
     }
 
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szEmblemPath, "%s\\ui\\emblems\\icon%02dc", "DATA\\GLOBAL", byEmblemIcon - 1);
     DC6* pEmblemDC6 = D2WinArchive::IMAGE_LoadDC6(szEmblemPath, 0);
     *(DC6**)(pCompUnit + 0xbc) = (DC6*)pEmblemDC6;
-    if ((uint8_t)(byPrimaryColor - 1) < 10) {
+    if ((uint8_t)(byPrimaryColor - 1) <= 9) {
       *(uint8_t*)(pCompUnit + 0xc0) = gaGlideEmblemPrimaryColorTableEntries[byPrimaryColor - 1];
     } else {
       *(uint8_t*)(pCompUnit + 0xc0) = 0;
     }
-    if ((uint8_t)(bySecondaryColor - 1) < 10) {
+    if ((uint8_t)(bySecondaryColor - 1) <= 9) {
       *(uint8_t*)(pCompUnit + 0xc1) = gaGlideEmblemSecondaryColorTableEntries[bySecondaryColor - 1];
       return;
     }
@@ -2296,47 +2295,7 @@ void __stdcall D2COMP_InitEmblemColorTables() {
 }
 
 char * __stdcall D2COMP_GetTitlePrefix(uint32_t nCharClass, uint32_t nTitleRank, int32_t nParam) {
-    if (!nParam) {
-      switch (nCharClass) {
-        case 0:
-
-        case 1:
-
-        case 6:
-
-        case 9:
-          switch (nTitleRank) {
-            case 1:
-              return "Dame ";
-            case 2:
-              return "Lady ";
-            case 3:
-              return "Baroness ";
-            case 4:
-              return "Countess ";
-            case 5:
-              return "Duchess ";
-            case 6:
-              return "Queen ";
-          }
-        return "";
-      }
-
-      switch (nTitleRank) {
-        case 1:
-          return "Sir ";
-        case 2:
-          return "Lord ";
-        case 3:
-          return "Baron ";
-        case 4:
-          return "Count ";
-        case 5:
-          return "Duke ";
-        case 6:
-          return "King ";
-      }
-    } else {
+    if (nParam) {
       switch (nCharClass) {
         case 0:
 
@@ -2376,6 +2335,46 @@ char * __stdcall D2COMP_GetTitlePrefix(uint32_t nCharClass, uint32_t nTitleRank,
           return "Conqueror ";
         case 6:
           return "Guardian ";
+      }
+    } else {
+      switch (nCharClass) {
+        case 0:
+
+        case 1:
+
+        case 6:
+
+        case 9:
+          switch (nTitleRank) {
+            case 1:
+              return "Dame ";
+            case 2:
+              return "Lady ";
+            case 3:
+              return "Baroness ";
+            case 4:
+              return "Countess ";
+            case 5:
+              return "Duchess ";
+            case 6:
+              return "Queen ";
+          }
+        return "";
+      }
+
+      switch (nTitleRank) {
+        case 1:
+          return "Sir ";
+        case 2:
+          return "Lord ";
+        case 3:
+          return "Baron ";
+        case 4:
+          return "Count ";
+        case 5:
+          return "Duke ";
+        case 6:
+          return "King ";
       }
     }
 
@@ -2552,7 +2551,7 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
         D2COMP_AddTextLineToLayout(wszLineText, aLineLayouts[0], &__frame0.nLineCount, &__frame0.nMaxLineWidth, &__frame0.nTotalWidth);
         add_d2_character_lines:
         nPingMs = pA3Q6Data[10].pDrlgMap;
-        if (0 < (int)nPingMs) {
+        if ((int)nPingMs > 0) {
           memset(wszLineText, 0, 0x200);
           pWideStr = D2Lang::StrTable::strtable::GetLocaleString(0x1399);
           D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszLineText, pWideStr, nPingMs);
@@ -2622,31 +2621,31 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
                   if (dwPlayerInfo == 0x44324456 || dwPlayerInfo == 0x44325850 || dwPlayerInfo == 0x44325354) {
                     goto add_d2_character_lines;
                   }
-                  if (dwPlayerInfo < 0x53534853) {
-                    if (dwPlayerInfo == 0x53534852) {
-                      szGameTypeName = "Starcraft Shareware";
-                    } else if (dwPlayerInfo < 0x44545355) {
-                      if (dwPlayerInfo == 0x44545354 || dwPlayerInfo == 0x4452544c) {
-                        szGameTypeName = "Diablo";
-                      } else if (dwPlayerInfo == 0x44534852) {
-                        szGameTypeName = "Diablo Shareware";
+                  if (dwPlayerInfo <= 0x53534852) {
+                    if (dwPlayerInfo != 0x53534852) {
+                      if (dwPlayerInfo <= 0x44545354) {
+                        if (dwPlayerInfo == 0x44545354 || dwPlayerInfo == 0x4452544c) {
+                          szGameTypeName = "Diablo";
+                        } else if (dwPlayerInfo == 0x44534852) {
+                          szGameTypeName = "Diablo Shareware";
+                        } else {
+                          unknown_product:
+                          szGameTypeName = "Unknown";
+                        }
+                      } else if (dwPlayerInfo == 0x4a535452) {
+                        szGameTypeName = "Starcraft";
                       } else {
-                        unknown_product:
-                        szGameTypeName = "Unknown";
-                      }
-                    } else if (dwPlayerInfo == 0x4a535452) {
-                      szGameTypeName = "Starcraft";
-                    } else {
-                      if (dwPlayerInfo != 0x53455850) {
-                        goto unknown_product;
-                      }
+                        if (dwPlayerInfo != 0x53455850) {
+                          goto unknown_product;
+                        }
 
-                      szGameTypeName = "Brood War";
-                    }
-                  } else if (dwPlayerInfo < 0x57335851) {
-                    if (dwPlayerInfo == 0x57335850) {
-                      szGameTypeName = "Frozen Throne";
+                        szGameTypeName = "Brood War";
+                      }
                     } else {
+                      szGameTypeName = "Starcraft Shareware";
+                    }
+                  } else if (dwPlayerInfo <= 0x57335850) {
+                    if (dwPlayerInfo != 0x57335850) {
                       if (dwPlayerInfo == 0x53544152) {
                         szGameTypeName = "Starcraft";
                       } else {
@@ -2656,6 +2655,8 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
 
                         szGameTypeName = "Warcraft II";
                       }
+                    } else {
+                      szGameTypeName = "Frozen Throne";
                     }
                   } else {
                     if (dwPlayerInfo != 0x57415233) {
@@ -2680,7 +2681,7 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
       if (nPlayerFlags < 0) {
         nLineIndex = -nPlayerFlags;
         nPlayerFlags = 0;
-      } else if (800 < nPlayerFlags + __frame0.nMaxLineWidth) {
+      } else if (nPlayerFlags + __frame0.nMaxLineWidth > 800) {
         nLineIndex = 800 - nPlayerFlags - __frame0.nMaxLineWidth;
         nPlayerFlags = 800 - __frame0.nMaxLineWidth;
       }
@@ -2690,9 +2691,9 @@ void __fastcall DRAW_OOG_ChannelPlayers(D2QuestDataA3Q6Strc * pA3Q6Data) {
       nIconAnchorY = __frame0.nLineCount;
       nXCenter += nLineIndex;
       nYPos += 3;
-      if (__frame0.nLineCount < 8) {
+      if (__frame0.nLineCount <= 7) {
         nPlayerFlags = 0;
-        if (0 >= __frame0.nLineCount) {
+        if (__frame0.nLineCount <= 0) {
           return;
         }
 
@@ -2942,7 +2943,7 @@ void __stdcall D2COMP_AllocTxt_EverythingItems() {
           }
 
           nDupCheckIdx = nSlotIdx;
-          if (0xfe < nSlotIdx) {
+          if (nSlotIdx >= 0xff) {
             nDupCheckIdx = nNextFreeSlot;
           }
 
@@ -3018,14 +3019,14 @@ D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, 
         pCharSelComp->ppCofCacheEntries = (int**)pCofCache;
         D2COMP_AllocTxt_EverythingItems();
         pCharSelComp->nPlayerClassId = nPlayerClassId;
-        if (nPlayerClassId < 7) {
+        if (nPlayerClassId >= 7) {
+          pCharSelComp->nWeaponClass = 1;
+        } else {
           nErrorLine = D2COMP_ResolveWeaponClass(nPlayerClassId, pbyEquipSlots);
           pCharSelComp->nWeaponClass = nErrorLine;
           if (!nErrorLine) {
             return nullptr;
           }
-        } else {
-          pCharSelComp->nWeaponClass = 1;
         }
 
         pCharSelComp->nAnimMode = nClassicExpansion;
@@ -3038,7 +3039,7 @@ D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, 
         do {
           pComponentCode[0x10] = 1;
           bComponentIndex = *pbyEquipSlots;
-          if (!bComponentIndex || gnMaxCharacters <= (int)(uint32_t)bComponentIndex || bComponentIndex == 0xff) {
+          if (bComponentIndex <= 0 || (int)(uint32_t)bComponentIndex >= gnMaxCharacters || bComponentIndex == 0xff) {
             *pComponentCode = 0;
           } else {
             D2COMP_ValidateEquippedItemForClass(nComponentSlot, pbyEquipSlots);

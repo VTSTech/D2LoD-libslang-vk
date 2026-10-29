@@ -62,7 +62,7 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
     if (0 >= nFrameCount) {
       return;
     }
-    if (0x80 < nFrameCount) {
+    if (nFrameCount > 0x80) {
       nFrameCount = 0x80;
     }
 
@@ -110,7 +110,7 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
     }
 
-    for (; nNumFrames; nNumFrames--) {
+    for (; (uint32_t)nNumFrames > 0; nNumFrames--) {
       Engine::Application::DEBUG_FormatAddressInfo(aFrameAddrs->dwReturnAddr, __frame0.szAddressInfo);
       if (bIncludeThreadName == '\0') {
         __frame0.szAddressInfo[0] = '\0';
@@ -120,12 +120,12 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
       pszScan = __frame0.szLineBuffer;
       pszScan = pszScan + strlen(pszScan) + 1;
       nLineLen = (int)pszScan - (int)(__frame0.szLineBuffer + 1);
-      if (nLineLen < 0x3ff) {
-        __frame0.szLineBuffer[nLineLen] = '\n';
-        __frame0.szLineBuffer[nLineLen + 1] = '\0';
-      } else {
+      if (nLineLen >= 0x3ff) {
         __frame0.szLineBuffer[0x3fe] = '\n';
         __frame0.szLineBuffer[0x3ff] = '\0';
+      } else {
+        __frame0.szLineBuffer[nLineLen] = '\n';
+        __frame0.szLineBuffer[nLineLen + 1] = '\0';
       }
 
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
@@ -344,7 +344,7 @@ static void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
     }
 
     HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
-    /* va_list * Arguments for FormatMessageA */ /* DWORD nSize for FormatMessageA */ /* LPSTR lpBuffer for FormatMessageA */ /* DWORD dwLanguageId for FormatMessageA */ /* DWORD dwMessageId for FormatMessageA */ /* LPCVOID lpSource for FormatMessageA */ /* DWORD dwFlags for FormatMessageA */ if (!(!hNtdll || (nMsgLen = FormatMessageA(0xa00, (LPCVOID)hNtdll, dwExceptionCode, 0x400, szText, 0x100, nullptr) , !nMsgLen))) {
+    /* va_list * Arguments for FormatMessageA */ /* DWORD nSize for FormatMessageA */ /* LPSTR lpBuffer for FormatMessageA */ /* DWORD dwLanguageId for FormatMessageA */ /* DWORD dwMessageId for FormatMessageA */ /* LPCVOID lpSource for FormatMessageA */ /* DWORD dwFlags for FormatMessageA */ if (!(!hNtdll || (nMsgLen = FormatMessageA(0xa00, (LPCVOID)hNtdll, dwExceptionCode, 0x400, szText, 0x100, nullptr) , nMsgLen <= 0))) {
       return;
     }
 
@@ -416,19 +416,19 @@ uint32_t __stdcall FILETOOLS_ExtractDirectory(char * szDest, char * nDestSize, c
     }
 
     pSep = strrchr(szSrcPath, 0x5c);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
 
     pSep = strrchr(szSrcPath, 0x3a);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
     if (!pLastSep) {
       *szDest = '\0';
     } else {
       szDest = STRING_CopyStringBounded((int32_t)nDestSize, szDest, szSrcPath);
-      if (nDestSize <= szDest) {
+      if (szDest >= nDestSize) {
         return (uint32_t)szDest & -256;
       }
     }
@@ -446,12 +446,12 @@ uint32_t __stdcall FILETOOLS_ExtractFilename(char * szDest, char * szSrcPath, ch
     }
 
     pSep = strrchr(szSrcPath, 0x5c);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
 
     pSep = strrchr(szSrcPath, 0x3a);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
     if (pLastSep) {
@@ -542,28 +542,28 @@ char * __stdcall STRING_AppendStringToString(char * szDest, int32_t nDestSize, c
 
     int nDestLen = (int)pDestEnd - (int)szDest;
     nRemaining = nDestSize - nDestLen;
-    if (nRemaining) {
-      char* pSrcScan;
-      cCurChar = *szSrc;
-      pSrcScan = szSrc;
-      while (cCurChar != '\0') {
-        if (nRemaining != 1) {
-          *pDestEnd = *pSrcScan;
-          pDestEnd++;
-          nRemaining--;
-        }
-
-        pSrcScan++;
-        cCurChar = *pSrcScan;
-      }
-
-      *pDestEnd = '\0';
-      return pSrcScan + (nDestLen - (int)szSrc);
+    if (!nRemaining) {
+      pDestEnd = szSrc + 1;
+      szSrc = szSrc + strlen(szSrc) + 1;
+      return szSrc + (nDestLen - (int)pDestEnd);
     }
 
-    pDestEnd = szSrc + 1;
-    szSrc = szSrc + strlen(szSrc) + 1;
-    return szSrc + (nDestLen - (int)pDestEnd);
+    char* pSrcScan;
+    cCurChar = *szSrc;
+    pSrcScan = szSrc;
+    while (cCurChar != '\0') {
+      if (nRemaining != 1) {
+        *pDestEnd = *pSrcScan;
+        pDestEnd++;
+        nRemaining--;
+      }
+
+      pSrcScan++;
+      cCurChar = *pSrcScan;
+    }
+
+    *pDestEnd = '\0';
+    return pSrcScan + (nDestLen - (int)szSrc);
 }
 
 int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...) {
@@ -686,7 +686,7 @@ bool __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName) {
 
     LPWSTR pLastSep = wcsrchr(lpPathName, L'\\');
     LPWSTR pSep = wcsrchr(lpPathName, L'/');
-    if (pLastSep < pSep) {
+    if (pSep > pLastSep) {
       pLastSep = wcsrchr(lpPathName, L'/');
     }
     if (!pLastSep) {

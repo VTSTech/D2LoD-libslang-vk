@@ -28,41 +28,41 @@ void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLev
     uint32_t nRandVariantIdx;
     int nFileIdx;
     int nFileCount;
-    if ((int)nVariants < 1) {
+    if ((int)nVariants <= 0) {
       nRandVariantIdx = 0;
     } else {
       D2SeedStrc DVar1;
       nRandVariantIdx = pLevel->sSeed.nSeedLow;
-      if (!(nVariants & nVariants - 1)) {
+      if (nVariants & nVariants - 1) {
         DVar1 = D2_SEED_NEXT(pLevel->sSeed);
         pLevel->sSeed = DVar1;
-        nRandVariantIdx = nVariants - 1 & DVar1.nSeedLow;
+        nRandVariantIdx = (uint32_t)(DVar1.nSeedLow % nVariants);
       } else {
         DVar1 = D2_SEED_NEXT(pLevel->sSeed);
         pLevel->sSeed = DVar1;
-        nRandVariantIdx = (uint32_t)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) % (uint64_t)nVariants);
+        nRandVariantIdx = nVariants - 1 & DVar1.nSeedLow;
       }
     }
 
     DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(pLevelPrestIds[nRandVariantIdx]);
-    if (0 >= (int)nVariants) {
+    if ((int)nVariants <= 0) {
       return;
     }
 
     uint32_t nIterCountdown = nVariants;
     do {
-      if (!bIterateFiles) {
-        Outdoors::SpawnOutdoorLevelPreset(pLevel, pLevelPrestIds[nRandVariantIdx], -1, 0, '\x0f');
-      } else {
+      if (bIterateFiles) {
         pLvlPrest = DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(pLevelPrestIds[nRandVariantIdx]);
         nFileCount = pLvlPrest->Files;
         nFileIdx = 0;
-        if (0 < nFileCount) {
+        if (nFileCount > 0) {
           do {
             Outdoors::SpawnOutdoorLevelPreset(pLevel, pLevelPrestIds[nRandVariantIdx], nFileIdx, 0, '\x0f');
             nFileIdx++;
           } while (nFileIdx < nFileCount);
         }
+      } else {
+        Outdoors::SpawnOutdoorLevelPreset(pLevel, pLevelPrestIds[nRandVariantIdx], -1, 0, '\x0f');
       }
 
       nRandVariantIdx = (int)(nRandVariantIdx + 1) % (int)nVariants;

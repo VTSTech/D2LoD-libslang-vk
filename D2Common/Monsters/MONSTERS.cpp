@@ -102,7 +102,7 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
       pCurrentFrame >>= 8;
       nPrevFrameShifted >>= 8;
       nEventFrame = nPrevFrameShifted;
-      if (pCurrentFrame <= nPrevFrameShifted) {
+      if (nPrevFrameShifted >= pCurrentFrame) {
         return ~MISSILE_Arrow;
       }
 
@@ -113,12 +113,12 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
         }
 
         nEventFrame++;
-        if (pCurrentFrame < nEventFrame) {
+        if (nEventFrame > pCurrentFrame) {
           return ~MISSILE_Arrow;
         }
       }
 
-      if (pCurrentFrame < nEventFrame) {
+      if (nEventFrame > pCurrentFrame) {
         return ~MISSILE_Arrow;
       }
       if (nEventFrame <= nPrevFrameShifted) {
@@ -140,7 +140,7 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
     }
 
     nEventFrame = pMonster->nClassId;
-    if (!(-1 < nEventFrame && nEventFrame < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nEventFrame >= 0 && nEventFrame < sgptDataTable->nTxtMonStatsSize)) {
       return (int)*pMissileTable;
     }
 
@@ -296,7 +296,7 @@ uint32_t __fastcall MONSTER_IsBossOrChampion(D2UnitStrc * pUnit) {
     }
 
     int pMonData = pUnit->nClassId;
-    if (!(-1 < pMonData && pMonData < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonData)) {
+    if (!(pMonData >= 0 && pMonData < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonData)) {
       return 0;
     }
     if (!(!sgptDataTable->pTxtMonStats[pMonData].npc && !sgptDataTable->pTxtMonStats[pMonData].inTown)) {
@@ -312,11 +312,11 @@ BOOL __stdcall MONSTER_IsAndarielNormal(D2UnitStrc * pUnit, int32_t nParam) {
       nBaseId = -1;
     } else {
       nBaseId = pUnit->nClassId;
-      if (-1 < nBaseId && nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
+      if (nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
         nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
       }
     }
-    if (!(nBaseId == (0x4e < sgptDataTable->nTxtMonStatsSize ? 0x4e : -1) && !nParam)) {
+    if (!(nBaseId == (sgptDataTable->nTxtMonStatsSize > 0x4e ? 0x4e : -1) && !nParam)) {
       return 0;
     }
 
@@ -329,7 +329,7 @@ uint32_t __stdcall IsDemon(D2UnitStrc * pUnit) {
     }
 
     int pMonStatsTxt = pUnit->nClassId;
-    if (!(-1 < pMonStatsTxt && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
+    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
       return 0;
     }
 
@@ -343,7 +343,7 @@ BOOL __stdcall MONSTER_IsMonsterUndead(D2UnitStrc * pUnit) {
     }
 
     int pMonStatsTxt = pUnit->nClassId;
-    if (!(-1 < pMonStatsTxt && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt && (sgptDataTable->pTxtMonStats[pMonStatsTxt].lUndead || sgptDataTable->pTxtMonStats[pMonStatsTxt].hUndead))) {
+    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt && (sgptDataTable->pTxtMonStats[pMonStatsTxt].lUndead || sgptDataTable->pTxtMonStats[pMonStatsTxt].hUndead))) {
       return 0;
     }
 
@@ -352,7 +352,7 @@ BOOL __stdcall MONSTER_IsMonsterUndead(D2UnitStrc * pUnit) {
 
 uint32_t __stdcall UnitIsMarkedBoss(D2MonStatsTxt * pMonStatsTxt, D2UnitStrc * pUnit) {
     int nClassId;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pMonStatsTxt || (nClassId = pUnit->nClassId , -1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize) && (pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId , pMonStatsTxt != 0)))) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pMonStatsTxt || (nClassId = pUnit->nClassId , nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize) && (pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId , pMonStatsTxt != 0)))) {
       return 0;
     }
 
@@ -375,7 +375,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
     D2SkillsTxt* pSkillsTxt;
     short int nSpawnId;
     if (!nParam1 || !pUnit || pUnit->eUnitType != UNIT_MONSTER) {
-      if (-1 < nParam2 && nParam2 < sgptDataTable->nTxtSkillsCount) {
+      if (nParam2 >= 0 && nParam2 < sgptDataTable->nTxtSkillsCount) {
         pSkillsTxt = sgptDataTable->pTxtSkills + nParam2;
         if (pSkillsTxt && -1 < pSkillsTxt->summon && (int)pSkillsTxt->summon < sgptDataTable->nTxtMonStatsSize) {
           if (pnParam1) {
@@ -392,7 +392,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
 
           nSumModeOrSpawnMode = (int)pSkillsTxt->summode;
           *pnMode = nSumModeOrSpawnMode;
-          if (!(nSumModeOrSpawnMode < 0 || 0xf < nSumModeOrSpawnMode)) {
+          if (!(nSumModeOrSpawnMode < 0 || nSumModeOrSpawnMode >= 0x10)) {
             return (int)pSkillsTxt->summon;
           }
 
@@ -403,7 +403,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
     } else {
       D2MonStatsTxt* pMonStatsTxt;
       nSumModeOrSpawnMode = pUnit->nClassId;
-      if (-1 < nSumModeOrSpawnMode && nSumModeOrSpawnMode < sgptDataTable->nTxtMonStatsSize) {
+      if (nSumModeOrSpawnMode >= 0 && nSumModeOrSpawnMode < sgptDataTable->nTxtMonStatsSize) {
         pMonStatsTxt = sgptDataTable->pTxtMonStats + nSumModeOrSpawnMode;
         if (pMonStatsTxt) {
           nSpawnId = pMonStatsTxt->spawn;
@@ -421,7 +421,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
 
           nSumModeOrSpawnMode = (int)pMonStatsTxt->spawnmode;
           *pnMode = nSumModeOrSpawnMode;
-          if (!(nSumModeOrSpawnMode < 0 || 0xf < nSumModeOrSpawnMode)) {
+          if (!(nSumModeOrSpawnMode < 0 || nSumModeOrSpawnMode >= 0x10)) {
             return (int)nSpawnId;
           }
 
@@ -464,7 +464,7 @@ uint8_t __stdcall MONSTERS_GetMaxLightRadiusFromEquipment(D2UnitStrc * pUnit) {
       pComponentOverlay = DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnitSaved, nComponentIdx, (uint32_t)(uint8_t)pcVar2[nComponentIdx]);
       if (pComponentOverlay && pComponentOverlay != (D2UnitStrc*)0x2074696c && pComponentOverlay != (D2UnitStrc*)0x2064656d && pComponentOverlay != (D2UnitStrc*)0x20797668) {
         pItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine((uint32_t)pComponentOverlay, &nClassId);
-        if (pItemsTxt && *(uint8_t*)((char*)&pUnit + 3) < (uint8_t)pItemsTxt->bLightRadius) {
+        if (pItemsTxt && (uint8_t)pItemsTxt->bLightRadius > *(uint8_t*)((char*)&pUnit + 3)) {
           pUnit = (D2UnitStrc*)((uint32_t)(uint8_t)pItemsTxt->bLightRadius << 0x18);
         }
       }
@@ -489,10 +489,10 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
     }
 
     int nInputBaseId = nMonsterId;
-    if (-1 < nMonsterId && nMonsterId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonsterId) {
+    if (nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonsterId) {
       nInputBaseId = (int)sgptDataTable->pTxtMonStats[nMonsterId].BaseId;
     }
-    if (-1 >= nInputBaseId) {
+    if (nInputBaseId < 0) {
       return nMonsterId;
     }
 
@@ -513,7 +513,7 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
       do {
         nMonArrayEntry = (int)*pMonArray;
         nMonBaseId = nMonArrayEntry;
-        if (-1 < nMonArrayEntry && nMonArrayEntry < nMonStatsSize && pMonStatsTable + nMonArrayEntry) {
+        if (nMonArrayEntry >= 0 && nMonArrayEntry < nMonStatsSize && pMonStatsTable + nMonArrayEntry) {
           nMonBaseId = (int)pMonStatsTable[nMonArrayEntry].BaseId;
         }
         if (nMonBaseId == nInputBaseId) {
@@ -529,7 +529,7 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
     DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonsterId, &nUpgradeCount, nullptr);
     iMonArrayIdx = 0;
     int32_t nUpgradedId = nMonsterId;
-    if (0 >= (int)nUpgradeCount) {
+    if ((int)nUpgradeCount <= 0) {
       return nUpgradedId;
     }
 
@@ -538,7 +538,7 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
       if (nUpgradedId < 0) {
         return nMonsterId;
       }
-      if (sgptDataTable->nTxtMonStatsSize <= nUpgradedId) {
+      if (nUpgradedId >= sgptDataTable->nTxtMonStatsSize) {
         return nMonsterId;
       }
 
@@ -546,7 +546,7 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
       if (!pMonStatsTxt) {
         return nMonsterId;
       }
-      if (pLevelsTxt->MonLvlEx[0] + 1 < (int)pMonStatsTxt->aLevel[0]) {
+      if ((int)pMonStatsTxt->aLevel[0] > pLevelsTxt->MonLvlEx[0] + 1) {
         return nMonsterId;
       }
 
@@ -564,7 +564,7 @@ uint32_t __stdcall MONSTERS_CheckMonStatFlag0xc_Bit7(D2UnitStrc * pnParam) {
     }
 
     int pMonStatsTxt = pnParam->nClassId;
-    if (!(-1 < pMonStatsTxt && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
+    if (!(pMonStatsTxt >= 0 && pMonStatsTxt < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + pMonStatsTxt)) {
       return 0;
     }
 
@@ -598,19 +598,18 @@ void __stdcall MONSTERS_GetUpgradeSkillsAndCount(D2UnitStrc * pUnit, uint32_t * 
       exit(-1);
     } else {
       DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(pUnit->nClassId, nullptr, (eD2Skills*)&pUnit);
-      if ((int)pUnit < 4) {
-        if (!(-1 < (int)pUnit)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c9);
-          exit(-1);
-        }
-
-        *pdwAnimFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwFlags;
-        *pdwValidFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwValidFlags;
-        return;
-      } else {
+      if ((int)pUnit >= 4) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c8);
         exit(-1);
       }
+      if (!((int)pUnit >= 0)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c9);
+        exit(-1);
+      }
+
+      *pdwAnimFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwFlags;
+      *pdwValidFlags = gdwMonStatAnimFlagsTable[(int)pUnit].dwValidFlags;
+      return;
     }
 }
 
@@ -620,7 +619,7 @@ uint32_t __stdcall MONSTER_GetMercType(D2UnitStrc * pUnit) {
     }
 
     uint32_t nClassId = pUnit->nClassId;
-    if (nClassId < 360) {
+    if (nClassId <= 359) {
       if (nClassId == 359) {
         return 3;
       }
@@ -630,7 +629,7 @@ uint32_t __stdcall MONSTER_GetMercType(D2UnitStrc * pUnit) {
       if (nClassId == 338) {
         return 2;
       }
-    } else if (nClassId - 0x230 < 2) {
+    } else if (nClassId - 0x230 <= 1) {
       return 4;
     }
 
@@ -705,17 +704,17 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       D2SeedStrc* pSeed;
       nMonStatsId = pUnit->nClassId;
       nBaseId = nMonStatsId;
-      if (-1 < (int)nMonStatsId && (int)nMonStatsId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonStatsId) {
+      if ((int)nMonStatsId >= 0 && (int)nMonStatsId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonStatsId) {
         nBaseId = (int)sgptDataTable->pTxtMonStats[nMonStatsId].BaseId;
       }
-      if ((int)nBaseId < 0 || (nMonStatsTblSize = sgptDataTable->nTxtMonStatsSize , nMonStatsTblSize <= (int)nBaseId)) {
+      if ((int)nBaseId < 0 || (nMonStatsTblSize = sgptDataTable->nTxtMonStatsSize , (int)nBaseId >= nMonStatsTblSize)) {
         nBaseId = ~MonsterUnitSkeleton1;
       } else {
-        if (0x14e < (int)nBaseId) {
+        if ((int)nBaseId > 0x14e) {
           switch (nBaseId) {
             case MonsterUnitMinionSpawner:
               DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonStatsId, nullptr, (eD2Skills*)&pUnit);
-            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x1c5 < sgptDataTable->nTxtMonStatsSize ? 0x1c5 : -1, (int32_t)pUnit);
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0x1c5 ? 0x1c5 : -1, (int32_t)pUnit);
             *pnMonId = nErrorLine;
             nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
             *pnPosX = nPosX;
@@ -728,7 +727,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
             case MonsterUnitHut:
               if (!pfnCallback) {
                 nErrorLine = 0x1fc;
-                *pnMonId = (0 < nMonStatsTblSize) - 1;
+                *pnMonId = (nMonStatsTblSize > 0) - 1;
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
                 exit(-1);
               }
@@ -742,7 +741,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
             return;
             case MonsterUnitAncientStatue1:
               DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonStatsId, nullptr, (eD2Skills*)&pUnit);
-            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x21c < sgptDataTable->nTxtMonStatsSize ? 0x21c : -1, (int32_t)pUnit);
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0x21c ? 0x21c : -1, (int32_t)pUnit);
             *pnMonId = nErrorLine;
             nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
             *pnPosX = nPosX;
@@ -753,7 +752,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
             return;
             case MonsterUnitCrab:
               pSeed = &pUnit->sSeed;
-            if (*pnMonId == (0x23a < nMonStatsTblSize ? 0x23a : -1)) {
+            if (*pnMonId == (nMonStatsTblSize > 0x23a ? 0x23a : -1)) {
               nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
               nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
               *pnPosX = nPosJitter - 0xc + nErrorLine;
@@ -765,7 +764,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
             }
 
             nRandVal = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 2);
-            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x232 < nMonStatsTblSize ? 0x232 : -1, nRandVal + nRandSeed);
+            nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(nMonStatsTblSize > 0x232 ? 0x232 : -1, nRandVal + nRandSeed);
             *pnMonId = nErrorLine;
             nPosJitter = D2Client::Archive::UNIT_GetModuloFromSeed(pSeed, 0x18);
             nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
@@ -781,25 +780,25 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
         }
         if (nBaseId == MonsterUnitSuckerNest) {
           DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nMonStatsId, nullptr, (eD2Skills*)&pUnit);
-          nSpawnMonId = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x72 < sgptDataTable->nTxtMonStatsSize ? 0x72 : -1, (int32_t)pUnit);
+          nSpawnMonId = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0x72 ? 0x72 : -1, (int32_t)pUnit);
           *pnMonId = nSpawnMonId;
           eUnitType = pUnitIn->eUnitType;
-          if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
             nClassId = pUnitIn->pPath.pStaticPath->nPosX;
-          } else if (!pUnitIn->pPath.pDynamicPath) {
-            nClassId = 0;
-          } else {
+          } else if (pUnitIn->pPath.pDynamicPath) {
             nClassId = PATH::DynamicPath::GetXPos(pUnitIn->pPath.pDynamicPath);
+          } else {
+            nClassId = 0;
           }
 
           *pnPosX = nClassId - 2;
           eUnitTypeForY = pUnitIn->eUnitType;
-          if (eUnitTypeForY == UNIT_OBJECT || 3 < (int)eUnitTypeForY && (int)eUnitTypeForY < 6) {
+          if (eUnitTypeForY == UNIT_OBJECT || (int)eUnitTypeForY > 3 && (int)eUnitTypeForY <= 5) {
             nClassId = pUnitIn->pPath.pStaticPath->nPosY;
-          } else if (!pUnitIn->pPath.pDynamicPath) {
-            nClassId = 0;
-          } else {
+          } else if (pUnitIn->pPath.pDynamicPath) {
             nClassId = PATH::DynamicPath::GetYPos(pUnitIn->pPath.pDynamicPath);
+          } else {
+            nClassId = 0;
           }
 
           *pnPosY = nClassId - 2;
@@ -817,7 +816,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
           nErrorLine = pUnit->nClassId;
         }
       DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
-      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0xf < sgptDataTable->nTxtMonStatsSize ? 0xf : -1, (int32_t)pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0xf ? 0xf : -1, (int32_t)pUnit);
       *pnMonId = nErrorLine;
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
       *pnPosX = nPosX;
@@ -826,7 +825,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       *pdwSpawnMode = 1;
       return;
       case MonsterUnitMummyGenerator:
-        nClassId = 0x60 < sgptDataTable->nTxtMonStatsSize ? 0x60 : -1;
+        nClassId = sgptDataTable->nTxtMonStatsSize > 0x60 ? 0x60 : -1;
       pMonRoom = Units::UNITS_GetRoom(pUnit);
       nErrorLine = GetMonsterBaseId(pMonRoom, nClassId);
       *pnMonId = nErrorLine;
@@ -837,7 +836,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       *pdwSpawnMode = 1;
       return;
       case MonsterUnitBloodraven:
-        *pnMonId = 6 < sgptDataTable->nTxtMonStatsSize ? 6 : -1;
+        *pnMonId = sgptDataTable->nTxtMonStatsSize > 6 ? 6 : -1;
       pDynamicPath = pUnit->pPath.pDynamicPath;
       nPosJitter = PATH::DynamicPath::GetXSP1(pDynamicPath);
       *pnPosX = nPosJitter;
@@ -852,7 +851,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
           nErrorLine = pUnit->nClassId;
         }
       DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
-      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x44 < sgptDataTable->nTxtMonStatsSize ? 0x44 : -1, (int32_t)pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0x44 ? 0x44 : -1, (int32_t)pUnit);
       *pnMonId = nErrorLine;
       nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
       *pnPosX = nErrorLine + 8;
@@ -867,7 +866,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
           nErrorLine = pUnit->nClassId;
         }
       DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nErrorLine, nullptr, (eD2Skills*)&pUnit);
-      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(0x12d < sgptDataTable->nTxtMonStatsSize ? 0x12d : -1, (int32_t)pUnit);
+      nErrorLine = D2Game::Monsters::Spawn::MONSTER_GetMonsterClassByDifficulty(sgptDataTable->nTxtMonStatsSize > 0x12d ? 0x12d : -1, (int32_t)pUnit);
       *pnMonId = nErrorLine;
       pDynamicPath = pUnitIn->pPath.pDynamicPath;
       nPosJitter = PATH::DynamicPath::GetXSP1(pDynamicPath);
@@ -878,9 +877,9 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       return;
       case MonsterUnitIzual | MonsterUnitThornBeast:
         if (!pUnit || pUnit->nClassId != 0x2c7) {
-          *pnMonId = 0x13 < sgptDataTable->nTxtMonStatsSize ? 0x13 : -1;
+          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x13 ? 0x13 : -1;
         } else {
-          *pnMonId = 0x2c8 < sgptDataTable->nTxtMonStatsSize ? 0x2c8 : -1;
+          *pnMonId = sgptDataTable->nTxtMonStatsSize > 0x2c8 ? 0x2c8 : -1;
         }
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
       *pnPosX = nPosX;
@@ -891,7 +890,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
     }
 
     default_spawn_params:
-    *pnMonId = (0 < sgptDataTable->nTxtMonStatsSize) - 1;
+    *pnMonId = (sgptDataTable->nTxtMonStatsSize > 0) - 1;
     *pnPosX = 0;
     *pnPosY = 0;
     *pdwSpawnMode = 1;

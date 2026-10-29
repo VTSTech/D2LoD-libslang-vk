@@ -22,7 +22,7 @@ uint32_t __fastcall RAW_CreateCelFrames(int32_t pRawFile, int32_t pCelFile) {
     uint32_t nFramesPerDir = *(uint32_t*)(pRawFile + 0x24) / *(uint32_t*)(pRawFile + 0x28);
     uint32_t iFrame = 0;
     uint32_t pDirNode = *(uint32_t*)(pRawFile + 0x34);
-    for (nDirCount = (int)pDirNode < 1 ? 0 : pDirNode; 0 < (int)nDirCount; nDirCount = *(uint32_t*)(nDirCount + 4)) {
+    for (nDirCount = (int)pDirNode <= 0 ? 0 : pDirNode; 0 < (int)nDirCount; nDirCount = *(uint32_t*)(nDirCount + 4)) {
       uint32_t* pNewFrame;
       nFrameDataSize = *(int*)(nDirCount + 0xc) * *(int*)(nDirCount + 0x10) * 3;
       pNewFrame = (uint32_t*)D2_ALLOC_AT(nFrameDataSize + 0x23, ".\\SRC\\Raw.cpp", 0x22);
@@ -36,10 +36,10 @@ uint32_t __fastcall RAW_CreateCelFrames(int32_t pRawFile, int32_t pCelFile) {
       pNewFrame[7] = nFrameDataSize;
       memcpy(pNewFrame + 8, *(void**)(nDirCount + 0x20), nFrameDataSize);
       pDirNode = *(uint32_t*)(pRawFile + 0x28);
-      if (pDirNode < 2) {
-        nDirAngle = 1;
-      } else {
+      if (pDirNode > 1) {
         nDirAngle = (iFrame / nFramesPerDir << 6) / pDirNode;
+      } else {
+        nDirAngle = 1;
       }
 
       nDirIndex = CelCmp::CELCMP_GetDirectionFrameTableIndex(nDirAngle, pDirNode);

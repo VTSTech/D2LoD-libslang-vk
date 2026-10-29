@@ -142,7 +142,30 @@ void SetSelectedUnit_I(D2UnitStrc * pUnit) {
     _Selection::eSelectedUnitType = pUnit->eUnitType;
     _Selection::nSelectedUnitGUID = pUnit->nUnitGUID;
     _Selection::bHasSelectedUnit = 1;
-    if (_Selection::eSelectedUnitType == UNIT_MONSTER) {
+    if (_Selection::eSelectedUnitType != UNIT_MONSTER) {
+      if (_Selection::eSelectedUnitType != UNIT_OBJECT) {
+        if (_Selection::eSelectedUnitType == UNIT_WARP && !bSameUnitAsLast) {
+          nWarpClassId = pUnit->nClassId;
+          pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+          D2Common::DUNGEON::Dungeon::UpdateWarpRoomSelect(pRoom, nWarpClassId);
+          View::SetFlag0x1(D2GameView);
+          return;
+        }
+      } else {
+        bIsDoor = D2Common::Units::IsDoor(pUnit);
+        if (bIsDoor && pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::GetHit) {
+          dwTickCount = GetTickCount();
+          if (dwTickCount - pUnit->dwTickCount > 500) {
+            sprintf(szDebugString, "msg at %d\n", dwTickCount);
+            /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szDebugString);
+            nDoorUnitGUID = _Selection::nSelectedUnitGUID;
+            pUnit->dwTickCount = dwTickCount;
+            /* Highlight a door? */ Msg::NET_D2GS_CLIENT_Send_INT(0x3d, nDoorUnitGUID);
+            return;
+          }
+        }
+      }
+    } else {
       if (!bSameUnitAsLast) {
         nErrorLine = pUnit->nClassId;
         pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nErrorLine);
@@ -156,25 +179,6 @@ void SetSelectedUnit_I(D2UnitStrc * pUnit) {
           }
         }
       }
-    } else if (_Selection::eSelectedUnitType == UNIT_OBJECT) {
-      bIsDoor = D2Common::Units::IsDoor(pUnit);
-      if (bIsDoor && pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::GetHit) {
-        dwTickCount = GetTickCount();
-        if (500 < dwTickCount - pUnit->dwTickCount) {
-          sprintf(szDebugString, "msg at %d\n", dwTickCount);
-          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szDebugString);
-          nDoorUnitGUID = _Selection::nSelectedUnitGUID;
-          pUnit->dwTickCount = dwTickCount;
-          /* Highlight a door? */ Msg::NET_D2GS_CLIENT_Send_INT(0x3d, nDoorUnitGUID);
-          return;
-        }
-      }
-    } else if (_Selection::eSelectedUnitType == UNIT_WARP && !bSameUnitAsLast) {
-      nWarpClassId = pUnit->nClassId;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::DUNGEON::Dungeon::UpdateWarpRoomSelect(pRoom, nWarpClassId);
-      View::SetFlag0x1(D2GameView);
-      return;
     }
 }
 
@@ -291,15 +295,17 @@ static BOOL SELECT_HandleMouseInput(int * pnMouseX, int * pnMouseY) {
     *pnMouseX = nMouseY;
     nMouseY = UI::ui::GetMouseY();
     *pnMouseY = nMouseY;
-    if (nMouseY <= ScreenSizeY - 0x31 && (!gbSelectExclusionActive || *pnMouseX <= gnSelectExclusionRectLeft || gnSelectExclusionRectRight <= *pnMouseX || nMouseY <= gnSelectExclusionRectTop || gnSelectExclusionRectBottom <= nMouseY)) {
-      if (nBorderType == 1) {
+    if (nMouseY <= ScreenSizeY - 0x31 && (!gbSelectExclusionActive || *pnMouseX <= gnSelectExclusionRectLeft || *pnMouseX >= gnSelectExclusionRectRight || nMouseY <= gnSelectExclusionRectTop || nMouseY >= gnSelectExclusionRectBottom)) {
+      if (nBorderType != 1) {
+        if (nBorderType != 2 || *pnMouseX >= ScreenSizeX / 2) {
+          SELECT_ScreenToWorldCoords(pnMouseX, pnMouseY);
+          return 0;
+        }
+      } else {
         if (*pnMouseX < ScreenSizeX / 2) {
           SELECT_ScreenToWorldCoords(pnMouseX, pnMouseY);
           return 0;
         }
-      } else if (nBorderType != 2 || ScreenSizeX / 2 <= *pnMouseX) {
-        SELECT_ScreenToWorldCoords(pnMouseX, pnMouseY);
-        return 0;
       }
     }
 
@@ -316,18 +322,18 @@ static uint32_t __stdcall SELECT_IsDoorBlockingUnit(D2UnitStrc * pUnit, D2UnitSt
     }
 
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayerUnit_lcl) {
+    if (pPlayerUnit_lcl) {
+      D2Common::Units::GetCoords(pPlayerUnit_lcl, &ptPlayerCoord);
+    } else {
       ptPlayerCoord.x = 0;
       ptPlayerCoord.y = 0;
-    } else {
-      D2Common::Units::GetCoords(pPlayerUnit_lcl, &ptPlayerCoord);
     }
 
     D2Common::Units::GetCoords(pUnit, &ptDoorCoord);
     D2Common::Units::GetCoords(pUnit2, &ptTargetCoord);
     D2ObjectsTxt* pObjectsTxt = D2Common::Units::GetObjectTxtRecordFromObject(pUnit2);
     if (pObjectsTxt->Orientation == '\x01') {
-      if ((uint32_t)ptTargetCoord.y <= (uint32_t)ptDoorCoord.y || (uint32_t)ptPlayerCoord.y <= (uint32_t)ptTargetCoord.y) {
+      if ((uint32_t)ptTargetCoord.y <= (uint32_t)ptDoorCoord.y || (uint32_t)ptTargetCoord.y >= (uint32_t)ptPlayerCoord.y) {
         if ((uint32_t)ptDoorCoord.y <= (uint32_t)ptTargetCoord.y) {
           return 1;
         }
@@ -335,7 +341,7 @@ static uint32_t __stdcall SELECT_IsDoorBlockingUnit(D2UnitStrc * pUnit, D2UnitSt
           return 1;
         }
       }
-    } else if (((uint32_t)ptDoorCoord.x <= (uint32_t)ptTargetCoord.x || (uint32_t)ptTargetCoord.x <= (uint32_t)ptPlayerCoord.x) && ((uint32_t)ptTargetCoord.x <= (uint32_t)ptDoorCoord.x || (uint32_t)ptPlayerCoord.x <= (uint32_t)ptTargetCoord.x)) {
+    } else if (((uint32_t)ptTargetCoord.x >= (uint32_t)ptDoorCoord.x || (uint32_t)ptTargetCoord.x <= (uint32_t)ptPlayerCoord.x) && ((uint32_t)ptTargetCoord.x <= (uint32_t)ptDoorCoord.x || (uint32_t)ptTargetCoord.x >= (uint32_t)ptPlayerCoord.x)) {
       return 1;
     }
 
@@ -353,11 +359,11 @@ static uint32_t __stdcall SELECT_IsUnitBehindDoor(D2UnitStrc * pUnit, D2UnitStrc
 
     D2ObjectsTxt* pObjectsTxt = D2Common::Units::GetObjectTxtRecordFromObject(pUnit2);
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayerUnit_lcl) {
+    if (pPlayerUnit_lcl) {
+      D2Common::Units::GetCoords(pPlayerUnit_lcl, &ptPlayerCoord);
+    } else {
       ptPlayerCoord.x = 0;
       ptPlayerCoord.y = 0;
-    } else {
-      D2Common::Units::GetCoords(pPlayerUnit_lcl, &ptPlayerCoord);
     }
 
     D2Common::Units::GetCoords(pUnit2, &ptDoorCoord);
@@ -367,11 +373,11 @@ static uint32_t __stdcall SELECT_IsUnitBehindDoor(D2UnitStrc * pUnit, D2UnitStrc
         if ((uint32_t)ptDoorCoord.y <= (uint32_t)ptTargetCoord.y) {
           return 0;
         }
-        if ((uint32_t)ptPlayerCoord.y <= (uint32_t)ptDoorCoord.y) {
+        if ((uint32_t)ptDoorCoord.y >= (uint32_t)ptPlayerCoord.y) {
           return 0;
         }
       }
-    } else if ((uint32_t)ptDoorCoord.x <= (uint32_t)ptTargetCoord.x || (uint32_t)ptPlayerCoord.x <= (uint32_t)ptDoorCoord.x) {
+    } else if ((uint32_t)ptTargetCoord.x >= (uint32_t)ptDoorCoord.x || (uint32_t)ptDoorCoord.x >= (uint32_t)ptPlayerCoord.x) {
       if ((uint32_t)ptTargetCoord.x <= (uint32_t)ptDoorCoord.x) {
         return 0;
       }
@@ -432,22 +438,22 @@ static D2UnitStrc * __stdcall SKILL_FindTargetInRange(D2SkillStrc * pSkill, D2Un
       }
 
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nRadius = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nRadius = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nRadius = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nRadius = 0;
       }
 
       *pX = nRadius;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nRadius = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nRadius = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nRadius = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nRadius = 0;
       }
 
       *pY = nRadius;
@@ -484,7 +490,7 @@ static D2UnitStrc * __stdcall SKILL_FindTargetInRange(D2SkillStrc * pSkill, D2Un
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     nFindFlags = 0;
     int nSkill = 0xa;
-    if (0 < sUnitFindData.nCountedUnits) {
+    if (sUnitFindData.nCountedUnits > 0) {
       int32_t nDistToUnit;
       do {
         pFoundUnit = sUnitFindData.pUnitsArray->aFoundUnitsList[nFindFlags];
@@ -534,22 +540,22 @@ static D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pP
       eCollisionFlags eCollision;
       eUnitType = pPlayerUnit_lcl->eUnitType;
       nAdjustedDirIdx = *pDirTableEntry + ((nFacingDirection & 0xff) >> 3) & 7;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nUnitX = pPlayerUnit_lcl->pPath.pStaticPath->nPosX;
-      } else if (!pPlayerUnit_lcl->pPath.pDynamicPath) {
-        nUnitX = 0;
-      } else {
+      } else if (pPlayerUnit_lcl->pPath.pDynamicPath) {
         nUnitX = D2Common::PATH::DynamicPath::GetXPos(pPlayerUnit_lcl->pPath.pDynamicPath);
+      } else {
+        nUnitX = 0;
       }
 
       nOffsetX = gnGameSelectPathState[nAdjustedDirIdx];
       eUnitType = pPlayerUnit_lcl->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nUnitY = pPlayerUnit_lcl->pPath.pStaticPath->nPosY;
-      } else if (!pPlayerUnit_lcl->pPath.pDynamicPath) {
-        nUnitY = 0;
-      } else {
+      } else if (pPlayerUnit_lcl->pPath.pDynamicPath) {
         nUnitY = D2Common::PATH::DynamicPath::GetYPos(pPlayerUnit_lcl->pPath.pDynamicPath);
+      } else {
+        nUnitY = 0;
       }
 
       nOffsetY = gnGameSelectGameState[nAdjustedDirIdx];
@@ -575,7 +581,7 @@ static D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pP
       }
 
       pDirTableEntry++;
-      if ((uintptr_t)((char*)&gaTargetSelectionAngleTable + 19) < (int)pDirTableEntry) {
+      if ((int)pDirTableEntry >= (uintptr_t)((char*)&gaTargetSelectionAngleTable + sizeof(gaTargetSelectionAngleTable))) {
         return nullptr;
       }
     }
@@ -588,28 +594,28 @@ static D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pP
 static int * __stdcall SELECT_GetTargetCoords(int * pnOutX, int * pUnit, int * pnOutY) {
     POINT ptCoord;
     eD2UnitType eUnitType;
-    if (!pUnit) {
-      ptCoord.x = *pnOutX;
-      ptCoord.y = *pnOutY;
-    } else {
+    if (pUnit) {
       eD2UnitType eUnitTypeForY;
       eUnitType = *pUnit;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         ptCoord.x = *(int32_t*)(pUnit[0xb] + 0xc);
-      } else if (!(D2DynamicPathStrc*)pUnit[0xb]) {
-        ptCoord.x = 0;
-      } else {
+      } else if ((D2DynamicPathStrc*)pUnit[0xb]) {
         ptCoord.x = D2Common::PATH::DynamicPath::GetXPos((D2DynamicPathStrc*)pUnit[0xb]);
+      } else {
+        ptCoord.x = 0;
       }
 
       eUnitTypeForY = *pUnit;
-      if (eUnitTypeForY == UNIT_OBJECT || 3 < (int)eUnitTypeForY && (int)eUnitTypeForY < 6) {
+      if (eUnitTypeForY == UNIT_OBJECT || (int)eUnitTypeForY > 3 && (int)eUnitTypeForY <= 5) {
         ptCoord.y = *(int32_t*)(pUnit[0xb] + 0x10);
-      } else if (!(D2DynamicPathStrc*)pUnit[0xb]) {
-        ptCoord.y = 0;
-      } else {
+      } else if ((D2DynamicPathStrc*)pUnit[0xb]) {
         ptCoord.y = D2Common::PATH::DynamicPath::GetYPos((D2DynamicPathStrc*)pUnit[0xb]);
+      } else {
+        ptCoord.y = 0;
       }
+    } else {
+      ptCoord.x = *pnOutX;
+      ptCoord.y = *pnOutY;
     }
 
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
@@ -623,13 +629,13 @@ static int * __stdcall SELECT_GetTargetCoords(int * pnOutX, int * pUnit, int * p
     }
 
     pRoom = D2Common::Collision::GetFreeCoordinates_WithMaxDistance(pRoom, &ptCoord, 1, 1, 0, 7);
-    if (!pRoom) {
-      return pUnit;
+    if (pRoom) {
+      *pnOutX = ptCoord.x;
+      *pnOutY = ptCoord.y;
+      return nullptr;
     }
 
-    *pnOutX = ptCoord.x;
-    *pnOutY = ptCoord.y;
-    return nullptr;
+    return pUnit;
 }
 
 // Client-side skill targeting resolver (D2Game::Game::Select). Given a candidate target unit and the requested cast position (*pX/*pY), returns the unit/coords the skill should actually act on. If the candidate is an already-active player it is kept as-is; otherwise (for non-flags4&1 skills) the candidate is dropped and its dynamic-path coords are substituted. If the requested position equals the local player's own position, it is nudged to the tile in front of the player (GetPositionNextToPlayerDirection). Suppresses targeting while moving for certain bUseFlags combos. Finally, if the player can use the skill (PLRSKILLS_CanUseSkillCheck) it applies skill-flag-driven target selection: flag 0x40 -> SKILL_FindTargetInRange, flag 0x20 + bAllowDirectional -> facing-direction target, flag 0x80 -> ground coords. Returns the resolved target unit (may be null) and writes resolved coords back through pX/pY.
@@ -664,21 +670,21 @@ D2UnitStrc * __fastcall SKILL_ValidateTarget(D2SkillStrc * pSkill, D2UnitStrc * 
 
     eD2UnitType eUnitType;
     eUnitType = pPlayerUnit_lcl->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitCoord = pPlayerUnit_lcl->pPath.pStaticPath->nPosX;
-    } else if (!pPlayerUnit_lcl->pPath.pDynamicPath) {
-      nUnitCoord = 0;
-    } else {
+    } else if (pPlayerUnit_lcl->pPath.pDynamicPath) {
       nUnitCoord = D2Common::PATH::DynamicPath::GetXPos(pPlayerUnit_lcl->pPath.pDynamicPath);
+    } else {
+      nUnitCoord = 0;
     }
     if (*pX == nUnitCoord) {
       eUnitType = pPlayerUnit_lcl->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nUnitCoord = pPlayerUnit_lcl->pPath.pStaticPath->nPosY;
-      } else if (!pPlayerUnit_lcl->pPath.pDynamicPath) {
-        nUnitCoord = 0;
-      } else {
+      } else if (pPlayerUnit_lcl->pPath.pDynamicPath) {
         nUnitCoord = D2Common::PATH::DynamicPath::GetYPos(pPlayerUnit_lcl->pPath.pDynamicPath);
+      } else {
+        nUnitCoord = 0;
       }
       if (*pY == nUnitCoord) {
         SKILLS::Skills::GetPositionNextToPlayerDirection(pPlayerUnit_lcl, pX, pY);
@@ -715,21 +721,21 @@ void __stdcall SELECT_InitConstants() {
 }
 
 D2UnitStrc * __stdcall GetSelectedUnit() {
-    if (!_Selection::bHasSelectedUnit) {
+    if (_Selection::bHasSelectedUnit) {
+      D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(_Selection::nSelectedUnitGUID, _Selection::eSelectedUnitType);
+      if (pUnit) {
+        uint32_t bIsOnScreen;
+        bIsOnScreen = UNIT::CUnit::HitTestScreen(pUnit, 0, 0, nullptr);
+        if (bIsOnScreen) {
+          return pUnit;
+        }
+      }
+
+      _Selection::bCanSelectUnit = 0;
+      _Selection::bHasSelectedUnit = 0;
       return nullptr;
     }
 
-    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(_Selection::nSelectedUnitGUID, _Selection::eSelectedUnitType);
-    if (pUnit) {
-      uint32_t bIsOnScreen;
-      bIsOnScreen = UNIT::CUnit::HitTestScreen(pUnit, 0, 0, nullptr);
-      if (bIsOnScreen) {
-        return pUnit;
-      }
-    }
-
-    _Selection::bCanSelectUnit = 0;
-    _Selection::bHasSelectedUnit = 0;
     return nullptr;
 }
 
@@ -841,7 +847,7 @@ void __stdcall SELECT_UpdateSelectedUnit() {
             }
             nIterCount = iVar1 + 1;
             pPrevUnit = pIterUnit;
-            if (30000 < iVar1) {
+            if (iVar1 > 30000) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x218);
               exit(-1);
             }
@@ -891,7 +897,38 @@ void __stdcall SELECT_UpdateSelectedUnit() {
 
                     pCandidate = pBestUnit;
                     pPlayerUnitLocal = pPlayerUnit_lcl;
-                    if (eCurUnitType == UNIT_OBJECT) {
+                    if (eCurUnitType != UNIT_OBJECT) {
+                      if (eBestUnitType == UNIT_OBJECT) {
+                        bIsDeadOrDoor = D2Common::Units::IsDoor(pBestUnit);
+                        if (bIsDeadOrDoor) {
+                          bHitTest = SELECT_IsDoorBlockingUnit(pIterUnit, pCandidate);
+                          pIterUnit = pCurrentUnit;
+                          pCandidate = pBestUnit;
+                          if (bHitTest) {
+                            pBestUnit = pCurrentUnit;
+                            pCandidate = pBestUnit;
+                          }
+                        } else {
+                          pick_higher_priority:
+                          pCandidate = pBestUnit;
+                          if (nBestPriority < iVar1) {
+                            pCandidate = pIterUnit;
+                          }
+                        }
+                      } else {
+                        compare_priority_or_distance:
+                        if (nBestPriority == iVar1) {
+                          eCurUnitType = SELECT_GetDistanceSquared(pIterUnit, pPlayerUnit_lcl);
+                          nBestDistSq = SELECT_GetDistanceSquared(pBestUnit, pPlayerUnitLocal);
+                          pCandidate = pBestUnit;
+                          if ((int)eCurUnitType < nBestDistSq) {
+                            pCandidate = pIterUnit;
+                          }
+                        } else if (nBestPriority < iVar1) {
+                          pCandidate = pIterUnit;
+                        }
+                      }
+                    } else {
                       if (eBestUnitType == UNIT_OBJECT) {
                         goto compare_priority_or_distance;
                       }
@@ -907,35 +944,6 @@ void __stdcall SELECT_UpdateSelectedUnit() {
                       if (bHitTest && nBestPriority < iVar1) {
                         pBestUnit = pCurrentUnit;
                         pCandidate = pBestUnit;
-                      }
-                    } else if (eBestUnitType == UNIT_OBJECT) {
-                      bIsDeadOrDoor = D2Common::Units::IsDoor(pBestUnit);
-                      if (!bIsDeadOrDoor) {
-                        pick_higher_priority:
-                        pCandidate = pBestUnit;
-                        if (nBestPriority < iVar1) {
-                          pCandidate = pIterUnit;
-                        }
-                      } else {
-                        bHitTest = SELECT_IsDoorBlockingUnit(pIterUnit, pCandidate);
-                        pIterUnit = pCurrentUnit;
-                        pCandidate = pBestUnit;
-                        if (bHitTest) {
-                          pBestUnit = pCurrentUnit;
-                          pCandidate = pBestUnit;
-                        }
-                      }
-                    } else {
-                      compare_priority_or_distance:
-                      if (nBestPriority == iVar1) {
-                        eCurUnitType = SELECT_GetDistanceSquared(pIterUnit, pPlayerUnit_lcl);
-                        nBestDistSq = SELECT_GetDistanceSquared(pBestUnit, pPlayerUnitLocal);
-                        pCandidate = pBestUnit;
-                        if ((int)eCurUnitType < nBestDistSq) {
-                          pCandidate = pIterUnit;
-                        }
-                      } else if (nBestPriority < iVar1) {
-                        pCandidate = pIterUnit;
                       }
                     }
                   }

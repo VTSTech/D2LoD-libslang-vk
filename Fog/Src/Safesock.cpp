@@ -197,7 +197,7 @@ int32_t __fastcall WSASocket2_Read(D2NetDataStrc * pNetData, char * pBuffer, siz
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pNetData->pSync);
     int nBytesRead = recv(pNetData->hSocket, pBuffer, nSize, 0);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pNetData->pSync);
-    if (nBytesRead >= 1) {
+    if (nBytesRead > 0) {
       return nBytesRead;
     }
 
@@ -286,12 +286,12 @@ int __fastcall Safesock_PollReadReady(D2NetDataStrc * pNetData) {
       /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &exceptFds);
       if (!nResult) {
         /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &readFds);
-        if (!nResult) {
-          ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
-          exit(-1);
+        if (nResult) {
+          return 1;
         }
 
-        return 1;
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
+        exit(-1);
       }
     }
 

@@ -54,7 +54,7 @@ void __stdcall AllocGameRecord() {
 }
 
 void __stdcall AddGameEntry(uint32_t uMsg, WPARAM wParam, LPARAM lParam) {
-    if (499 < gpCurrentGameRecord->nEntrySize) {
+    if (gpCurrentGameRecord->nEntrySize >= 500) {
       AllocGameRecord();
     }
 
@@ -72,7 +72,7 @@ void __fastcall HandleWinProcMsg(uint32_t uMsg, WPARAM wParam, LPARAM lParam) {
     if (!SettedUp) {
       return;
     }
-    if (uMsg < 0x112) {
+    if (uMsg <= 0x111) {
       if (uMsg != 0x111) {
         switch (uMsg) {
           case 0x10:
@@ -180,7 +180,7 @@ void __stdcall LoadGameRecordFromFile() {
           pBlock->pNext = 0;
           gpCurrentGameRecord = pBlock;
         }
-        if (lpBuffer_007a2768.nLastBlockEntries < 0x1f5) {
+        if (lpBuffer_007a2768.nLastBlockEntries <= 0x1f4) {
           gsGameRecordContext.nEntrySize = lpBuffer_007a2768.nLastBlockEntries;
           if (nBlockIndex + 1 != lpBuffer_007a2768.nBlockCount) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100);
@@ -295,13 +295,13 @@ void __stdcall RecordCurrentStep() {
     }
 
     int32_t nEntryIndex = Game::GetEntryIndex();
-    if (lpBuffer_007a2768.nStepCount <= nEntryIndex) {
+    if (nEntryIndex >= lpBuffer_007a2768.nStepCount) {
       gbIsPlaybackActive = 0;
       return;
     }
 
     int nPlaybackPos = gpCurrentGameRecord->nPlaybackIndex;
-    if (499 < nPlaybackPos) {
+    if (nPlaybackPos >= 500) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x189);
       exit(-1);
     }
@@ -322,7 +322,7 @@ void __stdcall RecordCurrentStep() {
       if (!pNextBlock && pBlock->nEntrySize == pBlock->nPlaybackIndex) {
         break;
       }
-      if (499 < pBlock->nPlaybackIndex) {
+      if (pBlock->nPlaybackIndex >= 500) {
         pBlock = pNextBlock;
         gpCurrentGameRecord = pNextBlock;
       }
@@ -331,7 +331,7 @@ void __stdcall RecordCurrentStep() {
       }
 
       pEntry = pBlock->pEntry + pBlock->nPlaybackIndex;
-      if (nEntryIndex < pEntry->nGameIndex) {
+      if (pEntry->nGameIndex > nEntryIndex) {
         return;
       }
     }

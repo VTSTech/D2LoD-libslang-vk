@@ -97,32 +97,32 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::SetLinkOffset(int3
 }
 
 template<> TSLink<::MappingEntryNode>* TSExplicitList<MappingEntryNode, -572662307>::Link(::MappingEntryNode * pNode) {
-    if (!pNode) {
-      return &this->m_terminator;
+    if (pNode) {
+      return (TSLink<::MappingEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
     }
 
-    return (TSLink<::MappingEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
+    return &this->m_terminator;
 }
 
 template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::Next(::MappingEntryNode * pNode) {
     uint32_t uAbsOffset;
     if (pNode) {
       uAbsOffset = *(uint32_t*)((uintptr_t)&pNode->m_linktoslot.m_prevlink + this->m_linkoffset);
-      return (::MappingEntryNode*)((int)uAbsOffset < 1 ? 0 : uAbsOffset);
+      return (::MappingEntryNode*)((int)uAbsOffset <= 0 ? 0 : uAbsOffset);
     }
 
     uAbsOffset = this->m_terminator.m_next;
-    return (::MappingEntryNode*)((int)uAbsOffset < 1 ? 0 : uAbsOffset);
+    return (::MappingEntryNode*)((int)uAbsOffset <= 0 ? 0 : uAbsOffset);
 }
 
 template<> void TSExplicitList<MappingEntryNode, -572662307>::LinkNode(::MappingEntryNode * pNode, uint32_t nLinkType, ::MappingEntryNode * pExisting) {
     TSLink<::MappingEntryNode>* pSrcSlot;
     int* pPrevLink;
     uint32_t pTailLink;
-    if (!pNode) {
-      pSrcSlot = &this->m_terminator;
-    } else {
+    if (pNode) {
       pSrcSlot = (TSLink<::MappingEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
+    } else {
+      pSrcSlot = &this->m_terminator;
     }
 
     TSLink<::MappingEntryNode>* pDestSlot = pSrcSlot->m_prevlink;
@@ -139,10 +139,10 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::LinkNode(::Mapping
       pSrcSlot->m_prevlink = 0;
       pSrcSlot->m_next = 0;
     }
-    if (!pExisting) {
-      pDestSlot = &this->m_terminator;
-    } else {
+    if (pExisting) {
       pDestSlot = (TSLink<::MappingEntryNode>*)((uintptr_t)&pExisting->m_hashval + this->m_linkoffset);
+    } else {
+      pDestSlot = &this->m_terminator;
     }
     if (nLinkType != 1) {
       TSLink<::MappingEntryNode>* pTVar1;
@@ -172,20 +172,20 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::LinkNode(::Mapping
 }
 
 template<> ::MappingEntryNode * TSExplicitList<MappingEntryNode, -572662307>::RawNext(::MappingEntryNode * pNode) {
-    if (!pNode) {
-      return (::MappingEntryNode*)this->m_terminator.m_next;
+    if (pNode) {
+      return *(::MappingEntryNode**)((uintptr_t)&pNode->m_linktoslot.m_prevlink + this->m_linkoffset);
     }
 
-    return *(::MappingEntryNode**)((uintptr_t)&pNode->m_linktoslot.m_prevlink + this->m_linkoffset);
+    return (::MappingEntryNode*)this->m_terminator.m_next;
 }
 
 template<> void TSExplicitList<MappingEntryNode, -572662307>::UnlinkNode(::MappingEntryNode * pNode) {
     TSLink<::MappingEntryNode>* pSlot;
     int* pPrevLink;
-    if (!pNode) {
-      pSlot = &this->m_terminator;
-    } else {
+    if (pNode) {
       pSlot = (TSLink<::MappingEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
+    } else {
+      pSlot = &this->m_terminator;
     }
 
     TSLink<::MappingEntryNode>* nHeadEntry = pSlot->m_prevlink;
@@ -253,11 +253,11 @@ template<> ::MappingEntryNode * TSHashTable<MappingEntryNode, HASHKEY_STRI>::Nex
     uint32_t uAbsOffset;
     if (pNode) {
       uAbsOffset = *(uint32_t*)((uintptr_t)&pNode->m_linktoslot.m_prevlink + this->tFullList.m_linkoffset);
-      return (::MappingEntryNode*)((int)uAbsOffset < 1 ? 0 : uAbsOffset);
+      return (::MappingEntryNode*)((int)uAbsOffset <= 0 ? 0 : uAbsOffset);
     }
 
     uAbsOffset = this->tFullList.m_terminator.m_next;
-    return (::MappingEntryNode*)((int)uAbsOffset < 1 ? 0 : uAbsOffset);
+    return (::MappingEntryNode*)((int)uAbsOffset <= 0 ? 0 : uAbsOffset);
 }
 
 template<> void TSExplicitList<MappingEntryNode, -572662307>::UnlinkAll() {
@@ -268,7 +268,7 @@ template<> void TSExplicitList<MappingEntryNode, -572662307>::UnlinkAll() {
     while (true) {
       int* pSlot;
       nSlotOffset = this->m_terminator.m_next;
-      if (0 >= nSlotOffset) {
+      if (nSlotOffset <= 0) {
         break;
       }
 

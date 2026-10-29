@@ -61,24 +61,24 @@ void DRLGOUTROOM_PlaceAct5SpecialPresets(D2DrlgLevelStrc * pLevel) {
     do {
       D2DrlgLevelDataWildernessLevel* pWildData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
       if (pLevel->eD2LevelId == ((D2Act5SpecialPresetStrc*)(pTableEntry - 4))->eLevelId) {
-        if (pLevel->sCoordinatesAndSize.WorldSize.y < pLevel->sCoordinatesAndSize.WorldSize.x) {
+        if (pLevel->sCoordinatesAndSize.WorldSize.x > pLevel->sCoordinatesAndSize.WorldSize.y) {
           nLvlPrestId = *pTableEntry;
           DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(nLvlPrestId);
-          if (!pTableEntry[-2]) {
-            nX = 0;
+          if (pTableEntry[-2]) {
+            nX = pWildData->nGridCoordsWidth - 2;
             nY = 2;
           } else {
-            nX = pWildData->nGridCoordsWidth - 2;
+            nX = 0;
             nY = 2;
           }
         } else {
           nLvlPrestId = pTableEntry[-1];
           DATATBLS::LvlTbls::TXT_LvlPrest_GetLine(nLvlPrestId);
           nX = 2;
-          if (!pTableEntry[-2]) {
-            nY = 0;
-          } else {
+          if (pTableEntry[-2]) {
             nY = pWildData->nGridCoordsHeight - 2;
+          } else {
+            nY = 0;
           }
         }
 
@@ -94,7 +94,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(D2DrlgLevelStrc * pLevel) {
     uint32_t nGridFlags;
     D2DrlgLevelDataWildernessLevel* pWildData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
     int nXCur = 0;
-    if (0 < pWildData->nGridCoordsWidth) {
+    if (pWildData->nGridCoordsWidth > 0) {
       do {
         nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, nXCur, 0);
         if (nGridFlags & 0x400) {
@@ -108,7 +108,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(D2DrlgLevelStrc * pLevel) {
 
     int nXIter = 0;
     nXCur = pWildData->nGridCoordsHeight - 2;
-    if (0 < pWildData->nGridCoordsWidth) {
+    if (pWildData->nGridCoordsWidth > 0) {
       do {
         nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, nXIter, nXCur);
         if (nGridFlags & 0x400) {
@@ -121,7 +121,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(D2DrlgLevelStrc * pLevel) {
     }
 
     nXCur = 0;
-    if (0 < pWildData->nGridCoordsHeight) {
+    if (pWildData->nGridCoordsHeight > 0) {
       do {
         nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, 0, nXCur);
         if (nGridFlags & 0x400) {
@@ -135,7 +135,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(D2DrlgLevelStrc * pLevel) {
 
     nXIter = 0;
     nXCur = pWildData->nGridCoordsWidth - 2;
-    if (0 >= pWildData->nGridCoordsHeight) {
+    if (pWildData->nGridCoordsHeight <= 0) {
       return;
     }
 
@@ -146,7 +146,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(D2DrlgLevelStrc * pLevel) {
       }
 
       nXIter++;
-      if (pWildData->nGridCoordsHeight <= nXIter) {
+      if (nXIter >= pWildData->nGridCoordsHeight) {
         return;
       }
     }
@@ -183,10 +183,10 @@ void __stdcall DRLGOUTROOM_PlaceAct5RoadPath(D2DrlgLevelStrc * pLevel) {
       if (nDx < 0) {
         nAbsDx = -nDx;
       }
-      if (nDy < 0) {
-        nAbsDy = -nDy;
-      } else {
+      if (nDy >= 0) {
         nAbsDy = nDy;
+      } else {
+        nAbsDy = -nDy;
       }
 
       nNextXAligned = pNextVertex->nPosX & -2;
@@ -210,7 +210,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5RoadPath(D2DrlgLevelStrc * pLevel) {
 
         nCurrentY = nMaxCoord + nAbsDx * -4 & -2;
         nMaxCoord = pNextVertex->nPosY;
-        if (pNextVertex->nPosY < pDrlgVertex->nPosY) {
+        if (pDrlgVertex->nPosY > pNextVertex->nPosY) {
           nMaxCoord = pDrlgVertex->nPosY;
         }
 
@@ -310,7 +310,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
 
         nErrCode = pTableEntry[2];
         nCount = 0;
-        if (0 < pTableEntry[4]) {
+        if (pTableEntry[4] > 0) {
           do {
             bSuccess = Outdoors::SpawnOutdoorLevelPreset(pLevel, nPresetId, nErrCode, 0, '\x0f');
             nCount++;
@@ -328,7 +328,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
 
       next_entry:
       pTableEntry += 7;
-      if ((uintptr_t)((char*)&gaAct5SceneryPresetTable_0 + sizeof(gaAct5SceneryPresetTable_0) + 3) < (int)pTableEntry) {
+      if ((int)pTableEntry >= (uintptr_t)((char*)&gaAct5SceneryPresetTable_0 + sizeof(gaAct5SceneryPresetTable_0) + 4)) {
         return;
       }
     } while (true);
@@ -360,14 +360,14 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
       nAttempts = 0;
       nPlacedCount = 0;
       do {
-        if (2 < nPlacedCount) {
+        if (nPlacedCount >= 3) {
           break;
         }
 
         nGridX = D2Client::Archive::UNIT_GetModuloFromSeed(&pLevel->sSeed, pLevelData->nGridCoordsWidth / 2);
         nGridY = D2Client::Archive::UNIT_GetModuloFromSeed(&pLevel->sSeed, pLevelData->nGridCoordsHeight / 2);
         nPresetCoord = Outdoors::DRLGOUTDOOR_GetPresetCoordFromGrid(pLevel, nGridX * 2, nGridY * 2);
-        if (nPresetCoord - 0x393U < 8) {
+        if (nPresetCoord - 0x393U <= 7) {
           Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nGridX * 2, nGridY * 2, nPresetCoord + 0x10, -1, 0);
           nPlacedCount++;
         }
@@ -376,56 +376,56 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
       } while (nAttempts < 0x5a);
 
       nStartX = pLevelData->nGridCoordsWidth / 2;
-      if ((int)nStartX < 1) {
+      if ((int)nStartX <= 0) {
         nStartX = 0;
       } else {
         nSeedLowTmp = pLevel->sSeed.nSeedLow;
-        if (!(nStartX & nStartX - 1)) {
-          tNewSeed2 = D2_SEED_NEXT(pLevel->sSeed);
-          nStartX = nStartX - 1 & tNewSeed2.nSeedLow;
-          pLevel->sSeed = tNewSeed2;
-        } else {
+        if (nStartX & nStartX - 1) {
           DVar1 = D2_SEED_NEXT(pLevel->sSeed);
           pLevel->sSeed = DVar1;
           nStartX = DVar1.nSeedLow % nStartX;
+        } else {
+          tNewSeed2 = D2_SEED_NEXT(pLevel->sSeed);
+          nStartX = nStartX - 1 & tNewSeed2.nSeedLow;
+          pLevel->sSeed = tNewSeed2;
         }
       }
 
       nStartY = pLevelData->nGridCoordsHeight / 2;
-      if ((int)nStartY < 1) {
+      if ((int)nStartY <= 0) {
         nStartY = 0;
       } else {
         nSeedLowTmp = pLevel->sSeed.nSeedLow;
-        if (!(nStartY & nStartY - 1)) {
-          DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-          nStartY = nStartY - 1 & DVar1.nSeedLow;
-          pLevel->sSeed = DVar1;
-        } else {
+        if (nStartY & nStartY - 1) {
           DVar1 = D2_SEED_NEXT(pLevel->sSeed);
           pLevel->sSeed = DVar1;
           nStartY = DVar1.nSeedLow % nStartY;
+        } else {
+          DVar1 = D2_SEED_NEXT(pLevel->sSeed);
+          nStartY = nStartY - 1 & DVar1.nSeedLow;
+          pLevel->sSeed = DVar1;
         }
       }
 
       nAttempts = 0;
-      if (0 < pLevelData->nGridCoordsHeight) {
+      if (pLevelData->nGridCoordsHeight > 0) {
         do {
-          if (2 < nPlacedCount) {
+          if (nPlacedCount >= 3) {
             return;
           }
 
           nGridWidth = pLevelData->nGridCoordsWidth;
           nXIter = 0;
-          if (0 < nGridWidth) {
+          if (nGridWidth > 0) {
             do {
-              if (2 < nPlacedCount) {
+              if (nPlacedCount >= 3) {
                 break;
               }
 
               nGridWidth = (int)(nXIter + nStartX * 2) % nGridWidth;
               nY = (int)(nAttempts + nStartY * 2) % pLevelData->nGridCoordsHeight;
               iVar2 = Outdoors::DRLGOUTDOOR_GetPresetCoordFromGrid(pLevel, nGridWidth, nY);
-              if (iVar2 - 0x393U < 8) {
+              if (iVar2 - 0x393U <= 7) {
                 Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nGridWidth, nY, iVar2 + 0x10, -1, 0);
                 nPlacedCount++;
               }
@@ -438,7 +438,7 @@ void DRLGOUTPLACE_PlaceAct5BloodyFoothillsRandomPresets(D2DrlgLevelStrc * pLevel
           nAttempts++;
         } while (nAttempts < pLevelData->nGridCoordsHeight);
       }
-      if (2 < nPlacedCount) {
+      if (nPlacedCount >= 3) {
         return;
       }
 

@@ -63,7 +63,7 @@ void __thiscall SRP_ExtractSessionKeyBytes(void * pThis, void * pDst, uint32_t n
     if (nBytes) {
       iVar1 = *(int*)pThis;
       nAvail = *(uint32_t*)(iVar1 + 0x48);
-      while (nAvail < nBytes) {
+      while (nBytes > nAvail) {
         memcpy(pDst, (void*)(iVar1 - nAvail + 0x48), nAvail);
         pDst = (void*)((int)pDst + *(int*)(*(int*)pThis + 0x48));
         nBytes -= *(int*)(*(int*)pThis + 0x48);
@@ -77,7 +77,7 @@ void __thiscall SRP_ExtractSessionKeyBytes(void * pThis, void * pDst, uint32_t n
         nAvail = *(uint32_t*)(iVar1 + 0x48);
       }
 
-      if (nBytes) {
+      if (nBytes > 0) {
         memcpy(pDst, (void*)(*(int*)pThis - *(int*)(*(int*)pThis + 0x48) + 0x48), nBytes);
         *(int*)(*(int*)pThis + 0x48) -= nBytes;
       }
@@ -122,7 +122,10 @@ void __stdcall SRP_HashBigNumToU32(BigData * * ppBigNum, uint32_t * pdwOut) {
 }
 
 int __fastcall SRP_ClientComputeSharedSecret(int32_t pSrp, BigData * * pPrivateKey, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
+    BigData* pExponentBase;
+    BigData* pExponent;
     BigData* pBase;
+    BigData* pScramblingLocal;
     uint32_t nMultiplierU;
     int32_t pThis = pSrp;
     int32_t nCmpResult = SHA::SHA1_CompareBigInt(*pnParam1, *(BigData**)(pSrp + 8));
@@ -136,31 +139,32 @@ int __fastcall SRP_ClientComputeSharedSecret(int32_t pSrp, BigData * * pPrivateK
     }
 
     SRP_HashBigNumToU32(pnParam1, &nMultiplierU);
-    if (!nMultiplierU) {
-      return 0;
+    if (nMultiplierU) {
+      BigData* pScramblingParam;
+      pScramblingParam = SHA::SHA1_BigIntFromUnsigned(0);
+      pScramblingLocal = pScramblingParam;
+      SRP_ComputeScramblingParam(pSrp, pnParam2, &pScramblingLocal);
+      pExponentBase = SHA::SHA1_BigIntFromUnsigned(0);
+      pExponent = SHA::SHA1_BigIntFromUnsigned(0);
+      nCmpResult = SHA::SHA1_CompareBigInt(*pnParam1, pScramblingParam);
+      if (nCmpResult < 0) {
+        SHA::SHA1_BigIntAdd(pExponent, *pnParam1, *(BigData**)(pThis + 8));
+        pBase = pExponent;
+      } else {
+        pBase = *pnParam1;
+      }
+
+      SHA::SHA1_BigIntSub(pExponentBase, pBase, pScramblingParam);
+      SHA::SHA1_BigIntMulValue(pExponent, *pnParam2, nMultiplierU);
+      SHA::SHA1_BigIntAdd(pExponent, pExponent, *pPrivateKey);
+      SHA::SHA1_BigIntPowMod(*pnParam3, pExponentBase, pExponent, *(BigData**)(pThis + 8));
+      SHA::SHA1_BigIntFree(pExponent);
+      SHA::SHA1_BigIntFree(pExponentBase);
+      SHA::SHA1_BigIntFree(pScramblingParam);
+      return 1;
     }
 
-    BigData* pScramblingParam = SHA::SHA1_BigIntFromUnsigned(0);
-    BigData* pScramblingLocal = pScramblingParam;
-    SRP_ComputeScramblingParam(pSrp, pnParam2, &pScramblingLocal);
-    BigData* pExponentBase = SHA::SHA1_BigIntFromUnsigned(0);
-    BigData* pExponent = SHA::SHA1_BigIntFromUnsigned(0);
-    nCmpResult = SHA::SHA1_CompareBigInt(*pnParam1, pScramblingParam);
-    if (nCmpResult < 0) {
-      SHA::SHA1_BigIntAdd(pExponent, *pnParam1, *(BigData**)(pThis + 8));
-      pBase = pExponent;
-    } else {
-      pBase = *pnParam1;
-    }
-
-    SHA::SHA1_BigIntSub(pExponentBase, pBase, pScramblingParam);
-    SHA::SHA1_BigIntMulValue(pExponent, *pnParam2, nMultiplierU);
-    SHA::SHA1_BigIntAdd(pExponent, pExponent, *pPrivateKey);
-    SHA::SHA1_BigIntPowMod(*pnParam3, pExponentBase, pExponent, *(BigData**)(pThis + 8));
-    SHA::SHA1_BigIntFree(pExponent);
-    SHA::SHA1_BigIntFree(pExponentBase);
-    SHA::SHA1_BigIntFree(pScramblingParam);
-    return 1;
+    return 0;
 }
 
 int __fastcall SRP_ServerComputeSharedSecret(D2Srp * pThis, BigData * * ppClientPublic, int * pnParam, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
@@ -174,7 +178,7 @@ int __fastcall SRP_ServerComputeSharedSecret(D2Srp * pThis, BigData * * ppClient
     SHA::SHA1_BigIntPowModValue(pSharedBase, *pnParam2, (uint32_t)pScramblingHash, pThis->pModulusN);
     SHA::SHA1_BigIntMulMod(pSharedBase, *ppClientPublic, pSharedBase, pThis->pModulusN);
     int32_t nCmpResult = SHA::SHA1_BigIntCompareValue(pSharedBase, 1);
-    if (0 < nCmpResult) {
+    if (nCmpResult > 0) {
       BigData* pModCheck;
       pModCheck = SHA::SHA1_BigIntFromUnsigned(0);
       SHA::SHA1_BigIntAddValue(pModCheck, pSharedBase, 1);
@@ -293,14 +297,14 @@ BOOL __thiscall SRP_SetParameters(D2Srp * * ppSrp, uint32_t nGeneratorLen, uint8
     (*ppSrp)->bInitialized = 1;
     D2Srp* pSrp = *ppSrp;
     BOOL bContextValid = SRP_IsContextInitialized(pSrp);
-    if (bContextValid) {
-      return pSrp->bInitialized;
+    if (!bContextValid) {
+      SHA::SHA1_BigIntFree(pSrp->pModulusN);
+      SHA::SHA1_BigIntFree((*ppSrp)->pGenerator);
+      (*ppSrp)->bInitialized = 0;
+      return (*ppSrp)->bInitialized;
     }
 
-    SHA::SHA1_BigIntFree(pSrp->pModulusN);
-    SHA::SHA1_BigIntFree((*ppSrp)->pGenerator);
-    (*ppSrp)->bInitialized = 0;
-    return (*ppSrp)->bInitialized;
+    return pSrp->bInitialized;
 }
 
 // Seeds the SRP context's random state: loads *ppSrp and tail-jumps to SRP_InitializeRandomState(pSrp, dwSeed).
@@ -395,7 +399,7 @@ BOOL __thiscall SRP_ClientVerifyServerProof(D2Srp * * pThis, void * pSrpContext,
       nRemaining -= 4;
       pServerProof = (int*)((int)pServerProof + 4);
       pComputedProof += 4;
-    } while (3 < nRemaining);
+    } while (nRemaining >= 4);
 
     if (!nRemaining) {
       proofs_equal:
@@ -422,7 +426,7 @@ BOOL __thiscall SRP_ClientVerifyServerProof(D2Srp * * pThis, void * pSrpContext,
       }
 
       nCmpSign = 1;
-      if (nCmpDiff < 1) {
+      if (nCmpDiff <= 0) {
         nCmpSign = -1;
       }
     }
@@ -469,7 +473,7 @@ void __thiscall SRP_ServerComputePublicB(void * pThis, int32_t nContextBase) {
     SHA::SHA1_BigIntPowMod(pPublicB, *(BigData**)(*(int*)pThis + 4), pRandomKeyBigInt, *(BigData**)(*(int*)pThis + 8));
     SHA::SHA1_BigIntAdd(pPublicB, pPublicB, pSmallKeyBigInt);
     int nCmpResult = SHA::SHA1_CompareBigInt(pPublicB, *(BigData**)(*(int*)pThis + 8));
-    while (0 < nCmpResult) {
+    while (nCmpResult > 0) {
       SHA::SHA1_BigIntSub(pPublicB, pPublicB, *(BigData**)(*(int*)pThis + 8));
       nCmpResult = SHA::SHA1_CompareBigInt(pPublicB, *(BigData**)(*(int*)pThis + 8));
     }
@@ -517,7 +521,7 @@ void __thiscall SRP_ClientVerifyAndComputeKey(void * pThis, void * pContext, uin
       nRemaining -= 4;
       pServerProof++;
       pSharedSecret = (BigData*)&pSharedSecret->sPrimary.nCount;
-    } while (3 < nRemaining);
+    } while (nRemaining >= 4);
 }
 
 void __stdcall SRP_ComputeFinalProof(int32_t nContextBase) {

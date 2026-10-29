@@ -57,6 +57,27 @@ through fixlib's batch loop only where the oracle confirms it.
              where only its truth is used (an if or loop condition, an
              operand of `!`, `&&`, `||` or a `?:` condition): the high
              dword is masked off either way.
+  pow2div    `(int)(x + (x >> 0x1f & 3U)) >> 2` is `x / 4`, for every 32-bit
+             x and every power of two 2^n with the mask 2^n-1 (`(int)x >>
+             0x1f` for an unsigned x makes it `(int)x / 4`): a negative x is
+             biased by 2^n-1 so the arithmetic shift rounds toward zero, as
+             `/` does; a non-negative x gets nothing added. It is VC8's own
+             lowering of a signed division by 2^n, which Ghidra prints
+             unfolded; compiled as written, VC8 copies x for the sign
+             (`mov edx, eax; sar edx, 0x1f`) where the original's `/` has
+             `cdq` (DRAW_UnitUnderMouse, 00454f30: ScreenSizeX / 4). x
+             appears twice in the idiom and once in the rewrite, so it
+             must not call or assign anything; the shift must be an
+             operand of its own.
+  maskcast   `x & 0xff` is `(uint8_t)x`, `x & 0xffff` `(uint16_t)x`: both
+             keep the low byte (word) of x and zero the rest. Ghidra prints
+             the original's zero extension - a cast to a byte or a word - as
+             the mask; compiled as written, VC8 masks (`and eax, 0xff`)
+             where the original zero-extends (`movzx eax, al`; SFILE_Hash,
+             00415330: `nUpper & 0xff`). The cast's type is int where x's
+             may be unsigned, which a comparison or division using the
+             value could tell apart: kept only where the code comes out
+             more similar. x must be the whole left operand of `&`.
 
 An idiom marked `gain` is kept only where an owner comes out more similar
 (fixlib's require_gain); the others where nothing gets worse.
@@ -224,6 +245,133 @@ class SeedBit:
             yield _Call(line, m.start(), m.end(), '%s.nSeedLow & %s' % (m.group('s'), m.group('k')))
 
 
+class Pow2Division:
+    """`(int)(x + (x >> 0x1f & 2^n-1)) >> n` written back as `x / 2^n` (see
+    `pow2div` above)."""
+    TAIL = re.compile(r' >> (?P<n>' + NUM + r')(?![\w.])')
+    MASK = re.compile(r'(?P<b>.+) >> 0x1f & (?P<m>' + NUM + r')(?P<u>[uU]?)', re.S)
+    # The shift must be an operand of its own: after and before nothing that
+    # binds more tightly than `>>` (a cast, `+`, `-`, `<<`, `>>`, ...).
+    BEFORE = re.compile(r'(?:^|[(,=?:{\[;]|\breturn|(?<![<>])[<>]=?|[=!]=|&&|\|\||(?<!&)&|\||\^)\s*$')
+    AFTER_BAD = re.compile(r'^\s*(?:[*/%.\[(+\-]|->)')
+    # What may stand at the top level of x, the left operand of that `+`.
+    LOOSE = re.compile(r'<<|>>|[<>=!?&|^,]')
+
+    def search(self, line):
+        return next(self._matches(line), None)
+
+    def sub(self, fn, line):
+        out, last = [], 0
+        for m in self._matches(line):
+            if m.start() < last:
+                continue
+            out.append(line[last:m.start()] + fn(m))
+            last = m.end()
+        return ''.join(out) + line[last:]
+
+    @staticmethod
+    def _top(e):
+        """e with everything inside parentheses blanked."""
+        out, depth = [], 0
+        for c in e:
+            if c in '([':
+                depth += 1
+            out.append(c if depth == 0 else ' ')
+            if c in ')]':
+                depth -= 1
+        return ''.join(out)
+
+    @staticmethod
+    def _uncast(e):
+        """e without an `(int)` cast of the whole of it."""
+        e = _bare(e)
+        rest = e[len('(int)'):]
+        if e.startswith('(int)') and (re.fullmatch(SCOPED, rest) or
+                                      (rest.startswith('(') and _args(rest, 0)[1] == len(rest) - 1)):
+            return _bare(rest)
+        return e
+
+    def _matches(self, line):
+        for k in range(len(line)):
+            if line[k] != '(' or line.startswith('(int)', k):
+                continue
+            args, close = _args(line, k)
+            if not args or len(args) != 1:
+                continue
+            tail = self.TAIL.match(line, close + 1)
+            content = args[0]
+            if not tail or not content.endswith(')'):
+                continue
+            depth, g = 0, None                   # the group closing the content
+            for j in range(len(content) - 1, -1, -1):
+                depth += {')': 1, ']': 1, '(': -1, '[': -1}.get(content[j], 0)
+                if depth == 0:
+                    g = j
+                    break
+            if g is None or not content[:g].endswith(' + '):
+                continue
+            x = content[:g - 3].strip()
+            mask = self.MASK.fullmatch(content[g + 1:-1])
+            n = int(tail.group('n'), 0)
+            if not mask or not x or not 0 < n < 31 or int(mask.group('m'), 0) != (1 << n) - 1:
+                continue
+            b = mask.group('b')
+            if self.LOOSE.search(self._top(b).replace('->', '  ')) or \
+                    self.LOOSE.search(self._top(x).replace('->', '  ')) or \
+                    self._uncast(b) != self._uncast(x) or PURE.search(x):
+                continue
+            start = k - len('(int)') if line[:k].endswith('(int)') else k
+            # Without the cast the sum must be signed: no `U`, no cast of x.
+            signed = start < k or (not mask.group('u') and not _bare(b).startswith('(int)'))
+            if not signed or not self.BEFORE.search(line[:start]) or self.AFTER_BAD.match(line[tail.end():]):
+                continue
+            xs = self._uncast(x)
+            cast = start < k or _bare(b).startswith('(int)')
+            new = '%s%s / %d' % ('(int)' if cast else '', _operand(xs), 1 << n)
+            yield _Call(line, start, tail.end(), new)
+
+
+class MaskCast:
+    """`x & 0xff` / `x & 0xffff` written back as the cast `(uint8_t)x` /
+    `(uint16_t)x` (see `maskcast` above)."""
+    RX = re.compile(r'(?P<x>' + SCOPED + r'|\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)) & '
+                    r'(?P<m>0xff|0xffff|255|65535)(?P<u>[uU]?)(?![\w.])')
+    # x must be the whole left operand of `&`: after nothing binding more
+    # tightly (no cast, `+`, `<<`, `==`, ...), and the `&` before nothing
+    # binding more tightly either.
+    BEFORE = re.compile(r'(?:^|[(,?:{\[;]|\breturn|&&|\|\||(?<![&|^=!<>+\-*/%])[&|^]=?|(?<![<>=!+\-*/%&|^])=)\s*$')
+    AFTER = re.compile(r'^\s*(?:[),;:?\]]|&&|\|\||&(?!&)|\||\^|$)')
+
+    def search(self, line):
+        return next(self._matches(line), None)
+
+    def sub(self, fn, line):
+        out, last = [], 0
+        for m in self._matches(line):
+            out.append(line[last:m.start()] + fn(m))
+            last = m.end()
+        return ''.join(out) + line[last:]
+
+    def _matches(self, line):
+        for m in self.RX.finditer(line):
+            x = m.group('x')
+            pre = line[:m.start()]
+            if not self.BEFORE.search(pre) or not self.AFTER.match(line[m.end():]):
+                continue
+            if x.startswith('(') and re.search(r'\b(?:if|while|for|switch|sizeof|return)\s*$|[\w\]]\s*$', pre):
+                continue                      # a call's or a statement's parentheses, not a group
+            if x.startswith('(') and _args(x, 0)[1] != len(x) - 1:
+                continue
+            if re.fullmatch(SCOPED, x) and re.fullmatch(r'\d\w*|0x\w+|[A-Z_][A-Z0-9_]*', x):
+                continue                      # a constant expression, not a variable
+            t = 'uint8_t' if int(m.group('m'), 0) == 0xff else 'uint16_t'
+            start, end = m.start(), m.end()
+            if pre.endswith('(') and line[end:end + 1] == ')' and \
+                    not re.search(r'(?:[\w\]\)]|\b(?:if|while|for|switch|sizeof|return))\s*\($', pre):
+                start, end = start - 1, end + 1   # the group's own parentheses go: a cast needs none
+            yield _Call(line, start, end, '(%s)%s' % (t, x))
+
+
 IDIOMS = [
     ('seed_mod',
      re.compile(r'(?P<s>' + LVALUE + r')\.nSeedLow \+ \(int\)\(\(\(uint64_t\)d2_bits_of\((?P=s)\) & 0xffffffff\) / '
@@ -241,6 +389,8 @@ IDIOMS = [
     ('seed_rem', re.compile(CAST32 + r'\(' + SEED_LO + r' % ' + DIVISOR + r'\)'), _seed_arith('%'), 'gain'),
     ('seed_div', re.compile(CAST32 + r'\(' + SEED_LO + r' / ' + DIVISOR + r'\)'), _seed_arith('/'), 'gain'),
     ('seed_bit', SeedBit(), lambda m: m.new),
+    ('pow2div', Pow2Division(), lambda m: m.new),
+    ('maskcast', MaskCast(), lambda m: m.new, 'gain'),
 ]
 GAIN = {i[0] for i in IDIOMS if len(i) > 3 and i[3] == 'gain'}
 

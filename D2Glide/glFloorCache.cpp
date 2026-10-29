@@ -48,7 +48,7 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
         if (nEntryIndex < (int)(pCache->nMaxEntries - 1)) {
           pNode[3] = (uintptr_t)&pCache->pNodes[1].nIndex + nByteOffset;
         }
-        if (0 < nEntryIndex) {
+        if (nEntryIndex > 0) {
           pNode[4] = (uintptr_t)&pCache->pNodes[-1].nIndex + nByteOffset;
         }
 
@@ -73,7 +73,7 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
     if (1 < (int)(pCache->nMaxEntries - 1)) {
       pVramAddr = &pNodes[1].dwAddress;
       do {
-        if (*pVramAddr < 0x200000 && 0x200000 < pCache->dwEntrySize + *pVramAddr) {
+        if (*pVramAddr < 0x200000 && pCache->dwEntrySize + *pVramAddr > 0x200000) {
           pNodes[nVramAddr - 1].pNext = pNodes + nVramAddr + 1;
           pCache->pNodes[nVramAddr + 1].pPrev = pCache->pNodes + nVramAddr - 1;
           pCache->pNodes[nVramAddr].pPrev = 0;
@@ -88,7 +88,7 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
     }
 
     nEntryCount = pCache->pNodes[pCache->nMaxEntries - 1].dwAddress;
-    if (!(nEntryCount < 0x200000 && 0x200000 < pCache->dwEntrySize + nEntryCount)) {
+    if (!(nEntryCount < 0x200000 && pCache->dwEntrySize + nEntryCount > 0x200000)) {
       return pCache->nMaxEntries * dwFloorSize + nVramStart;
     }
 
@@ -162,10 +162,10 @@ static int GLFLOOR_AllocateNode(GlFloorCacheStrc * pCache) {
       GlFloorCacheNodeStrc* pNextFree;
       pNextFree = pGVar1->pNext;
       pCache->pFreeHead = pNextFree;
-      if (!pNextFree) {
-        pCache->pFreeTail = 0;
-      } else {
+      if (pNextFree) {
         pNextFree->pPrev = 0;
+      } else {
+        pCache->pFreeTail = 0;
       }
 
       pGVar1->pNext = 0;
@@ -191,17 +191,17 @@ static int GLFLOOR_AllocateNode(GlFloorCacheStrc * pCache) {
 // Promotes a floor cache node to most-recently-used position (active list tail).
 void __fastcall GLFLOOR_PromoteNodeToMRU(GlFloorCacheStrc * pCache, int nNodeIndex1Based) {
     GlFloorCacheNodeStrc* pNode;
-    if ((int)pCache->nUsedCount < 2) {
+    if ((int)pCache->nUsedCount <= 1) {
       return;
     }
     if (!nNodeIndex1Based) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbc);
       exit(-1);
-    } else if ((int)pCache->nMaxEntries < nNodeIndex1Based) {
+    } else if (nNodeIndex1Based > (int)pCache->nMaxEntries) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbd);
       exit(-1);
     } else {
-      if (!(0 < nNodeIndex1Based)) {
+      if (!(nNodeIndex1Based >= 1)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbe);
         exit(-1);
       }
@@ -227,10 +227,10 @@ void __fastcall GLFLOOR_EvictLRU(GlFloorCacheStrc * pCache) {
     if (pEvictNode) {
       pNextNode = pEvictNode->pNext;
       pCache->pActiveHead = pNextNode;
-      if (!pNextNode) {
-        pCache->pActiveTail = 0;
-      } else {
+      if (pNextNode) {
         pNextNode->pPrev = 0;
+      } else {
+        pCache->pActiveTail = 0;
       }
 
       pEvictNode->pNext = 0;

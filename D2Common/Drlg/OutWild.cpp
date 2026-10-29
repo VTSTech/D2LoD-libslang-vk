@@ -72,7 +72,7 @@ void __fastcall InitAct1OutdoorLevel(D2DrlgLevelStrc * pLevel) {
 
     OutPlace::SetOutGridLinkFlags(pLevel);
     OutPlace::PlaceAct1245OutdoorBorders(pLevel);
-    if (1 < pLevel->eD2LevelId && pLevel->eD2LevelId < 8) {
+    if (pLevel->eD2LevelId >= 2 && pLevel->eD2LevelId <= 7) {
       Outdoors::AddAct124SecondaryBorder(pLevel, 0, 4);
       DRLGOUTROOM_FillBorderCornersAndPresets(pLevel);
       Outdoors::AddAct124SecondaryBorder(pLevel, 1, 4);
@@ -87,10 +87,10 @@ void __fastcall InitAct1OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       Outdoors::AddAct124SecondaryBorder(pLevel, 2, 4);
       Outdoors::AddAct124SecondaryBorder(pLevel, 3, 4);
     }
-    if (2 < pLevel->eD2LevelId && pLevel->eD2LevelId < 7) {
+    if (pLevel->eD2LevelId >= 3 && pLevel->eD2LevelId <= 6) {
       Outdoors::SpawnAct12Waypoint(pLevel);
     }
-    if (1 < pLevel->eD2LevelId && pLevel->eD2LevelId < 8) {
+    if (pLevel->eD2LevelId >= 2 && pLevel->eD2LevelId <= 7) {
       Outdoors::SpawnAct12Shrines(pLevel, 5);
     }
 

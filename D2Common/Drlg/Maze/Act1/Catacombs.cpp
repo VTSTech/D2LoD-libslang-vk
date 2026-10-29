@@ -107,7 +107,7 @@ void __fastcall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
     pLevel->sSeed = sNewSeed;
-    if (!((uint64_t)d2_bits_of(sNewSeed) & 1)) {
+    if (!(sNewSeed.nSeedLow & 1)) {
       pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pStartRoom->pLevel, 2);
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;

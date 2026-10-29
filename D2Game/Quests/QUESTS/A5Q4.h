@@ -19,7 +19,7 @@ namespace D2Game::Quests::QUESTS::A5Q4 {
 
 // Function declarations
 // Q34_NotifyQuestState (Betrayal of Harrogath / kill Nihlathak). Quest-update callback passed to QUEST_SetStateAndBroadcast. Sends quest-log update (msg 0x22) to the player only when the quest is in a finished/just-completed/cannot-complete terminal state (Completed | FinishedInPreviousGame), but NOT yet acknowledged via JustCompleted/CannotComplete. Gates client log refresh on real completion.
-void __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
+int __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // Q34_StatusFilter (Betrayal of Harrogath). Computes the quest-log icon/state byte (*nUnknown) shown to the client from the QuestRecord bits: 0=not-yet (intro), 0x0c=CannotComplete-in-this-game, else maps Step0x04 bit (+4) or the in-memory nStateFlagPrev. Read-only on quest state.
 bool __fastcall Q34_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
 // A5Q4 (Betrayal of Harrogath) helper. On first call when bPortalSpawned==0, spawns the red portal object (classId 0x3c) at pUnit's tile position +(10,5) leading to LEVEL_NihlathaksTemple via SERVER_SpawnPortal. Sets bPortalSpawned=1 and clears bNotifiedCompletion on success. Gated by A5Q4 specific-data flags; no QuestRecord access.

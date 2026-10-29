@@ -152,7 +152,7 @@ int __stdcall QSERVER_CountMonstersInFirstActiveGame() {
 
 D2RoomStrc * __stdcall QSERVER_FindRoomInFirstActiveGame(uint8_t byActIndex, int32_t nSubtileX, int32_t nSubtileY) {
     ::SGAMEDATA* pFirstGame = GAME::Server::QSERVER_GetFirstActiveGame();
-    if (4 < byActIndex) {
+    if (byActIndex >= 5) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8d);
       exit(-1);
     }
@@ -282,7 +282,7 @@ int __fastcall TASK_GetTimeUntilNextTask(uint32_t nParam) {
       uVar2 = GAME::Task::TASK_GetTimestamp();
       nTimeDelta = ((D2TaskNodeStrc*)((char*)pFirstTask - 0xc))->dwTimestamp - uVar2;
     }
-    if (0x1f < pDVar1->nSlotIndex) {
+    if (pDVar1->nSlotIndex >= 0x20) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
       exit(-1);
     }
@@ -307,23 +307,23 @@ uint32_t __fastcall SKILLS_AreaEffect_FindNearestUnit(D2SkillCallbackContextStrc
     }
 
     eD2UnitType eUnitType = pTargetUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDeltaX = pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nDeltaX = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nUnitX = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
       nDeltaX = nUnitX;
+    } else {
+      nDeltaX = 0;
     }
 
     nDeltaX -= pSearchContext->nX;
     eTargetType = pTargetUnit->eUnitType;
-    if (eTargetType == UNIT_OBJECT || 3 < (int)eTargetType && (int)eTargetType < 6) {
+    if (eTargetType == UNIT_OBJECT || (int)eTargetType > 3 && (int)eTargetType <= 5) {
       nUnitY = pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nUnitY = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nUnitY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nUnitY = 0;
     }
 
     nUnitY -= pSearchContext->nY;
@@ -350,7 +350,7 @@ uint32_t __fastcall SKILLS_AreaEffect_TrackBestUnitByUnitId(D2SkillCallbackConte
     } else {
       nUnitId = pTargetUnit->nUnitGUID;
     }
-    if (pNextGUIDCtx->nAfterGUID < nUnitId && nUnitId < pNextGUIDCtx->nNextGUID) {
+    if (nUnitId > pNextGUIDCtx->nAfterGUID && nUnitId < pNextGUIDCtx->nNextGUID) {
       pNextGUIDCtx->nCount++;
       pNextGUIDCtx->nNextGUID = nUnitId;
       pNextGUIDCtx->pNext = pTargetUnit;
@@ -441,7 +441,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
     pPlayerInventory = pUnit->pInventory;
     uint32_t uVar1;
     uVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpseCount(pPlayerInventory);
-    if (0xf < uVar1) {
+    if (uVar1 > 0xf) {
       PLAYER::PlayerModes::PLRMODES_DropAllEquipmentAndGold(pGame, pUnit);
       return nullptr;
     }
@@ -472,19 +472,19 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
           pUnit_00->eUnitFlagsEx |= UNITFLAGEX_ISCORPSE;
           pUnit_00->eUnitFlags |= UNITFLAG_TARGETABLE;
           uVar1 = GAME::Clients::GetExperience(pClient);
-          if ((int)uVar1 < 0x100001) {
-            iVar4 = (int)(uVar1 * 0x4b) >> 0x1f;
-            nExpQuotient = (int)(uVar1 * 0x4b) / 100 + iVar4;
-            lExpTimes75 = (uint64_t)((uint64_t)(uint32_t)nExpQuotient << 32 | (uint64_t)(uint32_t)(nExpQuotient - iVar4));
-          } else {
+          if ((int)uVar1 > 0x100000) {
             iVar4 = (int)uVar1 >> 0x1f;
             if ((int)(uVar1 & -16) < 0x640) {
               lExpTimes75 = __allmul(uVar1, iVar4, 0x4b, 0);
-              lExpTimes75 = __alldiv((uint32_t)lExpTimes75, (uint32_t)((uint64_t)lExpTimes75 >> 0x20), 100, 0);
+              lExpTimes75 = lExpTimes75 / 100;
             } else {
               nExpQuotient = (int)uVar1 / 100 + iVar4;
               lExpTimes75 = (uint64_t)((uint64_t)(uint32_t)nExpQuotient << 32 | (uint64_t)(uint32_t)((nExpQuotient - iVar4) * 0x4b));
             }
+          } else {
+            iVar4 = (int)(uVar1 * 0x4b) >> 0x1f;
+            nExpQuotient = (int)(uVar1 * 0x4b) / 100 + iVar4;
+            lExpTimes75 = (uint64_t)((uint64_t)(uint32_t)nExpQuotient << 32 | (uint64_t)(uint32_t)(nExpQuotient - iVar4));
           }
 
           pCorpseInventory = (D2InventoryStrc*)lExpTimes75;
@@ -581,7 +581,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
 
             next_body_loc:
             nBodyLocIndex = iVar5 + 1;
-            if (0xc < nBodyLocIndex) {
+            if (nBodyLocIndex >= 0xd) {
               uVar3 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
               if (pUnit->eUnitType == UNIT_PLAYER) {
                 D2Common::Units::GetInventoryGoldLimit(pUnit);
@@ -769,7 +769,7 @@ void __fastcall Q03_AutoCompleteIfHighLevel(::SGAMEDATA * pGame, D2UnitStrc * pU
     }
 
     int32_t iVar3 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if (7 >= iVar3) {
+    if (iVar3 < 8) {
       return;
     }
 
@@ -1114,10 +1114,10 @@ void __fastcall Q22_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     BVar3 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_KhalimsWill, QUESTSTATE_Completed);
-    if (!BVar3) {
-      eQuestState = QUESTSTATE_Step0x04;
-    } else {
+    if (BVar3) {
       eQuestState = QUESTSTATE_Completed;
+    } else {
+      eQuestState = QUESTSTATE_Step0x04;
     }
 
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, eQuestState);

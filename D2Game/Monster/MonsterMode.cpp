@@ -114,7 +114,7 @@ void __fastcall SetCombatAndMonStats(D2MonsterPathParamStrc * pPathParam, int32_
     if (nSteps == '\0') {
       return;
     }
-    if (0x4d < nSteps) {
+    if (nSteps >= 0x4e) {
       nSteps = 'M';
     }
 
@@ -139,29 +139,29 @@ static eD2PathTypes __stdcall GetPathCount(eD2PathTypes ePathType, uint8_t nDist
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, ePathType);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
     int32_t nPathSize = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
-    if (!nPathSize) {
-      switch (ePathType) {
-        case PATHTYPE_TOWARD:
-
-        case PATHTYPE_STRAIGHT:
-
-        case PATHTYPE_STRAIGHT_STRICT:
-
-        case PATHTYPE_TOWARD_FINISH:
-          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-        pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
-        D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xf);
-        D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
-        ePathType = PATHTYPE_FOLLOW_WALL;
-      }
-
+    if (nPathSize) {
+      D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+      pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
+      pPathParam->bPathFlag0 = '\0';
+      pPathParam->bPathFlag1 = '\0';
       return ePathType;
     }
 
-    D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
-    pPathParam->bPathFlag0 = '\0';
-    pPathParam->bPathFlag1 = '\0';
+    switch (ePathType) {
+      case PATHTYPE_TOWARD:
+
+      case PATHTYPE_STRAIGHT:
+
+      case PATHTYPE_STRAIGHT_STRICT:
+
+      case PATHTYPE_TOWARD_FINISH:
+        D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+      pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
+      D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xf);
+      D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
+      ePathType = PATHTYPE_FOLLOW_WALL;
+    }
+
     return ePathType;
 }
 

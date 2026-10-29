@@ -41,15 +41,15 @@ char __fastcall D2FILE_VerifyFileSignature(LPCSTR szText) {
     int iVar3;
     char szSignerOrg[512];
     int32_t dwWinTrustResult = D2FILE_VerifySignatureWinTrust(szText);
-    if (!dwWinTrustResult) {
+    if (dwWinTrustResult) {
+      cVar2 = '\0';
+    } else {
       bVar1 = D2FILE_GetSignerOrganization(szText, szSignerOrg, 0x200);
       cVar2 = '\0';
       if (bVar1) {
         iVar3 = __strnicmp(szSignerOrg, gnFileSignatureResult, 0x200);
         cVar2 = '\x01' - (iVar3 != 0);
       }
-    } else {
-      cVar2 = '\0';
     }
 
     return cVar2;
@@ -65,7 +65,7 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
     GUID sActionGuid;
     if (szText && *szText != '\0') {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nVerifyResult = MultiByteToWideChar(0, 0, szText, -1, (LPWSTR)0x0, 0);
-      if (0 < (int)nVerifyResult) {
+      if ((int)nVerifyResult > 0) {
         pWideStr = (LPWSTR)Fog::Engine::Application::MISC_OperatorNewShim(-(uint32_t)((int)((uint64_t)nVerifyResult * 2 >> 0x20) != 0) | (uint32_t)((uint64_t)nVerifyResult * 2));
         /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0, 0, szText, -1, pWideStr, nVerifyResult);
         memset(&sWvtFileInfo, 0, 0x10);
@@ -99,15 +99,15 @@ int32_t __fastcall D2FILE_VerifySignatureWinTrust(LPCSTR szText) {
         nTrustResult = WinVerifyTrust((HWND)0x0, &sActionGuid, &sWvtData);
         if (nTrustResult == -0x7ff6dfda || nTrustResult == -0x7ff4fffc) {
           nVerifyResult = 3;
-        } else if (nTrustResult == -0x7ff4ff00) {
-          dwLastError = GetLastError();
-          nVerifyResult = (dwLastError != 0x800b0100) + 1;
-        } else {
+        } else if (nTrustResult != -0x7ff4ff00) {
           if (nTrustResult == -0x7ff4feef) {
             nVerifyResult = 3;
           } else {
             nVerifyResult = nTrustResult ? 4 : 0;
           }
+        } else {
+          dwLastError = GetLastError();
+          nVerifyResult = (dwLastError != 0x800b0100) + 1;
         }
 
         Fog::Engine::Application::MISC_OperatorDeleteShim(pWideStr);
@@ -165,7 +165,7 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     }
 
     int nWideCharLen = MultiByteToWideChar(0xfde9, 0, szFilePath, -1, (LPWSTR)0x0, 0);
-    if (0 >= nWideCharLen) {
+    if (nWideCharLen <= 0) {
       return false;
     }
 

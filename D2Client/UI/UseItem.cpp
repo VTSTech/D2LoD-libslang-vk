@@ -80,7 +80,7 @@ void __stdcall INPUT_UseItemClick(D2UIMouseMsgStrc * pMsg) {
     }
 
     pPlayerUnit_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pPlayerUnit_lcl->pInventory);
-    if (!(pPlayerUnit_lcl && nParam1 - 0x7b < 0x59 && uMouseY - 0x6a < 0x73)) {
+    if (!(pPlayerUnit_lcl && nParam1 - 0x7b <= 0x58 && uMouseY - 0x6a <= 0x72)) {
       return;
     }
 
@@ -164,7 +164,7 @@ void __stdcall TEXT_DrawCashDisplay() {
         nTabIdx2 = 0;
         if (0 < nCashDisplayItemCount) {
           do {
-            if (gaNpcCashTabs[nTabIdx2].nHitBoxX1 <= nMouseX && nMouseX <= gaNpcCashTabs[nTabIdx2].nHitBoxX2 && gaNpcCashTabs[nTabIdx2].nHitBoxY1 <= nTabIdx && nTabIdx <= gaNpcCashTabs[nTabIdx2].nHitBoxY2) {
+            if (nMouseX >= gaNpcCashTabs[nTabIdx2].nHitBoxX1 && nMouseX <= gaNpcCashTabs[nTabIdx2].nHitBoxX2 && nTabIdx >= gaNpcCashTabs[nTabIdx2].nHitBoxY1 && nTabIdx <= gaNpcCashTabs[nTabIdx2].nHitBoxY2) {
               nStringId = gaNpcCashTabs[nTabIdx2].nTooltipStringId;
               if (nStringId == 0xfb1) {
                 if (!nHoradricCubeUIState) {

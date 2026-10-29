@@ -69,7 +69,7 @@ int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
-    if (!(pCtx && pCtx->pMissileTxt && pUnit && -1 < (int)pUnit->eUnitType && (int)pUnit->eUnitType < 2)) {
+    if (!(pCtx && pCtx->pMissileTxt && pUnit && (int)pUnit->eUnitType >= 0 && (int)pUnit->eUnitType <= 1)) {
       return 0;
     }
 
@@ -83,7 +83,7 @@ int32_t __fastcall fpMissileSrvDoFuncData_MissileFlagCheck(D2UnitStrc * pUnit, D
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId && sgptDataTable->pTxtMissiles[nClassId].CanDestroy)) {
+    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId && sgptDataTable->pTxtMissiles[nClassId].CanDestroy)) {
       return 0;
     }
 

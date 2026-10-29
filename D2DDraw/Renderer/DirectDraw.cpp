@@ -59,8 +59,6 @@ typedef void (__stdcall *fnBinkFrameCallback)();
 
 namespace D2DDraw::Renderer::DirectDraw {
 
-static bool gbDDrawPaletteSet = 0; D2_STATIC_GUARD(gbDDrawPaletteSet, "D2DDraw::Renderer::DirectDraw::gbDDrawPaletteSet");
-
 BOOL __fastcall Initialize(HINSTANCE hInstance) {
     // Static local variables (originally global data)
     static char gszRendererDeviceName[256] = {}; D2_STATIC_GUARD(gszRendererDeviceName, "D2DDraw::Renderer::DirectDraw::Initialize::gszRendererDeviceName");
@@ -241,17 +239,17 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
     if (!(nErrorCode != -0x7789fe52 && nErrorCode != -0x7789fe3e)) {
       return;
     }
-    if (nErrorCode < -0x7789fefb) {
+    if (nErrorCode <= -0x7789fefc) {
       if (nErrorCode == -0x7789fefc) {
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DDERR_NOOVERLAYHW", 0x88760104);
         return;
       }
-      if (nErrorCode < -0x7789fffa) {
+      if (nErrorCode <= -0x7789fffb) {
         if (nErrorCode == -0x7789fffb) {
           Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DDERR_ALREADYINITIALIZED", 0x88760005);
           return;
         }
-        if (nErrorCode < -0x7ffbfe0f) {
+        if (nErrorCode <= -0x7ffbfe10) {
           if (nErrorCode == -0x7ffbfe10) {
             Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DDERR_NOTINITIALIZED", 0x800401f0);
             return;
@@ -356,7 +354,7 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
           return;
         }
       }
-    } else if (nErrorCode < -0x7789fde6) {
+    } else if (nErrorCode <= -0x7789fde7) {
       if (nErrorCode == -0x7789fde7) {
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DDERR_VERTICALBLANKINPROGRESS", 0x88760219);
         return;
@@ -448,7 +446,7 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
           Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DDERR_UNSUPPORTEDMASK", nErrorCode);
         return;
       }
-    } else if (nErrorCode < 1) {
+    } else if (nErrorCode <= 0) {
       if (!nErrorCode) {
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** DirectDraw error: %s - %s (0x%x)", szContext, "DD_OK", 0);
         return;
@@ -602,102 +600,102 @@ static BOOL InternalOpenWindow(int32_t nResolutionMode) {
     DDSURFACEDESC ddSurfDesc;
     uint32_t dwDDSCapsBackBuffer;
     int32_t nLine;
-    if (!gbDDrawWindowInitialized) {
-      HRESULT HVar1;
-      if (!nResolutionMode) {
-        RENDERER_nWindowWidth = 0x280;
-        RENDERER_nWindowHeight = 0x1e0;
-      } else {
-        RENDERER_nWindowWidth = 800;
-        RENDERER_nWindowHeight = 600;
-      }
-
-      RENDERER_DDRAW_SetHorizontalBounds(nResolutionMode);
-      gnDDrawDisplayModeIndex = gdwDirectDrawPaletteSizes[nResolutionMode];
-      gnDDrawSurfaceWidth = gdwDirectDrawSurfaceWidths[nResolutionMode];
-      HVar1 = pWindowHandleBuffer->lpVtbl->SetCooperativeLevel(pWindowHandleBuffer, (HWND)gnGlideWindowHandle, 0x11);
-      if (HVar1 && HVar1 != -0x7789fdbb) {
-        DirectDrawErrorHandler("SetCooperativeLevel failed!", HVar1);
-        return 0;
-      }
-      if (!pWindowHandleBuffer) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
-        exit(-1);
-      }
-
-      nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, gnDDrawDisplayModeIndex, gnDDrawSurfaceWidth, 8);
-      if (!nLine) {
-        memset(&ddSurfDesc, 0, 0x6c);
-        ddSurfDesc.dwBackBufferCount = 2;
-        gnDDrawFlipState = 2;
-        ddSurfDesc.dwSize = 0x6c;
-        ddSurfDesc.dwFlags = 0x21;
-        ddSurfDesc.ddsCaps = 0x4218;
-        HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-        if (HVar1) {
-          memset(&ddSurfDesc, 0, 0x6c);
-          ddSurfDesc.ddsCaps = 0x4218;
-          ddSurfDesc.dwSize = 0x6c;
-          ddSurfDesc.dwFlags = 0x21;
-          ddSurfDesc.dwBackBufferCount = 1;
-          gnDDrawFlipState = 1;
-          HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-          if (HVar1) {
-            memset(&ddSurfDesc, 0, 0x6c);
-            ddSurfDesc.dwSize = 0x6c;
-            ddSurfDesc.dwFlags = 1;
-            ddSurfDesc.ddsCaps = 0x4200;
-            gnDDrawFlipState = 0;
-            nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
-            if (nLine) {
-              szErrorMsg = "CreateSurface (primary single buffered) failed!";
-              goto report_ddraw_failure;
-            }
-          }
-        }
-        if (gnDDrawFlipState) {
-          dwDDSCapsBackBuffer = 4;
-          nLine = gpDDrawPrimarySurface->lpVtbl->GetAttachedSurface(gpDDrawPrimarySurface, (DDSCAPS*)&dwDDSCapsBackBuffer, &gpDDrawBackBuffer);
-          if (nLine) {
-            szErrorMsg = "GetAttachedSurface (backbuffer) failed!";
-            goto report_ddraw_failure;
-          }
-        }
-
-        memset(&ddSurfDesc, 0, 0x6c);
-        ddSurfDesc.dwSize = 0x6c;
-        nLine = gpDDrawPrimarySurface->lpVtbl->GetSurfaceDesc(gpDDrawPrimarySurface, &ddSurfDesc);
-        if (!nLine) {
-          ddSurfDesc.dwFlags = 7;
-          ddSurfDesc.ddsCaps = 0x840;
-          nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&pDirectDrawSurface, nullptr);
-          if (!nLine) {
-            nLine = gpDDrawPrimarySurface->lpVtbl->SetPalette(gpDDrawPrimarySurface, pDirectDrawPalette);
-            if (!nLine) {
-              gbDDrawWindowInitialized = 1;
-              gbDDrawPaletteSet = 0;
-              return 1;
-            }
-
-            szErrorMsg = "SetPalette failed!";
-          } else {
-            szErrorMsg = "CreateSurface (render) failed!";
-          }
-        } else {
-          szErrorMsg = "GetSurfaceDesc (primary) failed!";
-        }
-      } else {
-        szErrorMsg = "SetDisplayMode failed!";
-      }
-
-      report_ddraw_failure:
-      DirectDrawErrorHandler(szErrorMsg, nLine);
-      Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window failed!");
-      return 0;
-    } else {
+    if (gbDDrawWindowInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x142);
       exit(-1);
     }
+
+    HRESULT HVar1;
+    if (!nResolutionMode) {
+      RENDERER_nWindowWidth = 0x280;
+      RENDERER_nWindowHeight = 0x1e0;
+    } else {
+      RENDERER_nWindowWidth = 800;
+      RENDERER_nWindowHeight = 600;
+    }
+
+    RENDERER_DDRAW_SetHorizontalBounds(nResolutionMode);
+    gnDDrawDisplayModeIndex = gdwDirectDrawPaletteSizes[nResolutionMode];
+    gnDDrawSurfaceWidth = gdwDirectDrawSurfaceWidths[nResolutionMode];
+    HVar1 = pWindowHandleBuffer->lpVtbl->SetCooperativeLevel(pWindowHandleBuffer, (HWND)gnGlideWindowHandle, 0x11);
+    if (HVar1 && HVar1 != -0x7789fdbb) {
+      DirectDrawErrorHandler("SetCooperativeLevel failed!", HVar1);
+      return 0;
+    }
+    if (!pWindowHandleBuffer) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
+      exit(-1);
+    }
+
+    nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, gnDDrawDisplayModeIndex, gnDDrawSurfaceWidth, 8);
+    if (nLine) {
+      szErrorMsg = "SetDisplayMode failed!";
+    } else {
+      memset(&ddSurfDesc, 0, 0x6c);
+      ddSurfDesc.dwBackBufferCount = 2;
+      gnDDrawFlipState = 2;
+      ddSurfDesc.dwSize = 0x6c;
+      ddSurfDesc.dwFlags = 0x21;
+      ddSurfDesc.ddsCaps = 0x4218;
+      HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+      if (HVar1) {
+        memset(&ddSurfDesc, 0, 0x6c);
+        ddSurfDesc.ddsCaps = 0x4218;
+        ddSurfDesc.dwSize = 0x6c;
+        ddSurfDesc.dwFlags = 0x21;
+        ddSurfDesc.dwBackBufferCount = 1;
+        gnDDrawFlipState = 1;
+        HVar1 = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+        if (HVar1) {
+          memset(&ddSurfDesc, 0, 0x6c);
+          ddSurfDesc.dwSize = 0x6c;
+          ddSurfDesc.dwFlags = 1;
+          ddSurfDesc.ddsCaps = 0x4200;
+          gnDDrawFlipState = 0;
+          nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&gpDDrawPrimarySurface, nullptr);
+          if (nLine) {
+            szErrorMsg = "CreateSurface (primary single buffered) failed!";
+            goto report_ddraw_failure;
+          }
+        }
+      }
+      if (gnDDrawFlipState) {
+        dwDDSCapsBackBuffer = 4;
+        nLine = gpDDrawPrimarySurface->lpVtbl->GetAttachedSurface(gpDDrawPrimarySurface, (DDSCAPS*)&dwDDSCapsBackBuffer, &gpDDrawBackBuffer);
+        if (nLine) {
+          szErrorMsg = "GetAttachedSurface (backbuffer) failed!";
+          goto report_ddraw_failure;
+        }
+      }
+
+      memset(&ddSurfDesc, 0, 0x6c);
+      ddSurfDesc.dwSize = 0x6c;
+      nLine = gpDDrawPrimarySurface->lpVtbl->GetSurfaceDesc(gpDDrawPrimarySurface, &ddSurfDesc);
+      if (nLine) {
+        szErrorMsg = "GetSurfaceDesc (primary) failed!";
+      } else {
+        ddSurfDesc.dwFlags = 7;
+        ddSurfDesc.ddsCaps = 0x840;
+        nLine = pWindowHandleBuffer->lpVtbl->CreateSurface(pWindowHandleBuffer, &ddSurfDesc, (void**)&pDirectDrawSurface, nullptr);
+        if (nLine) {
+          szErrorMsg = "CreateSurface (render) failed!";
+        } else {
+          nLine = gpDDrawPrimarySurface->lpVtbl->SetPalette(gpDDrawPrimarySurface, pDirectDrawPalette);
+          if (!nLine) {
+            gbDDrawWindowInitialized = 1;
+            gbDDrawPaletteSet = 0;
+            return 1;
+          }
+
+          szErrorMsg = "SetPalette failed!";
+        }
+      }
+    }
+
+    report_ddraw_failure:
+    DirectDrawErrorHandler(szErrorMsg, nLine);
+    Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening DirectDraw window failed!");
+    return 0;
 }
 
 BOOL __stdcall InternalCutsceneWindow() {
@@ -714,16 +712,18 @@ BOOL __stdcall InternalCutsceneWindow() {
     RENDERER_nWindowHeight = 0x1e0;
     gnDDrawSurfaceWidth = 0x1e0;
     DWORD nBitDepth = 0x10;
-    if (!(gdwDDrawInitFlags & 2)) {
+    if (gdwDDrawInitFlags & 2) {
+      nBitDepth = 0x20;
+    } else {
       if (gdwDDrawInitFlags & 4) {
         nBitDepth = 0x18;
       }
-    } else {
-      nBitDepth = 0x20;
     }
 
     nLine = pWindowHandleBuffer->lpVtbl->SetDisplayMode(pWindowHandleBuffer, 0x280, 0x1e0, nBitDepth);
-    if (!nLine) {
+    if (nLine) {
+      szErrorMsg = "SetDisplayMode failed!";
+    } else {
       ddSurfDesc.dwSize = 0x6c;
       memset(&ddSurfDesc.dwFlags, 0, 0x68);
       ddSurfDesc.dwFlags = 1;
@@ -736,8 +736,6 @@ BOOL __stdcall InternalCutsceneWindow() {
       }
 
       szErrorMsg = "Failed to create primary surface for cutscenes";
-    } else {
-      szErrorMsg = "SetDisplayMode failed!";
     }
 
     DirectDrawErrorHandler(szErrorMsg, nLine);
@@ -804,16 +802,16 @@ BOOL __fastcall BeginScene(BOOL bClear, BYTE nRed, BYTE nGreen, BYTE nBlue) {
     ddSurfDescSize.dwSize = 0x6c;
     memset(&ddSurfDescSize.dwFlags, 0, 0x68);
     HRESULT nErrorCode = pDirectDrawSurface->lpVtbl->Lock(pDirectDrawSurface, nullptr, &ddSurfDescSize, 0x21, (HANDLE)0x0);
-    if (!nErrorCode) {
-      gpRenderBackBufferBits = (BYTE*)ddSurfDescSize.lpSurface;
-      RENDERER_nWindowWidth = ddSurfDescSize.lPitch;
-      D2GfxRendereInitFunctionsStrc->nfpFillYBufferTable(ddSurfDescSize.lpSurface, ddSurfDescSize.lPitch, RENDERER_nWindowHeight, 0);
-      return 1;
+    if (nErrorCode) {
+      DirectDrawErrorHandler("Lock failed!", nErrorCode);
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&RENDERER_SelectedRendererCore->sLock);
+      return 0;
     }
 
-    DirectDrawErrorHandler("Lock failed!", nErrorCode);
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&RENDERER_SelectedRendererCore->sLock);
-    return 0;
+    gpRenderBackBufferBits = (BYTE*)ddSurfDescSize.lpSurface;
+    RENDERER_nWindowWidth = ddSurfDescSize.lPitch;
+    D2GfxRendereInitFunctionsStrc->nfpFillYBufferTable(ddSurfDescSize.lpSurface, ddSurfDescSize.lPitch, RENDERER_nWindowHeight, 0);
+    return 1;
 }
 
 BOOL EndScene1() {
@@ -837,18 +835,7 @@ BOOL EndScene1() {
 BOOL EndScene2() {
     int32_t nHResult;
     RECT rcDestLeft;
-    if (!gnDDrawFlipState) {
-      if (pDirectDrawSurface) {
-        rcDestLeft.right = RENDERER_nWindowWidth;
-        rcDestLeft.left = 0;
-        rcDestLeft.top = 0;
-        rcDestLeft.bottom = RENDERER_nWindowHeight;
-        nHResult = gpDDrawPrimarySurface->lpVtbl->BltFast(gpDDrawPrimarySurface, 0, 0, pDirectDrawSurface, &rcDestLeft, 0x10);
-        if (nHResult) {
-          goto blt_failed;
-        }
-      }
-    } else {
+    if (gnDDrawFlipState) {
       if (pDirectDrawSurface && gpDDrawBackBuffer && pDirectDrawSurface != gpDDrawBackBuffer) {
         rcDestLeft.right = RENDERER_nWindowWidth;
         rcDestLeft.left = 0;
@@ -863,6 +850,17 @@ BOOL EndScene2() {
       }
 
       gpDDrawPrimarySurface->lpVtbl->Flip(gpDDrawPrimarySurface, nullptr, 1);
+    } else {
+      if (pDirectDrawSurface) {
+        rcDestLeft.right = RENDERER_nWindowWidth;
+        rcDestLeft.left = 0;
+        rcDestLeft.top = 0;
+        rcDestLeft.bottom = RENDERER_nWindowHeight;
+        nHResult = gpDDrawPrimarySurface->lpVtbl->BltFast(gpDDrawPrimarySurface, 0, 0, pDirectDrawSurface, &rcDestLeft, 0x10);
+        if (nHResult) {
+          goto blt_failed;
+        }
+      }
     }
     if (!(gnDDrawPaletteSize && pDirectDrawPalette)) {
       return 1;
@@ -870,12 +868,12 @@ BOOL EndScene2() {
 
     gnDDrawPaletteSize = 0;
     HRESULT nErrorCode = pDirectDrawPalette->lpVtbl->SetEntries(pDirectDrawPalette, 0, 1, 0xff, (PALETTEENTRY*)((char*)&gaDirectDrawDitherPaletteRemap + 4));
-    if (!nErrorCode) {
-      return 1;
+    if (nErrorCode) {
+      DirectDrawErrorHandler("SetEntries failed!", nErrorCode);
+      return 0;
     }
 
-    DirectDrawErrorHandler("SetEntries failed!", nErrorCode);
-    return 0;
+    return 1;
 }
 
 BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
@@ -891,45 +889,45 @@ BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
     }
 
     HRESULT nHResult = gpDDrawBackBuffer->lpVtbl->Lock(gpDDrawBackBuffer, nullptr, &ddSurfDescSize, 0x11, (HANDLE)0x0);
-    if (!nHResult) {
-      uint8_t* pbDstPixel;
-      nY = 0;
-      iVar1 = RENDERER_nWindowWidth;
-      if (0 < RENDERER_nWindowHeight) {
-        do {
-          nX = 0;
-          pbDstPixel = pBuffer;
-          pbSrcPixel = (uint8_t*)ddSurfDescSize.lpSurface;
-          if (0 < iVar1) {
-            do {
-              iVar1 = (uint32_t)*pbSrcPixel * 4;
-              *pbDstPixel = gaDirectDrawDitherPaletteRemap[(uint32_t)*pbSrcPixel * 4];
-              pbDstPixel[1] = gaDirectDrawDitherPaletteRemap[iVar1 + 1];
-              pbDstPixel[2] = gaDirectDrawDitherPaletteRemap[iVar1 + 2];
-              nX++;
-              pbDstPixel += 3;
-              iVar1 = RENDERER_nWindowWidth;
-              pbSrcPixel++;
-            } while (nX < RENDERER_nWindowWidth);
-          }
+    if (nHResult) {
+      DirectDrawErrorHandler("Lock failed!", nHResult);
+      return 0;
+    }
 
-          ddSurfDescSize.lpSurface = (void*)((int)ddSurfDescSize.lpSurface + ddSurfDescSize.lPitch);
-          nY++;
-          pBuffer += iVar1 * 3;
-        } while (nY < RENDERER_nWindowHeight);
-      }
+    uint8_t* pbDstPixel;
+    nY = 0;
+    iVar1 = RENDERER_nWindowWidth;
+    if (RENDERER_nWindowHeight > 0) {
+      do {
+        nX = 0;
+        pbDstPixel = pBuffer;
+        pbSrcPixel = (uint8_t*)ddSurfDescSize.lpSurface;
+        if (iVar1 > 0) {
+          do {
+            iVar1 = (uint32_t)*pbSrcPixel * 4;
+            *pbDstPixel = gaDirectDrawDitherPaletteRemap[(uint32_t)*pbSrcPixel * 4];
+            pbDstPixel[1] = gaDirectDrawDitherPaletteRemap[iVar1 + 1];
+            pbDstPixel[2] = gaDirectDrawDitherPaletteRemap[iVar1 + 2];
+            nX++;
+            pbDstPixel += 3;
+            iVar1 = RENDERER_nWindowWidth;
+            pbSrcPixel++;
+          } while (nX < RENDERER_nWindowWidth);
+        }
 
-      nHResult = gpDDrawBackBuffer->lpVtbl->Unlock(gpDDrawBackBuffer, (LPVOID)0x0);
-      if (!nHResult) {
-        return 1;
-      }
+        ddSurfDescSize.lpSurface = (void*)((int)ddSurfDescSize.lpSurface + ddSurfDescSize.lPitch);
+        nY++;
+        pBuffer += iVar1 * 3;
+      } while (nY < RENDERER_nWindowHeight);
+    }
 
+    nHResult = gpDDrawBackBuffer->lpVtbl->Unlock(gpDDrawBackBuffer, (LPVOID)0x0);
+    if (nHResult) {
       DirectDrawErrorHandler("Unlock failed!", nHResult);
       return 0;
     }
 
-    DirectDrawErrorHandler("Lock failed!", nHResult);
-    return 0;
+    return 1;
 }
 
 void __stdcall InternalReleaseWindow() {
@@ -984,13 +982,14 @@ BOOL __stdcall RENDERER_DDRAW_DestroyWindow() {
 }
 
 BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
-    if (gnRenderState) {
-      return 1;
+    if (!gnRenderState) {
+      BOOL bSuccess;
+      InternalReleaseWindow();
+      bSuccess = InternalOpenWindow(bForceResize);
+      return bSuccess;
     }
 
-    InternalReleaseWindow();
-    BOOL bSuccess = InternalOpenWindow(bForceResize);
-    return bSuccess;
+    return 1;
 }
 
 // @sourcefile .\Src\ddCore.cpp
@@ -1064,10 +1063,10 @@ BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc
     pD2GFXRenderedDataStrc = pSettings;
     D2GfxRendereInitFunctionsStrc = pHelpers;
     D2ddDebugFont_Alloc();
-    if (!(gdwDDrawInitFlags & 1)) {
-      pGlideConfig = &gGlideOpenWindowConfig;
-    } else {
+    if (gdwDDrawInitFlags & 1) {
       pGlideConfig = 0;
+    } else {
+      pGlideConfig = &gGlideOpenWindowConfig;
     }
 
     HRESULT nResult = DirectDrawCreate(pGlideConfig, &pWindowHandleBuffer, nullptr);
@@ -1145,9 +1144,9 @@ uint32_t __stdcall RENDERER_DDRAW_IsDC6OffScreen(int32_t nX, int32_t nY, int32_t
 static BOOL __stdcall RENDERER_DDRAW_ComputeDC6ClipRect(int32_t nY, DC6Block * pDC6Block, int32_t nX, uint32_t * pOutClipRect, uint32_t * pInClipBounds) {
     int32_t nWidth = D2CMP::SRC::CelCmp::GetDC6Width(pDC6Block);
     int32_t nHeight = D2CMP::SRC::CelCmp::GetDC6Height(pDC6Block);
-    uint32_t nClipLeft = (int)*pInClipBounds < 1 ? 0 : *pInClipBounds;
+    uint32_t nClipLeft = (int)*pInClipBounds <= 0 ? 0 : *pInClipBounds;
     uint32_t nClipRight = pInClipBounds[1];
-    if (RENDERER_nWindowWidth <= (int)nClipRight) {
+    if ((int)nClipRight >= RENDERER_nWindowWidth) {
       nClipRight = RENDERER_nWindowWidth;
     }
     if ((int)nClipLeft > (int)nClipRight) {
@@ -1155,13 +1154,13 @@ static BOOL __stdcall RENDERER_DDRAW_ComputeDC6ClipRect(int32_t nY, DC6Block * p
     }
 
     int32_t nOffsetX = D2CMP::SRC::CelCmp::GetDC6OffsetX(pDC6Block);
-    if (!(nX + nOffsetX < (int)nClipRight && (int)nClipLeft <= nWidth + nX + nOffsetX)) {
+    if (!(nX + nOffsetX < (int)nClipRight && nWidth + nX + nOffsetX >= (int)nClipLeft)) {
       return 1;
     }
 
-    uint32_t nClipTop = (int)pInClipBounds[2] < 1 ? 0 : pInClipBounds[2];
+    uint32_t nClipTop = (int)pInClipBounds[2] <= 0 ? 0 : pInClipBounds[2];
     uint32_t nClipBottom = pInClipBounds[3];
-    if (RENDERER_nWindowHeight <= (int)pInClipBounds[3]) {
+    if ((int)pInClipBounds[3] >= RENDERER_nWindowHeight) {
       nClipBottom = RENDERER_nWindowHeight;
     }
     if ((int)nClipTop > (int)nClipBottom) {
@@ -1170,23 +1169,23 @@ static BOOL __stdcall RENDERER_DDRAW_ComputeDC6ClipRect(int32_t nY, DC6Block * p
 
     nWidth = D2CMP::SRC::CelCmp::GetDC6OffsetY(pDC6Block);
     int nDrawBottom = nY + nWidth;
-    if (!((int)nClipTop <= nDrawBottom && nDrawBottom - nHeight <= (int)nClipBottom)) {
+    if (!(nDrawBottom >= (int)nClipTop && nDrawBottom - nHeight <= (int)nClipBottom)) {
       return 1;
     }
 
     *pOutClipRect = nClipLeft;
     pOutClipRect[1] = nClipRight;
-    if ((int)nClipBottom < nDrawBottom) {
-      pOutClipRect[2] = nDrawBottom - nClipBottom - 1;
-    } else {
+    if (!(nDrawBottom > (int)nClipBottom)) {
       pOutClipRect[2] = 0;
-    }
-    if (nDrawBottom - nHeight < (int)nClipTop) {
-      pOutClipRect[3] = nDrawBottom - pOutClipRect[2] - nClipTop + 1;
     } else {
-      pOutClipRect[3] = nHeight - pOutClipRect[2];
+      pOutClipRect[2] = nDrawBottom - nClipBottom - 1;
     }
-    if (!((int)pOutClipRect[3] >= 1)) {
+    if (!(nDrawBottom - nHeight < (int)nClipTop)) {
+      pOutClipRect[3] = nHeight - pOutClipRect[2];
+    } else {
+      pOutClipRect[3] = nDrawBottom - pOutClipRect[2] - nClipTop + 1;
+    }
+    if (!((int)pOutClipRect[3] > 0)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xab);
       exit(-1);
     }
@@ -1359,11 +1358,11 @@ void __fastcall DrawImageFast(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPos
 }
 
 void __fastcall DebugFillBackBuffer(int32_t nPosX, int32_t nPosY) {
-    if (!(0 < nPosX && nPosX < RENDERER_nWindowWidth - 0x50)) {
+    if (!(nPosX > 0 && nPosX < RENDERER_nWindowWidth - 0x50)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x186);
       exit(-1);
     }
-    if (!(0 < nPosY && nPosY < RENDERER_nWindowHeight - 0x50)) {
+    if (!(nPosY > 0 && nPosY < RENDERER_nWindowHeight - 0x50)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x187);
       exit(-1);
     }
@@ -1428,7 +1427,7 @@ void __stdcall D2ddDebugFont_Alloc() {
       *pCharOffsetEntry = nFontDataOffset;
       pCharOffsetEntry++;
       nFontDataOffset += 0x80;
-    } while ((int)pCharOffsetEntry < (uintptr_t)((char*)&gaD2ddDebugFontCharOffsets + 381));
+    } while ((int)pCharOffsetEntry <= (uintptr_t)((char*)&gaD2ddDebugFontCharOffsets + 380));
 
     /* LPINT lpBuffer for GetCharWidthA */ /* UINT iLast for GetCharWidthA */ /* UINT iFirst for GetCharWidthA */ /* HDC hdc for GetCharWidthA */ GetCharWidthA(hdc, 0x20, 0x7f, (LPINT)lpBuffer_00881428);
     /* HGDIOBJ ho for DeleteObject */ DeleteObject(h_00);
@@ -1449,8 +1448,11 @@ void __stdcall D2ddDebugFont_Free() {
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
 static LPINT __stdcall RENDERER_DDRAW_DrawDebugFontChar(int32_t nX, char cCharacter, int32_t nY) {
     uint8_t* pCurPixel;
+    uint8_t* pFontData;
+    int nRowCount;
+    int nColCount;
     uint8_t cFontByte;
-    if (0x280 < nX) {
+    if (nX > 0x280) {
       return (LPINT)0x0;
     }
     if (nX < 0) {
@@ -1458,33 +1460,33 @@ static LPINT __stdcall RENDERER_DDRAW_DrawDebugFontChar(int32_t nX, char cCharac
     }
 
     uint8_t nCharOffset = cCharacter - 0x20;
-    if (nCharOffset >= 0x60) {
-      return (LPINT)lpBuffer_00881428[0];
+    if (nCharOffset <= 0x5f) {
+      uint8_t* pPixel;
+      pFontData = &gpD2ddDebugFont->field_0x0 + gaD2ddDebugFontCharOffsets[(char)nCharOffset];
+      pPixel = gpRenderBackBufferBits + nX + RENDERER_nWindowWidth * nY;
+      nRowCount = 0x10;
+      do {
+        nColCount = 8;
+        do {
+          pCurPixel = pPixel;
+          cFontByte = *pFontData;
+          pFontData++;
+          if (cFontByte) {
+            *pCurPixel = 0xff;
+          }
+
+          nColCount--;
+          pPixel = pCurPixel + 1;
+        } while (nColCount);
+
+        nRowCount--;
+        pPixel = pCurPixel + RENDERER_nWindowWidth - 7;
+      } while (nRowCount);
+
+      return (LPINT)lpBuffer_00881428[(char)nCharOffset];
     }
 
-    uint8_t* pFontData = &gpD2ddDebugFont->field_0x0 + gaD2ddDebugFontCharOffsets[(char)nCharOffset];
-    uint8_t* pPixel = gpRenderBackBufferBits + nX + RENDERER_nWindowWidth * nY;
-    int nRowCount = 0x10;
-    do {
-      int nColCount;
-      nColCount = 8;
-      do {
-        pCurPixel = pPixel;
-        cFontByte = *pFontData;
-        pFontData++;
-        if (cFontByte) {
-          *pCurPixel = 0xff;
-        }
-
-        nColCount--;
-        pPixel = pCurPixel + 1;
-      } while (nColCount);
-
-      nRowCount--;
-      pPixel = pCurPixel + RENDERER_nWindowWidth - 7;
-    } while (nRowCount);
-
-    return (LPINT)lpBuffer_00881428[(char)nCharOffset];
+    return (LPINT)lpBuffer_00881428[0];
 }
 
 void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_list va) {
@@ -1492,7 +1494,7 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
     int nCharCount = wvsprintfA(szBuf, szFormat, va);
     int nCharIdx = 0;
     int nCurX = nPosX;
-    if (0 >= nCharCount) {
+    if (nCharCount <= 0) {
       return;
     }
 
@@ -1524,12 +1526,12 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
     int nDrawMode2;
     uint8_t* pBlendTable = RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawMode2);
     uint32_t nClipRight = RENDERER_nWindowWidth - 1;
-    uint32_t nClipLeft = nXStart < 1 ? 0 : nXStart;
-    if ((int)nClipRight <= (int)nClipLeft) {
+    uint32_t nClipLeft = nXStart <= 0 ? 0 : nXStart;
+    if ((int)nClipLeft >= (int)nClipRight) {
       nClipLeft = nClipRight;
     }
 
-    uint32_t nClipRightEnd = nXEnd < 1 ? 0 : nXEnd;
+    uint32_t nClipRightEnd = nXEnd <= 0 ? 0 : nXEnd;
     if ((int)nClipRightEnd < (int)nClipRight) {
       nClipRight = nClipRightEnd;
     }
@@ -1538,13 +1540,13 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
     }
 
     uint32_t nClipBottom = RENDERER_nWindowHeight - 1;
-    nClipRightEnd = nYStart < 1 ? 0 : nYStart;
-    if ((int)nClipBottom <= (int)nClipRightEnd) {
+    nClipRightEnd = nYStart <= 0 ? 0 : nYStart;
+    if ((int)nClipRightEnd >= (int)nClipBottom) {
       nClipRightEnd = nClipBottom;
     }
 
-    uint32_t nClipTop = nYEnd < 1 ? 0 : nYEnd;
-    if ((int)nClipBottom <= (int)nClipTop) {
+    uint32_t nClipTop = nYEnd <= 0 ? 0 : nYEnd;
+    if ((int)nClipTop >= (int)nClipBottom) {
       nClipTop = nClipBottom;
     }
     if (nClipTop == nClipRightEnd) {
@@ -1557,7 +1559,38 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
 
     int nColIdx = nClipTop - nClipRightEnd;
     uint8_t* pScanline = gpRenderBackBufferBits + nClipLeft + RENDERER_nWindowWidth * nClipRightEnd;
-    if (nDrawMode2 == 1) {
+    if (nDrawMode2 != 1) {
+      if (nDrawMode2 != 2) {
+        if (nColIdx) {
+          do {
+            nColIdx--;
+            memset(pScanline, dwColor & 0xff, nClipRight - nClipLeft);
+            pScanline += RENDERER_nWindowWidth;
+          } while (nColIdx);
+
+          return;
+        }
+      } else {
+        if (nColIdx) {
+          do {
+            nColIdx--;
+            if (nClipRight - nClipLeft) {
+              pRowPixel = pScanline;
+              nPixelCount = nClipRight - nClipLeft;
+              do {
+                nPixelCount--;
+                *pRowPixel = pBlendTable[(uint32_t)*pRowPixel * 0x100 + (dwColor & 0xff)];
+                pRowPixel++;
+              } while (nPixelCount);
+            }
+
+            pScanline += RENDERER_nWindowWidth;
+          } while (nColIdx);
+
+          return;
+        }
+      }
+    } else {
       while (nColIdx) {
         nColIdx--;
         pRowPixel = pScanline;
@@ -1568,55 +1601,28 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
 
         pScanline += RENDERER_nWindowWidth;
       }
-    } else if (nDrawMode2 == 2) {
-      if (nColIdx) {
-        do {
-          nColIdx--;
-          if (nClipRight - nClipLeft) {
-            pRowPixel = pScanline;
-            nPixelCount = nClipRight - nClipLeft;
-            do {
-              nPixelCount--;
-              *pRowPixel = pBlendTable[(uint32_t)*pRowPixel * 0x100 + (dwColor & 0xff)];
-              pRowPixel++;
-            } while (nPixelCount);
-          }
-
-          pScanline += RENDERER_nWindowWidth;
-        } while (nColIdx);
-
-        return;
-      }
-    } else if (nColIdx) {
-      do {
-        nColIdx--;
-        memset(pScanline, dwColor & 0xff, nClipRight - nClipLeft);
-        pScanline += RENDERER_nWindowWidth;
-      } while (nColIdx);
-
-      return;
     }
 }
 
 // Draws a solid rectangle with alpha blending transparency
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha) {
     int32_t nDrawMode;
-    if (nAlpha < 0xc0) {
-      if (nAlpha < 0x80) {
-        if (nAlpha < 0x40) {
+    if (nAlpha >= 0xc0) {
+      nDrawMode = 5;
+    } else {
+      if (nAlpha >= 0x80) {
+        nDrawMode = 2;
+      } else {
+        if (nAlpha >= 0x40) {
+          nDrawMode = 1;
+        } else {
           if (nAlpha == '\0') {
             return;
           }
 
           nDrawMode = 0;
-        } else {
-          nDrawMode = 1;
         }
-      } else {
-        nDrawMode = 2;
       }
-    } else {
-      nDrawMode = 5;
     }
 
     DirectDraw::DrawSolidRectEx(nXStart, nYStart, nXEnd, nYEnd, dwColor, nDrawMode);
@@ -1624,7 +1630,7 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
 
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
 void __fastcall RENDERER_DDRAW_DrawPixel(int32_t nX, int32_t nY, BYTE nPaletteIndex) {
-    if (!(-1 < nX && nX < RENDERER_nWindowWidth && -1 < nY && nY < RENDERER_nWindowHeight)) {
+    if (!(nX >= 0 && nX < RENDERER_nWindowWidth && nY >= 0 && nY < RENDERER_nWindowHeight)) {
       return;
     }
 
@@ -1648,22 +1654,22 @@ void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_
     } else {
       nYEnd = 1;
     }
-    if (-1 < nXStart && nXStart < RENDERER_nWindowWidth && -1 < nYStart && nYStart < RENDERER_nWindowHeight) {
+    if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
       gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
     }
 
     int nError = 0;
     if (nDeltaX < nDeltaY) {
       nStepsRemaining = nDeltaY;
-      if (0 < nDeltaY) {
+      if (nDeltaY > 0) {
         do {
           nYStart += nYEnd;
           nError += nDeltaX;
-          if (nDeltaY < nError) {
+          if (nError > nDeltaY) {
             nXStart += nXEnd;
             nError -= nDeltaY;
           }
-          if (-1 < nXStart && nXStart < RENDERER_nWindowWidth && -1 < nYStart && nYStart < RENDERER_nWindowHeight) {
+          if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
             gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
           }
 
@@ -1674,15 +1680,15 @@ void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_
       }
     } else {
       nStepsRemaining = nDeltaX;
-      if (0 < nDeltaX) {
+      if (nDeltaX > 0) {
         do {
           nXStart += nXEnd;
           nError += nDeltaY;
-          if (nDeltaX < nError) {
+          if (nError > nDeltaX) {
             nYStart += nYEnd;
             nError -= nDeltaX;
           }
-          if (-1 < nXStart && nXStart < RENDERER_nWindowWidth && -1 < nYStart && nYStart < RENDERER_nWindowHeight) {
+          if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
             gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
           }
 
@@ -1708,7 +1714,7 @@ void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, 
     int nAccumulatorY = nDeltaY * nDeltaY + nDeltaX * nDeltaX;
     int nAccumulatorX = 0;
     int nLineLength = 0;
-    if (0 < nAccumulatorY) {
+    if (nAccumulatorY > 0) {
       do {
         nAccumulatorX++;
         nLineLength = nAccumulatorX;
@@ -1721,23 +1727,23 @@ void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, 
     nAccumulatorX = 0;
     int nPixelsDrawn = 0;
     int nCurrentY = nStepX;
-    while (nStepX < 0 || RENDERER_nWindowHeight <= nStepX || nCurrentX < 0 || RENDERER_nWindowWidth <= nCurrentX) {
+    while (nStepX < 0 || nStepX >= RENDERER_nWindowHeight || nCurrentX < 0 || nCurrentX >= RENDERER_nWindowWidth) {
       nAccumulatorX += nDeltaX;
-      if (0xffff < nAccumulatorX || nAccumulatorX < -0xffff) {
-        nStepX = (int)(nAccumulatorX + (nAccumulatorX >> 0x1f & 0xffffU)) >> 0x10;
+      if (nAccumulatorX >= 0x10000 || nAccumulatorX <= -0x10000) {
+        nStepX = nAccumulatorX / 65536;
         nCurrentX += nStepX;
         nAccumulatorX += nStepX * -0x10000;
         nStepX = nCurrentY;
       }
 
       nAccumulatorY += nDeltaY;
-      if (0xffff < nAccumulatorY || nAccumulatorY < -0xffff) {
-        nStepY = (int)(nAccumulatorY + (nAccumulatorY >> 0x1f & 0xffffU)) >> 0x10;
+      if (nAccumulatorY >= 0x10000 || nAccumulatorY <= -0x10000) {
+        nStepY = nAccumulatorY / 65536;
         nStepX = nCurrentY + nStepY;
         nAccumulatorY += nStepY * -0x10000;
         nCurrentY = nStepX;
       }
-      if (nLineLength <= nPixelsDrawn) {
+      if (nPixelsDrawn >= nLineLength) {
         return;
       }
 
@@ -1753,8 +1759,8 @@ void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, 
 
     while (true) {
       nAccumulatorX += nDeltaX;
-      if (0xffff < nAccumulatorX || nAccumulatorX < -0xffff) {
-        nStepX = (int)(nAccumulatorX + (nAccumulatorX >> 0x1f & 0xffffU)) >> 0x10;
+      if (nAccumulatorX >= 0x10000 || nAccumulatorX <= -0x10000) {
+        nStepX = nAccumulatorX / 65536;
         nCurrentX += nStepX;
         pPixelDst += nStepX;
         nAccumulatorX += nStepX * -0x10000;
@@ -1762,13 +1768,13 @@ void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, 
       if (nCurrentX < 0) {
         return;
       }
-      if (RENDERER_nWindowWidth <= nCurrentX) {
+      if (nCurrentX >= RENDERER_nWindowWidth) {
         return;
       }
 
       nAccumulatorY += nDeltaY;
-      if (0xffff < nAccumulatorY || nAccumulatorY < -0xffff) {
-        nStepX = (int)(nAccumulatorY + (nAccumulatorY >> 0x1f & 0xffffU)) >> 0x10;
+      if (nAccumulatorY >= 0x10000 || nAccumulatorY <= -0x10000) {
+        nStepX = nAccumulatorY / 65536;
         nCurrentY += nStepX;
         pPixelDst += RENDERER_nWindowWidth * nStepX;
         nAccumulatorY += nStepX * -0x10000;
@@ -1776,13 +1782,13 @@ void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, 
       if (nCurrentY < 0) {
         break;
       }
-      if (RENDERER_nWindowHeight <= nCurrentY) {
+      if (nCurrentY >= RENDERER_nWindowHeight) {
         return;
       }
 
       nPixelsDrawn++;
       *pPixelDst = nPaletteIndex;
-      if (nLineLength <= nPixelsDrawn) {
+      if (nPixelsDrawn >= nLineLength) {
         return;
       }
     }
@@ -1795,7 +1801,7 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
     POINT nLeft;
     int32_t nLine;
     nLeft.x = pRect->left;
-    if (pRect->right < nLeft.x) {
+    if (nLeft.x > pRect->right) {
       nLine = 0x12d;
     } else {
       uint32_t nWidth;
@@ -1832,7 +1838,7 @@ void __fastcall DrawRectEx(RECT * pRect, BYTE nColor) {
     POINT nRight;
     POINT nRightSave;
     nLeftSave.x = pRect->left;
-    if (pRect->right < nLeftSave.x) {
+    if (nLeftSave.x > pRect->right) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x149);
       exit(-1);
     } else {
@@ -1873,19 +1879,19 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
       nTop = pRect->top;
       nBottom = pRect->bottom;
       if (nTop <= nBottom) {
-        if (!(-1 < nLeft && iVar1 < RENDERER_nWindowWidth && -1 < nBottom && nTop < RENDERER_nWindowHeight)) {
+        if (!(nLeft >= 0 && iVar1 < RENDERER_nWindowWidth && nBottom >= 0 && nTop < RENDERER_nWindowHeight)) {
           return;
         }
         if (iVar1 < 0) {
           pRect->left = 0;
         }
-        if (RENDERER_nWindowWidth <= nLeft) {
+        if (nLeft >= RENDERER_nWindowWidth) {
           pRect->right = RENDERER_nWindowWidth - 1;
         }
         if (nTop < 0) {
           pRect->top = 0;
         }
-        if (RENDERER_nWindowHeight <= nBottom) {
+        if (nBottom >= RENDERER_nWindowHeight) {
           pRect->bottom = RENDERER_nWindowHeight - 1;
         }
 
@@ -1898,7 +1904,7 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
         pRowDst = gpRenderBackBufferBits + pRect->top * RENDERER_nWindowWidth + pRect->left;
         do {
           iVar1--;
-          if (nFillWidth) {
+          if (nFillWidth > 0) {
             memset(pRowDst, (uint32_t)((uint32_t)((uint32_t)byPaletteHigh & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), nFillWidth);
           }
 
@@ -1963,35 +1969,37 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
     int iVar1 = RENDERER_nWindowHeight + 0x20;
     int nClipLeft = -0x20;
     int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels == 1) {
+    if (nScreenPanels != 1) {
+      if (nScreenPanels == 2) {
+        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+      }
+    } else {
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-    } else if (nScreenPanels == 2) {
-      nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
     }
 
     int nSubtileIndex = 0;
-    if (0 >= pTile->nSubTiles) {
-      return 0;
+    if (0 < pTile->nSubTiles) {
+      int nSubtileX;
+      do {
+        nSubtileX = pTile->pSubTiles[nSubtileIndex].nOffsetX + nPosX;
+        nSubtileY = pTile->pSubTiles[nSubtileIndex].nOffsetY + nPosY;
+        if (nSubtileX >= nClipLeft && nSubtileX < nClipRight && nSubtileY >= -0x20 && nSubtileY < iVar1) {
+          bAnyDrawn = 1;
+          bBlendEnabled = RENDERER_DDRAW_AreBlendedShadowsEnabled();
+          if (bBlendEnabled) {
+            D2GfxRendereInitFunctionsStrc->nfpDrawBlendedVisTile((int)pTile->pSubTiles[nSubtileIndex].pPixelData, nSubtileX, nSubtileY, 0xc0);
+          } else {
+            D2GfxRendereInitFunctionsStrc->nfpDrawVisTile(pTile->pSubTiles[nSubtileIndex].pPixelData, nSubtileX, nSubtileY);
+          }
+        }
+
+        nSubtileIndex++;
+      } while (nSubtileIndex < pTile->nSubTiles);
+
+      return bAnyDrawn;
     }
 
-    do {
-      int nSubtileX;
-      nSubtileX = pTile->pSubTiles[nSubtileIndex].nOffsetX + nPosX;
-      nSubtileY = pTile->pSubTiles[nSubtileIndex].nOffsetY + nPosY;
-      if (nClipLeft <= nSubtileX && nSubtileX < nClipRight && -0x21 < nSubtileY && nSubtileY < iVar1) {
-        bAnyDrawn = 1;
-        bBlendEnabled = RENDERER_DDRAW_AreBlendedShadowsEnabled();
-        if (!bBlendEnabled) {
-          D2GfxRendereInitFunctionsStrc->nfpDrawVisTile(pTile->pSubTiles[nSubtileIndex].pPixelData, nSubtileX, nSubtileY);
-        } else {
-          D2GfxRendereInitFunctionsStrc->nfpDrawBlendedVisTile((int)pTile->pSubTiles[nSubtileIndex].pPixelData, nSubtileX, nSubtileY, 0xc0);
-        }
-      }
-
-      nSubtileIndex++;
-    } while (nSubtileIndex < pTile->nSubTiles);
-
-    return bAnyDrawn;
+    return 0;
 }
 
 BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha) {
@@ -2008,10 +2016,12 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX,
     int iVar1 = RENDERER_nWindowHeight + 0x20;
     int nClipLeft = -0x20;
     int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels == 1) {
+    if (nScreenPanels != 1) {
+      if (nScreenPanels == 2) {
+        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+      }
+    } else {
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-    } else if (nScreenPanels == 2) {
-      nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
     }
 
     nScreenPanels = 0;
@@ -2023,7 +2033,7 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX,
       int a3;
       a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
       nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
-      if (nClipLeft <= nSubtileX && nSubtileX < nClipRight && -0x21 < a3 && a3 < iVar1) {
+      if (nSubtileX >= nClipLeft && nSubtileX < nClipRight && a3 >= -0x20 && a3 < iVar1) {
         pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
         nLightIndex = (int)*pSubtileEntry >> 5;
         aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
@@ -2041,7 +2051,7 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX,
 }
 
 BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels) {
-    int nLightIndex;
+    int a3;
     int nSubtileX;
     short int* pSubtileEntry;
     uint32_t aCornerLight[4];
@@ -2054,60 +2064,62 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int3
     int iVar1 = RENDERER_nWindowHeight + 0x20;
     int nClipLeft = -0x20;
     int nClipRight = RENDERER_nWindowWidth;
-    if (nScreenPanels == 1) {
+    if (nScreenPanels != 1) {
+      if (nScreenPanels == 2) {
+        nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
+      }
+    } else {
       nClipRight = RENDERER_nWindowWidth - RENDERER_nWindowWidth / 2;
-    } else if (nScreenPanels == 2) {
-      nClipLeft = RENDERER_nWindowWidth / 2 - 0x20;
     }
 
     nScreenPanels = 0;
-    if (0 >= pTile->nSubTiles) {
-      return 0;
+    if (0 < pTile->nSubTiles) {
+      int nLightIndex;
+      do {
+        a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
+        nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
+        if (nSubtileX >= nClipLeft && nSubtileX < nClipRight && a3 >= -0x20 && a3 < iVar1) {
+          pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
+          nLightIndex = (int)*pSubtileEntry >> 5;
+          aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
+          aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
+          bAnyDrawn = 1;
+          aCornerLight[2] = aCornerLight[1];
+          aCornerLight[3] = aCornerLight[0];
+          D2GfxRendereInitFunctionsStrc->nfpDrawWallTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight);
+        }
+
+        nScreenPanels++;
+      } while (nScreenPanels < pTile->nSubTiles);
+
+      return bAnyDrawn;
     }
 
-    do {
-      int a3;
-      a3 = pTile->pSubTiles[nScreenPanels].nOffsetY + nPosY;
-      nSubtileX = pTile->pSubTiles[nScreenPanels].nOffsetX + nPosX;
-      if (nClipLeft <= nSubtileX && nSubtileX < nClipRight && -0x21 < a3 && a3 < iVar1) {
-        pSubtileEntry = &pTile->pSubTiles[nScreenPanels].nOffsetX;
-        nLightIndex = (int)*pSubtileEntry >> 5;
-        aCornerLight[0] = (uint32_t)pLight[nLightIndex].nIntensity;
-        aCornerLight[1] = (uint32_t)pLight[nLightIndex + 1].nIntensity;
-        bAnyDrawn = 1;
-        aCornerLight[2] = aCornerLight[1];
-        aCornerLight[3] = aCornerLight[0];
-        D2GfxRendereInitFunctionsStrc->nfpDrawWallTile(*(int*)(pSubtileEntry + 8), nSubtileX, a3, (int)aCornerLight);
-      }
-
-      nScreenPanels++;
-    } while (nScreenPanels < pTile->nSubTiles);
-
-    return bAnyDrawn;
+    return 0;
 }
 
 BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int32_t nPosX, int32_t nPosY, int32_t nWorldXpos, int32_t nWorldYpos, BYTE nAlpha, int32_t nScreenPanels, void * pTileData) {
     int nPanelOffset;
     BOOL bDrawResult = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    if (!bDrawResult) {
-      return 0;
-    }
+    if (bDrawResult) {
+      int a2 = nPosX - 0x50;
+      if (nScreenPanels != 1) {
+        if (nScreenPanels != 2) {
+          bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
+          return bDrawResult;
+        }
 
-    int a2 = nPosX - 0x50;
-    if (nScreenPanels == 1) {
-      nPanelOffset = -((int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2);
-    } else {
-      if (nScreenPanels != 2) {
-        bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
-        return bDrawResult;
+        nPanelOffset = RENDERER_nWindowWidth / 4;
+      } else {
+        nPanelOffset = -(RENDERER_nWindowWidth / 4);
       }
 
-      nPanelOffset = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
+      a2 += nPanelOffset;
+      bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
+      return bDrawResult;
     }
 
-    a2 += nPanelOffset;
-    bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
-    return bDrawResult;
+    return 0;
 }
 
 // @sourcefile .\Src\ddSmack.cpp
@@ -2162,7 +2174,26 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     uint32_t nImageWidth;
     DWORD nFileSize;
     pBuffer->eMode = (char)nVersion;
-    if ((char)nVersion == 'p') {
+    if ((char)nVersion != 'p') {
+      void* nResult;
+      if ((char)nVersion != 's') {
+        return;
+      }
+      if (pBuffer->hSmack) {
+        return;
+      }
+
+      nResult = (void*)SmackOpen(szSmacker, 0xfe000, -1);
+      pBuffer->hSmack = nResult;
+      if (nResult) {
+        pImageBuffer = D2_ALLOC_AT(*(int*)((int)nResult + 4) * *(int*)((int)nResult + 8), ".\\Src\\ddSmack.cpp", 0x42);
+        *(uint32_t*)((char*)&gaSmackerPaletteRemap + 256) = (uint32_t)(uintptr_t)pImageBuffer;
+        memset(pImageBuffer, 0, *(int*)((int)nResult + 4) * *(int*)((int)nResult + 8));
+        SmackToBuffer(pBuffer->hSmack, 0, 0, *(uint32_t*)((int)nResult + 4), *(uint32_t*)((int)nResult + 8), pImageBuffer, 0);
+        gbSmackerPaletteDirty = 0;
+        return;
+      }
+    } else {
       *(uint32_t*)((char*)&gaSmackerPaletteRemap + 256) = (uint32_t)(uintptr_t)D2_ALLOC_AT(0x6db0, ".\\Src\\ddSmack.cpp", 0x53);
       memset((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0, 0x6db0);
       nVersion = 0;
@@ -2182,25 +2213,6 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
           return;
         }
       }
-    } else {
-      void* nResult;
-      if ((char)nVersion != 's') {
-        return;
-      }
-      if (pBuffer->hSmack) {
-        return;
-      }
-
-      nResult = (void*)SmackOpen(szSmacker, 0xfe000, -1);
-      pBuffer->hSmack = nResult;
-      if (nResult) {
-        pImageBuffer = D2_ALLOC_AT(*(int*)((int)nResult + 4) * *(int*)((int)nResult + 8), ".\\Src\\ddSmack.cpp", 0x42);
-        *(uint32_t*)((char*)&gaSmackerPaletteRemap + 256) = (uint32_t)(uintptr_t)pImageBuffer;
-        memset(pImageBuffer, 0, *(int*)((int)nResult + 4) * *(int*)((int)nResult + 8));
-        SmackToBuffer(pBuffer->hSmack, 0, 0, *(uint32_t*)((int)nResult + 4), *(uint32_t*)((int)nResult + 8), pImageBuffer, 0);
-        gbSmackerPaletteDirty = 0;
-        return;
-      }
     }
     if (*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256)) {
       D2_FREE_AT((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), ".\\Src\\ddSmack.cpp", 0xf0);
@@ -2219,39 +2231,41 @@ void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
     uint32_t nPaletteColor;
     uint8_t* pPaletteEntry;
     void* nSmackHandle;
-    if (pContext->eMode == 'p') {
+    if (pContext->eMode != 'p') {
+      if (pContext->eMode == 's' && (nSmackHandle = pContext->hSmack , nSmackHandle != 0)) {
+        nWaitResult = SmackWait(nSmackHandle);
+        if (!nWaitResult) {
+          if (!gnGlideWindowHandle) {
+            return;
+          }
+          if (*(int*)((int)nSmackHandle + 0x68)) {
+            nWaitResult = 0;
+            pPaletteEntry = (uint8_t*)((int)nSmackHandle + 0x6d);
+            do {
+              nPaletteColor = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)pPaletteEntry[-1], (uint32_t)*pPaletteEntry, (uint32_t)pPaletteEntry[1]);
+              gaSmackerPaletteRemap[nWaitResult] = (uint8_t)nPaletteColor;
+              nWaitResult++;
+              pPaletteEntry += 3;
+            } while (nWaitResult < 0x100);
+
+            gbSmackerPaletteDirty = 1;
+          }
+
+          SmackDoFrame(nSmackHandle);
+          if (*(int*)((int)nSmackHandle + 0x374) == *(int*)((int)nSmackHandle + 0xc)) {
+            DirectDraw::CloseSmacker(pContext);
+          } else {
+            SmackNextFrame(nSmackHandle);
+          }
+        }
+        if (!gnRenderState && gbSmackerPaletteDirty) {
+          RENDERER_DDRAW_BlitSmackerFrame(*(int32_t*)((int)nSmackHandle + 8), *(int32_t*)((int)nSmackHandle + 4), pContext);
+        }
+      }
+    } else {
       if (!gnRenderState) {
         RENDERER_DDRAW_BlitSmackerFrame(0x3c, 0x1d4, pContext);
         return;
-      }
-    } else if (pContext->eMode == 's' && (nSmackHandle = pContext->hSmack , nSmackHandle != 0)) {
-      nWaitResult = SmackWait(nSmackHandle);
-      if (!nWaitResult) {
-        if (!gnGlideWindowHandle) {
-          return;
-        }
-        if (*(int*)((int)nSmackHandle + 0x68)) {
-          nWaitResult = 0;
-          pPaletteEntry = (uint8_t*)((int)nSmackHandle + 0x6d);
-          do {
-            nPaletteColor = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)pPaletteEntry[-1], (uint32_t)*pPaletteEntry, (uint32_t)pPaletteEntry[1]);
-            gaSmackerPaletteRemap[nWaitResult] = (uint8_t)nPaletteColor;
-            nWaitResult++;
-            pPaletteEntry += 3;
-          } while (nWaitResult < 0x100);
-
-          gbSmackerPaletteDirty = 1;
-        }
-
-        SmackDoFrame(nSmackHandle);
-        if (*(int*)((int)nSmackHandle + 0x374) == *(int*)((int)nSmackHandle + 0xc)) {
-          DirectDraw::CloseSmacker(pContext);
-        } else {
-          SmackNextFrame(nSmackHandle);
-        }
-      }
-      if (!gnRenderState && gbSmackerPaletteDirty) {
-        RENDERER_DDRAW_BlitSmackerFrame(*(int32_t*)((int)nSmackHandle + 8), *(int32_t*)((int)nSmackHandle + 4), pContext);
       }
     }
 }

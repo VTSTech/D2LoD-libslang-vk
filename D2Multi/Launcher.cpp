@@ -429,13 +429,13 @@ uint32_t __stdcall LAUNCHER_ReadRegistryValue(LPCSTR szSubKey, LPCSTR szValueNam
 
     /* LPDWORD lpcbData for RegQueryValueExA */ /* LPBYTE lpData for RegQueryValueExA */ /* LPDWORD lpType for RegQueryValueExA */ *pdwDataSize = dwDataSize;
     /* LPDWORD lpReserved for RegQueryValueExA */ /* LPCSTR lpValueName for RegQueryValueExA */ /* HKEY hKey for RegQueryValueExA */ lStatus = RegQueryValueExA(hKey, szValueName, (LPDWORD)0x0, &dwValueType, pbData, pdwDataSize);
-    if (!lStatus) {
-      /* HKEY hKey for RegCloseKey */ lStatus = RegCloseKey(hKey);
-      return (uint32_t)!lStatus;
+    if (lStatus) {
+      /* HKEY hKey for RegCloseKey */ RegCloseKey(hKey);
+      return 0;
     }
 
-    /* HKEY hKey for RegCloseKey */ RegCloseKey(hKey);
-    return 0;
+    /* HKEY hKey for RegCloseKey */ lStatus = RegCloseKey(hKey);
+    return (uint32_t)!lStatus;
 }
 
 // Sets the active state of the game-list cache control pGameListCache via D2WINMAIN_SetControlActive. Returns TRUE (MOV EAX,1 at 0043dadd); the caller ignores it.
@@ -472,11 +472,11 @@ int __stdcall isServerDown() {
     }
 
     int32_t bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
-    if (bHasPeerName) {
-      return 0;
+    if (!bHasPeerName) {
+      return -1;
     }
 
-    return -1;
+    return 0;
 }
 
 void LAUNCHER_AllocCharSelectComponent(int32_t pCharInfo) {
@@ -577,7 +577,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
       *ppCtlSlot = pCtl;
       ppCtlSlot++;
       pFormDef++;
-    } while ((int)ppCtlSlot < (uintptr_t)((char*)&gpCtlLobbyChat + 5));
+    } while ((int)ppCtlSlot <= (uintptr_t)((char*)&gpCtlLobbyChat + 4));
 
     gpCtlConfirmDialog = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x13);
     uint16_t* pwszLocaleStr = wszClassName;
@@ -673,7 +673,7 @@ void __stdcall CHATDLG_DestroyAllForms() {
       }
 
       pForm++;
-    } while ((int)pForm < (uintptr_t)((char*)&gpCtlLobbyChat + 5));
+    } while ((int)pForm <= (uintptr_t)((char*)&gpCtlLobbyChat + 4));
 
     if (!gpCtlConfirmDialog) {
       return;

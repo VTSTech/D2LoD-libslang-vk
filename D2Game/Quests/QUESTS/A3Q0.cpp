@@ -93,11 +93,11 @@ bool __fastcall Q17_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bIsQuestCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToHratli, QUESTSTATE_Completed);
-    if (bIsQuestCompleted) {
-      return false;
+    if (!bIsQuestCompleted) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A3Q0 handler [0x0d] — player join / quest refresh. If this player already has SpokeToHratli Completed, re-broadcast it as JustCompleted so the joining client's quest log syncs. No new progress.

@@ -110,10 +110,10 @@ void __stdcall GFX_RemoveOverlayFromUnit(D2UnitStrc * pUnit, int * pOverlay) {
       Draw::LightMap::FreeLightMap((D2LightMapStrc*)pMemoryToFree[0x10]);
       pMemoryToFree[0x10] = 0;
     }
-    if (!pPrev) {
-      pGfxInfo->pOverlayList = (void*)pMemoryToFree[0x29];
-    } else {
+    if (pPrev) {
       pPrev[0x29] = pMemoryToFree[0x29];
+    } else {
+      pGfxInfo->pOverlayList = (void*)pMemoryToFree[0x29];
     }
     if (*pMemoryToFree == 8) {
       Gfx::GFX_RemoveStateOverlayAndReprioritize(pUnit, (int32_t)pGfxInfo, (int32_t)pMemoryToFree);
@@ -224,7 +224,7 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
           if (nThisOverlayId < 0) {
             return;
           }
-          if (sgptDataTable->nTxtOverlaySize <= nThisOverlayId) {
+          if (nThisOverlayId >= sgptDataTable->nTxtOverlaySize) {
             return;
           }
 
@@ -309,13 +309,15 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
       nOffset = D2Common::Units::GetPrecisionX(pUnit);
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nOffset, iVar2, nTmpZ, pAdjustX, pAdjustY);
       bPerspective = UI::Path::DRAW_GetTypeOfBorder();
-      if (bPerspective == 1) {
-        nScreenX -= (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-      } else if (bPerspective == 2) {
-        nScreenX += (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-        nDrawY = nScreenY + 0x10;
-        nDrawX = nScreenX;
-        goto draw_overlays;
+      if (bPerspective != 1) {
+        if (bPerspective == 2) {
+          nScreenX += ScreenSizeX / 4;
+          nDrawY = nScreenY + 0x10;
+          nDrawX = nScreenX;
+          goto draw_overlays;
+        }
+      } else {
+        nScreenX -= ScreenSizeX / 4;
       }
 
       nDrawX = nScreenX;
@@ -342,7 +344,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
       if ((*pCur != 8 || pCur[0xf]) && bShow) {
         nFrameField = pCur[6];
         nThisOverlayId = pCur[1];
-        if (nThisOverlayId < 0 || sgptDataTable->nTxtOverlaySize <= nThisOverlayId || (pOverlayTxt = sgptDataTable->pTxtOverlay + nThisOverlayId , !pOverlayTxt)) {
+        if (nThisOverlayId < 0 || nThisOverlayId >= sgptDataTable->nTxtOverlaySize || (pOverlayTxt = sgptDataTable->pTxtOverlay + nThisOverlayId , !pOverlayTxt)) {
           DRAW_UNIT_States_HaltTail(0x2d1);
         }
 
@@ -451,12 +453,12 @@ static BOOL GFX_FreeGfxInfoEntry(D2UnitStrc * pUnit, D2GfxInfoUnkStrc * pGfxInfo
 
     pCur = pMemoryToFree->pNext;
     D2_FREE_AT(pMemoryToFree, ".\\ENGINE\\Gfx.cpp", 0x3d0);
-    if (pPrev) {
-      pPrev->pNext = pCur;
+    if (!pPrev) {
+      pGfxInfo->pGfxInfoUnk = pCur;
       return 1;
     }
 
-    pGfxInfo->pGfxInfoUnk = pCur;
+    pPrev->pNext = pCur;
     return 1;
 }
 
@@ -591,11 +593,11 @@ void GFX_LoadMonsterModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
     int nOutCofData;
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -627,11 +629,11 @@ void GFX_LoadObjectModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
     int nClassId;
     uint32_t bComponentAlreadyLoaded;
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -676,33 +678,33 @@ static void __stdcall GFX_FreeAllGfxInfoEntries(int32_t nComponentCount, D2UnitS
     int nComponent;
     D2GfxInfoUnkStrc* pMemoryToFree;
     D2GfxInfoUnkStrc* pNext;
-    if (nComponentCount < 0x10) {
-      D2GfxInfoStrc* pGfxInfo;
-      nComponent = 0;
-      do {
-        GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
-        nComponent++;
-      } while (nComponent < 0x10);
-
-      pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
-      if (!pGfxInfo) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x668);
-        exit(-1);
-      }
-
-      pMemoryToFree = pGfxInfo->pGfxInfoUnk;
-      while (pMemoryToFree) {
-        pNext = pMemoryToFree->pNext;
-        D2_FREE_AT(pMemoryToFree, ".\\ENGINE\\Gfx.cpp", 0x66d);
-        pMemoryToFree = pNext;
-      }
-
-      pGfxInfo->pGfxInfoUnk = 0;
-      return;
-    } else {
+    if (nComponentCount >= 0x10) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x65f);
       exit(-1);
     }
+
+    D2GfxInfoStrc* pGfxInfo;
+    nComponent = 0;
+    do {
+      GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
+      nComponent++;
+    } while (nComponent < 0x10);
+
+    pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
+    if (!pGfxInfo) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x668);
+      exit(-1);
+    }
+
+    pMemoryToFree = pGfxInfo->pGfxInfoUnk;
+    while (pMemoryToFree) {
+      pNext = pMemoryToFree->pNext;
+      D2_FREE_AT(pMemoryToFree, ".\\ENGINE\\Gfx.cpp", 0x66d);
+      pMemoryToFree = pNext;
+    }
+
+    pGfxInfo->pGfxInfoUnk = 0;
+    return;
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -836,11 +838,11 @@ uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     }
 
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -848,7 +850,7 @@ uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     if (eUnitType != UNIT_MONSTER) {
       return gbHealthBarColorGreen;
     }
-    if (nClassId < 0 || sgptDataTable->nTxtMonStatsSize <= nClassId) {
+    if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize) {
       pMonStats = 0;
     } else {
       pMonStats = sgptDataTable->pTxtMonStats + nClassId;
@@ -889,7 +891,7 @@ uint32_t __fastcall DrawItemGfx(D2UnitStrc * pUnit, int32_t nHeight, int32_t nWi
     eD2ItemTypes eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pUnit);
     if (eItemType == ITEMTYPE_Gold) {
       nGoldAmount = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
-      if (99 < nGoldAmount) {
+      if (nGoldAmount >= 100) {
         if (nGoldAmount < 500) {
           nDC6Height = 1;
         } else {
@@ -963,11 +965,11 @@ void __fastcall GFX_SetAllGfxInfoFlags(D2UnitStrc * pUnit, uint8_t byFlag) {
 
 D2ParticleStrc * __fastcall GetParticleFromUnit(D2UnitStrc * pUnit) {
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
-    if (!pGfxInfo) {
-      return nullptr;
+    if (pGfxInfo) {
+      return pGfxInfo->pParticle;
     }
 
-    return pGfxInfo->pParticle;
+    return nullptr;
 }
 
 void __fastcall SetParticle(D2UnitStrc * pUnit, D2ParticleStrc * pParticle) {
@@ -989,7 +991,7 @@ void __fastcall GFX_RemoveOverlayById(int32_t nOverlayId, D2UnitStrc * pUnit) {
     if (!pGfxInfo) {
       return;
     }
-    if (nOverlayId < 0 || sgptDataTable->nTxtOverlaySize <= nOverlayId || !(sgptDataTable->pTxtOverlay + nOverlayId)) {
+    if (nOverlayId < 0 || nOverlayId >= sgptDataTable->nTxtOverlaySize || !(sgptDataTable->pTxtOverlay + nOverlayId)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xca9);
       exit(-1);
     }

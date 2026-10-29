@@ -165,62 +165,62 @@ static uint8_t __stdcall Q10_CheckQuestItemsForDialog(D2UnitStrc * pUnit, D2Ques
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     D2UnitStrc* pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20747368);
-    if (!pFoundItem) {
-      pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20786f62);
-      if (pFoundItem) {
-        bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
-        if (!bQuestStepSet) {
-          *pOutput = 3;
-          return '\x01';
-        }
-
-        *pOutput = 9;
-      }
-
-      pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20317274);
-      if (pFoundItem) {
-        bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
-        if (!bQuestStepSet) {
-          *pOutput = 0;
-          return '\x01';
-        }
-
-        *pOutput = 6;
-      }
-
-      pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20706976);
-      if (pFoundItem) {
-        bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x04);
-        if (!bQuestStepSet) {
-          *pOutput = 1;
-          return '\x01';
-        }
-
-        *pOutput = 7;
-      }
-
-      pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x2066736d);
-      if (!pFoundItem) {
-        return '\0';
-      }
-
-      bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x05);
+    if (pFoundItem) {
+      bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
       if (!bQuestStepSet) {
-        *pOutput = 2;
+        *pOutput = 4;
         return '\x01';
       }
 
-      *pOutput = 8;
+      *pOutput = 5;
       return '\0';
     }
 
-    bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
+    pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20786f62);
+    if (pFoundItem) {
+      bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
+      if (!bQuestStepSet) {
+        *pOutput = 3;
+        return '\x01';
+      }
+
+      *pOutput = 9;
+    }
+
+    pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20317274);
+    if (pFoundItem) {
+      bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
+      if (!bQuestStepSet) {
+        *pOutput = 0;
+        return '\x01';
+      }
+
+      *pOutput = 6;
+    }
+
+    pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20706976);
+    if (pFoundItem) {
+      bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x04);
+      if (!bQuestStepSet) {
+        *pOutput = 1;
+        return '\x01';
+      }
+
+      *pOutput = 7;
+    }
+
+    pFoundItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x2066736d);
+    if (!pFoundItem) {
+      return '\0';
+    }
+
+    bQuestStepSet = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x05);
     if (!bQuestStepSet) {
-      *pOutput = 4;
+      *pOutput = 2;
       return '\x01';
     }
 
-    *pOutput = 5;
+    *pOutput = 8;
     return '\0';
 }
 
@@ -398,7 +398,9 @@ void __fastcall Q10_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_RewardAwaits);
-    if (!bIsCompleted) {
+    if (bIsCompleted) {
+      nGossipMsgIndex = 4;
+    } else {
       bool bHasQuestItem;
       bHasQuestItem = (bool)Q10_CheckQuestItemsForDialog(pQuestArgs->pPlayer, pQuestData, &byItemDialogMsg);
       if (!bHasQuestItem || byItemDialogMsg == 0xff) {
@@ -409,7 +411,9 @@ void __fastcall Q10_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         }
 
         bIsCompleted = QUEST_HasPlayerParticipated(pQuestData, nPlayerGUID);
-        if (!bIsCompleted) {
+        if (bIsCompleted) {
+          nGossipMsgIndex = 5;
+        } else {
           if (bRewardAwaits == 1) {
             if (!bIsJustCompleted) {
               return;
@@ -418,7 +422,7 @@ void __fastcall Q10_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
               return;
             }
           }
-          if (9 < byItemDialogMsg) {
+          if (byItemDialogMsg > 9) {
             bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
             if (!bIsJustCompleted) {
               return;
@@ -428,14 +432,10 @@ void __fastcall Q10_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
           }
 
           nGossipMsgIndex = (uint32_t)byItemDialogMsg;
-        } else {
-          nGossipMsgIndex = 5;
         }
       } else {
         nGossipMsgIndex = (uint32_t)byItemDialogMsg;
       }
-    } else {
-      nGossipMsgIndex = 4;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0xf4, nGossipMsgIndex);
@@ -489,13 +489,13 @@ void __fastcall Q10_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
         if (iVar1 != 0x2066736d) {
           return;
         }
-        if (bStep0x03Set) {
-          pQuestData->nStateFlagPrev = 2;
+        if (!bStep0x03Set) {
+          pQuestData->nStateFlagPrev = 6;
           Q10_NotifyHoradricStaffActive(pQuestArgs->pPlayer, pQuestData->pGame);
           return;
         }
 
-        pQuestData->nStateFlagPrev = 6;
+        pQuestData->nStateFlagPrev = 2;
         Q10_NotifyHoradricStaffActive(pQuestArgs->pPlayer, pQuestData->pGame);
         return;
       }
@@ -578,39 +578,39 @@ void __fastcall Q10_AdjustStaffPieceCount(int pQuestArg, int nCountDelta) {
 BOOL __fastcall OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop2(D2ObjectOperateFnArg * pOperation) {
     D2ObjectOperateFnArg* pOperationLocal = pOperation;
     BOOL bPortalActive = PORTAL_ActivateOrDeactivatePortalObject((::SGAMEDATA**)pOperation);
-    if (!bPortalActive) {
-      return 0;
-    }
-
-    pOperation->sArg.pVictim->dwDropItemCode = 0x20317274;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
-    int nDropCount = 0;
-    if (pQuestData) {
-      D2QuestDataA2Q2Strc* pA1Q1Scratch;
-      pA1Q1Scratch = pQuestData->pQuestSpecificData.pA2Q2;
-      pA1Q1Scratch->nQuestItemPickupNotifyCount = 0;
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnScrollPickup);
-      if (0 < pA1Q1Scratch->nQuestItemPickupNotifyCount) {
-        do {
-          ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_PlayerBodyPart, (int32_t*)&pOperationLocal, nullptr, -1, 1);
-          nDropCount++;
-        } while (nDropCount < pA1Q1Scratch->nQuestItemPickupNotifyCount);
+    if (bPortalActive) {
+      pOperation->sArg.pVictim->dwDropItemCode = 0x20317274;
+      D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
+      int nDropCount = 0;
+      if (pQuestData) {
+        D2QuestDataA2Q2Strc* pA1Q1Scratch;
+        pA1Q1Scratch = pQuestData->pQuestSpecificData.pA2Q2;
+        pA1Q1Scratch->nQuestItemPickupNotifyCount = 0;
+        UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnScrollPickup);
+        if (pA1Q1Scratch->nQuestItemPickupNotifyCount > 0) {
+          do {
+            ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_PlayerBodyPart, (int32_t*)&pOperationLocal, nullptr, -1, 1);
+            nDropCount++;
+          } while (nDropCount < pA1Q1Scratch->nQuestItemPickupNotifyCount);
+        }
       }
-    }
 
-    Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
-    D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
-    D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
-    *pSeed = sNewSeed;
-    nDropCount = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 5) * -5 + 5;
-    if (0 >= nDropCount) {
+      Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
+      D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
+      D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
+      *pSeed = sNewSeed;
+      nDropCount = sNewSeed.nSeedLow % 5 + 5;
+      if (nDropCount <= 0) {
+        return 0;
+      }
+
+      do {
+        Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
+        nDropCount--;
+      } while (nDropCount);
+
       return 0;
     }
-
-    do {
-      Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
-      nDropCount--;
-    } while (nDropCount);
 
     return 0;
 }
@@ -624,45 +624,45 @@ BOOL __fastcall OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop3(D2ObjectOperateFnArg * 
     D2QuestDataA2Q2Strc* pA2Q2Data;
     D2ObjectOperateFnArg* pOperationLocal = pOperation;
     BOOL nDropIdx = PORTAL_ActivateOrDeactivatePortalObject((::SGAMEDATA**)pOperation);
-    if (!nDropIdx) {
-      return 0;
-    }
+    if (nDropIdx) {
+      pOperation->sArg.pVictim->dwDropItemCode = 0x2066736d;
+      D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
+      int iVar1 = 0;
+      if (pQuestData) {
+        D2UnitStrc* pDroppedItem;
+        pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
+        pA2Q2Data->nQuestItemPickupNotifyCount = 0;
+        UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnStaffOrViperPickup);
+        if (pA2Q2Data->nQuestItemPickupNotifyCount > 0) {
+          do {
+            pDroppedItem = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_PlayerBodyPart, (int32_t*)&pOperationLocal, nullptr, -1, 1);
+            if (pDroppedItem) {
+              D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pDroppedItem, ITEMFLAG_IDENTIFIED, 1);
+              pA2Q2Data->nMsfCount++;
+              pA2Q2Data->bHasViperAmulet = true;
+            }
 
-    pOperation->sArg.pVictim->dwDropItemCode = 0x2066736d;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
-    int iVar1 = 0;
-    if (pQuestData) {
-      D2UnitStrc* pDroppedItem;
-      pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
-      pA2Q2Data->nQuestItemPickupNotifyCount = 0;
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnStaffOrViperPickup);
-      if (0 < pA2Q2Data->nQuestItemPickupNotifyCount) {
-        do {
-          pDroppedItem = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_PlayerBodyPart, (int32_t*)&pOperationLocal, nullptr, -1, 1);
-          if (pDroppedItem) {
-            D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pDroppedItem, ITEMFLAG_IDENTIFIED, 1);
-            pA2Q2Data->nMsfCount++;
-            pA2Q2Data->bHasViperAmulet = true;
-          }
-
-          iVar1++;
-        } while (iVar1 < pA2Q2Data->nQuestItemPickupNotifyCount);
+            iVar1++;
+          } while (iVar1 < pA2Q2Data->nQuestItemPickupNotifyCount);
+        }
       }
-    }
 
-    Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
-    D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
-    D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
-    *pSeed = sNewSeed;
-    iVar1 = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 5) * -5 + 5;
-    if (0 >= iVar1) {
+      Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
+      D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
+      D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
+      *pSeed = sNewSeed;
+      iVar1 = sNewSeed.nSeedLow % 5 + 5;
+      if (iVar1 <= 0) {
+        return 0;
+      }
+
+      do {
+        Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
+        iVar1--;
+      } while (iVar1);
+
       return 0;
     }
-
-    do {
-      Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
-      iVar1--;
-    } while (iVar1);
 
     return 0;
 }
@@ -675,44 +675,44 @@ BOOL __fastcall OBJOP_A2Q2_ArcaneSanctuaryPortalAndDrop1(D2ObjectOperateFnArg * 
     D2QuestDataA2Q2Strc* pA2Q2Data;
     D2ObjectOperateFnArg* pOperationLocal = pOperation;
     BOOL nDropIdx = PORTAL_ActivateOrDeactivatePortalObject((::SGAMEDATA**)pOperation);
-    if (!nDropIdx) {
-      return 0;
-    }
+    if (nDropIdx) {
+      pOperation->sArg.pVictim->dwDropItemCode = 0x20786f62;
+      D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
+      int iVar1 = 0;
+      if (pQuestData) {
+        D2UnitStrc* pDroppedItem;
+        pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
+        pA2Q2Data->nQuestItemPickupNotifyCount = 0;
+        UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnHoradricCubePickup);
+        if (pA2Q2Data->nQuestItemPickupNotifyCount > 0) {
+          do {
+            pDroppedItem = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 1);
+            if (pDroppedItem) {
+              pA2Q2Data->nBoxCount++;
+              pA2Q2Data->bHasCube = true;
+            }
 
-    pOperation->sArg.pVictim->dwDropItemCode = 0x20786f62;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheHoradricStaff);
-    int iVar1 = 0;
-    if (pQuestData) {
-      D2UnitStrc* pDroppedItem;
-      pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
-      pA2Q2Data->nQuestItemPickupNotifyCount = 0;
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q10_OnHoradricCubePickup);
-      if (0 < pA2Q2Data->nQuestItemPickupNotifyCount) {
-        do {
-          pDroppedItem = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 1);
-          if (pDroppedItem) {
-            pA2Q2Data->nBoxCount++;
-            pA2Q2Data->bHasCube = true;
-          }
-
-          iVar1++;
-        } while (iVar1 < pA2Q2Data->nQuestItemPickupNotifyCount);
+            iVar1++;
+          } while (iVar1 < pA2Q2Data->nQuestItemPickupNotifyCount);
+        }
       }
-    }
 
-    Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
-    D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
-    D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
-    *pSeed = sNewSeed;
-    iVar1 = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 5) * -5 + 5;
-    if (0 >= iVar1) {
+      Objects::ObjectsMode::RollChestDrops(pOperation, ITEMTYPE_Gold);
+      D2SeedStrc* pSeed = GetQuestControlSeed(pOperation->sArg.pGame);
+      D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
+      *pSeed = sNewSeed;
+      iVar1 = sNewSeed.nSeedLow % 5 + 5;
+      if (iVar1 <= 0) {
+        return 0;
+      }
+
+      do {
+        Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
+        iVar1--;
+      } while (iVar1);
+
       return 0;
     }
-
-    do {
-      Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
-      iVar1--;
-    } while (iVar1);
 
     return 0;
 }
@@ -814,12 +814,12 @@ bool __fastcall Q10_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       if (pItemMsf && pItemVip && pItemBox) {
         /* GetQuestState Step0x06 (have all 3 pieces: 0 -> status 2/4, set -> status 3)
                           */ BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
-        if (!BVar2) {
-          *nUnknown = !BVar1 * '\x02' + '\x02';
+        if (BVar2) {
+          *nUnknown = '\x03';
           return true;
         }
 
-        *nUnknown = '\x03';
+        *nUnknown = !BVar1 * '\x02' + '\x02';
         return true;
       }
       if (pItemTsh) {
@@ -915,18 +915,20 @@ void __fastcall Q10_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (pItemVip) {
       return;
     }
-    if (!pSpecificData) {
+    if (pSpecificData) {
+      if (pItemTsh) {
+        if (pItemMsf) {
+          return;
+        }
+
+        goto check_cube;
+      }
+    } else {
       /* UnsetQuestState Step0x05 (no longer holding msf -> re-offer) */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x05);
       check_cube:
       if (pItemTsh) {
         goto check_viper_amulet;
       }
-    } else if (pItemTsh) {
-      if (pItemMsf) {
-        return;
-      }
-
-      goto check_cube;
     }
 
     /* UnsetQuestState Step0x06 (no longer holding cube -> re-offer) */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
@@ -961,7 +963,7 @@ void __fastcall Q10_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     if (pQuestSpecific) {
       pA1Q1QuestData->nHstCount++;
     }
-    if (!(pA1Q1QuestData->bAllItemsAccountedFor && (0 < pA1Q1QuestData->nHstCount || pA1Q1QuestData->nBoxCount && pA1Q1QuestData->nVipCount && pA1Q1QuestData->nMsfCount))) {
+    if (!(pA1Q1QuestData->bAllItemsAccountedFor && (pA1Q1QuestData->nHstCount > 0 || pA1Q1QuestData->nBoxCount && pA1Q1QuestData->nVipCount && pA1Q1QuestData->nMsfCount))) {
       return;
     }
 
@@ -983,7 +985,7 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
     eD2HostGameType eGameType;
     D2QuestDataA2Q2Strc* pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
     uint32_t dwItemCode = D2Common::ITEMS::Items::ITEM_GetItemsTxt_szCode(pQuestArgs->pTarget);
-    if (dwItemCode < 0x20747369) {
+    if (dwItemCode <= 0x20747368) {
       switch (dwItemCode) {
         case 0x20747368:
           {

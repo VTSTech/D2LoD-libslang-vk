@@ -40,18 +40,7 @@ namespace D2Win::Src::D2WinSmack {
 char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(int pUnused, int32_t nClass, int32_t bHasModifier, int32_t bIsExpansion) {
     uint32_t nTitleIndex;
     bool bSignedGreaterOrEqual;
-    if (!bIsExpansion) {
-      if (nClass < 4) {
-        nTitleIndex = 0;
-        goto lookup_title_prefix;
-      }
-      if (nClass < 8) {
-        nTitleIndex = 1;
-        goto lookup_title_prefix;
-      }
-
-      bSignedGreaterOrEqual = nClass >= 0xc;
-    } else {
+    if (bIsExpansion) {
       if (nClass < 5) {
         nTitleIndex = 0;
         goto lookup_title_prefix;
@@ -62,6 +51,17 @@ char * __stdcall D2WINSMACK_GetTitlePrefixIndexFromClass(int pUnused, int32_t nC
       }
 
       bSignedGreaterOrEqual = nClass >= 0xf;
+    } else {
+      if (nClass < 4) {
+        nTitleIndex = 0;
+        goto lookup_title_prefix;
+      }
+      if (nClass < 8) {
+        nTitleIndex = 1;
+        goto lookup_title_prefix;
+      }
+
+      bSignedGreaterOrEqual = nClass >= 0xc;
     }
 
     nTitleIndex = bSignedGreaterOrEqual + 2;

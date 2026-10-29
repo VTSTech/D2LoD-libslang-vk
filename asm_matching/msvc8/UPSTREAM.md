@@ -18,6 +18,10 @@ the constant (`cmp x, 4` against `cmp x, 5`), the strictness of the jump
 (`jl` against `jle`) and the order of the operands. Example:
 FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder (0040f000), `-1 < nResult`
 compiles to `cmp eax, -1; jle`, the original has `test eax, eax; jl`.
+An unsigned `x > 0` comes out as `x != 0`; where the original's `jbe`
+stands against the tree's `jne` the if/else is also the other way round,
+and both are restored together (GFX_PrecacheMonsterCofSprites, 0046f650:
+`if (c == '\0') {A} else {B}` is `if ((uint32_t)c > 0) {B} else {A}`).
 
 **Assertions in front of the code they guard** (`fix_assert.py`). Blizzard's
 assertion is `if (!(cond)) { ERROR_UnrecoverableInternalError_Halt(...);
@@ -28,7 +32,11 @@ ASYNCDATA_GetReadSize (0040aa40) matches once it is put back.
 **If/else branches in the original's order** (`fix_ifelse.py`). VC8 lays an
 if/else out in source order, the then-branch falling through; where the
 original falls through into what the tree has as the else branch, the
-branches are swapped and the condition negated (DumpLog, 004082e0).
+branches are swapped and the condition negated (DumpLog, 004082e0). With
+the branches the other way round the layouts often do not align, so every
+`if (!x) {A} else {B}` of one operand is also tried as `if (x) {B} else {A}`
+and kept where its function comes out more similar: Blizzard tests the
+pointer first and handles its absence after.
 
 **`static` for file-local functions the original passes arguments in
 registers** (`fix_static.py`). VC8 gives a static function whose every call
@@ -118,7 +126,10 @@ original does (D2ApplyPercent, 00483360). The same 64-bit cast hides the
 & 0xffffffff) % (uint64_t)n)`: Ghidra's reading of `xor edx, edx; div`, which
 is `s.nSeedLow % n` (UNIT_GetModuloFromSeed, 0045c390, the inlined
 SEED_RollLimitedRandomNumber); likewise the quotient, and a bit test of the
-low dword, `(uint64_t)d2_bits_of(s) & 1`, is `s.nSeedLow & 1`.
+low dword, `(uint64_t)d2_bits_of(s) & 1`, is `s.nSeedLow & 1`. A zero extension, a
+cast to a byte or a word, comes back as a mask, `nUpper & 0xff`: compiled as
+written VC8 masks (`and eax, 0xff`) where the original has `movzx eax, al`
+(SFILE_Hash, 00415330); `(uint8_t)nUpper` is what it compiles to that.
 
 **Zero-fills and copies as the loops they were** (`fix_stringops.py`). VC8
 SP1 expands no memset beyond 32 bytes, and an index loop it unrolls or turns
@@ -165,7 +176,8 @@ from functions the tree inlines them into.
 database types `void` whose original loads EAX with a constant before it
 returns (`mov eax, 1` ahead of the epilogue:
 NET_SID_CLIENT_Send_0x3D_CreateAccount2, 0051a740) returned that value; where
-it is one constant on every path the fixer restores it. Functions that return
+it is one constant on every path the fixer restores it. A setter whose EAX holds the
+same argument at every return (AUTOMAP_SetFade) returns that parameter. Functions that return
 different values on different paths are left for the database: which `return`
 gets which value is the signature's and the body's to say. The ones an earlier
 version of the fixer retyped with one value were set by hand from EAX at each
@@ -226,6 +238,16 @@ argument takes care: VC8 reserves a 4-byte local with `push ecx`, and
 live-in analysis discounts both; DEBUG_CrashDumpRequestThreadProc,
 004027c0, and DetectCpuVendor, 0040e250, take none).
 
+**Parameters typed by what the function reads** (`fix_paramtype.py`).
+Ghidra gives a parameter the type of what its function reads of it: a
+function testing only the low byte of an argument gets `uint8_t`. The
+original's callers show the type it had: for a `__fastcall` argument they
+load the whole register, `mov edx, 5` or `mov edx, dword ptr [...]`, where a
+byte parameter makes VC8 load DL (QUEST_SetStateAndBroadcast, 00544300,
+and its quest callers). The rule: a parameter the original's callers pass
+in a full register is an int - the type of a parameter is evidence at its
+call sites, not only in its function.
+
 **Local types.** D2Game sends packets from `uint8_t aPacket[N]` locals where
 the original has packet structs: VC8 protects byte arrays with a stack cookie
 and structs of scalars not, so these functions have a cookie the original
@@ -236,7 +258,10 @@ spells its two bytes of alignment as `uint8_t nReserved66[2]`, and every
 function with a local D2DamageStrc gets a cookie the original does not have
 (SetUninterruptableState, 005544b0); `fix_gsbuffer.py --members` makes the
 member a struct of byte fields. Padding the compiler inserts by itself needs
-no member at all. A packet built on the stack can also come apart:
+no member at all. A local typed by what the function reads of it, `uint8_t
+byFlags`, is loaded into AL and stored as a byte, where the original
+zero-extends the load and stores a dword: it was an int (SMEM_DestroyHeap,
+00411f00; `fix_localtype.py`). A packet built on the stack can also come apart:
 NET_SID_CLIENT_Send_0x52_AuthAccountCreate (00522130) fills a salt, a
 verifier and the user name and then sends `nUsernameLen + 0x41` bytes from
 the salt - one packet struct in the original, three arrays in the tree, which

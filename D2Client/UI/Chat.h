@@ -56,7 +56,6 @@ void __stdcall CHAT_DrawIMEComposition(int32_t nPosX, int32_t nPosY);
 void __stdcall CHAT_DrawIMECandidates();
 void __stdcall DRAW_UI_ChatInput();
 void __stdcall CHAT_RestoreFromHistory();
-void __fastcall CHAT_AddToHistory(int32_t nUnused, uint16_t * pwSrc);
 void __stdcall CHAT_ScrollHistory(int32_t nDirection);
 BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, char * szOutParam);
 void __stdcall CHAT_CheckChatboxBounds(int32_t nParam);
@@ -75,6 +74,6 @@ void __fastcall ESCMENU_Init3DSoundItem(struct D2EscMenuItemStrc * pItem, struct
 void __fastcall UI_SLIDER_ApplyPositionalBias(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall ESCMENU_InitEaxSoundItem(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyNpcSpeech(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-// 9 internal functions (defined in .cpp)
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Chat

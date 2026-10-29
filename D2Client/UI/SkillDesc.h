@@ -1224,7 +1224,7 @@ void __fastcall SKILLDESC_DrawSkillDmgProgElem(struct D2UnitStrc * pUnit, struct
 void __stdcall SKILLDESC_DescLine29_FormatMonster(uint16_t * wszText, struct D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nParam2);
 void __stdcall SKILLDESC_DescLine22_SkillSynergies(struct D2UnitStrc * pUnit, uint16_t * wszText, eD2Skills eSkill, short * nParam, int32_t nParam2);
 void __stdcall SKILLDESC_DescLine35_BonusList(short * pSkillArgs, uint16_t wLabelStringId);
-int __stdcall SKILLDESC_HasAnyClassSkill(struct D2UnitStrc * pUnit, int32_t nSkillId);
+int __stdcall SKILLDESC_HasAnyClassSkill(struct D2UnitStrc * pUnit);
 // Draws skill tooltip info panel with 3 sections: skill name, damage description (via gSkillDamageDescFuncTable dispatch), and attack rating text (via gpSkillDescAttackFuncTable dispatch). Layout positions from int32_t_ARRAY_ARRAY_0072d840. Validates descdam/descatt indices (<144/<72) and checks CanUseSkill result (0/1/6/8) to enable/disable sections.
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillInfo(struct D2UnitStrc * pPlayerUnit, struct D2SkillStrc * pActiveSkill, int32_t nLayoutIndex);
@@ -1232,7 +1232,7 @@ void __fastcall DRAW_UI_STAT_Damage(struct D2UnitStrc * pUnit);
 BOOL __fastcall SKILLDESC_GetSkillBonusText(struct D2UnitStrc * pUnit, int32_t nParam);
 BOOL __fastcall SKILLDESC_ProcessDescLine(struct D2UnitStrc * pUnit, uint16_t * pwszOutput, struct D2SkillsTxt * pSkillsTxt, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nDescLineIndex, char cCharClass);
 void __fastcall SKILLDESC_BuildSkillTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nClassMask, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
-void __fastcall SKILLDESC_BuildSkillTooltip_NoMaxLevelCheck(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nClassMask, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
+void __fastcall SKILLDESC_BuildSkillTooltip_NoMaxLevelCheck(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nScreenX, int32_t nScreenY);
 void __fastcall SKILLDESC_BuildSkillShortTooltip(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nCalcIndex, int32_t nParam1, int32_t nParam2, int32_t nParam3);
 // 65 internal functions (defined in .cpp)
 

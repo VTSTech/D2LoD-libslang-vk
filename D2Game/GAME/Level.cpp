@@ -51,10 +51,10 @@ namespace D2Game::GAME::Level {
 static void InitDrlgAct(::SGAMEDATA * pGame, char nActNo) {
     eD2LevelId townLevelId;
     uint32_t arenaModeFlag = Arena::ARENA_IsArenaLevel(pGame);
-    if (!arenaModeFlag) {
-      townLevelId = D2Common::DUNGEON::Dungeon::GetTownLevelIdFromActNo(nActNo);
-    } else {
+    if (arenaModeFlag) {
       townLevelId = Arena::GetTownLevelFromArenaCtrl(pGame);
+    } else {
+      townLevelId = D2Common::DUNGEON::Dungeon::GetTownLevelIdFromActNo(nActNo);
     }
 
     D2DrlgActStrc* pDrlgAct = D2Common::DUNGEON::Dungeon::AllocAct(nActNo, pGame->pInitSeed.nSeedLow, 0, pGame, pGame->nDifficulty, pGame->pMemoryPool, townLevelId, nullptr, nullptr);
@@ -246,7 +246,7 @@ void __fastcall ProcessUnitUpdateFlags(::SGAMEDATA * pGame) {
 // Counts the rooms of pGame->pAct[nAct] (DRLGROOM_GetRoomFromAct, pDrlgRoomNext chain); halts (line 660) when nAct >= 5.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 int __stdcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct) {
-    if (4 < nAct) {
+    if (nAct >= 5) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x294);
       exit(-1);
     }

@@ -140,7 +140,7 @@ void __fastcall LRUCACHE_ForEach(D2LRUCacheStrc * pCache, fpLRUCacheForEachFn pf
 }
 
 static D2LRUCacheNodeStrc * LRUCACHE_AllocEntry(D2LRUCacheStrc * pCache, int32_t nEntrySize) {
-    if (pCache->nCount == pCache->nMaxCount || pCache->dwBufSize < (uint32_t)(pCache->nBytesUsed + nEntrySize)) {
+    if (pCache->nCount == pCache->nMaxCount || (uint32_t)(pCache->nBytesUsed + nEntrySize) > pCache->dwBufSize) {
       return nullptr;
     }
 
@@ -151,10 +151,10 @@ static D2LRUCacheNodeStrc * LRUCACHE_AllocEntry(D2LRUCacheStrc * pCache, int32_t
       D2LRUCacheNodeStrc* pDVar1;
       pDVar1 = pEntry->pNext;
       pCache->pFreeHead = pDVar1;
-      if (!pDVar1) {
-        pCache->pFreeTail = 0;
-      } else {
+      if (pDVar1) {
         pDVar1->pPrev = 0;
+      } else {
+        pCache->pFreeTail = 0;
       }
 
       pEntry->pNext = 0;
@@ -192,12 +192,12 @@ void __fastcall LRUCACHE_FreeEntry(D2LRUCacheStrc * pCache, D2LRUCacheNodeStrc *
 
       pNextFreeEntry = pNode->pNext;
       pCache->pLRUHead = pNextFreeEntry;
-      if (!pNextFreeEntry) {
-        pCache->pLRUTail = 0;
+      if (pNextFreeEntry) {
+        pNextFreeEntry->pPrev = 0;
         pNode->pNext = 0;
         pNode->pPrev = 0;
       } else {
-        pNextFreeEntry->pPrev = 0;
+        pCache->pLRUTail = 0;
         pNode->pNext = 0;
         pNode->pPrev = 0;
       }
@@ -273,30 +273,30 @@ void __fastcall LRUCACHE_FreeAll(D2LRUCacheStrc * pCache) {
 // @sourcefile .\SRC\LRUCache.cpp
 D2LRUCacheNodeStrc * __fastcall LRUCACHE_GetOrAlloc(D2LRUCacheStrc * pCache, uint32_t nEntrySize, void * pUserData) {
     void* nAddress;
-    if (nEntrySize < pCache->dwBufSize) {
-      D2LRUCacheNodeStrc* ppAllocEntry;
-      pCache->nMissCount++;
-      pCache->nHitCount++;
-      ppAllocEntry = LRUCACHE_AllocEntry(pCache, nEntrySize);
-      while (!ppAllocEntry) {
-        LRUCACHE_FreeEntry(pCache, nullptr);
-        ppAllocEntry = LRUCACHE_AllocEntry(pCache, nEntrySize);
-      }
-
-      nAddress = D2_ALLOC_POOL_AT((D2PoolManagerStrc*)pCache->pAllocator, nEntrySize, ".\\SRC\\LRUCache.cpp", 0x84);
-      ppAllocEntry->pBuf = nAddress;
-      if (!nAddress) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x85);
-        exit(-1);
-      }
-
-      ppAllocEntry->nBufSize = nEntrySize;
-      ppAllocEntry->pUserData = pUserData;
-      return ppAllocEntry;
-    } else {
+    if (!(nEntrySize < pCache->dwBufSize)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x76);
       exit(-1);
     }
+
+    D2LRUCacheNodeStrc* ppAllocEntry;
+    pCache->nMissCount++;
+    pCache->nHitCount++;
+    ppAllocEntry = LRUCACHE_AllocEntry(pCache, nEntrySize);
+    while (!ppAllocEntry) {
+      LRUCACHE_FreeEntry(pCache, nullptr);
+      ppAllocEntry = LRUCACHE_AllocEntry(pCache, nEntrySize);
+    }
+
+    nAddress = D2_ALLOC_POOL_AT((D2PoolManagerStrc*)pCache->pAllocator, nEntrySize, ".\\SRC\\LRUCache.cpp", 0x84);
+    ppAllocEntry->pBuf = nAddress;
+    if (!nAddress) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x85);
+      exit(-1);
+    }
+
+    ppAllocEntry->nBufSize = nEntrySize;
+    ppAllocEntry->pUserData = pUserData;
+    return ppAllocEntry;
 }
 
 } // namespace D2CMP::SRC::LRUCache

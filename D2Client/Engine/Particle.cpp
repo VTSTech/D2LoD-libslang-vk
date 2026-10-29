@@ -67,83 +67,83 @@ void __stdcall FreeParticle(D2UnitStrc * pUnit) {
 
 int32_t __stdcall PARTICLE_GetX(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nX;
     }
 
-    return pParticle->nX;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetY(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nY;
     }
 
-    return pParticle->nY;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetScreenZ(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nScreenOffsetZ;
     }
 
-    return pParticle->nScreenOffsetZ;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosXShifted(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosX >> 0xb;
     }
 
-    return pParticle->nPosX >> 0xb;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosYShifted(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosY >> 0xb;
     }
 
-    return pParticle->nPosY >> 0xb;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosZShifted(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosZ >> 0xb;
     }
 
-    return pParticle->nPosZ >> 0xb;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosXRaw(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosX;
     }
 
-    return pParticle->nPosX;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosYRaw(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosY;
     }
 
-    return pParticle->nPosY;
+    return 0;
 }
 
 int32_t __stdcall PARTICLE_GetPosZRaw(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nPosZ;
     }
 
-    return pParticle->nPosZ;
+    return 0;
 }
 
 void __stdcall SetPosVectorShifted(D2UnitStrc * pUnit, int32_t nPosX, int32_t nPosY, int32_t nPosZ) {
@@ -221,11 +221,11 @@ void __stdcall PARTICLE_SetBounceParams(D2UnitStrc * pUnit, int32_t nDurationFra
 
 int32_t __stdcall PARTICLE_GetBounceCount(D2UnitStrc * pUnit) {
     D2ParticleStrc* pParticle = GfxInfo::GetParticleFromUnit(pUnit);
-    if (!pParticle) {
-      return 0;
+    if (pParticle) {
+      return pParticle->nDurationFrames;
     }
 
-    return pParticle->nDurationFrames;
+    return 0;
 }
 
 void __fastcall PARTICLE_ClearLifetimeFlag(D2UnitStrc * pUnit) {
@@ -277,17 +277,29 @@ void __stdcall PARTICLE_UpdatePosition(D2UnitStrc * pUnit) {
     nOffsetX1 = iVar1 + pParticle->pOffsets[1].nOffsetZ;
     pParticle->pOffsets[0].nOffsetZ = nOffsetX1;
     if (nFlags & 2) {
-      if (!pParticle->nBounceCount) {
+      if (pParticle->nBounceCount) {
+        pParticle->nBounceCount--;
+      } else {
         pParticle->nFlags = nFlags | 1;
         *pX = 0;
         *pY = 0;
-      } else {
-        pParticle->nBounceCount--;
       }
     }
 
     nFlags = pParticle->nFlags;
-    if (!(nFlags & 4)) {
+    if (nFlags & 4) {
+      if (pParticle->nPosZ >> 0xb > pParticle->pOffsets[2].nOffsetZ) {
+        goto project_to_screen;
+      }
+
+      nOffsetX0 = (int)((uint64_t)((int64_t)(pParticle->nZAnimScale * nOffsetX1) * -0x51eb851f) >> 0x20);
+      pParticle->pOffsets[0].nOffsetZ = (nOffsetX0 >> 5) - (nOffsetX0 >> 0x1f);
+      pParticle->nPosZ = pParticle->pOffsets[2].nOffsetZ;
+      if (pParticle->nDurationFrames) {
+        pParticle->nDurationFrames--;
+        goto project_to_screen;
+      }
+    } else {
       D2UnitStrc* pOwner;
       if (nFlags & 0x10) {
         pOwner = UNIT::Player::MISSILE_GetOwnerUnit(pUnit);
@@ -337,7 +349,7 @@ void __stdcall PARTICLE_UpdatePosition(D2UnitStrc * pUnit) {
         pParticle->nPosZ = pParticle->nScreenOffsetZ * -0x800;
         goto project_to_screen;
       }
-      if ((nFlags & 0x20 || pParticle->pOffsets[2].nOffsetX < *pX >> 0xb || pParticle->pOffsets[2].nOffsetY < *pY >> 0xb || (iVar2 = pParticle->pOffsets[2].nOffsetZ , iVar2 < pParticle->nPosZ >> 0xb)) && (!(nFlags & 0x20) || *pX >> 0xb < pParticle->pOffsets[2].nOffsetX || *pY >> 0xb < pParticle->pOffsets[2].nOffsetY || (iVar2 = pParticle->pOffsets[2].nOffsetZ , pParticle->nPosZ >> 0xb < iVar2))) {
+      if ((nFlags & 0x20 || *pX >> 0xb > pParticle->pOffsets[2].nOffsetX || *pY >> 0xb > pParticle->pOffsets[2].nOffsetY || (iVar2 = pParticle->pOffsets[2].nOffsetZ , pParticle->nPosZ >> 0xb > iVar2)) && (!(nFlags & 0x20) || *pX >> 0xb < pParticle->pOffsets[2].nOffsetX || *pY >> 0xb < pParticle->pOffsets[2].nOffsetY || (iVar2 = pParticle->pOffsets[2].nOffsetZ , pParticle->nPosZ >> 0xb < iVar2))) {
         goto project_to_screen;
       }
 
@@ -345,18 +357,6 @@ void __stdcall PARTICLE_UpdatePosition(D2UnitStrc * pUnit) {
       iVar1 = pParticle->pOffsets[2].nOffsetY;
       pParticle->nPosZ = iVar2 << 0xb;
       *pY = iVar1 << 0xb;
-    } else {
-      if (pParticle->pOffsets[2].nOffsetZ < pParticle->nPosZ >> 0xb) {
-        goto project_to_screen;
-      }
-
-      nOffsetX0 = (int)((uint64_t)((int64_t)(pParticle->nZAnimScale * nOffsetX1) * -0x51eb851f) >> 0x20);
-      pParticle->pOffsets[0].nOffsetZ = (nOffsetX0 >> 5) - (nOffsetX0 >> 0x1f);
-      pParticle->nPosZ = pParticle->pOffsets[2].nOffsetZ;
-      if (pParticle->nDurationFrames) {
-        pParticle->nDurationFrames--;
-        goto project_to_screen;
-      }
     }
 
     pParticle->nFlags = nFlags | 1;

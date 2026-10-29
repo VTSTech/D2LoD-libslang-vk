@@ -35,18 +35,18 @@ BOOL __stdcall SOUND_IsAmbientStreaming() {
     }
 
     uint32_t bIsStreaming = D2SoundSmp::SOUNDSMP_IsStreaming(gpMusicStreamBuffer);
-    if (!bIsStreaming) {
-      return 0;
+    if (bIsStreaming) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall SOUND_ResetAmbientSoundFlags() {
     int i = 0;
     DWORD dwLangCode = gnAmbientSoundLanguageCode;
     int nCount = gaAmbientSoundFlags;
-    if (0 >= gaAmbientSoundFlags) {
+    if (gaAmbientSoundFlags <= 0) {
       return;
     }
 
@@ -62,7 +62,7 @@ void __stdcall SOUND_ResetAmbientSoundFlags() {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x52);
         exit(-1);
       }
-      if (nCount <= i) {
+      if (i >= nCount) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53);
         exit(-1);
       }
@@ -174,7 +174,7 @@ int __stdcall SOUND_PlayNextAmbientSound() {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x52);
             exit(-1);
           }
-          if (nAmbientCount <= nRandIdx) {
+          if (nRandIdx >= nAmbientCount) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x53);
             exit(-1);
           }
@@ -185,7 +185,7 @@ int __stdcall SOUND_PlayNextAmbientSound() {
           }
           if (pAmbientEntry[1]) {
             nRandIdx++;
-            if (nAmbientCount <= nRandIdx) {
+            if (nRandIdx >= nAmbientCount) {
               nRandIdx = 0;
             }
 
@@ -237,17 +237,17 @@ void __stdcall SOUND_LoadRegistrySettings() {
     }
 
     bReadMasterVol = Storm::Source::SReg::SRegLoadValue("Diablo II", "Master Volume", 0, (int32_t*)&dwRegValue);
-    if (bReadMasterVol && dwRegValue < 0x65) {
+    if (bReadMasterVol && dwRegValue <= 0x64) {
       g_nSoundMasterVolume = dwRegValue;
     }
 
     bReadMasterVol = Storm::Source::SReg::SRegLoadValue("Diablo II", "Music Volume", 0, (int32_t*)&dwRegValue);
-    if (bReadMasterVol && dwRegValue < 0x65) {
+    if (bReadMasterVol && dwRegValue <= 0x64) {
       g_nSoundMusicVolume = dwRegValue;
     }
 
     bReadMasterVol = Storm::Source::SReg::SRegLoadValue("Diablo II", "Positional Bias", 0, (int32_t*)&dwRegValue);
-    if (bReadMasterVol && dwRegValue < 0x65) {
+    if (bReadMasterVol && dwRegValue <= 0x64) {
       g_nSoundPositionalBias = dwRegValue;
     }
 
@@ -257,7 +257,7 @@ void __stdcall SOUND_LoadRegistrySettings() {
     }
 
     bReadMasterVol = Storm::Source::SReg::SRegLoadValue("Diablo II", "Options Music", 0, (int32_t*)&dwRegValue);
-    if (!(bReadMasterVol && dwRegValue < 2)) {
+    if (!(bReadMasterVol && dwRegValue <= 1)) {
       return;
     }
 
@@ -399,7 +399,7 @@ void __fastcall SOUND_PlaySoundEffect(uint8_t * pbParam) {
         nCmpResult = 0;
         while (gpaSoundEffectBuffers[nCmpResult]->dwFlags != *(int*)(pbMatchedEntry + 0x58) || (bIsPlaying = D2SoundSmp::SOUNDSMP_IsPlaying(gpaSoundEffectBuffers[nCmpResult]) , bIsPlaying != 0)) {
           nCmpResult++;
-          if (7 < nCmpResult) {
+          if (nCmpResult >= 8) {
             /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_008817c4);
             return;
           }

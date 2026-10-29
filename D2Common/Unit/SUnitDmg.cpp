@@ -45,7 +45,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
       if (pUnit->eUnitType == UNIT_PLAYER) {
         if (eAnimMode == eD2PlayerAnimMode_ns::Run || eAnimMode == Walk) {
           nParam = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
-          if (nParam < 1) {
+          if (nParam <= 0) {
             return 0;
           }
 
@@ -53,14 +53,14 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
           roll_evade:
           DVar1 = D2_SEED_NEXT(pUnit->sSeed);
           pUnit->sSeed = DVar1;
-          nAvoidChance = DVar1.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) / 100) * -100;
+          nAvoidChance = DVar1.nSeedLow % 100;
           nSeedMod = "evades";
           nParryBonus = nParam;
           nDodgeChance = nAvoidChance;
           D2Game::UNIT::SUnit::GetGamePointer(pUnit2);
           D2Game::nullsub_4Arg(pUnit, nParryBonus, nDodgeChance, (uint32_t)nSeedMod);
           nRandRoll = 8;
-          if (nParam > nAvoidChance) {
+          if (nAvoidChance < nParam) {
             return nRandRoll;
           }
 
@@ -69,7 +69,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
         }
 
         nParryBonus = D2Game::UNIT::SUnitDmg::DAMAGE_GetSkillDamageBonus(pUnit);
-        if (0 < nParryBonus) {
+        if (nParryBonus > 0) {
           COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, &nWeaponClass2, -1, 1);
           if (nWeaponClass2 == 0xd) {
             nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
@@ -89,7 +89,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
       }
       if (eAnimMode == eD2PlayerAnimMode_ns::Skill3 || eAnimMode == Walk) {
         nParam = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
-        if (nParam < 1) {
+        if (nParam <= 0) {
           return 0;
         }
 
@@ -99,7 +99,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
     }
 
     nParryBonus = D2Game::UNIT::SUnitDmg::DAMAGE_GetSkillDamageBonus(pUnit);
-    if (0 < nParryBonus) {
+    if (nParryBonus > 0) {
       COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, &nWeaponClass3, -1, 1);
       if (nWeaponClass3 == 0xd) {
         nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
@@ -118,7 +118,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
     roll_dodge_or_avoid:
     if (!nParam) {
       nDodgeChance = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_dodge, 0);
-      if (0 < nDodgeChance) {
+      if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "dodges";
         nAvoidChance = nDodgeChance;
@@ -131,7 +131,7 @@ uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit
       }
     } else {
       nDodgeChance = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_avoid, 0);
-      if (0 < nDodgeChance) {
+      if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "avoids";
         nAvoidChance = nDodgeChance;

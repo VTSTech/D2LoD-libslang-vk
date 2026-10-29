@@ -62,7 +62,7 @@ namespace D2Client::Engine {
 BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_t nRectWidth, int32_t nRectHeight) {
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (!(nRectLeftX <= nMouseX && nMouseX <= nRectLeftX + nRectWidth && nRectBottomY - nRectHeight <= nMouseY && nMouseY <= nRectBottomY)) {
+    if (!(nMouseX >= nRectLeftX && nMouseX <= nRectLeftX + nRectWidth && nMouseY >= nRectBottomY - nRectHeight && nMouseY <= nRectBottomY)) {
       return 0;
     }
 
@@ -72,10 +72,10 @@ BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_
 void __stdcall DrawPopupOk(int32_t nParam) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
-    if (!nParam) {
-      sGfxData.pDC6 = (DC6*)IMG_popupok_ConnLost;
-    } else {
+    if (nParam) {
       sGfxData.pDC6 = (DC6*)IMG_popupok_DiscPrompt;
+    } else {
+      sGfxData.pDC6 = (DC6*)IMG_popupok_ConnLost;
     }
 
     sGfxData.nDirection = 0;
@@ -92,10 +92,10 @@ void __stdcall LOADER_CheckForInsertedDiscs() {
     UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     nColor_lcl = 0;
-    if (!bIsExpansion) {
-      /* Play Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5169);
-    } else {
+    if (bIsExpansion) {
       /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
+    } else {
+      /* Play Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5169);
     }
 
     UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 205 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
@@ -146,7 +146,7 @@ void __stdcall INPUT_CharScreenOkDown(D2UIMouseMsgStrc * pMsg) {
     int nLeftEdge = gnPanelOffsetX + 0x110;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x170 && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
+    if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
       gnCharScreenOkButtonPressed = 1;
       gnCharScreenInputState = 1;
       Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
@@ -174,7 +174,7 @@ void __stdcall INPUT_CharScreenOkUp(D2UIMouseMsgStrc * pMsg) {
       nLeftEdge = gnPanelOffsetX + 0x110;
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
-      if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x170 && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
+      if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkPressed = 1;
         gnCharScreenInputState = 0;
         pMsg->bHandled = 1;
@@ -269,13 +269,13 @@ void __stdcall INPUT_CharScreenDualButtonDown(D2UIMouseMsgStrc * pMsg) {
     int nLeftEdge = gnPanelOffsetX + 0xce;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (nMouseX < nLeftEdge || nBaseX + 0x12e < nMouseX || nMouseY < nBaseY + 0x116 || nBaseY + 0x136 < nMouseY) {
+    if (nMouseX < nLeftEdge || nMouseX > nBaseX + 0x12e || nMouseY < nBaseY + 0x116 || nMouseY > nBaseY + 0x136) {
       int nBaseX2 = gnPanelOffsetX;
       nBaseY = -gnPanelOffsetY;
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseX = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();
-      if (nBaseX < nMouseY || nBaseX2 + 0x1b2 < nBaseX || nMouseX < nBaseY + 0x116 || nBaseY + 0x136 < nMouseX) {
+      if (nBaseX < nMouseY || nBaseX > nBaseX2 + 0x1b2 || nMouseX < nBaseY + 0x116 || nMouseX > nBaseY + 0x136) {
         GAME::Game::GAMEDATA_ClearQueuedClicks();
         pMsg->bHandled = 1;
         pMsg->dwResult = 0;
@@ -310,7 +310,7 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
       nBaseX2 = gnPanelOffsetX;
-      if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x12e && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
+      if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x12e && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkButtonConfirmed = 1;
         gnCharScreenInputState = 0;
       }
@@ -319,7 +319,7 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseY = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();
-      if (nMouseY <= nBaseY && nBaseY <= nBaseX2 + 0x1b2 && nBaseX + 0x116 <= nMouseX && nMouseX <= nBaseX + 0x136) {
+      if (nBaseY >= nMouseY && nBaseY <= nBaseX2 + 0x1b2 && nMouseX >= nBaseX + 0x116 && nMouseX <= nBaseX + 0x136) {
         gbCharScreenCancelPressed = 1;
         gnCharScreenInputState = 0;
       }
@@ -496,21 +496,21 @@ void __stdcall CLIENT_SetAnimModeAndMoveToCurrentPos(eD2PlayerAnimMode nAnimMode
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nY = 0;
     }
     if (!(nX && nY)) {
       return;
@@ -535,7 +535,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nRoomCount);
     uint32_t nCount = 0;
-    if (!nRoomCount) {
+    if (nRoomCount <= 0) {
       return;
     }
 
@@ -586,7 +586,7 @@ void __fastcall CLIENT_UpdateUnitLightRadius(D2UnitStrc * pUnit, int32_t nRadius
     }
 
     nLightRadius += nRadiusBonus;
-    Draw::LightMap::LIGHTMAP_SetRadius(pLightMap, (int)nLightRadius < 1 ? 0 : nLightRadius);
+    Draw::LightMap::LIGHTMAP_SetRadius(pLightMap, (int)nLightRadius <= 0 ? 0 : nLightRadius);
 }
 
 void __fastcall CLIENT_SetUnitLightColor(D2UnitStrc * pUnit, int32_t dwRGB) {

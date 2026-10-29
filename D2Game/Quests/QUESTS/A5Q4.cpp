@@ -61,7 +61,7 @@ typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, D2UnitSt
 namespace D2Game::Quests::QUESTS::A5Q4 {
 
 // Q34_NotifyQuestState (Betrayal of Harrogath / kill Nihlathak). Quest-update callback passed to QUEST_SetStateAndBroadcast. Sends quest-log update (msg 0x22) to the player only when the quest is in a finished/just-completed/cannot-complete terminal state (Completed | FinishedInPreviousGame), but NOT yet acknowledged via JustCompleted/CannotComplete. Gates client log refresh on real completion.
-void __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
+int __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Completed);
@@ -70,12 +70,13 @@ void __fastcall Q34_NotifyQuestState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, vo
       if (!bQuestState) {
         bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
         if (!bQuestState) {
-          return;
+          return 0;
         }
       }
     }
 
     QUEST_SendQuestUpdateToPlayer(pGame, pUnit, 0x22);
+    return 0;
 }
 
 // Q34_StatusFilter (Betrayal of Harrogath). Computes the quest-log icon/state byte (*nUnknown) shown to the client from the QuestRecord bits: 0=not-yet (intro), 0x0c=CannotComplete-in-this-game, else maps Step0x04 bit (+4) or the in-memory nStateFlagPrev. Read-only on quest state.
@@ -95,16 +96,15 @@ bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         }
 
         BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BetrayalOfHaggorath, QUESTSTATE_CannotCompleteQuestInGame);
-        if (!BVar1) {
-          if (3 < pQuestData->nStateFlag) {
-            return true;
-          }
-
-          *nUnknown = pQuestData->nStateFlagPrev;
+        if (BVar1) {
+          *nUnknown = '\f';
+          return true;
+        }
+        if (pQuestData->nStateFlag >= 4) {
           return true;
         }
 
-        *nUnknown = '\f';
+        *nUnknown = pQuestData->nStateFlagPrev;
         return true;
       }
     }
@@ -125,21 +125,21 @@ void __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     BOOL BVar1 = 1;
@@ -184,21 +184,21 @@ void __fastcall Q34_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     BOOL BVar2 = 1;
@@ -270,18 +270,18 @@ bool __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pQuestData_00) {
-      return false;
+    if (pQuestData_00) {
+      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6);
+        exit(-1);
+      }
+
+      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
 
-    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6);
-      exit(-1);
-    }
-
-    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-    return bVar1;
+    return false;
 }
 
 // A5Q4 (Betrayal of Harrogath) NPC dialog callback for Nihlathak (classId 0x200). On accept-quest line 0x4ea9: advances nStateFlag to 2, marks bAcceptedQuest/bNotifiedCompletion, and iterates Q34_UpdateQuestStep for all players. On return-after-kill line 0x4eb4: broadcasts prev state, sets Step0x04 in the player's QuestRecord, and if JustCompleted already set advances to nStateFlag 5 and runs Q34_SequenceFilter.
@@ -375,12 +375,12 @@ void __fastcall Q34_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
       if (bIsJustCompleted) {
         bPrisonComplete = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_BetrayalOfHaggorath, QUESTSTATE_Step0x04);
-        if (bPrisonComplete) {
-          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
+        if (!bPrisonComplete) {
+          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
           return;
         }
 
-        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
+        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
         return;
       }
       if (!pQuestArgs->pPlayer) {
@@ -445,7 +445,7 @@ BOOL __fastcall Q34_CheckNearNihlathak(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       uint32_t nAdjacentIdx;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
       nAdjacentIdx = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (ppAdjacentRooms[nAdjacentIdx] == (D2RoomStrc*)pBetrayalQuest->pRoomTarget) {
             bIsNearNihlathak = '\x01';
@@ -648,21 +648,21 @@ void __fastcall Q34_SpawnNihlathakPortalTimer(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     BOOL BVar1 = 1;
@@ -819,21 +819,21 @@ void __fastcall Q34_NpcSpawnPortalInAct5(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPosX = 0;
     }
 
     BOOL bIgnoreSpawnLocation = 1;

@@ -130,47 +130,47 @@ BOOL __stdcall D2WINMAIN_SetFocusedControl(D2ControlStrc * pControl) {
 
 BOOL __stdcall FORMS_AddControlToGlobalList(D2ControlStrc * pControl) {
     D2ControlStrc* pTail;
-    if (D2Client::Forms::pFormsList) {
-      D2ControlStrc* pNext;
-      pNext = D2Client::Forms::pFormsList->pNext;
-      pTail = D2Client::Forms::pFormsList;
-      while (pNext) {
-        pTail = pTail->pNext;
-        pNext = pTail->pNext;
-      }
-
-      pTail->pNext = pControl;
+    if (!D2Client::Forms::pFormsList) {
+      D2Client::Forms::pFormsList = pControl;
       return 1;
     }
 
-    D2Client::Forms::pFormsList = pControl;
+    D2ControlStrc* pNext;
+    pNext = D2Client::Forms::pFormsList->pNext;
+    pTail = D2Client::Forms::pFormsList;
+    while (pNext) {
+      pTail = pTail->pNext;
+      pNext = pTail->pNext;
+    }
+
+    pTail->pNext = pControl;
     return 1;
 }
 
 BOOL __fastcall FORMS_AppendFormToDestroyQueue(D2ControlStrc * pControl) {
     D2ControlStrc* pNext;
     pControl->pNext = 0;
-    if (D2Client::Forms::pFormUnknown) {
-      D2ControlStrc* pTail;
-      pNext = D2Client::Forms::pFormUnknown->pNext;
-      pTail = D2Client::Forms::pFormUnknown;
-      while (pNext) {
-        pTail = pTail->pNext;
-        pNext = pTail->pNext;
-      }
-
-      pTail->pNext = pControl;
+    if (!D2Client::Forms::pFormUnknown) {
+      D2Client::Forms::pFormUnknown = pControl;
       return 1;
     }
 
-    D2Client::Forms::pFormUnknown = pControl;
+    D2ControlStrc* pTail;
+    pNext = D2Client::Forms::pFormUnknown->pNext;
+    pTail = D2Client::Forms::pFormUnknown;
+    while (pNext) {
+      pTail = pTail->pNext;
+      pNext = pTail->pNext;
+    }
+
+    pTail->pNext = pControl;
     return 1;
 }
 
 // @sourcefile .\Src\D2WinMain.cpp
 void __stdcall D2WINMAIN_FreeLeadingFormControls() {
     D2ControlStrc* pDVar1;
-    if (!(gnFormControlCount < 1 && D2Client::Forms::pFormUnknown)) {
+    if (!(gnFormControlCount <= 0 && D2Client::Forms::pFormUnknown)) {
       return;
     }
 
@@ -442,7 +442,7 @@ void __stdcall DrawCursorOOG() {
     sGfxData.nFrameNumber = gnCursorDC6FrameNumber;
     sGfxData.pDC6 = pDVar1;
     sGfxData.nDirection = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nMouseX < 1 ? 0 : nMouseX, (nMouseY < 1 ? 0 : nMouseY) - 1, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nMouseX <= 0 ? 0 : nMouseX, (nMouseY <= 0 ? 0 : nMouseY) - 1, -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall DRAW_UI_Sprites() {
@@ -581,17 +581,17 @@ void __stdcall INPUT_FormKeyHandler(D2UIMouseMsgStrc * pMsg) {
     if (D2Client::Forms::pFormTextAndEditBox) {
       ::D2WinEditBox* pEditBoxScan;
       pEditBoxScan = (::D2WinEditBox*)D2Client::Forms::pFormImage;
-      if (!D2Client::Forms::pFormImage) {
-        send_to_focused_editbox:
-        bCallbackResult = D2WinEditBox::D2WINEDITBOX_HandleKeyPress(D2Client::Forms::pFormTextAndEditBox, (uint8_t)pMsg->nWParam);
-        if (bCallbackResult) {
-          goto consume_message;
-        }
-      } else {
+      if (D2Client::Forms::pFormImage) {
         for (; pEditBoxScan; pEditBoxScan = (::D2WinEditBox*)pEditBoxScan->sControl.pNext) {
           if (pEditBoxScan == D2Client::Forms::pFormTextAndEditBox) {
             goto send_to_focused_editbox;
           }
+        }
+      } else {
+        send_to_focused_editbox:
+        bCallbackResult = D2WinEditBox::D2WINEDITBOX_HandleKeyPress(D2Client::Forms::pFormTextAndEditBox, (uint8_t)pMsg->nWParam);
+        if (bCallbackResult) {
+          goto consume_message;
         }
       }
     }
@@ -632,17 +632,17 @@ void __stdcall INPUT_FormKeyUpHandler(D2UIMouseMsgStrc * pMsg) {
     if (D2Client::Forms::pFormTextAndEditBox) {
       ::D2WinEditBox* pEditBoxScan;
       pEditBoxScan = (::D2WinEditBox*)D2Client::Forms::pFormImage;
-      if (!D2Client::Forms::pFormImage) {
-        send_to_focused_editbox:
-        bCallbackResult = D2WinEditBox::D2WINEDITBOX_HandleKeyRelease(D2Client::Forms::pFormTextAndEditBox, (char)pMsg->nWParam);
-        if (bCallbackResult) {
-          goto consume_message;
-        }
-      } else {
+      if (D2Client::Forms::pFormImage) {
         for (; pEditBoxScan; pEditBoxScan = (::D2WinEditBox*)pEditBoxScan->sControl.pNext) {
           if (pEditBoxScan == D2Client::Forms::pFormTextAndEditBox) {
             goto send_to_focused_editbox;
           }
+        }
+      } else {
+        send_to_focused_editbox:
+        bCallbackResult = D2WinEditBox::D2WINEDITBOX_HandleKeyRelease(D2Client::Forms::pFormTextAndEditBox, (char)pMsg->nWParam);
+        if (bCallbackResult) {
+          goto consume_message;
         }
       }
     }
@@ -748,7 +748,7 @@ void __stdcall D2WIN_HandleSystemCommand(int32_t nParam) {
         pRcDesktop = &rcDesktop;
         /* LPRECT lpRect for GetClientRect */ hDesktopWnd = GetDesktopWindow();
         /* HWND hWnd for GetClientRect */ GetClientRect(hDesktopWnd, pRcDesktop);
-        if (nClientWidth == nTargetWidth && nClientHeight == nTargetHeight && nTargetWidth < rcDesktop.right - rcDesktop.left && nTargetHeight < rcDesktop.bottom - rcDesktop.top) {
+        if (nClientWidth == nTargetWidth && nClientHeight == nTargetHeight && rcDesktop.right - rcDesktop.left > nTargetWidth && rcDesktop.bottom - rcDesktop.top > nTargetHeight) {
           nWndPosX = nMonWorkLeft;
           nWndPosY = nMonWorkTop;
           bFixAspect = D2gfx::D2GFX::D2GFX_GetFixAspect();
@@ -807,16 +807,7 @@ void __stdcall D2WIN_HandleActivation(int32_t nParam) {
     static uint32_t gbWindowDeactivated; D2_STATIC_GUARD_BSS(gbWindowDeactivated, "D2Win::Src::D2WinMain::D2WIN_HandleActivation::gbWindowDeactivated");
 
     gbWindowIsActive = (uint32_t)(*(int*)(nParam + 8) != 0);
-    if (!*(int*)(nParam + 8)) {
-      if (!gbWindowDeactivated) {
-        gnSavedMusicVolume = D2Sound::Src::D2SoundFast::SOUND_GetMusicVolume();
-      }
-
-      gbWindowDeactivated = 1;
-      if (gbWindowed != 1) {
-        D2gfx::D2GFX::D2GFX_OnActivationChange(1);
-      }
-    } else {
+    if (*(int*)(nParam + 8)) {
       uint32_t nErrorState;
       nErrorState = Fog::Src::ErrorManager::GetErrorState();
       if (!nErrorState) {
@@ -826,6 +817,15 @@ void __stdcall D2WIN_HandleActivation(int32_t nParam) {
 
       D2Sound::Src::D2SoundFast::SOUND_SetMusicVolume(gnSavedMusicVolume);
       gbWindowDeactivated = 0;
+    } else {
+      if (!gbWindowDeactivated) {
+        gnSavedMusicVolume = D2Sound::Src::D2SoundFast::SOUND_GetMusicVolume();
+      }
+
+      gbWindowDeactivated = 1;
+      if (gbWindowed != 1) {
+        D2gfx::D2GFX::D2GFX_OnActivationChange(1);
+      }
     }
 
     BOOL bIsCutScene = D2gfx::D2GFX::D2GFX_CheckCutScene();
@@ -908,7 +908,7 @@ void __fastcall D2WIN_TakeThrottledScreenshot(LPCSTR szFileName) {
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     DWORD dwTickCount = GetTickCount();
-    if (!(999 < dwTickCount - gdwLastScreenshotTick || szFileName)) {
+    if (!(dwTickCount - gdwLastScreenshotTick >= 1000 || szFileName)) {
       return;
     }
 
@@ -936,10 +936,10 @@ void __stdcall D2WIN_ToggleMusicOptions(int32_t nParam) {
     }
 
     bMusicEnabled = D2Sound::Src::D2SoundFast::SOUND_GetOptionsMusic();
-    if (!bMusicEnabled) {
-      D2Sound::Src::D2SoundFast::SOUND_SetMusicEnabled(1);
-    } else {
+    if (bMusicEnabled) {
       D2Sound::Src::D2SoundFast::SOUND_FadeOutMusic();
+    } else {
+      D2Sound::Src::D2SoundFast::SOUND_SetMusicEnabled(1);
     }
 
     D2Sound::Src::D2SoundFast::SOUND_SetOptionsMusic((uint32_t)!bMusicEnabled);
@@ -962,7 +962,7 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
     int nDistX1 = pControl1->dwPosX;
     if (D2Client::Mouse::nPosX < nDistX1) {
       nDistX1 = D2Client::Mouse::nPosX - nDistX1;
-    } else if (pControl1->dwSizeX + nDistX1 < D2Client::Mouse::nPosX) {
+    } else if (D2Client::Mouse::nPosX > pControl1->dwSizeX + nDistX1) {
       nDistX1 = D2Client::Mouse::nPosX - pControl1->dwSizeX - nDistX1;
     } else {
       nDistX1 = 0;
@@ -971,7 +971,7 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
     int nDistY1 = pControl1->dwPosY;
     if (D2Client::Mouse::nPosY < nDistY1 - pControl1->dwSizeY) {
       nDistY1 = pControl1->dwSizeY - nDistY1 + D2Client::Mouse::nPosY;
-    } else if (nDistY1 < D2Client::Mouse::nPosY) {
+    } else if (D2Client::Mouse::nPosY > nDistY1) {
       nDistY1 = D2Client::Mouse::nPosY - nDistY1;
     } else {
       nDistY1 = 0;
@@ -980,7 +980,7 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
     int nDistX2 = pControl2->dwPosX;
     if (D2Client::Mouse::nPosX < nDistX2) {
       nDistX2 = D2Client::Mouse::nPosX - nDistX2;
-    } else if (pControl2->dwSizeX + nDistX2 < D2Client::Mouse::nPosX) {
+    } else if (D2Client::Mouse::nPosX > pControl2->dwSizeX + nDistX2) {
       nDistX2 = D2Client::Mouse::nPosX - pControl2->dwSizeX - nDistX2;
     } else {
       nDistX2 = 0;
@@ -989,17 +989,17 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
     int nDistY2 = pControl2->dwPosY;
     if (D2Client::Mouse::nPosY < nDistY2 - pControl2->dwSizeY) {
       nDistY2 = pControl2->dwSizeY - nDistY2 + D2Client::Mouse::nPosY;
-    } else if (nDistY2 < D2Client::Mouse::nPosY) {
+    } else if (D2Client::Mouse::nPosY > nDistY2) {
       nDistY2 = D2Client::Mouse::nPosY - nDistY2;
     } else {
       nDistY2 = 0;
     }
-    if (!nDistY1 && nDistX1 < 1) {
+    if (!nDistY1 && nDistX1 <= 0) {
       bControl1Inside = true;
     } else {
       bControl1Inside = false;
     }
-    if (!nDistY2 && nDistX2 < 1) {
+    if (!nDistY2 && nDistX2 <= 0) {
       bVar1 = true;
     } else {
       bVar1 = false;
@@ -1010,7 +1010,7 @@ int32_t __stdcall D2WIN_FindClosestControlToMouse(D2ControlStrc * pControl1, D2C
       if (!bVar1) {
         return (int32_t)pControl1;
       }
-      if (nDistX2 < nDistX1) {
+      if (nDistX1 > nDistX2) {
         return (int32_t)pControl1;
       }
     } else if (!bVar1 && nDistY1 * nDistY1 + nDistX1 * nDistX1 < nDistY2 * nDistY2 + nDistX2 * nDistX2) {
@@ -1032,10 +1032,10 @@ void __stdcall INPUT_FormMouseWheel(D2UIMouseMsgStrc * pMsg) {
     if (bHandled) {
       return;
     }
-    if (!D2Client::Forms::pFormImage) {
-      pActiveForm = D2Client::Forms::pFormsList;
-    } else {
+    if (D2Client::Forms::pFormImage) {
       pActiveForm = D2Client::Forms::pFormImage;
+    } else {
+      pActiveForm = D2Client::Forms::pFormsList;
     }
     if (pActiveForm) {
       int32_t nMaxValue;
@@ -1046,7 +1046,7 @@ void __stdcall INPUT_FormMouseWheel(D2UIMouseMsgStrc * pMsg) {
           dwState = pControl->sControl.dwState;
           if (dwState & 4 && dwState & 1) {
             nMaxValue = D2WinScrollbar::D2WINSCROLLBAR_GetMaxValue(pControl);
-            if (0 < nMaxValue) {
+            if (nMaxValue > 0) {
               pClosestScrollbar = (::D2WinScrollbar*)D2WIN_FindClosestControlToMouse(&pClosestScrollbar->sControl, &pControl->sControl);
             }
           }
@@ -1103,11 +1103,11 @@ BOOL __stdcall FORMS_SetGlobalFormImage(D2ControlStrc * pControl, int32_t nParam
 
 // Returns first element from linked list (dereferences pointer if non-null)
 void * __stdcall D2WINMAIN_GetFirstElement(void * * ppHead) {
-    if (ppHead) {
-      return *ppHead;
+    if (!ppHead) {
+      return nullptr;
     }
 
-    return nullptr;
+    return *ppHead;
 }
 
 // Returns pFormImage global control pointer
@@ -1166,17 +1166,25 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
       BOOL hasMessage;
       D2CONTROL_Pump(); D2LOUD_GuardPump();   // in-process test channel: applies queued input on THIS thread; loud build: walks the guard zones
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ hasMessage = PeekMessageA(&windowMsg, (HWND)0x0, 0, 0, 0);
-      if (!hasMessage) {
+      if (hasMessage) {
+        /* UINT wMsgFilterMax for GetMessageA */ /* UINT wMsgFilterMin for GetMessageA */ /* HWND hWnd for GetMessageA */ /* LPMSG lpMsg for GetMessageA */ gbMessageLoopActive = GetMessageA(&windowMsg, (HWND)0x0, 0, 0);
+        if (!gbMessageLoopActive && gpfnExitCallback) {
+          (*gpfnExitCallback)();
+        }
+
+        /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&windowMsg);
+        /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&windowMsg);
+      } else {
         TickCountA = GetTickCount();
         dwSleepMs = TickCountA - TickCountB;
         TickCountB = GetTickCount();
         nFrameIndex = nFrameArg;
-        if (1000 < dwSleepMs) {
+        if (dwSleepMs > 1000) {
           dwSleepMs = 1000;
         }
 
         nBudgetAccum -= dwSleepMs;
-        if ((int)nBudgetAccum < 1) {
+        if ((int)nBudgetAccum <= 0) {
           nBudgetAccum += 0x28;
           if ((int)nBudgetAccum < -1000) {
             nBudgetAccum = 0;
@@ -1191,7 +1199,7 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
 
         D2Client::Forms::pFormTextAndEditBox = (::D2WinEditBox*)D2Client::Forms::pFormSecond;
         dwSleepMs = nBudgetAccum;
-        if (0x14 < nBudgetAccum) {
+        if (nBudgetAccum > 0x14) {
           dwSleepMs = 0x14;
         }
         if (gbWindowIsActive) {
@@ -1199,14 +1207,6 @@ void __stdcall MessagePump(pfnFramePump pfnFrameCallback) {
         }
 
         /* DWORD dwMilliseconds for Sleep */ Sleep(dwSleepMs);
-      } else {
-        /* UINT wMsgFilterMax for GetMessageA */ /* UINT wMsgFilterMin for GetMessageA */ /* HWND hWnd for GetMessageA */ /* LPMSG lpMsg for GetMessageA */ gbMessageLoopActive = GetMessageA(&windowMsg, (HWND)0x0, 0, 0);
-        if (!gbMessageLoopActive && gpfnExitCallback) {
-          (*gpfnExitCallback)();
-        }
-
-        /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&windowMsg);
-        /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&windowMsg);
       }
     }
 
@@ -1244,12 +1244,12 @@ void __stdcall MOUSE_CaptureMousePosition(HWND * phWnd) {
     if (bWindowActive) {
       int nClampedX;
       nClampedX = nRawX;
-      if ((int)phWnd < nRawX) {
+      if (nRawX > (int)phWnd) {
         nClampedX = (int)phWnd;
       }
 
       Y = nScreenHeight;
-      if (nScreenHeight < (int)nRawY || (bVar2 = (int)phWnd < nRawX , nRawX = nClampedX , Y = nRawY , bVar2)) {
+      if ((int)nRawY > nScreenHeight || (bVar2 = (int)phWnd < nRawX , nRawX = nClampedX , Y = nRawY , bVar2)) {
         /* int Y for SetCursorPos */ /* int X for SetCursorPos */ SetCursorPos(nClampedX, Y);
         nRawX = nClampedX;
         nRawY = Y;
@@ -1295,7 +1295,7 @@ void __stdcall TakeScreenshot() {
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     DWORD dwTickCount = GetTickCount();
-    if (999 >= dwTickCount - gdwLastScreenshotTick) {
+    if (!(dwTickCount - gdwLastScreenshotTick >= 1000)) {
       return;
     }
 
@@ -1345,11 +1345,7 @@ void __stdcall INPUT_FormMouseHandler(D2UIMouseMsgStrc * pMsg) {
       iVar1 = D2Client::Mouse::nPosX;
       if (pControl) {
         do {
-          if (!pControl->fpDrawAnim) {
-            if (pControl->dwPosX <= iVar1 && pControl->dwPosY - pControl->dwSizeY <= D2Client::Mouse::nPosY && iVar1 < pControl->dwSizeX + pControl->dwPosX && D2Client::Mouse::nPosY < pControl->dwPosY) {
-              goto push_hit_control;
-            }
-          } else {
+          if (pControl->fpDrawAnim) {
             bHandled = pControl->fpDrawAnim(pControl);
             iVar1 = D2Client::Mouse::nPosX;
             if (bHandled) {
@@ -1365,6 +1361,10 @@ void __stdcall INPUT_FormMouseHandler(D2UIMouseMsgStrc * pMsg) {
                   break;
                 }
               }
+            }
+          } else {
+            if (iVar1 >= pControl->dwPosX && D2Client::Mouse::nPosY >= pControl->dwPosY - pControl->dwSizeY && iVar1 < pControl->dwSizeX + pControl->dwPosX && D2Client::Mouse::nPosY < pControl->dwPosY) {
+              goto push_hit_control;
             }
           }
 

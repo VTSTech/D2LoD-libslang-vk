@@ -145,13 +145,13 @@ void __stdcall AUTOMAP_SetupPosition() {
       AUTOMAP_CenterOnPlayer(1);
       return;
     }
-    if (!AutoMapLeft) {
-      gnAutomapCenterX = ScreenSizeX * 2 / 3;
-      nAutomapCenterY = 0x4e;
-    } else {
+    if (AutoMapLeft) {
       gnAutomapCenterX = 0;
       bNotMercPurchase = Hireables::HIREABLE_IsNotInMercPurchaseMode();
       nAutomapCenterY = bNotMercPurchase ? 0x60 : 0;
+    } else {
+      gnAutomapCenterX = ScreenSizeX * 2 / 3;
+      nAutomapCenterY = 0x4e;
     }
 
     gnAutomapPanelOffsetX = gnAutomapCenterX;
@@ -295,42 +295,44 @@ void __stdcall AUTOMAP_RebalanceTreeRight(D2AutomapCellStrc * * ppRootNode) {
     D2AutomapCellStrc* pNode = *ppRootNode;
     D2AutomapCellStrc* pChild = pNode->pLess;
     D2AutomapCellStrc** ppChildSlot = &pNode->pLess;
-    if (pChild->wWeight == -1) {
+    if (pChild->wWeight != -1) {
+      if (pChild->wWeight != 1) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x259);
+        exit(-1);
+      } else {
+        pGrandChild = pChild->pMore;
+        nBalanceFactor = (int)pGrandChild->wWeight;
+        if (nBalanceFactor != -1) {
+          if (nBalanceFactor) {
+            if (nBalanceFactor == 1) {
+              pNode->wWeight = 0;
+              pChild->wWeight = -1;
+            }
+          } else {
+            pNode->wWeight = 0;
+            pChild->wWeight = 0;
+          }
+        } else {
+          pNode->wWeight = 1;
+          pChild->wWeight = 0;
+        }
+
+        pGrandChild->wWeight = 0;
+        AUTOMAP_RotateCellRight(nBalanceFactor, ppChildSlot);
+        pChild = *ppChildSlot;
+        if (!pChild) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x245);
+          exit(-1);
+        }
+
+        *ppChildSlot = pChild->pMore;
+        pChild->pMore = pNode;
+        *ppRootNode = pChild;
+        return;
+      }
+    } else {
       pNode->wWeight = 0;
       pChild->wWeight = 0;
-      pChild = *ppChildSlot;
-      if (!pChild) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x245);
-        exit(-1);
-      }
-
-      *ppChildSlot = pChild->pMore;
-      pChild->pMore = pNode;
-      *ppRootNode = pChild;
-      return;
-    } else if (pChild->wWeight != 1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x259);
-      exit(-1);
-    } else {
-      pGrandChild = pChild->pMore;
-      nBalanceFactor = (int)pGrandChild->wWeight;
-      if (nBalanceFactor == -1) {
-        pNode->wWeight = 1;
-        pChild->wWeight = 0;
-      } else {
-        if (!nBalanceFactor) {
-          pNode->wWeight = 0;
-          pChild->wWeight = 0;
-        } else {
-          if (nBalanceFactor == 1) {
-            pNode->wWeight = 0;
-            pChild->wWeight = -1;
-          }
-        }
-      }
-
-      pGrandChild->wWeight = 0;
-      AUTOMAP_RotateCellRight(nBalanceFactor, ppChildSlot);
       pChild = *ppChildSlot;
       if (!pChild) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x245);
@@ -415,86 +417,87 @@ int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1,
     int32_t nInserted;
     short int wWeight;
     D2AutomapCellStrc* pNode = *pAutomapCell2;
-    if (!pNode) {
-      pAutomapCell1->pLess = 0;
-      pAutomapCell1->pMore = 0;
-      pAutomapCell1->wWeight = 0;
-      nInserted = 1;
-      *pAutomapCell2 = pAutomapCell1;
-      return nInserted;
-    }
-
-    int nCompare = (int)pAutomapCell1->yPixel - (int)pNode->yPixel;
-    if (!nCompare) {
-      nCompare = (int)pAutomapCell1->xPixel - (int)pNode->xPixel;
+    if (pNode) {
+      int nCompare = (int)pAutomapCell1->yPixel - (int)pNode->yPixel;
       if (!nCompare) {
-        if (gnAutoMapCellPriority[pAutomapCell1->nCellNo] == -1 || gnAutoMapCellPriority[pAutomapCell1->nCellNo] == gnAutoMapCellPriority[pNode->nCellNo]) {
+        nCompare = (int)pAutomapCell1->xPixel - (int)pNode->xPixel;
+        if (!nCompare) {
+          if (gnAutoMapCellPriority[pAutomapCell1->nCellNo] == -1 || gnAutoMapCellPriority[pAutomapCell1->nCellNo] == gnAutoMapCellPriority[pNode->nCellNo]) {
+            *pAutomapCell2 = pNode;
+            return 0;
+          }
+
+          nCompare = (int)pAutomapCell1->nCellNo - (int)pNode->nCellNo;
+        }
+      }
+
+      D2AutomapCellStrc* pRebalanceRoot = pNode;
+      if (nCompare < 0) {
+        nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pLess);
+        pAutomapCell1 = pNode;
+        if (!nInserted) {
+          *pAutomapCell2 = pAutomapCell1;
+          return nInserted;
+        }
+
+        wWeight = pNode->wWeight;
+        if (wWeight == -1) {
+          AUTOMAP_RebalanceTreeRight(&pRebalanceRoot);
+          *pAutomapCell2 = pRebalanceRoot;
+          return 0;
+        }
+        if (!wWeight) {
+          pNode->wWeight = -1;
+          *pAutomapCell2 = pNode;
+          return nInserted;
+        }
+        if (wWeight != 1) {
+          *pAutomapCell2 = pAutomapCell1;
+          return nInserted;
+        }
+      } else {
+        if (nCompare < 1) {
           *pAutomapCell2 = pNode;
           return 0;
         }
 
-        nCompare = (int)pAutomapCell1->nCellNo - (int)pNode->nCellNo;
-      }
-    }
+        nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pMore);
+        pAutomapCell1 = pNode;
+        if (!nInserted) {
+          *pAutomapCell2 = pAutomapCell1;
+          return nInserted;
+        }
 
-    D2AutomapCellStrc* pRebalanceRoot = pNode;
-    if (nCompare < 0) {
-      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pLess);
-      pAutomapCell1 = pNode;
-      if (!nInserted) {
-        *pAutomapCell2 = pAutomapCell1;
-        return nInserted;
-      }
+        wWeight = pNode->wWeight;
+        if (wWeight != -1) {
+          if (wWeight) {
+            if (wWeight == 1) {
+              AUTOMAP_RebalanceTreeLeft(&pRebalanceRoot);
+              *pAutomapCell2 = pRebalanceRoot;
+              return 0;
+            }
 
-      wWeight = pNode->wWeight;
-      if (wWeight == -1) {
-        AUTOMAP_RebalanceTreeRight(&pRebalanceRoot);
-        *pAutomapCell2 = pRebalanceRoot;
-        return 0;
-      }
-      if (!wWeight) {
-        pNode->wWeight = -1;
-        *pAutomapCell2 = pNode;
-        return nInserted;
-      }
-      if (wWeight != 1) {
-        *pAutomapCell2 = pAutomapCell1;
-        return nInserted;
-      }
-    } else {
-      if (nCompare < 1) {
-        *pAutomapCell2 = pNode;
-        return 0;
-      }
+            *pAutomapCell2 = pAutomapCell1;
+            return nInserted;
+          }
 
-      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pMore);
-      pAutomapCell1 = pNode;
-      if (!nInserted) {
-        *pAutomapCell2 = pAutomapCell1;
-        return nInserted;
-      }
-
-      wWeight = pNode->wWeight;
-      if (wWeight != -1) {
-        if (!wWeight) {
           pNode->wWeight = 1;
           *pAutomapCell2 = pNode;
           return nInserted;
         }
-        if (wWeight == 1) {
-          AUTOMAP_RebalanceTreeLeft(&pRebalanceRoot);
-          *pAutomapCell2 = pRebalanceRoot;
-          return 0;
-        }
-
-        *pAutomapCell2 = pAutomapCell1;
-        return nInserted;
       }
+
+      pNode->wWeight = 0;
+      *pAutomapCell2 = pNode;
+      return 0;
     }
 
-    pNode->wWeight = 0;
-    *pAutomapCell2 = pNode;
-    return 0;
+    pAutomapCell1->pLess = 0;
+    pAutomapCell1->pMore = 0;
+    pAutomapCell1->wWeight = 0;
+    nInserted = 1;
+    *pAutomapCell2 = pAutomapCell1;
+    return nInserted;
 }
 
 // @sourcefile .\UI\automap.cpp
@@ -531,7 +534,7 @@ D2AutomapCellStrc * __stdcall AUTOMAP_AllocCell() {
 
         break;
       }
-      if (nBlockCount >> 9 <= nBlockIndex) {
+      if (nBlockIndex >= nBlockCount >> 9) {
         pNewListHead = sgpAutomapCellList;
         if (pAutomap) {
           break;
@@ -592,21 +595,22 @@ static void __stdcall AUTOMAP_RevealTile(D2RoomExStrc * pRoomEx, D2AutomapCellSt
     D2Common::Drlg::Transform::CoordsMiniMapToScreen(&nY, &nX);
     nY /= 10;
     nX /= 10;
-    if (nY + 0x8000U < 0x10000) {
-      if (nX + 0x8000U < 0x10000) {
-        if (!(nCellNo + 0x8000U < 0x10000)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x393);
-          exit(-1);
-        }
-        if (0xf < pTileData->nTileType) {
-          nX += 0x18;
+    if (nY + 0x8000U <= 0xffff) {
+      if (nX + 0x8000U <= 0xffff) {
+        if (nCellNo + 0x8000U <= 0xffff) {
+          if (pTileData->nTileType >= 0x10) {
+            nX += 0x18;
+          }
+
+          pAutomapCell1->nCellNo = (short int)nCellNo;
+          pAutomapCell1->xPixel = (short int)nY;
+          pAutomapCell1->yPixel = (short int)nX;
+          AUTOMAP_InsertCellIntoTree(pAutomapCell1, pAutomapCell);
+          return;
         }
 
-        pAutomapCell1->nCellNo = (short int)nCellNo;
-        pAutomapCell1->xPixel = (short int)nY;
-        pAutomapCell1->yPixel = (short int)nX;
-        AUTOMAP_InsertCellIntoTree(pAutomapCell1, pAutomapCell);
-        return;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x393);
+        exit(-1);
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x392);
         exit(-1);
@@ -630,18 +634,18 @@ static void __stdcall AUTOMAP_AddCellForUnit(int32_t nParam, D2AutomapCellStrc *
     D2AutomapCellStrc* pAutomapCell1 = AUTOMAP_AllocCell();
     int32_t nTargetX = D2Common::Units::GetTargetX(pUnit);
     int32_t nTargetY = D2Common::Units::GetTargetY(pUnit);
-    if (nTargetX / 10 + 0x8001U < 0x10000) {
-      if (nTargetY / 10 + 0x7ffdU < 0x10000) {
-        if (!(nParam + 0x8000U < 0x10000)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3c7);
-          exit(-1);
+    if (nTargetX / 10 + 0x8001U <= 0xffff) {
+      if (nTargetY / 10 + 0x7ffdU <= 0xffff) {
+        if (nParam + 0x8000U <= 0xffff) {
+          pAutomapCell1->nCellNo = (short int)nParam;
+          pAutomapCell1->xPixel = (short int)(nTargetX / 10) + 1;
+          pAutomapCell1->yPixel = (short int)(nTargetY / 10) - 3;
+          AUTOMAP_InsertCellIntoTree(pAutomapCell1, pAutomapCell);
+          return;
         }
 
-        pAutomapCell1->nCellNo = (short int)nParam;
-        pAutomapCell1->xPixel = (short int)(nTargetX / 10) + 1;
-        pAutomapCell1->yPixel = (short int)(nTargetY / 10) - 3;
-        AUTOMAP_InsertCellIntoTree(pAutomapCell1, pAutomapCell);
-        return;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3c7);
+        exit(-1);
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3c6);
         exit(-1);
@@ -689,14 +693,7 @@ HANDLE __stdcall AUTOMAP_GetMapFileHandle() {
     __frame0.szRealmPath = '\0';
     memset(__frame0.local_32b, 0, 0x103);
     Fog::Source::SFile::GetAndCreateSavePath(&__frame1.szSavePath, 0x104);
-    if (RealmName[0] == '\0') {
-      open_in_save_dir:
-      sprintf(&__frame2.szFileName, "%s%s.map", &__frame1.szSavePath, D2Game::Save::szSaveCharacterName);
-      hFile = Fog::Source::SFile::thunk_CreateFileA(&__frame2.szFileName, 0xc0000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 4, 0x80, (HANDLE)0x0);
-      if (hFile == (HANDLE)-1) {
-        return (HANDLE)-1;
-      }
-    } else {
+    if (RealmName[0] != '\0') {
       Storm::Source::SSTR::SStrPrintf(&__frame0.szRealmPath, 0x104, "%s%s\\", &__frame1.szSavePath, RealmName);
       Fog::Source::SFile::SafeCreateDirectoryTree(&__frame0.szRealmPath);
       Storm::Source::SSTR::SStrPrintf(&__frame2.szFileName, 0x104, "%s%s.map", &__frame0.szRealmPath, D2Game::Save::szSaveCharacterName);
@@ -706,6 +703,13 @@ HANDLE __stdcall AUTOMAP_GetMapFileHandle() {
       }
 
       Storm::Source::SSTR::SStrCopy(&__frame1.szSavePath, &__frame0.szRealmPath, 0x104);
+    } else {
+      open_in_save_dir:
+      sprintf(&__frame2.szFileName, "%s%s.map", &__frame1.szSavePath, D2Game::Save::szSaveCharacterName);
+      hFile = Fog::Source::SFile::thunk_CreateFileA(&__frame2.szFileName, 0xc0000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 4, 0x80, (HANDLE)0x0);
+      if (hFile == (HANDLE)-1) {
+        return (HANDLE)-1;
+      }
     }
 
     __frame2.sSeedHeader.nHeaderMagic = 0;
@@ -791,9 +795,7 @@ static void AUTOMAP_SaveLayerToFile(D2AutomapFileEntryStrc * pEntry) {
 
     __frame0.nEntryOffset = dwHeader[pEntry->nLayer];
     __frame0.dwFileSize = GetFileSize(hFile, (LPDWORD)0x0);
-    if (!__frame0.nEntryOffset) {
-      dwHeader[pEntry->nLayer] = __frame0.dwFileSize;
-    } else {
+    if (__frame0.nEntryOffset) {
       int nPrevEntryOffset;
       do {
         Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, __frame0.nEntryOffset, (PLONG)0x0, 0);
@@ -803,6 +805,8 @@ static void AUTOMAP_SaveLayerToFile(D2AutomapFileEntryStrc * pEntry) {
 
       Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, nPrevEntryOffset, (PLONG)0x0, 0);
       Fog::Source::SFile::thunk_WriteFile(hFile, (LPCVOID)&__frame0.dwFileSize, 4, &__frame0.dwBytesTransferred, (LPOVERLAPPED)0x0);
+    } else {
+      dwHeader[pEntry->nLayer] = __frame0.dwFileSize;
     }
 
     Fog::Source::SFile::SFILE_Win32SetFilePointer(hFile, 0, (PLONG)0x0, 0);
@@ -1068,10 +1072,10 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           }
 
           nWordIndex = 0;
-          if (nWordCount) {
+          if (nWordCount > 0) {
             do {
               wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
-              if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
+              if ((short int)wCellNo >= nAutoMapDC6FrameCount[0]) {
                 AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
@@ -1104,10 +1108,10 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           }
 
           nWordIndex = 0;
-          if (nWordCount) {
+          if (nWordCount > 0) {
             do {
               wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
-              if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
+              if ((short int)wCellNo >= nAutoMapDC6FrameCount[0]) {
                 AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
@@ -1141,10 +1145,10 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             }
 
             nWordIndex = 0;
-            if (nWordCount) {
+            if (nWordCount > 0) {
               do {
                 wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
-                if (nAutoMapDC6FrameCount[0] <= (short int)wCellNo) {
+                if ((short int)wCellNo >= nAutoMapDC6FrameCount[0]) {
                   AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                   break;
                 }
@@ -1182,10 +1186,10 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           }
 
           nWordIndex = 0;
-          if (nWordCount) {
+          if (nWordCount > 0) {
             do {
               wCellNo = *(uint16_t*)((int)nErrorAddress + nWordIndex * 2);
-              if (nAutoMapDC6FrameCount[sFileEntry.nTileCount] <= (int)(short int)wCellNo) {
+              if ((int)(short int)wCellNo >= nAutoMapDC6FrameCount[sFileEntry.nTileCount]) {
                 AUTOMAP_InvalidateLayerEntry(__frame1.nCellIndex, hFileHandle, &__frame0.nNextFilePos);
                 break;
               }
@@ -1289,9 +1293,9 @@ void __stdcall AUTOMAP_RevealUnitsInRoom(D2RoomStrc * pRoom, D2AutomapCellStrc *
         if (pUnit->eUnitType == UNIT_MONSTER) {
           if (pUnit) {
             nAutomapCel = pUnit->nClassId;
-            if (-1 < nAutomapCel && nAutomapCel < sgptDataTable->nTxtMonStatsSize) {
+            if (nAutomapCel >= 0 && nAutomapCel < sgptDataTable->nTxtMonStatsSize) {
               nAutomapCel = (int)sgptDataTable->pTxtMonStats[nAutomapCel].MonStatsEx;
-              if (-1 < nAutomapCel && nAutomapCel < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nAutomapCel) {
+              if (nAutomapCel >= 0 && nAutomapCel < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nAutomapCel) {
                 nAutomapCel = sgptDataTable->pTxtMonStatsEx[nAutomapCel].nAutomapCel;
                 if (nAutomapCel) {
                   AUTOMAP_AddCellForUnit(nAutomapCel, pAutomapCell, pUnit);
@@ -1359,7 +1363,7 @@ void __stdcall AUTOMAP_RevealRoom(D2RoomStrc * pRoom, int32_t bForceReveal, D2Au
     D2RoomExStrc* pRoomEx = D2Common::DUNGEON::Dungeon::GetRoomExFromRoom(pRoom);
     D2DrlgTileDataStrc* pTiles = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(pRoom, (int*)&nTileCount);
     uint32_t i = 0;
-    if (nTileCount) {
+    if (nTileCount > 0) {
       pnTileFlags = &pTiles->nFlags;
       do {
         if (!(*pnTileFlags & 8U) && (*pnTileFlags & 0x20000U || bAutoMapRevealAll || bForceReveal)) {
@@ -1436,12 +1440,12 @@ void __stdcall AUTOMAP_Update() {
       if (nDeltaY < 0) {
         nDeltaY = -nDeltaY;
       }
-      if (nDeltaY < nDeltaX) {
+      if (nDeltaX > nDeltaY) {
         nDeltaY += nDeltaX * 2;
       } else {
         nDeltaY = nDeltaX + nDeltaY * 2;
       }
-      if (0x4f >= nDeltaY / 2) {
+      if (!(nDeltaY / 2 >= 0x50)) {
         return;
       }
 
@@ -1460,7 +1464,7 @@ void __stdcall AUTOMAP_Update() {
       nErrorLine = pLevelDefs->Layer;
       pAutomapLayer = AUTOMAP_AddLayer(nErrorLine);
       i = 0;
-      if (!nRoomCount) {
+      if (nRoomCount <= 0) {
         return;
       }
 
@@ -1525,17 +1529,44 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
     int nRowCount;
     int nStepY;
     int nStepX;
-    if (!sgpAutomapLayerEx) {
-      nPrevLayer = -1;
-    } else {
+    if (sgpAutomapLayerEx) {
       nPrevLayer = sgpAutomapLayerEx->nLayer;
+    } else {
+      nPrevLayer = -1;
     }
 
     D2LevelDefsTxt* pLevelDefs;
     pLevelDefs = D2Common::DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(eLevel);
     D2AutomapLayerStrc* pLayer;
     pLayer = AUTOMAP_AddLayer(pLevelDefs->Layer);
-    if (eLevel == LEVEL_LutGholein) {
+    if (eLevel != LEVEL_LutGholein) {
+      if (eLevel != LEVEL_ThePandemoniumFortress) {
+        if (eLevel != LEVEL_Harrogath) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x751);
+          exit(-1);
+        }
+
+        pLayer->fSaved = (uint8_t*)0x3;
+        pnSkipCellList = 0;
+        eLevel = LEVEL_ColdPlains;
+        nRowCount = 2;
+        nOriginX = -0x14;
+        nPixelY = -0x9b;
+        nStepX = 0xb4;
+        nStepY = 0xaa;
+        nCellNo = 0;
+      } else {
+        pLayer->fSaved = (void*)0x2;
+        pnSkipCellList = 0;
+        eLevel = LEVEL_BloodMoor;
+        nRowCount = 2;
+        nOriginX = -3;
+        nPixelY = -0x32;
+        nStepX = 0x88;
+        nStepY = 0x5a;
+        nCellNo = 0;
+      }
+    } else {
       pLayer->fSaved = (uint8_t*)0x1;
       nCellNo = nCellNo != 1 ? 0x14 : 0;
       pnSkipCellList = (uint32_t*)gaLuthGoleinTownCells;
@@ -1545,31 +1576,6 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
       nPixelY = -0x51;
       nStepX = 0xa0;
       nStepY = 100;
-    } else if (eLevel == LEVEL_ThePandemoniumFortress) {
-      pLayer->fSaved = (void*)0x2;
-      pnSkipCellList = 0;
-      eLevel = LEVEL_BloodMoor;
-      nRowCount = 2;
-      nOriginX = -3;
-      nPixelY = -0x32;
-      nStepX = 0x88;
-      nStepY = 0x5a;
-      nCellNo = 0;
-    } else {
-      if (eLevel != LEVEL_Harrogath) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x751);
-        exit(-1);
-      }
-
-      pLayer->fSaved = (uint8_t*)0x3;
-      pnSkipCellList = 0;
-      eLevel = LEVEL_ColdPlains;
-      nRowCount = 2;
-      nOriginX = -0x14;
-      nPixelY = -0x9b;
-      nStepX = 0xb4;
-      nStepY = 0xaa;
-      nCellNo = 0;
     }
 
     D2Common::Drlg::Transform::CoordsMiniMapToScreen(&nX, &nY);
@@ -1595,15 +1601,15 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
                 }
               }
             }
-            if (nPixelX < -0x8000 || 0x7fff < nPixelX) {
+            if (nPixelX < -0x8000 || nPixelX > 0x7fff) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x777);
               exit(-1);
             }
-            if (nPixelY < -0x8000 || 0x7fff < nPixelY) {
+            if (nPixelY < -0x8000 || nPixelY > 0x7fff) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x778);
               exit(-1);
             }
-            if (0xffff < nCellNoCheck) {
+            if (nCellNoCheck > 0xffff) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x779);
               exit(-1);
             }
@@ -1657,21 +1663,23 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
 
       nBorderOffsetX = 0;
       eBorderType = Path::DRAW_GetTypeOfBorder();
-      if (eBorderType == 1) {
-        nBorderOffsetX = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
-      } else if (eBorderType == 2) {
-        nBorderOffsetX = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+      if (eBorderType != 1) {
+        if (eBorderType == 2) {
+          nBorderOffsetX = ScreenSizeX / 4;
+        }
+      } else {
+        nBorderOffsetX = -(ScreenSizeX / 4);
       }
 
       nParam1 = pCell->xPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollX;
       nScreenY = pCell->yPixel * 10 / nAutoMapZoomDivisor - nAutoMapScrollY;
-      if (apDC6Layers->nClipTop <= nScreenY) {
+      if (nScreenY >= apDC6Layers->nClipTop) {
         AUTOMAP_DrawCellTree(pCell->pLess, apDC6Layers);
-        if (apDC6Layers->nClipTop <= nScreenY) {
-          if (apDC6Layers->nClipBottom < nScreenY) {
+        if (nScreenY >= apDC6Layers->nClipTop) {
+          if (nScreenY > apDC6Layers->nClipBottom) {
             return;
           }
-          if (apDC6Layers->nClipLeft <= nParam1 && nParam1 <= apDC6Layers->nClipRight) {
+          if (nParam1 >= apDC6Layers->nClipLeft && nParam1 <= apDC6Layers->nClipRight) {
             nDrawMode = 5;
             memset(&sGfxData, 0, 0x48);
             sGfxData.nFrameNumber = (int)pCell->nCellNo;
@@ -1686,7 +1694,7 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                     nScreenY2 = apDC6Layers->nOffsetY + nScreenY;
                     nHalfHeight = WindowSizeY / 2;
                     nHalfWidth = WindowSizeX / 2;
-                    if (nHalfWidth - 0x8c + nBorderOffsetX <= nScreenX && nScreenX <= nHalfWidth + 0x8c + nBorderOffsetX && nHalfHeight - 0x96 <= nScreenY2 && nScreenY2 <= nHalfHeight + 0x82) {
+                    if (nScreenX >= nHalfWidth - 0x8c + nBorderOffsetX && nScreenX <= nHalfWidth + 0x8c + nBorderOffsetX && nScreenY2 >= nHalfHeight - 0x96 && nScreenY2 <= nHalfHeight + 0x82) {
                       nBorderOffsetX = nHalfWidth - nScreenX + nBorderOffsetX;
                       if (nBorderOffsetX < 0) {
                         nBorderOffsetX = -nBorderOffsetX;
@@ -1696,7 +1704,7 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                       if (nScreenY2 < 0) {
                         nScreenY2 = -nScreenY2;
                       }
-                      if (nScreenY2 < nBorderOffsetX) {
+                      if (nBorderOffsetX > nScreenY2) {
                         nScreenY2 += nBorderOffsetX * 2;
                       } else {
                         nScreenY2 = nBorderOffsetX + nScreenY2 * 2;
@@ -1739,30 +1747,30 @@ void __fastcall AUTOMAP_DrawCellTree(D2AutomapCellStrc * pCell, D2AutomapDrawCtx
                 }
             }
 
-            if (MiniMapType == 1) {
-              if (!AutoMapLeft) {
-                sClipRect.nX0 = ScreenSizeX - 0x119;
-                sClipRect.nY0 = 0x39;
-              } else {
-                sClipRect.nX0 = 0;
-                eBorderType = Hireables::HIREABLE_IsNotInMercPurchaseMode();
-                sClipRect.nY0 = eBorderType ? 0x4b : -0x15;
-              }
-
-              sClipRect.nX1 = sClipRect.nX0 + 0x117;
-              sClipRect.nY1 = sClipRect.nY0 + 0xe1;
-            } else {
+            if (MiniMapType != 1) {
               sClipRect.nX1 = ScreenSizeX - 1;
               sClipRect.nY1 = ScreenSizeY - 1;
               sClipRect.nX0 = 0;
               sClipRect.nY0 = 0;
+            } else {
+              if (AutoMapLeft) {
+                sClipRect.nX0 = 0;
+                eBorderType = Hireables::HIREABLE_IsNotInMercPurchaseMode();
+                sClipRect.nY0 = eBorderType ? 0x4b : -0x15;
+              } else {
+                sClipRect.nX0 = ScreenSizeX - 0x119;
+                sClipRect.nY0 = 0x39;
+              }
+
+              sClipRect.nX1 = sClipRect.nX0 + 0x117;
+              sClipRect.nY1 = sClipRect.nY0 + 0xe1;
             }
 
             /* Draws all non units (so walls and stuff) */ D2gfx::D2GFX::D2GFX_DrawSprite6(&sGfxData, nParam1, nScreenY, &sClipRect, nDrawMode);
           }
         }
       }
-      if (apDC6Layers->nClipBottom < nScreenY) {
+      if (nScreenY > apDC6Layers->nClipBottom) {
         return;
       }
 
@@ -1790,28 +1798,30 @@ void __stdcall AUTOMAP_DrawMap() {
 
     int nBorderOffsetX = 0;
     uint32_t eBorderType = Path::DRAW_GetTypeOfBorder();
-    if (eBorderType == 1) {
+    if (eBorderType != 1) {
+      if (eBorderType != 2) {
+        if (AutoMapLeft != AutoMapLeft2) {
+          AutoMapLeft = AutoMapLeft2;
+        }
+        if (AutoMapLeft != AutoMapLeft3) {
+          AutoMapLeft = AutoMapLeft3;
+        }
+      } else {
+        if (MiniMapType != 1) {
+          nBorderOffsetX = ScreenSizeX / 4;
+        }
+        if (AutoMapLeft) {
+          AutoMapLeft2 = AutoMapLeft;
+          AutoMapLeft = 0;
+        }
+      }
+    } else {
       if (MiniMapType != 1) {
-        nBorderOffsetX = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
+        nBorderOffsetX = -(ScreenSizeX / 4);
       }
       if (!AutoMapLeft) {
         AutoMapLeft2 = 0;
         AutoMapLeft = 1;
-      }
-    } else if (eBorderType == 2) {
-      if (MiniMapType != 1) {
-        nBorderOffsetX = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-      }
-      if (AutoMapLeft) {
-        AutoMapLeft2 = AutoMapLeft;
-        AutoMapLeft = 0;
-      }
-    } else {
-      if (AutoMapLeft != AutoMapLeft2) {
-        AutoMapLeft = AutoMapLeft2;
-      }
-      if (AutoMapLeft != AutoMapLeft3) {
-        AutoMapLeft = AutoMapLeft3;
       }
     }
 
@@ -1821,15 +1831,7 @@ void __stdcall AUTOMAP_DrawMap() {
     nAutoMapViewCenterY = nMouseOffset / nAutoMapZoomDivisor - WindowSizeY / 2;
     nAutoMapScrollX = AutoMapMoveX + 0x28 + nBorderOffsetX;
     nAutoMapScrollY = AutoMapMoveY + 0xf + nAutoMapViewCenterY;
-    if (MiniMapType == 1) {
-      pDC6.nClipLeft = gnAutomapCenterX - 8;
-      pDC6.nClipTop = nAutomapCenterY - 0x10;
-      pDC6.nClipRight = WindowSizeX / 3 + 8 + gnAutomapCenterX;
-      pDC6.nClipBottom = WindowSizeY / 3 + 0x10 + nAutomapCenterY;
-      pDC6.nOffsetX = 4;
-      pDC6.nOffsetY = 8;
-      nAutoMapZoomDivisor = 0x14;
-    } else {
+    if (MiniMapType != 1) {
       pDC6.nClipRight = WindowSizeX + 0x10;
       pDC6.nClipBottom = WindowSizeY + 0x20;
       pDC6.nClipLeft = -0x10;
@@ -1837,6 +1839,14 @@ void __stdcall AUTOMAP_DrawMap() {
       pDC6.nOffsetX = 8;
       pDC6.nOffsetY = 0x10;
       nAutoMapZoomDivisor = 10;
+    } else {
+      pDC6.nClipLeft = gnAutomapCenterX - 8;
+      pDC6.nClipTop = nAutomapCenterY - 0x10;
+      pDC6.nClipRight = WindowSizeX / 3 + 8 + gnAutomapCenterX;
+      pDC6.nClipBottom = WindowSizeY / 3 + 0x10 + nAutomapCenterY;
+      pDC6.nOffsetX = 4;
+      pDC6.nOffsetY = 8;
+      nAutoMapZoomDivisor = 0x14;
     }
 
     pDC6.pDC6 = pAutoMapDC6[0];
@@ -1844,46 +1854,37 @@ void __stdcall AUTOMAP_DrawMap() {
     AUTOMAP_DrawCellTree(sgpAutomapLayerEx->pFloors, &pDC6);
     AUTOMAP_DrawCellTree(sgpAutomapLayerEx->pWalls, &pDC6);
     AUTOMAP_DrawCellTree(sgpAutomapLayerEx->pObjects, &pDC6);
-    if (MiniMapType == 1) {
+    if (MiniMapType != 1) {
       fSavedFlag = (uint8_t*)sgpAutomapLayerEx->fSaved;
-      if (fSavedFlag == (uint8_t*)0x1) {
-        pDC6.pDC6 = pAutoMapDC6[1];
-        pDC6.nClipLeft = gnAutomapCenterX - 0xa0;
-        pDC6.nClipTop = nAutomapCenterY - 100;
-        pDC6.nClipRight = WindowSizeX / 3 + 0xa0 + gnAutomapCenterX;
-        pDC6.nClipBottom = WindowSizeY / 3 + 100 + nAutomapCenterY;
-        pDC6.nOffsetX = 0x50;
-        pDC6.nOffsetY = 0x32;
-      } else if (fSavedFlag == (unsigned char*)(void*)0x2) {
-        pDC6.pDC6 = pAutoMapDC6[2];
-        pDC6.nClipLeft = gnAutomapCenterX - 0x88;
-        pDC6.nClipTop = nAutomapCenterY - 0x5a;
-        pDC6.nClipRight = WindowSizeX / 3 + 0x88 + gnAutomapCenterX;
-        pDC6.nClipBottom = WindowSizeY / 3 + 0x5a + nAutomapCenterY;
-        pDC6.nOffsetX = 0x44;
-        pDC6.nOffsetY = 0x2d;
-      } else if (fSavedFlag == (uint8_t*)0x3) {
-        pDC6.pDC6 = pAutoMapDC6[3];
-        pDC6.nClipLeft = gnAutomapCenterX - 0xb4;
-        pDC6.nClipTop = nAutomapCenterY - 0xaa;
-        pDC6.nClipRight = WindowSizeX / 3 + 0xb4 + gnAutomapCenterX;
-        pDC6.nClipBottom = WindowSizeY / 3 + 0xaa + nAutomapCenterY;
-        pDC6.nOffsetX = 0x5a;
-        pDC6.nOffsetY = 0x55;
+      if (fSavedFlag != (uint8_t*)0x1) {
+        if (fSavedFlag != (unsigned char*)(void*)0x2) {
+          if (fSavedFlag != (uint8_t*)0x3) {
+            pDC6.nClipRight = WindowSizeX + 0x10;
+            pDC6.nClipLeft = -0x10;
+            pDC6.nClipTop = -0x20;
+            pDC6.nClipBottom = WindowSizeY + 0x20;
+            pDC6.nOffsetX = 8;
+            pDC6.nOffsetY = 0x10;
+            pDC6.pDC6 = pAutoMapDC6[0];
+          } else {
+            pDC6.nClipRight = WindowSizeX + 0xb4;
+            pDC6.nClipLeft = -0xb4;
+            pDC6.nClipTop = -0xaa;
+            pDC6.nClipBottom = WindowSizeY + 0xaa;
+            pDC6.nOffsetX = 0x5a;
+            pDC6.nOffsetY = 0x55;
+            pDC6.pDC6 = pAutoMapDC6[3];
+          }
+        } else {
+          pDC6.nClipRight = WindowSizeX + 0x88;
+          pDC6.nClipLeft = -0x88;
+          pDC6.nClipTop = -0x5a;
+          pDC6.nClipBottom = WindowSizeY + 0x5a;
+          pDC6.nOffsetX = 0x44;
+          pDC6.nOffsetY = 0x2d;
+          pDC6.pDC6 = pAutoMapDC6[2];
+        }
       } else {
-        pDC6.pDC6 = pAutoMapDC6[0];
-        pDC6.nClipLeft = gnAutomapCenterX - 8;
-        pDC6.nClipTop = nAutomapCenterY - 0x10;
-        pDC6.nClipRight = WindowSizeX / 3 + 8 + gnAutomapCenterX;
-        pDC6.nClipBottom = WindowSizeY / 3 + 0x10 + nAutomapCenterY;
-        pDC6.nOffsetX = 4;
-        pDC6.nOffsetY = 8;
-      }
-
-      nAutoMapZoomDivisor = 0x14;
-    } else {
-      fSavedFlag = (uint8_t*)sgpAutomapLayerEx->fSaved;
-      if (fSavedFlag == (uint8_t*)0x1) {
         pDC6.nClipRight = WindowSizeX + 0xa0;
         pDC6.nClipLeft = -0xa0;
         pDC6.nClipTop = -100;
@@ -1891,33 +1892,50 @@ void __stdcall AUTOMAP_DrawMap() {
         pDC6.nOffsetX = 0x50;
         pDC6.nOffsetY = 0x32;
         pDC6.pDC6 = pAutoMapDC6[1];
-      } else if (fSavedFlag == (unsigned char*)(void*)0x2) {
-        pDC6.nClipRight = WindowSizeX + 0x88;
-        pDC6.nClipLeft = -0x88;
-        pDC6.nClipTop = -0x5a;
-        pDC6.nClipBottom = WindowSizeY + 0x5a;
-        pDC6.nOffsetX = 0x44;
-        pDC6.nOffsetY = 0x2d;
-        pDC6.pDC6 = pAutoMapDC6[2];
-      } else if (fSavedFlag == (uint8_t*)0x3) {
-        pDC6.nClipRight = WindowSizeX + 0xb4;
-        pDC6.nClipLeft = -0xb4;
-        pDC6.nClipTop = -0xaa;
-        pDC6.nClipBottom = WindowSizeY + 0xaa;
-        pDC6.nOffsetX = 0x5a;
-        pDC6.nOffsetY = 0x55;
-        pDC6.pDC6 = pAutoMapDC6[3];
-      } else {
-        pDC6.nClipRight = WindowSizeX + 0x10;
-        pDC6.nClipLeft = -0x10;
-        pDC6.nClipTop = -0x20;
-        pDC6.nClipBottom = WindowSizeY + 0x20;
-        pDC6.nOffsetX = 8;
-        pDC6.nOffsetY = 0x10;
-        pDC6.pDC6 = pAutoMapDC6[0];
       }
 
       nAutoMapZoomDivisor = 10;
+    } else {
+      fSavedFlag = (uint8_t*)sgpAutomapLayerEx->fSaved;
+      if (fSavedFlag != (uint8_t*)0x1) {
+        if (fSavedFlag != (unsigned char*)(void*)0x2) {
+          if (fSavedFlag != (uint8_t*)0x3) {
+            pDC6.pDC6 = pAutoMapDC6[0];
+            pDC6.nClipLeft = gnAutomapCenterX - 8;
+            pDC6.nClipTop = nAutomapCenterY - 0x10;
+            pDC6.nClipRight = WindowSizeX / 3 + 8 + gnAutomapCenterX;
+            pDC6.nClipBottom = WindowSizeY / 3 + 0x10 + nAutomapCenterY;
+            pDC6.nOffsetX = 4;
+            pDC6.nOffsetY = 8;
+          } else {
+            pDC6.pDC6 = pAutoMapDC6[3];
+            pDC6.nClipLeft = gnAutomapCenterX - 0xb4;
+            pDC6.nClipTop = nAutomapCenterY - 0xaa;
+            pDC6.nClipRight = WindowSizeX / 3 + 0xb4 + gnAutomapCenterX;
+            pDC6.nClipBottom = WindowSizeY / 3 + 0xaa + nAutomapCenterY;
+            pDC6.nOffsetX = 0x5a;
+            pDC6.nOffsetY = 0x55;
+          }
+        } else {
+          pDC6.pDC6 = pAutoMapDC6[2];
+          pDC6.nClipLeft = gnAutomapCenterX - 0x88;
+          pDC6.nClipTop = nAutomapCenterY - 0x5a;
+          pDC6.nClipRight = WindowSizeX / 3 + 0x88 + gnAutomapCenterX;
+          pDC6.nClipBottom = WindowSizeY / 3 + 0x5a + nAutomapCenterY;
+          pDC6.nOffsetX = 0x44;
+          pDC6.nOffsetY = 0x2d;
+        }
+      } else {
+        pDC6.pDC6 = pAutoMapDC6[1];
+        pDC6.nClipLeft = gnAutomapCenterX - 0xa0;
+        pDC6.nClipTop = nAutomapCenterY - 100;
+        pDC6.nClipRight = WindowSizeX / 3 + 0xa0 + gnAutomapCenterX;
+        pDC6.nClipBottom = WindowSizeY / 3 + 100 + nAutomapCenterY;
+        pDC6.nOffsetX = 0x50;
+        pDC6.nOffsetY = 0x32;
+      }
+
+      nAutoMapZoomDivisor = 0x14;
     }
 
     AUTOMAP_DrawCellTree(sgpAutomapLayerEx->pExtras, &pDC6);
@@ -1983,9 +2001,7 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
         }
       case UNIT_MONSTER:
         {
-          if (!pUnit) {
-            eOwnership = -1;
-          } else {
+          if (pUnit) {
             if (pUnit->eAnimMode.ePlayerMode == Kick) {
               return 0;
             }
@@ -1994,18 +2010,25 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
             }
 
             eOwnership = pUnit->nClassId;
+          } else {
+            eOwnership = -1;
           }
 
           bIsNPC = DataTbls::MonsterTbls::TXT_MonStats_GetFlagsByBitOffset(eOwnership, interact);
-          if (!bIsNPC) {
+          if (bIsNPC) {
+            if (!pUnit || (eOwnership = pUnit->nClassId , eOwnership != 0x219 && eOwnership != 0x21a) && eOwnership != 0x21b) {
+              *pbColorOut = nAutoMapColorNPC;
+              return 1;
+            }
+          } else {
             eTransformType = UNIT_COUNT;
-            if (!pUnit) {
-              nTransformClassId = -1;
-              eTransformMode.ePlayerMode = Death;
-            } else {
+            if (pUnit) {
               eTransformType = pUnit->eUnitType;
               nTransformClassId = pUnit->nClassId;
               eTransformMode = pUnit->eAnimMode;
+            } else {
+              nTransformClassId = -1;
+              eTransformMode.ePlayerMode = Death;
             }
 
             D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eTransformType, &nTransformClassId, (int*)&eTransformMode.ePlayerMode, ".\\UI\\automap.cpp", 0x92d);
@@ -2056,9 +2079,6 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
               default:
                 return 1;
             }
-          } else if (!pUnit || (eOwnership = pUnit->nClassId , eOwnership != 0x219 && eOwnership != 0x21a) && eOwnership != 0x21b) {
-            *pbColorOut = nAutoMapColorNPC;
-            return 1;
           }
 
           break;
@@ -2070,23 +2090,26 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
           } else {
             eOwnership = pUnit->nClassId;
           }
-          if (eOwnership == 0x3b) {
-            *pbColorOut = nAutoMapColorShrine;
-            return 1;
-          }
-          if (eOwnership == 0x3c) {
-            pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-            eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-            if (eLevel != LEVEL_Abaddon && eLevel != LEVEL_PitOfAcheron && eLevel != LEVEL_InfernalPit && eLevel != LEVEL_FrigidHighlands && eLevel != LEVEL_ArreatPlateau && eLevel != LEVEL_FrozenTundra) {
-              *pbColorOut = nAutoMapColorShrine;
-              return 1;
+          if (eOwnership != 0x3b) {
+            if (eOwnership != 0x3c) {
+              if (eOwnership == 0x10b) {
+                *pbColorOut = '\0';
+                return 1;
+              }
+            } else {
+              pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+              eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+              if (eLevel != LEVEL_Abaddon && eLevel != LEVEL_PitOfAcheron && eLevel != LEVEL_InfernalPit && eLevel != LEVEL_FrigidHighlands && eLevel != LEVEL_ArreatPlateau && eLevel != LEVEL_FrozenTundra) {
+                *pbColorOut = nAutoMapColorShrine;
+                return 1;
+              }
             }
-          } else if (eOwnership == 0x10b) {
-            *pbColorOut = '\0';
-            return 1;
+
+            break;
           }
 
-          break;
+          *pbColorOut = nAutoMapColorShrine;
+          return 1;
         }
     }
 
@@ -2228,14 +2251,14 @@ void __stdcall AUTOMAP_DrawDifficulty() {
     uint16_t wText[300];
     BOOL bMultiLineCenter;
     uint8_t eDifficulty = GAME::Game::GetDificulity();
-    if (eDifficulty == '\x01') {
-      /* Nightmare */ nDiffStringId = 0x1423;
-    } else {
+    if (eDifficulty != '\x01') {
       if (eDifficulty != '\x02') {
         return;
       }
 
       /* Hell */ nDiffStringId = 0x1422;
+    } else {
+      /* Nightmare */ nDiffStringId = 0x1423;
     }
 
     uint16_t* pZeroFill = wText;
@@ -2249,22 +2272,22 @@ void __stdcall AUTOMAP_DrawDifficulty() {
     int32_t nTextWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);
     pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x1057);
     int32_t nFormatLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);
-    if (nTextWidth + 3 + nFormatLen < 300) {
-      uint16_t* wFormat;
-      pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
-      wFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1057);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wText, wFormat, pZeroFill);
-      bMultiLineCenter = 0;
-      nFormatLen = 4;
-      nY = AUTOMAP_TextHeightOffset;
-      nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wText);
-      D2Win::Src::D2WinFont::DRAW_text(wText, WindowSizeX - nTextWidth - 0x10, nY, nFormatLen, bMultiLineCenter);
-      AUTOMAP_TextHeightOffset += 0x10;
-      return;
+    if (nTextWidth + 3 + nFormatLen >= 300) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb2a);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb2a);
-    exit(-1);
+    uint16_t* wFormat;
+    pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
+    wFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1057);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, wText, wFormat, pZeroFill);
+    bMultiLineCenter = 0;
+    nFormatLen = 4;
+    nY = AUTOMAP_TextHeightOffset;
+    nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wText);
+    D2Win::Src::D2WinFont::DRAW_text(wText, WindowSizeX - nTextWidth - 0x10, nY, nFormatLen, bMultiLineCenter);
+    AUTOMAP_TextHeightOffset += 0x10;
+    return;
 }
 
 void __stdcall AUTOMAP_LoadDC6Sprites() {
@@ -2282,18 +2305,7 @@ void __stdcall AUTOMAP_LoadDC6Sprites() {
       ppDC6++;
     } while ((int)ppDC6 < (uintptr_t)((char*)&pAutoMapDC6 + sizeof(pAutoMapDC6)));
 
-    if (MiniMapType == 1) {
-      sprintf(szPath, "%s\\UI\\AutoMap\\MaxiMapS", "DATA\\GLOBAL");
-      pAutoMapDC6[0] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
-      nAutoMapDC6FrameCount[0] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[0]);
-      sprintf(szPath, "%s\\UI\\AutoMap\\Act2MapS", "DATA\\GLOBAL");
-      pAutoMapDC6[1] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
-      nAutoMapDC6FrameCount[1] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[1]);
-      sprintf(szPath, "%s\\UI\\AutoMap\\Act4MapS", "DATA\\GLOBAL");
-      pAutoMapDC6[2] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
-      nAutoMapDC6FrameCount[2] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[2]);
-      szFmt = "%s\\UI\\AutoMap\\ExTnMapS";
-    } else {
+    if (MiniMapType != 1) {
       BOOL bIsExpansion;
       sprintf(szPath, "%s\\UI\\AutoMap\\MaxiMap", "DATA\\GLOBAL");
       pAutoMapDC6[0] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
@@ -2312,6 +2324,17 @@ void __stdcall AUTOMAP_LoadDC6Sprites() {
       }
 
       szFmt = "%s\\UI\\AutoMap\\ExTnMap";
+    } else {
+      sprintf(szPath, "%s\\UI\\AutoMap\\MaxiMapS", "DATA\\GLOBAL");
+      pAutoMapDC6[0] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
+      nAutoMapDC6FrameCount[0] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[0]);
+      sprintf(szPath, "%s\\UI\\AutoMap\\Act2MapS", "DATA\\GLOBAL");
+      pAutoMapDC6[1] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
+      nAutoMapDC6FrameCount[1] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[1]);
+      sprintf(szPath, "%s\\UI\\AutoMap\\Act4MapS", "DATA\\GLOBAL");
+      pAutoMapDC6[2] = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
+      nAutoMapDC6FrameCount[2] = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pAutoMapDC6[2]);
+      szFmt = "%s\\UI\\AutoMap\\ExTnMapS";
     }
 
     sprintf(szPath, szFmt, "DATA\\GLOBAL");
@@ -2568,7 +2591,7 @@ static void __stdcall AUTOMAP_DrawTextCentered(int32_t nCenterX, int32_t nBaseY,
     if (pStrScan == szText + 1) {
       return;
     }
-    if (0xc < byColor) {
+    if (byColor >= 0xd) {
       byColor = 0;
     }
 
@@ -2642,36 +2665,10 @@ static void AUTOMAP_DrawUnitMarker(D2UnitStrc * pUnit) {
     xLocation = nTargetX / nAutoMapZoomDivisor - nAutoMapScrollX + 8;
     nTemp = nTargetY / nAutoMapZoomDivisor - nAutoMapScrollY;
     yLocation = nTemp - 8;
-    if (!(gnAutomapClipLeft <= xLocation && xLocation <= gnAutomapClipRight && gnAutomapClipTop <= yLocation && yLocation <= gnAutomapClipBottom)) {
+    if (!(xLocation >= gnAutomapClipLeft && xLocation <= gnAutomapClipRight && yLocation >= gnAutomapClipTop && yLocation <= gnAutomapClipBottom)) {
       return;
     }
-    if (!pUnitTypeOrName) {
-      if (nAutoMapParty || *(uint8_t*)(char*)&uUnitColor.ePlayerMode != nAutoMapColorParty) {
-        AUTOMAP_DrawXMarker(xLocation, uUnitColor.ePlayerMode, yLocation);
-      }
-      if (!AutoMapPartyNames) {
-        return;
-      }
-      if (!nAutoMapParty) {
-        return;
-      }
-
-      pNameUnit = UNIT::Player::GetPlayerUnit_UI();
-      if (pUnit == pNameUnit) {
-        return;
-      }
-
-      pNameUnit = pUnit;
-      if (*(uint8_t*)(char*)&uUnitColor.ePlayerMode == nAutoMapColorParty) {
-        if (!nAutoMapParty) {
-          return;
-        }
-
-        pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-        AUTOMAP_DrawTextCentered(xLocation, yLocation, 2, pPlayerData->szCharName);
-        return;
-      }
-    } else {
+    if (pUnitTypeOrName) {
       int16_t nMyPartyId;
       if (pUnitTypeOrName != (uint16_t*)0x1) {
         if (pUnitTypeOrName != (uint16_t*)0x2) {
@@ -2722,13 +2719,13 @@ static void AUTOMAP_DrawUnitMarker(D2UnitStrc * pUnit) {
       }
 
       pUnitTypeOrName = (uint16_t*)0x6;
-      if (!pUnit) {
-        nTransformClassId = -1;
-        uUnitColor.ePlayerMode = Death;
-      } else {
+      if (pUnit) {
         pUnitTypeOrName = (uint16_t*)pUnit->eUnitType;
         nTransformClassId = pUnit->nClassId;
         uUnitColor = pUnit->eAnimMode;
+      } else {
+        nTransformClassId = -1;
+        uUnitColor.ePlayerMode = Death;
       }
 
       D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, (eD2UnitType*)&pUnitTypeOrName, &nTransformClassId, (int*)&uUnitColor.ePlayerMode, ".\\UI\\automap.cpp", 0xa15);
@@ -2757,6 +2754,32 @@ static void AUTOMAP_DrawUnitMarker(D2UnitStrc * pUnit) {
           return;
         }
       }
+    } else {
+      if (nAutoMapParty || *(uint8_t*)(char*)&uUnitColor.ePlayerMode != nAutoMapColorParty) {
+        AUTOMAP_DrawXMarker(xLocation, uUnitColor.ePlayerMode, yLocation);
+      }
+      if (!AutoMapPartyNames) {
+        return;
+      }
+      if (!nAutoMapParty) {
+        return;
+      }
+
+      pNameUnit = UNIT::Player::GetPlayerUnit_UI();
+      if (pUnit == pNameUnit) {
+        return;
+      }
+
+      pNameUnit = pUnit;
+      if (*(uint8_t*)(char*)&uUnitColor.ePlayerMode == nAutoMapColorParty) {
+        if (!nAutoMapParty) {
+          return;
+        }
+
+        pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+        AUTOMAP_DrawTextCentered(xLocation, yLocation, 2, pPlayerData->szCharName);
+        return;
+      }
     }
 
     pPlayerData = D2Common::Units::GetPlayerData(pNameUnit);
@@ -2780,7 +2803,7 @@ static void AUTOMAP_DrawPartyMember(D2RosterStrc * pRoster) {
     D2Common::Drlg::Transform::CoordsMapToScreen(&nScreenX, &nScreenY);
     nScreenX = nScreenX / nAutoMapZoomDivisor - nAutoMapScrollX + 8;
     nScreenY = nScreenY / nAutoMapZoomDivisor - nAutoMapScrollY - 8;
-    if (!(gnAutomapClipLeft <= nScreenX && nScreenX <= gnAutomapClipRight && gnAutomapClipTop <= nScreenY && nScreenY <= gnAutomapClipBottom)) {
+    if (!(nScreenX >= gnAutomapClipLeft && nScreenX <= gnAutomapClipRight && nScreenY >= gnAutomapClipTop && nScreenY <= gnAutomapClipBottom)) {
       return;
     }
 
@@ -2820,7 +2843,7 @@ void __stdcall AUTOMAP_DrawPlayersAndParty() {
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, pppRoomList, pNumRooms);
     int nNumRooms = __frame0.nRoomCount;
-    if (0 < __frame0.nRoomCount) {
+    if (__frame0.nRoomCount > 0) {
       do {
         for (pUnit = __frame0.pRoomList[i]->pUnitList; pUnit; pUnit = pUnit->pRoomNext) {
           AUTOMAP_DrawUnitMarker(pUnit);

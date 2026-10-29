@@ -180,7 +180,7 @@ void __stdcall OVERLAYTBLS_FreeOverlayTables() {
 }
 
 int32_t __stdcall OVERLAYTBLS_GetFrames(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -188,7 +188,7 @@ int32_t __stdcall OVERLAYTBLS_GetFrames(int32_t nParam) {
 }
 
 uint32_t __stdcall OVERLAYTBLS_GetPreDraw(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -196,7 +196,7 @@ uint32_t __stdcall OVERLAYTBLS_GetPreDraw(int32_t nParam) {
 }
 
 int32_t __stdcall OVERLAYTBLS_GetXOffset(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -204,7 +204,7 @@ int32_t __stdcall OVERLAYTBLS_GetXOffset(int32_t nParam) {
 }
 
 int32_t __stdcall OVERLAYTBLS_GetYOffset(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -212,7 +212,7 @@ int32_t __stdcall OVERLAYTBLS_GetYOffset(int32_t nParam) {
 }
 
 uint32_t __stdcall OVERLAYTBLS_GetTrans(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -220,7 +220,7 @@ uint32_t __stdcall OVERLAYTBLS_GetTrans(int32_t nParam) {
 }
 
 uint32_t __stdcall OVERLAYTBLS_GetLightRadiusAndRGB(int32_t nOverlayId, int * pnInitRadius, int * pnRadius, char * pbyRed, char * pbyGreen, char * pbyBlue) {
-    if (-1 < nOverlayId && nOverlayId < sgptDataTable->nTxtOverlaySize) {
+    if (nOverlayId >= 0 && nOverlayId < sgptDataTable->nTxtOverlaySize) {
       D2OverlayTxt* pOverlay;
       pOverlay = sgptDataTable->pTxtOverlay + nOverlayId;
       if (pOverlay) {
@@ -246,7 +246,7 @@ uint32_t __stdcall OVERLAYTBLS_GetLightRadiusAndRGB(int32_t nOverlayId, int * pn
 }
 
 int32_t __stdcall OVERLAYTBLS_Get1ofN(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -254,7 +254,7 @@ int32_t __stdcall OVERLAYTBLS_Get1ofN(int32_t nParam) {
 }
 
 uint32_t __stdcall OVERLAYTBLS_GetDir(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
       return 0;
     }
 
@@ -344,12 +344,14 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
       if (neAct == ACT_II) {
         nBaseClassId = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit);
         nBaseClassId = D2Client::UNIT::Player::ValidateClassId(nBaseClassId);
-        if (!nBaseClassId) {
+        if (nBaseClassId) {
+          if (nBaseClassId == 0xaa && gnOverlayTblsMaxId[nComponentIdx]) {
+            return (D2UnitStrc*)gnOverlayTblsMaxId[nComponentIdx][nVariantIdx];
+          }
+        } else {
           if (gnOverlayTblsCount[nComponentIdx]) {
             pCompCodeStr = (D2UnitStrc*)gnOverlayTblsCount[nComponentIdx][nVariantIdx];
           }
-        } else if (nBaseClassId == 0xaa && gnOverlayTblsMaxId[nComponentIdx]) {
-          return (D2UnitStrc*)gnOverlayTblsMaxId[nComponentIdx][nVariantIdx];
         }
       }
     }
@@ -360,20 +362,20 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
 
 // 2022.01.09 - dzik
 uint32_t __stdcall OVERLAYTBLS_GetMonsterComponentOverlay(int32_t nMonStatId, uint32_t nComponentIdx, uint32_t nVariantIdx) {
-    if (0xf < nComponentIdx) {
+    if (nComponentIdx >= 0x10) {
       return 0;
     }
-    if (!(-1 < nMonStatId && nMonStatId < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
     }
 
     int nMonStats2Idx = (int)sgptDataTable->pTxtMonStats[nMonStatId].MonStatsEx;
-    if (!(-1 < nMonStats2Idx && nMonStats2Idx < sgptDataTable->nTxtMonStatsExSize)) {
+    if (!(nMonStats2Idx >= 0 && nMonStats2Idx < sgptDataTable->nTxtMonStatsExSize)) {
       return 0;
     }
 
     D2MonStats2Txt* pMonStats2 = sgptDataTable->pTxtMonStatsEx + nMonStats2Idx;
-    if (!(pMonStats2 && nVariantIdx < pMonStats2->aComponents[nComponentIdx])) {
+    if (!(pMonStats2 && pMonStats2->aComponents[nComponentIdx] > nVariantIdx)) {
       return 0;
     }
 

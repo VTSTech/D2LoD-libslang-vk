@@ -89,7 +89,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
         if (nMouseYStack < nMouseInTopScroll + 0x28) {
           ui::UI_ScrollConfigListHorizontal(-1);
         }
-        if (nMouseInTopScroll + 0x136 < nMouseYStack) {
+        if (nMouseYStack > nMouseInTopScroll + 0x136) {
           ui::UI_ScrollConfigListHorizontal(1);
         }
 
@@ -119,14 +119,14 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       gaControlConfigRegionMouseState[1] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwNowTick = GetTickCount();
-        if (gbUICtrlConfigPendingKey + 0x32 < dwNowTick) {
+        if (dwNowTick > gbUICtrlConfigPendingKey + 0x32) {
           gbUICtrlConfigPendingKey = GetTickCount();
           nMaxScrollRows = ui::UI_GetControlConfigRowCount();
           nMouseInTopScroll = gnUICtrlConfigScrollOffset;
-          if (0 < gnUICtrlConfigScrollOffset) {
+          if (gnUICtrlConfigScrollOffset > 0) {
             nMouseInTopScroll = gnUICtrlConfigScrollOffset - 1;
           }
-          if (-1 < nMouseInTopScroll) {
+          if (nMouseInTopScroll >= 0) {
             gnUICtrlConfigScrollOffset = nMouseInTopScroll;
           }
 
@@ -149,7 +149,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       gaControlConfigRegionMouseState[2] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwTickCount = GetTickCount();
-        if (gbUICtrlConfigPendingKey + 0x32 < dwTickCount) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
           gbUICtrlConfigPendingKey = GetTickCount();
           nMaxScrollRows = ui::UI_GetControlConfigRowCount();
           nMouseInBottomScroll = (int)nMaxScrollRows;
@@ -180,7 +180,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       gaControlConfigRegionMouseState[3] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwTickCount = GetTickCount();
-        if (gbUICtrlConfigPendingKey + 0x32 < dwTickCount) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
           gbUICtrlConfigPendingKey = GetTickCount();
           ui::UI_ScrollConfigListVertical(-0xe);
         }
@@ -226,7 +226,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       gaControlConfigRegionMouseState[5] = nMouseInTopScroll;
       if (nMouseInTopScroll) {
         dwTickCount = GetTickCount();
-        if (gbUICtrlConfigPendingKey + 0x32 < dwTickCount) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
           gbUICtrlConfigPendingKey = GetTickCount();
           ui::UI_ScrollConfigListVertical(0xe);
         }
@@ -237,7 +237,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
     pButtonState = gaControlConfigRegionMouseState;
     while (!*pButtonState || pButtonState == gaControlConfigRegionMouseState + 6) {
       pButtonState++;
-      if ((uintptr_t)((char*)&gaControlConfigRegionMouseState + 27) < (int)pButtonState) {
+      if ((int)pButtonState >= (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState))) {
         if (nHoveredTab == 3) {
           return;
         }
@@ -297,7 +297,7 @@ void __stdcall CONTROLCONFIG_CalculateColumnBounds() {
     nColumnIndex = gnUICtrlConfigTotalRows;
     do {
       nColumnIndex--;
-      if (nColumnIndex < 1) {
+      if (nColumnIndex <= 0) {
         nColumnIndex = 0;
         break;
       }
@@ -422,13 +422,13 @@ void __stdcall DRAW_ConfigControlsMenu() {
     nTmpY = 0;
     nTmpWidth = 0;
     do {
-      if (gnUICtrlConfigTotalRows <= nTmpY) {
+      if (nTmpY >= gnUICtrlConfigTotalRows) {
         break;
       }
 
       nLeftEdge2 = nTmpWidth + 0x22 + (WindowSizeY - 0x1a4) / 2;
       nTmpX = gnUICtrlConfigScrollOffset + nTmpY;
-      if (!gbUICtrlConfigKeyBindMode || nTmpX != g_ControlConfigUIState || (bShowKeyBind = 0 , 4 < ((uint8_t)gnUICtrlConfigAnimationFrame & 0xf))) {
+      if (!gbUICtrlConfigKeyBindMode || nTmpX != g_ControlConfigUIState || (bShowKeyBind = 0 , ((uint8_t)gnUICtrlConfigAnimationFrame & 0xf) > 4)) {
         bShowKeyBind = 1;
       }
 
@@ -495,7 +495,7 @@ void __stdcall DRAW_ConfigControlsMenu() {
 
     nTmpY = 0;
     sGfxData.nFrameNumber = 0xe;
-    if (0 < gnUICtrlConfigScrollMaxLines) {
+    if (gnUICtrlConfigScrollMaxLines > 0) {
       nTmpWidth = 0;
       do {
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - (ScreenSizeX - 0x26c) / 2 - 0x20, nTmpWidth + 0xc + gnUICtrlConfigScrollPosition, -1, DRAW_SOLID, nullptr);
@@ -505,14 +505,14 @@ void __stdcall DRAW_ConfigControlsMenu() {
     }
 
     nTmpY = nMouseY;
-    if (!gaControlConfigRegionMouseState[1] || (nTmpWidth = (ScreenSizeX - 0x26c) / 2 , nTmpX < ScreenSizeX - nTmpWidth - 0x1f) || ScreenSizeX - nTmpWidth - 0x12 < nTmpX || (nTmpWidth = (WindowSizeY - 0x1a4) / 2 , nMouseY < nTmpWidth + 0x23 || nTmpWidth + 0x2f < nMouseY)) {
+    if (!gaControlConfigRegionMouseState[1] || (nTmpWidth = (ScreenSizeX - 0x26c) / 2 , nTmpX < ScreenSizeX - nTmpWidth - 0x1f) || nTmpX > ScreenSizeX - nTmpWidth - 0x12 || (nTmpWidth = (WindowSizeY - 0x1a4) / 2 , nMouseY < nTmpWidth + 0x23 || nMouseY > nTmpWidth + 0x2f)) {
       sGfxData.nFrameNumber = 0xb;
     } else {
       sGfxData.nFrameNumber = 9;
     }
 
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - (ScreenSizeX - 0x26c) / 2 - 0x1f, (WindowSizeY - 0x1a4) / 2 + 0x2f, -1, DRAW_SOLID, nullptr);
-    if (!gaControlConfigRegionMouseState[2] || (nTmpWidth = (ScreenSizeX - 0x26c) / 2 , nTmpX < ScreenSizeX - nTmpWidth - 0x1f) || ScreenSizeX - nTmpWidth - 0x12 < nTmpX || (nTmpX = (WindowSizeY - 0x1a4) / 2 , nTmpY < nTmpX + 0x125 || (sGfxData.nFrameNumber = 8 , nTmpX + 0x131 < nTmpY))) {
+    if (!gaControlConfigRegionMouseState[2] || (nTmpWidth = (ScreenSizeX - 0x26c) / 2 , nTmpX < ScreenSizeX - nTmpWidth - 0x1f) || nTmpX > ScreenSizeX - nTmpWidth - 0x12 || (nTmpX = (WindowSizeY - 0x1a4) / 2 , nTmpY < nTmpX + 0x125 || (sGfxData.nFrameNumber = 8 , nTmpY > nTmpX + 0x131))) {
       sGfxData.nFrameNumber = 10;
     }
 

@@ -158,10 +158,12 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
     ReplaceRoom(DRLG_ICECAVES_REPLACE_THREE + nRoll, pLevel, &nRoll);
     int nLevelId = pLevel->eD2LevelId;
     if (nLevelId != 0x71) {
-      if (nLevelId == 0x73) {
+      if (nLevelId != 0x73) {
+        if (nLevelId != 0x76) {
+          return;
+        }
+      } else {
         ReplaceRoom(DRLG_ICECAVES_REPLACE_FOUR + nRoll, pLevel, &nRoll);
-      } else if (nLevelId != 0x76) {
-        return;
       }
     }
 

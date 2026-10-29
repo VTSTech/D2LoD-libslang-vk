@@ -34,11 +34,11 @@ typedef int32_t (__fastcall *fnCUnitEventCallback)(D2UnitStrc * pUnit, D2UnitStr
 namespace D2Client::UNIT::CUnitEvent {
 
 D2PoolManagerStrc * __fastcall GetMemPool(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->pMemory;
+    if (!pUnit) {
+      return nullptr;
     }
 
-    return nullptr;
+    return pUnit->pMemory;
 }
 
 // @sourcefile .\UNIT\CUnitEvent.cpp
@@ -113,10 +113,10 @@ void __fastcall CUNITEVENT_RemoveByTypeAndState(D2UnitStrc * pUnit, int32_t nEve
 
       pvVar1 = pMemoryToFree->pPrev;
       if (pMemoryToFree->nEventType == nEventType && pMemoryToFree->nEventState == nEventState) {
-        if (!pMemoryToFree->pNext) {
-          pUnit->uSideData.pClientSide.pCUnitEventList = pvVar1;
-        } else {
+        if (pMemoryToFree->pNext) {
           pMemoryToFree->pNext->pPrev = pvVar1;
+        } else {
+          pUnit->uSideData.pClientSide.pCUnitEventList = pvVar1;
         }
         if (pMemoryToFree->pPrev) {
           pMemoryToFree->pPrev->pNext = pMemoryToFree->pNext;

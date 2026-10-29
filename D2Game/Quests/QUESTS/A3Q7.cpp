@@ -105,14 +105,14 @@ void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cPara
     if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 6)) {
       return;
     }
-    if (cParam == '\0') {
+    if (cParam != '\0') {
+      nPrevStateFlag = pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
+    } else {
       pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev = (uint32_t)pQuestData->nStateFlagPrev;
       nPrevStateFlag = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
-    } else {
-      nPrevStateFlag = pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
     }
 
-    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, pQuestData->nStateFlag != 0);
+    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, (uint8_t)pQuestData->nStateFlag > 0);
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.
@@ -340,10 +340,13 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
     0x3
 }; D2_STATIC_GUARD(gnA3Q7ArchonState2, "D2Game::Quests::QUESTS::A3Q7::Q24_TimerCallback_SpawnPortals::gnA3Q7ArchonState2");
 
+    D2SeedStrc* pSeed;
+    D2RoomStrc* pRoom;
     D2UnitStrc* pDVar5;
     uint32_t uVar2;
     POINT ptUnitPos;
     POINT ptPortalPos;
+    ::SGAMEDATA* pGameSaved;
     D2QuestDataA3Q7Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q7;
     if (pQuestSpecificData->bPortalsSpawned) {
       return '\x01';
@@ -354,23 +357,24 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
     pQuestSpecificData->bPortalsSpawned = true;
     pQuestSpecificData->bTimerStarted = false;
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pQuestSpecificData->nDarkWandererGUID);
-    if (!pUnit) {
-      return '\x01';
-    }
-
-    D2SeedStrc* pSeed = GetQuestControlSeed(pGame);
-    D2SeedStrc DVar1 = D2_SEED_NEXT(*pSeed);
-    *pSeed = DVar1;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Units::GetCoords(pUnit, &ptUnitPos);
-    ::SGAMEDATA* pGameSaved = pSpawnRoom;
-    for (uVar2 = DVar1.nSeedLow & 1; uVar2 < 8; uVar2++) {
-      ptPortalPos.y = ptUnitPos.y + gnA3Q7ArchonState2[uVar2 * 2 + 1];
-      ptPortalPos.x = gnA3Q7ArchonState2[uVar2 * 2] + ptUnitPos.x;
-      FindSpawnableLocation(pRoom, &ptPortalPos, 3, 0x3f11, (D2RoomStrc**)&pSpawnRoom, 0xb, 100);
-      if (pSpawnRoom) {
-        UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x83, ptPortalPos.x, ptPortalPos.y, pGameSaved, (D2RoomStrc*)pSpawnRoom, 1, 0, nullptr);
+    if (pUnit) {
+      D2SeedStrc DVar1;
+      pSeed = GetQuestControlSeed(pGame);
+      DVar1 = D2_SEED_NEXT(*pSeed);
+      *pSeed = DVar1;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      D2Common::Units::GetCoords(pUnit, &ptUnitPos);
+      pGameSaved = pSpawnRoom;
+      for (uVar2 = DVar1.nSeedLow & 1; uVar2 < 8; uVar2++) {
+        ptPortalPos.y = ptUnitPos.y + gnA3Q7ArchonState2[uVar2 * 2 + 1];
+        ptPortalPos.x = gnA3Q7ArchonState2[uVar2 * 2] + ptUnitPos.x;
+        FindSpawnableLocation(pRoom, &ptPortalPos, 3, 0x3f11, (D2RoomStrc**)&pSpawnRoom, 0xb, 100);
+        if (pSpawnRoom) {
+          UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x83, ptPortalPos.x, ptPortalPos.y, pGameSaved, (D2RoomStrc*)pSpawnRoom, 1, 0, nullptr);
+        }
       }
+
+      return '\x01';
     }
 
     return '\x01';

@@ -237,7 +237,7 @@ int __fastcall SKILL_SelectProc_IsConvertibleCorpse(D2UnitStrc * pUnit, D2UnitSt
     }
 
     int32_t nMonStatsId = UNIT::Player::TXT_MonStats_GetBaseId(pTargetUnit);
-    if (!(nMonStatsId < 0 || sgptDataTable->nTxtMonStatsSize <= nMonStatsId || nMonStatsId != 0x4e)) {
+    if (!(nMonStatsId < 0 || nMonStatsId >= sgptDataTable->nTxtMonStatsSize || nMonStatsId != 0x4e)) {
       return 0;
     }
 
@@ -268,11 +268,11 @@ BOOL __fastcall ITEM_IsQuestItem(D2UnitStrc * pItem, D2UnitFindArgStrc * pUnitFi
     }
 
     uint32_t uVar1 = D2Common::ITEMS::Items::TXT_Items_GetBitFieldAnd0x02(pItem->nClassId);
-    if (!uVar1) {
-      return 0;
+    if (uVar1) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Key-command handler: toggles the character screen. Reached only through gaCmdBindings[].pfnHandler, whose funcdef is __stdcall, and every one of its 56 sibling handlers is __stdcall. Left as "unknown" it emitted as cdecl and was the single strict compile error in globals.cpp.
@@ -380,13 +380,13 @@ void __stdcall CMD_SelectSkillHotkeySlot(int nSlot) {
     if (uVar2) {
       return;
     }
-    if (8 < nSlot) {
+    if (nSlot > 8) {
       BVar1 = GAME::Game::CLIENT_CheckExpansion();
       if (!BVar1) {
         return;
       }
     }
-    if (nSlot < 0 && 0xf < nSlot) {
+    if (nSlot < 0 && nSlot > 0xf) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc);
       exit(-1);
     }
@@ -816,7 +816,7 @@ void __stdcall CMD_ReleaseHoldAltAndClearSelection() {
 
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton) {
-    if (!((nMouseButton & 0xffff) - 0x103 < 2 && gaCmdBindings[nCmdIndex].pfnAltHandler)) {
+    if (!((nMouseButton & 0xffff) - 0x103 <= 1 && gaCmdBindings[nCmdIndex].pfnAltHandler)) {
       return 1;
     }
     if (!pErrorCode) {
@@ -834,11 +834,11 @@ int32_t SORT_CompareInts(int * pA, int * pB) {
     if (*pB < *pA) {
       return 1;
     }
-    if (!*(int*)((int)pA + 6)) {
-      return (uint32_t)(*(int*)((int)pB + 6) != 0);
+    if (*(int*)((int)pA + 6)) {
+      return (*(int*)((int)pB + 6) != 0) - 1;
     }
 
-    return (*(int*)((int)pB + 6) != 0) - 1;
+    return (uint32_t)(*(int*)((int)pB + 6) != 0);
 }
 
 // Rebuilds derived mouse button bindings (0x100-0x104) from command table. Scans all key bindings and populates gKeyBindingTable slots for left/right/middle/scroll/forward mouse buttons. Invalidates bindings (sets 0xFFFF) if command has no handler or conflicts with mouse-specific restrictions.
@@ -856,13 +856,13 @@ void __stdcall CMD_RebuildDerivedBindings() {
     D2KeyBindStrc* pBinding;
     pBinding = g_KeyBindingsTable;
     do {
-      if (0xdf < pBinding->wKeyCode) {
+      if (pBinding->wKeyCode > 0xdf) {
         iVar1 = pBinding->nCmdIndex;
         if (iVar1 < 0x39) {
           nKeyCode = (uint32_t)pBinding->wKeyCode;
           switch (nKeyCode) {
             case 0x100:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
+              if (nKeyCode - 0x103 <= 1 && gaCmdBindings[iVar1].pfnAltHandler) {
                 unbind_key:
                 pBinding->wKeyCode = 0xffff;
               } else {
@@ -871,27 +871,27 @@ void __stdcall CMD_RebuildDerivedBindings() {
               }
             break;
             case 0x101:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
+              if (nKeyCode - 0x103 <= 1 && gaCmdBindings[iVar1].pfnAltHandler) {
                 goto unbind_key;
               }
             gpfnMouseMiddleButtonAltHandler = gaCmdBindings[iVar1].pfnHandler;
             gpfnMouseRightButtonHandler = gaCmdBindings[iVar1].pfnAltHandler;
             break;
             case 0x102:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
+              if (nKeyCode - 0x103 <= 1 && gaCmdBindings[iVar1].pfnAltHandler) {
                 goto unbind_key;
               }
             gpfnMouseRightButtonAltHandler = gaCmdBindings[iVar1].pfnHandler;
             gpfnMouseMiddleButtonHandler = gaCmdBindings[iVar1].pfnAltHandler;
             break;
             case 0x103:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
+              if (nKeyCode - 0x103 <= 1 && gaCmdBindings[iVar1].pfnAltHandler) {
                 goto unbind_key;
               }
             gpfnScrollUpButtonHandler = gaCmdBindings[iVar1].pfnHandler;
             break;
             case 0x104:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
+              if (nKeyCode - 0x103 <= 1 && gaCmdBindings[iVar1].pfnAltHandler) {
                 goto unbind_key;
               }
             gpfnScrollDownButtonHandler = gaCmdBindings[iVar1].pfnHandler;
@@ -900,14 +900,14 @@ void __stdcall CMD_RebuildDerivedBindings() {
       }
 
       pBinding++;
-      if ((uintptr_t)((char*)&g_KeyBindingsTable + 1139) < (int)pBinding) {
+      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
         return;
       }
     } while (true);
 }
 
 D2MissilesTxt * __fastcall GetMissleById(int32_t nMissileId) {
-    if (!(-1 < nMissileId && nMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if (!(nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize)) {
       return nullptr;
     }
 
@@ -935,9 +935,7 @@ void __stdcall ClientLight_UpdateRoomLightPulse() {
 
       gRoomLightPulse.nLightPulseIntensity = (uint32_t)(fAmbientColorF * fVar1);
       gRoomLightPulse.nSinOffset = (int)(gRoomLightPulse.nCurrentTick << 7) / (int)gRoomLightPulse.nFadeInDuration;
-    } else if ((int)gRoomLightPulse.nCurrentTick < (int)(gRoomLightPulse.nTotalDuration - gRoomLightPulse.nFadeOutDuration)) {
-      gRoomLightPulse.nLightPulseIntensity = 0;
-    } else {
+    } else if (!((int)gRoomLightPulse.nCurrentTick < (int)(gRoomLightPulse.nTotalDuration - gRoomLightPulse.nFadeOutDuration))) {
       fVar1 = Fog::MATH_sinTable_f32_LookupOffset(gRoomLightPulse.nSinOffset);
       fAmbientColorF = (float)(int)nAmbientColor;
       if ((int)nAmbientColor < 0) {
@@ -951,6 +949,8 @@ void __stdcall ClientLight_UpdateRoomLightPulse() {
       }
 
       gRoomLightPulse.nSinOffset = 0x80 - (int)((nFadeOutBase + gRoomLightPulse.nCurrentTick) * 0x80) / (int)gRoomLightPulse.nFadeOutDuration;
+    } else {
+      gRoomLightPulse.nLightPulseIntensity = 0;
     }
 
     gRoomLightPulse.nCurrentTick++;
@@ -959,7 +959,7 @@ void __stdcall ClientLight_UpdateRoomLightPulse() {
     if (pRoom) {
       eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     }
-    if (!((int)gRoomLightPulse.nTotalDuration < (int)gRoomLightPulse.nCurrentTick || eLevelId != gRoomLightPulse.eLevelId)) {
+    if (!((int)gRoomLightPulse.nCurrentTick > (int)gRoomLightPulse.nTotalDuration || eLevelId != gRoomLightPulse.eLevelId)) {
       return;
     }
 
@@ -1035,7 +1035,7 @@ void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
       memset(wszWide, 0, 32 * sizeof(wszWide[0]));
       if (pMsg->uLParam.nLParam & 0x800U) {
         /* DWORD dwBufLen for ImmGetCompositionStringA */ /* LPVOID lpBuf for ImmGetCompositionStringA */ /* DWORD param_2 for ImmGetCompositionStringA */ /* HIMC param_1 for ImmGetCompositionStringA */ dwBufLen = ImmGetCompositionStringA(hImc, 0x800, (LPVOID)0x0, 0);
-        if (199 < dwBufLen) {
+        if (dwBufLen > 199) {
           dwBufLen = 199;
         }
 
@@ -1068,12 +1068,12 @@ void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
           if (nResultBufLen) {
             memset(szMultiByte, 0, 200);
             memset(wszWide, 0, 0x40);
-            if (199 < nResultBufLen) {
+            if (nResultBufLen > 199) {
               nResultBufLen = 199;
             }
 
             /* DWORD dwBufLen for ImmGetCompositionStringA */ /* LPVOID lpBuf for ImmGetCompositionStringA */ /* DWORD param_2 for ImmGetCompositionStringA */ /* HIMC param_1 for ImmGetCompositionStringA */ nResultBytes = ImmGetCompositionStringA(hImc, 8, szMultiByte, nResultBufLen);
-            if (0 < nResultBytes) {
+            if (nResultBytes > 0) {
               /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ szMultiByte[199] = '\0';
               MultiByteToWideChar(0, 1, szMultiByte, -1, (LPWSTR)wszWide, 0x20);
               nNewLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszWide);
@@ -1082,12 +1082,12 @@ void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
               } else {
                 *(uint32_t*)((char*)&wszWide + 60) &= 0xffff;
               }
-              if (nNewLen < 0x20) {
-                D2Lang::Unicode::UNISYS::STRING_CopyWideString(gwcIMECompositionString, wszWide);
-              } else {
+              if (nNewLen >= 0x20) {
                 D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(gwcIMECompositionString, wszWide, 0x1f);
                 gwcIMECompositionString[0x1f] = L'\0';
                 Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+              } else {
+                D2Lang::Unicode::UNISYS::STRING_CopyWideString(gwcIMECompositionString, wszWide);
               }
             }
           }
@@ -1145,12 +1145,12 @@ static BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathP
     if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
       BOOL BVar1;
       BVar1 = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
-      if (!BVar1) {
-        return 1;
+      if (BVar1) {
+        UNIT::UnitMode::UNITMODE_HandleMoveAction(nActionType, (int32_t)d2_bits_of(pathPoint), nTargetGUID, pUnit);
+        return 0;
       }
 
-      UNIT::UnitMode::UNITMODE_HandleMoveAction(nActionType, (int32_t)d2_bits_of(pathPoint), nTargetGUID, pUnit);
-      return 0;
+      return 1;
     }
 
     GAME::Select::SELECT_UpdateUnitSelection(nullptr);
@@ -1196,22 +1196,24 @@ void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
     if (!nActionType) {
       return;
     }
-    if (eTargetType == UNIT_PLAYER) {
-      fInteractResult = UNIT::UnitMode::UNITMODE_HandleItemOrObjectInteraction(nActionType, 0, nUnitGUID, pTargetUnit, pUnit);
-    } else if (eTargetType == UNIT_MONSTER) {
-      fInteractResult = UNIT::UnitMode::UNITMODE_HandleSkillTargetInteraction(nActionType, 1, pUnit, pTargetUnit, nUnitGUID);
-    } else {
-      if (eTargetType != UNIT_OBJECT) {
-        bTargetable = UNIT::CheckFlags(pTargetUnit, UNITFLAG_TARGETABLE);
-        if (!bTargetable) {
-          GAME::Select::SELECT_UpdateUnitSelection(nullptr);
-          return;
+    if (eTargetType != UNIT_PLAYER) {
+      if (eTargetType != UNIT_MONSTER) {
+        if (eTargetType != UNIT_OBJECT) {
+          bTargetable = UNIT::CheckFlags(pTargetUnit, UNITFLAG_TARGETABLE);
+          if (!bTargetable) {
+            GAME::Select::SELECT_UpdateUnitSelection(nullptr);
+            return;
+          }
+
+          goto execute_action;
         }
 
-        goto execute_action;
+        fInteractResult = UNITMODE_TryInteractWithObject(pUnit, (D2PathPointStrc)0x2, nActionType, pTargetUnit, nUnitGUID);
+      } else {
+        fInteractResult = UNIT::UnitMode::UNITMODE_HandleSkillTargetInteraction(nActionType, 1, pUnit, pTargetUnit, nUnitGUID);
       }
-
-      fInteractResult = UNITMODE_TryInteractWithObject(pUnit, (D2PathPointStrc)0x2, nActionType, pTargetUnit, nUnitGUID);
+    } else {
+      fInteractResult = UNIT::UnitMode::UNITMODE_HandleItemOrObjectInteraction(nActionType, 0, nUnitGUID, pTargetUnit, pUnit);
     }
     if (!fInteractResult) {
       return;
@@ -1268,7 +1270,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     int32_t nErrorLine;
     int nCurrentCutsceneId;
     nCurrentCutsceneId = nCutsceneId;
-    if (gnCutsceneCount <= nCutsceneId) {
+    if (nCutsceneId >= gnCutsceneCount) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xef);
       exit(-1);
     }
@@ -1278,7 +1280,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     if (bExitCutsceneActive != '\0') {
       return;
     }
-    if (gnCutsceneCount <= nCutsceneId) {
+    if (nCutsceneId >= gnCutsceneCount) {
       GAME::Msg::NET_D2GS_CLIENT_Send_CMD(0x48);
       gbItemDescDirtyFlag = 0;
       return;
@@ -1286,7 +1288,14 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
 
     int32_t nPlayMode;
     nPlayMode = 0;
-    if (!gdwSoundHeaderCacheIndex[nCutsceneId].bCharacterAnimationPlayed) {
+    if (gdwSoundHeaderCacheIndex[nCutsceneId].bCharacterAnimationPlayed) {
+      if (gbLoggerStateInactive != '\0') {
+        sprintf(szVideoPath, gdwSoundHeaderCacheIndex[nCutsceneId].pszVideoPath, "640x292");
+      } else {
+        nPlayMode = 2;
+        sprintf(szVideoPath, gdwSoundHeaderCacheIndex[nCutsceneId].pszVideoPath, "640x146");
+      }
+    } else {
       pszSrcName = gdwSoundHeaderCacheIndex[nCutsceneId].pszVideoPath;
       bMpqLoaded = -(int)pszSrcName;
       do {
@@ -1294,11 +1303,6 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         pszSrcName[(int)(szVideoPath + bMpqLoaded)] = cChar;
         pszSrcName++;
       } while (cChar != '\0');
-    } else if (gbLoggerStateInactive == '\0') {
-      nPlayMode = 2;
-      sprintf(szVideoPath, gdwSoundHeaderCacheIndex[nCutsceneId].pszVideoPath, "640x146");
-    } else {
-      sprintf(szVideoPath, gdwSoundHeaderCacheIndex[nCutsceneId].pszVideoPath, "640x292");
     }
 
     Sound::SoundHdr::Cleanup();
@@ -1344,21 +1348,12 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
 
       bConnectionLost = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)pfnCallback, 0, bConnectionLost);
       bMpqLoaded = 0;
-      if (!bConnectionLost) {
-        check_chained_cutscene:
-        if ((char)geCutsceneCurrentSoundId != '\0') {
-          if (bMpqLoaded) {
-            goto unload_before_chained;
-          }
-
-          goto play_chained_cutscene;
-        }
-      } else {
+      if (bConnectionLost) {
         bVideoLoaded = 1;
-        if (!gdwSoundHeaderCacheIndex[nCutsceneId].bHasAltSoundPath) {
-          sprintf((char*)szSoundPath, "%s\\video\\%s", "DATA\\GLOBAL", szVideoPath);
+        if (gdwSoundHeaderCacheIndex[nCutsceneId].bHasAltSoundPath) {
+          Sound::SOUND_LocalizeSoundPath("%s\\video\\%s\\%s", szSoundPath, szVideoPath);
         } else {
-          Sound::SOUND_LocalizeSoundPath("%s\\video\\%s\\%s", szSoundPath);
+          sprintf((char*)szSoundPath, "%s\\video\\%s", "DATA\\GLOBAL", szVideoPath);
         }
 
         bExitCutsceneActive = '\x01';
@@ -1366,10 +1361,10 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         UI::Draw::SetUIFlag(UI_NODRAW, UI_SET, 0);
         dwResult = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
         if (dwResult) {
-          if (gbCutsceneActive == '\0') {
-            pfFrame = (void*)GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING;
-          } else {
+          if (gbCutsceneActive != '\0') {
             pfFrame = 0;
+          } else {
+            pfFrame = (void*)GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING;
           }
 
           D2gfx::D2GFX::D2GFX_PlayCutScene((char*)szSoundPath, nPlayMode, pfFrame);
@@ -1395,18 +1390,18 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         bConnectionLost = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())Engine::fpRequiredUserAction, 0, 1);
         if (bConnectionLost) {
           nCurrentCutsceneId = 6;
-          if (gbLoggerStateInactive == '\0') {
+          if (gbLoggerStateInactive != '\0') {
+            pszSrcName = "640x292";
+          } else {
             pszSrcName = "640x146";
             nPlayMode = 2;
-          } else {
-            pszSrcName = "640x292";
           }
 
           sprintf(szVideoPath, gdwSoundHeaderCacheIndex[6].pszVideoPath, pszSrcName);
-          if (!gdwSoundHeaderCacheIndex[6].bHasAltSoundPath) {
-            sprintf((char*)szSoundPath, "%s\\video\\%s", "DATA\\GLOBAL", szVideoPath);
+          if (gdwSoundHeaderCacheIndex[6].bHasAltSoundPath) {
+            Sound::SOUND_LocalizeSoundPath("%s\\video\\%s\\%s", szSoundPath, szVideoPath);
           } else {
-            Sound::SOUND_LocalizeSoundPath("%s\\video\\%s\\%s", szSoundPath);
+            sprintf((char*)szSoundPath, "%s\\video\\%s", "DATA\\GLOBAL", szVideoPath);
           }
 
           dwResult = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
@@ -1422,6 +1417,15 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         bExitCutsceneActive = '\0';
         *(uint8_t*)(char*)&geCutsceneCurrentSoundId = '\0';
         D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(4);
+      } else {
+        check_chained_cutscene:
+        if ((char)geCutsceneCurrentSoundId != '\0') {
+          if (bMpqLoaded) {
+            goto unload_before_chained;
+          }
+
+          goto play_chained_cutscene;
+        }
       }
 
       GAME::Msg::NET_D2GS_CLIENT_Send_CMD(0x48);
@@ -1494,13 +1498,8 @@ void __fastcall MONUNIQUE_DispatchDeathEffect(D2UnitStrc * pUnit, int32_t nUMod,
     }
 
     uint32_t uVar1 = pUnit->nClassId;
-    if (uVar1 < 0x101) {
-      if (uVar1 == 0x100) {
-        if (pUnit->eAnimMode.ePlayerMode == Death) {
-          Source::ClientEngine::CLIENT_BossDeath_Izual(pUnit);
-          return;
-        }
-      } else {
+    if (uVar1 <= 0x100) {
+      if (uVar1 != 0x100) {
         switch (uVar1) {
           case 0x2d:
             if (pUnit->eAnimMode.ePlayerMode == Death) {
@@ -1538,35 +1537,48 @@ void __fastcall MONUNIQUE_DispatchDeathEffect(D2UnitStrc * pUnit, int32_t nUMod,
               return;
             }
         }
+      } else {
+        if (pUnit->eAnimMode.ePlayerMode == Death) {
+          Source::ClientEngine::CLIENT_BossDeath_Izual(pUnit);
+          return;
+        }
       }
-    } else if (uVar1 < 0x1e0) {
-      if (uVar1 == 0x1df) {
+    } else if (uVar1 <= 0x1df) {
+      if (uVar1 != 0x1df) {
+        if (uVar1 != 0x10b) {
+          if (uVar1 != 0x11c) {
+            if (uVar1 == 0x16e && pUnit->eAnimMode.ePlayerMode == Death) {
+              Source::ClientEngine::CLIENT_SpawnOrbMistEffect(pUnit);
+              return;
+            }
+          } else {
+            if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2) {
+              Source::ClientEngine::CLIENT_BossDeath_SandMaggotQueen(pUnit);
+              return;
+            }
+          }
+        } else {
+          if (pUnit->eAnimMode.ePlayerMode == Death) {
+            Source::ClientEngine::CLIENT_BossDeath_BloodRaven(pUnit);
+            return;
+          }
+        }
+      } else {
         if (pUnit->eAnimMode.ePlayerMode == Death) {
           Source::ClientEngine::CLIENT_SpawnOverseerControlMissile(pUnit);
           return;
         }
-      } else if (uVar1 == 0x10b) {
-        if (pUnit->eAnimMode.ePlayerMode == Death) {
-          Source::ClientEngine::CLIENT_BossDeath_BloodRaven(pUnit);
-          return;
-        }
-      } else if (uVar1 == 0x11c) {
-        if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2) {
-          Source::ClientEngine::CLIENT_BossDeath_SandMaggotQueen(pUnit);
-          return;
-        }
-      } else if (uVar1 == 0x16e && pUnit->eAnimMode.ePlayerMode == Death) {
-        Source::ClientEngine::CLIENT_SpawnOrbMistEffect(pUnit);
-        return;
       }
-    } else if (0x21b < uVar1) {
-      if (uVar1 < 0x21f) {
+    } else if (uVar1 >= 0x21c) {
+      if (uVar1 > 0x21e) {
+        if (uVar1 == 0x220 && pUnit->eAnimMode.ePlayerMode == Death) {
+          Source::ClientEngine::CLIENT_BossDeath_Baal();
+          return;
+        }
+      } else {
         if (pUnit->eAnimMode.ePlayerMode == Death) {
           Source::ClientEngine::CLIENT_SpawnAncientDeathMissile(pUnit);
         }
-      } else if (uVar1 == 0x220 && pUnit->eAnimMode.ePlayerMode == Death) {
-        Source::ClientEngine::CLIENT_BossDeath_Baal();
-        return;
       }
     }
 }
@@ -1608,29 +1620,29 @@ int __stdcall NPCMENU_GetCurrentMenuId() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
     UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTradeErrorDialog);
     UI::Dialog::gpNpcTradeErrorDialog = 0;
-    if (_Interaction::geNpcUiState != NPCUI_TRADE_REJECTED) {
-      if (gnNpcMenuTransactionType == 6) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd55);
-        exit(-1);
-      } else {
-        if (_Interaction::geNpcUiState == 8) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd56);
-          exit(-1);
-        }
-
-        _Interaction::geNpcUiState = NPCUI_SHOP;
-        UI::Inv::INV_ExitIdentifyMode();
+    if (_Interaction::geNpcUiState == NPCUI_TRADE_REJECTED) {
+      if (gnNpcMenuTransactionType == 5) {
+        UI::npcmenu::NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
+        UI::Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
         return 1;
       }
-    }
-    if (gnNpcMenuTransactionType == 5) {
-      UI::npcmenu::NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      UI::Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+
+      UI::npcmenu::NPCMENU_OpenInteractionDialog();
       return 1;
     }
+    if (gnNpcMenuTransactionType == 6) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd55);
+      exit(-1);
+    } else {
+      if (_Interaction::geNpcUiState == 8) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd56);
+        exit(-1);
+      }
 
-    UI::npcmenu::NPCMENU_OpenInteractionDialog();
-    return 1;
+      _Interaction::geNpcUiState = NPCUI_SHOP;
+      UI::Inv::INV_ExitIdentifyMode();
+      return 1;
+    }
 }
 
 void __fastcall TRADE_HandleTradeComplete(int32_t nValue, char cParam) {
@@ -1674,26 +1686,28 @@ void __fastcall TRADE_SendGoldToPartner(uint32_t nParam) {
 }
 
 int __stdcall TRADE_IsTradeThrottled() {
-    if (g_nTradeWindowState != 7) {
-      return 0;
-    }
-    if (gdwTradeThrottleTimestamp == -1) {
+    if (g_nTradeWindowState == 7) {
+      DWORD dwTickCount;
+      if (gdwTradeThrottleTimestamp == -1) {
+        return 1;
+      }
+
+      dwTickCount = GetTickCount();
+      if (!(dwTickCount > gdwTradeThrottleTimestamp + 30000U)) {
+        return 1;
+      }
+
+      UI::Inv::INV_ResetShopState();
+      g_nTradeWindowState = 0;
+      UI::ui::UI_CloseTradeWindow(0);
+      GAME::Msg::NET_D2GS_CLIENT_Send_0x69();
+      ClientModeInGame::D2CLIENT_SetExitVar1(0);
+      GAME::Game::D2CLIENT_SetExitVar2(1);
+      GAME::Game::D2CLIENT_SetExitVar3ToTrue();
       return 1;
     }
 
-    DWORD dwTickCount = GetTickCount();
-    if (gdwTradeThrottleTimestamp + 30000U >= dwTickCount) {
-      return 1;
-    }
-
-    UI::Inv::INV_ResetShopState();
-    g_nTradeWindowState = 0;
-    UI::ui::UI_CloseTradeWindow(0);
-    GAME::Msg::NET_D2GS_CLIENT_Send_0x69();
-    ClientModeInGame::D2CLIENT_SetExitVar1(0);
-    GAME::Game::D2CLIENT_SetExitVar2(1);
-    GAME::Game::D2CLIENT_SetExitVar3ToTrue();
-    return 1;
+    return 0;
 }
 
 void __stdcall SHOP_CleanupAssets() {
@@ -1778,7 +1792,7 @@ int32_t __fastcall SEED_RollRange(D2SeedStrc * pSeed, int32_t nMin, int32_t nMax
     if (nRangeWidth & nRangeWidth - 1) {
       dSeedResult = D2_SEED_NEXT(*pSeed);
       *pSeed = dSeedResult;
-      return (int)(((uint64_t)d2_bits_of(dSeedResult) & 0xffffffff) % (uint64_t)nRangeWidth) + nMin;
+      return (int)(dSeedResult.nSeedLow % nRangeWidth) + nMin;
     }
 
     dSeedResult = D2_SEED_NEXT(*pSeed);
@@ -1814,22 +1828,23 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
 
     int32_t nPeriodOfDay = D2Common::Environment::DRLGENV_GetPeriodOfDayFromAct(sgpDrlgAct, nullptr);
     if (nPeriodOfDay) {
-      if (!(nPeriodOfDay - 1U < 3)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x66);
-        exit(-1);
-      }
-      if (pUnit->eAnimMode.ePlayerMode == Death) {
-        pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
-        if (!bSkipCofLoad) {
-          Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      if (nPeriodOfDay - 1U <= 2) {
+        if (pUnit->eAnimMode.ePlayerMode == Death) {
+          pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
+          if (!bSkipCofLoad) {
+            Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+          }
+
+          D2Common::Units::InitAnimMode(pUnit);
+          UNIT::SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
         }
 
-        D2Common::Units::InitAnimMode(pUnit);
-        UNIT::SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
+        OBJECT_SetLightRGB(pTxtLine->Red, pTxtLine->Green, pTxtLine->Blue, (uint16_t)(uint8_t)pTxtLine->Lit[pUnit->eAnimMode.ePlayerMode], pUnit);
+        return 1;
       }
 
-      OBJECT_SetLightRGB(pTxtLine->Red, pTxtLine->Green, pTxtLine->Blue, (uint16_t)(uint8_t)pTxtLine->Lit[pUnit->eAnimMode.ePlayerMode], pUnit);
-      return 1;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x66);
+      exit(-1);
     }
     if (!(pUnit->eAnimMode.ePlayerMode == Walk || pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
       return 0;
@@ -1862,7 +1877,7 @@ void __stdcall TEXT_InitializeTextSystem() {
     gnTextSystemInitFlag = 0;
     gpUpgradeMenuDC6 = UI::ui::ARCHIVE_LoadOverlayImageUsedInGame("menu\\upgrade");
     gpHoradricBackgroundDC6 = UI::ui::ARCHIVE_LoadOverlayImageUsedInGame("menu\\horadricback");
-    if (0 >= nCashDisplayItemCount) {
+    if (nCashDisplayItemCount <= 0) {
       return;
     }
 
@@ -1951,7 +1966,7 @@ void __stdcall TEXT_HandleMouseMove() {
 void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2) {
     int nClearCount;
     int nItemCount = nCashDisplayItemCount;
-    if (0 < nCashDisplayItemCount) {
+    if (nCashDisplayItemCount > 0) {
       uint8_t* pHitTestEntry;
       pHitTestEntry = &gaNpcCashTabs[0].nHitTestState;
       nClearCount = nCashDisplayItemCount;
@@ -1962,14 +1977,14 @@ void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2) {
         nClearCount--;
       } while (nClearCount);
     }
-    if (0 >= nItemCount) {
+    if (nItemCount <= 0) {
       return;
     }
 
     uint32_t* pBoundsEntry = (uint32_t*)&gaNpcCashTabs[0].nHitBoxX2;
     nClearCount = 0;
     do {
-      if ((int)pBoundsEntry[-1] <= nParam1 && nParam1 <= (int)*pBoundsEntry && (int)pBoundsEntry[1] <= nParam2 && nParam2 <= (int)pBoundsEntry[2]) {
+      if (nParam1 >= (int)pBoundsEntry[-1] && nParam1 <= (int)*pBoundsEntry && nParam2 >= (int)pBoundsEntry[1] && nParam2 <= (int)pBoundsEntry[2]) {
         Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
         nItemCount = nCashDisplayItemCount;
         *(uint8_t*)((int)pBoundsEntry + 0x11) = 1;
@@ -2031,12 +2046,12 @@ static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAn
       if (pCofDataBase) {
         nComponentIdx = 0;
         pCofEntry = pCofDataBase + 0x1c;
-        if (!*pCofDataBase) {
+        if (*pCofDataBase <= 0) {
           return 0;
         }
 
         do {
-          if (0xf < *pCofEntry) {
+          if (*pCofEntry >= 0x10) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
             exit(-1);
           }
@@ -2123,7 +2138,7 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbP
     int nLoadedCount = 0;
     int nLayerIdx = 0;
     uint8_t* pLayerArrayBase = pbParam;
-    if (!*pbParam) {
+    if (*pbParam <= 0) {
       return nLoadedCount;
     }
 
@@ -2149,7 +2164,7 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbP
           nDrawWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
           nWorldOffsetY = D2Common::Units::GetTargetY(pUnit);
           iVar1 = nWorldOffsetY + (nOffsetY - nDrawWorldOffsetY);
-          if (*pOutMaxY < iVar1) {
+          if (iVar1 > *pOutMaxY) {
             *pOutMaxY = iVar1;
           }
 
@@ -2266,7 +2281,7 @@ void __stdcall dSceneTransitionDraw() {
 
     DWORD dwTickCount = GetTickCount();
     int nXEnd = ScreenSizeX;
-    if (gdwWarpFadeExpireTime < dwTickCount) {
+    if (dwTickCount > gdwWarpFadeExpireTime) {
       gdwWarpFadeExpireTime = 0;
       return;
     }
@@ -2274,10 +2289,12 @@ void __stdcall dSceneTransitionDraw() {
     int nTimeRemaining = gdwWarpFadeExpireTime - dwTickCount;
     int nYEnd = ScreenSizeY - 0x2f;
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    if (nBorderType == 1) {
+    if (nBorderType != 1) {
+      if (nBorderType == 2) {
+        nXStart = ScreenSizeX / 2;
+      }
+    } else {
       nXEnd -= ScreenSizeX / 2;
-    } else if (nBorderType == 2) {
-      nXStart = ScreenSizeX / 2;
     }
 
     D2gfx::D2GFX::D2GFX_DrawSolidRectAlpha(nXStart, 0, nXEnd, nYEnd, 0, nTimeRemaining * 0xff / 500);
@@ -2323,11 +2340,11 @@ uint32_t __stdcall DRAW_ShouldDrawEdges(int32_t nParam) {
     }
 
     DWORD dwResMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
-    if (dwResMode != 2) {
-      return 0;
+    if (dwResMode == 2) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // TRUE when left <= nX < right and top <= nY < bottom; halts (dFloor.cpp line 118, ptRect) on a NULL rect.
@@ -2337,7 +2354,7 @@ BOOL __stdcall DFLOOR_IsPointInRect(RECT * pRect, int nX, int nY) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x76);
       exit(-1);
     }
-    if (!(pRect->left <= nX && nX < pRect->right && pRect->top <= nY && nY < pRect->bottom)) {
+    if (!(nX >= pRect->left && nX < pRect->right && nY >= pRect->top && nY < pRect->bottom)) {
       return 0;
     }
 
@@ -4191,7 +4208,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
             pImageWritePtr = (void*)((int)pImageWritePtr + ((uint32_t)__frame0.pModuleBase & 0xffff));
             __frame0.pCopyDst = pImageWritePtr;
             __frame0.ppSectionEntry = ppSectionDataCursor;
-            if ((void*)(nHeaderSize + (int)ppFVar7) <= pImageWritePtr) {
+            if (pImageWritePtr >= (void*)(nHeaderSize + (int)ppFVar7)) {
               break;
             }
 
@@ -4203,7 +4220,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           __frame0.nRelocationCount = 0;
           while (true) {
             __frame0.pModuleBase = *ppuVar1;
-            if (__frame0.pModuleBase[3] <= __frame0.nRelocationCount) {
+            if (__frame0.nRelocationCount >= __frame0.pModuleBase[3]) {
               break;
             }
 
@@ -4254,7 +4271,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           while (true) {
             ppFVar7 = *__frame0.ppInputSaved;
             __frame0.nSectionIdx = nHeaderSize;
-            if (ppFVar7[9] <= nHeaderSize) {
+            if (nHeaderSize >= ppFVar7[9]) {
               break;
             }
 
@@ -4274,7 +4291,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           nHeaderSize = ppFVar7[2];
           if (nHeaderSize < *ppFVar7) {
             nAlignedSize = nHeaderSize + 0xfff & -4096;
-            if (nHeaderSize <= nAlignedSize && nAlignedSize < *ppFVar7) {
+            if (nAlignedSize >= nHeaderSize && nAlignedSize < *ppFVar7) {
               /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree((LPVOID)((int)ppFVar7 + nAlignedSize), *ppFVar7 - nAlignedSize, 0x4000);
             }
           }
@@ -4337,7 +4354,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
             pImageWritePtr = (void*)((int)pImageWritePtr + ((uint32_t)__frame0.pModuleBase & 0xffff));
             __frame0.pCopyDst = pImageWritePtr;
             __frame0.ppSectionEntry = ppSectionDataCursor;
-            if ((void*)(nHeaderSize + (int)ppFVar7) <= pImageWritePtr) {
+            if (pImageWritePtr >= (void*)(nHeaderSize + (int)ppFVar7)) {
               break;
             }
 
@@ -4349,7 +4366,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           __frame0.nRelocationCount = 0;
           while (true) {
             __frame0.pModuleBase = *ppuVar1;
-            if (__frame0.pModuleBase[3] <= __frame0.nRelocationCount) {
+            if (__frame0.nRelocationCount >= __frame0.pModuleBase[3]) {
               break;
             }
 
@@ -4410,7 +4427,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           while (true) {
             ppFVar7 = *__frame0.ppInputSaved;
             __frame0.nSectionIdx = nHeaderSize;
-            if (ppFVar7[9] <= nHeaderSize) {
+            if (nHeaderSize >= ppFVar7[9]) {
               break;
             }
 
@@ -4430,7 +4447,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           nHeaderSize = ppFVar7[2];
           if (nHeaderSize < *ppFVar7) {
             nAlignedSize = nHeaderSize + 0xfff & -4096;
-            if (nHeaderSize <= nAlignedSize && nAlignedSize < *ppFVar7) {
+            if (nAlignedSize >= nHeaderSize && nAlignedSize < *ppFVar7) {
               /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree((LPVOID)((int)ppFVar7 + nAlignedSize), *ppFVar7 - nAlignedSize, 0x4000);
             }
           }
@@ -4591,15 +4608,8 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
           }
 
           /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bDirectCommand = PeekMessageA(&msgPeek, (HWND)0x0, 0, 0, 1);
-          if (!bDirectCommand) {
-            nBinkWaitResult = BinkWait(gpBinkVideoDirectDraw);
-            if (!nBinkWaitResult) {
-              BINK_RenderVideoFrame();
-            } else {
-              /* DWORD dwMilliseconds for Sleep */ Sleep(1);
-            }
-          } else {
-            if (msgPeek.message < 0x202) {
+          if (bDirectCommand) {
+            if (msgPeek.message <= 0x201) {
               if (msgPeek.message == 0x201) {
                 goto request_skip;
               }
@@ -4619,6 +4629,13 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
 
             /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&msgPeek);
             /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&msgPeek);
+          } else {
+            nBinkWaitResult = BinkWait(gpBinkVideoDirectDraw);
+            if (!nBinkWaitResult) {
+              BINK_RenderVideoFrame();
+            } else {
+              /* DWORD dwMilliseconds for Sleep */ Sleep(1);
+            }
           }
         }
 

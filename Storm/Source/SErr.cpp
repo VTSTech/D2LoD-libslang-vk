@@ -151,7 +151,7 @@ void __stdcall SERR_InternalLeaveCriticalSection() {
 // @blizzard UndecorateObjectName (SERR.CPP)
 static BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLen, char * szText) {
     uint32_t pcMarker = SSTR::SStrLen(szMangled);
-    if (!(5 < pcMarker && *szMangled == '.' && szMangled[3] == 'U')) {
+    if (!(pcMarker >= 6 && *szMangled == '.' && szMangled[3] == 'U')) {
       return 0;
     }
 
@@ -162,24 +162,24 @@ static BOOL __stdcall SERR_UndecorateObjectName(char * szMangled, int32_t nMaxLe
 
     SSTR::SStrCopy(szText, szMangled + 4, nMaxLen);
     pcVar1 = strpbrk(szText, "?@");
-    if (!pcVar1) {
-      return 0;
-    }
+    if (pcVar1) {
+      *pcVar1 = '\0';
+      while (true) {
+        pcVar1--;
+        if (!(pcVar1 >= szText && *pcVar1 == '_')) {
+          break;
+        }
 
-    *pcVar1 = '\0';
-    while (true) {
-      pcVar1--;
-      if (!(szText <= pcVar1 && *pcVar1 == '_')) {
-        break;
+        *pcVar1 = '\0';
       }
 
-      *pcVar1 = '\0';
+      SSTR::SStrPack(szText, " (", nMaxLen);
+      SSTR::SStrPack(szText, szMangled, nMaxLen);
+      SSTR::SStrPack(szText, ")", nMaxLen);
+      return 1;
     }
 
-    SSTR::SStrPack(szText, " (", nMaxLen);
-    SSTR::SStrPack(szText, szMangled, nMaxLen);
-    SSTR::SStrPack(szText, ")", nMaxLen);
-    return 1;
+    return 0;
 }
 
 // Under the error critical section, records a callback and its parameter plus the calling thread id, so a later app-fatal can call back into the caller's context.
@@ -273,13 +273,13 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
     uint32_t nPrevLinkOffset;
     SERR_InternalEnterCriticalSection();
     StormLinkStrc** pNode = (StormLinkStrc**)SMem::SMemAlloc(0xc, gszSSystemListAllocTag, -2, 0x8000008);
-    if (!pNode) {
-      pNewCallback = 0;
-      pNode = &gnStormErrorCallbackCount.pPrevLink;
-    } else {
+    if (pNode) {
       *pNode = 0;
       pNode[1] = 0;
       pNewCallback = pNode;
+    } else {
+      pNewCallback = 0;
+      pNode = &gnStormErrorCallbackCount.pPrevLink;
     }
 
     StormLinkStrc* iVar1 = *pNode;
@@ -406,7 +406,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
       nErrorCodeArg = SSTR::SStrCopy(pCustomMsgArg, (char*)__frame0.pStackTracePtr, 0x7fffffff);
       pCustomMsgArg = __frame0.szFullMessage + nErrorCodeArg;
     }
-    if (0 < nTraceFlags) {
+    if (nTraceFlags > 0) {
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pCustomMsgArg, "(%u)", nTraceFlags);
       nLen = SSTR::SStrLen(pCustomMsgArg);
       pCustomMsgArg += nLen;
@@ -499,7 +499,7 @@ int __stdcall SErrDisplayError(uint32_t nErrorCode, uint32_t * pStackTrace, int3
 
     iVar1 = 7;
     __frame0.nMsgBoxFlags = (uint32_t)(nMessageFlags != 0) * 2 + 1 | 0x52010;
-    for (pCallbackNode = (StormSErrHandlerNode*)(gnStormErrorCallbackCount.pNext < 1 ? 0 : gnStormErrorCallbackCount.pNext); 0 < (int)pCallbackNode; pCallbackNode = pCallbackNode->pNext) {
+    for (pCallbackNode = (StormSErrHandlerNode*)(gnStormErrorCallbackCount.pNext <= 0 ? 0 : gnStormErrorCallbackCount.pNext); 0 < (int)pCallbackNode; pCallbackNode = pCallbackNode->pNext) {
       pCustomMsgArg = __frame0.pCustomMsgPtr;
       if (!__frame0.pCustomMsgPtr) {
         pCustomMsgArg = "";
@@ -600,8 +600,8 @@ void __stdcall SErrReportNamedResourceLeak(char * szMessage, char * szText) {
 // @oracle-basis Callee set {EnterCriticalSection, <free>, LeaveCriticalSection} with arity 1, operating on the same list SErrRegisterHandler 0041c900 builds. The oracle calls SMemFree directly; MSVC factored the unlink+free into SSYSTEM_ListRemoveAndFree 0041ca10, which calls SMemFree - the same operation one level down. SSYSTEM_ListRemoveAndFree has this function as its only caller.
 void __stdcall SErrUnregisterHandler(int32_t nCallbackId) {
     SERR_InternalEnterCriticalSection();
-    int* piEntry = (int*)(gnStormErrorCallbackCount.pNext < 1 ? 0 : gnStormErrorCallbackCount.pNext);
-    while (0 < (int)piEntry) {
+    int* piEntry = (int*)(gnStormErrorCallbackCount.pNext <= 0 ? 0 : gnStormErrorCallbackCount.pNext);
+    while ((int)piEntry > 0) {
       if (piEntry[2] == nCallbackId) {
         piEntry = (int*)SSystem::SSYSTEM_ListRemoveAndFree(&gnStormErrorCallbackCount, piEntry);
       } else {

@@ -183,6 +183,62 @@ def ref_view(start, model_entry):
     return out
 
 
+def span_pieces(model, start, end):
+    """The carved functions that tile [start, end) exactly, in order, or None.
+    end == the carve's own end gives [start]."""
+    out, p = [], start
+    while p < end:
+        if p not in model:
+            return None
+        out.append(p)
+        p = model[p][0].end
+    return out if p == end else None
+
+
+def ref_view_span(start, end, model):
+    """ref_view of the original's code from `start` to `end`, where the carve
+    split one function into several: refimage starts a function at every call
+    target, so a CRT function's __finally funclet (`call $LN5`, reached only
+    from its own body) is carved as a function of its own, while our object
+    holds it inside the one COMDAT. Over the joined span a reference is
+    normalised as our object's is: a branch or call into the span carries no
+    relocation in ours, so it is compared by its raw bytes and names nothing;
+    an address taken inside the span is ('self', offset); a call of the span's
+    own entry stays a call. With end == the carve's end this is ref_view."""
+    pieces = span_pieces(model, start, end)
+    if pieces is None:
+        raise ValueError('%08x..%08x is not a run of carved functions' % (start, end))
+    if len(pieces) == 1:
+        return ref_view(start, model[start])
+    out = []
+    for p in pieces:
+        dec, refs = model[p]
+        calls = {i.addr for i in dec.insns if i.bytes[:1] == b'\xe8'}
+        per_insn = {}
+        for a, off, size, kind, tgt in refs:
+            if kind == 'call' and start <= tgt < end and not (tgt == start and a in calls):
+                continue                                    # a branch inside the span: raw bytes
+            if kind == 'self':
+                tok = ('self', tgt + p - start)
+            elif kind in ('call', 'fptr'):
+                tok = ('self', tgt - start) if kind == 'fptr' and start <= tgt < end else ('fn', tgt)
+            elif kind == 'string':
+                tok = ('str', tgt)
+            elif kind == 'import':
+                tok = ('import', tgt.split('!', 1)[1])
+            else:
+                tok = ('self', tgt - start) if isinstance(tgt, int) and start <= tgt < end else ('data', tgt)
+            per_insn.setdefault(a, []).append((off, size, tok, kind == 'call'))
+        for i in dec.insns:
+            fields = sorted(per_insn.get(i.addr, ()))
+            masked = bytearray(i.bytes)
+            for off, size, _t, _b in fields:
+                masked[off:off + size] = b'\0' * size
+            text, key = _render(i.bytes, i.addr - start, fields)
+            out.append(NInsn(i.addr - start, bytes(masked), i.mnemonic, text, key, [t for _o, _s, t, _b in fields]))
+    return out
+
+
 class Result:
     __slots__ = ('status', 'ref_insns', 'our_insns', 'byte_diffs', 'similarity', 'ref_diffs', 'unverified',
                  'notes', 'wiring')

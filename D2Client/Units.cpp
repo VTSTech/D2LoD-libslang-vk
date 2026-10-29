@@ -40,28 +40,30 @@ eD2UnitType __fastcall GetType(D2UnitStrc * pUnit) {
 
 int32_t __fastcall GetXPosFromDynamicPathUnit(D2UnitStrc * pUnit) {
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType < 4 || 5 < (int)eUnitType))) {
+    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5))) {
       return pUnit->pPath.pStaticPath->nPosX;
     }
-    if (!pUnit->pPath.pDynamicPath) {
-      return 0;
+    if (pUnit->pPath.pDynamicPath) {
+      int32_t nXPos;
+      nXPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      return nXPos;
     }
 
-    int32_t nXPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-    return nXPos;
+    return 0;
 }
 
 int32_t __fastcall GetYPosFromDynamicPathUnit(D2UnitStrc * pUnit) {
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType < 4 || 5 < (int)eUnitType))) {
+    if (!(eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5))) {
       return pUnit->pPath.pStaticPath->nPosY;
     }
-    if (!pUnit->pPath.pDynamicPath) {
-      return 0;
+    if (pUnit->pPath.pDynamicPath) {
+      int32_t nYPos;
+      nYPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      return nYPos;
     }
 
-    int32_t nYPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-    return nYPos;
+    return 0;
 }
 
 void __fastcall IfPlayer(D2UnitStrc * pUnit) {
@@ -81,11 +83,11 @@ BOOL __fastcall IsUnitDistanceLowerThan700(D2UnitStrc * pUnit) {
     D2Common::Units::GetTargetCoords(pUnit, &ptUnit);
     int nDeltaY = ptUnit.y - ptPlayer.y;
     float fVar1 = _Utils::CalculateHypotenusePowered((float)(ptUnit.x - ptPlayer.x), (float)nDeltaY + (float)nDeltaY);
-    if (fVar1 < 490000.0 == (fVar1 == 490000.0)) {
-      return 0;
+    if (fVar1 < 490000.0 != (fVar1 == 490000.0)) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Returns 1 if the unit supports animation mode nMode (0–15), 0 otherwise. Accounts for shape-shift/transform GFX overrides via SKILLS_GetStateTransformGfx. For players, always accepts modes 0–4, 8, 9. For monsters, checks the MonStats2 bitmask (HD/TR/LG/RA/LA/RH/LH/SH flags). For objects, checks ObjectsTxt->Mode[nMode+0x12]. Items accept mode 1 only.
@@ -99,11 +101,11 @@ BOOL __fastcall GFXUTIL_UnitHasAnimMode(D2UnitStrc * pUnit, uint32_t nMode) {
     }
 
     eD2UnitType eType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);

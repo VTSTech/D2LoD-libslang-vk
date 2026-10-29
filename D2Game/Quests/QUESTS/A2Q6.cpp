@@ -165,7 +165,9 @@ void __fastcall Q14_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     /* GetQuestState(TheSevenTombs, 3=Step0x03=Duriel-dead) — if set, gossip
                          message index = 3 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
-    if (!bQuestState) {
+    if (bQuestState) {
+      nMessageIndexMaybe = 3;
+    } else {
       int32_t nPlayerGUID;
       /* GetQuestState(TheSevenTombs, 4=Step0x04) — if set: Drognan(0xd2)->msg5,
                          else msg4 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x04);
@@ -201,7 +203,7 @@ void __fastcall Q14_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (bQuestState == 1 && !bJustCompleted) {
         return;
       }
-      if (3 < pQuestData->nStateFlag && !bJustCompleted) {
+      if (pQuestData->nStateFlag >= 4 && !bJustCompleted) {
         return;
       }
 
@@ -216,12 +218,10 @@ void __fastcall Q14_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         if (nMessageIndexMaybe == -1) {
           return;
         }
-        if (7 < nMessageIndexMaybe) {
+        if (nMessageIndexMaybe >= 8) {
           return;
         }
       }
-    } else {
-      nMessageIndexMaybe = 3;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nMessageIndexMaybe);
@@ -262,7 +262,7 @@ BOOL __fastcall Q14_UpdateQuestRecordStep(::SGAMEDATA * pGame, D2UnitStrc * pUni
     }
 
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && 1 < pQuestData->nStateFlag)) {
+    if (!(pQuestData && pQuestData->nStateFlag >= 2)) {
       return 0;
     }
 
@@ -539,49 +539,48 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       }
     } else {
       if (nNpcNo == 0xc9) {
-        if (nMessageIndex != 0x1ae) {
-          if (nMessageIndex != 0x1ba) {
-            return;
-          }
-
-          /* GetQuestState(TheSevenTombs, 3=Step0x03=Duriel-dead) — Jerhyn 0x1ba
-                         dialogue requires Duriel dead */ bPortalSpawned = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
-          if (!bPortalSpawned) {
-            return;
-          }
-
-          /* GetQuestState(TheSevenTombs, 0xd=JustCompleted) — if so, set live
-                         nStateFlag 5 */ bPortalSpawned = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
-          if (bPortalSpawned) {
-            QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x26c);
-          }
-
-          pSpecificData->bDragoneyeSpokenFlag = 1;
-          pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q14_Callback02_NpcDeactivate;
-          /* SetQuestState(TheSevenTombs, 4=Step0x04) — Jerhyn post-Duriel: advance
-                         Step0x03 -> Step0x04 */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x04);
-          /* UnsetQuestState(TheSevenTombs, 3=Step0x03) — clear old Duriel-dead bit
-                         after promoting to Step0x04 */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
+        if (nMessageIndex == 0x1ae) {
           QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
+          QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x254);
+          pTaintedSunData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
+          pSpecificData->bJerhynSpokeFlag = 1;
+          pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q14_Callback02_NpcDeactivate;
+          if (!pTaintedSunData) {
+            return;
+          }
+
+          /* FARPROC lpfn for IsBadCodePtr */ bPortalSpawned = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+          if (bPortalSpawned) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25a);
+            exit(-1);
+          }
+
+          pTaintedSunData->fpSequenceFilter(pTaintedSunData);
+          return;
+        }
+        if (nMessageIndex != 0x1ba) {
           return;
         }
 
-        QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
-        QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x254);
-        pTaintedSunData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
-        pSpecificData->bJerhynSpokeFlag = 1;
-        pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q14_Callback02_NpcDeactivate;
-        if (!pTaintedSunData) {
+        /* GetQuestState(TheSevenTombs, 3=Step0x03=Duriel-dead) — Jerhyn 0x1ba
+                         dialogue requires Duriel dead */ bPortalSpawned = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
+        if (!bPortalSpawned) {
           return;
         }
 
-        /* FARPROC lpfn for IsBadCodePtr */ bPortalSpawned = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+        /* GetQuestState(TheSevenTombs, 0xd=JustCompleted) — if so, set live
+                         nStateFlag 5 */ bPortalSpawned = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
         if (bPortalSpawned) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25a);
-          exit(-1);
+          QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x26c);
         }
 
-        pTaintedSunData->fpSequenceFilter(pTaintedSunData);
+        pSpecificData->bDragoneyeSpokenFlag = 1;
+        pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q14_Callback02_NpcDeactivate;
+        /* SetQuestState(TheSevenTombs, 4=Step0x04) — Jerhyn post-Duriel: advance
+                         Step0x03 -> Step0x04 */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x04);
+        /* UnsetQuestState(TheSevenTombs, 3=Step0x03) — clear old Duriel-dead bit
+                         after promoting to Step0x04 */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
+        QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
         return;
       }
       if (nNpcNo == 0xd2) {
@@ -825,7 +824,7 @@ void __fastcall Q14_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 void __fastcall Q14_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int nLevelId;
     nLevelId = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (0x22 < nLevelId - 0x28U) {
+    if (nLevelId - 0x28U > 0x22) {
       return;
     }
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28) {
@@ -868,7 +867,7 @@ void __fastcall Q14_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       }
 
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x371);
-      if (1 < pQuestData->nStateFlagPrev) {
+      if (pQuestData->nStateFlagPrev > 1) {
         goto record_player_step;
       }
     } else {
@@ -876,12 +875,12 @@ void __fastcall Q14_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       if (nLevelId != 0x49) {
         return;
       }
-      if (1 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag > 1) {
         return;
       }
 
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x390);
-      if (1 < pQuestData->nStateFlagPrev) {
+      if (pQuestData->nStateFlagPrev > 1) {
         return;
       }
     }
@@ -999,23 +998,25 @@ bool __fastcall Q14_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
 
 // A2Q6 "The Seven Tombs" — fpSequenceFilter: if quest not yet started (nStateFlag==0) and introduced, sets nStateFlag 1 (quest visible/started). Then chains into TheTaintedSun's sequence filter (the two Act2 quests are linked). No bitbuffer record changes.
 bool __fastcall Q14_SequenceFilter(D2QuestDataStrc * pQuestData) {
+    BOOL BVar2;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x3e9);
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
-    if (!pQuestData_00) {
-      return true;
+    if (pQuestData_00) {
+      bool bVar1;
+      /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3ee);
+        exit(-1);
+      }
+
+      bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
 
-    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3ee);
-      exit(-1);
-    }
-
-    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-    return bVar1;
+    return true;
 }
 
 // A2Q6 "The Seven Tombs" — handler slot 0xe: on this event, clears the player's TheHoradricStaff record Step0x09 bit (cross-quest cleanup tying staff completion into the tombs quest).

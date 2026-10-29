@@ -28,7 +28,7 @@ uint16_t * __fastcall UNICODE_FindSubstringNoCase(uint16_t * pwszHaystack, uint1
 uint16_t * __fastcall UNICODE_FindSubstring(uint16_t * pwszHaystack, uint16_t * pwszNeedle);
 void UNICODE_FormatWideString(int32_t nMaxChars, uint16_t * wszDst, uint16_t * wszFmt, ...);
 BOOL __fastcall UNICODE_CheckLineBreakPosition(int32_t pWszText, int32_t nPos);
-void __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffer, int32_t nSize);
+uint16_t * __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffer, int32_t nSize);
 uint16_t * __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize);
 char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int32_t nSize);
 bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar);
@@ -40,7 +40,6 @@ uint32_t __thiscall UNICODE_CheckByteInRange(void * pThis, uint8_t byValue);
 void __stdcall UNICODE_FreeKamapTables();
 // @sourcefile .\Unicode\UNISYS.CPP
 void __fastcall UNICODE_LoadKamapFile(struct D2PoolManagerStrc * pMemory, char * szFilename);
-uint32_t __fastcall UNICODE_MapCharacterToCode(uint32_t dwParam, uint16_t wChar);
 int UNICODE_CompareKamapEntry(LPCVOID pParam1, LPCVOID pParam2);
 // The 4-byte search key sits in the slot the prologue's PUSH ECX reserves; only its high word (wChar) is
 // set and read - UNICODE_CompareKamapEntry compares the word at +2.
@@ -49,6 +48,6 @@ uint16_t * __fastcall UNICODE_ConvertMultiByteToWide(uint16_t * wszText, uint8_t
 uint8_t * __fastcall UNICODE_ConvertWideToMultiByte(uint8_t * pParam, uint16_t * nParam, int32_t nSize);
 int32_t __fastcall UNICODE_GetMultiByteLength(uint16_t * wszText, int32_t nParam);
 int32_t __fastcall UNICODE_GetWideCharCount(char * szText, int32_t szSourceFile);
-// 2 internal functions (defined in .cpp)
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Lang::Unicode::UNISYS

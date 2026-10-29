@@ -53,7 +53,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2RosterPetStrc) == 0x34, "D2_NEW_A
 namespace D2Client::GAME::RosterPets {
 
 D2PetTypeTxt * __fastcall GetPetTypeTxtById(int32_t nPetId) {
-    if (!(-1 < nPetId && nPetId < sgptDataTable->nTxtPetTypeSize)) {
+    if (!(nPetId >= 0 && nPetId < sgptDataTable->nTxtPetTypeSize)) {
       return nullptr;
     }
 
@@ -74,7 +74,7 @@ void __stdcall FreeRosterPet() {
 }
 
 // @sourcefile .\GAME\RosterPets.cpp
-void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nOwnerGUID, int32_t nRosterGUID) {
+static void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nRosterGUID) {
     D2RosterPetStrc* pPrev = 0;
     D2RosterPetStrc* pMemoryToFree = pRosterPet;
     if (!pRosterPet) {
@@ -106,7 +106,7 @@ void __fastcall AddRosterPet(int32_t nRosterGUID, int32_t nOwnerGUID, int32_t nS
     D2RosterPetStrc* pRosterPet;
     D2RosterPetStrc* pExisting = RosterPets::pRosterPet;
     if (nSkillId == 7) {
-      ROSTERPETS_RemoveRosterPetsBySkillID(nRosterGUID, nRosterGUID);
+      ROSTERPETS_RemoveRosterPetsBySkillID(nRosterGUID);
       pExisting = RosterPets::pRosterPet;
     }
 
@@ -142,7 +142,7 @@ void __fastcall AddRosterPetMerc(DWORD nRosterGUID, int32_t nOwnerGUID, int32_t 
     D2RosterPetStrc* pRosterPet;
     pRosterPet = RosterPets::pRosterPet;
     if (nSkillID == 7) {
-      ROSTERPETS_RemoveRosterPetsBySkillID(nRosterGUID, nRosterGUID);
+      ROSTERPETS_RemoveRosterPetsBySkillID(nRosterGUID);
       pRosterPet = RosterPets::pRosterPet;
     }
 
@@ -222,10 +222,10 @@ void __fastcall RemoveRosterPet(int32_t nRosterGUID) {
         return;
       }
     }
-    if (!pPrev) {
-      pRosterPet = pMemoryToFree->pNext;
-    } else {
+    if (pPrev) {
       pPrev->pNext = pMemoryToFree->pNext;
+    } else {
+      pRosterPet = pMemoryToFree->pNext;
     }
 
     D2_FREE_AT(pMemoryToFree, ".\\GAME\\RosterPets.cpp", 0xd1);
@@ -246,7 +246,7 @@ int __fastcall ROSTER_GetPetOwnershipRelation(int32_t nRosterGUID) {
     }
 
     int nPlayerGUID = pPet->nSkillID;
-    if (nPlayerGUID < 0 || sgptDataTable->nTxtPetTypeSize <= nPlayerGUID || !(sgptDataTable->pTxtPetType + nPlayerGUID) || !sgptDataTable->pTxtPetType[nPlayerGUID].automap) {
+    if (nPlayerGUID < 0 || nPlayerGUID >= sgptDataTable->nTxtPetTypeSize || !(sgptDataTable->pTxtPetType + nPlayerGUID) || !sgptDataTable->pTxtPetType[nPlayerGUID].automap) {
       return 3;
     }
 
@@ -559,12 +559,12 @@ uint32_t __fastcall ROSTER_IsUnitHostileToPlayer(D2UnitStrc * pUnit) {
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (pPlayer && pPlayer->nUnitGUID != -1) {
       uint32_t bHostile;
-      if (nGUID == -1) {
-        return 1;
+      if (nGUID != -1) {
+        bHostile = UNIT::PlayerList::GetFlag(nGUID, pPlayer->nUnitGUID, 8);
+        return bHostile;
       }
 
-      bHostile = UNIT::PlayerList::GetFlag(nGUID, pPlayer->nUnitGUID, 8);
-      return bHostile;
+      return 1;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x225);
@@ -578,7 +578,7 @@ void __fastcall ROSTER_UpdateMercHostileColors(int32_t nOwnerGUID) {
     int32_t nGfxSeq;
     D2RosterPetStrc* pRosterIter;
     for (pRosterIter = pRosterPet; pRosterIter; pRosterIter = pRosterIter->pNext) {
-      if (pRosterIter->nOwnerGUID == nOwnerGUID && pRosterIter->nRosterClass - 0x16bU < 2) {
+      if (pRosterIter->nOwnerGUID == nOwnerGUID && pRosterIter->nRosterClass - 0x16bU <= 1) {
         pRosterUnit = UNIT::Player::UNITS_FindClientSideUnit(pRosterIter->nRosterGUID, UNIT_MONSTER);
         if (pRosterUnit) {
           nPalShift = UNIT::CUnit::GetPalShiftIndex(pRosterUnit);

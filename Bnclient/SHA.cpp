@@ -426,9 +426,7 @@ void __fastcall SHA1_Update(uint32_t * pnParam, void * pParam, uint32_t nByteLen
     }
 
     pnParam[6] += nByteLen >> 0x1d;
-    if (nBitLo + nByteLen < 0x40) {
-      nProcessed = 0;
-    } else {
+    if (nBitLo + nByteLen > 0x3f) {
       nProcessed = -nBitLo + 0x40;
       memcpy((void*)(nBitLo + 0x1c + (int)pnParam), pParam, nProcessed);
       SHA1_Transform(pnParam + 7, pnParam);
@@ -438,6 +436,8 @@ void __fastcall SHA1_Update(uint32_t * pnParam, void * pParam, uint32_t nByteLen
       }
 
       nBitLo = 0;
+    } else {
+      nProcessed = 0;
     }
 
     memcpy((void*)(nBitLo + 0x1c + (int)pnParam), (void*)(nProcessed + (int)pParam), nByteLen - nProcessed);
@@ -500,7 +500,7 @@ int32_t __fastcall SHA1_HashWideString(uint8_t * pHashOut, char * pWideStr, int3
     void* pTmpBuf = Storm::SMem::SMemAlloc(nHalfLen, ".\\SHA.cpp", 200, 0);
     uint32_t nByteIdx = 0;
     if (pTmpBuf) {
-      if (nHalfLen) {
+      if (nHalfLen > 0) {
         do {
           *(char*)(nByteIdx + (int)pTmpBuf) = pWideStr[nByteIdx * 2];
           nByteIdx++;
@@ -517,7 +517,7 @@ int32_t __fastcall SHA1_HashWideString(uint8_t * pHashOut, char * pWideStr, int3
       } while (i < 0x14);
 
       i = 0;
-      if (nHalfLen) {
+      if (nHalfLen > 0) {
         pOddSrcByte = pWideStr + 1;
         do {
           *(char*)(i + (int)pTmpBuf) = *pOddSrcByte;

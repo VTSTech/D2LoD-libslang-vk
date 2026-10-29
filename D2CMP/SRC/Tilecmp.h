@@ -92,7 +92,6 @@ void __stdcall TILECMP_InitTileSetFromDT1(struct D2TileCmpTileSetStrc * pTileSet
 uint32_t __stdcall TILECMP_ExportCacheToBuffer(struct D2TileCmpTileSetListStrc * pTileSetList, void * ppOutBuffer, DWORD nErrLine);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_FreeTileCache(struct D2TileLibraryHeaderStrc * pTileLibrary, int32_t nUnused);
-int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpHdr);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __fastcall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, void * * ppDstBuffer, size_t * pSizeOut);
 void __stdcall TILECMP_FixupPointersInPlace(int * pTileCmpHdr, int * * ppTileCmpHdrOut, char * szText);
@@ -118,6 +117,6 @@ void __stdcall TILECMP_ProcessAllTilePixels(int32_t pTileCmpHdr, void * pNodeByt
 void __stdcall TILECMP_DeepCopyWithRecompression(uint32_t * pSrcTileCmpHdr, uint32_t * ppDstTileCmpHdr, void * pPaletteContext);
 // @sourcefile .\SRC\Tilecmp.cpp
 void __stdcall TILECMP_ShallowCopyZeroPointers(void * pParam, void * * pParam2, size_t * pnSize);
-// 9 internal functions (defined in .cpp)
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2CMP::SRC::Tilecmp

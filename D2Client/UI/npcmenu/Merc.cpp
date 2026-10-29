@@ -43,7 +43,7 @@ void __fastcall AddMercForHireToGlobalList(D2GSPacketSrv0x4E * pPacket) {
     int nMercSlot = 0;
     while (D2Client::Merc::D2MercForHire[nMercSlot].bActive) {
       nMercSlot++;
-      if ((uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 7) < (int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive) {
+      if ((int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive >= (uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 8)) {
         return;
       }
     }
@@ -108,10 +108,10 @@ void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
       Sound::SOUND_PlaySound(0x11ff, pUnit, 0, 0, 0);
       return;
     }
-    if (!_Interaction::bInteractingWithNpc) {
-      pInteractedNpc = 0;
-    } else {
+    if (_Interaction::bInteractingWithNpc) {
       pInteractedNpc = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
+    } else {
+      pInteractedNpc = 0;
     }
     if (pUnit == pInteractedNpc) {
       return;

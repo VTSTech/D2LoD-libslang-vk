@@ -14,7 +14,7 @@ namespace Fog::Source::SSComp {
 void __fastcall COMPRESS_HeapSiftDown(int32_t * pArray, int32_t nCount, int32_t nIndex) {
     int nChildIndex;
     int nSiftValue = pArray[nIndex];
-    if (nCount / 2 <= nIndex) {
+    if (nIndex >= nCount / 2) {
       pArray[nIndex] = nSiftValue;
       return;
     }
@@ -26,13 +26,13 @@ void __fastcall COMPRESS_HeapSiftDown(int32_t * pArray, int32_t nCount, int32_t 
       if (nChildIndex < nCount - 1 && pArray[nChildIndex] < pArray[iVar1 + 2]) {
         nChildIndex = iVar1 + 2;
       }
-      if (pArray[nChildIndex] < nSiftValue) {
+      if (nSiftValue > pArray[nChildIndex]) {
         break;
       }
 
       pArray[nIndex] = pArray[nChildIndex];
       nIndex = nChildIndex;
-      if (nCount / 2 <= nChildIndex) {
+      if (nChildIndex >= nCount / 2) {
         pArray[nChildIndex] = nSiftValue;
         return;
       }
@@ -86,7 +86,7 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
     nScanIndex = 2;
     if (1 < nTailIndex) {
       do {
-        if (nScanIndex < nCount && pWeights[nScanIndex] <= pWeights[nReadIndex]) {
+        if (nScanIndex < nCount && pWeights[nReadIndex] >= pWeights[nScanIndex]) {
           pWeights[nWriteIndex] = pWeights[nScanIndex];
           nScanIndex++;
         } else {
@@ -94,7 +94,7 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
           pWeights[nReadIndex] = nWriteIndex;
           nReadIndex++;
         }
-        if (nScanIndex < nCount && (nWriteIndex <= nReadIndex || pWeights[nScanIndex] <= pWeights[nReadIndex])) {
+        if (nScanIndex < nCount && (nReadIndex >= nWriteIndex || pWeights[nReadIndex] >= pWeights[nScanIndex])) {
           pWeights[nWriteIndex] += pWeights[nScanIndex];
           nScanIndex++;
         } else {
@@ -109,7 +109,7 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
 
     nScanIndex = nCount - 2;
     pWeights[nScanIndex] = 0;
-    for (nWriteIndex = nCount - 3; -1 < nWriteIndex; nWriteIndex--) {
+    for (nWriteIndex = nCount - 3; nWriteIndex >= 0; nWriteIndex--) {
       pWeights[nWriteIndex] = pWeights[pWeights[nWriteIndex]] + 1;
     }
 
@@ -118,11 +118,11 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
     do {
       int nRunLength;
       nRunLength = 0;
-      for (; -1 < nScanIndex && pWeights[nScanIndex] == nReadIndex; nScanIndex--) {
+      for (; nScanIndex >= 0 && pWeights[nScanIndex] == nReadIndex; nScanIndex--) {
         nRunLength++;
       }
 
-      if (nRunLength < nWriteIndex) {
+      if (nWriteIndex > nRunLength) {
         nWriteIndex -= nRunLength;
         do {
           pWeights[nTailIndex] = nReadIndex;
@@ -133,7 +133,7 @@ void __fastcall COMPRESS_BuildHuffmanTree(int * pWeights, int32_t nCount) {
 
       nWriteIndex = nRunLength * 2;
       nReadIndex++;
-    } while (0 < nWriteIndex);
+    } while (nWriteIndex > 0);
 }
 
 void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
@@ -162,20 +162,20 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
     memset(anOffsets, 0, 16 * sizeof(anOffsets[0]));
     while (true) {
       byCodeLen = pCodeLengths[nIndex];
-      if (!(byCodeLen && byCodeLen < 0x10)) {
+      if (!(byCodeLen > 0 && byCodeLen < 0x10)) {
         break;
       }
 
       anOffsets[byCodeLen]++;
       nIndex++;
-      if (0xff < nIndex) {
+      if (nIndex >= 0x100) {
         nIndex = 0xf;
         do {
           nTmp = anOffsets[nIndex];
           anOffsets[nIndex] = anOffsets[0];
           anOffsets[0] += nTmp;
           nIndex--;
-        } while (0 < nIndex);
+        } while (nIndex > 0);
 
         nIndex = 0;
         do {
@@ -211,7 +211,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
         nRemaining = 0x100;
         do {
           byCodeLen = asSortedSymbols[nLenIndex + 0xff];
-          if (byCodeLen < 9) {
+          if (byCodeLen <= 8) {
             bySymbol = asSortedSymbols[nLenIndex + 0x1ff];
             nIndex = 1 << (8 - byCodeLen & 0x1f);
             pTableEntry = gaHuffmanFastDecodeTable + ((uint32_t)gabHuffmanNextTable[bySymbol] << (8 - byCodeLen & 0x1f));
@@ -220,7 +220,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
             pDecodeBuf += 2;
             *(uint8_t*)(*pTableEntry + 1) = bySymbol;
             pFillEntry = pTableEntry;
-            if (0 < nIndex) {
+            if (nIndex > 0) {
               do {
                 *pFillEntry = *pTableEntry;
                 nIndex--;
@@ -239,7 +239,7 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
               *pDecodeBuf = byCodeLen - 8;
               pDecodeBuf++;
               nIndex = 0;
-              if (0 < anOffsets[0x10]) {
+              if (anOffsets[0x10] > 0) {
                 pSymbolPtr = pSymbolBase;
                 do {
                   nTmp = 1 << (byCodeLen - asSortedSymbols[nIndex + nLenIndex + 0xff] & 0x1f);
@@ -299,7 +299,7 @@ void __stdcall COMPRESS_Implode(void * pAddress, char * szModulePath, int * pnSe
     uint32_t nSectionVSize = (int)pAddress - (int)_Stack_20.AllocationBase;
     uint32_t* pSectionHeader = (uint32_t*)((uint32_t)*(uint16_t*)(pNtHeader + 5) + (int)pNtHeader);
     uint32_t nSectionIdx = 0;
-    if (!*(uint16_t*)((int)pNtHeader + 6)) {
+    if (*(uint16_t*)((int)pNtHeader + 6) <= 0) {
       return;
     }
 
@@ -310,13 +310,13 @@ void __stdcall COMPRESS_Implode(void * pAddress, char * szModulePath, int * pnSe
       if (nSectionRawSize <= pSectionHeader[8]) {
         nSectionRawSize = pSectionHeader[8];
       }
-      if (nSectionEnd <= nSectionVSize && nSectionVSize <= nSectionRawSize + nSectionEnd) {
+      if (nSectionVSize >= nSectionEnd && nSectionVSize <= nSectionRawSize + nSectionEnd) {
         break;
       }
 
       nSectionIdx++;
       pSectionHeader += 10;
-      if (*(uint16_t*)((int)pNtHeader + 6) <= nSectionIdx) {
+      if (nSectionIdx >= *(uint16_t*)((int)pNtHeader + 6)) {
         return;
       }
     }

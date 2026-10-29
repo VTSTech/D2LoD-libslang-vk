@@ -19,10 +19,16 @@ typedef int eD2LevelId;
 
 // Data types
 struct D2MonEquipEntryStrc {
+    D2MonEquipEntryStrc() = default;
+    D2MonEquipEntryStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
+    operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
+    D2MonEquipEntryStrc(uint32_t a0, uint8_t a1, uint8_t a2, uint8_t a3, uint8_t a4) : dwItemCode(a0), nBodyLoc(a1), nFlag(a2), _pad06(a3), _pad07(a4) {}
+
     /* 0x00 */ uint32_t dwItemCode;
     /* 0x04 */ uint8_t nBodyLoc;
     /* 0x05 */ uint8_t nFlag;
-    /* 0x06 */ uint8_t _pad06[2];
+    /* 0x06 */ uint8_t _pad06;
+    /* 0x07 */ uint8_t _pad07;
 };
 
 union D2MonStatsExTxtSlot {

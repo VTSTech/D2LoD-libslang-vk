@@ -71,11 +71,11 @@ namespace D2Game::Quests::QUESTS::A3Q6 {
 // AI not yet active for the prior quest chain (predicate used to gate Mephisto-quest progression).
 uint32_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheBlackenedTemple);
-    if (!pQuestData) {
-      return 1;
+    if (pQuestData) {
+      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA3Q6 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)!pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA3Q6 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)!pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive);
+    return 1;
 }
 
 // [The Guardian (Q23)] Predicate: returns 0 if the unit is in Durance of Hate Level 2, OR if the prior
@@ -295,7 +295,7 @@ void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
       nGossipLineIdx = 6;
     } else {
-      if (5 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 6) {
         if (_bCompleted != 1) {
           return;
         }
@@ -308,7 +308,7 @@ void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipLineIdx == -1) {
         return;
       }
-      if (7 < nGossipLineIdx) {
+      if (nGossipLineIdx >= 8) {
         return;
       }
     }
@@ -356,7 +356,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       D2BitBufferStrc* pBitBuffer;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
-      if (1 < pQuestData->nStateFlag && pQuestData->nStateFlag < 4) {
+      if (pQuestData->nStateFlag > 1 && pQuestData->nStateFlag <= 3) {
         pGame = pQuestArgs->pGame;
         pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -388,7 +388,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q23_PlayerUpdateGuardianSteps);
       }
     }
-    if (0x61 < nLamEsenDone2 && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
+    if (nLamEsenDone2 >= 0x62 && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
       pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q23_Callback02_NpcDeactivate;
     }
@@ -428,12 +428,12 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       }
 
       nLamEsenDone2 = QUEST_GetQuestRecordState(pQuestArgs->pGame, QUEST_LamEsensTome, 0xd);
-      if (nLamEsenDone2 != 1) {
-        nJournalStringId = 0x1ae;
-        nEventId = 5;
-      } else {
+      if (nLamEsenDone2 == 1) {
         nJournalStringId = 0x1aa;
         nEventId = 4;
+      } else {
+        nJournalStringId = 0x1ae;
+        nEventId = 5;
       }
     }
 
@@ -688,7 +688,7 @@ void __fastcall Q23_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     pQuestSpecificData->nMephistoApproachMode = 2;
     pQuestArgs->pTarget->dwDropItemCode = 0x2073736d;
     /* local8 become int here */ nSoulstoneDropLoop = 0;
-    if (0 < pQuestSpecificData->nPlayerCount) {
+    if (pQuestSpecificData->nPlayerCount > 0) {
       do {
         pDroppedUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pQuestArgs->pGame, pQuestArgs->pTarget, ITEMTYPE_Shield, &nDroppedItemGUID, nullptr, -1, 0);
         if (pDroppedUnit) {

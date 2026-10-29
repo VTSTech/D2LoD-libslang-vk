@@ -102,7 +102,7 @@ void __fastcall DRAW_ConvertPaletteRGBtoHSL(D2HSLColorStrc * pHSLOut, uint8_t * 
       pRGBIn += 4;
       pHSLOut->dLightness = dVar5;
       pHSLOut++;
-      if (0xff < nPaletteIndex) {
+      if (nPaletteIndex >= 0x100) {
         return;
       }
     } while (true);
@@ -122,7 +122,7 @@ double __stdcall DRAW_GetHueSector(double m1, double m2, double dHue) {
     if (dHue < 180.0) {
       return m2;
     }
-    if (240.0 > dHue) {
+    if (!(240.0 <= dHue)) {
       return (m2 - m1) * (240.0 - dHue) / 60.0 + m1;
     }
 
@@ -143,10 +143,10 @@ static void DRAW_ConvertPaletteHSLtoRGB(D2HSLColorStrc * pHSLIn, uint8_t * pRGBO
         byRed = byChannel;
         byGreen = byChannel;
       } else {
-        if (0.5 < pHSLIn->dLightness) {
-          dP = pHSLIn->dLightness + pHSLIn->dSaturation - pHSLIn->dLightness * pHSLIn->dSaturation;
-        } else {
+        if (!(0.5 < pHSLIn->dLightness)) {
           dP = (pHSLIn->dSaturation + 1.0) * pHSLIn->dLightness;
+        } else {
+          dP = pHSLIn->dLightness + pHSLIn->dSaturation - pHSLIn->dLightness * pHSLIn->dSaturation;
         }
 
         m1 = pHSLIn->dLightness + pHSLIn->dLightness - dP;
@@ -183,7 +183,7 @@ uint32_t __stdcall D2GFX_GetColorWithAlphaFromPallete(LPPALETTEENTRY pPallete, u
     uint32_t nMinDistance = -1;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = 0;
-    if (!nAlpha) {
+    if (nAlpha <= 0) {
       return nBestPaletteIndex;
     }
 
@@ -208,7 +208,7 @@ uint8_t __stdcall DRAW_FindFarthestPaletteColor(uint8_t * pPalette, int nPalette
     uint32_t nMaxDistance = 0;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = 0;
-    if (!nPaletteSize) {
+    if ((uint32_t)nPaletteSize <= 0) {
       return byBestIndex;
     }
 
@@ -216,7 +216,7 @@ uint8_t __stdcall DRAW_FindFarthestPaletteColor(uint8_t * pPalette, int nPalette
     do {
       uint32_t nDistance;
       nDistance = ((uint32_t)*pbCurEntry - nBlue) * ((uint32_t)*pbCurEntry - nBlue) + ((uint32_t)pbCurEntry[-1] - nGreen) * ((uint32_t)pbCurEntry[-1] - nGreen) + ((uint32_t)pbCurEntry[-2] - nRed) * ((uint32_t)pbCurEntry[-2] - nRed);
-      if (nMaxDistance < nDistance) {
+      if (nDistance > nMaxDistance) {
         nBestIndex = nCurrentIndex;
         nMaxDistance = nDistance;
       }
@@ -301,7 +301,7 @@ BOOL __stdcall DRAW_InitPalette(LPCSTR szPaletteFile, int nStartIndex, int nEndI
     if (!szPaletteFile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b6);
       exit(-1);
-    } else if (nEndIndex < nStartIndex) {
+    } else if (nStartIndex > nEndIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b7);
       exit(-1);
     } else if (nStartIndex < 0) {
@@ -323,56 +323,56 @@ BOOL __stdcall DRAW_InitPalette(LPCSTR szPaletteFile, int nStartIndex, int nEndI
 
       gnDrawTransparentColorRGB = 0;
       szStringEnd = Storm::Source::SSTR::SStrLen((char*)szPaletteFile);
-      if (!szStringEnd) {
-        nPaletteIndex = 0;
-        do {
-          byPaletteValue = (uint8_t)nPaletteIndex;
-          gaGlobalPaletteRed[nPaletteIndex].r = byPaletteValue;
-          gaGlobalPaletteRed[nPaletteIndex].g = byPaletteValue;
-          gaGlobalPaletteRed[nPaletteIndex].b = byPaletteValue;
-          nPaletteIndex++;
-        } while (nPaletteIndex < 0x100);
+      if (szStringEnd) {
+        /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ hFile = CreateFileA(lpFileName, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
+        if (hFile == (HANDLE)-1) {
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Unable to open ");
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(lpFileName);
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("\n");
+          return 0;
+        }
 
-        gbPaletteLoaded = 1;
-        return 1;
-      }
+        /* LPDWORD lpFileSizeHigh for GetFileSize */ /* HANDLE hFile for GetFileSize */ DVar2 = GetFileSize(hFile, (LPDWORD)&nStartIndex);
+        if (DVar2 == 0x300) {
+          /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ szPaletteFile = (LPCSTR)0x0;
+          ReadFile(hFile, lpBuffer_008e8d28, 0x300, (LPDWORD)&szPaletteFile, (LPOVERLAPPED)0x0);
+          if (szPaletteFile == (LPCSTR)0x300) {
+            pbPaletteEntry = &gaGlobalPaletteRed[0].g;
+            nPaletteIndex = 0;
+            do {
+              pbPaletteEntry[1] = lpBuffer_008e8d28[nPaletteIndex];
+              *pbPaletteEntry = lpBuffer_008e8d28[nPaletteIndex + 1];
+              ((D2PaletteEntryStrc*)(pbPaletteEntry - 1))->r = lpBuffer_008e8d28[nPaletteIndex + 2];
+              nPaletteIndex += 3;
+              pbPaletteEntry += 4;
+            } while (nPaletteIndex < 0x300);
 
-      /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ hFile = CreateFileA(lpFileName, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
-      if (hFile == (HANDLE)-1) {
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Unable to open ");
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(lpFileName);
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("\n");
-        return 0;
-      }
+            /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 1;
+            CloseHandle(hFile);
+            return gbPaletteLoaded;
+          }
 
-      /* LPDWORD lpFileSizeHigh for GetFileSize */ /* HANDLE hFile for GetFileSize */ DVar2 = GetFileSize(hFile, (LPDWORD)&nStartIndex);
-      if (DVar2 == 0x300) {
-        /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ szPaletteFile = (LPCSTR)0x0;
-        ReadFile(hFile, lpBuffer_008e8d28, 0x300, (LPDWORD)&szPaletteFile, (LPOVERLAPPED)0x0);
-        if (szPaletteFile == (LPCSTR)0x300) {
-          pbPaletteEntry = &gaGlobalPaletteRed[0].g;
-          nPaletteIndex = 0;
-          do {
-            pbPaletteEntry[1] = lpBuffer_008e8d28[nPaletteIndex];
-            *pbPaletteEntry = lpBuffer_008e8d28[nPaletteIndex + 1];
-            ((D2PaletteEntryStrc*)(pbPaletteEntry - 1))->r = lpBuffer_008e8d28[nPaletteIndex + 2];
-            nPaletteIndex += 3;
-            pbPaletteEntry += 4;
-          } while (nPaletteIndex < 0x300);
-
-          /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 1;
+          /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 0;
           CloseHandle(hFile);
           return gbPaletteLoaded;
         }
 
-        /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 0;
-        CloseHandle(hFile);
+        /* HANDLE hObject for CloseHandle */ CloseHandle(hFile);
+        gbPaletteLoaded = DRAW_LoadPaletteFromPCX(lpFileName);
         return gbPaletteLoaded;
       }
 
-      /* HANDLE hObject for CloseHandle */ CloseHandle(hFile);
-      gbPaletteLoaded = DRAW_LoadPaletteFromPCX(lpFileName);
-      return gbPaletteLoaded;
+      nPaletteIndex = 0;
+      do {
+        byPaletteValue = (uint8_t)nPaletteIndex;
+        gaGlobalPaletteRed[nPaletteIndex].r = byPaletteValue;
+        gaGlobalPaletteRed[nPaletteIndex].g = byPaletteValue;
+        gaGlobalPaletteRed[nPaletteIndex].b = byPaletteValue;
+        nPaletteIndex++;
+      } while (nPaletteIndex < 0x100);
+
+      gbPaletteLoaded = 1;
+      return 1;
     }
 }
 
@@ -385,7 +385,7 @@ uint8_t __stdcall DRAW_FindNearestPaletteColor(uint8_t nRed, uint8_t nGreen, uin
     uint32_t nMinDistance = 0x7fffffff;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = gnPaletteColorDepth;
-    if (gnPaletteMaxIndex < gnPaletteColorDepth) {
+    if (gnPaletteColorDepth > gnPaletteMaxIndex) {
       return '\0';
     }
 
@@ -403,7 +403,7 @@ uint8_t __stdcall DRAW_FindNearestPaletteColor(uint8_t nRed, uint8_t nGreen, uin
       }
 
       nCurrentIndex++;
-      if (gnPaletteMaxIndex < nCurrentIndex) {
+      if (nCurrentIndex > gnPaletteMaxIndex) {
         return (uint8_t)nBestIndex;
       }
     } while (true);
@@ -421,12 +421,12 @@ void __stdcall DRAW_ConvertRGBAToIndexed(uint8_t * pRGBAIn, uint8_t * pIndexedOu
       pfnColorFinder = pfnCustomColorFinder;
     }
 
-    for (; nPixelCount; nPixelCount--) {
+    for (; (uint32_t)nPixelCount > 0; nPixelCount--) {
       uint8_t byColorIndex;
       *(uint8_t*)(char*)&pfnCustomColorFinder = *pSrcPixel;
       *(uint8_t*)(char*)&pIndexedOut = pSrcPixel[1];
       *(uint8_t*)(char*)&pRGBAIn = pSrcPixel[2];
-      if (gbBlackColorIsTransparent && (uint8_t)(uintptr_t)pfnCustomColorFinder < 0xb && (uint8_t)(uintptr_t)pIndexedOut < 0xb && (uint8_t)(uintptr_t)pRGBAIn < 0xb) {
+      if (gbBlackColorIsTransparent && (uint8_t)(uintptr_t)pfnCustomColorFinder <= 0xa && (uint8_t)(uintptr_t)pIndexedOut <= 0xa && (uint8_t)(uintptr_t)pRGBAIn <= 0xa) {
         *(uint8_t*)(char*)&pfnCustomColorFinder = 4;
         *(uint8_t*)(char*)&pRGBAIn = 0;
         *(uint8_t*)(char*)&pIndexedOut = 0;
@@ -465,12 +465,14 @@ void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
     int nAlphaValue;
     uint32_t nAlphaLevel = 0;
     do {
-      if (!nAlphaLevel) {
-        nAlphaValue = 0xbf;
-      } else if (nAlphaLevel == 1) {
-        nAlphaValue = 0x7f;
+      if (nAlphaLevel) {
+        if (nAlphaLevel != 1) {
+          nAlphaValue = 0x3f;
+        } else {
+          nAlphaValue = 0x7f;
+        }
       } else {
-        nAlphaValue = 0x3f;
+        nAlphaValue = 0xbf;
       }
 
       iAlphaFactor = 0xff - nAlphaValue;
@@ -513,12 +515,12 @@ void __stdcall DRAW_BuildAdditiveBlendTable(LPPALETTEENTRY pPalette) {
         }
 
         nRedSum = (uint32_t)pPalette[-nOuterLoop + 256].peGreen + (uint32_t)pPalette[-nInnerLoop + 256].peGreen;
-        if (0xfe < nRedSum) {
+        if (nRedSum >= 0xff) {
           nRedSum = 0xff;
         }
 
         nBlueSum = (uint32_t)pPalette[-nOuterLoop + 256].peBlue + (uint32_t)pPalette[-nInnerLoop + 256].peBlue;
-        if (0xfe < nBlueSum) {
+        if (nBlueSum >= 0xff) {
           nBlueSum = 0xff;
         }
 
@@ -583,15 +585,15 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
       bRed = ((tagPALETTEENTRY*)(pbColorOuter - 2))->peRed;
       nBlueComponent = *pbColorOuter;
       bGreen = pbColorOuter[-1];
-      if (bRed) {
+      if (bRed > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)bRed * 0x55555555) >> 0x20) - (uint32_t)bRed;
         bRed += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
-      if (nBlueComponent) {
+      if (nBlueComponent > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)nBlueComponent * 0x55555555) >> 0x20) - (uint32_t)nBlueComponent;
         nBlueComponent += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
-      if (bGreen) {
+      if (bGreen > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)bGreen * 0x55555555) >> 0x20) - (uint32_t)bGreen;
         bGreen += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
@@ -614,9 +616,9 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
       }
 
       bMaxComponent = pbColorOuter[1];
-      if (pbColorOuter[1] < bGreen) {
+      if (bGreen > pbColorOuter[1]) {
         bMaxComponent = *pbColorOuter;
-        if (*pbColorOuter < bRed) {
+        if (bRed > *pbColorOuter) {
           bMaxComponent = bRed;
         }
       }

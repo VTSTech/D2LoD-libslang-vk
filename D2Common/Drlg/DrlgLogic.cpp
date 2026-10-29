@@ -113,7 +113,7 @@ void __fastcall InitializeDrlgCoordList(D2RoomExStrc * pRoomEx, int nMatchIndex,
     }
 
     int iNearIdx = 0;
-    if (0 >= pRoomEx->nDrlgRoomsExNearCount) {
+    if (pRoomEx->nDrlgRoomsExNearCount <= 0) {
       return;
     }
 
@@ -133,7 +133,7 @@ static void __stdcall DRLGLOGIC_SetGridDoorFlags(D2DrlgGridStrc * pGrid, D2RoomE
     D2DrlgTileDataStrc* pTileData;
     D2DrlgTileGridStrc* pRoomTiles = pRoomEx->pRoomTiles;
     uint32_t nTileIndex = 0;
-    if (!pRoomTiles->sRoomTiles.nWallTilesCount) {
+    if ((uint32_t)pRoomTiles->sRoomTiles.nWallTilesCount <= 0) {
       return;
     }
 
@@ -159,7 +159,7 @@ void __stdcall DRLGLOGIC_SetGridWallFlags(D2RoomExStrc * pRoomEx, D2DrlgGridStrc
     D2DrlgTileDataStrc* pTileEntry;
     D2DrlgTileGridStrc* pRoomTiles = pRoomEx->pRoomTiles;
     uint32_t nTileIndex = 0;
-    if (pRoomTiles->sRoomTiles.nWallTilesCount) {
+    if ((uint32_t)pRoomTiles->sRoomTiles.nWallTilesCount > 0) {
       uint32_t nWallFlags;
       nTileByteOffset = 0;
       do {
@@ -175,7 +175,7 @@ void __stdcall DRLGLOGIC_SetGridWallFlags(D2RoomExStrc * pRoomEx, D2DrlgGridStrc
     }
 
     uint32_t nNearIndex = 0;
-    if (!pRoomEx->nDrlgRoomsExNearCount) {
+    if ((uint32_t)pRoomEx->nDrlgRoomsExNearCount <= 0) {
       return;
     }
 
@@ -208,7 +208,7 @@ void __stdcall DRLGLOGIC_FillTileGridFlags(D2RoomExStrc * pRoomEx) {
     D2DrlgTileDataStrc* pTileData;
     D2DrlgTileGridStrc* pRoomTiles = pRoomEx->pRoomTiles;
     uint32_t nTileIndex = 0;
-    if (!pRoomTiles->sRoomTiles.nWallTilesCount) {
+    if ((uint32_t)pRoomTiles->sRoomTiles.nWallTilesCount <= 0) {
       return;
     }
 
@@ -219,11 +219,11 @@ void __stdcall DRLGLOGIC_FillTileGridFlags(D2RoomExStrc * pRoomEx) {
       pCoordList = pRoomEx->pDrlgCoordList;
       if (!pCoordList) {
         *(uint32_t*)&pTileData[nTileIndex].nGridFlags = 0;
-      } else if (!(pCoordList->eFlags & 1)) {
+      } else if (pCoordList->eFlags & 1) {
+        *(uint32_t*)&pTileData[nTileIndex].nGridFlags = 0;
+      } else {
         nGridFlags = DrlgGrid::GetGridFlags(&pCoordList->sCoordIndexGrid, pTileData[nTileIndex].nPosX + nGridFlags - nGridFlags, pTileData[nTileIndex].nPosY);
         *(int*)&pTileData[nTileIndex].nGridFlags = nGridFlags;
-      } else {
-        *(uint32_t*)&pTileData[nTileIndex].nGridFlags = 0;
       }
 
       nTileIndex++;
@@ -246,14 +246,14 @@ void __stdcall DRLGLOGIC_BuildCoordRegions(D2RoomExStrc * pRoomEx, D2DrlgCoordLi
     int nGridHeight = pRoomEx->sCoords.WorldSize.y + 1;
     int nGridWidth = pRoomEx->sCoords.WorldSize.x + 1;
     int nCellY = 0;
-    if (0 >= nGridHeight) {
+    if (nGridHeight <= 0) {
       return;
     }
 
     do {
       int iCellX;
       iCellX = 0;
-      if (0 < nGridWidth) {
+      if (nGridWidth > 0) {
         do {
           nOrientFlags = DrlgGrid::GetGridFlags(&pCoordList->sOrientationGrid, iCellX, nCellY);
           nOrientFlagsLow = nOrientFlags & 0xfffffff;
@@ -290,7 +290,7 @@ void __stdcall DRLGLOGIC_BuildCoordRegions(D2RoomExStrc * pRoomEx, D2DrlgCoordLi
             bRowBreak = false;
             nRowY = nCellY;
             do {
-              if (nGridHeight <= nRowY) {
+              if (nRowY >= nGridHeight) {
                 break;
               }
 
@@ -338,15 +338,15 @@ void __stdcall DRLGLOGIC_BuildCoordRegions(D2RoomExStrc * pRoomEx, D2DrlgCoordLi
             _Dst->pRect.right = nColX;
             _Dst->pRect.bottom = nRowY;
             nRowY = pRoomEx->sCoords.WorldPosition.x + pRoomEx->sCoords.WorldSize.x;
-            if (nRowY <= _Dst->pRect.right) {
+            if (_Dst->pRect.right >= nRowY) {
               _Dst->pRect.right = nRowY;
             }
 
             nRowY = pRoomEx->sCoords.WorldSize.y + pRoomEx->sCoords.WorldPosition.y;
-            if (nRowY <= _Dst->pRect.bottom) {
+            if (_Dst->pRect.bottom >= nRowY) {
               _Dst->pRect.bottom = nRowY;
             }
-            if (pRoomEx->sCoords.WorldSize.x + pRoomEx->sCoords.WorldPosition.x <= _Dst->pRect.left || pRoomEx->sCoords.WorldPosition.y + pRoomEx->sCoords.WorldSize.y <= _Dst->pRect.top) {
+            if (_Dst->pRect.left >= pRoomEx->sCoords.WorldSize.x + pRoomEx->sCoords.WorldPosition.x || _Dst->pRect.top >= pRoomEx->sCoords.WorldPosition.y + pRoomEx->sCoords.WorldSize.y) {
               _Dst->pRect.left = 0;
               _Dst->pRect.top = 0;
               _Dst->pRect.right = 0;
@@ -412,16 +412,16 @@ int __stdcall DRLGLOGIC_GetRoomCoordIndexAt(D2RoomExStrc * pRoomEx, int nX, int 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x29c);
       exit(-1);
     }
-    if (!(pDVar1->eFlags & 1)) {
-      pDVar2 = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pDVar1->sCoordIndexGrid, nX - pRoomEx->sCoords.WorldPosition.x, nY - pRoomEx->sCoords.WorldPosition.y);
-    } else {
+    if (pDVar1->eFlags & 1) {
       pDVar2 = pDVar1->pCoord;
+    } else {
+      pDVar2 = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pDVar1->sCoordIndexGrid, nX - pRoomEx->sCoords.WorldPosition.x, nY - pRoomEx->sCoords.WorldPosition.y);
     }
-    if (!pDVar2) {
-      return -1;
+    if (pDVar2) {
+      return pDVar2->nIndex;
     }
 
-    return pDVar2->nIndex;
+    return -1;
 }
 
 int32_t __fastcall DRLG_ROOMEX_GetGridIndex(D2RoomExStrc * pRoomEx, int32_t nX, int32_t nY) {
@@ -431,16 +431,16 @@ int32_t __fastcall DRLG_ROOMEX_GetGridIndex(D2RoomExStrc * pRoomEx, int32_t nX, 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x29c);
       exit(-1);
     }
-    if (!(pCoordList->eFlags & 1)) {
-      pCoordEntry = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pCoordList->sCoordIndexGrid, nX / 5 - pRoomEx->sCoords.WorldPosition.x, nY / 5 - pRoomEx->sCoords.WorldPosition.y);
-    } else {
+    if (pCoordList->eFlags & 1) {
       pCoordEntry = pCoordList->pCoord;
+    } else {
+      pCoordEntry = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pCoordList->sCoordIndexGrid, nX / 5 - pRoomEx->sCoords.WorldPosition.x, nY / 5 - pRoomEx->sCoords.WorldPosition.y);
     }
-    if (!pCoordEntry) {
-      return -1;
+    if (pCoordEntry) {
+      return pCoordEntry->nIndex;
     }
 
-    return pCoordEntry->nIndex;
+    return -1;
 }
 
 // Converts subtile coords to world coords and looks up coord list entry.
@@ -481,18 +481,18 @@ static void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, D2Roo
     D2DrlgCoordListStrc* pNeighborCoordList = pSrcRoom->pDrlgCoordList;
     if (pNeighborCoordList) {
       D2RoomCoordListStrc* pCoordEntry;
-      if (!(pNeighborCoordList->eFlags & 1)) {
-        nNeighborCoordIndex = DrlgGrid::GetGridFlags(&pNeighborCoordList->sCoordIndexGrid, nX - pSrcRoom->sCoords.WorldPosition.x, nY - pSrcRoom->sCoords.WorldPosition.y);
-      } else {
+      if (pNeighborCoordList->eFlags & 1) {
         nNeighborCoordIndex = (int32_t)pNeighborCoordList->pCoord;
+      } else {
+        nNeighborCoordIndex = DrlgGrid::GetGridFlags(&pNeighborCoordList->sCoordIndexGrid, nX - pSrcRoom->sCoords.WorldPosition.x, nY - pSrcRoom->sCoords.WorldPosition.y);
       }
 
       pNeighborCoordList = pNeighborRoom->pDrlgCoordList;
       if (pNeighborCoordList) {
-        if (!(pNeighborCoordList->eFlags & 1)) {
-          pCoordEntry = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pNeighborCoordList->sCoordIndexGrid, nX - pNeighborRoom->sCoords.WorldPosition.x, nY - pNeighborRoom->sCoords.WorldPosition.y);
-        } else {
+        if (pNeighborCoordList->eFlags & 1) {
           pCoordEntry = pNeighborCoordList->pCoord;
+        } else {
+          pCoordEntry = (D2RoomCoordListStrc*)DrlgGrid::GetGridFlags(&pNeighborCoordList->sCoordIndexGrid, nX - pNeighborRoom->sCoords.WorldPosition.x, nY - pNeighborRoom->sCoords.WorldPosition.y);
         }
 
         nDestIndex = *(int*)(nNeighborCoordIndex + 0x28);
@@ -527,7 +527,7 @@ static void __stdcall DRLGLOGIC_LinkCoordListEntry(int32_t nY, int32_t nX, D2Roo
 static void DRLGLOGIC_LinkBorderCoordLists(D2RoomExStrc * pRoomEx) {
     int nCoordValue;
     int nNearIndex = 0;
-    if (0 >= pRoomEx->nDrlgRoomsExNearCount) {
+    if (pRoomEx->nDrlgRoomsExNearCount <= 0) {
       return;
     }
 

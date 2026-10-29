@@ -281,20 +281,13 @@ void __stdcall FreeTokenTables() {
 }
 
 D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nModeIndex) {
-    if ((uint32_t)nTxtPlrTypeModeSize <= nMode) {
+    if (nMode >= (uint32_t)nTxtPlrTypeModeSize) {
       return nullptr;
     }
     if (!pTxtPlrTypeMode1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x110);
       exit(-1);
-    } else if (!nModeIndex) {
-      if (!(pTxtPlrTypeMode2 + nMode)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
-        exit(-1);
-      }
-
-      return pTxtPlrTypeMode2 + nMode;
-    } else {
+    } else if (nModeIndex) {
       if (nModeIndex != 1) {
         return nullptr;
       }
@@ -304,21 +297,21 @@ D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nMode
       }
 
       return pTxtPlrTypeMode3 + nMode;
+    } else {
+      if (!(pTxtPlrTypeMode2 + nMode)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
+        exit(-1);
+      }
+
+      return pTxtPlrTypeMode2 + nMode;
     }
 }
 
 D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
-    if ((uint32_t)nTxtMonModeSize <= nId) {
+    if (nId >= (uint32_t)nTxtMonModeSize) {
       return nullptr;
     }
-    if (!nModeIndex) {
-      if (!(pTxtMonMode2 + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
-        exit(-1);
-      }
-
-      return pTxtMonMode2 + nId;
-    } else {
+    if (nModeIndex) {
       if (nModeIndex != 1) {
         return nullptr;
       }
@@ -328,21 +321,21 @@ D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
       }
 
       return pTxtMonMode3 + nId;
+    } else {
+      if (!(pTxtMonMode2 + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
+        exit(-1);
+      }
+
+      return pTxtMonMode2 + nId;
     }
 }
 
 D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex) {
-    if ((uint32_t)nTxtObjTypeModeSize <= nId) {
+    if (nId >= (uint32_t)nTxtObjTypeModeSize) {
       return nullptr;
     }
-    if (!nModeIndex) {
-      if (!(pTxtObjType + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
-        exit(-1);
-      }
-
-      return pTxtObjType + nId;
-    } else {
+    if (nModeIndex) {
       if (nModeIndex != 1) {
         return nullptr;
       }
@@ -352,6 +345,13 @@ D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex)
       }
 
       return (D2ObjTypeTxt*)(pTxtObjMode + nId);
+    } else {
+      if (!(pTxtObjType + nId)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
+        exit(-1);
+      }
+
+      return pTxtObjType + nId;
     }
 }
 
@@ -763,11 +763,11 @@ D2InventoryTxt * __stdcall TXT_Inventory_GetLine(uint32_t nIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7f);
       exit(-1);
     }
-    if ((uint32_t)nTxtInventorySize >= nIndex) {
-      return pTxtInventory + nIndex;
+    if (nIndex > (uint32_t)nTxtInventorySize) {
+      return nullptr;
     }
 
-    return nullptr;
+    return pTxtInventory + nIndex;
 }
 
 void __stdcall GetInvDimensions(int32_t neInventoryPage, int32_t nScreenMode, D2InventoryScreenCoordinates * pOutput) {
@@ -837,7 +837,7 @@ void __stdcall GetBodyDimensions(int32_t neInventoryPage, int32_t nScreenMode, D
     if (!pTxtInventory) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x7f);
       exit(-1);
-    } else if ((uint32_t)nTxtInventorySize < nTxtIndex || !(pTxtInventory + nTxtIndex)) {
+    } else if (nTxtIndex > (uint32_t)nTxtInventorySize || !(pTxtInventory + nTxtIndex)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa3);
       exit(-1);
     } else {

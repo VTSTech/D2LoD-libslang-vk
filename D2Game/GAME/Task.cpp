@@ -160,7 +160,7 @@ void __stdcall TASK_LeaveQueueCriticalSection(D2TaskQueueSlotStrc * pSlot) {
     if (!pSlot) {
       return;
     }
-    if (0x1f < pSlot->nSlotIndex) {
+    if (pSlot->nSlotIndex >= 0x20) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
       exit(-1);
     }
@@ -213,7 +213,7 @@ void __stdcall TASK_MoveTasksToSlotAndLinkSlot(D2TaskQueueSlotStrc * pSlot) {
     nTailCycleCount = gnTaskQueueTailIndex / gnTaskQueueSlotCounter;
     uint32_t nSlotMask;
     nSlotMask = gnTaskQueueSlotCounter - 1;
-    if (0x1f < nSlotMask) {
+    if (nSlotMask >= 0x20) {
       nSlotMask = 0x20;
     }
 
@@ -288,16 +288,16 @@ void __stdcall TASK_MoveTasksToSlotAndLinkSlot(D2TaskQueueSlotStrc * pSlot) {
     }
 
     pSlotNode = &pSlot->sSlotLink;
-    if (pSlotNode) {
-      pSlotNode->pNext = &gsTaskQueueListHead;
-      pSlot->sSlotLink.pPrev = gsTaskQueueListHead.pPrev;
-      gsTaskQueueListHead.pPrev->pNext = pSlotNode;
-      gsTaskQueueListHead.pPrev = pSlotNode;
-      return;
+    if (!pSlotNode) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78);
-    exit(-1);
+    pSlotNode->pNext = &gsTaskQueueListHead;
+    pSlot->sSlotLink.pPrev = gsTaskQueueListHead.pPrev;
+    gsTaskQueueListHead.pPrev->pNext = pSlotNode;
+    gsTaskQueueListHead.pPrev = pSlotNode;
+    return;
 }
 
 // Scheduled-task callback that drives one game's server tick. Looks up+locks the game by token (pTaskNode->dwUserData), runs ServerGameLoop and FlushAllClientPackets, then either reschedules itself in the per-bucket task queue (nParam&0x1f) for the next tick, or — if the game is empty/expired (idle >300s or frame in the shutdown window) — disconnects all clients (0xB0 ConnectionTerminated + cleanup), destroys the game by token, and unlinks/frees its task node. Uses the task-queue critical sections; halts via Fog ErrorManager on queue-invariant violations.
@@ -319,14 +319,14 @@ void __stdcall TASK_GameTickCallback(uint32_t nParam, D2TaskNodeStrc * pTaskNode
     Server::FlushAllClientPackets(pGame);
     uint32_t nHighResTime;
     nHighResTime = Fog::Src::LogManager::LOGMGR_GetHighResolutionTime();
-    if (pGame->dwLastActivityTime != 1 && nHighResTime - pGame->dwLastActivityTime < 0x709) {
+    if (pGame->dwLastActivityTime != 1 && nHighResTime - pGame->dwLastActivityTime <= 0x708) {
       DWORD DVar2;
       DVar2 = GetTickCount();
       if (!pGame->nClientsCount) {
         if (!pGame->dwLastUpdateTick) {
           pGame->dwLastUpdateTick = DVar2;
         }
-        if (300000 < DVar2 - pGame->dwLastUpdateTick || 0x5dc < pGame->dwGameFrame && pGame->dwGameFrame < 0x1d4c) {
+        if (DVar2 - pGame->dwLastUpdateTick > 300000 || pGame->dwGameFrame > 0x5dc && pGame->dwGameFrame < 0x1d4c) {
           goto destroy_game;
         }
       } else {
@@ -542,12 +542,12 @@ int32_t __fastcall TASK_DequeueReadyTask(uint32_t nSlotToken, D2TaskNodeStrc * *
       uint32_t uVar2;
       uVar2 = TASK_GetTimestamp();
       nResult = ((D2TaskNodeStrc*)((char*)pReadyTask - 0xc))->dwTimestamp - uVar2;
-      if (nResult < 1) {
+      if (nResult <= 0) {
         TASK_UnlinkTaskFromList(pReadyTask);
         *ppTaskOut = (D2TaskNodeStrc*)((char*)pReadyTask - 0xc);
       }
     }
-    if (0x1f < pDVar1->nSlotIndex) {
+    if (pDVar1->nSlotIndex >= 0x20) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
       exit(-1);
     }

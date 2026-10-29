@@ -95,7 +95,7 @@ void __stdcall GLBLOCKS_RenderTileSubBlocks(D2TileLibraryEntryStrc * pTileEntry,
     uint8_t bySkip;
     memset(pbDstBuf, 0, 0x8000);
     int nSubBlockIdx = 0;
-    if (0 >= pTileEntry->nSubTiles) {
+    if (pTileEntry->nSubTiles <= 0) {
       return;
     }
 
@@ -104,7 +104,28 @@ void __stdcall GLBLOCKS_RenderTileSubBlocks(D2TileLibraryEntryStrc * pTileEntry,
       psVar1 = &pTileEntry->pSubTiles[nSubBlockIdx].nOffsetX;
       pbDstRow = pbDstBuf + (int)*psVar1 + psVar1[1] * 0x100;
       if (psVar1[4] & 1U) {
-        if (!(psVar1[4] & 4U)) {
+        if (psVar1[4] & 4U) {
+          pbSrc = *(uint8_t**)(psVar1 + 8);
+          nRleRowsLeft = 0xf;
+          pbRleRowStart = pbDstRow;
+          do {
+            bySkip = *pbSrc;
+            byRunLen = pbSrc[1];
+            pbSrc += 2;
+            if (!bySkip && !byRunLen) {
+              nRleRowsLeft--;
+              pbDstRow = pbRleRowStart + 0x100;
+              pbRleRowStart = pbDstRow;
+            } else {
+              pbDstRow += bySkip;
+              for (; byRunLen; byRunLen--) {
+                *pbDstRow = *pbSrc;
+                pbDstRow++;
+                pbSrc++;
+              }
+            }
+          } while (nRleRowsLeft);
+        } else {
           nErrAddr = *(void**)(psVar1 + 8);
           pbDstRow += 0xe;
           nCopyWidth = 4;
@@ -131,27 +152,6 @@ void __stdcall GLBLOCKS_RenderTileSubBlocks(D2TileLibraryEntryStrc * pTileEntry,
 
             nIsomRow++;
           } while (nIsomRow < 0xf);
-        } else {
-          pbSrc = *(uint8_t**)(psVar1 + 8);
-          nRleRowsLeft = 0xf;
-          pbRleRowStart = pbDstRow;
-          do {
-            bySkip = *pbSrc;
-            byRunLen = pbSrc[1];
-            pbSrc += 2;
-            if (!bySkip && !byRunLen) {
-              nRleRowsLeft--;
-              pbDstRow = pbRleRowStart + 0x100;
-              pbRleRowStart = pbDstRow;
-            } else {
-              pbDstRow += bySkip;
-              for (; byRunLen; byRunLen--) {
-                *pbDstRow = *pbSrc;
-                pbDstRow++;
-                pbSrc++;
-              }
-            }
-          } while (nRleRowsLeft);
         }
       }
 
@@ -182,7 +182,7 @@ BOOL __fastcall GLBLOCKS_LoadFloorTileTexture(D2TileLibraryEntryStrc * pTileLibr
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe5);
         exit(-1);
       }
-      if ((int)gGlideFloorTextureCache.nMaxEntries <= iVar1) {
+      if (iVar1 >= (int)gGlideFloorTextureCache.nMaxEntries) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe6);
         exit(-1);
       }
@@ -209,52 +209,52 @@ void __fastcall GLBLOCKS_LoadWallSubtileTexture(D2GroundSubTileStrc * pSubTile) 
       exit(-1);
     } else {
       FxU32 startAddress;
-      if (nTexCacheIdx) {
-        glSubtileCache::GLSUBTILE_PromoteNodeToMRU(&gGlideSubtileTextureCache, (int)nTexCacheIdx);
-        startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
-        (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
-        Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
-        return;
-      }
-
-      GLBLOCKS_DecodeRLEBlock(pSubTile->pPixelData, (uint8_t*)gpGlBlocksWallBuffer);
-      nNodeIdx0 = glSubtileCache::GLSUBTILE_EnsureCapacity(&gGlideSubtileTextureCache);
-      nTexCacheIdx = (short int)nNodeIdx0;
-      pSubTile->nTextureCacheIndex = nTexCacheIdx;
-      nNodeIdx0 = nTexCacheIdx - 1;
-      if (nNodeIdx0 < 0) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
-        exit(-1);
-      } else {
-        if (!(nNodeIdx0 < (int)gGlideSubtileTextureCache.nMaxEntries)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
+      if (!nTexCacheIdx) {
+        GLBLOCKS_DecodeRLEBlock(pSubTile->pPixelData, (uint8_t*)gpGlBlocksWallBuffer);
+        nNodeIdx0 = glSubtileCache::GLSUBTILE_EnsureCapacity(&gGlideSubtileTextureCache);
+        nTexCacheIdx = (short int)nNodeIdx0;
+        pSubTile->nTextureCacheIndex = nTexCacheIdx;
+        nNodeIdx0 = nTexCacheIdx - 1;
+        if (nNodeIdx0 < 0) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
           exit(-1);
-        }
+        } else {
+          if (!(nNodeIdx0 < (int)gGlideSubtileTextureCache.nMaxEntries)) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
+            exit(-1);
+          }
 
-        gGlideSubtileTextureCache.pNodes[nTexCacheIdx - 1].pSubTile = pSubTile;
-        startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
-        (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
-        (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
-        Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
-        return;
+          gGlideSubtileTextureCache.pNodes[nTexCacheIdx - 1].pSubTile = pSubTile;
+          startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
+          (*GLIDEDLL_grTexDownloadMipMap_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
+          (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
+          Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
+          return;
+        }
       }
+
+      glSubtileCache::GLSUBTILE_PromoteNodeToMRU(&gGlideSubtileTextureCache, (int)nTexCacheIdx);
+      startAddress = gGlideSubtileTextureCache.pNodes[pSubTile->nTextureCacheIndex - 1].dwAddress;
+      (*GLIDEDLL_grTexSource_16)(gnGlideTMUId, startAddress, 3, &g_GrTexInfoGlBlocks);
+      Renderer::Glide::RENDERER_GLIDE_SetTextureMode(gnGlideTMUId);
+      return;
     }
 }
 
 void __fastcall GLBLOCKS_ReleaseTileTextures(D2TileLibraryEntryStrc * pTile) {
-    if (0 < pTile->nTextureCacheIndex) {
+    if (pTile->nTextureCacheIndex > 0) {
       glFloorCache::GLFLOOR_InvalidateByIndex(&gGlideFloorTextureCache, (int)(short int)(pTile->nTextureCacheIndex - 1));
     }
 
     int nSubBlockIdx = 0;
-    if (0 >= pTile->nSubTiles) {
+    if (pTile->nSubTiles <= 0) {
       return;
     }
 
     do {
       short int nSubtileCacheIdx;
       nSubtileCacheIdx = pTile->pSubTiles[nSubBlockIdx].nTextureCacheIndex;
-      if (0 < nSubtileCacheIdx) {
+      if (nSubtileCacheIdx > 0) {
         glSubtileCache::GLSUBTILE_InvalidateByIndex(&gGlideSubtileTextureCache, (int)(short int)(nSubtileCacheIdx - 1));
       }
 
@@ -361,15 +361,8 @@ void __fastcall GLBLOCKS_PlayBinkVideo(char * szFileName, int32_t nAudioChannel,
           }
 
           /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bDirectCmdMode = PeekMessageA(&msg, (HWND)0x0, 0, 0, 1);
-          if (!bDirectCmdMode) {
-            bBinkNotReady = BinkWait(gpBinkVideoGlide);
-            if (!bBinkNotReady) {
-              GLBLOCKS_RenderBinkVideoFrame();
-            } else {
-              /* DWORD dwMilliseconds for Sleep */ Sleep(1);
-            }
-          } else {
-            if (msg.message < 0x202) {
+          if (bDirectCmdMode) {
+            if (msg.message <= 0x201) {
               if (msg.message == 0x201) {
                 goto request_skip;
               }
@@ -388,6 +381,13 @@ void __fastcall GLBLOCKS_PlayBinkVideo(char * szFileName, int32_t nAudioChannel,
 
             /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&msg);
             /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&msg);
+          } else {
+            bBinkNotReady = BinkWait(gpBinkVideoGlide);
+            if (!bBinkNotReady) {
+              GLBLOCKS_RenderBinkVideoFrame();
+            } else {
+              /* DWORD dwMilliseconds for Sleep */ Sleep(1);
+            }
           }
         }
 

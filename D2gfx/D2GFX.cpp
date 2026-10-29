@@ -119,7 +119,7 @@ void __stdcall D2GFX_SetPerspectiveCapable(BOOL bResult) {
 }
 
 uint32_t __stdcall IsWindowMode() {
-    return (uint32_t)(3 < (int)eRendererMode);
+    return (uint32_t)((int)eRendererMode >= 4);
 }
 
 uint32_t __stdcall D2GFX_IsPerspectiveActive() {
@@ -271,7 +271,7 @@ void __stdcall HideOSCursor() {
 
     do {
       /* BOOL bShow for ShowCursor */ displayCount = ShowCursor(0);
-    } while (-1 < displayCount);
+    } while (displayCount >= 0);
 
     IsOSCursorVisible = 0;
 }
@@ -383,17 +383,17 @@ HWND __stdcall D2GFX_CreateWindow(BOOL bWindowed, int32_t nResolution) {
         /* int nIndex for GetSystemMetrics */ bWindowed = 0;
         nWindowX = 0;
         nSystemResolutionX = GetSystemMetrics(0);
-        if (nSystemResolutionX < 0x321) {
-          nSystemResolutionX = 800;
-        } else {
+        if (nSystemResolutionX > 0x320) {
           /* int nIndex for GetSystemMetrics */ nSystemResolutionX = GetSystemMetrics(0);
+        } else {
+          nSystemResolutionX = 800;
         }
 
         /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
-        if (nSystemResolutionXY < 0x259) {
-          nSystemResolutionXY = 600;
-        } else {
+        if (nSystemResolutionXY > 0x258) {
           /* int nIndex for GetSystemMetrics */ nSystemResolutionXY = GetSystemMetrics(1);
+        } else {
+          nSystemResolutionXY = 600;
         }
       }
 
@@ -534,7 +534,7 @@ BOOL __stdcall D2GFX_ResizeWindow(int32_t nResolution, BOOL bForceResize) {
       rcCurrentClient.bottom = 0;
       /* LPRECT lpRect for GetClientRect */ /* HWND hWnd for GetClientRect */ rcCurrentClient.left = 0;
       GetClientRect(hwndD2GFX_Window, &rcCurrentClient);
-      if (rcCurrentClient.right - rcCurrentClient.left < 0x321 && rcCurrentClient.bottom - rcCurrentClient.top < 0x259) {
+      if (rcCurrentClient.right - rcCurrentClient.left <= 0x320 && rcCurrentClient.bottom - rcCurrentClient.top <= 0x258) {
         rcNewWindow.left = 0;
         rcNewWindow.top = 0;
         D2GFX_GetWindowSizeByResolutionMode(nResolution, (int*)&rcNewWindow.right, (int*)&rcNewWindow.bottom);
@@ -566,62 +566,62 @@ BOOL __stdcall D2GFX_UpdateWindowSize(int32_t nResolutionMode) {
     tagRECT rcCurrentClient;
     HWND hWndLocal;
     HWND hWnd = hwndD2GFX_Window;
-    if (RENDERER_CurrentRenderedFunctions) {
-      int cy;
-      nResolutionMode = nResolutionMode;
-      if (bD2GFX_Windowed != 1) {
-        return 1;
-      }
+    if (!RENDERER_CurrentRenderedFunctions) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
+      exit(-1);
+    }
 
-      /* LPRECT lpRect for GetClientRect */ /* HWND hWnd for GetClientRect */ hWndLocal = hwndD2GFX_Window;
-      rcCurrentClient.left = 0;
-      rcCurrentClient.top = 0;
-      rcCurrentClient.right = 0;
-      rcCurrentClient.bottom = 0;
-      GetClientRect(hwndD2GFX_Window, &rcCurrentClient);
-      if (!(rcCurrentClient.right - rcCurrentClient.left < 0x321 && rcCurrentClient.bottom - rcCurrentClient.top < 0x259)) {
-        return 1;
-      }
-
-      /* UINT fWinIni for SystemParametersInfoA */ /* PVOID pvParam for SystemParametersInfoA */ /* UINT uiParam for SystemParametersInfoA */ /* UINT uiAction for SystemParametersInfoA */ __frame0.nWorkAreaLeft = 0;
-      __frame0.nWorkAreaTop = 0;
-      __frame0.nWorkAreaRight = 0;
-      __frame0.nWorkAreaBottom = 0;
-      SystemParametersInfoA(0x30, 0, &__frame0.nWorkAreaLeft, 0);
-      nWorkAreaHeight = __frame0.nWorkAreaBottom - __frame0.nWorkAreaTop;
-      nWindowX = __frame0.nWorkAreaRight - __frame0.nWorkAreaLeft;
-      /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ rcWindowPos.left = 0;
-      rcWindowPos.top = 0;
-      rcWindowPos.right = 0;
-      rcWindowPos.bottom = 0;
-      GetWindowRect(hWnd, &rcWindowPos);
-      __frame0.rcNewWindow.top = 0;
-      __frame0.rcNewWindow.right = 0;
-      __frame0.rcNewWindow.bottom = 0;
-      __frame0.rcNewWindow.left = 0;
-      D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&__frame0.rcNewWindow.right, (int*)&__frame0.rcNewWindow.bottom);
-      /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ nWindowSizeY = __frame0.rcNewWindow.bottom;
-      AdjustWindowRectEx(&__frame0.rcNewWindow, 0xcb0000, 0, 0x40000);
-      cy = __frame0.rcNewWindow.bottom - __frame0.rcNewWindow.top;
-      nWindowSizeY = cy - nWindowSizeY;
-      nWindowX = (nWindowX - (__frame0.rcNewWindow.right - __frame0.rcNewWindow.left)) / 2 + __frame0.nWorkAreaLeft;
-      if (nWindowX < 0) {
-        nWindowX = 0;
-      }
-
-      nWorkAreaHeight = (nWorkAreaHeight - cy) / 2 + __frame0.nWorkAreaTop;
-      if (nWorkAreaHeight < 0) {
-        nWorkAreaHeight = 0;
-      }
-
-      /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, nWindowX, nWorkAreaHeight, __frame0.rcNewWindow.right - __frame0.rcNewWindow.left, cy, 0x14);
-      D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&rInitialWindowRect.right, (int*)&rInitialWindowRect.bottom);
-      /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ GetWindowRect(hWndLocal, &rInitialWindowRect);
+    int cy;
+    nResolutionMode = nResolutionMode;
+    if (bD2GFX_Windowed != 1) {
       return 1;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
-    exit(-1);
+    /* LPRECT lpRect for GetClientRect */ /* HWND hWnd for GetClientRect */ hWndLocal = hwndD2GFX_Window;
+    rcCurrentClient.left = 0;
+    rcCurrentClient.top = 0;
+    rcCurrentClient.right = 0;
+    rcCurrentClient.bottom = 0;
+    GetClientRect(hwndD2GFX_Window, &rcCurrentClient);
+    if (!(rcCurrentClient.right - rcCurrentClient.left <= 0x320 && rcCurrentClient.bottom - rcCurrentClient.top <= 0x258)) {
+      return 1;
+    }
+
+    /* UINT fWinIni for SystemParametersInfoA */ /* PVOID pvParam for SystemParametersInfoA */ /* UINT uiParam for SystemParametersInfoA */ /* UINT uiAction for SystemParametersInfoA */ __frame0.nWorkAreaLeft = 0;
+    __frame0.nWorkAreaTop = 0;
+    __frame0.nWorkAreaRight = 0;
+    __frame0.nWorkAreaBottom = 0;
+    SystemParametersInfoA(0x30, 0, &__frame0.nWorkAreaLeft, 0);
+    nWorkAreaHeight = __frame0.nWorkAreaBottom - __frame0.nWorkAreaTop;
+    nWindowX = __frame0.nWorkAreaRight - __frame0.nWorkAreaLeft;
+    /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ rcWindowPos.left = 0;
+    rcWindowPos.top = 0;
+    rcWindowPos.right = 0;
+    rcWindowPos.bottom = 0;
+    GetWindowRect(hWnd, &rcWindowPos);
+    __frame0.rcNewWindow.top = 0;
+    __frame0.rcNewWindow.right = 0;
+    __frame0.rcNewWindow.bottom = 0;
+    __frame0.rcNewWindow.left = 0;
+    D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&__frame0.rcNewWindow.right, (int*)&__frame0.rcNewWindow.bottom);
+    /* DWORD dwExStyle for AdjustWindowRectEx */ /* BOOL bMenu for AdjustWindowRectEx */ /* DWORD dwStyle for AdjustWindowRectEx */ /* LPRECT lpRect for AdjustWindowRectEx */ nWindowSizeY = __frame0.rcNewWindow.bottom;
+    AdjustWindowRectEx(&__frame0.rcNewWindow, 0xcb0000, 0, 0x40000);
+    cy = __frame0.rcNewWindow.bottom - __frame0.rcNewWindow.top;
+    nWindowSizeY = cy - nWindowSizeY;
+    nWindowX = (nWindowX - (__frame0.rcNewWindow.right - __frame0.rcNewWindow.left)) / 2 + __frame0.nWorkAreaLeft;
+    if (nWindowX < 0) {
+      nWindowX = 0;
+    }
+
+    nWorkAreaHeight = (nWorkAreaHeight - cy) / 2 + __frame0.nWorkAreaTop;
+    if (nWorkAreaHeight < 0) {
+      nWorkAreaHeight = 0;
+    }
+
+    /* UINT uFlags for SetWindowPos */ /* int cy for SetWindowPos */ /* int cx for SetWindowPos */ /* int Y for SetWindowPos */ /* int X for SetWindowPos */ /* HWND hWndInsertAfter for SetWindowPos */ /* HWND hWnd for SetWindowPos */ SetWindowPos(hwndD2GFX_Window, HWND_NOTOPMOST, nWindowX, nWorkAreaHeight, __frame0.rcNewWindow.right - __frame0.rcNewWindow.left, cy, 0x14);
+    D2GFX_GetWindowSizeByResolutionMode(nResolutionMode, (int*)&rInitialWindowRect.right, (int*)&rInitialWindowRect.bottom);
+    /* LPRECT lpRect for GetWindowRect */ /* HWND hWnd for GetWindowRect */ GetWindowRect(hWndLocal, &rInitialWindowRect);
+    return 1;
 }
 
 void __stdcall D2GFX_ClearCaches() {
@@ -744,17 +744,17 @@ void __stdcall D2GFX_EndCutScene() {
     }
 
     ::D2GFX_EndCutScene = D2GFX_EndCutSceneCurrentState;
-    if (!D2GFX_EndCutSceneCurrentState) {
-      DRAW_HideTaskbarAppBars();
-      do {
-        /* BOOL bShow for ShowCursor */ nCursorDisplayCount = ShowCursor(0);
-      } while (-1 < nCursorDisplayCount);
-    } else {
+    if (D2GFX_EndCutSceneCurrentState) {
       /* int nCmdShow for ShowWindow */ /* HWND hWnd for ShowWindow */ ShowWindow(hwndD2GFX_Window, 6);
       D2GFX_ResetViewport();
       do {
         /* BOOL bShow for ShowCursor */ nCursorDisplayCount = ShowCursor(1);
       } while (nCursorDisplayCount < 0);
+    } else {
+      DRAW_HideTaskbarAppBars();
+      do {
+        /* BOOL bShow for ShowCursor */ nCursorDisplayCount = ShowCursor(0);
+      } while (nCursorDisplayCount >= 0);
     }
 
     RENDERER_CurrentRenderedFunctions->nfpEndCutScene(hwndD2GFX_Window, nResolutionMode, ::D2GFX_EndCutScene);
@@ -779,14 +779,14 @@ void __stdcall EndCutScene(int32_t nResolution) {
     }
 
     D2GFX_EndCutScene();
-    if (!::D2GFX_EndCutScene) {
+    if (::D2GFX_EndCutScene) {
+      nResolutionMode = nResolution;
+    } else {
       bResizeOk = D2GFX_ResizeWindow(nResolution, 1);
       if (!bResizeOk) {
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("Failed to resize window after cutscenes... this is fatal!");
         exit(-1);
       }
-    } else {
-      nResolutionMode = nResolution;
     }
 
     D2GFX_SetPalette((LPPALETTEENTRY)0x0);
@@ -848,7 +848,7 @@ BOOL __stdcall D2GFX_EndScene() {
       dVar2 = 5.0 - (dVar1 - gdFrameStartTime) + gdFrameSleepRemainder;
       dwMilliseconds = (DWORD)dVar2;
       gdFrameSleepRemainder = dVar2 - (double)(int)dwMilliseconds;
-      if ((int)dwMilliseconds < 1 || 5 < (int)dwMilliseconds) {
+      if ((int)dwMilliseconds < 1 || (int)dwMilliseconds > 5) {
         gdFrameSleepRemainder = 0.0;
       } else {
         /* DWORD dwMilliseconds for Sleep */ Sleep(dwMilliseconds);
@@ -869,7 +869,7 @@ BOOL __stdcall D2GFX_GetBackBuffer(BYTE * pBuffer) {
 }
 
 uint32_t __stdcall D2GFX_IsWindowActive() {
-    return (uint32_t)(3 < (int)eRendererMode);
+    return (uint32_t)((int)eRendererMode >= 4);
 }
 
 void __stdcall D2GFX_DrawRect(RECT * pRect, BYTE nPaletteIndex) {
@@ -889,7 +889,7 @@ void __stdcall D2GFX_DrawSolidSquare(POINT * pPoint, BYTE nSize, BYTE nPaletteIn
 }
 
 void __stdcall D2GFX_DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, DRAWMODE nDrawMode) {
-    if (!(nXStart <= nXEnd && nYStart <= nYEnd)) {
+    if (!(nXEnd >= nXStart && nYEnd >= nYStart)) {
       return;
     }
 
@@ -897,7 +897,7 @@ void __stdcall D2GFX_DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t n
 }
 
 void __stdcall D2GFX_DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, DWORD nAlpha) {
-    if (!(nXStart <= nXEnd && nYStart <= nYEnd)) {
+    if (!(nXEnd >= nXStart && nYEnd >= nYStart)) {
       return;
     }
 
@@ -1027,17 +1027,17 @@ uint32_t __stdcall D2GFX_IsInPerspectiveBounds(int32_t nXpos, int32_t nYpos) {
       if (nDelta < 0) {
         nDelta = -nDelta;
       }
-      if (0x320000 < nDelta) {
+      if (nDelta > 0x320000) {
         return 0;
       }
 
       nDelta = nYpos - nD2GFX_PerspectiveScaleY;
       if (nDelta >= 0) {
-        return (uint32_t)(nDelta < 0x320001);
+        return (uint32_t)(nDelta <= 0x320000);
       }
 
       nDelta = -nDelta;
-      return (uint32_t)(nDelta < 0x320001);
+      return (uint32_t)(nDelta <= 0x320000);
     } else {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
       exit(-1);
@@ -1455,8 +1455,8 @@ void __stdcall D2GFX_InitializeLineBuffer() {
         iPixel = 0;
         nBlendValue = iTileRow << 0x18;
         do {
-          nBlendValue = (int)nBlendValue < 1 ? 0 : nBlendValue;
-          if (0x1effffff < (int)nBlendValue) {
+          nBlendValue = (int)nBlendValue <= 0 ? 0 : nBlendValue;
+          if ((int)nBlendValue >= 0x1f000000) {
             nBlendValue = 0x1f000000;
           }
 
@@ -1478,7 +1478,7 @@ void __stdcall D2GFX_InitializeLineBuffer() {
       pbCurTileEntry += 0x20;
       iTileRow++;
       nNegColorBase += -0x1000000;
-      if ((uintptr_t)((char*)&gpLineBufferTileArray + 32767) < (int)pbCurTileEntry) {
+      if ((int)pbCurTileEntry >= (uintptr_t)((char*)&gpLineBufferTileArray + sizeof(gpLineBufferTileArray))) {
         return;
       }
     } while (true);

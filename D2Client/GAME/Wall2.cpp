@@ -45,8 +45,6 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Sound/Src/D2SoundFast.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
@@ -90,8 +88,6 @@ typedef BOOL (__stdcall *ROOMCALLBACKFN)(D2RoomStrc * pRoom, void * pArgs);
 #endif
 
 namespace D2Client::GAME::Wall2 {
-
-static unsigned short geCutsceneAmbientMusicSoundId = {}; D2_STATIC_GUARD(geCutsceneAmbientMusicSoundId, "D2Client::GAME::Wall2::geCutsceneAmbientMusicSoundId");
 
 void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
     int32_t nLine;
@@ -186,56 +182,56 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
     eD2LevelId eLevel;
     int32_t nLOSDraw;
     BOOL bIsBlocked;
-    if (!pOtherUnit) {
+    if (pOtherUnit) {
+      switch (pOtherUnit->eUnitType) {
+        case UNIT_PLAYER:
+          pUnit = UNIT::Player::GetPlayerUnit_Net();
+        if (pUnit == pOtherUnit || pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
+          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+          return 1;
+        }
+
+        break;
+        case UNIT_MONSTER:
+          if (pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == Kick) {
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            return 1;
+          }
+        case UNIT_MISSILE:
+
+        case UNIT_ITEM:
+          pUnit = UNIT::Player::GetPlayerUnit_Net();
+        break;
+        default:
+          {
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            return 1;
+          }
+      }
+
+      if (pUnit) {
+        D2RoomStrc* pRoom;
+        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+        if (pRoom) {
+          eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+          nLOSDraw = D2Common::Drlg::TXT_LevelDefs_GetLOSDraw(eLevel);
+          if (!nLOSDraw) {
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            return 1;
+          }
+        }
+
+        bIsBlocked = D2Common::Units::TestCollisionWithUnit(pUnit, pOtherUnit, 2);
+        if (bIsBlocked) {
+          pOtherUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISINLOS;
+          return 0;
+        }
+      }
+
+      pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
       return 1;
     }
 
-    switch (pOtherUnit->eUnitType) {
-      case UNIT_PLAYER:
-        pUnit = UNIT::Player::GetPlayerUnit_Net();
-      if (pUnit == pOtherUnit || pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
-        pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
-        return 1;
-      }
-
-      break;
-      case UNIT_MONSTER:
-        if (pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == Kick) {
-          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
-          return 1;
-        }
-      case UNIT_MISSILE:
-
-      case UNIT_ITEM:
-        pUnit = UNIT::Player::GetPlayerUnit_Net();
-      break;
-      default:
-        {
-          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
-          return 1;
-        }
-    }
-
-    if (pUnit) {
-      D2RoomStrc* pRoom;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      if (pRoom) {
-        eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-        nLOSDraw = D2Common::Drlg::TXT_LevelDefs_GetLOSDraw(eLevel);
-        if (!nLOSDraw) {
-          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
-          return 1;
-        }
-      }
-
-      bIsBlocked = D2Common::Units::TestCollisionWithUnit(pUnit, pOtherUnit, 2);
-      if (bIsBlocked) {
-        pOtherUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISINLOS;
-        return 0;
-      }
-    }
-
-    pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
     return 1;
 }
 
@@ -267,7 +263,7 @@ void __fastcall DRAW_WORLD_Unit(D2UnitStrc * pUnit, uint32_t nParam, uint32_t nD
       if (pUnit && pUnit->eUnitType == UNIT_PLAYER && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead && (eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_playerbody) , eState == STATE_none)) {
         return;
       }
-      if (!bPerspective && pUnit && 0 < (int)pUnit->eUnitType && (int)pUnit->eUnitType < 3) {
+      if (!bPerspective && pUnit && (int)pUnit->eUnitType > 0 && (int)pUnit->eUnitType <= 2) {
         eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_attached);
         if (eState != STATE_none) {
           return;
@@ -301,10 +297,7 @@ void __fastcall DRAW_WORLD_Unit(D2UnitStrc * pUnit, uint32_t nParam, uint32_t nD
     } else {
       eLocalUnitType = pUnit->eUnitType;
     }
-    if (!bPerspective) {
-      nDrawLayer = D2Common::Units::GetTargetX(pUnit);
-      nDrawY = D2Common::Units::GetTargetY(pUnit);
-    } else {
+    if (bPerspective) {
       bOrder = 0;
       if (pUnit && pUnit->eUnitType == UNIT_OBJECT) {
         pObjTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId);
@@ -319,10 +312,46 @@ void __fastcall DRAW_WORLD_Unit(D2UnitStrc * pUnit, uint32_t nParam, uint32_t nD
       nDrawLayer += nPrecisionX;
       nPrecisionX = UI::Path::DRAW_GetWorldOffsetY();
       nDrawY = nDrawX + nPrecisionX;
+    } else {
+      nDrawLayer = D2Common::Units::GetTargetX(pUnit);
+      nDrawY = D2Common::Units::GetTargetY(pUnit);
     }
 
     nDrawX = nDrawY;
-    if (eLocalUnitType == UNIT_PLAYER) {
+    if (eLocalUnitType != UNIT_PLAYER) {
+      if (eLocalUnitType != UNIT_MONSTER) {
+        bInViewBounds = nDrawLayer;
+        if (eLocalUnitType == UNIT_MISSILE) {
+          if (!pUnit) {
+            nMissileId = -1;
+          } else {
+            nMissileId = pUnit->nClassId;
+          }
+
+          pMissileTxt = GetMissleById(nMissileId);
+          if (!pMissileTxt) {
+            goto restore_perspective;
+          }
+
+          nDrawY = (int)pMissileTxt->yoffset + (int)pMissileTxt->zoffset + nDrawY;
+          bInViewBounds = (int)pMissileTxt->xoffset + nDrawLayer;
+        }
+
+        pGfxResult = Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, bInViewBounds, nDrawY, nullptr, 1);
+        if (pGfxResult && pUnit) {
+          pUnit->eUnitFlags |= UNITFLAG_AUTOMAP;
+        }
+      } else {
+        nPrecisionX = UNIT::Monster::IsMonsterGhostly(pUnit);
+        UNIT::PlrSkills::PLRSKILLS_DrawChargeTrailIfPrimary(pUnit, nParam);
+        pGfxResult = Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, nDrawLayer, nDrawX, (D2GamePalShiftGreenBloodStrc*)(uint32_t)(nPrecisionX != 0), 1);
+        if (pGfxResult && pUnit) {
+          pUnit->eUnitFlags |= UNITFLAG_AUTOMAP;
+        }
+
+        UNIT::PlrSkills::PLRSKILLS_DrawChargeTrailIfSecondary(pUnit, nParam);
+      }
+    } else {
       UNIT::PlrSkills::PLRSKILLS_CheckSkillWhipAndLeap(pUnit, nParam);
       pGfxResult = Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, nDrawLayer, nDrawX, nullptr, 1);
       if (pGfxResult && pUnit) {
@@ -330,37 +359,6 @@ void __fastcall DRAW_WORLD_Unit(D2UnitStrc * pUnit, uint32_t nParam, uint32_t nD
       }
 
       UNIT::PlrSkills::PLRSKILLS_DrawSkillTrail_Secondary(pUnit, nParam);
-    } else if (eLocalUnitType == UNIT_MONSTER) {
-      nPrecisionX = UNIT::Monster::IsMonsterGhostly(pUnit);
-      UNIT::PlrSkills::PLRSKILLS_DrawChargeTrailIfPrimary(pUnit, nParam);
-      pGfxResult = Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, nDrawLayer, nDrawX, (D2GamePalShiftGreenBloodStrc*)(uint32_t)(nPrecisionX != 0), 1);
-      if (pGfxResult && pUnit) {
-        pUnit->eUnitFlags |= UNITFLAG_AUTOMAP;
-      }
-
-      UNIT::PlrSkills::PLRSKILLS_DrawChargeTrailIfSecondary(pUnit, nParam);
-    } else {
-      bInViewBounds = nDrawLayer;
-      if (eLocalUnitType == UNIT_MISSILE) {
-        if (!pUnit) {
-          nMissileId = -1;
-        } else {
-          nMissileId = pUnit->nClassId;
-        }
-
-        pMissileTxt = GetMissleById(nMissileId);
-        if (!pMissileTxt) {
-          goto restore_perspective;
-        }
-
-        nDrawY = (int)pMissileTxt->yoffset + (int)pMissileTxt->zoffset + nDrawY;
-        bInViewBounds = (int)pMissileTxt->xoffset + nDrawLayer;
-      }
-
-      pGfxResult = Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, bInViewBounds, nDrawY, nullptr, 1);
-      if (pGfxResult && pUnit) {
-        pUnit->eUnitFlags |= UNITFLAG_AUTOMAP;
-      }
     }
 
     restore_perspective:
@@ -408,15 +406,15 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
       geAmbientMusicLevelId = eCurrentLevel;
     }
 
-    eD2Sounds eSongId = SOUND_NONE;
+    int eSongId = 0;
     uint32_t nSoundEnvIdx = D2Client::Sound::SoundHdr::GetSoundEnv();
     D2SoundEnvironTxt* pSoundEnvLine = D2Client::Sound::SoundHdr::GetSoundEnvironLine(nSoundEnvIdx);
     if (pSoundEnvLine) {
       eSongId = pSoundEnvLine->Song;
-      if (eSongId != SOUND_NONE) {
+      if (eSongId) {
         nTmpResult = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
-        if ((int)eSongId < nTmpResult || (nTmpResult = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal1() , nTmpResult < (int)eSongId)) {
-          eSongId = SOUND_NONE;
+        if (eSongId < nTmpResult || (nTmpResult = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal1() , eSongId > nTmpResult)) {
+          eSongId = 0;
         }
       }
     }
@@ -427,31 +425,31 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
     } else {
       bHasVolume = true;
     }
-    if (geCutsceneAmbientMusicSoundId != eSongId && (0x4a < nTickCount - gdwAmbientMusicLevelChangeTick || !bHasVolume || geCutsceneAmbientMusicSoundId == SOUND_NONE)) {
+    if (geCutsceneAmbientMusicSoundId != eSongId && (nTickCount - gdwAmbientMusicLevelChangeTick >= 0x4b || !bHasVolume || !geCutsceneAmbientMusicSoundId)) {
       geCutsceneAmbientMusicSoundId = eSongId;
       gdwAmbientMusicChangeTime = nTickCount;
     }
     if (!bHasVolume) {
       D2Client::Sound::SOUND_StopMusic();
     }
-    if (geCutsceneAmbientMusicSoundId == SOUND_NONE) {
+    if (!geCutsceneAmbientMusicSoundId) {
       D2Client::Sound::SOUND_StopMusic();
     }
     if (gbSoundSequenceActive) {
       uint32_t nRecordingIdx;
       if (gbPendingSoundSequencePlay) {
         nRecordingIdx = Game::gnRecordingIndex();
-        if (gnSoundSequenceResumeIndex <= nRecordingIdx) {
+        if (nRecordingIdx >= gnSoundSequenceResumeIndex) {
           D2Client::Sound::SOUND_PlaySound(geSoundSequenceSoundId, nullptr, 0, 0, 0);
           gbPendingSoundSequencePlay = 0;
         }
       }
       if (gbPendingDelayedSoundPlay) {
         nRecordingIdx = Game::gnRecordingIndex();
-        if (gnDelayedSoundPlayIndex <= nRecordingIdx) {
+        if (nRecordingIdx >= gnDelayedSoundPlayIndex) {
           pUnit = UNIT::Player::GetPlayerUnit_UI();
-          nTmpResult = UNIT::CUnit::IsActive(pUnit);
-          if (!nTmpResult) {
+          eSongId = UNIT::CUnit::IsActive(pUnit);
+          if (!eSongId) {
             D2Client::Sound::SOUND_PlaySound(geDelayedSoundId, pUnit, 0, 0, 0);
           }
 
@@ -469,60 +467,60 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
         D2Client::Sound::SOUND_FadeOutMusic(geSoundSequenceSoundId);
       }
     }
-    if (geCutsceneAmbientMusicSoundId != SOUND_NONE && bHasVolume) {
-      nTmpResult = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
-      if (!nTmpResult) {
-        nTmpResult = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
-        nTmpResult = geCutsceneAmbientMusicSoundId - nTmpResult;
+    if (geCutsceneAmbientMusicSoundId && bHasVolume) {
+      eSongId = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
+      if (!eSongId) {
+        eSongId = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
+        eSongId = geCutsceneAmbientMusicSoundId - eSongId;
         nSoundHdrIdx = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal2();
-        nTmpResult = *(int*)((int)nSoundHdrIdx + nTmpResult * 4);
+        eSongId = *(int*)((int)nSoundHdrIdx + eSongId * 4);
         BVar1 = D2Client::Sound::SOUND_GetAmbientMusicState();
-        if (!BVar1 && !nTmpResult) {
+        if (!BVar1 && !eSongId) {
           nVolume = 2;
         } else {
           nVolume = 0;
         }
 
         D2Client::Sound::SOUND_StopMusic();
-        D2Client::Sound::SOUND_PlaySound(geCutsceneAmbientMusicSoundId, nullptr, 0, nVolume, nTmpResult);
+        D2Client::Sound::SOUND_PlaySound(geCutsceneAmbientMusicSoundId, nullptr, 0, nVolume, eSongId);
         gdwAmbientMusicRestartTick = nTickCount;
       }
     }
-    if (geAmbientMusicLevelId != geLastAmbientMusicLevelId && 0x3d < nTickCount - gdwAmbientMusicLevelChangeTick) {
+    if (geAmbientMusicLevelId != geLastAmbientMusicLevelId && nTickCount - gdwAmbientMusicLevelChangeTick >= 0x3e) {
       UNIT::UnitSnd::SOUND_UpdateAmbientMusic();
       geLastAmbientMusicLevelId = geAmbientMusicLevelId;
     }
-    if (!(geCutsceneAmbientMusicSoundId != SOUND_NONE && gdwAmbientMusicChangeTime + 0x7d < nTickCount)) {
+    if (!(geCutsceneAmbientMusicSoundId && nTickCount > gdwAmbientMusicChangeTime + 0x7d)) {
       return;
     }
 
     D2SoundsTxt* pSoundTxt = DataTbls::TXT_sounds_GetLineBySoundId(geCutsceneAmbientMusicSoundId);
-    nTmpResult = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
-    if (!nTmpResult) {
+    eSongId = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
+    if (!eSongId) {
       return;
     }
 
-    nSoundEnvIdx = D2Client::Sound::SOUND_GetSoundId(nTmpResult);
+    nSoundEnvIdx = D2Client::Sound::SOUND_GetSoundId(eSongId);
     if (!nSoundEnvIdx) {
       return;
     }
 
-    nSoundEnvIdx = D2Client::Sound::SOUND_GetCurrentMusic(nTmpResult);
-    nTmpResult = 0;
-    if (-1 < (int)nSoundEnvIdx && (int)nSoundEnvIdx < pSoundTxt->Block[0]) {
-      nTmpResult = pSoundTxt->Block[0];
+    nSoundEnvIdx = D2Client::Sound::SOUND_GetCurrentMusic(eSongId);
+    eSongId = 0;
+    if ((int)nSoundEnvIdx >= 0 && (int)nSoundEnvIdx < pSoundTxt->Block[0]) {
+      eSongId = pSoundTxt->Block[0];
     }
-    if (pSoundTxt->Block[0] <= (int)nSoundEnvIdx && (int)nSoundEnvIdx < pSoundTxt->Block[1]) {
-      nTmpResult = pSoundTxt->Block[1];
+    if ((int)nSoundEnvIdx >= pSoundTxt->Block[0] && (int)nSoundEnvIdx < pSoundTxt->Block[1]) {
+      eSongId = pSoundTxt->Block[1];
     }
-    if (pSoundTxt->Block[1] <= (int)nSoundEnvIdx && (int)nSoundEnvIdx < pSoundTxt->Block[2]) {
-      nTmpResult = pSoundTxt->Block[2];
+    if ((int)nSoundEnvIdx >= pSoundTxt->Block[1] && (int)nSoundEnvIdx < pSoundTxt->Block[2]) {
+      eSongId = pSoundTxt->Block[2];
     }
 
-    int iVar2 = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
-    iVar2 = geCutsceneAmbientMusicSoundId - iVar2;
+    nTmpResult = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
+    nTmpResult = geCutsceneAmbientMusicSoundId - nTmpResult;
     nSoundHdrIdx = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal2();
-    *(int*)((int)nSoundHdrIdx + iVar2 * 4) = nTmpResult;
+    *(int*)((int)nSoundHdrIdx + nTmpResult * 4) = eSongId;
     gdwAmbientMusicChangeTime = nTickCount;
 }
 
@@ -539,10 +537,10 @@ void __fastcall WALL2_ScheduleSoundSequence(uint32_t dwParam1, int32_t nParam1, 
       if (pStopHandle) {
         nActiveSoundId = D2Client::Sound::SOUND_GetSoundId(pStopHandle);
         if (nActiveSoundId) {
-          if (!nBlockIdx) {
-            pStopHandle = 0;
-          } else {
+          if ((uint32_t)nBlockIdx > 0) {
             pStopHandle = pSoundTxt->Block[nBlockIdx - 1];
+          } else {
+            pStopHandle = 0;
           }
 
           nSoundHdrOffset = D2Client::Sound::SoundHdr::SOUNDHDR_GetGlobal0();
@@ -639,7 +637,7 @@ void __fastcall FreeWall2(D2GameViewStrc * pGameView) {
 BOOL WALL2_IsInDrawGrid(int nX, int nY, D2Wall2DrawListStrc * pDrawList) {
     int iVar1 = nX - pDrawList->nWall2GridOriginX;
     int nRelY = nY - pDrawList->nWall2GridOriginY;
-    if (!(-1 < iVar1 && -1 < nRelY && iVar1 < (int)pDrawList->nWall2GridDim)) {
+    if (!(iVar1 >= 0 && nRelY >= 0 && iVar1 < (int)pDrawList->nWall2GridDim)) {
       return 0;
     }
 
@@ -660,22 +658,22 @@ static void WALL2_InsertUnitDrawBelow(D2Wall2DrawListStrc * pDrawList, D2UnitStr
     pDVar1->pData = pUnit;
     pDVar1->pNext = 0;
     eD2UnitType eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nX = nUnitPos * 8;
     eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nY = nUnitPos * 8;
@@ -706,7 +704,7 @@ static int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileD
       if (!(pDVar1 && pDVar1->nIndex != gnPlayerTileGridIndex)) {
         return 0;
       }
-      if (pDVar1->pBox.nPosX > UNIT_CenterXCoordsDiv5) {
+      if (UNIT_CenterXCoordsDiv5 < pDVar1->pBox.nPosX) {
         return 1;
       }
 
@@ -716,7 +714,7 @@ static int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileD
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     roomCoords.dwXStart += pTileData->nPosX * 5;
     roomCoords.dwYStart += pTileData->nPosY * 5;
-    if (UNIT_CenterXCoordsDiv5 * 5 < roomCoords.dwXStart && roomCoords.dwXStart - 0x14 < UNIT_CenterXCoordsDiv5 * 5 && true) {
+    if (UNIT_CenterXCoordsDiv5 * 5 < roomCoords.dwXStart && UNIT_CenterXCoordsDiv5 * 5 > roomCoords.dwXStart - 0x14 && true) {
       switch (pTileData->nTileType) {
         case 1:
 
@@ -734,7 +732,7 @@ static int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileD
           return 1;
       }
     }
-    if (!(UNIT_CenterYCoordsDiv5 * 5 < roomCoords.dwYStart && roomCoords.dwYStart - 0x14 < UNIT_CenterYCoordsDiv5 * 5 && true)) {
+    if (!(UNIT_CenterYCoordsDiv5 * 5 < roomCoords.dwYStart && UNIT_CenterYCoordsDiv5 * 5 > roomCoords.dwYStart - 0x14 && true)) {
       return 0;
     }
 
@@ -769,7 +767,7 @@ static void __stdcall WALL2_AddWallTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
     uint32_t nDrawEntryIdx;
     nDrawEntryIdx = pDrawList->nWall2EntryCount;
     pDrawList->nWall2EntryCount = nDrawEntryIdx + 1;
-    if (2999 < nDrawEntryIdx) {
+    if (nDrawEntryIdx >= 3000) {
       return;
     }
 
@@ -786,21 +784,7 @@ static void __stdcall WALL2_AddWallTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
       int32_t iVar3;
       iVar3 = WALL2_IsTileOccludingPlayer(pTileData, pRoom);
       nDrawEntryIdx = pTileData->nTransitionFlags;
-      if (!iVar3) {
-        if (!(nDrawEntryIdx & 1)) {
-          goto insert_draw_entry;
-        }
-
-        pTileData->nAlphaStart = 0x80;
-        pTileData->nAlphaEnd = 0xff;
-        if (pTileData->nCurrentAlpha == 0x80) {
-          pTileData->nFadeEndTime = nFadeEndTime;
-        } else {
-          pTileData->nFadeEndTime = (int)((0x80 - (uint32_t)pTileData->nCurrentAlpha) * 500) / 0x7f + nFadeEndTime;
-        }
-
-        nDrawEntryIdx = nDrawEntryIdx & -2 | 2;
-      } else {
+      if (iVar3) {
         if (nDrawEntryIdx & 1) {
           goto insert_draw_entry;
         }
@@ -814,6 +798,20 @@ static void __stdcall WALL2_AddWallTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
           pTileData->nFadeEndTime = (int)((pTileData->nCurrentAlpha - 0xff) * 500) / 0x7f + nFadeEndTime;
           nDrawEntryIdx |= 3;
         }
+      } else {
+        if (!(nDrawEntryIdx & 1)) {
+          goto insert_draw_entry;
+        }
+
+        pTileData->nAlphaStart = 0x80;
+        pTileData->nAlphaEnd = 0xff;
+        if (pTileData->nCurrentAlpha == 0x80) {
+          pTileData->nFadeEndTime = nFadeEndTime;
+        } else {
+          pTileData->nFadeEndTime = (int)((0x80 - (uint32_t)pTileData->nCurrentAlpha) * 500) / 0x7f + nFadeEndTime;
+        }
+
+        nDrawEntryIdx = nDrawEntryIdx & -2 | 2;
       }
 
       pTileData->nTransitionFlags = nDrawEntryIdx;
@@ -843,10 +841,10 @@ static void __stdcall WALL2_AddWallTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
       }
       if ((*(uint32_t*)((int)pDVar1->pData + 0x14) >> 0xe & 7) < (*(uint32_t*)((int)pPrevNode->pData + 0x14) >> 0xe & 7)) {
         pDVar1->pNext = pPrevNode;
-        if (!pCurNode) {
-          pWall2Cell->pWallList = pDVar1;
-        } else {
+        if (pCurNode) {
           pCurNode->pNext = pDVar1;
+        } else {
+          pWall2Cell->pWallList = pDVar1;
         }
         if (pPrevNode->pNext) {
           return;
@@ -903,10 +901,10 @@ static void __stdcall WALL2_AddLowerWallTile(D2Wall2DrawListStrc * pDrawList, D2
         if ((*(uint32_t*)((int)pDVar1->pData + 0x14) >> 0xe & 7) < (*(uint32_t*)((int)pCmpEntry->pData + 0x14) >> 0xe & 7)) {
           pDVar1->pNext = pCmpEntry;
           pLastNode = pCmpEntry;
-          if (!pCurNode) {
-            pWall2Cell->pUnderFloorList = pDVar1;
-          } else {
+          if (pCurNode) {
             pCurNode->pNext = pDVar1;
+          } else {
+            pWall2Cell->pUnderFloorList = pDVar1;
           }
 
           break;
@@ -955,10 +953,10 @@ static void __stdcall WALL2_AddRoofTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
     for (pNextNode = pDVar3->pNext; pCurNode = pDVar3 , pNextNode != 0; pNextNode = pNextNode->pNext) {
       if ((*(uint32_t*)((int)pDVar1->pData + 0x14) >> 0xe & 7) < (*(uint32_t*)((int)pCurNode->pData + 0x14) >> 0xe & 7)) {
         pDVar1->pNext = pCurNode;
-        if (!pPrevNode) {
-          pWall2Cell->pRoofPassList = pDVar1;
-        } else {
+        if (pPrevNode) {
           pPrevNode->pNext = pDVar1;
+        } else {
+          pWall2Cell->pRoofPassList = pDVar1;
         }
 
         break;
@@ -1025,22 +1023,22 @@ static void __stdcall WALL2_InsertUnitDraw(D2Wall2CellStrc * pWall2Cell, D2UnitS
     pDVar1->pData = pUnit;
     pDVar1->pNext = 0;
     eD2UnitType eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nX = nUnitPos * 8;
     eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nY = nUnitPos * 8;
@@ -1079,22 +1077,22 @@ static void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D
     pDVar1->pData = pUnit;
     pDVar1->pNext = 0;
     eD2UnitType eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nX = nUnitPos * 8;
     eVar3 = pUnit->eUnitType;
-    if (eVar3 == UNIT_OBJECT || 3 < (int)eVar3 && (int)eVar3 < 6) {
+    if (eVar3 == UNIT_OBJECT || (int)eVar3 > 3 && (int)eVar3 <= 5) {
       nUnitPos = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitPos = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitPos = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitPos = 0;
     }
 
     pDVar1->nY = nUnitPos * 8;
@@ -1133,13 +1131,13 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
     D2GameViewStrc* pGameView = pnParam->pGameView;
     D2Wall2DrawListStrc* pAllocBase = &pGameView->sWall2;
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetMinimapRect((uint32_t)pnParam, pRoom, (int32_t*)&nMinimapLeft.left);
-    if (!(nMinimapLeft.left <= pParamTmp->rcCull.right && nMinimapLeft.top <= pParamTmp->rcCull.bottom + 400 && pParamTmp->rcCull.left - 200 <= nMinimapLeft.right && pParamTmp->rcCull.top <= nMinimapLeft.bottom)) {
+    if (!(nMinimapLeft.left <= pParamTmp->rcCull.right && nMinimapLeft.top <= pParamTmp->rcCull.bottom + 400 && nMinimapLeft.right >= pParamTmp->rcCull.left - 200 && nMinimapLeft.bottom >= pParamTmp->rcCull.top)) {
       return 1;
     }
 
     D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetWallTilesFromRoom(pRoomTmp, (int*)&nTileCount);
     uint32_t nTileIdx = 0;
-    if (nTileCount) {
+    if (nTileCount > 0) {
       int nScreenYAdj;
       do {
         pTileLibEntry = pTileData->pTileLibraryEntry;
@@ -1147,9 +1145,9 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
         D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoX, &nIsoY);
         nRoofHeightIdx = nIsoY - 1;
         nIsoY = nRoofHeightIdx;
-        if (pTileData->nScreenX <= pnParam->rcCull.right && pnParam->rcCull.left <= pTileData->nScreenX + 0xa0) {
+        if (pTileData->nScreenX <= pnParam->rcCull.right && pTileData->nScreenX + 0xa0 >= pnParam->rcCull.left) {
           nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)pTileLibEntry->nRoofHeight;
-          if (nRoofHeightIdx2 + nScreenYAdj <= pnParam->rcCull.bottom && pnParam->rcCull.top <= nScreenYAdj - nRoofHeightIdx2) {
+          if (nRoofHeightIdx2 + nScreenYAdj <= pnParam->rcCull.bottom && nScreenYAdj - nRoofHeightIdx2 >= pnParam->rcCull.top) {
             bInDrawGrid = WALL2_IsInDrawGrid(nIsoX, nRoofHeightIdx, pAllocBase);
             if (bInDrawGrid) {
               nIsoY = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
@@ -1158,12 +1156,14 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
               pGridCellVoid->dwFlags = 0;
               if (!(pTileData->nFlags & 0x1c000U)) {
                 WALL2_AddShadowPassTile(pGridCellVoid, pRoom, pTileData, pAllocBase);
-              } else if (pTileData->nTileType == 0xf) {
-                WALL2_AddRoofTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
-              } else if (pTileData->nTileType - 0x10U < 4) {
-                WALL2_AddLowerWallTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
+              } else if (pTileData->nTileType != 0xf) {
+                if (pTileData->nTileType - 0x10U <= 3) {
+                  WALL2_AddLowerWallTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
+                } else {
+                  WALL2_AddWallTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
+                }
               } else {
-                WALL2_AddWallTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
+                WALL2_AddRoofTile(pAllocBase, pGridCellVoid, pRoom, pTileData);
               }
             }
           }
@@ -1178,13 +1178,13 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
 
     pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoofTilesFromRoom(pRoomTmp, (int*)&nTileCount);
     nTileIdx = 0;
-    if (nTileCount) {
+    if (nTileCount > 0) {
       do {
         nRoofHeightIdx2 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetRoofHeightIndex((int32_t)pTileData->pTileLibraryEntry);
         D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160(pTileData->nScreenX, pTileData->nScreenY, &nIsoY, &nIsoX);
         nRoofHeightIdx = nIsoX - 1;
         nIsoX = nRoofHeightIdx;
-        if (pTileData->nScreenX <= pnParam->rcCull.right && pnParam->rcCull.left <= pTileData->nScreenX + 0xa0 && nRoofHeightIdx2 + pTileData->nScreenY <= pnParam->rcCull.bottom && pnParam->rcCull.top <= pTileData->nScreenY - nRoofHeightIdx2) {
+        if (pTileData->nScreenX <= pnParam->rcCull.right && pTileData->nScreenX + 0xa0 >= pnParam->rcCull.left && nRoofHeightIdx2 + pTileData->nScreenY <= pnParam->rcCull.bottom && pTileData->nScreenY - nRoofHeightIdx2 >= pnParam->rcCull.top) {
           bInDrawGrid = WALL2_IsInDrawGrid(nIsoY, nRoofHeightIdx, pAllocBase);
           if (bInDrawGrid) {
             nIsoX = nRoofHeightIdx - pGameView->sWall2.nWall2GridOriginY;
@@ -1209,23 +1209,25 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
       D2Common::Drlg::Transform::DRLG_OrthToIsoCoordsDiv160((int32_t)pRoom, (int32_t)pnParam, (int32_t*)&pRoom, (int32_t*)&pnParam);
       pRoomTmp = (D2RoomStrc*)((int)pRoom - pGameView->sWall2.nWall2GridOriginX);
       pParamTmp = (D2Wall2DrawContextStrc*)((int)pnParam - pGameView->sWall2.nWall2GridOriginY);
-      if (-1 < (int)pRoomTmp && -1 < (int)pParamTmp) {
+      if ((int)pRoomTmp >= 0 && (int)pParamTmp >= 0) {
         nGridDim = pGameView->sWall2.nWall2GridDim;
         if ((int)pRoomTmp < (int)nGridDim && (int)pParamTmp < (int)nGridDim) {
           pRoom = pRoomTmp;
           pnParam = pParamTmp;
-          if ((int)pRoomTmp < 0 || (int)nGridDim <= (int)pRoomTmp) {
+          if ((int)pRoomTmp < 0 || (int)pRoomTmp >= (int)nGridDim) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x300);
             exit(-1);
           }
-          if ((int)pParamTmp < 0 || (int)nGridDim <= (int)pParamTmp) {
+          if ((int)pParamTmp < 0 || (int)pParamTmp >= (int)nGridDim) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x301);
             exit(-1);
           }
 
           pGridCellVoid = pGameView->sWall2.pWall2 + (int)pRoomTmp->nLastDeadGUIDs + nGridDim * (int)pParamTmp - 0x38;
           nLine = UNIT::CUnit::IsAlive(pUnit);
-          if (!nLine) {
+          if (nLine) {
+            WALL2_InsertUnitDraw(pGridCellVoid, pUnit, pAllocBase);
+          } else {
             if (!pUnit || !(pUnit->eUnitFlags >> 0x14 & 1)) {
               WALL2_InsertUnitDrawBelow(pAllocBase, pUnit, pGridCellVoid);
               if (pUnit && pUnit->eUnitFlagsEx >> 7 & 1) {
@@ -1234,8 +1236,6 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
             } else {
               WALL2_InsertUnitDraw(pGridCellVoid, pUnit, pAllocBase);
             }
-          } else {
-            WALL2_InsertUnitDraw(pGridCellVoid, pUnit, pAllocBase);
           }
         }
       }
@@ -1268,14 +1268,14 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
     uint32_t bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     int nPlayerX = pGameView->nCenterX;
     int nPlayerY = pGameView->nCenterY;
-    if (!bPerspective) {
-      nViewWidth = pGameView->pView.right - pGameView->pView.left;
-      yTop = nPlayerY;
-      xLeft = nPlayerX;
-    } else {
+    if (bPerspective) {
       nViewWidth = pGameView->pView.right - pGameView->pView.left + 0x30;
       yTop = nPlayerY - 0x30;
       xLeft = nPlayerX - 0x30;
+    } else {
+      nViewWidth = pGameView->pView.right - pGameView->pView.left;
+      yTop = nPlayerY;
+      xLeft = nPlayerX;
     }
 
     /* int xRight for SetRect */ /* int yTop for SetRect */ /* int xLeft for SetRect */ /* LPRECT lprc for SetRect */ SetRect(&pGameViewLocal.rcCull, xLeft, yTop, nViewWidth + nPlayerX, pGameView->pView.bottom - pGameView->pView.top + nPlayerY);
@@ -1299,10 +1299,10 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
       pGameView->sWall2.nWall2GridOriginX = nIsoY;
       pGridCellIter = pGameView->sWall2.pWall2;
       pGameView->sWall2.nWall2GridOriginY = nIsoX;
-      if (pGameView->sWall2.nWall2GridDim) {
+      if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
         do {
           nGridColIdx = 0;
-          if (pGameView->sWall2.nWall2GridDim) {
+          if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
             do {
               pGridCellIter->nGridIsoX = nIsoY + nGridColIdx;
               pGridCellIter->nGridIsoY = nIsoX + nGridRowIdx;
@@ -1323,41 +1323,41 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
 
       pGameViewLocal.pRoom = UNIT::CUnit::GetCurrentRoom();
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nGridRowIdx = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nGridRowIdx = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nGridRowIdx = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nGridRowIdx = 0;
       }
 
       eUnitType = pUnit->eUnitType;
       UNIT_CenterXCoordsDiv5 = nGridRowIdx / 5;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nGridRowIdx = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nGridRowIdx = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nGridRowIdx = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nGridRowIdx = 0;
       }
 
       eUnitType = pUnit->eUnitType;
       UNIT_CenterYCoordsDiv5 = nGridRowIdx / 5;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPlayerX = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPlayerX = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nPlayerX = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nPlayerX = 0;
       }
 
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPlayerY = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPlayerY = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nPlayerY = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nPlayerY = 0;
       }
 
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);

@@ -23,10 +23,41 @@ The code is machine-generated from a reverse-engineered database and then correc
 hand where needed. It is not the original source: the names, types and structure are
 reconstructions, and some functions read like a decompiler wrote them, because one did.
 
-It is [Devilution](https://github.com/diasurgical/devilution)'s idea applied to Diablo II,
-without the debug symbols Devilution had: every name and type here was reverse-engineered.
-How that differs, and how the project was made since 2021:
-[redivivus.app/about](https://redivivus.app/about#devilution).
+## The same idea as Devilution
+
+[Devilution](https://github.com/diasurgical/devilution) did this for the first Diablo: it
+reconstructed the shipped `Diablo.exe` as source code that builds, and
+[DevilutionX](https://github.com/diasurgical/DevilutionX) grew from it into the port many
+people play Diablo with today. Redivivus is the same concept for Diablo II.
+
+Two things differ:
+
+- **The evidence.** Devilution could lean on debug symbols left on a PlayStation release
+  for many of its names and types. No such symbols exist for 1.14d, so every name, type
+  and structure here was reverse-engineered, cross-checked where possible against the
+  game's own assert messages and against the Mac build.
+- **The target.** Devilution worked toward a binary that matches the original byte for
+  byte. Redivivus aims first for one that behaves like the original; byte-matching
+  individual functions comes after.
+
+## How it was made
+
+This project started in 2021, well before large language models were any use for this kind of
+work. The reverse-engineering of 1.14d (naming, typing and understanding the code) was
+done by hand over years. Once LLMs became usable for it they sped the work up
+considerably: proposing types, chasing crashes, and building the tooling below. They
+joined an existing project; they did not start it.
+
+1. The 1.14d `Game.exe` was reverse-engineered in [Ghidra](https://ghidra-sre.org/):
+   every function named, typed and given its calling convention; every global given a
+   type and an extent.
+2. [ghidra-reconstruct](https://github.com/jaenster/ghidra-reconstruct) pulls the
+   decompilation out through [ghidra-mcp](https://github.com/jaenster/ghidra-mcp),
+   parses it into a C++ syntax tree, undoes the decompiler's artifacts, and emits this
+   tree.
+3. The tree is built, run, and every crash is traced back to its cause. That cause is
+   fixed where it belongs, usually in the Ghidra database, sometimes in the generator,
+   and only rarely by hand in the source.
 
 ## Status
 
@@ -45,28 +76,53 @@ At this commit:
 
 |Measure|Byte-identical to the original|
 |-|-|
-|Functions|3,985 of 15,521 (25.7%)|
-|Code|236,646 of 2,678,537 bytes (8.83%)|
+|Functions|5,059 of 15,521 (32.6%)|
+|Code|356,888 of 2,678,537 bytes (13.32%)|
 
 The rest compiles and runs but differs somewhere in its instructions. Each difference
 that the same generator rule or database gap causes everywhere is fixed there, so the
 count only grows.
 
-## Build and run
+## You need
 
-You need your own Diablo II: Lord of Destruction 1.14 installation; this repository holds no
-game data. With a mingw-w64 cross compiler for 32-bit Windows, CMake and Ninja:
+- Your own installation of Diablo II: Lord of Destruction, version 1.14. This repository
+  contains no game data and no Blizzard binaries; the executable reads the MPQ archives
+  from your installation. If you have no installation at hand,
+  [blizzard-legacy-dl](https://github.com/jaenster/blizzard-legacy-dl) downloads the
+  installers from Blizzard's own servers:
+
+  ```sh
+  blizzard-legacy-dl fetch D2DV -o ./d2     # Diablo II
+  blizzard-legacy-dl fetch D2XP -o ./d2     # Lord of Destruction
+  ```
+
+  You still need your own CD keys to install.
+- To build: a mingw-w64 cross compiler for 32-bit Windows (`i686-w64-mingw32-g++`), CMake
+  and Ninja.
+  - macOS: `brew install mingw-w64 cmake ninja`
+  - Debian/Ubuntu: `apt install g++-mingw-w64-i686 cmake ninja-build`
+  - Windows: an MSYS2 MinGW32 shell
+
+## Build
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
 cmake --build build
 ```
 
-Copy `build/d2.exe` next to `Game.exe` in your Diablo II folder and run `d2.exe -w`.
+That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
+the same from a clean clone and checks the result; CI runs it on every push.
 
-- [docs/building.md](docs/building.md): getting the game, the toolchain per platform.
-- [docs/original-compilers.md](docs/original-compilers.md): building with the compilers that
-  built 1.14d, Visual C++ 2005 SP1 and Apple LLVM 4.2, and their flags.
+## Run
+
+Copy `d2.exe` into your Diablo II folder, next to the original `Game.exe`, and
+start it from there:
+
+```
+d2.exe -w
+```
+
+`-w` runs it in a window.
 
 ## Known issues
 
@@ -77,6 +133,16 @@ Copy `build/d2.exe` next to `Game.exe` in your Diablo II folder and run `d2.exe 
   executable; please attach it to an [issue](https://github.com/jaenster/redivivus/issues).
 - **Battle.net does not work.** Logging in crashes in the version check. Single player
   is what works today.
+
+## Future ideas
+
+Other Diablo II code is known to exist and could be recovered the same way:
+
+- **D2Server**, the game-server module that hosted closed Battle.net games. Recovered as
+  source, it would give a realm game server built from the same code as the game itself.
+- **The Mac build.** It carries code the Windows executable never had, most visibly an
+  OpenGL renderer. [D2OpenGL](https://github.com/jaenster/D2OpenGL) already brings that
+  renderer to 1.14d on Windows.
 
 ## Contributing
 
@@ -94,9 +160,7 @@ claude plugin install redivivus@redivivus
 ```
 
 The plugin brings the MCP server and the house rules; sign in with GitHub from `/mcp`. Other
-agents: see https://redivivus.app/agent-setup/prompt.md. Corrections go in as proposals that are
-checked against the databases, reviewed, and applied with you as the git author; see
-[how proposals work](https://redivivus.app/about#contributing).
+agents: see https://redivivus.app/agent-setup/prompt.md
 
 ## Credits
 

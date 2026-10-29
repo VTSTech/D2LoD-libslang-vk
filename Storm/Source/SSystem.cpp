@@ -234,11 +234,11 @@ void __fastcall SSYSTEM_ListUnlinkAndInsert(int * * pNode, int32_t nInsertMode, 
 
 uint32_t __fastcall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
     if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
     }
 
     pNode = pList + 4;
-    return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+    return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
 void __fastcall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
@@ -266,11 +266,11 @@ void __fastcall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
 }
 
 uint32_t __fastcall SSYSTEM_ListGetData(int32_t pList, int32_t pNode) {
-    if (!pNode) {
-      return *(uint32_t*)(pList + 8);
+    if (pNode) {
+      return *(uint32_t*)(pNode + 4);
     }
 
-    return *(uint32_t*)(pNode + 4);
+    return *(uint32_t*)(pList + 8);
 }
 
 void __fastcall SSYSTEM_ListClearPositive(D2StormListHead * pList) {
@@ -280,7 +280,7 @@ void __fastcall SSYSTEM_ListClearPositive(D2StormListHead * pList) {
     while (true) {
       int pNext;
       pNode = (int*)pList->pNext;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -325,11 +325,11 @@ void __fastcall SSYSTEM_ListClearAll(D2StormListHead * pList) {
 
 int * * __fastcall SSYSTEM_ListAllocNode(int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags, int * * pList) {
     int** pNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, gszSSystemListAllocTag, -2, nAllocFlags | 8);
-    if (!pNode) {
-      pNode = 0;
-    } else {
+    if (pNode) {
       *pNode = 0;
       pNode[1] = 0;
+    } else {
+      pNode = 0;
     }
     if (!nInsertMode) {
       return pNode;
@@ -371,7 +371,7 @@ void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList) {
     while (true) {
       int pNext;
       pNode = *(int**)(pList + 8);
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -418,12 +418,12 @@ uint32_t __fastcall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
     }
 
     SMem::SMemFree(pNode, gszSSystemListAllocTag, -2, 0);
-    return (int)nResultOffset < 1 ? 0 : nResultOffset;
+    return (int)nResultOffset <= 0 ? 0 : nResultOffset;
 }
 
 int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLength) {
     int nResult;
-    for (; 3 < nLength; nLength -= 4) {
+    for (; nLength >= 4; nLength -= 4) {
       if (*(int*)pLeft != *(int*)pRight) {
         goto compare_bytes;
       }
@@ -458,7 +458,7 @@ int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLe
       }
 
       nResult = 1;
-      if (nDiff < 1) {
+      if (nDiff <= 0) {
         return -1;
       }
     }
@@ -587,7 +587,7 @@ void __fastcall LINKEDLIST_UnlinkAll(int32_t pList) {
     while (true) {
       int pNext;
       pNode = *(int**)(pList + 8);
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -680,7 +680,7 @@ void __fastcall LINKEDLIST_UnlinkSelf(int * pNode) {
 }
 
 uint32_t __fastcall LINKEDLIST_GetCount(int * pList) {
-    return pList[2] < 1 ? 0 : pList[2];
+    return pList[2] <= 0 ? 0 : pList[2];
 }
 
 // Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
@@ -758,11 +758,11 @@ void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t n
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
 uint32_t __fastcall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode) {
     if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
     }
 
     nNode = pThis + 4;
-    return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+    return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
 void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
@@ -791,11 +791,11 @@ void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
 
 // Gets the value stored at a specific index within a linked list. Returns the value field at offset+4 from the node pointer. Handles NULL input by defaulting to the list head at this+8.
 uint32_t __fastcall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode) {
-    if (!nNode) {
-      return *(uint32_t*)((int)pListHead + 8);
+    if (nNode) {
+      return *(uint32_t*)(nNode + 4);
     }
 
-    return *(uint32_t*)(nNode + 4);
+    return *(uint32_t*)((int)pListHead + 8);
 }
 
 void __fastcall LINKEDLIST_GetTail(D2StormListHead * pList) {
@@ -805,7 +805,7 @@ void __fastcall LINKEDLIST_GetTail(D2StormListHead * pList) {
     while (true) {
       int nNextNode;
       pNode = (int*)pList->pNext;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -851,11 +851,11 @@ void __fastcall LINKEDLIST_InsertHead(D2StormListHead * pList) {
 // Allocates a new linked list node via SMemAlloc with 12 bytes overhead plus data size. Initializes next/prev pointers to NULL. Optionally links the node into an existing list via LINKEDLIST_IsEmpty call.
 int * * __fastcall LINKEDLIST_AllocNode(int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags, int * * pListHead) {
     int** pNewNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, s___AUBREAKCMD___007088d8, -2, dwAllocFlags | 8);
-    if (!pNewNode) {
-      pNewNode = 0;
-    } else {
+    if (pNewNode) {
       *pNewNode = 0;
       pNewNode[1] = 0;
+    } else {
+      pNewNode = 0;
     }
     if (!pList) {
       return pNewNode;
@@ -916,7 +916,7 @@ uint32_t __fastcall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNo
     }
 
     SMem::SMemFree(pNode, s___AUBREAKCMD___007088d8, -2, 0);
-    return (int)uCount < 1 ? 0 : uCount;
+    return (int)uCount <= 0 ? 0 : uCount;
 }
 
 StormLinkStrc * __fastcall LINKEDLIST_GetNodePointer(int32_t nLinkOffset, StormLinkStrc * pLink) {
@@ -967,30 +967,30 @@ void __fastcall LINKEDLIST_InsertNode(void * pNewItem, int32_t nInsertMode, void
     if (pNodeLink->pPrevLink) {
       LINKEDLIST_UnlinkNodeSelf(pNodeLink);
     }
-    if (!pRefItem) {
-      pAnchorLink = &pList->head;
-    } else {
+    if (pRefItem) {
       pAnchorLink = LINKEDLIST_GetOffset(pRefItem, pList);
-    }
-    if (nInsertMode == 1) {
-      pNodeLink->pPrevLink = pAnchorLink;
-      pNodeLink->pNext = pAnchorLink->pNext;
-      pPrevLinkField = LINKEDLIST_GetNodePointer(pList->nLinkOffset, pAnchorLink);
-      pPrevLinkField->pPrevLink = pNodeLink;
-      pAnchorLink->pNext = (int)pNewItem;
     } else {
+      pAnchorLink = &pList->head;
+    }
+    if (nInsertMode != 1) {
       pPrevLinkField = pAnchorLink->pPrevLink;
       pNodeLink->pPrevLink = pPrevLinkField;
       pNodeLink->pNext = pPrevLinkField->pNext;
       pPrevLinkField->pNext = (int)pNewItem;
       pAnchorLink->pPrevLink = pNodeLink;
+    } else {
+      pNodeLink->pPrevLink = pAnchorLink;
+      pNodeLink->pNext = pAnchorLink->pNext;
+      pPrevLinkField = LINKEDLIST_GetNodePointer(pList->nLinkOffset, pAnchorLink);
+      pPrevLinkField->pPrevLink = pNodeLink;
+      pAnchorLink->pNext = (int)pNewItem;
     }
 }
 
 int32_t __fastcall LINKEDLIST_GetNodeAt(int32_t nOffset, int * pList) {
     StormLinkStrc* pListNode = LINKEDLIST_GetOffset((void*)nOffset, (StormLinkedListStrc*)pList);
     int nNodeValue = pListNode->pNext;
-    if (nNodeValue >= 1) {
+    if (nNodeValue > 0) {
       return nNodeValue;
     }
 
@@ -1016,7 +1016,7 @@ void __fastcall LINKEDLIST_FreeNode(void * pParam) {
     while (true) {
       int nOffset;
       nOffset = *(int*)((int)pParam + 8);
-      if (0 >= nOffset) {
+      if (nOffset <= 0) {
         nOffset = 0;
         break;
       }
@@ -1032,11 +1032,11 @@ void __fastcall LINKEDLIST_FreeNodeAndUnlink(void * pParam) {
 
 void * __fastcall LINKEDLIST_AllocAndInsertNode(int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags, StormLinkedListStrc * pList) {
     uint32_t* pNewNode = (uint32_t*)SMem::SMemAlloc(nExtraSize + 0xc, s___AUTMESSAGESOURCE___0072f9fc, -2, dwFlags | 8);
-    if (!pNewNode) {
-      pNewNode = 0;
-    } else {
+    if (pNewNode) {
       *pNewNode = 0;
       pNewNode[1] = 0;
+    } else {
+      pNewNode = 0;
     }
     if (!nInsertMode) {
       return pNewNode;
@@ -1065,7 +1065,7 @@ void __fastcall LINKEDLIST_FreeAllNodes(void * pListHead) {
     while (true) {
       FILE* pObject;
       pObject = *(FILE**)((int)pListHead + 8);
-      if ((int)pObject < 1) {
+      if ((int)pObject <= 0) {
         pObject = 0;
       }
       if (!pObject) {

@@ -79,7 +79,7 @@ size_t SStrPrintf(char * szOutput, size_t nSize, char * Format, ...);
 // SStrPrintf. The va_list/varargs split is exactly what separates the two API names.
 // @sourcefile-storm .\SOURCE\SSTR.CPP  (first-party: SStrDup's own SMemAlloc call site names it)
 // @wasnamed SSTR_Vsnprintf
-uint32_t __stdcall SStrVPrintf(char * szOutput, size_t nSize, char * szFormatString, va_list vaArgs);
+uint32_t SStrVPrintf(char * szOutput, size_t nSize, char * szFormatString, va_list vaArgs);
 // @oracle PPC Mac Storm 1.10b export table (337 named TVector symbols), the authoritative Storm API.
 // @oracle-signature SStrToInt(const char *)
 // @oracle-basis One parameter. Consumes an optional leading '-', accumulates decimal digits, negates on the sign.
@@ -191,7 +191,7 @@ void __stdcall UTF8_StepForwardOneChar(int str_base, int position, uint32_t ecx_
 void __stdcall TRANSTBL_UnicodeToLatin1(uint8_t * pbOut, void * pSrcUTF16, int nCount);
 void __stdcall TRANSTBL_UnicodeToLatin2(uint8_t * pbOut, void * pSrcUTF16, int nCount);
 void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int nCount);
-int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru);
+int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count);
 void __stdcall TRANSTBL_Latin2ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru);
 void __stdcall TRANSTBL_KoreanToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru);
 int __fastcall SSTR_StringLength(char * szText);

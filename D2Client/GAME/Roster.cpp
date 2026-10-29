@@ -225,11 +225,11 @@ void __stdcall ClearBothRosterLists() {
 }
 
 D2RosterStrc * __fastcall GetNextRosterPlayer(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return gpRosterPlayers;
+    if (pRoster) {
+      return pRoster->pNext;
     }
 
-    return pRoster->pNext;
+    return gpRosterPlayers;
 }
 
 char * __fastcall GetRosterName(D2RosterStrc * pRoster) {
@@ -308,7 +308,7 @@ static D2RosterStrc * ROSTER_SortByLevel(D2RosterStrc * pRoster) {
         pPrev = 0;
         do {
           pCur = pScan;
-          if (pCur->nArenaScore < pRoster->nArenaScore) {
+          if (pRoster->nArenaScore > pCur->nArenaScore) {
             break;
           }
 
@@ -374,14 +374,14 @@ static D2RosterStrc * ROSTER_CollectPartiesIntoPartyList(D2RosterPartyListStrc *
       if (pPrev->nPartyId == pRosterPartyList->nPartyId) {
         ppNextLink = &pPrev->pNext;
         ppRosterNext = *ppNextLink;
-        if (!pNextRoster) {
+        if (pNextRoster) {
+          pNextRoster->pNext = ppRosterNext;
           *ppNextLink = pRosterPartyList->pOwner;
-          gpRosterPlayers = ppRosterNext;
           pRosterPartyList->pOwner = pPrev;
           pPrev = ppRosterNext;
         } else {
-          pNextRoster->pNext = ppRosterNext;
           *ppNextLink = pRosterPartyList->pOwner;
+          gpRosterPlayers = ppRosterNext;
           pRosterPartyList->pOwner = pPrev;
           pPrev = ppRosterNext;
         }
@@ -525,10 +525,10 @@ void __stdcall ROSTER_SortAllParties() {
     for (pPartyIter = pRosterPartyList; pPartyIter; pPartyIter = pPartyIter->pNext) {
       int32_t bIsArena;
       bIsArena = CLIENT_IsArenaLevel();
-      if (!bIsArena) {
-        pSortedOwner = ROSTER_SortByName(pPartyIter->pOwner);
-      } else {
+      if (bIsArena) {
         pSortedOwner = ROSTER_SortByLevel(pPartyIter->pOwner);
+      } else {
+        pSortedOwner = ROSTER_SortByName(pPartyIter->pOwner);
       }
 
       pPartyIter->pOwner = pSortedOwner;
@@ -543,11 +543,11 @@ void __stdcall ROSTER_FlattenPartyListsIntoSingleRosterChain() {
     D2RosterStrc* pWalkNext;
     D2RosterStrc* pChainTail = 0;
     for (pPartyList = pRosterPartyList; pPartyList; pPartyList = pPartyList->pNext) {
-      if (!pChainTail) {
+      if (pChainTail) {
+        pChainTail->pNext = pPartyList->pOwner;
+      } else {
         pChainTail = pPartyList->pOwner;
         gpRosterPlayers = pChainTail;
-      } else {
-        pChainTail->pNext = pPartyList->pOwner;
       }
 
       pPartyList->pOwner = 0;
@@ -591,10 +591,10 @@ void __stdcall ROSTER_RebuildPlayerParty() {
     }
 
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
-    if (!pRoster) {
-      nPartyId = -1;
-    } else {
+    if (pRoster) {
       nPartyId = pRoster->nPartyId;
+    } else {
+      nPartyId = -1;
     }
 
     ROSTER_GroupPlayersIntoParties();
@@ -629,27 +629,27 @@ void __fastcall ROSTER_SetArenaScore(int32_t nRosterGUID, uint16_t nArenaScore) 
 
 // Returns arena score from roster entry field 0x18. Returns 0 if roster is null.
 int32_t __fastcall ROSTER_GetArenaScore(D2RosterStrc * pRoster) {
+    if (!pRoster) {
+      return 0;
+    }
+
+    return pRoster->nArenaScore;
+}
+
+uint32_t __fastcall GetRosterLevel(D2RosterStrc * pRoster) {
     if (pRoster) {
-      return pRoster->nArenaScore;
+      return (uint32_t)(uint16_t)pRoster->nUnitLevel;
     }
 
     return 0;
 }
 
-uint32_t __fastcall GetRosterLevel(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return 0;
-    }
-
-    return (uint32_t)(uint16_t)pRoster->nUnitLevel;
-}
-
 int32_t __fastcall GetRosterCharType(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return 0;
+    if (pRoster) {
+      return pRoster->nCharType;
     }
 
-    return pRoster->nCharType;
+    return 0;
 }
 
 D2RosterStrc * __fastcall GetRosterByGUID(int32_t nRosterGUID) {
@@ -672,7 +672,7 @@ int16_t __fastcall GetRosterPartyId(D2RosterStrc * pRoster) {
       pCurrent = pCurrent->pNext;
     } while (pCurrent);
 
-    if (1 >= nMemberCount) {
+    if (nMemberCount <= 1) {
       return -1;
     }
 
@@ -685,59 +685,59 @@ int16_t __fastcall GetUnitPartyId(D2UnitStrc * pUnit) {
     }
 
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(pUnit->nUnitGUID);
-    if (!pRoster) {
-      return -1;
+    if (pRoster) {
+      return pRoster->nPartyId;
     }
 
-    return pRoster->nPartyId;
+    return -1;
 }
 
 uint32_t __fastcall ROSTER_GetLootFlag(D2RosterStrc * pRoster) {
     uint32_t bFlag;
-    if (!pRoster) {
-      return 0;
-    }
+    if (pRoster) {
+      D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
+      if (!pPlayer) {
+        bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 1);
+        return bFlag;
+      }
 
-    D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayer) {
-      bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 1);
+      bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 1);
       return bFlag;
     }
 
-    bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 1);
-    return bFlag;
+    return 0;
 }
 
 uint32_t __fastcall ROSTER_GetListenFlag(D2RosterStrc * pRoster) {
     uint32_t bFlag;
-    if (!pRoster) {
-      return 0;
-    }
+    if (pRoster) {
+      D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
+      if (!pPlayer) {
+        bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 2);
+        return bFlag;
+      }
 
-    D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayer) {
-      bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 2);
+      bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 2);
       return bFlag;
     }
 
-    bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 2);
-    return bFlag;
+    return 0;
 }
 
 uint32_t __fastcall ROSTER_GetMuteFlag(D2RosterStrc * pRoster) {
     uint32_t bFlag;
-    if (!pRoster) {
-      return 0;
-    }
+    if (pRoster) {
+      D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
+      if (!pPlayer) {
+        bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 4);
+        return bFlag;
+      }
 
-    D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayer) {
-      bFlag = UNIT::PlayerList::GetFlag(-1, pRoster->nRosterGUID, 4);
+      bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 4);
       return bFlag;
     }
 
-    bFlag = UNIT::PlayerList::GetFlag(pPlayer->nUnitGUID, pRoster->nRosterGUID, 4);
-    return bFlag;
+    return 0;
 }
 
 int __fastcall ROSTER_GetHostileFlag(D2RosterStrc * pRoster) {
@@ -754,19 +754,19 @@ int __fastcall ROSTER_GetHostileFlag(D2RosterStrc * pRoster) {
     }
 
     uint32_t bFlag = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
-    if (!bFlag) {
-      return 0;
-    }
-
-    return 1;
-}
-
-BOOL __fastcall GetRosterInPartyBool(D2RosterStrc * pRoster) {
-    if (!pRoster) {
+    if (bFlag) {
       return 1;
     }
 
-    return pRoster->nPartyState;
+    return 0;
+}
+
+BOOL __fastcall GetRosterInPartyBool(D2RosterStrc * pRoster) {
+    if (pRoster) {
+      return pRoster->nPartyState;
+    }
+
+    return 1;
 }
 
 static void ROSTER_TogglePlayerFlag(D2RosterStrc * pRoster, int16_t nFlags) {
@@ -941,7 +941,7 @@ void __fastcall ROSTER_ToggleHostileAndSend(D2RosterStrc * pRoster) {
     }
 
     uint32_t bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
-    if (!(bIsHostile || 8 < (uint16_t)pRoster->nUnitLevel)) {
+    if (!(bIsHostile || (uint16_t)pRoster->nUnitLevel >= 9)) {
       return;
     }
 
@@ -976,11 +976,11 @@ uint32_t __fastcall CheckRostersArePartied(int32_t nRoster1GUID, int32_t nRoster
 }
 
 int32_t __fastcall GetRosterGUID(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return -1;
+    if (pRoster) {
+      return pRoster->nRosterGUID;
     }
 
-    return pRoster->nRosterGUID;
+    return -1;
 }
 
 void __fastcall SetRosterHpAndArea(int32_t nRosterGUID, int32_t nHpPercent, eD2LevelId eLevel) {
@@ -1012,38 +1012,40 @@ uint32_t __fastcall ROSTER_CheckPlayerInSameParty(int32_t pRoster) {
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     int16_t nPlayerPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
-    if (nPlayerPartyId != *(short int*)(pRoster + 0x22)) {
-      return 0;
+    if (nPlayerPartyId == *(short int*)(pRoster + 0x22)) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int32_t __fastcall GetRosterHP(int32_t nRosterGUID) {
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
-    if (!pRoster) {
-      return 0;
+    if (pRoster) {
+      return pRoster->nHpPercent;
     }
 
-    return pRoster->nHpPercent;
+    return 0;
 }
 
 uint32_t __fastcall ROSTER_CheckPlayerNotHostile(int32_t nRosterGUID) {
+    uint32_t bIsHostile;
     int nUnitGUID;
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
-    if (!pRoster) {
-      return 1;
+    if (pRoster) {
+      D2UnitStrc* pPlayerUnit_lcl;
+      pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
+      if (!pPlayerUnit_lcl) {
+        nUnitGUID = -1;
+      } else {
+        nUnitGUID = pPlayerUnit_lcl->nUnitGUID;
+      }
+
+      bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 4);
+      return (uint32_t)!bIsHostile;
     }
 
-    D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayerUnit_lcl) {
-      nUnitGUID = -1;
-    } else {
-      nUnitGUID = pPlayerUnit_lcl->nUnitGUID;
-    }
-
-    uint32_t bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 4);
-    return (uint32_t)!bIsHostile;
+    return 1;
 }
 
 void __fastcall GetRosterPosition(D2RosterStrc * pRoster, int * pX, int * pY) {
@@ -1058,11 +1060,11 @@ void __fastcall GetRosterPosition(D2RosterStrc * pRoster, int * pX, int * pY) {
 }
 
 eD2LevelId __fastcall GetRosterArea(D2RosterStrc * pRoster) {
-    if (!pRoster) {
-      return LEVEL_None;
+    if (pRoster) {
+      return pRoster->eLevelId;
     }
 
-    return pRoster->eLevelId;
+    return LEVEL_None;
 }
 
 // @wasnamed GetRosterName - one name on two different functions.
@@ -1070,11 +1072,11 @@ eD2LevelId __fastcall GetRosterArea(D2RosterStrc * pRoster) {
 // 004795c0 takes a D2RosterStrc* directly and halts on NULL. Different argument, different contract.
 char * __fastcall GetRosterNameByGUID(int32_t nRosterGUID) {
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
-    if (!pRoster) {
-      return nullptr;
+    if (pRoster) {
+      return pRoster->pRosterName;
     }
 
-    return pRoster->pRosterName;
+    return nullptr;
 }
 
 char * __fastcall GetPlayerRosterName(D2UnitStrc * pUnit) {
@@ -1155,11 +1157,11 @@ BOOL __fastcall CheckIfUnitHasPartiedRosters(D2UnitStrc * pUnit) {
 
 D2PlayerListStrc * __fastcall GetPlayerList(int32_t nRosterGUID) {
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
-    if (!pRoster) {
-      return nullptr;
+    if (pRoster) {
+      return pRoster->pPlayerList;
     }
 
-    return pRoster->pPlayerList;
+    return nullptr;
 }
 
 void __fastcall SetRosterPartyId(int32_t nRosterGUID, uint16_t nPartyId) {
@@ -1341,11 +1343,11 @@ BOOL __fastcall ROSTER_HasIncomingHostile(D2RosterStrc * pRoster) {
     }
 
     uint32_t bHostile = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 8);
-    if (!bHostile) {
-      return 0;
+    if (bHostile) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall ROSTER_HasOutgoingHostile(D2RosterStrc * pRoster) {
@@ -1355,11 +1357,11 @@ BOOL __fastcall ROSTER_HasOutgoingHostile(D2RosterStrc * pRoster) {
     }
 
     uint32_t bHostile = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 8);
-    if (!bHostile) {
-      return 0;
+    if (bHostile) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall ROSTER_HasIncomingLoot(D2RosterStrc * pRoster) {
@@ -1369,11 +1371,11 @@ BOOL __fastcall ROSTER_HasIncomingLoot(D2RosterStrc * pRoster) {
     }
 
     uint32_t bHasLoot = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 1);
-    if (!bHasLoot) {
-      return 0;
+    if (bHasLoot) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall ROSTER_HasOutgoingLoot(D2RosterStrc * pRoster) {
@@ -1383,11 +1385,11 @@ BOOL __fastcall ROSTER_HasOutgoingLoot(D2RosterStrc * pRoster) {
     }
 
     uint32_t bHasLoot = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 1);
-    if (!bHasLoot) {
-      return 0;
+    if (bHasLoot) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall RosterIsFemale(D2RosterStrc * pRoster) {
@@ -1396,7 +1398,7 @@ BOOL __fastcall RosterIsFemale(D2RosterStrc * pRoster) {
     }
 
     int nCharType = pRoster->nCharType;
-    if (!(-1 < nCharType && (nCharType < 2 || nCharType == 6))) {
+    if (!(nCharType >= 0 && (nCharType <= 1 || nCharType == 6))) {
       return 1;
     }
 
@@ -1445,15 +1447,17 @@ void __fastcall ROSTER_AllocOrUpdatePlayer(int nPlayerGUID, int nCharType, char 
         pPrev = pDVar1;
       }
 
-      if (!pNewRoster) {
+      if (pNewRoster) {
+        if (pPrev) {
+          pPrev->pNext = pNewRoster->pNext;
+          pNewRoster->pNext = 0;
+        } else {
+          gpRosterOther = pNewRoster->pNext;
+          pNewRoster->pNext = 0;
+        }
+      } else {
         pNewRoster = D2_NEW_AT(D2RosterStrc, ".\\GAME\\Roster.cpp", 0xd8);
         memset(pNewRoster, 0, 0x84);
-      } else if (!pPrev) {
-        gpRosterOther = pNewRoster->pNext;
-        pNewRoster->pNext = 0;
-      } else {
-        pPrev->pNext = pNewRoster->pNext;
-        pNewRoster->pNext = 0;
       }
 
       pPlayerList = UNIT::PlayerList::AllocPlayerList();
@@ -1517,10 +1521,10 @@ void __fastcall PlayerLeft(int32_t nPlayerUid) {
         }
       }
 
-      if (!pPrevious) {
-        gpRosterPlayers = pCurrent->pNext;
-      } else {
+      if (pPrevious) {
         pPrevious->pNext = pCurrent->pNext;
+      } else {
+        gpRosterPlayers = pCurrent->pNext;
       }
 
       UNIT::PlayerList::FreePlayerList(pCurrent->pPlayerList);

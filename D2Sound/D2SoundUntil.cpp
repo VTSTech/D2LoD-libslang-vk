@@ -272,12 +272,12 @@ uint32_t __fastcall SOUNDUTIL_GetVersionResourceSize(LPCSTR szText) {
     }
 
     DWORD dwLastError = GetLastError();
-    if (dwLastError != 0x7a) {
-      return 0;
+    if (dwLastError == 0x7a) {
+      /* DWORD dwErrCode for SetLastError */ SetLastError(0);
+      return nResourceSize;
     }
 
-    /* DWORD dwErrCode for SetLastError */ SetLastError(0);
-    return nResourceSize;
+    return 0;
 }
 
 void __fastcall SOUNDUTIL_ReadVersionResourceToBuffer(LPCSTR szText, uint32_t nBufferSizeIn, void * pBuffer) {

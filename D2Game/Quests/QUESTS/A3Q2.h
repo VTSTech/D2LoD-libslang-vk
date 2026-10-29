@@ -34,9 +34,6 @@ void __fastcall Q19_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData
 void __fastcall Q19_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_SequenceFilter (Khalim's Will). Sequence-chain filter: if this quest not yet at StateFlag 5 and is active, bumps StateFlag 0->1 and returns. Otherwise chains to the next quest's (nSequenceQuestId=QUEST_AbleGoToAct3) sequence filter, halting on a bad fn ptr. Pure StateFlag gating; no QuestRecord writes.
 bool __fastcall Q19_SequenceFilter(struct D2QuestDataStrc * pQuestData);
-// Q19_SendQuestStatePacket (Khalim's Will). Builds and sends the 0x5D quest-state packet to the player's client conveying which Khalim's Will sub-stage/relic message to display. No QuestRecord transitions; pure client notification.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
-void __fastcall Q19_SendQuestStatePacket(uint8_t bStateByte, struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_Callback_04 (Khalim's Will). Item-interaction handler fired when player handles a Khalim relic / assembled Khalim's Will. Gates on QUEST_AbleGoToAct3=Completed and quest not already Completed. Inspects which of the 4 relics (Flail 0x20316671, Eye 0x20796571, Brain 0x20726271, Heart 0x20726871) and the combined Khalim's Will (0x20326671) the player holds, plus sub-steps 0x02-0x07, then sends the appropriate Q19_SendQuestStatePacket message. Reads quest state only; no SetQuestState here.
 void __fastcall Q19_Callback04_ItemPickedUp(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_Callback_13 (Khalim's Will). Quest-load/refresh handler. If not Completed: if Step0x07 not set but Step0x02 set, sets in-memory StateFlag=2/prev=7 (mid-quest resume). Also resumes StateFlag=2 when the quest GUID player-bitmask is non-empty. Reads QuestRecord; mutates only in-memory StateFlag.
@@ -76,5 +73,6 @@ void __fastcall Q19_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, 
 bool __fastcall Q19_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_InitData(struct D2QuestDataStrc * pQuestData);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A3Q2

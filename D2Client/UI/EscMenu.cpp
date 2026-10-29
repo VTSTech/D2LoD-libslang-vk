@@ -172,7 +172,7 @@ void __fastcall UI_SLIDER_InitContrast(D2EscMenuItemStrc * pItem, D2UIMouseMsgSt
 }
 
 void __fastcall UI_SLIDER_ApplyAutomapMode(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    if (2 < (uint32_t)pItem->nImageIndex) {
+    if ((uint32_t)pItem->nImageIndex > 2) {
       pItem->nImageIndex = 0;
     }
 
@@ -193,7 +193,7 @@ void __fastcall UI_SLIDER_InitAutomapMode(D2EscMenuItemStrc * pItem, D2UIMouseMs
 }
 
 void __fastcall UI_SLIDER_ApplyAutomapFade(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    if (4 < (uint32_t)pItem->nImageIndex) {
+    if ((uint32_t)pItem->nImageIndex > 4) {
       pItem->nImageIndex = 0;
     }
 
@@ -204,7 +204,7 @@ void __fastcall UI_SLIDER_ApplyAutomapFade(D2EscMenuItemStrc * pItem, D2UIMouseM
 void __fastcall UI_SLIDER_InitAutomapFade(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     uint32_t nAutomapFade = (uint32_t)pItem;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "AutoMapFade", 0, (int32_t*)&nAutomapFade);
-    if (4 < nAutomapFade) {
+    if (nAutomapFade > 4) {
       nAutomapFade = 0;
       Automap::AUTOMAP_SetFade(0);
     }
@@ -256,18 +256,18 @@ static int32_t ESCMENU_GetItemIndexFromMouseY(int32_t nParam) {
     int nMenuCenterY = (ScreenSizeY - 0x50) / 2;
     int nMenuHeight = gpEscMenuItemCount->nVerticalSpacing * iVar1 / 2;
     int32_t nFoundIndex = -1;
-    if (!(nMenuCenterY - nMenuHeight < nParam && nParam < nMenuCenterY + nMenuHeight)) {
+    if (!(nParam > nMenuCenterY - nMenuHeight && nParam < nMenuCenterY + nMenuHeight)) {
       return nFoundIndex;
     }
 
     nMenuCenterY = 0;
-    if (0 >= iVar1) {
+    if (iVar1 <= 0) {
       return nFoundIndex;
     }
 
     int* pItemYPosition = &gpEscMenuCurrentTable->nYPosition;
     do {
-      if (*pItemYPosition && *pItemYPosition + iVar1 <= nParam) {
+      if (*pItemYPosition && nParam >= *pItemYPosition + iVar1) {
         nFoundIndex = nMenuCenterY;
       }
 
@@ -275,7 +275,7 @@ static int32_t ESCMENU_GetItemIndexFromMouseY(int32_t nParam) {
       pItemYPosition += 0x154;
     } while (nMenuCenterY < iVar1);
 
-    if (-1 >= nFoundIndex) {
+    if (nFoundIndex < 0) {
       return nFoundIndex;
     }
     if (gpEscMenuCurrentTable[nFoundIndex].nMenuItemType != -1) {
@@ -302,22 +302,24 @@ static void __stdcall ESCMENU_ClickMenuItem(D2UIMouseMsgStrc * pMsg) {
     }
 
     D2EscMenuItemStrc* pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
-    if (!pItemData->nMenuItemType) {
+    if (pItemData->nMenuItemType) {
+      if (pItemData->nMenuItemType == 1) {
+        pItemData->nImageIndex++;
+        if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
+          pItemData->nImageIndex = 0;
+        }
+        if (pItemData->fpClickCallback) {
+          pItemData->fpClickCallback(pItemData, pMsg);
+        }
+
+        Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+        return;
+      }
+    } else {
       if (pItemData->fpClickCallback) {
         pItemData->fpClickCallback(pItemData, pMsg);
         Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
       }
-    } else if (pItemData->nMenuItemType == 1) {
-      pItemData->nImageIndex++;
-      if (pItemData->nSubImageCount - 1U < (uint32_t)pItemData->nImageIndex) {
-        pItemData->nImageIndex = 0;
-      }
-      if (pItemData->fpClickCallback) {
-        pItemData->fpClickCallback(pItemData, pMsg);
-      }
-
-      Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-      return;
     }
 }
 
@@ -346,11 +348,11 @@ static void ESCMENU_HandleSliderDrag(int32_t nParam1, int32_t nParam2) {
           iVar3 = nScreenCenterX - 0x90;
           nSliderTrackX = nScreenCenterX - 0x91;
         }
-        if (gnEscMenuSliderValue || iVar3 < nParam2 && nParam2 < iVar3 + 0x121) {
+        if (gnEscMenuSliderValue || nParam2 > iVar3 && nParam2 < iVar3 + 0x121) {
           if (nParam2 < nSliderTrackX + 0xc) {
             pDVar1->nImageIndex = 0;
           } else {
-            if (nSliderTrackX + 0x115 < nParam2) {
+            if (nParam2 > nSliderTrackX + 0x115) {
               iVar3 = pDVar1->nSubImageCount - 1;
             } else {
               iVar3 = pDVar1->nSubImageCount - 1;
@@ -419,7 +421,7 @@ void __stdcall INPUT_EscMenuNavigateNext(D2UIMouseMsgStrc * pMsg) {
     pfnEscMenuItemVisible pfnEnableCallback;
     do {
       gnEscMenuSelectedIndex++;
-      if (gpEscMenuItemCount->nItemCount - 1 < gnEscMenuSelectedIndex) {
+      if (gnEscMenuSelectedIndex > gpEscMenuItemCount->nItemCount - 1) {
         gnEscMenuSelectedIndex = 0;
       }
     } while (gpEscMenuCurrentTable[gnEscMenuSelectedIndex].nMenuItemType == -1 || (pfnEnableCallback = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].fpVisibilityCheck , pfnEnableCallback && (nNextIndex = (*pfnEnableCallback)() , !nNextIndex)));
@@ -464,14 +466,16 @@ void __stdcall INPUT_EscMenuOptionDecrease(D2UIMouseMsgStrc * pMsg) {
     iVar1 = gnEscMenuSelectedIndex;
     D2EscMenuItemStrc* pItemData;
     pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
-    if (pItemData->nMenuItemType == 1) {
+    if (pItemData->nMenuItemType != 1) {
+      if (pItemData->nMenuItemType == 2 && (pItemData->nImageIndex-- , (uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U)) {
+        pItemData->nImageIndex = 0;
+      }
+    } else {
       pItemData->nImageIndex--;
       uVar2 = pItemData->nSubImageCount - 1;
-      if (uVar2 < (uint32_t)pItemData->nImageIndex) {
+      if ((uint32_t)pItemData->nImageIndex > uVar2) {
         pItemData->nImageIndex = uVar2;
       }
-    } else if (pItemData->nMenuItemType == 2 && (pItemData->nImageIndex-- , pItemData->nSubImageCount - 1U < (uint32_t)pItemData->nImageIndex)) {
-      pItemData->nImageIndex = 0;
     }
 
     notify_if_changed:
@@ -506,16 +510,18 @@ void __stdcall INPUT_EscMenuOptionIncrease(D2UIMouseMsgStrc * pMsg) {
     nItemIndex = gnEscMenuSelectedIndex;
     D2EscMenuItemStrc* pItemData;
     pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
-    if (pItemData->nMenuItemType == 1) {
-      pItemData->nImageIndex++;
-      if (pItemData->nSubImageCount - 1U < (uint32_t)pItemData->nImageIndex) {
-        pItemData->nImageIndex = 0;
+    if (pItemData->nMenuItemType != 1) {
+      if (pItemData->nMenuItemType == 2) {
+        pItemData->nImageIndex++;
+        uVar1 = pItemData->nSubImageCount - 1;
+        if ((uint32_t)pItemData->nImageIndex > uVar1) {
+          pItemData->nImageIndex = uVar1;
+        }
       }
-    } else if (pItemData->nMenuItemType == 2) {
+    } else {
       pItemData->nImageIndex++;
-      uVar1 = pItemData->nSubImageCount - 1;
-      if (uVar1 < (uint32_t)pItemData->nImageIndex) {
-        pItemData->nImageIndex = uVar1;
+      if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
+        pItemData->nImageIndex = 0;
       }
     }
 
@@ -574,7 +580,7 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
       memset(szLangAbbrev, 0, 4 * sizeof(szLangAbbrev[0]));
       D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
       __frame0.nItemIndex = 0;
-      if (0 >= *pMenuHeader) {
+      if (*pMenuHeader <= 0) {
         return;
       }
 
@@ -588,12 +594,12 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
             pMenuTable[__frame0.nItemIndex].pDC6Main = pLoadedDC6;
             if (nSubImageCount == 1) {
               nSubImageCount = pMenuTable[__frame0.nItemIndex].nSubImageCount;
-              if (!nSubImageCount || 4 < nSubImageCount) {
+              if (nSubImageCount <= 0 || nSubImageCount > 4) {
                 ESCMENU_LoadLocalizedImages_HaltTail(0x4fe);
               }
 
               nSubImageIndex = 0;
-              if (nSubImageCount) {
+              if (nSubImageCount > 0) {
                 pSubImagePath = pMenuTable[__frame0.nItemIndex].szSubImage1Path;
                 do {
                   if (*pSubImagePath == '\0') {
@@ -651,14 +657,14 @@ void __stdcall ESCMENU_Initialize() {
     ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderOptions.nItemCount, gaEscMenuOptionsTable);
     ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderSaveExit.nItemCount, gaEscMenuSaveExitTable);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    if (!bIsExpansion) {
-      ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderSwitchClass.nItemCount, gaEscMenuSwitchClassTable);
-      pSaveExitTable = gaEscMenuClassicSaveExitTable;
-      pSaveExitHeader = &gaEscMenuHeaderExpansionOptions;
-    } else {
+    if (bIsExpansion) {
       ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderDeleteChar.nItemCount, gaEscMenuDeleteCharTable);
       pSaveExitTable = gaEscMenuExpansionSaveExitTable;
       pSaveExitHeader = &gaEscMenuHeaderExpansionSaveExit;
+    } else {
+      ESCMENU_LoadLocalizedImages(&gaEscMenuHeaderSwitchClass.nItemCount, gaEscMenuSwitchClassTable);
+      pSaveExitTable = gaEscMenuClassicSaveExitTable;
+      pSaveExitHeader = &gaEscMenuHeaderExpansionOptions;
     }
 
     ESCMENU_LoadLocalizedImages(&pSaveExitHeader->nItemCount, pSaveExitTable);
@@ -677,7 +683,7 @@ void __stdcall ESCMENU_Initialize() {
     uint32_t nStarFrameCount = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(sStarGfxData.pDC6);
     int32_t nMaxStarWidth = 0;
     sStarGfxData.nFrameNumber = 0;
-    if (nStarFrameCount) {
+    if (nStarFrameCount > 0) {
       DC6Block* pStarFrame;
       do {
         pStarFrame = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sStarGfxData);
@@ -707,7 +713,7 @@ void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, void * pMenuTable) {
     }
     if (pMenuTable) {
       nItemIndex = 0;
-      if (0 >= *pnItemCount) {
+      if (*pnItemCount <= 0) {
         return;
       }
 
@@ -720,7 +726,7 @@ void __fastcall ESCMENU_FreeLoadedImages(int * pnItemCount, void * pMenuTable) {
         }
         if (pItemData[-0x48] == 1) {
           nSubImageCount = *pItemData;
-          if (!nSubImageCount || 4 < nSubImageCount) {
+          if (!nSubImageCount || nSubImageCount > 4) {
             ESCMENU_FreeLoadedImages_HaltTail(0x565);
           }
           if (nSubImageCount) {
@@ -764,14 +770,14 @@ void __stdcall ESCMENU_Shutdown() {
     ESCMENU_FreeLoadedImages(&gaEscMenuHeaderOptions.nItemCount, gaEscMenuOptionsTable);
     ESCMENU_FreeLoadedImages(&gEscMenuHeaderInitData.nItemCount, gaEscMenuMainTable);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    if (!bIsExpansion) {
-      ESCMENU_FreeLoadedImages(&gaEscMenuHeaderSwitchClass.nItemCount, gaEscMenuSwitchClassTable);
-      pSaveExitTable = gaEscMenuClassicSaveExitTable;
-      pMenuTable = &gaEscMenuHeaderExpansionOptions;
-    } else {
+    if (bIsExpansion) {
       ESCMENU_FreeLoadedImages(&gaEscMenuHeaderDeleteChar.nItemCount, gaEscMenuDeleteCharTable);
       pSaveExitTable = gaEscMenuExpansionSaveExitTable;
       pMenuTable = &gaEscMenuHeaderExpansionSaveExit;
+    } else {
+      ESCMENU_FreeLoadedImages(&gaEscMenuHeaderSwitchClass.nItemCount, gaEscMenuSwitchClassTable);
+      pSaveExitTable = gaEscMenuClassicSaveExitTable;
+      pMenuTable = &gaEscMenuHeaderExpansionOptions;
     }
 
     ESCMENU_FreeLoadedImages(&pMenuTable->nItemCount, pSaveExitTable);
@@ -834,23 +840,23 @@ void __fastcall ESCMENU_ShowMenu(int32_t bHideUI, int32_t nMenuIndex) {
       break;
       case 3:
         bShouldHideUI = Fog::D2CheckExpansionGame();
-      if (!bShouldHideUI) {
-        gpEscMenuItemCount = &gaEscMenuHeaderSwitchClass;
-        gpEscMenuCurrentTable = gaEscMenuSwitchClassTable;
-      } else {
+      if (bShouldHideUI) {
         gpEscMenuItemCount = &gaEscMenuHeaderDeleteChar;
         gpEscMenuCurrentTable = gaEscMenuDeleteCharTable;
+      } else {
+        gpEscMenuItemCount = &gaEscMenuHeaderSwitchClass;
+        gpEscMenuCurrentTable = gaEscMenuSwitchClassTable;
       }
 
       break;
       case 4:
         bShouldHideUI = Fog::D2CheckExpansionGame();
-      if (!bShouldHideUI) {
-        gpEscMenuItemCount = &gaEscMenuHeaderExpansionOptions;
-        gpEscMenuCurrentTable = gaEscMenuClassicSaveExitTable;
-      } else {
+      if (bShouldHideUI) {
         gpEscMenuItemCount = &gaEscMenuHeaderExpansionSaveExit;
         gpEscMenuCurrentTable = gaEscMenuExpansionSaveExitTable;
+      } else {
+        gpEscMenuItemCount = &gaEscMenuHeaderExpansionOptions;
+        gpEscMenuCurrentTable = gaEscMenuClassicSaveExitTable;
       }
     }
 
@@ -890,10 +896,10 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     D2GfxDataStrc sGfxData;
     int nItemCount = gpEscMenuItemCount->nBarYOffset + nBaseY;
     int nScreenCenterX = ScreenSizeX / 2;
-    if (!bIsOptionsMenu) {
-      nCenterX = nScreenCenterX - 0x3c;
-    } else {
+    if (bIsOptionsMenu) {
       nCenterX = nScreenCenterX - 0x91;
+    } else {
+      nCenterX = nScreenCenterX - 0x3c;
     }
 
     int bIsFilled = pMenuItem->nSubImageCount - 1;
@@ -910,10 +916,10 @@ void __stdcall ESCMENU_DrawProgressBar(D2EscMenuItemStrc * pMenuItem, int32_t nB
     int nBarLeftX = nCenterX - (int)(fImageIndex * (-265.0 / fSubImageMax));
     bIsFilled = pMenuItem->bSelected;
     nCenterX = nBarLeftX - nCenterX + 0xc;
-    if (!bIsOptionsMenu) {
-      nBarWidth = nScreenCenterX - 0x3b;
-    } else {
+    if (bIsOptionsMenu) {
       nBarWidth = nScreenCenterX - 0x90;
+    } else {
+      nBarWidth = nScreenCenterX - 0x3b;
     }
 
     Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBarWidth, nItemCount - 0x1e, nCenterX, 0x1e, 0, bIsFilled ? DRAW_TRANSPARENT : DRAW_LESSTRANSPARENT);
@@ -976,19 +982,19 @@ void __stdcall DRAW_EscMenu() {
       if (gnEscMenuLastMouseY != nMouseY || gnEscMenuLastMouseX != nMouseX) {
         gnEscMenuLastMouseX = nMouseX;
         gnEscMenuLastMouseY = nMouseY;
-        if (!gbEscMenuSliderDragging) {
+        if (gbEscMenuSliderDragging) {
+          ESCMENU_HandleSliderDrag(nMouseY, nMouseX);
+        } else {
           nErrorLine = ESCMENU_GetItemIndexFromMouseY(nMouseY);
           if (nErrorLine != -1) {
             gnEscMenuSelectedIndex = nErrorLine;
           }
-        } else {
-          ESCMENU_HandleSliderDrag(nMouseY, nMouseX);
         }
       }
 
       nVisibleItemCount = 0;
       nItemIndex = 0;
-      if (0 < gpEscMenuItemCount->nItemCount) {
+      if (gpEscMenuItemCount->nItemCount > 0) {
         pCurrentTable = gpEscMenuCurrentTable;
         do {
           bItemVisible = 0;
@@ -1040,10 +1046,10 @@ void __stdcall DRAW_EscMenu() {
 
       memset(&sGfxData, 0, 0x48);
       sGfxData.pDC6 = ui::UI_GetCursorIconIndex();
-      if (!DRAW_RotatingStarPosition) {
-        sGfxData.nFrameNumber = 0;
-      } else {
+      if (DRAW_RotatingStarPosition) {
         sGfxData.nFrameNumber = 8 - DRAW_RotatingStarPosition;
+      } else {
+        sGfxData.nFrameNumber = 0;
       }
 
       nVerticalSpacing = gpEscMenuCurrentTable[gnEscMenuSelectedIndex].nYPosition + gpEscMenuItemCount->nStarOffset;

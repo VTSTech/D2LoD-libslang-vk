@@ -218,7 +218,7 @@ static void AllocUiPartyFromRoster(D2RosterStrc * pRoster, int32_t nPositionY) {
     Party::pUiParty = pUiParty;
 }
 
-void __fastcall UI_DrawPartyMemberName(char * pszName, D2UiPartyStrc * pUiParty, int32_t nScreenY, int32_t nColor, int32_t bNarrowMode) {
+static void __fastcall UI_DrawPartyMemberName(D2UiPartyStrc * pUiParty, int32_t nScreenY, int32_t nColor, int32_t bNarrowMode) {
     int i;
     uint16_t wszName[100];
     char szEllipsisUtf8[5];
@@ -238,24 +238,24 @@ void __fastcall UI_DrawPartyMemberName(char * pszName, D2UiPartyStrc * pUiParty,
     memset(wszEllipsis, 0, 5 * sizeof(wszEllipsis[0]));
     int32_t nTextWidth;
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszName);
-    if (!bNarrowMode) {
-      if (nTextWidth < 0x88) {
+    if (bNarrowMode) {
+      if (nTextWidth <= 0x5f) {
         goto draw_name;
       }
 
       i = D2Win::Src::D2WinFont::DRAW_text0(wszName);
-      while (0x87 < i) {
+      while (i > 0x5f) {
         pTruncate--;
         *pTruncate = L'\0';
         i = D2Win::Src::D2WinFont::DRAW_text0(wszName);
       }
     } else {
-      if (nTextWidth < 0x60) {
+      if (nTextWidth <= 0x87) {
         goto draw_name;
       }
 
       i = D2Win::Src::D2WinFont::DRAW_text0(wszName);
-      while (0x5f < i) {
+      while (i > 0x87) {
         pTruncate--;
         *pTruncate = L'\0';
         i = D2Win::Src::D2WinFont::DRAW_text0(wszName);
@@ -315,14 +315,14 @@ void __fastcall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY,
         if (nPartyId == -1) {
           return;
         }
-      if (!bHostileMode) {
-        nLocaleId = 0x1035;
-        nTextFlags = 8;
-        nX = 0xaf;
-      } else {
+      if (bHostileMode) {
         nLocaleId = 0x1034;
         nTextFlags = 2;
         nX = 0x9b;
+      } else {
+        nLocaleId = 0x1035;
+        nTextFlags = 8;
+        nX = 0xaf;
       }
 
       break;
@@ -377,11 +377,11 @@ void __stdcall UI_DrawPlayerNameInParty() {
     pszScan = pszScan + strlen(pszScan) + 1;
     int32_t nLen = D2Lang::UTF8_GetStringLength(pszName, (int)pszScan - (int)(pszName + 1));
     uint32_t nLenPlus1 = nLen + 1;
-    if (0xb < nLenPlus1) {
-      if (nLenPlus1 < 0xe) {
-        nLen = 0;
-      } else {
+    if (nLenPlus1 > 0xb) {
+      if (nLenPlus1 >= 0xe) {
         nLen = 6;
+      } else {
+        nLen = 0;
       }
 
       D2Win::Src::D2WinFont::SetAndReturnLastFont(nLen);
@@ -400,7 +400,7 @@ void __stdcall ResetPartyUi() {
     int nPositionY = 0x5a;
     D2RosterStrc* pRosterPlayer = GAME::Roster::GetNextRosterPlayer(nullptr);
     pRosterPlayer = GAME::Roster::GetNextRosterPlayer(pRosterPlayer);
-    for (nCounter = 0; pRosterPlayer || 8 < nCounter; nCounter++) {
+    for (nCounter = 0; pRosterPlayer || nCounter > 8; nCounter++) {
       AllocUiPartyFromRoster(pRosterPlayer, nPositionY);
       nPositionY += 0x26;
       pRosterPlayer = GAME::Roster::GetNextRosterPlayer(pRosterPlayer);
@@ -429,12 +429,12 @@ void __stdcall UI_DrawPartyButtons(D2UiPartyStrc * pUiParty) {
         sGfxData.nFrameNumber = pButton[2];
         switch (pButton[3]) {
           case 1:
-            if ((uint32_t)sGfxData.nFrameNumber < 4 || 7 < (uint32_t)sGfxData.nFrameNumber) {
+            if ((uint32_t)sGfxData.nFrameNumber < 4 || (uint32_t)sGfxData.nFrameNumber > 7) {
               sGfxData.nFrameNumber = 4;
             }
           break;
           case 2:
-            if ((uint32_t)sGfxData.nFrameNumber < 0xc || 0xf < (uint32_t)sGfxData.nFrameNumber) {
+            if ((uint32_t)sGfxData.nFrameNumber < 0xc || (uint32_t)sGfxData.nFrameNumber > 0xf) {
               sGfxData.nFrameNumber = 0xc;
             }
           nResult = ClientModeInGame::CLIENTMODE_GetIngameUIFlags();
@@ -444,12 +444,12 @@ void __stdcall UI_DrawPartyButtons(D2UiPartyStrc * pUiParty) {
 
           break;
           case 3:
-            if (3 < (uint32_t)sGfxData.nFrameNumber) {
+            if ((uint32_t)sGfxData.nFrameNumber > 3) {
               sGfxData.nFrameNumber = 0;
             }
           break;
           case 4:
-            if ((uint32_t)sGfxData.nFrameNumber < 8 || 0xb < (uint32_t)sGfxData.nFrameNumber) {
+            if ((uint32_t)sGfxData.nFrameNumber < 8 || (uint32_t)sGfxData.nFrameNumber > 0xb) {
               sGfxData.nFrameNumber = 8;
             }
         }
@@ -506,7 +506,7 @@ static void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int3
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLevelName, wSource);
     uint16_t* pTruncate = wszLevelName + 0xfe;
     int32_t nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
-    if (0x8c < nPixelWidth) {
+    if (nPixelWidth > 0x8c) {
       char szEllipsis[5];
       nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLevelName);
       wLastCharTmp = wszLevelName[nPixelWidth - 1];
@@ -516,7 +516,7 @@ static void __stdcall UI_DrawPartyMemberLevelName(D2UiPartyStrc * pUiParty, int3
       wszEllipsis[3] = wLastCharTmp;
       nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszEllipsis);
       iVar3 = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
-      while (0x8b - nPixelWidth < iVar3) {
+      while (iVar3 > 0x8b - nPixelWidth) {
         pTruncate--;
         *pTruncate = L'\0';
         iVar3 = D2Win::Src::D2WinFont::DRAW_text0(wszLevelName);
@@ -577,7 +577,7 @@ void __stdcall SetEachPlayerRosterGlobalPartyId() {
 BOOL __stdcall UI_CheckMouseInRectangle(int32_t nX, int32_t nY, int32_t nWidth, int32_t nHeight) {
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nX + gnPanelOffsetX <= nMouseX && nMouseX <= nX + gnPanelOffsetX + nWidth && nY - gnPanelOffsetY - nHeight <= nMouseY && nMouseY <= nY - gnPanelOffsetY)) {
+    if (!(nMouseX >= nX + gnPanelOffsetX && nMouseX <= nX + gnPanelOffsetX + nWidth && nMouseY >= nY - gnPanelOffsetY - nHeight && nMouseY <= nY - gnPanelOffsetY)) {
       return 0;
     }
 
@@ -634,7 +634,7 @@ static void __stdcall ShowToolTipOnPartyButtons(int16_t nLocaleIdLine1, int16_t 
       nBoxY = 0x2a;
       nSizeY = 0xf;
     }
-    if (nWidth2 < nWidth1) {
+    if (nWidth1 > nWidth2) {
       nWidth2 = nWidth1;
     }
 
@@ -659,7 +659,7 @@ void __stdcall DRAW_UI_PartyWindow_II() {
     if (nPartyId != -1) {
       nTmp = ui::GetMouseX();
       nTmpX = ui::GetMouseY();
-      if (gnPanelOffsetX + 0xe3 <= nTmp && nTmp <= gnPanelOffsetX + 0x118 && 0x18 - gnPanelOffsetY <= nTmpX && nTmpX <= 0x23 - gnPanelOffsetY) {
+      if (nTmp >= gnPanelOffsetX + 0xe3 && nTmp <= gnPanelOffsetX + 0x118 && nTmpX >= 0x18 - gnPanelOffsetY && nTmpX <= 0x23 - gnPanelOffsetY) {
         ShowToolTipOnPartyButtons(0x1018, 0, 0xd5, 0);
         nTextWidth = UI_CalculateCenteredTextXPosition(0x1018, 0xd5);
         bCenter = 0;
@@ -681,9 +681,9 @@ void __stdcall DRAW_UI_PartyWindow_II() {
       nMouseY = ui::GetMouseY();
       pUiPartyCur = pUiPartyGlobal;
       nTmpX = gnPanelOffsetX + nTmpX;
-      if (nTmpX <= nTmpY && nTmpY <= nTmpX + 0x35) {
+      if (nTmpY >= nTmpX && nTmpY <= nTmpX + 0x35) {
         nTmp -= gnPanelOffsetY;
-        if (nTmp - 0x14 <= nMouseY && nMouseY <= nTmp && !pUiPartyGlobal->pPartyButtons[0].nButtonType) {
+        if (nMouseY >= nTmp - 0x14 && nMouseY <= nTmp && !pUiPartyGlobal->pPartyButtons[0].nButtonType) {
           nTmp = pUiPartyGlobal->pPartyButtons[0].bIsActive;
           switch (nTmp) {
             case 0:
@@ -858,21 +858,21 @@ static void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
     BOOL bInLoot = GAME::Roster::ROSTER_HasIncomingLoot(pRoster);
     BOOL bIsFemale = GAME::Roster::RosterIsFemale(pRoster);
     if (BVar1 == bInHostile) {
-      if (!bIsFemale) {
-        pSrc = D2Lang::StrTable::strtable::GetLocaleString(gawRosterTooltipOffsetY[bInHostile + BVar1 * 2]);
+      if (bIsFemale) {
+        pSrc = D2Lang::StrTable::strtable::GetLocaleString(gawRosterTooltipOffsetX[bInHostile + BVar1 * 2]);
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLine1, pSrc);
       } else {
-        pSrc = D2Lang::StrTable::strtable::GetLocaleString(gawRosterTooltipOffsetX[bInHostile + BVar1 * 2]);
+        pSrc = D2Lang::StrTable::strtable::GetLocaleString(gawRosterTooltipOffsetY[bInHostile + BVar1 * 2]);
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLine1, pSrc);
       }
     } else {
       uint16_t nLocaleId;
       pSrc = wszName;
       bOutHostile = bInHostile + BVar1 * 2;
-      if (!bIsFemale) {
-        nLocaleId = gawRosterTooltipOffsetY[bOutHostile];
-      } else {
+      if (bIsFemale) {
         nLocaleId = gawRosterTooltipOffsetX[bOutHostile];
+      } else {
+        nLocaleId = gawRosterTooltipOffsetY[bOutHostile];
       }
 
       pFormat = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId);
@@ -884,21 +884,21 @@ static void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
       nBoxHeight = 0x1e;
       if (bOutLoot == bInLoot) {
         bIsFemale = GAME::Roster::RosterIsFemale(pRoster);
-        if (!bIsFemale) {
-          pSrc = D2Lang::StrTable::strtable::GetLocaleString(gwRosterSizeMax[bInLoot + bOutLoot * 2]);
+        if (bIsFemale) {
+          pSrc = D2Lang::StrTable::strtable::GetLocaleString(gwRosterCountMax[bInLoot + bOutLoot * 2]);
           D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLine2, pSrc);
         } else {
-          pSrc = D2Lang::StrTable::strtable::GetLocaleString(gwRosterCountMax[bInLoot + bOutLoot * 2]);
+          pSrc = D2Lang::StrTable::strtable::GetLocaleString(gwRosterSizeMax[bInLoot + bOutLoot * 2]);
           D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLine2, pSrc);
         }
       } else {
         bIsFemale = GAME::Roster::RosterIsFemale(pRoster);
-        if (!bIsFemale) {
-          pSrc = wszName;
-          pFormat = D2Lang::StrTable::strtable::GetLocaleString(gwRosterSizeMax[bInLoot + bOutLoot * 2]);
-        } else {
+        if (bIsFemale) {
           pSrc = wszName;
           pFormat = D2Lang::StrTable::strtable::GetLocaleString(gwRosterCountMax[bInLoot + bOutLoot * 2]);
+        } else {
+          pSrc = wszName;
+          pFormat = D2Lang::StrTable::strtable::GetLocaleString(gwRosterSizeMax[bInLoot + bOutLoot * 2]);
         }
 
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszLine2, pFormat, pSrc);
@@ -920,7 +920,7 @@ static void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
     int32_t nPixelWidth1 = D2Win::Src::D2WinFont::DRAW_text0(wszLine1);
     int32_t nPixelWidth2 = D2Win::Src::D2WinFont::DRAW_text0(wszLine2);
     bOutHostile = nPixelWidth2 + 10;
-    if (nPixelWidth2 + 10 < nPixelWidth1 + 10) {
+    if (nPixelWidth1 + 10 > nPixelWidth2 + 10) {
       bOutHostile = nPixelWidth1 + 10;
     }
 
@@ -975,7 +975,7 @@ void __stdcall UI_HandlePartyButtonTooltips() {
       nTmpX = ui::GetMouseX();
       nTmpY = ui::GetMouseY();
       pRosterPlayer = pRosterIter;
-      if (nTmpX < gnPanelOffsetX + 0x24 || gnPanelOffsetX + 0x8c < nTmpX || (nTmp -= gnPanelOffsetY , nTmpY < nTmp - 0x1a) || nTmp < nTmpY) {
+      if (nTmpX < gnPanelOffsetX + 0x24 || nTmpX > gnPanelOffsetX + 0x8c || (nTmp -= gnPanelOffsetY , nTmpY < nTmp - 0x1a) || nTmpY > nTmp) {
         nButtonIdx = 1;
         pButton = &pUiPartyCur->pPartyButtons[1].nButtonType;
         do {
@@ -983,12 +983,46 @@ void __stdcall UI_HandlePartyButtonTooltips() {
           nTmp = pButton[-4];
           nTmpX = ui::GetMouseX();
           nTmpY = ui::GetMouseY();
-          if (gnPanelOffsetX + nTmp <= nTmpX && nTmpX <= gnPanelOffsetX + nTmp + 0x14 && nButtonY - gnPanelOffsetY - 0x14 <= nTmpY && nTmpY <= nButtonY - gnPanelOffsetY) {
+          if (nTmpX >= gnPanelOffsetX + nTmp && nTmpX <= gnPanelOffsetX + nTmp + 0x14 && nTmpY >= nButtonY - gnPanelOffsetY - 0x14 && nTmpY <= nButtonY - gnPanelOffsetY) {
             nTmp = *pButton;
             if (nTmp == 1) {
               pRosterPlayer = GAME::Roster::GetNextRosterPlayer(nullptr);
               nFlag = GAME::Roster::GetRosterLevel(pRosterPlayer);
-              if ((int)nFlag < 9) {
+              if ((int)nFlag >= 9) {
+                if (pUiPartyIter->nCharLevel >= 9) {
+                  if (bInTown) {
+                    nTmp = GAME::Roster::ROSTER_GetHostileFlag(pRosterIter);
+                    if (nTmp) {
+                      UI_DrawPartyButtonTextWithTooltip(0x100c, 0x100d, 0, 0x41, 0, 0x6e, 0x32);
+                      return;
+                    }
+
+                    UI_DrawPartyButtonTextWithTooltip(0x100a, 0x100b, 0, 0x41, 0, 0x6e, 0x32);
+                    return;
+                  }
+
+                  ShowToolTipOnPartyButtons(0x1019, 0, 0x6e, 0);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1019, 0x6e);
+                  nTmpX = 0x37 - gnPanelOffsetY;
+                  nTmp3 = 1;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  nLocaleId = 0x1019;
+                } else {
+                  ShowToolTipOnPartyButtons(0x101a, 0x101b, 0xa0, 1);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x101a, 0xa0);
+                  bResult = 0;
+                  nTmpX = 0x32 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  pText = D2Lang::StrTable::strtable::GetLocaleString(0x101a);
+                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x101b, 0xa0);
+                  nTmpX = 0x41 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  nLocaleId = 0x101b;
+                }
+              } else {
                 ShowToolTipOnPartyButtons(0x101a, 0x101b, 0xa0, 1);
                 pText = wszText;
                 for (nTmp = 0x32; nTmp; nTmp--) {
@@ -1020,38 +1054,6 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                 nTmp3 = 0;
                 nTmp = gnPanelOffsetX - nTextWidth / 2 + 0xa0;
                 nLocaleId = 0x101b;
-              } else if (pUiPartyIter->nCharLevel < 9) {
-                ShowToolTipOnPartyButtons(0x101a, 0x101b, 0xa0, 1);
-                nTextWidth = UI_CalculateCenteredTextXPosition(0x101a, 0xa0);
-                bResult = 0;
-                nTmpX = 0x32 - gnPanelOffsetY;
-                nTmp3 = 0;
-                nTmp = gnPanelOffsetX + nTextWidth;
-                pText = D2Lang::StrTable::strtable::GetLocaleString(0x101a);
-                D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
-                nTextWidth = UI_CalculateCenteredTextXPosition(0x101b, 0xa0);
-                nTmpX = 0x41 - gnPanelOffsetY;
-                nTmp3 = 0;
-                nTmp = gnPanelOffsetX + nTextWidth;
-                nLocaleId = 0x101b;
-              } else {
-                if (bInTown) {
-                  nTmp = GAME::Roster::ROSTER_GetHostileFlag(pRosterIter);
-                  if (nTmp) {
-                    UI_DrawPartyButtonTextWithTooltip(0x100c, 0x100d, 0, 0x41, 0, 0x6e, 0x32);
-                    return;
-                  }
-
-                  UI_DrawPartyButtonTextWithTooltip(0x100a, 0x100b, 0, 0x41, 0, 0x6e, 0x32);
-                  return;
-                }
-
-                ShowToolTipOnPartyButtons(0x1019, 0, 0x6e, 0);
-                nTextWidth = UI_CalculateCenteredTextXPosition(0x1019, 0x6e);
-                nTmpX = 0x37 - gnPanelOffsetY;
-                nTmp3 = 1;
-                nTmp = gnPanelOffsetX + nTextWidth;
-                nLocaleId = 0x1019;
               }
 
               draw_last_text_line:
@@ -1064,21 +1066,7 @@ void __stdcall UI_HandlePartyButtonTooltips() {
               nFlag = ClientModeInGame::CLIENTMODE_GetIngameUIFlags();
               if (nFlag) {
                 nFlag = GAME::Roster::ROSTER_GetLootFlag(pRosterIter);
-                if (!nFlag) {
-                  ShowToolTipOnPartyButtons(0x100e, 0x100f, 0xff, 1);
-                  nTextWidth = UI_CalculateCenteredTextXPosition(0x100e, 0xff);
-                  bResult = 0;
-                  nTmpX = 0x32 - gnPanelOffsetY;
-                  nTmp3 = 0;
-                  nTmp = gnPanelOffsetX + nTextWidth;
-                  pText = D2Lang::StrTable::strtable::GetLocaleString(0x100e);
-                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
-                  nTextWidth = UI_CalculateCenteredTextXPosition(0x100f, 0xff);
-                  nTmpX = 0x41 - gnPanelOffsetY;
-                  nTmp3 = 0;
-                  nTmp = gnPanelOffsetX + nTextWidth;
-                  nLocaleId = 0x100f;
-                } else {
+                if (nFlag) {
                   ShowToolTipOnPartyButtons(0x1010, 0x1011, 0xff, 1);
                   nTextWidth = UI_CalculateCenteredTextXPosition(0x1010, 0xff);
                   bResult = 0;
@@ -1092,6 +1080,20 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                   nTmp3 = 0;
                   nTmp = gnPanelOffsetX + nTextWidth;
                   nLocaleId = 0x1011;
+                } else {
+                  ShowToolTipOnPartyButtons(0x100e, 0x100f, 0xff, 1);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x100e, 0xff);
+                  bResult = 0;
+                  nTmpX = 0x32 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  pText = D2Lang::StrTable::strtable::GetLocaleString(0x100e);
+                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x100f, 0xff);
+                  nTmpX = 0x41 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  nLocaleId = 0x100f;
                 }
 
                 goto draw_last_text_line;
@@ -1099,21 +1101,7 @@ void __stdcall UI_HandlePartyButtonTooltips() {
             } else {
               if (nTmp == 3) {
                 nFlag = GAME::Roster::ROSTER_GetListenFlag(pRosterIter);
-                if (!nFlag) {
-                  ShowToolTipOnPartyButtons(0x1014, 0x1015, 0x114, 1);
-                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1014, 0x114);
-                  bResult = 0;
-                  nTmpX = 0x32 - gnPanelOffsetY;
-                  nTmp3 = 0;
-                  nTmp = gnPanelOffsetX + nTextWidth;
-                  pText = D2Lang::StrTable::strtable::GetLocaleString(0x1014);
-                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
-                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1015, 0x114);
-                  nTmpX = 0x41 - gnPanelOffsetY;
-                  nTmp3 = 0;
-                  nTmp = gnPanelOffsetX + nTextWidth;
-                  nLocaleId = 0x1015;
-                } else {
+                if (nFlag) {
                   ShowToolTipOnPartyButtons(0x1012, 0x1013, 0x114, 1);
                   nTextWidth = UI_CalculateCenteredTextXPosition(0x1012, 0x114);
                   bResult = 0;
@@ -1127,26 +1115,40 @@ void __stdcall UI_HandlePartyButtonTooltips() {
                   nTmp3 = 0;
                   nTmp = gnPanelOffsetX + nTextWidth;
                   nLocaleId = 0x1013;
+                } else {
+                  ShowToolTipOnPartyButtons(0x1014, 0x1015, 0x114, 1);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1014, 0x114);
+                  bResult = 0;
+                  nTmpX = 0x32 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  pText = D2Lang::StrTable::strtable::GetLocaleString(0x1014);
+                  D2Win::Src::D2WinFont::DRAW_text(pText, nTmp, nTmpX, nTmp3, bResult);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1015, 0x114);
+                  nTmpX = 0x41 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = gnPanelOffsetX + nTextWidth;
+                  nLocaleId = 0x1015;
                 }
 
                 goto draw_last_text_line;
               }
               if (nTmp == 4) {
                 nFlag = GAME::Roster::ROSTER_GetMuteFlag(pRosterIter);
-                if (!nFlag) {
-                  ShowToolTipOnPartyButtons(0x1016, 0, 0x128, 0);
-                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1016, 0x128);
-                  nTmpX = 0x37 - gnPanelOffsetY;
-                  nTmp3 = 0;
-                  nTmp = nTextWidth + gnPanelOffsetX;
-                  nLocaleId = 0x1016;
-                } else {
+                if (nFlag) {
                   ShowToolTipOnPartyButtons(0x1017, 0, 0x128, 0);
                   nTextWidth = UI_CalculateCenteredTextXPosition(0x1017, 0x128);
                   nTmpX = 0x37 - gnPanelOffsetY;
                   nTmp3 = 0;
                   nTmp = gnPanelOffsetX + nTextWidth;
                   nLocaleId = 0x1017;
+                } else {
+                  ShowToolTipOnPartyButtons(0x1016, 0, 0x128, 0);
+                  nTextWidth = UI_CalculateCenteredTextXPosition(0x1016, 0x128);
+                  nTmpX = 0x37 - gnPanelOffsetY;
+                  nTmp3 = 0;
+                  nTmp = nTextWidth + gnPanelOffsetX;
+                  nLocaleId = 0x1016;
                 }
 
                 goto draw_last_text_line;
@@ -1308,9 +1310,9 @@ void __stdcall INPUT_PartyScreenLeftClick(D2UIMouseMsgStrc * pMsg) {
     nButtonY = ui::GetMouseX();
     int nMouseX;
     nMouseX = ui::GetMouseY();
-    if (nButtonY < gnPanelOffsetX + 0x116 || gnPanelOffsetX + 0x136 < nButtonY || nMouseX < 0x185 - gnPanelOffsetY || 0x1a5 - gnPanelOffsetY < nMouseX) {
+    if (nButtonY < gnPanelOffsetX + 0x116 || nButtonY > gnPanelOffsetX + 0x136 || nMouseX < 0x185 - gnPanelOffsetY || nMouseX > 0x1a5 - gnPanelOffsetY) {
       int nMouseY;
-      if (ScreenSizeX / 2 <= nTmpX) {
+      if (nTmpX >= ScreenSizeX / 2) {
         pMsg->bHandled = 0;
         return;
       }
@@ -1324,7 +1326,7 @@ void __stdcall INPUT_PartyScreenLeftClick(D2UIMouseMsgStrc * pMsg) {
             nMouseX = ui::GetMouseX();
             nMouseY = ui::GetMouseY();
             nTmpX = gnPanelOffsetX + nTmpX;
-            if (nTmpX <= nMouseX && nMouseX <= nTmpX + 0x14 && nButtonY - gnPanelOffsetY - 0x14 <= nMouseY && nMouseY <= nButtonY - gnPanelOffsetY) {
+            if (nMouseX >= nTmpX && nMouseX <= nTmpX + 0x14 && nMouseY >= nButtonY - gnPanelOffsetY - 0x14 && nMouseY <= nButtonY - gnPanelOffsetY) {
               if (*pButton == 1) {
                 pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
                 nLevel = GAME::Roster::GetRosterLevel(pRoster);
@@ -1359,7 +1361,7 @@ void __stdcall INPUT_PartyScreenLeftClick(D2UIMouseMsgStrc * pMsg) {
             nMouseX = ui::GetMouseX();
             nMouseY = ui::GetMouseY();
             nTmpX = gnPanelOffsetX + nTmpX;
-            if (nTmpX <= nMouseX && nMouseX <= nTmpX + 0x35 && nButtonY - gnPanelOffsetY - 0x14 <= nMouseY && nMouseY <= nButtonY - gnPanelOffsetY) {
+            if (nMouseX >= nTmpX && nMouseX <= nTmpX + 0x35 && nMouseY >= nButtonY - gnPanelOffsetY - 0x14 && nMouseY <= nButtonY - gnPanelOffsetY) {
               if (pUiParty->pPartyButtons[nButtonIdx].bIsActive != 1) {
                 pUiParty->pPartyButtons[nButtonIdx].nIndexDC6 = 1;
               }
@@ -1406,7 +1408,7 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
     gpPartyAcceptButton = 0;
     D2UnitStrc* pUnit;
     pUnit = UNIT::Player::GetPlayerUnit_UI();
-    if (ScreenSizeX / 2 <= nMouseX) {
+    if (nMouseX >= ScreenSizeX / 2) {
       pMsg->bHandled = 0;
       return;
     }
@@ -1414,25 +1416,11 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
     nMouseX = ui::GetMouseX();
     int nMouseY;
     nMouseY = ui::GetMouseY();
-    if (nMouseX < gnPanelOffsetX + 0x116 || gnPanelOffsetX + 0x136 < nMouseX || nMouseY < 0x185 - gnPanelOffsetY || 0x1a5 - gnPanelOffsetY < nMouseY) {
+    if (nMouseX < gnPanelOffsetX + 0x116 || nMouseX > gnPanelOffsetX + 0x136 || nMouseY < 0x185 - gnPanelOffsetY || nMouseY > 0x1a5 - gnPanelOffsetY) {
       int16_t nPartyId;
       bIsInTown = UI_CheckMouseInRectangle(0xe3, 0x23, 0x35, 0xb);
       if (!bIsInTown || (nPartyId = GAME::Roster::GetRosterPartyId(pRosterPlayer) , nPartyId == -1)) {
-        if (!gpWaypointButtonHover) {
-          for (; pUiParty; pUiParty = pUiParty->pNext) {
-            pButtonField = &pUiParty->pPartyButtons[0].bIsPressed;
-            nMouseX = 5;
-            do {
-              if (*pButtonField) {
-                pButtonField[-3]--;
-                *pButtonField = 0;
-              }
-
-              pButtonField += 8;
-              nMouseX--;
-            } while (nMouseX);
-          }
-        } else {
+        if (gpWaypointButtonHover) {
           pRosterPlayer = GAME::Roster::GetNextRosterPlayer(pRosterPlayer);
           while (pRosterPlayer && pUiParty) {
             nButtonIndex = 0;
@@ -1443,7 +1431,7 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
                 nMouseX2 = ui::GetMouseX();
                 nMouseY2 = ui::GetMouseY();
                 nMouseX = gnPanelOffsetX + nMouseX;
-                if (nMouseX <= nMouseX2 && nMouseX2 <= nMouseX + 0x14 && nMouseY - gnPanelOffsetY - 0x14 <= nMouseY2 && nMouseY2 <= nMouseY - gnPanelOffsetY) {
+                if (nMouseX2 >= nMouseX && nMouseX2 <= nMouseX + 0x14 && nMouseY2 >= nMouseY - gnPanelOffsetY - 0x14 && nMouseY2 <= nMouseY - gnPanelOffsetY) {
                   if (pButtonField[1] == 1) {
                     pFirstRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
                     nRosterLevel = GAME::Roster::GetRosterLevel(pFirstRoster);
@@ -1474,7 +1462,7 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
                 nMouseX2 = ui::GetMouseX();
                 nMouseY2 = ui::GetMouseY();
                 nMouseX = gnPanelOffsetX + nMouseX;
-                if (nMouseX <= nMouseX2 && nMouseX2 <= nMouseX + 0x35 && nMouseY - gnPanelOffsetY - 0x14 <= nMouseY2 && nMouseY2 <= nMouseY - gnPanelOffsetY) {
+                if (nMouseX2 >= nMouseX && nMouseX2 <= nMouseX + 0x35 && nMouseY2 >= nMouseY - gnPanelOffsetY - 0x14 && nMouseY2 <= nMouseY - gnPanelOffsetY) {
                   UI_HandlePartyButtonClick(pUiParty, pRosterPlayer, nButtonIndex);
                   goto clear_queued_clicks_and_consume;
                 }
@@ -1486,6 +1474,20 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
           }
 
           gpWaypointButtonHover = 0;
+        } else {
+          for (; pUiParty; pUiParty = pUiParty->pNext) {
+            pButtonField = &pUiParty->pPartyButtons[0].bIsPressed;
+            nMouseX = 5;
+            do {
+              if (*pButtonField) {
+                pButtonField[-3]--;
+                *pButtonField = 0;
+              }
+
+              pButtonField += 8;
+              nMouseX--;
+            } while (nMouseX);
+          }
         }
       } else {
         GAME::Roster::LeaveParty();
@@ -1567,7 +1569,6 @@ void __stdcall UI_DrawPartyMembers() {
     D2UiPartyStrc* pUiParty;
     int16_t nPartyIdCheck;
     BOOL bHasHostile;
-    char* dwUnused;
     int32_t dwColor;
     int nMemberIndex;
     bool bSameParty;
@@ -1596,7 +1597,7 @@ void __stdcall UI_DrawPartyMembers() {
       }
 
       D2Win::Src::D2WinFont::SetAndReturnLastFont(0);
-      UI_DrawPartyMemberName(dwUnused, (D2UiPartyStrc*)pUiParty->szPlayerName, nY, dwColor, (uint32_t)(nPartyId != -1));
+      UI_DrawPartyMemberName((D2UiPartyStrc*)pUiParty->szPlayerName, nY, dwColor, (uint32_t)(nPartyId != -1));
       UI_DrawPartyMemberClass(nY + 0xc, pUiParty->nCharType, dwColor);
       UI_DrawPartyMemberLevel(pUiParty->nCharLevel, dwColor, nY + 0xc);
       if (bSameParty && pUiParty->eLevelId != LEVEL_None) {
@@ -1623,7 +1624,7 @@ void __stdcall DRAW_UI_PartyWindow() {
     SetEachPlayerRosterGlobalPartyId();
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(gnPanelOffsetX + 0x116 <= nMouseX && nMouseX <= gnPanelOffsetX + 0x136 && 0x185 - gnPanelOffsetY <= nMouseY && nMouseY <= 0x1a5 - gnPanelOffsetY)) {
+    if (!(nMouseX >= gnPanelOffsetX + 0x116 && nMouseX <= gnPanelOffsetX + 0x136 && nMouseY >= 0x185 - gnPanelOffsetY && nMouseY <= 0x1a5 - gnPanelOffsetY)) {
       return;
     }
 

@@ -123,7 +123,7 @@ void __stdcall ExecuteHit(D2UnitStrc * pUnit, int32_t eCollisionFlag, uint32_t n
     int32_t nPathCount = PATH::DynamicPath::GetPathPoint(pDynamicPath, &pPathPoints);
     D2RoomStrc* pRoom = UNITS_GetRoom(pUnit);
     int nPathIdx = 0;
-    if (0 >= nPathCount) {
+    if (nPathCount <= 0) {
       return;
     }
 
@@ -217,7 +217,7 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
       nPathIdx = 0;
       nSubSegIdx = 0;
       nCurDamage = nParam1;
-      if (0 < nSegmentCount) {
+      if (nSegmentCount > 0) {
         do {
           nCurY = (uint32_t)pPathPoints[nPathIdx].nY;
           nCurX = (uint32_t)pPathPoints[nPathIdx].nX;
@@ -233,7 +233,7 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
             nCurDamage -= nParam2;
             pStream->pStream[nPathIdx] = nCreated;
             if (bExtended) {
-              nCreated = (int)(nExtraSpacing + ((int)nExtraSpacing >> 0x1f & 3U)) >> 2;
+              nCreated = (int)nExtraSpacing / 4;
               nExtraSpacingRem = nExtraSpacing & 0x80000003;
               if ((int)nExtraSpacingRem < 0) {
                 nExtraSpacingRem = (nExtraSpacingRem - 1 | -4) + 1;
@@ -243,10 +243,10 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
               }
 
               nExtraCycleCounter--;
-              if (nExtraCycleCounter < 1) {
+              if (nExtraCycleCounter <= 0) {
                 nExtraCycleCounter = 4;
               }
-              if (0 < nCreated) {
+              if (nCreated > 0) {
                 do {
                   nExtraMissiles = nCreated;
                   nCreated = (*nfpCreate)(pUnit, pStream->pStream[nPathIdx], nCurX, nCurY, nCurDamage, 2);
@@ -263,7 +263,7 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
           nPathIdx++;
         } while (nPathIdx < nSegmentCount);
       }
-      if (pStream->nStreamSize <= nPathIdx) {
+      if (nPathIdx >= pStream->nStreamSize) {
         return;
       }
 

@@ -20,6 +20,11 @@ the temporary is put back into the call where:
   - the next line names it exactly once, as a whole argument of a call;
   - the arguments to its right (those VC8 evaluates before the inner call)
     call nothing and change nothing;
+  - or the next line names it once as the base of a member access, `p->f`,
+    which then takes the call: `GetPlayerData(pUnit)->pQuestRecord[n]`
+    (the quest code's record lookups, D2Game); the arguments right of every
+    argument list holding it change nothing, and outside any argument list
+    the line calls nothing else;
   - it is dead after that line: every other mention of it in the function
     assigns or declares it, or the next one after does and the site is in no
     loop (a declaration with the call as its initialiser keeps the bare
@@ -56,6 +61,7 @@ TEMP = re.compile(r'^(?P<ind>[ \t]*)(?P<decl>(?:const\s+)?[A-Za-z_][\w:]*(?:\s*\
                   r'(?P<x>[A-Za-z_]\w*) = (?P<call>[A-Za-z_][\w:]*(?:(?:->|\.)[A-Za-z_]\w*)*\(.*\));[ \t]*$')
 IMPURE = re.compile(r'\+\+|--|(?<![=!<>])=(?!=)|\b(?!sizeof\b)[A-Za-z_]\w*\s*\(')
 COMMENT = re.compile(r'/\*.*?\*/')
+CALLS = re.compile(r'\b(?!sizeof\b|if\b|while\b|switch\b|return\b|for\b)[A-Za-z_]\w*\s*\(')
 
 
 def balanced_call(text):
@@ -117,18 +123,36 @@ def site(lines, k, lo, hi):
         for i, (a, b) in enumerate(args):
             if nxt[a:b].strip() == x and a <= at < b:
                 target = (args, i)
-    if target is None:
-        return None
-    args, i = target
-    for a, b in args[i + 1:]:
-        if IMPURE.search(nxt[a:b]):
+    member = target is None and re.match(r'\s*->', nxt[at + len(x):])
+    if member and re.match(r'\s*(?:\}|while\b|for\b|do\b)', nxt):
+        return None                          # a loop's condition is evaluated again
+    if member:
+        # `p->f` with p the call's result: the call goes in front of the member
+        # access. VC8 evaluates what stands right of the innermost argument
+        # holding it first; with no argument list around it, the line may
+        # call nothing else.
+        inner = [(args, i) for _s, _e, args in call_args(nxt) for i, (a, b) in enumerate(args) if a <= at < b]
+        if inner:
+            if any(IMPURE.search(nxt[a:b]) for args, i in inner for a, b in args[i + 1:]):
+                return None
+        elif CALLS.search(nxt[:at] + nxt[at + len(x):]):
             return None
+    elif target is None:
+        return None
+    else:
+        args, i = target
+        for a, b in args[i + 1:]:
+            if IMPURE.search(nxt[a:b]):
+                return None
     if not dead_after(lines, lo, hi, k, k + 1, (x,)):
         return None
     others = [j for j in range(lo + 1, hi + 1) if j not in (k, k + 1) and mentions(x, lines[j])]
-    a, b = args[i]
-    lead = nxt[a:b][:len(nxt[a:b]) - len(nxt[a:b].lstrip())]
-    new_next = nxt[:a] + lead + call + nxt[b:]
+    if member:
+        new_next = nxt[:at] + call + nxt[at + len(x):]
+    else:
+        a, b = args[i]
+        lead = nxt[a:b][:len(nxt[a:b]) - len(nxt[a:b].lstrip())]
+        new_next = nxt[:a] + lead + call + nxt[b:]
     first = ''
     if t.group('decl') and others:
         first = t.group('ind') + t.group('decl').rstrip() + ' ' + x + ';'

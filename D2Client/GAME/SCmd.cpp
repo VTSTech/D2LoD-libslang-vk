@@ -19,12 +19,10 @@
 #include "D2Client/D2GSPacketSrv0x73.h"
 #include "D2Client/D2GSPacketSrv0x76.h"
 #include "D2Client/D2GSPacketSrv0x7A.h"
-#include "D2Client/D2GSPacketSrv0x7F.h"
 #include "D2Client/D2GSPacketSrv0x81.h"
 #include "D2Client/D2GSPacketSrv0x82.h"
 #include "D2Client/D2GSPacketSrv0x8B.h"
 #include "D2Client/D2GSPacketSrv0x8E.h"
-#include "D2Client/D2GSPacketSrv0x90.h"
 #include "D2Client/D2GSPacketSrv0x91.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/Draw/Weather.h"
@@ -94,13 +92,12 @@
 #include "D2Game/D2CreateMonsterUnitStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Server.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Net/Game/Server.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
@@ -169,7 +166,7 @@ void __fastcall SCMD_ClearPlayerTradeFields(D2UnitStrc * pUnit) {
 }
 
 D2SkillsTxt * __fastcall TXT_Skills_GetLine(eD2Skills eSkill) {
-    if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return nullptr;
     }
 
@@ -177,7 +174,7 @@ D2SkillsTxt * __fastcall TXT_Skills_GetLine(eD2Skills eSkill) {
 }
 
 D2ItemStatCostTxt * __fastcall TXT_ItemStatCost_GetLine(eD2UnitStat eUnitStat) {
-    if (!(-1 < (int)eUnitStat && (int)eUnitStat < sgptDataTable->nTxtItemStatCostSize)) {
+    if (!((int)eUnitStat >= 0 && (int)eUnitStat < sgptDataTable->nTxtItemStatCostSize)) {
       return nullptr;
     }
 
@@ -192,10 +189,10 @@ void __stdcall SaveCharacter() {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25);
       exit(-1);
     }
-    if (!(7 < D2Game::Save::nRawSaveBufferSize && *(int*)D2Game::Save::pRawSaveBuffer == -0x55aa55ab)) {
+    if (!(D2Game::Save::nRawSaveBufferSize >= 8 && *(int*)D2Game::Save::pRawSaveBuffer == -0x55aa55ab)) {
       return;
     }
-    /* Version ID */ if (*(uint32_t*)(D2Game::Save::pRawSaveBuffer + 4) < 92) {
+    /* Version ID */ if (*(uint32_t*)(D2Game::Save::pRawSaveBuffer + 4) <= 91) {
       if (D2Game::Save::nRawSaveBufferSize < 0x82) {
         return;
       }
@@ -482,10 +479,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x07_NEWROOM(char * pBytes) {
     }
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    if (!pUnit) {
-      pRoomCache = 0;
-    } else {
+    if (pUnit) {
       pRoomCache = D2Common::Units::UNITS_GetRoom(pUnit);
+    } else {
+      pRoomCache = 0;
     }
 
     D2Common::DUNGEON::Dungeon::AddRoomData(sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoomCache);
@@ -501,10 +498,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x08_REMOVEROOM(char * pBytes) {
     }
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    if (!pUnit) {
-      pRoom = 0;
-    } else {
+    if (pUnit) {
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+    } else {
+      pRoom = 0;
     }
 
     D2Common::DUNGEON::Dungeon::RemoveRoomData(sgpDrlgAct, (eD2LevelId)(uint8_t)pBytes[5], (uint32_t)nX, (uint32_t)nY, pRoom);
@@ -902,17 +899,17 @@ void __fastcall SCMD_RecalcInventoryItemStats(D2UnitStrc * pUnit) {
     }
 
     D2SkillStrc* pSkill = pUnit->pSkillsList->pLeftSkill;
-    if (!pSkill) {
-      nLeftSkill = SKILL_Attack;
-    } else {
+    if (pSkill) {
       nLeftSkill = (eD2Skills)pSkill->pRecord->skill;
+    } else {
+      nLeftSkill = SKILL_Attack;
     }
 
     pSkill = pUnit->pSkillsList->pRightSkill;
-    if (!pSkill) {
-      nRightSkill = 0;
-    } else {
+    if (pSkill) {
       nRightSkill = (int32_t)pSkill->pRecord->skill;
+    } else {
+      nRightSkill = 0;
     }
 
     D2UnitStrc* pItem = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
@@ -1013,7 +1010,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA3_PROGRESSIVE_SKILL(char * pBytes) {
 
     D2UnitStrc* pTargetUnit = UNIT::Player::UNITS_FindClientSideUnit(*(int32_t*)(pBytes + 0xc), (eD2UnitType)(uint8_t)pBytes[0xb]);
     eD2Skills eSkill = (eD2Skills)*(short int*)(pBytes + 2);
-    if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return;
     }
     if (sgptDataTable->pTxtSkills[eSkill].progressive) {
@@ -1873,7 +1870,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x81(D2GSPacketSrv0x81 * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7B_SYNCHOTKEYS(char * pBytes) {
     uint32_t nSkillId = *(uint16_t*)(pBytes + 2) & 0xfff;
-    if (sgptDataTable->nTxtSkillsCount < (int)nSkillId) {
+    if ((int)nSkillId > sgptDataTable->nTxtSkillsCount) {
       nSkillId = -1;
     }
 
@@ -2189,7 +2186,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(char * pBytes) {
       if (eUnitStat < 0) {
         return;
       }
-      if (sgptDataTable->nTxtItemStatCostSize <= eUnitStat) {
+      if (eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
         return;
       }
 
@@ -2202,7 +2199,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(char * pBytes) {
       }
 
       nStatParam = 0;
-      if (pItemStatCost->sendParamBits) {
+      if ((uint8_t)pItemStatCost->sendParamBits > 0) {
         nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
         nStatParam = nParamRaw & 0xffff;
       }
@@ -2264,7 +2261,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(char * pBytes) {
           if (eUnitStat < 0) {
             return;
           }
-          if (sgptDataTable->nTxtItemStatCostSize <= eUnitStat) {
+          if (eUnitStat >= sgptDataTable->nTxtItemStatCostSize) {
             return;
           }
 
@@ -2277,7 +2274,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(char * pBytes) {
           }
 
           nStatParam = 0;
-          if (pItemStatCost->sendParamBits) {
+          if ((uint8_t)pItemStatCost->sendParamBits > 0) {
             nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
             nStatParam = nParamRaw & 0xffff;
           }
@@ -2362,7 +2359,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       if (i < 0) {
         return;
       }
-      if (sgptDataTable->nTxtMonStatsSize <= i) {
+      if (i >= sgptDataTable->nTxtMonStatsSize) {
         return;
       }
 
@@ -2370,7 +2367,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       if (i < 0) {
         return;
       }
-      if (sgptDataTable->nTxtMonStatsExSize <= i) {
+      if (i >= sgptDataTable->nTxtMonStatsExSize) {
         return;
       }
 
@@ -2506,7 +2503,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       if (nStatValue >= 0x1ff) {
         break;
       }
-      if (-1 >= nStatValue) {
+      if (nStatValue < 0) {
         break;
       }
       if (nStatValue >= sgptDataTable->nTxtItemStatCostSize) {
@@ -2519,7 +2516,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       }
 
       nPosX = 0;
-      if (pItemStatCost->sendParamBits) {
+      if ((uint8_t)pItemStatCost->sendParamBits > 0) {
         nPosX = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
         nPosX &= 0xffff;
       }
@@ -2564,19 +2561,19 @@ static D2ServerCmdStrc * STRUCT_CreateAndPreprareServerCmd(D2UnitStrc * pUnit) {
       pTableEntry = &NET_D2GS_CLIENT_INCOMING[0].nExpectedSize;
       nMaxPacketSize = 0;
       do {
-        if ((D2NET_CLIENT_D2GStoCLT_Unit)pTableEntry[1] && nMaxPacketSize < *pTableEntry) {
+        if ((D2NET_CLIENT_D2GStoCLT_Unit)pTableEntry[1] && *pTableEntry > nMaxPacketSize) {
           nMaxPacketSize = *pTableEntry;
         }
-        if (pTableEntry[4] && nMaxPacketSize < pTableEntry[3]) {
+        if (pTableEntry[4] && pTableEntry[3] > nMaxPacketSize) {
           nMaxPacketSize = pTableEntry[3];
         }
-        if (pTableEntry[7] && nMaxPacketSize < pTableEntry[6]) {
+        if (pTableEntry[7] && pTableEntry[6] > nMaxPacketSize) {
           nMaxPacketSize = pTableEntry[6];
         }
-        if (pTableEntry[10] && nMaxPacketSize < pTableEntry[9]) {
+        if (pTableEntry[10] && pTableEntry[9] > nMaxPacketSize) {
           nMaxPacketSize = pTableEntry[9];
         }
-        if (pTableEntry[0xd] && nMaxPacketSize < pTableEntry[0xc]) {
+        if (pTableEntry[0xd] && pTableEntry[0xc] > nMaxPacketSize) {
           nMaxPacketSize = pTableEntry[0xc];
         }
 
@@ -2614,7 +2611,7 @@ static void __stdcall NET_D2GS_CLIENT_PutIncomingBytesIntoServerCmdStructure(siz
     if (!pServerCmd || pServerCmd->nUsedBuffersCount + 1 == pServerCmd->nBufferArraySize) {
       pServerCmd = STRUCT_CreateAndPreprareServerCmd(pUnit);
     }
-    if ((int)nD2PacketsClientBufferSize < (int)nExpectedSize) {
+    if ((int)nExpectedSize > (int)nD2PacketsClientBufferSize) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x127f);
       exit(-1);
     }
@@ -2658,10 +2655,10 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
     size_t nRemaining;
     nRemaining = nSize;
     GetTickCount();
-    if (500 < (int)nSize) {
+    if ((int)nSize > 500) {
       gnOversizedPacketCount++;
     }
-    if ((int)nSize < 1) {
+    if ((int)nSize <= 0) {
       gnNetPacketZeroSizeCount++;
     } else {
       size_t nPacketSize;
@@ -2677,7 +2674,7 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
         }
 
         nConsumed = nVariableSize & 0xffff;
-        if (0xae < byPacketId) {
+        if (byPacketId >= 0xaf) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1449);
           exit(-1);
         }
@@ -2685,10 +2682,18 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
         nPacketId = (uint32_t)byPacketId;
         pTableEntry = NET_D2GS_CLIENT_INCOMING + nPacketId;
         uVar1 = NET_D2GS_CLIENT_INCOMING[nPacketId].nExpectedSize;
-        if (uVar1 == -1) {
+        if (uVar1 != -1) {
+          if ((nVariableSize & 0xffff) != uVar1) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1450);
+            exit(-1);
+          }
+          if (uVar1 == -1 || (nVariableSize & 0xffff) == uVar1) {
+            goto dispatch_packet;
+          }
+        } else {
           dispatch_packet:
           if (NET_D2GS_CLIENT_INCOMING[nPacketId].fpIncomingHandlerUnit) {
-            if (byPacketId < 0x67 || 0x6d < byPacketId) {
+            if (byPacketId < 0x67 || byPacketId > 0x6d) {
               nLine = *(int32_t*)(pBytes + 2);
               eUnitType = (eD2UnitType)(uint8_t)pBytes[1];
             } else {
@@ -2722,14 +2727,6 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
           if (pTableEntry->fpIncomingHandler) {
             pTableEntry->fpIncomingHandler(pBytes);
           }
-        } else {
-          if ((nVariableSize & 0xffff) != uVar1) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1450);
-            exit(-1);
-          }
-          if (uVar1 == -1 || (nVariableSize & 0xffff) == uVar1) {
-            goto dispatch_packet;
-          }
         }
 
         uVar1 = nConsumed & 0xffff;
@@ -2739,7 +2736,7 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
         *(uint8_t*)(char*)&gbyLastProcessedPacketId = byPacketId;
         nSize = nTotalSize;
         pCurrentPacket = (uint8_t*)pBytes;
-        if ((int)nRemaining < 1) {
+        if ((int)nRemaining <= 0) {
           gnNetPacketZeroSizeCount++;
           return;
         }
@@ -2769,13 +2766,13 @@ void __fastcall SCMD_ProcessIncomingPacketBuffer(D2UnitStrc * pUnit) {
     if (!pServerCmd) {
       return;
     }
-    if (pServerCmd->nBufferArraySize < pServerCmd->nUsedBuffersCount) {
+    if (pServerCmd->nUsedBuffersCount > pServerCmd->nBufferArraySize) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwErrLine);
       exit(-1);
     }
 
     int nBufferIndex = 0;
-    if (0 < pServerCmd->nUsedBuffersCount) {
+    if (pServerCmd->nUsedBuffersCount > 0) {
       uint8_t bVar1;
       do {
         pBytes = (uint8_t*)(pServerCmd->aBuffers + nD2PacketsClientBufferSize * nBufferIndex);
@@ -2785,7 +2782,7 @@ void __fastcall SCMD_ProcessIncomingPacketBuffer(D2UnitStrc * pUnit) {
         }
 
         bVar1 = *pBytes;
-        if (0xae < bVar1) {
+        if (bVar1 >= 0xaf) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1531);
           exit(-1);
         }

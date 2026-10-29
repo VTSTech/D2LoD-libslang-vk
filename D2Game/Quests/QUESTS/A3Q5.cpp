@@ -96,9 +96,7 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
     pQuestArgs->pTarget->dwDropItemCode = 0x2034336a;
     D2UnitStrc* pPlayerData = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pQuestData->pGame, pQuestArgs->pTarget, ITEMTYPE_Shield, &nDroppedItemGUID, nullptr, -1, 0);
-    if (!pPlayerData) {
-      pQuestSpecificDataA3Q5->bCanDropBird = true;
-    } else {
+    if (pPlayerData) {
       pQuestData->sStateFunctions.fpQuestStateHandler[8] = (QUESTCALLBACKFN)0x0;
       pQuestSpecificDataA3Q5->nBirdItemCount++;
       pQuestSpecificDataA3Q5->bBirdDropEnabled = false;
@@ -111,6 +109,8 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
         pQuestSpecificDataA3Q5->bBossKillTracking = false;
         return;
       }
+    } else {
+      pQuestSpecificDataA3Q5->bCanDropBird = true;
     }
 
     pQuestSpecificDataA3Q5->bBossKillTracking = false;
@@ -223,7 +223,7 @@ BOOL __fastcall Q22_PlayerUpdateBlackenedTempleState(::SGAMEDATA * pGame, D2Unit
     if (!pQuestData) {
       return 0;
     }
-    if ((uint8_t)(pQuestData->nStateFlag - 2) < 2) {
+    if ((uint8_t)(pQuestData->nStateFlag - 2) <= 1) {
       /* SetQuestState(Blackened Temple=0x15, Step0x02=2): log entry "started" when
                          live stateFlag is 2/3 */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x02);
     }
@@ -300,7 +300,7 @@ BOOL __fastcall Q22_PlayerCheckNearTravincal(::SGAMEDATA * pGame, D2UnitStrc * p
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRoomList, (int*)&nAdjRoomCount);
       iAdjRoomIdx = 0;
-      if (nAdjRoomCount) {
+      if (nAdjRoomCount > 0) {
         do {
           if (pAdjRoomList[iAdjRoomIdx] == pTargetRoom) {
             _bSameOrAdjacentRoom = 1;
@@ -320,10 +320,10 @@ BOOL __fastcall Q22_PlayerCheckNearTravincal(::SGAMEDATA * pGame, D2UnitStrc * p
 
     /* GetQuestState(Khalim's Will=0x12, Completed=0): if Khalim's Will already
                          done, jump straight to Completed; else only to Step0x04 */ bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBitBuffer, QUEST_KhalimsWill, QUESTSTATE_Completed);
-    if (!bQuestState) {
-      eQuestState = QUESTSTATE_Step0x04;
-    } else {
+    if (bQuestState) {
       eQuestState = QUESTSTATE_Completed;
+    } else {
+      eQuestState = QUESTSTATE_Step0x04;
     }
 
     /* SetQuestState(Blackened Temple=0x15, => Completed=0 if Khalim's Will done,
@@ -374,7 +374,13 @@ void __fastcall Q22_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x04);
-    if (!bJustCompleted) {
+    if (bJustCompleted) {
+      if (pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive) {
+        return;
+      }
+
+      nGossipLineIdx = 5;
+    } else {
       int32_t nPlayerGUID;
       if (bAtStep04 == 1) {
         if (!pQuestArgs->pPlayer) {
@@ -388,7 +394,7 @@ void __fastcall Q22_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
           return;
         }
       }
-      if (5 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 6) {
         if (bQuestCompleted != 1) {
           return;
         }
@@ -404,15 +410,9 @@ void __fastcall Q22_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipLineIdx == -1) {
         return;
       }
-      if (7 < nGossipLineIdx) {
+      if (nGossipLineIdx >= 8) {
         return;
       }
-    } else {
-      if (pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive) {
-        return;
-      }
-
-      nGossipLineIdx = 5;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNPCClassId, nGossipLineIdx);
@@ -452,7 +452,7 @@ void __fastcall Q22_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     }
 
     QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
-    if (!(1 < pQuestData->nStateFlag && pQuestData->nStateFlag < 4)) {
+    if (!(pQuestData->nStateFlag > 1 && pQuestData->nStateFlag <= 3)) {
       return;
     }
 
@@ -588,18 +588,18 @@ bool __fastcall Q22_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pQuestData_00) {
-      return false;
+    if (pQuestData_00) {
+      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f5);
+        exit(-1);
+      }
+
+      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
 
-    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f5);
-      exit(-1);
-    }
-
-    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-    return bVar1;
+    return false;
 }
 
 // Q22_Callback_13 (BLACKENED TEMPLE) — quest-state[0xd] init/resume handler that reconstructs the live nStateFlag from the player's saved quest record when a game (re)loads. Sets bJerhynAiActive if Khalim's Will is done. If the record is Completed OR at Step0x04, marks the shared record JustCompleted and ends intro. Otherwise reads Lam Esen's Tome completion into pPortalSpawnRoom, then maps record Step0x02/Step0x03 to live nStateFlag (2/3 -> Step0x02 partial; 4/5 -> Step0x03), choosing the value by Lam Esen completion. Pure resume logic; one record write (JustCompleted).
@@ -630,24 +630,24 @@ void __fastcall Q22_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     pLamEsenResult->bLamEsenComplete = bQuestState;
     /* GetQuestState(Blackened Temple=0x15, Step0x02=2): record step 2 -> live
                          nStateFlag 2/3 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x02);
-    if (!bQuestState) {
-      /* GetQuestState(Blackened Temple=0x15, Step0x03=3): without Step0x02, step 3 ->
-                         nStateFlag 4/5 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x03);
-      if (!bQuestState) {
-        return;
-      }
-    } else {
+    if (bQuestState) {
       /* GetQuestState(Blackened Temple=0x15, Step0x03=3): with Step0x02 set, step 3
                          -> nStateFlag 4/5 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x03);
       if (!bQuestState) {
         iVar1 = pLamEsenResult->bLamEsenComplete;
         pQuestData->nStateFlagPrev = 2;
-        if (!iVar1) {
-          pQuestData->nStateFlag = 3;
+        if (iVar1) {
+          pQuestData->nStateFlag = 2;
           return;
         }
 
-        pQuestData->nStateFlag = 2;
+        pQuestData->nStateFlag = 3;
+        return;
+      }
+    } else {
+      /* GetQuestState(Blackened Temple=0x15, Step0x03=3): without Step0x02, step 3 ->
+                         nStateFlag 4/5 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x03);
+      if (!bQuestState) {
         return;
       }
     }
@@ -711,7 +711,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
     pQuestSpecificData->anCouncilKillerGUIDs[_nBroadcastState] = nLoopIdx;
     pQuestSpecificData->nCouncilKillCount++;
     pQuestSpecificData->nCouncilKillsRemaining = pQuestSpecificData->nCouncilKillCount;
-    if (pQuestData->nStateFlag < 2) {
+    if (pQuestData->nStateFlag <= 1) {
       if (pQuestData->nStateFlagPrev == 1) {
         goto set_state_by_lam_esen;
       }
@@ -998,7 +998,7 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
         pQuestArgs->pTarget->dwDropItemCode = 0x20316671;
         nKhalimsWillDropCount = 0;
         nDropLoop = 0;
-        if (0 < pDVar1->nFlailDropPlayerCount) {
+        if (pDVar1->nFlailDropPlayerCount > 0) {
           do {
             pTargetUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pQuestData->pGame, pQuestArgs->pTarget, ITEMTYPE_PlayerBodyPart, &nRewardItemGUID, nullptr, -1, 0);
             if (pTargetUnit) {
@@ -1023,14 +1023,14 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
         pDVar1->bBoxDropped = true;
         pQuestArgs->pTarget->dwDropItemCode = 0x20786f62;
         nDropLoop = 0;
-        if (0 < pDVar1->nBoxDropPlayerCount) {
+        if (pDVar1->nBoxDropPlayerCount > 0) {
           do {
             ITEMS::Items::Drop::ITEM_RewardItemToDrop(pQuestData->pGame, pQuestArgs->pTarget, ITEMTYPE_Shield, &nRewardItemGUID, nullptr, -1, 0);
             nDropLoop++;
           } while (nDropLoop < pDVar1->nBoxDropPlayerCount);
         }
       }
-      if (pQuestData->bIsNotIntroduction && 0 < pDVar1->nCouncilKillsRemaining) {
+      if (pQuestData->bIsNotIntroduction && pDVar1->nCouncilKillsRemaining > 0) {
         nCouncilKillsRemaining = pDVar1->nCouncilKillsRemaining - 1;
         pDVar1->nCouncilKillsRemaining = nCouncilKillsRemaining;
         if (!nCouncilKillsRemaining) {
@@ -1045,12 +1045,12 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
           pDVar1->bCouncilMemberTracking = (bool)(char)((uint32_t)iVar2 >> 0x10);
           pDVar1->field_0x3 = (bool)(char)((uint32_t)iVar2 >> 0x18);
           pQuestData->nQuestPacketFlags = '\0';
-          if (!pDVar1->bJerhynAiActive) {
-            QUEST_SetStateFlag(pQuestData, 6, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x3d1);
-            iVar2 = 4;
-          } else {
+          if (pDVar1->bJerhynAiActive) {
             QUEST_SetStateFlag(pQuestData, 7, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x3cc);
             iVar2 = 0xd;
+          } else {
+            QUEST_SetStateFlag(pQuestData, 6, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x3d1);
+            iVar2 = 4;
           }
 
           QUEST_SetStateAndBroadcast(pQuestData, iVar2, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);

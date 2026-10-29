@@ -64,13 +64,13 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       byBlue5 = *pSrcEntry >> 3;
       uVar1 = (uint16_t)byBlue5;
       wGreen5 = (uint16_t)(pSrcEntry[-1] >> 3);
-      if (byRed5 < 0x1f && 3 < (((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed & 7)) {
+      if (byRed5 < 0x1f && (((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed & 7) >= 4) {
         wRed5++;
       }
-      if (byBlue5 < 0x1f && 3 < (*pSrcEntry & 7)) {
+      if (byBlue5 < 0x1f && (*pSrcEntry & 7) >= 4) {
         uVar1 = byBlue5 + 1;
       }
-      if (pSrcEntry[-1] >> 3 < 0x1f && 3 < (pSrcEntry[-1] & 7)) {
+      if (pSrcEntry[-1] >> 3 < 0x1f && (pSrcEntry[-1] & 7) >= 4) {
         wGreen5++;
       }
 
@@ -103,7 +103,7 @@ static BYTE * gaGlidePaletteTable[72] = {}; D2_STATIC_GUARD(gaGlidePaletteTable,
 }
 
 void __fastcall RENDERER_D3D_CopyPixelsWithStride(void * pSrc, void * pDest, size_t nWidthBytes, int nHeight, int nDestPitch, uint32_t dwParam6) {
-    if (0 >= nHeight) {
+    if (nHeight <= 0) {
       return;
     }
 
@@ -118,7 +118,7 @@ void __fastcall RENDERER_D3D_CopyPixelsWithStride(void * pSrc, void * pDest, siz
 void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t * pDest32Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwParam6) {
     uint8_t* pSrcPixel;
     int nPixelsRemaining;
-    if (0 >= nHeight) {
+    if (nHeight <= 0) {
       return;
     }
 
@@ -127,7 +127,7 @@ void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t
       pDestPixel = pDest32Bit;
       pSrcPixel = pSrc8Bit;
       nPixelsRemaining = nWidth;
-      if (0 < nWidth) {
+      if (nWidth > 0) {
         do {
           *pDestPixel = g_Palette32Bit[*pSrcPixel];
           nPixelsRemaining--;

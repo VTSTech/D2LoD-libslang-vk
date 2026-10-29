@@ -82,7 +82,7 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     uint16_t wRefill;
     uint16_t** pBitBufAlias = pBitBuf;
     uint32_t wWord = (uint32_t)pBitBuf[2];
-    if (wWord < 8) {
+    if (wWord <= 7) {
       wRefill = **pBitBuf;
       pBitBuf[2] = (uint16_t*)(wWord + 0x10);
       pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
@@ -92,12 +92,9 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     uint16_t* puVar2 = pBitBuf[1];
     int* pQuickEntry = (int*)(pThis + (((uint32_t)puVar2 & 0x7f) * 3 + 0xd1d) * 4);
     bool bNeedRebuild = *pQuickEntry != *(int*)(pThis + 4);
-    if (bNeedRebuild) {
-      nBitCount = *(uint32_t*)(**(int**)(pThis + 0x3060) + 4);
-      pTreeNode = (uint16_t**)((int)nBitCount < 1 ? 0 : nBitCount);
-    } else {
+    if (!bNeedRebuild) {
       nBitCount = pQuickEntry[1];
-      if (nBitCount < 8) {
+      if (nBitCount <= 7) {
         pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - nBitCount);
         pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> ((uint8_t)nBitCount & 0x1f));
         return pQuickEntry[2];
@@ -106,6 +103,9 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
       pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - 7);
       pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> 7);
       pTreeNode = (uint16_t**)pQuickEntry[2];
+    } else {
+      nBitCount = *(uint32_t*)(**(int**)(pThis + 0x3060) + 4);
+      pTreeNode = (uint16_t**)((int)nBitCount <= 0 ? 0 : nBitCount);
     }
 
     nBitCount = 0;
@@ -135,7 +135,7 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     if (!bNeedRebuild) {
       return (int32_t)pTreeNode[2];
     }
-    if (7 < nBitCount) {
+    if (nBitCount > 7) {
       nQuickStep = *(int*)(pThis + 4);
       pQuickEntry[1] = nBitCount;
       *pQuickEntry = nQuickStep;
@@ -152,14 +152,14 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
       *pQuickFill = (uint32_t)(uintptr_t)pTreeNode[2];
       nQuickIdx += nQuickStep;
       pQuickFill += nQuickStep * 3;
-    } while (nQuickIdx < 0x80);
+    } while (nQuickIdx <= 0x7f);
 
     return (int32_t)pTreeNode[2];
 }
 
 int * * __fastcall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode) {
     int** pNode = *(int***)(pThis + 0x3058);
-    if ((int)pNode < 1 || !pNode) {
+    if ((int)pNode <= 0 || !pNode) {
       pNode = (int**)(pThis + 8 + *(int*)(pThis + 0x3068) * 0x18);
       (*(int*)(pThis + 0x3068))++;
     }
@@ -196,7 +196,7 @@ int __fastcall HUFFMAN_DecompressBlock(uint8_t * pDst, int32_t nDstMax, uint16_t
     }
 
     uint32_t wWord = (uint32_t)pBitBuf[2];
-    if (wWord < 9) {
+    if (wWord <= 8) {
       wRefill = **pBitBuf;
       pBitBuf[2] = (uint16_t*)(wWord + 0x10);
       pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
@@ -287,27 +287,27 @@ D2SLogStrc * __stdcall SLOG_LockLog(uint32_t * pnSlotOut, int32_t bAllocate, uin
       pDVar1 = *ppNext;
     }
 
-    if (bAllocate) {
-      D2SLogStrc* pContext;
-      /* DWORD flProtect for VirtualAlloc */ /* DWORD flAllocationType for VirtualAlloc */ /* SIZE_T dwSize for VirtualAlloc */ /* LPVOID lpAddress for VirtualAlloc */ pContext = (D2SLogStrc*)VirtualAlloc((LPVOID)0x0, 0x1001c, 0x1000, 4);
-      *ppNext = pContext;
-      if (pContext) {
-        pContext->nHandle = nHandle;
-        pContext->pNext = 0;
-        pContext->hFile = (HANDLE)-1;
-        pContext->nUsed = 0;
-        pContext->nLineStart = 0;
-        return pContext;
-      }
-
+    if (!bAllocate) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
       *pnSlotOut = -1;
       return nullptr;
     }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-    *pnSlotOut = -1;
-    return nullptr;
+    D2SLogStrc* pContext;
+    /* DWORD flProtect for VirtualAlloc */ /* DWORD flAllocationType for VirtualAlloc */ /* SIZE_T dwSize for VirtualAlloc */ /* LPVOID lpAddress for VirtualAlloc */ pContext = (D2SLogStrc*)VirtualAlloc((LPVOID)0x0, 0x1001c, 0x1000, 4);
+    *ppNext = pContext;
+    if (!pContext) {
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+      *pnSlotOut = -1;
+      return nullptr;
+    }
+
+    pContext->nHandle = nHandle;
+    pContext->pNext = 0;
+    pContext->hFile = (HANDLE)-1;
+    pContext->nUsed = 0;
+    pContext->nLineStart = 0;
+    return pContext;
 }
 
 // @blizzard SLogCreate (SLOG.CPP)
@@ -332,15 +332,15 @@ void __stdcall SLogCreate(LPCSTR szFileName, uint32_t dwUnused, int * pnHandleOu
         gnSLogSequence = nNewHandle;
         *pnHandleSaved = nNewHandle;
         pContext = SLOG_LockLog((uint32_t*)&szFileName, 1, nNewHandle);
-        if (pContext) {
-          pContext->hFile = hFile;
-          pContext->bTimestamps = 1;
-          pContext->nIndent = 0;
-          Source::SSComp::SLOG_UnlockLog((int32_t)szFileName);
+        if (!pContext) {
+          *pnHandleSaved = 0;
           return;
         }
 
-        *pnHandleSaved = 0;
+        pContext->hFile = hFile;
+        pContext->bTimestamps = 1;
+        pContext->nIndent = 0;
+        Source::SSComp::SLOG_UnlockLog((int32_t)szFileName);
         return;
       }
     }

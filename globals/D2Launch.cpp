@@ -3906,6 +3906,7 @@ D2WinTextBox * gpCtlBnetProgressBar = 0; D2_GLOBAL_GUARD(gpCtlBnetProgressBar, "
 D2WinTextBox * gbBnetConnectionTimerActive = 0; D2_GLOBAL_GUARD(gbBnetConnectionTimerActive, "gbBnetConnectionTimerActive");
 int gbBnetProgressActive = 0; D2_GLOBAL_GUARD(gbBnetProgressActive, "gbBnetProgressActive");
 HANDLE ghBnetConnectHandle = 0; D2_GLOBAL_GUARD(ghBnetConnectHandle, "ghBnetConnectHandle");
+unsigned int gbBNetConnectionProgressFlag = {}; D2_GLOBAL_GUARD(gbBNetConnectionProgressFlag, "gbBNetConnectionProgressFlag");
 D2WinEditBox * gpCharSelAccountNameInputControl = 0; D2_GLOBAL_GUARD(gpCharSelAccountNameInputControl, "gpCharSelAccountNameInputControl");
 D2WinEditBox * gpCtlDisconnectMessage1 = 0; D2_GLOBAL_GUARD(gpCtlDisconnectMessage1, "gpCtlDisconnectMessage1");
 D2WinEditBox * gpCtlDisconnectMessage2 = 0; D2_GLOBAL_GUARD(gpCtlDisconnectMessage2, "gpCtlDisconnectMessage2");

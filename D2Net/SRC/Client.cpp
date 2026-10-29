@@ -186,11 +186,11 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
       if (!nPacketSizeResult) {
         break;
       }
-      if (0x204 < nPacketSize) {
+      if (nPacketSize > 0x204) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x129);
         exit(-1);
       }
-      if ((int)pBytesSize < (int)nPacketSize) {
+      if ((int)nPacketSize > (int)pBytesSize) {
         break;
       }
 
@@ -222,7 +222,7 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
       }
 
       ppTailNext = &pD2PacketClient_to_0xAE;
-      if (0xae < (uint8_t)pBytes->pBytes[0]) {
+      if ((uint8_t)pBytes->pBytes[0] >= 0xaf) {
         ppTailNext = &pD2PacketClient_from_0xAF;
       }
 
@@ -302,13 +302,7 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
       }
 
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882ce8);
-      /* int flags for recv */ /* int len for recv */ if (!bCompressedMode) {
-        /* char * buf for recv */ /* SOCKET s for recv */ pbRecvResult = (uint8_t*)recv(CLIENT_SocketToServer, pD2PacketsClientBuffer->pBytes + pD2PacketsClientBuffer->nCount, 0x5b4, 0);
-        if (0 < (int)pbRecvResult) {
-          pD2PacketsClientBuffer->nCount = (int)(pbRecvResult + pD2PacketsClientBuffer->nCount);
-          bCompressedMode = NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues();
-        }
-      } else {
+      /* int flags for recv */ /* int len for recv */ if (bCompressedMode) {
         /* char * buf for recv */ /* SOCKET s for recv */ pbRecvResult = (uint8_t*)recv(CLIENT_SocketToServer, (char*)(aCompressedBuf + (int)pCompressedRead), 0x5b4, 0);
         if (0 < (int)pbRecvResult) {
           pCompressedRead += (int)pbRecvResult;
@@ -333,7 +327,7 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
             pCompressedEnd += -(int)pbDecompressResult;
             pCompressedConsumed += (int)pbDecompressResult;
             pCompressedRead = pCompressedEnd;
-            if (0 < (int)pbRecvResult) {
+            if ((int)pbRecvResult > 0) {
               pD2PacketsClientBuffer->nCount = (int)(pbRecvResult + pD2PacketsClientBuffer->nCount);
               NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues();
               pCompressedRead = pCompressedEnd;
@@ -343,6 +337,12 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
           if (pCompressedRead && pCompressedConsumed) {
             memmove(aCompressedBuf, aCompressedBuf + (int)pCompressedConsumed, (size_t)pCompressedRead);
           }
+        }
+      } else {
+        /* char * buf for recv */ /* SOCKET s for recv */ pbRecvResult = (uint8_t*)recv(CLIENT_SocketToServer, pD2PacketsClientBuffer->pBytes + pD2PacketsClientBuffer->nCount, 0x5b4, 0);
+        if (0 < (int)pbRecvResult) {
+          pD2PacketsClientBuffer->nCount = (int)(pbRecvResult + pD2PacketsClientBuffer->nCount);
+          bCompressedMode = NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues();
         }
       }
 
@@ -377,7 +377,7 @@ DWORD __stdcall ThreadClientToServer(void * lpThreadParam) {
 
 // Sends packet to server. Validates packet size <= 0x204 bytes, forwards to NET_SendPacketToClient (misnomer in callee name).
 void __fastcall NET_CLIENT_SendPacketToServer(void * pUnused, uint16_t nPacketSize, char * pPacket) {
-    if (0x204 < nPacketSize) {
+    if (nPacketSize > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c6);
       exit(-1);
     }
@@ -411,7 +411,7 @@ uint32_t __stdcall NET_D2GS_CLIENT_SendPacketAfterChecks(size_t nSize, int32_t U
 
     BOOL BVar1 = ::D2Net::Game::Server::NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
     if (BVar1) {
-      if (0x204 < (uint16_t)nSize) {
+      if ((uint16_t)nSize > 0x204) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c6);
         exit(-1);
       }
@@ -434,7 +434,7 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
     char* nPacketSize = pBytes;
     while (true) {
       D2OnePacketClientStrc* pNewPacket;
-      if ((int)pBytesSize < 1) {
+      if ((int)pBytesSize <= 0) {
         return;
       }
 
@@ -443,10 +443,10 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
       if (!nSizeResult) {
         return;
       }
-      if ((char*)0x204 < nPacketSize) {
+      if (nPacketSize > (char*)0x204) {
         break;
       }
-      if ((int)nPacketSize < 1) {
+      if ((int)nPacketSize <= 0) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x204);
         exit(-1);
       }
@@ -458,19 +458,19 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
       pNewPacket->pD2PacketClientNext = 0;
       byFirstByte = *pBytes;
       pTailPacket = pD2PacketClient_to_0xAE;
-      if (0xae < byFirstByte) {
+      if (byFirstByte >= 0xaf) {
         pTailPacket = pD2PacketClient_from_0xAF;
-        if (0xb4 < byFirstByte) {
+        if (byFirstByte >= 0xb5) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x217);
           exit(-1);
         }
       }
       if (!pTailPacket) {
         pTailPacket = pD2PacketClient_from_0xAF;
-        if (0xae < byFirstByte) {
+        if (byFirstByte >= 0xaf) {
           pTailPacket = pNewPacket;
           pNewPacket = pD2PacketClient_to_0xAE;
-          if (0xb4 < byFirstByte) {
+          if (byFirstByte >= 0xb5) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x21e);
             exit(-1);
           }

@@ -106,15 +106,7 @@ void __stdcall DRAW_AltItems() {
             if (pItem && pItem->eUnitFlagsEx >> 7 & 1 && pItem->eUnitType == UNIT_ITEM && nItemSlotIdx < 0x20) {
               gaGroundItemLabels[nItemSlotIdx].pItem = pItem;
               __frame0.pCurrentItem = pItem;
-              if (!__frame0.bPerspectiveActive) {
-                nColorOrCoord = D2Common::Units::GetTargetX(pItem);
-                nCoordTemp = Path::DRAW_GetWorldOffsetX();
-                __frame0.nItemX = nColorOrCoord - nCoordTemp;
-                nColorOrCoord = Path::DRAW_GetWorldOffsetY();
-                nCoordTemp = D2Common::Units::GetTargetY(__frame0.pCurrentItem);
-                nColorIdx = nCoordTemp + (-0x10 - nColorOrCoord);
-                pItem = __frame0.pCurrentItem;
-              } else {
+              if (__frame0.bPerspectiveActive) {
                 nColorOrCoord = D2Common::Units::GetPrecisionX(pItem);
                 __frame0.nPrecisionX = D2Common::Units::GetPrecisionY(pItem);
                 uBorderType = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(nColorOrCoord, __frame0.nPrecisionX);
@@ -126,15 +118,25 @@ void __stdcall DRAW_AltItems() {
                 D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nColorOrCoord, __frame0.nPrecisionX, 0, &__frame0.nItemPosX, &__frame0.nPerspY);
                 uBorderType = Path::DRAW_GetTypeOfBorder();
                 nColorIdx = __frame0.nPerspY;
-                if (uBorderType == 1) {
-                  __frame0.nItemPosX -= (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-                } else if (uBorderType == 2) {
-                  __frame0.nItemPosX += (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-                  __frame0.nItemX = __frame0.nItemPosX;
-                  goto layout_label;
+                if (uBorderType != 1) {
+                  if (uBorderType == 2) {
+                    __frame0.nItemPosX += ScreenSizeX / 4;
+                    __frame0.nItemX = __frame0.nItemPosX;
+                    goto layout_label;
+                  }
+                } else {
+                  __frame0.nItemPosX -= ScreenSizeX / 4;
                 }
 
                 __frame0.nItemX = __frame0.nItemPosX;
+              } else {
+                nColorOrCoord = D2Common::Units::GetTargetX(pItem);
+                nCoordTemp = Path::DRAW_GetWorldOffsetX();
+                __frame0.nItemX = nColorOrCoord - nCoordTemp;
+                nColorOrCoord = Path::DRAW_GetWorldOffsetY();
+                nCoordTemp = D2Common::Units::GetTargetY(__frame0.pCurrentItem);
+                nColorIdx = nCoordTemp + (-0x10 - nColorOrCoord);
+                pItem = __frame0.pCurrentItem;
               }
 
               layout_label:
@@ -142,14 +144,16 @@ void __stdcall DRAW_AltItems() {
               __frame0.nItemVisY = nColorIdx;
               __frame0.nMaxX = ScreenSizeX;
               uBorderType = Path::DRAW_GetTypeOfBorder();
-              if (uBorderType == 1) {
+              if (uBorderType != 1) {
+                if (uBorderType == 2) {
+                  __frame0.nItemPosY = ScreenSizeX / 2;
+                }
+              } else {
                 __frame0.nMaxX = ScreenSizeX / 2 - 0x20;
-              } else if (uBorderType == 2) {
-                __frame0.nItemPosY = ScreenSizeX / 2;
               }
 
               nDrawCount = gItemDrawFlags;
-              if (__frame0.nItemPosY <= __frame0.nItemX && __frame0.nItemX <= __frame0.nMaxX && -9 < nColorIdx && nColorIdx <= ScreenSizeY - 0x10) {
+              if (__frame0.nItemX >= __frame0.nItemPosY && __frame0.nItemX <= __frame0.nMaxX && nColorIdx >= -8 && nColorIdx <= ScreenSizeY - 0x10) {
                 wszText = gaGroundItemLabels[nItemSlotIdx].wszName;
                 *wszText = L'\0';
                 ui::UI_FormatItemNameWithQuality(__frame0.pCurrentItem, wszText, 0x100);
@@ -174,13 +178,13 @@ void __stdcall DRAW_AltItems() {
                 bVar1 = false;
                 commit_label:
                 nDrawCount = gItemDrawFlags;
-                if (__frame0.nPrecisionX <= nColorIdx && __frame0.nItemPosY <= __frame0.nItemX && bVar1) {
+                if (__frame0.nPrecisionX <= nColorIdx && __frame0.nItemX >= __frame0.nItemPosY && bVar1) {
                   gaGroundItemLabels[nItemSlotIdx].nLeft = __frame0.nItemX;
                   gaGroundItemLabels[nItemSlotIdx].nTop = __frame0.nItemNameHeight;
                   gaGroundItemLabels[nItemSlotIdx].nRight = __frame0.nPrecisionX;
                   gaGroundItemLabels[nItemSlotIdx].nBottom = __frame0.nItemVisY;
                   if (!__frame0.bFoundMatch) {
-                    if (nMouseX < __frame0.nItemX || __frame0.nPrecisionX < nMouseX || nMouseY < __frame0.nItemNameHeight || __frame0.nItemVisY + 4 < nMouseY) {
+                    if (nMouseX < __frame0.nItemX || nMouseX > __frame0.nPrecisionX || nMouseY < __frame0.nItemNameHeight || nMouseY > __frame0.nItemVisY + 4) {
                       if (__frame0.pCurrentItem != pPlayerUnit_lcl) {
                         goto color_by_quality;
                       }
@@ -254,7 +258,7 @@ void __stdcall DRAW_AltItems() {
     }
 
     nMouseX = 0;
-    if (0 < nDrawCount) {
+    if (nDrawCount > 0) {
       do {
         D2Win::Src::D2WinFont::D2WINFONT_DrawTextWithBackgroundRect(gaGroundItemLabels[nMouseX].wszName, gaGroundItemLabels[nMouseX].nLeft, gaGroundItemLabels[nMouseX].nBottom, gaGroundItemLabels[nMouseX].nColorKey, gaGroundItemLabels[nMouseX].nDrawPosition, gaGroundItemLabels[nMouseX].nTextColor);
         nMouseX++;

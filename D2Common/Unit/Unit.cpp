@@ -63,23 +63,23 @@ static BOOL __stdcall DRLGROOM_ValidateUnitPosition(int32_t nParam, D2RoomStrc *
     int nRoomXStart;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitX = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitY = PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitY = 0;
     }
-    if (!pRoom || (nRoomXStart = pRoom->sCoords.dwXStart , nUnitX < nRoomXStart) || pRoom->sCoords.dwXSize + nRoomXStart <= nUnitX || (nUnitX = pRoom->sCoords.dwYStart , nUnitY < nUnitX || pRoom->sCoords.dwYSize + nUnitX <= nUnitY)) {
+    if (!pRoom || (nRoomXStart = pRoom->sCoords.dwXStart , nUnitX < nRoomXStart) || nUnitX >= pRoom->sCoords.dwXSize + nRoomXStart || (nUnitX = pRoom->sCoords.dwYStart , nUnitY < nUnitX || nUnitY >= pRoom->sCoords.dwYSize + nUnitX)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e);
       exit(-1);
     } else {
@@ -96,12 +96,12 @@ static BOOL __stdcall DRLGROOM_ValidateUnitPosition(int32_t nParam, D2RoomStrc *
         pUnitIter = pUnitIter->pRoomNext;
       }
 
-      if (nParam) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3c);
-        exit(-1);
+      if (!nParam) {
+        return 0;
       }
 
-      return 0;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3c);
+      exit(-1);
     }
 }
 
@@ -156,11 +156,11 @@ void __stdcall SortUnitListByTargetY(D2RoomStrc * pRoom) {
       do {
         nTargetYCur = Units::GetTargetY(pUnitCur);
         nTargetYNext = Units::GetTargetY(pUnit);
-        if (nTargetYNext < nTargetYCur) {
-          if (!pPrev) {
-            *ppUnitList = pUnit;
-          } else {
+        if (nTargetYCur > nTargetYNext) {
+          if (pPrev) {
             pPrev->pRoomNext = pUnit;
+          } else {
+            *ppUnitList = pUnit;
           }
 
           pUnitCur->pRoomNext = pUnit->pRoomNext;
@@ -380,7 +380,7 @@ void __stdcall DRLGROOM_ClearUnitRoomLink(D2UnitStrc * pUnit) {
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType != UNIT_OBJECT && ((int)eUnitType < 4 || 5 < (int)eUnitType)) {
+    if (eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5)) {
       Drlg::Path::DRLGPATH_ClearPathPosition(pUnit->pPath.pDynamicPath);
       return;
     }

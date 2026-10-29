@@ -250,7 +250,9 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!bRewardAwaits) {
+    if (bRewardAwaits) {
+      nMessageIndex = 3;
+    } else {
       int32_t nPlayerId = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       bRewardAwaits = QUEST_HasPlayerParticipated(pQuestData, nPlayerId);
       if (bRewardAwaits == 1) {
@@ -260,7 +262,7 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       /* If quest completed, return */ if (bQuestCompleted == 1) {
         return;
       }
-      if (3 < pQuestData->nStateFlag && !bQuestJustCompleted) {
+      if (pQuestData->nStateFlag >= 4 && !bQuestJustCompleted) {
         return;
       }
       if (!pQuestData->bIsNotIntroduction) {
@@ -271,11 +273,9 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nMessageIndex == -1) {
         return;
       }
-      if (7 < nMessageIndex) {
+      if (nMessageIndex >= 8) {
         return;
       }
-    } else {
-      nMessageIndex = 3;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
@@ -518,23 +518,24 @@ bool __fastcall Q01_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bIsQuestInState == 1) {
-      return false;
-    }
-    /* If quest has been given by NPC (status 1) and reward is not yet available:
-                         active */ if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
-      bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      if (!bIsQuestInState) {
-        return true;
-      }
-    }
-
-    /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (bIsQuestInState != 1) {
-      /* Otherwise: inactive */ return false;
+      /* If quest has been given by NPC (status 1) and reward is not yet available:
+                         active */ if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
+        bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+        if (!bIsQuestInState) {
+          return true;
+        }
+      }
+
+      /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+      if (bIsQuestInState != 1) {
+        /* Otherwise: inactive */ return false;
+      }
+
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A1Q1 (Den of Evil) sequence-filter (Q01_SequenceFilter, fpSequenceFilter) -- chains quest activation. Only proceeds once Den of Evil is finished (nStateFlag==5 or fully introduced); then looks up the next quest in the chain (nSequenceQuestId = QUEST_SistersBurialGrounds, set in Q01_InitData) and invokes its sequence filter, so completing the Den unlocks/advances A1Q2. No direct quest-record state ops; it drives quest progression via the chain.
@@ -544,18 +545,18 @@ bool __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pNextQuestData) {
-      return false;
+    if (pNextQuestData) {
+      BOOL bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadFnPtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
+        exit(-1);
+      }
+
+      bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return uVar1;
     }
 
-    BOOL bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadFnPtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
-      exit(-1);
-    }
-
-    bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-    return uVar1;
+    return false;
 }
 
 // A1Q1 (Den of Evil) state-0x0d callback (Q01_Callback_13) -- reconstructs the server-side progress flags (nStateFlag / nStateFlagPrev) from a player's saved quest record on (re)load, so a returning player resumes at the right step. If the player's QUEST_DenOfEvil record is not Completed and not FinishedInPreviousGame, it reads the journal step sub-states: Step0x04 -> flag 3, prev 2 (den cleared, return to Akara); Step0x03 -> flag 3, prev 1 (entered the Den); Step0x02 -> flag 2, prev 1 (talked to Akara). The inverse of Q01_SyncQuestStepToPlayer.

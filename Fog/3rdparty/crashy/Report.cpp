@@ -64,7 +64,7 @@ int8_t __thiscall Open(::Report * pThis, char * szFileName) {
     }
 
     int nLen1 = File::STRING_FormatVarArgs("%s/%04d-%02d-%02d %02d.%02d.%02d", gszCrashLogTempDir, localTime.tm_year + 0x76c, localTime.tm_mon + 1, localTime.tm_mday, localTime.tm_hour, localTime.tm_min, localTime.tm_sec);
-    if (nLen1 + 1U >= 0x401) {
+    if (!(nLen1 + 1U < 0x401)) {
       return '\0';
     }
 
@@ -74,7 +74,7 @@ int8_t __thiscall Open(::Report * pThis, char * szFileName) {
     }
 
     nLen1 = File::STRING_FormatVarArgs("%s/%s", pThis->szReportDir, (int32_t)szFileName);
-    if (nLen1 + 1U >= 0x401) {
+    if (!(nLen1 + 1U < 0x401)) {
       return '\0';
     }
 
@@ -108,10 +108,45 @@ int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToR
     uint32_t local_8;
     ::Report* pFileReg;
     pFileReg = pThis;
-    if (0xf < pThis->nAttachmentCount) {
+    if (pThis->nAttachmentCount >= 0x10) {
       return '\0';
     }
-    if (bCopyToReportDir == '\0') {
+    if (bCopyToReportDir != '\0') {
+      if (pThis->szReportDir[0] != '\0') {
+        pDst = szPathCopy;
+        nCopyRemaining = 0x3ff;
+        pBaseDirPtr = pThis->szReportDir;
+        do {
+          cCh = *pBaseDirPtr;
+          *pDst = cCh;
+          pDst++;
+          pBaseDirPtr++;
+          if (cCh == '\0') {
+            if (nCopyRemaining) {
+              goto copy_file_into_report_dir;
+            }
+
+            break;
+          }
+
+          nCopyRemaining--;
+        } while (nCopyRemaining);
+
+        *pDst = '\0';
+        pBaseDirPtr = pBaseDirPtr + strlen(pBaseDirPtr) + 1;
+        copy_file_into_report_dir:
+        pBaseDirPtr += -1 - (int)pThis->szReportDir;
+        if (pBaseDirPtr < (char*)0x400) {
+          szPathCopy[(int)pBaseDirPtr] = '/';
+          uVar1 = File::FILETOOLS_ExtractFilename(szPathCopy + (int)(pBaseDirPtr + 1), szPath, (char*)((uintptr_t)&local_8 - (int)(szPathCopy + (int)(pBaseDirPtr + 1))));
+          if ((char)uVar1 != '\0') {
+            File::FILETOOLS_CopyFile_UTF8(szPath, szPathCopy);
+            szPath = szPathCopy;
+            goto store_path;
+          }
+        }
+      }
+    } else {
       pDst = szPath;
       pDst = pDst + strlen(pDst) + 1;
       if ((uint32_t)((int)pDst - (int)(szPath + 1)) < 0x400) {
@@ -139,39 +174,6 @@ int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToR
         count_attachment:
         pFileReg->nAttachmentCount++;
         return '\x01';
-      }
-    } else if (pThis->szReportDir[0] != '\0') {
-      pDst = szPathCopy;
-      nCopyRemaining = 0x3ff;
-      pBaseDirPtr = pThis->szReportDir;
-      do {
-        cCh = *pBaseDirPtr;
-        *pDst = cCh;
-        pDst++;
-        pBaseDirPtr++;
-        if (cCh == '\0') {
-          if (nCopyRemaining) {
-            goto copy_file_into_report_dir;
-          }
-
-          break;
-        }
-
-        nCopyRemaining--;
-      } while (nCopyRemaining);
-
-      *pDst = '\0';
-      pBaseDirPtr = pBaseDirPtr + strlen(pBaseDirPtr) + 1;
-      copy_file_into_report_dir:
-      pBaseDirPtr += -1 - (int)pThis->szReportDir;
-      if (pBaseDirPtr < (char*)0x400) {
-        szPathCopy[(int)pBaseDirPtr] = '/';
-        uVar1 = File::FILETOOLS_ExtractFilename(szPathCopy + (int)(pBaseDirPtr + 1), szPath, (char*)((uintptr_t)&local_8 - (int)(szPathCopy + (int)(pBaseDirPtr + 1))));
-        if ((char)uVar1 != '\0') {
-          File::FILETOOLS_CopyFile_UTF8(szPath, szPathCopy);
-          szPath = szPathCopy;
-          goto store_path;
-        }
       }
     }
 

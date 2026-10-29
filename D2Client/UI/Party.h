@@ -22,7 +22,6 @@ void __stdcall SetRedToBlack();
 void __stdcall UI_DrawPartyPanelBackground();
 void __stdcall FreeAllUiParty();
 void __stdcall UI_InitializePartyButtonStruct(uint32_t nX, uint32_t nY, uint32_t nDC6OrCallback, uint32_t nFrame, uint32_t nButtonType, uint32_t nData1, uint32_t nData2, uint32_t * pdwParam);
-void __fastcall UI_DrawPartyMemberName(char * pszName, struct D2UiPartyStrc * pUiParty, int32_t nScreenY, int32_t nColor, int32_t bNarrowMode);
 void __fastcall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, int16_t nPartyId);
 void __stdcall UI_DrawPartyLeaveButton();
 void __stdcall UI_DrawPlayerNameInParty();
@@ -41,6 +40,6 @@ void __stdcall LoadPartyDC6();
 void __stdcall FreePartyDC6();
 void __stdcall UI_DrawPartyMembers();
 void __stdcall DRAW_UI_PartyWindow();
-// 11 internal functions (defined in .cpp)
+// 12 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Party

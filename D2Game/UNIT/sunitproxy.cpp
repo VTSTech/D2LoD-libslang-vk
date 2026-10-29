@@ -149,7 +149,7 @@ void __fastcall SUNITPROXY_AddItemToNpcProxy(D2UnitStrc * pNpcUnit, ::SGAMEDATA 
 // @sourcefile .\UNIT\sunitproxy.cpp
 static void SUNITPROXY_InitNpcTradeItems(int32_t nParam1, ::SGAMEDATA * pGame, void * * pParam) {
     void* nNpcTradeIdx;
-    if (0x10 < nParam1) {
+    if (nParam1 >= 0x11) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa4);
       exit(-1);
     }
@@ -495,8 +495,7 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
     D2SeedStrc seedComputed;
     seedComputed = D2_SEED_NEXT(pGame->pGameSeed);
     pGame->pGameSeed = seedComputed;
-    pNpcControl->sSeed.nSeedLow = seedComputed.nSeedLow;
-    pNpcControl->sSeed.nSeedHigh = 0x29a;
+    D2Common::Seed::InitSeed_Param_666(&pNpcControl->sSeed, seedComputed.nSeedLow);
     if (!gptItemCodeArmor) {
       D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(0x20767163, (int*)&gptItemCodeArmor);
     }
@@ -517,7 +516,7 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
       pNpcEntry = &pNpcArray->pNpc[0].pProxyQueue;
       pDataTable = sgptDataTable;
       do {
-        if (-1 < nMonStatsIdx && nMonStatsIdx < pDataTable->nTxtMonStatsSize) {
+        if (nMonStatsIdx >= 0 && nMonStatsIdx < pDataTable->nTxtMonStatsSize) {
           pMonStatsTxtEntry = pDataTable->pTxtMonStats->Code + nMonStatsByteOffset - 0x10;
           if (pMonStatsTxtEntry && pMonStatsTxtEntry[0xd] & (uint8_t)2) {
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->nMonStatsId = nMonStatsIdx;
@@ -535,14 +534,14 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->pProxyInventories = 0;
             ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->flags0x0C = 0;
             nNpcControlTableSize = gnNpcControlInitCount;
-            if (0x3f < nNpcCount) {
+            if (nNpcCount >= 0x40) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe6);
               exit(-1);
             }
 
             pNpcControl->nNpcCount++;
             bFoundInControlTable = false;
-            if (0 < nNpcControlTableSize) {
+            if (nNpcControlTableSize > 0) {
               do {
                 if (bFoundInControlTable) {
                   break;
@@ -564,15 +563,8 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
                 ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x07 = 0;
                 if (byNpcControlFlags == 1) {
                   iVar1 = ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->nMonStatsId;
-                  if (iVar1 < 0x196) {
-                    if (iVar1 == 0x195) {
-                      nTradeItemIdx = 0xd;
-                      init_trade_with_all_flags:
-                      SUNITPROXY_InitNpcTradeItems(nTradeItemIdx, pGame, &((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.pTradeList1);
-                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x04 = 1;
-                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x05 = 1;
-                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->flags0x0C = 1;
-                    } else {
+                  if (iVar1 <= 0x195) {
+                    if (iVar1 != 0x195) {
                       switch (iVar1) {
                         case 0x93:
                           nTradeItemIdx = 1;
@@ -622,6 +614,13 @@ void __fastcall SUNITPROXY_AllocNpcControl(::SGAMEDATA * pGame) {
                         ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x04 = 1;
                         ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x05 = 1;
                       }
+                    } else {
+                      nTradeItemIdx = 0xd;
+                      init_trade_with_all_flags:
+                      SUNITPROXY_InitNpcTradeItems(nTradeItemIdx, pGame, &((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.pTradeList1);
+                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x04 = 1;
+                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->sTrade.unk0x05 = 1;
+                      ((D2GameNpcStrc*)((char*)pNpcEntry - 0x14))->flags0x0C = 1;
                     }
                   } else {
                     switch (iVar1) {
@@ -737,7 +736,7 @@ void __fastcall FreeNpcControl(::SGAMEDATA * pGame) {
     void* pNextInteraction;
     D2GameNpcControlStrc* pNpcControl = pGame->pNpcControl;
     int iNpc = 0;
-    if (0 < pNpcControl->nNpcCount) {
+    if (pNpcControl->nNpcCount > 0) {
       void* pInteractionEntry;
       pNpcEntryPtr = &pNpcControl->pNpc->pNpc[0].sTrade.pTradeList1;
       do {
@@ -832,7 +831,7 @@ void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t 
     uint8_t* pNpcArrayBase = (uint8_t*)pNpcCtrl->pNpc;
     int nNpcIdx = 0;
     GetTickCount();
-    if (0 >= pNpcCtrl->nNpcCount) {
+    if (pNpcCtrl->nNpcCount <= 0) {
       return;
     }
 
@@ -1038,10 +1037,10 @@ void __fastcall SUNITPROXY_RemovePlayerFromNpc(::SGAMEDATA * pGame, D2UnitStrc *
           break;
         }
         if ((D2PoolManagerStrc*)pProxyEntry->nPlayerGUID == pMemory) {
-          if (!pProxyEntryIter) {
-            pNpc->pProxyInventories = pProxyEntry->pNext;
-          } else {
+          if (pProxyEntryIter) {
             pProxyEntryIter->pNext = pProxyEntry->pNext;
+          } else {
+            pNpc->pProxyInventories = pProxyEntry->pNext;
           }
           if (pProxyEntry->pInventory) {
             SUNITPROXY_FreeInventoryItems(pGame, pProxyEntry->pInventory);
@@ -1073,10 +1072,10 @@ void __fastcall SUNITPROXY_RemovePlayerFromNpc(::SGAMEDATA * pGame, D2UnitStrc *
       }
     }
 
-    if (!pPrevInteraction) {
-      pNpc->pPlayerInteractions = pInteractionEntry->pNext;
-    } else {
+    if (pPrevInteraction) {
       pPrevInteraction->pNext = pInteractionEntry->pNext;
+    } else {
+      pNpc->pPlayerInteractions = pInteractionEntry->pNext;
     }
 
     D2_FREE_POOL_AT(pGame->pMemoryPool, pInteractionEntry, ".\\UNIT\\sunitproxy.cpp", 0x4a7);
@@ -1160,7 +1159,7 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
     gbaNpcItemTableBuilt[nNpcIndex] = 1;
     int nTradeCountTmp = 0;
     int nQuestCount = 0;
-    if (0 < pItemTblSize->nSize) {
+    if (pItemTblSize->nSize > 0) {
       int iVar1;
       pItemRow = &pItemTblSize->pItems->bAkaraMagicMax + nNpcIndex;
       iVar1 = pItemTblSize->nSize;
@@ -1189,7 +1188,7 @@ void __stdcall SUNITPROXY_BuildNpcItemTables(int32_t nNpcIndex) {
     memset(pAllocBuf, 0, nQuestCount * 4);
     gaNpcItemTables[nNpcIndex].nQuestCount = nQuestCount;
     int nItemIdx = 0;
-    if (0 >= pItemTblSize->nSize) {
+    if (pItemTblSize->nSize <= 0) {
       return;
     }
 
@@ -1225,35 +1224,14 @@ void __stdcall SUNITPROXY_InitAllNpcItemTables() {
     nMonStatsSize = sgptDataTable->nTxtMonStatsSize;
     eD2MonsterClassId nMonIdx;
     nMonIdx = MonsterUnitSkeleton1;
-    if (0 >= nMonStatsSize) {
+    if (nMonStatsSize <= 0) {
       return;
     }
 
     do {
-      if (!((int)nMonIdx < 0 || sgptDataTable->nTxtMonStatsSize <= (int)nMonIdx || !(sgptDataTable->pTxtMonStats + nMonIdx) || !sgptDataTable->pTxtMonStats[nMonIdx].interact)) {
-        if (0x195 < (int)nMonIdx) {
-          switch (nMonIdx) {
-            case MonsterUnitLarzuk:
-              nNpcTableIdx = 0xf;
-            break;
-            case MonsterUnitDrehya1:
-
-            case MonsterUnitTown:
-              nNpcTableIdx = 0x10;
-            break;
-            case MonsterUnitMalah:
-              nNpcTableIdx = 0xe;
-            break;
-            default:
-              goto next_monster;
-          }
-
-          SUNITPROXY_BuildNpcItemTables(nNpcTableIdx);
-        } else {
-          if (nMonIdx == MonsterUnitJamella) {
-            nNpcTableIdx = 0xd;
-            SUNITPROXY_BuildNpcItemTables(nNpcTableIdx);
-          } else {
+      if (!((int)nMonIdx < 0 || (int)nMonIdx >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nMonIdx) || !sgptDataTable->pTxtMonStats[nMonIdx].interact)) {
+        if ((int)nMonIdx <= 0x195) {
+          if (nMonIdx != MonsterUnitJamella) {
             switch (nMonIdx) {
               case MonsterUnitGheed:
                 nNpcTableIdx = 1;
@@ -1295,7 +1273,28 @@ void __stdcall SUNITPROXY_InitAllNpcItemTables() {
             }
 
             SUNITPROXY_BuildNpcItemTables(nNpcTableIdx);
+          } else {
+            nNpcTableIdx = 0xd;
+            SUNITPROXY_BuildNpcItemTables(nNpcTableIdx);
           }
+        } else {
+          switch (nMonIdx) {
+            case MonsterUnitLarzuk:
+              nNpcTableIdx = 0xf;
+            break;
+            case MonsterUnitDrehya1:
+
+            case MonsterUnitTown:
+              nNpcTableIdx = 0x10;
+            break;
+            case MonsterUnitMalah:
+              nNpcTableIdx = 0xe;
+            break;
+            default:
+              goto next_monster;
+          }
+
+          SUNITPROXY_BuildNpcItemTables(nNpcTableIdx);
         }
       }
 
@@ -1363,10 +1362,10 @@ void __fastcall SUNITPROXY_RemovePlayerProxyInventory(::SGAMEDATA * pGame, D2Uni
       }
     }
 
-    if (!pPrevNode) {
-      pNpc->pProxyInventories = pMemoryToFree->pNext;
-    } else {
+    if (pPrevNode) {
       pPrevNode->pNext = pMemoryToFree->pNext;
+    } else {
+      pNpc->pProxyInventories = pMemoryToFree->pNext;
     }
     if (pMemoryToFree->pInventory) {
       SUNITPROXY_FreeInventoryItems(pGame, pMemoryToFree->pInventory);
@@ -1387,19 +1386,14 @@ void __stdcall SUNITPROXY_UpdateNpcProxiesForAct(::SGAMEDATA * pGame, char nAct,
     D2GameNpcArrayStrc* pNpcArray = pNpcControl->pNpc;
     int nNpcIdx = 0;
     DWORD dwNow = GetTickCount();
-    if (0 >= pNpcControl->nNpcCount) {
+    if (pNpcControl->nNpcCount <= 0) {
       return;
     }
 
     uint8_t* pNpcEntry = &pNpcArray->pNpc[0].sTrade.unk0x07;
     do {
       if (pNpcEntry != (uint8_t*)0x7 && pNpcEntry[-5] == nAct && pNpcEntry[-4] == 1 && *(int*)(pNpcEntry - 0xb) == 1 && ((D2NpcTradeStateStrc*)(pNpcEntry - 7))->bStoreFilled == 1) {
-        if (!bResult) {
-          if (*(uint32_t*)(pNpcEntry + 1) + 240000 < dwNow) {
-            *pNpcEntry = 1;
-            *(DWORD*)(pNpcEntry + 1) = dwNow;
-          }
-        } else {
+        if (bResult) {
           pLiveUnit = SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, *(uint32_t*)(pNpcEntry + 0x19));
           if (!pLiveUnit || pLiveUnit->nClassId != *(int*)(pNpcEntry - 0x27)) {
             SUNITPROXY_FreeNpcProxyData((D2GameNpcStrc*)(pNpcEntry - 0x27), pGame);
@@ -1415,6 +1409,11 @@ void __stdcall SUNITPROXY_UpdateNpcProxiesForAct(::SGAMEDATA * pGame, char nAct,
             } else {
               *pNpcEntry = 1;
             }
+          }
+        } else {
+          if (dwNow > *(uint32_t*)(pNpcEntry + 1) + 240000) {
+            *pNpcEntry = 1;
+            *(DWORD*)(pNpcEntry + 1) = dwNow;
           }
         }
       }

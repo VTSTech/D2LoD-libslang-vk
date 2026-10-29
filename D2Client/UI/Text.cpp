@@ -258,13 +258,13 @@ void __stdcall TEXT_FreeAllScreenMessages(D2ScreenMessageListStrc * pList) {
 
       pList->pHead = 0;
     }
-    if (nCount == pList->nCount) {
-      pList->nCount = 0;
-      return;
+    if (nCount != pList->nCount) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6cd);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6cd);
-    exit(-1);
+    pList->nCount = 0;
+    return;
 }
 
 void __fastcall TEXT_SetTextDisplayMode(int32_t nParam) {
@@ -371,7 +371,7 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
           if (pTmpLine) {
             nYTop = 0x5e - ((uint32_t)nFirstVisibleYOffset >> 10);
             iVar1 = nYTop;
-            if (0x11 < nYTop) {
+            if (nYTop >= 0x12) {
               iVar1 = 0x12;
             }
             if (gnTextDisplayMode || gbTextScrollBoxVisible) {
@@ -421,34 +421,35 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
     restore_font_check_scrolled:
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
     iVar1 = (int)ppwszText[1] - 1;
-    if (iVar1 < 1) {
+    if (iVar1 <= 0) {
       iVar1 = 1;
     }
-    if (iVar1 * 0x12 + 0x70U >= (uint32_t)ppwszText[2] >> 10) {
-      return 0;
-    }
-    if (gnTextScrollBoxLineHeight != 1) {
+    if ((uint32_t)ppwszText[2] >> 10 > iVar1 * 0x12 + 0x70U) {
+      if (gnTextScrollBoxLineHeight != 1) {
+        return 1;
+      }
+
+      gnTextScrollBoxLineHeight = 0;
       return 1;
     }
 
-    gnTextScrollBoxLineHeight = 0;
-    return 1;
+    return 0;
 }
 
 void __fastcall TEXT_DrawTextBoxAtPosition(D2TextBoxStrc * pTextBox, int32_t nScreenX, int32_t nScreenY) {
     int32_t nLineCount = pTextBox->nLineCount;
-    if (10 < (uint32_t)nLineCount) {
+    if ((uint32_t)nLineCount > 10) {
       nLineCount = 10;
     }
 
     D2TextLineStrc* pCurLine = pTextBox->pLineList;
-    if (!(nLineCount && pCurLine && -1 < nScreenY && (int)((uint32_t)pTextBox->nHeight + nScreenY) < ScreenSizeY)) {
+    if (!(nLineCount && pCurLine && nScreenY >= 0 && (int)((uint32_t)pTextBox->nHeight + nScreenY) < ScreenSizeY)) {
       return;
     }
 
     Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX, nScreenY + 4, (uint32_t)pTextBox->nWidth, pTextBox->nHeight - 5, 0, DRAW_TRANSPARENT);
     int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
-    if (0 < nLineCount) {
+    if (nLineCount > 0) {
       int nLineIdx = 0;
       do {
         if (!pCurLine) {
@@ -475,7 +476,7 @@ static int TEXT_DrawTextBoxWithBorderCheck(D2TextBoxStrc * pTextBox, int * pnPar
     switch (nBorderType) {
       case 1:
         {
-          if (ScreenSizeX / 2 - 10 < *pnParam) {
+          if (*pnParam > ScreenSizeX / 2 - 10) {
             return 1;
           }
 
@@ -531,7 +532,7 @@ ScreenMessage_t * __fastcall TEXT_AllocScreenMessage(uint16_t * * ppwszText) {
     *(uint32_t*)((uintptr_t)&pMessage->dwMessageExpiration + 2) = 0;
     *(uint16_t*)((uintptr_t)&pMessage->pNext + 2) = 0;
     int i = 0;
-    if (*(short int*)(ppwszText + 6)) {
+    if ((uint16_t)*(short int*)(ppwszText + 6) > 0) {
       int32_t nLen;
       ppwszSrcLine = ppwszText;
       do {
@@ -556,7 +557,7 @@ void __fastcall TEXT_InsertScreenMessage(uint16_t * * ppwszText) {
     ScreenMessage_t* pNextNext;
     ScreenMessage_t* pPrev;
     ScreenMessage_t* pNewMessage = TEXT_AllocScreenMessage(ppwszText);
-    if (0x7f < AllMessagesMaybe.nCount && AllMessagesMaybe.pHead) {
+    if (AllMessagesMaybe.nCount >= 0x80 && AllMessagesMaybe.pHead) {
       ScreenMessage_t* pCurrent;
       pNextNext = AllMessagesMaybe.pHead->pNext;
       pPrev = 0;
@@ -634,16 +635,7 @@ void __stdcall TEXT_DrawChatMessages() {
         pListHead = pPrevMessage;
         pwszLine = pMessage->apwszLines[(int)pPrevMessage];
         if (pwszLine) {
-          if (!bWordWrap) {
-            nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLine);
-            nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pMessage->apwszLines[(int)pListHead], nPixelWidth);
-            if (nPixelWidth) {
-              nScreenY = nLineIdx * 0xf + nBaseY;
-              Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX - 4, nScreenY - 0xe, nPixelWidth + 8, 0x10, 0, DRAW_TRANSPARENT);
-              D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[(int)pPrevMessage], nScreenX, nScreenY, pMessage->color, 0);
-              nLineIdx++;
-            }
-          } else {
+          if (bWordWrap) {
             pwszClear = awszBuffer;
             for (nScreenY = 200; nScreenY; nScreenY--) {
               pwszClear[0] = L'\0';
@@ -672,6 +664,15 @@ void __stdcall TEXT_DrawChatMessages() {
                 pWrapNode = (D2TextLineStrc*)pWrapNext;
                 pMessage = pMessageHead;
               } while (pWrapNext);
+            }
+          } else {
+            nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLine);
+            nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pMessage->apwszLines[(int)pListHead], nPixelWidth);
+            if (nPixelWidth) {
+              nScreenY = nLineIdx * 0xf + nBaseY;
+              Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX - 4, nScreenY - 0xe, nPixelWidth + 8, 0x10, 0, DRAW_TRANSPARENT);
+              D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[(int)pPrevMessage], nScreenX, nScreenY, pMessage->color, 0);
+              nLineIdx++;
             }
           }
         }
@@ -817,87 +818,87 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
     RECT* pExistingRect;
     char bOverlaps;
     LONG nBottom;
-    if (0xf < nExistingRectCount) {
+    if (nExistingRectCount >= 0x10) {
       return nDefaultResult & -256;
     }
-    if (nExistingRectCount) {
-      BOOL bIntersects;
-      i = 0;
-      if (0 < nExistingRectCount) {
-        pExistingRect = gnTextBoxExclusionLeft;
-        do {
-          /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcCandidate, pExistingRect, pRect);
-          if (bIntersects) {
-            nDistX = 0x32;
-            do {
-              pExistingRect = (RECT*)0x23;
-              do {
-                nDirIdx = 0;
-                if (0 < gnTextNonOverlapRectCount) {
-                  do {
-                    rcCandidate.left = pRect->left + gaTextNonOverlapRects[nDirIdx] * nDistX;
-                    rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
-                    rcCandidate.right = rcCandidate.left + 400;
-                    rcCandidate.bottom = rcCandidate.top + 0x118;
-                    if (-1 < rcCandidate.left && rcCandidate.right <= ScreenSizeX && -1 < rcCandidate.top && rcCandidate.bottom <= ScreenSizeY) {
-                      bOverlaps = '\0';
-                      pCheckRect = gnTextBoxExclusionLeft;
-                      nRemaining = nExistingRectCount;
-                      do {
-                        /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcIntersect2, pCheckRect, &rcCandidate);
-                        if (bIntersects) {
-                          bOverlaps = '\x01';
-                        }
-
-                        pCheckRect++;
-                        nRemaining--;
-                      } while (nRemaining);
-
-                      if (bOverlaps == '\0') {
-                        gnTextBoxExclusionLeft[nExistingRectCount].left = rcCandidate.left;
-                        gnTextBoxExclusionLeft[nExistingRectCount].top = rcCandidate.top;
-                        gnTextBoxExclusionLeft[nExistingRectCount].right = rcCandidate.right;
-                        gnTextBoxExclusionLeft[nExistingRectCount].bottom = rcCandidate.bottom;
-                        pRect->left = rcCandidate.left;
-                        pRect->top = rcCandidate.top;
-                        pRect->right = rcCandidate.right;
-                        pRect->bottom = rcCandidate.bottom;
-                        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(gnTextBoxExclusionLeft + nExistingRectCount) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-                      }
-                    }
-
-                    nDirIdx++;
-                  } while (nDirIdx < gnTextNonOverlapRectCount);
-                }
-
-                pExistingRect = (RECT*)((int)pExistingRect + 0x23);
-              } while ((int)pExistingRect < 0x118);
-
-              nDistX += 0x32;
-              if (399 < (int)nDistX) {
-                return nDistX & -256;
-              }
-            } while (true);
-          }
-
-          pExistingRect++;
-          i++;
-        } while (i < nExistingRectCount);
-      }
-
-      gnTextBoxExclusionLeft[nExistingRectCount].left = pRect->left;
-      gnTextBoxExclusionLeft[nExistingRectCount].top = pRect->top;
-      gnTextBoxExclusionLeft[nExistingRectCount].right = pRect->right;
-      nBottom = pRect->bottom;
-      gnTextBoxExclusionLeft[nExistingRectCount].bottom = nBottom;
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nBottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    if (!nExistingRectCount) {
+      gnTextBoxExclusionLeft[0].left = pRect->left;
+      gnTextBoxExclusionLeft[0].top = pRect->top;
+      gnTextBoxExclusionLeft[0].right = pRect->right;
+      gnTextBoxExclusionLeft[0].bottom = pRect->bottom;
+      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pRect->bottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
-    gnTextBoxExclusionLeft[0].left = pRect->left;
-    gnTextBoxExclusionLeft[0].top = pRect->top;
-    gnTextBoxExclusionLeft[0].right = pRect->right;
-    gnTextBoxExclusionLeft[0].bottom = pRect->bottom;
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pRect->bottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    BOOL bIntersects;
+    i = 0;
+    if (nExistingRectCount > 0) {
+      pExistingRect = gnTextBoxExclusionLeft;
+      do {
+        /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcCandidate, pExistingRect, pRect);
+        if (bIntersects) {
+          nDistX = 0x32;
+          do {
+            pExistingRect = (RECT*)0x23;
+            do {
+              nDirIdx = 0;
+              if (gnTextNonOverlapRectCount > 0) {
+                do {
+                  rcCandidate.left = pRect->left + gaTextNonOverlapRects[nDirIdx] * nDistX;
+                  rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
+                  rcCandidate.right = rcCandidate.left + 400;
+                  rcCandidate.bottom = rcCandidate.top + 0x118;
+                  if (-1 < rcCandidate.left && rcCandidate.right <= ScreenSizeX && -1 < rcCandidate.top && rcCandidate.bottom <= ScreenSizeY) {
+                    bOverlaps = '\0';
+                    pCheckRect = gnTextBoxExclusionLeft;
+                    nRemaining = nExistingRectCount;
+                    do {
+                      /* RECT * lprcSrc2 for IntersectRect */ /* RECT * lprcSrc1 for IntersectRect */ /* LPRECT lprcDst for IntersectRect */ bIntersects = IntersectRect(&rcIntersect2, pCheckRect, &rcCandidate);
+                      if (bIntersects) {
+                        bOverlaps = '\x01';
+                      }
+
+                      pCheckRect++;
+                      nRemaining--;
+                    } while (nRemaining);
+
+                    if (bOverlaps == '\0') {
+                      gnTextBoxExclusionLeft[nExistingRectCount].left = rcCandidate.left;
+                      gnTextBoxExclusionLeft[nExistingRectCount].top = rcCandidate.top;
+                      gnTextBoxExclusionLeft[nExistingRectCount].right = rcCandidate.right;
+                      gnTextBoxExclusionLeft[nExistingRectCount].bottom = rcCandidate.bottom;
+                      pRect->left = rcCandidate.left;
+                      pRect->top = rcCandidate.top;
+                      pRect->right = rcCandidate.right;
+                      pRect->bottom = rcCandidate.bottom;
+                      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(gnTextBoxExclusionLeft + nExistingRectCount) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+                    }
+                  }
+
+                  nDirIdx++;
+                } while (nDirIdx < gnTextNonOverlapRectCount);
+              }
+
+              pExistingRect = (RECT*)((int)pExistingRect + 0x23);
+            } while ((int)pExistingRect < 0x118);
+
+            nDistX += 0x32;
+            if ((int)nDistX >= 400) {
+              return nDistX & -256;
+            }
+          } while (true);
+        }
+
+        pExistingRect++;
+        i++;
+      } while (i < nExistingRectCount);
+    }
+
+    gnTextBoxExclusionLeft[nExistingRectCount].left = pRect->left;
+    gnTextBoxExclusionLeft[nExistingRectCount].top = pRect->top;
+    gnTextBoxExclusionLeft[nExistingRectCount].right = pRect->right;
+    nBottom = pRect->bottom;
+    gnTextBoxExclusionLeft[nExistingRectCount].bottom = nBottom;
+    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nBottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
 }
 
 static uint32_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwParam, char * szText, uint32_t nLanguage, uint16_t * pwszDest) {
@@ -918,7 +919,7 @@ static uint32_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwParam, char * szTe
         nConvertResult = (uint16_t*)(uint32_t)*pwszDest;
         if (*pwszDest) {
           do {
-            if (0x7f < (uint16_t)(uintptr_t)nConvertResult) {
+            if ((uint16_t)(uintptr_t)nConvertResult >= 0x80) {
               return (uint32_t)nConvertResult & -256;
             }
 
@@ -984,7 +985,7 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
     __frame0.nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     D2TextLineStrc* pNewMessage = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(wMessage, (int*)&__frame0.nWrapCount, ScreenSizeX - 0x46);
     uint32_t nLineCount = __frame0.nWrapCount;
-    if (6 < __frame0.nWrapCount) {
+    if (__frame0.nWrapCount > 6) {
       nLineCount = 6;
     }
 
@@ -1050,7 +1051,7 @@ void __fastcall TEXT_PrintGameString(uint16_t * wMessage, uint8_t nColor) {
         pIterMsg = *ppSVar1;
       } while (*ppSVar1);
 
-      if (0x12 < nLineIdx) {
+      if (nLineIdx > 0x12) {
         ScreenMessagesMaybe.pHead = ScreenMessagesMaybe.pHead->pNext;
         ScreenMessagesMaybe.nCount = nPrevChatCount;
         TEXT_FreeScreenMessage(pNewMsg);
@@ -1095,7 +1096,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
       uint16_t* pwszLine;
       while (true) {
         nLineLen = nSegLen;
-        if (!(0 < (int)nLineLen && (nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)(pwszText + nOffset), nLineLen) , ScreenSizeX - 0x46 < nPixelWidth))) {
+        if (!((int)nLineLen > 0 && (nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)(pwszText + nOffset), nLineLen) , nPixelWidth > ScreenSizeX - 0x46))) {
           break;
         }
 
@@ -1104,7 +1105,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
 
       if (nOffset + nLineLen != nTotalLen) {
         while (true) {
-          if (0 >= (int)nLineLen) {
+          if ((int)nLineLen <= 0) {
             break;
           }
 
@@ -1122,7 +1123,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
 
       pwszLineSeg = pwszText + nOffset;
       D2Lang::WideCharToUTF8(szUtf8, pwszLineSeg, nLineLen);
-      if (5 < pNewMsg->nLineCount) {
+      if (pNewMsg->nLineCount >= 6) {
         break;
       }
 
@@ -1163,7 +1164,7 @@ void __fastcall TEXT_PrintPartyMessage(uint16_t * wszText, uint8_t byColor) {
     ScreenPartyMessages.nCount++;
     TEXT_InsertScreenMessage(pNewMsg->apwszLines);
     pNewMsg = ScreenPartyMessages.pHead;
-    if (2 < ScreenPartyMessages.nCount) {
+    if (ScreenPartyMessages.nCount > 2) {
       ScreenPartyMessages.pHead = ScreenPartyMessages.pHead->pNext;
       TEXT_FreeScreenMessage(pNewMsg);
       ScreenPartyMessages.nCount--;
@@ -1188,7 +1189,7 @@ void __stdcall TEXT_SetTextBoxExclusionRect() {
     RECT nRectLeft;
     nRectLeft.top = gnScrollingTextBoxTopY;
     nRectLeft.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if (ScreenSizeY - 0x35 <= (int)(gnScrollingTextBoxTopY + 0xb6)) {
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
       nRectLeft.bottom = ScreenSizeY - 0x35;
     }
 
@@ -1225,9 +1226,7 @@ static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
     memset(awszPlayerName, 0, 16 * sizeof(awszPlayerName[0]));
     D2UnitStrc* pPlayerUnit_lcl;
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!pRoster) {
-      szRosterName[0] = '\0';
-    } else {
+    if (pRoster) {
       char* pszSrc;
       pszSrc = GAME::Roster::GetRosterName(pRoster);
       pszDst = szRosterName;
@@ -1237,6 +1236,8 @@ static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
         pszSrc++;
         pszDst++;
       } while (cNameCh != '\0');
+    } else {
+      szRosterName[0] = '\0';
     }
 
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszPlayerName, szRosterName, 0x10);
@@ -1349,7 +1350,7 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
     char* pNameCursor;
     pNameCursor = pszName;
     pNameCursor = pNameCursor + strlen(pNameCursor) + 1;
-    if (0xe < (uint32_t)((int)pNameCursor - (int)(pMessageCtx->szName1 + 1))) {
+    if ((uint32_t)((int)pNameCursor - (int)(pMessageCtx->szName1 + 1)) >= 0xf) {
       pMessageCtx->szName1[0xf] = '\0';
     }
 
@@ -1478,18 +1479,20 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
       case '\x06':
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszName, pszName, 0x10);
       byKillSubType = pMessageCtx->nArgTypes;
-      if (byKillSubType == '\0') {
-        pszName = pMessageCtx->szName2;
-        pszName = pszName + strlen(pszName) + 1;
-        if (pszName == pMessageCtx->szName2 + 1) {
-          goto print_without_killer;
-        }
+      if (byKillSubType != '\0') {
+        if (byKillSubType != '\x01') {
+          if (byKillSubType != '\x02' || (pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pMessageCtx->nArg) , !pObjectTxt)) {
+            goto print_without_killer;
+          }
 
-        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszExtra, pMessageCtx->szName2, 0x10);
-        nKillFmtStrId = 0xe40;
-        pwszLocale = awszExtra;
-      } else {
-        if (byKillSubType == '\x01') {
+          nKillFmtStrId = 0xe3f;
+          if (pMessageCtx->nArg != 0xb) {
+            pwszLocale = pObjectTxt->NameWideString;
+            goto print_with_killer_name;
+          }
+
+          nNameStrId = 0xc98;
+        } else {
           if (pMessageCtx->szName2[0] == '\0') {
             pMonStatsTxt = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pMessageCtx->nArg);
             if (!pMonStatsTxt) {
@@ -1512,28 +1515,26 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
 
             nNameStrId = pSuperUniqueTxt->Name;
           }
-        } else {
-          if (byKillSubType != '\x02' || (pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pMessageCtx->nArg) , !pObjectTxt)) {
-            goto print_without_killer;
-          }
-
-          nKillFmtStrId = 0xe3f;
-          if (pMessageCtx->nArg != 0xb) {
-            pwszLocale = pObjectTxt->NameWideString;
-            goto print_with_killer_name;
-          }
-
-          nNameStrId = 0xc98;
         }
 
         pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(nNameStrId);
+      } else {
+        pszName = pMessageCtx->szName2;
+        pszName = pszName + strlen(pszName) + 1;
+        if (pszName == pMessageCtx->szName2 + 1) {
+          goto print_without_killer;
+        }
+
+        D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(awszExtra, pMessageCtx->szName2, 0x10);
+        nKillFmtStrId = 0xe40;
+        pwszLocale = awszExtra;
       }
 
       print_with_killer_name:
       pwszArg = D2Lang::StrTable::strtable::GetLocaleString(nKillFmtStrId);
       nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszArg);
       nMonNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszLocale);
-      if (0x131 < nLine + 0x10 + nMonNameLen) {
+      if (nLine + 0x10 + nMonNameLen >= 0x132) {
         return;
       }
 
@@ -1703,10 +1704,10 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     if (unit && unit->eUnitType == UNIT_PLAYER || pMessage->name[0] != '\0') {
       ::IgnoreList* pIgnoreList;
       nMaxName = 0x11;
-      if (!unit) {
-        pszName = pMessage->name;
-      } else {
+      if (unit) {
         pszName = D2Common::Units::GetPlayerName(unit);
+      } else {
+        pszName = pMessage->name;
       }
 
       Storm::Source::SSTR::SStrCopy(szNameBuf, pszName, nMaxName);
@@ -1771,7 +1772,7 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
         TEXT_PrintGameString(wszFormatBuf, 2);
         return;
       }
-      if ((int)pszName - (int)(pMessage->message + 1) < 0x132) {
+      if ((int)pszName - (int)(pMessage->message + 1) <= 0x131) {
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszFormatBuf, wszMessage);
         TEXT_PrintGameString(wszFormatBuf, 2);
         return;
@@ -1792,16 +1793,16 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
               Fog::File::CONTAINER_InitializeBuffer(wszNameBuf2, 2, 0x10, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
               D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNameBuf2, pMessage->name, 0x10);
               D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszFormatBuf, wszNameBuf2);
-              ui::AppendAsWideChar(wszFormatBuf, '\x04');
+              ui::AppendAsWideChar(wszFormatBuf, 4);
               pszWideOut = D2Lang::StrTable::strtable::GetLocaleString(0xfd0);
               D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszMsgBuf, pszWideOut);
               D2Lang::Unicode::UNISYS::AppendToBuffer(wszMsgBuf, wszMessage);
-              ui::AppendAsWideChar(wszMsgBuf, '\0');
+              ui::AppendAsWideChar(wszMsgBuf, 0);
               D2Lang::Unicode::UNISYS::AppendToBuffer(wszFormatBuf, wszMsgBuf);
               TEXT_PrintGameString(wszFormatBuf, pMessage->messageColor);
               return;
             }
-            if ((int)pszName - (int)(pMessage->message + 1) < 0x132) {
+            if ((int)pszName - (int)(pMessage->message + 1) <= 0x131) {
               D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszFormatBuf, wszMessage);
               TEXT_PrintGameString(wszFormatBuf, pMessage->messageColor);
               return;
@@ -3972,7 +3973,7 @@ uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
     int nIdx;
     uint16_t* pWVar1;
     int nEndIdx;
-    if (nSoundId < gaSoundStringKeys[100].nSoundId) {
+    if (gaSoundStringKeys[100].nSoundId > nSoundId) {
       nIdx = 0;
       nEndIdx = 100;
     } else {
@@ -3981,7 +3982,7 @@ uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
     }
 
     while (true) {
-      if (nEndIdx <= nIdx) {
+      if (nIdx >= nEndIdx) {
         pWVar1 = D2Lang::StrTable::strtable::GetLocaleString(0xe8c);
         return pWVar1;
       }
@@ -4134,7 +4135,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     } else {
       DWORD dwTick;
       dwTick = GetTickCount();
-      if (dwTick > gnQuestScrollAnimFrame + 0x32) {
+      if (gnQuestScrollAnimFrame + 0x32 < dwTick) {
         gnQuestScrollAnimFrame = GetTickCount();
         gnQuestScrollAnimMaxFrame++;
         nFrameIdx = 0;
@@ -4142,7 +4143,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
     }
 
     do {
-      if (gaQuestScrollFrameDelay[nFrameIdx] < gnQuestScrollAnimMaxFrame) {
+      if (gnQuestScrollAnimMaxFrame > gaQuestScrollFrameDelay[nFrameIdx]) {
         nElapsed = gnQuestScrollAnimMaxFrame - gaQuestScrollFrameDelay[nFrameIdx];
         eDrawMode = DRAW_SOLID;
         __frame0.sGfxData2.nFrameNumber = nFrameIdx;
@@ -4159,7 +4160,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
 
         nLineValue = gnQuestScrollLine[nFrameIdx];
         if (nLineValue < 6) {
-          if (4 < nLineValue) {
+          if (nLineValue >= 5) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1673);
             exit(-1);
           }
@@ -4168,7 +4169,7 @@ void __stdcall TEXT_DrawQuestScrollAnimation(int32_t bDraw) {
           D2gfx::D2GFX::D2GFX_DrawImage(&__frame0.sGfxData2, gaTextDrawAnimPos[nLineIdx * 2] + gnPanelOffsetX, gaTextDrawAnimPos[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, eDrawMode, nullptr);
           memset(&__frame0.sGfxData, 0, 0x48);
           __frame0.sGfxData.pDC6 = gpQuestScrollImageTop;
-          __frame0.sGfxData.nFrameNumber = 0x14 < (int)nElapsed ? 0 : nElapsed;
+          __frame0.sGfxData.nFrameNumber = (int)nElapsed >= 0x15 ? 0 : nElapsed;
           D2gfx::D2GFX::D2GFX_DrawImage(&__frame0.sGfxData, gaTextAnimBounds[nLineIdx * 2] + gnPanelOffsetX, gaTextAnimBounds[nLineIdx * 2 + 1] - gnPanelOffsetY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
         }
       }
@@ -4329,10 +4330,10 @@ void __stdcall TEXT_OpenMessageLogDialog() {
       Dialog::AddStringData(Dialog::DialogHandle, pwszLabel, nPosX, nPosY, nField, nEnabled, pfnCloseCallback, nEntryIdx);
       pLogListAlloc = (::ListBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
       nSehTryLevel = 0;
-      if (!pLogListAlloc) {
-        gpTextMessageLogHead = 0;
-      } else {
+      if (pLogListAlloc) {
         gpTextMessageLogHead = ListBox::ListBoxWrapper::Constructor(pLogListAlloc, 5, 0x41, ScreenSizeX - 0x14, ScreenSizeY - 200, 2, 0, 0xd, nullptr, true);
+      } else {
+        gpTextMessageLogHead = 0;
       }
 
       nSehTryLevel = -1;
@@ -4918,7 +4919,7 @@ void __fastcall TEXT_SetUnitOverheadFromSoundTable(D2UnitStrc * pUnitAnim, uint3
     }
 
     uint32_t nLanguageCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    if (!(5 < (int)nLanguageCode && ((int)nLanguageCode < 8 || nLanguageCode == 9) && nSoundId - 0xb76 < 0x6bb)) {
+    if (!((int)nLanguageCode >= 6 && ((int)nLanguageCode <= 7 || nLanguageCode == 9) && nSoundId - 0xb76 <= 0x6ba)) {
       return;
     }
     if (pUnitAnim->eUnitType == UNIT_PLAYER) {
@@ -4944,7 +4945,7 @@ void __fastcall TEXT_SetUnitOverheadFromSoundTable(D2UnitStrc * pUnitAnim, uint3
     nTableIdx = 0;
     while (gaSoundStringLookup[nTableIdx * 2] != nSoundId) {
       nTableIdx++;
-      if (5 < nTableIdx) {
+      if (nTableIdx >= 6) {
         return;
       }
     }
@@ -5043,13 +5044,13 @@ D2TextLineStrc * __stdcall TEXT_ParseMultilineString(uint16_t * pwszInput, int *
         nLine2Len = 0;
         iLineLen = 0;
         bIsFirstLine = true;
-        if (nLineWStrLen < 1) {
+        if (nLineWStrLen <= 0) {
           D2Lang::WideCharToUTF8(szUtf8Buf, wszLineBuf, 100);
           nScrollRate = atol(szUtf8Buf);
           *pnScrollRate = (uint16_t)nScrollRate;
         } else {
           do {
-            if (0x7f < (uint16_t)wszLineBuf[iLineLen]) {
+            if ((uint16_t)wszLineBuf[iLineLen] >= 0x80) {
               bIsFirstLine = false;
             }
 
@@ -5117,7 +5118,7 @@ D2TextLineStrc * __stdcall TEXT_ParseMultilineString(uint16_t * pwszInput, int *
       bIsFirstLine = false;
       nLineWStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLineBuf);
       nPixelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszLineBuf);
-      if (0x133 < nPixelWidth) {
+      if (nPixelWidth >= 0x134) {
         /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szLogBuf, "line %d of string is too long", *pnLineCount);
       }
 
@@ -5231,29 +5232,28 @@ static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
     }
 
     TEXT_CloseScrollingText();
-    if (!gpTextScrollCompleteCallback) {
-      if (gbTextStaticPopupActive == 1) {
-        gbTextStaticPopupActive = 0;
-      } else if (gnTextNpcInteractGuid) {
-        npcmenu::NPCMENU_CloseScrollAndInteraction(gnTextNpcGuid);
-      }
+    if (gpTextScrollCompleteCallback) {
+      nHandlerCount = (*gpTextScrollCompleteCallback)(gpTextScrollCompleteParam, 0, nullptr);
+      return nHandlerCount;
+    }
+    if (gbTextStaticPopupActive == 1) {
+      gbTextStaticPopupActive = 0;
+    } else if (gnTextNpcInteractGuid) {
+      npcmenu::NPCMENU_CloseScrollAndInteraction(gnTextNpcGuid);
+    }
 
-      ui::UI_UpdateCursorAnimationTimer();
-      gnTextNpcInteractGuid = 0;
-      GAME::Select::SELECT_SetExclusionRect(nullptr);
-      if (gbTextEventHandlersRegistered != 1) {
-        return 0;
-      }
-
-      nCount = 7;
-      gbTextEventHandlersRegistered = 0;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nCount);
+    ui::UI_UpdateCursorAnimationTimer();
+    gnTextNpcInteractGuid = 0;
+    GAME::Select::SELECT_SetExclusionRect(nullptr);
+    if (gbTextEventHandlersRegistered != 1) {
       return 0;
     }
 
-    nHandlerCount = (*gpTextScrollCompleteCallback)(gpTextScrollCompleteParam, 0, nullptr);
-    return nHandlerCount;
+    nCount = 7;
+    gbTextEventHandlersRegistered = 0;
+    pHwnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nCount);
+    return 0;
 }
 
 void __stdcall TEXT_CloseNpcInteraction() {
@@ -5275,15 +5275,7 @@ int __stdcall TEXT_HandleEscapeKey() {
     int32_t nLine;
     gbTextScrollBoxAnimating = 1;
     if (gnTextNpcInteractGuid || gbTextScrollBoxActive == 1) {
-      if (!gpTextScrollCompleteCallback) {
-        if (!gnTextNpcInteractGuid) {
-          TEXT_CloseScrollingText();
-        } else {
-          npcmenu::NPCMENU_CloseScrollAndInteraction(gnTextNpcGuid);
-        }
-
-        ui::UI_UpdateCursorAnimationTimer();
-      } else {
+      if (gpTextScrollCompleteCallback) {
         TEXT_CloseScrollingText();
         ui::UI_UpdateCursorAnimationTimer();
         iVar1 = (*gpTextScrollCompleteCallback)(gpTextScrollCompleteParam, 1, (void*)gpTextDismissCallback);
@@ -5294,6 +5286,14 @@ int __stdcall TEXT_HandleEscapeKey() {
         if (gnTextNpcInteractGuid) {
           npcmenu::NPCMENU_CloseScrollAndInteraction(gnTextNpcGuid);
         }
+      } else {
+        if (gnTextNpcInteractGuid) {
+          npcmenu::NPCMENU_CloseScrollAndInteraction(gnTextNpcGuid);
+        } else {
+          TEXT_CloseScrollingText();
+        }
+
+        ui::UI_UpdateCursorAnimationTimer();
       }
 
       gnTextNpcInteractGuid = 0;
@@ -5333,7 +5333,7 @@ int __stdcall TEXT_HandleEscapeKey() {
 static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, int32_t pUnit, uint16_t * wszText, int * pScreenPos) {
     RECT rcBox;
     uint32_t nExpireFrame = D2Common::Chat::GetExpireFrame(pHoverText);
-    if (nExpireFrame < gnTextOverheadCounter) {
+    if (gnTextOverheadCounter > nExpireFrame) {
       D2Common::Chat::Free(nullptr, pHoverText);
       if (pUnit) {
         *(uint32_t*)(pUnit + 0xa4) = 0;
@@ -5395,9 +5395,7 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     ptScreenPos2.x -= lprcTextOverheadRect.left;
     ptScreenPos2.y += -0x1e - lprcTextOverheadRect.top;
     nBorderType = Path::DRAW_GetTypeOfBorder();
-    if (nBorderType == 1) {
-      nXOffset = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
-    } else {
+    if (nBorderType != 1) {
       if (nBorderType != 2) {
         if (nBorderType == 3) {
           return;
@@ -5406,20 +5404,22 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
         goto draw_if_on_screen;
       }
 
-      nXOffset = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+      nXOffset = ScreenSizeX / 4;
+    } else {
+      nXOffset = -(ScreenSizeX / 4);
     }
 
     ptScreenPos2.x += nXOffset;
     draw_if_on_screen:
-    if (0 < ptScreenPos2.y && ptScreenPos2.y < ScreenSizeY && -100 < ptScreenPos2.x && ptScreenPos2.x < ScreenSizeX + 100) {
+    if (ptScreenPos2.y > 0 && ptScreenPos2.y < ScreenSizeY && ptScreenPos2.x > -100 && ptScreenPos2.x < ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHover, (int32_t)szMessage);
-      if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atol(szMessage + 2) , 0x42c < nStringId && nStringId < 0x510) || 0x5586 < nStringId && nStringId < 0x5616 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
+      if (szMessage[0] == -1 && szMessage[1] == -1 && ((nStringId = atol(szMessage + 2) , nStringId >= 0x42d && nStringId <= 0x50f) || nStringId >= 0x5587 && nStringId <= 0x5615 || nStringId == 0x2aa4 || nStringId == 0x5586)) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {
           Fog::File::CONTAINER_InitializeBuffer(wszLocaleString, 2, 200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
           memset(wszLocaleString, 0, 400);
           nSizeMaybe = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
-          if (199 < (int)nSizeMaybe) {
+          if ((int)nSizeMaybe >= 200) {
             nSizeMaybe = 199;
           }
 
@@ -5462,9 +5462,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     ptScreenPos.x -= lprcTextOverheadRect.left;
     ptScreenPos.y += -10 - lprcTextOverheadRect.top;
     nBorderType = Path::DRAW_GetTypeOfBorder();
-    if (nBorderType == 1) {
-      nXOffset = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
-    } else {
+    if (nBorderType != 1) {
       if (nBorderType != 2) {
         if (nBorderType == 3) {
           return;
@@ -5473,21 +5471,23 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
         goto draw_if_on_screen;
       }
 
-      nXOffset = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+      nXOffset = ScreenSizeX / 4;
+    } else {
+      nXOffset = -(ScreenSizeX / 4);
     }
 
     ptScreenPos.x += nXOffset;
     draw_if_on_screen:
-    if (0 < ptScreenPos.y && ptScreenPos.y < ScreenSizeY && -100 < ptScreenPos.x && ptScreenPos.x < ScreenSizeX + 100) {
+    if (ptScreenPos.y > 0 && ptScreenPos.y < ScreenSizeY && ptScreenPos.x > -100 && ptScreenPos.x < ScreenSizeX + 100) {
       D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, (int32_t)szMessage);
       nStringId = atol(szMessage);
-      if (nStringId - 1U < 0xfffe) {
+      if (nStringId - 1U <= 0xfffd) {
         wszString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nStringId);
         if (wszString) {
           Fog::File::CONTAINER_InitializeBuffer(wszLocaleString, 2, 200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
           memset(wszLocaleString, 0, 400);
           nSizeMaybe = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszString);
-          if (199 < (int)nSizeMaybe) {
+          if ((int)nSizeMaybe >= 200) {
             nSizeMaybe = 199;
           }
 
@@ -5498,7 +5498,7 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     }
 }
 
-void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void * pScrollCtx) {
+void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
     HWND pHwnd;
     DWORD dwTickCount;
     D2UnitStrc* pNpcUnit;
@@ -5557,13 +5557,13 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView, void 
       }
 
       dwTickCount = GetTickCount();
-      bPopupAlive = dwTickCount <= gdwTextPopupExpireTime;
-      if (bPopupAlive) {
-        TEXT_DrawTextBoxWithBorderCheck(gpStaticTextPopup, &gaTextStaticPopupRect);
-      } else {
+      bPopupAlive = gdwTextPopupExpireTime >= dwTickCount;
+      if (!bPopupAlive) {
         TEXT_FreeStaticTextBox();
         gbTextStaticPopupActive = 0;
         gnTextNpcInteractGuid = 0;
+      } else {
+        TEXT_DrawTextBoxWithBorderCheck(gpStaticTextPopup, &gaTextStaticPopupRect);
       }
 
       nVisibleCount += (uint32_t)bPopupAlive;
@@ -5644,7 +5644,7 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
 
     nExclusionXOff.top = gnScrollingTextBoxTopY;
     nExclusionXOff.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if (ScreenSizeY - 0x35 <= (int)(gnScrollingTextBoxTopY + 0xb6)) {
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
       nExclusionXOff.bottom = ScreenSizeY - 0x35;
     }
 
@@ -5700,12 +5700,12 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
     int32_t nVolume;
     RECT nExclusionLeft;
     int32_t nHandlers;
-    if (nParam2) {
-      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY;
-      gnTextBoxExclusionX = gnPanelOffsetX;
-    } else {
+    if (!nParam2) {
       gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
       gnScrollingTextBoxTopY = 0xc;
+    } else {
+      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY;
+      gnTextBoxExclusionX = gnPanelOffsetX;
     }
 
     gnTextScrollBoxHeight = (uint32_t)(nParam2 != 0);
@@ -5724,7 +5724,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
     gpTextScrollBoxBuffer = 0;
     gnTextNpcInteractGuid = 0;
     nExclusionLeft.bottom = gnScrollingTextBoxTopY + 0xb6;
-    if (ScreenSizeY - 0x35 <= (int)(gnScrollingTextBoxTopY + 0xb6)) {
+    if ((int)(gnScrollingTextBoxTopY + 0xb6) >= ScreenSizeY - 0x35) {
       nExclusionLeft.bottom = ScreenSizeY - 0x35;
     }
 
@@ -5898,7 +5898,15 @@ void __stdcall INPUT_TextClickHandler(D2UIMouseMsgStrc * pMsg) {
     D2UnitStrc* pNpcUnit;
     gpTextDismissCallback = 1;
     D2UnitStrc* pSelectedUnit = GAME::Select::GetSelectedUnit();
-    if (!pSelectedUnit) {
+    if (pSelectedUnit) {
+      if (gnTextNpcInteractGuid) {
+        pSelectedUnit = UNIT::Player::UNITS_FindClientSideUnit(gnTextNpcGuid, UNIT_MONSTER);
+        pNpcUnit = GAME::Select::GetSelectedUnit();
+        if (pSelectedUnit == pNpcUnit) {
+          return;
+        }
+      }
+    } else {
       pSelectedUnit = GAME::Select::GetSelectedUnit();
       if (!pSelectedUnit && gbTextNpcMenuSelection != '\0') {
         pSelectedUnit = UNIT::Player::UNITS_FindClientSideUnit(gnTextNpcMenuIndex, UNIT_MONSTER);
@@ -5916,12 +5924,6 @@ void __stdcall INPUT_TextClickHandler(D2UIMouseMsgStrc * pMsg) {
         Storm::SMsgBreakHandlerChain(pMsg);
         return;
       }
-    } else if (gnTextNpcInteractGuid) {
-      pSelectedUnit = UNIT::Player::UNITS_FindClientSideUnit(gnTextNpcGuid, UNIT_MONSTER);
-      pNpcUnit = GAME::Select::GetSelectedUnit();
-      if (pSelectedUnit == pNpcUnit) {
-        return;
-      }
     }
 
     INPUT_TextDismiss(pMsg);
@@ -5932,7 +5934,7 @@ void __stdcall INPUT_TextKeyHandler(D2UIMouseMsgStrc * pMsg) {
     if (bIsBound) {
       uint16_t uVar1;
       uVar1 = CmdTbl::CMD_GetKeyForCommand(7, 1);
-      if (uVar1 != 0xffff && uVar1 < 0xe0 && pMsg->nWParam == (uint32_t)uVar1) {
+      if (uVar1 != 0xffff && uVar1 <= 0xdf && pMsg->nWParam == (uint32_t)uVar1) {
         return;
       }
     }

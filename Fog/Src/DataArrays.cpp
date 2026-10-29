@@ -93,7 +93,7 @@ uint32_t __fastcall FOG_GetMissileField(D2MissilesTxt * pMissilesTxt) {
     while (*pSlotEntry) {
       nSlotIndex++;
       pSlotEntry = (uint16_t*)((int)pSlotEntry + nSlotStride);
-      if (pMissilesTxt->MinELev5 <= nSlotIndex) {
+      if (nSlotIndex >= pMissilesTxt->MinELev5) {
         return nMissileSlot;
       }
     }
@@ -123,7 +123,7 @@ short * __fastcall FOG_GetDataArrayEntry(D2DataArrayStrc * pDataArray, int nHand
     if (nHandle == -1) {
       return nullptr;
     }
-    if (nHandle < 0 || (nHighWord = (int)(short int)((uint32_t)nHandle >> 0x10) , pDataArray->numObjects <= nHighWord)) {
+    if (nHandle < 0 || (nHighWord = (int)(short int)((uint32_t)nHandle >> 0x10) , nHighWord >= pDataArray->numObjects)) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xdb);
       exit(-1);
     } else {
@@ -231,15 +231,19 @@ void __fastcall FOG_FillArrayWithRandomInts(int nArrayOffset, uint32_t * pArrayD
 
               fVar2 = CRT_CIPow(fVar2 / fCountMinus1, (long double)(double)(fHundredF10 / (long double)nArrayOffset));
               nOutValue = (int)(((long double)(double)fVar1 * (long double)fParam + fVar2 * (long double)nMaxValue * (long double)(double)(fHundredF10 - fParamF10)) / (long double)100.0);
-              if (pElemSize == (uint32_t*)0x1) {
+              if (pElemSize != (uint32_t*)0x1) {
+                if (pElemSize != (uint32_t*)0x2) {
+                  if (pElemSize == (uint32_t*)0x4) {
+                    *pdwParam = nOutValue;
+                    pdwParam++;
+                  }
+                } else {
+                  *(short int*)pArrayData = (short int)nOutValue;
+                  pArrayData = (uint32_t*)((int)pArrayData + 2);
+                }
+              } else {
                 *(char*)pByteOut = (char)nOutValue;
                 pByteOut = (uint32_t*)((int)pByteOut + 1);
-              } else if (pElemSize == (uint32_t*)0x2) {
-                *(short int*)pArrayData = (short int)nOutValue;
-                pArrayData = (uint32_t*)((int)pArrayData + 2);
-              } else if (pElemSize == (uint32_t*)0x4) {
-                *pdwParam = nOutValue;
-                pdwParam++;
               }
 
               fVar2 = (long double)fTmp1 + (long double)1.0;

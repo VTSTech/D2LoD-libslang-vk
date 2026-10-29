@@ -25,7 +25,7 @@ prose is stale the moment the next fix lands. Read `evidence/audit.tsv.summary`.
 
 ```sh
 asm_matching/msvc8/oracle setup     # once: Game.exe 1.14d + the VC8 toolchain (~4 GB download)
-asm_matching/msvc8/oracle all       # build every TU, map, audit
+asm_matching/msvc8/oracle all       # build every TU, map, libmap, audit
 asm_matching/msvc8/oracle diff DRLGENV_UpdateLightIntensity
 ```
 
@@ -46,7 +46,10 @@ minutes on a Raspberry Pi 5; after an edit only the touched TUs recompile.
 
 Needs: wine (here wine 9.17 run by box64 on aarch64; any x86 wine works),
 `7z`, `cabextract`, `msitools`, `curl`, `python3` with `venv`. A private
-venv with capstone is created on first use (`.venv/`).
+venv with capstone is created on first use (`.venv/`). `oracle fix` also
+needs what the game builds with - `cmake`, `ninja` and the mingw-w64 i686
+cross compiler - for `fix_refile.py`'s syntax check, without which it
+stops, saying so.
 
 * **The reference.** `scripts/fetch_reference.sh` downloads Blizzard's
   `LODPatch_114d.exe` (6 MB) and extracts `Game.exe` with a standard-library
@@ -223,6 +226,41 @@ conflicting ones, which point at a wrong global or offset in the tree.
 original's CRT (`evidence/crtmap.tsv`), and the per-version split is what
 settled SP1 (`evidence/toolchain.md`).
 
+The runtime is code we link, not code the tree holds, and it is measured like
+the rest. `scripts/libmap.py` (`oracle libmap`, run by `oracle all` after
+`map`) pairs every original function the funcmap leaves unpaired with a
+function of the SP1 libraries, and writes `evidence/libmap.tsv` in the
+funcmap's format, `tu` being `<library>/<member>`:
+
+| tier | evidence |
+|-|-|
+| `lib-exact` | identical masked code, unique on both sides; code the libraries hold in several members is taken, inside the run of library code, as the copy our image links |
+| `lib-order` | the linker keeps a member's functions in member order: beside a paired one, the most similar of its unpaired neighbours, clearly |
+| `lib-similar` | inside the run of library code, the clearly most similar library function: another revision of the same function |
+| `lib-votes` | twins code cannot tell apart (memcpy, memmove): where the aligned call sites of everything paired send our call |
+
+`oracle audit` judges these pairs with the same comparer, relocations masked
+the same way, and counts them in its totals; the summary's next line says how
+much of them is the runtime. Nothing about a library pair decides its status:
+a wrong pair costs a MATCH, it cannot make one. `oracle diff` shows them too.
+
+Two facts of the original's carving matter here. refimage starts a function
+at every call target, so a CRT function's `__finally` funclet, called from its
+own body, is carved apart, while the library object holds it in one function:
+a pair may span several carved functions that tile it exactly
+(`compare.ref_view_span`), and over the span a branch into it is compared by
+its raw bytes and an address taken in it as `$+offset`, as in our object. And
+an assembler object's PROCs need not carry the function type, so a library's
+code section without function symbols is split at its public labels
+(`objfuncs.functions(..., labels=True)`).
+
+Which pairs our image links (`linked` in the detail) comes from the map of
+`build-exe/d2recon-vc8.exe`, which `recon/runs/build-vc8.sh` writes
+(`--exe-map` to point elsewhere). `evidence/libmap.tsv.summary` has the pairs
+per tier and what stays unpaired: inside the run of library code, the import
+thunks the linker makes (`jmp [__imp_X]`, no code of ours to compare), and
+elsewhere - the game's own functions the funcmap does not pair.
+
 ## Flags
 
 The default (`scripts/oracle_config.py`):
@@ -326,31 +364,41 @@ names the evidence its rule rests on.
 
 | fixer | the generator wrote | the original has |
 |-|-|-|
-| `fix_static.py` | every function extern | a file-local function `static`: VC8 then gives it a register convention of its own (an argument in EAX, ESI, ...), which the original shows |
+| `fix_static.py` | every function extern | a file-local function `static`: VC8 then gives it a register convention of its own (an argument in EAX, ESI, ..., or a `__fastcall` that leaves EDX or ECX unused), which the original shows - a register it reads, or pushes on and never pops, at entry |
 | `fix_refile.py` | a function in the file of its Ghidra namespace, though the original passes it arguments in registers from callers filed elsewhere (`evidence/objects.tsv`, kind `object`) | the function and its callers in one file - the one the annotations around them name, else the one holding most of them - at their addresses, `static` where only that file calls them, each in a block of its own namespace: names stay, files change |
-| `fix_compare.py` | Ghidra's canonical comparison: `-1 < x`, `x < 5`, `b <= a` | the form the instruction shows: `x >= 0`, `x <= 4`, `a >= b` |
+| `fix_compare.py` | Ghidra's canonical comparison: `-1 < x`, `x < 5`, `b <= a`; `x != 0` where the original's unsigned jump shows `x > 0` (with the if/else swapped where the jump is inverted too) | the form the instruction shows: `x >= 0`, `x <= 4`, `a >= b`, `(uint32_t)x > 0` |
 | `fix_assert.py` | `if (ok) { return x; } halt(); exit(-1);` | the assertion first: `if (!ok) { halt(); exit(-1); } return x;` |
-| `fix_ifelse.py` | `if (!c) { B } else { A }` | the branches in the order VC8 lays out: `if (c) { A } else { B }` |
-| `fix_switch.py` | an if-chain on one variable, `if (v == A) {…} else if (v == B) {…}`, or consecutive `if (v == A) {… return;}` blocks | the `switch (v)` the original lowers to subtractions |
+| `fix_ifelse.py` | `if (!c) { B } else { A }`, where a jump shows it - or, kept only where its function gets more similar, any `if (!x)` or `if (x == 0)` of one operand | the branches in the order VC8 lays out: `if (c) { A } else { B }` |
+| `fix_switch.py` | an if-chain on one variable, `if (v == A) {…} else if (v == B) {…}`, or consecutive `if (v == A) {… return;}` blocks | the `switch (v)` the original lowers to subtractions; `--single` also a one-case chain where the original subtracts the case value (`sub; je`) |
 | `fix_guardstack.py` | `Fog::Debug::GuardStack();` where the original checks its stack cookie | nothing: under `/GS` VC8 emits the check itself |
 | `fix_uninline.py` | the body of a helper marked inline in the Ghidra database, e.g. `seed.nSeedLow = v; seed.nSeedHigh = 0x29a;` | the call: `InitSeed_Param_666(&seed, v)` |
-| `fix_return.py` | `void` where the original returns one constant on every path (EAX at each `ret`, by constant propagation over its control flow: `classify.eax_at_returns`) | `int` returning that constant; `bool` where only AL holds it |
+| `fix_return.py` | `void` where the original returns one constant on every path (EAX at each `ret`, by constant propagation over its control flow: `classify.eax_at_returns`), or one argument (`arg_at_returns`) | `int` returning that constant; `bool` where only AL holds it; the parameter, as its type |
 | `fix_gsbuffer.py` | `uint8_t aPacket[9]` in a function the original gives no stack cookie (`/GS` protects byte arrays); with `--members` a byte array inside a local's struct type, such as D2DamageStrc's padding `uint8_t nReserved66[2]` | a struct of scalar fields, `struct { uint8_t e0, …, e8; }`, addressed through a byte pointer |
 | `fix_order.py` | independent stores in an order of its own, `p[2] = x; p[1] = y; p[0] = 0x0c;` | the order VC8 schedules the original's from: fields in member order (`--by offset`), or the original's store order (`--by store`) |
-| `fix_idioms.py` | operators Ghidra could not fold back, e.g. `s.nSeedLow + (int)(((uint64_t)d2_bits_of(s) & 0xffffffff) / 100) * -100` | the operator: `s.nSeedLow % 100`; `__alldiv((uint32_t)E, (uint32_t)((uint64_t)E >> 0x20), 100, 0)` is `(int64_t)E / 100` (each idiom documented with why the value is the same) |
+| `fix_idioms.py` | operators Ghidra could not fold back, e.g. `s.nSeedLow + (int)(((uint64_t)d2_bits_of(s) & 0xffffffff) / 100) * -100` | the operator: `s.nSeedLow % 100`; `__alldiv((uint32_t)E, (uint32_t)((uint64_t)E >> 0x20), 100, 0)` is `(int64_t)E / 100`; `(int)(x + (x >> 0x1f & 3U)) >> 2` is `x / 4`; `x & 0xff` is `(uint8_t)x` (each idiom documented with why the value is the same) |
+| `fix_localtype.py` | a `uint8_t` or `uint16_t` local the original keeps whole: VC8 loads and stores it as a byte (`mov al, byte ptr [edi + 3]`, `mov byte ptr [ebp - 0xcd], 0`) where the original zero-extends and stores a dword | `uint32_t` (`int32_t` if signed), kept where the function comes out more similar |
+| `fix_bitmask.py` | a flag tested or set with a constant mask, `dwState & 4`, or read through a one-bit bitfield, `if (pMonStats2->isSmall)` | the mask read from Blizzard's table, as the original loads it: `dwState & gadwBitMasks[2]`, `(*((uint8_t *)pMonStats2 + 0xOFF) & gadwBitMasks[n])` - as many sites per bit as the original reads the table at that bit; with `--inverse` a flag cleared, `dwState &= -2`, as `dwState &= gadwInvBitMasks[0]`, each function with its gadwBitMasks sites in one edit |
+| `fix_shiftbit.py` | a flag test as a mask, `f & 8` or `f >> 3 & 1`, which VC8 compiles to `test byte ptr [R + N], 8` | the bool the original makes of the shifted bit, `((bool)(f >> 3 & 1))`: `shr eax, 3; test al, 1` |
 | `fix_stringops.py` | the string instructions as library calls or pointer loops: `memset(a, 0, 32 * sizeof(a[0]))`, `for (n = 25; n; n--) { p[0] = 0; p[1] = 0; p += 2; }`, `for (n = K; n; n--) { *d = *s; s++; d++; }` | what VC8 compiles to those instructions: `for (int i = 0; i < 32; i++) a[i] = 0;` (VC8 expands no memset beyond 32 bytes), `memcpy(d, s, K * sizeof(*d))` |
 | `fix_nestcall.py` | a call's result in a temporary, `pGame = GetGamePointer(pUnit); HasQuestItem(pGame, pUnit, code);` (with `--runs`, several temporaries feeding one call) | the call nested in the argument list, which VC8 evaluates after the arguments to its right: `HasQuestItem(GetGamePointer(pUnit), pUnit, code)` |
+| `fix_inplace.py` | a read-modify-write through a temporary pointer, `p = &pUnit->nCount; *p = *p + 1;` | the update of the field itself, `pUnit->nCount++` (`+= v`, `|= v`, ...) |
+| `fix_boolarith.py` | arithmetic on a comparison, `(uint32_t)(c != 0) * 2 + 1` | the choice VC8 compiled without a branch, `(uint32_t)((c != 0) ? 3 : 1)` |
 | `fix_allocargs.py` | Fog allocator calls as upstream's macros, `D2_FREE(p)`, `D2_NEW(T)`, `D2_REALLOC_POOL(m, p, n)`, which pass the reconstruction's own `__FILE__` and `__LINE__` | the call with the file and line the original passes, read off the original's code: `FreeClientMemory(p, ".\\Src\\Exceptions.cpp", 0x1f7, 0)` |
 | `fix_permute.py` | a run of independent assignments in the order Ghidra listed the original's stores, which is VC8's schedule, not the source order | the order that compiles to the original's: searched, every order of each run tried, one trial per function per round |
 | `fix_caseorder.py` | a switch's cases in order of their values | the order Blizzard wrote them in, read off the original's jump table: VC8 lays case bodies out in source order, so the same case values reach the same bodies at other addresses |
 | `fix_forloop.py` | a rotated loop, `if (0 < n) { int i = 0; do { B; i++; } while (i < n); }` | the for loop it was, `for (int i = 0; i < n; i++) { B }`: VC8 then initialises the counter before the test, as the original does |
-| `fix_fastcall.py` | `__cdecl`/`__stdcall` on a function whose original takes its first arguments in ECX (and EDX) and pops what `__fastcall` leaves on the stack | `__fastcall`, judged on the function and every caller |
+| `fix_fastcall.py` | `__cdecl`/`__stdcall` on a function whose original takes its first arguments in ECX (and EDX) and pops what `__fastcall` leaves on the stack | `__fastcall`, judged on the function and every caller; `--thiscall`: a function taking `this` in ECX that no original code calls directly becomes `__fastcall(this, int32_t nEdxUnused, ...)` |
+| `fix_paramtype.py` | a `uint8_t` or `uint16_t` parameter of a `__fastcall` function, where the original's callers load the whole of ECX or EDX (`mov edx, 5` against our `mov dl, 5`) | `int32_t`, judged on the function and every caller |
+| `fix_globalwidth.py` | a global or static typed `bool`, `uint8_t`, `uint16_t`, ..., by the accesses Ghidra saw: `mov byte ptr [g], 1` | the dword the original reads and writes, `mov dword ptr [g], 1`: `BOOL`, `int32_t` or `uint32_t` in every declaration, judged on the whole tree |
+| `fix_restore.py` | after a regeneration, the generator's body again for a function that matched before it | the body it matched with, from the old tree's commit (`fix_restore.py REV OLD_AUDIT`), kept only where the function then matches again |
 
 `oracle fix` runs them all (`scripts/fix_all.py`): conventions first
-(`fix_refile`, `fix_static`, then `--demote`, then `fix_fastcall`), the local rewrites after, the whole cycle
+(`fix_refile`, `fix_static`, then `--demote`, then `fix_fastcall`, `fix_paramtype`, `fix_globalwidth`), the local rewrites after, the whole cycle
 again while a round still keeps edits - their rules interact (a static
 function changes its callers; a comparison written back lets an if/else line
-up). It is also what a regenerated tree is put through. Fixers keep a file's
+up). It is also what a regenerated tree is put through, and what
+the fixers do not find again `fix_restore.py` takes from the tree before it,
+where the oracle confirms it. Fixers keep a file's
 line count while they work (a removed statement becomes an empty line, so
 the line tables of everything after it stay valid between builds);
 `scripts/tidy_blanks.py --apply` drops those lines once the fixing is done.
@@ -401,9 +449,10 @@ map (`bracket`, `align`) and `tulayout.py` order our functions by source line
 | `scripts/diffgrams.py`, `classify.py`, `tulayout.py` | what differs, over all pairs |
 | `scripts/commit.py` | commit the branch's way (CLAUDE.md, "Commits"): tooling amended into the first commit, source changes as a new commit |
 | `scripts/objects.py` | `evidence/objects.tsv`: functions the tree files apart from the callers they share a register convention with, and declared conventions the original contradicts - for upstream |
-| `scripts/fixlib.py`, `fix_static.py`, `fix_refile.py`, `fix_compare.py`, `fix_assert.py`, `fix_ifelse.py`, `fix_switch.py`, `fix_guardstack.py`, `fix_idioms.py`, `fix_uninline.py`, `fix_return.py`, `fix_gsbuffer.py`, `fix_stringops.py`, `fix_nestcall.py`, `fix_allocargs.py`, `fix_order.py`, `fix_permute.py`, `fix_caseorder.py`, `fix_forloop.py`, `fix_fastcall.py`, `fix_all.py`, `tidy_blanks.py` | systematic fixes, kept only where confirmed; `oracle fix` runs them all |
+| `scripts/fixlib.py`, `fix_static.py`, `fix_refile.py`, `fix_compare.py`, `fix_assert.py`, `fix_ifelse.py`, `fix_switch.py`, `fix_guardstack.py`, `fix_idioms.py`, `fix_bitmask.py`, `fix_shiftbit.py`, `fix_localtype.py`, `fix_uninline.py`, `fix_return.py`, `fix_gsbuffer.py`, `fix_stringops.py`, `fix_nestcall.py`, `fix_inplace.py`, `fix_boolarith.py`, `fix_allocargs.py`, `fix_order.py`, `fix_permute.py`, `fix_caseorder.py`, `fix_forloop.py`, `fix_fastcall.py`, `fix_paramtype.py`, `fix_globalwidth.py`, `fix_restore.py`, `fix_all.py`, `tidy_blanks.py` | systematic fixes, kept only where confirmed; `oracle fix` runs them all |
 | `scripts/oracle_config.py` | which build directory a configuration uses |
 | `scripts/objdiff.py` | do two builds contain the same code |
 | `scripts/abcompare.py` | baseline vs experiment, module by module |
 | `scripts/crtmap.py` | the linked CRT, by bytes |
+| `scripts/libmap.py` | the linked runtime's functions paired with the original's, judged by the audit |
 | `scripts/decode_rich_header.py`, `compid.py` | tool stamps in images and objects |

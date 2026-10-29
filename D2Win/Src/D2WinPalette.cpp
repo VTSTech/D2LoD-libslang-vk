@@ -64,13 +64,13 @@ void __stdcall DRAW_SetOrReloadPalleteMain() {
     if (gbGammaShiftActive) {
       DWORD dwTickCount;
       dwTickCount = GetTickCount();
-      if (dwTickCount - gdwPaletteShiftStartTick < 0x7d1) {
+      if (dwTickCount - gdwPaletteShiftStartTick <= 0x7d0) {
         return;
       }
 
       gdwPaletteShiftStartTick = GetTickCount();
       gnPaletteGammaShiftState--;
-      if (0 < gnPaletteGammaShiftState) {
+      if (gnPaletteGammaShiftState > 0) {
         goto apply_palette;
       }
 

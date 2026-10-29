@@ -78,65 +78,65 @@ void __fastcall D2WINLIST_AddListItem(::D2WinList * pList, uint16_t * wszText, f
     D2WinListEntry* nNextNode;
     int* pItemCount;
     D2WinListEntry* pTailEntry;
-    if (pList->sControl.neD2FormType == FORM_List) {
-      D2WinListEntry* pNewEntry;
-      D2WinFont::SetAndReturnLastFont(pList->sEntriesControl.nFontId);
-      pNewEntry = D2_NEW_AT(D2WinListEntry, ".\\Src\\D2WinList.cpp", 0xa5);
-      nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
-      if (!(nLine < 0x100)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
-        exit(-1);
-      }
-
-      D2Lang::Unicode::UNISYS::STRING_CopyWideString(pNewEntry->wszText, wszText);
-      D2WinFont::TEXT_CalcTextDimensions(wszText, &pTextWidth, &nTextHeight);
-      pTextWidth += 8;
-      if (pList->sEntriesControl.nMaxTextWidth < pTextWidth) {
-        pList->sEntriesControl.nMaxTextWidth = pTextWidth;
-      }
-
-      pNewEntry->nTextWidth = pTextWidth;
-      pNewEntry->pfnOnActivate = nItemData;
-      pNewEntry->nLeft = 0;
-      pNewEntry->nRight = 0;
-      pNewEntry->nTop = 0;
-      pNewEntry->nBottom = 0;
-      pNewEntry->bItemFlags = bItemFlags;
-      pNewEntry->nUserData = nUserData;
-      if (!bPrepend) {
-        pTailEntry = pList->sEntriesControl.pFirstEntry;
-        if (!pTailEntry) {
-          pList->sEntriesControl.pFirstEntry = pNewEntry;
-          pNewEntry->pNext = 0;
-        } else {
-          nNextNode = pTailEntry->pNext;
-          while (nNextNode) {
-            pTailEntry = pTailEntry->pNext;
-            nNextNode = pTailEntry->pNext;
-          }
-
-          pTailEntry->pNext = pNewEntry;
-          pNewEntry->pNext = 0;
-        }
-      } else {
-        pNewEntry->pNext = pList->sEntriesControl.pFirstEntry;
-        pList->sEntriesControl.pFirstEntry = pNewEntry;
-      }
-
-      pItemCount = &pList->sEntriesControl.nItemCount;
-      (*pItemCount)++;
-      D2WinFont::SetAndReturnLastFont(1);
-      if (!bSelect) {
-        return;
-      }
-
-      pList->sEntriesControl.pSelectedEntry = pNewEntry;
-      pList->sEntriesControl.nSelectedIndex = pList->sEntriesControl.nItemCount - 1;
-      return;
-    } else {
+    if (pList->sControl.neD2FormType != FORM_List) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
       exit(-1);
     }
+
+    D2WinListEntry* pNewEntry;
+    D2WinFont::SetAndReturnLastFont(pList->sEntriesControl.nFontId);
+    pNewEntry = D2_NEW_AT(D2WinListEntry, ".\\Src\\D2WinList.cpp", 0xa5);
+    nLine = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
+    if (!(nLine < 0x100)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
+      exit(-1);
+    }
+
+    D2Lang::Unicode::UNISYS::STRING_CopyWideString(pNewEntry->wszText, wszText);
+    D2WinFont::TEXT_CalcTextDimensions(wszText, &pTextWidth, &nTextHeight);
+    pTextWidth += 8;
+    if (pTextWidth > pList->sEntriesControl.nMaxTextWidth) {
+      pList->sEntriesControl.nMaxTextWidth = pTextWidth;
+    }
+
+    pNewEntry->nTextWidth = pTextWidth;
+    pNewEntry->pfnOnActivate = nItemData;
+    pNewEntry->nLeft = 0;
+    pNewEntry->nRight = 0;
+    pNewEntry->nTop = 0;
+    pNewEntry->nBottom = 0;
+    pNewEntry->bItemFlags = bItemFlags;
+    pNewEntry->nUserData = nUserData;
+    if (!bPrepend) {
+      pTailEntry = pList->sEntriesControl.pFirstEntry;
+      if (pTailEntry) {
+        nNextNode = pTailEntry->pNext;
+        while (nNextNode) {
+          pTailEntry = pTailEntry->pNext;
+          nNextNode = pTailEntry->pNext;
+        }
+
+        pTailEntry->pNext = pNewEntry;
+        pNewEntry->pNext = 0;
+      } else {
+        pList->sEntriesControl.pFirstEntry = pNewEntry;
+        pNewEntry->pNext = 0;
+      }
+    } else {
+      pNewEntry->pNext = pList->sEntriesControl.pFirstEntry;
+      pList->sEntriesControl.pFirstEntry = pNewEntry;
+    }
+
+    pItemCount = &pList->sEntriesControl.nItemCount;
+    (*pItemCount)++;
+    D2WinFont::SetAndReturnLastFont(1);
+    if (!bSelect) {
+      return;
+    }
+
+    pList->sEntriesControl.pSelectedEntry = pNewEntry;
+    pList->sEntriesControl.nSelectedIndex = pList->sEntriesControl.nItemCount - 1;
+    return;
 }
 
 // Returns the position of pSelectedEntry in the entry chain (pNext), or -1 when nothing is selected; halts (D2WinList.cpp line 210, ptListData->eType == D2WIN_LIST) on a non-list control.
@@ -247,7 +247,7 @@ BOOL __fastcall Draw(::D2WinList * pList) {
       D2WinFont::SetAndReturnLastFont(pList->sEntriesControl.nFontId);
       pCurrentEntry = pList->sEntriesControl.pFirstEntry;
       pY = pList->sEntriesControl.nRowPadding - pList->sControl.dwSizeY + pList->sEntriesControl.nFontHeight + pList->sControl.dwPosY;
-      if (0 < pList->sEntriesControl.nTopIndex) {
+      if (pList->sEntriesControl.nTopIndex > 0) {
         nTextWidth = pList->sEntriesControl.nTopIndex;
         do {
           if (pCurrentEntry) {
@@ -289,7 +289,7 @@ BOOL __fastcall Draw(::D2WinList * pList) {
 
       ppDrawFrame = &pList->sEntriesControl.nCursorFrame;
       (*ppDrawFrame)++;
-      if (7 < pList->sEntriesControl.nCursorFrame) {
+      if (pList->sEntriesControl.nCursorFrame >= 8) {
         pList->sEntriesControl.nCursorFrame = 0;
       }
 
@@ -314,7 +314,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 
     DWORD dwTickCount = GetTickCount();
     for (pEntry = pList->sEntriesControl.pFirstEntry; pEntry; pEntry = pEntry->pNext) {
-      if (pEntry->nLeft < nMouseX && nMouseX < pEntry->nRight && pEntry->nTop < nMouseY && nMouseY < pEntry->nBottom) {
+      if (nMouseX > pEntry->nLeft && nMouseX < pEntry->nRight && nMouseY > pEntry->nTop && nMouseY < pEntry->nBottom) {
         if (pEntry == pList->sEntriesControl.pSelectedEntry && dwTickCount - gdwListLastClickTick < 300) {
           if (pEntry->pfnOnActivate) {
             bCallbackResult = pEntry->pfnOnActivate(pControlMsg);
@@ -376,14 +376,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
     }
 
     uint32_t WVar2 = pControlMsg->wParam;
-    if (WVar2 == 0xd) {
-      D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
-      pfVar5 = pList->sEntriesControl.pSelectedEntry->pfnOnActivate;
-      if (pfVar5) {
-        bCallbackResult = (*pfVar5)(pControlMsg);
-        return bCallbackResult;
-      }
-    } else {
+    if (WVar2 != 0xd) {
       int* piVar1;
       if (WVar2 == 0x26) {
         pDVar6 = pList->sEntriesControl.pFirstEntry;
@@ -409,14 +402,14 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
 
         nKeyCode = pList->sEntriesControl.nSelectedIndex;
         iVar3 = pList->sEntriesControl.nTopIndex;
-        if (nKeyCode < iVar3) {
+        if (iVar3 > nKeyCode) {
           pList->sEntriesControl.nTopIndex = nKeyCode;
           D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
           return 1;
         }
 
         nKeyCode -= iVar3;
-        while (pList->sEntriesControl.nMaxVisibleIndex < nKeyCode) {
+        while (nKeyCode > pList->sEntriesControl.nMaxVisibleIndex) {
           piVar1 = &pList->sEntriesControl.nTopIndex;
           (*piVar1)++;
           nKeyCode--;
@@ -441,14 +434,14 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
 
         nKeyCode = pList->sEntriesControl.nSelectedIndex;
         iVar3 = pList->sEntriesControl.nTopIndex;
-        if (nKeyCode < iVar3) {
+        if (iVar3 > nKeyCode) {
           pList->sEntriesControl.nTopIndex = nKeyCode;
           D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
           return 1;
         }
 
         nKeyCode -= iVar3;
-        while (pList->sEntriesControl.nMaxVisibleIndex < nKeyCode) {
+        while (nKeyCode > pList->sEntriesControl.nMaxVisibleIndex) {
           piVar1 = &pList->sEntriesControl.nTopIndex;
           (*piVar1)++;
           nKeyCode--;
@@ -456,6 +449,13 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
 
         D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
         return 1;
+      }
+    } else {
+      D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
+      pfVar5 = pList->sEntriesControl.pSelectedEntry->pfnOnActivate;
+      if (pfVar5) {
+        bCallbackResult = (*pfVar5)(pControlMsg);
+        return bCallbackResult;
       }
     }
 
@@ -534,7 +534,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
         pNewEntry = D2_NEW_AT(D2WinListEntry, ".\\Src\\D2WinList.cpp", 0x56);
         wszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)(nSizeX - 1));
         nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocaleStr);
-        if (0xff < nStrLen) {
+        if (nStrLen >= 0x100) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58);
           exit(-1);
         }
@@ -542,7 +542,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(pNewEntry->wszText, wszLocaleStr);
         D2WinFont::TEXT_CalcTextDimensions(wszLocaleStr, (int*)&pnFontType, (int*)&pnItemArray);
         pnFontType += 2;
-        if (pList->sEntriesControl.nMaxTextWidth < (int)pnFontType) {
+        if ((int)pnFontType > pList->sEntriesControl.nMaxTextWidth) {
           pList->sEntriesControl.nMaxTextWidth = (int32_t)pnFontType;
         }
 
@@ -556,9 +556,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
         pNewEntry->nUserData = nSizeX[1];
         pNewEntry->pNext = 0;
         pTailEntry = pList->sEntriesControl.pFirstEntry;
-        if (!pTailEntry) {
-          pList->sEntriesControl.pFirstEntry = pNewEntry;
-        } else {
+        if (pTailEntry) {
           pDVar1 = pTailEntry->pNext;
           while (pDVar1) {
             pTailEntry = pTailEntry->pNext;
@@ -566,6 +564,8 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
           }
 
           pTailEntry->pNext = pNewEntry;
+        } else {
+          pList->sEntriesControl.pFirstEntry = pNewEntry;
         }
 
         pItemCountPtr = &pList->sEntriesControl.nItemCount;

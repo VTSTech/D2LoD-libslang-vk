@@ -31,7 +31,7 @@ void __fastcall SSIG_FreeBigNum(void * * pBigNum) {
 static BOOL __stdcall SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalSize, int32_t pBuffer, int * pnFoundOffset) {
     int nMarkerOffset = nTotalSize - nOffset - 4;
     *pnFoundOffset = nMarkerOffset;
-    if (!(nOffset + 4U <= nTotalSize && *(int*)(nMarkerOffset + pBuffer) == 0x5349474e)) {
+    if (!(nTotalSize >= nOffset + 4U && *(int*)(nMarkerOffset + pBuffer) == 0x5349474e)) {
       return 0;
     }
 
@@ -71,10 +71,10 @@ uint32_t __fastcall SSignatureVerifyStream_GetSignatureLength(D2SsigContextStrc 
 void __fastcall SSignatureVerifyStream_ProvideData(D2SsigContextStrc * pContext, uint8_t * pData, size_t nDataLen) {
     uint32_t nRemaining = nDataLen - pContext->nBufferSize;
     if (-1 < (int)nRemaining) {
-      if (pContext->nBytesBuffered) {
+      if ((uint32_t)pContext->nBytesBuffered > 0) {
         Sha1_Append(pContext->pDataBuffer, pContext->nBytesBuffered, &pContext->sSha1);
       }
-      if (0 < (int)nRemaining) {
+      if ((int)nRemaining > 0) {
         Sha1_Append(pData, nRemaining, &pContext->sSha1);
       }
 
@@ -84,7 +84,7 @@ void __fastcall SSignatureVerifyStream_ProvideData(D2SsigContextStrc * pContext,
     }
 
     nRemaining = pContext->nBytesBuffered - pContext->nBufferSize + nDataLen;
-    if (0 < (int)nRemaining) {
+    if ((int)nRemaining > 0) {
       Sha1_Append(pContext->pDataBuffer, nRemaining, &pContext->sSha1);
       pContext->nBytesBuffered -= nRemaining;
       SSystem::SMemMove(pContext->pDataBuffer, pContext->pDataBuffer + nRemaining, pContext->nBytesBuffered);
@@ -460,7 +460,7 @@ void __fastcall Sha1_Append(uint8_t * pData, uint32_t nLen, D2Sha1ContextStrc * 
       pCursor += 0x40;
       nBufIndex = 0;
     }
-    if (0x3f < nLen) {
+    if (nLen >= 0x40) {
       pData = (uint8_t*)(nLen >> 6);
       do {
         Sha1_Pump(pCtx->aState, pCursor);

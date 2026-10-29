@@ -29,7 +29,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Clear() {
     while (true) {
       int nNext;
       pObject = (int*)this->m_terminator.m_next;
-      if (0 >= (int)pObject) {
+      if ((int)pObject <= 0) {
         break;
       }
 
@@ -77,5 +77,5 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::DeleteNode(::T
     }
 
     Storm::SMem::SMemFree(ptr, s___AUTCELENTRY___00741f14, -2, 0);
-    return (::TCELENTRY*)((int)uReturnLink < 1 ? 0 : uReturnLink);
+    return (::TCELENTRY*)((int)uReturnLink <= 0 ? 0 : uReturnLink);
 }

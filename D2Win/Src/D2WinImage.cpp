@@ -133,7 +133,7 @@ BOOL __stdcall D2WINIMAGE_SetFrame(::D2WinImage * pImage, int32_t nFrame) {
     }
 
     nLine = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pImage->sControl.pDC6);
-    if (nLine - 1 < nFrame) {
+    if (nFrame > nLine - 1) {
       nFrame = nLine - 1;
     }
     if (nFrame < 0) {
@@ -195,13 +195,13 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
     local_60.pDC6 = pImage->sControl.pDC6;
     local_60.nFrameNumber = pImage->nFrame;
     local_60.nDirection = 0;
-    if (0 < nTilesY) {
+    if (nTilesY > 0) {
       nTileDrawY = nStartY - nTileRowY + 0x101;
       nTileRowCount = nTilesY;
       do {
         nTileColCount = nTilesX;
         nTileDrawX = nPositionX;
-        if (0 < nTilesX) {
+        if (nTilesX > 0) {
           do {
             D2gfx::D2GFX::D2GFX_DrawImage(&local_60, nTileDrawX, nTileDrawY, -1, pImage->eDrawMode, nullptr);
             local_60.nFrameNumber++;
@@ -214,7 +214,7 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
         nTileRowCount--;
       } while (nTileRowCount);
     }
-    if (!(-1 < nTilesY && 0 < nTilesX)) {
+    if (!(-1 < nTilesY && nTilesX > 0)) {
       return 1;
     }
 
@@ -243,7 +243,7 @@ void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStr
     iVar1 = (iVar1 - 1 + nTileCountX) / nTileCountX;
     int nTileRepeatX = (nDstOffsetX - 1 + iVar2) / iVar2;
     nDstOffsetX = pScreenRect->nY0 - pDstRect->nY0 + 0x100;
-    if (0 >= nTileRepeatX) {
+    if (nTileRepeatX <= 0) {
       return;
     }
 
@@ -251,25 +251,25 @@ void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStr
       int nParam1;
       nParam1 = pScreenRect->nX0 - pDstRect->nX0;
       nSrcX1 = iVar1;
-      if (0 < iVar1) {
+      if (iVar1 > 0) {
         do {
           sClipRect.nX0 = pDstRect->nX0 + nParam1;
-          if (sClipRect.nX0 < pScreenRect->nX0) {
+          if (pScreenRect->nX0 > sClipRect.nX0) {
             sClipRect.nX0 = pScreenRect->nX0;
           }
 
           sClipRect.nX1 = pScreenRect->nX1;
-          if (sClipRect.nX0 + nTileCountX <= pScreenRect->nX1) {
+          if (pScreenRect->nX1 >= sClipRect.nX0 + nTileCountX) {
             sClipRect.nX1 = sClipRect.nX0 + nTileCountX;
           }
 
           sClipRect.nY0 = pDstRect->nY0 - 0x100 + nDstOffsetX;
-          if (sClipRect.nY0 < pScreenRect->nY0) {
+          if (pScreenRect->nY0 > sClipRect.nY0) {
             sClipRect.nY0 = pScreenRect->nY0;
           }
 
           sClipRect.nY1 = pScreenRect->nY1;
-          if (sClipRect.nY0 + iVar2 <= pScreenRect->nY1) {
+          if (pScreenRect->nY1 >= sClipRect.nY0 + iVar2) {
             sClipRect.nY1 = sClipRect.nY0 + iVar2;
           }
 
@@ -308,7 +308,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
       pfnHitEntry = pHitAreaTable->pfnOnHit;
       pHitAreaCur = pHitAreaTable;
       while (pfnHitEntry) {
-        if (pHitAreaCur->nX <= iVar2 && pHitAreaCur->nY - pHitAreaCur->nHeight <= nRelMouseY && iVar2 < pHitAreaCur->nWidth + pHitAreaCur->nX && nRelMouseY < pHitAreaCur->nY) {
+        if (iVar2 >= pHitAreaCur->nX && nRelMouseY >= pHitAreaCur->nY - pHitAreaCur->nHeight && iVar2 < pHitAreaCur->nWidth + pHitAreaCur->nX && nRelMouseY < pHitAreaCur->nY) {
           bPressResult = pHitAreaTable[nHitAreaIdx].pfnOnHit(pControlMsg);
           return bPressResult;
         }
@@ -320,12 +320,12 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     }
 
     OnPress pfnOnPress = pControlMsg->pControl->fpOnPress;
-    if (!pfnOnPress) {
-      return 0;
+    if (pfnOnPress) {
+      bPressResult = (*pfnOnPress)(pControlMsg);
+      return bPressResult;
     }
 
-    bPressResult = (*pfnOnPress)(pControlMsg);
-    return bPressResult;
+    return 0;
 }
 
 // @sourcefile .\Src\D2WinImage.cpp

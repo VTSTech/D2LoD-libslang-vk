@@ -57,10 +57,8 @@ void __stdcall TABLES_GetLangAbbreviation(char * szOutAbbrev, int32_t nFormat);
 void __stdcall STRTABLE_FormatNumber(uint16_t * wszText, uint32_t nValue, int32_t nMaxLen);
 void __stdcall STRTABLE_FormatInt64(uint16_t * wszText, int32_t nParam1, int32_t nParam2, int32_t nParam3);
 void __stdcall STRTABLE_FormatUInt64WithAbbrev(uint16_t * wszText, uint32_t dwParam1, uint32_t dwParam2, int32_t nParam);
-// Loads and validates a .tbl string table. Takes ONE argument, the filename, in EDX - all three callers (00525b33, 00525cc5, 00525e54) set EDX only and never touch ECX. The PUSH ECX at 00525923 is MSVC's local-allocation idiom, not a parameter; read as one, it produced a phantom ECX argument that callers passed uninitialised, and that phantom is the local the CRC is computed into and compared against the file's stored CRC.
-uint16_t * __fastcall STRTABLE_LoadStringTableFile(char * szFileName);
 // @sourcefile .\StrTable\strtable.cpp
 int __fastcall TABLES_LoadStrings(struct D2PoolManagerStrc * pPoolManager, char * szText, int32_t isXpac);
-// 3 internal functions (defined in .cpp)
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Lang::StrTable::strtable

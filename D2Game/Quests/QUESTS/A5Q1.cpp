@@ -90,12 +90,12 @@ bool __fastcall Q31_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_SiegeOnHaggorath, QUESTSTATE_RewardAwaits);
     if (bQuestState || (bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted) , bQuestState != 0)) {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, pQuestData->nQuestIdReal, QUESTSTATE_Step0x05);
-      if (!bQuestState) {
-        *pbyIconFlag = '\x03';
+      if (bQuestState) {
+        *pbyIconFlag = '\x04';
         return true;
       }
 
-      *pbyIconFlag = '\x04';
+      *pbyIconFlag = '\x03';
       return true;
     }
     if (!pQuestData->bIsNotIntroduction) {
@@ -112,7 +112,7 @@ bool __fastcall Q31_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       *pbyIconFlag = '\f';
       return true;
     }
-    if (4 < pQuestData->nStateFlag) {
+    if (pQuestData->nStateFlag >= 5) {
       return true;
     }
 
@@ -272,19 +272,19 @@ void __fastcall Q31_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!bRewardAwaits) {
+    if (bRewardAwaits) {
+      bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x05);
+      if (!bCompleted) {
+        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNPCClassId, 3);
+        return;
+      }
+    } else {
       uint32_t nGossipLineIdx;
       if (bCompleted != 1 && (pQuestData->nStateFlag < 4 || bJustCompleted) && pQuestData->bIsNotIntroduction) {
         nGossipLineIdx = gdwQuestCallbackAddressQ31[pQuestData->nStateFlag];
         if (nGossipLineIdx != -1 && nGossipLineIdx < 8) {
           AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNPCClassId, nGossipLineIdx);
         }
-      }
-    } else {
-      bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x05);
-      if (!bCompleted) {
-        AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNPCClassId, 3);
-        return;
       }
     }
 }
@@ -325,7 +325,7 @@ BOOL __fastcall Q31_CheckNearShenk(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void
       uint32_t nAdjRoomIdx;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nAdjRoomCount);
       nAdjRoomIdx = 0;
-      if (nAdjRoomCount) {
+      if (nAdjRoomCount > 0) {
         do {
           if (pAdjacentRooms[nAdjRoomIdx] == pA5Q1Data->pShenkRoom) {
             bIsNearShenkRoom = '\x01';
@@ -474,7 +474,7 @@ void __fastcall Q31_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     BOOL bQuestState;
     D2BitBufferStrc* pBitBuffer;
     ::SGAMEDATA* pGame;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex - 0x6eU < 3) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex - 0x6eU <= 2) {
       if (pQuestData->bIsNotIntroduction && (pQuestData->nStateFlag == 1 || pQuestData->nStateFlag == 2)) {
         QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q1.cpp", 0x229);
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q31_SyncQuestProgress);
@@ -540,18 +540,18 @@ bool __fastcall Q31_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pSeqQuestData) {
-      return false;
+    if (pSeqQuestData) {
+      BOOL bIsBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bIsBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x272);
+        exit(-1);
+      }
+
+      bool nTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+      return nTmp;
     }
 
-    BOOL bIsBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bIsBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x272);
-      exit(-1);
-    }
-
-    bool nTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-    return nTmp;
+    return false;
 }
 
 // A5Q1: on game load, rebuild volatile in-memory state (nStateFlagPrev@+0xb, nStateFlag@+0xc) from the player's persisted quest-record bits. Priority: Completed(0)/FinishedPrev(0xf)/RewardAwaits(1) -> prev=5 (done); Step0x04(4) -> prev2,flag3; Step0x03(3) -> prev1,flag3; Step0x02(2) -> prev1,flag2; else if player has spoken with Larzuk-intro NPC 0x201 and intro shown -> flag=1. Decompiler shows nQuestIdReal via [ESI+0xe0].

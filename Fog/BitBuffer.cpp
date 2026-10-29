@@ -37,7 +37,7 @@ void __stdcall BITBUF_AndBuffers(uint32_t * pBufferA, uint32_t * pBufferB, uint3
     int nDwordCount = (int)(nByteCount + (nByteOffset >> 0x1f & 3U)) >> 2;
     int nRemaining = nDwordCount * 4;
     nByteOffset = 0;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       uint32_t* pCursorB;
       nRemaining = (nRemaining - 1U >> 2) + 1;
       nByteOffset = nRemaining * 4;
@@ -75,7 +75,7 @@ void __stdcall BITBUF_OrBuffers(uint8_t * pBufferA, uint32_t * pBufferB, uint8_t
     int nDwordCount = (int)(nByteCount + (nByteOffset >> 0x1f & 3U)) >> 2;
     int nRemaining = nDwordCount * 4;
     nByteOffset = 0;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       uint32_t* pCursorB;
       nRemaining = (nRemaining - 1U >> 2) + 1;
       nByteOffset = nRemaining * 4;
@@ -111,7 +111,7 @@ void __stdcall BITBUF_NotBuffer(uint8_t * pSrc, uint32_t * pDest, int32_t nBitCo
     int nDwordCount = (int)(nByteCount + (nByteOffset >> 0x1f & 3U)) >> 2;
     int nRemaining = nDwordCount * 4;
     nByteOffset = 0;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       uint32_t* pCursorDest;
       nRemaining = (nRemaining - 1U >> 2) + 1;
       nByteOffset = nRemaining * 4;
@@ -147,7 +147,7 @@ void __stdcall BITBUF_XorBuffers(uint8_t * pBufferA, uint32_t * pBufferB, uint8_
     int nDwordCount = (int)(nByteCount + (nByteOffset >> 0x1f & 3U)) >> 2;
     int nRemaining = nDwordCount * 4;
     nByteOffset = 0;
-    if (0 < nRemaining) {
+    if (nRemaining > 0) {
       uint32_t* pCursorB;
       nRemaining = (nRemaining - 1U >> 2) + 1;
       nByteOffset = nRemaining * 4;
@@ -202,9 +202,9 @@ int32_t __stdcall GetNextPositon(D2BitBufferStrc * pBitBuffer) {
 
 void __stdcall WriteValueToBitBuffer(D2BitBufferStrc * pBitBuffer, int32_t nValue, int32_t nSizeInBits) {
     size_t nCapacityBits = pBitBuffer->nBitsInBuffer;
-    /* check if there is room */ if ((int)nCapacityBits < (int)(pBitBuffer->nBitsAtPos + pBitBuffer->nCurrentPos * 8 + nSizeInBits)) {
+    /* check if there is room */ if ((int)(pBitBuffer->nBitsAtPos + pBitBuffer->nCurrentPos * 8 + nSizeInBits) > (int)nCapacityBits) {
       pBitBuffer->bEnd = 1;
-      pBitBuffer->nCurrentPos = (int)(nCapacityBits + ((int)nCapacityBits >> 0x1f & 7U)) >> 3;
+      pBitBuffer->nCurrentPos = (int)nCapacityBits / 8;
       pBitBuffer->nBitsAtPos = 0;
       return;
     }
@@ -214,12 +214,12 @@ void __stdcall WriteValueToBitBuffer(D2BitBufferStrc * pBitBuffer, int32_t nValu
 
     while (true) {
       int nBitsThisStep;
-      if (nSizeInBits < 1) {
+      if (nSizeInBits <= 0) {
         return;
       }
 
       nBitsThisStep = 8 - pBitBuffer->nBitsAtPos;
-      if (nSizeInBits < nBitsThisStep) {
+      if (nBitsThisStep > nSizeInBits) {
         nBitsThisStep = nSizeInBits;
       }
 
@@ -261,34 +261,34 @@ int32_t __stdcall Read(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
 
     nSize = 0;
     pBitBuffer = 0;
-    if (nBitsRemaining < 1) {
-      return 0;
+    if (nBitsRemaining >= 1) {
+      do {
+        uint8_t byCurrent;
+        nBitsThisStep = 8 - pBuf->nBitsAtPos;
+        if (nBitsThisStep > nBitsRemaining) {
+          nBitsThisStep = nBitsRemaining;
+        }
+
+        nBitsAtPos = pBuf->nBitsAtPos;
+        byCurrent = *pBuf->pBuffer;
+        byMask = *(uint8_t*)((int)gbGameSaveFileMarker + nBitsAtPos);
+        dwBitMask = gdwBitBufferSeed[nBitsThisStep];
+        pBuf->nBitsAtPos = nBitsAtPos + nBitsThisStep;
+        nSize += ((uint8_t)((byMask & byCurrent) >> ((uint8_t)nBitsAtPos & 0x1f)) & dwBitMask) << ((uint8_t)(uintptr_t)pBitBuffer & 0x1f);
+        nBitsRemaining -= nBitsThisStep;
+        if (nBitsAtPos + nBitsThisStep == 8) {
+          pBuf->nCurrentPos++;
+          pBuf->pBuffer++;
+          pBuf->nBitsAtPos = 0;
+        }
+
+        pBitBuffer = (D2BitBufferStrc*)((uintptr_t)&pBitBuffer->pBuffer + nBitsThisStep);
+      } while (nBitsRemaining > 0);
+
+      return nSize;
     }
 
-    do {
-      uint8_t byCurrent;
-      nBitsThisStep = 8 - pBuf->nBitsAtPos;
-      if (nBitsRemaining < nBitsThisStep) {
-        nBitsThisStep = nBitsRemaining;
-      }
-
-      nBitsAtPos = pBuf->nBitsAtPos;
-      byCurrent = *pBuf->pBuffer;
-      byMask = *(uint8_t*)((int)gbGameSaveFileMarker + nBitsAtPos);
-      dwBitMask = gdwBitBufferSeed[nBitsThisStep];
-      pBuf->nBitsAtPos = nBitsAtPos + nBitsThisStep;
-      nSize += ((uint8_t)((byMask & byCurrent) >> ((uint8_t)nBitsAtPos & 0x1f)) & dwBitMask) << ((uint8_t)(uintptr_t)pBitBuffer & 0x1f);
-      nBitsRemaining -= nBitsThisStep;
-      if (nBitsAtPos + nBitsThisStep == 8) {
-        pBuf->nCurrentPos++;
-        pBuf->pBuffer++;
-        pBuf->nBitsAtPos = 0;
-      }
-
-      pBitBuffer = (D2BitBufferStrc*)((uintptr_t)&pBitBuffer->pBuffer + nBitsThisStep);
-    } while (0 < nBitsRemaining);
-
-    return nSize;
+    return 0;
 }
 
 uint32_t __stdcall ReadUnsigned(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
@@ -341,7 +341,7 @@ int32_t __stdcall BITBUFFER_ReadHuffmanValue(D2BitBufferStrc * pBitBuffer, int32
       }
 
       nNodeIndex = nBit + nNodeBase;
-      if (-1 < *(int*)(pHuffmanTree + nNodeIndex * 4)) {
+      if (*(int*)(pHuffmanTree + nNodeIndex * 4) >= 0) {
         break;
       }
 

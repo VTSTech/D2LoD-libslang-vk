@@ -171,10 +171,10 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
 
       nTmp = nLevel - pHirelingTxt->level;
       nCalc = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
-      if (nLevel < nCalc - 1) {
-        nCalc = D2Common::Merc::GetBaseExperience(nLevel + 1, pHirelingTxt->expPerLvl);
-      } else {
+      if (!(nLevel < nCalc - 1)) {
         nCalc = 0;
+      } else {
+        nCalc = D2Common::Merc::GetBaseExperience(nLevel + 1, pHirelingTxt->expPerLvl);
       }
 
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_nextexp, nCalc, 0);
@@ -185,14 +185,14 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
       }
 
       nLevelDiff = pHirelingTxt->strPerlvl * nTmp;
-      nCalc = ((int)(nLevelDiff + (nLevelDiff >> 0x1f & 7U)) >> 3) + pHirelingTxt->str;
+      nCalc = nLevelDiff / 8 + pHirelingTxt->str;
       if (nCalc < 10) {
         nCalc = 10;
       }
 
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_strength, nCalc, 0);
       nLevelDiff = pHirelingTxt->dexPerlvl * nTmp;
-      nCalc = ((int)(nLevelDiff + (nLevelDiff >> 0x1f & 7U)) >> 3) + pHirelingTxt->dex;
+      nCalc = nLevelDiff / 8 + pHirelingTxt->dex;
       if (nCalc < 10) {
         nCalc = 10;
       }
@@ -208,10 +208,10 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
       nUnsignedStatVal = pHirelingTxt->defPerlvl * nTmp + pHirelingTxt->defense;
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_armorclass, (int)nUnsignedStatVal < 0 ? 0 : nUnsignedStatVal, 0);
       nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
-      uVar1 = ((int)(nLevelDiff + (nLevelDiff >> 0x1f & 7U)) >> 3) + pHirelingTxt->dmgMin;
+      uVar1 = nLevelDiff / 8 + pHirelingTxt->dmgMin;
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_secondary_mindamage, (int)uVar1 < 0 ? 0 : uVar1, 0);
       nLevelDiff = pHirelingTxt->dmgPerlvl * nTmp;
-      nCalc = ((int)(nLevelDiff + (nLevelDiff >> 0x1f & 7U)) >> 3) + pHirelingTxt->dmgMax;
+      nCalc = nLevelDiff / 8 + pHirelingTxt->dmgMax;
       if (nCalc < 1) {
         nCalc = 1;
       }
@@ -220,7 +220,7 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
       uVar1 = pHirelingTxt->arPerlvl * nTmp + pHirelingTxt->ar;
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_tohit, (int)uVar1 < 0 ? 0 : uVar1, 0);
       nLevelDiff = pHirelingTxt->resistPerlvl * nTmp;
-      uVar1 = ((int)(nLevelDiff + (nLevelDiff >> 0x1f & 3U)) >> 2) + pHirelingTxt->resist;
+      uVar1 = nLevelDiff / 4 + pHirelingTxt->resist;
       uVar1 = (int)uVar1 < 0 ? 0 : uVar1;
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_fireresist, uVar1, 0);
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMerc, UNITSTAT_lightresist, uVar1, 0);
@@ -231,10 +231,10 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
       pSkillEntry = pHirelingTxt->nSkillId;
       for (nLevelDiff = 0; nLevelDiff < 6; pSkillEntry++ , nLevelDiff++) {
         eSkill = *pSkillEntry;
-        if ((int)eSkill < 1) {
+        if ((int)eSkill <= 0) {
           return;
         }
-        if (sgptDataTable->nTxtSkillsCount <= (int)eSkill) {
+        if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
           return;
         }
         if ('\x0f' < (char)pHirelingTxt->nSkillMode[nLevelDiff]) {
@@ -242,11 +242,11 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
         }
 
         pSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine(eSkill);
-        if (pSkillTxt && pSkillTxt->reqlevel <= nLevel) {
+        if (pSkillTxt && nLevel >= pSkillTxt->reqlevel) {
           uVar1 = ((char)pHirelingTxt->nSkillLvlPerLvl[nLevelDiff] * nTmp >> 5) + (int)(char)pHirelingTxt->nSkillLevel[nLevelDiff];
-          uVar1 = (int)uVar1 < 1 ? 0 : uVar1;
+          uVar1 = (int)uVar1 <= 0 ? 0 : uVar1;
           if ((int)uVar1 < 0x20) {
-            if ((int)uVar1 < 1) {
+            if ((int)uVar1 <= 0) {
               continue;
             }
           } else {
@@ -318,10 +318,10 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     D2MonsterAiSubStrc* pNewAiSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2MonsterAiSubStrc, ".\\MONSTER\\MonsterAI.cpp", 0x1c7);
     pNewAiSub->pUnit = pPlayer;
     D2MonsterAiSubStrc* pExistingAiSub = pAi->pAiSub;
-    if (pExistingAiSub) {
-      pNewAiSub->pNext = pExistingAiSub;
-    } else {
+    if (!pExistingAiSub) {
       pNewAiSub->pNext = 0;
+    } else {
+      pNewAiSub->pNext = pExistingAiSub;
     }
 
     _bFirstInteraction = (uint32_t)!pExistingAiSub;
@@ -502,7 +502,7 @@ void __fastcall FreeAndResetAiSub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
     do {
       D2MonsterAiSubStrc** ppSubAiNext;
       if (pSubAi->pUnit == pUnit) {
-        if (0 < (int)pSubAi->nState) {
+        if ((int)pSubAi->nState >= 1) {
           if (!pPrevSubAi) {
             pMonsterAi->pAiSub = pSubAi->pNext;
           } else {
@@ -558,7 +558,7 @@ static BOOL __stdcall UnitHasSwitchAiSet(D2UnitStrc * pMonster) {
     }
 
     int32_t nClassId = pMonster->nClassId;
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].switchai)) {
+    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].switchai)) {
       return 0;
     }
 
@@ -638,7 +638,7 @@ uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
       pSubAi = pSubAi->pNext;
     }
 
-    return (uint32_t)(0 < (int)pSubAi->nState);
+    return (uint32_t)((int)pSubAi->nState >= 1);
 }
 
 // Tears down a monster's D2MonsterAiSubStrc list. For each sub-AI node: sends 0x62 MakeUnitTargetable packet to the interacting client, optionally clears that client's interact-info (if bClientSide and the client was interacting with this monster), calls an optional fpFunction cleanup callback, then frees the node. Sets pMonsterAi->pAiSub to NULL when done.

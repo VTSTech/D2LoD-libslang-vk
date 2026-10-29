@@ -233,7 +233,17 @@ void __fastcall Q03_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     D2UnitStrc* pCompletedCheck = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x206d6468);
-    if (!pCompletedCheck) {
+    if (pCompletedCheck) {
+      nPlayerLevel2 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pQuestArgs->pPlayer, UNITSTAT_level, 0);
+      if (nPlayerLevel2 >= 8) {
+        /* GetQuestState(Completed=0) — has Malus & lvl>=8: offer "return Malus" line
+                         if not done */ bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
+        if (!bCompleted) {
+          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
+          return;
+        }
+      }
+    } else {
       uint32_t nMessageIndexMaybe;
       if (bJustCompleted != 1) {
         nStateFlag = pQuestData->nStateFlag;
@@ -242,16 +252,6 @@ void __fastcall Q03_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
           if (nMessageIndexMaybe != -1 && nMessageIndexMaybe < 6) {
             AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nMessageIndexMaybe);
           }
-        }
-      }
-    } else {
-      nPlayerLevel2 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pQuestArgs->pPlayer, UNITSTAT_level, 0);
-      if (7 < nPlayerLevel2) {
-        /* GetQuestState(Completed=0) — has Malus & lvl>=8: offer "return Malus" line
-                         if not done */ bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
-        if (!bCompleted) {
-          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
-          return;
         }
       }
     }
@@ -507,30 +507,31 @@ bool __fastcall Q03_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
-    if (BVar1 == 1) {
-      return false;
-    }
-    /* If quest has been given by NPC (status 1) and reward is not yet available:
+    if (BVar1 != 1) {
+      /* If quest has been given by NPC (status 1) and reward is not yet available:
                          active */ /* GetQuestState(RewardAwaits=1) — started & no reward pending => active */ if (pQuestData->nStateFlag == 1) {
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
-      if (!BVar1) {
-        return true;
+        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
+        if (!BVar1) {
+          return true;
+        }
       }
+
+      int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
+      if (nPlayerLevel < 8) {
+        return false;
+      }
+
+      uint32_t dwItemCode = 0x206d6468;
+      ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
+      D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, dwItemCode);
+      /* If the player carries the Horadric Hammer: active */ if (!pMalusItem) {
+        return false;
+      }
+
+      return true;
     }
 
-    int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if (7 >= nPlayerLevel) {
-      return false;
-    }
-
-    uint32_t dwItemCode = 0x206d6468;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, dwItemCode);
-    /* If the player carries the Horadric Hammer: active */ if (!pMalusItem) {
-      return false;
-    }
-
-    return true;
+    return false;
 }
 
 // Q03_CheckPlayerHasMalus (A1Q3) — party-iteration callback. If this player carries the Horadric Malus ('hdm '), set the shared A1Q3 flag field_0xA0=1 (used by Q03_CheckPartyHasMalus to test whether anyone in the party holds the Malus). No quest-record writes.
@@ -579,7 +580,13 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     }
 
     bQuestState = Q03_CheckPartyHasMalus(pUnit, pQuestData);
-    if (!bQuestState) {
+    if (bQuestState) {
+      /* GetQuestState(Completed=0) — party holds Malus & not done => status 0x02 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
+      if (!bQuestState) {
+        *pbyStatusCode = '\x02';
+        return true;
+      }
+    } else {
       int iVar1;
       if (pQuestData->bIsNotIntroduction) {
         /* GetQuestState(JustCompleted=0xd) — just turned in self game */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_JustCompleted);
@@ -602,14 +609,8 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         iVar1 = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_ToolsOfTheTrade, 0xd);
         if (iVar1) {
           nCompletionState = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-          *pbyStatusCode = (7 < nCompletionState) * '\b' + '\x04';
+          *pbyStatusCode = (nCompletionState >= 8) * '\b' + '\x04';
         }
-      }
-    } else {
-      /* GetQuestState(Completed=0) — party holds Malus & not done => status 0x02 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
-      if (!bQuestState) {
-        *pbyStatusCode = '\x02';
-        return true;
       }
     }
 
@@ -626,18 +627,18 @@ bool __fastcall Q03_SequenceFilter(D2QuestDataStrc * pQuestData) {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x35a);
     } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
       pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-      if (!pQuestData_00) {
-        return false;
+      if (pQuestData_00) {
+        /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+        if (BVar2) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x362);
+          exit(-1);
+        }
+
+        bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+        return bVar1;
       }
 
-      /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-      if (BVar2) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x362);
-        exit(-1);
-      }
-
-      bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-      return bVar1;
+      return false;
     }
 
     return true;

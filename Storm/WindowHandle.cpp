@@ -155,11 +155,11 @@ void __fastcall WND_InsertListNode(int * * pNode, int32_t nMode, int * * ppAncho
 
 uint32_t __fastcall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
     if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
     }
 
     pNode = pThis + 4;
-    return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+    return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
 void __fastcall WND_UnlinkListNode(int32_t pThis, int * pNode) {
@@ -187,11 +187,11 @@ void __fastcall WND_UnlinkListNode(int32_t pThis, int * pNode) {
 }
 
 uint32_t __fastcall WND_GetNodeData(int32_t pThis, int32_t pNode) {
-    if (!pNode) {
-      return *(uint32_t*)(pThis + 8);
+    if (pNode) {
+      return *(uint32_t*)(pNode + 4);
     }
 
-    return *(uint32_t*)(pNode + 4);
+    return *(uint32_t*)(pThis + 8);
 }
 
 void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
@@ -201,7 +201,7 @@ void __fastcall WND_RemoveAllChildren(D2StormListHead * pWindow) {
     while (true) {
       int nNext;
       pNode = (int*)pWindow->pNext;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -246,11 +246,11 @@ void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
 
 int * * __fastcall WND_AllocRecord(int32_t nMode, int32_t nSize, uint32_t dwFlags, int * * ppList) {
     int** ppRecord = (int**)SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
-    if (!ppRecord) {
-      ppRecord = 0;
-    } else {
+    if (ppRecord) {
       *ppRecord = 0;
       ppRecord[1] = 0;
+    } else {
+      ppRecord = 0;
     }
     if (!nMode) {
       return ppRecord;
@@ -290,13 +290,13 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
     StormWndRecStrc* pEntry;
     uint32_t nOffset;
     StormWndRecStrc* pRecord = (StormWndRecStrc*)SMem::SMemAlloc(0xc, s___AUWNDREC___00708850, -2, 8);
-    if (!pRecord) {
-      pEntry = 0;
-      pRecord = (StormWndRecStrc*)&gpWndTrackingListHead.pPrevLink;
-    } else {
+    if (pRecord) {
       pRecord->link.pPrevLink = 0;
       pRecord->link.pNext = 0;
       pEntry = pRecord;
+    } else {
+      pEntry = 0;
+      pRecord = (StormWndRecStrc*)&gpWndTrackingListHead.pPrevLink;
     }
 
     StormLinkStrc* nNext = pRecord->link.pPrevLink;
@@ -347,14 +347,14 @@ uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * 
     }
 
     SMem::SMemFree(pRecord, s___AUWNDREC___00708850, -2, 0);
-    return (int)nResult < 1 ? 0 : nResult;
+    return (int)nResult <= 0 ? 0 : nResult;
 }
 
 // @blizzard FindWindow (SMSG.CPP)
 uint32_t __fastcall SMSG_FindWindow(int32_t nHandle) {
-    uint32_t nRecord = gpWndTrackingListHead.pNext < 1 ? 0 : gpWndTrackingListHead.pNext;
+    uint32_t nRecord = gpWndTrackingListHead.pNext <= 0 ? 0 : gpWndTrackingListHead.pNext;
     while (true) {
-      if ((int)nRecord < 1) {
+      if ((int)nRecord <= 0) {
         return 0;
       }
       if (*(int*)(nRecord + 8) == nHandle) {
@@ -525,12 +525,12 @@ LRESULT __stdcall WndProcC(HWND hWnd, uint32_t nParam1, uint32_t nParam2, LPARAM
 }
 
 uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId) {
-    if (!nResourceId) {
-      return (uint8_t*)WndProcC;
+    if (nResourceId) {
+      Source::SErr::SErrSetLastError(0x57);
+      return nullptr;
     }
 
-    Source::SErr::SErrSetLastError(0x57);
-    return nullptr;
+    return (uint8_t*)WndProcC;
 }
 
 uint32_t __fastcall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes) {
@@ -552,13 +552,14 @@ void __fastcall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount) {
 }
 
 int32_t __fastcall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew) {
-    if (!bAllocNew) {
-      return pReuseEntry;
+    if (bAllocNew) {
+      int nIndex;
+      nIndex = *(int*)(pThis + 0x140);
+      *(int*)(pThis + 0x140) = nIndex + 1;
+      return pThis + nIndex * 0x14;
     }
 
-    int nIndex = *(int*)(pThis + 0x140);
-    *(int*)(pThis + 0x140) = nIndex + 1;
-    return pThis + nIndex * 0x14;
+    return pReuseEntry;
 }
 
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.

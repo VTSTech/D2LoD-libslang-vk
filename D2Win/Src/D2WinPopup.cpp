@@ -77,7 +77,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
       exit(-1);
     }
-    if (7 < gpD2WinPopupControl->nMessageCount) {
+    if (gpD2WinPopupControl->nMessageCount >= 8) {
       return 0;
     }
 
@@ -92,7 +92,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
     D2WinFont::SetAndReturnLastFont(1);
     nLine = D2WinFont::DRAW_text0(pnParam->wszText);
     nCopyCount = pPopup->sControl.dwSizeX;
-    if (nLine < nCopyCount) {
+    if (nCopyCount > nLine) {
       nLine = nCopyCount;
     }
 
@@ -138,7 +138,7 @@ BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
     pPopup->bCentered = -1;
     int iVar1 = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
     int nRelX = nSizeY - pPopup->sControl.dwPosY + D2Client::Mouse::nPosY;
-    if (!(-1 < iVar1 && iVar1 <= pPopup->sControl.dwSizeX && -1 < nRelX && nRelX <= nSizeY)) {
+    if (!(iVar1 >= 0 && iVar1 <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= nSizeY)) {
       return 1;
     }
 
@@ -172,7 +172,7 @@ BOOL __fastcall Draw(::D2WinPopup * pPopup) {
     D2gfx::D2GFX::D2GFX_DrawSolidRectEx(sPopupRect.left, sPopupRect.bottom, sPopupRect.right, sPopupRect.top, dwFillColor, DRAW_LESSTRANSPARENT);
     D2WinFont::SetAndReturnLastFont(1);
     nMsgIdx = pPopup->nMessageCount;
-    if (0 >= nMsgIdx) {
+    if (nMsgIdx <= 0) {
       return 1;
     }
 

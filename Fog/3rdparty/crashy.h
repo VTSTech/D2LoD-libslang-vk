@@ -65,7 +65,7 @@ void __fastcall SYSTEM_SetGlobalString(char * szText);
 bool __fastcall ErrorReportingLaunch(char * szText, struct D2BlizzardErrorArgument * pArg);
 char * ILT_strrchr(char * _Str, int32_t _Ch);
 void __stdcall SYSTEM_EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection);
-void __stdcall LeaveCriticalSection_System(LPCRITICAL_SECTION lpCriticalSection);
+void __stdcall LeaveCriticalSection_System();
 void __stdcall DebugThread();
 // 1 internal function (defined in .cpp)
 

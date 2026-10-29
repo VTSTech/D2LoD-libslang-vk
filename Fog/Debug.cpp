@@ -786,7 +786,7 @@ bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, char * pExceptionPtrs, 
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
     int nConvertedChars = MultiByteToWideChar(0xfde9, 0, szDumpPath, -1, (LPWSTR)wszDumpPath, 0x104);
-    if (0 < nConvertedChars) {
+    if (nConvertedChars > 0) {
       /* HANDLE hTemplateFile for CreateFileW */ /* DWORD dwFlagsAndAttributes for CreateFileW */ /* DWORD dwCreationDisposition for CreateFileW */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileW */ /* DWORD dwShareMode for CreateFileW */ /* DWORD dwDesiredAccess for CreateFileW */ /* LPCWSTR lpFileName for CreateFileW */ hResult = CreateFileW((LPCWSTR)wszDumpPath, 0x40000000, 3, (LPSECURITY_ATTRIBUTES)0x0, 2, 0x80, (HANDLE)0x0);
       if (hResult != (HANDLE)-1) {
         /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0098a6c4);
@@ -937,11 +937,11 @@ void __fastcall SKILLSTXT_ZeroOutFields(D2SkillsTxt * pSkillsTxt) {
 }
 
 int CompareUintDescending(LPCVOID pParam1, LPCVOID pParam2) {
-    if (*(uint32_t*)pParam2 >= *(uint32_t*)pParam1) {
-      return -(uint32_t)(*(uint32_t*)pParam1 < *(uint32_t*)pParam2);
+    if (*(uint32_t*)pParam1 > *(uint32_t*)pParam2) {
+      return 1;
     }
 
-    return 1;
+    return -(uint32_t)(*(uint32_t*)pParam2 > *(uint32_t*)pParam1);
 }
 
 static void FormatModuleDebugString(char * szText, D2FogDebugModuleEntryStrc * pModule) {
@@ -949,7 +949,7 @@ static void FormatModuleDebugString(char * szText, D2FogDebugModuleEntryStrc * p
     char szTimeStampSuffix[16];
     *szText = '\0';
     szTimeStampSuffix[0] = '\0';
-    if (pModule->dwTimestamp) {
+    if ((uint32_t)pModule->dwTimestamp > 0) {
       __snprintf_s(szTimeStampSuffix, 0x10, -1, " %8x", pModule->dwTimestamp);
     }
 
@@ -972,17 +972,17 @@ void __fastcall FormatAddressDebugString(uint32_t * pAddrInfo, char * pSymInfo, 
     }
 
     int nOffset = __snprintf_s(szOutput, 0x400, -1, "%p %s", (void*)*pAddrInfo, pSymInfo + 0x204);
-    if (0 < 0x15 - nOffset) {
+    if (0x15 - nOffset > 0) {
       nWritten = __snprintf_s(szOutput + nOffset, 0x400 - nOffset, -1, "%*s", 0x15 - nOffset, " ");
       nOffset += nWritten;
     }
-    if (*pSymInfo != '\0' || *(int*)(pSymInfo + 0x200)) {
+    if (*pSymInfo != '\0' || (uint32_t)*(int*)(pSymInfo + 0x200) > 0) {
       nWritten = __snprintf_s(szOutput + nOffset, 0x400 - nOffset, -1, " %s+%llu", pSymInfo, (uint64_t)nSymDisplacement << 0x20);
       nOffset += nWritten;
     }
 
     nWritten = __snprintf_s(szOutput + nOffset, 0x400 - nOffset, -1, "%s", szParamDetail);
-    if (pSymInfo[0x244] != '\0' || *(int*)(pSymInfo + 0x344)) {
+    if (pSymInfo[0x244] != '\0' || (uint32_t)*(int*)(pSymInfo + 0x344) > 0) {
       __snprintf_s(szOutput + nOffset + nWritten, 0x400 - (nOffset + nWritten), -1, " (%s,%u)", pSymInfo + 0x244, *(uint32_t*)(pSymInfo + 0x344));
     }
 }
@@ -1355,7 +1355,7 @@ D2FogModuleNodeStrc * __fastcall FindModuleContainingAddress(uint32_t nAddress, 
       if (!pModuleList) {
         return nullptr;
       }
-      if ((uintptr_t)pModuleList->dwBaseAddress <= nAddress && nAddress < (uintptr_t)(pModuleList->dwBaseAddress + pModuleList->dwSize)) {
+      if (nAddress >= (uintptr_t)pModuleList->dwBaseAddress && nAddress < (uintptr_t)(pModuleList->dwBaseAddress + pModuleList->dwSize)) {
         break;
       }
 
@@ -1418,10 +1418,10 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
     if (!bBadPtr) {
       pBytesRemaining = "unknown";
     }
-    if (!pEipModule) {
-      pcVar4 = "unknown";
-    } else {
+    if (pEipModule) {
       pcVar4 = pEipModule->szModuleName;
+    } else {
+      pcVar4 = "unknown";
     }
 
     Src::LogManager::LogWithCategoryVarArgs("", "\n                     // EIP = 0x%08X - %s - %s+%04X\n\n", nEip, pcVar4, pBytesRemaining, __frame1.nBytesRemaining);
@@ -1430,13 +1430,13 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
     __frame1.nBytesRemaining = 0x1000;
     do {
       nBytesThisRow = __frame1.nBytesRemaining;
-      if (399 < nLinesEmitted) {
+      if (nLinesEmitted >= 400) {
         break;
       }
 
       Src::LogManager::LogWithCategoryVarArgs("", "              %08X:", pStackPtr);
       __frame1.pBytesToDump = (char*)nBytesThisRow;
-      if (0xf < nBytesThisRow) {
+      if (nBytesThisRow >= 0x10) {
         __frame1.pBytesToDump = (char*)0x10;
       }
 
@@ -1449,13 +1449,13 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
         Storm::Source::SSTR::SStrCopy(__frame1.szHexLine, "<unreadable>", 0x7fffffff);
         break;
       }
-      if (0 < (int)pBytesRemaining) {
+      if ((int)pBytesRemaining > 0) {
         do {
           pcVar4 = __frame1.szHexLine;
           pcVar4 = pcVar4 + strlen(pcVar4) + 1;
           Storm::Source::SSTR::SStrPrintf(__frame1.szHexLine + ((int)pcVar4 - (int)(__frame1.szHexLine + 1)), 0x100 - ((int)pcVar4 - (int)(__frame1.szHexLine + 1)), " %02X%02X%02X%02X", (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 1), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 2), (uint32_t)*(uint8_t*)((int)pStackPtr + iVar2 + 3));
           for (pDVar1 = pModuleListIter; pDVar1; pDVar1 = pDVar1->pNext) {
-            if (pDVar1->dwBaseAddress <= *(uint8_t**)((int)pStackPtr + iVar2) && *(uint8_t**)((int)pStackPtr + iVar2) < pDVar1->dwBaseAddress + pDVar1->dwSize) {
+            if (*(uint8_t**)((int)pStackPtr + iVar2) >= pDVar1->dwBaseAddress && *(uint8_t**)((int)pStackPtr + iVar2) < pDVar1->dwBaseAddress + pDVar1->dwSize) {
               pEipModule = (D2FogModuleNodeStrc*)0x1;
               iVar2 += 4;
               goto emit_line;
@@ -1475,14 +1475,14 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
         do {
           Storm::Source::SSTR::SStrPack(__frame1.szHexLine, " ", 0x100);
           nByteOffset--;
-        } while (0 < nByteOffset);
+        } while (nByteOffset > 0);
       }
 
       __frame1.pBytesToDump = __frame1.szHexLine;
       __frame1.pBytesToDump = __frame1.pBytesToDump + strlen(__frame1.pBytesToDump) + 1;
       __frame1.pBytesToDump += -(int)(__frame1.szHexLine + 1);
       nByteOffset = 0;
-      if (0 < iVar2) {
+      if (iVar2 > 0) {
         pAsciiOut = (uint8_t*)(__frame1.szHexLine + (int)__frame1.pBytesToDump);
         do {
           byAscii = *(uint8_t*)(nByteOffset + (int)pStackPtr);
@@ -1506,7 +1506,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
             Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x3a5);
             exit(-1);
           }
-          if (pDVar1->dwBaseAddress <= pAsciiOut && pAsciiOut < pDVar1->dwBaseAddress + pDVar1->dwSize) {
+          if (pAsciiOut >= pDVar1->dwBaseAddress && pAsciiOut < pDVar1->dwBaseAddress + pDVar1->dwSize) {
             break;
           }
 
@@ -1514,10 +1514,10 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
         }
 
         bBadPtr = (*pSymGetSymFromAddr)(hSymProc, (DWORD)pAsciiOut, &__frame0.nSymDisplacement, __frame1.aSymInfo);
-        if (!bBadPtr) {
-          __frame1.pBytesToDump = "unknown";
-        } else {
+        if (bBadPtr) {
           __frame1.pBytesToDump = __frame1.szSymbol;
+        } else {
+          __frame1.pBytesToDump = "unknown";
         }
 
         iVar2 = __stricmp(__frame1.pBytesToDump, "`string\'");
@@ -1537,7 +1537,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
       nLinesEmitted++;
       __frame1.nBytesRemaining -= iVar2;
       pStackPtr = (void*)((int)pStackPtr + iVar2);
-    } while (__frame1.nBytesRemaining);
+    } while (__frame1.nBytesRemaining > 0);
 }
 
 static D2FogModuleNodeStrc * __stdcall LoadSymbolsForAllModules(HANDLE hProcess, uint32_t dwProcessId) {
@@ -1556,42 +1556,42 @@ static D2FogModuleNodeStrc * __stdcall LoadSymbolsForAllModules(HANDLE hProcess,
     Src::LogManager::LOGMANAGER_TraceToModuleLog("", "");
     Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Load symbols...");
     D2FogModuleNodeStrc* pCurModule = pModuleListHead;
-    if (!pModuleListHead) {
-      return nullptr;
+    if (pModuleListHead) {
+      do {
+        pNextModule = pCurModule->pNext;
+        pszCopySrc = pCurModule;
+        do {
+          chCopy = pszCopySrc->szModulePath[0];
+          (szModulePath - (int)pCurModule)[(int)pszCopySrc] = chCopy;
+          pszCopySrc = (D2FogModuleNodeStrc*)(pszCopySrc->szModulePath + 1);
+        } while (chCopy != '\0');
+
+        pcVar2 = pCurModule->szModuleName;
+        iVar1 = -(int)pcVar2;
+        do {
+          chCopy = *pcVar2;
+          pcVar2[(int)(szModuleName + iVar1)] = chCopy;
+          pcVar2++;
+        } while (chCopy != '\0');
+
+        dwLastError = (*pSymLoadModule)(hProcess, (HANDLE)0x0, szModulePath, szModuleName, (DWORD)pCurModule->dwBaseAddress, pCurModule->dwSize);
+        if (!gnSymbolLoadState) {
+          if (!dwLastError) {
+            pcVar2 = szModuleName;
+            dwLastError = GetLastError();
+            Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Error (%d) loading symbols for \'%s\'", dwLastError, pcVar2);
+          } else {
+            Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Symbols Loaded for \'%s\'", szModuleName);
+          }
+        }
+
+        pCurModule = pNextModule;
+      } while (pNextModule);
+
+      return pModuleListHead;
     }
 
-    do {
-      pNextModule = pCurModule->pNext;
-      pszCopySrc = pCurModule;
-      do {
-        chCopy = pszCopySrc->szModulePath[0];
-        (szModulePath - (int)pCurModule)[(int)pszCopySrc] = chCopy;
-        pszCopySrc = (D2FogModuleNodeStrc*)(pszCopySrc->szModulePath + 1);
-      } while (chCopy != '\0');
-
-      pcVar2 = pCurModule->szModuleName;
-      iVar1 = -(int)pcVar2;
-      do {
-        chCopy = *pcVar2;
-        pcVar2[(int)(szModuleName + iVar1)] = chCopy;
-        pcVar2++;
-      } while (chCopy != '\0');
-
-      dwLastError = (*pSymLoadModule)(hProcess, (HANDLE)0x0, szModulePath, szModuleName, (DWORD)pCurModule->dwBaseAddress, pCurModule->dwSize);
-      if (!gnSymbolLoadState) {
-        if (!dwLastError) {
-          pcVar2 = szModuleName;
-          dwLastError = GetLastError();
-          Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Error (%d) loading symbols for \'%s\'", dwLastError, pcVar2);
-        } else {
-          Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Symbols Loaded for \'%s\'", szModuleName);
-        }
-      }
-
-      pCurModule = pNextModule;
-    } while (pNextModule);
-
-    return pModuleListHead;
+    return nullptr;
 }
 
 BOOL __fastcall FILETOOLS_GetExecutableFolderPath(LPSTR lpFilename, DWORD nSize) {
@@ -1604,7 +1604,7 @@ BOOL __fastcall FILETOOLS_GetExecutableFolderPath(LPSTR lpFilename, DWORD nSize)
     LPSTR pszEnd = lpFilename;
     pszEnd = pszEnd + strlen(pszEnd) + 1;
     int32_t nScanIndex = (int)pszEnd + (-1 - (int)(lpFilename + 1));
-    if (0 >= nScanIndex) {
+    if (nScanIndex <= 0) {
       return 0;
     }
 
@@ -1619,12 +1619,12 @@ BOOL __fastcall FILETOOLS_GetExecutableFolderPath(LPSTR lpFilename, DWORD nSize)
       }
 
       nScanIndex--;
-      if (nScanIndex < 1) {
+      if (nScanIndex <= 0) {
         return 0;
       }
     }
 
-    if (0 >= nScanIndex) {
+    if (nScanIndex <= 0) {
       return 0;
     }
     if (lpFilename[nScanIndex] == ':') {
@@ -1684,11 +1684,11 @@ static int BuildSymbolSearchPath(char * szSearchPath) {
 
     char* pszAppendDst = szSearchPath;
     pszAppendDst = pszAppendDst + strlen(pszAppendDst) + 1;
-    if (!((int)pszAppendDst - (int)(szSearchPath + 1))) {
-      Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Unable to generate symbols search path");
-    } else {
+    if ((int)pszAppendDst - (int)(szSearchPath + 1)) {
       szSearchPath[(int)pszAppendDst - (int)(szSearchPath + 1) - 1] = '\0';
       Src::LogManager::LOGMANAGER_TraceToModuleLog("", "User defined symbols path: %s", szSearchPath);
+    } else {
+      Src::LogManager::LOGMANAGER_TraceToModuleLog("", "Unable to generate symbols search path");
     }
 
     char cCurChar = *szSearchPath;
@@ -1712,7 +1712,7 @@ int __stdcall InitializeSymbolsWithRefcount() {
       int nRefcount;
       bResult = 1;
       nRefcount = gnDbgSymInitRefcount + 1;
-      bNeedsInit = gnDbgSymInitRefcount < 1;
+      bNeedsInit = gnDbgSymInitRefcount <= 0;
       gnDbgSymInitRefcount = nRefcount;
       if (bNeedsInit) {
         if (szDbgSymbolSearchPath[0] == '\0') {
@@ -1839,7 +1839,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     __frame1.pContextCopy = pContext;
     HANDLE hThread = hProcess;
     __frame1.szLogCategory = szSearchPath;
-    if (gnStackWalkInProgress) {
+    if ((uint32_t)gnStackWalkInProgress > 0) {
       return 0;
     }
 
@@ -1890,7 +1890,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
       bCarry = (uint32_t)((uint32_t)nCyclesAcc + (uint32_t)nCycleSample) < (uint32_t)nCyclesAcc;
       nCyclesAcc += nCycleSample;
       nWalkCyclesHi = nWalkCyclesHi + nCycleSample + (uint32_t)bCarry;
-      if (0 < (int)__frame2.nFrameIdx) {
+      if ((int)__frame2.nFrameIdx >= 1) {
         __frame2.nSymOffset = 0;
         __frame1.pLineKey = 0;
         __frame1.bHasLineInfo = 0;
@@ -1898,10 +1898,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
         __frame1.nLineAddr = 0;
         __frame1.nLineStructSize = 0x14;
         BVar1 = (*pSymGetSymFromAddr)(hCurrentProcess, __frame0.stackFrame[0], &__frame2.nSymOffset, &__frame2.sSymbol);
-        if (!BVar1) {
-          __frame1.nSymLookupFails++;
-          pszSymName = "unknown";
-        } else {
+        if (BVar1) {
           pszSymName = __frame2.sSymbol.Name;
           __frame1.nLineNumber = __frame2.nSymOffset;
           BVar1 = GetSourceLineWithRetry(hProcessCur, __frame0.stackFrame[0], &__frame1.nLineNumber, &__frame1.nLineStructSize);
@@ -1909,6 +1906,9 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
           if (!BVar1) {
             __frame1.bHasLineInfo = 0;
           }
+        } else {
+          __frame1.nSymLookupFails++;
+          pszSymName = "unknown";
         }
 
         bCarry = (uint32_t)((uint32_t)qwSymCycles + (uint32_t)nCycleSample) < (uint32_t)qwSymCycles;
@@ -1925,9 +1925,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
         bCarry = (uint32_t)((uint32_t)qwModInfoCycles + (uint32_t)nCycleSample) < (uint32_t)qwModInfoCycles;
         *(uint32_t*)(char*)&qwModInfoCycles = (uint32_t)qwModInfoCycles + nCycleSample;
         *(uint32_t*)((char*)&qwModInfoCycles + 4) = *(uint32_t*)((char*)&qwModInfoCycles + 4) + nCycleSample + (uint32_t)bCarry;
-        if (!__frame1.bHasLineInfo) {
-          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X", __frame0.stackFrame[0], __frame2.moduleInfo.ModuleName, pszSymName);
-        } else {
+        if (__frame1.bHasLineInfo) {
           pszRelFileName = Src::ErrorManager::StripPathPrefixToRelative(__frame1.pszFileName);
           nStrLen = Storm::Source::SSTR::SStrLen(__frame2.moduleInfo.ModuleName);
           __frame1.nLineNumber = 0x28 - nStrLen;
@@ -1938,6 +1936,8 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
           }
 
           Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X  %*s%s,%d", __frame0.stackFrame[0], __frame2.moduleInfo.ModuleName, pszSymName, __frame2.nSymOffset, bOk, " ", pszRelFileName);
+        } else {
+          Src::LogManager::LOGMANAGER_TraceToModuleLog(__frame1.szLogCategory, "    %08X  %s!%s+%04X", __frame0.stackFrame[0], __frame2.moduleInfo.ModuleName, pszSymName);
         }
       }
 
@@ -2062,10 +2062,7 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
       __frame0.dwLineAddr = 0;
       __frame0.nSymDisplacement = 0;
       bWalkOk = (*pSymGetSymFromAddr)(hDupProcess, tStackFrame.AddrPC.Offset, &__frame0.nSymDisplacement, &sSymbol);
-      if (!bWalkOk) {
-        __frame0.nSymFailCount++;
-        __frame0.pszSymbolName = "unknown";
-      } else {
+      if (bWalkOk) {
         __frame0.pszSymbolName = sSymbol.Name;
         __frame0.pLineInfo = __frame0.nSymDisplacement;
         __frame0.dwLineStructSize = 0x14;
@@ -2073,14 +2070,17 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
         if (!bWalkOk) {
           __frame0.nLineNumber = 0;
         }
+      } else {
+        __frame0.nSymFailCount++;
+        __frame0.pszSymbolName = "unknown";
       }
 
       Source::SSComp::COMPRESS_Implode((void*)tStackFrame.AddrPC.Offset, szModulePath, &nImplodeOutLen, &__frame0.pLineInfo, 0x104);
       pszText = strrchr(szModulePath, 0x5c);
-      if (!pszText) {
-        pszText = szModulePath;
-      } else {
+      if (pszText) {
         pszText++;
+      } else {
+        pszText = szModulePath;
       }
 
       Src::LogManager::LogWithCategory("", "%08x %08x %-12s ", tStackFrame.AddrPC.Offset, tStackFrame.AddrFrame.Offset, pszText);
@@ -2099,8 +2099,20 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
       if (tStackFrame.FuncTableEntry) {
         wFpoFlags = tStackFrame.FuncTableEntry->wAttributes;
         pwFpoFlags = &tStackFrame.FuncTableEntry->wAttributes;
-        if (!(wFpoFlags >> 0xe)) {
-          if (!(wFpoFlags & 0x800)) {
+        if (wFpoFlags >> 0xe) {
+          if (wFpoFlags >> 0xe != 3) {
+            Src::LogManager::LogWithCategoryVarArgs("", "(UNKNOWN FPO TYPE)");
+          } else {
+            dwFpoLocals = tStackFrame.FuncTableEntry->cdwLocals;
+            nFpoRegCount = (uint32_t)(wFpoFlags >> 8);
+            wFpoFlags = tStackFrame.FuncTableEntry->cdwParams;
+            pszText = "(FPO: Non-FPO [%d, %d, %d])";
+            Src::LogManager::LogWithCategoryVarArgs("", pszText, (uint32_t)wFpoFlags, dwFpoLocals, nFpoRegCount & 7);
+          }
+        } else {
+          if (wFpoFlags & 0x800) {
+            Src::LogManager::LogWithCategoryVarArgs("", "(FPO: [SEH])");
+          } else {
             Src::LogManager::LogWithCategoryVarArgs("", " (FPO:");
             if (*pwFpoFlags & 0x1000) {
               Src::LogManager::LogWithCategoryVarArgs("", " [EBP 0x%08x]", tStackFrame.Reserved[0]);
@@ -2111,17 +2123,7 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
             wFpoFlags = pFVar1->cdwParams;
             pszText = " [%d, %d, %d])";
             Src::LogManager::LogWithCategoryVarArgs("", pszText, (uint32_t)wFpoFlags, dwFpoLocals, nFpoRegCount & 7);
-          } else {
-            Src::LogManager::LogWithCategoryVarArgs("", "(FPO: [SEH])");
           }
-        } else if (wFpoFlags >> 0xe == 3) {
-          dwFpoLocals = tStackFrame.FuncTableEntry->cdwLocals;
-          nFpoRegCount = (uint32_t)(wFpoFlags >> 8);
-          wFpoFlags = tStackFrame.FuncTableEntry->cdwParams;
-          pszText = "(FPO: Non-FPO [%d, %d, %d])";
-          Src::LogManager::LogWithCategoryVarArgs("", pszText, (uint32_t)wFpoFlags, dwFpoLocals, nFpoRegCount & 7);
-        } else {
-          Src::LogManager::LogWithCategoryVarArgs("", "(UNKNOWN FPO TYPE)");
         }
       }
       if (__frame0.nLineNumber) {
@@ -2223,7 +2225,7 @@ BOOL __fastcall LoadPreviousCrashDump(uint8_t * pOutBuffer, int * pnBufferSize) 
             pRecordCur = (D2CharSelCompStrc*)(&pRecordCur->nFrameIncrement + nDwordCount);
             pOutEntry = (short int*)(pOutBufferLocal + 1);
             nMatchIndex = 0;
-            if (0 < nUniqueCount) {
+            if (nUniqueCount > 0) {
               do {
                 if (*(D2CharSelCompFlags*)(pOutEntry + 1) == recHeader0 && *(int*)(pOutEntry + 3) == recHeader1 && *(uint32_t*)(pOutEntry + 5) == recHeader2 && (char)pOutEntry[7] == (char)nRecDwordCount) {
                   iVar2 = Storm::Source::SSystem::SSYSTEM_MemCompare((uint8_t*)((int)pOutEntry + 0xf), recDataScratch, nFileSize);
@@ -2238,7 +2240,7 @@ BOOL __fastcall LoadPreviousCrashDump(uint8_t * pOutBuffer, int * pnBufferSize) 
               } while (nMatchIndex < nUniqueCount);
             }
             if (nMatchIndex == nUniqueCount) {
-              if (pOutLimit <= (uint8_t*)((int)pOutEntry + 0x2fU)) {
+              if ((uint8_t*)((int)pOutEntry + 0x2fU) >= pOutLimit) {
                 break;
               }
 

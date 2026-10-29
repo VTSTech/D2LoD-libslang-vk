@@ -125,8 +125,8 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
 
       nEdgeMin *= nEdgeVtxPos;
       nEdgeMax = nCoordMin * nEdgeVtxPos;
-      if (!(nEdgeMax - nEdgeMin) || nEdgeMax < nEdgeMin) {
-        if (nEdgeMin <= nCoordMax * nEdgeVtxPos) {
+      if (!(nEdgeMax - nEdgeMin) || nEdgeMin > nEdgeMax) {
+        if (nCoordMax * nEdgeVtxPos >= nEdgeMin) {
           mark_edge_and_split_end:
           nCoordMin = *(int*)((int)pDrlgRoomData + 8);
           pEdgeVertex->dwFlags |= 1;
@@ -153,7 +153,7 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
             pEdgeVertex->pNext = pNewVertex;
           }
         }
-      } else if (!(nEdgeMax - nAnchorPos * nEdgeVtxPos) || nEdgeMax < nAnchorPos * nEdgeVtxPos) {
+      } else if (!(nEdgeMax - nAnchorPos * nEdgeVtxPos) || nAnchorPos * nEdgeVtxPos > nEdgeMax) {
         pNewVertex = D2_NEW_POOL_AT(pMemory, D2DrlgVertexStrc, ".\\DRLG\\DrlgVer.cpp", 0x13);
         pNewVertex->nPosX = 0;
         pNewVertex->nPosY = 0;

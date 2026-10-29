@@ -96,10 +96,10 @@ BOOL __fastcall D2WINACCOUNTLIST_RemoveAccount(::D2WinAccountList * pAccountList
         if (pAccountList->pSelectedEntry == pCurEntry) {
           pAccountList->pSelectedEntry = 0;
         }
-        if (!pPrevEntry) {
-          pAccountList->pFirstEntry = pCurEntry->pNext;
-        } else {
+        if (pPrevEntry) {
           pPrevEntry->pNext = pCurEntry->pNext;
+        } else {
+          pAccountList->pFirstEntry = pCurEntry->pNext;
         }
 
         D2_FREE_AT(pCurEntry, ".\\Src\\D2WinAccountList.cpp", 0xa7);
@@ -121,18 +121,18 @@ BOOL __fastcall D2WINACCOUNTLIST_GetSelectedAccountName(::D2WinAccountList * pAc
     }
 
     char* pszSrc = pAccountList->pSelectedEntry->szAccountName;
-    if (!pszSrc) {
-      return 0;
+    if (pszSrc) {
+      do {
+        cVar1 = *pszSrc;
+        *szDest = cVar1;
+        pszSrc++;
+        szDest++;
+      } while (cVar1 != '\0');
+
+      return 1;
     }
 
-    do {
-      cVar1 = *pszSrc;
-      *szDest = cVar1;
-      pszSrc++;
-      szDest++;
-    } while (cVar1 != '\0');
-
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
@@ -201,7 +201,7 @@ BOOL __fastcall Draw(::D2WinAccountList * pAccountList) {
     int nPosXEntry = 0;
     int nEntryCount = nEntryIdx;
     for (; nEntryIdx = nPosXEntry , pSource != 0; pSource = pSource->pNext) {
-      if (pAccountList->nTopIndex <= nEntryIdx && nEntryIdx < pAccountList->nTopIndex + 0x18) {
+      if (nEntryIdx >= pAccountList->nTopIndex && nEntryIdx < pAccountList->nTopIndex + 0x18) {
         nPosXEntry = nPosX + nEntryIdx % 6 * 0x78;
         nYEnd = nBaseY + nEntryIdx / 6 * 0x14;
         nEntryIdx = nEntryCount;

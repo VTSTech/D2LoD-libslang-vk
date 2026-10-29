@@ -112,10 +112,10 @@ void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, in
       }
 
       _bOrientGridValid = DRLGGRID_IsGridValid((D2DrlgGridStrc*)pFloodFillContext[2]);
-      if (!_bOrientGridValid) {
-        nOrientFlags = 0;
-      } else {
+      if (_bOrientGridValid) {
         nOrientFlags = GetGridFlags((D2DrlgGridStrc*)pFloodFillContext[2], nX, nY);
+      } else {
+        nOrientFlags = 0;
       }
 
       dwGridCellEntry2 = gdwDrlgGridCellCount[nDirection + gnDrlgGridMaxDepth[nOrientFlags] * 5];
@@ -155,14 +155,14 @@ void DRLGLOGIC_PopulateGridCoordIndices(int * pnParam) {
     int nWidth = *(int*)(*pnParam + 0x3c);
     int nHeight = *(int*)(*pnParam + 0x40);
     int nGridY = 0;
-    if (-1 >= nHeight) {
+    if (nHeight < 0) {
       return;
     }
 
     do {
       int nGridX;
       nGridX = 0;
-      if (-1 < nWidth) {
+      if (nWidth >= 0) {
         do {
           nCellFlags = GetGridFlags((D2DrlgGridStrc*)pnParam[1], nGridX, nGridY);
           if (!(nCellFlags & 0x10000000)) {
@@ -223,7 +223,7 @@ BOOL __fastcall DRLGGRID_IsGridValid(D2DrlgGridStrc * pDrlgGrid) {
 }
 
 BOOL __fastcall IsPointInsideGridArea(D2DrlgGridStrc * pDrlgGrid, int32_t nX, int32_t nY) {
-    if (!(-1 < nX && nX < pDrlgGrid->nWidth && -1 < nY && nY < pDrlgGrid->nHeight)) {
+    if (!(nX >= 0 && nX < pDrlgGrid->nWidth && nY >= 0 && nY < pDrlgGrid->nHeight)) {
       return 0;
     }
 
@@ -258,7 +258,7 @@ int __fastcall GetGridFlags(D2DrlgGridStrc * pGrid, int nX, int nY) {
 void __fastcall AlterAllGridFlags(D2DrlgGridStrc * pDrlgGrid, int32_t nFlag, int32_t eOperation) {
     int32_t nXIdx;
     int32_t nYIdx = 0;
-    if (0 >= pDrlgGrid->nHeight) {
+    if (pDrlgGrid->nHeight <= 0) {
       return;
     }
 
@@ -267,7 +267,7 @@ void __fastcall AlterAllGridFlags(D2DrlgGridStrc * pDrlgGrid, int32_t nFlag, int
       eD2GridCellFlags* pCellFlag;
       nXIdx = 0;
       pCellFlag = pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nYIdx];
-      if (0 < nRowWidth) {
+      if (nRowWidth > 0) {
         do {
           (*apFlagOperations[eOperation])((int*)pCellFlag, nFlag);
           nRowWidth = pDrlgGrid->nWidth;
@@ -320,7 +320,7 @@ void __fastcall DRLGGRID_ApplyFlagToBorderCells(D2DrlgGridStrc * pDrlgGrid, int 
     }
 
     nIndex = 0;
-    if (0 >= pDrlgGrid->nHeight) {
+    if (pDrlgGrid->nHeight <= 0) {
       return;
     }
 
@@ -353,7 +353,7 @@ void __fastcall DRLGGRID_SetEdgeGridFlags(D2DrlgGridStrc * pDrlgGrid, D2DrlgVert
         bHorizontal = false;
         nY = nNextX;
         nX = nEndX;
-        if (nNextX <= nEndY) {
+        if (nEndY >= nNextX) {
           goto step_y;
         }
 
@@ -421,7 +421,7 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
     int nGridOffsetX = nY - pDrlgCoords->WorldPosition.y;
     int nRowOffsetY = 0;
     if (nDx < nDy) {
-      if (0 < nLineWidth) {
+      if (nLineWidth > 0) {
         do {
           _bInside = DrlgRoom::AreXYInsideCoordinates(pDrlgCoords, nRowOffsetY + nX, nY);
           if (_bInside) {
@@ -434,11 +434,11 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
 
       nRemainingY = nDy;
       nGridOffsetX = nX;
-      if (0 < nDy) {
+      if (nDy > 0) {
         do {
           nY += nSignY;
           nError += nDx;
-          if (nDy < nError) {
+          if (nError > nDy) {
             nGridOffsetX += nSignX;
             nError -= nDy;
           }
@@ -446,7 +446,7 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
           nX = pDrlgCoords->WorldPosition.x;
           nGridX = pDrlgCoords->WorldPosition.y;
           nWidthIndex = 0;
-          if (0 < nLineWidth) {
+          if (nLineWidth > 0) {
             do {
               _bInside = DrlgRoom::AreXYInsideCoordinates(pDrlgCoords, nWidthIndex + nGridOffsetX, nY);
               if (_bInside) {
@@ -464,7 +464,7 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
       }
     } else {
       int nRemainingX;
-      if (0 < nLineWidth) {
+      if (nLineWidth > 0) {
         nGridOffsetX *= 4;
         do {
           _bInside = DrlgRoom::AreXYInsideCoordinates(pDrlgCoords, nX, nRowOffsetY + nY);
@@ -478,18 +478,18 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
       }
 
       nRemainingX = nDx;
-      if (0 < nDx) {
+      if (nDx > 0) {
         do {
           nX += nSignX;
           nError += nDy;
-          if (nDx < nError) {
+          if (nError > nDx) {
             nY += nSignY;
             nError -= nDx;
           }
 
           nGridX = pDrlgCoords->WorldPosition.x;
           nWidthIndex = 0;
-          if (0 < nLineWidth) {
+          if (nLineWidth > 0) {
             nRowOffsetY = (nY - pDrlgCoords->WorldPosition.y) * 4;
             do {
               _bInside = DrlgRoom::AreXYInsideCoordinates(pDrlgCoords, nX, nWidthIndex + nY);
@@ -518,7 +518,7 @@ void __fastcall DRLGGRID_InitGridCells(D2PoolManagerStrc * pMemory, D2DrlgGridSt
     memset(pRowOffsets, 0, nAllocSize);
     pDrlgGrid->pCellsFlags = (eD2GridCellFlags*)(pDrlgGrid->pCellsRowOffsets + nHeight);
     int nRow = 0;
-    if (0 < nHeight) {
+    if (nHeight > 0) {
       int nOffset = 0;
       do {
         pDrlgGrid->pCellsRowOffsets[nRow] = nOffset;
@@ -538,7 +538,7 @@ void __fastcall FillGrid(D2DrlgGridStrc * pDrlgGrid, int32_t nWidth, int32_t nHe
     int nRowOffset = 0;
     int nRowIdx = 0;
     pDrlgGrid->pCellsRowOffsets = pCellRowOffsets;
-    if (nHeight < 1) {
+    if (nHeight <= 0) {
       pDrlgGrid->bIsSubGrid = 0;
       return;
     }
@@ -561,7 +561,7 @@ void __fastcall DRLGGRID_AllocGrid(D2PoolManagerStrc * pMemory, D2DrlgGridStrc *
     int* pRowOffsets = (int*)D2_ALLOC_POOL_AT(pMemory, nHeight * 4, ".\\DRLG\\DrlgGrid.cpp", 0x1d0);
     pDrlgGrid->pCellsRowOffsets = pRowOffsets;
     int nRow = 0;
-    if (0 < nHeight) {
+    if (nHeight > 0) {
       int nOffset = 0;
       do {
         pDrlgGrid->pCellsRowOffsets[nRow] = nOffset;
@@ -582,7 +582,7 @@ void __fastcall DRLGGRID_InitGridFromTileData(D2PoolManagerStrc * pMemory, D2Drl
     int* pRowOffsets = (int*)D2_ALLOC_POOL_AT(pMemory, pTileData->nHeight * 4, ".\\DRLG\\DrlgGrid.cpp", 0x1ec);
     pGrid->pCellsRowOffsets = pRowOffsets;
     int nOffset = 0;
-    if (0 < pTileData->nHeight) {
+    if (pTileData->nHeight > 0) {
       int nRow = 0;
       do {
         pGrid->pCellsRowOffsets[nRow] = nOffset;
@@ -601,7 +601,7 @@ void __fastcall FillExternalCellFlags(D2DrlgGridStrc * pDrlgGrid, D2DrlgMapStrc 
     pDrlgGrid->pCellsFlags = (eD2GridCellFlags*)(&pCellPos->nNumber + pDrlgCoord->nPosY * nWidth + pDrlgCoord->nPosX);
     pDrlgGrid->pCellsRowOffsets = pCellFlags;
     int nRowOffset = 0;
-    if (0 < pDrlgCoord->nHeight) {
+    if (pDrlgCoord->nHeight > 0) {
       int nRowIdx = 0;
       do {
         pDrlgGrid->pCellsRowOffsets[nRowIdx] = nRowOffset;

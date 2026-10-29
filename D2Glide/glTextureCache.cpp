@@ -43,7 +43,7 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
         if (iNode < (int)(pCache->nMaxEntries - 1)) {
           pNode[5] = (int)(pCache->pNodes + nByteOffset + 0x1c);
         }
-        if (0 < iNode) {
+        if (iNode > 0) {
           pNode[6] = (int)(pCache->pNodes + nByteOffset - 0x1c);
         }
 
@@ -68,7 +68,7 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
     if (1 < (int)(pCache->nMaxEntries - 1)) {
       pDebugScan = (uint32_t*)(pNodeArray + 0x20);
       do {
-        if (*pDebugScan < 0x200000 && 0x200000 < pCache->dwEntrySize + *pDebugScan) {
+        if (*pDebugScan < 0x200000 && pCache->dwEntrySize + *pDebugScan > 0x200000) {
           iNode *= 0x1c;
           *(uint8_t**)(pNodeArray + iNode - 8) = pNodeArray + iNode + 0x1c;
           *(uint8_t**)(pCache->pNodes + iNode + 0x34) = pCache->pNodes + iNode - 0x1c;
@@ -84,7 +84,7 @@ int __fastcall GLTEXCACHE_Initialize(GlTextureCacheStrc * pCache, int nVramStart
     }
 
     nEntryCount = *(uint32_t*)(pCache->pNodes + pCache->nMaxEntries * 0x1c - 0x18);
-    if (!(nEntryCount < 0x200000 && 0x200000 < pCache->dwEntrySize + nEntryCount)) {
+    if (!(nEntryCount < 0x200000 && pCache->dwEntrySize + nEntryCount > 0x200000)) {
       return pCache->nMaxEntries * dwTextureSize + nVramStart;
     }
 
@@ -159,10 +159,10 @@ static int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
       uint8_t* pNewFreeHead;
       pNewFreeHead = (uint8_t*)pAllocNode[5];
       pCache->pFreeHead = pNewFreeHead;
-      if (!pNewFreeHead) {
-        pCache->pFreeTail = 0;
-      } else {
+      if (pNewFreeHead) {
         memset(pNewFreeHead + 24, 0, 4 * sizeof(pNewFreeHead[0]));
+      } else {
+        pCache->pFreeTail = 0;
       }
 
       pAllocNode[5] = 0;
@@ -188,17 +188,17 @@ static int GLTEXCACHE_AllocateNode(GlTextureCacheStrc * pCache) {
 // Promotes a texture cache node to most-recently-used position (active list tail). Validates index range and ensures cache has multiple entries before relinking.
 void __fastcall GLTEXCACHE_PromoteNodeToMRU(GlTextureCacheStrc * pCache, int nNodeIndex1Based) {
     GlTextureCacheNodeStrc* pNode;
-    if ((int)pCache->nUsedCount < 2) {
+    if ((int)pCache->nUsedCount <= 1) {
       return;
     }
     if (!nNodeIndex1Based) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
       exit(-1);
-    } else if ((int)pCache->nMaxEntries < nNodeIndex1Based) {
+    } else if (nNodeIndex1Based > (int)pCache->nMaxEntries) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdf);
       exit(-1);
     } else {
-      if (!(0 < nNodeIndex1Based)) {
+      if (!(nNodeIndex1Based >= 1)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe0);
         exit(-1);
       }
@@ -220,10 +220,10 @@ void __fastcall GLTEXCACHE_EvictLRU(GlTextureCacheStrc * pCache) {
       uint8_t* pNextNode;
       pNextNode = *(uint8_t**)(pEvictNode + 0x14);
       pCache->pActiveHead = pNextNode;
-      if (!pNextNode) {
-        pCache->pActiveTail = 0;
-      } else {
+      if (pNextNode) {
         *(uint32_t*)(pNextNode + 0x18) = 0;
+      } else {
+        pCache->pActiveTail = 0;
       }
 
       *(uint32_t*)(pEvictNode + 0x14) = 0;
@@ -285,10 +285,10 @@ int __fastcall GLTEXCACHE_EnsureCapacity(GlTextureCacheStrc * pCache) {
         if (pEvictNode) {
           pNextNode = *(uint8_t**)(pEvictNode + 0x14);
           pCache->pActiveHead = pNextNode;
-          if (!pNextNode) {
-            pCache->pActiveTail = 0;
-          } else {
+          if (pNextNode) {
             memset(pNextNode + 24, 0, 4 * sizeof(pNextNode[0]));
+          } else {
+            pCache->pActiveTail = 0;
           }
 
           memset(pEvictNode + 20, 0, 8 * sizeof(pEvictNode[0]));

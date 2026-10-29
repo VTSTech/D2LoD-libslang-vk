@@ -120,12 +120,12 @@ void __stdcall DRLGMAZE_GenerateBarracksLayout(D2DrlgLevelStrc * pDrlgLevelStrc)
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
     pDrlgLevelStrc->sSeed = DVar1;
-    if (!((uint64_t)d2_bits_of(DVar1) & 1)) {
-      ReplaceRoom(gaDrlgBarracksReplacements_B + nJailExitVariant, pDrlgLevelStrc, &nJailExitVariant);
-      pReplaceData = gaDrlgBarracksReplacements_A + nJailExitVariant;
-    } else {
+    if (DVar1.nSeedLow & 1) {
       ReplaceRoom(gaDrlgBarracksReplacements_A + nJailExitVariant, pDrlgLevelStrc, &nJailExitVariant);
       pReplaceData = gaDrlgBarracksReplacements_B + nJailExitVariant;
+    } else {
+      ReplaceRoom(gaDrlgBarracksReplacements_B + nJailExitVariant, pDrlgLevelStrc, &nJailExitVariant);
+      pReplaceData = gaDrlgBarracksReplacements_A + nJailExitVariant;
     }
 
     ReplaceRoom(pReplaceData, pDrlgLevelStrc, &nJailExitVariant);

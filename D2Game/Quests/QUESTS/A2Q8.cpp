@@ -69,7 +69,7 @@ void __fastcall Q16_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     pPlayerData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
-    if (!(!pPlayerData || !pPlayerData->bIsNotIntroduction || 3 < pPlayerData->nStateFlag)) {
+    if (!(!pPlayerData || !pPlayerData->bIsNotIntroduction || pPlayerData->nStateFlag >= 4)) {
       return;
     }
 
@@ -117,11 +117,11 @@ bool __fastcall Q16_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
     /* GetQuestState(QUEST_TheSevenTombs, Completed): gate - not eligible once Seven
                          Tombs completed */ bQuestStateCheck = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, QUEST_TheSevenTombs, QUESTSTATE_Completed);
-    if (bQuestStateCheck) {
-      return false;
+    if (!bQuestStateCheck) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // Q16_InitData - A2Q8 / QUEST_Act2Guard5Gossip: HIDDEN GOSSIP PSEUDO-QUEST (Act2 7th internal slot, not a journal quest). NPC 0x17a = Lut Gholein "Act2Guard5" (a Desert/Palace guard). Registers the quest dispatch handlers: gossip handler[0]=Q16_Callback_00 (offer gossip line), handler[0xb]=Q16_Callback_11 (mark gossip "spoken"). nQuestIdReal=QUEST_Act2Guard5Gossip; aNpcGossipData = single entry {monStat 0x17a, string 0x12f, menu}. Allocs 2-byte per-game scratch (D2QuestDataA2Q8Strc) zeroed. No journal/reward/items: purely a conditional one-line dialog gate.

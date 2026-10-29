@@ -100,14 +100,14 @@ uint8_t __fastcall Q35_ResetAncientsStatues(::SGAMEDATA * pGame, D2QuestDataStrc
       do {
         if (*pAncientAliveFlag) {
           pAncient = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pAncientMode[-7]);
-          if (!pAncient) {
-            bMissingAncient = true;
-          } else {
+          if (pAncient) {
             D2Common::Units::SetupUpdateFlag(pAncient, 1);
             pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pAncient->nClassId);
             GAME::Event::SetEvent(pGame, pAncient, 1, (pObjectTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
             *pAncientAliveFlag = 0;
             *pAncientMode = 2;
+          } else {
+            bMissingAncient = true;
           }
         }
 
@@ -291,23 +291,25 @@ void __fastcall Q35_SpawnAncientTimer(D2QuestDataStrc * pQuestData, D2UnitStrc *
     } else {
       nClassId = pUnit->nClassId;
     }
-    if (nClassId == 0x1da) {
+    if (nClassId != 0x1da) {
+      if (nClassId != 0x1db) {
+        if (nClassId != 0x1dc) {
+          return;
+        }
+
+        nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2c];
+        nAncientSlot = 2;
+      } else {
+        nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2b];
+        nAncientSlot = 0;
+      }
+    } else {
       nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2d];
       nAncientSlot = 1;
-    } else if (nClassId == 0x1db) {
-      nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2b];
-      nAncientSlot = 0;
-    } else {
-      if (nClassId != 0x1dc) {
-        return;
-      }
-
-      nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2c];
-      nAncientSlot = 2;
     }
 
     D2QuestDataStrc* pQuestDataLocal = pQuestData;
-    if (0 < pQuestSpecificData->nResurrectionCount) {
+    if (pQuestSpecificData->nResurrectionCount > 0) {
       Q35_ResetAncientsArena(pQuestData->pGame, (int32_t)pQuestData, (int32_t)pQuestSpecificData);
       return;
     }
@@ -340,7 +342,7 @@ BOOL __fastcall Q35_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
     }
 
     int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if ((int)((pGame->nDifficulty + 1) * 0x14) > nPlayerLevel) {
+    if (nPlayerLevel < (int)((pGame->nDifficulty + 1) * 0x14)) {
       return 0;
     }
 
@@ -402,7 +404,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
         }
-        if (0 < pQuestSpecificData->nResurrectionCount) {
+        if (pQuestSpecificData->nResurrectionCount > 0) {
           return;
         }
 
@@ -504,7 +506,7 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
     if (!bIsCompleted) {
       uint32_t nGossipMsgIndex;
-      if (0x218 < (int)nNpcId && (int)nNpcId < 0x21c && !pQuestSpecificData->bAncientsActive) {
+      if ((int)nNpcId >= 0x219 && (int)nNpcId <= 0x21b && !pQuestSpecificData->bAncientsActive) {
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNpcId, 4);
       }
 
@@ -512,7 +514,7 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipMsgIndex == -1) {
         return;
       }
-      if (8 < nGossipMsgIndex) {
+      if (nGossipMsgIndex >= 9) {
         return;
       }
 
@@ -564,10 +566,12 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
     int32_t ePlayerClassId;
     QUEST_SendQuestInfoToUnit(pQuestData, pUnit);
     uint32_t nExpRemaining = 1400000;
-    if (pQuestData->nDifficulty == 1) {
+    if (pQuestData->nDifficulty != 1) {
+      if (pQuestData->nDifficulty == 2) {
+        nExpRemaining = 40000000;
+      }
+    } else {
       nExpRemaining = 20000000;
-    } else if (pQuestData->nDifficulty == 2) {
-      nExpRemaining = 40000000;
     }
     if (!pUnit) {
       ePlayerClassId = -1;
@@ -583,7 +587,7 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
 
     DWORD dwExpCurrentLevel = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(ePlayerClassId, nLevel + 1);
     DWORD dwExpNextLevel = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(ePlayerClassId, nLevel);
-    if ((int)(dwExpCurrentLevel - dwExpNextLevel) < (int)nExpRemaining) {
+    if ((int)nExpRemaining > (int)(dwExpCurrentLevel - dwExpNextLevel)) {
       nExpRemaining = dwExpCurrentLevel - dwExpNextLevel;
     }
 
@@ -596,16 +600,16 @@ static uint32_t __stdcall RewardExperienceFromAncients(::SGAMEDATA * pQuestData,
       nCurrentExp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_nextexp, 0);
       nExpNeeded = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
       nValue = nCurrentExp - nExpNeeded;
-      if (nExpRemaining < nValue) {
-        nCurrentExp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nExpRemaining + nCurrentExp, 0);
-        nExpRemaining = 0;
-      } else {
+      if (!(nExpRemaining < nValue)) {
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nCurrentExp, 0);
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lastexp, nValue, 0);
         UNIT::SUnitMsg::UpdateGameInfo(pQuestData, pUnit);
         nExpRemaining -= nValue;
         nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+      } else {
+        nCurrentExp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nExpRemaining + nCurrentExp, 0);
+        nExpRemaining = 0;
       }
 
       dwExpNextLevel = nLevel;
@@ -624,7 +628,7 @@ void __fastcall Q35_SetCompleteForPartyMember(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     int32_t nLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if ((int)((pGame->nDifficulty + 1) * 0x14) > nLevel) {
+    if (nLevel < (int)((pGame->nDifficulty + 1) * 0x14)) {
       return;
     }
 
@@ -696,7 +700,7 @@ BOOL __fastcall Q35_OnAncientsDefeated(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     }
 
     nAssertLine = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if ((int)((pGame->nDifficulty + 1) * 0x14) > nAssertLine) {
+    if (nAssertLine < (int)((pGame->nDifficulty + 1) * 0x14)) {
       return 0;
     }
 
@@ -741,21 +745,21 @@ static void __stdcall Q35_FireAncientDeathMissile(D2QuestArgStrc * pQuestArg, D2
     sSkillArg.nMissileTxtNo = MISSILE_AncientDeathCenter;
     eD2UnitType eUnitType = pAncientUnit->eUnitType;
     sSkillArg.pMissile = sSkillArg.pOwner;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sSkillArg.nUnitX = pAncientUnit->pPath.pStaticPath->nPosX;
-    } else if (!pAncientUnit->pPath.pDynamicPath) {
-      sSkillArg.nUnitX = 0;
-    } else {
+    } else if (pAncientUnit->pPath.pDynamicPath) {
       sSkillArg.nUnitX = D2Common::PATH::DynamicPath::GetXPos(pAncientUnit->pPath.pDynamicPath);
+    } else {
+      sSkillArg.nUnitX = 0;
     }
 
     eUnitType = pAncientUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sSkillArg.nUnitY = pAncientUnit->pPath.pStaticPath->nPosY;
-    } else if (!pAncientUnit->pPath.pDynamicPath) {
-      sSkillArg.nUnitY = 0;
-    } else {
+    } else if (pAncientUnit->pPath.pDynamicPath) {
       sSkillArg.nUnitY = D2Common::PATH::DynamicPath::GetYPos(pAncientUnit->pPath.pDynamicPath);
+    } else {
+      sSkillArg.nUnitY = 0;
     }
 
     sSkillArg.nSkillLevel = 1;
@@ -787,19 +791,21 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     } else {
       nKilledClassId = pQuestArgs->pTarget->nClassId;
     }
-    if (nKilledClassId == 0x21c) {
+    if (nKilledClassId != 0x21c) {
+      if (nKilledClassId != 0x21d) {
+        if (nKilledClassId != 0x21e) {
+          return;
+        }
+
+        pQuestSpecificData->abAncientDead[1] = 1;
+        dwParam = pQuestSpecificData->anStatueObjectGUID[1];
+      } else {
+        pQuestSpecificData->abAncientDead[0] = 1;
+        dwParam = pQuestSpecificData->anStatueObjectGUID[0];
+      }
+    } else {
       pQuestSpecificData->abAncientDead[2] = 1;
       dwParam = pQuestSpecificData->anStatueObjectGUID[2];
-    } else if (nKilledClassId == 0x21d) {
-      pQuestSpecificData->abAncientDead[0] = 1;
-      dwParam = pQuestSpecificData->anStatueObjectGUID[0];
-    } else {
-      if (nKilledClassId != 0x21e) {
-        return;
-      }
-
-      pQuestSpecificData->abAncientDead[1] = 1;
-      dwParam = pQuestSpecificData->anStatueObjectGUID[1];
     }
 
     Q35_FireAncientDeathMissile(pQuestArgs, pQuestData, dwParam);
@@ -820,7 +826,7 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RiteOfPassage, QUESTSTATE_Completed);
       if (!bIsCompleted) {
         nPosYSpawn2 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pQuestArgs->pPlayer, UNITSTAT_level, 0);
-        if ((int)((pQuestData->pGame->nDifficulty + 1) * 0x14) <= nPosYSpawn2) {
+        if (nPosYSpawn2 >= (int)((pQuestData->pGame->nDifficulty + 1) * 0x14)) {
           D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RiteOfPassage, QUESTSTATE_Completed);
           D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RiteOfPassage, QUESTSTATE_JustCompleted);
           RewardExperienceFromAncients(pQuestArgs->pGame, pQuestArgs->pPlayer);
@@ -896,7 +902,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
     bool bDidBroadcast;
     bDidBroadcast = false;
-    if (pQuestData->nStateFlagPrev < 2 && 2 < pQuestData->nStateFlag) {
+    if (pQuestData->nStateFlagPrev < 2 && pQuestData->nStateFlag > 2) {
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
       bDidBroadcast = true;
@@ -937,18 +943,18 @@ bool __fastcall Q35_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pNextQuestData) {
-      return false;
+    if (pNextQuestData) {
+      BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3d5);
+        exit(-1);
+      }
+
+      bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return uVar1;
     }
 
-    BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3d5);
-      exit(-1);
-    }
-
-    bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-    return uVar1;
+    return false;
 }
 
 // [A5Q5 = Rite of Passage] Q35_Callback_13 (sub-handler idx 0xd): on game load, reconstructs live nStateFlag/nStateFlagPrev from the saved quest record. Completed/FinishedInPreviousGame -> set field_0x4A (done). Step0x03 -> nStateFlag 3. Step0x02 -> nStateFlag 2. Read-only on records.
@@ -1089,7 +1095,7 @@ D2UnitStrc * __fastcall Q35_FindAncientByClassId(::SGAMEDATA * pGame, int32_t nC
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
     D2QuestDataA5Q5Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     int i = 0;
-    if (0 >= pQuestSpecificData->nSpawnedAncientCount) {
+    if (pQuestSpecificData->nSpawnedAncientCount <= 0) {
       return nullptr;
     }
 
@@ -1116,11 +1122,11 @@ D2UnitStrc * __fastcall Q35_FindAncientByClassId(::SGAMEDATA * pGame, int32_t nC
 // [A5Q5 = Rite of Passage] Q35_CheckQuestNotStarted: predicate (returns BOOL in EAX) — true if quest is active but the Ancients fight hasn't been started yet. No quest-state writes.
 BOOL __fastcall Q35_CheckQuestNotStarted(::SGAMEDATA * pGame, D2UnitStrc * pUnitStrc, uint32_t dwParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
-    if (pQuestData->bIsNotIntroduction) {
-      return (uint32_t)!pQuestData->pQuestSpecificData.pA5Q5->bAncientsDefeated;
+    if (!pQuestData->bIsNotIntroduction) {
+      return 0;
     }
 
-    return 0;
+    return (uint32_t)!pQuestData->pQuestSpecificData.pA5Q5->bAncientsDefeated;
 }
 
 // [A5Q5 = Rite of Passage] Q35_SetStatueAnimMode: sets one altar statue's display/anim mode from the saved per-statue mode. classId 0x1da->slot[0x34], 0x1db->slot[0x30], 0x1dc->slot[0x38]. No quest-state writes.
@@ -1132,9 +1138,7 @@ static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuest
     } else {
       nClassId = pUnit->nClassId;
     }
-    if (nClassId == 0x1da) {
-      D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[1]);
-    } else {
+    if (nClassId != 0x1da) {
       if (nClassId == 0x1db) {
         D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[0]);
         return;
@@ -1143,6 +1147,8 @@ static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuest
         D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[2]);
         return;
       }
+    } else {
+      D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[1]);
     }
 }
 
@@ -1277,13 +1283,13 @@ BOOL __fastcall OBJOP_A5Q5_AncientsAltarActivate(D2ObjectOperateFnArg * pOperati
       return 0;
     }
     if (!pQuestData->bIsNotIntroduction) {
-      if (0 < pQuestSpecificData->nResurrectionCount) {
+      if (pQuestSpecificData->nResurrectionCount > 0) {
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_BootPlayerFromSummit);
       }
 
       QUEST_SendNpcInfoPacket(pOperation->pAttacker, pOperation->sArg.pVictim, 0x4e22);
     } else if (pQuestData->nStateFlag < 4) {
-      if (0 < pQuestSpecificData->nResurrectionCount) {
+      if (pQuestSpecificData->nResurrectionCount > 0) {
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_BootPlayerFromSummit);
       }
 
@@ -1340,19 +1346,21 @@ BOOL __fastcall OBJOP_A5Q5_WorldstonePortalActivate(D2ObjectOperateFnArg * pOper
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Opened) {
+        A2Q7::TakeStairs(pOperation);
+        bQuestState = 1;
+        pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
+        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
+        return 0;
+      }
+    } else {
       D2Common::Units::SetupUpdateFlag(pUnit, 1);
       bQuestState = 0;
       pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
       D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
       pGame = pOperation->sArg.pGame;
       GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
-    } else if (eAnimMode == Opened) {
-      A2Q7::TakeStairs(pOperation);
-      bQuestState = 1;
-      pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
-      return 0;
     }
 
     return 0;

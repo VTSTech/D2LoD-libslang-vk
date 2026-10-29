@@ -82,21 +82,21 @@ void __fastcall ANIMDATA_FreeAnimDataRecord(void * * pParam) {
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __stdcall ANIMDATA_CompareNames(uint32_t * pdwName1, uint32_t * pdwName2) {
     uint32_t uVar1 = Storm::Source::SSTR::SSTR_StringLength((char*)pdwName1);
-    if (uVar1 < 9) {
-      uVar1 = Storm::Source::SSTR::SSTR_StringLength((char*)pdwName2);
-      if (!(uVar1 < 9)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
-        exit(-1);
-      }
-      if (*pdwName1 == *pdwName2) {
-        return (uint32_t)(pdwName1[1] == pdwName2[1]);
-      }
-
-      return 0;
-    } else {
+    if (uVar1 > 8) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd9);
       exit(-1);
     }
+
+    uVar1 = Storm::Source::SSTR::SSTR_StringLength((char*)pdwName2);
+    if (!(uVar1 <= 8)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
+      exit(-1);
+    }
+    if (*pdwName1 != *pdwName2) {
+      return 0;
+    }
+
+    return (uint32_t)(pdwName1[1] == pdwName2[1]);
 }
 
 // Looks up an AnimData record by name. Uppercases the name, computes a
@@ -129,17 +129,17 @@ static int * ANIMDATA_GetRecordByNameHash(LPSTR pnParam) {
     int nRecordCount = pAnimTbls->pHashTable[nHashValue & 0xff]->nCount;
     D2AnimDataRecordStrc* szRecordName = pAnimTbls->pHashTable[nHashValue & 0xff]->aRecords;
     while (true) {
-      if (nRecordCount < 1) {
+      if (nRecordCount <= 0) {
         return nullptr;
       }
 
       nHashValue = Storm::Source::SSTR::SSTR_StringLength(pnParam);
-      if (8 < nHashValue) {
+      if (nHashValue > 8) {
         break;
       }
 
       nHashValue = Storm::Source::SSTR::SSTR_StringLength(szRecordName->szAnimDataName);
-      if (8 < nHashValue) {
+      if (nHashValue > 8) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xda);
         exit(-1);
       }
@@ -192,30 +192,30 @@ void __stdcall ANIMDATA_SetAnimSpeedForUnit(D2UnitStrc * pUnit, int32_t nParam) 
 // fallback to default record.
 BOOL __stdcall ANIMDATA_GetFramesSpeedAndTrigger(int * pszName, uint32_t * pnFrameCount, int * pnAnimSpeed, uint32_t * pnTriggerFrame) {
     int* pRecord = ANIMDATA_GetRecordByNameHash((LPSTR)pszName);
-    if (!pRecord) {
-      D2AnimDataStrc* pAnimTbls;
-      pAnimTbls = DataTbls::TXT_AnimTbls_Get();
-      *pnFrameCount = pAnimTbls->pDefaultRecord.nFrames;
-      *pnAnimSpeed = pAnimTbls->pDefaultRecord.nAnimSpeed;
-      *pnTriggerFrame = *pnFrameCount;
-      return 0;
+    if (pRecord) {
+      *pnFrameCount = pRecord[2];
+      *pnAnimSpeed = pRecord[3];
+      uint32_t nFrameIndex = 0;
+      if ((uint32_t)pRecord[2] > 0) {
+        do {
+          if (nFrameIndex >= 0x90 || *(char*)(nFrameIndex + 0x10 + (int)pRecord) != '\0') {
+            break;
+          }
+
+          nFrameIndex++;
+        } while (nFrameIndex < (uint32_t)pRecord[2]);
+      }
+
+      *pnTriggerFrame = nFrameIndex;
+      return 1;
     }
 
-    *pnFrameCount = pRecord[2];
-    *pnAnimSpeed = pRecord[3];
-    uint32_t nFrameIndex = 0;
-    if (pRecord[2]) {
-      do {
-        if (0x8f < nFrameIndex || *(char*)(nFrameIndex + 0x10 + (int)pRecord) != '\0') {
-          break;
-        }
-
-        nFrameIndex++;
-      } while (nFrameIndex < (uint32_t)pRecord[2]);
-    }
-
-    *pnTriggerFrame = nFrameIndex;
-    return 1;
+    D2AnimDataStrc* pAnimTbls;
+    pAnimTbls = DataTbls::TXT_AnimTbls_Get();
+    *pnFrameCount = pAnimTbls->pDefaultRecord.nFrames;
+    *pnAnimSpeed = pAnimTbls->pDefaultRecord.nAnimSpeed;
+    *pnTriggerFrame = *pnFrameCount;
+    return 0;
 }
 
 } // namespace D2Common::DATATBLS::AnimTbls

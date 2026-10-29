@@ -70,21 +70,19 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     }
 
     D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    if (!pD2IniData->b3DFX) {
-      if (!pD2IniData->bWINDOW) {
-        eD2ApplicationModeAndRenderer = (pD2IniData->bD3D ? 3 : 0) + RENDERED_DirectDraw;
-      } else {
-        eD2ApplicationModeAndRenderer = RENDERER_Windowed;
-      }
-    } else {
+    if (pD2IniData->b3DFX) {
       eD2ApplicationModeAndRenderer = RENDERER_Glide;
+    } else {
+      if (pD2IniData->bWINDOW) {
+        eD2ApplicationModeAndRenderer = RENDERER_Windowed;
+      } else {
+        eD2ApplicationModeAndRenderer = (pD2IniData->bD3D ? 3 : 0) + RENDERED_DirectDraw;
+      }
     }
 
     int bExpansionMode = *(int*)pD2IniData->bD2ExpMpqExistsOrLanugageCode;
     uint32_t bWindowed = (uint32_t)pD2IniData->bWINDOW;
-    if (geD2ApplicationMode == APPMODE_server) {
-      bWindowCreated = false;
-    } else {
+    if (geD2ApplicationMode != APPMODE_server) {
       HWND hWnd;
       bMpqLoaded = D2Win::Src::D2WinMain::D2GFX_PreSetupBeforeCreatingWindow(hInstance, eD2ApplicationModeAndRenderer, bWindowed, (uint32_t)!pD2IniData->bNOCOMPRESS);
       if (!bMpqLoaded) {
@@ -111,6 +109,8 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       }
 
       bWindowCreated = true;
+    } else {
+      bWindowCreated = false;
     }
     if (pD2IniData->bQUALITY) {
       D2gfx::D2GFX::D2GFX_ToggleLowQuality();

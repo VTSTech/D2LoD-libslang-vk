@@ -4,9 +4,10 @@
 #   oracle setup              fetch Game.exe 1.14d, build the VC8 toolchain (once)
 #   oracle build [-j N] [TU]  translate + compile, incremental (TU = path substring)
 #   oracle map                derive evidence/funcmap.tsv (our function -> address)
+#   oracle libmap             derive evidence/libmap.tsv (the linked runtime's functions -> address)
 #   oracle audit              byte-compare every mapped function: evidence/audit.tsv
 #   oracle diff <name|addr>   one function, ours beside the original
-#   oracle all                build, map, audit
+#   oracle all                build, map, libmap, audit
 #   oracle fix [PATTERN]      run every fixer over the tree (scripts/fix_all.py), then build, audit
 #   oracle crt                re-derive evidence/crtmap.tsv (the linked CRT)
 #   oracle ref                re-carve the original into functions (cached; automatic)
@@ -39,6 +40,11 @@ case "$cmd" in
                 echo "oracle map: not in an experiment - an A/B audit must use the baseline's map" >&2; exit 2
             fi
             oracle_python "$SCRIPTS/funcmap.py" "$@" ;;
+    libmap) ensure_ref
+            if is_experiment; then
+                echo "oracle libmap: not in an experiment - an A/B audit must use the baseline's map" >&2; exit 2
+            fi
+            oracle_python "$SCRIPTS/libmap.py" "$@" ;;
     audit)  ensure_ref
             if is_experiment; then
                 # Same pairs as the baseline, this experiment's objects: a fair A/B.
@@ -50,7 +56,7 @@ case "$cmd" in
     diff)   ensure_ref; oracle_python "$SCRIPTS/asmdiff.py" "$@" ;;
     fix)    if is_experiment; then echo "oracle fix: not in an experiment - it edits the tree" >&2; exit 2; fi
             ensure_ref; oracle_python "$SCRIPTS/fix_all.py" "$@" ;;
-    all)    "$0" build "$@"; "$0" map; "$0" audit ;;
+    all)    "$0" build "$@"; "$0" map; "$0" libmap; "$0" audit ;;
     rich)   oracle_python "$SCRIPTS/decode_rich_header.py" "${1:-$REFERENCE_EXE}" ;;
     compid) oracle_python "$SCRIPTS/compid.py" "$@" ;;
     *)      sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;

@@ -69,7 +69,7 @@ uint32_t __stdcall CHATDLG_InvokeCallbackIfSet(struct D2ControlMsg * pControlMsg
 // Opens the ladder type menu: background form 0x5d (gpDC6LadderChoiceEXP), title text box 0x5e (string 0x14c5), buttons 0x5f HARDCORE LADDER, 0x61 STANDARD LADDER, 0x62/0x63 expansion hardcore/standard ladder and 0x64 CANCEL (CHATDLG_OnPressCloseDialog); 0x60 is never created.
 // Provenance: asm 0043eb30..0043eb93; called by CHATDLG_DestroyFormsAndShowLadder (lobby LADDER button) and CHATDLG_OnPressCloseDialogRedrawLadder.
 void __stdcall CHATDLG_OpenLadderTypeMenu();
-void __stdcall CHATDLG_UpdateButtonVisibility();
+int __stdcall CHATDLG_UpdateButtonVisibility();
 // Stores the ladder filter byte (0070cd62) = nFilterMode and the selected rank (0070cd7c) = nRank.
 // Provenance: asm 0043ec50..0043ec5c; unreferenced in 1.14d.
 void __fastcall CHATDLG_SetLadderFilterAndRank(uint8_t nFilterMode, int nRank);

@@ -849,17 +849,16 @@ void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
 }
 
 D2ObjectsTxt * __stdcall TXT_Objects_GetLine(int32_t nClassId) {
-    if (nClassId < nTxtObjectsSize) {
-      if (!(-1 < nClassId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
-        exit(-1);
-      }
-
-      return sgpTxtObjects + nClassId;
-    } else {
+    if (!(nClassId < nTxtObjectsSize)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
       exit(-1);
     }
+    if (!(nClassId >= 0)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
+      exit(-1);
+    }
+
+    return sgpTxtObjects + nClassId;
 }
 
 void __stdcall TXT_FreeTxt_Objects() {
@@ -1017,11 +1016,11 @@ void __fastcall TXT_AllocTxt_objgroup(D2PoolManagerStrc * pMemory) {
 
 // Returns the D2ObjGroupTxt record at the given index, or NULL if the index is out of range (>= nTxtObjGroupSize).
 D2ObjGroupTxt * __stdcall DATATBLS_GetObjGroupTxtRecord(int32_t nIndex) {
-    if (nIndex >= nTxtObjGroupSize) {
-      return nullptr;
+    if (nTxtObjGroupSize > nIndex) {
+      return pTxtObjGroup + nIndex;
     }
 
-    return pTxtObjGroup + nIndex;
+    return nullptr;
 }
 
 // Initialises and compiles the shrines.txt binary table into sgtDataTable. Declares an 11-entry D2BinFieldInputStrc descriptor array mapping shrines columns (Code, Arg0, Arg1, Duration in frames, reset time in minutes, rarity, view name, niftyphrase, effectclass, LevelMin) to their offsets within D2ShrinesTxt (row size 0xB8), then calls CompileTxt to parse and store the result in pTxtShrines/nTxtShrinesSize.
@@ -1086,17 +1085,16 @@ void __fastcall TXT_AllocTxt_shrines(D2PoolManagerStrc * pMemory) {
 }
 
 D2ShrinesTxt * __stdcall TXT_Shrines_GetLine(int32_t nShrineId) {
-    if (nShrineId < nTxtShrinesSize) {
-      if (!(-1 < nShrineId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-        exit(-1);
-      }
-
-      return pTxtShrines + nShrineId;
-    } else {
+    if (!(nShrineId < nTxtShrinesSize)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15f);
       exit(-1);
     }
+    if (!(nShrineId >= 0)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+      exit(-1);
+    }
+
+    return pTxtShrines + nShrineId;
 }
 
 int32_t __stdcall GetShrinesSize() {

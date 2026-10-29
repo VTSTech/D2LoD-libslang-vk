@@ -22,8 +22,6 @@ struct D2PetTypeTxt * __fastcall GetPetTypeTxtById(int32_t nPetId);
 // @sourcefile .\GAME\RosterPets.cpp
 void __stdcall FreeRosterPet();
 // @sourcefile .\GAME\RosterPets.cpp
-void __fastcall ROSTERPETS_RemoveRosterPetsBySkillID(int32_t nOwnerGUID, int32_t nRosterGUID);
-// @sourcefile .\GAME\RosterPets.cpp
 void __fastcall AddRosterPet(int32_t nRosterGUID, int32_t nOwnerGUID, int32_t nSkillId, int32_t nRosterType);
 // Registers a pet or mercenary in the client-side roster pet list. For skillID 7 (merc), first removes any existing merc for the owner, then adds the pet entry and populates seed/owner fields from pMercArg. If the merc unit already exists in the world, initializes it via MERC_InitializeFromPacket, marks it attackable, sets up its light map, and flags it for update.
 void __fastcall AddRosterPetMerc(DWORD nRosterGUID, int32_t nOwnerGUID, int32_t nSkillID, int32_t nRosterType, struct D2RosterMercArg * pMercArg);
@@ -48,5 +46,6 @@ int32_t __fastcall GetSkillId(int32_t nRosterGUID);
 // Returns 1 if pUnit is hostile to the local player, 0 if friendly. If pUnit is a known roster pet, resolves to the pet's owner GUID first. Then queries the player-list hostility flag (bit 8) between the resolved GUID and the local player's GUID via GetFlag. Halts if the local player unit is missing.
 uint32_t __fastcall ROSTER_IsUnitHostileToPlayer(struct D2UnitStrc * pUnit);
 void __fastcall ROSTER_UpdateMercHostileColors(int32_t nOwnerGUID);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::GAME::RosterPets

@@ -44,7 +44,7 @@ uint32_t __stdcall CELCMP_AllocateCelListKey(uint32_t nParam1, uint32_t nParam2,
     uint32_t nBitShift1 = nParam2 >> 2 & 0x33333333;
     uint32_t nBitShift2 = nParam2 >> 1 & 0x77777777;
     uint32_t nBitCount = nParam2 >> 3 & 0x11111111;
-    if (((nParam2 - nBitShift2 - nBitShift1 - nBitCount >> 4) - nBitShift2 - nBitShift1 - nBitCount + nParam2 & 0xf0f0f0f) % 0xff == 1 && nParam2 < 0x21) {
+    if (((nParam2 - nBitShift2 - nBitShift1 - nBitCount >> 4) - nBitShift2 - nBitShift1 - nBitCount + nParam2 & 0xf0f0f0f) % 0xff == 1 && nParam2 <= 0x20) {
       ::CELLIST* pCelEntry;
       if ((int)nParam1 < 2) {
         pCelEntry = gCelCmpCacheHandler.NewLock(&nParam1, (int32_t*)&nParam2);
@@ -105,20 +105,20 @@ uint32_t __stdcall TILEPROJECT_GetAnimatedSubstDataPtr(int32_t nParam) {
 }
 
 void __stdcall D2CMP_MinDouble(double fParam1, double fParam2) {
-    if (fParam2 >= fParam1) {
+    if (!(fParam2 < fParam1)) {
       return;
     }
 }
 
 void __stdcall D2CMP_MaxDouble(double fParam1, double fParam2) {
-    if (fParam1 >= fParam2) {
+    if (!(fParam1 < fParam2)) {
       return;
     }
 }
 
 int32_t __fastcall SUBTILE_CountRunLength(char * pDataStart, char * pDataEnd, int32_t nMaxRunLength, uint32_t * pIsAtEndFlag, uint32_t * pIsExactMatchFlag) {
     int32_t nLine;
-    if (pDataEnd <= pDataStart) {
+    if (pDataStart >= pDataEnd) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
       exit(-1);
     }
@@ -126,7 +126,7 @@ int32_t __fastcall SUBTILE_CountRunLength(char * pDataStart, char * pDataEnd, in
     char cFirst = *pDataStart;
     nLine = 0;
     do {
-      if (cFirst != *pDataStart || nMaxRunLength <= nLine) {
+      if (cFirst != *pDataStart || nLine >= nMaxRunLength) {
         break;
       }
 
@@ -134,29 +134,29 @@ int32_t __fastcall SUBTILE_CountRunLength(char * pDataStart, char * pDataEnd, in
       nLine++;
     } while (pDataStart < pDataEnd);
 
-    if (pDataStart != pDataEnd) {
-      *pIsAtEndFlag = 0;
-      for (; pDataStart < pDataEnd && cFirst == *pDataStart; pDataStart++) {}
-
-      *pIsExactMatchFlag = (uint32_t)(pDataStart == pDataEnd);
+    if (pDataStart == pDataEnd) {
+      *pIsAtEndFlag = 1;
+      *pIsExactMatchFlag = 0;
       return nLine;
     }
 
-    *pIsAtEndFlag = 1;
-    *pIsExactMatchFlag = 0;
+    *pIsAtEndFlag = 0;
+    for (; pDataStart < pDataEnd && cFirst == *pDataStart; pDataStart++) {}
+
+    *pIsExactMatchFlag = (uint32_t)(pDataStart == pDataEnd);
     return nLine;
 }
 
 int32_t __fastcall SUBTILE_CountRunLengthForByte(char * pCur, char * pEnd, char cSkipByte, int32_t nMaxRunLen, uint32_t * pbAtEnd, uint32_t * pbExactMatch) {
     int32_t nLine;
-    if (pEnd <= pCur) {
+    if (pCur >= pEnd) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6f);
       exit(-1);
     }
 
     nLine = 0;
     do {
-      if (*pCur == cSkipByte || nMaxRunLen <= nLine) {
+      if (*pCur == cSkipByte || nLine >= nMaxRunLen) {
         break;
       }
 
@@ -164,16 +164,16 @@ int32_t __fastcall SUBTILE_CountRunLengthForByte(char * pCur, char * pEnd, char 
       nLine++;
     } while (pCur < pEnd);
 
-    if (pCur != pEnd) {
-      *pbAtEnd = 0;
-      for (; pCur < pEnd && *pCur == cSkipByte; pCur++) {}
-
-      *pbExactMatch = (uint32_t)(pCur == pEnd);
+    if (pCur == pEnd) {
+      *pbAtEnd = 1;
+      *pbExactMatch = 0;
       return nLine;
     }
 
-    *pbAtEnd = 1;
-    *pbExactMatch = 0;
+    *pbAtEnd = 0;
+    for (; pCur < pEnd && *pCur == cSkipByte; pCur++) {}
+
+    *pbExactMatch = (uint32_t)(pCur == pEnd);
     return nLine;
 }
 

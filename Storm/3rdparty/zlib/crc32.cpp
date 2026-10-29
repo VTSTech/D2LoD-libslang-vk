@@ -796,7 +796,7 @@ static uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
       nLen--;
     }
 
-    if (0x1f < nLen) {
+    if (nLen >= 0x20) {
       uint32_t* pdwBuf;
       nBlockCount = nLen >> 5;
       pdwBuf = (uint32_t*)pbBuf;
@@ -816,7 +816,7 @@ static uint32_t crc32_little(uint8_t * pbBuf, uint32_t nLen, uint32_t nCrc) {
         pdwBuf = (uint32_t*)pbBuf;
       } while (nBlockCount);
     }
-    if (3 < nLen) {
+    if (nLen >= 4) {
       nBlockCount = nLen >> 2;
       do {
         nCrcAcc ^= *(uint32_t*)pbBuf;
@@ -1620,7 +1620,7 @@ int32_t __stdcall crc32_big(uint32_t nLength, uint32_t dwInitialCrc, uint8_t * p
     }
 
     uint32_t* pdwData = (uint32_t*)(pbParam - 4);
-    if (0x1f < nLength) {
+    if (nLength >= 0x20) {
       nBlockCount = nLength >> 5;
       do {
         dwCrc ^= pdwData[1];
@@ -1637,7 +1637,7 @@ int32_t __stdcall crc32_big(uint32_t nLength, uint32_t dwInitialCrc, uint8_t * p
         nBlockCount--;
       } while (nBlockCount);
     }
-    if (3 < nLength) {
+    if (nLength >= 4) {
       nBlockCount = nLength >> 2;
       do {
         dwCrc ^= pdwData[1];
@@ -1700,7 +1700,7 @@ uint32_t __stdcall crc32_combine_(uint32_t dwCrc, uint32_t dwFinalXor, int32_t n
     uint32_t adwMatOdd[32];
     uint32_t adwMatEven[32];
     uint64_t qwLength = (uint64_t)((uint64_t)(uint32_t)nLengthHi << 32 | (uint64_t)(uint32_t)nLengthLo);
-    if (nLengthHi < 1 && (nLengthHi < 0 || !nLengthLo)) {
+    if (nLengthHi <= 0 && (nLengthHi < 0 || (uint32_t)nLengthLo <= 0)) {
       return dwCrc;
     }
 

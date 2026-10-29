@@ -8,8 +8,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Launch/Engine/Application.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/3rdparty/crashy.h"
 #include "Fog/Debug.h"
 #include "Fog/Engine/Application/Service.h"
@@ -76,27 +74,27 @@ bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     }
 
     /* HANDLE hThread for SuspendThread */ dwCurrentTid = SuspendThread(hThread);
-    if (dwCurrentTid != -1) {
-      BOOL bGotContext;
-      /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGotContext = GetThreadContext(hThread, pContext);
-      /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
+    if (dwCurrentTid == -1) {
       /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
-      return bGotContext != 0;
+      return false;
     }
 
+    BOOL bGotContext;
+    /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGotContext = GetThreadContext(hThread, pContext);
+    /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
     /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
-    return false;
+    return bGotContext != 0;
 }
 
 static uint32_t DEBUG_GetPEImageType(short * nMagic) {
-    if (*nMagic != 0x10b) {
-      return *nMagic != 0x20b ? 0 : 0x2;
+    if (*nMagic == 0x10b) {
+      return 1;
     }
 
-    return 1;
+    return *nMagic != 0x20b ? 0 : 0x2;
 }
 
-static uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize, int * pnRVA, short * pOptHeader) {
+static uint32_t DEBUG_ParsePEDebugDirectory(uint32_t * pnSize, int * pnRVA, short * pOptHeader) {
     uint32_t nDirSize;
     int nDirRVA;
     if (*pOptHeader == 0x10b) {
@@ -112,14 +110,14 @@ static uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize
     *pnRVA = 0;
     *pnSize = -1;
     if (nDirRVA == 2) {
-      if (*(uint32_t*)(pOptHeader + 0x36) < 7) {
+      if (*(uint32_t*)(pOptHeader + 0x36) <= 6) {
         return 0;
       }
 
       nDirRVA = *(int*)(pOptHeader + 0x50);
       nDirSize = *(uint32_t*)(pOptHeader + 0x52);
     } else {
-      if (*(uint32_t*)(pOptHeader + 0x2e) < 7) {
+      if (*(uint32_t*)(pOptHeader + 0x2e) <= 6) {
         return 0;
       }
 
@@ -133,7 +131,7 @@ static uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize
       if (!nDirSize) {
         return 1;
       }
-    } else if (0x1b < *pnSize) {
+    } else if (*pnSize >= 0x1c) {
       return 1;
     }
 
@@ -141,12 +139,12 @@ static uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize
 }
 
 bool __stdcall DEBUG_IsValidDebugDirectorySize(uint32_t nDirSize) {
-    return 0x1b < nDirSize;
+    return nDirSize >= 0x1c;
 }
 
 uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t * pDebugData, int pModuleInfoOut) {
     uint32_t nParseResult;
-    if (3 >= nDataSize) {
+    if (nDataSize < 4) {
       return nDataSize & -256;
     }
 
@@ -160,12 +158,12 @@ uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t 
       nParseResult = DEBUG_ParseNB01DebugInfo(pDebugData, pModuleInfoOut);
       return nParseResult;
     }
-    if (nDataSize != 0x53445352) {
-      return nDataSize & -256;
+    if (nDataSize == 0x53445352) {
+      nParseResult = DEBUG_ParseRSDSDebugInfo(pDebugData, pModuleInfoOut);
+      return nParseResult;
     }
 
-    nParseResult = DEBUG_ParseRSDSDebugInfo(pDebugData, pModuleInfoOut);
-    return nParseResult;
+    return nDataSize & -256;
 }
 
 static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, int32_t pOutput) {
@@ -184,7 +182,7 @@ static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t
     pEntry = (int*)(pDirEntries + 0xc);
     do {
       pDebugData = (int*)(pEntry[2] + nBaseAddress);
-      if (*pEntry == 2 && 3 < (uint32_t)pEntry[1]) {
+      if (*pEntry == 2 && (uint32_t)pEntry[1] >= 4) {
         /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pDebugData, pEntry[1]);
         if (!bIsBadPtr) {
           if (*pDebugData == 0x3031424e) {
@@ -253,7 +251,7 @@ static uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short
 
     uint32_t nDirRVA = 0;
     uint32_t nDirSize = 0;
-    bIsValidImage = DEBUG_ParsePEDebugDirectory(ppModuleBase, &nDirSize, (int*)&nDirRVA, (short int*)(pNtHeader + 6));
+    bIsValidImage = DEBUG_ParsePEDebugDirectory(&nDirSize, (int*)&nDirRVA, (short int*)(pNtHeader + 6));
     bIsBadPtr = nDirSize;
     if ((char)bIsValidImage == '\0') {
       return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
@@ -266,7 +264,7 @@ static uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short
 
     void* pDebugDir = (void*)(nDirRVA + (int)pModuleBase);
     /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsValidImage = IsBadReadPtr(pDebugDir, nDirSize);
-    if (!(!bIsValidImage && 0x1b < bIsBadPtr)) {
+    if (!(!bIsValidImage && bIsBadPtr >= 0x1c)) {
       return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
@@ -294,10 +292,10 @@ static bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModuleP
     uint32_t nMbLen = WideCharToMultiByte(0xfde9, 0, szModulePath, nPathLength, aModuleInfo.szPath, 0x100, (LPCSTR)0x0, (LPBOOL)0x0);
     if ((int)nMbLen < 0) {
       aModuleInfo.szPath[0] = '\0';
-    } else if (nMbLen < 0x100) {
-      aModuleInfo.szPath[nMbLen] = '\0';
-    } else {
+    } else if (nMbLen > 0xff) {
       aModuleInfo.szPath[0xff] = '\0';
+    } else {
+      aModuleInfo.szPath[nMbLen] = '\0';
     }
 
     char* pDst = strrchr(aModuleInfo.szPath, 0x2f);
@@ -307,18 +305,18 @@ static bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModuleP
     }
 
     pDst = strrchr(aModuleInfo.szPath, 0x5c);
-    if (pDst && pBasename < pDst) {
+    if (pDst && pDst > pBasename) {
       pBasename = pDst;
     }
 
     pDst = strrchr(aModuleInfo.szPath, 0x3a);
-    if (pDst && pBasename < pDst) {
+    if (pDst && pDst > pBasename) {
       pBasename = pDst;
     }
-    if (!pBasename) {
-      pBasename = aModuleInfo.szPath;
-    } else {
+    if (pBasename) {
       pBasename++;
+    } else {
+      pBasename = aModuleInfo.szPath;
     }
 
     pDst = aModuleInfo.szPath;
@@ -417,29 +415,29 @@ bool DEBUG_EnumerateModulesViaToolhelp32(int * pModuleList) {
     int bHasModule;
     MODULEENTRY32W moduleEntry;
     HANDLE hSnapshot = (HANDLE)CreateToolhelp32Snapshot(8, 0);
-    if (hSnapshot != (HANDLE)-1) {
-      bool bAddOk;
-      moduleEntry.dwSize = 0x428;
-      bHasModule = Module32FirstW(hSnapshot, &moduleEntry);
-      while (true) {
-        if (!bHasModule) {
-          break;
-        }
-
-        bAddOk = DEBUG_AddModuleToList(pModuleList, (LPCWSTR)moduleEntry.szModule, -1, (short int*)moduleEntry.modBaseAddr);
-        if (!bAddOk) {
-          break;
-        }
-
-        moduleEntry.dwSize = 0x428;
-        bHasModule = Module32NextW(hSnapshot, &moduleEntry);
-      }
-
-      /* HANDLE hObject for CloseHandle */ CloseHandle(hSnapshot);
-      return true;
+    if (hSnapshot == (HANDLE)-1) {
+      return false;
     }
 
-    return false;
+    bool bAddOk;
+    moduleEntry.dwSize = 0x428;
+    bHasModule = Module32FirstW(hSnapshot, &moduleEntry);
+    while (true) {
+      if (!bHasModule) {
+        break;
+      }
+
+      bAddOk = DEBUG_AddModuleToList(pModuleList, (LPCWSTR)moduleEntry.szModule, -1, (short int*)moduleEntry.modBaseAddr);
+      if (!bAddOk) {
+        break;
+      }
+
+      moduleEntry.dwSize = 0x428;
+      bHasModule = Module32NextW(hSnapshot, &moduleEntry);
+    }
+
+    /* HANDLE hObject for CloseHandle */ CloseHandle(hSnapshot);
+    return true;
 }
 
 bool __fastcall DEBUG_EnumerateModulesViaPEB(int * pnParam) {
@@ -499,7 +497,7 @@ bool __stdcall DEBUG_EnumerateModules(int * pModuleList) {
 }
 
 void __stdcall DEBUG_ExtractDebugDirectory64(uint32_t dwParam, uint32_t * pnRVA, uint32_t * pnSize, int32_t pOptHeader) {
-    if (6 >= *(uint32_t*)(pOptHeader + 0x6c)) {
+    if (*(uint32_t*)(pOptHeader + 0x6c) <= 6) {
       return;
     }
 
@@ -509,7 +507,7 @@ void __stdcall DEBUG_ExtractDebugDirectory64(uint32_t dwParam, uint32_t * pnRVA,
 }
 
 void __stdcall DEBUG_ExtractDebugDirectory32(uint32_t dwParam, uint32_t * pnRVA, uint32_t * pnSize, int32_t pOptHeader) {
-    if (6 >= *(uint32_t*)(pOptHeader + 0x5c)) {
+    if (*(uint32_t*)(pOptHeader + 0x5c) <= 6) {
       return;
     }
 
@@ -641,7 +639,7 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
       hThread = hOpenedThread;
       if (cVar2 != '\0') {
         for (__frame0.nWalkIndex = 0; __frame0.nWalkIndex < 0x80; __frame0.nWalkIndex++) {
-          if (nSkipFrames <= __frame0.nWalkIndex) {
+          if (__frame0.nWalkIndex >= nSkipFrames) {
             pDVar1 = __frame0.pFrameArrayBase + nFrameCount;
             pDVar1->dwReturnAddr = __frame0.nCurEip;
             pDVar1->dw08 = (uint32_t)__frame0.pCurEsp;
@@ -655,7 +653,7 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
           if (threadContext.Ebp <= (uintptr_t)__frame0.pCurEsp) {
             break;
           }
-          if (__frame0.pStackTop < (uint32_t*)(threadContext.Ebp + 8)) {
+          if ((uint32_t*)(threadContext.Ebp + 8) > __frame0.pStackTop) {
             break;
           }
 
@@ -713,12 +711,12 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
       }
 
       pSep = strrchr(szModulePath, 0x5c);
-      if (pSep && pBasename < pSep) {
+      if (pSep && pSep > pBasename) {
         pBasename = pSep;
       }
 
       pSep = strrchr(szModulePath, 0x3a);
-      if (pSep && pBasename < pSep) {
+      if (pSep && pSep > pBasename) {
         pBasename = pSep;
       }
 
@@ -741,12 +739,12 @@ bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
     }
 
     pSep = strrchr(szModulePath, 0x5c);
-    if (pSep && pBasename < pSep) {
+    if (pSep && pSep > pBasename) {
       pBasename = pSep;
     }
 
     pSep = strrchr(szModulePath, 0x3a);
-    if (pSep && pBasename < pSep) {
+    if (pSep && pSep > pBasename) {
       pBasename = pSep;
     }
 
@@ -827,7 +825,7 @@ int32_t __stdcall INI_FindConfigValueIndex(uint8_t * pbArgName) {
       pbEntry = pbEntryStart + 0x5c;
       pbArgCursor = pbArgName;
       pbEntryStart = pbEntry;
-      if (0x14d7 < nByteOffset) {
+      if (nByteOffset >= 0x14d8) {
         return -1;
       }
     } while (true);
@@ -867,13 +865,13 @@ static void INI_StripDelimiters(char * szText) {
     nLen = (int)pCursor - (int)(szText + 1);
     int nReadIdx;
     nReadIdx = 0;
-    if (0 < nLen) {
+    if (nLen > 0) {
       memcpy(aWorkBuf, " \t\n:", 4);
       do {
         nWriteIdx = 0;
         while (aWorkBuf[nWriteIdx] != szText[nReadIdx]) {
           nWriteIdx++;
-          if (3 < nWriteIdx) {
+          if (nWriteIdx >= 4) {
             goto copy_token;
           }
         }
@@ -915,11 +913,11 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, in
     int nCmdLen = (int)pCursor - (int)(szCmdLine + 1);
     int nNameLen = 0;
     int32_t nConfigIdx = -1;
-    if (0xff < nCmdLen) {
+    if (nCmdLen >= 0x100) {
       Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(DWORD)Src::ErrorManager::GetInstructionPointer(), 0x103);
       exit(-1);
     }
-    if (0 < nCmdLen) {
+    if (nCmdLen > 0) {
       nDstOffset = -(int)szCmdLine;
       do {
         cChar = *szCmdLine;
@@ -999,7 +997,7 @@ void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2In
     pCmdEnd = pCmdEnd + strlen(pCmdEnd) + 1;
     int iVar1 = (int)pCmdEnd - (int)(szText + 1);
     int nPos = 0;
-    if (0 < iVar1) {
+    if (iVar1 > 0) {
       do {
         if (szText[nPos] == '-') {
           nPos++;
@@ -1081,23 +1079,24 @@ int32_t __stdcall ApplicationRunCurrentMode(D2IniConfigStrc * pD2IniData) {
     static fnAppModeRun * CurrentApplication = (fnAppModeRun *)0x00000000; D2_STATIC_GUARD(CurrentApplication, "Fog::Engine::Application::ApplicationRunCurrentMode::CurrentApplication");
 
     int32_t modeResult;
-    if (4 < (uint32_t)(geD2ApplicationMode - APPMODE_client)) {
-      return 0;
-    }
-    if (!ApplicationBootstrapArray[geD2ApplicationMode].pfnInit) {
-      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x133);
-      exit(-1);
-    } else {
-      if (!ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown) {
-        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x134);
+    if ((uint32_t)(geD2ApplicationMode - APPMODE_client) <= 4) {
+      if (!ApplicationBootstrapArray[geD2ApplicationMode].pfnInit) {
+        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x133);
         exit(-1);
-      }
+      } else {
+        if (!ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown) {
+          Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x134);
+          exit(-1);
+        }
 
-      CurrentApplication = ApplicationBootstrapArray[geD2ApplicationMode].pfnInit(WinMain_hInstance);
-      modeResult = (**CurrentApplication)(pD2IniData);
-      ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown();
-      return modeResult;
+        CurrentApplication = ApplicationBootstrapArray[geD2ApplicationMode].pfnInit(WinMain_hInstance);
+        modeResult = (**CurrentApplication)(pD2IniData);
+        ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown();
+        return modeResult;
+      }
     }
+
+    return 0;
 }
 
 void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
@@ -1262,7 +1261,7 @@ static int __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgum
 // lpHandlerProc parameter of RegisterServiceCtrlHandlerA
 void __stdcall ERRORMANAGER_ServiceControlHandler(int32_t nServiceControl) {
     // Static local variables (originally global data)
-    static bool gbApplicationModeCommandLineArgumentFound = true; D2_STATIC_GUARD(gbApplicationModeCommandLineArgumentFound, "Fog::Engine::Application::ERRORMANAGER_ServiceControlHandler::gbApplicationModeCommandLineArgumentFound");
+    static BOOL gbApplicationModeCommandLineArgumentFound = 0x1; D2_STATIC_GUARD(gbApplicationModeCommandLineArgumentFound, "Fog::Engine::Application::ERRORMANAGER_ServiceControlHandler::gbApplicationModeCommandLineArgumentFound");
 
     if (nServiceControl != 1) {
       if (nServiceControl == 4) {
@@ -1284,7 +1283,7 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     D2IniConfigStrc pD2IniData;
     char szVersionString[260];
     char* local_4e0 = "";
-    if (1 < argc) {
+    if (argc > 1) {
       local_4e0 = argv[argc - 1];
     }
 
@@ -1355,7 +1354,7 @@ uint32_t __stdcall PATH_GetKnownFolderPath(LPSTR szOutPath, int32_t nBufferSize)
     }
 
     hrResult = (*pSHGetKnownFolderPath)((GUID*)&GUID_006cca6c, 0x8000, (HANDLE)0x0, &pwszKnownPath);
-    if (-1 >= (int)hrResult) {
+    if ((int)hrResult < 0) {
       return hrResult & -256;
     }
 

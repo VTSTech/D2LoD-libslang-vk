@@ -39,23 +39,23 @@ void * __thiscall getMemory(::HeapManager * pThis, uint32_t nSize, int bUseHeap)
       pResult = pThis->pfnAlloc(nAlignedSize);
       return pResult;
     }
-    if (!nAlignedSize) {
+    if (nAlignedSize <= 0) {
       nAlignedSize = 8;
     }
     if (pThis->nFreeBytes < nAlignedSize) {
       void** pNewChunk;
       if (nAlignedSize < 0x1001) {
         pNewChunk = (void**)getMemory(&gpHeapManager, 0x1004, 1);
-        if (!pNewChunk) {
-          pNewChunk = 0;
-        } else {
+        if (pNewChunk) {
           *pNewChunk = 0;
+        } else {
+          pNewChunk = 0;
         }
         if (pNewChunk) {
-          if (!pThis->pChunkTail) {
-            pThis->pChunkHead = pNewChunk;
-          } else {
+          if (pThis->pChunkTail) {
             *pThis->pChunkTail = pNewChunk;
+          } else {
+            pThis->pChunkHead = pNewChunk;
           }
 
           pThis->pChunkTail = pNewChunk;

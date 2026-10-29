@@ -38,7 +38,7 @@ static void __fastcall SKILLS_PushValue(int * pStack, int value) {
 }
 
 static int __fastcall SKILLS_PopValue(int * pValueStack) {
-    if (pValueStack[0x40] < 1) {
+    if (pValueStack[0x40] <= 0) {
       return 0;
     }
 
@@ -57,7 +57,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
     uint32_t uVar1;
     int nIntResult;
     int aFormulaValueStack[65];
-    if (nParam < 1) {
+    if (nParam <= 0) {
       return 0;
     }
 
@@ -66,7 +66,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
     aFormulaValueStack[0x40] = 0;
     uint8_t* pbReadPtr;
     pbReadPtr = (uint8_t*)pdwParam;
-    if (0 >= nParam) {
+    if (nParam <= 0) {
       return 0;
     }
 
@@ -88,7 +88,13 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         case 1:
           uVar1 = (uint32_t)*pbNext2;
         pbNext2 = pbReadPtr + 2;
-        if ((int)uVar1 < nFunctionArraySize) {
+        if (!((int)uVar1 < nFunctionArraySize)) {
+          push_zero:
+          if (nArgCount < 0x40) {
+            aFormulaValueStack[nArgCount] = 0;
+            goto commit_push;
+          }
+        } else {
           nIntResult = pFunctionArray[uVar1].nArgCount;
           if (nIntResult != 3) {
             if (nIntResult == 2) {
@@ -118,12 +124,6 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           nArgCount = pFunctionArray[uVar1].pfnMethod(nIntResult, nArgCount, nOperand3, dwParam);
           SKILLS_PushValue(aFormulaValueStack, nArgCount);
           nArgCount = aFormulaValueStack[0x40];
-        } else {
-          push_zero:
-          if (nArgCount < 0x40) {
-            aFormulaValueStack[nArgCount] = 0;
-            goto commit_push;
-          }
         }
 
         break;
@@ -133,7 +133,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           if (!pFunction) {
             return 0;
           }
-        if (nParam <= (int)pbNext2 - (int)pdwParam) {
+        if ((int)pbNext2 - (int)pdwParam >= nParam) {
           return 0;
         }
 
@@ -143,7 +143,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           if (!pFunction) {
             return 0;
           }
-        if (nParam <= (int)pbNext2 - (int)pdwParam) {
+        if ((int)pbNext2 - (int)pdwParam >= nParam) {
           return 0;
         }
 
@@ -156,7 +156,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           if (!pFunction) {
             return 0;
           }
-        if (nParam <= (int)pbNext2 - (int)pdwParam) {
+        if ((int)pbNext2 - (int)pdwParam >= nParam) {
           return 0;
         }
 
@@ -166,7 +166,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         nArgCount = aFormulaValueStack[0x40];
         break;
         case 7:
-          if (nParam <= (int)pbNext2 - (int)pdwParam) {
+          if ((int)pbNext2 - (int)pdwParam >= nParam) {
             return 0;
           }
         nArgCount = (int)(char)*pbNext2;
@@ -176,7 +176,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         nArgCount = aFormulaValueStack[0x40];
         break;
         case 8:
-          if (nParam <= (int)pbNext2 - (int)pdwParam) {
+          if ((int)pbNext2 - (int)pdwParam >= nParam) {
             return 0;
           }
         SKILLS_PushValue(aFormulaValueStack, (int)*(short int*)pbNext2);
@@ -184,7 +184,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         nArgCount = aFormulaValueStack[0x40];
         break;
         case 9:
-          if (nParam <= (int)pbNext2 - (int)pdwParam) {
+          if ((int)pbNext2 - (int)pdwParam >= nParam) {
             return 0;
           }
         SKILLS_PushValue(aFormulaValueStack, *(uint32_t*)pbNext2);
@@ -192,14 +192,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         nArgCount = aFormulaValueStack[0x40];
         break;
         case 10:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -217,14 +217,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0xb:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -232,20 +232,20 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           uOperandB = aFormulaValueStack[nArgCount];
         }
         if (nArgCount < 0x40) {
-          uVar1 = (uint32_t)(nIntResult < uOperandB);
+          uVar1 = (uint32_t)(uOperandB > nIntResult);
           goto push_comparison_result;
         }
 
         break;
         case 0xc:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -259,14 +259,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0xd:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -274,20 +274,20 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
           uOperandB = aFormulaValueStack[nArgCount];
         }
         if (nArgCount < 0x40) {
-          uVar1 = (uint32_t)(nIntResult <= uOperandB);
+          uVar1 = (uint32_t)(uOperandB >= nIntResult);
           goto push_comparison_result;
         }
 
         break;
         case 0xe:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -301,14 +301,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0xf:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -322,14 +322,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x10:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -343,14 +343,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x11:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -364,14 +364,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x12:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -385,14 +385,14 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x13:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
@@ -408,31 +408,31 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
         nArgCount = aFormulaValueStack[0x40];
         break;
         case 0x14:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
           aFormulaValueStack[0x40] = nArgCount;
           uOperandB = aFormulaValueStack[nArgCount];
         }
-        if (nIntResult < 1) {
-          uOperandA = 1;
-        } else {
+        if (nIntResult > 0) {
           uOperandA = uOperandB;
-          if (1 < nIntResult) {
+          if (nIntResult > 1) {
             nIntResult--;
             do {
               uOperandA *= uOperandB;
               nIntResult--;
             } while (nIntResult);
           }
+        } else {
+          uOperandA = 1;
         }
         if (nArgCount < 0x40) {
           aFormulaValueStack[nArgCount] = uOperandA;
@@ -441,7 +441,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x15:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
@@ -455,21 +455,21 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
 
         break;
         case 0x16:
-          if (nArgCount < 1) {
+          if (nArgCount <= 0) {
             nIntResult = 0;
           } else {
             nArgCount--;
             aFormulaValueStack[0x40] = nArgCount;
             nIntResult = aFormulaValueStack[nArgCount];
           }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = 0;
         } else {
           nArgCount--;
           aFormulaValueStack[0x40] = nArgCount;
           uOperandB = aFormulaValueStack[nArgCount];
         }
-        if (nArgCount < 1) {
+        if (nArgCount <= 0) {
           uOperandB = nIntResult;
         } else {
           nArgCount--;
@@ -485,7 +485,7 @@ uint32_t __stdcall SKILLS_CompileSkillFormula(uint32_t * pdwParam, int nParam, f
       }
 
       pbReadPtr = pbNext2;
-      if (nParam <= (int)pbNext2 - (int)pdwParam) {
+      if ((int)pbNext2 - (int)pdwParam >= nParam) {
         return 0;
       }
     }
@@ -540,98 +540,48 @@ char * __fastcall SKILLS_ParseSkillDescription(CalcGetKeyWordToNumber_t pFuncLoo
 
       return szToken;
     }
-    if (*szToken != '\'') {
-      nCtype = isalpha((int)*szToken);
-      if (!nCtype) {
-        switch (*szToken) {
-          case '!':
-            if (szToken[1] == '=') {
-              *pTokenType = '\x0f';
-              return szToken + 2;
-            }
+    if (*szToken == '\'') {
+      szTokenBuf[0] = szToken[1];
+      nCtype = 1;
+      cCur = szToken[2];
+      pcTokenEnd = szToken + 2;
+      do {
+        if (cCur == '\0') {
           break;
-          case '(':
-            *pTokenType = '\0';
-          return szToken + 1;
-          case ')':
-            *pTokenType = '\x01';
-          return szToken + 1;
-          case '*':
-            *pTokenType = '\x05';
-          return szToken + 1;
-          case '+':
-            *pTokenType = '\x03';
-          return szToken + 1;
-          case ',':
-            *pTokenType = '\x02';
-          return szToken + 1;
-          case '-':
-            *pTokenType = '\x04';
-          return szToken + 1;
-          case '.':
-            szTokenBuf[0] = szToken[1];
-          nCtype = 1;
-          pcTokenEnd = szToken + 2;
-          nLookupResult = isalnum((int)szToken[2]);
-          while (nLookupResult) {
-            if (nCtype < 0xff) {
-              szTokenBuf[nCtype] = *pcTokenEnd;
-              nCtype++;
-            }
-
-            pcScan = pcTokenEnd + 1;
+        }
+        if (cCur == '\'') {
+          if (*pcTokenEnd != '\0') {
             pcTokenEnd++;
-            nLookupResult = isalnum((int)*pcScan);
-          }
-
-          nLookupResult = *(int*)(nParserContext + 0x140);
-          szTokenBuf[nCtype] = '\0';
-          local_118 = 0;
-          nCtype = (*local_114)(szTokenBuf, (int*)&local_118, (uint32_t)*(uint8_t*)(nLookupResult - 1 + nParserContext), *(uint32_t*)(nParserContext + 0x3c + nLookupResult * 4));
-          if (-1 < nCtype) {
-            *local_10c = '\x10';
-            *local_110 = nCtype;
-            return pcTokenEnd;
           }
 
           break;
-          case '/':
-            *pTokenType = '\x06';
-          return szToken + 1;
-          case ':':
-            *pTokenType = '\b';
-          return szToken + 1;
-          case '<':
-            if (szToken[1] != '=') {
-              *pTokenType = '\v';
-              return szToken + 1;
-            }
-          *pTokenType = '\n';
-          return szToken + 2;
-          case '=':
-            if (szToken[1] == '=') {
-              *pTokenType = '\x0e';
-              return szToken + 2;
-            }
-          break;
-          case '>':
-            if (szToken[1] != '=') {
-              *pTokenType = '\f';
-              return szToken + 1;
-            }
-          *pTokenType = '\r';
-          return szToken + 2;
-          case '?':
-            *pTokenType = '\a';
-          return szToken + 1;
-          case '^':
-            *pTokenType = '\t';
-          return szToken + 1;
+        }
+        if (nCtype < 0xff) {
+          szTokenBuf[nCtype] = cCur;
+          nCtype++;
         }
 
-        return nullptr;
+        cCur = pcTokenEnd[1];
+        pcTokenEnd++;
+      } while (true);
+
+      nLookupResult = *(int*)(nParserContext + 0x140);
+      szTokenBuf[nCtype] = '\0';
+      local_10c = 0;
+      nCtype = (*local_114)(szTokenBuf, (int*)&local_10c, (uint32_t)*(uint8_t*)(nLookupResult - 1 + nParserContext), *(uint32_t*)(nParserContext + 0x3c + nLookupResult * 4));
+      if (nCtype >= 0) {
+        *pTokenType = !local_10c + '\x10';
+        *local_110 = nCtype;
+        return pcTokenEnd;
       }
 
+      *pTokenType = '\x10';
+      *local_110 = 0;
+      return pcTokenEnd;
+    }
+
+    nCtype = isalpha((int)*szToken);
+    if (nCtype) {
       szTokenBuf[0] = *szToken;
       nCtype = 1;
       nLookupResult = isalnum((int)szToken[1]);
@@ -660,7 +610,7 @@ char * __fastcall SKILLS_ParseSkillDescription(CalcGetKeyWordToNumber_t pFuncLoo
         if (!nCtype) {
           if (*pcTokenEnd != '\0' && *pcTokenEnd == '(') {
             nCtype = (*local_118)(szTokenBuf);
-            if (-1 < nCtype) {
+            if (nCtype >= 0) {
               *local_10c = '\x12';
               *local_110 = nCtype;
               return pcTokenEnd + 1;
@@ -676,54 +626,104 @@ char * __fastcall SKILLS_ParseSkillDescription(CalcGetKeyWordToNumber_t pFuncLoo
 
       local_11c = 0;
       nCtype = (*local_114)(szTokenBuf, &local_11c, (uint32_t)*(uint8_t*)(*(int*)(nParserContext + 0x140) - 1 + nParserContext), *(uint32_t*)(nParserContext + 0x3c + *(int*)(nParserContext + 0x140) * 4));
-      if (nCtype < 0) {
-        *local_10c = '\x10';
-        *local_110 = 0;
+      if (nCtype >= 0) {
+        *local_10c = !local_11c + '\x10';
+        *local_110 = nCtype;
         return pcTokenEnd;
       }
 
-      *local_10c = !local_11c + '\x10';
-      *local_110 = nCtype;
-      return pcTokenEnd;
-    }
-
-    szTokenBuf[0] = szToken[1];
-    nCtype = 1;
-    cCur = szToken[2];
-    pcTokenEnd = szToken + 2;
-    do {
-      if (cCur == '\0') {
-        break;
-      }
-      if (cCur == '\'') {
-        if (*pcTokenEnd != '\0') {
-          pcTokenEnd++;
-        }
-
-        break;
-      }
-      if (nCtype < 0xff) {
-        szTokenBuf[nCtype] = cCur;
-        nCtype++;
-      }
-
-      cCur = pcTokenEnd[1];
-      pcTokenEnd++;
-    } while (true);
-
-    nLookupResult = *(int*)(nParserContext + 0x140);
-    szTokenBuf[nCtype] = '\0';
-    local_10c = 0;
-    nCtype = (*local_114)(szTokenBuf, (int*)&local_10c, (uint32_t)*(uint8_t*)(nLookupResult - 1 + nParserContext), *(uint32_t*)(nParserContext + 0x3c + nLookupResult * 4));
-    if (nCtype < 0) {
-      *pTokenType = '\x10';
+      *local_10c = '\x10';
       *local_110 = 0;
       return pcTokenEnd;
     }
 
-    *pTokenType = !local_10c + '\x10';
-    *local_110 = nCtype;
-    return pcTokenEnd;
+    switch (*szToken) {
+      case '!':
+        if (szToken[1] == '=') {
+          *pTokenType = '\x0f';
+          return szToken + 2;
+        }
+      break;
+      case '(':
+        *pTokenType = '\0';
+      return szToken + 1;
+      case ')':
+        *pTokenType = '\x01';
+      return szToken + 1;
+      case '*':
+        *pTokenType = '\x05';
+      return szToken + 1;
+      case '+':
+        *pTokenType = '\x03';
+      return szToken + 1;
+      case ',':
+        *pTokenType = '\x02';
+      return szToken + 1;
+      case '-':
+        *pTokenType = '\x04';
+      return szToken + 1;
+      case '.':
+        szTokenBuf[0] = szToken[1];
+      nCtype = 1;
+      pcTokenEnd = szToken + 2;
+      nLookupResult = isalnum((int)szToken[2]);
+      while (nLookupResult) {
+        if (nCtype < 0xff) {
+          szTokenBuf[nCtype] = *pcTokenEnd;
+          nCtype++;
+        }
+
+        pcScan = pcTokenEnd + 1;
+        pcTokenEnd++;
+        nLookupResult = isalnum((int)*pcScan);
+      }
+
+      nLookupResult = *(int*)(nParserContext + 0x140);
+      szTokenBuf[nCtype] = '\0';
+      local_118 = 0;
+      nCtype = (*local_114)(szTokenBuf, (int*)&local_118, (uint32_t)*(uint8_t*)(nLookupResult - 1 + nParserContext), *(uint32_t*)(nParserContext + 0x3c + nLookupResult * 4));
+      if (nCtype >= 0) {
+        *local_10c = '\x10';
+        *local_110 = nCtype;
+        return pcTokenEnd;
+      }
+
+      break;
+      case '/':
+        *pTokenType = '\x06';
+      return szToken + 1;
+      case ':':
+        *pTokenType = '\b';
+      return szToken + 1;
+      case '<':
+        if (szToken[1] != '=') {
+          *pTokenType = '\v';
+          return szToken + 1;
+        }
+      *pTokenType = '\n';
+      return szToken + 2;
+      case '=':
+        if (szToken[1] == '=') {
+          *pTokenType = '\x0e';
+          return szToken + 2;
+        }
+      break;
+      case '>':
+        if (szToken[1] != '=') {
+          *pTokenType = '\f';
+          return szToken + 1;
+        }
+      *pTokenType = '\r';
+      return szToken + 2;
+      case '?':
+        *pTokenType = '\a';
+      return szToken + 1;
+      case '^':
+        *pTokenType = '\t';
+      return szToken + 1;
+    }
+
+    return nullptr;
 }
 
 // Returns the operator precedence level for a skill formula opcode used by the calc compiler. Switches on the opcode byte (in AL): opcode 1 invokes a callback via pFunctionTable; opcodes 10-20 (0xa-0x14) return precedence 2; 0x15 returns 1; 0x16 returns 3; others return 0. Part of the skill formula expression evaluator (SKILLS_CompileSkillFormula).
@@ -798,12 +798,12 @@ static uint8_t * __stdcall SKILLS_EmitFormulaBytecode(uint8_t * pWritePtr, uint8
 
     int nPrecedence;
     int nWriteOffset;
-    if (0 < *(int*)(pOperatorStack + 0x140)) {
+    if (*(int*)(pOperatorStack + 0x140) > 0) {
       uint8_t opcode;
       nWriteOffset = (int)pWritePtr - (int)pBuffer;
       do {
         opcode = pOperatorStack[*(int*)(pOperatorStack + 0x140) - 1];
-        if (opcode == 1 || bToken == 1 || 0x16 < opcode || BYTE_ARRAY_006fc874[opcode] < bToken) {
+        if (opcode == 1 || bToken == 1 || opcode >= 0x17 || BYTE_ARRAY_006fc874[opcode] < bToken) {
           break;
         }
 
@@ -811,7 +811,7 @@ static uint8_t * __stdcall SKILLS_EmitFormulaBytecode(uint8_t * pWritePtr, uint8
         if (*(int*)(pOperatorStack + 0x144) < nPrecedence) {
           goto clear_and_fail;
         }
-        if (nBufferSize <= nWriteOffset) {
+        if (nWriteOffset >= nBufferSize) {
           *pBuffer = 0;
           return nullptr;
         }
@@ -821,13 +821,13 @@ static uint8_t * __stdcall SKILLS_EmitFormulaBytecode(uint8_t * pWritePtr, uint8
         (*(int*)(pOperatorStack + 0x140))--;
         *(int*)(pOperatorStack + 0x144) += 1 - nPrecedence;
         pWritePtr++;
-      } while (0 < *(int*)(pOperatorStack + 0x140));
+      } while (*(int*)(pOperatorStack + 0x140) > 0);
     }
     if (bToken != 0x17 && bToken != 3) {
       if (!bToken) {
         goto emit_terminator;
       }
-      if (0x3f < *(int*)(pOperatorStack + 0x140)) {
+      if (*(int*)(pOperatorStack + 0x140) >= 0x40) {
         *pBuffer = 0;
         return nullptr;
       }
@@ -854,14 +854,14 @@ static uint8_t * __stdcall SKILLS_EmitFormulaBytecode(uint8_t * pWritePtr, uint8
 }
 
 static uint8_t * __fastcall SKILLS_WriteValueToBuffer(uint8_t * pBase, int nValue, int nBufferSize, D2QuestDataA5Q2Strc * pStruct, uint8_t * pWritePtr) {
-    if (nValue + 0x80U < 0x100) {
+    if (nValue + 0x80U <= 0xff) {
       if ((int)pWritePtr - (int)pBase < nBufferSize) {
         *pWritePtr = 7;
         pWritePtr[1] = (char)nValue;
         pStruct->anWussieMonsterGUIDs[9]++;
         return pWritePtr + 2;
       }
-    } else if (nValue + 0x8000U < 0x10000) {
+    } else if (nValue + 0x8000U <= 0xffff) {
       if ((int)(pWritePtr + (3 - (int)pBase)) < nBufferSize) {
         *pWritePtr = 8;
         *(short int*)(pWritePtr + 1) = (short int)nValue;
@@ -880,14 +880,14 @@ static uint8_t * __fastcall SKILLS_WriteValueToBuffer(uint8_t * pBase, int nValu
 }
 
 static uint8_t * __fastcall SKILLS_WriteValueToBuffer2(uint8_t * pBase, int nValue, int nBufferSize, D2QuestDataA5Q2Strc * pStruct, uint8_t * pWritePtr) {
-    if (nValue + 0x80U < 0x100) {
+    if (nValue + 0x80U <= 0xff) {
       if ((int)pWritePtr - (int)pBase < nBufferSize) {
         *pWritePtr = '\x04';
         pWritePtr[1] = (uint8_t)nValue;
         pStruct->anWussieMonsterGUIDs[9]++;
         return pWritePtr + 2;
       }
-    } else if (nValue + 0x8000U < 0x10000) {
+    } else if (nValue + 0x8000U <= 0xffff) {
       if ((int)(pWritePtr + (3 - (int)pBase)) < nBufferSize) {
         *pWritePtr = '\x05';
         *(short int*)(pWritePtr + 1) = (short int)nValue;
@@ -963,7 +963,7 @@ int __stdcall SKILLS_ParseCalcExpression(char * szExpressionString, uint8_t * pb
         *pbByteCodeOutput = 0;
         return 0;
         case 1:
-          if (0 < __frame0.nOpStackTop) {
+          if (__frame0.nOpStackTop > 0) {
             nBytesWritten = (int)pbWritePtr - (int)pbByteCodeOutput;
             while (true) {
               __frame0.aTokenBuf = __frame0.aOpStackTokenTypes[__frame0.nOpStackTop - 1];
@@ -973,7 +973,7 @@ int __stdcall SKILLS_ParseCalcExpression(char * szExpressionString, uint8_t * pb
 
               nFunctionArg = __frame0.aOpStackTokenValues[__frame0.nOpStackTop - 1];
               nPrecedence = SKILLS_GetOpcodePrecedence(__frame0.aTokenBuf, pOpcodeInfo, nFunctionArg);
-              if (__frame0.nPrecedenceDepth < nPrecedence || nMaxOutputSize <= nBytesWritten) {
+              if (__frame0.nPrecedenceDepth < nPrecedence || nBytesWritten >= nMaxOutputSize) {
                 *pbByteCodeOutput = 0;
                 return 0;
               }
@@ -983,7 +983,7 @@ int __stdcall SKILLS_ParseCalcExpression(char * szExpressionString, uint8_t * pb
               *pbWritePtr = __frame0.aTokenBuf;
               pbFinalWrite = pbWritePtr + 1;
               if (__frame0.aTokenBuf == 1) {
-                if (nMaxOutputSize <= (int)pbFinalWrite - (int)pbByteCodeOutput) {
+                if ((int)pbFinalWrite - (int)pbByteCodeOutput >= nMaxOutputSize) {
                   *pbByteCodeOutput = 0;
                   return 0;
                 }
@@ -996,13 +996,13 @@ int __stdcall SKILLS_ParseCalcExpression(char * szExpressionString, uint8_t * pb
 
               __frame0.nOpStackTop--;
               pbWritePtr = pbFinalWrite;
-              if (__frame0.nOpStackTop < 1) {
+              if (__frame0.nOpStackTop <= 0) {
                 *pbByteCodeOutput = 0;
                 return 0;
               }
             }
 
-            if (0 < __frame0.nOpStackTop && (__frame0.aOpStackTokenTypes[__frame0.nOpStackTop - 1] == 2 || __frame0.aOpStackTokenTypes[__frame0.nOpStackTop - 1] == 1)) {
+            if (__frame0.nOpStackTop > 0 && (__frame0.aOpStackTokenTypes[__frame0.nOpStackTop - 1] == 2 || __frame0.aOpStackTokenTypes[__frame0.nOpStackTop - 1] == 1)) {
               __frame0.nOpStackTop--;
               goto finish_token;
             }

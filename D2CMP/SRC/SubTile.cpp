@@ -25,14 +25,14 @@ typedef uint8_t (__stdcall *pfnRGBToPaletteIndex)(uint8_t nRed, uint8_t nGreen, 
 namespace D2CMP::SRC::SubTile {
 
 int __fastcall SUBTILE_CountRunLength(char cParam, char * pCur, char * pEnd, int32_t nMaxRunLen, uint32_t * pbAtEnd, uint32_t * pbExactMatch) {
-    if (pEnd <= pCur) {
+    if (pCur >= pEnd) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x45);
       exit(-1);
     }
 
     int nCount = 0;
     do {
-      if (cParam != *pCur || nMaxRunLen <= nCount) {
+      if (cParam != *pCur || nCount >= nMaxRunLen) {
         break;
       }
 
@@ -40,16 +40,16 @@ int __fastcall SUBTILE_CountRunLength(char cParam, char * pCur, char * pEnd, int
       nCount++;
     } while (pCur < pEnd);
 
-    if (pCur != pEnd) {
-      *pbAtEnd = 0;
-      for (; pCur < pEnd && cParam == *pCur; pCur++) {}
-
-      *pbExactMatch = (uint32_t)(pCur == pEnd);
+    if (pCur == pEnd) {
+      *pbAtEnd = 1;
+      *pbExactMatch = 0;
       return nCount;
     }
 
-    *pbAtEnd = 1;
-    *pbExactMatch = 0;
+    *pbAtEnd = 0;
+    for (; pCur < pEnd && cParam == *pCur; pCur++) {}
+
+    *pbExactMatch = (uint32_t)(pCur == pEnd);
     return nCount;
 }
 
@@ -84,7 +84,7 @@ char * __fastcall SUBTILE_CompressToRLE(char * pDataStart, char * * ppCompressed
           *pDstPtr = cZeroRunLen;
           pDstPtr[1] = (char)iVar2;
           pDstPtr += 2;
-          for (; iVar2; iVar2--) {
+          for (; (uint32_t)iVar2 > 0; iVar2--) {
             *pDstPtr = *pDataStart;
             pDstPtr++;
             pDataStart++;
@@ -106,7 +106,7 @@ char * __fastcall SUBTILE_CompressToRLE(char * pDataStart, char * * ppCompressed
       }
 
       pRowStart = pNextRowStart;
-      if (0x1f < iRow) {
+      if (iRow >= 0x20) {
         *ppCompressedEnd = pDstPtr - (int)pWorkBuf;
         return pWorkBuf;
       }
@@ -118,10 +118,7 @@ void __fastcall SUBTILE_AllocAndCompress(uint32_t * pRawData, int bIsRaw) {
     int i;
     char* pCompEndPtr;
     char* local_8 = (char*)pRawData;
-    if (!bIsRaw) {
-      pCompressedBuf = SUBTILE_CompressToRLE((char*)pRawData, &local_8);
-      pCompEndPtr = local_8;
-    } else {
+    if (bIsRaw) {
       pCompressedBuf = (char*)D2_ALLOC_AT(0xc00, ".\\SRC\\SubTile.cpp", 0x66);
       pCompEndPtr = pCompressedBuf;
       for (i = 0x300; i; i--) {
@@ -131,12 +128,15 @@ void __fastcall SUBTILE_AllocAndCompress(uint32_t * pRawData, int bIsRaw) {
       }
 
       pCompEndPtr = (char*)0xc00;
+    } else {
+      pCompressedBuf = SUBTILE_CompressToRLE((char*)pRawData, &local_8);
+      pCompEndPtr = local_8;
     }
 
     uint32_t* pSubTileEntry = (uint32_t*)D2_ALLOC_AT(0x14, ".\\SRC\\SubTile.cpp", 0x6e);
     *pSubTileEntry = 0;
     memset(pSubTileEntry + 1, 0, 4 * sizeof(pSubTileEntry[0]));
-    if ((int)pCompEndPtr < 0x10000) {
+    if ((int)pCompEndPtr <= 0xffff) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x70);
       exit(-1);
     }
@@ -226,7 +226,7 @@ char * __stdcall SUBTILE_ConvertRGBToIndexed(char * pSrcRGBData, uint32_t nRGBDa
 
     memset(pIndexedBuf, 0, nAllocSize);
     nRGBDataSize = 0;
-    if (0 >= (int)nAllocSize) {
+    if ((int)nAllocSize <= 0) {
       return (char*)pIndexedBuf;
     }
 
@@ -260,7 +260,7 @@ static BOOL SUBTILE_CheckIfIsometricEmpty(int32_t pSubTileData) {
     do {
       int iCol;
       iCol = 0;
-      if (0 < nRowWidth) {
+      if (nRowWidth > 0) {
         do {
           if (*(char*)(nXOff + pSubTileData + iCol) == '\0') {
             return 1;
@@ -323,7 +323,7 @@ static void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char
             *pDst = cZeroCount;
             pDst[1] = (char)nNonZeroLen;
             pDst += 2;
-            if (0 < nNonZeroLen) {
+            if (nNonZeroLen > 0) {
               do {
                 *pDst = *pPixelData;
                 pDst++;
@@ -350,24 +350,24 @@ static void __stdcall SUBTILE_CompressIsometricShape(int32_t pSubTileEntry, char
       } while (iRow < 0xf);
 
       nAllocSize = (int)pDst - (int)pWorkBuf;
-      if ((int)nAllocSize < 0x10000) {
-        nErrorAddr = D2_ALLOC_AT(nAllocSize, ".\\SRC\\SubTile.cpp", 0x169);
-        if (!nErrorAddr) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16a);
-          exit(-1);
-        }
-
-        memset(nErrorAddr, 0, nAllocSize);
-        memcpy(nErrorAddr, pWorkBuf, nAllocSize);
-        *(uint16_t*)(pSubTileEntry + 8) |= 5;
-        *(void**)(pSubTileEntry + 0x10) = (void*)nErrorAddr;
-        *(short int*)(pSubTileEntry + 10) = (short int)nAllocSize;
-        D2_FREE_AT(pWorkBuf, ".\\SRC\\SubTile.cpp", 0x176);
-        return;
-      } else {
+      if ((int)nAllocSize >= 0x10000) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
         exit(-1);
       }
+
+      nErrorAddr = D2_ALLOC_AT(nAllocSize, ".\\SRC\\SubTile.cpp", 0x169);
+      if (!nErrorAddr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16a);
+        exit(-1);
+      }
+
+      memset(nErrorAddr, 0, nAllocSize);
+      memcpy(nErrorAddr, pWorkBuf, nAllocSize);
+      *(uint16_t*)(pSubTileEntry + 8) |= 5;
+      *(void**)(pSubTileEntry + 0x10) = (void*)nErrorAddr;
+      *(short int*)(pSubTileEntry + 10) = (short int)nAllocSize;
+      D2_FREE_AT(pWorkBuf, ".\\SRC\\SubTile.cpp", 0x176);
+      return;
     }
 }
 
@@ -411,10 +411,10 @@ void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIn
     do {
       if (*pPixel != '\0') {
         BVar1 = SUBTILE_CheckIfIsometricEmpty((int32_t)pMemoryToFree);
-        if (!BVar1) {
-          SUBTILE_ExtractIsometricPixels(pDstSubTile, (int32_t)pMemoryToFree);
-        } else {
+        if (BVar1) {
           SUBTILE_CompressIsometricShape(pDstSubTile, (char*)pMemoryToFree);
+        } else {
+          SUBTILE_ExtractIsometricPixels(pDstSubTile, (int32_t)pMemoryToFree);
         }
 
         D2_FREE_AT(pMemoryToFree, ".\\SRC\\SubTile.cpp", 0x1c7);
@@ -434,10 +434,10 @@ void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIn
 void __fastcall SUBTILE_RecompressExisting(int32_t pSubTileEntry) {
     char* pMemoryToFree = *(char**)(pSubTileEntry + 0x10);
     BOOL iVar1 = SUBTILE_CheckIfIsometricEmpty((int32_t)pMemoryToFree);
-    if (!iVar1) {
-      SUBTILE_ExtractIsometricPixels(pSubTileEntry, (int32_t)pMemoryToFree);
-    } else {
+    if (iVar1) {
       SUBTILE_CompressIsometricShape(pSubTileEntry, pMemoryToFree);
+    } else {
+      SUBTILE_ExtractIsometricPixels(pSubTileEntry, (int32_t)pMemoryToFree);
     }
 
     D2_FREE_AT(pMemoryToFree, ".\\SRC\\SubTile.cpp", 0x1de);

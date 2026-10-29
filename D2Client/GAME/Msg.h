@@ -155,7 +155,7 @@ void __fastcall NET_D2GS_CLIENT_Send_INT(uint8_t nId, int32_t nParam);
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2);
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT(uint8_t nPacketId, int32_t nArg1, int32_t nArg2, int32_t nArg3);
 void __fastcall NET_D2GS_CLIENT_Send_INT_INT_INT_INT(uint8_t nPacketId, int32_t nUnitType, int32_t nUnitGUID, int32_t nTargetX, int32_t nTargetY);
-void __fastcall NET_D2GS_CLIENT_Send_0x5D(uint8_t nActionType, uint32_t nPlayerGUID, int32_t bToggle);
+void __fastcall NET_D2GS_CLIENT_Send_0x5D(int nActionType, uint32_t nPlayerGUID, int32_t bToggle);
 void __fastcall NET_D2GS_CLIENT_Send_0x5E(uint8_t nActionType, int32_t nPlayerGUID);
 void __fastcall NET_D2GS_CLIENT_Send_Chat(struct D2ChatPacketBuildStrc * pChatPacket);
 void __fastcall NET_D2GS_CLIENT_Send_0x66(void * pData, uint32_t nLen);

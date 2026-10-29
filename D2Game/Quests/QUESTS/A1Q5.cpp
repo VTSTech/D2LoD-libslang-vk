@@ -73,47 +73,47 @@ namespace D2Game::Quests::QUESTS::A1Q5 {
 static BOOL __stdcall Q05_RemovePlayerFromTrackingList(int32_t nListSelector, int32_t nListBase, int32_t nPlayerGUID) {
     uint32_t nListCount;
     int i = 0;
-    if (!nListSelector) {
-      nListCount = (uint32_t)*(uint16_t*)(nListBase + 0x30);
+    if (nListSelector) {
+      nListCount = (uint32_t)*(uint16_t*)(nListBase + 100);
       if (!nListCount) {
         return 0;
       }
 
+      int* pListEntry = (int*)(nListBase + 0x34);
       do {
-        if (*(int*)(nListBase + i * 4) == nPlayerGUID) {
+        if (*pListEntry == nPlayerGUID) {
           if (i != nListCount - 1) {
-            *(uint32_t*)(nListBase + i * 4) = *(uint32_t*)(nListBase - 4 + nListCount * 4);
+            *(uint32_t*)(nListBase + 0x34 + i * 4) = *(uint32_t*)(nListBase + 0x30 + nListCount * 4);
           }
 
-          (*(short int*)(nListBase + 0x30))--;
+          (*(short int*)(nListBase + 100))--;
           return 1;
         }
 
         i++;
-      } while (i < (int)(uint32_t)*(uint16_t*)(nListBase + 0x30));
+        pListEntry++;
+      } while (i < (int)(uint32_t)*(uint16_t*)(nListBase + 100));
 
       return 0;
     }
 
-    nListCount = (uint32_t)*(uint16_t*)(nListBase + 100);
+    nListCount = (uint32_t)*(uint16_t*)(nListBase + 0x30);
     if (!nListCount) {
       return 0;
     }
 
-    int* pListEntry = (int*)(nListBase + 0x34);
     do {
-      if (*pListEntry == nPlayerGUID) {
+      if (*(int*)(nListBase + i * 4) == nPlayerGUID) {
         if (i != nListCount - 1) {
-          *(uint32_t*)(nListBase + 0x34 + i * 4) = *(uint32_t*)(nListBase + 0x30 + nListCount * 4);
+          *(uint32_t*)(nListBase + i * 4) = *(uint32_t*)(nListBase - 4 + nListCount * 4);
         }
 
-        (*(short int*)(nListBase + 100))--;
+        (*(short int*)(nListBase + 0x30))--;
         return 1;
       }
 
       i++;
-      pListEntry++;
-    } while (i < (int)(uint32_t)*(uint16_t*)(nListBase + 100));
+    } while (i < (int)(uint32_t)*(uint16_t*)(nListBase + 0x30));
 
     return 0;
 }
@@ -122,7 +122,19 @@ static BOOL __stdcall Q05_RemovePlayerFromTrackingList(int32_t nListSelector, in
 uint32_t __stdcall QUEST_IsPlayerGUIDInTrackingList(D2QuestDataA1Q5Strc * pListBase, int32_t nListSelector, int32_t nPlayerGUID) {
     int32_t* pListEntry;
     int i = 0;
-    if (!nListSelector) {
+    if (nListSelector) {
+      if (pListBase->nPlayersForRewardCount) {
+        pListEntry = pListBase->aPlayersForRewardGUIDs;
+        do {
+          if (*pListEntry == nPlayerGUID) {
+            return 1;
+          }
+
+          i++;
+          pListEntry++;
+        } while (i < (int)(uint32_t)pListBase->nPlayersForRewardCount);
+      }
+    } else {
       if (pListBase->nPlayersInTowerCount) {
         do {
           if (pListBase->aPlayersInTowerGUIDs[i] == nPlayerGUID) {
@@ -134,16 +146,6 @@ uint32_t __stdcall QUEST_IsPlayerGUIDInTrackingList(D2QuestDataA1Q5Strc * pListB
 
         return 0;
       }
-    } else if (pListBase->nPlayersForRewardCount) {
-      pListEntry = pListBase->aPlayersForRewardGUIDs;
-      do {
-        if (*pListEntry == nPlayerGUID) {
-          return 1;
-        }
-
-        i++;
-        pListEntry++;
-      } while (i < (int)(uint32_t)pListBase->nPlayersForRewardCount);
     }
 
     return 0;
@@ -283,7 +285,7 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         while (*pStoneGUIDEntry != nPlayerGuid) {
           iStoneIdx++;
           pStoneGUIDEntry++;
-          if ((int)(uint32_t)pQuestSpecific->nPlayersForRewardCount <= iStoneIdx) {
+          if (iStoneIdx >= (int)(uint32_t)pQuestSpecific->nPlayersForRewardCount) {
             return;
           }
         }
@@ -292,7 +294,7 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         while (*pStoneGUIDBase != nPlayerGuid) {
           iStoneIdx++;
           pStoneGUIDBase++;
-          if ((int)(uint32_t)pQuestSpecific->nPlayersForRewardCount <= iStoneIdx) {
+          if (iStoneIdx >= (int)(uint32_t)pQuestSpecific->nPlayersForRewardCount) {
             return;
           }
         }
@@ -357,7 +359,7 @@ void __fastcall Q05_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 
     while (pQuestSpecific->aPlayersInTowerGUIDs[i] != nPlayerGUID) {
       i++;
-      if ((int)(uint32_t)pQuestSpecific->nPlayersInTowerCount <= i) {
+      if (i >= (int)(uint32_t)pQuestSpecific->nPlayersInTowerCount) {
         return;
       }
     }
@@ -409,7 +411,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     D2QuestDataA1Q5Strc* pQuestSpecific;
     pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q5;
-    if (3 < pQuestData->nStateFlag) {
+    if (pQuestData->nStateFlag >= 4) {
       i = 0;
       if (pQuestSpecific->nPlayersForRewardCount) {
         pListEntry = pQuestSpecific->aPlayersForRewardGUIDs;
@@ -430,7 +432,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
       while (pQuestSpecific->aPlayersInTowerGUIDs[i] != nPlayerGUID) {
         i++;
-        if ((int)(uint32_t)pQuestSpecific->nPlayersInTowerCount <= i) {
+        if (i >= (int)(uint32_t)pQuestSpecific->nPlayersInTowerCount) {
           return;
         }
       }
@@ -458,7 +460,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
       while (pQuestSpecific->aPlayersInTowerGUIDs[i] != nPlayerGUID) {
         i++;
-        if ((int)(uint32_t)pQuestSpecific->nPlayersInTowerCount <= i) {
+        if (i >= (int)(uint32_t)pQuestSpecific->nPlayersInTowerCount) {
           return;
         }
       }
@@ -469,7 +471,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipLineIdx == -1) {
         return;
       }
-      if (4 < nGossipLineIdx) {
+      if (nGossipLineIdx >= 5) {
         return;
       }
     }
@@ -555,7 +557,7 @@ BOOL __fastcall OBJOP_A1Q5_ActivateCairnStone(D2ObjectOperateFnArg * pOperation)
     }
 
     QUEST_SendNpcInfoPacket(pOperation->pAttacker, pOperation->sArg.pVictim, 0x7f);
-    if (pQuestData->nStateFlag >= 2) {
+    if (pQuestData->nStateFlag > 1) {
       return 0;
     }
 
@@ -680,7 +682,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x267);
         nIndex = 3;
       } else {
-        if (3 < pQuestData->nStateFlag) {
+        if (pQuestData->nStateFlag > 3) {
           return;
         }
         if (pQuestData->nStateFlagPrev != 1) {
@@ -693,7 +695,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       if (nIndex != 0x19) {
         goto handle_left_town;
       }
-      if (3 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 4) {
         return;
       }
       if (pQuestData->nStateFlagPrev == 2) {
@@ -724,7 +726,12 @@ void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * 
     if (bQuestState == 1) {
       return;
     }
-    if (!nAreaFlag) {
+    if (nAreaFlag) {
+      if (pQuestData->nStateFlag == 2 || pQuestData->nStateFlag == 3) {
+        D2Common::QuestRecord::SetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+        return;
+      }
+    } else {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
       if (bQuestState == 1 && pQuestData->nStateFlag != 3) {
         QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x2c1);
@@ -732,9 +739,6 @@ void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * 
         QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q05_NotifyQuestStateToPlayer, true);
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q05_SyncQuestStepToPlayer);
       }
-    } else if (pQuestData->nStateFlag == 2 || pQuestData->nStateFlag == 3) {
-      D2Common::QuestRecord::SetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      return;
     }
 }
 
@@ -744,18 +748,18 @@ bool __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pSeqQuestData) {
-      return false;
+    if (pSeqQuestData) {
+      BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e0);
+        exit(-1);
+      }
+
+      bool byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+      return byTmp;
     }
 
-    BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e0);
-      exit(-1);
-    }
-
-    bool byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-    return byTmp;
+    return false;
 }
 
 bool __fastcall Q05_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
@@ -820,7 +824,7 @@ void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestG
     BOOL bCompleted;
     D2BitBufferStrc* pBitBuffer;
     int i = 0;
-    if (!pQuestGUIDBase->nPlayerCount) {
+    if ((uint16_t)pQuestGUIDBase->nPlayerCount <= 0) {
       return;
     }
 
@@ -866,7 +870,7 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_
 
     int i;
     i = 0;
-    if (!*(short int*)(nParam2 + 0x88)) {
+    if ((uint16_t)*(short int*)(nParam2 + 0x88) <= 0) {
       return;
     }
 
@@ -899,21 +903,21 @@ void __stdcall Q05_SpawnCountessDeathEffect(D2QuestDataStrc * pQuestData, int32_
 
         *(uint8_t*)(nParam2 + 0x119) = 1;
         eUnitType = pChestUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           nPosY = pChestUnit->pPath.pStaticPath->nPosY;
-        } else if (!pChestUnit->pPath.pDynamicPath) {
-          nPosY = 0;
-        } else {
+        } else if (pChestUnit->pPath.pDynamicPath) {
           nPosY = D2Common::PATH::DynamicPath::GetYPos(pChestUnit->pPath.pDynamicPath);
+        } else {
+          nPosY = 0;
         }
 
         eUnitType = pChestUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           nPosX = pChestUnit->pPath.pStaticPath->nPosX;
-        } else if (!pChestUnit->pPath.pDynamicPath) {
-          nPosX = 0;
-        } else {
+        } else if (pChestUnit->pPath.pDynamicPath) {
           nPosX = D2Common::PATH::DynamicPath::GetXPos(pChestUnit->pPath.pDynamicPath);
+        } else {
+          nPosX = 0;
         }
 
         pChestUnit = SKILLS::SkillsServer::SKILLS_CreateMissileAtTarget(pQuestData->pGame, pCountessDeathActor, SKILL_Attack, 1, MISSILE_Towerchestspawner, nPosX, nPosY);

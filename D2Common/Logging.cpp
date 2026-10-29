@@ -158,7 +158,7 @@ long STATLIST_BinarySearchStatById(int32_t nParam, int * pnParam) {
     int nMid;
     int nCount = (int)(short int)pnParam[1];
     int nLo = 0;
-    if (0 >= nCount) {
+    if (nCount <= 0) {
       return -1;
     }
 
@@ -166,7 +166,7 @@ long STATLIST_BinarySearchStatById(int32_t nParam, int * pnParam) {
       int nEntryKey;
       nMid = (nCount - nLo) / 2 + nLo;
       nEntryKey = *(int*)(*pnParam + nMid * 8);
-      if (nEntryKey < nParam) {
+      if (nParam > nEntryKey) {
         nLo = nMid + 1;
         nMid = nCount;
       } else if (nEntryKey <= nParam) {

@@ -112,7 +112,7 @@ int __fastcall SOUNDHDR_GetSoundField0x60(int32_t nSoundId) {
     if (!pTxtSounds) {
       return 0;
     }
-    if (!(-1 < nSoundId && nSoundId < nTxtSoundsSize)) {
+    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
       return *(volatile uint8_t*)0x60;
     }
 
@@ -123,7 +123,7 @@ uint8_t __fastcall SOUNDHDR_GetSoundGroupSize(int32_t nSoundId) {
     if (!pTxtSounds) {
       return '\0';
     }
-    if (!(-1 < nSoundId && nSoundId < nTxtSoundsSize)) {
+    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
       return *(volatile uint8_t*)0x3d;
     }
 
@@ -134,7 +134,7 @@ uint32_t __fastcall SOUNDHDR_GetSoundLoopFlag(int32_t nSoundId) {
     if (!pTxtSounds) {
       return 0;
     }
-    if (!(-1 < nSoundId && nSoundId < nTxtSoundsSize)) {
+    if (!(nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
       return (uint32_t)*(volatile uint8_t*)0x3e;
     }
 
@@ -142,7 +142,7 @@ uint32_t __fastcall SOUNDHDR_GetSoundLoopFlag(int32_t nSoundId) {
 }
 
 D2SoundEnvironTxt * __fastcall GetSoundEnvironLine(int32_t nSoundEnviron) {
-    if (!(pTxtSoundEnviron && -1 < nSoundEnviron && nSoundEnviron < nTxtSoundEnvironSize)) {
+    if (!(pTxtSoundEnviron && nSoundEnviron >= 0 && nSoundEnviron < nTxtSoundEnvironSize)) {
       return nullptr;
     }
 
@@ -407,105 +407,105 @@ void __stdcall TXT_AllocTxt_sounds_soundenviron() {
     soundenviron[0x16].nSize = 0;
     soundenviron[0x16].nOffset = 0;
     soundenviron[0x16].fpLinker = 0;
-    if (!pTxtSounds) {
-      uint8_t byMatCount;
-      if (pTxtSoundEnviron) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd);
-        exit(-1);
-      }
-
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPath, "%s\\sounds.txt", "DATA\\GLOBAL\\EXCEL");
-      nLine = 0x101;
-      szSourceFile = ".\\Sound\\SoundHdr.cpp";
-      pFileSize = &nFileSize;
-      pMpq = D2Win::Src::D2WinArchive::ReturnZero();
-      pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
-      pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
-      nTxtSoundsSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
-      pSounds = (D2SoundsTxt*)D2_ALLOC_AT(nTxtSoundsSize * 0x8e, ".\\Sound\\SoundHdr.cpp", 0x106);
-      pTxtSounds = pSounds;
-      memset(pSounds, 0, nTxtSoundsSize * 0x8e);
-      Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinExcel, sounds, pSounds->Filename, nTxtSoundsSize, 0x8e);
-      Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinExcel);
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPath, "%s\\soundenviron.txt", "DATA\\GLOBAL\\EXCEL");
-      nLine = 0x10d;
-      szSourceFile = ".\\Sound\\SoundHdr.cpp";
-      pFileSize = &nFileSize;
-      pMpq = D2Win::Src::D2WinArchive::ReturnZero();
-      pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
-      pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
-      nTxtSoundEnvironSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
-      pSoundEnviron = (D2SoundEnvironTxt*)D2_ALLOC_AT(nTxtSoundEnvironSize * 0x58, ".\\Sound\\SoundHdr.cpp", 0x112);
-      pTxtSoundEnviron = pSoundEnviron;
-      memset(pSoundEnviron, 0, nTxtSoundEnvironSize * 0x58);
-      Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinExcel, soundenviron, (char*)pSoundEnviron, nTxtSoundEnvironSize, 0x58);
-      Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinExcel);
-      nLineIdx = 1;
-      nPrevLine = 0;
-      nGroupSize = 1;
-      if (1 < (int)nTxtSoundsSize) {
-        pSoundRow = &pTxtSounds[1].Group_Size;
-        do {
-          if (!nPrevLine || nLineIdx < nPrevLine || (int)(nGroupSize + nPrevLine) <= nLineIdx) {
-            *(int*)(pSoundRow + 0x23) = nLineIdx;
-          } else {
-            *(int*)(pSoundRow + 0x23) = nPrevLine;
-          }
-          if (!*pSoundRow) {
-            *pSoundRow = 1;
-          } else {
-            nGroupSize = (uint32_t)*pSoundRow;
-            nPrevLine = nLineIdx;
-          }
-
-          nMatIdx = 0;
-          do {
-            byMatCount = (uint8_t)nMatIdx;
-            if (*(int*)(pSoundRow + nMatIdx * 4 + 0x17) == -1) {
-              break;
-            }
-
-            byMatCount++;
-            nMatIdx = (uint32_t)byMatCount;
-          } while (byMatCount < 3);
-
-          pSoundRow[0x43] = byMatCount;
-          nLineIdx++;
-          pSoundRow += 0x8e;
-        } while (nLineIdx < (int)nTxtSoundsSize);
-      }
-
-      nMaxSong = 0;
-      gnSoundIdRangeMax = 0;
-      pEnvironRow = pTxtSoundEnviron;
-      gpSoundHdrGlobal = nTxtSoundsSize;
-      nEnvRemaining = nTxtSoundEnvironSize;
-      if (0 < (int)nTxtSoundEnvironSize) {
-        do {
-          nSong = pEnvironRow->Song;
-          if (0 < (int)nSong) {
-            if ((int)nSong < (int)gpSoundHdrGlobal) {
-              gpSoundHdrGlobal = nSong;
-            }
-            if ((int)nMaxSong < (int)nSong) {
-              nMaxSong = nSong;
-            }
-          }
-
-          nEnvRemaining--;
-          pEnvironRow++;
-          gnSoundIdRangeMax = nMaxSong;
-        } while (nEnvRemaining);
-      }
-
-      nMaxSong = (gnSoundIdRangeMax - gpSoundHdrGlobal + 1) * 4;
-      pSoundChannelDataArray = D2_ALLOC_AT(nMaxSong, ".\\Sound\\SoundHdr.cpp", 0x147);
-      memset(pSoundChannelDataArray, 0, nMaxSong);
-      return;
-    } else {
+    if (pTxtSounds) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc);
       exit(-1);
     }
+
+    uint8_t byMatCount;
+    if (pTxtSoundEnviron) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd);
+      exit(-1);
+    }
+
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPath, "%s\\sounds.txt", "DATA\\GLOBAL\\EXCEL");
+    nLine = 0x101;
+    szSourceFile = ".\\Sound\\SoundHdr.cpp";
+    pFileSize = &nFileSize;
+    pMpq = D2Win::Src::D2WinArchive::ReturnZero();
+    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
+    pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
+    nTxtSoundsSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
+    pSounds = (D2SoundsTxt*)D2_ALLOC_AT(nTxtSoundsSize * 0x8e, ".\\Sound\\SoundHdr.cpp", 0x106);
+    pTxtSounds = pSounds;
+    memset(pSounds, 0, nTxtSoundsSize * 0x8e);
+    Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinExcel, sounds, pSounds->Filename, nTxtSoundsSize, 0x8e);
+    Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinExcel);
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPath, "%s\\soundenviron.txt", "DATA\\GLOBAL\\EXCEL");
+    nLine = 0x10d;
+    szSourceFile = ".\\Sound\\SoundHdr.cpp";
+    pFileSize = &nFileSize;
+    pMpq = D2Win::Src::D2WinArchive::ReturnZero();
+    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
+    pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
+    nTxtSoundEnvironSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
+    pSoundEnviron = (D2SoundEnvironTxt*)D2_ALLOC_AT(nTxtSoundEnvironSize * 0x58, ".\\Sound\\SoundHdr.cpp", 0x112);
+    pTxtSoundEnviron = pSoundEnviron;
+    memset(pSoundEnviron, 0, nTxtSoundEnvironSize * 0x58);
+    Fog::Src::Excel::TXT_ParseDataAndPutIntoStructure(pBinExcel, soundenviron, (char*)pSoundEnviron, nTxtSoundEnvironSize, 0x58);
+    Fog::Src::Excel::TXT_FreeBinFieldExcel(pBinExcel);
+    nLineIdx = 1;
+    nPrevLine = 0;
+    nGroupSize = 1;
+    if (1 < (int)nTxtSoundsSize) {
+      pSoundRow = &pTxtSounds[1].Group_Size;
+      do {
+        if (!nPrevLine || nLineIdx < nPrevLine || nLineIdx >= (int)(nGroupSize + nPrevLine)) {
+          *(int*)(pSoundRow + 0x23) = nLineIdx;
+        } else {
+          *(int*)(pSoundRow + 0x23) = nPrevLine;
+        }
+        if (*pSoundRow) {
+          nGroupSize = (uint32_t)*pSoundRow;
+          nPrevLine = nLineIdx;
+        } else {
+          *pSoundRow = 1;
+        }
+
+        nMatIdx = 0;
+        do {
+          byMatCount = (uint8_t)nMatIdx;
+          if (*(int*)(pSoundRow + nMatIdx * 4 + 0x17) == -1) {
+            break;
+          }
+
+          byMatCount++;
+          nMatIdx = (uint32_t)byMatCount;
+        } while (byMatCount < 3);
+
+        pSoundRow[0x43] = byMatCount;
+        nLineIdx++;
+        pSoundRow += 0x8e;
+      } while (nLineIdx < (int)nTxtSoundsSize);
+    }
+
+    nMaxSong = 0;
+    gnSoundIdRangeMax = 0;
+    pEnvironRow = pTxtSoundEnviron;
+    gpSoundHdrGlobal = nTxtSoundsSize;
+    nEnvRemaining = nTxtSoundEnvironSize;
+    if (0 < (int)nTxtSoundEnvironSize) {
+      do {
+        nSong = pEnvironRow->Song;
+        if (0 < (int)nSong) {
+          if ((int)nSong < (int)gpSoundHdrGlobal) {
+            gpSoundHdrGlobal = nSong;
+          }
+          if ((int)nSong > (int)nMaxSong) {
+            nMaxSong = nSong;
+          }
+        }
+
+        nEnvRemaining--;
+        pEnvironRow++;
+        gnSoundIdRangeMax = nMaxSong;
+      } while (nEnvRemaining);
+    }
+
+    nMaxSong = (gnSoundIdRangeMax - gpSoundHdrGlobal + 1) * 4;
+    pSoundChannelDataArray = D2_ALLOC_AT(nMaxSong, ".\\Sound\\SoundHdr.cpp", 0x147);
+    memset(pSoundChannelDataArray, 0, nMaxSong);
+    return;
 }
 
 void __fastcall SOUNDHDR_Init(uint32_t bBackgroundActive) {
@@ -527,7 +527,7 @@ void __fastcall SOUNDHDR_Init(uint32_t bBackgroundActive) {
 }
 
 void __fastcall SOUNDHDR_AdjustReferenceCount(int32_t nSoundId, int32_t nDelta) {
-    if (!(nSoundId && pTxtSounds && -1 < nSoundId && nSoundId < nTxtSoundsSize)) {
+    if (!(nSoundId && pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
       return;
     }
 
@@ -544,10 +544,10 @@ void __fastcall SOUNDHDR_AdjustReferenceCount(int32_t nSoundId, int32_t nDelta) 
     D2SoundsTxt* pGroupSound = pTxtSounds + nGroupIdx;
     do {
       D2SoundsTxt* pCurSound;
-      if (nGroupIdx < 0 || (pCurSound = pGroupSound , nTxtSoundsSize <= nGroupIdx)) {
+      if (nGroupIdx < 0 || (pCurSound = pGroupSound , nGroupIdx >= nTxtSoundsSize)) {
         pCurSound = 0;
       }
-      if (!pCurSound->nRefCount && nDelta == -1) {
+      if ((uint32_t)pCurSound->nRefCount <= 0 && nDelta == -1) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1dc);
         exit(-1);
       }
@@ -560,7 +560,7 @@ void __fastcall SOUNDHDR_AdjustReferenceCount(int32_t nSoundId, int32_t nDelta) 
 
 void __fastcall SOUNDHDR_ClearReferenceCounts(eD2Sounds eSound) {
     int nSoundsCount = nTxtSoundsSize;
-    if (!(eSound != SOUND_NONE && pTxtSounds && -1 < (int)eSound && (int)eSound < nTxtSoundsSize)) {
+    if (!(eSound != SOUND_NONE && pTxtSounds && (int)eSound >= 0 && (int)eSound < nTxtSoundsSize)) {
       return;
     }
 
@@ -577,7 +577,7 @@ void __fastcall SOUNDHDR_ClearReferenceCounts(eD2Sounds eSound) {
     D2SoundsTxt* pGroupSound = pTxtSounds + nGroupIdx;
     do {
       D2SoundsTxt* pCurSound;
-      if (nGroupIdx < 0 || (pCurSound = pGroupSound , nSoundsCount <= nGroupIdx)) {
+      if (nGroupIdx < 0 || (pCurSound = pGroupSound , nGroupIdx >= nSoundsCount)) {
         pCurSound = 0;
       }
 
@@ -590,7 +590,7 @@ void __fastcall SOUNDHDR_ClearReferenceCounts(eD2Sounds eSound) {
 // @sourcefile .\Sound\SoundHdr.cpp
 void __fastcall SOUNDHDR_FreeSoundBuffer(int32_t nSoundId) {
     D2SoundsTxt* pSound;
-    if (!pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId) {
+    if (!pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize) {
       pSound = 0;
     } else {
       pSound = pTxtSounds + nSoundId;
@@ -642,7 +642,7 @@ BOOL __stdcall SOUNDHDR_EvictLeastRecentlyUsed(int32_t nBytesNeeded, int32_t bMu
       do {
         if (pLRUNode) {
           nId = *pLRUNode;
-          if (!pSoundsBase || nId < 0 || nTxtSoundsSize <= nId) {
+          if (!pSoundsBase || nId < 0 || nId >= nTxtSoundsSize) {
             pSound = 0;
           } else {
             pSound = pSoundsBase + nId;
@@ -662,7 +662,7 @@ BOOL __stdcall SOUNDHDR_EvictLeastRecentlyUsed(int32_t nBytesNeeded, int32_t bMu
 
         nPass++;
         pLRUNode = (int*)gpSoundLRUListHead;
-        if (1 < nPass) {
+        if (nPass > 1) {
           break;
         }
       } while (true);
@@ -674,7 +674,7 @@ BOOL __stdcall SOUNDHDR_EvictLeastRecentlyUsed(int32_t nBytesNeeded, int32_t bMu
 }
 
 float __fastcall SOUNDHDR_GetFalloffMin(int32_t nSoundId) {
-    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId ? 0 : pTxtSounds + nSoundId;
+    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize ? 0 : pTxtSounds + nSoundId;
     switch (pSound->Falloff) {
       case 2:
         return 200.0;
@@ -688,7 +688,7 @@ float __fastcall SOUNDHDR_GetFalloffMin(int32_t nSoundId) {
 }
 
 float __fastcall SOUNDHDR_GetFalloffMax(int32_t nSoundId) {
-    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId ? 0 : pTxtSounds + nSoundId;
+    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize ? 0 : pTxtSounds + nSoundId;
     switch (pSound->Falloff) {
       case 0:
         return 400.0;
@@ -711,22 +711,22 @@ int32_t __fastcall SOUNDHDR_RandomizeSoundFromGroup(int32_t nSoundId) {
     if (!pTxtSounds) {
       return nSoundId;
     }
-    if (nSoundId < 0 || nTxtSoundsSize <= nSoundId) {
+    if (nSoundId < 0 || nSoundId >= nTxtSoundsSize) {
       pSound = 0;
     } else {
       pSound = pTxtSounds + nSoundId;
     }
 
     uint8_t byGroupSize = pSound->Group_Size;
-    if (1 >= byGroupSize) {
+    if (byGroupSize <= 1) {
       return nSoundId;
     }
 
     int nHistDepth = byGroupSize - 1;
-    if (1 < nHistDepth) {
+    if (nHistDepth >= 2) {
       nHistDepth = 2;
     }
-    if (byGroupSize < 4) {
+    if (byGroupSize <= 3) {
       nRoll = _Utils::RollRandomNumerUpToArgument(byGroupSize + 1);
       if (!nRoll) {
         nHistDepth--;
@@ -738,7 +738,7 @@ int32_t __fastcall SOUNDHDR_RandomizeSoundFromGroup(int32_t nSoundId) {
       nRoll = _Utils::RollRandomNumerUpToArgument((uint32_t)pSound->Group_Size);
       nPickedId = nRoll + nSoundId;
       nHistIdx = 0;
-      if (nHistDepth < 1) {
+      if (nHistDepth <= 0) {
         return nPickedId;
       }
 
@@ -746,7 +746,7 @@ int32_t __fastcall SOUNDHDR_RandomizeSoundFromGroup(int32_t nSoundId) {
       while (nPickedId != *pHistEntry) {
         nHistIdx++;
         pHistEntry++;
-        if (nHistDepth <= nHistIdx) {
+        if (nHistIdx >= nHistDepth) {
           return nPickedId;
         }
       }
@@ -761,12 +761,12 @@ void __fastcall SOUNDHDR_BuildSoundPath(int32_t nSoundId, uint32_t * pszOutPath)
     char* pszDst;
     uint32_t nDwordCount;
     char cChar;
-    if (!pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId) {
+    if (!pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize) {
       pSound = 0;
     } else {
       pSound = pTxtSounds + nSoundId;
     }
-    if (nSoundId - 0xb76U < 0x6bb) {
+    if (nSoundId - 0xb76U <= 0x6ba) {
       *pszOutPath = 0x41544144;
       memcpy((char*)(pszOutPath + 1), "\\LOC", 4);
       *(uint16_t*)(pszOutPath + 2) = 0x4c41;
@@ -776,7 +776,7 @@ void __fastcall SOUNDHDR_BuildSoundPath(int32_t nSoundId, uint32_t * pszOutPath)
       memcpy((char*)(pszOutPath + 1), "\\GLO", 4);
       memcpy((char*)(pszOutPath + 2), "BAL", 4);
     }
-    if (nSoundId - 0x1231U < 0x2a) {
+    if (nSoundId - 0x1231U <= 0x29) {
       pszDst = (char*)((int)pszOutPath - 1);
       do {
         pScanDwordEnd = pszDst;
@@ -840,7 +840,7 @@ void __fastcall SOUNDHDR_BuildSoundPath(int32_t nSoundId, uint32_t * pszOutPath)
 }
 
 void __fastcall SOUNDHDR_UpdateLRUTimestamp(int32_t nSoundId) {
-    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId ? 0 : pTxtSounds + nSoundId;
+    D2SoundsTxt* pSound = !pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize ? 0 : pTxtSounds + nSoundId;
     pSound->nLRUTimestamp = gnCurrentGameAudioVolume;
     D2Sound::D2SoundUntil::SOUND_sD2SoundSmp_Free((int**)&gpSoundLRUListHead, nSoundId);
     D2Sound::D2SoundUntil::SOUNDUTIL_AppendToLinkedList(&gpSoundLRUListHead, nSoundId);
@@ -894,7 +894,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
     D2MPQFileStrc* pMpqFile;
     int32_t* pSoundDataBytes;
     char* szSourceFile;
-    if (!pTxtSounds || nSoundId < 0 || nTxtSoundsSize <= nSoundId) {
+    if (!pTxtSounds || nSoundId < 0 || nSoundId >= nTxtSoundsSize) {
       pSound = 0;
     } else {
       pSound = pTxtSounds + nSoundId;
@@ -933,7 +933,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
 
     DWORD nFileSize = Fog::Source::SFile::ERRORMANAGER_FGetFileSize(pMpqFile, (LPDWORD)0x0);
     Fog::Source::SFile::ERRORMANAGER_FCloseFile(pMpqFile);
-    if (gnSoundBufferMaxBytes < gnSoundBufferBytesLoaded + nFileSize) {
+    if (gnSoundBufferBytesLoaded + nFileSize > gnSoundBufferMaxBytes) {
       BOOL BVar1;
       BVar1 = SOUNDHDR_EvictLeastRecentlyUsed(gnSoundBufferBytesLoaded - gnSoundBufferMaxBytes + nFileSize, bForceSyncLocal, bRespectRecency);
       if (!BVar1) {
@@ -982,14 +982,14 @@ void __fastcall SOUNDHDR_ProcessAsyncLoads(int32_t dwTick) {
     int nRowOffset;
     char* pSoundRow;
     uint32_t dwTickToStore = gdwLastSoundAsyncLoadTick;
-    if (pTxtSounds && (!dwTick || 0x18 < dwTick - gdwLastSoundAsyncLoadTick)) {
+    if (pTxtSounds && (!dwTick || dwTick - gdwLastSoundAsyncLoadTick >= 0x19)) {
       uint32_t bAsyncComplete;
       nRowIndex = 1;
       nRowOffset = 0x8e;
       do {
         pSoundRow = pTxtSounds[nRowIndex].Filename;
         if (!pTxtSounds[nRowIndex].nLoadState && (*(int*)(pSoundRow + 0x8a) || pSoundRow[0x4c])) {
-          if (!dwTick || gnSoundAsyncLoadCount < 0xf && 0xf9 < (uint32_t)(dwTick - gnSoundEvictedAudioVolume)) {
+          if (!dwTick || gnSoundAsyncLoadCount < 0xf && (uint32_t)(dwTick - gnSoundEvictedAudioVolume) >= 0xfa) {
             SOUNDHDR_LoadSoundFile(nRowIndex, (uint32_t)!dwTick, 1);
             if (*(int*)(pSoundRow + 0x86) == 1) {
               bAsyncComplete = Fog::Src::AsyncData::ASYNCDATA_IsComplete(*(D2AsyncData_Line0x128**)(pSoundRow + 0x82));
@@ -1010,7 +1010,7 @@ void __fastcall SOUNDHDR_ProcessAsyncLoads(int32_t dwTick) {
         nRowOffset += 0x8e;
         nRowIndex++;
         dwTickToStore = dwTick;
-      } while (nRowOffset < 0x65ae7);
+      } while (nRowOffset <= 0x65ae6);
     }
 
     gdwLastSoundAsyncLoadTick = dwTickToStore;
@@ -1048,29 +1048,29 @@ void __fastcall SOUNDHDR_UpdateRegistryVersion(int32_t nSoundHeaderIndex) {
     int dwRequiredVersion = gdwSoundHeaderCacheIndex[nSoundHeaderIndex].nCutsceneId;
     __frame0.dwVersionBuild = 0x22;
     int32_t bReadOk = Storm::Source::SReg::SRegLoadString("Diablo II", "Aux Battle.net", 0, szVersionString, 100);
-    if (!bReadOk) {
-      byCurrentVersionFlag = 0x22;
-    } else {
+    if (bReadOk) {
       FID_conflict__sscanf(szVersionString, "%d.%d.%d.%d", &__frame0.nVersionMajor, &__frame0.nVersionMinor, &__frame0.nVersionRevision, (int*)&__frame0.dwVersionBuild);
-      if (!(__frame0.dwVersionBuild & 1)) {
+      if (__frame0.dwVersionBuild & 1) {
+        byCurrentVersionFlag = 7;
+      } else {
         if ((char)__frame0.dwVersionBuild < '\0') {
           byCurrentVersionFlag = 6;
-        } else if (!(__frame0.dwVersionBuild & 0x10)) {
-          if (!(__frame0.dwVersionBuild & 8)) {
-            if (!(__frame0.dwVersionBuild & 0x40)) {
-              byCurrentVersionFlag = ((__frame0.dwVersionBuild & 4) != 0) + 1;
-            } else {
-              byCurrentVersionFlag = 3;
-            }
-          } else {
-            byCurrentVersionFlag = 4;
-          }
-        } else {
+        } else if (__frame0.dwVersionBuild & 0x10) {
           byCurrentVersionFlag = 5;
+        } else {
+          if (__frame0.dwVersionBuild & 8) {
+            byCurrentVersionFlag = 4;
+          } else {
+            if (__frame0.dwVersionBuild & 0x40) {
+              byCurrentVersionFlag = 3;
+            } else {
+              byCurrentVersionFlag = ((__frame0.dwVersionBuild & 4) != 0) + 1;
+            }
+          }
         }
-      } else {
-        byCurrentVersionFlag = 7;
       }
+    } else {
+      byCurrentVersionFlag = 0x22;
     }
 
     switch (dwRequiredVersion) {

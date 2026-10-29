@@ -72,7 +72,7 @@ int64_t __stdcall SBIG_Accumulator_ComputeOffset(uint32_t nMultiplicand, uint32_
 static void BigBuffer_DecodeDataBytes(uint32_t * pnReadPos, uint8_t * pBuffer, uint32_t * pnValue, uint32_t nBufferLen) {
     *pnValue = 0;
     *pnReadPos = 0;
-    if (nBufferLen) {
+    if (nBufferLen > 0) {
       uint32_t byByte;
       do {
         byByte = (uint32_t)pBuffer[*pnReadPos];
@@ -105,11 +105,11 @@ int32_t __fastcall TSBaseArray_Ui_Subscript(int32_t pThis, int32_t nIndex) {
 // @oracle-method CONFIRMED. Identical body to the oracle's .Top__15TSBaseArray<Ui>Fv @1009c580 - last element, i.e. m_data + (m_count-1)*4.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 int32_t __fastcall TSBaseArray_Ui_Top(int32_t pArray) {
-    if (!*(int*)(pArray + 4)) {
-      return 0;
+    if (*(int*)(pArray + 4)) {
+      return *(int*)(pArray + 8) - 4 + *(int*)(pArray + 4) * 4;
     }
 
-    return *(int*)(pArray + 8) - 4 + *(int*)(pArray + 4) * 4;
+    return 0;
 }
 
 // @was SBIG_BitSet_GetWordAtOffset (pass 6, 2026.08.28)
@@ -132,20 +132,22 @@ uint32_t * __fastcall SBIG_BigBuffer_GetDataPtr(BigBuffer * pBitSet) {
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Zeroes m_alloc, m_count and m_data. The old infix Small was meaningless - the two functions it distinguished are two instantiations, not two sizes. SMem tag 0x708880.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall TSBaseArray_Uc_Constructor(BigBuffer * pBitSet) {
+BigBuffer * __fastcall TSBaseArray_Uc_Constructor(BigBuffer * pBitSet) {
     pBitSet->nCapacity = 0;
     pBitSet->nCount = 0;
     pBitSet->pData = 0;
+    return pBitSet;
 }
 
 // @was SBIG_BitSet_InitMedium (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Body identical to 00421020; second byte instantiation, SMem tag 0x70888c. The old infix Medium was likewise meaningless.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall TSBaseArray_UcAlt_Constructor(BigBuffer * pBitSet) {
+BigBuffer * __fastcall TSBaseArray_UcAlt_Constructor(BigBuffer * pBitSet) {
     pBitSet->nCapacity = 0;
     pBitSet->nCount = 0;
     pBitSet->pData = 0;
+    return pBitSet;
 }
 
 // @was SBIG_BitSet_RoundUpPow2_Max64 (pass 6, 2026.08.28)
@@ -263,10 +265,10 @@ void __thiscall TSFixedArray_Uc_ReallocData(TSGrowableArray_Uc * pBuffer, uint32
     if (!pOldBuffer) {
       return;
     }
-    if (pBuffer->nLen <= nNewSize) {
+    if (nNewSize >= pBuffer->nLen) {
       nNewSize = pBuffer->nLen;
     }
-    if (nNewSize) {
+    if (nNewSize > 0) {
       uint32_t uCopyIdx = 0;
       do {
         if (pBuffer->pData + uCopyIdx) {
@@ -329,11 +331,11 @@ uint32_t __stdcall TSGrowableArray_UcAlt_RoundToChunk(uint32_t nValue, uint32_t 
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 uint32_t __fastcall SBIG_BigBuffer_GetWord(BigBuffer * pThis, int32_t nOffset) {
     uint32_t uIndex = pThis->nStartWord + nOffset;
-    if (uIndex >= pThis->nCount) {
-      return 0;
+    if (uIndex < pThis->nCount) {
+      return pThis->pData[uIndex];
     }
 
-    return pThis->pData[uIndex];
+    return 0;
 }
 
 // @was SBIG_BitSet_Compare (pass 6, 2026.08.28)
@@ -352,14 +354,14 @@ int32_t __stdcall BigBuffer_Compare(BigBuffer * pBitSetA, BigBuffer * pBitSetB) 
     int32_t nResult = 0;
     do {
       int nWordB;
-      if (nIndexA < pBitSetA->nCount) {
-        nWordA = *(int*)(nByteOffsetA + (int)pBitSetA->pData);
-      } else {
-        if (nCountB <= nIndexB) {
+      if (!(nIndexA < pBitSetA->nCount)) {
+        if (nIndexB >= nCountB) {
           return nResult;
         }
 
         nWordA = 0;
+      } else {
+        nWordA = *(int*)(nByteOffsetA + (int)pBitSetA->pData);
       }
       if (nIndexB < nCountB) {
         nWordB = *(int*)(nByteOffsetB + (int)pBitSetB->pData);
@@ -433,7 +435,7 @@ int32_t __stdcall SBIG_BigBuffer_FindHighestBit(BigBuffer * pBitSet) {
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6: this is NOT BigBuffer IsOdd, despite the obvious temptation. The oracle's .IsOdd__FRC9BigBuffer @1009e4d0 has the OPPOSITE polarity and normalizes the leading zero limbs first, which this function does not do. The real IsOdd is BigBuffer_IsOdd 00422710, bound in pass 4. Do not rename this to IsOdd.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-BOOL __fastcall SBIG_BigBuffer_IsLowestBitClear(BigBuffer * pBitSet) {
+static BOOL __fastcall SBIG_BigBuffer_IsLowestBitClear(BigBuffer * pBitSet) {
     uint32_t uWord = pBitSet->nStartWord;
     if (pBitSet->nCount == uWord) {
       return 1;
@@ -443,11 +445,11 @@ BOOL __fastcall SBIG_BigBuffer_IsLowestBitClear(BigBuffer * pBitSet) {
     } else {
       uWord = 0;
     }
-    if (!(uWord & 1)) {
-      return 1;
+    if (uWord & 1) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // @was SBIG_BitSet_FindLowestBit (pass 6, 2026.08.28)
@@ -494,7 +496,7 @@ int32_t __stdcall SBIG_BigBuffer_FindLowestBit(BigBuffer * pBitSet) {
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Tail unchanged and unverified.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-static void SBIG_BigBuffer_GetFirstWord(uint32_t dwUnused, uint32_t * pOutWord, BigBuffer * pBitSet) {
+static void SBIG_BigBuffer_GetFirstWord(uint32_t * pOutWord, BigBuffer * pBitSet) {
     *pOutWord = 0;
     if (pBitSet->nStartWord < pBitSet->nCount) {
       *pOutWord = pBitSet->pData[pBitSet->nStartWord];
@@ -527,7 +529,7 @@ BOOL __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer
 // @caution Thunk onto SBIG_BigBuffer_GetFirstWord 00421510. The tail is misleading - this is not a dword-array cursor read; the correct tail is not established.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
 void __fastcall SBIG_ArrayDwordReadAtCursor(BigBuffer * pBigNum, uint32_t * pOutWord, uint32_t dwUnused) {
-    SBIG_BigBuffer_GetFirstWord(dwUnused, pOutWord, pBigNum);
+    SBIG_BigBuffer_GetFirstWord(pOutWord, pBigNum);
 }
 
 // @was SBIG_ArrayDwordAssignFromData (pass 6, 2026.08.28)
@@ -543,7 +545,7 @@ void __thiscall TSBaseArray_Ui_Copy(uint32_t * pArray, uint32_t nCount, uint32_t
     }
 
     uint32_t nIndex = 0;
-    if (nCount) {
+    if (nCount > 0) {
       uint32_t* puVar1;
       do {
         puVar1 = (uint32_t*)(pArray[2] + nIndex * 4);
@@ -565,7 +567,7 @@ void __thiscall TSBaseArray_Ui_Copy(uint32_t * pArray, uint32_t nCount, uint32_t
 // @struct The container header is +0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk. BigBuffer extends it with +0x10 m_offset, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 void __thiscall TSGrowableArray_Uc_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity) {
     uint32_t nNewSize = nAdditional + pArray[1];
-    if (*pArray >= nNewSize) {
+    if (nNewSize <= *pArray) {
       return;
     }
     if (bAlignToGranularity) {
@@ -626,10 +628,10 @@ void __thiscall TSFixedArray_Ui_ReallocData(uint32_t * pArray, uint32_t nCapacit
     if (!pOldBuffer) {
       return;
     }
-    if (pArray[1] <= nCapacity) {
+    if (nCapacity >= pArray[1]) {
       nCapacity = pArray[1];
     }
-    if (nCapacity) {
+    if (nCapacity > 0) {
       uint32_t nIndex = 0;
       do {
         pNewBuffer = (uint32_t*)(pArray[2] + nIndex * 4);
@@ -662,10 +664,10 @@ void __thiscall TSFixedArray_UcAlt_ReallocData(uint32_t * pArray, uint32_t nCapa
     if (!pOldBuffer) {
       return;
     }
-    if (pArray[1] <= nCapacity) {
+    if (nCapacity >= pArray[1]) {
       nCapacity = pArray[1];
     }
-    if (nCapacity) {
+    if (nCapacity > 0) {
       uint32_t nIndex = 0;
       do {
         if ((uint8_t*)(pArray[2] + nIndex)) {
@@ -710,7 +712,7 @@ void * __thiscall TSFixedArray_Ui_Assign(uint32_t * pArray, void * pSrcArray) {
 int32_t __fastcall SBIG_ArrayByteAppendData(uint32_t nCount, uint8_t * pSrc, uint32_t * pArray) {
     uint32_t nGranularity;
     uint32_t nNewSize = pArray[1] + nCount;
-    if (*pArray < nNewSize) {
+    if (nNewSize > *pArray) {
       nGranularity = pArray[3];
       if (!nGranularity) {
         nGranularity = TSGrowableArray_Uc_CalcChunkSize((BigBuffer*)pArray, nNewSize);
@@ -723,7 +725,7 @@ int32_t __fastcall SBIG_ArrayByteAppendData(uint32_t nCount, uint8_t * pSrc, uin
     }
 
     nGranularity = 0;
-    if (nCount) {
+    if (nCount > 0) {
       uint8_t* pSlot;
       do {
         pSlot = (uint8_t*)(pArray[2] + nGranularity + pArray[1]);
@@ -747,7 +749,7 @@ int32_t __fastcall SBIG_ArrayByteAppendData(uint32_t nCount, uint8_t * pSrc, uin
 int32_t __fastcall TSGrowableArray_Uc_New(uint32_t * pArray) {
     uint32_t nGranularity;
     uint32_t nNewSize = pArray[1] + 1;
-    if (*pArray < nNewSize) {
+    if (nNewSize > *pArray) {
       nGranularity = pArray[3];
       if (!nGranularity) {
         nGranularity = TSGrowableArray_Uc_CalcChunkSize((BigBuffer*)pArray, nNewSize);
@@ -770,7 +772,7 @@ int32_t __fastcall TSGrowableArray_Uc_New(uint32_t * pArray) {
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 void __thiscall TSGrowableArray_Uc_SetCount(uint32_t * pArray, uint32_t nNewCount) {
     uint32_t nNewSize;
-    if (pArray[1] < nNewCount && *pArray < nNewCount) {
+    if (nNewCount > pArray[1] && nNewCount > *pArray) {
       uint32_t nGranularity;
       nGranularity = pArray[3];
       if (!nGranularity) {
@@ -808,7 +810,7 @@ void __thiscall TSBaseArray_Uc_Copy(uint32_t * pArray, uint32_t nCount, uint8_t 
     }
 
     uint32_t nIndex = 0;
-    if (nCount) {
+    if (nCount > 0) {
       do {
         if ((uint8_t*)(pArray[2] + nIndex)) {
           *(uint8_t*)(pArray[2] + nIndex) = *pSrc;
@@ -835,7 +837,7 @@ void __thiscall TSBaseArray_UcAlt_Copy(uint32_t * pArray, uint32_t nCount, uint8
     }
 
     uint32_t nIndex = 0;
-    if (nCount) {
+    if (nCount > 0) {
       do {
         if ((uint8_t*)(pArray[2] + nIndex)) {
           *(uint8_t*)(pArray[2] + nIndex) = *pSrc;
@@ -855,7 +857,7 @@ void __thiscall TSBaseArray_UcAlt_Copy(uint32_t * pArray, uint32_t nCount, uint8
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 void __thiscall TSGrowableArray_Ui_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity) {
     uint32_t nNewSize = nAdditional + pArray[1];
-    if (*pArray >= nNewSize) {
+    if (nNewSize <= *pArray) {
       return;
     }
     if (bAlignToGranularity) {
@@ -878,7 +880,7 @@ void __thiscall TSGrowableArray_Ui_Reserve(uint32_t * pArray, int32_t nAdditiona
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 void __thiscall TSGrowableArray_UcAlt_Reserve(uint32_t * pArray, int32_t nAdditional, int32_t bAlignToGranularity) {
     uint32_t nNewSize = nAdditional + pArray[1];
-    if (*pArray >= nNewSize) {
+    if (nNewSize <= *pArray) {
       return;
     }
     if (bAlignToGranularity) {
@@ -916,7 +918,7 @@ static void BigBuffer_EncodeDataBytes(uint32_t nValue, TSGrowableArray_Uc * pByt
     uint32_t nMask;
     while (nValue) {
       nRequiredLen = pByteBuffer->nLen + 1;
-      if (pByteBuffer->nCapacity < nRequiredLen) {
+      if (nRequiredLen > pByteBuffer->nCapacity) {
         nGranularity = pByteBuffer->nGrowStep;
         if (!nGranularity) {
           if (nRequiredLen < 0x100) {
@@ -947,7 +949,7 @@ static void BigBuffer_EncodeDataBytes(uint32_t nValue, TSGrowableArray_Uc * pByt
     }
 
     nRequiredLen = pByteBuffer->nLen + 1;
-    if (pByteBuffer->nCapacity < nRequiredLen) {
+    if (nRequiredLen > pByteBuffer->nCapacity) {
       nGranularity = pByteBuffer->nGrowStep;
       if (!nGranularity) {
         nGranularity = TSGrowableArray_Uc_CalcChunkSize((BigBuffer*)pByteBuffer, nRequiredLen);
@@ -972,7 +974,7 @@ void __stdcall BigBuffer_ToBinaryAppend(TSGrowableArray_Uc * pByteBuffer, BigBuf
     uint32_t nWordValue = pBignum->nCount;
     uint32_t nWordCount = nWordValue - nOffsetWords;
     uint32_t nByteIndex = 0;
-    if (!(nWordCount & 0x3fffffff)) {
+    if ((uint32_t)(nWordCount & 0x3fffffff) <= 0) {
       return;
     }
 
@@ -988,7 +990,7 @@ void __stdcall BigBuffer_ToBinaryAppend(TSGrowableArray_Uc * pByteBuffer, BigBuf
       nWordValue >>= ((uint8_t)nByteIndex & 3) * '\b';
       if (nWordValue || (nByteIndex >> 2) + 1 < nWordCount) {
         nOffsetWords = pByteBuffer->nLen + 1;
-        if (pByteBuffer->nCapacity < nOffsetWords) {
+        if (nOffsetWords > pByteBuffer->nCapacity) {
           nWordCount = pByteBuffer->nGrowStep;
           if (!nWordCount) {
             nWordCount = TSGrowableArray_Uc_CalcChunkSize((BigBuffer*)pByteBuffer, nOffsetWords);
@@ -1057,12 +1059,12 @@ BigData * __fastcall SBIG_Constructor(BigData * pBigData) {
 
 void __fastcall SBIG_EnsureCapacity(uint32_t nIndex, int32_t bZeroFill, BigBuffer * pDwordArray) {
     uint32_t nNewCapacity;
-    if (pDwordArray->nCount > nIndex) {
+    if (nIndex < pDwordArray->nCount) {
       return;
     }
 
     uint32_t nValue = nIndex + 1;
-    if (pDwordArray->nCapacity < nValue) {
+    if (nValue > pDwordArray->nCapacity) {
       uint32_t nGranularity;
       nGranularity = pDwordArray->nGrowStep;
       if (!nGranularity) {
@@ -1089,7 +1091,7 @@ void __fastcall SBIG_EnsureCapacity(uint32_t nIndex, int32_t bZeroFill, BigBuffe
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}. Chunk cap = 256/sizeof(element).
 void __thiscall TSGrowableArray_Ui_SetCount(BigBuffer * pDwordArray, uint32_t nNewLen) {
     uint32_t nNewCapacity;
-    if (pDwordArray->nCount < nNewLen && pDwordArray->nCapacity < nNewLen) {
+    if (nNewLen > pDwordArray->nCount && nNewLen > pDwordArray->nCapacity) {
       uint32_t nGranularity;
       nGranularity = pDwordArray->nGrowStep;
       if (!nGranularity) {
@@ -1110,7 +1112,7 @@ void __thiscall TSGrowableArray_Ui_SetCount(BigBuffer * pDwordArray, uint32_t nN
 int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, uint32_t * pByteArray) {
     uint32_t i;
     uint32_t nNewLen = pByteArray[1] + nByteCount;
-    if (*pByteArray < nNewLen) {
+    if (nNewLen > *pByteArray) {
       i = pByteArray[3];
       if (!i) {
         i = TSGrowableArray_UcAlt_CalcChunkSize((BigBuffer*)pByteArray, nNewLen);
@@ -1123,7 +1125,7 @@ int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, ui
     }
 
     i = 0;
-    if (nByteCount) {
+    if (nByteCount > 0) {
       uint8_t* pDst;
       do {
         pDst = (uint8_t*)(pByteArray[2] + i + pByteArray[1]);
@@ -1143,12 +1145,12 @@ int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, ui
 void __fastcall SBIG_GrowToIndex(int32_t nIndex, BigBuffer * pDwordArray) {
     uint32_t nNewCapacity;
     uint32_t nTargetIndex = pDwordArray->nStartWord + nIndex;
-    if (pDwordArray->nCount > nTargetIndex) {
+    if (nTargetIndex < pDwordArray->nCount) {
       return;
     }
 
     uint32_t nNewLen = nTargetIndex + 1;
-    if (pDwordArray->nCapacity < nNewLen) {
+    if (nNewLen > pDwordArray->nCapacity) {
       uint32_t nGranularity;
       nGranularity = pDwordArray->nGrowStep;
       if (!nGranularity) {
@@ -1175,7 +1177,7 @@ int32_t __fastcall SBIG_GetPtrAtOffset(int32_t nIndex, BigBuffer * pBigNum) {
 void __fastcall SBIG_TrimToOffset(BigBuffer * pDwordArray) {
     uint32_t nNewCapacity;
     uint32_t nNewLen = pDwordArray->nStartWord;
-    if (pDwordArray->nCount < nNewLen && pDwordArray->nCapacity < nNewLen) {
+    if (nNewLen > pDwordArray->nCount && nNewLen > pDwordArray->nCapacity) {
       uint32_t nGranularity;
       nGranularity = pDwordArray->nGrowStep;
       if (!nGranularity) {
@@ -1196,7 +1198,7 @@ void __fastcall SBIG_TrimToOffset(BigBuffer * pDwordArray) {
 void __fastcall SBIG_GrowToIndexNoZero(int32_t nIndex, BigBuffer * pDwordArray) {
     uint32_t nNewCapacity;
     uint32_t nNewLen = pDwordArray->nStartWord + nIndex;
-    if (pDwordArray->nCount < nNewLen && pDwordArray->nCapacity < nNewLen) {
+    if (nNewLen > pDwordArray->nCount && nNewLen > pDwordArray->nCapacity) {
       uint32_t nGranularity;
       nGranularity = pDwordArray->nGrowStep;
       if (!nGranularity) {
@@ -1239,7 +1241,7 @@ void __fastcall SBIG_TrimLeadingZeros(BigBuffer * pDwordArray) {
       }
 
       nNewLen = pDwordArray->nCount - 1;
-      if (pDwordArray->nCount < nNewLen && pDwordArray->nCapacity < nNewLen) {
+      if (nNewLen > pDwordArray->nCount && nNewLen > pDwordArray->nCapacity) {
         nGranularity = pDwordArray->nGrowStep;
         if (!nGranularity) {
           nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDwordArray, nNewLen);
@@ -1288,9 +1290,9 @@ static void __stdcall BigBuffer_Add_Ui(uint32_t nCarry, BigBuffer * pSource, Big
       nSum = nCarry + nDestIndex;
       nCarry = (uint32_t)((uint32_t)((uint32_t)nCarry + (uint32_t)nDestIndex) < (uint32_t)nCarry);
       nDestIndex = pDest->nStartWord + i;
-      if (pDest->nCount <= nDestIndex) {
+      if (nDestIndex >= pDest->nCount) {
         nNewLen = nDestIndex + 1;
-        if (pDest->nCapacity < nNewLen) {
+        if (nNewLen > pDest->nCapacity) {
           nGranularity = pDest->nGrowStep;
           if (!nGranularity) {
             nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDest, nNewLen);
@@ -1312,7 +1314,7 @@ static void __stdcall BigBuffer_Add_Ui(uint32_t nCarry, BigBuffer * pSource, Big
     }
 
     nDestIndex = pDest->nStartWord + i;
-    if (pDest->nCount < nDestIndex && pDest->nCapacity < nDestIndex) {
+    if (nDestIndex > pDest->nCount && nDestIndex > pDest->nCapacity) {
       nNewLen = pDest->nGrowStep;
       if (!nNewLen) {
         nNewLen = TSGrowableArray_Ui_CalcChunkSize(pDest, nDestIndex);
@@ -1358,9 +1360,9 @@ static void __stdcall BigBuffer_Add(BigBuffer * pSourceA, BigBuffer * pSourceB, 
       nSum = nCarry + nWordB + nDestIndex;
       nCarry = (uint32_t)((uint32_t)((uint32_t)nWordB + (uint32_t)nDestIndex) < (uint32_t)nWordB) + (uint32_t)((uint32_t)((uint32_t)nCarry + (uint32_t)(nWordB + nDestIndex)) < (uint32_t)nCarry);
       nDestIndex = pDest->nStartWord + i;
-      if (pDest->nCount <= nDestIndex) {
+      if (nDestIndex >= pDest->nCount) {
         nWordB = nDestIndex + 1;
-        if (pDest->nCapacity < nWordB) {
+        if (nWordB > pDest->nCapacity) {
           nGranularity = pDest->nGrowStep;
           if (!nGranularity) {
             nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDest, nWordB);
@@ -1382,7 +1384,7 @@ static void __stdcall BigBuffer_Add(BigBuffer * pSourceA, BigBuffer * pSourceB, 
     }
 
     nDestIndex = pDest->nStartWord + i;
-    if (pDest->nCount < nDestIndex && pDest->nCapacity < nDestIndex) {
+    if (nDestIndex > pDest->nCount && nDestIndex > pDest->nCapacity) {
       nWordB = pDest->nGrowStep;
       if (!nWordB) {
         nWordB = TSGrowableArray_Ui_CalcChunkSize(pDest, nDestIndex);
@@ -1413,13 +1415,10 @@ static void __stdcall BigBuffer_And(BigBuffer * pSourceA, BigBuffer * pSourceB, 
     i = 0;
     do {
       nWordIndex = pSourceA->nStartWord + i;
-      if (nWordIndex < pSourceA->nCount) {
-        read_lhs_word:
-        nWordA = pSourceA->pData[nWordIndex];
-      } else {
-        if (pSourceB->nCount <= pSourceB->nStartWord + i) {
+      if (!(nWordIndex < pSourceA->nCount)) {
+        if (pSourceB->nStartWord + i >= pSourceB->nCount) {
           nWordIndex = pDest->nStartWord + i;
-          if (pDest->nCount < nWordIndex && pDest->nCapacity < nWordIndex) {
+          if (nWordIndex > pDest->nCount && nWordIndex > pDest->nCapacity) {
             nNewLen = pDest->nGrowStep;
             if (!nNewLen) {
               nNewLen = TSGrowableArray_Ui_CalcChunkSize(pDest, nWordIndex);
@@ -1441,6 +1440,9 @@ static void __stdcall BigBuffer_And(BigBuffer * pSourceA, BigBuffer * pSourceB, 
         }
 
         nWordA = 0;
+      } else {
+        read_lhs_word:
+        nWordA = pSourceA->pData[nWordIndex];
       }
 
       nWordIndex = pSourceB->nStartWord + i;
@@ -1451,9 +1453,9 @@ static void __stdcall BigBuffer_And(BigBuffer * pSourceA, BigBuffer * pSourceB, 
       }
 
       nWordIndex = pDest->nStartWord + i;
-      if (pDest->nCount <= nWordIndex) {
+      if (nWordIndex >= pDest->nCount) {
         nNewLen = nWordIndex + 1;
-        if (pDest->nCapacity < nNewLen) {
+        if (nNewLen > pDest->nCapacity) {
           nGranularity = pDest->nGrowStep;
           if (!nGranularity) {
             nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDest, nNewLen);
@@ -1483,7 +1485,7 @@ static void __stdcall BigBuffer_And(BigBuffer * pSourceA, BigBuffer * pSourceB, 
 static int32_t __stdcall BigBuffer_Compare_Ui(uint32_t nValue, BigBuffer * pBigIntArray) {
     SBIG_TrimLeadingZeros(pBigIntArray);
     uint32_t uVar1 = pBigIntArray->nStartWord;
-    if (1 < pBigIntArray->nCount - uVar1) {
+    if (pBigIntArray->nCount - uVar1 > 1) {
       return 1;
     }
     if (!(uVar1 < pBigIntArray->nCount && pBigIntArray->pData[uVar1])) {
@@ -1503,7 +1505,7 @@ static void __stdcall BigBuffer_Div_Ux(uint32_t * pRemainderOut, BigBuffer * pDi
     LLDVRM_RESULT LVar1;
     uint32_t nWordValue;
     uint32_t nRemainder = pQuotient->nStartWord - pDividend->nStartWord + pDividend->nCount;
-    if (pQuotient->nCount < nRemainder && pQuotient->nCapacity < nRemainder) {
+    if (nRemainder > pQuotient->nCount && nRemainder > pQuotient->nCapacity) {
       nGranOrHi = pQuotient->nGrowStep;
       if (!nGranOrHi) {
         nGranOrHi = TSGrowableArray_Ui_CalcChunkSize(pQuotient, nRemainder);
@@ -1533,9 +1535,9 @@ static void __stdcall BigBuffer_Div_Ux(uint32_t * pRemainderOut, BigBuffer * pDi
 
       nScaledRem = __allmul(nRemainder, nParam12, 0, 1);
       nRemainder = pQuotient->nStartWord + nWordIndex;
-      if (pQuotient->nCount <= nRemainder) {
+      if (nRemainder >= pQuotient->nCount) {
         nGranOrHi = nRemainder + 1;
-        if (pQuotient->nCapacity < nGranOrHi) {
+        if (nGranOrHi > pQuotient->nCapacity) {
           nGranularity = pQuotient->nGrowStep;
           if (!nGranularity) {
             nGranularity = TSGrowableArray_Ui_CalcChunkSize(pQuotient, nGranOrHi);
@@ -1626,9 +1628,9 @@ static void __stdcall BigBuffer_Mul_Ux(BigBuffer * pSource, uint32_t nMultiplier
       nProduct = __allmul(nCarry, 0, nMultiplierLo, nMultiplierHi);
       nCarry = (uint32_t)(nProduct + nCarryExtended >> 0x20);
       nAbsIndex = pDest->nStartWord + i;
-      if (pDest->nCount <= nAbsIndex) {
+      if (nAbsIndex >= pDest->nCount) {
         nNeededLen = nAbsIndex + 1;
-        if (pDest->nCapacity < nNeededLen) {
+        if (nNeededLen > pDest->nCapacity) {
           nGranularity = pDest->nGrowStep;
           if (!nGranularity) {
             nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDest, nNeededLen);
@@ -1650,7 +1652,7 @@ static void __stdcall BigBuffer_Mul_Ux(BigBuffer * pSource, uint32_t nMultiplier
     }
 
     nCarry = pDest->nStartWord + i;
-    if (pDest->nCount < nCarry && pDest->nCapacity < nCarry) {
+    if (nCarry > pDest->nCount && nCarry > pDest->nCapacity) {
       nAbsIndex = pDest->nGrowStep;
       if (!nAbsIndex) {
         nAbsIndex = TSGrowableArray_Ui_CalcChunkSize(pDest, nCarry);
@@ -1687,9 +1689,9 @@ static void __stdcall BigBuffer_Not(BigBuffer * pSource, BigBuffer * pDest) {
         }
 
         nAbsIndex = pDest->nStartWord + i;
-        if (pDest->nCount <= nAbsIndex) {
+        if (nAbsIndex >= pDest->nCount) {
           nNewLen = nAbsIndex + 1;
-          if (pDest->nCapacity < nNewLen) {
+          if (nNewLen > pDest->nCapacity) {
             nGranularity = pDest->nGrowStep;
             if (!nGranularity) {
               nGranularity = TSGrowableArray_Ui_CalcChunkSize(pDest, nNewLen);
@@ -1716,7 +1718,7 @@ static void __stdcall BigBuffer_Not(BigBuffer * pSource, BigBuffer * pDest) {
     }
 
     nAbsIndex = pDest->nStartWord + nWordCount;
-    if (pDest->nCount < nAbsIndex && pDest->nCapacity < nAbsIndex) {
+    if (nAbsIndex > pDest->nCount && nAbsIndex > pDest->nCapacity) {
       nNewLen = pDest->nGrowStep;
       if (!nNewLen) {
         nNewLen = TSGrowableArray_Ui_CalcChunkSize(pDest, nAbsIndex);
@@ -1747,13 +1749,10 @@ static void __stdcall BigBuffer_Or(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffer
     i = 0;
     do {
       nIndex = pLhs->nStartWord + i;
-      if (nIndex < pLhs->nCount) {
-        read_lhs_word:
-        dwLhsWord = pLhs->pData[nIndex];
-      } else {
-        if (pRhs->nCount <= pRhs->nStartWord + i) {
+      if (!(nIndex < pLhs->nCount)) {
+        if (pRhs->nStartWord + i >= pRhs->nCount) {
           nIndex = pResult->nStartWord + i;
-          if (pResult->nCount < nIndex && pResult->nCapacity < nIndex) {
+          if (nIndex > pResult->nCount && nIndex > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nIndex);
@@ -1775,6 +1774,9 @@ static void __stdcall BigBuffer_Or(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffer
         }
 
         dwLhsWord = 0;
+      } else {
+        read_lhs_word:
+        dwLhsWord = pLhs->pData[nIndex];
       }
 
       nIndex = pRhs->nStartWord + i;
@@ -1785,9 +1787,9 @@ static void __stdcall BigBuffer_Or(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffer
       }
 
       nIndex = pResult->nStartWord + i;
-      if (pResult->nCount <= nIndex) {
+      if (nIndex >= pResult->nCount) {
         nChunkSize = nIndex + 1;
-        if (pResult->nCapacity < nChunkSize) {
+        if (nChunkSize > pResult->nCapacity) {
           nAlignedCount = pResult->nGrowStep;
           if (!nAlignedCount) {
             nAlignedCount = TSGrowableArray_Ui_CalcChunkSize(pResult, nChunkSize);
@@ -1822,9 +1824,9 @@ static void __stdcall BigBuffer_Set2Exp(uint32_t nBitPos, BigBuffer * pResult) {
     if (nBitPos >> 5) {
       do {
         nIndex = pResult->nStartWord + i;
-        if (pResult->nCount <= nIndex) {
+        if (nIndex >= pResult->nCount) {
           nNeededCount = nIndex + 1;
-          if (pResult->nCapacity < nNeededCount) {
+          if (nNeededCount > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nNeededCount);
@@ -1849,10 +1851,10 @@ static void __stdcall BigBuffer_Set2Exp(uint32_t nBitPos, BigBuffer * pResult) {
     }
 
     nNeededCount = pResult->nStartWord + nIndex;
-    if (pResult->nCount <= nNeededCount) {
+    if (nNeededCount >= pResult->nCount) {
       uint32_t nChunkSize2;
       nChunkSize = nNeededCount + 1;
-      if (pResult->nCapacity < nChunkSize) {
+      if (nChunkSize > pResult->nCapacity) {
         nChunkSize2 = pResult->nGrowStep;
         if (!nChunkSize2) {
           nChunkSize2 = TSGrowableArray_Ui_CalcChunkSize(pResult, nChunkSize);
@@ -1872,7 +1874,7 @@ static void __stdcall BigBuffer_Set2Exp(uint32_t nBitPos, BigBuffer * pResult) {
 
     pResult->pData[pResult->nStartWord + nIndex] = 1 << ((uint8_t)nBitPos & 0x1f);
     nIndex = pResult->nStartWord + 1 + nIndex;
-    if (pResult->nCount < nIndex && pResult->nCapacity < nIndex) {
+    if (nIndex > pResult->nCount && nIndex > pResult->nCapacity) {
       nNeededCount = pResult->nGrowStep;
       if (!nNeededCount) {
         nNeededCount = TSGrowableArray_Ui_CalcChunkSize(pResult, nIndex);
@@ -1895,7 +1897,7 @@ static void __stdcall BigBuffer_Set2Exp(uint32_t nBitPos, BigBuffer * pResult) {
 static void BigBuffer_SetOne(BigBuffer * pResult) {
     uint32_t nAlignedCount;
     uint32_t nNeededCount = pResult->nStartWord + 1;
-    if (pResult->nCount < nNeededCount && pResult->nCapacity < nNeededCount) {
+    if (nNeededCount > pResult->nCount && nNeededCount > pResult->nCapacity) {
       uint32_t nChunkSize;
       nChunkSize = pResult->nGrowStep;
       if (!nChunkSize) {
@@ -1921,7 +1923,7 @@ static void BigBuffer_SetOne(BigBuffer * pResult) {
 static void BigBuffer_SetZero(BigBuffer * pResult) {
     uint32_t nAlignedCount;
     uint32_t nValue = pResult->nStartWord;
-    if (pResult->nCount < nValue && pResult->nCapacity < nValue) {
+    if (nValue > pResult->nCount && nValue > pResult->nCapacity) {
       uint32_t nChunkSize;
       nChunkSize = pResult->nGrowStep;
       if (!nChunkSize) {
@@ -1961,7 +1963,7 @@ static void __stdcall BigBuffer_Shl(BigBuffer * pSrc, BigBuffer * pResult, uint3
         i--;
         nSrcIndex = nSrcWordCount - 1;
         dwWord = 0;
-        if (nWordShift <= i) {
+        if (i >= nWordShift) {
           nIndex = nSrcIndex + pSrc->nStartWord;
           if (nIndex < pSrc->nCount) {
             dwWord = pSrc->pData[nIndex];
@@ -1971,7 +1973,7 @@ static void __stdcall BigBuffer_Shl(BigBuffer * pSrc, BigBuffer * pResult, uint3
 
           byShift = (int8_t)(nShiftBits & 0x1f);
           dwWord <<= byShift;
-          if (nWordShift < i && nShiftBits & 0x1f) {
+          if (i > nWordShift && nShiftBits & 0x1f) {
             if (nSrcWordCount - 2 + pSrc->nStartWord < pSrc->nCount) {
               nIndex = pSrc->pData[nSrcIndex + pSrc->nStartWord - 1];
             } else {
@@ -1983,9 +1985,9 @@ static void __stdcall BigBuffer_Shl(BigBuffer * pSrc, BigBuffer * pResult, uint3
         }
 
         nIndex = pResult->nStartWord + i;
-        if (pResult->nCount <= nIndex) {
+        if (nIndex >= pResult->nCount) {
           nNeededLen = nIndex + 1;
-          if (pResult->nCapacity < nNeededLen) {
+          if (nNeededLen > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nNeededLen);
@@ -2009,7 +2011,7 @@ static void __stdcall BigBuffer_Shl(BigBuffer * pSrc, BigBuffer * pResult, uint3
     }
 
     nResultCount = pResult->nStartWord + nResultCount;
-    if (pResult->nCount < nResultCount && pResult->nCapacity < nResultCount) {
+    if (nResultCount > pResult->nCount && nResultCount > pResult->nCapacity) {
       nWordShift = pResult->nGrowStep;
       if (!nWordShift) {
         nWordShift = TSGrowableArray_Ui_CalcChunkSize(pResult, nResultCount);
@@ -2062,9 +2064,9 @@ static void __stdcall BigBuffer_Shr(BigBuffer * pSrc, BigBuffer * pResult, uint3
         }
 
         nSrcCount = pResult->nStartWord + i;
-        if (pResult->nCount <= nSrcCount) {
+        if (nSrcCount >= pResult->nCount) {
           nIndex = nSrcCount + 1;
-          if (pResult->nCapacity < nIndex) {
+          if (nIndex > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nIndex);
@@ -2090,7 +2092,7 @@ static void __stdcall BigBuffer_Shr(BigBuffer * pSrc, BigBuffer * pResult, uint3
     }
 
     nSrcCount = pResult->nStartWord + i;
-    if (pResult->nCount < nSrcCount && pResult->nCapacity < nSrcCount) {
+    if (nSrcCount > pResult->nCount && nSrcCount > pResult->nCapacity) {
       nWordShift = pResult->nGrowStep;
       if (!nWordShift) {
         nWordShift = TSGrowableArray_Ui_CalcChunkSize(pResult, nSrcCount);
@@ -2136,9 +2138,9 @@ static void __stdcall BigBuffer_Sub_Ui(BigBuffer * pSrc, BigBuffer * pResult, ui
         }
 
         nSrcCount = pResult->nStartWord + i;
-        if (pResult->nCount <= nSrcCount) {
+        if (nSrcCount >= pResult->nCount) {
           nSrcOffset = nSrcCount + 1;
-          if (pResult->nCapacity < nSrcOffset) {
+          if (nSrcOffset > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nSrcOffset);
@@ -2165,7 +2167,7 @@ static void __stdcall BigBuffer_Sub_Ui(BigBuffer * pSrc, BigBuffer * pResult, ui
     }
 
     nSrcCount = pResult->nStartWord + dwResultWord;
-    if (pResult->nCount < nSrcCount && pResult->nCapacity < nSrcCount) {
+    if (nSrcCount > pResult->nCount && nSrcCount > pResult->nCapacity) {
       nSrcOffset = pResult->nGrowStep;
       if (!nSrcOffset) {
         nSrcOffset = TSGrowableArray_Ui_CalcChunkSize(pResult, nSrcCount);
@@ -2199,13 +2201,10 @@ static void __stdcall BigBuffer_Sub(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
     nBorrowHi = 0;
     do {
       dwLhsWord = pLhs->nStartWord + i;
-      if (dwLhsWord < pLhs->nCount) {
-        read_lhs_word:
-        dwLhsWord = pLhs->pData[dwLhsWord];
-      } else {
-        if (pRhs->nCount <= pRhs->nStartWord + i) {
+      if (!(dwLhsWord < pLhs->nCount)) {
+        if (pRhs->nStartWord + i >= pRhs->nCount) {
           dwLhsWord = pResult->nStartWord + i;
-          if (pResult->nCount < dwLhsWord && pResult->nCapacity < dwLhsWord) {
+          if (dwLhsWord > pResult->nCount && dwLhsWord > pResult->nCapacity) {
             dwRhsWord = pResult->nGrowStep;
             if (!dwRhsWord) {
               dwRhsWord = TSGrowableArray_Ui_CalcChunkSize(pResult, dwLhsWord);
@@ -2227,6 +2226,9 @@ static void __stdcall BigBuffer_Sub(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
         }
 
         dwLhsWord = 0;
+      } else {
+        read_lhs_word:
+        dwLhsWord = pLhs->pData[dwLhsWord];
       }
 
       dwRhsWord = pRhs->nStartWord + i;
@@ -2244,9 +2246,9 @@ static void __stdcall BigBuffer_Sub(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
       }
 
       dwLhsWord = pResult->nStartWord + i;
-      if (pResult->nCount <= dwLhsWord) {
+      if (dwLhsWord >= pResult->nCount) {
         dwRhsWord = dwLhsWord + 1;
-        if (pResult->nCapacity < dwRhsWord) {
+        if (dwRhsWord > pResult->nCapacity) {
           nChunkSize = pResult->nGrowStep;
           if (!nChunkSize) {
             nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, dwRhsWord);
@@ -2283,13 +2285,10 @@ static void __stdcall BigBuffer_Xor(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
     i = 0;
     do {
       nIndex = pLhs->nStartWord + i;
-      if (nIndex < pLhs->nCount) {
-        read_lhs_word:
-        dwLhsWord = pLhs->pData[nIndex];
-      } else {
-        if (pRhs->nCount <= pRhs->nStartWord + i) {
+      if (!(nIndex < pLhs->nCount)) {
+        if (pRhs->nStartWord + i >= pRhs->nCount) {
           nIndex = pResult->nStartWord + i;
-          if (pResult->nCount < nIndex && pResult->nCapacity < nIndex) {
+          if (nIndex > pResult->nCount && nIndex > pResult->nCapacity) {
             nChunkSize = pResult->nGrowStep;
             if (!nChunkSize) {
               nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nIndex);
@@ -2311,6 +2310,9 @@ static void __stdcall BigBuffer_Xor(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
         }
 
         dwLhsWord = 0;
+      } else {
+        read_lhs_word:
+        dwLhsWord = pLhs->pData[nIndex];
       }
 
       nIndex = pRhs->nStartWord + i;
@@ -2321,9 +2323,9 @@ static void __stdcall BigBuffer_Xor(BigBuffer * pLhs, BigBuffer * pRhs, BigBuffe
       }
 
       nIndex = pResult->nStartWord + i;
-      if (pResult->nCount <= nIndex) {
+      if (nIndex >= pResult->nCount) {
         nChunkSize = nIndex + 1;
-        if (pResult->nCapacity < nChunkSize) {
+        if (nChunkSize > pResult->nCapacity) {
           nAlignedCount = pResult->nGrowStep;
           if (!nAlignedCount) {
             nAlignedCount = TSGrowableArray_Ui_CalcChunkSize(pResult, nChunkSize);
@@ -2357,7 +2359,7 @@ static void __stdcall BigBuffer_FromBinary(void * pSrcBytes, uint32_t nByteCount
     uint8_t byValue;
     uint32_t nNeededCount;
     uint32_t nByteInWord = pResult->nStartWord;
-    if (pResult->nCount < nByteInWord && pResult->nCapacity < nByteInWord) {
+    if (nByteInWord > pResult->nCount && nByteInWord > pResult->nCapacity) {
       nWordIndex = pResult->nGrowStep;
       if (!nWordIndex) {
         nWordIndex = TSGrowableArray_Ui_CalcChunkSize(pResult, nByteInWord);
@@ -2373,7 +2375,7 @@ static void __stdcall BigBuffer_FromBinary(void * pSrcBytes, uint32_t nByteCount
 
     pResult->nCount = nByteInWord;
     uint32_t i = 0;
-    if (!nByteCount) {
+    if (nByteCount <= 0) {
       return;
     }
 
@@ -2382,17 +2384,17 @@ static void __stdcall BigBuffer_FromBinary(void * pSrcBytes, uint32_t nByteCount
       byValue = *(uint8_t*)(i + (int)pSrcBytes);
       nWordIndex = i >> 2;
       nByteInWord = i & 3;
-      if (!nByteInWord) {
-        dwCurWord = 0;
-      } else {
+      if (nByteInWord) {
         SBIG_GrowToIndex(nWordIndex, pResult);
         dwCurWord = pResult->pData[pResult->nStartWord + nWordIndex];
+      } else {
+        dwCurWord = 0;
       }
 
       nAlignedCount = pResult->nStartWord + nWordIndex;
-      if (pResult->nCount <= nAlignedCount) {
+      if (nAlignedCount >= pResult->nCount) {
         nNeededCount = nAlignedCount + 1;
-        if (pResult->nCapacity < nNeededCount) {
+        if (nNeededCount > pResult->nCapacity) {
           nChunkSize = pResult->nGrowStep;
           if (!nChunkSize) {
             nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nNeededCount);
@@ -2451,10 +2453,10 @@ static void __stdcall BigBuffer_FromUnsigned(uint32_t dwValue, BigBuffer * pResu
     uint32_t nChunkSize;
     uint32_t nNeededCount;
     uint32_t nIndex = pResult->nStartWord;
-    if (pResult->nCount <= nIndex) {
+    if (nIndex >= pResult->nCount) {
       uint32_t nAlignedCount;
       nNeededCount = nIndex + 1;
-      if (pResult->nCapacity < nNeededCount) {
+      if (nNeededCount > pResult->nCapacity) {
         nChunkSize = pResult->nGrowStep;
         if (!nChunkSize) {
           nChunkSize = TSGrowableArray_Ui_CalcChunkSize(pResult, nNeededCount);
@@ -2474,7 +2476,7 @@ static void __stdcall BigBuffer_FromUnsigned(uint32_t dwValue, BigBuffer * pResu
 
     pResult->pData[pResult->nStartWord] = dwValue;
     nIndex = pResult->nStartWord + 1;
-    if (pResult->nCount < nIndex && pResult->nCapacity < nIndex) {
+    if (nIndex > pResult->nCount && nIndex > pResult->nCapacity) {
       nNeededCount = pResult->nGrowStep;
       if (!nNeededCount) {
         nNeededCount = TSGrowableArray_Ui_CalcChunkSize(pResult, nIndex);
@@ -2524,7 +2526,7 @@ static void __stdcall BigBuffer_ToStr(BigStack * pStack, BigBuffer * pValue, TSG
       BigBuffer_Div_Ux(&nDigit, pDividend, 10, 0, pDividend);
       cDigitChar = (char)nDigit + '0';
       nNeededLen = pOutBuffer->nLen + 1;
-      if (pOutBuffer->nCapacity < nNeededLen) {
+      if (nNeededLen > pOutBuffer->nCapacity) {
         nChunkSize = pOutBuffer->nGrowStep;
         if (!nChunkSize) {
           if (nNeededLen < 0x100) {
@@ -2571,7 +2573,7 @@ static void __stdcall BigBuffer_ToStr(BigStack * pStack, BigBuffer * pValue, TSG
     }
 
     nNeededLen = pOutBuffer->nLen + 1;
-    if (pOutBuffer->nCapacity < nNeededLen) {
+    if (nNeededLen > pOutBuffer->nCapacity) {
       nChunkSize = pOutBuffer->nGrowStep;
       if (!nChunkSize) {
         nChunkSize = TSGrowableArray_Uc_CalcChunkSize((BigBuffer*)pOutBuffer, nNeededLen);
@@ -2937,7 +2939,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
     nDividendLen = pDividend->nCount - pDividend->nStartWord;
     uint32_t nDivisorLen;
     nDivisorLen = pDivisor->nCount - uVar1;
-    if (nDividendLen < nDivisorLen) {
+    if (nDivisorLen > nDividendLen) {
       if (pRemainder != pDividend) {
         TSBaseArray_Ui_Copy(&pRemainder->nCapacity, pDividend->nCount, pDividend->pData);
       }
@@ -2947,7 +2949,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
       BigBuffer_SetZero(pQuotient);
       return;
     }
-    if (1 < nDivisorLen) {
+    if (nDivisorLen > 1) {
       BigBuffer* pResult;
       uVar1 = pStack->nUsed;
       pResult = pStack->aBuffers + uVar1;
@@ -2989,7 +2991,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           nDividend64 = __allmul(pDividendData[nAlignChunk + nDivisorLen], 0, 0, 1);
           nDividend64 += (uint64_t)pTopWordData[uBitIter + nTopIndex];
           SBIG_GrowToIndex(0, pQuotient);
-          uAligned = __aulldiv((uint32_t)nDividend64, (uint32_t)((uint64_t)nDividend64 >> 0x20), nDivisorHigh, 0);
+          uAligned = (uint64_t)nDividend64 / nDivisorHigh;
           nAlignChunk = (uint32_t)uAligned;
         }
 
@@ -3006,9 +3008,9 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           BigBuffer_Sub(pResult, pSubOperand, pResult);
           correct_quotient_digit:
           nDividendLen = pResult->nStartWord + nDivisorLen;
-          if (pResult->nCount <= nDividendLen) {
+          if (nDividendLen >= pResult->nCount) {
             uNeeded = nDividendLen + 1;
-            if (pResult->nCapacity < uNeeded) {
+            if (uNeeded > pResult->nCapacity) {
               nAlignChunk = pResult->nGrowStep;
               if (!nAlignChunk) {
                 if (uNeeded < 0x40) {
@@ -3045,9 +3047,9 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           }
 
           nDividendLen = pQuotient->nStartWord;
-          if (pQuotient->nCount <= nDividendLen) {
+          if (nDividendLen >= pQuotient->nCount) {
             uNeeded = nDividendLen + 1;
-            if (pQuotient->nCapacity < uNeeded) {
+            if (uNeeded > pQuotient->nCapacity) {
               uBitIter2 = pQuotient->nGrowStep;
               if (!uBitIter2) {
                 if (uNeeded < 0x40) {
@@ -3107,20 +3109,7 @@ static void __stdcall BigBuffer_Gcd(BigBuffer * pnA, BigStack * pStack, BigBuffe
     pStack->nUsed = uVar1 + 2;
     BigBuffer* pBignum = pStack->aBuffers + uVar1 + 1;
     int32_t nCmp = BigBuffer_Compare(pnA, pnB);
-    if (nCmp < 1) {
-      if (pnResult != pnB) {
-        TSBaseArray_Ui_Copy(&pnResult->nCapacity, pnB->nCount, pnB->pData);
-      }
-
-      pnResult->nGrowStep = pnB->nGrowStep;
-      pnResult->nStartWord = pnB->nStartWord;
-      if (pBignum != pnA) {
-        TSBaseArray_Ui_Copy(&pBignum->nCapacity, pnA->nCount, pnA->pData);
-      }
-
-      pBignum->nGrowStep = pnA->nGrowStep;
-      pBignum->nStartWord = pnA->nStartWord;
-    } else {
+    if (nCmp > 0) {
       if (pnResult != pnA) {
         TSBaseArray_Ui_Copy(&pnResult->nCapacity, pnA->nCount, pnA->pData);
       }
@@ -3133,6 +3122,19 @@ static void __stdcall BigBuffer_Gcd(BigBuffer * pnA, BigStack * pStack, BigBuffe
 
       pBignum->nGrowStep = pnB->nGrowStep;
       pBignum->nStartWord = pnB->nStartWord;
+    } else {
+      if (pnResult != pnB) {
+        TSBaseArray_Ui_Copy(&pnResult->nCapacity, pnB->nCount, pnB->pData);
+      }
+
+      pnResult->nGrowStep = pnB->nGrowStep;
+      pnResult->nStartWord = pnB->nStartWord;
+      if (pBignum != pnA) {
+        TSBaseArray_Ui_Copy(&pBignum->nCapacity, pnA->nCount, pnA->pData);
+      }
+
+      pBignum->nGrowStep = pnA->nGrowStep;
+      pBignum->nStartWord = pnA->nStartWord;
     }
 
     uint32_t bIsZero = BigBuffer_IsZero(pBignum);
@@ -3178,7 +3180,7 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
     }
 
     uLen = pnAcc->nStartWord;
-    if (pnAcc->nCount < uLen && pnAcc->nCapacity < uLen) {
+    if (uLen > pnAcc->nCount && uLen > pnAcc->nCapacity) {
       uGrowStep = pnAcc->nGrowStep;
       if (!uGrowStep) {
         uGrowStep = TSGrowableArray_Ui_CalcChunkSize(pnAcc, uLen);
@@ -3213,9 +3215,9 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
             }
 
             uLen = pnAcc->nStartWord + iAccPos;
-            if (pnAcc->nCount <= uLen) {
+            if (uLen >= pnAcc->nCount) {
               uGrowStep = uLen + 1;
-              if (pnAcc->nCapacity < uGrowStep) {
+              if (uGrowStep > pnAcc->nCapacity) {
                 uAlignedCap = pnAcc->nGrowStep;
                 if (!uAlignedCap) {
                   if (uGrowStep < 0x40) {
@@ -3249,9 +3251,9 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
             uNewCapacity = SBIG_BigBuffer_GetWord(pnA, iOuter);
             llProduct = (uint64_t)uNewCapacity * (uint64_t)dwWordB + (uint64_t)pnAcc->pData[uLen] + (uint64_t)dwCarry;
             dwCarry = (uint32_t)((uint64_t)llProduct >> 0x20);
-            if (pnAcc->nCount <= uLen) {
+            if (uLen >= pnAcc->nCount) {
               uGrowStep = uLen + 1;
-              if (pnAcc->nCapacity < uGrowStep) {
+              if (uGrowStep > pnAcc->nCapacity) {
                 uAlignedCap = pnAcc->nGrowStep;
                 if (!uAlignedCap) {
                   if (uGrowStep < 0x40) {
@@ -3292,9 +3294,9 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
 
         dwCarry = (uint32_t)((uint64_t)llProduct >> 0x20);
         uLen = pnAcc->nStartWord + iInnerNext + iOuter;
-        if (pnAcc->nCount <= uLen) {
+        if (uLen >= pnAcc->nCount) {
           uGrowStep = uLen + 1;
-          if (pnAcc->nCapacity < uGrowStep) {
+          if (uGrowStep > pnAcc->nCapacity) {
             uAlignedCap = pnAcc->nGrowStep;
             if (!uAlignedCap) {
               if (uGrowStep < 0x40) {
@@ -3379,7 +3381,7 @@ static void __stdcall BigBuffer_Pow(BigBuffer * pnResult, BigBuffer * pnBase, ui
 
     pnAcc->nGrowStep = pnBase->nGrowStep;
     pnAcc->nStartWord = pnBase->nStartWord;
-    while (1 < dwBitMask) {
+    while (dwBitMask > 1) {
       BigBuffer_Mul(pnAcc, pnAcc, pnAcc, pStack);
       dwBitMask >>= 1;
       if (nExponent & dwBitMask) {
@@ -3428,7 +3430,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
     uNeededCount = pnWork->nCount;
     uint32_t uGrowStep = pnWork->nStartWord;
     uint32_t uNewLen = uGrowStep + 2;
-    if (uNeededCount < uNewLen && pnWork->nCapacity < uNewLen) {
+    if (uNewLen > uNeededCount && uNewLen > pnWork->nCapacity) {
       uBitIter = pnWork->nGrowStep;
       if (!uBitIter) {
         uBitIter = TSGrowableArray_Ui_CalcChunkSize(pnWork, uNewLen);
@@ -3456,7 +3458,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
     }
 
     uNeededCount = self->nStartWord + 2;
-    if (self->nCount < uNeededCount && self->nCapacity < uNeededCount) {
+    if (uNeededCount > self->nCount && uNeededCount > self->nCapacity) {
       uGrowStep = self->nGrowStep;
       if (!uGrowStep) {
         uGrowStep = TSGrowableArray_Ui_CalcChunkSize(self, uNeededCount);
@@ -3474,9 +3476,9 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
     uint32_t i = 0;
     do {
       uNeededCount = self->nStartWord;
-      if (self->nCount <= uNeededCount) {
+      if (uNeededCount >= self->nCount) {
         uNewLen = uNeededCount + 1;
-        if (self->nCapacity < uNewLen) {
+        if (uNewLen > self->nCapacity) {
           uGrowStep = self->nGrowStep;
           if (!uGrowStep) {
             if (uNewLen < 0x40) {
@@ -3512,7 +3514,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
 
     SBIG_TrimLeadingZeros(pnModulus);
     uNeededCount = pnQuotient->nStartWord;
-    if (pnQuotient->nCount < uNeededCount && pnQuotient->nCapacity < uNeededCount) {
+    if (uNeededCount > pnQuotient->nCount && uNeededCount > pnQuotient->nCapacity) {
       uNewLen = pnQuotient->nGrowStep;
       if (!uNewLen) {
         if (uNeededCount < 0x40) {
@@ -3546,7 +3548,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
         BigBuffer_Shr(pnWork, pnShiftTmp, 0x10);
         BigBuffer_Add(pnShiftTmp, pnWork, pnWork);
         uNeededCount = pnWork->nStartWord + 2;
-        if (pnWork->nCount < uNeededCount && pnWork->nCapacity < uNeededCount) {
+        if (uNeededCount > pnWork->nCount && uNeededCount > pnWork->nCapacity) {
           uNewLen = pnWork->nGrowStep;
           if (!uNewLen) {
             if (uNeededCount < 0x40) {
@@ -3622,7 +3624,7 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
     }
 
     uNewCapacity = pnAcc->nStartWord;
-    if (pnAcc->nCount < uNewCapacity && pnAcc->nCapacity < uNewCapacity) {
+    if (uNewCapacity > pnAcc->nCount && uNewCapacity > pnAcc->nCapacity) {
       uGrowStep = pnAcc->nGrowStep;
       if (!uGrowStep) {
         uGrowStep = TSGrowableArray_Ui_CalcChunkSize(pnAcc, uNewCapacity);
@@ -3657,9 +3659,9 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
           uProduct64 = (uint64_t)dwWordB;
           dwWordB = iInner + uNewCapacity;
           uNewCapacity = pnAcc->nStartWord + dwWordB;
-          if (pnAcc->nCount <= uNewCapacity) {
+          if (uNewCapacity >= pnAcc->nCount) {
             uGrowStep = uNewCapacity + 1;
-            if (pnAcc->nCapacity < uGrowStep) {
+            if (uGrowStep > pnAcc->nCapacity) {
               uGrowStep2 = pnAcc->nGrowStep;
               if (!uGrowStep2) {
                 if (uGrowStep < 0x40) {
@@ -3696,9 +3698,9 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
           }
 
           uNeededCount = pnAcc->nStartWord + dwWordB;
-          if (pnAcc->nCount <= uNeededCount) {
+          if (uNeededCount >= pnAcc->nCount) {
             uGrowStep = uNeededCount + 1;
-            if (pnAcc->nCapacity < uGrowStep) {
+            if (uGrowStep > pnAcc->nCapacity) {
               uGrowStep2 = pnAcc->nGrowStep;
               if (!uGrowStep2) {
                 if (uGrowStep < 0x40) {
@@ -3737,9 +3739,9 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
 
         dwWordB = iInner + iOuter;
         uNewCapacity = pnAcc->nStartWord + dwWordB;
-        if (pnAcc->nCount <= uNewCapacity) {
+        if (uNewCapacity >= pnAcc->nCount) {
           uGrowStep = uNewCapacity + 1;
-          if (pnAcc->nCapacity < uGrowStep) {
+          if (uGrowStep > pnAcc->nCapacity) {
             uGrowStep2 = pnAcc->nGrowStep;
             if (!uGrowStep2) {
               if (uGrowStep < 0x40) {
@@ -3772,7 +3774,7 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
 
         pnAcc->pData[pnAcc->nStartWord + dwWordB] = (uint32_t)carry128;
         iOuter++;
-        if (pnInput->nCount <= pnInput->nStartWord + iOuter) {
+        if (pnInput->nStartWord + iOuter >= pnInput->nCount) {
           break;
         }
 
@@ -3985,7 +3987,7 @@ static void __stdcall BigBuffer_PowMod(BigBuffer * pnResult, BigBuffer * pnBase,
             nBitPos += -2;
           } while (!(dwExpWord & 0xc0000000));
 
-          if (nBitPos) {
+          if ((uint32_t)nBitPos > 0) {
             goto process_bit_pairs;
           }
         } else {
@@ -4251,11 +4253,11 @@ static int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCand
       nPrimeIdx = 0;
       do {
         pBVar1 = pnWitness;
-        if (0x2ab < nPrimeIdx) {
+        if (nPrimeIdx >= 171) {
           break;
         }
         if (false || false) {
-          BigBuffer_FromUnsigned(*(uint32_t*)((int)gaSBigSmallPrimesTable + nPrimeIdx), pnWitness);
+          BigBuffer_FromUnsigned(gaSBigSmallPrimesTable[nPrimeIdx], pnWitness);
           pBignum = pnOddPart;
           BigBuffer_Div(pQuotient, pnOddPart, pBVar1, pStack, pnCandidate);
           nShift = BigBuffer_IsZero(pBignum);
@@ -4266,7 +4268,7 @@ static int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCand
             }
           }
         } else {
-          BigBuffer_Div_Ux(&nIterOrRem, pnCandidate, *(uint32_t*)((int)gaSBigSmallPrimesTable + nPrimeIdx), 0, pQuotient);
+          BigBuffer_Div_Ux(&nIterOrRem, pnCandidate, gaSBigSmallPrimesTable[nPrimeIdx], 0, pQuotient);
           if (!nIterOrRem) {
             nCmp = BigBuffer_IsOne(pQuotient);
             if (!nCmp) {
@@ -4275,7 +4277,7 @@ static int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCand
           }
         }
 
-        nPrimeIdx += 4;
+        nPrimeIdx++;
       } while (bIsProbablePrime);
     }
     BigBuffer_Sub_Ui(pnCandidate, pnNegOne, 1);
@@ -4295,13 +4297,13 @@ static int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCand
       nPrimeIdx = 0;
       do {
         pBVar1 = pnWitness;
-        if (0x17 < nPrimeIdx) {
+        if (nPrimeIdx >= 6) {
           break;
         }
 
-        BigBuffer_FromUnsigned(*(uint32_t*)((int)gaSBigSmallPrimesTable + nPrimeIdx), pnWitness);
+        BigBuffer_FromUnsigned(gaSBigSmallPrimesTable[nPrimeIdx], pnWitness);
         nCmpResult = BigBuffer_Compare(pBVar1, pnCandidate);
-        if (-1 < nCmpResult) {
+        if (nCmpResult >= 0) {
           break;
         }
 
@@ -4329,33 +4331,33 @@ static int32_t __stdcall BigBuffer_IsPrime(BigStack * pStack, BigBuffer * pnCand
           }
         }
 
-        nPrimeIdx += 4;
+        nPrimeIdx++;
       } while (bIsProbablePrime);
     }
-    if (!bIsProbablePrime) {
+    if (bIsProbablePrime) {
+      pnOddPart = 0;
+      do {
+        pBVar1 = pnWitness;
+        if ((uintptr_t)pnOddPart >= 4) {
+          break;
+        }
+
+        BigBuffer_FromUnsigned(*(uint32_t*)((int)gnSBigMillerRabinWitness + (int)pnOddPart), pnWitness);
+        BigBuffer_PowMod(pQuotient, pBVar1, pnCandidate, pnCandidate, pStack);
+        nCmpResult = BigBuffer_Compare(pQuotient, pBVar1);
+        if (nCmpResult) {
+          bIsProbablePrime = 0;
+        }
+
+        pnOddPart = (BigBuffer*)((int)pnOddPart + 4);
+      } while (bIsProbablePrime);
+
       pStack->nUsed -= 4;
-      return 0;
+      return bIsProbablePrime;
     }
 
-    pnOddPart = 0;
-    do {
-      pBVar1 = pnWitness;
-      if (3 < (uintptr_t)pnOddPart) {
-        break;
-      }
-
-      BigBuffer_FromUnsigned(*(uint32_t*)((int)gnSBigMillerRabinWitness + (int)pnOddPart), pnWitness);
-      BigBuffer_PowMod(pQuotient, pBVar1, pnCandidate, pnCandidate, pStack);
-      nCmpResult = BigBuffer_Compare(pQuotient, pBVar1);
-      if (nCmpResult) {
-        bIsProbablePrime = 0;
-      }
-
-      pnOddPart = (BigBuffer*)((int)pnOddPart + 4);
-    } while (bIsProbablePrime);
-
     pStack->nUsed -= 4;
-    return bIsProbablePrime;
+    return 0;
 }
 
 // @renamed-from SBIG_MillerRabinTestWrapper (2026-08-28, Storm PowerPC oracle pass 4)
@@ -4407,7 +4409,7 @@ static void __stdcall BigBuffer_FindPrime(int32_t nBitLength, BigBuffer * pnLowe
 
       BigBuffer_Add_Ui(2, pnPrime, pnPrime);
       nResult = BigBuffer_Compare(pnPrime, pResult);
-      if (0 < nResult) {
+      if (nResult > 0) {
         BigBuffer_Sub(pnPrime, pnStep, pnPrime);
       }
     } while (true);

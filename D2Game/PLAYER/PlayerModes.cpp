@@ -131,7 +131,7 @@ BOOL PLRMODES_CanInterruptCurrentMode(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, u
     int32_t iVar1;
     BOOL BVar2;
     if (!pUnit->pInventory || (pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pUnit->pInventory) , !pCursorItem_lcl) || !nNewMode) {
-      if (0x11 < nNewMode) {
+      if (nNewMode > 0x11) {
         goto check_current_mode;
       }
     } else if (nNewMode != 0x11) {
@@ -228,7 +228,29 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
         return 1;
       }
     }
-    if (!pSkillTxt->interrupt) {
+    if (pSkillTxt->interrupt) {
+      D2StatListExStrc* pConcStatList;
+      eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentration);
+      if (eStunState == STATE_none) {
+        eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentrate);
+        if (eStunState == STATE_none) {
+          return 1;
+        }
+      } else {
+        pConcStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_concentration);
+        nConcPct = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pConcStatList, UNITSTAT_skill_concentration, 0);
+        nConcRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+        if ((int)nConcRandRoll >= nConcPct) {
+          eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentrate);
+          if (eStunState == STATE_none) {
+            return 1;
+          }
+        }
+      }
+      if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
+        return 0;
+      }
+    } else {
       if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
         switch (nX) {
           case 7:
@@ -253,28 +275,6 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
           default:
             return 0;
         }
-      }
-    } else {
-      D2StatListExStrc* pConcStatList;
-      eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentration);
-      if (eStunState == STATE_none) {
-        eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentrate);
-        if (eStunState == STATE_none) {
-          return 1;
-        }
-      } else {
-        pConcStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_concentration);
-        nConcPct = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pConcStatList, UNITSTAT_skill_concentration, 0);
-        nConcRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
-        if (nConcPct <= (int)nConcRandRoll) {
-          eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_concentrate);
-          if (eStunState == STATE_none) {
-            return 1;
-          }
-        }
-      }
-      if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
-        return 0;
       }
     }
 
@@ -385,7 +385,7 @@ static BOOL PLRMODES_DrainStamina(D2UnitStrc * pUnit) {
     }
 
     int nStaminaDrain = pUnit->nClassId;
-    if (!(-1 < nStaminaDrain && nStaminaDrain < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nStaminaDrain)) {
+    if (!(nStaminaDrain >= 0 && nStaminaDrain < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nStaminaDrain)) {
       return 0;
     }
 
@@ -414,12 +414,12 @@ static BOOL PLRMODES_DrainStamina(D2UnitStrc * pUnit) {
 
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_stamina, -nStaminaDrain, 0);
     nStaminaDrain = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_stamina, 0);
-    if (0 < nStaminaDrain) {
-      return 1;
+    if (nStaminaDrain <= 0) {
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, 0, 0);
+      return 0;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, 0, 0);
-    return 0;
+    return 1;
 }
 
 // Puts a dying player's unit into the dead state: hitpoints stat (6) set to 0 and the stat list recalculated, states
@@ -444,13 +444,13 @@ void __fastcall SERVERUNIT_GoldAmmountForDeadBody(::SGAMEDATA * pGame, D2UnitStr
     D2UnitStrc* pGoldItem;
     uint32_t nGoldTotal = nGoldAmmount;
     int i = 0;
-    if (0 >= (int)nGoldAmmount) {
+    if ((int)nGoldAmmount <= 0) {
       return;
     }
 
     nGoldAmmount = 0;
     ITEMS::Items::Drop::DROP_SpawnGoldPiles(pGame, pDeadBody, nGoldTotal, apGoldItems, (int*)&nGoldAmmount, 0x20);
-    if (0 >= (int)nGoldAmmount) {
+    if ((int)nGoldAmmount <= 0) {
       return;
     }
 
@@ -630,12 +630,12 @@ static uint32_t __stdcall PLRMODES_IsCorpseOwnedByPlayer(::SGAMEDATA * pGame, D2
       }
 
       pCorpseOwner = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, nPartyFlags);
-      if (!pCorpseOwner) {
-        return 0;
+      if (pCorpseOwner) {
+        nPartyFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pCorpseOwner, pUnit, 1);
+        return nPartyFlags;
       }
 
-      nPartyFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pCorpseOwner, pUnit, 1);
-      return nPartyFlags;
+      return 0;
     }
 }
 
@@ -693,21 +693,21 @@ void __fastcall PLRMODES_HandlePlayerDeath(::SGAMEDATA * pGame, D2UnitStrc * pUn
     int32_t nDeathY;
     eD2UnitType eUnitType;
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDeathY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nDeathY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nDeathY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nDeathY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDeathX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nDeathX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nDeathX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nDeathX = 0;
     }
 
     D2UnitStrc* pRoom;
@@ -850,7 +850,7 @@ static void __stdcall PLRMODES_HandleDepletedAmmoOrThrowable(::SGAMEDATA * pGame
     }
 
     int nQuantity = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_quantity, 0);
-    if (nQuantity >= 1) {
+    if (nQuantity > 0) {
       return;
     }
 
@@ -916,14 +916,14 @@ static void __stdcall PLRMODES_HandleDepletedAmmoOrThrowable(::SGAMEDATA * pGame
 void PLRMODES_CheckSwapWeaponSkill(eD2Skills * peSkillId, D2UnitStrc * pUnit) {
     eD2Skills eSkillId;
     D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
-    if (!pSkill) {
-      peSkillId[3] = ~SKILL_Attack;
-      peSkillId[1] = SKILL_Attack;
-    } else {
+    if (pSkill) {
       eSkillId = D2Common::Skills::GetOwnerGUID(pSkill);
       peSkillId[3] = eSkillId;
       eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x56e);
       peSkillId[1] = eSkillId;
+    } else {
+      peSkillId[3] = ~SKILL_Attack;
+      peSkillId[1] = SKILL_Attack;
     }
 
     pSkill = D2Common::Units::GetRightSkill(pUnit);
@@ -991,21 +991,21 @@ void __fastcall PLRMODES_CheckWeaponQuantityAndDurability(::SGAMEDATA * pGame, D
     }
 
     D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
-    if (!pSkill) {
-      aSwappedSkillState[3] = -1;
-      aSwappedSkillState[1] = 0;
-    } else {
+    if (pSkill) {
       aSwappedSkillState[3] = D2Common::Skills::GetOwnerGUID(pSkill);
       aSwappedSkillState[1] = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x56e);
+    } else {
+      aSwappedSkillState[3] = -1;
+      aSwappedSkillState[1] = 0;
     }
 
     pSkill = D2Common::Units::GetRightSkill(pUnit);
-    if (!pSkill) {
-      aSwappedSkillState[2] = -1;
-      aSwappedSkillState[0] = 0;
-    } else {
+    if (pSkill) {
       aSwappedSkillState[2] = D2Common::Skills::GetOwnerGUID(pSkill);
       aSwappedSkillState[0] = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x57a);
+    } else {
+      aSwappedSkillState[2] = -1;
+      aSwappedSkillState[0] = 0;
     }
 
     D2UnitStrc* pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
@@ -1057,7 +1057,7 @@ void __fastcall PLRMODES_BreakZeroDurabilityWeapons(::SGAMEDATA * pGame, D2UnitS
 
       pWeaponItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pEquipSlot);
       _bIsWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pWeaponItem, ITEMTYPE_Weapon);
-      if (!_bIsWeapon || (_bIsWeapon = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pWeaponItem) , !_bIsWeapon) || (nDurability = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pWeaponItem, UNITSTAT_durability, 0) , 0 < nDurability) || (bIsBroken = D2Common::ITEMS::Items::CheckItemFlag(pWeaponItem, ITEMFLAG_BROKEN, 0x5e9, ".\\PLAYER\\PlrModes.cpp") , bIsBroken != 0)) {
+      if (!_bIsWeapon || (_bIsWeapon = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pWeaponItem) , !_bIsWeapon) || (nDurability = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pWeaponItem, UNITSTAT_durability, 0) , nDurability > 0) || (bIsBroken = D2Common::ITEMS::Items::CheckItemFlag(pWeaponItem, ITEMFLAG_BROKEN, 0x5e9, ".\\PLAYER\\PlrModes.cpp") , bIsBroken != 0)) {
         goto next_item;
       }
       if (!bUpdatedUnit) {
@@ -1148,7 +1148,7 @@ static void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     }
 
     nRecoveryBonus = nCurrentStamina + nRecoverAmount;
-    if (nMaxStamina < (int)(nCurrentStamina + nRecoverAmount)) {
+    if ((int)(nCurrentStamina + nRecoverAmount) > nMaxStamina) {
       nRecoveryBonus = nMaxStamina;
     }
 
@@ -1163,7 +1163,7 @@ uint8_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
     int nHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     int32_t nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nMaxHpShifted = nMaxHp >> 8;
-    if (!(0 < nMaxHpShifted && nHp >> 8 < nMaxHpShifted)) {
+    if (!(nMaxHpShifted > 0 && nHp >> 8 < nMaxHpShifted)) {
       return 0x80;
     }
 
@@ -1185,7 +1185,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
     nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     int nNewHp;
     nNewHp = nCurrentHp + nHpRegen;
-    if (nMaxHp < nCurrentHp + nHpRegen) {
+    if (nCurrentHp + nHpRegen > nMaxHp) {
       D2StatListExStrc* pStatList;
       pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_healthpot);
       nNewHp = nMaxHp;
@@ -1205,7 +1205,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
       nHpRegen = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
       nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
       nNewHp = nMaxHp >> 8;
-      if (0 < nNewHp && nHpRegen >> 8 < nNewHp) {
+      if (nNewHp > 0 && nHpRegen >> 8 < nNewHp) {
         nNewHpPct128 = (nHpRegen >> 8 << 7) / nNewHp;
         goto send_hp_pct_if_changed;
       }
@@ -1217,7 +1217,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
     if (nHpRegen < 0) {
       nHpRegen = -nHpRegen;
     }
-    if (4 >= nHpRegen) {
+    if (nHpRegen <= 4) {
       return 1;
     }
 
@@ -1245,7 +1245,7 @@ static void PLRMODES_RegenMana(D2UnitStrc * pUnit) {
       if (nCharClassId < 0) {
         return;
       }
-      if (sgptDataTable->nTxtCharStatsSize <= nCharClassId) {
+      if (nCharClassId >= sgptDataTable->nTxtCharStatsSize) {
         return;
       }
       if (!(sgptDataTable->pTxtCharStats + nCharClassId)) {
@@ -1269,14 +1269,14 @@ static void PLRMODES_RegenMana(D2UnitStrc * pUnit) {
 
     nCharClassId = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecovery, 0);
     nCharClassId = nBaseRegen + nCharClassId;
-    if (nMaxMana <= nManaRegen && 0 < nCharClassId) {
+    if (nMaxMana <= nManaRegen && nCharClassId > 0) {
       pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_manapot);
       if (pStatList) {
         D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);
         D2Common::Stats::StatsEx::FreeStatList(&pStatList->sStatList);
       }
     }
-    if (nMaxMana - nManaRegen < nCharClassId) {
+    if (nCharClassId > nMaxMana - nManaRegen) {
       nCharClassId = nMaxMana - nManaRegen;
     }
     if (nCharClassId < -nManaRegen) {
@@ -1316,14 +1316,14 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
     pLocalPlayer = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
     if (pUnit) {
       uint8_t bIsWarping;
-      if (!(pUnit->eUnitFlagsEx >> 0x10 & 1)) {
+      if (pUnit->eUnitFlagsEx >> 0x10 & 1) {
+        bIsWarping = '\x01';
+      } else {
         if (!(pUnit->eUnitFlagsEx >> 0xb & 1) || pUnit == pLocalPlayer) {
           goto send_items_and_mode;
         }
 
         bIsWarping = '\0';
-      } else {
-        bIsWarping = '\x01';
       }
 
       PlayerMsg::SendReassignPlayer(pUnit, pClient, bIsWarping);
@@ -1507,7 +1507,7 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
     dwTickCount = GetTickCount();
     D2UnitDataPlayerStrc* pPlayerData;
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (pPlayerData->dwPosHistoryTick + 0x19 < dwTickCount) {
+    if (dwTickCount > pPlayerData->dwPosHistoryTick + 0x19) {
       uint8_t bVar1;
       bVar1 = pPlayerData->nPosHistoryIndex;
       if (!bVar1) {
@@ -1517,30 +1517,30 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
       }
 
       eTargetUnitType = pUnit->eUnitType;
-      if (eTargetUnitType == UNIT_OBJECT || 3 < (int)eTargetUnitType && (int)eTargetUnitType < 6) {
+      if (eTargetUnitType == UNIT_OBJECT || (int)eTargetUnitType > 3 && (int)eTargetUnitType <= 5) {
         nPosX = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPosX = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nPosX = 0;
       }
 
       eTargetUnitType = pUnit->eUnitType;
-      if (eTargetUnitType == UNIT_OBJECT || 3 < (int)eTargetUnitType && (int)eTargetUnitType < 6) {
+      if (eTargetUnitType == UNIT_OBJECT || (int)eTargetUnitType > 3 && (int)eTargetUnitType <= 5) {
         nPosY = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPosY = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nPosY = 0;
       }
 
       nDistance = D2Common::PATH::DynamicPath::GetDistanceSquaredXY(nPosX, nPosY, pPlayerData->aPosHistory[byPrevSlot].nX, pPlayerData->aPosHistory[byPrevSlot].nY);
-      if (0x2d < nDistance) {
+      if (nDistance > 0x2d) {
         pPlayerData->aPosHistory[bVar1].nX = nPosX;
         pPlayerData->aPosHistory[bVar1].nY = nPosY;
         pPlayerData->nPosHistoryIndex += '\x01';
         pPlayerData->dwPosHistoryTick = dwTickCount;
-        if (0x13 < pPlayerData->nPosHistoryIndex) {
+        if (pPlayerData->nPosHistoryIndex >= 0x14) {
           pPlayerData->nPosHistoryIndex = '\0';
         }
       }
@@ -1575,9 +1575,7 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
 
     D2SkillStrc* pSkill;
     pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
-    if (!pSkill) {
-      PLRMODES_SetIdleMode(pGame, pUnit, 1, 0, 0);
-    } else {
+    if (pSkill) {
       nPosY = D2Common::Skills::GetSkillMode(pUnit, pSkill);
       if (pUnit->eUnitType == UNIT_PLAYER && pUnit->pUnitData.pUnitDataPlayer) {
         dwTickCount = pUnit->pUnitData.pUnitDataPlayer->nTargetUnitGUID;
@@ -1592,6 +1590,8 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
 
       PLRMODES_StartModeID(pGame, pUnit, pSkill, nPosY, eTargetUnitType, dwTickCount, 0);
       nSkillMode = 1;
+    } else {
+      PLRMODES_SetIdleMode(pGame, pUnit, 1, 0, 0);
     }
 
     clear_pending_interact:
@@ -1690,101 +1690,102 @@ void __fastcall PLRMODES_OnModeComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       pSkill = D2Common::Units::GetCurrentSkill(pUnit);
       if (pSkill) {
         eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x779);
-        if (-1 < (int)eSkillId && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && sgptDataTable->pTxtSkills[eSkillId].durability) {
+        if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && sgptDataTable->pTxtSkills[eSkillId].durability) {
           PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
           PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
         }
       }
     } else {
       nMode = pUnit->eAnimMode.ePlayerMode;
-      if ((int)nMode < 7 || 8 < (int)nMode && nMode != Throw) {
+      if ((int)nMode < 7 || (int)nMode > 8 && nMode != Throw) {
         goto check_skill_durability;
       }
 
       PLRMODES_CheckWeaponQuantityAndDurability(pGame, pUnit);
       PLRMODES_BreakZeroDurabilityWeapons(pGame, pUnit);
     }
-    if (nMode == Death) {
-      PLRMODES_HandlePlayerDeath(pGame, pUnit, 0x11, 0, 0);
-      return;
-    }
-    if (nMode != KnockBack) {
-      PLRMODES_SetIdleMode(pGame, pUnit, 1, 0, 0);
-      return;
-    }
-    if (!pGame) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x805);
-      exit(-1);
-    } else {
-      if (pUnit->pInventory) {
-        pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pUnit->pInventory);
-        if (pCursorItem_lcl) {
-          return;
-        }
-      }
-      if (!false) {
-        switch (pUnit->eAnimMode.ePlayerMode) {
-          case Death:
-
-          case eD2PlayerAnimMode_ns::GetHit:
-
-          case eD2PlayerAnimMode_ns::Block:
-
-          case eD2PlayerAnimMode_ns::Dead:
-            return;
-          case eD2PlayerAnimMode_ns::Attack1:
-
-          case eD2PlayerAnimMode_ns::Attack2:
-
-          case eD2PlayerAnimMode_ns::Cast:
-
-          case Throw:
-            PLRMODES_HasAnimEventLastOrComing5Frames(pGame, pUnit);
-          break;
-          case Kick:
-            nLine = PLRMODES_HasAnimEventLastOrComing5Frames(pGame, pUnit);
-          if (!nLine) {
-            return;
-          }
-
-          break;
-          case eD2PlayerAnimMode_ns::Skill1:
-            bSkipIdle = !pUnit->nClassId;
-          if (bSkipIdle) {
-            return;
-          }
-
-          break;
-          case eD2PlayerAnimMode_ns::Skill3:
-            bSkipIdle = pUnit->nClassId == 5;
-          if (bSkipIdle) {
-            return;
-          }
-
-          break;
-          case eD2PlayerAnimMode_ns::Sequence:
-            bBadPtr = PLRMODES_HasEndAnimEventAndSeqInput(pGame, pUnit);
-          bSkipIdle = !bBadPtr;
-          if (bSkipIdle) {
-            return;
-          }
-        }
-      }
-
-      nMoveResult = PLRMODES_TryCancelModeAndMoveToLocation(pGame, pUnit, 4, 1, nullptr);
-      if (!nMoveResult) {
+    if (nMode != Death) {
+      if (nMode != KnockBack) {
+        PLRMODES_SetIdleMode(pGame, pUnit, 1, 0, 0);
         return;
       }
-
-      /* FARPROC lpfn for IsBadCodePtr */ bBadPtr = IsBadCodePtr((FARPROC)PLRMODES_ChangeAnimModeAndResetSkill);
-      if (bBadPtr) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x812);
+      if (!pGame) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x805);
         exit(-1);
-      }
+      } else {
+        if (pUnit->pInventory) {
+          pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pUnit->pInventory);
+          if (pCursorItem_lcl) {
+            return;
+          }
+        }
+        if (!false) {
+          switch (pUnit->eAnimMode.ePlayerMode) {
+            case Death:
 
-      PLRMODES_ChangeAnimModeAndResetSkill(pGame, pUnit, 4, -1, 0);
-      return;
+            case eD2PlayerAnimMode_ns::GetHit:
+
+            case eD2PlayerAnimMode_ns::Block:
+
+            case eD2PlayerAnimMode_ns::Dead:
+              return;
+            case eD2PlayerAnimMode_ns::Attack1:
+
+            case eD2PlayerAnimMode_ns::Attack2:
+
+            case eD2PlayerAnimMode_ns::Cast:
+
+            case Throw:
+              PLRMODES_HasAnimEventLastOrComing5Frames(pGame, pUnit);
+            break;
+            case Kick:
+              nLine = PLRMODES_HasAnimEventLastOrComing5Frames(pGame, pUnit);
+            if (!nLine) {
+              return;
+            }
+
+            break;
+            case eD2PlayerAnimMode_ns::Skill1:
+              bSkipIdle = !pUnit->nClassId;
+            if (bSkipIdle) {
+              return;
+            }
+
+            break;
+            case eD2PlayerAnimMode_ns::Skill3:
+              bSkipIdle = pUnit->nClassId == 5;
+            if (bSkipIdle) {
+              return;
+            }
+
+            break;
+            case eD2PlayerAnimMode_ns::Sequence:
+              bBadPtr = PLRMODES_HasEndAnimEventAndSeqInput(pGame, pUnit);
+            bSkipIdle = !bBadPtr;
+            if (bSkipIdle) {
+              return;
+            }
+          }
+        }
+
+        nMoveResult = PLRMODES_TryCancelModeAndMoveToLocation(pGame, pUnit, 4, 1, nullptr);
+        if (!nMoveResult) {
+          return;
+        }
+
+        /* FARPROC lpfn for IsBadCodePtr */ bBadPtr = IsBadCodePtr((FARPROC)PLRMODES_ChangeAnimModeAndResetSkill);
+        if (bBadPtr) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x812);
+          exit(-1);
+        }
+
+        PLRMODES_ChangeAnimModeAndResetSkill(pGame, pUnit, 4, -1, 0);
+        return;
+      }
     }
+
+    PLRMODES_HandlePlayerDeath(pGame, pUnit, 0x11, 0, 0);
+    return;
 }
 
 // Per-tick dispatcher for the player's current animation mode. Reads pUnit->eAnimMode, looks up the corresponding callback in gaPlayerModeCallbacks[], invokes it with (nArg1, nArg2), and calls PLRMODES_OnModeComplete if the callback returns 2 (mode finished).

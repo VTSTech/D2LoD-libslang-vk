@@ -32,7 +32,6 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
-#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -261,7 +260,7 @@ void __fastcall Q11_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (bQuestState == 1) {
         return;
       }
-      if (3 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 4) {
         return;
       }
 
@@ -269,7 +268,7 @@ void __fastcall Q11_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nMessageIndexMaybe == -1) {
         return;
       }
-      if (5 < nMessageIndexMaybe) {
+      if (nMessageIndexMaybe >= 6) {
         return;
       }
     }
@@ -358,18 +357,18 @@ bool __fastcall Q11_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pQuestData_00) {
-      return false;
+    if (pQuestData_00) {
+      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (BVar2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a5);
+        exit(-1);
+      }
+
+      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
 
-    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (BVar2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a5);
-      exit(-1);
-    }
-
-    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-    return bVar1;
+    return false;
 }
 
 // A2Q3 - per-unit iterator cb (Q11_UpdateQuestRecord): mirrors the server quest stateFlag into each player's
@@ -457,14 +456,14 @@ void __fastcall Q11_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (!bQuestState) {
       /* GetQuestState(buf, A2Q3, 3=Step0x03) - set -> stateFlag=2, else stateFlag=1
                           */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_Step0x03);
-      if (!bQuestState) {
-        pQuestData->nStateFlagPrev = 1;
-        pQuestData->nStateFlag = 1;
+      if (bQuestState) {
+        pQuestData->nStateFlagPrev = 2;
+        pQuestData->nStateFlag = 2;
         return;
       }
 
-      pQuestData->nStateFlagPrev = 2;
-      pQuestData->nStateFlag = 2;
+      pQuestData->nStateFlagPrev = 1;
+      pQuestData->nStateFlag = 1;
       return;
     }
 
@@ -642,7 +641,7 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
           eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pDVar1->pAltarRoom);
           pOperation->sArg.pVictim->dwDropItemCode = 0x20706976;
           nDroppedItemCount = 0;
-          if (0 < pDVar1->nViperAmuletDropCount) {
+          if (pDVar1->nViperAmuletDropCount > 0) {
             iDropLoop = 0;
             do {
               pPlayerData = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_PlayerBodyPart, (int32_t*)&eLevelId, nullptr, -1, 0);
@@ -665,8 +664,8 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
           pQuestSeed = GetQuestControlSeed(pOperation->sArg.pGame);
           seedNext = D2_SEED_NEXT(*pQuestSeed);
           *pQuestSeed = seedNext;
-          iDropLoop = seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 5) * -5 + 5;
-          if (0 < iDropLoop) {
+          iDropLoop = seedNext.nSeedLow % 5 + 5;
+          if (iDropLoop > 0) {
             do {
               Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
               iDropLoop--;
@@ -705,8 +704,8 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
         pQuestSeed = GetQuestControlSeed(pOperation->sArg.pGame);
         seedNext = D2_SEED_NEXT(*pQuestSeed);
         *pQuestSeed = seedNext;
-        iDropLoop = seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 5) * -5 + 5;
-        if (0 < iDropLoop) {
+        iDropLoop = seedNext.nSeedLow % 5 + 5;
+        if (iDropLoop > 0) {
           do {
             Objects::ObjectsMode::SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_NORMAL);
             iDropLoop--;
@@ -733,7 +732,7 @@ bool __fastcall Q11_IsTaintedSunComplete(::SGAMEDATA * pGame) {
       return true;
     }
 
-    return 3 < pQuestData->nStateFlag;
+    return pQuestData->nStateFlag >= 4;
 }
 
 // A2Q3 - Q11_InitTaintedSunForAct: on Act 2 (re)load, if the quest is mid-darkening (pending flag at +3 set),
@@ -763,11 +762,11 @@ void __fastcall Q11_InitTaintedSunForAct(::SGAMEDATA * pGame, char nActNo) {
 // quest-specific data, or 0 if quest data missing. Read-only.
 uint32_t __fastcall Q11_GetTaintedSunFlag(int32_t nParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(*(::SGAMEDATA**)(nParam + 4), QUESTINT_TheTaintedSun);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA2Q3 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA2Q3->bTaintedSunStartedFailed);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA2Q3 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA2Q3->bTaintedSunStartedFailed);
+    return 0;
 }
 
 // A2Q3 - state-0xb quest-event callback (fpQuestStateHandler[0xb], Q11_Callback_11): handles NPC turn-in /
@@ -783,7 +782,48 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int nPlayerGUID;
     ::SGAMEDATA* pGame;
     uint32_t nMsgIndex = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
-    if (nMsgIndex == 0x15c) {
+    if (nMsgIndex != 0x15c) {
+      if (nMsgIndex - 0x16a <= 0xa) {
+        pGame = pQuestArgs->pGame;
+        pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+        pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
+        /* GetQuestState(buf, A2Q3, 0xd=JustCompleted) - turn-in: finalize (display
+                         state 0xd, stateFlag 5, run sequence filter) */ if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+          bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
+          if (bQuestState) {
+            pQuestData->nQuestPacketFlags = '\0';
+            QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q11_NotifyTaintedSunComplete, false);
+            QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0xdc);
+            /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+            if (bQuestState) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
+              exit(-1);
+            }
+
+            pQuestData->fpSequenceFilter(pQuestData);
+          }
+        }
+
+        QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
+        /* GetQuestState(buf, A2Q3, 1=RewardAwaits) - reward collected self turn-in? */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+        if (bQuestState) {
+          /* SetQuestState(buf, A2Q3, 0=Completed) - reward taken: mark quest Completed */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_Completed);
+          /* UnsetQuestState(buf, A2Q3, 1=RewardAwaits) - clear pending-reward bit now
+                         it's Completed */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_RewardAwaits);
+          if (!pQuestArgs->pPlayer) {
+            nPlayerGUID = -1;
+          } else {
+            nPlayerGUID = pQuestArgs->pPlayer->nUnitGUID;
+          }
+
+          QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nPlayerGUID);
+          if (!pQuestData->bIsNotIntroduction) {
+            /* SetQuestRecordState(game, A2Q3, 0xd=JustCompleted) - pre-intro turn-in:
+                         broadcast completion */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
+          }
+        }
+      }
+    } else {
       if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0xb1) {
         if (pQuestData->nStateFlagPrev == 1) {
           pQuestData->nQuestPacketFlags = '\0';
@@ -793,45 +833,6 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0xcd);
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q11_UpdateQuestRecord);
           return;
-        }
-      }
-    } else if (nMsgIndex - 0x16a < 0xb) {
-      pGame = pQuestArgs->pGame;
-      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-      /* GetQuestState(buf, A2Q3, 0xd=JustCompleted) - turn-in: finalize (display
-                         state 0xd, stateFlag 5, run sequence filter) */ if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
-        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
-        if (bQuestState) {
-          pQuestData->nQuestPacketFlags = '\0';
-          QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q11_NotifyTaintedSunComplete, false);
-          QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0xdc);
-          /* FARPROC lpfn for IsBadCodePtr */ bQuestState = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-          if (bQuestState) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
-            exit(-1);
-          }
-
-          pQuestData->fpSequenceFilter(pQuestData);
-        }
-      }
-
-      QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
-      /* GetQuestState(buf, A2Q3, 1=RewardAwaits) - reward collected self turn-in? */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      if (bQuestState) {
-        /* SetQuestState(buf, A2Q3, 0=Completed) - reward taken: mark quest Completed */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_Completed);
-        /* UnsetQuestState(buf, A2Q3, 1=RewardAwaits) - clear pending-reward bit now
-                         it's Completed */ D2Common::QuestRecord::UnsetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_RewardAwaits);
-        if (!pQuestArgs->pPlayer) {
-          nPlayerGUID = -1;
-        } else {
-          nPlayerGUID = pQuestArgs->pPlayer->nUnitGUID;
-        }
-
-        QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nPlayerGUID);
-        if (!pQuestData->bIsNotIntroduction) {
-          /* SetQuestRecordState(game, A2Q3, 0xd=JustCompleted) - pre-intro turn-in:
-                         broadcast completion */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
         }
       }
     }

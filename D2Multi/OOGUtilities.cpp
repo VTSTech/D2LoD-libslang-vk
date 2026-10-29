@@ -327,7 +327,7 @@ int __stdcall OOGUTIL_HandleChannelListDoubleClick(D2ControlMsg * pControlMsg) {
 
     int32_t pLastSelectedLine = gaOOGUtilChannelListLangNames;
     uint32_t dwTickNow = gdwLastChannelListClickTick;
-    if (pControlMsg->uMsg == 0x201 && (dwTickNow = GetTickCount() , pLastSelectedLine = pCurSelectedLine , pCurSelectedLine == gaOOGUtilChannelListLangNames) && dwTickNow - gdwLastChannelListClickTick < 0x1f5) {
+    if (pControlMsg->uMsg == 0x201 && (dwTickNow = GetTickCount() , pLastSelectedLine = pCurSelectedLine , pCurSelectedLine == gaOOGUtilChannelListLangNames) && dwTickNow - gdwLastChannelListClickTick <= 0x1f4) {
       char szValue[256];
       pwszEditInput = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlChannelNameEditBox->sControl);
       if (pwszEditInput) {
@@ -350,20 +350,7 @@ int __stdcall OOGUTIL_HandleChannelListDoubleClick(D2ControlMsg * pControlMsg) {
 
 void __stdcall AbleToJoinGameOrBanned(int32_t bBanned) {
     uint16_t* pwszMessage;
-    if (!bBanned) {
-      if (!gpChatFormList && gpControlJoinGameError) {
-        ChatDlg::CHATDLG_DestroyAllForms();
-      }
-      if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Died) || !(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Hardcore)) {
-        D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyCreateButton->sControl, 1);
-        D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyJoinButton->sControl, 1);
-      }
-
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyLadderButton->sControl, (uint32_t)!gbIsChannelScreen);
-      if (pGameListCache) {
-        D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&pGameListCache->sControl, 1);
-      }
-    } else {
+    if (bBanned) {
       int32_t bHasPeer;
       bHasPeer = D2MCPClient::McpConnect::HasPeerName();
       if (!bHasPeer) {
@@ -378,6 +365,19 @@ void __stdcall AbleToJoinGameOrBanned(int32_t bBanned) {
       if (pGameListCache) {
         D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&pGameListCache->sControl, 0);
         return;
+      }
+    } else {
+      if (!gpChatFormList && gpControlJoinGameError) {
+        ChatDlg::CHATDLG_DestroyAllForms();
+      }
+      if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Died) || !(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Hardcore)) {
+        D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyCreateButton->sControl, 1);
+        D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyJoinButton->sControl, 1);
+      }
+
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyLadderButton->sControl, (uint32_t)!gbIsChannelScreen);
+      if (pGameListCache) {
+        D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&pGameListCache->sControl, 1);
       }
     }
 }
@@ -414,9 +414,9 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(pCursorDC6);
     fnGetTickCount pfnGetTickCount;
     pfnGetTickCount = GetTickCount;
-    if (gpChatFormList == (void*)0x2 && gdwGameJoinRequestTick) {
+    if (gpChatFormList == (void*)0x2 && (uint32_t)gdwGameJoinRequestTick > 0) {
       dwTickNow = GetTickCount();
-      if (30000 < dwTickNow - gdwGameJoinRequestTick) {
+      if (dwTickNow - gdwGameJoinRequestTick > 30000) {
         gpChatFormList = 0;
         /* Join Failed */ pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x1415);
         ChatDlg::UIMENU_DrawSpecificJoinGameError(pwszMessage, nullptr);
@@ -428,7 +428,125 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
       nValidateResult = ComCallback::COMCALLBACK_ValidateGameJoinability();
       nLoopActivity = D2MCPClient::McpConnect::NET_MCP_CLIENT_ReadAndParsePacket();
       nLoopActivity = nValidateResult | nLoopActivity;
-      if (gpChatFormList == (void*)0x1) {
+      if (gpChatFormList != (void*)0x1) {
+        if (gpChatFormList != (void*)0x2) {
+          if (gpChatFormList == (void*)0x3 && (nResult = D2MCPClient::McpConnect::HasPeerName() , nResult != 0)) {
+            pMcpCharBuf = D2MCPClient::McpConnect::MCPCONNECT_GetCharSelectBuffer();
+            nGSRequestId = pMcpCharBuf->wRequestId;
+            if (nGSRequestId) {
+              if (nGSRequestId == LastGameRequestId) {
+                nResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
+                if (nResult == 0x33) {
+                  OOGMENU_RefreshGameListDisplay();
+                  D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
+                } else if (nResult == 0x32) {
+                  UIMENU_DestroyLobbyAndJoinGameForms();
+                  AbleToJoinGameOrBanned(1);
+                  D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
+                } else if (pMcpCharBuf->nHasMoreData) {
+                  OOGMENU_RefreshGameListDisplay();
+                  D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
+                } else {
+                  OOGMENU_AddGameToCache((int32_t)pMcpCharBuf);
+                  D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
+                }
+              } else {
+                if (nGSRequestId == gwLastGameInfoRequestId) {
+                  OOGMENU_DisplayGameDetails((int32_t)pMcpCharBuf);
+                }
+
+                D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
+              }
+            }
+          }
+        } else {
+          nResult = D2MCPClient::McpConnect::HasPeerName();
+          if (nResult) {
+            nGSRequestId = D2MCPClient::McpConnect::GetD2GSRequestId();
+            if (nGSRequestId && nGSRequestId == LastGameRequestId) {
+              nResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
+              switch (nResult) {
+                case 0:
+                  D2IniData_multiplayer->nGAMETYPE = GAMETYPE_BNET;
+                nResult = D2MCPClient::McpConnect::GetD2GSGameToken();
+                D2IniData_multiplayer->nJOINID = (short int)nResult;
+                dwCurTick = D2MCPClient::McpConnect::MCPCONNECT_GetD2GSGameHash();
+                D2IniData_multiplayer->nCOMINT = dwCurTick;
+                pszGsIp = D2MCPClient::McpConnect::GetD2GSConnectIp();
+                pszServerIpDst = D2IniData_multiplayer->szSERVERIP;
+                do {
+                  cIpChar = *pszGsIp;
+                  *pszServerIpDst = cIpChar;
+                  pszGsIp++;
+                  pszServerIpDst++;
+                } while (cIpChar != '\0');
+
+                gnOpenBNetMode = 1;
+                pNetworkUnknown->pfnSendNotifyJoin(D2IniData_multiplayer->szGAMENAME, D2IniData_multiplayer->szGamePassword);
+                D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(nullptr);
+                D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
+                return 1;
+                default:
+                  /* Join Failed */ nErrorStrId = 0x1415;
+                break;
+                case 0x29:
+                  /* Game name and password don't match. */ nErrorStrId = 0x1428;
+                break;
+                case 0x2a:
+                  /* Game does not exist. */ nErrorStrId = 0x1427;
+                break;
+                case 0x2b:
+                  /* Game is Full. */ nErrorStrId = 0x1429;
+                break;
+                case 0x2c:
+                  /* You do not meet the level restrictions for self game. */ nErrorStrId = 0x142a;
+                break;
+                case 0x71:
+                  /* Hardcore and Normal Characters may not be in the same game. */ nErrorStrId = 0x1426;
+                break;
+                case 0x73:
+                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
+                    /* Unable to enter game. Your character must kill Diablo to play in a Nightmare
+                         game. */ nErrorStrId = 0x14f4;
+                  } else {
+                    /* Unable to enter game. Your character must kill Baal to play in a Nightmare
+                         game. */ nErrorStrId = 0x5522;
+                  }
+                break;
+                case 0x74:
+                  if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
+                    /* Unable to enter game. Your character must kill Diablo in Nightmare difficulty
+                         to play in a Hell game. */ nErrorStrId = 0x14f3;
+                  } else {
+                    /* Unable to enter game. Your character must kill Baal in Nightmare difficulty
+                         to play in a Hell game. */ nErrorStrId = 0x5521;
+                  }
+                break;
+                case 0x78:
+                  /* Unable to enter game. A Diablo II character cannot join a game created by a
+                         Diablo II Expansion character. */ nErrorStrId = 0x2775;
+                break;
+                case 0x79:
+                  /* Unable to enter game. A Diablo II Expansion character cannot join a game
+                         created by a Diablo II character. */ nErrorStrId = 0x2776;
+                break;
+                case 0x7d:
+                  if (!D2IniData_multiplayer->isLadder) {
+                    /* Unable to enter game. A Ladder character cannot join a game created by a
+                         Non-Ladder character. */ nErrorStrId = 0x2ab2;
+                  } else {
+                    /* Unable to enter game. A Non-Ladder character cannot join a game created by a
+                         Ladder character. */ nErrorStrId = 0x2ab1;
+                  }
+              }
+
+              gpChatFormList = 0;
+              pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(nErrorStrId);
+              ChatDlg::UIMENU_DrawSpecificJoinGameError(pwszMessage, OOG_DisableControlCallback);
+            }
+          }
+        }
+      } else {
         nResult = D2MCPClient::McpConnect::HasPeerName();
         if (nResult) {
           nGSRequestId = D2MCPClient::McpConnect::GetD2GSRequestId();
@@ -465,126 +583,12 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
             }
           }
         }
-      } else if (gpChatFormList == (void*)0x2) {
-        nResult = D2MCPClient::McpConnect::HasPeerName();
-        if (nResult) {
-          nGSRequestId = D2MCPClient::McpConnect::GetD2GSRequestId();
-          if (nGSRequestId && nGSRequestId == LastGameRequestId) {
-            nResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
-            switch (nResult) {
-              case 0:
-                D2IniData_multiplayer->nGAMETYPE = GAMETYPE_BNET;
-              nResult = D2MCPClient::McpConnect::GetD2GSGameToken();
-              D2IniData_multiplayer->nJOINID = (short int)nResult;
-              dwCurTick = D2MCPClient::McpConnect::MCPCONNECT_GetD2GSGameHash();
-              D2IniData_multiplayer->nCOMINT = dwCurTick;
-              pszGsIp = D2MCPClient::McpConnect::GetD2GSConnectIp();
-              pszServerIpDst = D2IniData_multiplayer->szSERVERIP;
-              do {
-                cIpChar = *pszGsIp;
-                *pszServerIpDst = cIpChar;
-                pszGsIp++;
-                pszServerIpDst++;
-              } while (cIpChar != '\0');
-
-              gnOpenBNetMode = 1;
-              pNetworkUnknown->pfnSendNotifyJoin(D2IniData_multiplayer->szGAMENAME, D2IniData_multiplayer->szGamePassword);
-              D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(nullptr);
-              D2Win::Src::D2WinMain::D2WINMAIN_ClearMessageLoopFlag();
-              return 1;
-              default:
-                /* Join Failed */ nErrorStrId = 0x1415;
-              break;
-              case 0x29:
-                /* Game name and password don't match. */ nErrorStrId = 0x1428;
-              break;
-              case 0x2a:
-                /* Game does not exist. */ nErrorStrId = 0x1427;
-              break;
-              case 0x2b:
-                /* Game is Full. */ nErrorStrId = 0x1429;
-              break;
-              case 0x2c:
-                /* You do not meet the level restrictions for self game. */ nErrorStrId = 0x142a;
-              break;
-              case 0x71:
-                /* Hardcore and Normal Characters may not be in the same game. */ nErrorStrId = 0x1426;
-              break;
-              case 0x73:
-                if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
-                  /* Unable to enter game. Your character must kill Diablo to play in a Nightmare
-                         game. */ nErrorStrId = 0x14f4;
-                } else {
-                  /* Unable to enter game. Your character must kill Baal to play in a Nightmare
-                         game. */ nErrorStrId = 0x5522;
-                }
-              break;
-              case 0x74:
-                if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion)) {
-                  /* Unable to enter game. Your character must kill Diablo in Nightmare difficulty
-                         to play in a Hell game. */ nErrorStrId = 0x14f3;
-                } else {
-                  /* Unable to enter game. Your character must kill Baal in Nightmare difficulty
-                         to play in a Hell game. */ nErrorStrId = 0x5521;
-                }
-              break;
-              case 0x78:
-                /* Unable to enter game. A Diablo II character cannot join a game created by a
-                         Diablo II Expansion character. */ nErrorStrId = 0x2775;
-              break;
-              case 0x79:
-                /* Unable to enter game. A Diablo II Expansion character cannot join a game
-                         created by a Diablo II character. */ nErrorStrId = 0x2776;
-              break;
-              case 0x7d:
-                if (!D2IniData_multiplayer->isLadder) {
-                  /* Unable to enter game. A Ladder character cannot join a game created by a
-                         Non-Ladder character. */ nErrorStrId = 0x2ab2;
-                } else {
-                  /* Unable to enter game. A Non-Ladder character cannot join a game created by a
-                         Ladder character. */ nErrorStrId = 0x2ab1;
-                }
-            }
-
-            gpChatFormList = 0;
-            pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(nErrorStrId);
-            ChatDlg::UIMENU_DrawSpecificJoinGameError(pwszMessage, OOG_DisableControlCallback);
-          }
-        }
-      } else if (gpChatFormList == (void*)0x3 && (nResult = D2MCPClient::McpConnect::HasPeerName() , nResult != 0)) {
-        pMcpCharBuf = D2MCPClient::McpConnect::MCPCONNECT_GetCharSelectBuffer();
-        nGSRequestId = pMcpCharBuf->wRequestId;
-        if (nGSRequestId) {
-          if (nGSRequestId == LastGameRequestId) {
-            nResult = D2MCPClient::McpConnect::GetD2GSJoinResult();
-            if (nResult == 0x33) {
-              OOGMENU_RefreshGameListDisplay();
-              D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
-            } else if (nResult == 0x32) {
-              UIMENU_DestroyLobbyAndJoinGameForms();
-              AbleToJoinGameOrBanned(1);
-              D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
-            } else if (!pMcpCharBuf->nHasMoreData) {
-              OOGMENU_AddGameToCache((int32_t)pMcpCharBuf);
-              D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
-            } else {
-              OOGMENU_RefreshGameListDisplay();
-              D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
-            }
-          } else {
-            if (nGSRequestId == gwLastGameInfoRequestId) {
-              OOGMENU_DisplayGameDetails((int32_t)pMcpCharBuf);
-            }
-
-            D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
-          }
-        }
       }
 
       run_periodic_polls:
       bVar1 = false;
       dwTickNow = (*pfnGetTickCount)();
-      if (14999 < dwTickNow - gdwLastNetworkHeartbeatTick) {
+      if (dwTickNow - gdwLastNetworkHeartbeatTick >= 15000) {
         gdwLastNetworkHeartbeatTick += dwTickNow - gdwLastNetworkHeartbeatTick;
         bVar1 = true;
         pNetworkUnknown->pfnSendCheckAd();
@@ -603,7 +607,7 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
       }
       if (gpChatFormList == (void*)0x3) {
         dwTickNow = (*pfnGetTickCount)();
-        if (14999 < dwTickNow - gdwLastGameListRefreshTick) {
+        if (dwTickNow - gdwLastGameListRefreshTick >= 15000) {
           gdwLastGameListRefreshTick += dwTickNow - gdwLastGameListRefreshTick;
           bVar1 = true;
           OOGMENU_RequestGameList();
@@ -611,7 +615,7 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
       }
 
       dwTickNow = (*pfnGetTickCount)();
-      if (999 < dwTickNow - gdwLastGameInfoPollTick) {
+      if (dwTickNow - gdwLastGameInfoPollTick >= 1000) {
         gdwLastGameInfoPollTick += dwTickNow - gdwLastGameInfoPollTick;
         bVar1 = true;
         OOGMENU_RequestGameInfo();
@@ -650,7 +654,7 @@ uint32_t __stdcall OOGMENU_RestoreMCPConnection() {
     uint16_t* pwszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
     ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszMessage, OOG::OOGUTIL_PrintCallback_SetFlag);
     uint32_t* pPeerData = (uint32_t*)pNetworkUnknown->pfnSendLogonRealmEx(D2IniData_multiplayer->szCharacterRealm, "password");
-    if (!(pPeerData && 8 < *pPeerData)) {
+    if (!(pPeerData && *pPeerData > 8)) {
       return 0;
     }
 
@@ -721,10 +725,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetBackgroundDC6(pBackgroundDC6);
-    if (!D2IniData_multiplayer->padding_0x35F[2]) {
-      Launcher::UIMENU_CantTestItBeacuseItCrash();
-      Launcher::LAUNCHER_AllocCharSelectComponent((int32_t)pD2IniConfig);
-    } else {
+    if (D2IniData_multiplayer->padding_0x35F[2]) {
       ppFormIter = &gpLobbyForm0;
       pPredefFormIter = gaPredefinedForms_b;
       do {
@@ -735,6 +736,9 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
       } while ((int)pPredefFormIter < (uintptr_t)((char*)&gaPredefinedForms_b + 816));
 
       BattleNetNews = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x17);
+    } else {
+      Launcher::UIMENU_CantTestItBeacuseItCrash();
+      Launcher::LAUNCHER_AllocCharSelectComponent((int32_t)pD2IniConfig);
     }
 
     gpChatMessagesTextBox = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x15);
@@ -798,10 +802,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     gbIsChannelScreen = (uint32_t)(D2IniData_multiplayer->nScreenToShow == 4);
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gpLobbyForm0.pCtlLobbyLadderButton->sControl, (uint32_t)!gbIsChannelScreen);
     uint32_t bMcpRestored = OOGMENU_RestoreMCPConnection();
-    if (!bMcpRestored) {
-      Fog::Src::LogManager::LOGFILE_WriteStringToFile("[D2MULTI]  Could not restore MCP connection.");
-      pNetworkUnknown->pfnDisconnect();
-    } else {
+    if (bMcpRestored) {
       sprintf(nMusicLevel, "%s,%s", pD2IniConfig->szCharacterRealm, pD2IniConfig->szNAME);
       dwFlags = (uint32_t)((pD2IniConfig->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Expansion) != 0);
       if (D2IniData_multiplayer->padding_0x35F[2]) {
@@ -809,12 +810,13 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
       }
 
       pNetworkUnknown->pfnEnterChatAndJoinChannel(pD2IniConfig->szNAME, nMusicLevel, (char*)0x25, (char*)(pD2IniConfig->padding_0x35F + 2), dwFlags);
+    } else {
+      Fog::Src::LogManager::LOGFILE_WriteStringToFile("[D2MULTI]  Could not restore MCP connection.");
+      pNetworkUnknown->pfnDisconnect();
     }
 
     bSocketConnected = pNetworkUnknown->pfnIsSocketConnected();
-    if (!bSocketConnected) {
-      gnOpenBNetMode = 4;
-    } else {
+    if (bSocketConnected) {
       D2MCPClient::McpConnect::SetIsMPCJoinSuccesfull(0);
       /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ InitializeCriticalSection(&lpCriticalSection_0077ae28);
       if (!D2IniData_multiplayer->padding_0x35F[2]) {
@@ -836,6 +838,8 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
       if (gnOpenBNetMode != 4) {
         D2MCPClient::McpConnect::FreeMCP();
       }
+    } else {
+      gnOpenBNetMode = 4;
     }
 
     GetTickCount();
@@ -890,7 +894,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
         }
 
         pForm++;
-      } while ((int)pForm < (uintptr_t)((char*)&gpCtlLobbyChat + 5));
+      } while ((int)pForm <= (uintptr_t)((char*)&gpCtlLobbyChat + 4));
 
       if (gpCtlConfirmDialog) {
         D2Win::Src::D2WinMain::FORMS_DestroyAnyForm((D2ControlStrc**)&gpCtlConfirmDialog);
@@ -1030,13 +1034,13 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
       pvVar1->SavePersistentSetting(ppIgnoreListB, (uint32_t)!nCmdMatch);
       ppIgnoreListThis = D2Common::Chat::Ignorelist::MISC_GetIgnorelist();
       nCmdMatch = ppIgnoreListThis->_vfptr->GetPersistentSetting(ppIgnoreListThis);
-      if (!nCmdMatch) {
-        pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba2);
+      if (nCmdMatch) {
+        pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba1);
         ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
         return;
       }
 
-      pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba1);
+      pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba2);
       ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
       return;
     }
@@ -1073,13 +1077,13 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
             ChatDlg::CHATDLG_ParseCommandArgument(0x104, szText, szArgBuffer);
             ppIgnoreListThis = D2Common::Chat::Ignorelist::MISC_GetIgnorelist();
             nCmdMatch = ppIgnoreListThis->_vfptr->AddByAccountName(ppIgnoreListThis, szArgBuffer);
-            if (!nCmdMatch) {
-              pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba8);
+            if (nCmdMatch) {
+              pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba7);
               ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
               return;
             }
 
-            pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba7);
+            pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba8);
             ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
             return;
           }
@@ -1089,13 +1093,13 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
             ChatDlg::CHATDLG_ParseCommandArgument(0x104, szText, szArgBuffer);
             ppIgnoreListThis = D2Common::Chat::Ignorelist::MISC_GetIgnorelist();
             nCmdMatch = ppIgnoreListThis->_vfptr->RemoveByAccountName(ppIgnoreListThis, szArgBuffer);
-            if (!nCmdMatch) {
-              pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2baa);
+            if (nCmdMatch) {
+              pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba9);
               ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
               return;
             }
 
-            pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2ba9);
+            pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2baa);
             ChatDlg::CHATDLG_AppendTextToTextBox(pwszMsg, 3);
             return;
           }
@@ -1108,24 +1112,24 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
           }
 
           nCmdMatch = ChatDlg::someStrCompare(szText, "/home");
-          if (nCmdMatch) {
-            nResult = pNetworkUnknown->pfnIsSocketConnected();
-            if (nResult) {
-              pNetworkUnknown->pfnSendChatCommand((uint8_t*)szText);
+          if (!nCmdMatch) {
+            nCmdMatch = Storm::Source::SReg::SRegLoadString("Diablo II", "Default Channel", 0, szChannelName, 0x20);
+            if (!nCmdMatch) {
               return;
             }
 
+            OOGUTIL_JoinChannelAndDestroyForms(szChannelName);
+            return;
+          }
+
+          nResult = pNetworkUnknown->pfnIsSocketConnected();
+          if (!nResult) {
             pwszMsg = D2Lang::StrTable::strtable::GetLocaleString(0x14e7);
             ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszMsg, OOG::OOGUTIL_DrawCallback_SetModeAndClearMsgLoop);
             return;
           }
 
-          nCmdMatch = Storm::Source::SReg::SRegLoadString("Diablo II", "Default Channel", 0, szChannelName, 0x20);
-          if (!nCmdMatch) {
-            return;
-          }
-
-          OOGUTIL_JoinChannelAndDestroyForms(szChannelName);
+          pNetworkUnknown->pfnSendChatCommand((uint8_t*)szText);
           return;
         }
       }
@@ -1175,7 +1179,7 @@ int __stdcall CHAT_SendOutOfGameMessage() {
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextWide(gpChatDlgInputEditBox, nullptr);
     int32_t nVisibleLines = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetVisibleLineCount(gpChatMessagesTextBox);
     int32_t nTotalLines = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetLineCount(gpChatMessagesTextBox);
-    if (nVisibleLines >= nTotalLines) {
+    if (nTotalLines <= nVisibleLines) {
       return 1;
     }
 
@@ -1213,7 +1217,10 @@ int __fastcall OOGUTIL_SendChatMessage(char * szText, int32_t bUseChannelPrefix)
     }
 
     BOOL nMatch = ChatDlg::CHATDLG_FindSubstringMatch(*(int32_t*)D2IniData_multiplayer->padding_0x3C3, *(int32_t*)(D2IniData_multiplayer->padding_0x3C3 + 4), szText);
-    if (!nMatch) {
+    if (nMatch) {
+      wszSubTitle = D2Lang::StrTable::strtable::GetLocaleString(0x2b38);
+      nTitleStrId = 0x2b37;
+    } else {
       nMatch = ChatDlg::CHATDLG_DetectCDKeyInString(szText);
       if (!nMatch) {
         nSendResult = CHAT_SendOutOfGameMessage();
@@ -1222,9 +1229,6 @@ int __fastcall OOGUTIL_SendChatMessage(char * szText, int32_t bUseChannelPrefix)
 
       wszSubTitle = D2Lang::StrTable::strtable::GetLocaleString(0x2b7b);
       nTitleStrId = 0x2b7a;
-    } else {
-      wszSubTitle = D2Lang::StrTable::strtable::GetLocaleString(0x2b38);
-      nTitleStrId = 0x2b37;
     }
 
     uint16_t* wszTitle = D2Lang::StrTable::strtable::GetLocaleString(nTitleStrId);
@@ -1289,14 +1293,15 @@ char * __fastcall OOGUTIL_GetStringEnd(char * szText) {
 uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
     uint8_t byLevelDigit = *pszLevelChars;
     int nMaxLevelDiff = (D2IniData_multiplayer->eCTEMP_eD2PlayerStatus >> 8 & 0x1f) / 5 + 1;
-    if (!(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Hardcore)) {
-      return (uint32_t)(nMaxLevelDiff < (int)(byLevelDigit - 0x30));
-    }
-    if (!((int)(byLevelDigit - 0x33) <= nMaxLevelDiff && 0x32 < byLevelDigit)) {
-      return 1;
+    if (D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & PLAYERSTATUS_Hardcore) {
+      if (!((int)(byLevelDigit - 0x33) <= nMaxLevelDiff && byLevelDigit >= 0x33)) {
+        return 1;
+      }
+
+      return 0;
     }
 
-    return 0;
+    return (uint32_t)((int)(byLevelDigit - 0x30) > nMaxLevelDiff);
 }
 
 // OOGMENU_AddGameToCache(pGameInfo = g_CharSelectBuffer): append one realm game to the JOIN-screen
@@ -1306,7 +1311,7 @@ uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
 void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
     char cChar;
     int nIndex = 0;
-    if (0 < nGameListDifficultyFilter) {
+    if (nGameListDifficultyFilter > 0) {
       uint16_t* pwCachePort;
       pwCachePort = &gbLanGameListEntryNamePadding2[0].nJoinId;
       do {
@@ -1385,7 +1390,7 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
     if (bHasSelection) {
       int nCmpResult;
       nEntryIndex = 0;
-      if (gnFilteredGameListCount < 1) {
+      if (gnFilteredGameListCount <= 0) {
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOOGGameListTextBox, nScrollPos);
         return;
       }
@@ -1399,7 +1404,7 @@ void __stdcall OOGMENU_RefreshGameListDisplay() {
         }
 
         nEntryIndex++;
-        if (gnFilteredGameListCount <= nEntryIndex) {
+        if (nEntryIndex >= gnFilteredGameListCount) {
           D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOOGGameListTextBox, nScrollPos);
           return;
         }
@@ -1466,16 +1471,14 @@ void __fastcall OOGMENU_DisplayGameDetails(int32_t pGameInfo) {
     }
 
     uint32_t nFmtLevel = *(uint32_t*)(pGameInfo + 0xc);
-    sprintf(szFormatBuffer, "Elapsed Time: %d:%02d:%02d", nFmtLevel / 0xe10, (int)((uint64_t)nFmtLevel % 0xe10 / 0x3c), nFmtLevel % 0x3c);
+    sprintf(szFormatBuffer, "Elapsed Time: %d:%02d:%02d", nFmtLevel / 0xe10, (int)(nFmtLevel % 0xe10 / 0x3c), nFmtLevel % 0x3c);
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
     uint8_t byLevelMax = *(uint8_t*)(pGameInfo + 0x11);
     if (byLevelMax < 100) {
       int nLevelRangeLow;
-      if (!byLevelMax) {
-        sprintf(szFormatBuffer, "Level %d", (uint32_t)*(uint8_t*)(pGameInfo + 0x10));
-      } else {
+      if (byLevelMax) {
         nLevelRangeLow = (uint32_t)*(uint8_t*)(pGameInfo + 0x10) - (uint32_t)byLevelMax;
-        if (nLevelRangeLow < 2) {
+        if (nLevelRangeLow <= 1) {
           nLevelRangeLow = 1;
         }
 
@@ -1485,20 +1488,22 @@ void __fastcall OOGMENU_DisplayGameDetails(int32_t pGameInfo) {
         }
 
         sprintf(szFormatBuffer, "Level %d to %d", nLevelRangeLow, nFmtLevel);
+      } else {
+        sprintf(szFormatBuffer, "Level %d", (uint32_t)*(uint8_t*)(pGameInfo + 0x10));
       }
 
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
     }
 
     byLevelMax = *(uint8_t*)(pGameInfo + 0x12);
-    if (byLevelMax && byLevelMax < 8) {
+    if (byLevelMax > 0 && byLevelMax < 8) {
       sprintf(szFormatBuffer, "Up to %d Players", (uint32_t)byLevelMax);
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
     }
 
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, "");
     int nPlayerIndex = 0;
-    if (0 < *(int*)(pGameInfo + 0x14)) {
+    if (*(int*)(pGameInfo + 0x14) > 0) {
       pwCurPlayerLevel = (uint16_t*)(pGameInfo + 0x6c);
       pszCurPlayerName = (char*)(pGameInfo + 0x8c);
       do {
@@ -1585,7 +1590,7 @@ void __stdcall OOGUTIL_LoadMaxPlayersSetting() {
 
     __frame0.szMaxPlayers[0] = '4';
     __frame0.szMaxPlayers[1] = '\0';
-    if (!(__frame0.nMaxPlayers < 9 && 0 < __frame0.nMaxPlayers)) {
+    if (!(__frame0.nMaxPlayers < 9 && __frame0.nMaxPlayers > 0)) {
       return;
     }
 
@@ -1665,7 +1670,7 @@ BOOL __stdcall OOGUTIL_OnPressMaxPlayersDown(D2ControlMsg * pControlMsg) {
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
     int nMaxPlayers = atol(szValue);
-    if (1 < nMaxPlayers) {
+    if (nMaxPlayers > 1) {
       nMaxPlayers--;
     }
 
@@ -1697,7 +1702,7 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionDown(D2ControlMsg * pControlMsg) {
     uint16_t* pwszValue = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
     D2Lang::WideCharToUTF8(szValue, pwszValue, 5);
     int nLevelRestriction = atol(szValue);
-    if (0 < nLevelRestriction) {
+    if (nLevelRestriction > 0) {
       nLevelRestriction--;
     }
 
@@ -1766,7 +1771,7 @@ void __stdcall OOGUTIL_RefreshGameList() {
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szValue, (uint16_t*)pwszValue, 0x10);
       pszScan = szValue;
       pszScan = pszScan + strlen(pszScan) + 1;
-      if (szValue[0] != ' ' && 0 < (int)pszScan - (int)(szValue + 1) && szValue[(int)pszScan - (int)(szValue + 1) - 1] != ' ') {
+      if (szValue[0] != ' ' && (int)pszScan - (int)(szValue + 1) >= 1 && szValue[(int)pszScan - (int)(szValue + 1) - 1] != ' ') {
         bNameValid = true;
       }
     }
@@ -1790,12 +1795,12 @@ void __stdcall OOGUTIL_RefreshGameList() {
         nGameCount = atol(szValue);
         nClampedCount = bSelectedValid;
         if (0 < nGameCount) {
-          if (nGameCount < 9) {
+          if (nGameCount <= 8) {
             goto check_restriction_field;
           }
           if (1 < nGameCount) {
             nClampedCount = nGameCount;
-            if (7 < nGameCount) {
+            if (nGameCount >= 8) {
               nClampedCount = 8;
             }
           }
@@ -1903,21 +1908,21 @@ int32_t __fastcall OOGUTIL_HandleGameListEntry(char * szText1, char * szText2, i
       dwFilterMin |= 8;
       dwFilterMax |= 8;
     }
-    if (!(ePlayerStatus & PLAYERSTATUS_Expansion)) {
-      bDiffMatch = (ePlayerStatus & 0x1f00) < 0x800;
-    } else {
+    if (ePlayerStatus & PLAYERSTATUS_Expansion) {
       bDiffMatch = (ePlayerStatus & 0x1f00) < 0xa00;
+    } else {
+      bDiffMatch = (ePlayerStatus & 0x1f00) < 0x800;
     }
     if (bDiffMatch) {
-      if (!(ePlayerStatus & PLAYERSTATUS_Expansion)) {
-        bDiffMatch = (ePlayerStatus & 0x1f00) < 0x400;
-      } else {
+      if (ePlayerStatus & PLAYERSTATUS_Expansion) {
         bDiffMatch = (ePlayerStatus & 0x1f00) < 0x500;
-      }
-      if (bDiffMatch) {
-        dwFilterMax |= 3;
       } else {
+        bDiffMatch = (ePlayerStatus & 0x1f00) < 0x400;
+      }
+      if (!bDiffMatch) {
         dwFilterMax |= 2;
+      } else {
+        dwFilterMax |= 3;
       }
     }
 
@@ -1927,7 +1932,7 @@ int32_t __fastcall OOGUTIL_HandleGameListEntry(char * szText1, char * szText2, i
     }
 
     int nGameCount = *pnQueryResult;
-    if (0 >= nGameCount) {
+    if (nGameCount < 1) {
       return 0;
     }
 
@@ -1944,19 +1949,20 @@ int32_t __fastcall OOGUTIL_HandleGameListEntry(char * szText1, char * szText2, i
     char* pszDescEnd = OOGUTIL_GetStringEnd((char*)pnNameField);
     uint8_t* pbLevelField = (uint8_t*)OOGUTIL_GetStringEnd(pszDescEnd);
     uint32_t bLevelReject = OOGUTIL_CheckCharacterLevel(pbLevelField);
-    if (bLevelReject) {
-      return 0;
+    if (!bLevelReject) {
+      uint8_t* pbCopySrc;
+      pbCopySrc = pbLevelField;
+      do {
+        byCopy = *pbCopySrc;
+        pbCopySrc[pEntry + 0x11 - (int)pbLevelField] = byCopy;
+        pbCopySrc++;
+      } while (byCopy);
+
+      OOGUTIL_GetStringEnd((char*)pbLevelField);
+      return nGameCount;
     }
 
-    uint8_t* pbCopySrc = pbLevelField;
-    do {
-      byCopy = *pbCopySrc;
-      pbCopySrc[pEntry + 0x11 - (int)pbLevelField] = byCopy;
-      pbCopySrc++;
-    } while (byCopy);
-
-    OOGUTIL_GetStringEnd((char*)pbLevelField);
-    return nGameCount;
+    return 0;
 }
 
 int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
@@ -1989,7 +1995,7 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     }
 
     int nEntryIdx = 0;
-    if (0 < nGameListDifficultyFilter) {
+    if (nGameListDifficultyFilter > 0) {
       int nCmp;
       do {
         nCmp = strcmp(gbLanGameListEntryNamePadding[nEntryIdx].szName, aPassword->szGameName);
@@ -2007,10 +2013,7 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     }
 
     bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&sGameEntry);
-    if (!bHasPeerName) {
-      pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1411);
-      ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszLocaleStr, nullptr);
-    } else {
+    if (bHasPeerName) {
       nEntryIdx = strcmp(sGameEntry.szGameName, aPassword->szGameName);
       if (!nEntryIdx) {
         pbEntryName = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)sGameEntry.dwIpAddress);
@@ -2020,6 +2023,9 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
         ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
         return 1;
       }
+    } else {
+      pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1411);
+      ChatDlg::UIMENU_DrawTitleOnCenterSmaller(pwszLocaleStr, nullptr);
     }
 
     return 0;
@@ -2196,16 +2202,18 @@ void __stdcall OOGUTIL_CloseProfileDialog() {
 // Returns 1. Entry proven by the fpOnPressCallback pointer at 0070e9a0 (RET 0x4).
 BOOL __stdcall OOGUTIL_OnPressProfileLadder(D2ControlMsg * pControlMsg) {
     OOGUTIL_CloseProfileDialog();
-    if (!gnProfileUserExpansionFlag) {
-      if (!gnProfileUserHardcoreFlag) {
-        ChatDlg::CHATDLG_OpenLadderClassicSoftcore();
+    if (gnProfileUserExpansionFlag) {
+      if (gnProfileUserHardcoreFlag) {
+        ChatDlg::CHATDLG_OpenLadderExpansionHardcore();
       } else {
-        ChatDlg::CHATDLG_OpenLadderClassicHardcore();
+        ChatDlg::CHATDLG_OpenLadderExpansionSoftcore();
       }
-    } else if (!gnProfileUserHardcoreFlag) {
-      ChatDlg::CHATDLG_OpenLadderExpansionSoftcore();
     } else {
-      ChatDlg::CHATDLG_OpenLadderExpansionHardcore();
+      if (gnProfileUserHardcoreFlag) {
+        ChatDlg::CHATDLG_OpenLadderClassicHardcore();
+      } else {
+        ChatDlg::CHATDLG_OpenLadderClassicSoftcore();
+      }
     }
 
     ChatDlg::CHATDLG_RequestLadderRank(gszProfileCharacterName, gnProfileUserHardcoreFlag, gnProfileUserExpansionFlag);
@@ -2616,21 +2624,21 @@ void __stdcall OOGUTIL_RequestGameListFromServer() {
       dwFilterMin |= 8;
       dwFilterMax |= 8;
     }
-    if (!(ePlayerStatus & PLAYERSTATUS_Expansion)) {
-      bDiffMatch = (ePlayerStatus & 0x1f00) < 0x800;
-    } else {
+    if (ePlayerStatus & PLAYERSTATUS_Expansion) {
       bDiffMatch = (ePlayerStatus & 0x1f00) < 0xa00;
+    } else {
+      bDiffMatch = (ePlayerStatus & 0x1f00) < 0x800;
     }
     if (bDiffMatch) {
-      if (!(ePlayerStatus & PLAYERSTATUS_Expansion)) {
-        bDiffMatch = (ePlayerStatus & 0x1f00) < 0x400;
-      } else {
+      if (ePlayerStatus & PLAYERSTATUS_Expansion) {
         bDiffMatch = (ePlayerStatus & 0x1f00) < 0x500;
-      }
-      if (bDiffMatch) {
-        dwFilterMax |= 3;
       } else {
+        bDiffMatch = (ePlayerStatus & 0x1f00) < 0x400;
+      }
+      if (!bDiffMatch) {
         dwFilterMax |= 2;
+      } else {
+        dwFilterMax |= 3;
       }
     }
 
@@ -2640,7 +2648,7 @@ void __stdcall OOGUTIL_RequestGameListFromServer() {
       nGameListDifficultyFilter = *pnQueryResult;
       pbCursor = (uint8_t*)(pnQueryResult + 1);
       nAcceptedCount = 0;
-      if (0 < nGameListDifficultyFilter) {
+      if (nGameListDifficultyFilter > 0) {
         pCacheSlot = &gbLanGameListEntryNamePadding2[0].dwIpAddr;
         do {
           *(uint16_t*)(pCacheSlot - 1) = 1;
@@ -2681,7 +2689,9 @@ void __stdcall OOGUTIL_RequestGameListFromServer() {
 
           pbCursor = pbField + 1;
           bLevelOk = OOGUTIL_CheckCharacterLevel(pbCursor);
-          if (!bLevelOk) {
+          if (bLevelOk) {
+            nGameListDifficultyFilter--;
+          } else {
             pbField += 2;
             nLevelCopyOffset = -0x26 - (int)pbField;
             do {
@@ -2692,8 +2702,6 @@ void __stdcall OOGUTIL_RequestGameListFromServer() {
 
             nAcceptedCount++;
             pCacheSlot = (uint32_t*)((int)pCacheSlot + 0x3b);
-          } else {
-            nGameListDifficultyFilter--;
           }
           if (!pbCursor) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xad);
@@ -2776,7 +2784,7 @@ int __stdcall OOGUTIL_HandleGameCreation(D2ControlMsg * pControlMsg) {
     if (pControlMsg->uMsg == 0x201) {
       dwTick = GetTickCount();
       bHasPeerName = pSelectedLine;
-      if (pSelectedLine == gaOOGUtilGameCreationLangNames && dwTick - gdwLastGameListClickTick < 0x1f5) {
+      if (pSelectedLine == gaOOGUtilGameCreationLangNames && dwTick - gdwLastGameListClickTick <= 0x1f4) {
         OOGUTIL_ProcessGameListEntry(nullptr);
         return 0;
       }
@@ -2785,9 +2793,7 @@ int __stdcall OOGUTIL_HandleGameCreation(D2ControlMsg * pControlMsg) {
     gdwLastGameListClickTick = dwTick;
     gaOOGUtilGameCreationLangNames = bHasPeerName;
     bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
-    if (!bHasPeerName) {
-      OOGUTIL_Unused2(pSelectedLine);
-    } else {
+    if (bHasPeerName) {
       uint16_t* pwszLineText;
       pwszLineText = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetSelectedLineText(gpOOGGameListTextBox);
       if (pwszLineText) {
@@ -2803,6 +2809,8 @@ int __stdcall OOGUTIL_HandleGameCreation(D2ControlMsg * pControlMsg) {
         D2Win::Src::D2WinMain::D2WINMAIN_SetFocusedControl(nullptr);
         return 0;
       }
+    } else {
+      OOGUTIL_Unused2(pSelectedLine);
     }
 
     return 0;
@@ -2816,21 +2824,7 @@ void __stdcall OOGUTIL_UpdateLevelRestrictionControls() {
     int dwTextFlags;
     int32_t nTextAlign;
     BOOL bLevelRestrictionChecked = D2Win::Src::D2WinButton::D2WINBUTTON_IsPressed(gUIGameListLevelRestrictionCheckbox);
-    if (!bLevelRestrictionChecked) {
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionUpButton, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gUIGameListLevelRestrictionDownButton->sControl, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUILevelRestrictionEditBox->sControl, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionUpButton, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUIGameListLevelRestrictionDownButton->sControl, 0);
-      dwTextFlags = 0;
-      bVar1 = false;
-      nTextAlign = 5;
-      pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
-      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLabel, nTextAlign, bVar1, dwTextFlags);
-      nTextAlign = 5;
-    } else {
+    if (bLevelRestrictionChecked) {
       uint8_t byColor;
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 0);
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 0);
@@ -2845,6 +2839,20 @@ void __stdcall OOGUTIL_UpdateLevelRestrictionControls() {
       pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
       D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLabel, nTextAlign, (bool)byColor, dwTextFlags);
       nTextAlign = 4;
+    } else {
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionUpButton, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gUIGameListLevelRestrictionDownButton->sControl, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUILevelRestrictionEditBox->sControl, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionUpButton, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUIGameListLevelRestrictionDownButton->sControl, 0);
+      dwTextFlags = 0;
+      bVar1 = false;
+      nTextAlign = 5;
+      pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
+      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLabel, nTextAlign, bVar1, dwTextFlags);
+      nTextAlign = 5;
     }
 
     dwTextFlags = 0;
@@ -2996,21 +3004,7 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionCheckbox(D2ControlMsg * pControlMs
     int dwTextFlags;
     int32_t nTextAlign;
     BOOL bLevelRestrictionChecked = D2Win::Src::D2WinButton::D2WINBUTTON_IsPressed(gUIGameListLevelRestrictionCheckbox);
-    if (!bLevelRestrictionChecked) {
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionUpButton, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gUIGameListLevelRestrictionDownButton->sControl, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUILevelRestrictionEditBox->sControl, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionUpButton, 0);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUIGameListLevelRestrictionDownButton->sControl, 0);
-      dwTextFlags = 0;
-      bVar1 = false;
-      nTextAlign = 5;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
-      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLocale, nTextAlign, bVar1, dwTextFlags);
-      nTextAlign = 5;
-    } else {
+    if (bLevelRestrictionChecked) {
       uint8_t byColor;
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 0);
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 0);
@@ -3025,6 +3019,20 @@ BOOL __stdcall OOGUTIL_OnPressLevelRestrictionCheckbox(D2ControlMsg * pControlMs
       pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
       D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLocale, nTextAlign, (bool)byColor, dwTextFlags);
       nTextAlign = 4;
+    } else {
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionUpButton, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gUIGameListLevelRestrictionDownButton->sControl, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUILevelRestrictionEditBox->sControl, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionUpButton, 0);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&gUIGameListLevelRestrictionDownButton->sControl, 0);
+      dwTextFlags = 0;
+      bVar1 = false;
+      nTextAlign = 5;
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
+      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLocale, nTextAlign, bVar1, dwTextFlags);
+      nTextAlign = 5;
     }
 
     dwTextFlags = 0;
@@ -3086,13 +3094,13 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
       *(uint32_t*)(char*)&szTempBuffer = (uint32_t)(uintptr_t)D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUIGameListMaxPlayersEditBox->sControl);
       *(uint8_t*)((char*)&sGameCreatePacket + 68) = 1;
       bCallResult = D2Win::Src::D2WinButton::D2WINBUTTON_IsPressed(gUIGameListLevelRestrictionCheckbox);
-      if (!bCallResult) {
-        sGameCreatePacket.nDifference = -1;
-      } else {
+      if (bCallResult) {
         pwszLevelRestriction = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gUILevelRestrictionEditBox->sControl);
         D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szNumberBuffer, (uint16_t*)pwszLevelRestriction, 3);
         nParsedValue = atol(szNumberBuffer);
         sGameCreatePacket.nDifference = (char)nParsedValue;
+      } else {
+        sGameCreatePacket.nDifference = -1;
       }
 
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szNumberBuffer, (uint16_t*)*(uint32_t*)(char*)&szTempBuffer, 3);
@@ -3459,7 +3467,7 @@ void __stdcall UIMENU_JoinGame() {
 
     gpOogGameListDetailsPanelControl = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x37);
     DWORD dwTickNow = GetTickCount();
-    if (4999 < dwTickNow - gdwLastGameListRefreshTick) {
+    if (dwTickNow - gdwLastGameListRefreshTick >= 5000) {
       gdwLastGameListRefreshTick += dwTickNow - gdwLastGameListRefreshTick;
       OOGMENU_RequestGameList();
     }
@@ -3528,39 +3536,7 @@ void __stdcall OOGUTIL_OpenCreateGameDialog() {
     sprintf(gszOogLevelRestrictionText, "%d", 4);
     sprintf(gszOogMaxPlayersText, "%d", 4);
     bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
-    if (!bHasPeerName) {
-      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gpOogGameNameEditControl, gUIGameListGameNameEditBox);
-      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gUIGameListGameNameEditBox, gUIGameListGamePasswordEditBox);
-      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gUIGameListGamePasswordEditBox, gpOogGameNameEditControl);
-      gUIGameListMaxPlayersLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x45);
-      bRegReadOk = 0;
-      uVar2 = 0;
-      bHasPeerName = 5;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148a);
-      D2Win::Src::D2WinTextBox::SetText(gUIGameListMaxPlayersLabel, pwszLocale, bHasPeerName, (bool)uVar2, bRegReadOk);
-      gUIGameListLevelRestrictionLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x46);
-      bRegReadOk = 0;
-      bDifficultySelected = false;
-      bHasPeerName = 5;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
-      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLocale, bHasPeerName, bDifficultySelected, bRegReadOk);
-      gUIGameListLevelRestrictionLevelsLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x47);
-      bRegReadOk = 0;
-      bDifficultySelected = false;
-      bHasPeerName = 5;
-      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148c);
-      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLevelsLabel, pwszLocale, bHasPeerName, bDifficultySelected, bRegReadOk);
-      gUIGameListLevelRestrictionInactiveImage = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x4f);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
-      gUIGameListLevelRestrictionInactiveArrowButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5a);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionInactiveArrowButton, 0);
-      gUIGameListMaxPlayersInactiveImage = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5b);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListMaxPlayersInactiveImage, 1);
-      gUIGameListMaxPlayersInactiveArrowButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5c);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListMaxPlayersInactiveArrowButton, 1);
-      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListMaxPlayersInactiveArrowButton, 0);
-    } else {
+    if (bHasPeerName) {
       uint8_t uVar1;
       gUIGameListMaxPlayersEditBox = (::D2WinEditBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x4b);
       D2Win::Src::D2WinEditBox::D2WINEDITBOX_SetTextFromAnsi(gUIGameListMaxPlayersEditBox, gszOogMaxPlayersText);
@@ -3608,6 +3584,38 @@ void __stdcall OOGUTIL_OpenCreateGameDialog() {
       D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gUILevelRestrictionEditBox, gpOogGameNameEditControl);
       OOGUTIL_LoadLevelRestrictionSetting();
       OOGUTIL_LoadMaxPlayersSetting();
+    } else {
+      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gpOogGameNameEditControl, gUIGameListGameNameEditBox);
+      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gUIGameListGameNameEditBox, gUIGameListGamePasswordEditBox);
+      D2Win::Src::D2WinEditBox::D2WINEDITBOX_LinkTabOrder(gUIGameListGamePasswordEditBox, gpOogGameNameEditControl);
+      gUIGameListMaxPlayersLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x45);
+      bRegReadOk = 0;
+      uVar2 = 0;
+      bHasPeerName = 5;
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148a);
+      D2Win::Src::D2WinTextBox::SetText(gUIGameListMaxPlayersLabel, pwszLocale, bHasPeerName, (bool)uVar2, bRegReadOk);
+      gUIGameListLevelRestrictionLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x46);
+      bRegReadOk = 0;
+      bDifficultySelected = false;
+      bHasPeerName = 5;
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148b);
+      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLabel, pwszLocale, bHasPeerName, bDifficultySelected, bRegReadOk);
+      gUIGameListLevelRestrictionLevelsLabel = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x47);
+      bRegReadOk = 0;
+      bDifficultySelected = false;
+      bHasPeerName = 5;
+      pwszLocale = D2Lang::StrTable::strtable::GetLocaleString(0x148c);
+      D2Win::Src::D2WinTextBox::SetText(gUIGameListLevelRestrictionLevelsLabel, pwszLocale, bHasPeerName, bDifficultySelected, bRegReadOk);
+      gUIGameListLevelRestrictionInactiveImage = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x4f);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveImage, 1);
+      gUIGameListLevelRestrictionInactiveArrowButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5a);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListLevelRestrictionInactiveArrowButton, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListLevelRestrictionInactiveArrowButton, 0);
+      gUIGameListMaxPlayersInactiveImage = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5b);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListMaxPlayersInactiveImage, 1);
+      gUIGameListMaxPlayersInactiveArrowButton = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x5c);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gUIGameListMaxPlayersInactiveArrowButton, 1);
+      D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gUIGameListMaxPlayersInactiveArrowButton, 0);
     }
 
     bDifficultySelected = false;
@@ -3724,13 +3732,14 @@ int __stdcall OOGUTIL_ValidateUsername1(D2ControlMsg * pControlMsg) {
     }
 
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszInput);
-    if (!nLength) {
-      return 1;
+    if (nLength) {
+      int nSendResult;
+      D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szMessage, (uint16_t*)pwszInput, 0x100);
+      nSendResult = OOGUTIL_SendChatMessage(szMessage, 0);
+      return nSendResult;
     }
 
-    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szMessage, (uint16_t*)pwszInput, 0x100);
-    int nSendResult = OOGUTIL_SendChatMessage(szMessage, 0);
-    return nSendResult;
+    return 1;
 }
 
 int __stdcall OOGUTIL_ValidateUsername2(D2ControlMsg * pControlMsg) {
@@ -3741,13 +3750,14 @@ int __stdcall OOGUTIL_ValidateUsername2(D2ControlMsg * pControlMsg) {
     }
 
     int32_t nLength = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pwszInput);
-    if (!nLength) {
-      return 1;
+    if (nLength) {
+      int nSendResult;
+      D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szMessage, (uint16_t*)pwszInput, 0x100);
+      nSendResult = OOGUTIL_SendChatMessage(szMessage, 1);
+      return nSendResult;
     }
 
-    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szMessage, (uint16_t*)pwszInput, 0x100);
-    int nSendResult = OOGUTIL_SendChatMessage(szMessage, 1);
-    return nSendResult;
+    return 1;
 }
 
 int __stdcall OOGUTIL_ValidateUsername3(D2ControlMsg * pControlMsg) {
@@ -3769,7 +3779,7 @@ int __stdcall OOGUTIL_ValidateUsername3(D2ControlMsg * pControlMsg) {
     }
 
     DWORD dwTickNow = GetTickCount();
-    if (gdwLastChatSendTick + 1000 > dwTickNow) {
+    if (!(dwTickNow >= gdwLastChatSendTick + 1000)) {
       return 1;
     }
 
@@ -3782,7 +3792,7 @@ int __stdcall OOGUTIL_ValidateUsername3(D2ControlMsg * pControlMsg) {
 int __stdcall OOGUTIL_ValidateUsername4(DWORD dwParam) {
     uint8_t szMessage[256];
     DWORD dwTickNow = GetTickCount();
-    if (gdwLastChatSendTick + 1000 > dwTickNow) {
+    if (!(dwTickNow >= gdwLastChatSendTick + 1000)) {
       return 1;
     }
 

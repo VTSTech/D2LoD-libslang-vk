@@ -196,7 +196,7 @@ uint32_t UNITMODE_CanInterruptSkill(D2UnitStrc * pUnit) {
     }
 
     eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\UnitMode.cpp", 0x2cc);
-    if (!(-1 < (int)eSkillId && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && !sgptDataTable->pTxtSkills[eSkillId].interrupt && (!pUnit || pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral && pUnit->eAnimMode.ePlayerMode != TownNeutral))) {
+    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId && !sgptDataTable->pTxtSkills[eSkillId].interrupt && (!pUnit || pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral && pUnit->eAnimMode.ePlayerMode != TownNeutral))) {
       return 1;
     }
 
@@ -229,14 +229,14 @@ BOOL UNITMODE_IsTargetInActionRange(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int
     BOOL bResult;
     int nRangeMin;
     int nRangeMax;
-    if (nActionType == 6) {
-      pSkill = D2Common::Units::GetLeftSkill(pUnit2);
-    } else {
+    if (nActionType != 6) {
       if (nActionType != 0xd) {
         goto check_interact_range;
       }
 
       pSkill = D2Common::Units::GetRightSkill(pUnit2);
+    } else {
+      pSkill = D2Common::Units::GetLeftSkill(pUnit2);
     }
     if (pSkill) {
       D2SkillsTxt* pSkillsTxt;
@@ -255,11 +255,11 @@ BOOL UNITMODE_IsTargetInActionRange(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int
       }
 
       bResult = D2Common::Units::TestCollisionBetweenInteractingUnits(pUnit2, pUnit, 0x804);
-      if (bResult) {
-        return 1;
+      if (!bResult) {
+        return 0;
       }
 
-      return 0;
+      return 1;
     }
     bResult = D2Common::Units::IsInMovingModeEx(pUnit);
     bResult = D2Common::Units::IsInMeleeRange(pUnit2, pUnit, bResult);
@@ -336,12 +336,12 @@ BOOL __stdcall UNITMODE_SetModeAndLoadCof(int32_t nAnimMode, D2UnitStrc * pUnit)
     }
 
     int32_t iVar1 = D2Common::Units::SetupUpdateFlag(pUnit, nAnimMode);
-    if (!iVar1) {
-      return 0;
+    if (iVar1) {
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      return 1;
     }
 
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
-    return 1;
+    return 0;
 }
 
 void __fastcall UNITMODE_SetAnimMode(D2UnitStrc * pUnit, eD2PlayerAnimMode nAnimMode) {
@@ -386,12 +386,12 @@ void __fastcall UNITMODE_SendWalkToPosition(D2UnitStrc * pUnit, int32_t nTargetX
     bMoved = 0;
     int32_t local_c;
     local_c = nTargetX;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosDelta = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosDelta = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosDelta = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosDelta = 0;
     }
 
     nPosDelta = nTargetX - nPosDelta;
@@ -403,12 +403,12 @@ void __fastcall UNITMODE_SendWalkToPosition(D2UnitStrc * pUnit, int32_t nTargetX
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosDelta = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosDelta = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosDelta = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosDelta = 0;
     }
 
     nPosDelta = nTargetY - nPosDelta;
@@ -431,7 +431,11 @@ void __fastcall UNITMODE_SendWalkToPosition(D2UnitStrc * pUnit, int32_t nTargetX
       msg.nItemId = nTargetY;
       msg.nSkillId = local_c;
       nWalkMsgId = 1;
-      if (eUnitType == UNIT_PLAYER) {
+      if (eUnitType != UNIT_PLAYER) {
+        if (eUnitType == UNIT_MONSTER) {
+          msg.nTargetUnitId = 1;
+        }
+      } else {
         pPlayerUnit_lcl = Player::GetPlayerUnit_Net();
         if (pUnit != pPlayerUnit_lcl) {
           if (bUsePathMove) {
@@ -441,8 +445,6 @@ void __fastcall UNITMODE_SendWalkToPosition(D2UnitStrc * pUnit, int32_t nTargetX
 
           nWalkMsgId = 0x17;
         }
-      } else if (eUnitType == UNIT_MONSTER) {
-        msg.nTargetUnitId = 1;
       }
 
       msg.nSkillLvl = 100;
@@ -622,20 +624,7 @@ void __stdcall UNITMODE_HandleMoveAction(uint32_t dwUnused, int32_t nX, int32_t 
     uint32_t dwClickFlags;
     dwClickFlags = GAME::Game::GetMouseClickFlags();
     sMsg[1] = nY;
-    if (!(dwClickFlags & 8)) {
-      dwClickFlags = UNITMODE_CanInterruptSkill(pUnit);
-      if (!dwClickFlags) {
-        goto queue_pending_interact;
-      }
-
-      memset(sMsg + 2, 0, 5 * sizeof(sMsg[0]));
-      sMsg[0] = nX;
-      bHandled = HandleMessage(0, pUnit, (D2ServerMessageHandleStrc*)sMsg, 0);
-      if (bHandled) {
-        nPacketId = 2;
-        GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(nPacketId, nX, nY);
-      }
-    } else {
+    if (dwClickFlags & 8) {
       dwClickFlags = UNITMODE_CanInterruptSkill(pUnit);
       if (!dwClickFlags) {
         goto queue_pending_interact;
@@ -646,6 +635,19 @@ void __stdcall UNITMODE_HandleMoveAction(uint32_t dwUnused, int32_t nX, int32_t 
       bHandled = HandleMessage(0x18, pUnit, (D2ServerMessageHandleStrc*)sMsg, 0);
       if (bHandled) {
         nPacketId = 4;
+        GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(nPacketId, nX, nY);
+      }
+    } else {
+      dwClickFlags = UNITMODE_CanInterruptSkill(pUnit);
+      if (!dwClickFlags) {
+        goto queue_pending_interact;
+      }
+
+      memset(sMsg + 2, 0, 5 * sizeof(sMsg[0]));
+      sMsg[0] = nX;
+      bHandled = HandleMessage(0, pUnit, (D2ServerMessageHandleStrc*)sMsg, 0);
+      if (bHandled) {
+        nPacketId = 2;
         GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(nPacketId, nX, nY);
       }
     }
@@ -671,22 +673,22 @@ void __stdcall UNITMODE_HandleMoveAction(uint32_t dwUnused, int32_t nX, int32_t 
 BOOL __stdcall UNITMODE_HandleItemOrObjectInteraction(int32_t nActionType, int32_t nX, int32_t nTargetGUID, D2UnitStrc * pTargetUnit, D2UnitStrc * pPlayerUnit) {
     BOOL BVar1;
     int nResult = CUnit::IsActive(pTargetUnit);
-    if (!nResult) {
-      if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
-        BVar1 = UNITMODE_IsTargetInActionRange(pTargetUnit, pPlayerUnit, nActionType);
-        if (!BVar1) {
-          return 1;
-        }
-
-        UNITMODE_HandleMoveAction(nActionType, nX, nTargetGUID, pPlayerUnit);
-        return 0;
-      }
-    } else {
+    if (nResult) {
       int32_t nLooterGUID = !pPlayerUnit ? -1 : pPlayerUnit->nUnitGUID;
       BVar1 = GAME::Roster::ROSTER_CheckPlayerCanLoot(nLooterGUID, nTargetGUID);
       if (BVar1) {
         UNITMODE_ExecuteSkillAction(nActionType, pPlayerUnit, nX, nTargetGUID, 0);
         return 0;
+      }
+    } else {
+      if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
+        BVar1 = UNITMODE_IsTargetInActionRange(pTargetUnit, pPlayerUnit, nActionType);
+        if (BVar1) {
+          UNITMODE_HandleMoveAction(nActionType, nX, nTargetGUID, pPlayerUnit);
+          return 0;
+        }
+
+        return 1;
       }
     }
 
@@ -700,12 +702,7 @@ BOOL __stdcall UNITMODE_HandleSkillTargetInteraction(eD2UnitModeAction nActionTy
     eD2Skills eSkillId;
     int nIsActive;
     nIsActive = CUnit::IsActive(pTargetUnit);
-    if (!nIsActive) {
-      if (!pTargetUnit || !(pTargetUnit->eUnitFlags >> 1 & 1)) {
-        GAME::Select::SELECT_UpdateUnitSelection(nullptr);
-        return 0;
-      }
-    } else {
+    if (nIsActive) {
       D2SkillStrc* pSkill;
       switch (nActionType) {
         case UNITMODEACTION_LEFTSKILL_COORD:
@@ -742,20 +739,25 @@ BOOL __stdcall UNITMODE_HandleSkillTargetInteraction(eD2UnitModeAction nActionTy
           goto clear_selection;
       }
 
-      if (!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\UnitMode.cpp", 0x44f) , (int)eSkillId < 0) || sgptDataTable->nTxtSkillsCount <= (int)eSkillId || !(sgptDataTable->pTxtSkills + eSkillId) || !sgptDataTable->pTxtSkills[eSkillId].TargetCorpse) {
+      if (!pSkill || (eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\UnitMode.cpp", 0x44f) , (int)eSkillId < 0) || (int)eSkillId >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkillId) || !sgptDataTable->pTxtSkills[eSkillId].TargetCorpse) {
         clear_selection:
+        GAME::Select::SELECT_UpdateUnitSelection(nullptr);
+        return 0;
+      }
+    } else {
+      if (!pTargetUnit || !(pTargetUnit->eUnitFlags >> 1 & 1)) {
         GAME::Select::SELECT_UpdateUnitSelection(nullptr);
         return 0;
       }
     }
 
     BOOL BVar1 = UNITMODE_IsTargetInActionRange(pTargetUnit, pPlayerUnit, nActionType);
-    if (!BVar1) {
-      return 1;
+    if (BVar1) {
+      UNITMODE_HandleMoveAction(nActionType, nX, nTargetGUID, pPlayerUnit);
+      return 0;
     }
 
-    UNITMODE_HandleMoveAction(nActionType, nX, nTargetGUID, pPlayerUnit);
-    return 0;
+    return 1;
 }
 
 } // namespace D2Client::UNIT::UnitMode

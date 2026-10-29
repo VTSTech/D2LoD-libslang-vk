@@ -151,10 +151,10 @@ void __fastcall PLAYERLIST_RemoveFromList(::SGAMEDATA * pGame, D2UnitStrc * pUni
       }
     }
 
-    if (!pPrevEntry) {
-      pPlayerData->pPlayerList = pMemoryToFree->pNext;
-    } else {
+    if (pPrevEntry) {
       pPrevEntry->pNext = pMemoryToFree->pNext;
+    } else {
+      pPlayerData->pPlayerList = pMemoryToFree->pNext;
     }
 
     D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\PlayerList.cpp", 0x97);
@@ -183,10 +183,10 @@ void __fastcall SendRelationshipStatus(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     pListEntry = 0;
     lookup_done:
     if (pUnit != pTargetUnit && pListEntry) {
-      if (!nParam) {
-        pListEntry->nRelationshipFlags &= ~dwFlagMask;
-      } else {
+      if (nParam) {
         pListEntry->nRelationshipFlags |= dwFlagMask;
+      } else {
+        pListEntry->nRelationshipFlags &= ~dwFlagMask;
       }
       if (!pTargetUnit) {
         nOtherUnitGUID = -1;

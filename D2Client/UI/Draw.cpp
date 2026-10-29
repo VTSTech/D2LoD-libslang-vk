@@ -120,7 +120,7 @@ void __fastcall SetActNo(int32_t nParam) {
 
 void __stdcall CleanupAfterLoadingAct() {
     // Static local variables (originally global data)
-    static bool gbCleanupAfterLoadingActFlag; D2_STATIC_GUARD_BSS(gbCleanupAfterLoadingActFlag, "D2Client::UI::Draw::CleanupAfterLoadingAct::gbCleanupAfterLoadingActFlag");
+    static BOOL gbCleanupAfterLoadingActFlag; D2_STATIC_GUARD_BSS(gbCleanupAfterLoadingActFlag, "D2Client::UI::Draw::CleanupAfterLoadingAct::gbCleanupAfterLoadingActFlag");
 
     if (gnLoadedActIndex) {
       Core::Archive::DC6_FreeAndDelete(gnLoadedActIndex);
@@ -154,12 +154,12 @@ BOOL __stdcall DRAW_CheckTickRateLimiter() {
     static unsigned int gdwLastDrawTickTimestamp; D2_STATIC_GUARD_BSS(gdwLastDrawTickTimestamp, "D2Client::UI::Draw::DRAW_CheckTickRateLimiter::gdwLastDrawTickTimestamp");
 
     DWORD dwNow = GetTickCount();
-    if (0x32 >= dwNow - gdwLastDrawTickTimestamp) {
-      return 0;
+    if (dwNow - gdwLastDrawTickTimestamp > 0x32) {
+      gdwLastDrawTickTimestamp = dwNow;
+      return 1;
     }
 
-    gdwLastDrawTickTimestamp = dwNow;
-    return 1;
+    return 0;
 }
 
 // Fills a four-int array with the visible viewport bounds as left, top, right, bottom. Callers must model the destination as one 16-byte object (int[4]): splitting it into separate stack locals leaves the right and bottom elements looking unwritten.
@@ -267,7 +267,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
       nClassId = -1;
     } else {
       nClassId = pUnit->nClassId;
-      if (-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize) {
+      if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize) {
         pMonStats = sgptDataTable->pTxtMonStats + nClassId;
         goto draw_hover_unit_label;
       }
@@ -356,54 +356,55 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
       if (nResult) {
         nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
         D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(wszNameBuf, (anViewportBounds[0] + anViewportBounds[2] >> 1) - (nTextWidth >> 1), 0x20, nNameColor, 0, nHpBarValue);
-        if (bIsMercenary) {
-          gnMonsterHealthBarValue[0] = 0;
+        if (!bIsMercenary) {
+          if (!pUnit) {
+            nClassId = -1;
+          } else {
+            nClassId = pUnit->nClassId;
+          }
+
+          pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nClassId);
+          wMonTypeStrId = 0;
+          nResult = D2Common::Monsters::MONSTERS::IsDemon(pUnit);
+          if (nResult) {
+            wMonTypeStrId = 0x275e;
+          } else {
+            bResult = D2Common::Monsters::MONSTERS::MONSTER_IsMonsterUndead(pUnit);
+            if (bResult) {
+              wMonTypeStrId = 0x275d;
+            }
+          }
+
+          bResult = ui::UI_GetUniqueMonsterName(pUnit, wMonTypeStrId);
+          if (!bResult) {
+            if (wMonTypeStrId) {
+              Fog::File::CONTAINER_InitializeBuffer(wszDescBuf, 2, 0x200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+              pwszStr = D2Lang::StrTable::strtable::GetLocaleString(wMonTypeStrId);
+              D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszDescBuf, pwszStr);
+              pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
+              if (pMonStats->DescStr != 0x1506) {
+                pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
+                D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
+              }
+
+              ui::UI_StoreGlobalUIText(wszDescBuf, nNameColor);
+              ui::UI_BuildUberBossImmunityString(pUnit);
+              D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+              return;
+            }
+            if (pMonStats->DescStr != 0x1506) {
+              pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
+              ui::UI_StoreGlobalUIText(pwszStr, nNameColor);
+            }
+          }
+
+          ui::UI_BuildUberBossImmunityString(pUnit);
           D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
           return;
         }
-        if (!pUnit) {
-          nClassId = -1;
-        } else {
-          nClassId = pUnit->nClassId;
-        }
 
-        pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nClassId);
-        wMonTypeStrId = 0;
-        nResult = D2Common::Monsters::MONSTERS::IsDemon(pUnit);
-        if (!nResult) {
-          bResult = D2Common::Monsters::MONSTERS::MONSTER_IsMonsterUndead(pUnit);
-          if (bResult) {
-            wMonTypeStrId = 0x275d;
-          }
-        } else {
-          wMonTypeStrId = 0x275e;
-        }
-
-        bResult = ui::UI_GetUniqueMonsterName(pUnit, wMonTypeStrId);
-        if (!bResult) {
-          if (wMonTypeStrId) {
-            Fog::File::CONTAINER_InitializeBuffer(wszDescBuf, 2, 0x200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(wMonTypeStrId);
-            D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszDescBuf, pwszStr);
-            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
-            D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
-            if (pMonStats->DescStr != 0x1506) {
-              pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
-              D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
-            }
-
-            ui::UI_StoreGlobalUIText(wszDescBuf, nNameColor);
-            ui::UI_BuildUberBossImmunityString(pUnit);
-            D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
-            return;
-          }
-          if (pMonStats->DescStr != 0x1506) {
-            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
-            ui::UI_StoreGlobalUIText(pwszStr, nNameColor);
-          }
-        }
-
-        ui::UI_BuildUberBossImmunityString(pUnit);
+        gnMonsterHealthBarValue[0] = 0;
         D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
         return;
       }
@@ -484,20 +485,13 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
       D2UnitStrc* pPlayer;
       pPlayer = UNIT::Player::GetPlayerUnit_UI();
       nX = D2Common::Collision::GetCollisionDistance(pUnit, pPlayer);
-      if (100 < nX) {
+      if (nX > 100) {
         return;
       }
     }
 
     nResult = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
-    if (!nResult) {
-      nX = D2Common::Units::GetTargetX(pUnit);
-      nY = Path::DRAW_GetWorldOffsetX();
-      nHealthBarScreenX = nX - nY;
-      nX = D2Common::Units::GetTargetY(pUnit);
-      nY = Path::DRAW_GetWorldOffsetY();
-      gnMercenaryHealthBarScreenY = nX - nY;
-    } else {
+    if (nResult) {
       nX = D2Common::Units::GetPrecisionX(pUnit);
       nY = D2Common::Units::GetPrecisionY(pUnit);
       nResult = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(nX, nY);
@@ -507,16 +501,25 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
 
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nX, nY, 0, &__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
       nResult = Path::DRAW_GetTypeOfBorder();
-      if (nResult == 1) {
-        nClassId = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
-        __frame0.nScreenX += nClassId;
-      } else if (nResult == 2) {
-        nClassId = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+      if (nResult != 1) {
+        if (nResult == 2) {
+          nClassId = ScreenSizeX / 4;
+          __frame0.nScreenX += nClassId;
+        }
+      } else {
+        nClassId = -(ScreenSizeX / 4);
         __frame0.nScreenX += nClassId;
       }
 
       gnMercenaryHealthBarScreenY = (int)__frame0.pLevelTxtResult->MonLvl;
       nHealthBarScreenX = __frame0.nScreenX;
+    } else {
+      nX = D2Common::Units::GetTargetX(pUnit);
+      nY = Path::DRAW_GetWorldOffsetX();
+      nHealthBarScreenX = nX - nY;
+      nX = D2Common::Units::GetTargetY(pUnit);
+      nY = Path::DRAW_GetWorldOffsetY();
+      gnMercenaryHealthBarScreenY = nX - nY;
     }
 
     switch (pUnit->eUnitType) {
@@ -754,13 +757,19 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
       }
 
       uResult = GAME::Game::GAMEDATA_CheckTimerExpired(&gnAreaNameOverlay);
-      if (!uResult) {
+      if (uResult) {
+        if (DC6_EnteredAreaName) {
+          Core::Archive::DC6_FreeAndDelete(DC6_EnteredAreaName);
+          DC6_EnteredAreaName = 0;
+          return;
+        }
+      } else {
         pLevelTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eRoomLevel);
-        if ((int)eRoomLevel < 0x6d) {
+        if ((int)eRoomLevel >= 0x6d) {
+          memcpy(szActDir, "EXPANSION", 10);
+        } else {
           neAct = D2Common::Drlg::GetActNoFromLevelNumber(eRoomLevel);
           sprintf(szActDir, "ACT%d", neAct + 1);
-        } else {
-          memcpy(szActDir, "EXPANSION", 10);
         }
 
         D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
@@ -786,10 +795,6 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
         }
 
         D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(DC6_EnteredAreaName, ScreenSizeX / 2, ScreenSizeY / 2 - 0x8c, 1, DRAW_SOLID, PALETTE_RED);
-      } else if (DC6_EnteredAreaName) {
-        Core::Archive::DC6_FreeAndDelete(DC6_EnteredAreaName);
-        DC6_EnteredAreaName = 0;
-        return;
       }
     }
 }
@@ -1273,7 +1278,7 @@ DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DW
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fb);
       exit(-1);
     }
-    if (UI_TOGGLE < neD2UIvarsSetType) {
+    if (neD2UIvarsSetType > UI_TOGGLE) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fc);
       exit(-1);
     }
@@ -1310,12 +1315,14 @@ DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DW
         }
       case UI_TOGGLE:
         {
-          if (!pUnit) {
+          if (pUnit) {
+            if (pUnit->eUnitType == UNIT_PLAYER && (iVar1 = UNIT::CUnit::IsActive(pUnit) , !iVar1)) {
+              (&GFX_bShowUIFlag.Game)[eUI] = (uint32_t)!(&GFX_bShowUIFlag.Game)[eUI];
+            } else if (eUI == UI_CHATBOX) {
+              GFX_bShowUIFlag.ChatInput = (BOOL)!GFX_bShowUIFlag.ChatInput;
+            }
+          } else {
             (&GFX_bShowUIFlag.Game)[eUI] = (uint32_t)!(&GFX_bShowUIFlag.Game)[eUI];
-          } else if (pUnit->eUnitType == UNIT_PLAYER && (iVar1 = UNIT::CUnit::IsActive(pUnit) , !iVar1)) {
-            (&GFX_bShowUIFlag.Game)[eUI] = (uint32_t)!(&GFX_bShowUIFlag.Game)[eUI];
-          } else if (eUI == UI_CHATBOX) {
-            GFX_bShowUIFlag.ChatInput = (BOOL)!GFX_bShowUIFlag.ChatInput;
           }
 
           break;
@@ -1350,20 +1357,20 @@ DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DW
           Path::TypeOfUiOverlayOverWorld(3);
           return 1;
         }
-      if (!iVar1) {
-        Path::TypeOfUiOverlayOverWorld(0);
-        if (bAdjustMouse && iVar2 < ScreenSizeX / 2) {
-          ui::SetMouseXY(((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2) + iVar2, y);
-          return 1;
-        }
-      } else {
+      if (iVar1) {
         Path::TypeOfUiOverlayOverWorld(1);
         if (bAdjustMouse) {
-          iVar1 = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-          if (iVar1 < iVar2) {
+          iVar1 = ScreenSizeX / 4;
+          if (iVar2 > iVar1) {
             ui::SetMouseXY(iVar2 - iVar1, y);
             return 1;
           }
+        }
+      } else {
+        Path::TypeOfUiOverlayOverWorld(0);
+        if (bAdjustMouse && iVar2 < ScreenSizeX / 2) {
+          ui::SetMouseXY(ScreenSizeX / 4 + iVar2, y);
+          return 1;
         }
       }
 
@@ -1382,30 +1389,30 @@ DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DW
 
       case UI_RECIPESCROLL:
         if (!GFX_bShowUIFlag.Inventory && !GFX_bShowUIFlag.Skill) {
-          if (!iVar1) {
-            Path::TypeOfUiOverlayOverWorld(0);
+          if (iVar1) {
+            Path::TypeOfUiOverlayOverWorld(2);
             if (!bAdjustMouse) {
               return 1;
             }
-            if (iVar2 <= ScreenSizeX / 2) {
+
+            iVar1 = ScreenSizeX / 4;
+            if (iVar2 >= ScreenSizeX - iVar1) {
               return 1;
             }
 
-            ui::SetMouseXY(iVar2 - ((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2), y);
+            ui::SetMouseXY(iVar1 + iVar2, y);
             return 1;
           }
 
-          Path::TypeOfUiOverlayOverWorld(2);
+          Path::TypeOfUiOverlayOverWorld(0);
           if (!bAdjustMouse) {
             return 1;
           }
-
-          iVar1 = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
-          if (ScreenSizeX - iVar1 <= iVar2) {
+          if (iVar2 <= ScreenSizeX / 2) {
             return 1;
           }
 
-          ui::SetMouseXY(iVar1 + iVar2, y);
+          ui::SetMouseXY(iVar2 - ScreenSizeX / 4, y);
           return 1;
         }
       eOverlayMode = 3;
@@ -1530,7 +1537,7 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
                   if (!GFX_bShowUIFlag.CharStat && !GFX_bShowUIFlag.WaypointMenu && !GFX_bShowUIFlag.Quest && !GFX_bShowUIFlag.PartyPane && !GFX_bShowUIFlag.MercMenu && !GFX_bShowUIFlag.UnusedScroll && !GFX_bShowUIFlag.PartyMenu) {
                     Path::TypeOfUiOverlayOverWorld(0);
                     if (bAdjustMouse && iVar1 < ScreenSizeX / 2) {
-                      ui::SetMouseXY(((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2) + iVar1, nMouseY);
+                      ui::SetMouseXY(ScreenSizeX / 4 + iVar1, nMouseY);
                     }
                   } else {
                     eOverlayMode = 2;
@@ -1556,8 +1563,8 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
                     goto apply_overlay_mode;
                   }
                 Path::TypeOfUiOverlayOverWorld(0);
-                if (bAdjustMouse && ScreenSizeX / 2 < iVar1) {
-                  ui::SetMouseXY(iVar1 - ((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2), nMouseY);
+                if (bAdjustMouse && iVar1 > ScreenSizeX / 2) {
+                  ui::SetMouseXY(iVar1 - ScreenSizeX / 4, nMouseY);
                 }
 
                 break;
@@ -1593,7 +1600,7 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
       }
 
       eUI += UI_INVENTORY;
-      if (0x25 < (int)eUI) {
+      if ((int)eUI >= 0x26) {
         return bClosedAny;
       }
     } while (true);
@@ -1606,12 +1613,12 @@ void __stdcall LoadingsScreen() {
     CleanupAfterLoadingAct();
     PALETTE_LoadLoadingScreenPalette();
     uint32_t nLangCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    if (!nLangCode) {
-      pszBaseDir = "DATA\\GLOBAL";
-      _Format = "%s\\UI\\Loading\\Loadingscreen";
-    } else {
+    if (nLangCode) {
       pszBaseDir = "DATA\\LOCAL";
       _Format = "%s\\UI\\LoadingScreen";
+    } else {
+      pszBaseDir = "DATA\\GLOBAL";
+      _Format = "%s\\UI\\Loading\\Loadingscreen";
     }
 
     sprintf(szPath, _Format, pszBaseDir);
@@ -1667,7 +1674,7 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
         }
 
         nResult = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(gnLoadedActIndex);
-        if (nResult <= gnLoadScreenAnimFrame) {
+        if (gnLoadScreenAnimFrame >= nResult) {
           gnLoadScreenAnimFrame = nResult - 1;
         }
 
@@ -1717,7 +1724,7 @@ void __stdcall UI_ToggleMiniPanel() {
       }
 
       eUI = UI_GAME;
-      if (0 < gnUIFlagCount) {
+      if (gnUIFlagCount > 0) {
         do {
           if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
             switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0x15]) {
@@ -2140,15 +2147,15 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     if (GFX_bShowUIFlag.HelpScreenRedButton) {
       Help::HELP_DrawHelpButton();
     }
-    if (!GFX_bShowUIFlag.EquipmentPane) {
-      ui::UI_DrawLevelUpButtonLeft();
-    } else {
+    if (GFX_bShowUIFlag.EquipmentPane) {
       ui::DRAW_UI_NewStatPoints_II();
-    }
-    if (!GFX_bShowUIFlag.NewSkill) {
-      ui::UI_DrawLevelUpButtonRight();
     } else {
+      ui::UI_DrawLevelUpButtonLeft();
+    }
+    if (GFX_bShowUIFlag.NewSkill) {
       ui::Draw_UI_NewStatPoints();
+    } else {
+      ui::UI_DrawLevelUpButtonRight();
     }
     if (GFX_bShowUIFlag.QuestLogButton) {
       QuestLog::QUESTLOG_DrawQuestLogButton();
@@ -2246,7 +2253,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     }
 
     Panel::PANEL_DrawHostileIndicator();
-    Text::TEXT_DrawMessageLogAndOverhead(pGameView, pnNpcParam);
+    Text::TEXT_DrawMessageLogAndOverhead(pGameView);
     D2Win::Src::D2WinFont::Draw_UnitNameUnderCursor();
     DRAW_MonsterUnderCursorImmunites();
     ui::UI_DrawStoredTooltip();
@@ -2279,10 +2286,12 @@ void __fastcall CLIENT_AdjustMemoryBudget(D2PoolManagerStrc * pMemory, int32_t b
 
     pStormGlobal = dwPhysMemBytes - 0xb00000;
     dwPhysMemBytes = pStormGlobal * 10 / 100;
-    if (dwPhysMemBytes < 0x300001) {
+    if (dwPhysMemBytes > 0x300000) {
+      if (dwPhysMemBytes >= 0x500000) {
+        dwPhysMemBytes = 0x500000;
+      }
+    } else {
       dwPhysMemBytes = 0x300000;
-    } else if (0x4fffff < dwPhysMemBytes) {
-      dwPhysMemBytes = 0x500000;
     }
 
     Sound::SoundHdr::SOUNDHDR_SetGlobal4(dwPhysMemBytes);
@@ -2295,12 +2304,12 @@ void __fastcall CLIENT_AdjustMemoryBudget(D2PoolManagerStrc * pMemory, int32_t b
 
     uint32_t dwCelCacheSize;
     dwCelCacheSize = (nRemainingBytes - 0x200000U) / 3;
-    if (0x1800000 < dwCelCacheSize) {
-      if (0x3ffffff < dwCelCacheSize) {
+    if (dwCelCacheSize > 0x1800000) {
+      if (dwCelCacheSize >= 0x4000000) {
         dwCelCacheSize = 0x4000000;
         goto init_caches;
       }
-      if (0x1800000 < dwCelCacheSize) {
+      if (dwCelCacheSize > 0x1800000) {
         goto init_caches;
       }
     }

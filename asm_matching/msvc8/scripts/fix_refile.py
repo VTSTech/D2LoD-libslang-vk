@@ -55,8 +55,11 @@ function it affects stops matching or vanishes - or another function of a
 TU it touched does and no edit's own functions explain it - when a TU it
 touched fails to compile, when the functions it affects come out less
 similar in sum and none of them comes to match (the register evidence is
-for the group, not for each function), or when a moved function refers to
-anything else than before (a name its new file binds differently). The rest
+for the group, not for each function), when a moved function refers to
+anything else than before (a name its new file binds differently), or when
+funcmap.py, run over the rebuilt tree, no longer pairs a function of a TU
+it touched that it paired before (the map pairs by neighbours in a TU: a
+move into Fog/Debug once left ILT_strrchr unpaired). The rest
 is tried again, a few rounds at most; a TU no edit touched that fails to
 compile drops the edits making static a function it names. A loss in a TU
 no edit touched comes from a header's declaration count, the symbol phase:
@@ -547,21 +550,36 @@ def build_tree():
     return built, failed
 
 
+def fail(why):
+    """Stop, the reason as the last line of stdout (what fix_all reports)."""
+    print('fix_refile cannot run: ' + ' '.join(why.split()), flush=True)
+    raise SystemExit(2)
+
+
 class Mingw:
     """Syntax checks with the game's own compiler, its command lines from a
-    configure-only CMake run in build/mingw."""
+    configure-only CMake run in build/mingw. Without them no move is tried:
+    the check is what keeps a move the game's build rejects out of the tree,
+    so its absence stops the fixer, saying why, rather than passing all."""
 
     def __init__(self):
         self.cmds = {}
         db = os.path.join(BUILD, 'mingw', 'compile_commands.json')
         if not os.path.exists(db):
-            subprocess.run(['cmake', '-S', REPO, '-B', os.path.dirname(db), '-G', 'Ninja',
-                            '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
-                            '-DCMAKE_TOOLCHAIN_FILE=' + os.path.join(REPO, 'cmake', 'mingw-i686.cmake')],
-                           capture_output=True, text=True)
-        if os.path.exists(db):
-            for e in json.load(open(db)):
-                self.cmds[os.path.realpath(e['file'])] = (e['directory'], e.get('arguments') or shlex.split(e['command']))
+            try:
+                p = subprocess.run(['cmake', '-S', REPO, '-B', os.path.dirname(db), '-G', 'Ninja',
+                                    '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
+                                    '-DCMAKE_TOOLCHAIN_FILE=' + os.path.join(REPO, 'cmake', 'mingw-i686.cmake')],
+                                   capture_output=True, text=True)
+                err = (p.stderr.strip() or p.stdout.strip())[-300:]
+            except FileNotFoundError:
+                err = 'cmake is not installed'
+            if not os.path.exists(db):
+                fail('no mingw syntax check (cmake, ninja and i686-w64-mingw32-g++ are needed): ' + err)
+        for e in json.load(open(db)):
+            self.cmds[os.path.realpath(e['file'])] = (e['directory'], e.get('arguments') or shlex.split(e['command']))
+        if not self.cmds:
+            fail('no mingw syntax check: %s lists no command' % db)
 
     def ok(self, path):
         """None when there is no command for `path`, else whether it compiles."""
@@ -731,6 +749,11 @@ def candidates(rows, model, fns, tree, pats, max_span):
             for m in members:
                 why[m] = 'its group would move %s, not a free function' % by_start[bad[0]][2]
             continue
+        stale = [m for m in members if tu_of[m] + '|' + by_start[m][4] not in fns]
+        if stale:
+            for m in members:
+                why[m] = 'the build lacks %s under its mapped symbol: oracle map' % by_start[stale[0]][2]
+            continue
         sources = {os.path.join(REPO, tu_of[m] + '.cpp') for m in movers}
         spec, promote, extern = [], [], []
         for m in members:
@@ -795,6 +818,22 @@ def candidates(rows, model, fns, tree, pats, max_span):
     return moves, why, callers
 
 
+def refresh(rows, fns):
+    """The funcmap's rows, a symbol the build no longer has - a fixer since
+    the map changed its mangling (fix_fastcall's convention, fix_return's
+    type) - replaced by the one function of that name in its TU. What has
+    none or several stays as it is, and candidates() leaves its group alone."""
+    by_name = collections.defaultdict(list)
+    for f in fns.values():
+        by_name[(f.tu, f.name)].append(f.symbol)
+    out = []
+    for s, e, name, tu, sym, mt, d in rows:
+        if tu + '|' + sym not in fns and len(by_name.get((tu, name), ())) == 1:
+            sym = by_name[(tu, name)][0]
+        out.append((s, e, name, tu, sym, mt, d))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--apply', action='store_true')
@@ -804,6 +843,7 @@ def main():
     rows = audit.load_funcmap(FUNCMAP)
     _ref, model = audit.load_context()
     fns = {f.key: f for f in ourslib.load_all(os.path.join(BUILD, 'obj'))}
+    rows = refresh(rows, fns)
     tree = Tree()
     moves, why, callers = candidates(rows, model, fns, tree, args.patterns, args.max_span)
     print('%d functions in %d moves' % (sum(len(m.movers) for m in moves), len(moves)))
@@ -870,6 +910,7 @@ def main():
     pats = sorted({t for m in tried for t in [m.x] + m.ys})
     _built, failed_before = build_tree()         # the baseline must be current
     base = check.judge(rows, pats, model, syms, quarantined)
+    base_map = derived_map()
     active = list(edits)
     state, built = None, set()
     for rnd in range(ROUNDS):
@@ -921,6 +962,25 @@ def main():
                 bad[e.label] = 'less similar'
             elif any(refset(our_function(tu_now[s], sym_of[s])) != before[s] for s in e.owners):
                 bad[e.label] = 'refers to something else'     # its new file binds a name differently
+        if not bad:
+            # The map pairs a function by its neighbours in its TU (bracket,
+            # align): a move can leave one the next `oracle map` no longer
+            # pairs, which no judgement by the old map sees (DebugThread
+            # into Fog/Debug unpaired ILT_strrchr). A function the map paired
+            # before and pairs no longer, or with another, is laid on every
+            # edit touching its TU.
+            now_map = derived_map()
+            unmapped = {s for s, (_t, sym) in base_map.items() if now_map.get(s, (None, None))[1] != sym}
+            for e in active:
+                m = move_of[e.label]
+                mine = {m.x} | set(m.ys)
+                hit = sorted(s for s in unmapped if base_map[s][0] in mine or s in e.affects)
+                if hit:
+                    bad[e.label] = 'unmaps %s' % ', '.join('%08x' % s for s in hit)
+            for s in sorted(unmapped - {s for e in active for s in e.affects} -
+                            {s for e in active for s in unmapped
+                             if base_map[s][0] in {move_of[e.label].x} | set(move_of[e.label].ys)}):
+                print('  unmapped, in a TU no move touched: %08x %s' % (s, base_map[s][1]), flush=True)
         for label, reason in sorted(bad.items()):
             print('  drop (%s): %s' % (reason, label), flush=True)
         claimed = {s for e in active for s in lost
@@ -965,6 +1025,16 @@ def main():
     print('kept %d of %d moves (%d functions), MATCH %+d' % (len(kept), len(moves), nf, gained))
     fixlib.record('fix_refile', sum(len(m.movers) for m in moves), nf, gained)
     return 0
+
+
+def derived_map():
+    """original start -> (TU, symbol), as funcmap.py pairs the current build."""
+    out = os.path.join(BUILD, 'refile-map.tsv')
+    p = subprocess.run([sys.executable, '-I', os.path.join(HERE, 'funcmap.py'), '--out', out],
+                       capture_output=True, text=True)
+    if p.returncode != 0:
+        fail('funcmap.py failed:\n' + p.stderr[-2000:])
+    return {r[0]: (r[3], r[4]) for r in audit.load_funcmap(out)}
 
 
 def refset(f):

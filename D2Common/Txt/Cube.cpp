@@ -140,18 +140,18 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
     size_t nSpanLen;
     nSpanLen = strcspn(pszField, ",");
     pszCursor = pszField + nSpanLen;
-    if (*pszCursor == '\0') {
-      pszNextFlagsToken = 0;
-      pszFlagsCursor = 0;
-    } else {
+    if (*pszCursor != '\0') {
       *pszCursor = '\0';
       pszFlagsCursor = pszCursor + 1;
+    } else {
+      pszNextFlagsToken = 0;
+      pszFlagsCursor = 0;
     }
 
     char* pszFlagsBlock;
     pszFlagsBlock = pszField;
     pszFlagsBlock = pszFlagsBlock + strlen(pszFlagsBlock) + 1;
-    if ((uint32_t)((int)pszFlagsBlock - (int)(pszField + 1)) < 5) {
+    if ((uint32_t)((int)pszFlagsBlock - (int)(pszField + 1)) <= 4) {
       int nCmpResult;
       nCmpResult = __stricmp(pszField, (char*)&gaCubeRecipeItemTypeFlags_8);
       if (!nCmpResult) {
@@ -163,10 +163,10 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
 
     pszCursor = pszField;
     pszCursor = pszCursor + strlen(pszCursor) + 1;
-    if ((uint32_t)((int)pszCursor - (int)(pszField + 1)) < 5) {
+    if ((uint32_t)((int)pszCursor - (int)(pszField + 1)) <= 4) {
       CUBE_PadItemCodeString(pszField, (char*)&pszNextFlagsToken);
       nClassId = Fog::Src::Excel::GetClassIdFromName(sgtDataTable.pTxtItemTypesLink, (uint32_t)pszNextFlagsToken, 0);
-      if (-1 < nClassId) {
+      if (nClassId >= 0) {
         pInput->wFlagsAndUpgrade |= 2;
         pInput->nItemClassId = (uint16_t)nClassId;
         goto parse_modifiers;
@@ -175,7 +175,7 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
 
     pszCursor = pszField;
     pszCursor = pszCursor + strlen(pszCursor) + 1;
-    if ((uint32_t)((int)pszCursor - (int)(pszField + 1)) < 5) {
+    if ((uint32_t)((int)pszCursor - (int)(pszField + 1)) <= 4) {
       CUBE_PadItemCodeString(pszField, (char*)&pszNextFlagsToken);
       pItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine((uint32_t)pszNextFlagsToken, (int*)wClassId);
       if (!pItemsTxt) {
@@ -216,11 +216,11 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
 
       nSpanLen = strcspn(pszFlagsCursor, "=,");
       pszCursor = pszFlagsCursor + nSpanLen;
-      if (*pszCursor == '\0') {
-        pszNextFlagsToken = 0;
-      } else {
+      if (*pszCursor != '\0') {
         *pszCursor = '\0';
         pszNextFlagsToken = pszCursor + 1;
+      } else {
+        pszNextFlagsToken = 0;
       }
 
       pszCursor = pszNextFlagsToken;
@@ -232,14 +232,14 @@ static void __stdcall CUBE_ParseInputItem(char * pszField, D2CubeInputStrc * pIn
       if (bTokenMatch) {
         nSpanLen = strcspn(pszNextFlagsToken, ",");
         pszLiteralCursor = pszCursor + nSpanLen;
-        if (*pszLiteralCursor == '\0') {
-          pszNextFlagsToken = 0;
+        if (*pszLiteralCursor != '\0') {
+          *pszLiteralCursor = '\0';
+          pszNextFlagsToken = pszLiteralCursor + 1;
           nAtol = atol(pszCursor);
           pInput->nQuantity = (uint8_t)nAtol;
           pszFlagsCursor = pszNextFlagsToken;
         } else {
-          *pszLiteralCursor = '\0';
-          pszNextFlagsToken = pszLiteralCursor + 1;
+          pszNextFlagsToken = 0;
           nAtol = atol(pszCursor);
           pInput->nQuantity = (uint8_t)nAtol;
           pszFlagsCursor = pszNextFlagsToken;
@@ -394,11 +394,11 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
     size_t nSpanLen;
     nSpanLen = strcspn(pszField, ",");
     pszCursor = pszField + nSpanLen;
-    if (*pszCursor == '\0') {
-      pszCursor = 0;
-    } else {
+    if (*pszCursor != '\0') {
       *pszCursor = '\0';
       pszCursor++;
+    } else {
+      pszCursor = 0;
     }
 
     char* szPaddedCode;
@@ -428,7 +428,7 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
             } else {
               pszCursor = pszItemCodeField;
               pszCursor = pszCursor + strlen(pszCursor) + 1;
-              if ((uint32_t)((int)pszCursor - (int)(pszItemCodeField + 1)) < 5) {
+              if ((uint32_t)((int)pszCursor - (int)(pszItemCodeField + 1)) <= 4) {
                 CUBE_PadItemCodeString(pszItemCodeField, (char*)&pszPadded);
                 pItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine((uint32_t)pszPadded, (int*)&pszPadded);
                 if (pItemsTxt) {
@@ -441,10 +441,10 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
 
               pszCursor = pszItemCodeField;
               pszCursor = pszCursor + strlen(pszCursor) + 1;
-              if ((uint32_t)((int)pszCursor - (int)(pszItemCodeField + 1)) < 5) {
+              if ((uint32_t)((int)pszCursor - (int)(pszItemCodeField + 1)) <= 4) {
                 CUBE_PadItemCodeString(pszItemCodeField, (char*)&pszPadded);
                 nItemTypeClassId = Fog::Src::Excel::GetClassIdFromName(sgtDataTable.pTxtItemTypesLink, (uint32_t)pszPadded, 0);
-                if (-1 < nItemTypeClassId) {
+                if (nItemTypeClassId >= 0) {
                   pOutputCopy->nType = 0xfd;
                   pOutputCopy->nItemClassId = (uint16_t)nItemTypeClassId;
                   pszCursor = szPaddedCode;
@@ -457,7 +457,7 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
                 }
 
                 nLinkIndex = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtSetItemsLink, pszItemCodeField, 0);
-                if (-1 >= nLinkIndex) {
+                if (nLinkIndex < 0) {
                   return;
                 }
 
@@ -494,11 +494,11 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
         nSpanLen = strcspn(szPaddedCode, "=,");
         pDVar1 = pOutput;
         pcVar2 = pszCursor + nSpanLen;
-        if (*pcVar2 == '\0') {
-          szPaddedCode = 0;
-        } else {
+        if (*pcVar2 != '\0') {
           *pcVar2 = '\0';
           szPaddedCode = pcVar2 + 1;
+        } else {
+          szPaddedCode = 0;
         }
 
         pcVar2 = szPaddedCode;
@@ -510,13 +510,13 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
         if (bTokenMatch) {
           nSpanLen = strcspn(szPaddedCode, ",");
           pszCursor = pcVar2 + nSpanLen;
-          if (*pszCursor == '\0') {
-            szPaddedCode = 0;
+          if (*pszCursor != '\0') {
+            *pszCursor = '\0';
+            szPaddedCode = pszCursor + 1;
             nAtol = atol(pcVar2);
             pOutput->nQuantity = (uint8_t)nAtol;
           } else {
-            *pszCursor = '\0';
-            szPaddedCode = pszCursor + 1;
+            szPaddedCode = 0;
             nAtol = atol(pcVar2);
             pOutput->nQuantity = (uint8_t)nAtol;
           }
@@ -525,11 +525,11 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
           if (bTokenMatch) {
             nSpanLen = strcspn(szPaddedCode, ",");
             pszCursor = pcVar2 + nSpanLen;
-            if (*pszCursor == '\0') {
-              szPaddedCode = 0;
-            } else {
+            if (*pszCursor != '\0') {
               *pszCursor = '\0';
               szPaddedCode = pszCursor + 1;
+            } else {
+              szPaddedCode = 0;
             }
 
             nAtol = atol(pcVar2);
@@ -540,11 +540,11 @@ static void __stdcall CUBE_ParseOutputItem(D2CubeOutputStrc * pOutput, char * ps
             if (bTokenMatch) {
               nSpanLen = strcspn(szPaddedCode, ",");
               pszCursor = pcVar2 + nSpanLen;
-              if (*pszCursor == '\0') {
-                szPaddedCode = 0;
-              } else {
+              if (*pszCursor != '\0') {
                 *pszCursor = '\0';
                 szPaddedCode = pszCursor + 1;
+              } else {
+                szPaddedCode = 0;
               }
 
               nAtol = atol(pcVar2);
@@ -1232,20 +1232,20 @@ void __fastcall CUBE_LoadCubeMainTable(D2PoolManagerStrc * pMemory) {
     cubemain[0x67].szName = "end";
     wsprintfA(szFilePath, "%s\\%s", "DATA\\GLOBAL\\EXCEL", "cubeserver.bin");
     _bFileExists = DATATBLS::DataTbls::CheckIfFileExists(pMemory, szFilePath, (D2MPQFileStrc**)&pFileData, 1);
-    if (!_bFileExists) {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s", "DATA\\GLOBAL\\EXCEL", "cubeserver.txt");
-      _bFileExists = DATATBLS::DataTbls::CheckIfFileExists(pMemory, szFilePath, (D2MPQFileStrc**)&pFileData, 1);
-      if (_bFileExists) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f4);
-        exit(-1);
-      }
-
-      pTxtCubeMain = (D2CubeMainTxt*)DATATBLS::DataTbls::CompileTxt(pMemory, "cubemain", cubemain, &nTxtCubeMainSize, 0x148);
-      return;
-    } else {
+    if (_bFileExists) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f0);
       exit(-1);
     }
+
+    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFilePath, "%s\\%s", "DATA\\GLOBAL\\EXCEL", "cubeserver.txt");
+    _bFileExists = DATATBLS::DataTbls::CheckIfFileExists(pMemory, szFilePath, (D2MPQFileStrc**)&pFileData, 1);
+    if (_bFileExists) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2f4);
+      exit(-1);
+    }
+
+    pTxtCubeMain = (D2CubeMainTxt*)DATATBLS::DataTbls::CompileTxt(pMemory, "cubemain", cubemain, &nTxtCubeMainSize, 0x148);
+    return;
 }
 
 // Frees the CubMain.txt table from memory. Called during game shutdown to clean up cube recipe data.

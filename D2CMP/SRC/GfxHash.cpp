@@ -61,7 +61,7 @@ void __fastcall GFXHASH_UnlinkCacheEntry(int32_t pHashTable, D2PoolManagerStrc *
         nErrAddress = (void*)pFrameData[6];
         nFrameByteOffset = 0;
         nFrameIdx = 0;
-        if ((uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount) {
+        if ((uint32_t)((uint32_t)pCacheBlock->tDecode.nFramesPerDir * (uint32_t)pCacheBlock->tDecode.nDirCount) > 0) {
           do {
             pPixelData = *(int**)(nFrameByteOffset + 0x18 + (int)pFrameData);
             if (pPixelData) {
@@ -112,27 +112,9 @@ uint32_t __fastcall GFXHASH_CalcDirectionIndex(int32_t nParam, uint32_t * pnPara
     int32_t nDirFrameTable;
     uint32_t nDirFrameIdx = 0;
     *pnParam = 0;
-    if (!*(int*)(nParam + 8)) {
-      *pnParam = 8;
-      if (!*(int*)(nParam + 0x10) || *(int*)(nParam + 0x10) == 0x11 || *(uint8_t*)(nParam + 0x44) & 2) {
-        *pnParam = 1;
-      }
-      if (!(pCelEntry->dwCacheFlags & 1)) {
-        dwDirectionMask = pCelEntry->nDirections;
-        nDirFrameTable = *(int32_t*)(nParam + 0x40);
-        nDirFrameIdx = CelCmp::CELCMP_GetDirectionFrameTableIndex(nDirFrameTable, dwDirectionMask);
-      }
-    } else {
+    if (*(int*)(nParam + 8)) {
       int nType;
-      if (*(int*)(nParam + 8) == 1) {
-        if (pCelEntry->dwCacheFlags & 1) {
-          return 0;
-        }
-
-        *pnParam = (pCelEntry->nDirections != 8 ? -3 : 0) + 4;
-        dwDirectionMask = pCelEntry->nDirections;
-        nDirFrameTable = *(int32_t*)(nParam + 0x40);
-      } else {
+      if (*(int*)(nParam + 8) != 1) {
         *pnParam = 1;
         nType = *(int*)(nParam + 8);
         if (nType == 2) {
@@ -155,9 +137,27 @@ uint32_t __fastcall GFXHASH_CalcDirectionIndex(int32_t nParam, uint32_t * pnPara
 
         dwDirectionMask = pCelEntry->nDirections;
         nDirFrameTable = *(int32_t*)(nParam + 0x40);
+      } else {
+        if (pCelEntry->dwCacheFlags & 1) {
+          return 0;
+        }
+
+        *pnParam = (pCelEntry->nDirections != 8 ? -3 : 0) + 4;
+        dwDirectionMask = pCelEntry->nDirections;
+        nDirFrameTable = *(int32_t*)(nParam + 0x40);
       }
 
       nDirFrameIdx = CelCmp::CELCMP_GetDirectionFrameTableIndex(nDirFrameTable, dwDirectionMask);
+    } else {
+      *pnParam = 8;
+      if (!*(int*)(nParam + 0x10) || *(int*)(nParam + 0x10) == 0x11 || *(uint8_t*)(nParam + 0x44) & 2) {
+        *pnParam = 1;
+      }
+      if (!(pCelEntry->dwCacheFlags & 1)) {
+        dwDirectionMask = pCelEntry->nDirections;
+        nDirFrameTable = *(int32_t*)(nParam + 0x40);
+        nDirFrameIdx = CelCmp::CELCMP_GetDirectionFrameTableIndex(nDirFrameTable, dwDirectionMask);
+      }
     }
     if (*pnParam) {
       return nDirFrameIdx / *pnParam;
@@ -203,13 +203,7 @@ int32_t __fastcall GFXHASH_FindEntryByGfxData(void * pHashTable, D2GfxDataStrc *
       nSrcField18 = pGfxData->nUnitToken;
       eVar1 = pGfxData->eUnitType;
       if (eVar1 == UNIT_COUNT) {
-        if (!(pGfxData->dwFlags & 2)) {
-          match_tokens:
-          if (nSrcField18 != *(int*)(nEntryPtr + 8) || nSrcField1C != *(int*)(nEntryPtr + 0xc) || nSrcField20 != *(int*)(nEntryPtr + 0x10) || pGfxData->nModeToken != *(int*)(nEntryPtr + 0x14)) {
-            continue;
-          }
-          bMatch = pGfxData->nWeaponClass == *(int*)(nEntryPtr + 0x18);
-        } else {
+        if (pGfxData->dwFlags & 2) {
           if (nSrcField18 != *(int*)(nEntryPtr + 8) || nSrcField1C != *(int*)(nEntryPtr + 0xc) || nSrcField20 != *(int*)(nEntryPtr + 0x10) || pGfxData->nModeToken != *(int*)(nEntryPtr + 0x14) || pGfxData->nWeaponClass != *(int*)(nEntryPtr + 0x18)) {
             continue;
           }
@@ -217,6 +211,12 @@ int32_t __fastcall GFXHASH_FindEntryByGfxData(void * pHashTable, D2GfxDataStrc *
           pCurEntry = pGfxData->nOverlayId;
           match_id:
           bMatch = pCurEntry == *(int*)(nEntryPtr + 4);
+        } else {
+          match_tokens:
+          if (nSrcField18 != *(int*)(nEntryPtr + 8) || nSrcField1C != *(int*)(nEntryPtr + 0xc) || nSrcField20 != *(int*)(nEntryPtr + 0x10) || pGfxData->nModeToken != *(int*)(nEntryPtr + 0x14)) {
+            continue;
+          }
+          bMatch = pGfxData->nWeaponClass == *(int*)(nEntryPtr + 0x18);
         }
         if (bMatch && *pnDirIdx == *(int*)(nEntryPtr + 0x1c)) {
           return nEntryPtr;

@@ -268,7 +268,7 @@ void __stdcall INPUT_HelpCloseButtonDown(D2UIMouseMsgStrc * pMsg) {
     } else {
       nRelX -= 0x20d;
     }
-    if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18) < 0x21) {
+    if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18) <= 0x20) {
       gpHelpCloseButton = 1;
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
@@ -294,7 +294,7 @@ void __stdcall HELP_HideMiniPanel() {
 BOOL __stdcall MouseIsInRange(int32_t nSizeX, int32_t nSizeY, int32_t nX, int32_t nY) {
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nX <= nMouseX && nMouseX <= nX + nSizeX && nY - nSizeY <= nMouseY && nMouseY <= nY)) {
+    if (!(nMouseX >= nX && nMouseX <= nX + nSizeX && nMouseY >= nY - nSizeY && nMouseY <= nY)) {
       return 0;
     }
 
@@ -390,7 +390,7 @@ void __stdcall INPUT_HelpScrollButtonDown(D2UIMouseMsgStrc * pMsg) {
     int nLeftX = ScreenSizeX - 0x4b;
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nLeftX <= nMouseX && nMouseX <= nScreenX - 0x28 && nScreenY - 0xc4 <= nMouseY && nMouseY <= nBottomY)) {
+    if (!(nMouseX >= nLeftX && nMouseX <= nScreenX - 0x28 && nMouseY >= nScreenY - 0xc4 && nMouseY <= nBottomY)) {
       return;
     }
 
@@ -411,7 +411,7 @@ void __stdcall INPUT_HelpScrollButtonUp(D2UIMouseMsgStrc * pMsg) {
     int nLeftX = ScreenSizeX - 0x4b;
     int nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
-    if (!(nLeftX <= nMouseX && nMouseX <= nScreenX - 0x28 && nScreenY - 0xc4 <= nMouseY && nMouseY <= nBottomY)) {
+    if (!(nMouseX >= nLeftX && nMouseX <= nScreenX - 0x28 && nMouseY >= nScreenY - 0xc4 && nMouseY <= nBottomY)) {
       return;
     }
 
@@ -1272,7 +1272,7 @@ void __stdcall INPUT_HelpCloseButtonUp(D2UIMouseMsgStrc * pMsg) {
       } else {
         nRelX -= 0x20d;
       }
-      if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18) < 0x21) {
+      if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18) <= 0x20) {
         Draw::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
         HELP_HideMiniPanel();
         goto consume_click;

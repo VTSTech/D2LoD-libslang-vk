@@ -268,7 +268,7 @@ BOOL __fastcall EVENT_TimerTypeExistsOnUnit(::SGAMEDATA * pGame, D2UnitStrc * pU
       pTimerHead = pCurrentTimer->pNextTimerOnUnit;
       if (pCurrentTimer->nTimerType == eTimerType) {
         nTimerFrame = pCurrentTimer->nFrame;
-        if (0 < nTimerFrame && (nTimerFrame < nBestFrame || !nBestFrame)) {
+        if (nTimerFrame > 0 && (nTimerFrame < nBestFrame || !nBestFrame)) {
           nBestFrame = nTimerFrame;
         }
       }

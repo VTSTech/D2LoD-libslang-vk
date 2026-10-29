@@ -28588,6 +28588,20 @@ char * gaLanguageNames_007273a8[15] = {
 
 uint32_t gnCursorInvTypeAutoOpenC[5] = { 0x0, 0x1, 0x4, 0x2, 0x6 }; D2_GLOBAL_GUARD(gnCursorInvTypeAutoOpenC, "gnCursorInvTypeAutoOpenC");
 
+int bUnitSoundTableInit[11] = {
+    0xb3e,
+    0xb43,
+    0xb89,
+    0xb8d,
+    0xb8b,
+    0xb76,
+    0xb78,
+    0xb8f,
+    0xb79,
+    0xb91,
+    0xad0
+}; D2_GLOBAL_GUARD(bUnitSoundTableInit, "bUnitSoundTableInit");
+
 eD2Sounds eD2Sounds_ARRAY_00727f48[12] = {
     SOUND_NONE,
     SOUND_NONE,
@@ -30297,6 +30311,90 @@ eD2Sounds eD2Sounds_ARRAY_007295c8[12] = {
     SOUND_NONE,
     SOUND_NONE
 }; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007295c8, "eD2Sounds_ARRAY_007295c8");
+
+int gaUnitSoundIdsBarbarian[11] = {
+    0xb56,
+    0xb5b,
+    0xbd7,
+    0xbdb,
+    0xbd9,
+    0xbc4,
+    0xbc6,
+    0xbdd,
+    0xbc7,
+    0xbdf,
+    0xb00
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+
+int gaUnitSoundIdsNecromancer[11] = {
+    0xb4e,
+    0xb53,
+    0xc25,
+    0xc29,
+    0xc27,
+    0xc12,
+    0xc14,
+    0xc2b,
+    0xc15,
+    0xc2d,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+
+int gaUnitSoundIdsPaladin[11] = {
+    0xb46,
+    0xb4b,
+    0xc73,
+    0xc77,
+    0xc75,
+    0xc60,
+    0xc62,
+    0xc79,
+    0xc63,
+    0xc7b,
+    0xad0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+
+int gaUnitSoundIdsSorceress[11] = {
+    0xb5e,
+    0xb63,
+    0xcc1,
+    0xcc5,
+    0xcc3,
+    0xcae,
+    0xcb0,
+    0xcc7,
+    0xcb1,
+    0xcc9,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+
+int gaUnitSoundIdsAssassin[11] = {
+    0xb66,
+    0xb6b,
+    0xd0f,
+    0xd13,
+    0xd11,
+    0xcfc,
+    0xcfe,
+    0xd15,
+    0xcff,
+    0xd17,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+
+int gaUnitSoundIdsDruid[11] = {
+    0xb6e,
+    0xb73,
+    0xd5d,
+    0xd61,
+    0xd5f,
+    0xd4a,
+    0xd4c,
+    0xd63,
+    0xd4d,
+    0xd65,
+    0xaa0
+}; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 
 char * gaLanguageNames_0072a300[15] = {
     s_English_006cc81c,
@@ -38168,13 +38266,6 @@ void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, 
 // Uninitialized data (BSS)
 // =============================================================================
 
-uint8_t bUnitSoundTableInit; D2_GLOBAL_GUARD_BSS(bUnitSoundTableInit, "bUnitSoundTableInit");
-uint8_t gaUnitSoundIdsBarbarian; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
-uint8_t gaUnitSoundIdsNecromancer; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
-uint8_t gaUnitSoundIdsPaladin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
-uint8_t gaUnitSoundIdsSorceress; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
-uint8_t gaUnitSoundIdsAssassin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
-uint8_t gaUnitSoundIdsDruid; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 uint8_t gbQuestA5Q2Unknown; D2_GLOBAL_GUARD_BSS(gbQuestA5Q2Unknown, "gbQuestA5Q2Unknown");
 uint8_t gaMonSeqMonsterTblData_Unknown; D2_GLOBAL_GUARD_BSS(gaMonSeqMonsterTblData_Unknown, "gaMonSeqMonsterTblData_Unknown");
 uint8_t gaMonSeqAnimData; D2_GLOBAL_GUARD_BSS(gaMonSeqAnimData, "gaMonSeqAnimData");

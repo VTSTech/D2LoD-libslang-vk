@@ -155,33 +155,33 @@ void __fastcall D2WINBUTTON_SetImageIndex(::D2WinButton * pButton, int32_t nImag
 // Handles mouse wheel input for scrollable buttons. Checks scroll up/down flags (bits 3-4 of field 0x10), invokes wheel callback (field 0xd) if delta is non-zero. Uses global recursion counter.
 BOOL __fastcall D2WINBUTTON_HandleMouseWheel(::D2WinButton * pButton, int32_t nWheelDelta) {
     uint32_t dwState;
-    if (pButton->sControl.neD2FormType == FORM_Button) {
-      D2ControlMsg sMsg;
-      dwState = pButton->sControl.dwState;
-      if (!(dwState & 1 && dwState & 4 && !pButton->bPressed && !pButton->bPressedInside && (0 < nWheelDelta && pButton->nButtonFlags & 8 || nWheelDelta < 0 && pButton->nButtonFlags & 0x10))) {
-        return 0;
-      }
+    if (pButton->sControl.neD2FormType != FORM_Button) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe2);
+      exit(-1);
+    }
 
-      sMsg.uMsg = 0;
-      sMsg.wParam = 0;
-      sMsg.uLParam.nLParam = 0;
-      sMsg.nCmdCode = 0;
-      sMsg.dwReserved = 0;
-      sMsg.bHandled = 0;
-      sMsg.dwResult = 0;
-      if (!pButton->sControl.fpOnPress) {
-        return 0;
-      }
-
-      gnFormControlCount++;
-      sMsg.pControl = &pButton->sControl;
-      pButton->sControl.fpOnPress(&sMsg);
-      gnFormControlCount--;
+    D2ControlMsg sMsg;
+    dwState = pButton->sControl.dwState;
+    if (!(dwState & 1 && dwState & 4 && !pButton->bPressed && !pButton->bPressedInside && (nWheelDelta > 0 && pButton->nButtonFlags & 8 || nWheelDelta < 0 && pButton->nButtonFlags & 0x10))) {
       return 0;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe2);
-    exit(-1);
+    sMsg.uMsg = 0;
+    sMsg.wParam = 0;
+    sMsg.uLParam.nLParam = 0;
+    sMsg.nCmdCode = 0;
+    sMsg.dwReserved = 0;
+    sMsg.bHandled = 0;
+    sMsg.dwResult = 0;
+    if (!pButton->sControl.fpOnPress) {
+      return 0;
+    }
+
+    gnFormControlCount++;
+    sMsg.pControl = &pButton->sControl;
+    pButton->sControl.fpOnPress(&sMsg);
+    gnFormControlCount--;
+    return 0;
 }
 
 // Sets custom user data field (field 0x9c) for application-specific button state.
@@ -200,7 +200,7 @@ void __fastcall D2WINBUTTON_SetCustomData(::D2WinButton * pButton, int32_t nCust
 static BOOL D2WINBUTTON_IsPointInside(::D2WinButton * pButton, int32_t nX, int32_t nY) {
     int nButtonX = pButton->sControl.dwPosX;
     int nButtonY = pButton->sControl.dwPosY;
-    if (!(nButtonX <= nX && nButtonY - pButton->sControl.dwSizeY <= nY && nX < pButton->sControl.dwSizeX + nButtonX && nY < nButtonY)) {
+    if (!(nX >= nButtonX && nY >= nButtonY - pButton->sControl.dwSizeY && nX < pButton->sControl.dwSizeX + nButtonX && nY < nButtonY)) {
       return 0;
     }
 
@@ -302,13 +302,13 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
           goto draw_button;
         }
       } else {
-        if (!(pButton->nButtonFlags & 3)) {
+        if (pButton->nButtonFlags & 3) {
+          pButton->bPressedInside = 1;
+        } else {
           bIsPointInside = D2WINBUTTON_IsPointInside(pButton, D2Client::Mouse::nPosX, D2Client::Mouse::nPosY);
           nFrameOffset = pButton->bPressed;
           dwState = pButton->sControl.dwState;
           pButton->bPressedInside = bIsPointInside;
-        } else {
-          pButton->bPressedInside = 1;
         }
         if (!nFrameOffset || !pButton->bPressedInside) {
           goto not_hovered;
@@ -333,14 +333,14 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
       memset(&sGfxData, 0, 0x48);
       sGfxData.pDC6 = pButton->sControl.pDC6;
       sGfxData.nDirection = 0;
-      if (0 < nLastTileRow) {
+      if (nLastTileRow > 0) {
         nTileY = nPosY - nFrameOffset + 0x101;
         nRowFrame = nFrameBase;
         nTileRows = nLastTileRow;
         do {
           nFrameOffset = 0;
           nTileX = nTileRowCount;
-          if (0 < nTileCols) {
+          if (nTileCols > 0) {
             do {
               sGfxData.nFrameNumber = nRowFrame + nFrameOffset;
               D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nTileX, nTileY, -1, eDrawMode, nullptr);
@@ -356,7 +356,7 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
       }
       if (-1 < nLastTileRow) {
         nFrameOffset = 0;
-        if (0 < nTileCols) {
+        if (nTileCols > 0) {
           nRowFrame = nTileRowCount;
           do {
             sGfxData.nFrameNumber = nFrameBase + nLastTileRow * 4 + nFrameOffset;
@@ -369,15 +369,15 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
 
       nFrameOffset = pButton->sControl.dwSizeY;
       pButton->nFontId = 10;
-      if (nFrameOffset < 0x23) {
+      if (nFrameOffset >= 0x23) {
+        pButton->nFontId = 9;
+        nFrameOffset = 4;
+      } else {
         if (nFrameOffset == 0x20) {
           nFrameOffset = 3;
         } else {
-          nFrameOffset = (0x14 < nFrameOffset) + 1;
+          nFrameOffset = (nFrameOffset > 0x14) + 1;
         }
-      } else {
-        pButton->nFontId = 9;
-        nFrameOffset = 4;
       }
 
       pButton->nTextColor = 0;
@@ -397,18 +397,18 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
     }
 
     pActiveFormImage = D2WinMain::D2WINMAIN_GetFormImage();
-    if (!pActiveFormImage) {
+    if (pActiveFormImage) {
+      pButton->bMouseOver = 0;
+    } else {
       nFrameOffset = pButton->sControl.dwPosX;
       nPosY = pButton->sControl.dwPosY;
-      if (D2Client::Mouse::nPosX < nFrameOffset || D2Client::Mouse::nPosY < nPosY - pButton->sControl.dwSizeY || pButton->sControl.dwSizeX + nFrameOffset <= D2Client::Mouse::nPosX || nPosY <= D2Client::Mouse::nPosY) {
+      if (D2Client::Mouse::nPosX < nFrameOffset || D2Client::Mouse::nPosY < nPosY - pButton->sControl.dwSizeY || D2Client::Mouse::nPosX >= pButton->sControl.dwSizeX + nFrameOffset || D2Client::Mouse::nPosY >= nPosY) {
         nFrameOffset = 0;
       } else {
         nFrameOffset = 1;
       }
 
       pButton->bMouseOver = nFrameOffset;
-    } else {
-      pButton->bMouseOver = 0;
     }
 
     sHoverMsg.uLParam = d2_bits_as<D2UIMsgLParamUnion>(pButton->bMouseOver);
@@ -430,16 +430,16 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     if (!(uVar1 & 4) || !(uVar1 & 1)) {
       return 0;
     }
-    if (!(pButton->nButtonFlags & 2U)) {
+    if (pButton->nButtonFlags & 2U) {
+      pButton->bPressed = (uint32_t)!pButton->bPressed;
+      pButton->bPressedInside = (uint32_t)!pButton->bPressedInside;
+    } else {
       if (pButton->bPressed && pButton->bPressedInside) {
         return 1;
       }
 
       pButton->bPressed = 1;
       pButton->bPressedInside = 1;
-    } else {
-      pButton->bPressed = (uint32_t)!pButton->bPressed;
-      pButton->bPressedInside = (uint32_t)!pButton->bPressedInside;
     }
     if (!(pButton->nButtonFlags & 4U)) {
       D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\button.wav");
@@ -452,7 +452,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     if (!pOVar2) {
       return 1;
     }
-    if (gnFormControlCount < 1) {
+    if (gnFormControlCount <= 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x221);
       exit(-1);
     }
@@ -484,7 +484,7 @@ BOOL __stdcall Mouse(D2ControlMsg * pControlMsg) {
       if (pButton->bPressedInside) {
         pOVar2 = pButton->sControl.fpOnPress;
         if (pOVar2) {
-          if (gnFormControlCount < 1) {
+          if (gnFormControlCount <= 0) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
             exit(-1);
           }
@@ -522,7 +522,7 @@ BOOL __stdcall D2WINBUTTON_HandleHotkey(D2ControlMsg * pControlMsg) {
     }
 
     pButton->nClickAnimState = 1;
-    if (gnFormControlCount < 1) {
+    if (gnFormControlCount <= 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x263);
       exit(-1);
     }
@@ -573,10 +573,10 @@ BOOL __stdcall D2WINBUTTON_HandleHotkey(D2ControlMsg * pControlMsg) {
 
     nTileFrames = (nSizeY + 0xff >> 8) * (nSizeX + 0xff >> 8);
     pNewButton->nFrameOffsetSecondary = nTileFrames;
-    if (!(pNewButton->nButtonFlags & 0x20)) {
-      nTileFrames = 0;
-    } else {
+    if (pNewButton->nButtonFlags & 0x20) {
       nTileFrames *= 2;
+    } else {
+      nTileFrames = 0;
     }
 
     pNewButton->nFrameOffsetDisabled = nTileFrames;

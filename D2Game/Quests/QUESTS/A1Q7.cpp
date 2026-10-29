@@ -77,7 +77,7 @@ void __fastcall Q07_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     D2SeedStrc seedNext = D2_SEED_NEXT(pPlayer->sSeed);
     pPlayer->sSeed = seedNext;
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x10a, seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 3) * -3 + 2);
+    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x10a, seedNext.nSeedLow % 3 + 2);
 }
 
 // A1Q7 Q07_Callback_08: quest-state handler for state index 8. STUB / no-op (empty body). Registered into sStateFunctions[8] by Q07_InitData but does nothing; this pseudo-quest never reaches/uses state 8.
@@ -124,11 +124,11 @@ bool __fastcall Q07_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
     /* GetQuestState(player, Q1 DenOfEvil, QUESTSTATE_RewardAwaits=1): Q1 done,
                          reward unclaimed? All 3 zero -> Q1 still open -> gossip ACTIVE. */ bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerBitBuffer, QUEST_DenOfEvil, QUESTSTATE_RewardAwaits);
-    if (bQuestState) {
-      return false;
+    if (!bQuestState) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A1Q7 Q07_InitData: registers this hidden Act 1 slot. Zeroes sStateFunctions (0x3c bytes), installs Q07_Callback_00 at state[0] and Q07_Callback_08 at state[8], points pNpcMessages at aNpcGossipData (1 entry: Akara 0x10a, string 0x3b, menu=1), marks bIsActive, clears state flags, sets nQuestIdReal=QUEST_UnknownDuplicate2, and installs Q07_StatusFilter / Q07_ActiveFilter. Confirms slot identity: a SpokeTo-Akara gossip pseudo-quest, not a real journal quest.

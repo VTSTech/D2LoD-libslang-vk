@@ -146,7 +146,7 @@ static D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUni
     }
 
     uint32_t nSequenceId = Skills::GetSequenceId(pUnit, pCurSkill);
-    if ((int)nSequenceId < 1) {
+    if ((int)nSequenceId <= 0) {
       return nullptr;
     }
 
@@ -188,31 +188,31 @@ static D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUni
 // 2022.01.09 - dzik
 D2MonSeqTxt * __stdcall MERC_GetSequenceTxt(D2UnitStrc * pUnit) {
     D2MonSeqMonsterTbls* pSeqTable = GetMonsterSequenceTable(pUnit);
-    if (pSeqTable) {
-      return pSeqTable->pMonSeqTxt;
+    if (!pSeqTable) {
+      return nullptr;
     }
 
-    return nullptr;
+    return pSeqTable->pMonSeqTxt;
 }
 
 // 2022.01.09 - dzik
 int32_t __stdcall GetCounter1(D2UnitStrc * pUnit) {
     D2MonSeqMonsterTbls* pSeqTable = GetMonsterSequenceTable(pUnit);
-    if (pSeqTable) {
-      return pSeqTable->nCounter1 << 8;
+    if (!pSeqTable) {
+      return 0;
     }
 
-    return 0;
+    return pSeqTable->nCounter1 << 8;
 }
 
 // 2022.01.09 - dzik
 int32_t __stdcall GetCounter2(D2UnitStrc * pUnit) {
     D2MonSeqMonsterTbls* pSeqTable = GetMonsterSequenceTable(pUnit);
-    if (pSeqTable) {
-      return pSeqTable->nCounter2;
+    if (!pSeqTable) {
+      return 0;
     }
 
-    return 0;
+    return pSeqTable->nCounter2;
 }
 
 // 2022.01.09 - dzik
@@ -524,79 +524,80 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
     }
 }; D2_STATIC_GUARD(gaMercDifficultyTable, "D2Common::Merc::MERC_GenerateStatsFromSeed::gaMercDifficultyTable");
 
+    int nTableIdx;
     uint32_t nRandResult2;
     D2SeedStrc rollSeed;
-    if (!(nSeed && pMercStats && nDifficulty < 3)) {
+    if (!(nSeed && pMercStats && nDifficulty <= 2)) {
       return 0;
     }
 
     uint32_t nMercClass = pMercStats->nMercClass;
-    if (nMercClass >= 4) {
-      return 0;
-    }
+    if (nMercClass <= 3) {
+      uint32_t nRandResult;
+      pMercStats->wFlags = 0;
+      Seed::SEED_InitDefault(&rollSeed);
+      Seed::InitSeed_Param_666(&rollSeed, nSeed);
+      pMercStats->nAttackRating = gaMercBaseStats[nMercClass].nBaseAttackRating;
+      pMercStats->nDefense = gaMercBaseStats[nMercClass].nBaseDefense;
+      nRandResult = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gnMercDamageVariance[nMercClass]);
+      nTableIdx = nRandResult + gnMercAttackRatingBase[nMercClass];
+      pMercStats->nSecDamage = gaMercSecondaryTable[nTableIdx].nDamage;
+      pMercStats->nSecArmor = gaMercSecondaryTable[nTableIdx].nArmor;
+      pMercStats->nDefense += gaMercSecondaryTable[nTableIdx].nArmorBonus;
+      pMercStats->nAttackRating += gaMercSecondaryTable[nTableIdx].nDefenseBonus;
+      nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercTertiaryDamageTable[nMercClass]);
+      nTableIdx = nRandResult2 + gnMercTertiaryDamageBase[nMercClass];
+      pMercStats->nTerArmor = gaMercTertiaryTable[nTableIdx].nArmor;
+      pMercStats->nTerDefense = gaMercTertiaryTable[nTableIdx].nDefense;
+      pMercStats->nDefense += gaMercTertiaryTable[nTableIdx].nArmorBonus;
+      pMercStats->nAttackRating += gaMercTertiaryTable[nTableIdx].nDefenseBonus;
+      nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercQuaternaryTable[nMercClass]);
+      nTableIdx = nRandResult2 + gnMercQuaternaryBase[nMercClass];
+      if ((int)nMercClass < 3) {
+        pMercStats->nStateA = gaMercQuaternaryTable[nTableIdx].nState;
+        pMercStats->nStateB = 0;
+      } else {
+        pMercStats->nStateA = 0;
+        pMercStats->nStateB = gaMercQuaternaryTable[nTableIdx].nState;
+      }
 
-    pMercStats->wFlags = 0;
-    Seed::SEED_InitDefault(&rollSeed);
-    rollSeed.nSeedHigh = 0x29a;
-    pMercStats->nAttackRating = gaMercBaseStats[nMercClass].nBaseAttackRating;
-    pMercStats->nDefense = gaMercBaseStats[nMercClass].nBaseDefense;
-    rollSeed.nSeedLow = nSeed;
-    uint32_t nRandResult = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gnMercDamageVariance[nMercClass]);
-    int nTableIdx = nRandResult + gnMercAttackRatingBase[nMercClass];
-    pMercStats->nSecDamage = gaMercSecondaryTable[nTableIdx].nDamage;
-    pMercStats->nSecArmor = gaMercSecondaryTable[nTableIdx].nArmor;
-    pMercStats->nDefense += gaMercSecondaryTable[nTableIdx].nArmorBonus;
-    pMercStats->nAttackRating += gaMercSecondaryTable[nTableIdx].nDefenseBonus;
-    nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercTertiaryDamageTable[nMercClass]);
-    nTableIdx = nRandResult2 + gnMercTertiaryDamageBase[nMercClass];
-    pMercStats->nTerArmor = gaMercTertiaryTable[nTableIdx].nArmor;
-    pMercStats->nTerDefense = gaMercTertiaryTable[nTableIdx].nDefense;
-    pMercStats->nDefense += gaMercTertiaryTable[nTableIdx].nArmorBonus;
-    pMercStats->nAttackRating += gaMercTertiaryTable[nTableIdx].nDefenseBonus;
-    nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercQuaternaryTable[nMercClass]);
-    nTableIdx = nRandResult2 + gnMercQuaternaryBase[nMercClass];
-    if ((int)nMercClass < 3) {
-      pMercStats->nStateA = gaMercQuaternaryTable[nTableIdx].nState;
-      pMercStats->nStateB = 0;
-    } else {
-      pMercStats->nStateA = 0;
-      pMercStats->nStateB = gaMercQuaternaryTable[nTableIdx].nState;
-    }
+      pMercStats->nQuatDamageBonus = gaMercQuaternaryTable[nTableIdx].nDamageBonus;
+      pMercStats->nQuatArmorBonus = gaMercQuaternaryTable[nTableIdx].nArmorBonus;
+      if (!gaMercQuaternaryTable[nTableIdx].nDefenseFlag) {
+        pMercStats->wFlags |= 1;
+      }
 
-    pMercStats->nQuatDamageBonus = gaMercQuaternaryTable[nTableIdx].nDamageBonus;
-    pMercStats->nQuatArmorBonus = gaMercQuaternaryTable[nTableIdx].nArmorBonus;
-    if (!gaMercQuaternaryTable[nTableIdx].nDefenseFlag) {
-      pMercStats->wFlags |= 1;
-    }
+      pMercStats->nDefense += gaMercQuaternaryTable[nTableIdx].nDefenseBonus;
+      pMercStats->nAttackRating += gaMercQuaternaryTable[nTableIdx].nHealthBonus;
+      nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercQuinaryTable[nMercClass]);
+      nTableIdx = nRandResult2 + gnMercCountMax[nMercClass];
+      nMercClass = gaMercQuinaryTable[nTableIdx].nAbility;
+      pMercStats->nQuinAbility = nMercClass;
+      pMercStats->nQuinSecondary = gaMercQuinaryTable[nTableIdx].nSecondary;
+      if ((int)nMercClass < 9 || (int)nMercClass > 0xb) {
+        pMercStats->nAbilityActiveFlag = 0;
+      } else {
+        pMercStats->nAbilityActiveFlag = 1;
+      }
 
-    pMercStats->nDefense += gaMercQuaternaryTable[nTableIdx].nDefenseBonus;
-    pMercStats->nAttackRating += gaMercQuaternaryTable[nTableIdx].nHealthBonus;
-    nRandResult2 = D2Client::Archive::RANDOM_RandomNumberSelector(&rollSeed, gdwMercQuinaryTable[nMercClass]);
-    nTableIdx = nRandResult2 + gnMercCountMax[nMercClass];
-    nMercClass = gaMercQuinaryTable[nTableIdx].nAbility;
-    pMercStats->nQuinAbility = nMercClass;
-    pMercStats->nQuinSecondary = gaMercQuinaryTable[nTableIdx].nSecondary;
-    if ((int)nMercClass < 9 || 0xb < (int)nMercClass) {
-      pMercStats->nAbilityActiveFlag = 0;
-    } else {
-      pMercStats->nAbilityActiveFlag = 1;
-    }
+      pMercStats->nDefense += gaMercQuinaryTable[nTableIdx].nArmorBonus;
+      pMercStats->nAttackRating += gaMercQuinaryTable[nTableIdx].nHealthBonus;
+      if (!nDifficulty) {
+        return 1;
+      }
 
-    pMercStats->nDefense += gaMercQuinaryTable[nTableIdx].nArmorBonus;
-    pMercStats->nAttackRating += gaMercQuinaryTable[nTableIdx].nHealthBonus;
-    if (!nDifficulty) {
+      nMercClass = (uint32_t)nDifficulty;
+      pMercStats->nSecArmor += gaMercDifficultyTable[nMercClass].nExpModifier;
+      pMercStats->nTerDefense += gaMercDifficultyTable[nMercClass].nArmorModifier;
+      pMercStats->nDefense += gaMercDifficultyTable[nMercClass].nDamageModifier;
+      pMercStats->nQuatDamageBonus = gaMercDifficultyTable[nMercClass].nResistMult * pMercStats->nQuatDamageBonus;
+      pMercStats->nQuatArmorBonus = gaMercDifficultyTable[nMercClass].nHealthMult * pMercStats->nQuatArmorBonus;
+      pMercStats->nQuinSecondary += gaMercDifficultyTable[nMercClass].nLifeModifier;
+      pMercStats->nAttackRating = gaMercDifficultyTable[nMercClass].nDamageFinalMult * pMercStats->nAttackRating;
       return 1;
     }
 
-    nMercClass = (uint32_t)nDifficulty;
-    pMercStats->nSecArmor += gaMercDifficultyTable[nMercClass].nExpModifier;
-    pMercStats->nTerDefense += gaMercDifficultyTable[nMercClass].nArmorModifier;
-    pMercStats->nDefense += gaMercDifficultyTable[nMercClass].nDamageModifier;
-    pMercStats->nQuatDamageBonus = gaMercDifficultyTable[nMercClass].nResistMult * pMercStats->nQuatDamageBonus;
-    pMercStats->nQuatArmorBonus = gaMercDifficultyTable[nMercClass].nHealthMult * pMercStats->nQuatArmorBonus;
-    pMercStats->nQuinSecondary += gaMercDifficultyTable[nMercClass].nLifeModifier;
-    pMercStats->nAttackRating = gaMercDifficultyTable[nMercClass].nDamageFinalMult * pMercStats->nAttackRating;
-    return 1;
+    return 0;
 }
 
 // 2022.01.09 - dzik
@@ -614,7 +615,7 @@ uint16_t * __fastcall GetMercTypeString(uint32_t nIndex) {
     0xd2f
 }; D2_STATIC_GUARD(aMercTypeLocaleStringIds, "D2Common::Merc::GetMercTypeString::aMercTypeLocaleStringIds");
 
-    if (!(-1 < (int)nIndex && nIndex < 9 && aMercTypeLocaleStringIds[nIndex])) {
+    if (!((int)nIndex >= 0 && nIndex < 9 && aMercTypeLocaleStringIds[nIndex])) {
       return nullptr;
     }
 
@@ -646,7 +647,7 @@ int32_t __stdcall GetBaseExperience(int32_t nLevel, int32_t nExpPerLevel) {
 uint32_t __stdcall GetReviveCost(D2UnitStrc * pUnit) {
     int nLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     uint32_t nCost = nLevel * nLevel / 2 * 0xf;
-    if (50000 >= nCost) {
+    if (nCost <= 50000) {
       return nCost;
     }
 
@@ -661,8 +662,7 @@ BOOL __fastcall RollMercStats(int32_t nVersion, D2UnitStrc * pUnit, int32_t nMer
     int nCost;
     D2UnitStrc* pBuyer = pUnit;
     Seed::SEED_InitDefault(&nRollSeed);
-    nRollSeed.nSeedLow = nMercSeed;
-    nRollSeed.nSeedHigh = 0x29a;
+    Seed::InitSeed_Param_666(&nRollSeed, nMercSeed);
     uint32_t nHirelingIdx = 0;
     pHirelingList[0] = 0;
     D2HirelingTxt* pHirelingTxt = DATATBLS::MonsterTbls::GetHirelingDataTable(nVersion, nAct, nDifficulty, nullptr);
@@ -694,47 +694,47 @@ BOOL __fastcall RollMercStats(int32_t nVersion, D2UnitStrc * pUnit, int32_t nMer
     pHireData->nLevel = nMercLevel;
     int nHp = pSelectedHireling->hp + pSelectedHireling->hpPerlvl * nLevelDiff;
     pHireData->nHp = nHp;
-    if (nHp < 0x29) {
+    if (nHp <= 0x28) {
       nHp = 0x28;
     }
 
     pHireData->nHp = nHp;
     int nStrength = pSelectedHireling->str + (pSelectedHireling->strPerlvl * nLevelDiff >> 3);
     pHireData->nStrength = nStrength;
-    if (nStrength < 0xb) {
+    if (nStrength <= 0xa) {
       nStrength = 10;
     }
 
     pHireData->nStrength = nStrength;
     int nDexterity = pSelectedHireling->dex + (pSelectedHireling->dexPerlvl * nLevelDiff >> 3);
     pHireData->nDexterity = nDexterity;
-    if (nDexterity < 0xb) {
+    if (nDexterity <= 0xa) {
       nDexterity = 10;
     }
 
     pHireData->nDexterity = nDexterity;
     nHp = (nLevelDiff * 0xf + 100) * pSelectedHireling->gold / 100;
     pHireData->nCost = nHp;
-    if (nHp < pSelectedHireling->gold) {
+    if (pSelectedHireling->gold > nHp) {
       nHp = pSelectedHireling->gold;
     }
 
     pHireData->nCost = nHp;
     int nExperience = (nMercLevel + 1) * pSelectedHireling->expPerLvl * nMercLevel * nMercLevel;
-    pHireData->nExperience = nExperience < 1 ? 0 : nExperience;
+    pHireData->nExperience = nExperience <= 0 ? 0 : nExperience;
     int nDefense = pSelectedHireling->defPerlvl * nLevelDiff + pSelectedHireling->defense;
-    pHireData->nDefense = nDefense < 1 ? 0 : nDefense;
+    pHireData->nDefense = nDefense <= 0 ? 0 : nDefense;
     int nMinDamage = (pSelectedHireling->dmgPerlvl * nLevelDiff >> 3) + pSelectedHireling->dmgMin;
-    pHireData->nMinDamage = nMinDamage < 1 ? 0 : nMinDamage;
+    pHireData->nMinDamage = nMinDamage <= 0 ? 0 : nMinDamage;
     int nMaxDamage = (pSelectedHireling->dmgPerlvl * nLevelDiff >> 3) + pSelectedHireling->dmgMax;
     pHireData->nMaxDamage = nMaxDamage;
-    if (nMaxDamage < 2) {
+    if (nMaxDamage <= 1) {
       nMaxDamage = 1;
     }
 
     pHireData->nMaxDamage = nMaxDamage;
-    pHireData->nShare = pSelectedHireling->share < 1 ? 0 : pSelectedHireling->share;
-    pHireData->nResists = pSelectedHireling->resist < 1 ? 0 : pSelectedHireling->resist;
+    pHireData->nShare = pSelectedHireling->share <= 0 ? 0 : pSelectedHireling->share;
+    pHireData->nResists = pSelectedHireling->resist <= 0 ? 0 : pSelectedHireling->resist;
     pHireData->nHireDescription = (uint32_t)pSelectedHireling->hiredesc;
     pHireData->field13_0x34 = 1;
     pHireData->field14_0x38 = 0;

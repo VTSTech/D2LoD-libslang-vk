@@ -247,16 +247,18 @@ int32_t __stdcall SRegLoadString(char * szSubKey, char * szValueName, int32_t nF
       BOOL bReadOk;
       bReadOk = SREG_InternalLoadEntry((LPDWORD)&szSubKey, (LPBYTE)szOutBuf, szSubKey, (uint8_t)nFlags, dwOutBufSize, szValueName, (LPDWORD)&szValueName);
       if (bReadOk) {
-        if (szSubKey == (char*)0x1) {
+        if (szSubKey != (char*)0x1) {
+          if (szSubKey == (char*)(void*)0x4) {
+            /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutBuf, "%u", *(uint32_t*)szOutBuf);
+            return 1;
+          }
+        } else {
           pTermPos = (char*)(dwOutBufSize - 1);
-          if (szValueName <= (char*)(dwOutBufSize - 1)) {
+          if ((char*)(dwOutBufSize - 1) >= szValueName) {
             pTermPos = szValueName;
           }
 
           pTermPos[(int)szOutBuf] = '\0';
-        } else if (szSubKey == (char*)(void*)0x4) {
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutBuf, "%u", *(uint32_t*)szOutBuf);
-          return 1;
         }
 
         return 1;
@@ -292,11 +294,13 @@ int __stdcall SRegLoadValue(char * pTree, char * pKey, uint8_t byFlags, int32_t 
       __frame0.valueBuf[0] &= -256;
       bReadOk = SREG_InternalLoadEntry(&__frame0.dwType, (LPBYTE)__frame0.valueBuf, pTree, byFlags, 0x100, pKey, &__frame0.dwDataLen);
       if (bReadOk) {
-        if (__frame0.dwType == 1) {
+        if (__frame0.dwType != 1) {
+          if (__frame0.dwType == 4) {
+            *__frame0.pnOutVal = __frame0.valueBuf[0];
+          }
+        } else {
           nParsed = strtoul((char*)__frame0.valueBuf, nullptr, 0);
           *__frame0.pnOutVal = nParsed;
-        } else if (__frame0.dwType == 4) {
-          *__frame0.pnOutVal = __frame0.valueBuf[0];
         }
 
         return 1;

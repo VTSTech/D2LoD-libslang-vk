@@ -66,7 +66,7 @@ int32_t __fastcall ITEMTBLS_ParseItemStatCostOrBase(char * szFieldValue, int32_t
     }
     if (sgtDataTable.pTxtItemStatCostLink) {
       nStatId = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtItemStatCostLink, szFieldValue, 0);
-      if (-1 < nStatId) {
+      if (nStatId >= 0) {
         *pResultType = 1;
         return nStatId;
       }
@@ -98,7 +98,7 @@ void __fastcall ITEMTBLS_CompileItemCodeExpression(char * szExpression, char * p
     }
     if (szExpression) {
       nParsedLen = Fog::Skills::SKILLS_ParseCalcExpression(szExpression, szWorkBuf, 0x400, ITEMTBLS_CalcExpr_ParseTokenType, ITEMTBLS_CalcExpr_GetConstTwo, (CalcGetLinkerIndex_t)ITEMTBLS_ParseItemStatCostOrBase);
-      if (0 < (int)nParsedLen) {
+      if ((int)nParsedLen > 0) {
         nFieldLen = DataTbls::DATATBLS_AppendDataToBuffer(&sgtDataTable.pItemsCode, &sgtDataTable.nItemsCodeSize, &sgtDataTable.nItemsCodeCapacity, szWorkBuf, nParsedLen);
         *(int32_t*)(pRecord + nOffset) = nFieldLen;
         return;
@@ -1158,7 +1158,7 @@ D2ItemsTableStrc * __stdcall TXT_Items_GetSize() {
 }
 
 uint32_t __stdcall TXT_Items_GetVersion(int32_t nItemClassId) {
-    if (!(nItemClassId < gsItemsTable.nSize && -1 < nItemClassId)) {
+    if (!(nItemClassId < gsItemsTable.nSize && nItemClassId >= 0)) {
       return -1;
     }
     if (!pTxtItemsVersion) {
@@ -1171,7 +1171,7 @@ uint32_t __stdcall TXT_Items_GetVersion(int32_t nItemClassId) {
 }
 
 D2ItemsTxt * __stdcall TXT_Items_GetLine(uint32_t nItemClassId) {
-    if ((uint32_t)gsItemsTable.nSize <= nItemClassId) {
+    if (nItemClassId >= (uint32_t)gsItemsTable.nSize) {
       return nullptr;
     }
     if (!gsItemsTable.pItems) {
@@ -1216,21 +1216,21 @@ void __fastcall ITEMTBLS_ParseSkillMonTypeOrStateId(char * szValue, char * pReco
         }
         if (sgtDataTable.pTxtSkillsLink) {
           nId = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtSkillsLink, szValue, 0);
-          if (-1 < nId) {
+          if (nId >= 0) {
             *(int32_t*)(pRecord + nOffset) = nId;
             return;
           }
         }
         if (sgtDataTable.pTxtMonTypeLink) {
           nId = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtMonTypeLink, szValue, 0);
-          if (-1 < nId) {
+          if (nId >= 0) {
             *(int32_t*)(pRecord + nOffset) = nId;
             return;
           }
         }
         if (sgtDataTable.pTxtStatesLink) {
           nId = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtStatesLink, szValue, 0);
-          if (-1 < nId) {
+          if (nId >= 0) {
             *(int32_t*)(pRecord + nOffset) = nId;
             return;
           }
@@ -1512,7 +1512,7 @@ D2MagicAffixTxt * __stdcall TXT_magicaffixes_GetLine(int32_t nAffixIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c8);
       exit(-1);
     }
-    if (!(nAffixIndex <= gsMagicAffixTable.nSize && 0 < nAffixIndex)) {
+    if (!(nAffixIndex <= gsMagicAffixTable.nSize && nAffixIndex > 0)) {
       return nullptr;
     }
 
@@ -1643,7 +1643,7 @@ D2RareAffixTableStrc * __stdcall TXT_RareAffixes_GetTableInfo() {
 
 // Returns rare affix group line for given 1-based index (72 bytes/entry). Used for rare item name generation (GetItemName).
 D2RareAffixTxt * __stdcall TXT_RareAffixes_GetLine(int32_t nIndex) {
-    if (!(nIndex <= gsRareAffixTable.nSize && 0 < nIndex)) {
+    if (!(nIndex <= gsRareAffixTable.nSize && nIndex > 0)) {
       return nullptr;
     }
     if (!gsRareAffixTable.pTable) {
@@ -2013,7 +2013,7 @@ void __fastcall TXT_AllocTxt_uniqueitems(D2PoolManagerStrc * pMemory) {
     __frame0.nByteOffset = (int)pMemory;
     sgtDataTable.pTxtUniqueItemsLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x37a);
     sgtDataTable.pTxtUniqueItems = (D2UniqueItemsTxt*)DataTbls::CompileTxt((D2PoolManagerStrc*)__frame0.nByteOffset, "uniqueitems", uniqueitems, &sgtDataTable.nTxtUniqueItemsSize, 0x14c);
-    if (0x7ffe < sgtDataTable.nTxtUniqueItemsSize) {
+    if (sgtDataTable.nTxtUniqueItemsSize >= 0x7fff) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x37c);
       exit(-1);
     }
@@ -2407,518 +2407,518 @@ void __fastcall TXT_AllocTxt_setitems(D2PoolManagerStrc * pMemory) {
     __frame0.nByteOffset = (int)pMemory;
     sgtDataTable.pTxtSetsLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x3f2);
     sgtDataTable.pTxtSets = (D2SetsTxt*)DataTbls::CompileTxt((D2PoolManagerStrc*)__frame0.nByteOffset, "sets", sets, &sgtDataTable.nTxtSetsSize, 0x128);
-    if (sgtDataTable.nTxtSetsSize < 0x7fff) {
-      uint32_t nStringId;
-      setitems[3].eType = FIELDTYPE_SHORT;
-      setitems[4].eType = FIELDTYPE_SHORT;
-      setitems[8].fpLinker = &sgtDataTable.pTxtColorsLink;
-      setitems[9].fpLinker = &sgtDataTable.pTxtColorsLink;
-      setitems[0].nSize = 0x1f;
-      setitems[8].eType = FIELDTYPE_CODE_CHAR;
-      setitems[9].eType = FIELDTYPE_CODE_CHAR;
-      setitems[10].eType = FIELDTYPE_ASCII;
-      setitems[10].nSize = 0x1f;
-      setitems[0xb].eType = FIELDTYPE_ASCII;
-      setitems[0xb].nSize = 0x1f;
-      setitems[0].szName = "index";
-      setitems[0].eType = FIELDTYPE_ASCII;
-      setitems[0].nOffset = 2;
-      setitems[0].fpLinker = 0;
-      setitems[1].szName = "item";
-      setitems[1].eType = FIELDTYPE_RAW4;
-      setitems[1].nSize = 0;
-      setitems[1].nOffset = 0x28;
-      setitems[1].fpLinker = 0;
-      setitems[2].szName = "set";
-      setitems[2].eType = FIELDTYPE_NAME_SHORT;
-      setitems[2].nSize = 0;
-      setitems[2].nOffset = 0x2c;
-      setitems[2].fpLinker = &sgtDataTable.pTxtSetsLink;
-      setitems[3].szName = "lvl";
-      setitems[3].nSize = 0;
-      setitems[3].nOffset = 0x30;
-      setitems[3].fpLinker = 0;
-      setitems[4].szName = "lvl req";
-      setitems[4].nSize = 0;
-      setitems[4].nOffset = 0x32;
-      setitems[4].fpLinker = 0;
-      setitems[5].szName = "rarity";
-      setitems[5].eType = FIELDTYPE_INT;
-      setitems[5].nSize = 0;
-      setitems[5].nOffset = 0x34;
-      setitems[5].fpLinker = 0;
-      setitems[6].szName = "cost mult";
-      setitems[6].eType = FIELDTYPE_INT;
-      setitems[6].nSize = 0;
-      setitems[6].nOffset = 0x38;
-      setitems[6].fpLinker = 0;
-      setitems[7].szName = "cost add";
-      setitems[7].eType = FIELDTYPE_INT;
-      setitems[7].nSize = 0;
-      setitems[7].nOffset = 0x3c;
-      setitems[7].fpLinker = 0;
-      setitems[8].szName = "chrtransform";
-      setitems[8].nSize = 0;
-      setitems[8].nOffset = 0x40;
-      setitems[9].szName = "invtransform";
-      setitems[9].nSize = 0;
-      setitems[9].nOffset = 0x41;
-      setitems[10].szName = "flippyfile";
-      setitems[10].nOffset = 0x42;
-      setitems[10].fpLinker = 0;
-      setitems[0xb].szName = "invfile";
-      setitems[0xb].nOffset = 0x62;
-      setitems[0xb].fpLinker = 0;
-      setitems[0xc].szName = "dropsound";
-      setitems[0xc].eType = FIELDTYPE_NAME_SHORT;
-      setitems[0xc].nSize = 0;
-      setitems[0xc].nOffset = 0x82;
-      setitems[0xc].fpLinker = &sgtDataTable.pTxtSoundsLink;
-      setitems[0xd].szName = "dropsfxframe";
-      setitems[0xd].eType = FIELDTYPE_CHAR;
-      setitems[0xd].nSize = 0;
-      setitems[0xd].nOffset = 0x86;
-      setitems[0xd].fpLinker = 0;
-      setitems[0xe].szName = "usesound";
-      setitems[0xe].eType = FIELDTYPE_NAME_SHORT;
-      setitems[0xe].nSize = 0;
-      setitems[0xe].fpLinker = &sgtDataTable.pTxtSoundsLink;
-      setitems[0xf].eType = FIELDTYPE_CHAR;
-      setitems[0xe].nOffset = 0x84;
-      setitems[0xf].szName = "add func";
-      setitems[0xf].nSize = 0;
-      setitems[0xf].nOffset = 0x87;
-      setitems[0xf].fpLinker = 0;
-      setitems[0x10].szName = "prop1";
-      setitems[0x10].eType = FIELDTYPE_NAME_INT;
-      setitems[0x10].nSize = 0;
-      setitems[0x10].nOffset = 0x88;
-      setitems[0x10].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x11].szName = "par1";
-      setitems[0x11].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x11].nSize = 0;
-      setitems[0x11].nOffset = 0x8c;
-      setitems[0x11].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x12].szName = "min1";
-      setitems[0x12].eType = FIELDTYPE_INT;
-      setitems[0x12].nSize = 0;
-      setitems[0x12].nOffset = 0x90;
-      setitems[0x12].fpLinker = 0;
-      setitems[0x13].szName = "max1";
-      setitems[0x13].eType = FIELDTYPE_INT;
-      setitems[0x13].nSize = 0;
-      setitems[0x13].nOffset = 0x94;
-      setitems[0x13].fpLinker = 0;
-      setitems[0x14].szName = "prop2";
-      setitems[0x14].eType = FIELDTYPE_NAME_INT;
-      setitems[0x14].nSize = 0;
-      setitems[0x14].nOffset = 0x98;
-      setitems[0x14].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x15].szName = "par2";
-      setitems[0x15].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x15].nSize = 0;
-      setitems[0x15].nOffset = 0x9c;
-      setitems[0x15].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x16].szName = "min2";
-      setitems[0x16].eType = FIELDTYPE_INT;
-      setitems[0x16].nSize = 0;
-      setitems[0x16].nOffset = 0xa0;
-      setitems[0x16].fpLinker = 0;
-      setitems[0x17].szName = "max2";
-      setitems[0x17].eType = FIELDTYPE_INT;
-      setitems[0x17].nSize = 0;
-      setitems[0x17].nOffset = 0xa4;
-      setitems[0x17].fpLinker = 0;
-      setitems[0x18].szName = "prop3";
-      setitems[0x18].eType = FIELDTYPE_NAME_INT;
-      setitems[0x18].nSize = 0;
-      setitems[0x18].nOffset = 0xa8;
-      setitems[0x18].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x19].szName = "par3";
-      setitems[0x19].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x19].nSize = 0;
-      setitems[0x19].nOffset = 0xac;
-      setitems[0x19].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x1a].szName = "min3";
-      setitems[0x1a].eType = FIELDTYPE_INT;
-      setitems[0x1a].nSize = 0;
-      setitems[0x1a].nOffset = 0xb0;
-      setitems[0x1a].fpLinker = 0;
-      setitems[0x1b].szName = "max3";
-      setitems[0x1b].eType = FIELDTYPE_INT;
-      setitems[0x1b].nSize = 0;
-      setitems[0x1b].nOffset = 0xb4;
-      setitems[0x1b].fpLinker = 0;
-      setitems[0x1c].szName = "prop4";
-      setitems[0x1c].eType = FIELDTYPE_NAME_INT;
-      setitems[0x1c].nSize = 0;
-      setitems[0x1c].nOffset = 0xb8;
-      setitems[0x1c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x1d].szName = "par4";
-      setitems[0x1d].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x1d].nSize = 0;
-      setitems[0x1d].nOffset = 0xbc;
-      setitems[0x1d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x1e].szName = "min4";
-      setitems[0x1e].eType = FIELDTYPE_INT;
-      setitems[0x1e].nSize = 0;
-      setitems[0x1e].nOffset = 0xc0;
-      setitems[0x1e].fpLinker = 0;
-      setitems[0x1f].szName = "max4";
-      setitems[0x1f].eType = FIELDTYPE_INT;
-      setitems[0x1f].nSize = 0;
-      setitems[0x1f].nOffset = 0xc4;
-      setitems[0x1f].fpLinker = 0;
-      setitems[0x20].szName = "prop5";
-      setitems[0x20].eType = FIELDTYPE_NAME_INT;
-      setitems[0x20].nSize = 0;
-      setitems[0x20].nOffset = 200;
-      setitems[0x20].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x21].szName = "par5";
-      setitems[0x21].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x21].nSize = 0;
-      setitems[0x21].nOffset = 0xcc;
-      setitems[0x21].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x22].szName = "min5";
-      setitems[0x22].eType = FIELDTYPE_INT;
-      setitems[0x22].nSize = 0;
-      setitems[0x22].nOffset = 0xd0;
-      setitems[0x22].fpLinker = 0;
-      setitems[0x23].szName = "max5";
-      setitems[0x23].eType = FIELDTYPE_INT;
-      setitems[0x23].nSize = 0;
-      setitems[0x23].nOffset = 0xd4;
-      setitems[0x23].fpLinker = 0;
-      setitems[0x24].szName = "prop6";
-      setitems[0x24].eType = FIELDTYPE_NAME_INT;
-      setitems[0x24].nSize = 0;
-      setitems[0x24].nOffset = 0xd8;
-      setitems[0x24].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x25].szName = "par6";
-      setitems[0x25].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x25].nSize = 0;
-      setitems[0x25].nOffset = 0xdc;
-      setitems[0x25].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x26].szName = "min6";
-      setitems[0x26].eType = FIELDTYPE_INT;
-      setitems[0x26].nSize = 0;
-      setitems[0x26].nOffset = 0xe0;
-      setitems[0x26].fpLinker = 0;
-      setitems[0x27].szName = "max6";
-      setitems[0x27].eType = FIELDTYPE_INT;
-      setitems[0x27].nSize = 0;
-      setitems[0x27].nOffset = 0xe4;
-      setitems[0x27].fpLinker = 0;
-      setitems[0x28].szName = "prop7";
-      setitems[0x28].eType = FIELDTYPE_NAME_INT;
-      setitems[0x28].nSize = 0;
-      setitems[0x28].nOffset = 0xe8;
-      setitems[0x28].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x29].szName = "par7";
-      setitems[0x29].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x29].nSize = 0;
-      setitems[0x29].nOffset = 0xec;
-      setitems[0x29].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x2a].szName = "min7";
-      setitems[0x2a].eType = FIELDTYPE_INT;
-      setitems[0x2a].nSize = 0;
-      setitems[0x2a].nOffset = 0xf0;
-      setitems[0x2a].fpLinker = 0;
-      setitems[0x2b].szName = "max7";
-      setitems[0x2b].eType = FIELDTYPE_INT;
-      setitems[0x2b].nSize = 0;
-      setitems[0x2b].nOffset = 0xf4;
-      setitems[0x2b].fpLinker = 0;
-      setitems[0x2c].szName = "prop8";
-      setitems[0x2c].eType = FIELDTYPE_NAME_INT;
-      setitems[0x2c].nSize = 0;
-      setitems[0x2c].nOffset = 0xf8;
-      setitems[0x2c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x2d].szName = "par8";
-      setitems[0x2d].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x2d].nSize = 0;
-      setitems[0x2d].nOffset = 0xfc;
-      setitems[0x2d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x2e].szName = "min8";
-      setitems[0x2e].eType = FIELDTYPE_INT;
-      setitems[0x2e].nSize = 0;
-      setitems[0x2e].nOffset = 0x100;
-      setitems[0x2e].fpLinker = 0;
-      setitems[0x2f].szName = "max8";
-      setitems[0x2f].eType = FIELDTYPE_INT;
-      setitems[0x2f].nSize = 0;
-      setitems[0x2f].nOffset = 0x104;
-      setitems[0x2f].fpLinker = 0;
-      setitems[0x30].szName = "prop9";
-      setitems[0x30].eType = FIELDTYPE_NAME_INT;
-      setitems[0x30].nSize = 0;
-      setitems[0x30].nOffset = 0x108;
-      setitems[0x30].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x31].szName = "par9";
-      setitems[0x31].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x31].nSize = 0;
-      setitems[0x31].nOffset = 0x10c;
-      setitems[0x31].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x32].szName = "min9";
-      setitems[0x32].eType = FIELDTYPE_INT;
-      setitems[0x32].nSize = 0;
-      setitems[0x32].nOffset = 0x110;
-      setitems[0x32].fpLinker = 0;
-      setitems[0x33].szName = "max9";
-      setitems[0x33].eType = FIELDTYPE_INT;
-      setitems[0x33].nSize = 0;
-      setitems[0x33].nOffset = 0x114;
-      setitems[0x33].fpLinker = 0;
-      setitems[0x34].szName = "aprop1a";
-      setitems[0x34].eType = FIELDTYPE_NAME_INT;
-      setitems[0x34].nSize = 0;
-      setitems[0x34].nOffset = 0x118;
-      setitems[0x34].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x35].szName = "apar1a";
-      setitems[0x35].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x35].nSize = 0;
-      setitems[0x35].nOffset = 0x11c;
-      setitems[0x35].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x36].szName = "amin1a";
-      setitems[0x36].eType = FIELDTYPE_INT;
-      setitems[0x36].nSize = 0;
-      setitems[0x36].nOffset = 0x120;
-      setitems[0x36].fpLinker = 0;
-      setitems[0x37].szName = "amax1a";
-      setitems[0x37].eType = FIELDTYPE_INT;
-      setitems[0x37].nSize = 0;
-      setitems[0x37].nOffset = 0x124;
-      setitems[0x37].fpLinker = 0;
-      setitems[0x38].szName = "aprop1b";
-      setitems[0x38].eType = FIELDTYPE_NAME_INT;
-      setitems[0x38].nSize = 0;
-      setitems[0x38].nOffset = 0x128;
-      setitems[0x38].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x39].szName = "apar1b";
-      setitems[0x39].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x39].nSize = 0;
-      setitems[0x39].nOffset = 300;
-      setitems[0x39].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x3a].szName = "amin1b";
-      setitems[0x3a].eType = FIELDTYPE_INT;
-      setitems[0x3a].nSize = 0;
-      setitems[0x3a].nOffset = 0x130;
-      setitems[0x3a].fpLinker = 0;
-      setitems[0x3b].szName = "amax1b";
-      setitems[0x3b].eType = FIELDTYPE_INT;
-      setitems[0x3b].nSize = 0;
-      setitems[0x3b].nOffset = 0x134;
-      setitems[0x3b].fpLinker = 0;
-      setitems[0x3c].szName = "aprop2a";
-      setitems[0x3c].eType = FIELDTYPE_NAME_INT;
-      setitems[0x3c].nSize = 0;
-      setitems[0x3c].nOffset = 0x138;
-      setitems[0x3c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x3d].szName = "apar2a";
-      setitems[0x3d].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x3d].nSize = 0;
-      setitems[0x3d].nOffset = 0x13c;
-      setitems[0x3d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x3e].szName = "amin2a";
-      setitems[0x3e].eType = FIELDTYPE_INT;
-      setitems[0x3e].nSize = 0;
-      setitems[0x3e].nOffset = 0x140;
-      setitems[0x3e].fpLinker = 0;
-      setitems[0x3f].szName = "amax2a";
-      setitems[0x3f].eType = FIELDTYPE_INT;
-      setitems[0x3f].nSize = 0;
-      setitems[0x3f].nOffset = 0x144;
-      setitems[0x3f].fpLinker = 0;
-      setitems[0x40].szName = "aprop2b";
-      setitems[0x40].eType = FIELDTYPE_NAME_INT;
-      setitems[0x40].nSize = 0;
-      setitems[0x40].nOffset = 0x148;
-      setitems[0x40].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x41].szName = "apar2b";
-      setitems[0x41].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x41].nSize = 0;
-      setitems[0x41].nOffset = 0x14c;
-      setitems[0x41].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x42].szName = "amin2b";
-      setitems[0x42].eType = FIELDTYPE_INT;
-      setitems[0x42].nSize = 0;
-      setitems[0x42].nOffset = 0x150;
-      setitems[0x42].fpLinker = 0;
-      setitems[0x43].szName = "amax2b";
-      setitems[0x43].eType = FIELDTYPE_INT;
-      setitems[0x43].nSize = 0;
-      setitems[0x43].nOffset = 0x154;
-      setitems[0x43].fpLinker = 0;
-      setitems[0x44].szName = "aprop3a";
-      setitems[0x44].eType = FIELDTYPE_NAME_INT;
-      setitems[0x44].nSize = 0;
-      setitems[0x44].nOffset = 0x158;
-      setitems[0x44].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x45].szName = "apar3a";
-      setitems[0x45].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x45].nSize = 0;
-      setitems[0x45].nOffset = 0x15c;
-      setitems[0x45].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x46].szName = "amin3a";
-      setitems[0x46].eType = FIELDTYPE_INT;
-      setitems[0x46].nSize = 0;
-      setitems[0x46].nOffset = 0x160;
-      setitems[0x46].fpLinker = 0;
-      setitems[0x47].szName = "amax3a";
-      setitems[0x47].eType = FIELDTYPE_INT;
-      setitems[0x47].nSize = 0;
-      setitems[0x47].nOffset = 0x164;
-      setitems[0x47].fpLinker = 0;
-      setitems[0x48].szName = "aprop3b";
-      setitems[0x48].eType = FIELDTYPE_NAME_INT;
-      setitems[0x48].nSize = 0;
-      setitems[0x48].nOffset = 0x168;
-      setitems[0x48].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x49].szName = "apar3b";
-      setitems[0x49].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x49].nSize = 0;
-      setitems[0x49].nOffset = 0x16c;
-      setitems[0x49].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x4a].szName = "amin3b";
-      setitems[0x4a].eType = FIELDTYPE_INT;
-      setitems[0x4a].nSize = 0;
-      setitems[0x4a].nOffset = 0x170;
-      setitems[0x4a].fpLinker = 0;
-      setitems[0x4b].szName = "amax3b";
-      setitems[0x4b].eType = FIELDTYPE_INT;
-      setitems[0x4b].nSize = 0;
-      setitems[0x4b].nOffset = 0x174;
-      setitems[0x4b].fpLinker = 0;
-      setitems[0x4c].szName = "aprop4a";
-      setitems[0x4c].eType = FIELDTYPE_NAME_INT;
-      setitems[0x4c].nSize = 0;
-      setitems[0x4c].nOffset = 0x178;
-      setitems[0x4c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x4d].szName = "apar4a";
-      setitems[0x4d].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x4d].nSize = 0;
-      setitems[0x4d].nOffset = 0x17c;
-      setitems[0x4d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x4e].szName = "amin4a";
-      setitems[0x4e].eType = FIELDTYPE_INT;
-      setitems[0x4e].nSize = 0;
-      setitems[0x4e].nOffset = 0x180;
-      setitems[0x4e].fpLinker = 0;
-      setitems[0x4f].szName = "amax4a";
-      setitems[0x4f].eType = FIELDTYPE_INT;
-      setitems[0x4f].nSize = 0;
-      setitems[0x4f].nOffset = 0x184;
-      setitems[0x4f].fpLinker = 0;
-      setitems[0x50].szName = "aprop4b";
-      setitems[0x50].eType = FIELDTYPE_NAME_INT;
-      setitems[0x50].nSize = 0;
-      setitems[0x50].nOffset = 0x188;
-      setitems[0x50].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x51].szName = "apar4b";
-      setitems[0x51].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x51].nSize = 0;
-      setitems[0x51].nOffset = 0x18c;
-      setitems[0x51].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x52].szName = "amin4b";
-      setitems[0x52].eType = FIELDTYPE_INT;
-      setitems[0x52].nSize = 0;
-      setitems[0x52].nOffset = 400;
-      setitems[0x52].fpLinker = 0;
-      setitems[0x53].szName = "amax4b";
-      setitems[0x53].eType = FIELDTYPE_INT;
-      setitems[0x53].nSize = 0;
-      setitems[0x53].nOffset = 0x194;
-      setitems[0x53].fpLinker = 0;
-      setitems[0x54].szName = "aprop5a";
-      setitems[0x54].eType = FIELDTYPE_NAME_INT;
-      setitems[0x54].nSize = 0;
-      setitems[0x54].nOffset = 0x198;
-      setitems[0x54].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x55].szName = "apar5a";
-      setitems[0x55].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x55].nSize = 0;
-      setitems[0x55].nOffset = 0x19c;
-      setitems[0x55].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x56].szName = "amin5a";
-      setitems[0x56].eType = FIELDTYPE_INT;
-      setitems[0x56].nSize = 0;
-      setitems[0x56].nOffset = 0x1a0;
-      setitems[0x56].fpLinker = 0;
-      setitems[0x57].szName = "amax5a";
-      setitems[0x57].eType = FIELDTYPE_INT;
-      setitems[0x57].nSize = 0;
-      setitems[0x57].nOffset = 0x1a4;
-      setitems[0x57].fpLinker = 0;
-      setitems[0x58].szName = "aprop5b";
-      setitems[0x58].eType = FIELDTYPE_NAME_INT;
-      setitems[0x58].nSize = 0;
-      setitems[0x58].nOffset = 0x1a8;
-      setitems[0x58].fpLinker = &sgtDataTable.pTxtPropertiesLink;
-      setitems[0x59].szName = "apar5b";
-      setitems[0x59].eType = FIELDTYPE_LINKER_INT;
-      setitems[0x59].nSize = 0;
-      setitems[0x59].nOffset = 0x1ac;
-      setitems[0x59].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
-      setitems[0x5a].szName = "amin5b";
-      setitems[0x5a].eType = FIELDTYPE_INT;
-      setitems[0x5a].nSize = 0;
-      setitems[0x5a].nOffset = 0x1b0;
-      setitems[0x5a].fpLinker = 0;
-      setitems[0x5b].szName = "amax5b";
-      setitems[0x5b].eType = FIELDTYPE_INT;
-      setitems[0x5b].nSize = 0;
-      setitems[0x5b].nOffset = 0x1b4;
-      setitems[0x5b].fpLinker = 0;
-      setitems[0x5c].szName = "end";
-      setitems[0x5c].eType = FIELDTYPE_END;
-      setitems[0x5c].nSize = 0;
-      setitems[0x5c].nOffset = 0;
-      setitems[0x5c].fpLinker = 0;
-      sgtDataTable.pTxtSetItemsLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x45d);
-      sgtDataTable.pTxtSetItems = (D2SetItemsTxt*)DataTbls::CompileTxt((D2PoolManagerStrc*)__frame0.nByteOffset, "setitems", setitems, &sgtDataTable.nTxtSetItemsSize, 0x1b8);
-      if (!(sgtDataTable.nTxtSetItemsSize < 0x7fff)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x45f);
-        exit(-1);
-      }
-
-      __frame0.nIdx = 0;
-      if (0 >= sgtDataTable.nTxtSetItemsSize) {
-        return;
-      }
-
-      __frame0.nByteOffset = 0;
-      do {
-        pCurSetItem = (D2SetItemsTxt*)(sgtDataTable.pTxtSetItems->index + __frame0.nByteOffset - 2);
-        pCurSetItem->nId = (short int)__frame0.nIdx;
-        Fog::Src::Excel::FOG_ParseStringField(sgtDataTable.pTxtSetItemsLink, pCurSetItem->index);
-        __frame0.pStringLookup = 0;
-        nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)pCurSetItem->index, &__frame0.pStringLookup);
-        pCurSetItem->stringId = (uint16_t)nStringId;
-        if (!(uint16_t)nStringId) {
-          pCurSetItem->stringId = 0x1507;
-        }
-
-        pTxtSetsCached = sgtDataTable.pTxtSets;
-        if (-1 < pCurSetItem->set) {
-          nSetIdx = (int)pCurSetItem->set;
-          if (nSetIdx < sgtDataTable.nTxtSetsSize && sgtDataTable.pTxtSets[nSetIdx].nTxtSetItemsCount < 6) {
-            pCurSetItem->version = sgtDataTable.pTxtSets[nSetIdx].version;
-            nSetItemSlot = (short int)pTxtSetsCached[nSetIdx].nTxtSetItemsCount;
-            pCurSetItem->setIndex = nSetItemSlot;
-            pTxtSetsCached[nSetIdx].pTxtSetItems[nSetItemSlot] = pCurSetItem;
-            pTxtSetsCached[nSetIdx].nTxtSetItemsCount++;
-          }
-        }
-
-        __frame0.nByteOffset += 0x1b8;
-        __frame0.nIdx++;
-      } while (__frame0.nIdx < sgtDataTable.nTxtSetItemsSize);
-
-      return;
-    } else {
+    if (sgtDataTable.nTxtSetsSize >= 0x7fff) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f4);
       exit(-1);
     }
+
+    uint32_t nStringId;
+    setitems[3].eType = FIELDTYPE_SHORT;
+    setitems[4].eType = FIELDTYPE_SHORT;
+    setitems[8].fpLinker = &sgtDataTable.pTxtColorsLink;
+    setitems[9].fpLinker = &sgtDataTable.pTxtColorsLink;
+    setitems[0].nSize = 0x1f;
+    setitems[8].eType = FIELDTYPE_CODE_CHAR;
+    setitems[9].eType = FIELDTYPE_CODE_CHAR;
+    setitems[10].eType = FIELDTYPE_ASCII;
+    setitems[10].nSize = 0x1f;
+    setitems[0xb].eType = FIELDTYPE_ASCII;
+    setitems[0xb].nSize = 0x1f;
+    setitems[0].szName = "index";
+    setitems[0].eType = FIELDTYPE_ASCII;
+    setitems[0].nOffset = 2;
+    setitems[0].fpLinker = 0;
+    setitems[1].szName = "item";
+    setitems[1].eType = FIELDTYPE_RAW4;
+    setitems[1].nSize = 0;
+    setitems[1].nOffset = 0x28;
+    setitems[1].fpLinker = 0;
+    setitems[2].szName = "set";
+    setitems[2].eType = FIELDTYPE_NAME_SHORT;
+    setitems[2].nSize = 0;
+    setitems[2].nOffset = 0x2c;
+    setitems[2].fpLinker = &sgtDataTable.pTxtSetsLink;
+    setitems[3].szName = "lvl";
+    setitems[3].nSize = 0;
+    setitems[3].nOffset = 0x30;
+    setitems[3].fpLinker = 0;
+    setitems[4].szName = "lvl req";
+    setitems[4].nSize = 0;
+    setitems[4].nOffset = 0x32;
+    setitems[4].fpLinker = 0;
+    setitems[5].szName = "rarity";
+    setitems[5].eType = FIELDTYPE_INT;
+    setitems[5].nSize = 0;
+    setitems[5].nOffset = 0x34;
+    setitems[5].fpLinker = 0;
+    setitems[6].szName = "cost mult";
+    setitems[6].eType = FIELDTYPE_INT;
+    setitems[6].nSize = 0;
+    setitems[6].nOffset = 0x38;
+    setitems[6].fpLinker = 0;
+    setitems[7].szName = "cost add";
+    setitems[7].eType = FIELDTYPE_INT;
+    setitems[7].nSize = 0;
+    setitems[7].nOffset = 0x3c;
+    setitems[7].fpLinker = 0;
+    setitems[8].szName = "chrtransform";
+    setitems[8].nSize = 0;
+    setitems[8].nOffset = 0x40;
+    setitems[9].szName = "invtransform";
+    setitems[9].nSize = 0;
+    setitems[9].nOffset = 0x41;
+    setitems[10].szName = "flippyfile";
+    setitems[10].nOffset = 0x42;
+    setitems[10].fpLinker = 0;
+    setitems[0xb].szName = "invfile";
+    setitems[0xb].nOffset = 0x62;
+    setitems[0xb].fpLinker = 0;
+    setitems[0xc].szName = "dropsound";
+    setitems[0xc].eType = FIELDTYPE_NAME_SHORT;
+    setitems[0xc].nSize = 0;
+    setitems[0xc].nOffset = 0x82;
+    setitems[0xc].fpLinker = &sgtDataTable.pTxtSoundsLink;
+    setitems[0xd].szName = "dropsfxframe";
+    setitems[0xd].eType = FIELDTYPE_CHAR;
+    setitems[0xd].nSize = 0;
+    setitems[0xd].nOffset = 0x86;
+    setitems[0xd].fpLinker = 0;
+    setitems[0xe].szName = "usesound";
+    setitems[0xe].eType = FIELDTYPE_NAME_SHORT;
+    setitems[0xe].nSize = 0;
+    setitems[0xe].fpLinker = &sgtDataTable.pTxtSoundsLink;
+    setitems[0xf].eType = FIELDTYPE_CHAR;
+    setitems[0xe].nOffset = 0x84;
+    setitems[0xf].szName = "add func";
+    setitems[0xf].nSize = 0;
+    setitems[0xf].nOffset = 0x87;
+    setitems[0xf].fpLinker = 0;
+    setitems[0x10].szName = "prop1";
+    setitems[0x10].eType = FIELDTYPE_NAME_INT;
+    setitems[0x10].nSize = 0;
+    setitems[0x10].nOffset = 0x88;
+    setitems[0x10].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x11].szName = "par1";
+    setitems[0x11].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x11].nSize = 0;
+    setitems[0x11].nOffset = 0x8c;
+    setitems[0x11].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x12].szName = "min1";
+    setitems[0x12].eType = FIELDTYPE_INT;
+    setitems[0x12].nSize = 0;
+    setitems[0x12].nOffset = 0x90;
+    setitems[0x12].fpLinker = 0;
+    setitems[0x13].szName = "max1";
+    setitems[0x13].eType = FIELDTYPE_INT;
+    setitems[0x13].nSize = 0;
+    setitems[0x13].nOffset = 0x94;
+    setitems[0x13].fpLinker = 0;
+    setitems[0x14].szName = "prop2";
+    setitems[0x14].eType = FIELDTYPE_NAME_INT;
+    setitems[0x14].nSize = 0;
+    setitems[0x14].nOffset = 0x98;
+    setitems[0x14].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x15].szName = "par2";
+    setitems[0x15].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x15].nSize = 0;
+    setitems[0x15].nOffset = 0x9c;
+    setitems[0x15].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x16].szName = "min2";
+    setitems[0x16].eType = FIELDTYPE_INT;
+    setitems[0x16].nSize = 0;
+    setitems[0x16].nOffset = 0xa0;
+    setitems[0x16].fpLinker = 0;
+    setitems[0x17].szName = "max2";
+    setitems[0x17].eType = FIELDTYPE_INT;
+    setitems[0x17].nSize = 0;
+    setitems[0x17].nOffset = 0xa4;
+    setitems[0x17].fpLinker = 0;
+    setitems[0x18].szName = "prop3";
+    setitems[0x18].eType = FIELDTYPE_NAME_INT;
+    setitems[0x18].nSize = 0;
+    setitems[0x18].nOffset = 0xa8;
+    setitems[0x18].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x19].szName = "par3";
+    setitems[0x19].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x19].nSize = 0;
+    setitems[0x19].nOffset = 0xac;
+    setitems[0x19].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x1a].szName = "min3";
+    setitems[0x1a].eType = FIELDTYPE_INT;
+    setitems[0x1a].nSize = 0;
+    setitems[0x1a].nOffset = 0xb0;
+    setitems[0x1a].fpLinker = 0;
+    setitems[0x1b].szName = "max3";
+    setitems[0x1b].eType = FIELDTYPE_INT;
+    setitems[0x1b].nSize = 0;
+    setitems[0x1b].nOffset = 0xb4;
+    setitems[0x1b].fpLinker = 0;
+    setitems[0x1c].szName = "prop4";
+    setitems[0x1c].eType = FIELDTYPE_NAME_INT;
+    setitems[0x1c].nSize = 0;
+    setitems[0x1c].nOffset = 0xb8;
+    setitems[0x1c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x1d].szName = "par4";
+    setitems[0x1d].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x1d].nSize = 0;
+    setitems[0x1d].nOffset = 0xbc;
+    setitems[0x1d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x1e].szName = "min4";
+    setitems[0x1e].eType = FIELDTYPE_INT;
+    setitems[0x1e].nSize = 0;
+    setitems[0x1e].nOffset = 0xc0;
+    setitems[0x1e].fpLinker = 0;
+    setitems[0x1f].szName = "max4";
+    setitems[0x1f].eType = FIELDTYPE_INT;
+    setitems[0x1f].nSize = 0;
+    setitems[0x1f].nOffset = 0xc4;
+    setitems[0x1f].fpLinker = 0;
+    setitems[0x20].szName = "prop5";
+    setitems[0x20].eType = FIELDTYPE_NAME_INT;
+    setitems[0x20].nSize = 0;
+    setitems[0x20].nOffset = 200;
+    setitems[0x20].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x21].szName = "par5";
+    setitems[0x21].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x21].nSize = 0;
+    setitems[0x21].nOffset = 0xcc;
+    setitems[0x21].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x22].szName = "min5";
+    setitems[0x22].eType = FIELDTYPE_INT;
+    setitems[0x22].nSize = 0;
+    setitems[0x22].nOffset = 0xd0;
+    setitems[0x22].fpLinker = 0;
+    setitems[0x23].szName = "max5";
+    setitems[0x23].eType = FIELDTYPE_INT;
+    setitems[0x23].nSize = 0;
+    setitems[0x23].nOffset = 0xd4;
+    setitems[0x23].fpLinker = 0;
+    setitems[0x24].szName = "prop6";
+    setitems[0x24].eType = FIELDTYPE_NAME_INT;
+    setitems[0x24].nSize = 0;
+    setitems[0x24].nOffset = 0xd8;
+    setitems[0x24].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x25].szName = "par6";
+    setitems[0x25].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x25].nSize = 0;
+    setitems[0x25].nOffset = 0xdc;
+    setitems[0x25].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x26].szName = "min6";
+    setitems[0x26].eType = FIELDTYPE_INT;
+    setitems[0x26].nSize = 0;
+    setitems[0x26].nOffset = 0xe0;
+    setitems[0x26].fpLinker = 0;
+    setitems[0x27].szName = "max6";
+    setitems[0x27].eType = FIELDTYPE_INT;
+    setitems[0x27].nSize = 0;
+    setitems[0x27].nOffset = 0xe4;
+    setitems[0x27].fpLinker = 0;
+    setitems[0x28].szName = "prop7";
+    setitems[0x28].eType = FIELDTYPE_NAME_INT;
+    setitems[0x28].nSize = 0;
+    setitems[0x28].nOffset = 0xe8;
+    setitems[0x28].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x29].szName = "par7";
+    setitems[0x29].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x29].nSize = 0;
+    setitems[0x29].nOffset = 0xec;
+    setitems[0x29].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x2a].szName = "min7";
+    setitems[0x2a].eType = FIELDTYPE_INT;
+    setitems[0x2a].nSize = 0;
+    setitems[0x2a].nOffset = 0xf0;
+    setitems[0x2a].fpLinker = 0;
+    setitems[0x2b].szName = "max7";
+    setitems[0x2b].eType = FIELDTYPE_INT;
+    setitems[0x2b].nSize = 0;
+    setitems[0x2b].nOffset = 0xf4;
+    setitems[0x2b].fpLinker = 0;
+    setitems[0x2c].szName = "prop8";
+    setitems[0x2c].eType = FIELDTYPE_NAME_INT;
+    setitems[0x2c].nSize = 0;
+    setitems[0x2c].nOffset = 0xf8;
+    setitems[0x2c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x2d].szName = "par8";
+    setitems[0x2d].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x2d].nSize = 0;
+    setitems[0x2d].nOffset = 0xfc;
+    setitems[0x2d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x2e].szName = "min8";
+    setitems[0x2e].eType = FIELDTYPE_INT;
+    setitems[0x2e].nSize = 0;
+    setitems[0x2e].nOffset = 0x100;
+    setitems[0x2e].fpLinker = 0;
+    setitems[0x2f].szName = "max8";
+    setitems[0x2f].eType = FIELDTYPE_INT;
+    setitems[0x2f].nSize = 0;
+    setitems[0x2f].nOffset = 0x104;
+    setitems[0x2f].fpLinker = 0;
+    setitems[0x30].szName = "prop9";
+    setitems[0x30].eType = FIELDTYPE_NAME_INT;
+    setitems[0x30].nSize = 0;
+    setitems[0x30].nOffset = 0x108;
+    setitems[0x30].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x31].szName = "par9";
+    setitems[0x31].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x31].nSize = 0;
+    setitems[0x31].nOffset = 0x10c;
+    setitems[0x31].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x32].szName = "min9";
+    setitems[0x32].eType = FIELDTYPE_INT;
+    setitems[0x32].nSize = 0;
+    setitems[0x32].nOffset = 0x110;
+    setitems[0x32].fpLinker = 0;
+    setitems[0x33].szName = "max9";
+    setitems[0x33].eType = FIELDTYPE_INT;
+    setitems[0x33].nSize = 0;
+    setitems[0x33].nOffset = 0x114;
+    setitems[0x33].fpLinker = 0;
+    setitems[0x34].szName = "aprop1a";
+    setitems[0x34].eType = FIELDTYPE_NAME_INT;
+    setitems[0x34].nSize = 0;
+    setitems[0x34].nOffset = 0x118;
+    setitems[0x34].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x35].szName = "apar1a";
+    setitems[0x35].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x35].nSize = 0;
+    setitems[0x35].nOffset = 0x11c;
+    setitems[0x35].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x36].szName = "amin1a";
+    setitems[0x36].eType = FIELDTYPE_INT;
+    setitems[0x36].nSize = 0;
+    setitems[0x36].nOffset = 0x120;
+    setitems[0x36].fpLinker = 0;
+    setitems[0x37].szName = "amax1a";
+    setitems[0x37].eType = FIELDTYPE_INT;
+    setitems[0x37].nSize = 0;
+    setitems[0x37].nOffset = 0x124;
+    setitems[0x37].fpLinker = 0;
+    setitems[0x38].szName = "aprop1b";
+    setitems[0x38].eType = FIELDTYPE_NAME_INT;
+    setitems[0x38].nSize = 0;
+    setitems[0x38].nOffset = 0x128;
+    setitems[0x38].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x39].szName = "apar1b";
+    setitems[0x39].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x39].nSize = 0;
+    setitems[0x39].nOffset = 300;
+    setitems[0x39].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x3a].szName = "amin1b";
+    setitems[0x3a].eType = FIELDTYPE_INT;
+    setitems[0x3a].nSize = 0;
+    setitems[0x3a].nOffset = 0x130;
+    setitems[0x3a].fpLinker = 0;
+    setitems[0x3b].szName = "amax1b";
+    setitems[0x3b].eType = FIELDTYPE_INT;
+    setitems[0x3b].nSize = 0;
+    setitems[0x3b].nOffset = 0x134;
+    setitems[0x3b].fpLinker = 0;
+    setitems[0x3c].szName = "aprop2a";
+    setitems[0x3c].eType = FIELDTYPE_NAME_INT;
+    setitems[0x3c].nSize = 0;
+    setitems[0x3c].nOffset = 0x138;
+    setitems[0x3c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x3d].szName = "apar2a";
+    setitems[0x3d].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x3d].nSize = 0;
+    setitems[0x3d].nOffset = 0x13c;
+    setitems[0x3d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x3e].szName = "amin2a";
+    setitems[0x3e].eType = FIELDTYPE_INT;
+    setitems[0x3e].nSize = 0;
+    setitems[0x3e].nOffset = 0x140;
+    setitems[0x3e].fpLinker = 0;
+    setitems[0x3f].szName = "amax2a";
+    setitems[0x3f].eType = FIELDTYPE_INT;
+    setitems[0x3f].nSize = 0;
+    setitems[0x3f].nOffset = 0x144;
+    setitems[0x3f].fpLinker = 0;
+    setitems[0x40].szName = "aprop2b";
+    setitems[0x40].eType = FIELDTYPE_NAME_INT;
+    setitems[0x40].nSize = 0;
+    setitems[0x40].nOffset = 0x148;
+    setitems[0x40].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x41].szName = "apar2b";
+    setitems[0x41].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x41].nSize = 0;
+    setitems[0x41].nOffset = 0x14c;
+    setitems[0x41].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x42].szName = "amin2b";
+    setitems[0x42].eType = FIELDTYPE_INT;
+    setitems[0x42].nSize = 0;
+    setitems[0x42].nOffset = 0x150;
+    setitems[0x42].fpLinker = 0;
+    setitems[0x43].szName = "amax2b";
+    setitems[0x43].eType = FIELDTYPE_INT;
+    setitems[0x43].nSize = 0;
+    setitems[0x43].nOffset = 0x154;
+    setitems[0x43].fpLinker = 0;
+    setitems[0x44].szName = "aprop3a";
+    setitems[0x44].eType = FIELDTYPE_NAME_INT;
+    setitems[0x44].nSize = 0;
+    setitems[0x44].nOffset = 0x158;
+    setitems[0x44].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x45].szName = "apar3a";
+    setitems[0x45].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x45].nSize = 0;
+    setitems[0x45].nOffset = 0x15c;
+    setitems[0x45].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x46].szName = "amin3a";
+    setitems[0x46].eType = FIELDTYPE_INT;
+    setitems[0x46].nSize = 0;
+    setitems[0x46].nOffset = 0x160;
+    setitems[0x46].fpLinker = 0;
+    setitems[0x47].szName = "amax3a";
+    setitems[0x47].eType = FIELDTYPE_INT;
+    setitems[0x47].nSize = 0;
+    setitems[0x47].nOffset = 0x164;
+    setitems[0x47].fpLinker = 0;
+    setitems[0x48].szName = "aprop3b";
+    setitems[0x48].eType = FIELDTYPE_NAME_INT;
+    setitems[0x48].nSize = 0;
+    setitems[0x48].nOffset = 0x168;
+    setitems[0x48].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x49].szName = "apar3b";
+    setitems[0x49].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x49].nSize = 0;
+    setitems[0x49].nOffset = 0x16c;
+    setitems[0x49].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x4a].szName = "amin3b";
+    setitems[0x4a].eType = FIELDTYPE_INT;
+    setitems[0x4a].nSize = 0;
+    setitems[0x4a].nOffset = 0x170;
+    setitems[0x4a].fpLinker = 0;
+    setitems[0x4b].szName = "amax3b";
+    setitems[0x4b].eType = FIELDTYPE_INT;
+    setitems[0x4b].nSize = 0;
+    setitems[0x4b].nOffset = 0x174;
+    setitems[0x4b].fpLinker = 0;
+    setitems[0x4c].szName = "aprop4a";
+    setitems[0x4c].eType = FIELDTYPE_NAME_INT;
+    setitems[0x4c].nSize = 0;
+    setitems[0x4c].nOffset = 0x178;
+    setitems[0x4c].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x4d].szName = "apar4a";
+    setitems[0x4d].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x4d].nSize = 0;
+    setitems[0x4d].nOffset = 0x17c;
+    setitems[0x4d].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x4e].szName = "amin4a";
+    setitems[0x4e].eType = FIELDTYPE_INT;
+    setitems[0x4e].nSize = 0;
+    setitems[0x4e].nOffset = 0x180;
+    setitems[0x4e].fpLinker = 0;
+    setitems[0x4f].szName = "amax4a";
+    setitems[0x4f].eType = FIELDTYPE_INT;
+    setitems[0x4f].nSize = 0;
+    setitems[0x4f].nOffset = 0x184;
+    setitems[0x4f].fpLinker = 0;
+    setitems[0x50].szName = "aprop4b";
+    setitems[0x50].eType = FIELDTYPE_NAME_INT;
+    setitems[0x50].nSize = 0;
+    setitems[0x50].nOffset = 0x188;
+    setitems[0x50].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x51].szName = "apar4b";
+    setitems[0x51].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x51].nSize = 0;
+    setitems[0x51].nOffset = 0x18c;
+    setitems[0x51].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x52].szName = "amin4b";
+    setitems[0x52].eType = FIELDTYPE_INT;
+    setitems[0x52].nSize = 0;
+    setitems[0x52].nOffset = 400;
+    setitems[0x52].fpLinker = 0;
+    setitems[0x53].szName = "amax4b";
+    setitems[0x53].eType = FIELDTYPE_INT;
+    setitems[0x53].nSize = 0;
+    setitems[0x53].nOffset = 0x194;
+    setitems[0x53].fpLinker = 0;
+    setitems[0x54].szName = "aprop5a";
+    setitems[0x54].eType = FIELDTYPE_NAME_INT;
+    setitems[0x54].nSize = 0;
+    setitems[0x54].nOffset = 0x198;
+    setitems[0x54].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x55].szName = "apar5a";
+    setitems[0x55].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x55].nSize = 0;
+    setitems[0x55].nOffset = 0x19c;
+    setitems[0x55].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x56].szName = "amin5a";
+    setitems[0x56].eType = FIELDTYPE_INT;
+    setitems[0x56].nSize = 0;
+    setitems[0x56].nOffset = 0x1a0;
+    setitems[0x56].fpLinker = 0;
+    setitems[0x57].szName = "amax5a";
+    setitems[0x57].eType = FIELDTYPE_INT;
+    setitems[0x57].nSize = 0;
+    setitems[0x57].nOffset = 0x1a4;
+    setitems[0x57].fpLinker = 0;
+    setitems[0x58].szName = "aprop5b";
+    setitems[0x58].eType = FIELDTYPE_NAME_INT;
+    setitems[0x58].nSize = 0;
+    setitems[0x58].nOffset = 0x1a8;
+    setitems[0x58].fpLinker = &sgtDataTable.pTxtPropertiesLink;
+    setitems[0x59].szName = "apar5b";
+    setitems[0x59].eType = FIELDTYPE_LINKER_INT;
+    setitems[0x59].nSize = 0;
+    setitems[0x59].nOffset = 0x1ac;
+    setitems[0x59].fpLinker = (void*)ITEMTBLS_ParseSkillMonTypeOrStateId;
+    setitems[0x5a].szName = "amin5b";
+    setitems[0x5a].eType = FIELDTYPE_INT;
+    setitems[0x5a].nSize = 0;
+    setitems[0x5a].nOffset = 0x1b0;
+    setitems[0x5a].fpLinker = 0;
+    setitems[0x5b].szName = "amax5b";
+    setitems[0x5b].eType = FIELDTYPE_INT;
+    setitems[0x5b].nSize = 0;
+    setitems[0x5b].nOffset = 0x1b4;
+    setitems[0x5b].fpLinker = 0;
+    setitems[0x5c].szName = "end";
+    setitems[0x5c].eType = FIELDTYPE_END;
+    setitems[0x5c].nSize = 0;
+    setitems[0x5c].nOffset = 0;
+    setitems[0x5c].fpLinker = 0;
+    sgtDataTable.pTxtSetItemsLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x45d);
+    sgtDataTable.pTxtSetItems = (D2SetItemsTxt*)DataTbls::CompileTxt((D2PoolManagerStrc*)__frame0.nByteOffset, "setitems", setitems, &sgtDataTable.nTxtSetItemsSize, 0x1b8);
+    if (!(sgtDataTable.nTxtSetItemsSize < 0x7fff)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x45f);
+      exit(-1);
+    }
+
+    __frame0.nIdx = 0;
+    if (0 >= sgtDataTable.nTxtSetItemsSize) {
+      return;
+    }
+
+    __frame0.nByteOffset = 0;
+    do {
+      pCurSetItem = (D2SetItemsTxt*)(sgtDataTable.pTxtSetItems->index + __frame0.nByteOffset - 2);
+      pCurSetItem->nId = (short int)__frame0.nIdx;
+      Fog::Src::Excel::FOG_ParseStringField(sgtDataTable.pTxtSetItemsLink, pCurSetItem->index);
+      __frame0.pStringLookup = 0;
+      nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)pCurSetItem->index, &__frame0.pStringLookup);
+      pCurSetItem->stringId = (uint16_t)nStringId;
+      if (!(uint16_t)nStringId) {
+        pCurSetItem->stringId = 0x1507;
+      }
+
+      pTxtSetsCached = sgtDataTable.pTxtSets;
+      if (-1 < pCurSetItem->set) {
+        nSetIdx = (int)pCurSetItem->set;
+        if (nSetIdx < sgtDataTable.nTxtSetsSize && sgtDataTable.pTxtSets[nSetIdx].nTxtSetItemsCount < 6) {
+          pCurSetItem->version = sgtDataTable.pTxtSets[nSetIdx].version;
+          nSetItemSlot = (short int)pTxtSetsCached[nSetIdx].nTxtSetItemsCount;
+          pCurSetItem->setIndex = nSetItemSlot;
+          pTxtSetsCached[nSetIdx].pTxtSetItems[nSetItemSlot] = pCurSetItem;
+          pTxtSetsCached[nSetIdx].nTxtSetItemsCount++;
+        }
+      }
+
+      __frame0.nByteOffset += 0x1b8;
+      __frame0.nIdx++;
+    } while (__frame0.nIdx < sgtDataTable.nTxtSetItemsSize);
+
+    return;
 }
 
 void __stdcall ITEMTBLS_FreeSetsAndSetItems() {
@@ -3492,7 +3492,7 @@ void __fastcall TXT_AllocTxt_lowqualityitems(D2PoolManagerStrc * pMemory) {
     nTxtLowQualityItemsSize.pTable = (D2LowQualityItemsTxt*)DataTbls::CompileTxt(pMemory, "lowqualityitems", aFieldDefs, &nTxtLowQualityItemsSize.nSize, 0x22);
     int nIdx = 0;
     uint16_t* pStringOut = 0;
-    if (0 >= nTxtLowQualityItemsSize.nSize) {
+    if (nTxtLowQualityItemsSize.nSize <= 0) {
       return;
     }
 
@@ -3657,7 +3657,7 @@ D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint3
     }
 
     int nRatioIdx = 0;
-    if (0 >= nTxtItemRatioSize) {
+    if (nTxtItemRatioSize <= 0) {
       return nullptr;
     }
 
@@ -3665,7 +3665,7 @@ D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint3
     do {
       if (uVar1 == (uint8_t)*(char*)((int)pEntry + 3) && bIsUpgradeable == *(uint8_t*)(pEntry + 1)) {
         wMinVal = *pEntry;
-        if (wMinVal <= nQualityTier && (int)nBestMinVal <= (int)(uint32_t)wMinVal) {
+        if (wMinVal <= nQualityTier && (int)(uint32_t)wMinVal >= (int)nBestMinVal) {
           nBestMatchIdx = nRatioIdx;
           nBestMinVal = (uint32_t)wMinVal;
         }
@@ -3675,7 +3675,7 @@ D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint3
       pEntry += 0x22;
     } while (nRatioIdx < nTxtItemRatioSize);
 
-    if (-1 >= nBestMatchIdx) {
+    if (nBestMatchIdx < 0) {
       return nullptr;
     }
 
@@ -3683,11 +3683,11 @@ D2ItemRatioTxt * __stdcall TXT_QualityRatio_GetLine(uint32_t nItemClassId, uint3
 }
 
 int SORT_ItemDescPriority(LPCVOID pParam1, LPCVOID pParam2) {
-    if (*(short int*)((int)pParam1 + 2) >= *(short int*)((int)pParam2 + 2)) {
-      return (uint32_t)(*(short int*)((int)pParam1 + 2) != *(short int*)((int)pParam2 + 2));
+    if (*(short int*)((int)pParam1 + 2) < *(short int*)((int)pParam2 + 2)) {
+      return -1;
     }
 
-    return -1;
+    return (uint32_t)(*(short int*)((int)pParam1 + 2) != *(short int*)((int)pParam2 + 2));
 }
 
 // Builds the itemstatcost.txt field-descriptor array (52 columns) and compiles it into the in-memory ItemStatCost table via DataTbls::CompileTxt (record size 0x144), enforcing a max of 0x1FF stats (fatal error otherwise). Then post-processes op-relationships: clears each stat's aOpBaseDependents arrays to -1, derives the charged-skill-level bit count (clamped 1..8, default 6) and its mask, and for every stat with an op walks its op-base/op-stat references to populate the dependency graph (aOpBaseDependents, aOpRelations, bHasOpBaseDependencies/bHasOp4Or5Dependency flags) plus special-case stat flag bits. Finally collects stats with a nonzero descpriority, qsorts them via SORT_ItemDescPriority, and allocates/stores the sorted pItemStatCostDescPriority list. __fastcall, pMemory in ECX.
@@ -3972,13 +3972,13 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
     aFieldDefinitions[0x33].fpLinker = 0;
     sgtDataTable.pTxtItemStatCostLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x6b4);
     sgtDataTable.pTxtItemStatCost = (D2ItemStatCostTxt*)DataTbls::CompileTxt(pMemory, "itemstatcost", aFieldDefinitions, &sgtDataTable.nTxtItemStatCostSize, 0x144);
-    if (0x1ff < sgtDataTable.nTxtItemStatCostSize) {
+    if (sgtDataTable.nTxtItemStatCostSize > 0x1ff) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6b6);
       exit(-1);
     }
 
     sgtDataTable.nChargedSkillLevelBits = sgtDataTable.pTxtItemStatCost->nChargedSkillLevelBits;
-    if (sgtDataTable.nChargedSkillLevelBits < 1 || 8 < sgtDataTable.nChargedSkillLevelBits) {
+    if (sgtDataTable.nChargedSkillLevelBits < 1 || sgtDataTable.nChargedSkillLevelBits > 8) {
       sgtDataTable.nChargedSkillLevelBits = 6;
     }
 
@@ -4013,7 +4013,7 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
       nStatByteOffset = 4;
       do {
         pDVar1 = sgtDataTable.pTxtItemStatCost;
-        if (!*pOp || 0xd < *pOp) {
+        if (!*pOp || *pOp >= 0xe) {
           *pOp = 0;
           nStatCount = sgtDataTable.nTxtItemStatCostSize;
         } else {
@@ -4023,22 +4023,22 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
             sgtDataTable.pTxtItemStatCost[nOpBaseStatId].bHasOpBaseDependencies = 1;
             pDepArrayCur = pDVar1[nOpBaseStatId].aOpBaseDependents + 1;
             do {
-              if (sgtDataTable.nTxtItemStatCostSize <= (int)(uint32_t)(uint16_t)pDepArrayCur[-1]) {
+              if ((int)(uint32_t)(uint16_t)pDepArrayCur[-1] >= sgtDataTable.nTxtItemStatCostSize) {
                 add_op_base_dependent:
                 if ((int)pDepSlot < 0x40) {
                   pDVar1[nOpBaseStatId].aOpBaseDependents[(int)pDepSlot] = (short int)(uintptr_t)nStatOrdinal;
                 }
                 break;
               }
-              if (sgtDataTable.nTxtItemStatCostSize <= (int)(uint32_t)(uint16_t)*pDepArrayCur) {
+              if ((int)(uint32_t)(uint16_t)*pDepArrayCur >= sgtDataTable.nTxtItemStatCostSize) {
                 pDepSlot = (short int*)((int)pDepSlot + 1);
                 goto add_op_base_dependent;
               }
-              if (sgtDataTable.nTxtItemStatCostSize <= (int)(uint32_t)(uint16_t)pDepArrayCur[1]) {
+              if ((int)(uint32_t)(uint16_t)pDepArrayCur[1] >= sgtDataTable.nTxtItemStatCostSize) {
                 pDepSlot = (short int*)((int)pDepSlot + 2);
                 goto add_op_base_dependent;
               }
-              if (sgtDataTable.nTxtItemStatCostSize <= (int)(uint32_t)(uint16_t)pDepArrayCur[2]) {
+              if ((int)(uint32_t)(uint16_t)pDepArrayCur[2] >= sgtDataTable.nTxtItemStatCostSize) {
                 pDepSlot = (short int*)((int)pDepSlot + 3);
                 goto add_op_base_dependent;
               }
@@ -4057,7 +4057,7 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
           pDepSlot = pOpStat1;
           do {
             nOpBaseStatId = (uint32_t)(uint16_t)*pDepSlot;
-            if (nStatCount <= (int)nOpBaseStatId) {
+            if ((int)nOpBaseStatId >= nStatCount) {
               break;
             }
 
@@ -4067,7 +4067,7 @@ void __fastcall TXT_AllocTxt_itemstatcost(D2PoolManagerStrc * pMemory) {
             do {
               if (pOpRelPtr[-6] == '\0') {
                 add_op_relation:
-                if (0xf < nStatCount) {
+                if (nStatCount >= 0x10) {
                   break;
                 }
                 sgtDataTable.pTxtItemStatCost[nOpBaseStatId].aOpRelations[nStatCount].nSourceStat = (short int)(uintptr_t)nStatOrdinal;
@@ -4343,11 +4343,11 @@ void __stdcall ITEMTBLS_FreeProperties() {
 }
 
 int TXT_Gamble_SortFunction(LPCVOID pParam1, LPCVOID pParam2) {
-    if (*(uint32_t*)((int)pParam2 + 4) >= *(uint32_t*)((int)pParam1 + 4)) {
-      return -(uint32_t)(*(uint32_t*)((int)pParam1 + 4) < *(uint32_t*)((int)pParam2 + 4));
+    if (*(uint32_t*)((int)pParam1 + 4) > *(uint32_t*)((int)pParam2 + 4)) {
+      return 1;
     }
 
-    return 1;
+    return -(uint32_t)(*(uint32_t*)((int)pParam2 + 4) > *(uint32_t*)((int)pParam1 + 4));
 }
 
 // One-time loader for gamble.txt. Compiles the binary "gamble" table (code field only), resolves each item code to a class id via the items link, then sorts the entries by level and builds two side-tables: GambleTable (sorted class-id array) and gnItemTblsCacheSize (per-level upper-bound cache for [1..99]).
@@ -4372,9 +4372,7 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
     gamble[1].nOffset = 0;
     gamble[1].fpLinker = 0;
     D2GambleTxt* pTxtGamble = (D2GambleTxt*)DataTbls::CompileTxt(pMemory, "gamble", gamble, &nTxtGambleSize.nSize, 0xc);
-    if (!nTxtGambleSize.nSize) {
-      nTxtGambleSize.pTable = 0;
-    } else {
+    if (nTxtGambleSize.nSize) {
       nTxtGambleSize.pTable = D2_ALLOC_POOL_AT(nullptr, nTxtGambleSize.nSize * 4, ".\\DATATBLS\\ItemTbls.cpp", 0x7db);
       nIdx = 0;
       if (0 < nTxtGambleSize.nSize) {
@@ -4394,6 +4392,8 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
       }
 
       qsort(pTxtGamble, nTxtGambleSize.nSize, 0xc, TXT_Gamble_SortFunction);
+    } else {
+      nTxtGambleSize.pTable = 0;
     }
 
     nIdx = 0;
@@ -4425,7 +4425,7 @@ void __fastcall TXT_AllocTxt_gamble(D2PoolManagerStrc * pMemory) {
       }
 
       nIdx++;
-      if (99 < nIdx) {
+      if (nIdx >= 100) {
         DataTbls::UnloadBin(pTxtGamble);
         return;
       }
@@ -4452,10 +4452,10 @@ BOOL __fastcall ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTa
     int nNewStackSize;
     int anTypeStack[128];
     short int wEquiv2;
-    if (nTargetTypeId < 1) {
+    if (nTargetTypeId <= 0) {
       return 1;
     }
-    if (nItemTypeId < 1 || sgtDataTable.nTxtItemTypesSize <= nItemTypeId) {
+    if (nItemTypeId <= 0 || nItemTypeId >= sgtDataTable.nTxtItemTypesSize) {
       return 0;
     }
 
@@ -4468,13 +4468,13 @@ BOOL __fastcall ITEMTBLS_CheckItemTypeRecursive(int32_t nItemTypeId, int32_t nTa
       if (nTargetTypeId == nCurTypeId) {
         return 1;
       }
-      if (sgtDataTable.nTxtItemTypesSize <= nCurTypeId) {
+      if (nCurTypeId >= sgtDataTable.nTxtItemTypesSize) {
         return 0;
       }
-      if (0x7c < nNewStackSize) {
+      if (nNewStackSize > 0x7c) {
         return 0;
       }
-      if (0 < sgtDataTable.pTxtItemTypes[nCurTypeId].equiv1) {
+      if (sgtDataTable.pTxtItemTypes[nCurTypeId].equiv1 > 0) {
         wEquiv2 = sgtDataTable.pTxtItemTypes[nCurTypeId].equiv2;
         anTypeStack[nNewStackSize] = (int)sgtDataTable.pTxtItemTypes[nCurTypeId].equiv1;
         nNewStackSize = nStackSize;
@@ -4694,7 +4694,7 @@ void __fastcall TXT_AllocTxt_itemtypes(D2PoolManagerStrc * pMemory) {
       }
     }
 
-    sgtDataTable.nItemTypesEquivRowDwords = (int)(sgtDataTable.nTxtItemTypesSize + 0x1f + (sgtDataTable.nTxtItemTypesSize + 0x1f >> 0x1f & 0x1fU)) >> 5;
+    sgtDataTable.nItemTypesEquivRowDwords = (sgtDataTable.nTxtItemTypesSize + 0x1f) / 32;
     size_t nAllocSize = sgtDataTable.nItemTypesEquivRowDwords * sgtDataTable.nTxtItemTypesSize * 4;
     sgtDataTable.pTxtItemTypesUnknown = D2_ALLOC_POOL_AT(nullptr, nAllocSize, ".\\DATATBLS\\ItemTbls.cpp", 0x893);
     memset(sgtDataTable.pTxtItemTypesUnknown, 0, nAllocSize);
@@ -4993,37 +4993,37 @@ void __fastcall TXT_AllocTxt_runes(D2PoolManagerStrc * pMemory) {
     aFieldDefs[0x2f].fpLinker = 0;
     sgtDataTable.pTxtRunesLink = Fog::Src::Excel::STRUCT_CreateTxtLinkStrc(".\\DATATBLS\\ItemTbls.cpp", 0x8ff);
     BOOL bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".txt", pMemory, "runessrv");
-    if (!bSrvBinExists) {
-      uint32_t nStringId;
-      bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".bin", pMemory, "runessrv");
-      if (!bSrvBinExists) {
-        bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".xls", pMemory, "runessrv");
-        if (bSrvBinExists) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x90c);
-          exit(-1);
-        }
-
-        nTxtRunesSize.pTable = (D2RunesTxt*)DataTbls::CompileTxt(pMemory, "runes", aFieldDefs, &nTxtRunesSize.nSize, 0x120);
-        pStringOut = 0;
-        if (0 >= nTxtRunesSize.nSize) {
-          return;
-        }
-
-        do {
-          nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&nTxtRunesSize.pTable[nRuneIdx].name[0], &pStringOut);
-          *(short int*)(nTxtRunesSize.pTable[nRuneIdx].rune_name + 0x42) = (short int)nStringId;
-          nRuneIdx++;
-        } while (nRuneIdx < nTxtRunesSize.nSize);
-
-        return;
-      } else {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x908);
-        exit(-1);
-      }
-    } else {
+    if (bSrvBinExists) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x904);
       exit(-1);
     }
+
+    uint32_t nStringId;
+    bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".bin", pMemory, "runessrv");
+    if (bSrvBinExists) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x908);
+      exit(-1);
+    }
+
+    bSrvBinExists = ITEMTBLS_CheckIfDataFileExists(".xls", pMemory, "runessrv");
+    if (bSrvBinExists) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x90c);
+      exit(-1);
+    }
+
+    nTxtRunesSize.pTable = (D2RunesTxt*)DataTbls::CompileTxt(pMemory, "runes", aFieldDefs, &nTxtRunesSize.nSize, 0x120);
+    pStringOut = 0;
+    if (0 >= nTxtRunesSize.nSize) {
+      return;
+    }
+
+    do {
+      nStringId = D2Lang::StrTable::strtable::STRTABLE_LookupString((uint8_t*)&nTxtRunesSize.pTable[nRuneIdx].name[0], &pStringOut);
+      *(short int*)(nTxtRunesSize.pTable[nRuneIdx].rune_name + 0x42) = (short int)nStringId;
+      nRuneIdx++;
+    } while (nRuneIdx < nTxtRunesSize.nSize);
+
+    return;
 }
 
 void __stdcall ITEMTBLS_FreeRunes() {
@@ -5067,7 +5067,7 @@ void __stdcall ITEMTBLS_CopyRunewordRecord(int32_t nRunewordId, char * pSourceRe
 }
 
 int32_t __stdcall ITEMTBLS_GetRunewordTxtRecord(int32_t nRunewordId) {
-    if (0 < nRunewordId && nRunewordId < nTxtRunesSize.nSize) {
+    if (nRunewordId > 0 && nRunewordId < nTxtRunesSize.nSize) {
       return (int32_t)(nTxtRunesSize.pTable + nRunewordId);
     }
 

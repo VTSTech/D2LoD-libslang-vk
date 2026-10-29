@@ -49,7 +49,7 @@ size_t __fastcall NET_D2GS_CLIENT_ExtractPacketSize(LPCRITICAL_SECTION * lpCriti
     if (!pPacket || nD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYERUNCAPPED && (dwTick = GetTickCount() , dwTick - pPacket->nTickCount < 500)) {
       nPacketSize = -1;
     } else {
-      if (0x203 < nSize) {
+      if (nSize >= 0x204) {
         nSize = 0x204;
       }
 

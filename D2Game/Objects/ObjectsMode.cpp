@@ -167,7 +167,7 @@ void __fastcall OBJMODE_UpdateDayNightState(::SGAMEDATA * pGame, D2UnitStrc * pU
       GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 1000, 0, 0);
       return;
     }
-    if (2 < nPeriod - 1U) {
+    if (nPeriod - 1U > 2) {
       GAME::Event::SetEvent(pGame, pUnit, 8, pGame->dwGameFrame + 600, 0, 0);
       return;
     }
@@ -190,10 +190,12 @@ void __fastcall OBJMODE_CreateRedPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
     D2RoomStrc* eLevel = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId nLevelId2 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(eLevel);
     eLevel = (D2RoomStrc*)0x7f;
-    if (nLevelId2 == LEVEL_FrigidHighlands) {
+    if (nLevelId2 != LEVEL_FrigidHighlands) {
+      if (nLevelId2 == LEVEL_ArreatPlateau) {
+        eLevel = (D2RoomStrc*)0x7e;
+      }
+    } else {
       eLevel = (D2RoomStrc*)0x7d;
-    } else if (nLevelId2 == LEVEL_ArreatPlateau) {
-      eLevel = (D2RoomStrc*)0x7e;
     }
 
     D2UnitStrc* pPortalUnit = SKILLS::SkillsServer::LinkPortal(pGame, pUnit, eLevel, nLevelId2);
@@ -279,7 +281,7 @@ void __fastcall OBJMODE_UpdateFillProgress(::SGAMEDATA * pGame, D2UnitStrc * pUn
       }
     } else {
       byComponent = OBJECT_GetDefaultSize();
-      if ((int)(uint32_t)byComponent <= (int)uFillLevel / pObjectTxt->Parm[2]) {
+      if ((int)uFillLevel / pObjectTxt->Parm[2] >= (int)(uint32_t)byComponent) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdc);
         exit(-1);
       }
@@ -352,11 +354,11 @@ void __fastcall OBJMODE_DispatchChestType(::SGAMEDATA * pGame, D2UnitStrc * pUni
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     uint8_t byChestType = pUnit->pUnitData.pUnitDataMonster->Components[0] & 0x7f;
     uint32_t uChestType = (uint32_t)byChestType;
-    if (gnObjectOperateCallbackCount <= (int)uChestType) {
+    if ((int)uChestType >= gnObjectOperateCallbackCount) {
       return;
     }
     if (byChestType == 8) {
-      if (0x4a < (int)eLevelId) {
+      if ((int)eLevelId >= 0x4b) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[2]);
         if (bBadCallback) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x161);
@@ -419,7 +421,16 @@ void __fastcall OBJMODE_UpdateProximityStateMachine(::SGAMEDATA * pGame, D2UnitS
     cProximityState = pUnit->pUnitData.pUnitDataPlayer->szCharName[4];
     int nActivated;
     nActivated = 0;
-    if (cProximityState == '\0') {
+    if (cProximityState != '\0') {
+      if (cProximityState == '\x01') {
+        nActivated = 1;
+        goto scan_nearby_players;
+      }
+      if (cProximityState == '\x02' && eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+        D2Common::Units::SetupUpdateFlag(pUnit, 0);
+        pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = '\0';
+      }
+    } else {
       int32_t nCollisionDist;
       scan_nearby_players:
       D2Common::Units::GetCoords(pUnit, &ptUnitCoords);
@@ -430,13 +441,13 @@ void __fastcall OBJMODE_UpdateProximityStateMachine(::SGAMEDATA * pGame, D2UnitS
         do {
           if (pTarget->eUnitType == UNIT_PLAYER && pTarget->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Dead) {
             nCollisionDist = D2Common::Collision::GetCollisionDistance(pUnit, pTarget);
-            if (nCollisionDist < 1) {
-              if (!nActivated) {
-                UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, UNITEVENTCALLBACK_REFRESHVENDOR, nullptr);
-                eAnimMode = Operating;
-              } else {
+            if (nCollisionDist <= 0) {
+              if (nActivated) {
                 Monster::AI::MONSTERAI_CalculateCounterAttackDamage(pGame, pUnit, pTarget, 0);
                 nCounterAttacked = 1;
+              } else {
+                UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, UNITEVENTCALLBACK_REFRESHVENDOR, nullptr);
+                eAnimMode = Operating;
               }
             }
           }
@@ -464,15 +475,6 @@ void __fastcall OBJMODE_UpdateProximityStateMachine(::SGAMEDATA * pGame, D2UnitS
         pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId);
         GAME::Event::SetEvent(pGame, pUnit, 3, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, nCollisionDist, pEventData);
         return;
-      }
-    } else {
-      if (cProximityState == '\x01') {
-        nActivated = 1;
-        goto scan_nearby_players;
-      }
-      if (cProximityState == '\x02' && eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-        D2Common::Units::SetupUpdateFlag(pUnit, 0);
-        pUnit->pUnitData.pUnitDataPlayer->szCharName[4] = '\0';
       }
     }
 
@@ -568,7 +570,7 @@ static void AUTOMAP_RevealAfterTeleport(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
     uint16_t nTileY = (uint16_t)roomCoords.sTileRect.top;
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\OBJECTS\\ObjMode.cpp", 0x361);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, (uint8_t)eLevelId, nTileX, nTileY);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, eLevelId, nTileX, nTileY);
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit2);
     if (!pUnit2) {
       return;
@@ -604,7 +606,7 @@ BOOL __fastcall OBJOP_RevealAutomapArea(D2ObjectOperateFnArg * pOperation) {
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRooms, (int*)&nAdjRoomCount);
     uint32_t uAdjRoomIdx = 0;
-    if (!nAdjRoomCount) {
+    if (nAdjRoomCount <= 0) {
       return 0;
     }
 
@@ -619,7 +621,7 @@ BOOL __fastcall OBJOP_RevealAutomapArea(D2ObjectOperateFnArg * pOperation) {
       }
 
       uAdjRoomIdx++;
-      if (nAdjRoomCount <= uAdjRoomIdx) {
+      if (uAdjRoomIdx >= nAdjRoomCount) {
         return 0;
       }
     } while (true);
@@ -660,7 +662,7 @@ BOOL __fastcall OBJOP_ToggleDoor(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pVictimUnit->eAnimMode.eObjectMode;
     }
-    if (!(pVictimUnit->dwTickCount + 500 <= dwTickNow && true)) {
+    if (!(dwTickNow >= pVictimUnit->dwTickCount + 500 && true)) {
       return 1;
     }
 
@@ -720,25 +722,27 @@ BOOL __fastcall OBJOP_UseStairway(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pWarpUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
-      D2Common::Units::SetupUpdateFlag(pWarpUnit, 2);
-    } else if (eAnimMode == Opened) {
-      pRoom = D2Common::Units::UNITS_GetRoom(pWarpUnit);
-      pWarpUnit = pRoom->pUnitList;
-      while (true) {
-        if (!pWarpUnit) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40e);
-          exit(-1);
-        }
-        if (pWarpUnit->eUnitType == UNIT_WARP) {
-          break;
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Opened) {
+        pRoom = D2Common::Units::UNITS_GetRoom(pWarpUnit);
+        pWarpUnit = pRoom->pUnitList;
+        while (true) {
+          if (!pWarpUnit) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40e);
+            exit(-1);
+          }
+          if (pWarpUnit->eUnitType == UNIT_WARP) {
+            break;
+          }
+
+          pWarpUnit = pWarpUnit->pRoomNext;
         }
 
-        pWarpUnit = pWarpUnit->pRoomNext;
+        UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
+        return 1;
       }
-
-      UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
-      return 1;
+    } else {
+      D2Common::Units::SetupUpdateFlag(pWarpUnit, 2);
     }
 
     return 1;
@@ -764,39 +768,41 @@ BOOL __fastcall OBJOP_UseWaygate(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pWarpUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Opened) {
+        for (pWarpUnit = pRoom->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
+          if (pWarpUnit->eUnitType == UNIT_WARP) {
+            use_found_warp:
+            UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
+            return 1;
+          }
+        }
+
+        D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRooms, (int*)&nAdjRoomCount);
+        uAdjRoomIdx = 0;
+        if (nAdjRoomCount > 0) {
+          do {
+            if (pAdjRooms[uAdjRoomIdx] != pRoom) {
+              for (pWarpUnit = pAdjRooms[uAdjRoomIdx]->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
+                if (pWarpUnit->eUnitType == UNIT_WARP) {
+                  goto use_found_warp;
+                }
+              }
+            }
+
+            uAdjRoomIdx++;
+            if (uAdjRoomIdx >= nAdjRoomCount) {
+              return 1;
+            }
+          } while (true);
+        }
+      }
+    } else {
       D2ObjectsTxt* pObjectTxt;
       D2Common::Units::SetupUpdateFlag(pWarpUnit, 1);
       pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
       pGame = pOperation->sArg.pGame;
       GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-    } else if (eAnimMode == Opened) {
-      for (pWarpUnit = pRoom->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
-        if (pWarpUnit->eUnitType == UNIT_WARP) {
-          use_found_warp:
-          UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
-          return 1;
-        }
-      }
-
-      D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRooms, (int*)&nAdjRoomCount);
-      uAdjRoomIdx = 0;
-      if (nAdjRoomCount) {
-        do {
-          if (pAdjRooms[uAdjRoomIdx] != pRoom) {
-            for (pWarpUnit = pAdjRooms[uAdjRoomIdx]->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
-              if (pWarpUnit->eUnitType == UNIT_WARP) {
-                goto use_found_warp;
-              }
-            }
-          }
-
-          uAdjRoomIdx++;
-          if (nAdjRoomCount <= uAdjRoomIdx) {
-            return 1;
-          }
-        } while (true);
-      }
     }
 
     return 1;
@@ -817,23 +823,25 @@ BOOL __fastcall OBJOP_OpenTimedDoor(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pVictimUnit2->eAnimMode.eObjectMode;
     }
-    if (pVictimUnit2->dwTickCount + 500 > dwTickNow) {
+    if (!(dwTickNow >= pVictimUnit2->dwTickCount + 500)) {
       return 1;
     }
 
     D2ObjectsTxt* pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Opened) {
+        D2Common::Units::BlockCollisionPath(pOperation->sArg.pVictim, pRoom, ptCoords.x, ptCoords.y);
+        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
+        pOperation->sArg.pVictim->dwTickCount = dwTickNow;
+        return 1;
+      }
+    } else {
       ::SGAMEDATA* pGame;
       D2Common::Units::RemoveCollision_Vector(pOperation->sArg.pVictim);
       D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
       pOperation->sArg.pVictim->dwTickCount = dwTickNow;
       pGame = pOperation->sArg.pGame;
       GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-    } else if (eAnimMode == Opened) {
-      D2Common::Units::BlockCollisionPath(pOperation->sArg.pVictim, pRoom, ptCoords.x, ptCoords.y);
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
-      pOperation->sArg.pVictim->dwTickCount = dwTickNow;
-      return 1;
     }
 
     return 1;
@@ -874,10 +882,10 @@ BOOL __fastcall OBJOP_OpenBreakableContainer(D2ObjectOperateFnArg * pOperation) 
     D2ObjectsTxt* pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
     pVictimUnit = pOperation->sArg.pVictim;
     if (pVictimUnit) {
-      if (!pObjectTxt->Selectable[eAnimMode]) {
-        pVictimUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-      } else {
+      if (pObjectTxt->Selectable[eAnimMode]) {
         pVictimUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
+      } else {
+        pVictimUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
       }
     }
 
@@ -901,16 +909,16 @@ static BOOL __stdcall OBJMODE_CheckSpawnMonsterFromSkeletonActRestriction(int32_
 
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eAct eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    if (eVar1 != ACT_I) {
-      return 1;
+    if (eVar1 == ACT_I) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 static void OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode eMonsterAnimMode, int32_t nParam, D2ObjectModeArg * pObjectModeArg) {
     eD2LevelId eLevel;
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
@@ -947,7 +955,7 @@ void __fastcall OBJMODE_SpawnRandomMonsters(::SGAMEDATA * pGame, D2UnitStrc * pU
     sOperation.sArg.pGame = pGame;
     sOperation.sArg.pVictim = pUnit;
     int32_t nMonClassId = ObjectsRgn::OBJECT_HandleObjectMode(&sOperation.sArg);
-    if (!(-1 < nMonClassId && nMonClassId < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
@@ -968,7 +976,7 @@ void __fastcall OBJMODE_SpawnCompanionChests(::SGAMEDATA * pGame, D2UnitStrc * p
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     int nChestPosX = ptCoords.x + 1;
-    if (!(roomCoords.dwXStart <= nChestPosX && nChestPosX < roomCoords.dwXSize + roomCoords.dwXStart)) {
+    if (!(nChestPosX >= roomCoords.dwXStart && nChestPosX < roomCoords.dwXSize + roomCoords.dwXStart)) {
       return;
     }
 
@@ -1174,12 +1182,12 @@ uint32_t __fastcall OBJECT_CanTargetMonster(D2UnitStrc * pUnit, D2UnitStrc * pUn
     }
 
     uStatFlag = D2Common::Monsters::MONSTERS::MONSTERS_CheckMonStatFlag0xc_Bit7(pUnit);
-    if (uStatFlag) {
-      return 0;
+    if (!uStatFlag) {
+      uStatFlag = Monsters::CheckMonsterType(pUnit, 0x1f);
+      return (uint32_t)!uStatFlag;
     }
 
-    uStatFlag = Monsters::CheckMonsterType(pUnit, 0x1f);
-    return (uint32_t)!uStatFlag;
+    return 0;
 }
 
 D2StatListExStrc * __fastcall ApplyShrineBonus(D2UnitStrc * pUnit, D2UnitStrc * pAttacker, uint32_t nDurationInFrames, int32_t nSkillCalc, eD2UnitStat eStat, eD2States eAuraState, PFN_StatExpireCallback pFunction) {
@@ -1386,7 +1394,7 @@ void __fastcall Shrines_GemShrineFunction(D2ObjectOperateFnArg * pArguments, D2S
     pGemItem = pArguments->pAttacker;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pGemItem->sSeed);
     pGemItem->sSeed = sNewSeed;
-    switch (sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 6) * -6) {
+    switch (sNewSeed.nSeedLow % 6) {
       case 0:
         acItemCode = 0x20776367;
       break;
@@ -1430,22 +1438,22 @@ void __fastcall Shrines_StormShrineFunction(D2ObjectOperateFnArg * pArguments, D
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pArguments->sArg.pVictim);
     D2UnitStrc* pTargetUnit = pArguments->sArg.pVictim;
     eD2UnitType eUnitType = pTargetUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitIdx = pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nUnitIdx = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nUnitIdx = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nUnitIdx = 0;
     }
 
     pTargetUnit = pArguments->sArg.pVictim;
     eUnitType = pTargetUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sUnitFindArg.nY = pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      sUnitFindArg.nY = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       sUnitFindArg.nY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      sUnitFindArg.nY = 0;
     }
 
     memset(&sUnitFindArg, 0, 0x38);
@@ -1455,7 +1463,7 @@ void __fastcall Shrines_StormShrineFunction(D2ObjectOperateFnArg * pArguments, D
     D2Common::Units::UnitFinds::InitializeUnitFindData(pArguments->sArg.pGame->pMemoryPool, &unitFindData, pRoom, nUnitIdx, sUnitFindArg.nY, sUnitFindArg.nDistance, (UNITFINDTEST)UNIT_IsAlive, &sUnitFindArg);
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&unitFindData);
     nUnitIdx = 0;
-    if (0 < unitFindData.nCountedUnits) {
+    if (unitFindData.nCountedUnits > 0) {
       BOOL bIsDead;
       do {
         pTargetUnit = unitFindData.pUnitsArray->aFoundUnitsList[nUnitIdx];
@@ -1486,27 +1494,27 @@ void __fastcall Shrines_StormShrineFunction(D2ObjectOperateFnArg * pArguments, D
         pTargetUnit = pArguments->sArg.pVictim;
         sSkillArg.nFlags = 3;
         eUnitType = pTargetUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           sSkillArg.nX = pTargetUnit->pPath.pStaticPath->nPosX;
-        } else if (!pTargetUnit->pPath.pDynamicPath) {
-          sSkillArg.nX = 0;
-        } else {
+        } else if (pTargetUnit->pPath.pDynamicPath) {
           sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
+        } else {
+          sSkillArg.nX = 0;
         }
 
         pTargetUnit = pArguments->sArg.pVictim;
         eUnitType = pTargetUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           sSkillArg.nY = pTargetUnit->pPath.pStaticPath->nPosY;
-        } else if (!pTargetUnit->pPath.pDynamicPath) {
-          sSkillArg.nY = 0;
-        } else {
+        } else if (pTargetUnit->pPath.pDynamicPath) {
           sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
-        }
-        if (!nRowParity) {
-          sSkillArg.nUnitX = (int)pTxtShrinesLocal;
         } else {
+          sSkillArg.nY = 0;
+        }
+        if (nRowParity) {
           sSkillArg.nUnitX = (int)pRoom;
+        } else {
+          sSkillArg.nUnitX = (int)pTxtShrinesLocal;
         }
 
         sSkillArg.nUnitY = nUnitIdx;
@@ -1520,7 +1528,7 @@ void __fastcall Shrines_StormShrineFunction(D2ObjectOperateFnArg * pArguments, D
         sSkillArg.nSkillLevel /= 5;
         if (sSkillArg.nSkillLevel < 1) {
           sSkillArg.nSkillLevel = 1;
-        } else if (8 < sSkillArg.nSkillLevel) {
+        } else if (sSkillArg.nSkillLevel > 8) {
           sSkillArg.nSkillLevel = 8;
         }
 
@@ -1541,22 +1549,22 @@ void __fastcall Shrines_WarpingShrineFunction(D2ObjectOperateFnArg * pArguments,
     int32_t nAttackerPosX;
     D2UnitStrc* pUnit = pArguments->pAttacker;
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nAttackerPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nAttackerPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nAttackerPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nAttackerPosY = 0;
     }
 
     pUnit = pArguments->pAttacker;
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nAttackerPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nAttackerPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nAttackerPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nAttackerPosX = 0;
     }
 
     pUnit = D2Common::Units::UnitFinds::GetNearestTestedUnit(pArguments->pAttacker, nAttackerPosX, nAttackerPosY, 0, (fpUnitTest)OBJECT_CanTargetMonster);
@@ -1584,25 +1592,25 @@ void __fastcall Shrines_ExplodingShrineFunction(D2ObjectOperateFnArg * pArgument
     uint32_t uSeedHigh = pTxtShrines->dwArg1 - pTxtShrines->dwArg0;
     D2UnitStrc* pCreatedItem = pArguments->sArg.pVictim;
     D2SeedStrc* pSeed = &pCreatedItem->sSeed;
-    if ((int)uSeedHigh < 1) {
+    if ((int)uSeedHigh <= 0) {
       uSeedHigh = 0;
-    } else if (!(uSeedHigh & uSeedHigh - 1)) {
-      lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
-      ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
-      sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
-      uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
-    } else {
+    } else if (uSeedHigh & uSeedHigh - 1) {
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
       *pSeed = sNewSeed;
       uSeedHigh = sNewSeed.nSeedLow % uSeedHigh;
+    } else {
+      lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
+      ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
+      sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
+      *pSeed = sNewSeed;
+      uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
     }
 
     aMissileOffsets[0xc] = pTxtShrines->dwArg0 + uSeedHigh;
     int nPotionSpawnIdx = 0;
-    if (0 < aMissileOffsets[0xc]) {
+    if (aMissileOffsets[0xc] > 0) {
       int32_t nItemClassId;
       do {
         nItemClassId = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(0x206d706f);
@@ -1663,22 +1671,22 @@ void __fastcall Shrines_ExplodingShrineFunction(D2ObjectOperateFnArg * pArgument
       sItemGenCtx.usually_one = 0x520;
       sItemGenCtx.wItemFormat = 0;
       eUnitType = pCreatedItem->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sItemGenCtx.maxDurability = pCreatedItem->pPath.pStaticPath->nPosX;
-      } else if (!pCreatedItem->pPath.pDynamicPath) {
-        sItemGenCtx.maxDurability = 0;
-      } else {
+      } else if (pCreatedItem->pPath.pDynamicPath) {
         sItemGenCtx.maxDurability = D2Common::PATH::DynamicPath::GetXPos(pCreatedItem->pPath.pDynamicPath);
+      } else {
+        sItemGenCtx.maxDurability = 0;
       }
 
       pCreatedItem = pArguments->sArg.pVictim;
       eUnitType = pCreatedItem->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sItemGenCtx.dwFileIndex = pCreatedItem->pPath.pStaticPath->nPosY;
-      } else if (!pCreatedItem->pPath.pDynamicPath) {
-        sItemGenCtx.dwFileIndex = 0;
-      } else {
+      } else if (pCreatedItem->pPath.pDynamicPath) {
         sItemGenCtx.dwFileIndex = D2Common::PATH::DynamicPath::GetYPos(pCreatedItem->pPath.pDynamicPath);
+      } else {
+        sItemGenCtx.dwFileIndex = 0;
       }
 
       sItemGenCtx.neD2ItemFlag = aMissileOffsets[iMissileIdx + 6] + sItemGenCtx.maxDurability;
@@ -1691,7 +1699,7 @@ void __fastcall Shrines_ExplodingShrineFunction(D2ObjectOperateFnArg * pArgument
       *(uint32_t*)(char*)&sItemGenCtx.szCustomName = nLevel / 5;
       if ((int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName < 1) {
         *(uint32_t*)(char*)&sItemGenCtx.szCustomName = 1;
-      } else if (8 < (int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName) {
+      } else if ((int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName > 8) {
         *(uint32_t*)(char*)&sItemGenCtx.szCustomName = 8;
       }
 
@@ -1717,25 +1725,25 @@ void __fastcall Shrines_PoisonShrineFunction(D2ObjectOperateFnArg * pArguments, 
     uint32_t uSeedHigh = pTxtShrines->dwArg1 - pTxtShrines->dwArg0;
     D2UnitStrc* pCreatedItem = pArguments->sArg.pVictim;
     D2SeedStrc* pSeed = &pCreatedItem->sSeed;
-    if ((int)uSeedHigh < 1) {
+    if ((int)uSeedHigh <= 0) {
       uSeedHigh = 0;
-    } else if (!(uSeedHigh & uSeedHigh - 1)) {
-      lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
-      ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
-      sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
-      *pSeed = sNewSeed;
-      uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
-    } else {
+    } else if (uSeedHigh & uSeedHigh - 1) {
       lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
       ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
       sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
       *pSeed = sNewSeed;
       uSeedHigh = sNewSeed.nSeedLow % uSeedHigh;
+    } else {
+      lSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
+      ptSpawnPos.y = (LONG)((uint64_t)lSeedProduct >> 0x20);
+      sNewSeed = (D2SeedStrc)(lSeedProduct + (uint64_t)pCreatedItem->sSeed.nSeedHigh);
+      *pSeed = sNewSeed;
+      uSeedHigh = uSeedHigh - 1 & sNewSeed.nSeedLow;
     }
 
     aMissileOffsets[0xc] = pTxtShrines->dwArg0 + uSeedHigh;
     int nPotionSpawnIdx = 0;
-    if (0 < aMissileOffsets[0xc]) {
+    if (aMissileOffsets[0xc] > 0) {
       int32_t nItemClassId;
       do {
         nItemClassId = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(0x206d7067);
@@ -1796,22 +1804,22 @@ void __fastcall Shrines_PoisonShrineFunction(D2ObjectOperateFnArg * pArguments, 
       sItemGenCtx.usually_one = 0x520;
       sItemGenCtx.wItemFormat = 0;
       eUnitType = pCreatedItem->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sItemGenCtx.maxDurability = pCreatedItem->pPath.pStaticPath->nPosX;
-      } else if (!pCreatedItem->pPath.pDynamicPath) {
-        sItemGenCtx.maxDurability = 0;
-      } else {
+      } else if (pCreatedItem->pPath.pDynamicPath) {
         sItemGenCtx.maxDurability = D2Common::PATH::DynamicPath::GetXPos(pCreatedItem->pPath.pDynamicPath);
+      } else {
+        sItemGenCtx.maxDurability = 0;
       }
 
       pCreatedItem = pArguments->sArg.pVictim;
       eUnitType = pCreatedItem->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         sItemGenCtx.dwFileIndex = pCreatedItem->pPath.pStaticPath->nPosY;
-      } else if (!pCreatedItem->pPath.pDynamicPath) {
-        sItemGenCtx.dwFileIndex = 0;
-      } else {
+      } else if (pCreatedItem->pPath.pDynamicPath) {
         sItemGenCtx.dwFileIndex = D2Common::PATH::DynamicPath::GetYPos(pCreatedItem->pPath.pDynamicPath);
+      } else {
+        sItemGenCtx.dwFileIndex = 0;
       }
 
       sItemGenCtx.neD2ItemFlag = aMissileOffsets[iMissileIdx + 6] + sItemGenCtx.maxDurability;
@@ -1824,7 +1832,7 @@ void __fastcall Shrines_PoisonShrineFunction(D2ObjectOperateFnArg * pArguments, 
       *(uint32_t*)(char*)&sItemGenCtx.szCustomName = nLevel / 5;
       if ((int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName < 1) {
         *(uint32_t*)(char*)&sItemGenCtx.szCustomName = 1;
-      } else if (8 < (int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName) {
+      } else if ((int)*(uint32_t*)(char*)&sItemGenCtx.szCustomName > 8) {
         *(uint32_t*)(char*)&sItemGenCtx.szCustomName = 8;
       }
 
@@ -1866,7 +1874,7 @@ static void __stdcall SKILL_GetAttackRateForWeapon(D2SkillStrc * pSkill, D2UnitS
     }
 
     int nCharClassId = pUnit->nClassId;
-    if (!(-1 < nCharClassId && nCharClassId < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nCharClassId)) {
+    if (!(nCharClassId >= 0 && nCharClassId < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nCharClassId)) {
       return;
     }
 
@@ -1924,7 +1932,7 @@ static int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUni
 void __fastcall Shrines_CombatBoostFunction(D2ObjectOperateFnArg * pArguments, D2ShrinesTxt * pTxtShrines) {
     int32_t nLine;
     uint8_t byShrineCode = pTxtShrines->nCode;
-    if (SHRINESCOUNT <= (int)(uint32_t)byShrineCode) {
+    if ((int)(uint32_t)byShrineCode >= SHRINESCOUNT) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9c1);
       exit(-1);
     }
@@ -1943,7 +1951,7 @@ void __fastcall SHRINE_OnStaminaExpire(D2UnitStrc * pUnit, eD2States eState, int
 void __fastcall Shrines_StaminaBoostFunction(D2ObjectOperateFnArg * pArguments, D2ShrinesTxt * pTxtShrines) {
     int32_t pvStatValue;
     uint32_t uShrineCode = (uint32_t)pTxtShrines->nCode;
-    if (SHRINESCOUNT <= (int)uShrineCode) {
+    if ((int)uShrineCode >= SHRINESCOUNT) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9e7);
       exit(-1);
     }
@@ -1959,14 +1967,14 @@ void __fastcall Shrines_StaminaBoostFunction(D2ObjectOperateFnArg * pArguments, 
 void __fastcall Shrines_StatBoostFunction(D2ObjectOperateFnArg * pArguments, D2ShrinesTxt * pTxtShrines) {
     int32_t nModifiedStatValue;
     uint32_t uShrineIdx = (uint32_t)pTxtShrines->nCode;
-    if (SHRINESCOUNT <= (int)uShrineIdx) {
+    if ((int)uShrineIdx >= SHRINESCOUNT) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9f9);
       exit(-1);
     }
-    if (OBJECTSHRINEFUNCTION[uShrineIdx].eStat == ~UNITSTAT_strength) {
-      nModifiedStatValue = 0;
-    } else {
+    if (OBJECTSHRINEFUNCTION[uShrineIdx].eStat != ~UNITSTAT_strength) {
       nModifiedStatValue = OBJMODE_GetModifiedStatValueFromShrine(OBJECTSHRINEFUNCTION[uShrineIdx].eStat, pTxtShrines->dwArg0, pArguments->pAttacker);
+    } else {
+      nModifiedStatValue = 0;
     }
 
     ApplyShrineBonus(pArguments->sArg.pVictim, pArguments->pAttacker, pTxtShrines->dwDurationInFrames, nModifiedStatValue, OBJECTSHRINEFUNCTION[uShrineIdx].eStat, OBJECTSHRINEFUNCTION[uShrineIdx].nState, nullptr);
@@ -2179,21 +2187,21 @@ BOOL __fastcall OBJOP_SpawnQuestItemReward(D2ObjectOperateFnArg * pOperation) {
     D2SeedStrc seedNext = D2_SEED_NEXT(*pDVar2);
     *pDVar2 = seedNext;
     pDVar2 = pOperation->pSeed;
-    if ((int)(seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 0x14) * -0x14) < 0xd) {
+    if ((int)(seedNext.nSeedLow % 0x14) > 0xc) {
       seedNext = D2_SEED_NEXT(*pDVar2);
       *pDVar2 = seedNext;
-      if (!((uint64_t)d2_bits_of(seedNext) & 1)) {
-        pOperation->sArg.pVictim->dwDropItemCode = 0x20637374;
+      if (seedNext.nSeedLow & 1) {
+        pOperation->sArg.pVictim->dwDropItemCode = 0x206b6269;
       } else {
-        pOperation->sArg.pVictim->dwDropItemCode = 0x20637369;
+        pOperation->sArg.pVictim->dwDropItemCode = 0x206b6274;
       }
     } else {
       seedNext = D2_SEED_NEXT(*pDVar2);
       *pDVar2 = seedNext;
-      if (!((uint64_t)d2_bits_of(seedNext) & 1)) {
-        pOperation->sArg.pVictim->dwDropItemCode = 0x206b6274;
+      if (seedNext.nSeedLow & 1) {
+        pOperation->sArg.pVictim->dwDropItemCode = 0x20637369;
       } else {
-        pOperation->sArg.pVictim->dwDropItemCode = 0x206b6269;
+        pOperation->sArg.pVictim->dwDropItemCode = 0x20637374;
       }
     }
 
@@ -2217,12 +2225,13 @@ BOOL __fastcall OBJOP_SpawnExceptionalItemDrop(D2ObjectOperateFnArg * pOperation
     ITEMS::Items::Drop::DROP_SpawnExceptionalItem(pOperation->sArg.pGame, pRoom, pPtPos, nPlayerGUID, nDropLevel, pUnit);
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     pUnit = pOperation->sArg.pVictim;
-    if (!pUnit) {
+    if (pUnit) {
+      eD2UnitFlags* peVar1;
+      peVar1 = &pUnit->eUnitFlags;
+      *peVar1 &= ~UNITFLAG_TARGETABLE;
       return 1;
     }
 
-    eD2UnitFlags* peVar1 = &pUnit->eUnitFlags;
-    *peVar1 &= ~UNITFLAG_TARGETABLE;
     return 1;
 }
 
@@ -2242,12 +2251,13 @@ BOOL __fastcall OBJOP_SpawnNormalItemDrop(D2ObjectOperateFnArg * pOperation) {
     ITEMS::Items::Drop::DROP_SpawnNormalItem(pOperation->sArg.pGame, pRoom, pPtPos, nPlayerGUID, nDropLevel, pUnit);
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     pUnit = pOperation->sArg.pVictim;
-    if (!pUnit) {
+    if (pUnit) {
+      eD2UnitFlags* peVar1;
+      peVar1 = &pUnit->eUnitFlags;
+      *peVar1 &= ~UNITFLAG_TARGETABLE;
       return 1;
     }
 
-    eD2UnitFlags* peVar1 = &pUnit->eUnitFlags;
-    *peVar1 &= ~UNITFLAG_TARGETABLE;
     return 1;
 }
 
@@ -2286,7 +2296,7 @@ static int OBJMODE_ApplyCounterAttackToNearbyUnits(::SGAMEDATA * * ppGame) {
               Monster::AI::MONSTERAI_CalculateCounterAttackDamage(*ppGame, (D2UnitStrc*)ppGame[1], (D2UnitStrc*)pTarget, 0);
             }
           }
-        } else if (eUnitType == UNIT_OBJECT && pTarget && pTarget->m_linktoslot.m_prevlink == (TSLink<::SGAMEDATA>*)0xb && ((uD2UnitMode*)&pTarget->m_linktofull.m_next)->ePlayerMode == Death && (nCollisionDist = D2Common::Collision::GetCollisionDistance((D2UnitStrc*)ppGame[1], (D2UnitStrc*)pTarget) , nCollisionDist < 3)) {
+        } else if (eUnitType == UNIT_OBJECT && pTarget && pTarget->m_linktoslot.m_prevlink == (TSLink<::SGAMEDATA>*)0xb && ((uD2UnitMode*)&pTarget->m_linktofull.m_next)->ePlayerMode == Death && (nCollisionDist = D2Common::Collision::GetCollisionDistance((D2UnitStrc*)ppGame[1], (D2UnitStrc*)pTarget) , nCollisionDist <= 2)) {
           sOperation.sArg.pVictim = (D2UnitStrc*)pTarget;
           OBJOP_DetonateExplosiveBarrel(&sOperation);
         }
@@ -2326,11 +2336,13 @@ BOOL __fastcall OBJOP_ActivateSimple(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Operating) {
+        D2Common::Units::SetupUpdateFlag(pUnit, 0);
+        return 0;
+      }
+    } else {
       D2Common::Units::SetupUpdateFlag(pUnit, 1);
-    } else if (eAnimMode == Operating) {
-      D2Common::Units::SetupUpdateFlag(pUnit, 0);
-      return 0;
     }
 
     return 0;
@@ -2346,7 +2358,7 @@ BOOL __fastcall OBJOP_ActivateNoOp(D2ObjectOperateFnArg * pOperation) {
         peVar1 = &pUnit->eUnitFlags;
         *peVar1 &= ~UNITFLAG_TARGETABLE;
       }
-    } else if ((uint32_t)(pUnit->eAnimMode.ePlayerMode - eD2PlayerAnimMode_ns::Neutral) < 2) {
+    } else if ((uint32_t)(pUnit->eAnimMode.ePlayerMode - eD2PlayerAnimMode_ns::Neutral) <= 1) {
       D2Common::Units::SetupUpdateFlag(pUnit, 0);
       return 1;
     }
@@ -2436,19 +2448,21 @@ void __thiscall OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid) {
     uint32_t nVectorX = D2Common::Units::GetUnitSizeX(pUnit);
     uint32_t nVectorY = D2Common::Units::GetUnitSizeY(pUnit);
     eD2ObjectAnimMode eAnimMode = pUnit->eAnimMode.eObjectMode;
-    if (eAnimMode == eD2ObjectAnimMode_ns::Neutral) {
-      D2Common::Collision::CheckCollision_Vector(pRoom, ptPos.x, ptPos.y, nVectorX, nVectorY, 0x8180);
-    } else if (eAnimMode == Opened || eAnimMode == Special3) {
-      wCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, ptPos.x, ptPos.y, nVectorX, nVectorY, 0x8180);
-      if (wCollisionResult == COLBIT_NONE) {
-        if (eAnimMode != Opened) {
-          D2Common::Units::SetupUpdateFlag(pUnit, 2);
+    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (eAnimMode == Opened || eAnimMode == Special3) {
+        wCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, ptPos.x, ptPos.y, nVectorX, nVectorY, 0x8180);
+        if (wCollisionResult == COLBIT_NONE) {
+          if (eAnimMode != Opened) {
+            D2Common::Units::SetupUpdateFlag(pUnit, 2);
+            return;
+          }
+        } else if (eAnimMode != Special3) {
+          D2Common::Units::SetupUpdateFlag(pUnit, 5);
           return;
         }
-      } else if (eAnimMode != Special3) {
-        D2Common::Units::SetupUpdateFlag(pUnit, 5);
-        return;
       }
+    } else {
+      D2Common::Collision::CheckCollision_Vector(pRoom, ptPos.x, ptPos.y, nVectorX, nVectorY, 0x8180);
     }
 }
 
@@ -2596,7 +2610,7 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
     dwHostileDelay = UNIT::PlayerList::GetHostileDelay(pOperation->pAttacker, nullptr);
     uint32_t dwTickCount;
     dwTickCount = GetTickCount();
-    if (dwTickCount < dwHostileDelay + 5000) {
+    if (dwHostileDelay + 5000 > dwTickCount) {
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
@@ -2672,7 +2686,7 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
           } else {
             eQuestId = pTxtLevelDefs->QuestFlagEx;
           }
-          if (0 < (int)eQuestId) {
+          if ((int)eQuestId > 0) {
             BVar2 = D2Common::QuestRecord::GetQuestState(__frame0.pQuestRecord, eQuestId, QUESTSTATE_Completed);
             pUnit = __frame0.pPortalOwnerObj;
             if (!BVar2) {
@@ -2829,10 +2843,12 @@ BOOL __fastcall OBJOP_ActivatePortalObject(D2ObjectOperateFnArg * pOperation) {
       pVictim = pOperation->sArg.pVictim;
       eLevel = LEVEL_None;
       if (pVictim) {
-        if (pVictim->nClassId == 100) {
+        if (pVictim->nClassId != 100) {
+          if (pVictim->nClassId == 0x179) {
+            eLevel = (eD2LevelId)pVictim->pUnitData.pUnitDataMonster->Components[0];
+          }
+        } else {
           eLevel = LEVEL_DurielsLair;
-        } else if (pVictim->nClassId == 0x179) {
-          eLevel = (eD2LevelId)pVictim->pUnitData.pUnitDataMonster->Components[0];
         }
       }
 
@@ -3155,6 +3171,7 @@ static uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, u
 }; D2_STATIC_GUARD(gaObjectsModeFuncTable, "D2Game::Objects::ObjectsMode::OBJMODE_DispatchOperateFunction::gaObjectsModeFuncTable");
     static uint32_t gnObjectsModeFunctionDispatchTableCount = 0x15; D2_STATIC_GUARD(gnObjectsModeFunctionDispatchTableCount, "D2Game::Objects::ObjectsMode::OBJMODE_DispatchOperateFunction::gnObjectsModeFunctionDispatchTableCount");
 
+    uint32_t dwResult;
     uint32_t nModeIdx = (uint32_t)bParam;
     if ((int)nModeIdx >= gnObjectsModeFunctionDispatchTableCount) {
       return 0;
@@ -3162,18 +3179,19 @@ static uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, u
 
     uint64_t ullSeedRoll = (uint64_t)*(uint32_t*)(nParam + 0x20) * 0x6ac690c5 + (uint64_t)*(uint32_t*)(nParam + 0x24);
     *(uint64_t*)(nParam + 0x20) = ullSeedRoll;
-    if ((uint32_t)((int)ullSeedRoll + (int)((ullSeedRoll & 0xffffffff) / 100) * -100) >= gaObjectsModeFuncTable[nModeIdx].nSpriteThreshold) {
-      return 0;
+    if ((uint32_t)((int)ullSeedRoll + (int)((ullSeedRoll & 0xffffffff) / 100) * -100) < gaObjectsModeFuncTable[nModeIdx].nSpriteThreshold) {
+      BOOL bBadCode;
+      /* FARPROC lpfn for IsBadCodePtr */ bBadCode = IsBadCodePtr((FARPROC)gaObjectsModeFuncTable[nModeIdx].pfnHandler);
+      if (bBadCode) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10f5);
+        exit(-1);
+      }
+
+      dwResult = gaObjectsModeFuncTable[nModeIdx].pfnHandler(pGame, (D2UnitStrc*)nParam, gaObjectsModeFuncTable[nModeIdx].nModeFlags);
+      return dwResult;
     }
 
-    BOOL bBadCode = IsBadCodePtr((FARPROC)gaObjectsModeFuncTable[nModeIdx].pfnHandler);
-    if (bBadCode) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10f5);
-      exit(-1);
-    }
-
-    uint32_t dwResult = gaObjectsModeFuncTable[nModeIdx].pfnHandler(pGame, (D2UnitStrc*)nParam, gaObjectsModeFuncTable[nModeIdx].nModeFlags);
-    return dwResult;
+    return 0;
 }
 
 // Server-side handler for the 0x44 object-interaction packet (well/Horadric-orifice/quest container). Resolves the player, object and item units by GUID. For nParam==2 sends the 0x58 OpenUI response (result 1) and clears interaction. For nParam==3 it tries to consume an item: special-cases the Horadric Orifice object (classId 0x98) requiring the "tsh " (Horadric Staff) item code, otherwise moves the item to the player's cursor; on success dispatches the object's operate function (or the orifice's Q14_OnStaffUsedInOrifice for A2Q7), sends OpenUI result 5 and schedules the object anim event; on failure sends result 4. Returns 1.
@@ -3192,68 +3210,70 @@ int __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD param
     pPlayer = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, dwParam);
     D2UnitStrc* pItem;
     pItem = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwItemGUID);
-    if (!pPlayer) {
-      if (!pObject) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1109);
-        exit(-1);
-      }
-    } else if (pObject) {
-      pClient = UNIT::SUnit::SUNIT_GetClient(pPlayer, ".\\OBJECTS\\ObjMode.cpp", 0x1135);
-      sPacket.nUnitGUID = param_1;
-      sPacket.nPacketId = 'X';
-      if (nParam == 2) {
-        sPacket.nUIType = '\x01';
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
-        D2Common::Units::SetupUpdateFlag(pObject, 0);
-        UNIT::SUnit::ClearInteractInfo(pPlayer);
-        return 1;
-      }
-      if (nParam == 3) {
-        if (!pItem) {
-          nItemClassId = -1;
-        } else {
-          nItemClassId = pItem->nClassId;
+    if (pPlayer) {
+      if (pObject) {
+        pClient = UNIT::SUnit::SUNIT_GetClient(pPlayer, ".\\OBJECTS\\ObjMode.cpp", 0x1135);
+        sPacket.nUnitGUID = param_1;
+        sPacket.nPacketId = 'X';
+        if (nParam == 2) {
+          sPacket.nUIType = '\x01';
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
+          D2Common::Units::SetupUpdateFlag(pObject, 0);
+          UNIT::SUnit::ClearInteractInfo(pPlayer);
+          return 1;
         }
+        if (nParam == 3) {
+          if (!pItem) {
+            nItemClassId = -1;
+          } else {
+            nItemClassId = pItem->nClassId;
+          }
 
-        pTxtItem = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
-        if (pObject->nClassId == 0x98) {
-          if (pTxtItem->dwCode == 0x20747368) {
-            accept_item_and_operate:
-            sPacket.nUIType = '\x05';
-            UNIT::SUnit::ClearInteractInfo(pPlayer);
-            if (pObject->nClassId == 0x98) {
-              sPacket.nUIState = '\x01';
-            } else {
-              dwDispatchResult = OBJMODE_DispatchOperateFunction(pGame, (uint8_t)pTxtItem->bSubType, (int32_t)pPlayer);
-              sPacket.nUIState = (uint8_t)dwDispatchResult;
-            }
-
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
-            if (sPacket.nUIState == '\x01') {
-              D2Common::Units::SetupUpdateFlag(pObject, 1);
-              pTxtObjects = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pObject->nClassId);
+          pTxtItem = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
+          if (pObject->nClassId == 0x98) {
+            if (pTxtItem->dwCode == 0x20747368) {
+              accept_item_and_operate:
+              sPacket.nUIType = '\x05';
+              UNIT::SUnit::ClearInteractInfo(pPlayer);
               if (pObject->nClassId == 0x98) {
-                D2Common::Units::SetupUpdateFlag(pObject, 2);
-                Quests::QUESTS::A2Q7::Q14_OnStaffUsedInOrifice(pGame, pPlayer, pObject);
+                sPacket.nUIState = '\x01';
+              } else {
+                dwDispatchResult = OBJMODE_DispatchOperateFunction(pGame, (uint8_t)pTxtItem->bSubType, (int32_t)pPlayer);
+                sPacket.nUIState = (uint8_t)dwDispatchResult;
+              }
+
+              GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
+              if (sPacket.nUIState == '\x01') {
+                D2Common::Units::SetupUpdateFlag(pObject, 1);
+                pTxtObjects = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pObject->nClassId);
+                if (pObject->nClassId == 0x98) {
+                  D2Common::Units::SetupUpdateFlag(pObject, 2);
+                  Quests::QUESTS::A2Q7::Q14_OnStaffUsedInOrifice(pGame, pPlayer, pObject);
+                  return 1;
+                }
+
+                GAME::Event::SetEvent(pGame, pObject, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
                 return 1;
               }
 
-              GAME::Event::SetEvent(pGame, pObject, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+              D2Common::Units::SetupUpdateFlag(pObject, 0);
               return 1;
             }
+          } else {
+            bToCursor = ITEMS::ItemMode::ToCursorItem(pGame, pPlayer, pItem);
+            if (bToCursor) {
+              goto accept_item_and_operate;
+            }
+          }
 
-            D2Common::Units::SetupUpdateFlag(pObject, 0);
-            return 1;
-          }
-        } else {
-          bToCursor = ITEMS::ItemMode::ToCursorItem(pGame, pPlayer, pItem);
-          if (bToCursor) {
-            goto accept_item_and_operate;
-          }
+          sPacket.nUIType = '\x04';
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
         }
-
-        sPacket.nUIType = '\x04';
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
+      }
+    } else {
+      if (!pObject) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1109);
+        exit(-1);
       }
     }
 
@@ -3385,7 +3405,7 @@ static BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt
     uint32_t dwWellFlags = pTxtObjects->Parm[3];
     if (nCurStat < nMaxStat && dwWellFlags & 2) {
       nCurStat = (pTxtObjects->Parm[1] * nMaxStat >> 8) + nCurStat;
-      if (nMaxStat < nCurStat) {
+      if (nCurStat > nMaxStat) {
         nCurStat = nMaxStat;
       }
 
@@ -3398,7 +3418,7 @@ static BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt
     nCurStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
     if (nCurStat < nMaxStat && dwWellFlags & 1) {
       nCurStat = (pTxtObjects->Parm[1] * nMaxStat >> 8) + nCurStat;
-      if (nMaxStat < nCurStat) {
+      if (nCurStat > nMaxStat) {
         nCurStat = nMaxStat;
       }
 
@@ -3411,7 +3431,7 @@ static BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt
     dwWellFlags = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_stamina, 0);
     if (dwWellFlags < nCurStat) {
       dwWellFlags = (pTxtObjects->Parm[1] * nCurStat >> 8) + dwWellFlags;
-      if (nCurStat < dwWellFlags) {
+      if (dwWellFlags > nCurStat) {
         dwWellFlags = nCurStat;
       }
 
@@ -3444,31 +3464,35 @@ static BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt
 }
 
 BOOL __fastcall OBJOP_ActivateHealingWell(D2ObjectOperateFnArg * pOperation) {
+    uint8_t bVar1;
+    eD2UnitType eHealedType;
+    int32_t nDoubledSize;
+    uint8_t byChargesLeft;
     D2ObjectsTxt* pTxtObjects = D2Common::Units::GetObjectTxtRecordFromObject(pOperation->sArg.pVictim);
     char cCharges = pOperation->sArg.pVictim->pUnitData.pUnitDataPlayer->szCharName[4];
-    if (cCharges == '\0') {
-      return 0;
-    }
-
-    eD2UnitType eHealedType = OBJMODE_ApplyWellHealing(pOperation->sArg.pGame, pTxtObjects, pOperation->pAttacker);
-    if (eHealedType == UNIT_PLAYER) {
-      return 0;
-    }
-
-    uint8_t byChargesLeft = cCharges - 1;
-    int32_t nDoubledSize = OBJECT_GetDoubledTxtSize((int32_t)pTxtObjects);
-    if (byChargesLeft <= (uint8_t)nDoubledSize) {
-      uint8_t bVar1;
-      bVar1 = OBJECT_GetDefaultSize();
-      if (!(int)((uint64_t)byChargesLeft % (uint64_t)(int64_t)(int)((uint64_t)(uint8_t)nDoubledSize / (uint64_t)(int64_t)(int)(uint32_t)bVar1))) {
-        bVar1 = OBJECT_GetDefaultSize();
-        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, (uint32_t)bVar1 - (int)((int64_t)(uint64_t)byChargesLeft / (int64_t)pTxtObjects->Parm[2]));
+    if (cCharges != '\0') {
+      ::SGAMEDATA* pGame;
+      eHealedType = OBJMODE_ApplyWellHealing(pOperation->sArg.pGame, pTxtObjects, pOperation->pAttacker);
+      if (eHealedType == UNIT_PLAYER) {
+        return 0;
       }
+
+      byChargesLeft = cCharges - 1;
+      nDoubledSize = OBJECT_GetDoubledTxtSize((int32_t)pTxtObjects);
+      if (byChargesLeft <= (uint8_t)nDoubledSize) {
+        bVar1 = OBJECT_GetDefaultSize();
+        if (!(int)((uint64_t)byChargesLeft % (uint64_t)(int64_t)(int)((uint64_t)(uint8_t)nDoubledSize / (uint64_t)(int64_t)(int)(uint32_t)bVar1))) {
+          bVar1 = OBJECT_GetDefaultSize();
+          D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, (uint32_t)bVar1 - (int)((int64_t)(uint64_t)byChargesLeft / (int64_t)pTxtObjects->Parm[2]));
+        }
+      }
+
+      pOperation->sArg.pVictim->pUnitData.pUnitDataMonster->Components[0] = byChargesLeft;
+      pGame = pOperation->sArg.pGame;
+      GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 2, pGame->dwGameFrame + 1 + pTxtObjects->Parm[0], 0, 0);
+      return 0;
     }
 
-    pOperation->sArg.pVictim->pUnitData.pUnitDataMonster->Components[0] = byChargesLeft;
-    ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 2, pGame->dwGameFrame + 1 + pTxtObjects->Parm[0], 0, 0);
     return 0;
 }
 
@@ -3568,7 +3592,6 @@ D2UnitStrc * * __fastcall RollChestDrops(D2ObjectOperateFnArg * pUnitKill, eD2It
     int32_t nActMonLvlMin;
     int32_t nActMonLvlMax;
     D2ParsedTreasureClassStrc* pTreasure;
-    uint16_t* pSeedExtra;
     uint32_t nAct;
     int nVictimLevel;
     D2UnitStrc* aResultsItemList[6];
@@ -3610,7 +3633,7 @@ D2UnitStrc * * __fastcall RollChestDrops(D2ObjectOperateFnArg * pUnitKill, eD2It
         if (__frame0.nMonLvl < nVictimLevel + nActMonLvlMin) {
           nVictimLevel = 0;
         } else {
-          nVictimLevel = (nActMonLvlMin + nVictimLevel * 2 <= __frame0.nMonLvl) + 1;
+          nVictimLevel = (__frame0.nMonLvl >= nActMonLvlMin + nVictimLevel * 2) + 1;
         }
 
         pTreasure = D2Common::DATATBLS::MonsterTbls::RollTreasureClass((uint32_t)pGame->nDifficulty, nAct, nVictimLevel);
@@ -3620,7 +3643,7 @@ D2UnitStrc * * __fastcall RollChestDrops(D2ObjectOperateFnArg * pUnitKill, eD2It
 
         __frame0.nResultsItemSize = 0;
         memset(aResultsItemList, 0, 6 * sizeof(aResultsItemList[0]));
-        ITEMS::Items::Drop::SERVER_ITEM_RollItemToDrop(pGame, pUnitKill->sArg.pVictim, pUnitKill->pAttacker, pTreasure, eItemType, nVictimLevel, 0, aResultsItemList, &__frame0.nResultsItemSize, 6, (uint16_t*)nVictimLevel, (uint32_t)pGame, pSeedExtra);
+        ITEMS::Items::Drop::SERVER_ITEM_RollItemToDrop(pGame, pUnitKill->sArg.pVictim, pUnitKill->pAttacker, pTreasure, eItemType, nVictimLevel, 0, aResultsItemList, &__frame0.nResultsItemSize, 6);
         return (D2UnitStrc**)aResultsItemList[0];
       }
     }
@@ -3652,28 +3675,28 @@ void __fastcall KillUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         {
           byHitCount = pUnit->pUnitData.pUnitDataMonster->Components[0] + 1;
           pUnit->pUnitData.pUnitDataMonster->Components[0] = byHitCount;
-          if (byHitCount < 2) {
+          if (byHitCount > 1) {
+            sOperation.pAttacker = 0;
+            sOperation.sArg.pGame = pGame;
+            sOperation.sArg.pVictim = pUnit;
             D2Common::Units::UNITS_GetRoom(pUnit);
-            ObjectsRgn::GetObjectControlSeed(pGame);
-            OBJMODE_TriggerProximityEffect(pGame, pUnit);
-            GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
-            return;
+            sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame);
+            sOperation.nObjectClassId = pUnit->nClassId;
+            ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
+            if (ppDropResult) {
+              D2Common::Units::SetupUpdateFlag(pUnit, 3);
+              GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+              return;
+            }
+
+            break;
           }
 
-          sOperation.pAttacker = 0;
-          sOperation.sArg.pGame = pGame;
-          sOperation.sArg.pVictim = pUnit;
           D2Common::Units::UNITS_GetRoom(pUnit);
-          sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame);
-          sOperation.nObjectClassId = pUnit->nClassId;
-          ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
-          if (ppDropResult) {
-            D2Common::Units::SetupUpdateFlag(pUnit, 3);
-            GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-            return;
-          }
-
-          break;
+          ObjectsRgn::GetObjectControlSeed(pGame);
+          OBJMODE_TriggerProximityEffect(pGame, pUnit);
+          GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
+          return;
         }
       case Special1:
         {
@@ -3716,12 +3739,12 @@ void __fastcall SERVER_MissleKilled(D2ObjectOperateFnArg * pKill) {
       pKill->sArg.pVictim->dwDropItemCode = nCharCode;
       ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
       ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
-      if (!pTxtObjects->Mode[1]) {
-        D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 2);
-      } else {
+      if (pTxtObjects->Mode[1]) {
         D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 1);
         pGame = pKill->sArg.pGame;
         GAME::Event::SetEvent(pGame, pKill->sArg.pVictim, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+      } else {
+        D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 2);
       }
 
       pVictim = pKill->sArg.pVictim;
@@ -3800,14 +3823,14 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
     nGoldDropped = 0;
     uint8_t bVar3;
     bVar3 = UNIT::SUnit::GetSparklyChestFlag(pOperation->sArg.pVictim);
-    if (!(bVar3 & 1)) {
-      eDropTypeSpark = ITEMTYPE_None1;
-    } else {
+    if (bVar3 & 1) {
       pDVar2 = pOperation->pSeed;
       sNextSeed = D2_SEED_NEXT(*pDVar2);
       *pDVar2 = sNextSeed;
       nGoldDropped = 1;
-      eDropTypeSpark = (uint32_t)((int)(sNextSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNextSeed) & 0xffffffff) / 100) * -100) < 5) * 2 + ITEMTYPE_Gold;
+      eDropTypeSpark = (uint32_t)((int)(sNextSeed.nSeedLow % 100) < 5) * 2 + ITEMTYPE_Gold;
+    } else {
+      eDropTypeSpark = ITEMTYPE_None1;
     }
 
     eD2ItemTypes eDropType;
@@ -3817,9 +3840,9 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
       pDVar2 = pOperation->pSeed;
       sNextSeed = D2_SEED_NEXT(*pDVar2);
       *pDVar2 = sNextSeed;
-      if (0x18 < (int)(sNextSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNextSeed) & 0xffffffff) / 100) * -100) || nGoldDropped || byNecroFlag) {
+      if ((int)(sNextSeed.nSeedLow % 100) >= 0x19 || nGoldDropped || byNecroFlag) {
         iVar4 = 0;
-        for (; nDropCount; nDropCount--) {
+        for (; (uint32_t)nDropCount > 0; nDropCount--) {
           pRolledItem = (D2UnitStrc*)RollChestDrops(pOperation, eDropType);
           if (pRolledItem) {
             bMagicCheck0 = D2Common::ITEMS::Items::ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pRolledItem);
@@ -3856,7 +3879,7 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
     pDVar2 = pOperation->pSeed;
     sNextSeed = D2_SEED_NEXT(*pDVar2);
     *pDVar2 = sNextSeed;
-    iVar4 = sNextSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNextSeed) & 0xffffffff) / 10000) * -10000;
+    iVar4 = sNextSeed.nSeedLow % 10000;
     if (iVar4 < 200) {
       pVictim = (D2UnitStrc*)RollChestDrops(pOperation, ITEMTYPE_PlayerBodyPart);
       if (pVictim) {
@@ -3925,10 +3948,10 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
           pVictim = (D2UnitStrc*)RollChestDrops(pOperation, ITEMTYPE_Gold);
           if (pVictim) {
             bMagicCheck0 = D2Common::ITEMS::Items::ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pVictim);
-            if (!bMagicCheck0) {
-              iVar4++;
-            } else {
+            if (bMagicCheck0) {
               eDropTypeSpark += ITEMTYPE_None2;
+            } else {
+              iVar4++;
             }
           }
         } while ((int)eDropTypeSpark < 2 && (nAttempts++ , nAttempts < 10));
@@ -3938,12 +3961,12 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
           if (pFallbackItemRoll) {
             iVar4 = 1;
           }
-        } else if (6 < iVar4) {
+        } else if (iVar4 >= 7) {
           goto finish_opening;
         }
 
         iVar4 = 7 - iVar4;
-        if (0 < iVar4) {
+        if (iVar4 > 0) {
           do {
             SpawnDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, 0x20646c67, QUALITY_INVALID);
             iVar4--;
@@ -3972,7 +3995,7 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
 
     if (iVar4 < 4) {
       iVar4 = 4 - iVar4;
-      if (0 < iVar4) {
+      if (iVar4 > 0) {
         do {
           RollChestDrops(pOperation, ITEMTYPE_None1);
           iVar4--;
@@ -4000,12 +4023,12 @@ BOOL __fastcall OBJOP_OpenSparklyChest(D2ObjectOperateFnArg * pOperation) {
 
     finish_opening:
     pTxtObjectsFinal = pTxtObjects;
-    if (!pTxtObjects->Mode[1]) {
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-    } else {
+    if (pTxtObjects->Mode[1]) {
       D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
       pGame = pOperation->sArg.pGame;
       GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pTxtObjectsFinal->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+    } else {
+      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     }
 
     pVictim = pOperation->sArg.pVictim;
@@ -4053,7 +4076,7 @@ BOOL __fastcall OBJOP_OpenChestSpawnMonster(D2ObjectOperateFnArg * pOperation) {
     D2SeedStrc* pSeed = pOperation->pSeed;
     D2SeedStrc sNewSeed = D2_SEED_NEXT(*pSeed);
     *pSeed = sNewSeed;
-    if (sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 10000) * -10000 & -8192) {
+    if (sNewSeed.nSeedLow % 10000 & -8192) {
       nObjectHandleResult = ObjectsRgn::OBJECT_HandleObjectMode(&pOperation->sArg);
       OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode_ns::Skill1, nObjectHandleResult, &pOperation->sArg);
     }
@@ -4103,7 +4126,7 @@ BOOL __fastcall OBJOP_OpenBossChestSpawnUniques(D2ObjectOperateFnArg * pOperatio
     D2SeedStrc* pSeedState = pOperation->pSeed;
     D2SeedStrc seedNextAlt = D2_SEED_NEXT(*pSeedState);
     *pSeedState = seedNextAlt;
-    if (seedNextAlt.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNextAlt) & 0xffffffff) / 0xff) * -0xff <= (uint32_t)pTxtObjects->Parm[7]) {
+    if (seedNextAlt.nSeedLow % 0xff <= (uint32_t)pTxtObjects->Parm[7]) {
       D2MonsterRegionStrc* pMonsterRegion;
       pMonsterRegion = Monster::MonsterRegion::ReturnMonsterRegionEntryForLevel(pOperation->sArg.pGame->pMonsterRegion, eLevel);
       nMonCount = pMonsterRegion->nCounter;
@@ -4141,7 +4164,7 @@ D2UnitStrc ** __fastcall OBJMODE_RollChestDrops(D2ObjectOperateFnArg * pOperateA
     D2SeedStrc* pSeedPtr = pOperateArg->pSeed;
     D2SeedStrc seedNext = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = seedNext;
-    if (seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 100) * -100 >= 0x15) {
+    if (!(seedNext.nSeedLow % 100 <= 0x14)) {
       return nullptr;
     }
 
@@ -4171,7 +4194,7 @@ BOOL __fastcall OBJOP_OpenChestNoMonster(D2ObjectOperateFnArg * pOperation) {
     D2SeedStrc* pSeedPtr = pOperation->pSeed;
     D2SeedStrc seedNext = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = seedNext;
-    if (seedNext.nSeedLow + (int)(((uint64_t)d2_bits_of(seedNext) & 0xffffffff) / 100) * -100 < 0x15) {
+    if (seedNext.nSeedLow % 100 <= 0x14) {
       RollChestDrops(pOperation, ITEMTYPE_None1);
     }
     if (!pTxtObjects->HasCollision[1]) {
@@ -4265,7 +4288,7 @@ BOOL __fastcall OBJOP_OpenTrapChestSkillTrigger(D2ObjectOperateFnArg * pOperatio
     D2SeedStrc* pSeedPtr = pOperation->pSeed;
     D2SeedStrc newSeed = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = newSeed;
-    if (newSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(newSeed) & 0xffffffff) / 10000) * -10000 & -8192) {
+    if (newSeed.nSeedLow % 10000 & -8192) {
       nObjectMode = ObjectsRgn::OBJECT_HandleObjectMode(&pOperation->sArg);
       OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode_ns::Skill1, nObjectMode, &pOperation->sArg);
     }
@@ -4273,7 +4296,7 @@ BOOL __fastcall OBJOP_OpenTrapChestSkillTrigger(D2ObjectOperateFnArg * pOperatio
     pSeedPtr = pOperation->pSeed;
     newSeed = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = newSeed;
-    if (newSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(newSeed) & 0xffffffff) / 100) * -100 < 0x15) {
+    if (newSeed.nSeedLow % 100 <= 0x14) {
       RollChestDrops(pOperation, ITEMTYPE_None1);
     }
 
@@ -4306,7 +4329,7 @@ BOOL __fastcall OBJOP_OpenUnlockedChest(D2ObjectOperateFnArg * pOperation) {
     D2SeedStrc* pSeedPtr = pOperation->pSeed;
     D2SeedStrc newSeed = D2_SEED_NEXT(*pSeedPtr);
     *pSeedPtr = newSeed;
-    if ((int)(newSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(newSeed) & 0xffffffff) / 100) * -100) < 0x5a) {
+    if ((int)(newSeed.nSeedLow % 100) < 0x5a) {
       D2UnitStrc** pDroppedItem;
       pDroppedItem = RollChestDrops(pOperation, ITEMTYPE_None1);
       if (pDroppedItem) {

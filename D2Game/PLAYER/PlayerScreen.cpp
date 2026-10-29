@@ -116,7 +116,7 @@ void __fastcall PARTYSCREEN_TogglePlayerSquelch(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     SendPlayerInfo(1, bNewState, pUnit, pGame, pTarget);
-    if (!pUnit || 1 < (uint32_t)pUnit->nClassId && pUnit->nClassId != 6) {
+    if (!pUnit || (uint32_t)pUnit->nClassId > 1 && pUnit->nClassId != 6) {
       bParam = bNewState ? 0x101 : 0xa;
     } else {
       bParam = bNewState ? 0x102 : 0xb;
@@ -371,7 +371,7 @@ void __fastcall PARTYSCREEN_SetHostileForPlayer(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     int32_t nUnitLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if (8 >= nUnitLevel) {
+    if (nUnitLevel < 9) {
       return;
     }
 
@@ -410,7 +410,7 @@ static void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2Uni
     }
 
     int32_t nTargetLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit2, UNITSTAT_level, 0);
-    if (8 >= nTargetLevel) {
+    if (nTargetLevel < 9) {
       return;
     }
 

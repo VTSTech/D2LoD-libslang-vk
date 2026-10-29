@@ -87,7 +87,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_BloodParticlesOnTarget(D2UnitStrc * pUnit, 
 }
 
 BOOL __fastcall Skills_CltStFunc_AllocStatListByCltCalc(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
 
@@ -150,7 +150,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
     }
 
     D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_throwable(pWeapon);
-    if (0x8ff < (int)(pUnit->nSeqFrame & -256)) {
+    if ((int)(pUnit->nSeqFrame & -256) >= 0x900) {
       pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
     }
 
@@ -163,18 +163,18 @@ BOOL __fastcall Skills_CltDoFunc_Bar_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
     }
 
     eMissilesId eMissileId = D2Common::ITEMS::Items::ITEM_GetItemsTxt_wMissileType(pWeapon);
-    if (!(0 < (int)eMissileId && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if (!((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 
     uint32_t bIsMissilePotion = D2Common::ITEMS::Items::ITEMS_IsA(pWeapon, ITEMTYPE_MissilePotion);
-    if (!bIsMissilePotion) {
-      Skills::MakeMissileAtSkillTarget(pUnit, eMissileId, eSkill, nSkillLvl);
-    } else {
+    if (bIsMissilePotion) {
       pWeapon = UNIT::Missile::MISSILE_CreateFromUnitWithOffset(pUnit, eMissileId, 0, 0, 0, 0, eSkill, nSkillLvl, 0);
       if (!pWeapon) {
         return 0;
       }
+    } else {
+      Skills::MakeMissileAtSkillTarget(pUnit, eMissileId, eSkill, nSkillLvl);
     }
 
     return 1;
@@ -215,7 +215,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUni
     if ((int)eSkill < 0) {
       return 0;
     }
-    if (sgptDataTable->nTxtSkillsCount <= (int)eSkill) {
+    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
 
@@ -261,14 +261,14 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_CorpseExplosion(D2UnitStrc * pUni
     if (!pMonStats2) {
       return 0;
     }
-    if (!pMonStats2->large) {
+    if (pMonStats2->large) {
+      eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[3];
+    } else {
       if (pMonStats2->isSmall) {
         eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[2];
       }
-    } else {
-      eCorpseMissile = (eMissilesId)pSkillTxt->cltmissile[3];
     }
-    if (!(-1 < (int)eCorpseMissile && (int)eCorpseMissile < sgptDataTable->nTxtMissilesSize)) {
+    if (!((int)eCorpseMissile >= 0 && (int)eCorpseMissile < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 
@@ -302,7 +302,7 @@ static BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int3
     if ((int)eSkill < 0) {
       return 0;
     }
-    if (sgptDataTable->nTxtSkillsCount <= (int)eSkill) {
+    if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
 
@@ -312,30 +312,30 @@ static BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int3
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitY = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitY = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nUnitX = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nUnitX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nUnitX = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nUnitX = 0;
     }
 
     int32_t nRangeCalc = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt[eSkill].aurarangecalc, eSkill, nParam);
     int nMaxTeleportRange = nRangeCalc;
     int32_t nDistToDestination = D2Common::Collision::GetDistanceToXY(pUnit, *pnParam1, *pnParam2);
-    if (nDistToDestination < 2) {
+    if (nDistToDestination <= 1) {
       nDistToDestination = 1;
     }
-    if (nRangeCalc < nDistToDestination) {
+    if (nDistToDestination > nRangeCalc) {
       nClampedDestY = *pnParam2;
       *pnParam1 = (*pnParam1 - nUnitY) * nMaxTeleportRange / nDistToDestination + nUnitY;
       *pnParam2 = (nClampedDestY - nUnitX) * nMaxTeleportRange / nDistToDestination + nUnitX;
@@ -343,22 +343,24 @@ static BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int3
 
     ptCandidatePos.y = *pnParam2;
     nParam = ptCandidatePos.y - nUnitX;
-    if (nParam < -1) {
+    if (nParam >= -1) {
+      if (nParam >= 2) {
+        nParam = 2;
+      }
+    } else {
       nParam = -2;
-    } else if (1 < nParam) {
-      nParam = 2;
     }
 
     ptCandidatePos.x = *pnParam1;
     int nStepDeltaX = nUnitY - ptCandidatePos.x;
-    if (nStepDeltaX < -1) {
-      nStepDeltaX = -2;
-      nTriesLeft = 3;
-    } else {
-      if (1 < nStepDeltaX) {
+    if (nStepDeltaX >= -1) {
+      if (nStepDeltaX >= 2) {
         nStepDeltaX = 2;
       }
 
+      nTriesLeft = 3;
+    } else {
+      nStepDeltaX = -2;
       nTriesLeft = 3;
     }
 
@@ -418,7 +420,7 @@ static BOOL __stdcall SKILL_ValidateTeleportDestination(D2UnitStrc * pUnit, int3
 }
 
 static BOOL __stdcall SKILL_CanUseAtLocation(D2UnitStrc * pUnit, int32_t nX, int32_t nY, eD2Skills eSkill) {
-    if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
@@ -496,18 +498,7 @@ BOOL __fastcall Skills_CltStFunc_SetupLeapTeleportDest(D2UnitStrc * pUnit, eD2Sk
     }
 
     _bUnitIsMonster = (uint32_t)(eUnitType == UNIT_MONSTER);
-    if (!_bUnitIsMonster) {
-      bGotCoords = Skills::GetCooordinates(pUnit, &nDestX, &nDestY);
-      if (bGotCoords) {
-        bGotCoords = SKILL_CanUseAtLocation(pUnit, nDestX, nDestY, eSkill);
-        if (bGotCoords) {
-          bGotCoords = SKILL_ValidateTeleportDestination(pUnit, nSkillLvl, &nDestX, &nDestY, eSkill);
-          if (bGotCoords) {
-            goto commit_destination;
-          }
-        }
-      }
-    } else {
+    if (_bUnitIsMonster) {
       pPlayerOrTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
       if (!pPlayerOrTarget) {
         bGotCoords = Skills::GetCooordinates(pUnit, &nDestX, &nDestY);
@@ -556,6 +547,17 @@ BOOL __fastcall Skills_CltStFunc_SetupLeapTeleportDest(D2UnitStrc * pUnit, eD2Sk
         D2Common::Skills::SKILL_SetFlags(pSkill, 0x1080);
         Skills::SKILL_CreateActiveSkillStatList(pUnit);
         return 1;
+      }
+    } else {
+      bGotCoords = Skills::GetCooordinates(pUnit, &nDestX, &nDestY);
+      if (bGotCoords) {
+        bGotCoords = SKILL_CanUseAtLocation(pUnit, nDestX, nDestY, eSkill);
+        if (bGotCoords) {
+          bGotCoords = SKILL_ValidateTeleportDestination(pUnit, nSkillLvl, &nDestX, &nDestY, eSkill);
+          if (bGotCoords) {
+            goto commit_destination;
+          }
+        }
       }
     }
 
@@ -637,7 +639,7 @@ void __fastcall SKILL_CreateLeapArcParticle(D2UnitStrc * pUnit, D2SkillStrc * pS
     }
 
     int32_t nLeapFrames = (nParam1 << 0x10) / (nVelocity >> 8 << 0xc);
-    if (1 < nLeapFrames) {
+    if (nLeapFrames > 1) {
       nLeapFrames--;
     }
 
@@ -685,22 +687,22 @@ static void __stdcall CLIENT_UpdateSkillMissilePosition(D2SkillStrc * pSkill, in
     D2Common::PATH::DynamicPath::SetStepNum(pDynamicPath_00, 1);
     D2Common::PATH::DynamicPath::SetTarget(pDynamicPath_00, nullptr);
     eTargetUnitType = pTargetUnit->eUnitType;
-    if (eTargetUnitType == UNIT_OBJECT || 3 < (int)eTargetUnitType && (int)eTargetUnitType < 6) {
+    if (eTargetUnitType == UNIT_OBJECT || (int)eTargetUnitType > 3 && (int)eTargetUnitType <= 5) {
       nTargetXPos = pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nTargetXPos = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nTargetXPos = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nTargetXPos = 0;
     }
 
     nTargetXPos = nParam1 * 3 + nTargetXPos * -2;
     eTargetUnitType = pTargetUnit->eUnitType;
-    if (eTargetUnitType == UNIT_OBJECT || 3 < (int)eTargetUnitType && (int)eTargetUnitType < 6) {
+    if (eTargetUnitType == UNIT_OBJECT || (int)eTargetUnitType > 3 && (int)eTargetUnitType <= 5) {
       nTargetYPos = pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nTargetYPos = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nTargetYPos = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nTargetYPos = 0;
     }
 
     int nTargetY = nParam2 * 3 + nTargetYPos * -2;
@@ -795,7 +797,7 @@ static BOOL __stdcall CLIENT_PlaySkillSound(D2SkillStrc * pSkill, int32_t nParam
       if (nAnimMode < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nAnimMode) {
         nAnimMode = (int)sgptDataTable->pTxtMonStats[nAnimMode].BaseId;
       }
-      if (nAnimMode < 0 || sgptDataTable->nTxtMonStatsSize <= nAnimMode) {
+      if (nAnimMode < 0 || nAnimMode >= sgptDataTable->nTxtMonStatsSize) {
         nAnimMode = -1;
       }
     }
@@ -813,53 +815,55 @@ static BOOL __stdcall CLIENT_PlaySkillSound(D2SkillStrc * pSkill, int32_t nParam
       nPosZ = 0;
       nSoundId = UNIT::UnitSnd::UNITSND_GetFootstepSound((D2UnitStrc*)pDynamicPath, 1);
       Sound::SOUND_PlaySound(nSoundId, (D2UnitStrc*)pDynamicPath, nPosZ, nNewSequence, nTargetXOrSeqFrame);
-      if (bNotInAnimation) {
+      if (!bNotInAnimation) {
+        if (nAnimMode == 0x4e) {
+          CLIENT_UpdateSkillMissilePosition(pSkill, nParam1, nParam2, pDynamicPath);
+          return 1;
+        }
+      } else {
         Sound::SOUND_PlaySound(SOUND_PALADIN_CHAT_F_1, (D2UnitStrc*)pDynamicPath, 0, 0, 0);
-      } else if (nAnimMode == 0x4e) {
-        CLIENT_UpdateSkillMissilePosition(pSkill, nParam1, nParam2, pDynamicPath);
-        return 1;
       }
 
       return 1;
     }
 
     int nUnitTypeOrMode = pDynamicPath->Coords.tFixed.x;
-    if (nUnitTypeOrMode == 2 || 3 < nUnitTypeOrMode && nUnitTypeOrMode < 6) {
+    if (nUnitTypeOrMode == 2 || nUnitTypeOrMode > 3 && nUnitTypeOrMode <= 5) {
       nXcoord = pDynamicPath->pServerPath->ScreenPos.y;
-    } else if (!pDynamicPath->pServerPath) {
-      nXcoord = 0;
-    } else {
+    } else if (pDynamicPath->pServerPath) {
       nXcoord = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath->pServerPath);
+    } else {
+      nXcoord = 0;
     }
     if (nXcoord == nParam1) {
       nUnitTypeOrMode = pDynamicPath->Coords.tFixed.x;
-      if (nUnitTypeOrMode == 2 || 3 < nUnitTypeOrMode && nUnitTypeOrMode < 6) {
+      if (nUnitTypeOrMode == 2 || nUnitTypeOrMode > 3 && nUnitTypeOrMode <= 5) {
         *(uint16_t*)(char*)&nUnitTypeOrMode = pDynamicPath->pServerPath->nTargetX;
         *(uint16_t*)((char*)&nUnitTypeOrMode + 2) = pDynamicPath->pServerPath->nTargetY;
-      } else if (!pDynamicPath->pServerPath) {
-        nUnitTypeOrMode = 0;
-      } else {
+      } else if (pDynamicPath->pServerPath) {
         nUnitTypeOrMode = D2Common::PATH::DynamicPath::GetYPos(pDynamicPath->pServerPath);
+      } else {
+        nUnitTypeOrMode = 0;
       }
       if (nUnitTypeOrMode == nParam2) {
         goto on_landed;
       }
     }
-    if (bNotInAnimation) {
-      D2Common::Units::SetSequenceFrame((D2UnitStrc*)pDynamicPath, 10);
+    if (!bNotInAnimation) {
+      nPosZ = 0;
+      if (nAnimMode == 0x4e) {
+        nPosZ = 8;
+      } else if (nAnimMode == 0x21c) {
+        nDistToTarget = D2Common::Collision::GetDistanceToXY((D2UnitStrc*)pDynamicPath, nParam1, nParam2);
+        nPosZ = nDistToTarget < 2 ? 0xc : 0xa;
+      }
+
+      D2Common::Units::SetSequenceFrame((D2UnitStrc*)pDynamicPath, nPosZ);
       pDynamicPath->nUnitWidth = (pDynamicPath->nUnitWidth & 0xffffff00U) + 0x100;
       return 0;
     }
 
-    nPosZ = 0;
-    if (nAnimMode == 0x4e) {
-      nPosZ = 8;
-    } else if (nAnimMode == 0x21c) {
-      nDistToTarget = D2Common::Collision::GetDistanceToXY((D2UnitStrc*)pDynamicPath, nParam1, nParam2);
-      nPosZ = nDistToTarget < 2 ? 0xc : 0xa;
-    }
-
-    D2Common::Units::SetSequenceFrame((D2UnitStrc*)pDynamicPath, nPosZ);
+    D2Common::Units::SetSequenceFrame((D2UnitStrc*)pDynamicPath, 10);
     pDynamicPath->nUnitWidth = (pDynamicPath->nUnitWidth & 0xffffff00U) + 0x100;
     return 0;
 }
@@ -877,29 +881,29 @@ void __fastcall SKILL_HandleTeleportLanding(D2UnitStrc * pUnit) {
     }
 
     D2SkillStrc* pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-    if (!pSkill) {
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        nDestX = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nDestX = 0;
-      } else {
-        nDestX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-      }
-    } else {
+    if (pSkill) {
       nDestX = D2Common::Skills::SKILL_GetParam1(pSkill);
-    }
-    if (!pSkill) {
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        nDestY = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nDestY = 0;
-      } else {
-        nDestY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      }
     } else {
+      eUnitType = pUnit->eUnitType;
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+        nDestX = pUnit->pPath.pStaticPath->nPosX;
+      } else if (pUnit->pPath.pDynamicPath) {
+        nDestX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nDestX = 0;
+      }
+    }
+    if (pSkill) {
       nDestY = D2Common::Skills::SKILL_GetParam2(pSkill);
+    } else {
+      eUnitType = pUnit->eUnitType;
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+        nDestY = pUnit->pPath.pStaticPath->nPosY;
+      } else if (pUnit->pPath.pDynamicPath) {
+        nDestY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nDestY = 0;
+      }
     }
 
     eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
@@ -951,17 +955,17 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Leap_ArcParticle(D2DynamicPathStrc * pUnit,
 
     finish_landing:
     iVar1 = pUnit->Coords.tFixed.x;
-    if (iVar1 == 2 || 3 < iVar1 && iVar1 < 6) {
+    if (iVar1 == 2 || iVar1 > 3 && iVar1 <= 5) {
       *(uint16_t*)(char*)&nSrvPathX = pUnit->pServerPath->nTargetX;
       *(uint16_t*)((char*)&nSrvPathX + 2) = pUnit->pServerPath->nTargetY;
-    } else if (!pUnit->pServerPath) {
-      nSrvPathX = 0;
-    } else {
+    } else if (pUnit->pServerPath) {
       nSrvPathX = D2Common::PATH::DynamicPath::GetYPos(pUnit->pServerPath);
+    } else {
+      nSrvPathX = 0;
     }
 
     iVar1 = pUnit->Coords.tFixed.x;
-    if (iVar1 != 2 && (iVar1 < 4 || 5 < iVar1)) {
+    if (iVar1 != 2 && (iVar1 <= 3 || iVar1 > 5)) {
       if (pUnit->pServerPath) {
         nSrvPathY = D2Common::PATH::DynamicPath::GetXPos(pUnit->pServerPath);
         PATH_ResetCollisionOnLanding(nSrvPathX, nSrvPathY, (D2UnitStrc*)pUnit);
@@ -1033,11 +1037,11 @@ BOOL __fastcall Skills_CltStFunc_FindTeleportPositionForTarget(D2UnitStrc * pUni
         D2Common::Collision::AddCollision_Type(pRoom, nTeleportX, nTeleportY, nUnitWidth, 0x80);
         D2Common::Skills::SKILL_SetParam1(pSkill, nTeleportX);
         D2Common::Skills::SKILL_SetParam2(pSkill, nTeleportY);
-        if (!pPlayerUnit_lcl) {
-          D2Common::Skills::SKILL_SetParam3(pSkill, 6);
-        } else {
+        if (pPlayerUnit_lcl) {
           D2Common::Skills::SKILL_SetParam3(pSkill, pPlayerUnit_lcl->eUnitType);
           D2Common::Skills::SKILL_SetParam4(pSkill, pPlayerUnit_lcl->nUnitGUID);
+        } else {
+          D2Common::Skills::SKILL_SetParam3(pSkill, 6);
         }
 
         D2Common::Skills::SKILL_SetFlags(pSkill, 0x1080);
@@ -1097,34 +1101,34 @@ BOOL __fastcall Skills_CltDoFunc_Bar_LeapAttack_ArcParticle(D2DynamicPathStrc * 
       }
     }
     if (!(nSkillFlags & 2)) {
-      if (-1 < (char)nSkillFlags) {
-        D2Common::Skills::SKILL_SetFlags(pSkill, 0x1000);
-        return bFoundTarget;
+      if (-1 >= (char)nSkillFlags) {
+        SKILL_SetupLeapPath((D2UnitStrc*)pUnit, pSkill);
+        SKILL_CreateLeapArcParticle((D2UnitStrc*)pUnit, pSkill);
+        return 1;
       }
 
-      SKILL_SetupLeapPath((D2UnitStrc*)pUnit, pSkill);
-      SKILL_CreateLeapArcParticle((D2UnitStrc*)pUnit, pSkill);
-      return 1;
+      D2Common::Skills::SKILL_SetFlags(pSkill, 0x1000);
+      return bFoundTarget;
     }
 
     finish_landing:
     iVar1 = pUnit->Coords.tFixed.x;
-    if (iVar1 == 2 || 3 < iVar1 && iVar1 < 6) {
+    if (iVar1 == 2 || iVar1 > 3 && iVar1 <= 5) {
       *(uint16_t*)(char*)&nDestY = pUnit->pServerPath->nTargetX;
       *(uint16_t*)((char*)&nDestY + 2) = pUnit->pServerPath->nTargetY;
-    } else if (!pUnit->pServerPath) {
-      nDestY = 0;
-    } else {
+    } else if (pUnit->pServerPath) {
       nDestY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pServerPath);
+    } else {
+      nDestY = 0;
     }
 
     iVar1 = pUnit->Coords.tFixed.x;
-    if (iVar1 == 2 || 3 < iVar1 && iVar1 < 6) {
+    if (iVar1 == 2 || iVar1 > 3 && iVar1 <= 5) {
       nDestX = pUnit->pServerPath->ScreenPos.y;
-    } else if (!pUnit->pServerPath) {
-      nDestX = 0;
-    } else {
+    } else if (pUnit->pServerPath) {
       nDestX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pServerPath);
+    } else {
+      nDestX = 0;
     }
 
     PATH_ResetCollisionOnLanding(nDestY, nDestX, (D2UnitStrc*)pUnit);
@@ -1156,10 +1160,7 @@ void __fastcall SKILL_DrawUnitAtRotatedAngle(D2UnitStrc * pUnit, uint32_t nParam
     nRotatedDir &= 0x3f;
     D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pDynamicPath, nRotatedDir);
     bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
-    if (!bPerspective) {
-      nScreenX = D2Common::Units::GetTargetX(pUnit);
-      nScreenY = D2Common::Units::GetTargetY(pUnit);
-    } else {
+    if (bPerspective) {
       int32_t nWorldOffset;
       bOrder = 0;
       pYpos = &nScreenY;
@@ -1172,6 +1173,9 @@ void __fastcall SKILL_DrawUnitAtRotatedAngle(D2UnitStrc * pUnit, uint32_t nParam
       nScreenX += nWorldOffset;
       nWorldOffset = UI::Path::DRAW_GetWorldOffsetY();
       nScreenY += nWorldOffset;
+    } else {
+      nScreenX = D2Common::Units::GetTargetX(pUnit);
+      nScreenY = D2Common::Units::GetTargetY(pUnit);
     }
 
     Engine::Gfx::DRAW_WORLD_Unit_1(pUnit, nParam, nScreenX, nScreenY, (D2GamePalShiftGreenBloodStrc*)(uint32_t)(pUnit->eUnitType == UNIT_PLAYER), 0);
@@ -1248,13 +1252,7 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
     D2Common::PATH::DynamicPath::PATH_SetPathType(pServerPath, 7);
     _bPathFound = D2Common::PATH::DynamicPath::PATH_CalculatePath(pServerPath, pUnit, 0);
     if (_bPathFound) {
-      if (!_bIsPlayer) {
-        nLine = 0x49f;
-        szSkillsBarCpp = ".\\SKILLS\\SkillsBar.cpp";
-        pMonStatsTxt = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
-        nSkillFlags = (uint32_t)pMonStatsTxt->Velocity;
-        D2Common::PATH::DynamicPath::SetVelocities(pServerPath, nSkillFlags << 8, szSkillsBarCpp, nLine);
-      } else {
+      if (_bIsPlayer) {
         pCharStatsTxt = DataTbls::INV_GetCharStatsTxtLine(pUnit->nClassId);
         if (pCharStatsTxt) {
           nSkillFlags = (uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity;
@@ -1262,6 +1260,12 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
           szSkillsBarCpp = ".\\SKILLS\\SkillsBar.cpp";
           D2Common::PATH::DynamicPath::SetVelocities(pServerPath, nSkillFlags << 8, szSkillsBarCpp, nLine);
         }
+      } else {
+        nLine = 0x49f;
+        szSkillsBarCpp = ".\\SKILLS\\SkillsBar.cpp";
+        pMonStatsTxt = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
+        nSkillFlags = (uint32_t)pMonStatsTxt->Velocity;
+        D2Common::PATH::DynamicPath::SetVelocities(pServerPath, nSkillFlags << 8, szSkillsBarCpp, nLine);
       }
 
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pServerPath, 0x401);

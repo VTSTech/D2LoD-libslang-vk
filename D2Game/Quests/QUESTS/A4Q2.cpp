@@ -387,7 +387,7 @@ void __fastcall Q27_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
     if (bCompleted != 1) {
       nStateFlag = pQuestData->nStateFlag;
-      if (3 < nStateFlag && !bStep0x08) {
+      if (nStateFlag >= 4 && !bStep0x08) {
         return;
       }
       if (!pQuestData->bIsNotIntroduction) {
@@ -401,7 +401,7 @@ void __fastcall Q27_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipMsgIdx == -1) {
         return;
       }
-      if (6 < nGossipMsgIdx) {
+      if (nGossipMsgIdx >= 7) {
         return;
       }
 
@@ -548,7 +548,26 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
     D2QuestDataA1Q1Strc* pQuestSpecificA4Q2;
     int* pnSpawnRetryCount;
     D2QuestDataA1Q1Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q1;
-    if (*(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) == '\0') {
+    if (*(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) != '\0') {
+      D2UnitStrc* pDVar2;
+      pnSpawnRetryCount = pDVar1->sQuestGUID.aPlayerGUID + 6;
+      (*pnSpawnRetryCount)++;
+      if ((uint32_t)pDVar1->sQuestGUID.aPlayerGUID[6] >= 10 && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 6) != '\0') {
+        pDVar2 = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pDVar1->sQuestGUID.aPlayerGUID[2]);
+        if (pDVar2) {
+          pQuestSpecificA4Q2 = pDVar1;
+          nY = D2Client::Units::GetYPosFromDynamicPathUnit(pDVar2);
+          nX = D2Client::Units::GetXPosFromDynamicPathUnit(pDVar2);
+          pRoom = D2Common::Units::UNITS_GetRoom(pDVar2);
+          pDVar2 = Q27_SpawnDiablo(pQuestData->pGame, pRoom, nX, nY, pQuestSpecificA4Q2);
+          if (pDVar2) {
+            *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) = 0;
+            *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 1) = 0;
+            return '\x01';
+          }
+        }
+      }
+    } else {
       if (*(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 3) == '\0') {
         return '\x01';
       }
@@ -568,7 +587,7 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
       }
 
       dwNowTick = GetTickCount();
-      if (dwNowTick <= pDVar1->sQuestGUID.aPlayerGUID[6] + 90000U) {
+      if (pDVar1->sQuestGUID.aPlayerGUID[6] + 90000U >= dwNowTick) {
         dwNowTick = GetTickCount();
         if (!(pDVar1->sQuestGUID.aPlayerGUID[6] + 75000U < dwNowTick && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 0x15) == '\0')) {
           return '\0';
@@ -584,25 +603,6 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
         }
 
         *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 5) = 0;
-      }
-    } else {
-      D2UnitStrc* pDVar2;
-      pnSpawnRetryCount = pDVar1->sQuestGUID.aPlayerGUID + 6;
-      (*pnSpawnRetryCount)++;
-      if (9 < (uint32_t)pDVar1->sQuestGUID.aPlayerGUID[6] && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 6) != '\0') {
-        pDVar2 = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pDVar1->sQuestGUID.aPlayerGUID[2]);
-        if (pDVar2) {
-          pQuestSpecificA4Q2 = pDVar1;
-          nY = D2Client::Units::GetYPosFromDynamicPathUnit(pDVar2);
-          nX = D2Client::Units::GetXPosFromDynamicPathUnit(pDVar2);
-          pRoom = D2Common::Units::UNITS_GetRoom(pDVar2);
-          pDVar2 = Q27_SpawnDiablo(pQuestData->pGame, pRoom, nX, nY, pQuestSpecificA4Q2);
-          if (pDVar2) {
-            *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) = 0;
-            *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 1) = 0;
-            return '\x01';
-          }
-        }
       }
     }
 
@@ -870,7 +870,7 @@ BOOL __fastcall Q27_PlayerCheckNearDiablo(::SGAMEDATA * pGame, D2UnitStrc * pUni
       uint32_t i;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
       i = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (ppAdjacentRooms[i] == (D2RoomStrc*)pDVar1->pDiabloRoom) {
             bIsNearDiablo = 1;
@@ -899,11 +899,11 @@ BOOL __fastcall Q27_PlayerCheckNearDiablo(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // [A4Q3 Terror's End] Getter: returns the "all five Chaos Sanctuary seals activated" flag (field_0x13) from the A4Q2 quest-specific struct.
 BOOL __fastcall Q27_GetAllSealsActivated(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      return (uint32_t)pQuestData->pQuestSpecificData.pA4Q2->bAllSealsActivated;
     }
 
-    return (uint32_t)pQuestData->pQuestSpecificData.pA4Q2->bAllSealsActivated;
+    return 0;
 }
 
 // [A4Q3 Terror's End] All-seals-activated trigger. Sets the seals-done flag, notifies players (event 0xc), then walks every room of Act IV's Chaos Sanctuary and force-kills all neutral living monsters (except Diablo 0xf3) — i.e. clears the seal bosses' minions when the final seal is hit, summoning Diablo.
@@ -1022,7 +1022,7 @@ void __fastcall Q27_Callback_08_KillHandler(D2QuestDataStrc * pQuestData, D2Ques
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q27_PlayerCheckCompletionSendState);
           if (bKillerNotCompleted) {
             iNotify = 0;
-            if (0 < pQuestSpecificData->nPlayerCompletionCount) {
+            if (pQuestSpecificData->nPlayerCompletionCount > 0) {
               do {
                 QUEST_StubEmpty(0x40);
                 iNotify++;
@@ -1176,11 +1176,11 @@ BOOL __fastcall OBJOP_A4Q2_DiabloSealActivateKillChaos(D2ObjectOperateFnArg * pO
 // [A4Q3 Terror's End] Getter: returns the "Diablo currently spawned" flag (field_0x14) from the A4Q2 quest-specific struct.
 uint32_t __fastcall Q27_IsDiabloSpawned(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
-    if (!pQuestData) {
-      return 0;
+    if (pQuestData) {
+      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA4Q2 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q2->bDiabloKilledBroadcast);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA4Q2 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q2->bDiabloKilledBroadcast);
+    return 0;
 }
 
 } // namespace D2Game::Quests::QUESTS::A4Q2

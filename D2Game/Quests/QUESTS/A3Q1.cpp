@@ -290,7 +290,9 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     D2UnitStrc* pTomeItem = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20626262);
-    if (!pTomeItem) {
+    if (pTomeItem) {
+      nGossipIndex = 3;
+    } else {
       int32_t nPlayerGUID;
       if (bIsCompleted == 1) {
         if (!pQuestArgs->pPlayer) {
@@ -310,7 +312,7 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (!pQuestData->bIsNotIntroduction) {
         return;
       }
-      if (3 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 4) {
         return;
       }
 
@@ -318,11 +320,9 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipIndex == -1) {
         return;
       }
-      if (5 < nGossipIndex) {
+      if (nGossipIndex >= 6) {
         return;
       }
-    } else {
-      nGossipIndex = 3;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipIndex);
@@ -330,37 +330,43 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
 // CompleteQuestStates — Lam Esen's Tome, per-player completion writer (run via IteratePlayerOrMonsterUnits when Alkor is handed the tome). For each player who is in a room and is in Act III and not already Completed/RewardAwaits, persist the three completion flags JustCompleted + Completed + RewardAwaits into the record, then send full quest info to the unit. This is the actual "quest done" commit.
 BOOL __fastcall CompleteQuestStates(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
+    D2UnitDataPlayerStrc* pPlayerData;
+    BOOL bQuestState;
+    eD2LevelId eLevel;
+    D2BitBufferStrc* pBitBuffer;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (!pRoom) {
-      return 0;
-    }
+    if (pRoom) {
+      eAct ePlayerAct;
+      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+      pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
+      /* GetQuestState(LamEsensTome, state 0=Completed) — bail if player already
+                         completed */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_Completed);
+      if (bQuestState) {
+        return 0;
+      }
 
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_Completed);
-    if (bQuestState) {
-      return 0;
-    }
-
-    /* GetQuestState(LamEsensTome, state 1=RewardAwaits) — bail if reward already
+      /* GetQuestState(LamEsensTome, state 1=RewardAwaits) — bail if reward already
                          pending */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_RewardAwaits);
-    if (bQuestState) {
-      return 0;
-    }
+      if (bQuestState) {
+        return 0;
+      }
 
-    eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    eAct ePlayerAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    if (ePlayerAct != ACT_III) {
-      return 0;
-    }
+      eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+      ePlayerAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+      if (ePlayerAct != ACT_III) {
+        return 0;
+      }
 
-    /* SetQuestState(LamEsensTome, state 0xd=JustCompleted) — mark fresh-this-game
+      /* SetQuestState(LamEsensTome, state 0xd=JustCompleted) — mark fresh-this-game
                          completion */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_JustCompleted);
-    /* SetQuestState(LamEsensTome, state 0=Completed) — mark quest permanently
+      /* SetQuestState(LamEsensTome, state 0=Completed) — mark quest permanently
                          done */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_Completed);
-    /* SetQuestState(LamEsensTome, state 1=RewardAwaits) — arm the +5 stat-point
+      /* SetQuestState(LamEsensTome, state 1=RewardAwaits) — arm the +5 stat-point
                          reward for RewardStatPoints */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_RewardAwaits);
-    QUEST_SendQuestInfoToUnit(pGame, pUnit);
+      QUEST_SendQuestInfoToUnit(pGame, pUnit);
+      return 0;
+    }
+
     return 0;
 }
 
@@ -626,7 +632,7 @@ void __fastcall Q18_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
     D2QuestDataA3Q1Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
     int32_t* piVar1 = &pA2Q3Data->nPlayersInArea;
     (*piVar1)--;
-    if (!(!*piVar1 && pQuestData->bIsNotIntroduction && pA2Q3Data->bNotifiedPlayers && pQuestData->nStateFlag < 4)) {
+    if (!(!*piVar1 && pQuestData->bIsNotIntroduction && pA2Q3Data->bNotifiedPlayers && pQuestData->nStateFlag <= 3)) {
       return;
     }
 
@@ -708,18 +714,18 @@ bool __fastcall Q18_SequenceFilter(D2QuestDataStrc * pQuestData) {
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pNextQuestData) {
-      return false;
+    if (pNextQuestData) {
+      BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x328);
+        exit(-1);
+      }
+
+      bool bBadPtr = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return bBadPtr;
     }
 
-    BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x328);
-      exit(-1);
-    }
-
-    bool bBadPtr = pNextQuestData->fpSequenceFilter(pNextQuestData);
-    return bBadPtr;
+    return false;
 }
 
 // Q18_CheckPlayerHasTome — Lam Esen's Tome, per-party-member predicate (called by ExecuteFunctionForEveryPartyMember from Q18_StatusFilter). If this party member carries the Tome item (0x20626262), set the shared bTaintedSunStartedFailed flag (reused as "someone in party has the tome") in the Lam Esen quest data. Read-only on quest record.

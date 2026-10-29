@@ -65,7 +65,7 @@ struct DC6 * __fastcall ARCHIVE_LoadOverlayImageUsedInGame(char * pFilename);
 void __stdcall InitializeGlobalsWithColors();
 void * __fastcall MoveArgumentToEAX(void * pParam);
 void __fastcall UI_TranslateWideCharacterLookup(uint16_t * wszText);
-uint16_t * __fastcall AppendAsWideChar(uint16_t * wszText, char cParam);
+uint16_t * __fastcall AppendAsWideChar(uint16_t * wszText, int cParam);
 uint16_t * __fastcall UI_AppendColorCodeToString(uint16_t * wszText, char cParam);
 uint16_t * __fastcall UI_RemoveColorCodesFromString(uint16_t * wszText);
 uint16_t * __fastcall UI_WrapStringWithColorCodes(uint16_t * wszText, char cStartColor, char cEndColor);

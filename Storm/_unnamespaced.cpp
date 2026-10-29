@@ -22,7 +22,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Sound/Src/D2SoundFast.h"
 #include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -175,13 +174,13 @@ DWORD __fastcall D2FILE_GetFileSize(D2PoolManagerStrc * pMemory, D2MPQFileStrc *
       exit(-1);
     } else {
       dwFileSizeResult = Fog::Source::SFile::ERRORMANAGER_FGetFileSize(pFile, pFileSizeOut);
-      if (dwFileSizeResult) {
-        return dwFileSizeResult;
+      if (!dwFileSizeResult) {
+        Storm::Source::SFile::SFileGetFileName(pFile, szArchivePath, 0x104);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5f);
+        exit(-1);
       }
 
-      Storm::Source::SFile::SFileGetFileName(pFile, szArchivePath, 0x104);
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5f);
-      exit(-1);
+      return dwFileSizeResult;
     }
 }
 
@@ -294,11 +293,11 @@ void __fastcall FAULT_LookupErrorString(uint32_t nErrorCode, char * szText, int3
       BOOL bHandled;
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gcsErrorHandlerList);
       pErrorHandler = (StormFaultHandlerNode*)gFaultHandlerList.head.pNext;
-      if (0 < gFaultHandlerList.head.pNext) {
+      if (gFaultHandlerList.head.pNext > 0) {
         goto try_handler;
       }
 
-      for (pErrorHandler = 0; 0 < (int)pErrorHandler; pErrorHandler = *(StormFaultHandlerNode**)((uintptr_t)&pErrorHandler->pNext + gFaultHandlerList.nLinkOffset)) {
+      for (pErrorHandler = 0; (int)pErrorHandler > 0; pErrorHandler = *(StormFaultHandlerNode**)((uintptr_t)&pErrorHandler->pNext + gFaultHandlerList.nLinkOffset)) {
         try_handler:
         bHandled = pErrorHandler->pfnHandler(nErrorCode, szText, nMaxLen);
         if (bHandled) {
@@ -360,21 +359,23 @@ void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDs
       uint32_t nRemainder;
       nRemainder = nBytesPerRow & 3;
       if (nRemainder) {
-        if (nRemainder == 1) {
+        if (nRemainder != 1) {
+          if (nRemainder != 2) {
+            *pCharSelComp = *(char*)pSrc;
+            pCharSelComp[1] = *(char*)((int)pSrc + 1);
+            pCharSelComp[2] = *(char*)((int)pSrc + 2);
+            pCharSelComp += 3;
+            pSrc = (uint32_t*)((int)pSrc + 3);
+          } else {
+            *pCharSelComp = *(char*)pSrc;
+            pCharSelComp[1] = *(char*)((int)pSrc + 1);
+            pCharSelComp += 2;
+            pSrc = (uint32_t*)((int)pSrc + 2);
+          }
+        } else {
           *pCharSelComp = *(char*)pSrc;
           pCharSelComp++;
           pSrc = (uint32_t*)((int)pSrc + 1);
-        } else if (nRemainder == 2) {
-          *pCharSelComp = *(char*)pSrc;
-          pCharSelComp[1] = *(char*)((int)pSrc + 1);
-          pCharSelComp += 2;
-          pSrc = (uint32_t*)((int)pSrc + 2);
-        } else {
-          *pCharSelComp = *(char*)pSrc;
-          pCharSelComp[1] = *(char*)((int)pSrc + 1);
-          pCharSelComp[2] = *(char*)((int)pSrc + 2);
-          pCharSelComp += 3;
-          pSrc = (uint32_t*)((int)pSrc + 3);
         }
       }
 
@@ -393,36 +394,38 @@ void __fastcall D2MEM_CopyRows(char * pCharSelComp, uint32_t * pSrc, int32_t nDs
 uint32_t __fastcall D2MEM_CompareBytes(int * pBuf1, int * pBuf2, uint32_t nByteCount) {
     uint32_t nRemainder = nByteCount & 3;
     if (nRemainder) {
-      if (nRemainder == 1) {
+      if (nRemainder != 1) {
+        if (nRemainder != 2) {
+          if ((char)*pBuf2 != (char)*pBuf1) {
+            return 0;
+          }
+          if (*(char*)((int)pBuf2 + 1) != *(char*)((int)pBuf1 + 1)) {
+            return 0;
+          }
+          if (*(char*)((int)pBuf2 + 2) != *(char*)((int)pBuf1 + 2)) {
+            return 0;
+          }
+
+          pBuf1 = (int*)((int)pBuf1 + 3);
+          pBuf2 = (int*)((int)pBuf2 + 3);
+        } else {
+          if ((char)*pBuf2 != (char)*pBuf1) {
+            return 0;
+          }
+          if (*(char*)((int)pBuf2 + 1) != *(char*)((int)pBuf1 + 1)) {
+            return 0;
+          }
+
+          pBuf1 = (int*)((int)pBuf1 + 2);
+          pBuf2 = (int*)((int)pBuf2 + 2);
+        }
+      } else {
         if ((char)*pBuf2 != (char)*pBuf1) {
           return 0;
         }
 
         pBuf1 = (int*)((int)pBuf1 + 1);
         pBuf2 = (int*)((int)pBuf2 + 1);
-      } else if (nRemainder == 2) {
-        if ((char)*pBuf2 != (char)*pBuf1) {
-          return 0;
-        }
-        if (*(char*)((int)pBuf2 + 1) != *(char*)((int)pBuf1 + 1)) {
-          return 0;
-        }
-
-        pBuf1 = (int*)((int)pBuf1 + 2);
-        pBuf2 = (int*)((int)pBuf2 + 2);
-      } else {
-        if ((char)*pBuf2 != (char)*pBuf1) {
-          return 0;
-        }
-        if (*(char*)((int)pBuf2 + 1) != *(char*)((int)pBuf1 + 1)) {
-          return 0;
-        }
-        if (*(char*)((int)pBuf2 + 2) != *(char*)((int)pBuf1 + 2)) {
-          return 0;
-        }
-
-        pBuf1 = (int*)((int)pBuf1 + 3);
-        pBuf2 = (int*)((int)pBuf2 + 3);
       }
     }
 
@@ -463,10 +466,10 @@ int32_t D2MEM_FindLowestSetBit(uint32_t dwMask) {
 
 uint32_t __stdcall FOG_ParseStringValue(char * szText, uint32_t nParam) {
     *szText = (char)(nParam / 0xff) + (char)nParam + '\x01';
-    szText[1] = (char)((uint64_t)(nParam / 0xff) % 0xff) + '\x01';
-    szText[2] = (char)((uint64_t)nParam / 0xfe01 % 0xff) + '\x01';
-    szText[3] = (char)((uint64_t)nParam / 0xfd02ff % 0xff) + '\x01';
-    return (int)((uint64_t)nParam / 0xfd02ff / 0xff);
+    szText[1] = (char)(nParam / 0xff % 0xff) + '\x01';
+    szText[2] = (char)(nParam / 0xfe01 % 0xff) + '\x01';
+    szText[3] = (char)(nParam / 0xfd02ff % 0xff) + '\x01';
+    return (int)(nParam / 0xfd02ff / 0xff);
 }
 
 void __stdcall QSSOCKET_SetCallbackHandler1(D2QSSocketStrc * pQSSocket, void * fpCallback, void * pContext) {
@@ -686,14 +689,14 @@ void StaticInit_6ca940() {
 
 void StaticInit_6ca960() {
     // Static local variables (originally global data)
-    static char gbChatMultiplayerUIActive; D2_STATIC_GUARD_BSS(gbChatMultiplayerUIActive, "StaticInit_6ca960::gbChatMultiplayerUIActive");
+    static unsigned int gbChatMultiplayerUIActive; D2_STATIC_GUARD_BSS(gbChatMultiplayerUIActive, "StaticInit_6ca960::gbChatMultiplayerUIActive");
 
     gbChatMultiplayerUIActive = Storm::Source::SSTR::SStrHash("Header", 0, 0);
 }
 
 void StaticInit_6ca980() {
     // Static local variables (originally global data)
-    static char gbChatLobbyInitialize; D2_STATIC_GUARD_BSS(gbChatLobbyInitialize, "StaticInit_6ca980::gbChatLobbyInitialize");
+    static unsigned int gbChatLobbyInitialize; D2_STATIC_GUARD_BSS(gbChatLobbyInitialize, "StaticInit_6ca980::gbChatLobbyInitialize");
 
     gbChatLobbyInitialize = Storm::Source::SSTR::SStrHash("Game Time", 0, 0);
 }

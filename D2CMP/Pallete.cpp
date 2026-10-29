@@ -37,7 +37,7 @@ int32_t __stdcall TILEPROJECT_ForEachTileEntry(pfnTileEntryEnum pfnCallback, voi
       int iTileEntry;
       pLibrary = pProject->pTileLibrary;
       iTileEntry = 0;
-      if (0 < pLibrary->nTiles) {
+      if (pLibrary->nTiles > 0) {
         do {
           (*pfnCallback)(&pLibrary->pTiles[iTileEntry], pContext);
           nInvokeCount++;
@@ -62,7 +62,7 @@ D2TileLibraryHeaderStrc * __stdcall TILEPROJECT_FindLibraryOfTile(D2TileLibraryE
 
       pTileBuffer = pCacheIter->pTileLibrary;
       iTileEntry = 0;
-      if (0 < pTileBuffer->nTiles) {
+      if (pTileBuffer->nTiles > 0) {
         pTileEntry = pTileBuffer->pTiles;
         do {
           if (pTargetEntry == pTileEntry) {
@@ -122,7 +122,7 @@ void __stdcall PALETTE_SetAct(int32_t nParam) {
     // Static local variables (originally global data)
     static uint32_t nPalleteAct = 0x1; D2_STATIC_GUARD(nPalleteAct, "D2CMP::Pallete::PALETTE_SetAct::nPalleteAct");
 
-    if (nParam - 1U >= 5) {
+    if (!(nParam - 1U <= 4)) {
       return;
     }
 
@@ -130,7 +130,7 @@ void __stdcall PALETTE_SetAct(int32_t nParam) {
 }
 
 uint8_t * __stdcall PALETTE_GetItemPalette(int32_t nPaletteSet, int32_t nRow) {
-    if (!(nPaletteSet < 9 && nRow < 0x15 && nPaletteSet && (nPaletteSet < 3 || 4 < nPaletteSet))) {
+    if (!(nPaletteSet < 9 && nRow < 0x15 && nPaletteSet && (nPaletteSet <= 2 || nPaletteSet > 4))) {
       return nullptr;
     }
 

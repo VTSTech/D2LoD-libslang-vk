@@ -87,10 +87,10 @@ void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
           exit(-1);
         }
-        if (pLightMap->bUnknown == '\0') {
-          pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
-        } else {
+        if (pLightMap->bUnknown != '\0') {
           pUnit = UNIT::Player::UNITS_FindServerSideUnit(pLightMap->nUnitGUID, eLightUnitType);
+        } else {
+          pUnit = UNIT::Player::UNITS_FindClientSideUnit(pLightMap->nUnitGUID, eLightUnitType);
         }
         if (!pUnit) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x591);
@@ -100,21 +100,21 @@ void __fastcall ACTCALLBACKFN(D2RoomStrc * pRoom) {
         pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         if (pUnitRoom != pRoom) {
           eLightUnitType = pUnit->eUnitType;
-          if (eLightUnitType == UNIT_OBJECT || 3 < (int)eLightUnitType && (int)eLightUnitType < 6) {
+          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
             nUnitX = pUnit->pPath.pStaticPath->nPosX;
-          } else if (!pUnit->pPath.pDynamicPath) {
-            nUnitX = 0;
-          } else {
+          } else if (pUnit->pPath.pDynamicPath) {
             nUnitX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nUnitX = 0;
           }
 
           eLightUnitType = pUnit->eUnitType;
-          if (eLightUnitType == UNIT_OBJECT || 3 < (int)eLightUnitType && (int)eLightUnitType < 6) {
+          if (eLightUnitType == UNIT_OBJECT || (int)eLightUnitType > 3 && (int)eLightUnitType <= 5) {
             nUnitY = pUnit->pPath.pStaticPath->nPosY;
-          } else if (!pUnit->pPath.pDynamicPath) {
-            nUnitY = 0;
-          } else {
+          } else if (pUnit->pPath.pDynamicPath) {
             nUnitY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nUnitY = 0;
           }
 
           nRadiusCells = pLightMap->nRadiusX >> 3;
@@ -149,12 +149,12 @@ void __fastcall DRAW_CoordIsInCoord(int32_t nWorldX, int32_t nWorldY, uint8_t * 
     int nCellY = (nWorldY >> 3) - gnLightmapBufferState;
     if (nCellX < 0) {
       nCellX = 0;
-    } else if (0x2f < nCellX) {
+    } else if (nCellX > 0x2f) {
       nCellX = 0x2f;
     }
     if (nCellY < 0) {
       nCellY = 0;
-    } else if (0x2f < nCellY) {
+    } else if (nCellY > 0x2f) {
       nCellY = 0x2f;
     }
 
@@ -191,7 +191,7 @@ uint8_t * __stdcall VIEW_AllocByteTable(uint32_t nDim, int32_t nSteps) {
     int nMidScaled;
     uint8_t* pTable = (uint8_t*)D2MEM_VirtualAlloc(nDim * nDim * nSteps + 3);
     uint32_t nOuter = 0;
-    if (!nDim) {
+    if (nDim <= 0) {
       return pTable;
     }
 
@@ -203,7 +203,7 @@ uint8_t * __stdcall VIEW_AllocByteTable(uint32_t nDim, int32_t nSteps) {
       nMidLeft = nDim;
       do {
         nAccum = nOuter << 0x10;
-        for (nStepLeft = nSteps; nStepLeft; nStepLeft--) {
+        for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
           *pWrite = (uint8_t)(nAccum + (nAccum >> 0x1f & 0xffffU) >> 0x10);
           pWrite++;
           nAccum += nMidScaled / nSteps;
@@ -227,7 +227,7 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable(uint32_t nDim, uint32_t nSte
     int nMidScaled;
     uint8_t** pTable = (uint8_t**)D2MEM_VirtualAlloc((nSteps + 1) * nDim * nDim * 4);
     uint32_t nOuter = 0;
-    if (!nDim) {
+    if (nDim <= 0) {
       return pTable;
     }
 
@@ -239,11 +239,11 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable(uint32_t nDim, uint32_t nSte
       nMidScaled = nOuterScaled;
       nMidLeft = nDim;
       do {
-        if (nSteps) {
+        if (nSteps > 0) {
           nInnerLeft = nSteps;
           nAccum = nOuter << 0x10;
           do {
-            nPaletteIdx = (int)(nAccum + (nAccum >> 0x1f & 0xffffU)) >> 0x10;
+            nPaletteIdx = nAccum / 65536;
             *pWrite = gPaletteTransitionTable + (nPaletteIdx & 0xff) * 0x100;
             pWrite++;
             nAccum += nMidScaled / (int)nSteps;
@@ -270,7 +270,7 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSte
     int nMidScaled;
     uint8_t** pTable = (uint8_t**)D2MEM_VirtualAlloc(nDim * nDim * nSteps * 4);
     uint32_t nOuter = 0;
-    if (!nDim) {
+    if (nDim <= 0) {
       return pTable;
     }
 
@@ -282,8 +282,8 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSte
       nMidLeft = nDim;
       do {
         nAccum = nOuter << 0x10;
-        for (nStepLeft = nSteps; nStepLeft; nStepLeft--) {
-          *pWrite = gPaletteTransitionTable + ((int)(nAccum + (nAccum >> 0x1f & 0xffffU)) >> 0x10 & 0xffU) * 0x100;
+        for (nStepLeft = nSteps; (uint32_t)nStepLeft > 0; nStepLeft--) {
+          *pWrite = gPaletteTransitionTable + (nAccum / 65536 & 0xffU) * 0x100;
           pWrite++;
           nAccum += nMidScaled / nSteps;
         }
@@ -300,38 +300,34 @@ uint8_t * * __stdcall VIEW_AllocPalettePointerTable2(uint32_t nDim, int32_t nSte
 }
 
 void __stdcall VIEW_InitLookupTables() {
-    if (!gpViewPalPointerTable32x8) {
-      if (!gpViewPalByteTable32x16) {
-        if (!gpViewPalByteTable16x32) {
-          if (!gpViewPalPointerTable32x32) {
-            if (gpViewPalByteTable32x40) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
-              exit(-1);
-            }
-
-            D2Win::Src::D2WinPalette::D2WINPAL_CopyPalette(gPaletteTransitionTable);
-            gpViewPalPointerTable32x8 = VIEW_AllocPalettePointerTable(0x20, 8);
-            gpViewPalByteTable32x16 = VIEW_AllocByteTable(0x20, 0x10);
-            gpViewPalByteTable16x32 = VIEW_AllocByteTable(0x20, 0x20);
-            gpViewPalPointerTable32x32 = VIEW_AllocPalettePointerTable2(0x20, 0x20);
-            gpViewPalByteTable32x40 = VIEW_AllocByteTable(0x20, 0x28);
-            return;
-          } else {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcd);
-            exit(-1);
-          }
-        } else {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcc);
-          exit(-1);
-        }
-      } else {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcb);
-        exit(-1);
-      }
-    } else {
+    if (gpViewPalPointerTable32x8) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xca);
       exit(-1);
     }
+    if (gpViewPalByteTable32x16) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcb);
+      exit(-1);
+    }
+    if (gpViewPalByteTable16x32) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcc);
+      exit(-1);
+    }
+    if (gpViewPalPointerTable32x32) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcd);
+      exit(-1);
+    }
+    if (gpViewPalByteTable32x40) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xce);
+      exit(-1);
+    }
+
+    D2Win::Src::D2WinPalette::D2WINPAL_CopyPalette(gPaletteTransitionTable);
+    gpViewPalPointerTable32x8 = VIEW_AllocPalettePointerTable(0x20, 8);
+    gpViewPalByteTable32x16 = VIEW_AllocByteTable(0x20, 0x10);
+    gpViewPalByteTable16x32 = VIEW_AllocByteTable(0x20, 0x20);
+    gpViewPalPointerTable32x32 = VIEW_AllocPalettePointerTable2(0x20, 0x20);
+    gpViewPalByteTable32x40 = VIEW_AllocByteTable(0x20, 0x28);
+    return;
 }
 
 void __stdcall VIEW_FreeDC6Images() {
@@ -488,32 +484,32 @@ void __stdcall VIEW_GenerateRandomViewParams(int32_t nStarIndex, int32_t bRespaw
     uint32_t nYPos;
     D2SeedStrc seed;
     D2SeedStrc* pStarSeed = gpArcaneStarsSeed;
-    if (!bRespawn) {
-      nStarXPos = Archive::UNIT_GetModuloFromSeed(gpArcaneStarsSeed, WindowSizeX);
-    } else {
+    if (bRespawn) {
       seed = D2_SEED_NEXT(*gpArcaneStarsSeed);
       *gpArcaneStarsSeed = seed;
       nStarXPos = (seed.nSeedLow & 7) - 1 + WindowSizeX;
+    } else {
+      nStarXPos = Archive::UNIT_GetModuloFromSeed(gpArcaneStarsSeed, WindowSizeX);
     }
 
     int nWindowHeight = WindowSizeY;
     gaArcaneStarXPos[nStarIndex] = nStarXPos;
-    if (nWindowHeight < 1) {
+    if (nWindowHeight <= 0) {
       nYPos = 0;
-    } else if (!(nWindowHeight & nWindowHeight - 1U)) {
+    } else if (nWindowHeight & nWindowHeight - 1U) {
       seed = D2_SEED_NEXT(*pStarSeed);
       *pStarSeed = seed;
-      nYPos = nWindowHeight - 1U & seed.nSeedLow;
+      nYPos = (uint32_t)(seed.nSeedLow % (uint32_t)nWindowHeight);
     } else {
       seed = D2_SEED_NEXT(*pStarSeed);
       *pStarSeed = seed;
-      nYPos = (uint32_t)(((uint64_t)d2_bits_of(seed) & 0xffffffff) % (uint64_t)(uint32_t)nWindowHeight);
+      nYPos = nWindowHeight - 1U & seed.nSeedLow;
     }
 
     gaArcaneStarYPos[nStarIndex] = nYPos;
     seed = D2_SEED_NEXT(*pStarSeed);
     *pStarSeed = seed;
-    gaArcaneStarXVelocity[nStarIndex] = (int)(((uint64_t)d2_bits_of(seed) & 0xffffffff) / 5) * 5 - seed.nSeedLow - 1;
+    gaArcaneStarXVelocity[nStarIndex] = (int)(seed.nSeedLow / 5) * 5 - seed.nSeedLow - 1;
     seed = D2_SEED_NEXT(*pStarSeed);
     *pStarSeed = seed;
     gaArcaneStarColors[nStarIndex] = gaArcaneStarColorTable[seed.nSeedLow & 7];
@@ -525,6 +521,7 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
     static unsigned int gdwArcaneStarsLastUpdateTick; D2_STATIC_GUARD_BSS(gdwArcaneStarsLastUpdateTick, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gdwArcaneStarsLastUpdateTick");
     static uint32_t gbArcaneStarsInitialized; D2_STATIC_GUARD_BSS(gbArcaneStarsInitialized, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gbArcaneStarsInitialized");
 
+    uint32_t nInitSeedLow;
     int i;
     int32_t nPaletteIdx;
     int nColorIdx;
@@ -532,38 +529,35 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
     int nGreen;
     int nBrightness;
     uint32_t* pXPos;
-    D2SeedStrc* pSeed;
     D2SeedStrc seed;
     if (!gbArcaneStarsInitialized) {
-      uint32_t nInitSeedLow;
+      D2SeedStrc* pDVar1;
       D2Common::Seed::SEED_InitDefault(gpArcaneStarsSeed);
       nInitSeedLow = D2Common::Seed::SEED_GenerateRandomSeed(SHAKE_StartTickcount);
-      pSeed = gpArcaneStarsSeed;
-      gpArcaneStarsSeed->nSeedLow = nInitSeedLow;
-      pSeed->nSeedHigh = 0x29a;
+      D2Common::Seed::InitSeed_Param_666(gpArcaneStarsSeed, nInitSeedLow);
       nColorIdx = 0;
       nBrightness = 0;
       do {
-        pSeed = gpArcaneStarsSeed;
+        pDVar1 = gpArcaneStarsSeed;
         i = nBrightness / 7 + 0x80;
         seed = D2_SEED_NEXT(*gpArcaneStarsSeed);
         nRed = (seed.nSeedLow & 0x3f) - 0x20 + i;
         *gpArcaneStarsSeed = seed;
-        if (0xff < nRed) {
+        if (nRed > 0xff) {
           nRed = 0xff;
         }
 
         seed = D2_SEED_NEXT_VAL(seed);
         nGreen = (seed.nSeedLow & 0x3f) - 0x20 + i;
-        *pSeed = seed;
-        if (0xff < nGreen) {
+        *pDVar1 = seed;
+        if (nGreen > 0xff) {
           nGreen = 0xff;
         }
 
         seed = D2_SEED_NEXT_VAL(seed);
         i = (seed.nSeedLow & 0x3f) - 0x20 + i;
-        *pSeed = seed;
-        if (0xff < i) {
+        *pDVar1 = seed;
+        if (i > 0xff) {
           i = 0xff;
         }
 
@@ -590,7 +584,7 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
 
     DWORD dwTickNow = GetTickCount();
     uint32_t dwLastTick = gdwArcaneStarsLastUpdateTick;
-    if (0x28 < dwTickNow - gdwArcaneStarsLastUpdateTick) {
+    if (dwTickNow - gdwArcaneStarsLastUpdateTick > 0x28) {
       i = 0;
       do {
         pXPos = (uint32_t*)(gaArcaneStarXPos + i);
@@ -712,7 +706,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
 
       sGfxData.nFrameNumber = nTileFrame3;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x300, 0x100, -1, DRAW_SOLID, nullptr);
-      if (0 < nScrollOffset) {
+      if (nScrollOffset > 0) {
         sGfxData.nFrameNumber = nTileFrame3;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset - 0x100, 0x100, -1, DRAW_SOLID, nullptr);
       }
@@ -725,7 +719,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x200, 0x200, -1, DRAW_SOLID, nullptr);
       sGfxData.nFrameNumber = nTileFrame3 + 4;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x300, 0x200, -1, DRAW_SOLID, nullptr);
-      if (0 < nScrollOffset) {
+      if (nScrollOffset > 0) {
         sGfxData.nFrameNumber = nTileFrame3 + 4;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset - 0x100, 0x200, -1, DRAW_SOLID, nullptr);
       }
@@ -740,7 +734,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x200, 0x300, -1, DRAW_SOLID, nullptr);
         sGfxData.nFrameNumber = nTileFrame3 + 8;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset + 0x300, 0x300, -1, DRAW_SOLID, nullptr);
-        if (0 < nScrollOffset) {
+        if (nScrollOffset > 0) {
           sGfxData.nFrameNumber = nTileFrame3 + 8;
           D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nScrollOffset - 0x100, 0x300, -1, DRAW_SOLID, nullptr);
         }
@@ -756,9 +750,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
       D2Common::Seed::SEED_InitDefault(gpAncientsCloudSeed);
       dwResMode = GetTickCount();
       nCloudSeedVal = D2Common::Seed::SEED_GenerateRandomSeed(dwResMode);
-      pAncientsCloudSeed = gpAncientsCloudSeed;
-      gpAncientsCloudSeed->nSeedLow = nCloudSeedVal;
-      pAncientsCloudSeed->nSeedHigh = 0x29a;
+      D2Common::Seed::InitSeed_Param_666(gpAncientsCloudSeed, nCloudSeedVal);
       pAncientsCloudSeed = gpAncientsCloudSeed;
       nScrollOffset = 0;
       do {
@@ -766,7 +758,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
         *(uint32_t*)((int)gaAncientsCloudXPos + nScrollOffset) = nCloudSeedVal;
         ullSeedValue = D2_SEED_NEXT(*pAncientsCloudSeed);
         *pAncientsCloudSeed = ullSeedValue;
-        *(uint32_t*)((int)gaAncientsCloudYPos + nScrollOffset) = ullSeedValue.nSeedLow + (int)(((uint64_t)d2_bits_of(ullSeedValue) & 0xffffffff) / 0xfa) * -0xfa;
+        *(uint32_t*)((int)gaAncientsCloudYPos + nScrollOffset) = ullSeedValue.nSeedLow % 0xfa;
         ullSeedValue = D2_SEED_NEXT(*pAncientsCloudSeed);
         *pAncientsCloudSeed = ullSeedValue;
         *(uint32_t*)((int)gaAncientsCloudVelocities + nScrollOffset) = (ullSeedValue.nSeedLow & 0xf) + 8;
@@ -780,11 +772,11 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     do {
       nCloudIdx = WindowSizeX;
       *(int*)((int)gaAncientsCloudXPos + nScrollOffset) += *(int*)((int)gaAncientsCloudVelocities + nScrollOffset);
-      if ((nCloudIdx + 0x170) * 0x10 < *(int*)((int)gaAncientsCloudXPos + nScrollOffset)) {
+      if (*(int*)((int)gaAncientsCloudXPos + nScrollOffset) > (nCloudIdx + 0x170) * 0x10) {
         *(uint32_t*)((int)gaAncientsCloudXPos + nScrollOffset) = -5888;
         ullSeedValue = D2_SEED_NEXT(*pAncientsCloudSeed);
         *pAncientsCloudSeed = ullSeedValue;
-        *(uint32_t*)((int)gaAncientsCloudYPos + nScrollOffset) = ullSeedValue.nSeedLow + (int)(((uint64_t)d2_bits_of(ullSeedValue) & 0xffffffff) / 300) * -300;
+        *(uint32_t*)((int)gaAncientsCloudYPos + nScrollOffset) = ullSeedValue.nSeedLow % 300;
       }
 
       nScrollOffset += 4;
@@ -792,7 +784,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
 
     nScrollOffset = 0;
     do {
-      nCloudIdx = (int)(*(int*)((int)gaAncientsCloudXPos + nScrollOffset) + (*(int*)((int)gaAncientsCloudXPos + nScrollOffset) >> 0x1f & 0xfU)) >> 4;
+      nCloudIdx = *(int*)((int)gaAncientsCloudXPos + nScrollOffset) / 16;
       sGfxData.pDC6 = gnDrawBackgroundRenderOffset;
       sGfxData.nFrameNumber = 0;
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nCloudIdx, *(int32_t*)((int)gaAncientsCloudYPos + nScrollOffset), -0x22222223, DRAW_LIGHTTRANSPARENT, nullptr);
@@ -807,7 +799,7 @@ static void SHAKE_UpdateShakeSoundVolume(int32_t nShakeIntensity) {
     uint32_t nNewVolume;
     uint32_t nTargetVolume;
     nTargetVolume = nShakeIntensity * 0xff / 0x14;
-    nTargetVolume = (int)nTargetVolume < 1 ? 0 : nTargetVolume;
+    nTargetVolume = (int)nTargetVolume <= 0 ? 0 : nTargetVolume;
     if ((int)nTargetVolume < 0xff) {
       if (nTargetVolume) {
         goto ensure_sound_playing;
@@ -838,7 +830,7 @@ static void SHAKE_UpdateShakeSoundVolume(int32_t nShakeIntensity) {
     }
     if ((int)nCurrentVolume < (int)nTargetVolume) {
       nNewVolume = nCurrentVolume + 6;
-      if ((int)(nCurrentVolume + 6) <= (int)nTargetVolume) {
+      if ((int)nTargetVolume >= (int)(nCurrentVolume + 6)) {
         goto apply_volume;
       }
     } else {
@@ -965,7 +957,7 @@ void __fastcall ViewDraw2(D2GameViewStrc * pGameView) {
     }
 
     uint32_t nRecordingFrame = Game::gnRecordingIndex();
-    if (gnLastLightmapUpdateFrame < nRecordingFrame) {
+    if (nRecordingFrame > gnLastLightmapUpdateFrame) {
       gnLastLightmapUpdateFrame = nRecordingFrame;
       D2Client::Draw::LightMap::dLightMapUpdate();
     }
@@ -1023,7 +1015,7 @@ void __fastcall SHAKE_AdjustCenterByShake(uint32_t * pCenterX, uint32_t * pCente
     nTicks = nCurrentTickCount - SHAKE_StartTickcount;
     uint32_t nSoundIntensity;
     nSoundIntensity = 0;
-    if (SHAKE_Arg2 + SHAKE_Arg1 + SHAKE_Arg3 < nTicks) {
+    if (nTicks > SHAKE_Arg2 + SHAKE_Arg1 + SHAKE_Arg3) {
       SHAKE_UpdateShakeSoundVolume(0);
       SHAKE_Amplitude = 0;
       SHAKE_OFFSET_X = 0;
@@ -1038,7 +1030,7 @@ void __fastcall SHAKE_AdjustCenterByShake(uint32_t * pCenterX, uint32_t * pCente
       nShakeMagnitude = SHAKE_Amplitude * nTicks / SHAKE_Arg3;
     } else {
       nShakeMagnitude = SHAKE_Amplitude;
-      if (SHAKE_Arg1 + SHAKE_Arg3 <= nTicks) {
+      if (nTicks >= SHAKE_Arg1 + SHAKE_Arg3) {
         if (!SHAKE_Arg2) {
           goto update_sound;
         }

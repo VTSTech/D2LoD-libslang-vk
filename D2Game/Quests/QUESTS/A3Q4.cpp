@@ -305,7 +305,7 @@ bool __fastcall Q21_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (!pQuestData->bIsNotIntroduction) {
       return true;
     }
-    if (5 < pQuestData->nStateFlagPrev) {
+    if (pQuestData->nStateFlagPrev >= 6) {
       *nUnknown = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + '\x06';
       return true;
     }
@@ -624,14 +624,14 @@ void __fastcall Q21_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       pGoldenBirdItem->bBirdDropEnabled = false;
       /* GetQuestState Step0x02(2) -- holds Jade: stateFlag=1 if !given-to-Meshif, =2
                          if given */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x02);
-      if (!bQuestState) {
-        pQuestData->nStateFlag = 1;
-        pQuestData->nStateFlagPrev = 1;
+      if (bQuestState) {
+        pQuestData->nStateFlag = 2;
+        pQuestData->nStateFlagPrev = 2;
         return;
       }
 
-      pQuestData->nStateFlag = 2;
-      pQuestData->nStateFlagPrev = 2;
+      pQuestData->nStateFlag = 1;
+      pQuestData->nStateFlagPrev = 1;
       return;
     }
 

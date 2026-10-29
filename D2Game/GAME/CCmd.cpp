@@ -59,7 +59,7 @@ static int __stdcall IsTokenFirstGame(int nMode, int nParam, char * szCharName) 
       Server::Unlock(pGame);
       return 0x10;
     }
-    if (7 < pGame->nClientsCount) {
+    if (pGame->nClientsCount >= 8) {
       Server::Unlock(pGame);
       return 0xf;
     }
@@ -185,7 +185,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
 
       break;
       case 'l':
-        /* D2GS_UPLOADSAVE */ if (0x1fff < pPacket->uMsg.sUploadSave.nTotalSize) {
+        /* D2GS_UPLOADSAVE */ if (pPacket->uMsg.sUploadSave.nTotalSize >= 0x2000) {
           /* Does self mean an entire game server crashes if you simply send a packet 0x6c
                          00 00 00 00 FF FF FF FF */ nLine = 0x1a8;
           bReturn1Result = Fog::Src::ErrorManager::GetInstructionPointer();
