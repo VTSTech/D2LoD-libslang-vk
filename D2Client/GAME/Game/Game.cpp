@@ -8,6 +8,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_Active/Latched call sites
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"

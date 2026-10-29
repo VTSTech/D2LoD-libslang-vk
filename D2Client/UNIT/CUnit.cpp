@@ -5,6 +5,7 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_LabelClickThrough call site
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"

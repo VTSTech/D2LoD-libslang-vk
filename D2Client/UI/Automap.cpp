@@ -102,9 +102,13 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2AutomapStrc) == 0x2804, "D2_NEW_A
 #define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
+// VP-BEGIN [automap tolerance]: fork-local spell of the upstream per-file
+// D2_FREE_AT macro (rule: code inside upstream files uses that file's
+// conventions; see docs/merge-upstream.md).
 #ifndef D2_FREE
 #define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
 #endif
+// VP-END [automap tolerance]
 
 static_assert(sizeof(void*) != 4 || sizeof(::D2AutomapLayerStrc) == 0x1c, "D2_NEW_AT(D2AutomapLayerStrc): the 32-bit layout must be the 0x1c bytes 1.14d allocates");
 
@@ -1066,16 +1070,18 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwFloorDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwFloorDataSize) {
-            // A hard crash between the header write and the data writes in
-            // AUTOMAP_SaveLayerToFile, or an entry written by an older build,
-            // leaves the chain promising more bytes than the .ma file holds.
-            // The cache entry is disposable: drop this layer's chain the way
-            // the layer-mismatch path does and keep playing instead of
-            // halting. The next AUTOMAP_SaveCurrentLayer rebuilds the chain.
+            // VP-BEGIN [automap tolerance]: A hard crash between the header
+            // write and the data writes in AUTOMAP_SaveLayerToFile, or an
+            // entry written by an older build, leaves the chain promising more
+            // bytes than the .ma file holds. The cache entry is disposable:
+            // drop this layer's chain the way the layer-mismatch path does and
+            // keep playing instead of halting. The next
+            // AUTOMAP_SaveCurrentLayer rebuilds the chain.
             D2_FREE(nErrorAddress);
             AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
+            // VP-END [automap tolerance]
           }
 
           nWordIndex = 0;
@@ -1110,11 +1116,13 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwWallDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwWallDataSize) {
-            // Same stale-entry tolerance as the floor read above.
+            // VP-BEGIN [automap tolerance]: same stale-entry tolerance as
+            // the floor read above.
             D2_FREE(nErrorAddress);
             AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
+            // VP-END [automap tolerance]
           }
 
           nWordIndex = 0;
@@ -1150,11 +1158,13 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
             __frame1.nWordLimit = nWordCount;
             Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwObjectDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
             if (dwBytesRead != sFileEntry.dwObjectDataSize) {
-              // Same stale-entry tolerance as the floor read above.
+              // VP-BEGIN [automap tolerance]: same stale-entry tolerance as
+              // the floor read above.
               D2_FREE(nErrorAddress);
               AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
               Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
               return;
+              // VP-END [automap tolerance]
             }
 
             nWordIndex = 0;
@@ -1194,11 +1204,13 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
           __frame1.nWordLimit = nWordCount;
           Fog::Source::SFile::thunk_ReadFile(hFileHandle, nErrorAddress, sFileEntry.dwExtraDataSize, &dwBytesRead, (LPOVERLAPPED)0x0);
           if (dwBytesRead != sFileEntry.dwExtraDataSize) {
-            // Same stale-entry tolerance as the floor read above.
+            // VP-BEGIN [automap tolerance]: same stale-entry tolerance as
+            // the floor read above.
             D2_FREE(nErrorAddress);
             AUTOMAP_InvalidateLayerEntry(0, hMapFile, &__frame0.nNextFilePos);
             Fog::Source::SFile::SFILE_Win32CloseHandle(hMapFile);
             return;
+            // VP-END [automap tolerance]
           }
 
           nWordIndex = 0;

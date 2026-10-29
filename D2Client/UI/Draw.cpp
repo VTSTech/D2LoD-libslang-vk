@@ -41,7 +41,8 @@
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Client/UI/VanillaPlusOptions.h"
+#include "D2Client/UI/VanillaPlusOptions.h" // VP: vanilla-plus options page API
+#include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus AUTO_GOLD_Tick / ALTTOGGLE_Reset
 #include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
@@ -948,9 +949,11 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
         ControlConfig::CONTROLCONFIG_OnToggleUI(1);
       DRAW_RegisterDrawHandlers();
       return;
-      case UI_VANILLAPLUS: // vanilla-plus (row 10): register the page's mouse/Esc handlers (UI_CONFIG shape)
+      // VP-BEGIN [row-10 options page]: register the page's mouse/Esc handlers (UI_CONFIG shape)
+      case UI_VANILLAPLUS:
         VanillaPlus::VANILLAPLUS_OnToggleUI(1);
       return;
+      // VP-END [row-10 options page]
       case UI_NPCSHOP:
         CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
       Inv::SelectDefaultTabForNPC();
@@ -1149,9 +1152,11 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 5, nHandlerCount);
       ControlConfig::CONTROLCONFIG_OnToggleUI(0);
       return;
-      case UI_VANILLAPLUS: // vanilla-plus (row 10): unregister the page's handlers
+      // VP-BEGIN [row-10 options page]: unregister the page's handlers
+      case UI_VANILLAPLUS:
         VanillaPlus::VANILLAPLUS_OnToggleUI(0);
       return;
+      // VP-END [row-10 options page]
       case UI_NPCSHOP:
         nHandlerCount = 8;
       pHwnd = D2gfx::D2GFX::GetHwnd();
@@ -1276,7 +1281,7 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
 
 DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DWORD bAdjustMouse) {
     int iVar1;
-    if (UI_VANILLAPLUS < eUI) { // vanilla-plus: bound UI_RECIPESCROLL(37) -> UI_VANILLAPLUS(38)
+    if (UI_VANILLAPLUS < eUI) { // VP: vanilla-plus bound UI_RECIPESCROLL(37) -> UI_VANILLAPLUS(38)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fb);
       exit(-1);
     }
@@ -1713,7 +1718,7 @@ void __stdcall UI_ToggleMiniPanel() {
     if (bIsExpansion) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+    if (gnUIFlagCount != 0x27) { // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
       exit(-1);
     }
@@ -1810,9 +1815,10 @@ void __stdcall InitializeUI() {
     GFX_bShowUIFlag.ConfigControls = 0;
     GFX_bShowUIFlag.NpcShop = 0;
     GFX_bShowUIFlag.AltShowItems = 0;
-    // [vanilla-plus alt-toggle] wholesale UI reset drops the latch too, so
+    // VP-BEGIN [alt-toggle]: wholesale UI reset drops the latch too, so
     // entering a game starts with labels off (vanilla parity).
     ALTTOGGLE_Reset();
+    // VP-END [alt-toggle]
     GFX_bShowUIFlag.Cash = 0;
     GFX_bShowUIFlag.Quest = 0;
     GFX_bShowUIFlag.PartyPane = 0;
@@ -1842,7 +1848,7 @@ void __stdcall InitializeUI() {
     if (bResult) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount == 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+    if (gnUIFlagCount == 0x27) { // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
       uint32_t bScrollActive;
       bScrollActive = Text::TEXT_IsScrollingTextActive();
       if (!bScrollActive) {
@@ -1896,7 +1902,7 @@ void __stdcall InitializeUI() {
       if (bResult2) {
         GAME::Game::CLIENT_CheckExpansion();
       }
-      if (gnUIFlagCount == 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+      if (gnUIFlagCount == 0x27) { // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
         bScrollActive = Text::TEXT_IsScrollingTextActive();
         if (!bScrollActive) {
           eUI = UI_GAME;
@@ -1974,7 +1980,7 @@ void __stdcall FreeDraw() {
     if (bIsExpansion) {
       GAME::Game::CLIENT_CheckExpansion();
     }
-    if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+    if (gnUIFlagCount != 0x27) { // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
       exit(-1);
     }
@@ -2074,9 +2080,11 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     /* Render Key Assigment menu */ if (GFX_bShowUIFlag.ConfigControls) {
       ControlConfig::DRAW_ConfigControlsMenu();
     }
-    /* Render Vanilla+ Options menu */ if (GFX_bShowUIFlag.VanillaPlus) { // vanilla-plus (row 10)
+    // VP-BEGIN [row-10 options page]: render the page (UI_CONFIG dispatch shape)
+    if (GFX_bShowUIFlag.VanillaPlus) {
       VanillaPlus::DRAW_VanillaPlusOptions();
     }
+    // VP-END [row-10 options page]
 
     D2UnitStrc* pUnit;
     pUnit = GAME::Select::GetSelectedUnit();
@@ -2182,7 +2190,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       if (bIsExpansion) {
         GAME::Game::CLIENT_CheckExpansion();
       }
-      if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+      if (gnUIFlagCount != 0x27) { // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1397);
         exit(-1);
       }
@@ -2241,10 +2249,11 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       draw_help_menu:
       Help::DrawBackgroundHelpMenu();
     }
-    // [vanilla-plus auto-gold] Walk-over gold pickup trigger. Per frame, in
+    // VP-BEGIN [auto-gold]: walk-over gold pickup trigger. Per frame, in
     // the same stage as the label renderer but OUTSIDE its AltShowItems
     // gate; inert (0 sends) unless [features] auto_gold=1 in d2vp.ini.
     AUTO_GOLD_Tick();
+    // VP-END [auto-gold]
     if (GFX_bShowUIFlag.AltShowItems) {
       eBorderType = Path::DRAW_GetTypeOfBorder();
       if (eBorderType != 3) {

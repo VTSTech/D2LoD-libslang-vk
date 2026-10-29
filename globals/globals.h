@@ -1076,7 +1076,7 @@ struct __attribute__((packed)) D2UIConfigTabEntryStrc {
 };
 
 struct D2UIFlagDescStrc {
-    /* 0x00 */ uint32_t anDismissMode[39]; // indexed by eD2UIvars; old nDismissMode@0x54 is anDismissMode[0x15]. vanilla-plus: grown 38 -> 39 for UI_VANILLAPLUS - existing rows' new last column zero-initializes (dismiss action 0 = ignore), so no initializer edits.
+    /* 0x00 */ uint32_t anDismissMode[39]; // VP: vanilla-plus grown 38 -> 39 for UI_VANILLAPLUS; old nDismissMode@0x54 is anDismissMode[0x15]. Existing rows' new last column zero-initializes (dismiss action 0 = ignore), so no initializer edits.
 };
 
 struct D2UIFlagStrc {
@@ -1118,7 +1118,7 @@ struct D2UIFlagStrc {
     /* 0x8C */ BOOL HireIcons;
     /* 0x90 */ BOOL MercMenu;
     /* 0x94 */ BOOL UnusedScroll;
-    /* 0x98 */ BOOL VanillaPlus; // vanilla-plus: UI_VANILLAPLUS page flag (row 10); keeps (&GFX_bShowUIFlag.Game)[38] in enum order
+    /* 0x98 */ BOOL VanillaPlus; // VP: vanilla-plus UI_VANILLAPLUS page flag (row 10); keeps (&GFX_bShowUIFlag.Game)[38] in enum order
 };
 
 struct D2UniqueCandidateStrc {
@@ -1736,7 +1736,7 @@ extern D2UIFlagInitStrc gaUIFlagInitCubeHandlers[7];
 extern D2UIFlagInitStrc g_UIFlagInitDrawPanel1[2];
 extern uint32_t gbCursorAnimationPending;
 extern D2UIFlagDescStrc gaUIFlagDescs[38];
-extern D2UIFlagDescStrc * gUIFlagDismissModeTable[39]; // vanilla-plus: 38 -> 39, entry 38 aliases UI_CONFIG's row (identical dismiss semantics)
+extern D2UIFlagDescStrc * gUIFlagDismissModeTable[39]; // VP: vanilla-plus 38 -> 39, entry 38 aliases UI_CONFIG's row (identical dismiss semantics)
 extern int nAutoMapZoomDivisor;
 extern uint32_t gaScreenResolutionTableIndexArray;
 extern uint32_t gaScreenResolutionModeArray;
@@ -1777,7 +1777,7 @@ extern D2EscMenuUIFlagStrc gaEscMenuUIFlags[38];
 extern D2EscMenuItemStrc gaEscMenuMainTable[3];
 extern D2EscMenuHeaderStrc gaEscMenuHeaderOptions;
 extern D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit;
-extern D2EscMenuItemStrc gaEscMenuOptionsTable[6];
+extern D2EscMenuItemStrc gaEscMenuOptionsTable[6]; // VP: vanilla-plus 5 -> 6 (row 10)
 extern D2EscMenuItemStrc gaEscMenuSaveExitTable[8];
 extern D2EscMenuHeaderStrc gaEscMenuHeaderSwitchClass;
 extern D2EscMenuHeaderStrc gaEscMenuHeaderDeleteChar;

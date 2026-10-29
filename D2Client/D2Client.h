@@ -110,40 +110,6 @@ void __stdcall CMD_SetHoldAlt();
 void __stdcall CMD_StopRun();
 void __stdcall CMD_ClearClickModifier();
 void __stdcall CMD_ReleaseHoldAltAndClearSelection();
-// [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
-// (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe,
-// [features] alt_toggle=0|1 - default/missing file/missing key/garbage = 0
-// = vanilla hold-Alt behavior byte-for-byte. A missing d2vp.ini is created
-// with a documented all-defaults template (once per process, at client boot
-// or lazily before the first config read).
-BOOL __stdcall ALTTOGGLE_Active();   // config: toggle mode on?
-BOOL __stdcall ALTTOGGLE_Latched();  // current latch value
-void __stdcall ALTTOGGLE_Flip();     // keydown: latch = !latch
-void __stdcall ALTTOGGLE_Reset();    // InitializeUI: latch = FALSE
-void __stdcall ALTTOGGLE_EnsureIni(); // create d2vp.ini template if missing
-// [vanilla-plus alt-toggle] True while labels are shown by the toggle LATCH
-// (never true in vanilla hold mode). While latched, the ground-label renderer
-// must not own the click selection (vanilla DRAW_AltItems clears the selected
-// unit every frame the cursor is not over a label, which turns every click
-// into a walk), and ground items stay hit-testable so a label click picks the
-// item up. D2R "Show Items: Toggle" parity: labels stay up, clicks still
-// attack/interact.
-BOOL __stdcall ALTTOGGLE_LabelClickThrough();
-// [vanilla-plus auto-gold] Config-gated walk-over gold pickup (D2R "Gold
-// Pickup" parity). d2vp.ini next to d2.exe, [features] auto_gold=0|1 -
-// default/missing file/missing key/garbage = 0 = vanilla byte-for-byte.
-// While on, gold piles inside the server's own instant-pick radius are
-// picked up through the literal click path (client 0x16 -> unmodified
-// D2Game pick code); suppressed in combat modes; a fire can never start
-// the retail walk-to-item mode (strict radius + collision parity).
-BOOL __stdcall AUTO_GOLD_Active();   // config: auto_gold on?
-void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
-// [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
-// page reads/flips the same [features] keys the gates consume; writes use
-// WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.
-int __stdcall D2VP_GetFeatureToggle(const char* szKey);   // 0 = off/missing/garbage
-void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue); // write + flush
-void __stdcall D2VP_ConfigReloaded();                     // bust all 2 s gate caches
 // Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
 BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
 int32_t SORT_CompareInts(int * pA, int * pB);

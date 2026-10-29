@@ -54,7 +54,7 @@
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/UseItem.h"
-#include "D2Client/UI/VanillaPlusOptions.h" // vanilla-plus (row 10): table row callbacks live in this namespace
+#include "D2Client/UI/VanillaPlusOptions.h" // VP: vanilla-plus (row 10): table row callbacks live in this namespace
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/npcmenu/Merc.h"
@@ -1699,7 +1699,7 @@ D2UIFlagInitStrc g_UIFlagInitDrawPanel1[2] = {
     }
 }; D2_GLOBAL_GUARD(g_UIFlagInitDrawPanel1, "g_UIFlagInitDrawPanel1");
 
-D2UIFlagDescStrc * gUIFlagDismissModeTable[39] = {
+D2UIFlagDescStrc * gUIFlagDismissModeTable[39] = { // VP: vanilla-plus 38 -> 39 (UI_VANILLAPLUS row)
     gaUIFlagDescsClient,
     gaUIFlagDescs,
     (D2UIFlagDescStrc*)&gaUIFlagDescs[1].anDismissMode[0],
@@ -1738,11 +1738,13 @@ D2UIFlagDescStrc * gUIFlagDismissModeTable[39] = {
     (D2UIFlagDescStrc*)&gaUIFlagDescsClient[2].anDismissMode[0],
     (D2UIFlagDescStrc*)&gaUIFlagDescs[36].anDismissMode[0],
     (D2UIFlagDescStrc*)&gaUIFlagDescs[37].anDismissMode[0],
-    // vanilla-plus (row 10): UI_VANILLAPLUS's row aliases UI_CONFIG's (index 11
-    // = &gaUIFlagDescs[9]): the page behaves exactly like the config screen in
-    // every cross-flag dismissal, and column 38 (its own flag id) zero-
-    // initializes to "ignore" so toggling our flag never closes retail panels.
+    // VP-BEGIN [row-10 options page]: UI_VANILLAPLUS's row aliases UI_CONFIG's
+    // (index 11 = &gaUIFlagDescs[9]): the page behaves exactly like the config
+    // screen in every cross-flag dismissal, and column 38 (its own flag id)
+    // zero-initializes to "ignore" so toggling our flag never closes retail
+    // panels.
     (D2UIFlagDescStrc*)&gaUIFlagDescs[9].anDismissMode[0]
+    // VP-END [row-10 options page]
 }; D2_GLOBAL_GUARD(gUIFlagDismissModeTable, "gUIFlagDismissModeTable");
 
 char s___AUTALLOCREC___00711480[16] = {
@@ -7284,7 +7286,7 @@ D2EscMenuItemStrc gaEscMenuMainTable[3] = {
 }; D2_GLOBAL_GUARD(gaEscMenuMainTable, "gaEscMenuMainTable");
 
 D2EscMenuHeaderStrc gaEscMenuHeaderOptions = {
-    /* .nItemCount = */ 0x6, // vanilla-plus (row 10): 0x5 -> 0x6, Vanilla+ Options row above Previous Menu
+    /* .nItemCount = */ 0x6, // VP: vanilla-plus (row 10) 0x5 -> 0x6, Vanilla+ Options row above Previous Menu
     /* .nVerticalSpacing = */ 0x32,
     /* .nRowHeight = */ 0x27,
     /* .nStarOffset = */ 0x33,
@@ -7299,7 +7301,7 @@ D2EscMenuHeaderStrc gaEscMenuHeaderSaveExit = {
     /* .nBarYOffset = */ 0x24
 }; D2_GLOBAL_GUARD(gaEscMenuHeaderSaveExit, "gaEscMenuHeaderSaveExit");
 
-D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // vanilla-plus (row 10): [5] -> [6]
+D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // VP: vanilla-plus (row 10) [5] -> [6]
     {
         /* .nMenuItemType = */ 0x0,
         /* .nExpansionOnly = */ 0x0,
@@ -12597,7 +12599,7 @@ D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // vanilla-plus (row 10): [5] -> 
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     },
     {
-        // vanilla-plus (row 10): "Vanilla+ Options" - placed directly above
+        // VP-BEGIN [row-10 options page]: "Vanilla+ Options" - placed directly above
         // Previous Menu (owner decision 2026-10-29; label route revised in
         // field QA same day). Empty image path: the retail loader
         // (ESCMENU_LoadLocalizedImages) skips rows whose path starts with
@@ -12626,6 +12628,7 @@ D2EscMenuItemStrc gaEscMenuOptionsTable[6] = { // vanilla-plus (row 10): [5] -> 
         /* .pDC6Main = */ nullptr,
         /* .pDC6SubImages = */ { nullptr, nullptr, nullptr, nullptr }
     },
+    // VP-END [row-10 options page]
     {
         /* .nMenuItemType = */ 0x0,
         /* .nExpansionOnly = */ 0x0,
@@ -45331,7 +45334,7 @@ D2GameRecordStrc * gpCurrentGameRecord = (D2GameRecordStrc *)&gsGameRecordContex
 uint32_t gnLastMouseButtonEventType = 0x1; D2_GLOBAL_GUARD(gnLastMouseButtonEventType, "gnLastMouseButtonEventType");
 int nHealthBarScreenX = -0x1; D2_GLOBAL_GUARD(nHealthBarScreenX, "nHealthBarScreenX");
 int gnMercenaryHealthBarScreenY = -0x1; D2_GLOBAL_GUARD(gnMercenaryHealthBarScreenY, "gnMercenaryHealthBarScreenY");
-int gnUIFlagCount = 0x27; D2_GLOBAL_GUARD(gnUIFlagCount, "gnUIFlagCount"); // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
+int gnUIFlagCount = 0x27; D2_GLOBAL_GUARD(gnUIFlagCount, "gnUIFlagCount"); // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
 uint32_t gbCursorAnimationPending = 0x1; D2_GLOBAL_GUARD(gbCursorAnimationPending, "gbCursorAnimationPending");
 int nAutoMapZoomDivisor = 0xa; D2_GLOBAL_GUARD(nAutoMapZoomDivisor, "nAutoMapZoomDivisor");
 uint32_t nNextGUID = 0x1; D2_GLOBAL_GUARD(nNextGUID, "nNextGUID");

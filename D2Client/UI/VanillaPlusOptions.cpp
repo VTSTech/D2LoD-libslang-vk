@@ -46,6 +46,7 @@
 
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Message.h"
@@ -277,25 +278,6 @@ void __fastcall ESCMENU_InitVanillaPlusLabel(D2EscMenuItemStrc * pItem, D2UIMous
 
 // ===== row label metrics (revE: measure the retail neighbor) ================
 
-// Mirror of D2Client.cpp's ALTTOGGLE_BuildIniPath (static there): resolve
-// "<exe dir>\\d2vp.ini" so [ui] label_font is read from the same file as the
-// [features] gates regardless of the process CWD. FALSE = unresolvable path;
-// the override is simply skipped.
-static BOOL VPLABEL_BuildIniPath(char* szIniPath) {
-    szIniPath[0] = '\0';
-    DWORD dwLen = GetModuleFileNameA(nullptr, szIniPath, 240);
-    if (!dwLen || dwLen >= 240) {
-        return FALSE;
-    }
-    char* pSlash = strrchr(szIniPath, '\\');
-    if (!pSlash) {
-        return FALSE;
-    }
-    pSlash[1] = '\0';
-    lstrcatA(szIniPath, "d2vp.ini");
-    return TRUE;
-}
-
 // Height of one glyph's frame in font nFontId (0 = not measurable). Forces
 // the standard lazy load through SetAndReturnLastFont (the exact path every
 // text draw takes when a font is first used), then reads the glyph's frame
@@ -373,7 +355,7 @@ static void VPLABEL_DecideMetrics() {
 
     char szIniPath[260];
     int nOverride = -1;
-    if (VPLABEL_BuildIniPath(szIniPath)) {
+    if (ALTTOGGLE_BuildIniPath(szIniPath)) {
         nOverride = (int)GetPrivateProfileIntA("ui", "label_font", -1, szIniPath);
     }
     if (nOverride >= 0 && nOverride < 14) {
