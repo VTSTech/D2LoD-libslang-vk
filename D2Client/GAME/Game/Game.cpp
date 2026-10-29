@@ -130,7 +130,7 @@ typedef void (__stdcall *pfnFaultError)(LPCSTR szFile, int nLine, LPCSTR szExpre
 
 namespace D2Client::GAME::Game {
 
-void __fastcall GAMEDATA_TimerInitWithTickCount(uint32_t dwDurationMs, uint32_t * pTimerStruct) {
+void __thiscall GAMEDATA_TimerInitWithTickCount(uint32_t * pTimerStruct, uint32_t dwDurationMs) {
     DWORD dwNowTick = GetTickCount();
     *pTimerStruct = dwNowTick;
     pTimerStruct[1] = dwDurationMs;
@@ -846,7 +846,7 @@ void __stdcall DrawLoadingMessage() {
 }
 
 // Compute frame-skip level based on elapsed ticks and fps_drawn.
-uint32_t __fastcall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn) {
+uint32_t __thiscall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn) {
     uint32_t nSkipLevel = (uint32_t)(nFpsDrawn < 7);
     if (nElapsedTicks > 1) {
       nSkipLevel++;

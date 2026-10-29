@@ -2052,7 +2052,7 @@ int __fastcall BITSTREAM_GetByteOffset(int nParam) {
     return nBitPosAligned / 8 + *(int*)(nParam + 4);
 }
 
-void __fastcall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount) {
+void __thiscall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount) {
     uint32_t nNewBitPos = *(int*)(pThis + 0xc) + nBitCount;
     *(uint32_t*)(pThis + 0xc) = nNewBitPos & 0x1f;
     *(int*)(pThis + 4) += (int)nNewBitPos / 32 * 4;

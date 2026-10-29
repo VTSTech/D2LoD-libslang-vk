@@ -724,7 +724,10 @@ BOOL __stdcall PutItemInInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUn
 }
 
 D2UnitStrc * __stdcall INVENTORY_GetFirstItem(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -732,7 +735,10 @@ D2UnitStrc * __stdcall INVENTORY_GetFirstItem(D2InventoryStrc * pInventory) {
 }
 
 D2UnitStrc * __stdcall INVENTORY_GetLastItem(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -1322,7 +1328,10 @@ BOOL __stdcall INVENTORY_GetItemAtBodyLoc(D2InventoryStrc * pInventory, D2UnitSt
 
 D2UnitStrc * __stdcall INVENTORY_GetItemByGridOffset(D2InventoryStrc * pInventory, int32_t nGridOffset) {
     D2InventoryGridStrc* pInventoryGrid;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -1399,7 +1408,10 @@ D2UnitStrc * __stdcall GetEquipedWeapon(D2InventoryStrc * pInventory) {
     uint32_t bIsWeaponType;
     D2InventoryGridInfoStrc* pGridInfo;
     D2UnitStrc* pUnit;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
     if (pInventory->dwPrimaryWeaponGUID != -1 && ((pGridInfo = ReinitializeInventoryGrid(pInventory, &gsInventoryBodyLocGridSize, 0) , pGridInfo && (pUnit = pGridInfo->pGridCells[5] , pUnit != 0)) && (bIsWeaponType = ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon) , bIsWeaponType != 0) && pUnit->nUnitGUID == pInventory->dwPrimaryWeaponGUID || pInventory->nSignatureMagic == 0x1020304 && (pGridInfo = ReinitializeInventoryGrid(pInventory, &gsInventoryBodyLocGridSize, 0) , pGridInfo != 0) && (pUnit = pGridInfo->pGridCells[4] , pUnit && (bIsWeaponType = ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon) , bIsWeaponType && pUnit->nUnitGUID == pInventory->dwPrimaryWeaponGUID)))) {
@@ -1413,7 +1425,10 @@ D2UnitStrc * __stdcall GetPrimaryWeapon(D2InventoryStrc * pInventory) {
     uint32_t bIsWeaponType;
     D2UnitStrc* pItem;
     D2UnitStrc* pUnit_00;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
     if (pInventory->dwPrimaryWeaponGUID == -1) {
@@ -1524,7 +1539,10 @@ void __stdcall CopyInventoryOfPlayerOrFree(D2InventoryStrc * pInventory, D2UnitS
 
 // @blizzard INVENTORYGetHandItem
 D2UnitStrc * __stdcall INVENTORY_GetHandItem(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -1821,7 +1839,10 @@ BOOL __stdcall INVENTORY_CanAutoBeltItem(D2InventoryStrc * pInventory, D2UnitStr
     bool _bSamePotion;
     bool bSamePotion;
     D2UnitStrc* pItemEx;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
     if (!(pItem && pItem->eUnitType == UNIT_ITEM)) {
@@ -1961,7 +1982,10 @@ D2UnitStrc * __stdcall INVENTORY_GetItemInBeltSlot(D2InventoryStrc * pInventory,
 BOOL __stdcall INVENTORY_CheckBeltSlotAndGetItem(D2InventoryStrc * pInventory, D2UnitStrc * pItemUnit, uint32_t dwParam1, D2UnitStrc * * ppOutItem) {
     char byItemHeight;
     D2InventoryStrc* pInventorySaved = pInventory;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 
@@ -2168,7 +2192,10 @@ void __stdcall INVENTORY_RemoveAllItems(D2InventoryStrc * pInventory) {
 }
 
 D2InventoryToBeUpdatedStrc * __stdcall GetUpdates(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -2257,7 +2284,10 @@ uint32_t __stdcall GetUpdatesUUid(D2InventoryToBeUpdatedStrc * pInventoryToBeUpd
 }
 
 int32_t __stdcall ITEM_ItemsInItem(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 
@@ -2854,7 +2884,10 @@ void __stdcall INVENTORY_SetOwnerGUID(D2InventoryStrc * pInventory, int32_t nUni
 }
 
 int32_t __stdcall INVENTORY_GetCursorItemGUID(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return -1;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return -1;
     }
 
@@ -2891,7 +2924,10 @@ void __stdcall INVENTORY_AddCorpse(D2InventoryStrc * pInventory, int32_t nUnitGU
 // @sourcefile .\INVENTORY\Inventory.cpp
 BOOL __stdcall INVENTORY_RemoveCorpse(D2InventoryStrc * pInventory, int32_t nGUID, int32_t eUnitType) {
     D2CorpseStrc* pMemoryToFree;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 
@@ -2931,7 +2967,10 @@ BOOL __stdcall INVENTORY_RemoveCorpse(D2InventoryStrc * pInventory, int32_t nGUI
 }
 
 D2CorpseStrc * __stdcall INVENTORY_GetCorpse(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -2957,7 +2996,10 @@ void __stdcall INVENTORY_FreeNotifications(int * pnParam) {
 }
 
 int32_t __stdcall INVENTORY_GetCorpseCount(D2InventoryStrc * pInventory) {
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 
@@ -4603,7 +4645,10 @@ D2UnitStrc * __stdcall GetCarriedItem(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall ITEM_GetGUID(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
       return 0;
     }
 
@@ -4663,7 +4708,10 @@ void __stdcall FreeRecursiveInventorysWithChilds(D2InventoryStrc * pInventory) {
 BOOL CopyInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUnit) {
     D2GridScreenCoordinates local_1c;
     uint8_t bWidth;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 
@@ -4701,7 +4749,10 @@ static BOOL __stdcall INVENTORY_ReserveGridCells(D2InventoryStrc * pInventory, D
     D2GridScreenCoordinates gridDims;
     int* pnColStart;
     uint8_t byItemHeight;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return 0;
     }
 

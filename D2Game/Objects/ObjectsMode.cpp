@@ -1884,11 +1884,12 @@ static void __stdcall SKILL_GetAttackRateForWeapon(D2SkillStrc * pSkill, D2UnitS
     }
 
     int nCharClassId = pUnit->nClassId;
-    if (!(nCharClassId >= 0 && nCharClassId < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nCharClassId)) {
+    D2CharStatsTxt* pCharStatsTxt = nCharClassId >= 0 && nCharClassId < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nCharClassId : nullptr;
+    if (!pCharStatsTxt) {
       return;
     }
 
-    *pnParam = sgptDataTable->pTxtCharStats[nCharClassId].ToHitFactor + nComputedToHit;
+    *pnParam = pCharStatsTxt->ToHitFactor + nComputedToHit;
 }
 
 // Returns a shrine's effective stat bonus for the given unit stat. For most stats (resistances, stamina, experience, etc.) returns nParam unchanged. For UNITSTAT_tohit, computes the attack rate via SKILL_GetAttackRateForWeapon. For UNITSTAT_mindamage, resolves whether to use primary or secondary min-damage stat based on dual-wield handedness, then fetches the raw stat value and scales it as (statValue * nParam) / 100.

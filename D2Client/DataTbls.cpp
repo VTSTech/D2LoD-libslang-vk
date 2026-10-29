@@ -60,9 +60,10 @@ D2UniqueItemsTxt * __fastcall INV_GetUniqueItemsTxtLine(int32_t nParam) {
 }
 
 D2SkillDescTxt * __fastcall GetSkillDescription(eD2Skills eSkillId) {
-    if ((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (pSkillsTxt) {
       int nSkillDescIdx;
-      nSkillDescIdx = (int)sgptDataTable->pTxtSkills[eSkillId].skilldesc;
+      nSkillDescIdx = (int)pSkillsTxt->skilldesc;
       if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize) {
         return sgptDataTable->pTxtSkillDesc + nSkillDescIdx;
       }

@@ -255,9 +255,10 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileRandom(D2UnitStrc * p
 
 BOOL __fastcall Skills_CltStFunc_CheckAuraStateInactive(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     short int sAuraState;
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (pSkillsTxt) {
       eD2States eState;
-      sAuraState = sgptDataTable->pTxtSkills[eSkill].aurastate;
+      sAuraState = pSkillsTxt->aurastate;
       if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize) {
         eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, (int)sAuraState);
         return (uint32_t)(eState == STATE_none);
@@ -311,7 +312,7 @@ BOOL __fastcall SKILLSASS_CltSetChargeUpState(D2UnitStrc * pUnit, eD2Skills eSki
         return 0;
       }
 
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
       if (!pSkill) {
         return 0;
       }
@@ -354,7 +355,7 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileCharge(D2UnitStrc * p
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -404,12 +405,13 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileCharge(D2UnitStrc * p
 }
 
 BOOL __fastcall Skills_CltStFunc_AllocStatListByParam3(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
-      Skills::SKILLS_CltAllocStatListForSkill(pUnit, sgptDataTable->pTxtSkills[eSkill].Param[3]);
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
+      Skills::SKILLS_CltAllocStatListForSkill(pUnit, 0);
       return 1;
     }
 
-    Skills::SKILLS_CltAllocStatListForSkill(pUnit, 0);
+    Skills::SKILLS_CltAllocStatListForSkill(pUnit, pSkillsTxt->Param[3]);
     return 1;
 }
 

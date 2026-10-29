@@ -1169,7 +1169,7 @@ void __fastcall ClearScreen(BOOL bPartial) {
 }
 
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
-void __fastcall RENDERER_WINDOWED_ClearScreen(int nParam, BYTE dwParam2, BYTE dwParam3) {
+void __thiscall RENDERER_WINDOWED_ClearScreen(int nParam, BYTE dwParam2, BYTE dwParam3) {
     RENDERER_WINDOWED_ClearFramebuffer(nParam);
 }
 

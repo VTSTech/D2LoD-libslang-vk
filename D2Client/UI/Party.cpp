@@ -300,7 +300,7 @@ static void __stdcall UI_DrawPartyMemberClass(int32_t nScreenY, int32_t nCharTyp
     D2Win::Src::D2WinFont::DRAW_text(wMessage, nX, nY, nColor, bMultiLineCenter);
 }
 
-void __fastcall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, int16_t nPartyId) {
+void __thiscall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, int16_t nPartyId) {
     uint16_t nLocaleId;
     int32_t nTextFlags = 0;
     int nX = 0xbe;

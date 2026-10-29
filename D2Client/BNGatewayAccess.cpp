@@ -17,7 +17,7 @@ int32_t __stdcall CurGateway(int32_t nParam) {
     /* 0x2e690  2  ?CurGateway@BNGatewayAccess@@QAGHXZ */ return *(int32_t*)(nParam + 0xc);
 }
 
-D2BNetGatewayAccessStr * __fastcall operator_(D2BNetGatewayAccessStr * pSrc, D2BNetGatewayAccessStr * pDst) {
+D2BNetGatewayAccessStr * __thiscall operator_(D2BNetGatewayAccessStr * pDst, D2BNetGatewayAccessStr * pSrc) {
     int nCopyCount;
     D2BNetGatewayAccessStr* pDstCursor = pDst;
     for (nCopyCount = 9; nCopyCount; nCopyCount--) {

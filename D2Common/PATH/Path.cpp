@@ -188,7 +188,7 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
     *(uint16_t*)((char*)&nParam + 2) = pPathState->pCoords.nPosX;
     *(uint16_t*)(char*)&nPackedSrc = pPathState->pCoords.nOffsetY;
     *(uint16_t*)((char*)&nPackedSrc + 2) = pPathState->pCoords.nPosY;
-    Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nPackedSrc, nParam, (uint32_t*)anDirections);
+    Drlg::Path::DRLGPATH_GetDirectionTripletPacked((uint32_t*)anDirections, nPackedSrc, nParam);
     uint16_t nSecAltX;
     nSecAltX = nCurX;
     uint16_t nSecAltY;
@@ -235,7 +235,7 @@ BOOL PATH_FindAlternateAroundObstacle(D2PathTypeArg * pPathState) {
 
       *(uint16_t*)(char*)&nParam_00 = pPathState->pCoords.nOffsetX;
       *(uint16_t*)((char*)&nParam_00 + 2) = pPathState->pCoords.nPosX;
-      Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nPackedCurXY, nParam_00, nDirTriplet);
+      Drlg::Path::DRLGPATH_GetDirectionTripletPacked(nDirTriplet, nPackedCurXY, nParam_00);
       anDirections[0] = nDirTriplet[0];
     }
 

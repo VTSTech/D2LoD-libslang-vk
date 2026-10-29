@@ -1093,7 +1093,7 @@ void __fastcall DRLGPATH_GetPathDirectionTriplet(int32_t nParam1, int32_t nParam
 // Returns all 3 path direction vectors (3 dwords from 12-byte table entry at 0x6f1518)
 // between two packed coordinate points. Writes primary + 2 alternates to output array.
 // Called by PathTypeFunc_02 and outdoor room linking functions.
-void __fastcall DRLGPATH_GetPathDirectionTripletPacked(uint32_t nPackedSrc, uint32_t nPackedDst, int * paDirOut) {
+void __thiscall DRLGPATH_GetPathDirectionTripletPacked(int * paDirOut, uint32_t nPackedSrc, uint32_t nPackedDst) {
     int32_t nDirIndex = DRLGPATH_GetDirectionIndexPacked(nPackedSrc, nPackedDst);
     *paDirOut = gPathDirectionTable[nDirIndex * 3];
     paDirOut[1] = gPathDirectionTable[nDirIndex * 3 + 1];
@@ -1113,7 +1113,7 @@ void __fastcall DRLGPATH_GetDirectionTriplet(int32_t nParam1, int32_t nParam2, i
 // Returns all 3 direction bytes (from 3-byte table at 0x6f1648) between two packed
 // coordinate points. Writes primary direction + 2 alternates to output array as
 // expanded uint values. Called by collision/pathing code at 0x00648120.
-void __fastcall DRLGPATH_GetDirectionTripletPacked(uint32_t nPackedSrc, uint32_t nParam, uint32_t * pnParam) {
+void __thiscall DRLGPATH_GetDirectionTripletPacked(uint32_t * pnParam, uint32_t nPackedSrc, uint32_t nParam) {
     int32_t nDirIndex = DRLGPATH_GetDirectionIndexPacked(nPackedSrc, nParam);
     *pnParam = (uint32_t)gaDrlgPathDirectionTable[nDirIndex * 3];
     pnParam[1] = (uint32_t)gaDrlgPathDirectionTable[nDirIndex * 3 + 1];
@@ -1893,7 +1893,7 @@ int32_t __fastcall DRLGPATH_SmoothPathPoints(D2PathTypeArg * pPathTypeArg) {
         }
 
         bWaypointAdded = 0;
-        DRLGPATH_GetPathDirectionTripletPacked((uint32_t)d2_bits_of(nPackedSrc), nPackedDst, aDirTriplet);
+        DRLGPATH_GetPathDirectionTripletPacked(aDirTriplet, (uint32_t)d2_bits_of(nPackedSrc), nPackedDst);
         aDirTriplet[0] = aDirTriplet[0] + nDirOffset & 7;
         aDirTriplet[1] = aDirTriplet[1] + nDirOffset & 7;
         aDirTriplet[2] = aDirTriplet[2] + nDirOffset & 7;
@@ -2016,7 +2016,7 @@ void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, D2DynamicP
     aDirDeltaTable[0x1d] = 1;
     aDirDeltaTable[0x1f] = 1;
     int32_t pPathStrcSave = pPathStrc;
-    DRLGPATH_GetPathDirectionTripletPacked(nPackedPos, *(uint32_t*)(pPathStrc + 0x10), aDirTriplet);
+    DRLGPATH_GetPathDirectionTripletPacked(aDirTriplet, nPackedPos, *(uint32_t*)(pPathStrc + 0x10));
     if ((int)nStepsRemain > 0) {
       POINT PVar1;
       pWaypointOut = (uint32_t*)(pPathStrc + 0x9c);
@@ -2180,7 +2180,7 @@ uint8_t * __stdcall DRLGPATH_GetDirectionDeltaTable(int32_t nParam1, int32_t nPa
 }
 
 // Checks if a packed coordinate (X|Y) is within the bounding rectangle of the path search area. Returns 1 if inside bounds, 0 otherwise.
-uint32_t __fastcall DRLGPATH_IsPositionInBounds(int32_t pThis, uint32_t nPackedPos) {
+uint32_t __thiscall DRLGPATH_IsPositionInBounds(int32_t pThis, uint32_t nPackedPos) {
     if ((uint16_t)nPackedPos >= *(uint16_t*)(pThis + 0x6278) && (uint16_t)nPackedPos <= *(uint16_t*)(pThis + 0x627c)) {
       uint16_t wPosY;
       wPosY = (uint16_t)(nPackedPos >> 0x10);
@@ -2289,7 +2289,7 @@ static int32_t DRLGPATH_ExtractPathFromResult(int32_t nPathCtx, int32_t nCurNode
 }
 
 // Top-level A* pathfinding function for PathTypeFunc_00. Initializes the search grid, computes initial heuristic, then iteratively expands the search with increasing cost limits. Extracts and returns the found path length (0 if no path found).
-int32_t __fastcall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2PathTypeArg * pPathTypeArg) {
+int32_t __thiscall DRLGPATH_FindPathAStar(D2DrlgRoomCoordsStrc * pRoomCoords, D2PathTypeArg * pPathTypeArg) {
     short int sVar1;
     uint32_t nCostLimit;
     uint32_t nInitCostClamped;

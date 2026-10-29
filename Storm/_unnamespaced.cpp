@@ -282,7 +282,7 @@ void __fastcall FAULT_RegisterErrorHandler(pfnStormErrorHandler pfnHandler) {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gcsErrorHandlerList);
-    StormFaultHandlerNodeStrc* pHandlerNode = (StormFaultHandlerNodeStrc*)Storm::Source::SSystem::LINKEDLIST_AllocAndInsertNode(1, 0, 0, &gFaultHandlerList);
+    StormFaultHandlerNodeStrc* pHandlerNode = (StormFaultHandlerNodeStrc*)Storm::Source::SSystem::LINKEDLIST_AllocAndInsertNode(&gFaultHandlerList, 1, 0, 0);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pHandlerNode->pfnHandler = pfnHandler;
     LeaveCriticalSection(&gcsErrorHandlerList);
 }

@@ -2037,7 +2037,7 @@ static void __stdcall INV_FormatBlockChanceText(uint16_t * wszText, D2ItemsTxt *
       }
 
       nBlockChance += (uint32_t)(uint8_t)pCharStats->BlockFactor;
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_HolyShield, pPlayerUnit_lcl);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pPlayerUnit_lcl, SKILL_HolyShield);
       if (pSkill) {
         eHolyShieldState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pPlayerUnit_lcl, STATE_holyshield);
         if (eHolyShieldState != STATE_none) {
@@ -2097,7 +2097,7 @@ static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, uint32_t pS
       D2UnitStrc* pPlayerUnit_lcl;
       *(uint16_t*)(char*)&pUnit = 0xd8c;
       pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_Net();
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_HolyShield, pPlayerUnit_lcl);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pPlayerUnit_lcl, SKILL_HolyShield);
       if (pSkill) {
         iStateCheck = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pPlayerUnit_lcl, STATE_holyshield);
         if (iStateCheck != STATE_none) {

@@ -65,11 +65,12 @@
 namespace D2Client::SKILLS::SkillsPal {
 
 int32_t __fastcall SKILLS_GetManaCostMultiplier(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nParam)) {
+    D2SkillsTxt* pSkillsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nParam : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[nParam].Param[0];
+    return pSkillsTxt->Param[0];
 }
 
 // Client DoFunc for Paladin Zeal directional offset missile. Determines the firing direction quadrant from the unit's movement direction (or a random quadrant if stationary), applies a random ±1 offset from gnPaladinSkillIndexTable/gnPaladinSkillOffsetTable, then spawns a missile of the skill's cltmissilea type (offset by a calc-driven random variant) at the computed position. Returns 1 on success, 0 if skill/missile data is invalid or no confirmed target.
@@ -660,7 +661,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
 }
 
 void __fastcall SKILL_StopAndClearUninterruptable(D2UnitStrc * pUnit, eD2Skills eSkill) {
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     uint32_t nSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
     if (nSkillFlags & 1) {
       D2Common::Skills::SKILL_SetFlags(pSkill, nSkillFlags | 2);
@@ -728,7 +729,7 @@ void __fastcall SKILL_ExecuteItemCast(D2UnitStrc * pUnit, eD2Skills eSkill, shor
         }
       }
 
-      bCastSucceeded = Skills::SKILLS_CastSkillClientArgsReversed(pDoFuncData, -1, pUnit, eSkill);
+      bCastSucceeded = Skills::SKILLS_CastSkillClientArgsReversed(pUnit, eSkill, pDoFuncData, -1);
       if (!bCastSucceeded) {
         goto restore_caster_state;
       }

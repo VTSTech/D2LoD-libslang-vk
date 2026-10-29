@@ -835,7 +835,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlock
               __frame0.nClassId = pUnit->nClassId;
               __frame0.nSeqMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
               D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &__frame0.nClassId, &__frame0.nSeqMode, ".\\ENGINE\\Gfx.cpp", 0x6cd);
-              GfxUtil::GFXUTIL_CalcDirectionAndFrame(__frame0.nClassId, nAnimMode, &__frame0.nDir, &nFrame, &__frame0.nFrameCount, nLayerIdx, 0, pUnit, eUnitType);
+              GfxUtil::GFXUTIL_CalcDirectionAndFrame(pUnit, eUnitType, __frame0.nClassId, nAnimMode, &__frame0.nDir, &nFrame, &__frame0.nFrameCount, nLayerIdx, 0);
               __frame0.pLayerData = GfxUtil::GFXUTIL_GetCofLayerData(pCofData, nFrame, 0);
               if (!__frame0.pLayerData) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6d6);
@@ -1189,7 +1189,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       }
     }
     if ((int)eOverlay < 0x8c || (int)eOverlay > 0x8e && eOverlay != OVERLAY_handofgod) {
-      GfxInfo::GFX_RemoveOverlayById(eOverlay, pUnit);
+      GfxInfo::GFX_RemoveOverlayById(pUnit, eOverlay);
     }
 
     D2GfxUnknown_0xa8* pOverlay = D2_NEW_AT(D2GfxUnknown_0xa8, ".\\ENGINE\\Gfx.cpp", 0xc48);
@@ -1877,7 +1877,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint
               bIsSelected = UNIT::CUnit::IsSelected(pUnit);
               byLayerComponent = D2Common::Units::GetDirection(pUnit);
               nDirection = (uint32_t)byLayerComponent;
-              GfxUtil::GFXUTIL_CalcDirectionAndFrame(nClassId, pSeqMode, &nDirection, &nFrame, &nFrameCount, (uint32_t)pCofIdentityData[2], 1, pUnit, eUnitType);
+              GfxUtil::GFXUTIL_CalcDirectionAndFrame(pUnit, eUnitType, nClassId, pSeqMode, &nDirection, &nFrame, &nFrameCount, (uint32_t)pCofIdentityData[2], 1);
               pCofLayerData = GfxUtil::GFXUTIL_GetCofLayerData(pCofData, nFrame, nFrameMetricX);
               if (!pCofLayerData) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x58e);
@@ -2310,7 +2310,7 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
       pZHalfOffset = pCofIdentity;
       byLayerComponent = D2Common::Units::GetDirection(pUnit);
       nDirection = (uint32_t)byLayerComponent;
-      GfxUtil::GFXUTIL_CalcDirectionAndFrame(nClassId, nSeqMode, &nDirection, (uint32_t*)(aFrameMetrics + 2), &nFrameCount, (uint32_t)pCofIdentity[2], 1, pUnit, eUnitTypeGfx);
+      GfxUtil::GFXUTIL_CalcDirectionAndFrame(pUnit, eUnitTypeGfx, nClassId, nSeqMode, &nDirection, (uint32_t*)(aFrameMetrics + 2), &nFrameCount, (uint32_t)pCofIdentity[2], 1);
       pCofData = GfxUtil::GFXUTIL_GetCofLayerData(pCofData, aFrameMetrics[2], nFrameMetricX);
       pCofLayerDataBase = pCofData;
       if (!pCofData) {
@@ -2571,7 +2571,7 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
 
     pCofIdentity = (uint8_t*)GfxUtil::GFXUTIL_Identity(pCofData);
     pCofIdentityBase = pCofIdentity;
-    GfxUtil::GFXUTIL_CalcDirectionAndFrame(nClassId, nSeqMode, &nDirection, &nFrame, &nFrameCount, (uint32_t)pCofIdentity[2], 1, pUnit, eUnitType);
+    GfxUtil::GFXUTIL_CalcDirectionAndFrame(pUnit, eUnitType, nClassId, nSeqMode, &nDirection, &nFrame, &nFrameCount, (uint32_t)pCofIdentity[2], 1);
     pCofData = GfxUtil::GFXUTIL_GetCofLayerData(pCofData, nFrame, nFrameMetricX);
     pCofLayerData = pCofData;
     if (!pCofData) {

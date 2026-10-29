@@ -1270,7 +1270,7 @@ void __stdcall NET_SID_CLIENT_InitializeSRP() {
 
     SRP::SRP_SetParameters(&g_pSrpContext, gnSrpGeneratorGLen, (uint8_t*)&gabSrpGeneratorG, gnSrpModulusNLen, gabSrpModulusN);
     DWORD dwTickCount = GetTickCount();
-    SRP::SRP_SeedRandom(dwTickCount, &g_pSrpContext);
+    SRP::SRP_SeedRandom(&g_pSrpContext, dwTickCount);
 }
 
 // Frees the SRP context allocated by NET_SID_CLIENT_InitializeSRP, releasing the safe prime/generator parameters and any ephemeral key material.
@@ -2094,7 +2094,7 @@ void __fastcall NET_SID_CLIENT_GenerateRandomString(int32_t szOutBuf, int32_t nL
     *(uint8_t*)(szOutBuf - 1 + nLength) = 0;
 }
 
-void __fastcall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
+void __thiscall NET_SID_CLIENT_EncodeCDKeyHash(int32_t pThis, int32_t nSeed) {
     int nRandByte;
     int nKeyCharIdx;
     int nKeyCharIdx2;
@@ -2200,7 +2200,10 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
       }
 
       NET_SID_CLIENT_EncodeCDKeyHash(szCDKey, 0);
-      if (nParam <= 8 || (nAlignedLen = nParam - 8 , (nAlignedLen & 0x3f) != 0)) {
+      if (nParam <= 8) {
+        return 0;
+      }
+      if (nAlignedLen = nParam - 8 , (nAlignedLen & 0x3f) != 0) {
         return 0;
       }
 

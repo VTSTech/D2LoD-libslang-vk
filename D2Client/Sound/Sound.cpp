@@ -316,7 +316,7 @@ static D2SoundChannelStrc * __stdcall SOUND_FindActiveStreamChannel(D2SoundChann
     return nChannelData;
 }
 
-int32_t __fastcall SOUND_CalculateDistance(int32_t pThis, int32_t nExcludeChannel) {
+int32_t __thiscall SOUND_CalculateDistance(int32_t pThis, int32_t nExcludeChannel) {
     D2SoundChannelStrc* nChannelData;
     D2SoundsTxt* pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pThis);
     D2SoundChannelNodeStrc* pDVar1 = gpActiveSoundChannelsHead;
@@ -358,7 +358,7 @@ static void __stdcall SOUND_CalculateUnitDirection(D2UnitStrc * pUnit, int32_t n
     pfDirection[1] = (float)(ptUnit.y - ptPlayer.y) + (float)(ptUnit.y - ptPlayer.y);
 }
 
-float __fastcall SOUND_CalculateUnitDistance(int32_t pThis, D2UnitStrc * pUnit) {
+float __thiscall SOUND_CalculateUnitDistance(int32_t pThis, D2UnitStrc * pUnit) {
     D2SoundEnvironTxt* pSoundEnvTxt;
     bool bIndoors;
     D2SoundsTxt* pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pThis);

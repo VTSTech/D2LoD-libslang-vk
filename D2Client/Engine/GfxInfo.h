@@ -59,7 +59,7 @@ void __fastcall GFX_FreeAllModesGfxInfo(struct D2UnitStrc * pUnit);
 void __fastcall GFX_SetAllGfxInfoFlags(struct D2UnitStrc * pUnit, uint8_t byFlag);
 struct D2ParticleStrc * __fastcall GetParticleFromUnit(struct D2UnitStrc * pUnit);
 void __fastcall SetParticle(struct D2UnitStrc * pUnit, struct D2ParticleStrc * pParticle);
-void __fastcall GFX_RemoveOverlayById(int32_t nOverlayId, struct D2UnitStrc * pUnit);
+void __thiscall GFX_RemoveOverlayById(struct D2UnitStrc * pUnit, int32_t nOverlayId);
 void __fastcall GFX_RemoveAllOverlays(struct D2UnitStrc * pUnit);
 void __fastcall GFX_SetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo, DWORD dwCofDataFlags);
 int32_t __fastcall GFX_GetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo);

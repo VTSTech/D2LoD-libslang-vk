@@ -183,11 +183,12 @@ static void __stdcall GFXUTIL_SetMissileCelFile(D2GfxDataStrc * pGfxData, D2Unit
     }
 
     int nMissileTxtIdx = pMissile->nClassId;
-    if (!(nMissileTxtIdx >= 0 && nMissileTxtIdx < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileTxtIdx)) {
+    D2MissilesTxt* pMissilesTxt = nMissileTxtIdx >= 0 && nMissileTxtIdx < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nMissileTxtIdx : nullptr;
+    if (!pMissilesTxt) {
       return;
     }
 
-    pGfxData->szFilename = sgptDataTable->pTxtMissiles[nMissileTxtIdx].CelFile;
+    pGfxData->szFilename = pMissilesTxt->CelFile;
 }
 
 // @sourcefile .\ENGINE\GfxUtil.cpp
@@ -443,11 +444,12 @@ static void GFXUTIL_SetItemGfxFile(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit)
 }
 
 static int32_t GFXUTIL_GetOverlayNumDirections(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + nParam)) {
+    D2OverlayTxt* pOverlayTxt = nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize ? sgptDataTable->pTxtOverlay + nParam : nullptr;
+    if (!pOverlayTxt) {
       return 1;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtOverlay[nParam].NumDirections;
+    return (uint32_t)(uint8_t)pOverlayTxt->NumDirections;
 }
 
 static int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, D2UnitStrc * pUnit) {
@@ -642,7 +644,10 @@ uint8_t * __fastcall GFXUTIL_GetCofLayerData(uint8_t * pbParam, int32_t nParam, 
 }
 
 uint32_t __fastcall GFXUTIL_GetCofDrawOrder(uint8_t * pbParam, uint32_t nParam) {
-    if (!(pbParam && (int)nParam < 0x10)) {
+    if (!pbParam) {
+      return 5;
+    }
+    if ((int)nParam >= 0x10) {
       return 5;
     }
 
@@ -734,7 +739,7 @@ static void GFXUTIL_ConvertDirectionBits(int32_t nFromDirs, int32_t nToDirs, uin
     }
 }
 
-void __fastcall GFXUTIL_CalcDirectionAndFrame(int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode, D2UnitStrc * pUnit, int32_t nAnimDir) {
+void __fastcall GFXUTIL_CalcDirectionAndFrame(D2UnitStrc * pUnit, int32_t nAnimDir, int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode) {
     char _cNumDirs;
     char cNumDirs;
     if (*pnParam >= 0x40) {
@@ -1186,11 +1191,12 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
       default:
         iVar3 = pGfxData->nOverlayId;
       pGfxData->dwFlags |= 2;
-      if (!(iVar3 >= 0 && iVar3 < sgptDataTable->nTxtOverlaySize && sgptDataTable->pTxtOverlay + iVar3)) {
+      D2OverlayTxt* pOverlayTxt = iVar3 >= 0 && iVar3 < sgptDataTable->nTxtOverlaySize ? sgptDataTable->pTxtOverlay + iVar3 : nullptr;
+      if (!pOverlayTxt) {
         return 1;
       }
 
-      pGfxData->szFilename = sgptDataTable->pTxtOverlay[iVar3].Filename;
+      pGfxData->szFilename = pOverlayTxt->Filename;
       return 1;
     }
 }

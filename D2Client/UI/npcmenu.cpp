@@ -106,7 +106,7 @@ typedef void (*fpListBoxItemActivated)();
 
 namespace D2Client::UI::npcmenu {
 
-void __fastcall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult) {
+void __thiscall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult) {
     uint16_t nConvertedId = *nInput;
     if (nConvertedId < 0x100) {
       *pResult = gnNpcMenuQuestIdTable[nConvertedId];
@@ -762,7 +762,7 @@ void __fastcall NPCMENU_ValidateNpcForShop(D2UnitStrc * pUnit) {
       return;
     }
 
-    Engine::GfxInfo::GFX_RemoveOverlayById(0x48, pUnit);
+    Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, 0x48);
 }
 
 void __stdcall NPCMENU_Initialize() {

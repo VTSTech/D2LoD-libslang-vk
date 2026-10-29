@@ -68,27 +68,30 @@ typedef int (__fastcall *UNITFINDTEST)(D2UnitStrc * pUnit, D2UnitFindArgStrc * p
 namespace D2Client::SKILLS {
 
 int32_t __fastcall GetSkilParam1(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[eSkill].Param[1];
+    return pSkillsTxt->Param[1];
 }
 
 int32_t __fastcall GetSkilParam2(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[eSkill].Param[2];
+    return pSkillsTxt->Param[2];
 }
 
 int32_t __fastcall GetSkilParam3(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[eSkill].Param[3];
+    return pSkillsTxt->Param[3];
 }
 
 int32_t __fastcall GetSkillParam4(int32_t nParam1, int32_t nParam2) {
@@ -510,7 +513,10 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileAtCoords(D2UnitStrc * pUnit, eD2Skil
 
 BOOL __fastcall Skills_CltStFunc_CheckTargetIsMonsterOrPlayer(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && (pTargetUnit->eUnitType == UNIT_MONSTER || pTargetUnit->eUnitType == UNIT_PLAYER))) {
+    if (!pTargetUnit) {
+      return 0;
+    }
+    if (!(pTargetUnit->eUnitType == UNIT_MONSTER || pTargetUnit->eUnitType == UNIT_PLAYER)) {
       return 0;
     }
 
@@ -2100,8 +2106,10 @@ uint32_t __fastcall SKILLSCLT_ValidateSkillAndMissile(D2UnitStrc * pUnit, int32_
     if (nBaseId < 0) {
       return nMissileId;
     }
-    if (nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
-      nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
+
+    D2MonStatsTxt* pMonStatsTxt = nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
+    if (pMonStatsTxt) {
+      nBaseId = (int)pMonStatsTxt->BaseId;
     }
     if (!(nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize && nBaseId == 0x10b && nMonId == 0xa7)) {
       return nMissileId;

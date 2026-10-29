@@ -43,7 +43,7 @@ typedef void (__fastcall *pfnSCompCodec)(void * pDst, uint32_t * pnDstLen, void 
 
 namespace Storm::Source::SSComp {
 
-void __fastcall BITSTREAM_WriteBits(D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount) {
+void __thiscall BITSTREAM_WriteBits(D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount) {
     uint32_t nBitsHeld;
     pBitStream->nBitAccum |= nBitsValue << ((uint8_t)pBitStream->nBitsHeld & 0x1f);
     nBitsHeld = pBitStream->nBitsHeld + nBitCount;
@@ -84,7 +84,7 @@ void __fastcall BITSTREAM_Flush(D2BitStreamWriterStrc * pBitStream) {
     }
 }
 
-void __fastcall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol) {
+void __thiscall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol) {
     int pParent;
     int pNode = *(int*)(pHuffState + 0x306c + nSymbol * 4);
     uint32_t nCode = 0;
@@ -951,7 +951,7 @@ uint32_t __stdcall SCOMP_CleanupTempBuffer() {
     return 1;
 }
 
-void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, int * * pTableSel) {
+void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, int * * pTableSel) {
     // Static local variables (originally global data)
     static uint8_t gaCompressHuffmanWeightTables[2322] = {
     0xa,
@@ -3594,7 +3594,7 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
     } while (true);
 }
 
-void __fastcall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2CompressHuffNodeStrc * pSymbolNode) {
+void __thiscall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2CompressHuffNodeStrc * pSymbolNode) {
     D2CompressHuffNodeStrc* pPrev;
     int* pPrevLink;
     uint32_t* pPrevLinkSlot;
@@ -3704,7 +3704,7 @@ void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder) {
     *(uint32_t*)(pEncoder + 8) = 0;
 }
 
-void __fastcall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nSymbol) {
+void __thiscall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nSymbol) {
     D2CompressHuffNodeStrc* pDVar1;
     uint32_t* pInsertSlot;
     int* pLink;
@@ -3853,7 +3853,7 @@ void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder) {
     _eh_vector_destructor_iterator_(pEncoder + 2, 0x18, 0x203, SSystem::LINKEDLIST_NodeDestructor);
 }
 
-int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel, uint32_t * pHuffCtx) {
+int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel) {
     int nBitsLeft;
     int32_t nRemainingBits;
     uint32_t nShiftBits;
@@ -3916,9 +3916,9 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags) {
     D2CompressEncoderStrc aHuffCtx;
     D2BitStreamWriterStrc aBitStream;
-    SSystem::LINKEDLIST_InsertAfter(pBitStreamCtx, *pnBytesWritten, &aBitStream);
+    SSystem::LINKEDLIST_InsertAfter(&aBitStream, pBitStreamCtx, *pnBytesWritten);
     HUFFMAN_InitContext(&aHuffCtx);
-    int nBytesWritten = COMPRESS_EncodeBuffer((uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel, (uint32_t*)&aHuffCtx);
+    int nBytesWritten = COMPRESS_EncodeBuffer((uint32_t*)&aHuffCtx, (uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel);
     *pnBytesWritten = nBytesWritten;
     COMPRESS_DestroyEncoderContext((uint32_t*)&aHuffCtx);
 }
@@ -3927,9 +3927,9 @@ void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnByte
 void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_t * pBitStreamCtx, uint32_t dwFlags, uint32_t dwParam) {
     uint32_t aHuffCtx[3741];
     int sListHead[3];
-    SSystem::LINKEDLIST_Unlink(pBitStreamCtx, sListHead);
+    SSystem::LINKEDLIST_Unlink(sListHead, pBitStreamCtx);
     HUFFMAN_ConstructorWithTable((int32_t)aHuffCtx);
-    int pBytesWritten = HUFFMAN_DecompressBlock(pDst, *pnDstSize, (uint16_t**)sListHead, aHuffCtx);
+    int pBytesWritten = HUFFMAN_DecompressBlock(aHuffCtx, pDst, *pnDstSize, (uint16_t**)sListHead);
     *pnDstSize = pBytesWritten;
     COMPRESS_DestroyEncoderContext(aHuffCtx);
 }

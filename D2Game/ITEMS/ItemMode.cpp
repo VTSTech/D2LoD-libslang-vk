@@ -1024,7 +1024,10 @@ static void __stdcall ITEMMODE_GetItemPageForUnit(int32_t nParam, D2UnitStrc * p
 }
 
 uint32_t __fastcall ITEMMODE_CheckQuestItemCodePair(D2ItemsTxt * pItemsTxt1, D2ItemsTxt * pItemsTxt2, int32_t nCode1, int32_t nCode2) {
-    if (!((pItemsTxt1->dwCode != nCode1 || pItemsTxt2->dwCode != nCode2) && (pItemsTxt1->dwCode != nCode2 || pItemsTxt2->dwCode != nCode1))) {
+    if (!(pItemsTxt1->dwCode != nCode1 || pItemsTxt2->dwCode != nCode2)) {
+      return 1;
+    }
+    if (!(pItemsTxt1->dwCode != nCode2 || pItemsTxt2->dwCode != nCode1)) {
       return 1;
     }
 
@@ -3422,7 +3425,10 @@ D2UnitStrc * __fastcall ITEMMODE_ValidateSocketedItems(::SGAMEDATA * pGameStrc, 
     int nBookQty;
     int nBookMaxQty;
     uint32_t bScrollOrSocketMatch = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Scroll);
-    if (!(bScrollOrSocketMatch && pOwnerUnit->pInventory)) {
+    if (!bScrollOrSocketMatch) {
+      return nullptr;
+    }
+    if (!pOwnerUnit->pInventory) {
       return nullptr;
     }
 

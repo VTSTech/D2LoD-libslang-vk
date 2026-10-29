@@ -221,8 +221,9 @@ void __stdcall MISSILE_SetDamage(D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2Dam
       }
       if (pTarget->eUnitType == UNIT_MONSTER) {
         nStatValue = pTarget->nClassId;
-        if (nStatValue >= 0 && nStatValue < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nStatValue) {
-          nMonType = sgptDataTable->pTxtMonStats[nStatValue].MonType;
+        D2MonStatsTxt* pMonStatsTxt = nStatValue >= 0 && nStatValue < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nStatValue : nullptr;
+        if (pMonStatsTxt) {
+          nMonType = pMonStatsTxt->MonType;
           if (nMonType > 0) {
             nElemDamage = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0xb4, aStatBonusValues, 0x80);
             nStatValue = 0;
@@ -4248,7 +4249,7 @@ BOOL __fastcall Missiles_SrvHitFunc_SpawnMonsterFromSkillParam(::SGAMEDATA * pGa
     }
 
     eD2Skills eSkill = D2Common::Units::Missile::GetSkillId(pUnit);
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit_00);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit_00, eSkill);
     if (!pSkill) {
       return 1;
     }
@@ -4507,11 +4508,12 @@ void __fastcall Missiles_SrvDmgFunc_PhysToElementalByCalc1(::SGAMEDATA * pGame, 
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId)) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (!pMissilesTxt) {
       return;
     }
 
-    uint32_t nCalcExpr = sgptDataTable->pTxtMissiles[nClassId].DmgCalc1;
+    uint32_t nCalcExpr = pMissilesTxt->DmgCalc1;
     int32_t nElemDamage = -1;
     int32_t nMaxDamage = -1;
     D2UnitStrc* pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
@@ -4539,11 +4541,12 @@ void __fastcall Missiles_SrvDmgFunc_RecalcElementalWithClear(::SGAMEDATA * pGame
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId)) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (!pMissilesTxt) {
       return;
     }
 
-    uint32_t nCalcExpression = sgptDataTable->pTxtMissiles[nClassId].DmgCalc1;
+    uint32_t nCalcExpression = pMissilesTxt->DmgCalc1;
     int32_t nElemDamage = -1;
     int32_t nScaledDamage = -1;
     uint32_t nCalcResult = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpression, nScaledDamage, nElemDamage);

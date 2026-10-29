@@ -828,7 +828,7 @@ void __fastcall SUNITPROXY_CountPlayerInLevel(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 // @sourcefile .\UNIT\sunitproxy.cpp
-void __fastcall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t dwGameTick) {
+void __thiscall SUNITPROXY_RefreshGambleForAllNpcs(::SGAMEDATA * pThis, int32_t dwGameTick) {
     int32_t* pNewQueueEntry;
     D2GameNpcControlStrc* pNpcCtrl = pThis->pNpcControl;
     uint8_t* pNpcArrayBase = (uint8_t*)pNpcCtrl->pNpc;

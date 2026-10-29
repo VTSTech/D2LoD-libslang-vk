@@ -36,7 +36,7 @@
 
 namespace D2Common::COMPOSIT::Composit {
 
-void __fastcall COMPOSIT_ReadCompositeFileRow(int32_t nBodyIndex, char * szText) {
+void __thiscall COMPOSIT_ReadCompositeFileRow(char * szText, int32_t nBodyIndex) {
     if (nBodyIndex != 0xb) {
       return;
     }

@@ -880,7 +880,7 @@ void __fastcall DRLGPRESET_InitGridsFromDS1File(D2RoomExStrc * pRoom) {
       nWallLayers = pFile->nWallLayers;
     }
     if (nWallLayers) {
-      DrlgGrid::FlagOperations(context.pRoomExDataPreset->pWallGrid, 0, 0x84);
+      DrlgGrid::FlagOperations(context.pRoomExDataPreset->pWallGrid, 0x84, 0);
     }
 
     nWallLayers = 1;
@@ -913,14 +913,14 @@ void __fastcall DRLGPRESET_InitGridsFromDS1File(D2RoomExStrc * pRoom) {
     if (pFile->nFloorLayers > 0) {
       pFloorGrid = context.pRoomExDataPreset->pFloorGrid;
       do {
-        DrlgGrid::FlagOperations(pFloorGrid, 0, 0x84);
+        DrlgGrid::FlagOperations(pFloorGrid, 0x84, 0);
         nWallLayers++;
         pFloorGrid++;
         pGrid = context.pGrid;
       } while (nWallLayers < pFile->nFloorLayers);
     }
 
-    DrlgGrid::FlagOperations(pGrid, 0, 0x84);
+    DrlgGrid::FlagOperations(pGrid, 0x84, 0);
     DRLGPRESET_AddAndSetPresetUnits(context.pRoom);
 }
 

@@ -57,7 +57,7 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
       nFrameCountClamped--;
     } while (-1 < nFrameCountClamped);
 
-    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames(dwThreadId, aFrames, nMaxFrames, (CONTEXT*)pContext);
+    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames((CONTEXT*)pContext, dwThreadId, aFrames, nMaxFrames);
     if (0 >= nFrameCount) {
       return;
     }

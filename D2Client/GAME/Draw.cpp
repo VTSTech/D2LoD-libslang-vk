@@ -52,7 +52,7 @@
 
 namespace D2Client::GAME::Draw {
 
-void __fastcall DRAW_UpdateTileVisibilityBounds(D2DrlgTileDataStrc * pActSub18, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
+void __thiscall DRAW_UpdateTileVisibilityBounds(int32_t nParam3, D2DrlgTileDataStrc * pActSub18, int32_t nParam1, int32_t nParam2) {
     pActSub18->nFlags |= 0x20000;
     if (!*(int*)(nParam3 + 0x28)) {
       return;
@@ -323,7 +323,7 @@ void __stdcall DRAW_CalcRoofLightPerspective(uint8_t * nRow, int32_t nTileX, int
 }
 
 // Renders a single floor tile during the game draw pass. Skips tiles with flags 0x408 (hidden/special) or outside the extended view rect, and skips non-zero-orientation tiles. Computes a per-tile light intensity array (8x8 for software render, 6x6 for 3D) via GetIntensityFlagsForTile or DRAW_CalcRoofLight* variants (ortho vs perspective, normal vs grid-lit). Calls D2GFX_DrawGroundTile to blit. For wet-floor tiles (flag 0x2) may spawn weather splashes or bubbles via WEATHER_Spawn*. Updates tile visibility bounds after drawing.
-void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int32_t nScreenX, int32_t nScreenY, int32_t nWorldX, int32_t nWorldY, D2DrawFloorStrc * pFloor) {
+void __thiscall DrawFloorTile(D2DrawFloorStrc * pFloor, D2DrlgTileDataStrc * pTileData, void * pParam, int32_t nScreenX, int32_t nScreenY, int32_t nWorldX, int32_t nWorldY) {
     D2GfxLightExStrc* pLightEx;
     int nColIter;
     uint32_t nScreenPanels;
@@ -407,10 +407,10 @@ void __fastcall DrawFloorTile(D2DrlgTileDataStrc * pTileData, void * pParam, int
       }
     }
 
-    DRAW_UpdateTileVisibilityBounds(pTileData, nWorldX, nWorldY, (int32_t)pFloor);
+    DRAW_UpdateTileVisibilityBounds((int32_t)pFloor, pTileData, nWorldX, nWorldY);
 }
 
-void __fastcall DRAW_DrawEdgeFloorTile(int32_t nWorldX, int32_t nParam, D2DrawFloorStrc * pDrawFloor) {
+void __thiscall DRAW_DrawEdgeFloorTile(D2DrawFloorStrc * pDrawFloor, int32_t nWorldX, int32_t nParam) {
     D2DrlgTileDataStrc* pTileData;
     int32_t nWorldY_00 = nParam;
     int32_t nWorldY = nWorldX;
@@ -430,19 +430,19 @@ void __fastcall DRAW_DrawEdgeFloorTile(int32_t nWorldX, int32_t nParam, D2DrawFl
       return;
     }
 
-    DrawFloorTile(pTileData, (void*)0x1, nScreenX, nWorldX, nWorldY, nWorldY_00, pDrawFloor);
+    DrawFloorTile(pDrawFloor, pTileData, (void*)0x1, nScreenX, nWorldX, nWorldY, nWorldY_00);
 }
 
-void __fastcall DrawSubTile(int32_t nTileX, int32_t nParam1, int32_t nParam2, int32_t nParam3, D2DrawFloorStrc * pDrawFloor) {
-    int nBaseX = nTileX / 5 * 5;
-    int nBaseY = nParam1 / 5 * 5;
-    DRAW_DrawEdgeFloorTile(nBaseX, nBaseY, pDrawFloor);
-    DRAW_DrawEdgeFloorTile(nBaseX + nParam2, nBaseY + nParam3, pDrawFloor);
-    DRAW_DrawEdgeFloorTile(nBaseX + nParam2 * 2, nBaseY + nParam3 * 2, pDrawFloor);
+void __thiscall DrawSubTile(D2DrawFloorStrc * pDrawFloor, int32_t nTileX, int32_t nParam1, int32_t nParam2, int32_t nParam3) {
+    int nWorldX = nTileX / 5 * 5;
+    int nParam = nParam1 / 5 * 5;
+    DRAW_DrawEdgeFloorTile(pDrawFloor, nWorldX, nParam);
+    DRAW_DrawEdgeFloorTile(pDrawFloor, nWorldX + nParam2, nParam + nParam3);
+    DRAW_DrawEdgeFloorTile(pDrawFloor, nWorldX + nParam2 * 2, nParam + nParam3 * 2);
 }
 
 // Client-side floor renderer: populates the per-frame D2DrawFloorStrc from the current view/state then draws all floor tiles of the current room and its adjacent rooms. Caches low-quality/perspective flags, weather splash rate, window-border type, and the player's roll seed; resets the tile bounding box; conditionally enables weather splash/recording every few frames. For each adjacent room it gets room coords and floor tiles and calls DrawFloorTile for tiles whose flag-derived layer (nFlags>>14 &7) matches the current pass (1..2), honoring the level's FloorFilter. When the level draws edges in perspective, calls DrawSubTile to fill the four boundary edges around the player position. Halts via ERROR_UnrecoverableInternalError_Halt if no player or level row.
-void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorStrc * pDrawFloor) {
+void __thiscall DrawFloorByViewAndFloor(D2DrawFloorStrc * pDrawFloor, D2GameViewStrc * pGameView) {
     eD2LevelId eLevelId;
     D2LevelsTxt* pLevelTxt;
     void* nErrLine;
@@ -534,7 +534,7 @@ void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorS
           pTile = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(ppRooms[nRoomIdx], &nTileCount);
           for (; nTileCount; nTileCount--) {
             if ((D2GameViewStrc*)((uint32_t)pTile->nFlags >> 0xe & 7) == pGameView) {
-              DrawFloorTile(pTile, nErrLine, pDrawFloor->nX + pTile->nScreenX, pTile->nScreenY + pDrawFloor->nY, sRoomCoords.dwXStart + pTile->nPosX * 5, sRoomCoords.dwYStart + pTile->nPosY * 5, pDrawFloor);
+              DrawFloorTile(pDrawFloor, pTile, nErrLine, pDrawFloor->nX + pTile->nScreenX, pTile->nScreenY + pDrawFloor->nY, sRoomCoords.dwXStart + pTile->nPosX * 5, sRoomCoords.dwYStart + pTile->nPosY * 5);
             }
 
             pTile++;
@@ -578,19 +578,19 @@ void __fastcall DrawFloorByViewAndFloor(D2GameViewStrc * pGameView, D2DrawFloorS
       nPlayerY = 0;
     }
     if ((int)pGameView - pDrawFloor->nMinTileX < bDrawEdges) {
-      DrawSubTile(pDrawFloor->nMinTileX - 5, nPlayerY, 0, -5, pDrawFloor);
+      DrawSubTile(pDrawFloor, pDrawFloor->nMinTileX - 5, nPlayerY, 0, -5);
     }
     if (pDrawFloor->nMaxTileX - (int)pGameView < nRoomIdx) {
-      DrawSubTile(pDrawFloor->nMaxTileX + 5, nPlayerY, 0, 5, pDrawFloor);
+      DrawSubTile(pDrawFloor, pDrawFloor->nMaxTileX + 5, nPlayerY, 0, 5);
     }
     if (nPlayerY - pDrawFloor->nMinTileY < bDrawEdges) {
-      DrawSubTile((int32_t)pGameView, pDrawFloor->nMinTileY - 5, -5, 0, pDrawFloor);
+      DrawSubTile(pDrawFloor, (int32_t)pGameView, pDrawFloor->nMinTileY - 5, -5, 0);
     }
     if (!(pDrawFloor->nMaxTileY - nPlayerY < nRoomIdx)) {
       return;
     }
 
-    DrawSubTile((int32_t)pGameView, pDrawFloor->nMaxTileY + 5, 5, 0, pDrawFloor);
+    DrawSubTile(pDrawFloor, (int32_t)pGameView, pDrawFloor->nMaxTileY + 5, 5, 0);
 }
 
 // Renders roof tiles for current game view with lighting intensity flags and alpha blending
@@ -710,7 +710,7 @@ void __fastcall dFloorDraw(D2GameViewStrc * pGameView) {
     // Static local variables (originally global data)
     static D2DrawFloorStrc D2DrawFloorStrc_007c8a28 = {}; D2_STATIC_GUARD(D2DrawFloorStrc_007c8a28, "D2Client::GAME::Draw::dFloorDraw::D2DrawFloorStrc_007c8a28");
 
-    DrawFloorByViewAndFloor(pGameView, &D2DrawFloorStrc_007c8a28);
+    DrawFloorByViewAndFloor(&D2DrawFloorStrc_007c8a28, pGameView);
 }
 
 // Fetches the act's light RGB into

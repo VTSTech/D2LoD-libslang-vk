@@ -2067,9 +2067,10 @@ BOOL __fastcall Skills_CltDoFunc_Mon_MeleeRepeat(D2UnitStrc * pUnit, eD2Skills e
 }
 
 BOOL __fastcall Skills_CltStFunc_SpawnCltMissileA(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (pSkillsTxt) {
       eMissilesId eMissileId;
-      eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[1];
+      eMissileId = (eMissilesId)pSkillsTxt->cltmissile[1];
       if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
         Skills::MakeMissileAtSkillTarget(pUnit, eMissileId, eSkill, nSkillLvl);
         return 1;
@@ -2120,7 +2121,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ScatterDoubleMissile(D2UnitStrc * pUnit, eD
 }
 
 BOOL __fastcall Skills_CltDoFunc_Mon_BaalTaunt_AnimCycle(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     int32_t nRepeatCount = D2Common::Skills::SKILL_GetParam1(pSkill);
     int nFrame = pUnit->nGfxCurrentFrame >> 8;
     if (nFrame != 6) {
@@ -2450,7 +2451,7 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
     uint32_t nDirRaw = D2Common::PATH::Path::Get8FlagsFromDynamicPath(nCompositeDir);
     if (nDirRaw) {
       int nUnitX;
-      nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit), 1);
+      nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_SpiderLay), 1);
       pStartRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       eUnitType = pUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {

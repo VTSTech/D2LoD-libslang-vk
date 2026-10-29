@@ -107,14 +107,14 @@ struct WardenClient {
 namespace D2Client::Warden {
 
 // Function declarations
-void __fastcall WARDEN_RC4Decrypt(struct D2RC4StateStrc * pState, int32_t pData, uint32_t nLen);
+void __thiscall WARDEN_RC4Decrypt(struct D2RC4StateStrc * pState, int32_t pData, uint32_t nLen);
 uint32_t __stdcall WARDEN_CheckSignatureMagic(int32_t nDataLen, uint32_t nTotalLen, int32_t pBuffer, int * pnSigOffset);
 // @sourcefile .\WARDEN\WardenClient.cpp
 void __fastcall WARDEN_CbAllocModuleStruct(uint32_t nParam);
 // @sourcefile .\WARDEN\WardenClient.cpp
 void __fastcall WARDEN_CbFreeModuleStruct(void * pParam);
 // @sourcefile .\WARDEN\WardenClient.cpp
-LPVOID * __fastcall WARDEN_DestroyModuleObject(uint8_t bFreeStruct, LPVOID * ppModule);
+LPVOID * __thiscall WARDEN_DestroyModuleObject(LPVOID * ppModule, uint8_t bFreeStruct);
 uint32_t __stdcall WARDEN_DownloadModule(char * dwParam1, void * dwParam2, uint32_t pModuleRequest);
 void __thiscall SendPacket(::WardenClient * pThis, void * pData, uint32_t nLen);
 bool __thiscall CheckModule(::WardenClient * pThis, uint8_t * pModuleHash, void * pRc4Key);

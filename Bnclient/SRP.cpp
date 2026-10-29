@@ -31,7 +31,7 @@ D2Srp * __fastcall SRP_ConstructContext(D2Srp * pSrp) {
 // calls srand(dwSeed) then rand(), SHA1s those 12 bytes into aRandomPoolA (this+0xc), copies
 // the 20-byte digest to aRandomPoolB (this+0x20), and clears aOutputBuffer (20 bytes) and nBytesAvailable.
 // Provenance: 1.14d asm 00527dd0..00527e60 (SHA1_Update(ctx, &sSeedEntropy, 0xc) at 00527e0c..00527e14).
-void __fastcall SRP_InitializeRandomState(D2Srp * pThis, uint32_t dwSeed) {
+void __thiscall SRP_InitializeRandomState(D2Srp * pThis, uint32_t dwSeed) {
     D2SrpSeedEntropyStrc sSeedEntropy;
     uint32_t aShaCtx[23];
     _time32(&sSeedEntropy.tTime);
@@ -104,7 +104,7 @@ void __stdcall SRP_ComputePasswordHash(void * pParam, char * szText1, char * szT
     *pnParam = (int)nHashResult;
 }
 
-void __fastcall SRP_ComputeScramblingParam(int32_t pThis, BigData * * ppBase, BigData * * pnParam) {
+void __thiscall SRP_ComputeScramblingParam(int32_t pThis, BigData * * ppBase, BigData * * pnParam) {
     SHA::SHA1_BigIntPowMod(*pnParam, *(BigData**)(pThis + 4), *ppBase, *(BigData**)(pThis + 8));
 }
 
@@ -119,7 +119,7 @@ void __stdcall SRP_HashBigNumToU32(BigData * * ppBigNum, uint32_t * pdwOut) {
     *pdwOut = (uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)aHash[0] << 8 | (uint16_t)(uint8_t)aHash[1]) << 8 | (uint32_t)(uint8_t)aHash[2]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)aHash[3]);
 }
 
-int __fastcall SRP_ClientComputeSharedSecret(int32_t pSrp, BigData * * pPrivateKey, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
+int __thiscall SRP_ClientComputeSharedSecret(int32_t pSrp, BigData * * pPrivateKey, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
     BigData* pExponentBase;
     BigData* pExponent;
     BigData* pBase;
@@ -165,7 +165,7 @@ int __fastcall SRP_ClientComputeSharedSecret(int32_t pSrp, BigData * * pPrivateK
     return 0;
 }
 
-int __fastcall SRP_ServerComputeSharedSecret(D2Srp * pThis, BigData * * ppClientPublic, int * pnParam, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
+int __thiscall SRP_ServerComputeSharedSecret(D2Srp * pThis, BigData * * ppClientPublic, int * pnParam, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
     SRP_HashBigNumToU32((BigData**)pnParam, (uint32_t*)&pnParam);
     int* pScramblingHash = pnParam;
     if (!pnParam) {
@@ -195,7 +195,7 @@ int __fastcall SRP_ServerComputeSharedSecret(D2Srp * pThis, BigData * * ppClient
     return 0;
 }
 
-void __fastcall SRP_ComputeClientProof(int32_t pThis, char * szUsername, void * pParam1, void * pParam2, void * pParam3, void * pParam4, int32_t nParam) {
+void __thiscall SRP_ComputeClientProof(int32_t pThis, char * szUsername, void * pParam1, void * pParam2, void * pParam3, void * pParam4, int32_t nParam) {
     uint32_t sha1Ctx[23];
     uint8_t hashG[20];
     uint8_t xorHashNPrime[32];
@@ -307,7 +307,7 @@ BOOL __thiscall SRP_SetParameters(D2Srp * * ppSrp, uint32_t nGeneratorLen, uint8
 
 // Seeds the SRP context's random state: loads *ppSrp and tail-jumps to SRP_InitializeRandomState(pSrp, dwSeed).
 // Provenance: 1.14d asm 00528620 MOV ECX,[ECX]; JMP 00527dd0.
-void __fastcall SRP_SeedRandom(uint32_t dwSeed, D2Srp * * ppSrp) {
+void __thiscall SRP_SeedRandom(D2Srp * * ppSrp, uint32_t dwSeed) {
     SRP_InitializeRandomState(*ppSrp, dwSeed);
 }
 

@@ -140,7 +140,10 @@ void __fastcall LRUCACHE_ForEach(D2LRUCacheStrc * pCache, fpLRUCacheForEachFn pf
 }
 
 static D2LRUCacheNodeStrc * LRUCACHE_AllocEntry(D2LRUCacheStrc * pCache, int32_t nEntrySize) {
-    if (pCache->nCount == pCache->nMaxCount || (uint32_t)(pCache->nBytesUsed + nEntrySize) > pCache->dwBufSize) {
+    if (pCache->nCount == pCache->nMaxCount) {
+      return nullptr;
+    }
+    if ((uint32_t)(pCache->nBytesUsed + nEntrySize) > pCache->dwBufSize) {
       return nullptr;
     }
 

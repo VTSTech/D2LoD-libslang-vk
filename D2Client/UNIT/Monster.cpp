@@ -550,7 +550,7 @@ void __fastcall MONSTER_SetMonStatsTxtAndType(D2UnitStrc * pUnit, uint16_t wPara
 // Returns the address of the monster data's AI slot (+0x30). The client never allocates a server AI there; it uses the slot as an int think-delay in frames, decremented each update and reloaded with 5..0x20.
 // Provenance: 1.14d asm 004ae123 LEA EAX,[ECX+0x30]; all 13 callers store small integers through it.
 int32_t * __fastcall GetMonsterAi(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return nullptr;
     }
 
@@ -558,7 +558,7 @@ int32_t * __fastcall GetMonsterAi(D2UnitStrc * pUnit) {
 }
 
 int32_t __fastcall GetOwnerGUID(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return -1;
     }
 
@@ -574,7 +574,7 @@ void __fastcall SetOwnerGUID(D2UnitStrc * pUnit, int32_t nOwnerGUID) {
 }
 
 int * __fastcall MONSTER_GetAiDataPtr(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return nullptr;
     }
 
@@ -846,8 +846,10 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     if (nBaseClassId < 0) {
       return 0;
     }
-    if (nBaseClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseClassId) {
-      nBaseClassId = (int)sgptDataTable->pTxtMonStats[nBaseClassId].BaseId;
+
+    D2MonStatsTxt* pMonStatsTxt = nBaseClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseClassId : nullptr;
+    if (pMonStatsTxt) {
+      nBaseClassId = (int)pMonStatsTxt->BaseId;
     }
     if (!(nBaseClassId >= 0 && nBaseClassId < sgptDataTable->nTxtMonStatsSize && nBaseClassId == 0x12a)) {
       return 0;
@@ -1003,7 +1005,7 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
       if (*pSkillIdPtr >= 0 && pMonStatsTxt->aSkLvl[i] > '\0') {
         D2Common::Skills::AddSkill(pUnit, (int)*pSkillIdPtr, pMonStatsTxt->aSkLvl[i] + nMonStats2Idx, 1, ".\\UNIT\\Monster.cpp", 0x23f);
         nRandStartFrame = (uint32_t)pMonStatsTxt->aSkMode[i];
-        D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum((int)*pSkillIdPtr, pUnit), nRandStartFrame);
+        D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)*pSkillIdPtr), nRandStartFrame);
       }
 
       pSkillIdPtr++;
@@ -1301,8 +1303,9 @@ void __stdcall MONSTER_SpawnFetishMissileSpread(D2UnitStrc * pUnit, eMissilesId 
 
     int nClassId = pUnit->nClassId;
     int nFetishBaseId = nClassId;
-    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId) {
-      nFetishBaseId = (int)sgptDataTable->pTxtMonStats[nClassId].BaseId;
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (pMonStatsTxt) {
+      nFetishBaseId = (int)pMonStatsTxt->BaseId;
     }
     if (!(nFetishBaseId >= 0 && nFetishBaseId < sgptDataTable->nTxtMonStatsSize && nFetishBaseId == 0x3f && nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
@@ -1546,7 +1549,10 @@ static int * MONSTER_GetAnimModeDataEntry(D2UnitStrc * pUnit) {
     }
 }; D2_STATIC_GUARD(gaMonsterAnimModeData, "D2Client::UNIT::Monster::MONSTER_GetAnimModeDataEntry::gaMonsterAnimModeData");
 
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if (!pUnit) {
+      return nullptr;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
       return nullptr;
     }
 
@@ -2719,7 +2725,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
 
       nClassId = nMonStatsTxtCount;
       if (nMonStatsTxtCount == 0x11c && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2) {
-        pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_QueenDeath, pUnit);
+        pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_QueenDeath);
         D2Common::Units::SetCurrentSkill(pUnit, pCurrentSkill);
       } else {
         UnitMode::UNITMODE_SetAnimMode(pUnit, Kick);
@@ -2809,7 +2815,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       D2Common::PATH::DynamicPath::PATH_SetOrClearFlag0x2000((D2DynamicPathStrc*)pUnit, 0);
       eDeathSkill = pMessage->nSkillId;
       D2Common::Skills::AddSkill(pUnit, eDeathSkill, pMessage->nSkillLvl, 0, ".\\UNIT\\Monster.cpp", 0x914);
-      pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eDeathSkill, pUnit);
+      pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eDeathSkill);
       D2Common::Units::SetCurrentSkill(pUnit, pCurrentSkill);
       eDeathMode = D2Common::Skills::GetSkillMode(pUnit, pCurrentSkill);
       if (eDeathMode == eD2MonsterAnimMode_ns::Sequence) {
@@ -2829,7 +2835,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, nullptr);
       eDeathSkill = pMessage->nSkillId;
       D2Common::Skills::AddSkill(pUnit, eDeathSkill, pMessage->nSkillLvl, 0, ".\\UNIT\\Monster.cpp", 0x929);
-      pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eDeathSkill, pUnit);
+      pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eDeathSkill);
       D2Common::Units::SetCurrentSkill(pUnit, pCurrentSkill);
       eVar2 = D2Common::Skills::GetSkillMode(pUnit, pCurrentSkill);
       if (eVar2 == eD2PlayerAnimMode_ns::Skill2) {
@@ -2948,7 +2954,7 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, D2MercInitArgStrc 
 
       nSkillModeVal = (uint32_t)(char)pHirelingTxt->nSkillMode[nSkillIdx];
       D2Common::Skills::AddSkill(pMercUnit, eSkill, nLevel, 0, ".\\UNIT\\Monster.cpp", 0x9c8);
-      D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pMercUnit), nSkillModeVal);
+      D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pMercUnit, eSkill), nSkillModeVal);
       pSkillIdPtr++;
       nSkillIdx++;
       pUnit = pMercUnit;

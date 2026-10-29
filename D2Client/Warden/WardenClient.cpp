@@ -27,7 +27,7 @@ typedef D2WardenModuleObjectStrc * (__fastcall *pfnWardenCreateInterface)(::Ward
 
 namespace D2Client::Warden {
 
-void __fastcall WARDEN_RC4Decrypt(D2RC4StateStrc * pState, int32_t pData, uint32_t nLen) {
+void __thiscall WARDEN_RC4Decrypt(D2RC4StateStrc * pState, int32_t pData, uint32_t nLen) {
     uint32_t nNextByteIndex;
     uint8_t byIndexJ;
     uint8_t bySwapTmp;
@@ -67,16 +67,16 @@ static void __stdcall WARDEN_ComputeModuleHash(char * szModuleName, int32_t pHas
     D2Sha1ContextStrc sha1Ctx;
     Fog::Source::SSignature::Sha1_Initialize(&sha1Ctx);
     if (nSplitOffset) {
-      Storm::Source::SSignature::Sha1_Append(pModuleData + nSplitOffset, nTotalLen - nSplitOffset, &sha1Ctx);
+      Storm::Source::SSignature::Sha1_Append(&sha1Ctx, pModuleData + nSplitOffset, nTotalLen - nSplitOffset);
       nTotalLen = nSplitOffset;
     }
 
-    Storm::Source::SSignature::Sha1_Append(pModuleData, nTotalLen, &sha1Ctx);
+    Storm::Source::SSignature::Sha1_Append(&sha1Ctx, pModuleData, nTotalLen);
     Storm::Source::SSTR::SStrCopy((char*)szUpperName, szModuleName, 0x400);
     Storm::Source::SSTR::SStrUpper((char*)szUpperName);
     uint32_t nNameLen = Storm::Source::SSTR::SStrLen((char*)szUpperName);
-    Storm::Source::SSignature::Sha1_Append(szUpperName, nNameLen, &sha1Ctx);
-    Storm::Source::SSignature::Sha1_Finalize((uint8_t*)pHashOut, &sha1Ctx);
+    Storm::Source::SSignature::Sha1_Append(&sha1Ctx, szUpperName, nNameLen);
+    Storm::Source::SSignature::Sha1_Finalize(&sha1Ctx, (uint8_t*)pHashOut);
 }
 
 // Verifies a Warden module's RSA signature: checks the 'NGIS' tag at the end of the module, builds the expected padded SHA-1 hash of the module and its name, decrypts the trailing signature with the supplied modulus and exponent (SBigPowMod) and returns TRUE when the two match.
@@ -148,7 +148,7 @@ void __fastcall WARDEN_CbFreeModuleStruct(void * pParam) {
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-LPVOID * __fastcall WARDEN_DestroyModuleObject(uint8_t bFreeStruct, LPVOID * ppModule) {
+LPVOID * __thiscall WARDEN_DestroyModuleObject(LPVOID * ppModule, uint8_t bFreeStruct) {
     WARDEN_FreeModuleLibraries(ppModule);
     if (!(bFreeStruct & 1)) {
       return ppModule;
@@ -497,7 +497,7 @@ static BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Ke
       if ((char)bDecryptOk == '\0') {
         nErrLine = 0x1a0;
       } else {
-        pLoadedLib = (pfnWardenCreateInterface)WARDEN_DecryptBuffer(1, (int*)ppModule);
+        pLoadedLib = (pfnWardenCreateInterface)WARDEN_DecryptBuffer((int*)ppModule, 1);
         ppModule->pfnCreateInterface = pLoadedLib;
         if (pLoadedLib) {
           Storm::SMem::SMemFree(pDecompressed, ".\\WARDEN\\WardenClient.cpp", 0x1b0, 0);

@@ -33,19 +33,19 @@ int __stdcall SMsgPopRegisterState(char * szText);
 // @blizzard SMsgPushRegisterState (SMSG.CPP)
 uint32_t __stdcall SMsgPushRegisterState(uint32_t nParam);
 uint32_t __stdcall WND_SetActiveWindow(uint32_t dwParam);
-uint32_t __fastcall WND_ResolveListOffset(int * pBase, int * pNode);
-int32_t __fastcall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode);
-void __fastcall WND_InsertListNode(int * * pNode, int32_t nMode, int * * ppAnchor, int * * ppList);
-uint32_t __fastcall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode);
-void __fastcall WND_UnlinkListNode(int32_t pThis, int * pNode);
-uint32_t __fastcall WND_GetNodeData(int32_t pThis, int32_t pNode);
+uint32_t __thiscall WND_ResolveListOffset(int * pNode, int * pBase);
+int32_t __thiscall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode);
+void __thiscall WND_InsertListNode(int * * ppList, int * * pNode, int32_t nMode, int * * ppAnchor);
+uint32_t __thiscall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode);
+void __thiscall WND_UnlinkListNode(int32_t pThis, int * pNode);
+uint32_t __thiscall WND_GetNodeData(int32_t pThis, int32_t pNode);
 void __fastcall WND_RemoveAllChildren(struct D2StormListHead * pWindow);
 void __fastcall WND_DetachAndClearChildren(struct D2StormListHead * pWindow);
-int * * __fastcall WND_AllocRecord(int32_t nMode, int32_t nSize, uint32_t dwFlags, int * * ppList);
-int * __fastcall WND_UnlinkAndFreeRecord(uint8_t byFreeFlags, int * pRecord);
+int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize, uint32_t dwFlags);
+int * __thiscall WND_UnlinkAndFreeRecord(int * pRecord, uint8_t byFreeFlags);
 // @blizzard AddWindow (SMSG.CPP)
 void __stdcall SMSG_AddWindow(uint32_t hWnd);
-uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, struct StormWndRecStrc * pRecord);
+uint32_t __thiscall WND_RemoveAndFreeRecord(void * pListHead, struct StormWndRecStrc * pRecord);
 // @blizzard FindWindow (SMSG.CPP)
 uint32_t __fastcall SMSG_FindWindow(int32_t nHandle);
 // @blizzard SMsgDispatchMessage (SMSG.CPP)
@@ -68,10 +68,10 @@ void __stdcall SMsgUnregisterKeyUp(uint32_t hWnd, char * szText1, char * szText2
 void __stdcall SMsgUnregisterMessage(uint32_t hWnd, char * szText1, char * szText2);
 LRESULT __stdcall WndProcC(HWND hWnd, uint32_t nParam1, uint32_t nParam2, LPARAM lParam);
 uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId);
-uint32_t __fastcall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes);
-int32_t __fastcall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount);
-void __fastcall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount);
-int32_t __fastcall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew);
+uint32_t __thiscall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes);
+int32_t __thiscall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount);
+void __thiscall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount);
+int32_t __thiscall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew);
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.
 void StaticFini_gWndTrackingList();
 // 3 internal functions (defined in .cpp)

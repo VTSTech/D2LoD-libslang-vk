@@ -233,7 +233,10 @@ D2UnitStrc * __fastcall FindUnitFromTable(::SGAMEDATA * pGame, eD2UnitType eUnit
 
 // Returns the owner unit (parent) of the given unit. Checks eUnitFlagsEx bit 10 (has owner flag), then looks up eOwnerType/nOwnerGUID via FindUnitFromTable.
 D2UnitStrc * __fastcall GetOwnerUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitFlagsEx >> 10 & 1)) {
+    if (!pUnit) {
+      return nullptr;
+    }
+    if (!(pUnit->eUnitFlagsEx >> 10 & 1)) {
       return nullptr;
     }
 

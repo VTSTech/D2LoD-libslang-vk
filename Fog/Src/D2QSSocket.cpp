@@ -301,7 +301,10 @@ void __stdcall NET_MCP_CLIENT_CreateConnectionThread(D2QSSocketStrc * NET_MCP_CL
 }
 
 HANDLE __stdcall QSSOCKET_Initialize(D2QSSocketStrc * pQSSocket) {
-    if (!(pQSSocket && !pQSSocket->hThread)) {
+    if (!pQSSocket) {
+      return (HANDLE)0x0;
+    }
+    if (pQSSocket->hThread) {
       return (HANDLE)0x0;
     }
 

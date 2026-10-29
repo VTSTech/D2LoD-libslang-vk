@@ -87,7 +87,7 @@ void __fastcall INTERACT_AnyObject(uint16_t eUnitType, DWORD nUnitGUID) {
             nPosY = 0x20d;
             pcVar2 = ".\\UNIT\\UnitMode.cpp";
             memset(aSkillCastMsg, 0, 7 * sizeof(aSkillCastMsg[0]));
-            pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_Kick, pPlayerUnit_lcl);
+            pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pPlayerUnit_lcl, SKILL_Kick);
             aSkillCastMsg[0] = D2Common::Skills::GetSkillId(pSkill, pcVar2, nPosY);
             if (pTargetUnit->nClassId == 0x194) {
               if (pTargetUnit->eAnimMode.ePlayerMode == Death) {
@@ -156,7 +156,7 @@ void __fastcall INTERACT_AnyObject(uint16_t eUnitType, DWORD nUnitGUID) {
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x13, eUnitType_00, nUnitGUID);
 }
 
-void __fastcall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction pThis, int32_t nTargetOrX, int32_t nParam, uint32_t dwUnused) {
+void __thiscall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction pThis, int32_t nTargetOrX, int32_t nParam, uint32_t dwUnused) {
     if (pThis == UNITMODEACTION_ITEM_INTERACT) {
       return;
     }

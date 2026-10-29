@@ -461,8 +461,9 @@ static uint8_t GetMPRegen(D2UnitStrc * pUnit) {
     if (pStatListMana && nMaxMana && pUnit) {
       uint8_t byPct;
       nManaRegenBase = pUnit->nClassId;
-      if (!(nManaRegenBase < 0 || nManaRegenBase >= sgptDataTable->nTxtCharStatsSize) && sgptDataTable->pTxtCharStats + nManaRegenBase) {
-        nManaRegenBase = (uint32_t)(uint8_t)sgptDataTable->pTxtCharStats[nManaRegenBase].ManaRegen * 0x19;
+      D2CharStatsTxt* pCharStatsTxt = !(nManaRegenBase < 0 || nManaRegenBase >= sgptDataTable->nTxtCharStatsSize) ? sgptDataTable->pTxtCharStats + nManaRegenBase : nullptr;
+      if (pCharStatsTxt) {
+        nManaRegenBase = (uint32_t)(uint8_t)pCharStatsTxt->ManaRegen * 0x19;
         if (!nManaRegenBase) {
           nManaRegenBase = 0x1d4c;
         }
@@ -975,7 +976,10 @@ eD2ServerIncomingStatus __thiscall ItemBelongsToUnit(void * pThis, D2UnitStrc * 
     }
 
     D2UnitStrc* pItem = UNIT::SUnit::FindUnitFromTable((::SGAMEDATA*)pThis, UNIT_ITEM, nItemGid);
-    if (!(pItem && (pItem->eAnimMode.ePlayerMode == Death || pItem->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral))) {
+    if (!pItem) {
+      return SERVERSTATUS_BAD_TARGET;
+    }
+    if (!(pItem->eAnimMode.ePlayerMode == Death || pItem->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
       return SERVERSTATUS_BAD_TARGET;
     }
 
@@ -1019,7 +1023,10 @@ eD2ServerIncomingStatus __thiscall ItemBelongsToInventoryOf(void * pThis, D2Unit
     }
 
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable((::SGAMEDATA*)pThis, UNIT_ITEM, nItemGid);
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == Walk)) {
+    if (!pUnit) {
+      return SERVERSTATUS_BAD_TARGET;
+    }
+    if (pUnit->eAnimMode.ePlayerMode != Walk) {
       return SERVERSTATUS_BAD_TARGET;
     }
 
@@ -1086,7 +1093,7 @@ int32_t __stdcall MONSTER_FindNearbyAllyUnit(::SGAMEDATA * pGame, int32_t bCheck
     if (!pAllyUnit) {
       return 1;
     }
-    if (!(pAllyUnit->eUnitType == UNIT_MONSTER && pAllyUnit->pUnitData.pUnitDataPlayer && pAllyUnit->pUnitData.pUnitDataPlayer->pMonsterAi)) {
+    if (!(pAllyUnit->eUnitType == UNIT_MONSTER && pAllyUnit->pUnitData.pUnitDataPlayer ? pAllyUnit->pUnitData.pUnitDataPlayer->pMonsterAi : 0)) {
       return 3;
     }
 
@@ -3001,7 +3008,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x2F_NpcInteract(::SGAMEDATA * pGame, D2
     if (!pNpc) {
       return SERVERSTATUS_BAD_TARGET;
     }
-    if (!(pNpc->eUnitType == UNIT_MONSTER && pNpc->pUnitData.pUnitDataPlayer && pNpc->pUnitData.pUnitDataPlayer->pMonsterAi)) {
+    if (!(pNpc->eUnitType == UNIT_MONSTER && pNpc->pUnitData.pUnitDataPlayer ? pNpc->pUnitData.pUnitDataPlayer->pMonsterAi : 0)) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -3038,7 +3045,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x30_NpcCancelDialog(::SGAMEDATA * pGame
     if (!pNpc) {
       return SERVERSTATUS_BAD_TARGET;
     }
-    if (!(pNpc->eUnitType == UNIT_MONSTER && pNpc->pUnitData.pUnitDataPlayer && pNpc->pUnitData.pUnitDataPlayer->pMonsterAi)) {
+    if (!(pNpc->eUnitType == UNIT_MONSTER && pNpc->pUnitData.pUnitDataPlayer ? pNpc->pUnitData.pUnitDataPlayer->pMonsterAi : 0)) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -3119,7 +3126,10 @@ eD2ServerIncomingStatus __fastcall SCMD_0x36_HireMerc(::SGAMEDATA * pGame, D2Uni
 }
 
 eD2ServerIncomingStatus __fastcall SCMD_0x62_NpcSellExpansion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x62_NpcSellExpansion * pPacket, uint32_t nSize) {
-    if (!(pGame->bExpansion && nSize == 5)) {
+    if (!pGame->bExpansion) {
+      return SERVERSTATUS_BAD_PARAMS;
+    }
+    if (nSize != 5) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 

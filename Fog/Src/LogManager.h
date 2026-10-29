@@ -60,7 +60,7 @@ void __fastcall WriteHexDumpLogEntry(int32_t pLogRecord);
 void __stdcall CloseStaleLogFileHandles();
 void __fastcall DeleteOldLogFile(int32_t pRefFileTime, char * szFileName);
 void __fastcall CloseLogFileByName(uint8_t * szFileName);
-uint32_t __fastcall ComputeAbsoluteFromRelative(int * pBase, int * pNode);
+uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase);
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix);
 long __fastcall GetLogFileSize(uint8_t * szFileName);
 // @sourcefile .\Src\LogManager.cpp
@@ -68,14 +68,14 @@ char * __fastcall ReadLogFileRange(uint8_t * szFileName, int32_t nStartOffset, i
 // Writes one log record to its log file, prefixed with the record's time of day.
 void __fastcall LogToFile(uint32_t pLogRecord);
 void __fastcall UnlinkListNode(int * pNode);
-int32_t __fastcall NormalizeListNodePointer(int32_t pThis, int32_t pNodePtr);
+int32_t __thiscall NormalizeListNodePointer(int32_t pThis, int32_t pNodePtr);
 void __stdcall ExitOrCrashCleanup();
 void __stdcall ExitOrCrashCleanUpJmp();
 void __stdcall DeleteOldLogFiles();
 void __fastcall UnlinkListNodeDouble(int * pNode);
 void __fastcall InitListHead(int * pListHead);
-void __fastcall InsertListNode(int * * pNode, int32_t bInsertAtHead, int * * ppTarget, int * * ppListHead);
-void __fastcall RemoveListNode(int32_t pListHead, int * pNode);
+void __thiscall InsertListNode(int * * ppListHead, int * * pNode, int32_t bInsertAtHead, int * * ppTarget);
+void __thiscall RemoveListNode(int32_t pListHead, int * pNode);
 void __fastcall ClearListNode(uint32_t * pNode);
 void __fastcall RemoveAllListNodes(struct D2StormListHead * pListHead);
 void __fastcall DestroyListWithHandler(int * pListHead);
@@ -84,7 +84,7 @@ void __fastcall ZeroListNode(uint32_t * pNode);
 // Scalar deleting destructor: MOV ESI,ECX takes this; TEST byte [EBP+8],1 is the free flag; RET 4; returns this in EAX. Parameters were listed in STORAGE order (bFreeMemory first), which is the argument-swap shape that crashed IGNORELIST_DtorScalar; a vtable caller passes (this, bFreeMemory).
 void * __thiscall DestroyListNodeAndFree(void * pThis, uint8_t bFreeMemory);
 void __fastcall DestroyAllListNodes(void * pListHead);
-int * * __fastcall AllocateAndInsertMessageNode(int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags, int * * ppListHead);
+int * * __thiscall AllocateAndInsertMessageNode(int * * ppListHead, int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags);
 void __stdcall StopLogWriterThread();
 void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, BOOL bSkipData, int32_t nVerbose);
 // lpStartAddress parameter of CreateThread

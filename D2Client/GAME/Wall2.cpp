@@ -702,7 +702,10 @@ static int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileD
     if (gbWall2UsePrecomputedOccluder) {
       D2RoomCoordListStrc* pDVar1;
       pDVar1 = pTileData->nGridFlags;
-      if (!(pDVar1 && pDVar1->nIndex != gnPlayerTileGridIndex)) {
+      if (!pDVar1) {
+        return 0;
+      }
+      if (pDVar1->nIndex == gnPlayerTileGridIndex) {
         return 0;
       }
       if (UNIT_CenterXCoordsDiv5 < pDVar1->pBox.nPosX) {

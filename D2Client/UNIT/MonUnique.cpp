@@ -74,7 +74,7 @@
 namespace D2Client::UNIT::MonUnique {
 
 uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return nullptr;
     }
 
@@ -98,7 +98,7 @@ void __fastcall SetBossId(D2UnitStrc * pUnit, int16_t nBossId) {
 }
 
 uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -106,7 +106,7 @@ uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
 }
 
 BOOL CheckMonTypeForMonster(D2UnitStrc * pUnit, eD2MonsterType eMonsterType, uint8_t byMonTypeMaskHi) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -383,7 +383,7 @@ void __fastcall MONUNIQUE_ApplyModifierBloodRaven(D2UnitStrc * pUnit, int32_t eM
     }
 
     D2Common::Skills::AddSkill(pUnit, SKILL_MonTeleport, 1, 1, ".\\UNIT\\MonUnique.cpp", 0x157);
-    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit), 4);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_MonTeleport), 4);
 }
 
 // Applies a unique/champion monster resistance modifier to a unit (eModifier = the monster modifier/affix id). For mod 0x1c (stone skin) also doubles armorclass. Reads the unit's current fire/light/cold/poison/magic/damage resists and counts how many are already >=100 (maxed); if 2+ are maxed it skips additive mods (prevents over-stacking). mod 8 = +40 cold/fire/light (cold-resistant style), mod 0x1b = +20 to those, mods 9/0x12/0x11/0x17 = +75 single elemental resist, 0x19 = +20 magic resist, 0x1c = +50 damage resist. Does nothing unless bApply is non-zero. Mutates unit stats via STATLIST_SetUnitStat and returns nothing. __fastcall: pUnit in ECX, eModifier in EDX, bApply on the stack.

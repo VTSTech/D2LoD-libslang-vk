@@ -363,11 +363,12 @@ BOOL __fastcall Skills_CltStFunc_CastMissileWithPositionOffset(D2UnitStrc * pUni
 }
 
 BOOL __fastcall Skills_CltStFunc_SpawnCltMissileAtSelf(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId nMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[1];
+    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->cltmissile[1];
     if (!((int)nMissileId >= 0 && (int)nMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 1;
     }
@@ -377,11 +378,12 @@ BOOL __fastcall Skills_CltStFunc_SpawnCltMissileAtSelf(D2UnitStrc * pUnit, eD2Sk
 }
 
 BOOL __fastcall Skills_CltDoFunc_EMon_CastAttackMissileB(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId nMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[2];
+    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->cltmissile[2];
     if ((int)nMissileId >= 0 && (int)nMissileId < sgptDataTable->nTxtMissilesSize) {
       D2UnitStrc* pMissileUnit;
       pMissileUnit = UNIT::Missile::CastAttack(pUnit, nMissileId, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, 1);
@@ -395,11 +397,12 @@ BOOL __fastcall Skills_CltDoFunc_EMon_OffsetParticleMissile(D2UnitStrc * pUnit, 
     D2UnitStrc* pTargetUnit;
     int32_t nSpriteOffsetX;
     int nSpriteOffsetY;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId nMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[2];
+    eMissilesId nMissileId = (eMissilesId)pSkillsTxt->cltmissile[2];
     if ((int)nMissileId >= 0 && (int)nMissileId < sgptDataTable->nTxtMissilesSize) {
       D2UnitStrc* pMissile;
       pMissile = Skills::CastAttackWithDistanceCheck(pUnit, nMissileId, eSkill, 1);
@@ -896,10 +899,10 @@ BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills e
       return 0;
     }
 
-    D2SkillStrc* pVineSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_VineAttack, pUnit);
+    D2SkillStrc* pVineSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_VineAttack);
     if (!pVineSkill) {
       D2Common::Skills::AddSkill(pUnit, SKILL_VineAttack, 1, 0, ".\\SKILLS\\SkillsEMon.cpp", 0x35c);
-      pVineSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_VineAttack, pUnit);
+      pVineSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_VineAttack);
       if (!pVineSkill) {
         return 0;
       }

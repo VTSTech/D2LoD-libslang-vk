@@ -981,7 +981,7 @@ void __fastcall SetParticle(D2UnitStrc * pUnit, D2ParticleStrc * pParticle) {
     pGfxInfo->pParticle = pParticle;
 }
 
-void __fastcall GFX_RemoveOverlayById(int32_t nOverlayId, D2UnitStrc * pUnit) {
+void __thiscall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nOverlayId) {
     int* ppNextOverlay;
     if (!pUnit) {
       return;

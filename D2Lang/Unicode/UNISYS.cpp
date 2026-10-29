@@ -663,7 +663,7 @@ char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int
     return pcVar1;
 }
 
-bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar) {
+bool __thiscall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar) {
     uint32_t nGuardRetVal;
     uint16_t wszTable[20];
     int i = 0;

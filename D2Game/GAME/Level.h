@@ -26,7 +26,7 @@ void __fastcall FreeAllUnits(::SGAMEDATA * pGame);
 void __fastcall ProcessUnitUpdateFlags(::SGAMEDATA * pGame);
 // Counts the rooms of pGame->pAct[nAct] (DRLGROOM_GetRoomFromAct, pDrlgRoomNext chain); halts (line 660) when nAct >= 5.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
-int __stdcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct);
+int __fastcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct);
 // 1 internal function (defined in .cpp)
 
 } // namespace D2Game::GAME::Level

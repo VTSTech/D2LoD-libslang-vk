@@ -79,7 +79,7 @@ static char cSFileVerifyOpcode2[3] = { '\\', '\\', '\x00' }; D2_STATIC_GUARD(cSF
 static char cSFileVerifyOpcode[3] = { ':', '\\', '\x00' }; D2_STATIC_GUARD(cSFileVerifyOpcode, "Storm::Source::SFile::cSFileVerifyOpcode");
 
 // Initializes a 4-element stream buffer structure by copying 4 sequential parameters into consecutive fields (param1→field[0], param2→field[1], param3→field[2], param4→field[3]). Used for stream buffer initialization in custom calling convention (ECX register for destination pointer).
-void __fastcall SFILE_SetStreamBuffer4(uint32_t pVal0, uint32_t pVal1, uint32_t pVal2, uint32_t pVal3, uint32_t * pdwParam) {
+void __thiscall SFILE_SetStreamBuffer4(uint32_t * pdwParam, uint32_t pVal0, uint32_t pVal1, uint32_t pVal2, uint32_t pVal3) {
     *pdwParam = pVal0;
     pdwParam[1] = pVal1;
     pdwParam[2] = pVal2;
@@ -87,7 +87,7 @@ void __fastcall SFILE_SetStreamBuffer4(uint32_t pVal0, uint32_t pVal1, uint32_t 
 }
 
 // Copies a 4-element stream buffer structure from source to destination by copying 4 consecutive fields. Custom calling convention uses ECX for destination pointer. Used for duplicating stream buffer state.
-void __fastcall SFILE_CopyStreamBuffer4(uint32_t * pDest, uint32_t * pSrc) {
+void __thiscall SFILE_CopyStreamBuffer4(uint32_t * pDest, uint32_t * pSrc) {
     *pDest = *pSrc;
     pDest[1] = pSrc[1];
     pDest[2] = pSrc[2];
@@ -303,7 +303,7 @@ static uint32_t __stdcall SFILE_SearchHashTable(D2ArchiveStrc * pArchive, int16_
     } while (true);
 }
 
-void __fastcall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCount) {
+void __thiscall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCount) {
     int nSectorsLeft;
     void* pSrc = (void*)(nSectorCount * 0x10 - 0x10 + pSectorTable);
     void* pDst = (void*)(nSectorCount * 0x2c - 0x2c + pSectorTable);
@@ -1429,7 +1429,7 @@ int32_t __stdcall SFileUnloadFile(void * pFile) {
     return 1;
 }
 
-uint32_t __fastcall SFILE_CompareFileTime1(int * pLeft, int * pnParam) {
+uint32_t __thiscall SFILE_CompareFileTime1(int * pnParam, int * pLeft) {
     uint32_t nValue = pnParam[1];
     if ((int)nValue < 0) {
       return ~nValue;
@@ -1442,7 +1442,7 @@ uint32_t __fastcall SFILE_CompareFileTime1(int * pLeft, int * pnParam) {
     return nValue + (int)pLeft;
 }
 
-uint32_t __fastcall SFILE_CompareFileTime2(int * pLeft, int * pnParam) {
+uint32_t __thiscall SFILE_CompareFileTime2(int * pnParam, int * pLeft) {
     uint32_t nValue = pnParam[1];
     if ((int)nValue < 0) {
       return ~nValue;
@@ -1455,7 +1455,7 @@ uint32_t __fastcall SFILE_CompareFileTime2(int * pLeft, int * pnParam) {
     return nValue + (int)pLeft;
 }
 
-uint32_t __fastcall SFILE_CompareFileSize1(int * pLeft, int * pnParam) {
+uint32_t __thiscall SFILE_CompareFileSize1(int * pnParam, int * pLeft) {
     uint32_t nValue = pnParam[1];
     if ((int)nValue < 0) {
       return ~nValue;
@@ -1468,7 +1468,7 @@ uint32_t __fastcall SFILE_CompareFileSize1(int * pLeft, int * pnParam) {
     return nValue + (int)pLeft;
 }
 
-uint32_t __fastcall SFILE_CompareFileSize2(int * pLeft, int * pnParam) {
+uint32_t __thiscall SFILE_CompareFileSize2(int * pnParam, int * pLeft) {
     uint32_t nValue = pnParam[1];
     if ((int)nValue < 0) {
       return ~nValue;
@@ -1481,7 +1481,7 @@ uint32_t __fastcall SFILE_CompareFileSize2(int * pLeft, int * pnParam) {
     return nValue + (int)pLeft;
 }
 
-uint32_t __fastcall SFILE_CompareFileName(int * pLeft, int * pnParam) {
+uint32_t __thiscall SFILE_CompareFileName(int * pnParam, int * pLeft) {
     uint32_t nValue = pnParam[1];
     if ((int)nValue < 0) {
       return ~nValue;
@@ -2068,7 +2068,7 @@ int __stdcall SFileAuthenticateArchive(D2ArchiveStrc * pArchive, uint32_t * pdwA
     return bVerified;
 }
 
-int __fastcall SFILE_AllocateFileRecord1(int32_t pThis, int32_t pLink) {
+int __thiscall SFILE_AllocateFileRecord1(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return pLink;
     }
@@ -2077,7 +2077,7 @@ int __fastcall SFILE_AllocateFileRecord1(int32_t pThis, int32_t pLink) {
     return pLink;
 }
 
-int __fastcall SFILE_FreeFileRecord1(int32_t pThis, int32_t pLink) {
+int __thiscall SFILE_FreeFileRecord1(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return pLink;
     }
@@ -2087,7 +2087,7 @@ int __fastcall SFILE_FreeFileRecord1(int32_t pThis, int32_t pLink) {
 }
 
 // @blizzard TSList::LinkNode (STORM.H)
-void __fastcall TSList_FILEREC_LinkNode(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer) {
+void __thiscall TSList_FILEREC_LinkNode(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead) {
     int* pLink;
     int** ppSlot = pNode;
     if (!pNode) {
@@ -2144,7 +2144,7 @@ void __fastcall TSList_FILEREC_LinkNode(int * * pNode, int32_t nInsertMode, int 
     }
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink) {
+uint32_t __thiscall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
     }
@@ -2153,7 +2153,7 @@ uint32_t __fastcall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink) {
     return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
 }
 
-int __fastcall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink) {
+int __thiscall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return pLink;
     }
@@ -2162,7 +2162,7 @@ int __fastcall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink) {
     return pLink;
 }
 
-void __fastcall SFILE_InsertFileRecordIntoList2(int * * pNode, int32_t nInsertMode, int * * ppListHead, D2StormListHead * ppListContainer) {
+void __thiscall SFILE_InsertFileRecordIntoList2(D2StormListHead * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead) {
     int nLinkOffset;
     uint32_t uPrevLinkRaw;
     StormLinkStrc* ppSlot = (StormLinkStrc*)pNode;
@@ -2221,7 +2221,7 @@ void __fastcall SFILE_InsertFileRecordIntoList2(int * * pNode, int32_t nInsertMo
     }
 }
 
-int __fastcall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink) {
+int __thiscall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return pLink;
     }
@@ -2230,7 +2230,7 @@ int __fastcall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink) {
     return pLink;
 }
 
-void __fastcall SFILE_InsertFileRecordIntoList3(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer) {
+void __thiscall SFILE_InsertFileRecordIntoList3(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead) {
     int* pLink;
     int** ppSlot = pNode;
     if (!pNode) {
@@ -2287,7 +2287,7 @@ void __fastcall SFILE_InsertFileRecordIntoList3(int * * pNode, int32_t nInsertMo
     }
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink) {
+uint32_t __thiscall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
     }
@@ -2296,7 +2296,7 @@ uint32_t __fastcall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink) {
     return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
 }
 
-int __fastcall SFILE_FreeFileRecord4(int32_t pThis, int32_t pLink) {
+int __thiscall SFILE_FreeFileRecord4(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return pLink;
     }
@@ -2305,7 +2305,7 @@ int __fastcall SFILE_FreeFileRecord4(int32_t pThis, int32_t pLink) {
     return pLink;
 }
 
-void __fastcall SFILE_InsertFileRecordIntoList4(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer) {
+void __thiscall SFILE_InsertFileRecordIntoList4(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead) {
     int* pLink;
     int** ppSlot = pNode;
     if (!pNode) {
@@ -2362,7 +2362,7 @@ void __fastcall SFILE_InsertFileRecordIntoList4(int * * pNode, int32_t nInsertMo
     }
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink) {
+uint32_t __thiscall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
     }
@@ -2371,7 +2371,7 @@ uint32_t __fastcall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink) {
     return (int)*(uint32_t*)(pLink + 4) <= 0 ? 0 : *(uint32_t*)(pLink + 4);
 }
 
-void __fastcall SFILE_RemoveFileRecordFromList1(int32_t pThis, int * pLink) {
+void __thiscall SFILE_RemoveFileRecordFromList1(int32_t pThis, int * pLink) {
     int* pTargetLink;
     if (!pLink) {
       pLink = (int*)(pThis + 4);
@@ -2628,7 +2628,7 @@ int __stdcall SFILE_OpenFileInternal(D2ArchiveStrc * pArchive, char * szFileName
     return nResult;
 }
 
-void __fastcall SFILE_InsertFileRecordIntoList5(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer) {
+void __thiscall SFILE_InsertFileRecordIntoList5(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead) {
     int* pLink;
     int** ppSlot = pNode;
     if (!pNode) {
@@ -2685,7 +2685,7 @@ void __fastcall SFILE_InsertFileRecordIntoList5(int * * pNode, int32_t nInsertMo
     }
 }
 
-void __fastcall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink) {
+void __thiscall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink) {
     int* pTargetLink;
     if (!pLink) {
       pLink = (int*)(pThis + 4);
@@ -2709,7 +2709,7 @@ void __fastcall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink) {
     pLink[1] = 0;
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord4(int32_t pThis, int32_t pLink) {
+uint32_t __thiscall SFILE_CompareFileRecord4(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return *(uint32_t*)(pLink + 4);
     }
@@ -2717,7 +2717,7 @@ uint32_t __fastcall SFILE_CompareFileRecord4(int32_t pThis, int32_t pLink) {
     return *(uint32_t*)(pThis + 8);
 }
 
-void __fastcall SFILE_RemoveFileRecordFromList3(int32_t pThis, int * pLink) {
+void __thiscall SFILE_RemoveFileRecordFromList3(int32_t pThis, int * pLink) {
     int* pTargetLink;
     if (!pLink) {
       pLink = (int*)(pThis + 4);
@@ -2741,7 +2741,7 @@ void __fastcall SFILE_RemoveFileRecordFromList3(int32_t pThis, int * pLink) {
     pLink[1] = 0;
 }
 
-void __fastcall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink) {
+void __thiscall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink) {
     int* pTargetLink;
     if (!pLink) {
       pLink = (int*)(pThis + 4);
@@ -2765,7 +2765,7 @@ void __fastcall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink) {
     pLink[1] = 0;
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink) {
+uint32_t __thiscall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink) {
     if (pLink) {
       return *(uint32_t*)(pLink + 4);
     }
@@ -2773,7 +2773,7 @@ uint32_t __fastcall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink) {
     return *(uint32_t*)(pThis + 8);
 }
 
-uint32_t __fastcall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord) {
+uint32_t __thiscall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord) {
     if (pRecord) {
       return *(uint32_t*)(pRecord + 4);
     }
@@ -2781,7 +2781,7 @@ uint32_t __fastcall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord) {
     return *(uint32_t*)(pThis + 8);
 }
 
-void __fastcall SFILE_RemoveFileRecordFromList5(int32_t pThis, int * pNode) {
+void __thiscall SFILE_RemoveFileRecordFromList5(int32_t pThis, int * pNode) {
     int* ppPrevSlot;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -2984,7 +2984,7 @@ void __fastcall SFILE_FreeArchiveRecord(D2ArchiveStrc * pArchive) {
     pArchive->pNext = 0;
 }
 
-D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord1(D2ArchiveStrc * pArchive, uint8_t bParam) {
+D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord1(D2ArchiveStrc * pArchive, uint8_t bParam) {
     SFILE_FreeArchiveRecord(pArchive);
     if (!(bParam & 1 && pArchive)) {
       return pArchive;
@@ -3177,7 +3177,7 @@ void __fastcall SFILE_DestroyFileRecord(D2MPQFileStrc * pMPQFile) {
     SMem::SMemFree(pMPQFile, "delete", -1, 0);
 }
 
-D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord1(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
+D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord1(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
     D2MPQFileStrc** ppFileRecord = (D2MPQFileStrc**)SMem::SMemAlloc(nExtraSize + 0x25c, sRTTI_ARCHIVEREC_AllocTag, -2, nFlags | 8);
     if (ppFileRecord) {
       *ppFileRecord = 0;
@@ -3189,11 +3189,11 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord1(int * * ppArchive, int32_t n
       return ppFileRecord;
     }
 
-    SFILE_InsertFileRecordIntoList5((int**)ppFileRecord, nInsertMode, nullptr, ppArchive);
+    SFILE_InsertFileRecordIntoList5(ppArchive, (int**)ppFileRecord, nInsertMode, nullptr);
     return ppFileRecord;
 }
 
-D2MPQFileStrc * __fastcall SFILE_AllocFileRecord(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
+D2MPQFileStrc * __thiscall SFILE_AllocFileRecord(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
     // Static local variables (originally global data)
     static char sRTTI_FILEREC_AllocTag[16] = {
     '.',
@@ -3230,11 +3230,11 @@ D2MPQFileStrc * __fastcall SFILE_AllocFileRecord(int * * ppArchive, int32_t nIns
       return ppFileRecord;
     }
 
-    SFILE_InsertFileRecordIntoList2((int**)ppFileRecord, nInsertMode, nullptr, (D2StormListHead*)ppArchive);
+    SFILE_InsertFileRecordIntoList2((D2StormListHead*)ppArchive, (int**)ppFileRecord, nInsertMode, nullptr);
     return ppFileRecord;
 }
 
-D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord2(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
+D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord2(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
     D2MPQFileStrc** ppFileRecord = (D2MPQFileStrc**)SMem::SMemAlloc(nExtraSize + 0xc, sRTTI_EVENTREC_AllocTag, -2, nFlags | 8);
     if (ppFileRecord) {
       *ppFileRecord = 0;
@@ -3246,11 +3246,11 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord2(int * * ppArchive, int32_t n
       return ppFileRecord;
     }
 
-    SFILE_InsertFileRecordIntoList3((int**)ppFileRecord, nInsertMode, nullptr, ppArchive);
+    SFILE_InsertFileRecordIntoList3(ppArchive, (int**)ppFileRecord, nInsertMode, nullptr);
     return ppFileRecord;
 }
 
-D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord2(D2ArchiveStrc * pArchive, uint8_t bParam) {
+D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord2(D2ArchiveStrc * pArchive, uint8_t bParam) {
     D2ArchiveStrc* nPrevLink;
     D2ArchiveStrc* pNextNode = pArchive->pPrevLink;
     if (pNextNode) {
@@ -3322,7 +3322,7 @@ void __fastcall SFILE_FreeFileRecord(D2MPQFileStrc * pMPQFile) {
     pMPQFile->pNext = 0;
 }
 
-D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord3(D2ArchiveStrc * pArchive, uint8_t bParam) {
+D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord3(D2ArchiveStrc * pArchive, uint8_t bParam) {
     SFILE_FreeFileRecord((D2MPQFileStrc*)pArchive);
     if (!(bParam & 1 && pArchive)) {
       return pArchive;
@@ -3541,7 +3541,7 @@ int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint3
     return nResult;
 }
 
-D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord3(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
+D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord3(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
     D2MPQFileStrc** pFileRecord = (D2MPQFileStrc**)SMem::SMemAlloc(nExtraSize + 0x44, sRTTI_REQUEST_AllocTag, -2, nFlags | 8);
     if (pFileRecord) {
       *pFileRecord = 0;
@@ -3553,11 +3553,11 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord3(int * * ppArchive, int32_t n
       return pFileRecord;
     }
 
-    TSList_FILEREC_LinkNode((int**)pFileRecord, nInsertMode, nullptr, ppArchive);
+    TSList_FILEREC_LinkNode(ppArchive, (int**)pFileRecord, nInsertMode, nullptr);
     return pFileRecord;
 }
 
-uint32_t __fastcall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode) {
+uint32_t __thiscall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode) {
     int* pPrevSlot = pNode;
     if (!pNode) {
       pPrevSlot = (int*)((int)pListContext + 4);
@@ -3584,7 +3584,7 @@ uint32_t __fastcall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int *
     return (int)nRefCount <= 0 ? 0 : nRefCount;
 }
 
-D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
+D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags) {
     D2MPQFileStrc** pFileRecord = (D2MPQFileStrc**)SMem::SMemAlloc(nExtraSize + 0x50, sRTTI_AUDIOSTREAM_AllocTag, -2, nFlags | 8);
     if (pFileRecord) {
       *pFileRecord = 0;
@@ -3596,7 +3596,7 @@ D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t n
       return pFileRecord;
     }
 
-    SFILE_InsertFileRecordIntoList4((int**)pFileRecord, nInsertMode, nullptr, ppArchive);
+    SFILE_InsertFileRecordIntoList4(ppArchive, (int**)pFileRecord, nInsertMode, nullptr);
     return pFileRecord;
 }
 
@@ -3775,7 +3775,7 @@ void __fastcall SFILE_DestroyAudioStream(D2StormAudioStreamRec * pAudioStream) {
 
 // Scalar deleting destructor of the audio-stream record: SFILE_DestroyAudioStream, then frees it when bit0 of the flag is set; returns the record.
 // Provenance: CALL 004199a0, TEST [EBP+8],1, RET 4.
-D2StormAudioStreamRec * __fastcall SFILE_DeleteAudioStream(D2StormAudioStreamRec * pAudioStream, uint8_t bDelete) {
+D2StormAudioStreamRec * __thiscall SFILE_DeleteAudioStream(D2StormAudioStreamRec * pAudioStream, uint8_t bDelete) {
     SFILE_DestroyAudioStream(pAudioStream);
     if (!(bDelete & 1 && pAudioStream)) {
       return pAudioStream;
@@ -3852,7 +3852,7 @@ int __stdcall SFileCloseArchive(D2ArchiveStrc * pArchive) {
 
 // Stream-list delete-node: destroys and frees pNode, returns the next node (NULL at the list end).
 // Provenance: next = [node+4] (<=0 -> NULL), CALL 004199a0, SMemFree(node), RET 4.
-D2StormAudioStreamRec * __fastcall SFILE_AudioStreamListDeleteNode(D2StormListHead * pList, D2StormAudioStreamRec * pNode) {
+D2StormAudioStreamRec * __thiscall SFILE_AudioStreamListDeleteNode(D2StormListHead * pList, D2StormAudioStreamRec * pNode) {
     D2StormAudioStreamRec* pPrev = pNode;
     if (!pNode) {
       pPrev = (D2StormAudioStreamRec*)&pList->pPrevLink;
@@ -4130,7 +4130,7 @@ void __fastcall SFILE_ReleaseAsyncRequest(D2StormAsyncOpStrc * pAsyncOp) {
 }
 
 // Deleting destructor of an async request (D2StormAsyncOpStrc): SFILE_ReleaseAsyncRequest, then SMemFree when bit 0 of bParam is set. Provenance: 1.14d asm 0041a0e0; the record is allocated with the REQUEST tag.
-D2StormAsyncOpStrc * __fastcall SFILE_DeleteAsyncRequest(D2StormAsyncOpStrc * pAsyncOp, uint8_t bParam) {
+D2StormAsyncOpStrc * __thiscall SFILE_DeleteAsyncRequest(D2StormAsyncOpStrc * pAsyncOp, uint8_t bParam) {
     SFILE_ReleaseAsyncRequest(pAsyncOp);
     if (!(bParam & 1 && pAsyncOp)) {
       return pAsyncOp;
@@ -4227,7 +4227,7 @@ int __stdcall SFileDestroy() {
 }
 
 // Releases and frees one async request (REQUEST tag) and returns the next link of the list it was on (0 at the end). Provenance: 1.14d asm 0041a2c0.
-int __fastcall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, D2StormAsyncOpStrc * pAsyncOp) {
+int __thiscall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, D2StormAsyncOpStrc * pAsyncOp) {
     D2StormAsyncOpStrc* pPrev = pAsyncOp;
     if (!pAsyncOp) {
       pPrev = (D2StormAsyncOpStrc*)(pListContext + 4);

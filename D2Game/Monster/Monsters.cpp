@@ -126,15 +126,16 @@ uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMon
 }
 
 int32_t __fastcall GetUmodConstant(int32_t nUmodId) {
-    if (nUmodId >= 0 && nUmodId < sgptDataTable->nTxtMonUmodSize && sgptDataTable->pTxtMonUmod + nUmodId) {
-      return sgptDataTable->pTxtMonUmod[nUmodId].constants;
+    D2MonUModTxt* pMonUmodTxt = nUmodId >= 0 && nUmodId < sgptDataTable->nTxtMonUmodSize ? sgptDataTable->pTxtMonUmod + nUmodId : nullptr;
+    if (pMonUmodTxt) {
+      return pMonUmodTxt->constants;
     }
 
     return 0;
 }
 
 uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return nullptr;
     }
 
@@ -143,7 +144,7 @@ uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
 
 // 2022.01.09 - dzik
 uint16_t __fastcall GetNameSeed(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0x1506;
     }
 
@@ -152,7 +153,7 @@ uint16_t __fastcall GetNameSeed(D2UnitStrc * pUnit) {
 
 // 2022.01.09 - dzik
 uint32_t __fastcall CheckMonsterType(D2UnitStrc * pUnit, uint16_t eMonsterType) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -178,7 +179,7 @@ void __fastcall MONSTER_SetMonsterDataFlags(int * pUnit, uint16_t nFlagMask, int
 
 // 2022.01.09 - dzik
 int16_t __fastcall GetBossNo(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return -1;
     }
 
@@ -252,7 +253,7 @@ static void __stdcall SetUniqueMonsterType(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 // 2022.01.09 - dzik
 uint32_t __fastcall CheckMonUModList(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -264,7 +265,7 @@ int32_t __fastcall MONSTER_GetBossNo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       D2UnitDataMonsterStrc* pMonsterData;
       pMonsterData = pUnit->pUnitData.pUnitDataMonster;
       if (pMonsterData && pMonsterData->eMonsterType & 2) {
-        if (!(true && pMonsterData)) {
+        if (!(true ? pMonsterData : 0)) {
           return -1;
         }
 
@@ -280,7 +281,10 @@ static BOOL __stdcall MONSTER_CanApplyUniqueModifier(D2MonUModTxt * pD2MonUModTx
     bool _bHasFlag;
     bool bHasFlag;
     int32_t nClassId;
-    if (pD2MonUModTxt->enabled == '\0' || !nParam && (uint16_t)pD2MonUModTxt->version >= 100) {
+    if (pD2MonUModTxt->enabled == '\0') {
+      return 0;
+    }
+    if (!nParam && (uint16_t)pD2MonUModTxt->version >= 100) {
       return 0;
     }
 
@@ -719,11 +723,12 @@ static int32_t MONSTER_GetMinion1MonstatId(D2UnitDataMonsterStrc * pMonData) {
     }
 
     int nClassId = *(int*)pMonData->Components;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!pMonStatsTxt) {
       return nClassId;
     }
 
-    short int nMinion1Id = sgptDataTable->pTxtMonStats[nClassId].minion1;
+    short int nMinion1Id = pMonStatsTxt->minion1;
     if (!(nMinion1Id >= 0 && (int)nMinion1Id < sgptDataTable->nTxtMonStatsSize)) {
       return nClassId;
     }
@@ -879,11 +884,13 @@ static void __stdcall MONSTER_SetElementalDamageFromLevel(D2UnitStrc * pUnit, eD
     } else if (nMaxDamConst < 0) {
       return;
     }
-    if (!(nMaxDamConst < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nMaxDamConst)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nMaxDamConst < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nMaxDamConst : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nMaxDamConst].DM[nLvlDamage * 3 + bIsMultiplayer];
+    nLvlDamage = pMonLvlTxt->DM[nLvlDamage * 3 + bIsMultiplayer];
     if (sgptDataTable->nTxtMonUmodSize <= 0x1c) {
       nMinDamConst = 0;
     } else {
@@ -1148,7 +1155,7 @@ void __fastcall MONSTER_ShadowDeathNova(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
     if (pOwner) {
       D2SkillStrc* pSkill;
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_ShadowWarrior, pOwner);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pOwner, SKILL_ShadowWarrior);
       if (pSkill) {
         nSkillLvl = D2Common::Skills::GetSkillLevel(pOwner, pSkill, 1);
         eSkill = nSkillLvl / 2 + SKILL_Kick;
@@ -2844,7 +2851,10 @@ int32_t __fastcall MONSTER_CalculateCorpseBombDamage(int32_t nParam1, int32_t nP
     0x38
 }; D2_STATIC_GUARD(gnCorpseBombDamageScaleByDifficulty, "D2Game::Monsters::MONSTER_CalculateCorpseBombDamage::gnCorpseBombDamageScaleByDifficulty");
 
-    if (!(*(char*)(nParam1 + 0x6d) != '\0' && nParam2 >= 2)) {
+    if (*(char*)(nParam1 + 0x6d) == '\0') {
+      return 0;
+    }
+    if (nParam2 < 2) {
       return 0;
     }
     if (nParam2 < 9) {
@@ -3116,8 +3126,10 @@ void __stdcall MONSTER_CheckSpecialDeathFlag(D2UnitStrc * pUnit, D2DamageStrc * 
     if (nClassId < 0) {
       return;
     }
-    if (nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId) {
-      nClassId = (int)sgptDataTable->pTxtMonStats[nClassId].BaseId;
+
+    D2MonStatsTxt* pMonStatsTxt = nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (pMonStatsTxt) {
+      nClassId = (int)pMonStatsTxt->BaseId;
     }
     if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && nClassId == 0x4e)) {
       return;

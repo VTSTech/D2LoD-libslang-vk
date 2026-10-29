@@ -150,7 +150,7 @@ BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, int32_t nParam);
 // Maps nBarricadeGroupId to a group via Q32_FindBarricadeGroup, increments that group's kill count
 // (group[+0x18]); when it exceeds 4 (>=5 = whole group of 5 barbarians dead) sets the group's 'all dead'
 // byte (+0x54). No QuestRecord access.
-void __fastcall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, int32_t nBarricadeGroupId);
+void __thiscall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, int32_t nBarricadeGroupId);
 // Q32_OnBarricadeDestroyed (A5Q2 Rescue on Mount Arreat) -- core "free the prisoners" handler (the big one).
 // When a barricade is destroyed, finds its group, scans adjacent rooms for a caged barbarian (classId 0x1b2 in Kick
 // anim) within range, then spawns a town-portal-like UNIT_OBJECT 0xbd (the escape portal) near it and schedules the

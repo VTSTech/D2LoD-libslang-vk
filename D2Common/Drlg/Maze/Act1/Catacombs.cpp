@@ -24,7 +24,7 @@
 namespace D2Common::Drlg::Maze::Act1::Catacombs {
 
 // DRLG maze generator for an Act 1 Catacombs level: subdivides the level's initial room into preset sub-rooms. With the stack flag bIsCatacombsLevel4 set it always carves 4 sub-rooms (final layout tag 0x122); otherwise it advances the level seed and uses its parity to pick a 2-room layout variant (tag 0x121 or 0x120). For each new room it allocates a D2RoomExStrc, copies SizeX/SizeY from pDrlgLevelData, calls ReplaceRoomWithNewRoom, and on success allocates shared nodes, picks room presets, and adds the room to the level (freeing it on failure). Marks the start room's RoomExData with the chosen layout tag and flags. Takes pLevel in ECX.
-void __fastcall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t dwParam2) {
+void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t dwParam2) {
     D2DrlgPresetRoomStrc* pDVar1;
     D2RoomExStrc* pNewRoom;
     int iVar2;

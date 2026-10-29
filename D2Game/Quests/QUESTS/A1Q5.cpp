@@ -741,7 +741,10 @@ void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 bool __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag < 2 && pQuestData->bIsNotIntroduction == '\x01' || pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
+    if (pQuestData->nStateFlag < 2 && pQuestData->bIsNotIntroduction == '\x01') {
+      return true;
+    }
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 

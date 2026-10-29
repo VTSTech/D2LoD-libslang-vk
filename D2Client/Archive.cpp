@@ -24,7 +24,7 @@ BOOL ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...) {
     return _bResult;
 }
 
-uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode) {
+uint32_t __thiscall ARCHIVE_ComputeAddress(int * pNode, int32_t nBaseAddr) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -37,7 +37,7 @@ uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode) {
     return nOffset + nBaseAddr;
 }
 
-int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
+int32_t __thiscall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
     if (nNode) {
       return nNode;
     }
@@ -46,7 +46,7 @@ int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
     return nNode;
 }
 
-uint32_t __fastcall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
+uint32_t __thiscall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
     if (nNode) {
       return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
     }
@@ -55,7 +55,7 @@ uint32_t __fastcall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
     return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
-void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
+void __thiscall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
     int* pPrevLink;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -79,7 +79,7 @@ void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
     pNode[1] = 0;
 }
 
-void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget, int * * ppList) {
+void __thiscall ARCHIVE_LinkNode(int * * ppList, int * * ppNode, int32_t nMode, int * * ppTarget) {
     int* pPrevLink;
     int** ppCurNode = ppNode;
     if (!ppNode) {
@@ -136,7 +136,7 @@ void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget
     }
 }
 
-uint32_t __fastcall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {
+uint32_t __thiscall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {
     if (nNode) {
       return *(uint32_t*)(nNode + 4);
     }
@@ -194,7 +194,7 @@ void __fastcall ARCHIVE_ClearAndFreeHead(int32_t nList) {
     *(uint32_t*)(nList + 8) = 0;
 }
 
-int * * __fastcall ARCHIVE_AllocNode(int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags, int * * ppList) {
+int * * __thiscall ARCHIVE_AllocNode(int * * ppList, int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags) {
     int** ppNode = (int**)Storm::SMem::SMemAlloc(nSize + 0x130, s___AUTALLOCREC___00711480, -2, dwAllocFlags | 8);
     if (ppNode) {
       *ppNode = 0;
@@ -206,11 +206,11 @@ int * * __fastcall ARCHIVE_AllocNode(int32_t nLinkMode, int32_t nSize, uint32_t 
       return ppNode;
     }
 
-    ARCHIVE_LinkNode(ppNode, nLinkMode, nullptr, ppList);
+    ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     return ppNode;
 }
 
-int * __fastcall ARCHIVE_FreeNode(uint8_t byFree, int * pNode) {
+int * __thiscall ARCHIVE_FreeNode(int * pNode, uint8_t byFree) {
     uint32_t nPrevOffset;
     int nNext = *pNode;
     if (nNext) {
@@ -235,7 +235,7 @@ int * __fastcall ARCHIVE_FreeNode(uint8_t byFree, int * pNode) {
     return pNode;
 }
 
-uint32_t __fastcall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
+uint32_t __thiscall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
     int* pPrevLink = pNode;
     if (!pNode) {
       pPrevLink = (int*)(pThis + 4);
@@ -353,7 +353,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
           }
         } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwUnknown124);
 
-        ARCHIVE_LinkNode((int**)pNewRec, 1, (int**)ppInsertAfter, &__frame0.pListTail);
+        ARCHIVE_LinkNode(&__frame0.pListTail, (int**)pNewRec, 1, (int**)ppInsertAfter);
       }
 
       nResult = Storm::SMem::SMemFindNextHeap((uint32_t)pHeapEnum, (int*)&pHeapEnum, &sHeapDetails);

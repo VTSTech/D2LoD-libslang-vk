@@ -1245,7 +1245,7 @@ int32_t __stdcall SKILLS_CastSkillClient(eD2Skills eSkill, D2UnitStrc * pUnit, i
     return eSkillResult;
 }
 
-int32_t __fastcall SKILLS_CastSkillClientArgsReversed(short * pArg1, int32_t nArg2, D2UnitStrc * pUnit, eD2Skills eSkill) {
+int32_t __fastcall SKILLS_CastSkillClientArgsReversed(D2UnitStrc * pUnit, eD2Skills eSkill, short * pArg1, int32_t nArg2) {
     int32_t iVar1 = SKILLS_CastSkillClient(eSkill, pUnit, nArg2, (uint32_t)pArg1);
     return iVar1;
 }

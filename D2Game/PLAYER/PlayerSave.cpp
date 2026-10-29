@@ -1170,7 +1170,7 @@ static BOOL __stdcall SERVER_CreatePlayerUnit(::SGAMEDATA * pGameStrc, D2ClientS
       if (nClassIdCheck >= 0 && nClassIdCheck < sgptDataTable->nTxtCharStatsSize) {
         pCharStatsTxt = sgptDataTable->pTxtCharStats + nClassIdCheck;
         if (pCharStatsTxt && pCharStatsTxt->StartSkill) {
-          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum((int)pCharStatsTxt->StartSkill, pUnit);
+          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)pCharStatsTxt->StartSkill);
           if (pDVar1) {
             SKILLS::SkillsServer::Server_SelectSkill(pUnit, 0, (int)pCharStatsTxt->StartSkill, -1);
             pPlayerData->eRightSkillId = (int)pCharStatsTxt->StartSkill;
@@ -1278,7 +1278,10 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       if (wDifficultyBits < 8 && pGameCopy->nDifficulty > 1) {
         return 0x12;
       }
-      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && (uint8_t)pGameCopy->nDifficulty > 0 || wDifficultyBits < 4 && (uint8_t)pGameCopy->nDifficulty > 0) {
+      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && (uint8_t)pGameCopy->nDifficulty > 0) {
+        return 0x11;
+      }
+      if (wDifficultyBits < 4 && (uint8_t)pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
 
@@ -1397,7 +1400,10 @@ int __fastcall _oldSaveGameLoadingPart2(D2UnitStrc * pUnit, int * pnParam, uint3
     }
 
     *(short int*)&pDstCopyPos->nMagic = (short int)*pnParam;
-    if (!(questDataBuf.nMagic == 0x216f6f57 && questDataBuf.nVersion == 6)) {
+    if (questDataBuf.nMagic != 0x216f6f57) {
+      return 2;
+    }
+    if (questDataBuf.nVersion != 6) {
       return 2;
     }
 

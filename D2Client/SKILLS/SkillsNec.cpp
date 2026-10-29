@@ -56,11 +56,12 @@
 namespace D2Client::SKILLS::SkillsNec {
 
 BOOL __fastcall Skills_CltStFunc_SpawnCltMissileC(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
+    eMissilesId eCltMissileC = (eMissilesId)pSkillsTxt->cltmissile[3];
     if (!((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize)) {
       return 1;
     }
@@ -210,9 +211,10 @@ static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t 
 
 BOOL __fastcall Skills_CltStFunc_SetBoneWallGraphics(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     uint32_t bResult;
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (pSkillsTxt) {
       eMissilesId eCltMissileC;
-      eCltMissileC = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].cltmissile[3];
+      eCltMissileC = (eMissilesId)pSkillsTxt->cltmissile[3];
       if ((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize) {
         bResult = SKILLSNEC_CltSetBoneWallGfx(eSkill, nSkillLvl, eCltMissileC, pUnit);
         return bResult;

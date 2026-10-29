@@ -186,7 +186,7 @@ void __fastcall DRLGWARP_UpdateWarpRoomExDeselect(D2RoomExStrc * pRoomEx, eD2Lev
 // rolls a seeded random index, then outputs the X/Y coordinates.
 // Also initializes the room at those coordinates.
 // Called by DRLGSPAWN_FindSpawnLocationInLevel.
-D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType, int * pnOutX, int * pnOutY, D2DrlgLevelStrc * pLevel) {
+D2RoomExStrc * __thiscall DRLGSPAWN_GetRandomPresetSpawnPoint(D2DrlgLevelStrc * pLevel, int32_t nSpawnType, int * pnOutX, int * pnOutY) {
     // Static local variables (originally global data)
     static int gaSpawnPointGroupTable[28] = {
     0x1,
@@ -328,7 +328,7 @@ static D2RoomExStrc * __stdcall DRLGSPAWN_FindWaypointRoomAndCoords(int * pX, in
 
 // Gets the room at the level's center position offset by (nOffsetX, nOffsetY).
 // Computes center as (WorldPos + WorldSize/2 - 2) plus the offsets.
-D2RoomExStrc * __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, D2DrlgLevelStrc * pLevel) {
+D2RoomExStrc * __thiscall DRLGSPAWN_GetRoomAtLevelCenterOffset(D2DrlgLevelStrc * pLevel, int32_t nOffsetX, int32_t nOffsetY) {
     D2RoomExStrc* pDVar1 = GetRoomOfCoord(pLevel, pLevel->sCoordinatesAndSize.WorldSize.x / 2 + pLevel->sCoordinatesAndSize.WorldPosition.x - 2 + nOffsetX, pLevel->sCoordinatesAndSize.WorldSize.y / 2 + pLevel->sCoordinatesAndSize.WorldPosition.y - 2 + nOffsetY);
     return pDVar1;
 }
@@ -608,7 +608,7 @@ D2RoomStrc * __fastcall DRLGSPAWN_FindSpawnLocationInLevel(D2DrlgStrc * pDrlg, e
         return pFoundRoomEx->pRoom;
       }
 
-      pFoundRoomEx = DRLGSPAWN_GetRandomPresetSpawnPoint(nSpawnTypeOrMode, pX, pY, pLevel);
+      pFoundRoomEx = DRLGSPAWN_GetRandomPresetSpawnPoint(pLevel, nSpawnTypeOrMode, pX, pY);
       DUNGEON::Dungeon::InitRoomEx(pFoundRoomEx);
       return pFoundRoomEx->pRoom;
     }

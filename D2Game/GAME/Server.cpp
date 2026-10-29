@@ -1676,9 +1676,10 @@ void __fastcall _TableNullSub25(char * szText, int32_t nId) {
 }
 
 void __fastcall MonsterIdToName(char * szText, int32_t nId) {
-    if (nId >= 0 && nId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nId) {
+    D2MonStatsTxt* pMonStatsTxt = nId >= 0 && nId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nId : nullptr;
+    if (pMonStatsTxt) {
       uint16_t* pwszSrc;
-      pwszSrc = D2Lang::StrTable::strtable::GetLocaleString(sgptDataTable->pTxtMonStats[nId].NameStr);
+      pwszSrc = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szText, (uint16_t*)pwszSrc, 0x40);
       return;
     }
@@ -1809,7 +1810,7 @@ void __fastcall RemoveObjects(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
     UNIT::SUnit::FreeServerUnit(pGame, pUnit);
 }
 
-void __fastcall SERVER_EnterCriticalSection(int32_t pThis, int * pCriticalSection, int32_t nParam) {
+void __thiscall SERVER_EnterCriticalSection(int32_t pThis, int * pCriticalSection, int32_t nParam) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection((LPCRITICAL_SECTION)(pThis + 0x50));
     *pCriticalSection = (uint32_t)(nParam != 0) * 2 - 1;
 }
@@ -1818,7 +1819,7 @@ uint32_t __stdcall ParamIsOne(int32_t nParam) {
     return (uint32_t)(nParam == 1);
 }
 
-uint32_t __fastcall QSERVER_TestGameFlags(int32_t pQServer, uint32_t nFlags) {
+uint32_t __thiscall QSERVER_TestGameFlags(int32_t pQServer, uint32_t nFlags) {
     return *(uint32_t*)(pQServer + 0x24) & nFlags;
 }
 

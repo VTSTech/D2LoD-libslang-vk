@@ -87,11 +87,12 @@ BOOL __fastcall Skills_CltDoFunc_Bar_BloodParticlesOnTarget(D2UnitStrc * pUnit, 
 }
 
 BOOL __fastcall Skills_CltStFunc_AllocStatListByCltCalc(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    int32_t nSkillLevel = D2Common::Skills::D2GetSkillCalc(pUnit, sgptDataTable->pTxtSkills[eSkill].cltcalc[0], eSkill, nSkillLvl);
+    int32_t nSkillLevel = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[0], eSkill, nSkillLvl);
     Skills::SKILLS_CltAllocStatListForSkill(pUnit, nSkillLevel);
     return 1;
 }
@@ -786,8 +787,9 @@ static BOOL __stdcall CLIENT_PlaySkillSound(D2SkillStrc * pSkill, int32_t nParam
     if (bNotInAnimation || !pDynamicPath || pDynamicPath->Coords.tFixed.x != 1 || (nAnimMode = pDynamicPath->Coords.tFixed.y , nAnimMode < 0)) {
       nAnimMode = -1;
     } else {
-      if (nAnimMode < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nAnimMode) {
-        nAnimMode = (int)sgptDataTable->pTxtMonStats[nAnimMode].BaseId;
+      D2MonStatsTxt* pMonStatsTxt = nAnimMode < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nAnimMode : nullptr;
+      if (pMonStatsTxt) {
+        nAnimMode = (int)pMonStatsTxt->BaseId;
       }
       if (nAnimMode < 0 || nAnimMode >= sgptDataTable->nTxtMonStatsSize) {
         nAnimMode = -1;
@@ -908,7 +910,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Leap_ArcParticle(D2DynamicPathStrc * pUnit,
     int32_t nSrvPathX;
     int32_t nSrvPathY;
     D2SkillStrc* pSkill;
-    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, (D2UnitStrc*)pUnit);
+    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum((D2UnitStrc*)pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -980,7 +982,7 @@ BOOL __fastcall Skills_CltStFunc_FindTeleportPositionForTarget(D2UnitStrc * pUni
     BOOL bInMeleeRange;
     D2RoomStrc* pRoom;
     eD2CollisionShapeType nUnitWidth;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1051,7 +1053,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_LeapAttack_ArcParticle(D2DynamicPathStrc * 
     int32_t nDestX;
     int32_t nSndParam3;
     D2SkillStrc* pSkill;
-    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, (D2UnitStrc*)pUnit);
+    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum((D2UnitStrc*)pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1187,7 +1189,7 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     D2DynamicPathStrc* pServerPath = (D2DynamicPathStrc*)pUnit->pPath.pStaticPath;
     if (!pSkill) {
       return 0;
@@ -1278,7 +1280,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_EndCollision(D2UnitStrc * pUnit, 
     int eCollisionFlag;
     bool bIsPlayer;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (pSkill && pDynamicPath) {
       int32_t nParam1X;
       bIsPlayer = pUnit->eUnitType == UNIT_PLAYER;
@@ -1308,7 +1310,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_Whirlwind_EndCollision(D2UnitStrc * pUnit, 
 }
 
 void __fastcall SKILL_StopAndClearSound(D2UnitStrc * pUnit, eD2Skills eSkill) {
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (pSkill) {
       uint32_t nSkillFlags;
       nSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);

@@ -158,7 +158,10 @@ int __stdcall GetConnectedClients(D2QServerStrc * pQServer) {
 }
 
 uint32_t __stdcall IsSingleplayer(D2QServerStrc * pQServer) {
-    if (!(pQServer && (pQServer->neD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYER || pQServer->neD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYERUNCAPPED))) {
+    if (!pQServer) {
+      return 0;
+    }
+    if (!(pQServer->neD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYER || pQServer->neD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYERUNCAPPED)) {
       return 0;
     }
 
@@ -368,7 +371,7 @@ void __fastcall SweepExpiredHackEntries(D2QServerStrc * pQServer) {
 }
 
 // @sourcefile .\Src\QServer\QServer.cpp
-void __fastcall HACKL_RemoveIpFromHacklist(D2QServerStrc * pQServer, uint32_t nIpAddress, uint32_t dwParam3) {
+void __thiscall HACKL_RemoveIpFromHacklist(D2QServerStrc * pQServer, uint32_t nIpAddress, uint32_t dwParam3) {
     D2QServerHacklistEntryStrc* pCurEntry;
     if (!pQServer->bUseQServerHack) {
       return;

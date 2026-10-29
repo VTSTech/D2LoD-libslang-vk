@@ -263,7 +263,7 @@ bool __stdcall GetSymbolNameForAddress(DWORD dwQueryAddr, char * szSymbolName, u
 bool __stdcall GetSourceLineForAddress(uint32_t dwQueryAddr, char * szFileName, uint32_t * pdwLineNumber);
 bool __stdcall EnumerateLoadedModules(uint32_t pfnModuleCallback, uint32_t pUserContext);
 void __fastcall SetSymbolSearchPath(char * szSearchPath);
-int __fastcall FindSymbolFile(char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext, void * pfnFindCallback);
+int __thiscall FindSymbolFile(void * pfnFindCallback, char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext);
 int __stdcall LoadModuleSymbols(HANDLE hFile, char * szImageName, char * szModuleName, uint32_t dwBaseOfDll, uint32_t dwSizeOfDll, uint32_t dwBaseHigh);
 uint32_t __stdcall UnloadModuleSymbols(uint32_t dwBaseOfDll, uint32_t dwBaseHigh);
 bool __stdcall WalkStackFrame(HANDLE hThread, uint32_t pStackFrame, uint32_t pContextRecord);

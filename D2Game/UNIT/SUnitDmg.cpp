@@ -425,8 +425,9 @@ int32_t __fastcall DAMAGE_GetMonsterDelayByDifficulty(D2UnitStrc * pUnit, D2Unit
     if (pMonster && pMonster->eUnitType == UNIT_MONSTER) {
       int nVictimClassId;
       nVictimClassId = pMonster->nClassId;
-      if (nVictimClassId >= 0 && nVictimClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nVictimClassId) {
-        return (int)sgptDataTable->pTxtMonStats[nVictimClassId].aColdEffect[*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9)];
+      D2MonStatsTxt* pMonStatsTxt = nVictimClassId >= 0 && nVictimClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nVictimClassId : nullptr;
+      if (pMonStatsTxt) {
+        return (int)pMonStatsTxt->aColdEffect[*(uint8_t*)((uintptr_t)&pUnit->uSideData + 9)];
       }
     }
 
@@ -753,11 +754,12 @@ static void __stdcall DAMAGE_ApplyMonsterTypeBonusDamage(D2UnitStrc * pUnit, D2D
     }
 
     int nMonTypeCount = pnParam[1];
-    if (!(nMonTypeCount >= 0 && nMonTypeCount < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonTypeCount)) {
+    D2MonStatsTxt* pMonStatsTxt = nMonTypeCount >= 0 && nMonTypeCount < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonTypeCount : nullptr;
+    if (!pMonStatsTxt) {
       return;
     }
 
-    short int nMonTypeCountShort = sgptDataTable->pTxtMonStats[nMonTypeCount].MonType;
+    short int nMonTypeCountShort = pMonStatsTxt->MonType;
     if (nMonTypeCountShort <= 0) {
       return;
     }
@@ -2332,7 +2334,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
               }
 
               eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-              pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pVictim);
+              pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pVictim, eSkill);
               if (!pEvadeSkill) {
                 return;
               }
@@ -2424,7 +2426,7 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
         pStatList = D2Common::Stats::StatsEx::GetStatsByState(pVictim, eImmovableState);
         if (pStatList) {
           eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-          pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pVictim);
+          pEvadeSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pVictim, eSkill);
           if (pEvadeSkill) {
             uVar2 = D2Common::Skills::SKILL_GetFlags(pEvadeSkill);
             D2Common::Skills::SKILL_SetFlags(pEvadeSkill, uVar2 | 4);

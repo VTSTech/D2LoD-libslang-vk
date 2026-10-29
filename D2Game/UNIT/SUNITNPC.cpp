@@ -775,7 +775,7 @@ void __fastcall SUNITNPC_ApplyScrollSkill(D2UnitStrc * pUnit, eD2Skills eSkill, 
       return;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return;
     }

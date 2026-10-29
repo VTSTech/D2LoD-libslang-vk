@@ -466,7 +466,7 @@ void __fastcall TeleHeal(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     SKILLS::SkillsServer::SetSkill(pUnit, SKILL_MonTeleport, 1, 1);
-    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit), 4);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_MonTeleport), 4);
     Monster::AI::SetUnsetAiFlags0x20(pUnit, 1);
 }
 
@@ -677,11 +677,12 @@ void __fastcall ExtraFast(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!pMonStatsTxt) {
       return;
     }
 
-    short int nBaseVelocity = sgptDataTable->pTxtMonStats[nClassId].Velocity;
+    short int nBaseVelocity = pMonStatsTxt->Velocity;
     if (nBaseVelocity <= 0) {
       return;
     }
@@ -746,11 +747,13 @@ void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLevelClamped = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
+    nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
     if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
@@ -815,11 +818,13 @@ void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnk
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLevelClamped = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
+    nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
     if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
@@ -885,11 +890,13 @@ void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
     if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
@@ -956,11 +963,13 @@ void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknow
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
     if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
@@ -1026,11 +1035,13 @@ void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
     if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);

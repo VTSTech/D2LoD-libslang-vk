@@ -113,7 +113,7 @@ void __fastcall SOUND_SetEaxEnvironment(int32_t nEnvId) {
     gnCurrentEaxEnvironmentId = nNewEnvId;
 }
 
-uint32_t __fastcall SOUND_MatchesSoundId(int32_t pSoundEntry, int32_t nSoundId) {
+uint32_t __thiscall SOUND_MatchesSoundId(int32_t pSoundEntry, int32_t nSoundId) {
     return (uint32_t)(*(int*)(pSoundEntry + 4) == nSoundId);
 }
 

@@ -114,7 +114,10 @@ uint32_t __stdcall ITEMS_SearchItemCodeTable(D2UnitStrc * pUnit, int32_t dwConte
     static int nItemsEventMethodSize = 0x4; D2_STATIC_GUARD(nItemsEventMethodSize, "D2Common::ITEMS::Items::ITEMS_SearchItemCodeTable::nItemsEventMethodSize");
 
     D2ItemCalcContextStrc sCalcContext;
-    if (!(sgptDataTable->pItemsCode && nOffset < (uint32_t)sgptDataTable->nItemsCodeSize)) {
+    if (!sgptDataTable->pItemsCode) {
+      return 0;
+    }
+    if (!(nOffset < (uint32_t)sgptDataTable->nItemsCodeSize)) {
       return 0;
     }
 
@@ -524,27 +527,30 @@ void __stdcall ITEM_SetItemData_bVariant(D2UnitStrc * pUnit, bool bVariant) {
 }
 
 int32_t __stdcall ITEMTYPE_IsShoots(int32_t nItemType) {
-    if (!(nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + nItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + nItemType : nullptr;
+    if (!pItemTypesTxt) {
       return 0;
     }
 
-    return (int)sgptDataTable->pTxtItemTypes[nItemType].shoots;
+    return (int)pItemTypesTxt->shoots;
 }
 
 int32_t __stdcall ITEMTYPE_IsQuiver(int32_t nItemType) {
-    if (!(nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + nItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + nItemType : nullptr;
+    if (!pItemTypesTxt) {
       return 0;
     }
 
-    return (int)sgptDataTable->pTxtItemTypes[nItemType].quiver;
+    return (int)pItemTypesTxt->quiver;
 }
 
 BOOL __stdcall ITEMTYPE_IsAutostack(int32_t nItemType) {
-    if (!(nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + nItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + nItemType : nullptr;
+    if (!pItemTypesTxt) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[nItemType].autostack;
+    return (uint32_t)(uint8_t)pItemTypesTxt->autostack;
 }
 
 int32_t __stdcall ITEM_GetItemsTxt_dwWClass(D2UnitStrc * pUnit) {
@@ -745,11 +751,12 @@ static int __stdcall ITEMS_nullsub(int nMaxLvlReq, D2MagicAffixTxt * pAffixTxt, 
 }
 
 BOOL __stdcall TXT_ItemTypes_CheckIfTypeIsThrowable(int32_t nItemType) {
-    if (!(nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + nItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = nItemType >= 0 && nItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + nItemType : nullptr;
+    if (!pItemTypesTxt) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[nItemType].throwable;
+    return (uint32_t)(uint8_t)pItemTypesTxt->throwable;
 }
 
 uint32_t __stdcall ITEM_GetItemsTxt_wMissileType(D2UnitStrc * pUnit) {
@@ -1801,11 +1808,12 @@ BOOL __stdcall TXT_Items_CheckIfHasClass(uint32_t nItemClassId) {
     }
 
     eD2ItemTypes eType = (eD2ItemTypes)pItemsTxt->wType;
-    if (!((int)eType >= 0 && (int)eType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eType)) {
+    D2ItemTypesTxt* pItemTypesTxt = (int)eType >= 0 && (int)eType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eType : nullptr;
+    if (!pItemTypesTxt) {
       return 0;
     }
 
-    return (uint32_t)((uint8_t)sgptDataTable->pTxtItemTypes[eType]._class < 7);
+    return (uint32_t)((uint8_t)pItemTypesTxt->_class < 7);
 }
 
 int16_t __stdcall ITEM_GetWeaponAnimClass(D2UnitStrc * pUnit) {
@@ -2952,8 +2960,9 @@ int32_t __stdcall ITEM_GetTxtSetItems_setIndex(D2UnitStrc * pUnit) {
     }
 
     int nFileIndex = ITEM_GetItemData_nFileIndex(pUnit);
-    if (nFileIndex >= 0 && nFileIndex < sgptDataTable->nTxtSetItemsSize && sgptDataTable->pTxtSetItems + nFileIndex) {
-      return (int)sgptDataTable->pTxtSetItems[nFileIndex].setIndex;
+    D2SetItemsTxt* pSetItemsTxt = nFileIndex >= 0 && nFileIndex < sgptDataTable->nTxtSetItemsSize ? sgptDataTable->pTxtSetItems + nFileIndex : nullptr;
+    if (pSetItemsTxt) {
+      return (int)pSetItemsTxt->setIndex;
     }
 
     return -1;
@@ -3334,8 +3343,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_throwable(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].throwable;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->throwable;
     }
 
     return 0;
@@ -3347,8 +3357,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_beltable(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].beltable;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->beltable;
     }
 
     return 0;
@@ -3403,8 +3414,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_staffmods(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].staffmods;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->staffmods;
     }
 
     return 7;
@@ -3722,8 +3734,9 @@ int32_t __stdcall TXT_ItemTypes_CheckClass(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)((uint8_t)sgptDataTable->pTxtItemTypes[eItemType]._class < 7);
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)((uint8_t)pItemTypesTxt->_class < 7);
     }
 
     return 0;
@@ -3736,11 +3749,12 @@ eD2PlayerClassIDDWORD __stdcall TXT_ItemTypes_GetClass(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (!pItemTypesTxt) {
       return CLASS_COUNT;
     }
 
-    uint8_t bVar1 = sgptDataTable->pTxtItemTypes[eItemType]._class;
+    uint8_t bVar1 = pItemTypesTxt->_class;
     if (bVar1 >= 7) {
       return CLASS_COUNT;
     }
@@ -5684,8 +5698,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_shoots(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (int)sgptDataTable->pTxtItemTypes[eItemType].shoots;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (int)pItemTypesTxt->shoots;
     }
 
     return 0;
@@ -5697,8 +5712,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_quiver(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (int)sgptDataTable->pTxtItemTypes[eItemType].quiver;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (int)pItemTypesTxt->quiver;
     }
 
     return 0;
@@ -5710,8 +5726,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_autostack(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].autostack;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->autostack;
     }
 
     return 0;
@@ -5723,8 +5740,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_reload(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reload;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->reload;
     }
 
     return 0;
@@ -5736,8 +5754,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_reequip(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].reequip;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->reequip;
     }
 
     return 0;
@@ -5749,11 +5768,12 @@ uint8_t __stdcall ITEM_GetTxtItemTypes_storepage(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if (!((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType)) {
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (!pItemTypesTxt) {
       return 0xff;
     }
 
-    uint8_t bStorePage = sgptDataTable->pTxtItemTypes[eItemType].storepage;
+    uint8_t bStorePage = pItemTypesTxt->storepage;
     if (bStorePage == 0xff) {
       return 0xff;
     }
@@ -5767,8 +5787,9 @@ uint8_t __stdcall ITEM_GetTxtItemTypes_varinvgfx(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return sgptDataTable->pTxtItemTypes[eItemType].varinvgfx;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return pItemTypesTxt->varinvgfx;
     }
 
     return 0;
@@ -5809,8 +5830,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_rare(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].rare;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->rare;
     }
 
     return 0;
@@ -5822,8 +5844,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_magic(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].magic;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->magic;
     }
 
     return 0;
@@ -5835,8 +5858,9 @@ uint32_t __stdcall ITEM_GetTxtItemTypes_normal(D2UnitStrc * pUnit) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].normal;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->normal;
     }
 
     return 1;
@@ -6611,7 +6635,7 @@ int32_t __stdcall CalculateTransactionCost_Thunk(D2UnitStrc * pUnit, D2UnitStrc 
 }
 
 // Takes only pItem. The prologue's PUSH ECX reserves the 4-byte slot for the second body location byte ([EBP-1]); ECX is not an argument.
-uint32_t __fastcall ITEMS_GetRequiredBodyType(D2UnitStrc * pItem) {
+uint32_t __stdcall ITEMS_GetRequiredBodyType(D2UnitStrc * pItem) {
     D2UnitStrc* pItemUnit = pItem;
     if (!(pItem && pItem->eUnitType == UNIT_ITEM)) {
       return 0;
@@ -6625,8 +6649,9 @@ uint32_t __fastcall ITEMS_GetRequiredBodyType(D2UnitStrc * pItem) {
     }
 
     eD2ItemTypes eItemType = ITEM_GetItemData_wType(pItemUnit);
-    if ((int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize && sgptDataTable->pTxtItemTypes + eItemType) {
-      return (uint32_t)(uint8_t)sgptDataTable->pTxtItemTypes[eItemType].body;
+    D2ItemTypesTxt* pItemTypesTxt = (int)eItemType >= 0 && (int)eItemType < sgptDataTable->nTxtItemTypesSize ? sgptDataTable->pTxtItemTypes + eItemType : nullptr;
+    if (pItemTypesTxt) {
+      return (uint32_t)(uint8_t)pItemTypesTxt->body;
     }
 
     return 0;

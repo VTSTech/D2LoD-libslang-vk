@@ -2101,7 +2101,7 @@ static void __fastcall UTF8_AdvanceToCharBoundary(int pszBase, int nPosition, in
     for (; nPosition > 0 && *(uint8_t*)(pszBase + nPosition) && (*(uint8_t*)(pszBase + nPosition) & 0xc0) == 0x80; nPosition += nDirection) {}
 }
 
-void __stdcall UTF8_StepBackOneChar(int str_base, int position, uint32_t ecx_passthru) {
+void __thiscall UTF8_StepBackOneChar(uint32_t ecx_passthru, int str_base, int position) {
     UTF8_AdvanceToCharBoundary(str_base, position, -1);
 }
 

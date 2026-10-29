@@ -870,9 +870,13 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     ::SGAMEDATA* pGame2 = pGame;
-    D2SkillStrc* pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pCurrentSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     uint16_t wSkillId = (uint16_t)eSkill;
-    if (!pCurrentSkill || (bHasTargetPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &nTargetX, &nTargetY) , !bHasTargetPos)) {
+    if (!pCurrentSkill) {
+      UNIT::SUnitMsg::UnitQueuePacket0xA5(pUnit, wSkillId);
+      return 0;
+    }
+    if (bHasTargetPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &nTargetX, &nTargetY) , !bHasTargetPos) {
       UNIT::SUnitMsg::UnitQueuePacket0xA5(pUnit, wSkillId);
       return 0;
     }
@@ -1134,7 +1138,7 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1765,7 +1769,7 @@ BOOL __fastcall Skills_SrvDoFunc_077_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUni
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1849,7 +1853,7 @@ BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * 
     eD2CollisionShapeType nWidth;
     eD2States eUnitState;
     uint32_t nDestY;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1913,7 +1917,7 @@ static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills 
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1968,7 +1972,7 @@ static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills 
 // Server do-func for Barbarian Whirlwind (skill 78). State machine: if flag 0x100 clear and 0x80 set, initiates movement via SKILL_InitTransportPath; if flag 0x200 set, executes a hit cycle via SKILLBAR_WhirlwindHitCycle; otherwise clears to flag 0x1000. When flag 0x100 is set (arrived), calls SKILLBAR_ArriveAtChargeTarget then SKILLBAR_AcquireNextTarget — ending the spin if no target remains, or re-arming anim timer events for the next arc.
 BOOL __fastcall Skills_SrvDoFunc_078_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL bArrived;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }

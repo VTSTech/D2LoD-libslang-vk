@@ -1011,7 +1011,10 @@ static eD2Sounds __stdcall UNITSND_GetModeChangeSound(int32_t nPrevMode, D2UnitS
     }
 
     eD2Sounds* pSoundTable = gaUnitSoundTableByClassIdExtra[nClassId];
-    if (!(pSoundTable && (pSoundTable != gaUnitSoundTableModeChange || nPrevMode <= nNewMode))) {
+    if (!pSoundTable) {
+      return SOUND_NONE;
+    }
+    if (!(pSoundTable != gaUnitSoundTableModeChange || nPrevMode <= nNewMode)) {
       return SOUND_NONE;
     }
 
@@ -1657,7 +1660,7 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       }
 
       eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-      pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pMercUnit);
+      pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pMercUnit, eSkill);
       if (!pDVar1) {
         return;
       }

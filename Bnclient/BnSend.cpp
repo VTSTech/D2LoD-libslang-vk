@@ -1922,11 +1922,11 @@ void __fastcall BNNEWS_SetNewsChannel(int bIsClassic) {
     szBnNewsChannelName = "BNNews-D2XP";
 }
 
-int __fastcall BNNEWS_GetNewsEntryByIndex(int * pNewsTable, int nIndex) {
+int __thiscall BNNEWS_GetNewsEntryByIndex(int * pNewsTable, int nIndex) {
     return nIndex * 0x408 + pNewsTable[2];
 }
 
-uint32_t __fastcall BNNEWS_RoundToPowerOfTwo(D2BnNewsTableStrc * pNewsTable, uint32_t dwSize) {
+uint32_t __thiscall BNNEWS_RoundToPowerOfTwo(D2BnNewsTableStrc * pNewsTable, uint32_t dwSize) {
     uint32_t uStripped;
     if (dwSize < 8) {
       uint32_t uHighBit;
@@ -2062,7 +2062,7 @@ void __stdcall BNNEWS_InvokeCallbacks() {
     } while (nUnreadCount);
 }
 
-void * __fastcall BNNEWS_DestroyNewsTable(void * pNewsTable, uint8_t bFreeMemory) {
+void * __thiscall BNNEWS_DestroyNewsTable(void * pNewsTable, uint8_t bFreeMemory) {
     if (*(void**)((int)pNewsTable + 8)) {
       Storm::SMem::SMemFree(*(void**)((int)pNewsTable + 8), s___AUItem_NewsTable___0072ff8c, -2, 0);
     }
@@ -2074,7 +2074,7 @@ void * __fastcall BNNEWS_DestroyNewsTable(void * pNewsTable, uint8_t bFreeMemory
     return pNewsTable;
 }
 
-void __fastcall BNNEWS_ReallocateNewsTable(D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCapacity) {
+void __thiscall BNNEWS_ReallocateNewsTable(D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCapacity) {
     int nByteOffset;
     int* pSrc;
     int* pDst;
@@ -2129,7 +2129,7 @@ void __fastcall BNNEWS_ClearNewsTable(uint32_t * pNewsTable) {
     pNewsTable[2] = 0;
 }
 
-void __fastcall BNNEWS_EnsureCapacityWithGrowth(uint32_t * pNewsTable, int dwAdditionalCount, int bGrow) {
+void __thiscall BNNEWS_EnsureCapacityWithGrowth(uint32_t * pNewsTable, int dwAdditionalCount, int bGrow) {
     uint32_t nNewCount = dwAdditionalCount + pNewsTable[1];
     if (nNewCount <= *pNewsTable) {
       return;
@@ -2182,7 +2182,7 @@ int __fastcall BNNEWS_AllocateNewsEntry(uint32_t * pNewsTable) {
     return nNewCount * 0x408 + pNewsTable[2];
 }
 
-void __fastcall BNNEWS_EnsureCapacity(uint32_t * pNewsTable, int dwAdditionalCount) {
+void __thiscall BNNEWS_EnsureCapacity(uint32_t * pNewsTable, int dwAdditionalCount) {
     if (!(pNewsTable[1] + dwAdditionalCount > *pNewsTable)) {
       return;
     }
@@ -2190,7 +2190,7 @@ void __fastcall BNNEWS_EnsureCapacity(uint32_t * pNewsTable, int dwAdditionalCou
     BNNEWS_ReallocateNewsTable((D2BnNewsTableStrc*)pNewsTable, pNewsTable[1] + dwAdditionalCount);
 }
 
-void __fastcall BNNEWS_SetNewsEntryCount(D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCount) {
+void __thiscall BNNEWS_SetNewsEntryCount(D2BnNewsTableStrc * pNewsTable, uint32_t dwNewCount) {
     uint32_t nAlignedCount;
     if (dwNewCount > pNewsTable->nCount && dwNewCount > pNewsTable->nCapacity) {
       uint32_t nPageSize;
@@ -2461,8 +2461,8 @@ __time32_t __stdcall BNSEND_GetTime32(__time32_t * pTime) {
 void __fastcall BNSEND_HashCDKeyData(void * pOutHash, void * pTokenData, uint32_t nDataLength) {
     D2Sha1ContextStrc aSHA1Ctx;
     Fog::Source::SSignature::Sha1_Initialize(&aSHA1Ctx);
-    Storm::Source::SSignature::Sha1_Append((uint8_t*)pTokenData, nDataLength, &aSHA1Ctx);
-    Storm::Source::SSignature::Sha1_Finalize((uint8_t*)pOutHash, &aSHA1Ctx);
+    Storm::Source::SSignature::Sha1_Append(&aSHA1Ctx, (uint8_t*)pTokenData, nDataLength);
+    Storm::Source::SSignature::Sha1_Finalize(&aSHA1Ctx, (uint8_t*)pOutHash);
 }
 
 void __stdcall BNNEWS_TransformCDKeyCharacter(uint8_t bKeyChar, uint32_t * pValue, uint8_t * pOutChar) {

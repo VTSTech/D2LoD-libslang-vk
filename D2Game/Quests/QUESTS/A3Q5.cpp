@@ -1069,7 +1069,7 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 }
 
 // Q22_StatusFilter (BLACKENED TEMPLE) — fpStatusFilter: computes the quest-log status icon/string byte for this quest. If the player cannot yet reach Act III (QUEST_AbleGoToAct3 not Completed) writes 0 (hidden). Else starts from a base byte; if the quest is Completed, writes 0xb (or 0xd when JustCompleted just fired); else if at Step0x04 writes 0xd or 0x4 by the council-tracking flag. (NB: Q22_InitData actually assigns fpStatusFilter=null, so this is the historical/Mac status handler.) Read-only quest-record probes.
-uint32_t __fastcall Q22_StatusFilter(int32_t pThis, uint32_t param_1, D2BitBufferStrc * pBitBuffer, char * szText) {
+uint32_t __thiscall Q22_StatusFilter(int32_t pThis, uint32_t param_1, D2BitBufferStrc * pBitBuffer, char * szText) {
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_AbleGoToAct3, QUESTSTATE_Completed);
     if (!bQuestState) {
       *szText = '\0';

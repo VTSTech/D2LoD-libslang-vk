@@ -96,7 +96,7 @@ static void BigBuffer_DecodeDataBytes(uint32_t * pnReadPos, uint8_t * pBuffer, u
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Body is 'return this->m_data + nIndex*4', identical to the oracle's .__vc__15TSBaseArray<Ui>FUi @1009b390. operator[](Ui) on the dword element array.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-int32_t __fastcall TSBaseArray_Ui_Subscript(int32_t pThis, int32_t nIndex) {
+int32_t __thiscall TSBaseArray_Ui_Subscript(int32_t pThis, int32_t nIndex) {
     return *(int*)(pThis + 8) + nIndex * 4;
 }
 
@@ -116,7 +116,7 @@ int32_t __fastcall TSBaseArray_Ui_Top(int32_t pArray) {
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Same body as .__vc__15TSBaseArray<Ui>FUi @1009b390 with element scale 1 instead of 4. operator[](Ui) on a byte array.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-int32_t __fastcall TSBaseArray_Uc_Subscript(BigBuffer * pThis, int32_t nOffset) {
+int32_t __thiscall TSBaseArray_Uc_Subscript(BigBuffer * pThis, int32_t nOffset) {
     return (int)pThis->pData + nOffset;
 }
 
@@ -154,7 +154,7 @@ BigBuffer * __fastcall TSBaseArray_UcAlt_Constructor(BigBuffer * pBitSet) {
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED, and verified by hand this pass against the oracle's .CalcChunkSize__34TSGrowableArray<3RGN,10TSCD<3RGN>>FUi @10041a10, which is: when n is at least K, store K into this[0xc] and return K; otherwise repeatedly clear the lowest set bit of n while any bit remains, and return 1 if n reached zero. This function is that, with K = 0x40. The store of the cap into this[0xc] is the decisive tell and is present in both. Note the old name was wrong in DIRECTION as well as module: the loop that clears the lowest set bit rounds DOWN to a power of two, it does not round up. K = 256/sizeof(T) - 0x40 here for 4-byte elements, 8 in the oracle's RGN instantiation whose elements are 32 bytes.
 // @struct The container header is +0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk. BigBuffer extends it with +0x10 m_offset, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-uint32_t __fastcall TSGrowableArray_Ui_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
+uint32_t __thiscall TSGrowableArray_Ui_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
     uint32_t uClearedNext;
     if (nValue < 0x40) {
       uint32_t uCleared;
@@ -196,7 +196,7 @@ uint32_t __stdcall TSGrowableArray_Ui_RoundToChunk(uint32_t nValue, uint32_t nMu
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6: NOT a TS* method. This is the flag-0 realloc fragment that the oracle inlines inside operator=, outlined here by MSVC, and it has ZERO callers. There is no oracle method name for it, so the descriptive name Resize was kept rather than upgraded. Do not map it onto ReallocData - that is 004216e0.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_DynArray_Resize(int32_t nNewCount, int * pArray) {
+void __thiscall SBIG_DynArray_Resize(int * pArray, int32_t nNewCount) {
     *pArray = nNewCount;
     if (!((uint32_t*)pArray[2] || nNewCount)) {
       return;
@@ -210,7 +210,7 @@ void __fastcall SBIG_DynArray_Resize(int32_t nNewCount, int * pArray) {
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Same structure as TSGrowableArray_Ui_CalcChunkSize 004210a0 with K = 0x100, i.e. 256/1 for byte elements. This is the instantiation using SMem tag 0x708880.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-uint32_t __fastcall TSGrowableArray_Uc_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
+uint32_t __thiscall TSGrowableArray_Uc_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
     uint32_t uClearedNext;
     if (nValue < 0x100) {
       uint32_t uCleared;
@@ -286,7 +286,7 @@ void __thiscall TSFixedArray_Uc_ReallocData(TSGrowableArray_Uc * pBuffer, uint32
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED. Identical to TSGrowableArray_Uc_CalcChunkSize 00421160, K = 0x100. Distinguished only by its SMem tag, 0x70888c - the second byte-array instantiation. The Alt infix marks that second instantiation, it is not an oracle token.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-uint32_t __fastcall TSGrowableArray_UcAlt_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
+uint32_t __thiscall TSGrowableArray_UcAlt_CalcChunkSize(BigBuffer * pThis, uint32_t nValue) {
     uint32_t uClearedNext;
     if (nValue < 0x100) {
       uint32_t uCleared;
@@ -329,7 +329,7 @@ uint32_t __stdcall TSGrowableArray_UcAlt_RoundToChunk(uint32_t nValue, uint32_t 
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Reads a limb at an offset. Tail unchanged and unverified.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-uint32_t __fastcall SBIG_BigBuffer_GetWord(BigBuffer * pThis, int32_t nOffset) {
+uint32_t __thiscall SBIG_BigBuffer_GetWord(BigBuffer * pThis, int32_t nOffset) {
     uint32_t uIndex = pThis->nStartWord + nOffset;
     if (uIndex < pThis->nCount) {
       return pThis->pData[uIndex];
@@ -520,7 +520,7 @@ int32_t __stdcall SBIG_CompareBigBuffers_ForSha1(BigData * pBigA, BigData * pBig
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Thunk onto 00421440.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-BOOL __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer * pBigNum) {
+BOOL __thiscall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer * pBigNum) {
     BOOL BVar1 = SBIG_BigBuffer_IsLowestBitClear(pBigNum);
     return BVar1;
 }
@@ -528,7 +528,7 @@ BOOL __fastcall SBIG_BigBuffer_IsLowestBitClearWrapper(uint32_t pThis, BigBuffer
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @caution Thunk onto SBIG_BigBuffer_GetFirstWord 00421510. The tail is misleading - this is not a dword-array cursor read; the correct tail is not established.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_ArrayDwordReadAtCursor(BigBuffer * pBigNum, uint32_t * pOutWord, uint32_t dwUnused) {
+void __thiscall SBIG_ArrayDwordReadAtCursor(uint32_t dwUnused, BigBuffer * pBigNum, uint32_t * pOutWord) {
     SBIG_BigBuffer_GetFirstWord(pOutWord, pBigNum);
 }
 
@@ -587,7 +587,7 @@ void __thiscall TSGrowableArray_Uc_Reserve(uint32_t * pArray, int32_t nAdditiona
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6: NOT a TS* method. Same flag-0 realloc fragment as 00421110, byte instantiation (SMem tag 0x708880), ZERO callers. No oracle name available; descriptive name kept.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_ArrayByteSetCapacity(int32_t nCapacity, int * pArray) {
+void __thiscall SBIG_ArrayByteSetCapacity(int * pArray, int32_t nCapacity) {
     *pArray = nCapacity;
     if (!((uint32_t*)pArray[2] || nCapacity)) {
       return;
@@ -600,7 +600,7 @@ void __fastcall SBIG_ArrayByteSetCapacity(int32_t nCapacity, int * pArray) {
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6: NOT a TS* method. Same flag-0 realloc fragment as 00421110, second byte instantiation (SMem tag 0x70888c), ZERO callers. No oracle name available; descriptive name kept.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_ArrayByteAltSetCapacity(int32_t nCapacity, int * pArray) {
+void __thiscall SBIG_ArrayByteAltSetCapacity(int * pArray, int32_t nCapacity) {
     *pArray = nCapacity;
     if (!((uint32_t*)pArray[2] || nCapacity)) {
       return;
@@ -709,7 +709,7 @@ void * __thiscall TSFixedArray_Ui_Assign(uint32_t * pArray, void * pSrcArray) {
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @oracle-negative Pass 6 examined this: no oracle symbol corresponds to it. The existing descriptive name matches what the body does and was kept unchanged rather than forced onto a TS* method name.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-int32_t __fastcall SBIG_ArrayByteAppendData(uint32_t nCount, uint8_t * pSrc, uint32_t * pArray) {
+int32_t __thiscall SBIG_ArrayByteAppendData(uint32_t * pArray, uint32_t nCount, uint8_t * pSrc) {
     uint32_t nGranularity;
     uint32_t nNewSize = pArray[1] + nCount;
     if (nNewSize > *pArray) {
@@ -793,8 +793,8 @@ void __thiscall TSGrowableArray_Uc_SetCount(uint32_t * pArray, uint32_t nNewCoun
 // @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
 // @note Thunk onto SBIG_ArrayByteAppendData 004218b0. Pass 6 found no oracle counterpart; name kept.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall SBIG_ArrayByteAppendByte(uint8_t * pByte, uint32_t * pArray) {
-    SBIG_ArrayByteAppendData(1, pByte, pArray);
+void __thiscall SBIG_ArrayByteAppendByte(uint32_t * pArray, uint8_t * pByte) {
+    SBIG_ArrayByteAppendData(pArray, 1, pByte);
 }
 
 // @was SBIG_ArrayByteAssignFromData (pass 6, 2026.08.28)
@@ -1057,7 +1057,7 @@ BigData * __fastcall SBIG_Constructor(BigData * pBigData) {
     return pBigData;
 }
 
-void __fastcall SBIG_EnsureCapacity(uint32_t nIndex, int32_t bZeroFill, BigBuffer * pDwordArray) {
+void __thiscall SBIG_EnsureCapacity(BigBuffer * pDwordArray, uint32_t nIndex, int32_t bZeroFill) {
     uint32_t nNewCapacity;
     if (nIndex < pDwordArray->nCount) {
       return;
@@ -1109,7 +1109,7 @@ void __thiscall TSGrowableArray_Ui_SetCount(BigBuffer * pDwordArray, uint32_t nN
     pDwordArray->nCount = nNewLen;
 }
 
-int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, uint32_t * pByteArray) {
+int32_t __thiscall SBIG_AppendBytes(uint32_t * pByteArray, uint32_t nByteCount, uint8_t * pSrcBytes) {
     uint32_t i;
     uint32_t nNewLen = pByteArray[1] + nByteCount;
     if (nNewLen > *pByteArray) {
@@ -1142,7 +1142,7 @@ int32_t __fastcall SBIG_AppendBytes(uint32_t nByteCount, uint8_t * pSrcBytes, ui
     return pByteArray[1] - nByteCount;
 }
 
-void __fastcall SBIG_GrowToIndex(int32_t nIndex, BigBuffer * pDwordArray) {
+void __thiscall SBIG_GrowToIndex(BigBuffer * pDwordArray, int32_t nIndex) {
     uint32_t nNewCapacity;
     uint32_t nTargetIndex = pDwordArray->nStartWord + nIndex;
     if (nTargetIndex < pDwordArray->nCount) {
@@ -1169,8 +1169,8 @@ void __fastcall SBIG_GrowToIndex(int32_t nIndex, BigBuffer * pDwordArray) {
     pDwordArray->nCount = nNewLen;
 }
 
-int32_t __fastcall SBIG_GetPtrAtOffset(int32_t nIndex, BigBuffer * pBigNum) {
-    SBIG_GrowToIndex(nIndex, pBigNum);
+int32_t __thiscall SBIG_GetPtrAtOffset(BigBuffer * pBigNum, int32_t nIndex) {
+    SBIG_GrowToIndex(pBigNum, nIndex);
     return (int32_t)(pBigNum->pData + pBigNum->nStartWord + nIndex);
 }
 
@@ -1195,7 +1195,7 @@ void __fastcall SBIG_TrimToOffset(BigBuffer * pDwordArray) {
     pDwordArray->nCount = nNewLen;
 }
 
-void __fastcall SBIG_GrowToIndexNoZero(int32_t nIndex, BigBuffer * pDwordArray) {
+void __thiscall SBIG_GrowToIndexNoZero(BigBuffer * pDwordArray, int32_t nIndex) {
     uint32_t nNewCapacity;
     uint32_t nNewLen = pDwordArray->nStartWord + nIndex;
     if (nNewLen > pDwordArray->nCount && nNewLen > pDwordArray->nCapacity) {
@@ -1216,13 +1216,13 @@ void __fastcall SBIG_GrowToIndexNoZero(int32_t nIndex, BigBuffer * pDwordArray) 
     pDwordArray->nCount = nNewLen;
 }
 
-void __fastcall SBIG_SetOffset(int32_t nOffset, BigBuffer * pBigNum) {
+void __thiscall SBIG_SetOffset(BigBuffer * pBigNum, int32_t nOffset) {
     pBigNum->nStartWord = nOffset;
     if (!nOffset) {
       return;
     }
 
-    SBIG_GrowToIndex(-1, pBigNum);
+    SBIG_GrowToIndex(pBigNum, -1);
 }
 
 void __fastcall SBIG_TrimLeadingZeros(BigBuffer * pDwordArray) {
@@ -1259,7 +1259,7 @@ void __fastcall SBIG_TrimLeadingZeros(BigBuffer * pDwordArray) {
     } while (nNewLen != pDwordArray->nStartWord);
 }
 
-void * __fastcall SBIG_CopyAssign(void * pSource, uint32_t * pDest) {
+void * __thiscall SBIG_CopyAssign(uint32_t * pDest, void * pSource) {
     if (pDest != (unsigned int*)pSource) {
       TSBaseArray_Ui_Copy(pDest, *(uint32_t*)((int)pSource + 4), *(uint32_t**)((int)pSource + 8));
     }
@@ -1913,7 +1913,7 @@ static void BigBuffer_SetOne(BigBuffer * pResult) {
     }
 
     pResult->nCount = nNeededCount;
-    SBIG_GrowToIndex(0, pResult);
+    SBIG_GrowToIndex(pResult, 0);
     pResult->pData[pResult->nStartWord] = 1;
 }
 
@@ -2385,7 +2385,7 @@ static void __stdcall BigBuffer_FromBinary(void * pSrcBytes, uint32_t nByteCount
       nWordIndex = i >> 2;
       nByteInWord = i & 3;
       if (nByteInWord) {
-        SBIG_GrowToIndex(nWordIndex, pResult);
+        SBIG_GrowToIndex(pResult, nWordIndex);
         dwCurWord = pResult->pData[pResult->nStartWord + nWordIndex];
       } else {
         dwCurWord = 0;
@@ -2635,7 +2635,7 @@ void __stdcall SBigDec(BigData * pDstBignum, BigData * pSrcBignum) {
 }
 
 // @oracle-note 2026-08-28 pass 4. NOT SBigDel - that is 00424e40. This takes 'this' in ECX plus a delete-flags byte on the stack, which is MSVC's compiler-generated scalar deleting destructor for the BigBuffer object, not a Storm C API entry point. It sits inside the alphabetical SBig* export run purely by linker layout.
-void * __fastcall SBIG_Destructor(uint8_t byDeleteFlags, BigData * pBigData) {
+void * __thiscall SBIG_Destructor(BigData * pBigData, uint8_t byDeleteFlags) {
     BigData_Destructor(pBigData);
     if (!(byDeleteFlags & 1 && pBigData)) {
       return pBigData;
@@ -2785,7 +2785,7 @@ void __stdcall SBigSub(BigData * pResult, BigData * pBigA, BigData * pBigB) {
 void __stdcall SBigToBinaryArray(BigData * pBigData, void * pDestArray, int32_t bAppend) {
     BigBuffer_ToBinary(&pBigData->sPrimary, &pBigData->sOutBuffer);
     if (bAppend) {
-      SBIG_ArrayByteAppendData(pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData, (uint32_t*)pDestArray);
+      SBIG_ArrayByteAppendData((uint32_t*)pDestArray, pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData);
       return;
     }
 
@@ -2829,7 +2829,7 @@ void __stdcall SBigToBinaryPtr(BigData * pBigData, uint8_t * * ppBufferOut, uint
 void __stdcall SBigToStrArray(BigData * pBigData, void * pDestArray, int32_t bAppend) {
     BigBuffer_ToStr(&pBigData->sStack, &pBigData->sPrimary, &pBigData->sOutBuffer);
     if (bAppend) {
-      SBIG_AppendBytes(pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData, (uint32_t*)pDestArray);
+      SBIG_AppendBytes((uint32_t*)pDestArray, pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData);
       return;
     }
 
@@ -2858,7 +2858,7 @@ void __stdcall SBigToStrPtr(BigData * pBigData, uint8_t * * ppStringOut) {
 void __stdcall SBigToStreamArray(BigData * pBigData, void * pDestArray, int32_t bAppend) {
     BigBuffer_ToStream(&pBigData->sOutBuffer, &pBigData->sPrimary);
     if (bAppend) {
-      SBIG_ArrayByteAppendData(pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData, (uint32_t*)pDestArray);
+      SBIG_ArrayByteAppendData((uint32_t*)pDestArray, pBigData->sOutBuffer.nLen, pBigData->sOutBuffer.pData);
       return;
     }
 
@@ -2899,7 +2899,7 @@ void __stdcall SBigXor(BigData * pResult, BigData * pBigA, BigData * pBigB) {
     BigBuffer_Xor(&pBigA->sPrimary, &pBigB->sPrimary, &pResult->sPrimary);
 }
 
-void __fastcall SBIG_CopyBigNumToTemp(BigStack * pStack, BigBuffer * pDest, BigBuffer * pSrc) {
+void __thiscall SBIG_CopyBigNumToTemp(BigStack * pStack, BigBuffer * pDest, BigBuffer * pSrc) {
     if (pDest == pSrc) {
       return;
     }
@@ -2915,6 +2915,7 @@ void __fastcall SBIG_CopyBigNumToTemp(BigStack * pStack, BigBuffer * pDest, BigB
 // @oracle Mac PPC 1.10b Storm mangled symbol .Div__FR9BigBufferR9BigBufferRC9BigBufferRC9BigBufferR8BigStack @1009f6a0 -- 5 args (quot, rem, a, b, stack); callee set {SetZero, Div_Ux, Shl, 64-bit divide, Mul_Ux, Sub, Shr} matches .Div one for one. Was SBIG_DivMod.
 // @oracle-note Internal, NOT an export: absent from the 337-name export table by design. The real symbol is the free function without a class qualifier; the BigBuffer_ prefix is a local disambiguator, and _Ui / _Ux are the MWCC mangling tokens for the scalar overloads.
 static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainder, BigBuffer * pDivisor, BigStack * pStack, BigBuffer * pDividend) {
+    BigBuffer* pResult_00;
     uint32_t uVar2;
     uint32_t nNormShift;
     int nTopIndex;
@@ -2927,7 +2928,6 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
     int64_t nDividend64;
     uint64_t uAligned;
     uint32_t* pDividendData;
-    BigBuffer* pDivisorShifted;
     BigBuffer* pSubOperand;
     uint32_t* pTopWordData;
     uint32_t uNeeded;
@@ -2953,56 +2953,56 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
       BigBuffer* pResult;
       uVar1 = pStack->nUsed;
       pResult = pStack->aBuffers + uVar1;
-      pDivisorShifted = pStack->aBuffers + uVar1 + 1;
+      pResult_00 = pStack->aBuffers + uVar1 + 1;
       pStack->nUsed = uVar1 + 3;
       nDivisorHigh = SBIG_BigBuffer_FindHighestBit(pDivisor);
       nNormShift = 0x1f - (nDivisorHigh & 0x1f);
       BigBuffer_Shl(pDividend, pResult, nNormShift);
-      BigBuffer_Shl(pDivisor, pDivisorShifted, nNormShift);
+      BigBuffer_Shl(pDivisor, pResult_00, nNormShift);
       nTopIndex = nDivisorLen - 1;
-      SBIG_GrowToIndex(nTopIndex, pDivisorShifted);
-      nDivisorHigh = pDivisorShifted->pData[pDivisorShifted->nStartWord + nTopIndex] + 1;
+      SBIG_GrowToIndex(pResult_00, nTopIndex);
+      nDivisorHigh = pResult_00->pData[pResult_00->nStartWord + nTopIndex] + 1;
       nShift = nDividendLen - nDivisorLen + 1;
-      SBIG_GrowToIndexNoZero(nShift, pQuotient);
+      SBIG_GrowToIndexNoZero(pQuotient, nShift);
       while (nShift) {
         nShift--;
         pQuotient->nStartWord = nShift;
         if (nShift) {
-          SBIG_GrowToIndex(-1, pQuotient);
+          SBIG_GrowToIndex(pQuotient, -1);
         }
 
         pResult->nStartWord = nShift;
         if (nShift) {
-          SBIG_GrowToIndex(-1, pResult);
+          SBIG_GrowToIndex(pResult, -1);
         }
 
-        SBIG_GrowToIndex(nDivisorLen, pResult);
+        SBIG_GrowToIndex(pResult, nDivisorLen);
         if (!nDivisorHigh) {
           nAlignChunk = pResult->nStartWord;
           pDividendData = pResult->pData;
-          SBIG_GrowToIndex(0, pQuotient);
+          SBIG_GrowToIndex(pQuotient, 0);
           nAlignChunk = pDividendData[nAlignChunk + nDivisorLen];
         } else {
           nAlignChunk = pResult->nStartWord;
           pDividendData = pResult->pData;
-          SBIG_GrowToIndex(nTopIndex, pResult);
+          SBIG_GrowToIndex(pResult, nTopIndex);
           uBitIter = pResult->nStartWord;
           pTopWordData = pResult->pData;
           nDividend64 = _allmul(pDividendData[nAlignChunk + nDivisorLen], 0, 0, 1);
           nDividend64 += (uint64_t)pTopWordData[uBitIter + nTopIndex];
-          SBIG_GrowToIndex(0, pQuotient);
+          SBIG_GrowToIndex(pQuotient, 0);
           uAligned = _aulldiv((uint32_t)nDividend64, (uint32_t)((uint64_t)nDividend64 >> 0x20), nDivisorHigh, 0);
           nAlignChunk = (uint32_t)uAligned;
         }
 
         pQuotient->pData[pQuotient->nStartWord] = nAlignChunk;
-        SBIG_GrowToIndex(0, pQuotient);
+        SBIG_GrowToIndex(pQuotient, 0);
         if (!pQuotient->pData[pQuotient->nStartWord]) {
           goto correct_quotient_digit;
         }
 
-        SBIG_GrowToIndex(0, pQuotient);
-        BigBuffer_Mul_Ux(pDivisorShifted, pQuotient->pData[pQuotient->nStartWord], 0, pStack->aBuffers + uVar1 + 2);
+        SBIG_GrowToIndex(pQuotient, 0);
+        BigBuffer_Mul_Ux(pResult_00, pQuotient->pData[pQuotient->nStartWord], 0, pStack->aBuffers + uVar1 + 2);
         pSubOperand = pStack->aBuffers + uVar1 + 2;
         while (true) {
           BigBuffer_Sub(pResult, pSubOperand, pResult);
@@ -3040,7 +3040,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
             pResult->nCount = uNeeded;
           }
           if (!pResult->pData[pResult->nStartWord + nDivisorLen]) {
-            nCmpResult = BigBuffer_Compare(pResult, pDivisorShifted);
+            nCmpResult = BigBuffer_Compare(pResult, pResult_00);
             if (nCmpResult < 0) {
               break;
             }
@@ -3080,7 +3080,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           }
 
           pQuotient->pData[pQuotient->nStartWord]++;
-          pSubOperand = pDivisorShifted;
+          pSubOperand = pResult_00;
         }
       }
 
@@ -3095,9 +3095,9 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
       nShift = 0;
     }
 
-    SBIG_GrowToIndex(0, pRemainder);
+    SBIG_GrowToIndex(pRemainder, 0);
     BigBuffer_Div_Ux(pRemainder->pData + pRemainder->nStartWord, pDividend, nShift, 0, pQuotient);
-    SBIG_GrowToIndexNoZero(1, pRemainder);
+    SBIG_GrowToIndexNoZero(pRemainder, 1);
 }
 
 // @renamed-from SBIG_GCD (2026-08-28, Storm PowerPC oracle pass 4)
@@ -3449,7 +3449,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
       int iVar1;
       uNeededCount = 0;
       do {
-        SBIG_GrowToIndex(0, pnWork);
+        SBIG_GrowToIndex(pnWork, 0);
         iVar1 = uNeededCount + pnWork->nStartWord * 4;
         pWorkData = gbSBigMontgomeryConstant1 + uNeededCount;
         uNeededCount++;
@@ -4422,11 +4422,11 @@ void __stdcall SBigFindPrime(BigData * pResult, int32_t nParam2, BigData * pnPar
     BigBuffer_FindPrime(nParam2, &pnParam1->sPrimary, &pnParam2->sPrimary, &pResult->sStack, &pResult->sPrimary);
 }
 
-void __fastcall CRYPTO_ByteSwap32Array(uint16_t wValue, uint16_t * pwOut) {
+void __thiscall CRYPTO_ByteSwap32Array(uint16_t * pwOut, uint16_t wValue) {
     *pwOut = wValue;
 }
 
-void __fastcall CRYPTO_ByteSwap64Array(uint16_t * pwOut, uint16_t * pwIn) {
+void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut) {
     uint16_t wValue = *pwIn;
     if (wValue < 0x100) {
       *pwOut = D2Client::UI::ui::CharacterLookupTable[wValue];

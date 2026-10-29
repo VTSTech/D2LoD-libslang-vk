@@ -438,9 +438,11 @@ static void GetPlayerClassIdToName(int32_t nClassId, char * szResult, size_t nSi
     if ((int)nSize <= 0) {
       return;
     }
-    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nClassId) {
+
+    D2CharStatsTxt* pCharStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nClassId : nullptr;
+    if (pCharStatsTxt) {
       char* pszClassName;
-      pszClassName = sgptDataTable->pTxtCharStats[nClassId].szClass;
+      pszClassName = pCharStatsTxt->szClass;
       if (*pszClassName != '\0') {
         strncpy(szResult, pszClassName, nSize);
         szResult[nSize - 1] = '\0';
@@ -457,9 +459,11 @@ static void GetMonsterClassIdToName(int32_t nClassId, char * szResult, size_t nS
     if ((int)nSize <= 0) {
       return;
     }
-    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId) {
+
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (pMonStatsTxt) {
       uint16_t* pwszLocaleName;
-      wNameStr = sgptDataTable->pTxtMonStats[nClassId].NameStr;
+      wNameStr = pMonStatsTxt->NameStr;
       if (wNameStr != 0x1506) {
         pwszLocaleName = D2Lang::StrTable::strtable::GetLocaleString(wNameStr);
         D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szResult, (uint16_t*)pwszLocaleName, nSize);

@@ -406,8 +406,9 @@ static void __stdcall SUNITINACTIVE_RestoreMonsterStateFromInactive(::SGAMEDATA 
     if (*pnParam == 1) {
       nBaseId = pnParam[1];
       if (nBaseId >= 0) {
-        if (nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
-          nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
+        D2MonStatsTxt* pMonStatsTxt = nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
+        if (pMonStatsTxt) {
+          nBaseId = (int)pMonStatsTxt->BaseId;
         }
         if (nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize) {
           if (nBaseId == 0x44) {
@@ -504,8 +505,9 @@ static void SUNITINACTIVE_SaveMonsterStateToInactive(D2InactiveMonsterRecordStrc
     if (*pnParam == 1) {
       nBaseId = pnParam[1];
       if (nBaseId >= 0) {
-        if (nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
-          nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
+        D2MonStatsTxt* pMonStatsTxt = nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
+        if (pMonStatsTxt) {
+          nBaseId = (int)pMonStatsTxt->BaseId;
         }
         if (nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize) {
           if (nBaseId == 0x44) {

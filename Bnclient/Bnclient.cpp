@@ -228,12 +228,12 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     return bGotOrg;
 }
 
-int * __fastcall BNCLIENT_InitFilestream(int * pStream, char * szFilePath) {
+int * __thiscall BNCLIENT_InitFilestream(int * pStream, char * szFilePath) {
     Storm::SLogCreate(szFilePath, 0, pStream);
     return pStream;
 }
 
-void * __fastcall BNCLIENT_DestroyCompressor(void * pCompressor, uint8_t bFreeMemory) {
+void * __thiscall BNCLIENT_DestroyCompressor(void * pCompressor, uint8_t bFreeMemory) {
     Storm::Source::SSComp::SLogClose(*(uint32_t*)pCompressor);
     if (!(bFreeMemory & 1)) {
       return pCompressor;

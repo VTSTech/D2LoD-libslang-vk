@@ -385,11 +385,12 @@ static BOOL PLRMODES_DrainStamina(D2UnitStrc * pUnit) {
     }
 
     int nStaminaDrain = pUnit->nClassId;
-    if (!(nStaminaDrain >= 0 && nStaminaDrain < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + nStaminaDrain)) {
+    D2CharStatsTxt* pCharStatsTxt = nStaminaDrain >= 0 && nStaminaDrain < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nStaminaDrain : nullptr;
+    if (!pCharStatsTxt) {
       return 0;
     }
 
-    nStaminaDrain = (uint32_t)(uint8_t)sgptDataTable->pTxtCharStats[nStaminaDrain].RunDrain * 2;
+    nStaminaDrain = (uint32_t)(uint8_t)pCharStatsTxt->RunDrain * 2;
     if (!pUnit->pInventory) {
       return 0;
     }
@@ -1570,7 +1571,7 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
     }
 
     D2SkillStrc* pSkill;
-    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (pSkill) {
       nPosY = D2Common::Skills::GetSkillMode(pUnit, pSkill);
       if (pUnit->eUnitType == UNIT_PLAYER && pUnit->pUnitData.pUnitDataPlayer) {

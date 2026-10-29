@@ -1031,11 +1031,12 @@ uint32_t __fastcall GetSomeMonsterStatFlag(int32_t nMonsterClassId, uint32_t nSt
     }
 
     int nMonStatsExIndex = (int)sgptDataTable->pTxtMonStats[nMonsterClassId].MonStatsEx;
-    if (!(nMonStatsExIndex >= 0 && nMonStatsExIndex < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatsExIndex)) {
+    D2MonStats2Txt* pMonStatsExTxt = nMonStatsExIndex >= 0 && nMonStatsExIndex < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatsExIndex : nullptr;
+    if (!pMonStatsExTxt) {
       return 0;
     }
 
-    return (uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStatsExIndex].mDT[(int)nStatBitIndex >> 3] & gadwBitMasks[nStatBitIndex & 7];
+    return (uint32_t)pMonStatsExTxt->mDT[(int)nStatBitIndex >> 3] & gadwBitMasks[nStatBitIndex & 7];
 }
 
 static void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32_t nMonsterClassId, uint32_t * pSeed) {
@@ -1054,11 +1055,12 @@ static void __stdcall ROOM_FindSpawnPositionForMonster(D2RoomStrc * pRoom, int32
     }
 
     int nSpawnX = (int)sgptDataTable->pTxtMonStats[nMonsterClassId].MonStatsEx;
-    if (!(nSpawnX >= 0 && nSpawnX < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nSpawnX)) {
+    D2MonStats2Txt* pMonStatsExTxt = nSpawnX >= 0 && nSpawnX < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nSpawnX : nullptr;
+    if (!pMonStatsExTxt) {
       return;
     }
 
-    eD2CollisionUnitSize nMonsterSizeX = (eD2CollisionUnitSize)sgptDataTable->pTxtMonStatsEx[nSpawnX].SizeX;
+    eD2CollisionUnitSize nMonsterSizeX = (eD2CollisionUnitSize)pMonStatsExTxt->SizeX;
     int nAttempts = 0;
     while (true) {
       eCollisionFlags eCollision;

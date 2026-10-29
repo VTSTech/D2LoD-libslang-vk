@@ -940,7 +940,7 @@ BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, int32_t nParam) {
 // Maps nBarricadeGroupId to a group via Q32_FindBarricadeGroup, increments that group's kill count
 // (group[+0x18]); when it exceeds 4 (>=5 = whole group of 5 barbarians dead) sets the group's 'all dead'
 // byte (+0x54). No QuestRecord access.
-void __fastcall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, int32_t nBarricadeGroupId) {
+void __thiscall Q32_IncrementWussieKillCount(::SGAMEDATA * pGameStrc, int32_t nBarricadeGroupId) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGameStrc, QUESTINT_RescueOnMountArreat);
     if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return;

@@ -925,8 +925,10 @@ BOOL __fastcall CheckIfBaseIsFallenOrScarabAndSet(int32_t nMonstatId) {
     if (nMonstatId < 0) {
       return 0;
     }
-    if (nMonstatId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonstatId) {
-      nMonstatId = (int32_t)sgptDataTable->pTxtMonStats[nMonstatId].BaseId;
+
+    D2MonStatsTxt* pMonStatsTxt = nMonstatId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonstatId : nullptr;
+    if (pMonStatsTxt) {
+      nMonstatId = (int32_t)pMonStatsTxt->BaseId;
     }
     if (!(nMonstatId >= 0 && nMonstatId < sgptDataTable->nTxtMonStatsSize && (nMonstatId == 19 || nMonstatId == 91))) {
       return 0;

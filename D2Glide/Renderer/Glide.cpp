@@ -2583,7 +2583,7 @@ BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, in
     return 0;
 }
 
-BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable) {
+BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable) {
     int nScreenY;
     int nScreenX;
     uint32_t dwColor0;

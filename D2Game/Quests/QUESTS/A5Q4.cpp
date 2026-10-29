@@ -115,12 +115,12 @@ bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 }
 
 // A5Q4 (Betrayal of Harrogath) helper. On first call when bPortalSpawned==0, spawns the red portal object (classId 0x3c) at pUnit's tile position +(10,5) leading to LEVEL_NihlathaksTemple via SERVER_SpawnPortal. Sets bPortalSpawned=1 and clears bNotifiedCompletion on success. Gated by A5Q4 specific-data flags; no QuestRecord access.
-void __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
+bool __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     int nPosY;
     int nPosX;
     D2QuestDataA5Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q4;
     if (pQuestSpecificData->bPortalSpawned) {
-      return;
+      return false;
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
@@ -148,12 +148,13 @@ void __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc
     nPosY += 5;
     nPosX += 10;
     BVar1 = SKILLS::SkillsServer::SERVER_SpawnPortal(pQuestData->pGame, nullptr, D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, eLevel, ppPortal, nClassId, BVar1);
-    if (!BVar1) {
-      return;
+    if (BVar1) {
+      pQuestSpecificData->bPortalSpawned = 1;
+      pQuestSpecificData->bNotifiedCompletion = 0;
+      return true;
     }
 
-    pQuestSpecificData->bPortalSpawned = 1;
-    pQuestSpecificData->bNotifiedCompletion = 0;
+    return false;
 }
 
 // A5Q4 (Betrayal of Harrogath) quest-state-2 NPC callback. Fires when the target is Nihlathak (classId 0x200). If group0 prisoners are freed: clears eFlags, calls QUEST_SetStateAndBroadcast to state 1 via Q34_NotifyQuestState, clears group0 flag. If group1 freed but group2 not: inlines Q34_SpawnNihlathakPortal — spawns a portal to LEVEL_NihlathaksTemple (objectClass 0x3c) near Nihlathak's position (+10x, +5y), and advances group1->group2 on success.

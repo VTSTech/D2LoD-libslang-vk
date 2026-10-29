@@ -161,7 +161,7 @@ int32_t __fastcall MISSILE_CltHitFn60_Nihlithak(struct D2UnitStrc * pUnit, struc
 int32_t __fastcall MISSILE_CltHitFn31_IceBreak(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 struct D2UnitStrc * __fastcall MISSILE_CreateFootprint(struct D2UnitStrc * pUnit, int32_t nParam);
 // Creates a client-side tracking missile (MISSILE_Hfspirit1) aimed from pUnit toward a world object looked up by nObjectId. Resolves both units' positions (static or dynamic path), computes the offset vector, allocates a particle, and sets its velocity direction. Called for Holy Freeze/spirit visual effects.
-void __fastcall MISSILE_CreateTowardObject(int32_t nObjectId, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
+void __thiscall MISSILE_CreateTowardObject(int32_t nObjectId, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 int32_t __fastcall MISSILE_CltHitFn42_HfFragment1(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);
 // Client hit handler for missile 043 (Hffragment / hellfire). Spawns a MISSILE_Hffragment3 sub-missile at the impact position using the range from missile TXT entry 0x175; applies a random Y-target offset derived from the parent missile's seed; sets target X from the parent. Flags 0x8005 mark it as a special fragment.
 int32_t __fastcall MISSILE_CltHitFn43_HfFragment2(struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget);

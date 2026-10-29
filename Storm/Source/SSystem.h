@@ -32,18 +32,18 @@ uint32_t __fastcall SSYSTEM_InitializeAndReturn(uint32_t nFlags);
 char * ILT_strpbrk(char * _Str, char * _Control);
 void __stdcall __break();
 void __stdcall SSYSTEM_SetShutdownFlag(uint32_t dwParam);
-uint32_t __fastcall SSYSTEM_ListOffsetToPointer(int * pBase, int * pNode);
-int32_t __fastcall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode);
-void __fastcall SSYSTEM_ListUnlinkAndInsert(int * * pNode, int32_t nInsertMode, int * * ppTarget, int * * pList);
-uint32_t __fastcall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode);
-void __fastcall SSYSTEM_ListUnlink(int32_t pThis, int * pNode);
-uint32_t __fastcall SSYSTEM_ListGetData(int32_t pList, int32_t pNode);
+uint32_t __thiscall SSYSTEM_ListOffsetToPointer(int * pNode, int * pBase);
+int32_t __thiscall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode);
+void __thiscall SSYSTEM_ListUnlinkAndInsert(int * * pList, int * * pNode, int32_t nInsertMode, int * * ppTarget);
+uint32_t __thiscall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode);
+void __thiscall SSYSTEM_ListUnlink(int32_t pThis, int * pNode);
+uint32_t __thiscall SSYSTEM_ListGetData(int32_t pList, int32_t pNode);
 void __fastcall SSYSTEM_ListClearPositive(struct D2StormListHead * pList);
 void __fastcall SSYSTEM_ListClearAll(struct D2StormListHead * pList);
-int * * __fastcall SSYSTEM_ListAllocNode(int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags, int * * pList);
-int * __fastcall SSYSTEM_ListFreeNode(uint8_t bFreeMemory, int * pNode);
+int * * __thiscall SSYSTEM_ListAllocNode(int * * pList, int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags);
+int * __thiscall SSYSTEM_ListFreeNode(int * pNode, uint8_t bFreeMemory);
 void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList);
-uint32_t __fastcall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode);
+uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode);
 int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLength);
 // @blizzard SMemCopy (Storm ordinal 491)
 void __stdcall SMemCopy(void * _Dst, void * _Src, size_t _Size);
@@ -53,22 +53,22 @@ void __stdcall SMemFill(void * pMemory, size_t nSize, uint8_t bValue);
 void __stdcall SMemMove(void * pParam1, void * pParam2, size_t nSize);
 // @blizzard SMemZero (Storm ordinal 494)
 void __stdcall SMemZero(void * pMemory, size_t nSize);
-void __fastcall LINKEDLIST_Unlink(uint32_t * pNode, int * pList);
-void __fastcall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits);
-void __fastcall LINKEDLIST_InsertAfter(uint8_t * pNode, int32_t pNewNode, struct D2BitStreamWriterStrc * pList);
-void __fastcall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode);
-void __fastcall LINKEDLIST_MoveNode(int * * pNode, int32_t nInsertAtHead, int * * pInsertRef, int * * pListHead);
+void __thiscall LINKEDLIST_Unlink(int * pList, uint32_t * pNode);
+void __thiscall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits);
+void __thiscall LINKEDLIST_InsertAfter(struct D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode);
+void __thiscall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode);
+void __thiscall LINKEDLIST_MoveNode(int * * pListHead, int * * pNode, int32_t nInsertAtHead, int * * pInsertRef);
 void __fastcall LINKEDLIST_UnlinkAll(int32_t pList);
 void __fastcall LINKEDLIST_LinkBefore(void * pNode);
 void __fastcall LINKEDLIST_NodeDestructor(void * pnParam);
 void __fastcall LINKEDLIST_GetNodeValue(void * pNode);
 uint32_t __fastcall LINKEDLIST_GetNextOffset(int * pList);
 // Calculates the offset position of a node within a linked list structure. Handles both forward and backward traversal using signed offset values. Returns the absolute position when given a node pointer and its offset metadata.
-uint32_t __fastcall LINKEDLIST_GetNodeOffset(int * pNode, int * pListInfo);
+uint32_t __thiscall LINKEDLIST_GetNodeOffset(int * pListInfo, int * pNode);
 void __fastcall LINKEDLIST_UnlinkSelf(int * pNode);
 uint32_t __fastcall LINKEDLIST_GetCount(int * pList);
 // Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
-int32_t __fastcall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode);
+int32_t __thiscall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode);
 // @wasnamed LINKEDLIST_IsEmpty - WRONG in kind. It is not a predicate: it returns void and mutates
 // links.
 // @evidence The body unlinks the node from its current list (00426b12..00426b3a) and then relinks it
@@ -83,37 +83,37 @@ int32_t __fastcall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode);
 // false one.
 void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList);
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
-uint32_t __fastcall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode);
-void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead);
+uint32_t __thiscall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode);
+void __thiscall LINKEDLIST_GetHead(int32_t pThis, int * pListHead);
 // Gets the value stored at a specific index within a linked list. Returns the value field at offset+4 from the node pointer. Handles NULL input by defaulting to the list head at this+8.
-uint32_t __fastcall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode);
+uint32_t __thiscall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode);
 void __fastcall LINKEDLIST_GetTail(struct D2StormListHead * pList);
 void __fastcall LINKEDLIST_InsertHead(struct D2StormListHead * pList);
 // Allocates a new linked list node via SMemAlloc with 12 bytes overhead plus data size. Initializes next/prev pointers to NULL. Optionally links the node into an existing list via LINKEDLIST_IsEmpty call.
-int * * __fastcall LINKEDLIST_AllocNode(int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags, int * * pListHead);
+int * * __thiscall LINKEDLIST_AllocNode(int * * pListHead, int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags);
 // Unlinks a node from its doubly-linked list by updating prev/next pointers of adjacent nodes. If bit 0 of bFreeMemory is set, also frees the node memory via SMemFree. Returns the unlinked node pointer.
-int * __fastcall LINKEDLIST_UnlinkAndFree(uint8_t bFreeMemory, int * pNode);
+int * __thiscall LINKEDLIST_UnlinkAndFree(int * pNode, uint8_t bFreeMemory);
 // Unlinks a node from the list, frees its memory, and returns the masked count value. Combines unlinking logic with memory cleanup and count extraction. Always deallocates via SMemFree after unlinking.
-uint32_t __fastcall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode);
-struct StormLinkStrc * __fastcall LINKEDLIST_GetNodePointer(int32_t nLinkOffset, struct StormLinkStrc * pLink);
+uint32_t __thiscall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode);
+struct StormLinkStrc * __thiscall LINKEDLIST_GetNodePointer(struct StormLinkStrc * pLink, int32_t nLinkOffset);
 void __fastcall LINKEDLIST_UnlinkNodeSelf(struct StormLinkStrc * pLink);
-struct StormLinkStrc * __fastcall LINKEDLIST_GetOffset(void * pItem, struct StormLinkedListStrc * pList);
-void __fastcall LINKEDLIST_SetNodeValue(int32_t dwValue, struct StormLinkedListStrc * pNode);
-void __fastcall LINKEDLIST_InsertNode(void * pNewItem, int32_t nInsertMode, void * pRefItem, struct StormLinkedListStrc * pList);
-int32_t __fastcall LINKEDLIST_GetNodeAt(int32_t nOffset, int * pList);
-void __fastcall LINKEDLIST_RemoveNode(int32_t nOffset, int * pnParam);
+struct StormLinkStrc * __thiscall LINKEDLIST_GetOffset(struct StormLinkedListStrc * pList, void * pItem);
+void __thiscall LINKEDLIST_SetNodeValue(struct StormLinkedListStrc * pNode, int32_t dwValue);
+void __thiscall LINKEDLIST_InsertNode(struct StormLinkedListStrc * pList, void * pNewItem, int32_t nInsertMode, void * pRefItem);
+int32_t __thiscall LINKEDLIST_GetNodeAt(int * pList, int32_t nOffset);
+void __thiscall LINKEDLIST_RemoveNode(int * pnParam, int32_t nOffset);
 // @wasnamed LINKEDLIST_GetCount - one name on two different functions.
 // @evidence Calls LINKEDLIST_GetOffset(nOffset,p) then returns node[+4].
 // It counts nothing. 00426a60 is the real count (returns max(pList[+8],0)).
 // @caveat no xrefs - an inlined Storm TS-list template instance. Name is body-derived, not recovered.
-int32_t __fastcall LINKEDLIST_GetNodeLinkAtOffset(int32_t nOffset, int * pnParam);
+int32_t __thiscall LINKEDLIST_GetNodeLinkAtOffset(int * pnParam, int32_t nOffset);
 void __fastcall LINKEDLIST_FreeNode(void * pParam);
 void __fastcall LINKEDLIST_FreeNodeAndUnlink(void * pParam);
-void * __fastcall LINKEDLIST_AllocAndInsertNode(int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags, struct StormLinkedListStrc * pList);
-FILE * __fastcall LINKEDLIST_DetachNode(uint8_t bFree, FILE * pFile);
+void * __thiscall LINKEDLIST_AllocAndInsertNode(struct StormLinkedListStrc * pList, int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags);
+FILE * __thiscall LINKEDLIST_DetachNode(FILE * pFile, uint8_t bFree);
 void __fastcall LINKEDLIST_FreeNodeSafe(void * pParam);
 void __fastcall LINKEDLIST_FreeAllNodes(void * pListHead);
-int32_t __fastcall LINKEDLIST_FindNode(void * pNode, int * pList);
+int32_t __thiscall LINKEDLIST_FindNode(int * pList, void * pNode);
 void __stdcall SetCurrentThreadId();
 void __stdcall StaticInit_6ca890();
 

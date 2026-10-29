@@ -532,7 +532,7 @@ void __fastcall SetSymbolSearchPath(char * szSearchPath) {
     ExceptionList = pSehFrame;
 }
 
-int __fastcall FindSymbolFile(char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext, void * pfnFindCallback) {
+int __thiscall FindSymbolFile(void * pfnFindCallback, char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext) {
     int bSymbolsInitOk;
     BOOL bFound;
     uint32_t nSehState;

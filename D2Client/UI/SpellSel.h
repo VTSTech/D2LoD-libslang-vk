@@ -48,7 +48,7 @@ uint32_t __stdcall SPELLSEL_IsMouseInRect(int32_t nWidth, int32_t nHeight, int32
 int32_t __fastcall SPELLSEL_GetSkillPalette(struct D2UnitStrc * pUnit, struct D2SkillStrc * pSkill);
 void __fastcall SPELLSEL_DrawSkillTooltip(short * pSkillId, int32_t bShowExpanded, int32_t nSkillDescId, int32_t nStatId, int32_t nIconX, int32_t nIconY);
 void __fastcall SPELLSEL_DrawKeyBindingText(int32_t nCmdIndex, int32_t nX, int32_t nY, int32_t dwColor);
-void __fastcall SPELLSEL_DrawSkillLevel(int32_t pThis, int32_t nScreenX, int32_t nIconY);
+void __thiscall SPELLSEL_DrawSkillLevel(int32_t pThis, int32_t nScreenX, int32_t nIconY);
 void __fastcall SPELLSEL_DrawSkillIconWithQuantity(struct DC6 * pDC6, short * pSkillId, int32_t nSkillId, int32_t nQuantity, GLOBALPALLETE nGlobalPaletteShift, int32_t nSkillIdSlot, int32_t nIconX, int32_t bIsLeftHand);
 void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int32_t nSkillId, GLOBALPALLETE nGlobalPaletteShift, int32_t nIconX, int32_t nIconY, int32_t bIsLeftHand);
 int __fastcall SPELLSEL_FindChargedSkill1(struct D2UnitStrc * pUnit, int32_t nTargetSkillId);

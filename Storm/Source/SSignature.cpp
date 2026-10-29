@@ -41,8 +41,8 @@ static BOOL __stdcall SSIG_FindSignatureMarker(int32_t nOffset, uint32_t nTotalS
 static void __stdcall SSIG_HashData(uint32_t nDataLen, uint8_t * pData, int32_t pDigestOut) {
     D2Sha1ContextStrc shaContext;
     Fog::Source::SSignature::Sha1_Initialize(&shaContext);
-    Sha1_Append(pData, nDataLen, &shaContext);
-    Sha1_Finalize((uint8_t*)pDigestOut, &shaContext);
+    Sha1_Append(&shaContext, pData, nDataLen);
+    Sha1_Finalize(&shaContext, (uint8_t*)pDigestOut);
 }
 
 // @sourcefile .\SOURCE\SSignature.cpp
@@ -72,10 +72,10 @@ void __fastcall SSignatureVerifyStream_ProvideData(D2SsigContextStrc * pContext,
     uint32_t nRemaining = nDataLen - pContext->nBufferSize;
     if (-1 < (int)nRemaining) {
       if ((uint32_t)pContext->nBytesBuffered > 0) {
-        Sha1_Append(pContext->pDataBuffer, pContext->nBytesBuffered, &pContext->sSha1);
+        Sha1_Append(&pContext->sSha1, pContext->pDataBuffer, pContext->nBytesBuffered);
       }
       if ((int)nRemaining > 0) {
-        Sha1_Append(pData, nRemaining, &pContext->sSha1);
+        Sha1_Append(&pContext->sSha1, pData, nRemaining);
       }
 
       SSystem::SMemCopy(pContext->pDataBuffer, pData + nRemaining, pContext->nBufferSize);
@@ -85,7 +85,7 @@ void __fastcall SSignatureVerifyStream_ProvideData(D2SsigContextStrc * pContext,
 
     nRemaining = pContext->nBytesBuffered - pContext->nBufferSize + nDataLen;
     if ((int)nRemaining > 0) {
-      Sha1_Append(pContext->pDataBuffer, nRemaining, &pContext->sSha1);
+      Sha1_Append(&pContext->sSha1, pContext->pDataBuffer, nRemaining);
       pContext->nBytesBuffered -= nRemaining;
       SSystem::SMemMove(pContext->pDataBuffer, pContext->pDataBuffer + nRemaining, pContext->nBytesBuffered);
     }
@@ -165,14 +165,14 @@ int __fastcall SSignatureGenerate(int32_t pData, uint32_t * pnDataLen, void * pM
     uint8_t* pSig1 = (uint8_t*)__builtin_alloca(nKeySize);       // 0041d5e6-0041d5ed
     SSystem::SMemCopy(pSig1, pHash, nKeySize);               // 0041d5ef-0041d5f2
     SSIG_InitRSAPair(rsaPair1);                                  // 0041d5f7 / 0041d5fa
-    CryptRSA_Prepare(pModulusBytes, nKeySize, pPrivateExponent, nPrivateExponentLen, rsaPair1); // 0041d5ff-0041d60f
-    CryptRSA_Process(pSig1, nKeySize, rsaPair1);                 // 0041d614-0041d619
+    CryptRSA_Prepare(rsaPair1, pModulusBytes, nKeySize, pPrivateExponent, nPrivateExponentLen); // 0041d5ff-0041d60f
+    CryptRSA_Process(rsaPair1, pSig1, nKeySize);                 // 0041d614-0041d619
 
     uint8_t* pSig2 = (uint8_t*)__builtin_alloca(nKeySize);       // 0041d61e-0041d625
     SSystem::SMemCopy(pSig2, pSig1, nKeySize);               // 0041d627-0041d62d
     SSIG_InitRSAPair(rsaPair2);                                  // 0041d632 / 0041d635
-    CryptRSA_Prepare(pModulusBytes, nKeySize, pPublicExponent, nPublicExponentLen, rsaPair2); // 0041d63a-0041d64a
-    CryptRSA_Process(pSig2, nKeySize, rsaPair2);                 // 0041d64f-0041d657
+    CryptRSA_Prepare(rsaPair2, pModulusBytes, nKeySize, pPublicExponent, nPublicExponentLen); // 0041d63a-0041d64a
+    CryptRSA_Process(rsaPair2, pSig2, nKeySize);                 // 0041d64f-0041d657
 
     if (SSystem::SSYSTEM_MemCompare(pSig2, pHash, nKeySize) == 0) { // 0041d65c-0041d669
       *(uint32_t*)(pDataBytes + nMarkerOffset) = 0x5349474e;     // 0041d686  'SIGN'
@@ -234,16 +234,16 @@ int __fastcall SSignatureVerifyStream_Finish(D2SsigContextStrc * pContext, void 
 
       SSystem::SMemFill(pHash, nSigLen, 0xbb);             // 0041d710-0041d717
       pHash[pContext->nModulusLen - 1] = 0x0b;                      // 0041d71c / 0041d722
-      Sha1_Finalize(pHash, &pContext->sSha1);                    // 0041d71e-0041d727  LEA ECX,[ESI+0x18]: the SHA-1 context
+      Sha1_Finalize(&pContext->sSha1, pHash);                    // 0041d71e-0041d727  LEA ECX,[ESI+0x18]: the SHA-1 context
 
       uint8_t* pSig = (uint8_t*)__builtin_alloca(pContext->nModulusLen); // 0041d72c-0041d735
 
       SSystem::SMemCopy(pSig, pContext->pDataBuffer + 4,
                             pContext->nModulusLen);                 // 0041d733-0041d740
       SSIG_InitRSAPair(rsaPair);                                 // 0041d745 / 0041d748
-      CryptRSA_Prepare(pModulusSaved, pContext->nModulusLen, pExponentBytes,
-                       pContext->nExponentLen, rsaPair);         // 0041d74d-0041d75f
-      CryptRSA_Process(pSig, pContext->nModulusLen, rsaPair);       // 0041d764-0041d76b
+      CryptRSA_Prepare(rsaPair, pModulusSaved, pContext->nModulusLen,
+                       pExponentBytes, pContext->nExponentLen);         // 0041d74d-0041d75f
+      CryptRSA_Process(rsaPair, pSig, pContext->nModulusLen);       // 0041d764-0041d76b
       bVerified = (SSystem::SSYSTEM_MemCompare(pSig, pHash,
                        pContext->nModulusLen) == 0);             // 0041d770-0041d783
       SSIG_FreeRSAPair(rsaPair);                         // 0041d780 / 0041d786
@@ -432,7 +432,7 @@ void __fastcall Sha1_Pump(uint32_t * pHashState, uint8_t * pBuffer) {
 // Storm SBig SHA-1 implementation - init, update, and finalize functions
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_SHA1Update. Oracle ".Append__4Sha1FPCvUl" @100a2c10 = Append(const void*, unsigned long). Basis: this+2 args in both; sole callee is Sha1_Pump / Sha1::Pump in both; both update a 64-bit bit counter by (len<<3) with carry before buffering.
-void __fastcall Sha1_Append(uint8_t * pData, uint32_t nLen, D2Sha1ContextStrc * pCtx) {
+void __thiscall Sha1_Append(D2Sha1ContextStrc * pCtx, uint8_t * pData, uint32_t nLen) {
     uint8_t* pCursor;
     uint32_t dwBitsLow = (uint32_t)((uint64_t)nLen * 8);
     uint32_t nBufIndex = pCtx->nBitCountLow >> 3 & 0x3f;
@@ -477,7 +477,7 @@ void __fastcall Sha1_Append(uint8_t * pData, uint32_t nLen, D2Sha1ContextStrc * 
 
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_PackTwoIntsToBytes. DESCRIPTIVE, not an oracle name. Writes 8 bytes big-endian: out[0..3] = the SECOND stack argument, out[4..7] = the first. The old parameter names (dwHighWord first) are therefore inverted with respect to the byte order it produces. This is the 64-bit bit-length encoder that Sha1_Finalize / Sha1::Finalize both emit inline (cf. Sha1_Finalize's byLen0..byLen7 stack bytes and the PPC's rlwimi/stb chain at 100a2b00). Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-uint32_t __fastcall SSIG_StoreBigEndian64(uint32_t dwHighWord, uint32_t dwParam, uint8_t * pParam) {
+uint32_t __thiscall SSIG_StoreBigEndian64(uint8_t * pParam, uint32_t dwHighWord, uint32_t dwParam) {
     pParam[7] = (uint8_t)dwHighWord;
     pParam[6] = (uint8_t)(dwHighWord >> 8);
     pParam[5] = (uint8_t)(dwHighWord >> 0x10);
@@ -492,7 +492,7 @@ uint32_t __fastcall SSIG_StoreBigEndian64(uint32_t dwHighWord, uint32_t dwParam,
 // Storm SBig SHA-1 implementation - init, update, and finalize functions
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_SHA1Final. Oracle ".Finalize__4Sha1FPUc" @100a2ae0 = Finalize(unsigned char*). Basis: this+1 arg in both; sole callee is Sha1_Append / Sha1::Append in both; both emit the 8-byte big-endian bit length and then the 5 state words.
-int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
+int __thiscall Sha1_Finalize(D2Sha1ContextStrc * pCtx, uint8_t * pDigest) {
     // Static local variables (originally global data)
     static uint8_t gaSha1PaddingBlock[64] = {
     0x80,
@@ -586,8 +586,8 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
     __frame0.byLen4 = (uint8_t)dwCountHigh;
     __frame0.byLen5 = (uint8_t)(dwCountHigh >> 8);
     __frame0.byLen6 = (uint8_t)(dwCountHigh >> 0x10);
-    Sha1_Append(gaSha1PaddingBlock, (-(pCtx->nBitCountLow >> 3) - 9 & 0x3f) + 1, pCtx);
-    Sha1_Append(&__frame0.byLen7, 8, pCtx);
+    Sha1_Append(pCtx, gaSha1PaddingBlock, (-(pCtx->nBitCountLow >> 3) - 9 & 0x3f) + 1);
+    Sha1_Append(pCtx, &__frame0.byLen7, 8);
     uint32_t* pStateCursor = pCtx->aState;
     uint8_t* pDigestCursor = pDigest + 1;
     int nWordsLeft = 5;
@@ -607,14 +607,14 @@ int __fastcall Sha1_Finalize(uint8_t * pDigest, D2Sha1ContextStrc * pCtx) {
 
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_ModPowWrapper. DESCRIPTIVE, not an oracle name. Body = SBigPowMod(*p4, *p1, *p2, *p3) and nothing else - the middle of Crypt::RSA::Process, which the PPC emits inline. Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-BigData * * __fastcall SSIGNATURE_RsaPowMod(BigData * * ppBase, BigData * * pnParam1, BigData * * pnParam2, BigData * * pnParam3) {
+BigData * * __thiscall SSIGNATURE_RsaPowMod(BigData * * pnParam3, BigData * * ppBase, BigData * * pnParam1, BigData * * pnParam2) {
     SBig::SBigPowMod(*pnParam3, *ppBase, *pnParam1, *pnParam2);
     return pnParam3;
 }
 
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_ExportBytesWithPadding. DESCRIPTIVE, not an oracle name. Body = SBigToBinaryBuffer into the caller's buffer, then zero-fill the remainder to the requested length - the exact tail of Crypt::RSA::Process. Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-void * __fastcall SSIGNATURE_RsaExportZeroPadded(void * pOutBuf, uint32_t nParam, BigData * * pnParam) {
+void * __thiscall SSIGNATURE_RsaExportZeroPadded(BigData * * pnParam, void * pOutBuf, uint32_t nParam) {
     uint32_t nOrigLen = nParam;
     BigData* pnParamValue = *pnParam;
     SBig::SBigToBinaryBuffer(pnParamValue, pOutBuf, nParam, &nParam);
@@ -628,21 +628,21 @@ void * __fastcall SSIGNATURE_RsaExportZeroPadded(void * pOutBuf, uint32_t nParam
 
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_LoadComponent. DESCRIPTIVE, not an oracle name - no PPC counterpart exists. Body is a single SBigFromBinary(this[0], bytes, len), i.e. one half of CryptRSA_Prepare. Zero callers in the whole program: an MSVC out-of-line COMDAT copy of a helper that was inlined at every use. Moved out of SBig into SSignature because that is the translation unit it belongs to.
-void __fastcall SSIGNATURE_RsaLoadComponent(void * pBytes, uint32_t nParam, BigData * * pnParam) {
+void __thiscall SSIGNATURE_RsaLoadComponent(BigData * * pnParam, void * pBytes, uint32_t nParam) {
     SBig::SBigFromBinary(*pnParam, pBytes, nParam);
 }
 
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_LoadKeyPair. Oracle: ".Prepare__Q25Crypt3RSAFPCvUlPCvUl" @100a2a50 = Crypt::RSA::Prepare(const void*, unsigned long, const void*, unsigned long). Basis: PPC body is exactly two bl .SBigFromBinary calls on this[0] and this[4], and reads r3..r7 = this+4 args; this function is byte-for-byte the same shape with this+4 params. So the object is a pair of BigBuffer handles at +0 and +4.
 // ppKey[0] is the modulus and ppKey[1] the exponent: CryptRSA_Process calls SBigPowMod(out, in, ppKey[1], ppKey[0]). SSignatureGenerate passes one modulus with its private then its public exponent, so neither pair is 'public' or 'private' as a whole.
-void __fastcall CryptRSA_Prepare(void * pModulusBytes, uint32_t nModulusLen, void * pExponentBytes, uint32_t nExponentLen, BigData * * ppKey) {
+void __thiscall CryptRSA_Prepare(BigData * * ppKey, void * pModulusBytes, uint32_t nModulusLen, void * pExponentBytes, uint32_t nExponentLen) {
     SBig::SBigFromBinary(*ppKey, pModulusBytes, nModulusLen);
     SBig::SBigFromBinary(ppKey[1], pExponentBytes, nExponentLen);
 }
 
 // Crypt::RSA::Process: one RSA operation in place on nDataLen bytes at pData. Loads the bytes into a BigData, computes SBigPowMod(out, in, ppKey[1] exponent, ppKey[0] modulus), writes the result back with SBigToBinaryBuffer and zero-fills any shorter tail; used for both signing (SSignatureGenerate) and verifying (SSignatureVerifyStream_Finish).
 // Provenance: 1.14d asm 004260a0; PPC Storm 1.10b symbol Process__Q25Crypt3RSAFPUcUl with the same callee set.
-void __fastcall CryptRSA_Process(void * pData, uint32_t nDataLen, BigData * * ppKey) {
+void __thiscall CryptRSA_Process(BigData * * ppKey, void * pData, uint32_t nDataLen) {
     BigData* pPlainBn;
     BigData* pCipherBn;
     uint32_t local_8 = -1;

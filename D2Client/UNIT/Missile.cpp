@@ -191,11 +191,12 @@ int32_t __fastcall MISSILE_CltHitFn10_ProgOverlay(D2UnitStrc * pUnit, D2UnitStrc
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId)) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (!pMissilesTxt) {
       return 1;
     }
 
-    short int nProgOverlay = sgptDataTable->pTxtMissiles[nClassId].ProgOverlay;
+    short int nProgOverlay = pMissilesTxt->ProgOverlay;
     if (nProgOverlay <= 0) {
       return 1;
     }
@@ -699,9 +700,10 @@ void __fastcall MISSILE_RemoveClientSide(D2UnitStrc * pUnit) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (pMissilesTxt) {
       int32_t nSoundHandle;
-      sTravelSound = sgptDataTable->pTxtMissiles[nClassId].TravelSound;
+      sTravelSound = pMissilesTxt->TravelSound;
       if (sTravelSound >= 0) {
         nSoundHandle = UnitSnd::UNITSND_GetMissileSound(pUnit, (int)sTravelSound);
         if (nSoundHandle) {
@@ -4534,11 +4536,12 @@ int32_t __fastcall MISSILE_CltHitFn36_HellMeteorDown(D2UnitStrc * pUnit, D2UnitS
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId)) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (!pMissilesTxt) {
       return 1;
     }
 
-    MISSILE_SpawnAreaOfEffect(pUnit, (int32_t*)gaMissile036_AoeSpawnData, 3, sgptDataTable->pTxtMissiles[nClassId].Param1, 0x19, 0x4b);
+    MISSILE_SpawnAreaOfEffect(pUnit, (int32_t*)gaMissile036_AoeSpawnData, 3, pMissilesTxt->Param1, 0x19, 0x4b);
     return 1;
 }
 
@@ -4908,11 +4911,12 @@ int32_t __fastcall MISSILE_CltHitFn54_VinesTrail(D2UnitStrc * pUnit, D2UnitStrc 
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId)) {
+    D2MissilesTxt* pMissilesTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nClassId : nullptr;
+    if (!pMissilesTxt) {
       return 1;
     }
 
-    short int nSubMissile = sgptDataTable->pTxtMissiles[nClassId].CltHitSubMissile1;
+    short int nSubMissile = pMissilesTxt->CltHitSubMissile1;
     if (nSubMissile < 0) {
       return 1;
     }
@@ -5240,7 +5244,7 @@ D2UnitStrc * __fastcall MISSILE_CreateFootprint(D2UnitStrc * pUnit, int32_t nPar
 }
 
 // Creates a client-side tracking missile (MISSILE_Hfspirit1) aimed from pUnit toward a world object looked up by nObjectId. Resolves both units' positions (static or dynamic path), computes the offset vector, allocates a particle, and sets its velocity direction. Called for Holy Freeze/spirit visual effects.
-void __fastcall MISSILE_CreateTowardObject(int32_t nObjectId, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+void __thiscall MISSILE_CreateTowardObject(int32_t nObjectId, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nUnitX;
     int nObjectX;
     int nUnitY;

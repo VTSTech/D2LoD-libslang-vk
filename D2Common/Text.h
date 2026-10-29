@@ -48,7 +48,7 @@ uint32_t __stdcall OVERHEAD_GetMessageType1(struct D2GSPacketSrv0x27_TextStrc * 
 // @sourcefile .\Text\Text.cpp
 void __stdcall StoreMessages(struct D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text, uint8_t * pPacketData);
 int32_t __fastcall TEXT_CompareMessagesByCode(uint16_t * pnCodeA, uint16_t * pnCodeB);
-void __fastcall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextMessageCompare pfnCompare);
+void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextMessageCompare pfnCompare);
 // @sourcefile .\Text\Text.cpp
 void __stdcall TEXT_SortMessageList(struct D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text);
 // 1 internal function (defined in .cpp)

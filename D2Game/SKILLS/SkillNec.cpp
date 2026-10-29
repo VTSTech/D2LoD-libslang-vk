@@ -363,13 +363,14 @@ uint32_t __fastcall SKILLNEC_ValidateAttackableTarget(::SGAMEDATA * pGame, D2Uni
     return (uint32_t)(nCheckResult != 0);
 }
 
-void __fastcall SKILLNEC_AssignCurseAiBehavior(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam, D2NecroSkillArgStrc * pNecroSkillArg) {
+void __thiscall SKILLNEC_AssignCurseAiBehavior(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam, D2NecroSkillArgStrc * pNecroSkillArg) {
     uint32_t nFunctionId;
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nParam)) {
+    D2SkillsTxt* pSkillsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nParam : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    short int sAuraTargetState = sgptDataTable->pTxtSkills[nParam].auratargetstate;
+    short int sAuraTargetState = pSkillsTxt->auratargetstate;
     if (sAuraTargetState != 0x17) {
       if (sAuraTargetState != 0x1b) {
         nFunctionId = sAuraTargetState != 0x38 ? 0 : 0xb;
@@ -2411,7 +2412,10 @@ BOOL __fastcall ITEMEVENT_NecroAuraStatDrain(::SGAMEDATA * pGame, uint32_t nUnit
     int nAbsorbDelta;
     short int nAuraStateId;
     int nIncomingDmg;
-    if (!pUnit || !pDamage) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (!pDamage) {
       return 0;
     }
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {

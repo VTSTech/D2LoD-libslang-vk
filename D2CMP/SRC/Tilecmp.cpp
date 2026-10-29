@@ -783,7 +783,7 @@ static size_t TILECMP_CopyTileNodes(void * pDstBuf, int32_t pTileSetEntry) {
 }
 
 // @sourcefile .\SRC\Tilecmp.cpp
-void __fastcall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, void * * ppDstBuffer, size_t * pSizeOut) {
+void __thiscall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, void * * ppDstBuffer, size_t * pSizeOut) {
     void* nErrAddress;
     size_t nCalcSize;
     int nSrcTileSetOffset;

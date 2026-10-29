@@ -1129,11 +1129,12 @@ BOOL __fastcall Skills_SrvDoFunc_138_FirePerpendicularMissileLine(::SGAMEDATA * 
 BOOL __fastcall Skills_SrvDoFunc_139_FireOrthogonalMissile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     uint32_t nCursorY;
     uint32_t nCursorX;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
+    eMissilesId eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -1163,11 +1164,13 @@ BOOL __fastcall SKILLEMONST_SrvStFn63_CorpseCycler(::SGAMEDATA * pGame, D2UnitSt
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return 0;
     }
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    eMissilesId eMissileTxtNo = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
+    eMissilesId eMissileTxtNo = (eMissilesId)pSkillsTxt->srvmissile[1];
     if (!((int)eMissileTxtNo > 0 && (int)eMissileTxtNo < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }

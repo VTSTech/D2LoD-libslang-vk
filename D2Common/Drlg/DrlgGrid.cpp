@@ -280,7 +280,7 @@ void __fastcall AlterAllGridFlags(D2DrlgGridStrc * pDrlgGrid, int32_t nFlag, int
     } while (nYIdx < pDrlgGrid->nHeight);
 }
 
-void __fastcall FlagOperations(D2DrlgGridStrc * pGrid, int32_t nCount, int32_t nOpIndex) {
+void __fastcall FlagOperations(D2DrlgGridStrc * pGrid, int32_t nOpIndex, int32_t nCount) {
     int32_t nOpIndexOrig = nCount;
     eD2GridCellFlags* pBottomRowCell = pGrid->pCellsFlags + pGrid->pCellsRowOffsets[pGrid->nHeight - 1];
     int nColIdx = 0;

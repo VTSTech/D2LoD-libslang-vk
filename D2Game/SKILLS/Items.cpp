@@ -762,7 +762,7 @@ int __fastcall ITEMMOD_RollMagicAffixVersionedEx(D2UnitStrc * pUnit, int32_t nPa
 }
 
 // Selects a random eligible rare affix group for classic item generation. Iterates the prefix (this==0) or suffix half of the rare affix table, filters each entry with ITEMMOD_CanApplyAffix, builds a candidate index array (max 511 entries), then rolls the item seed to pick one. Returns the chosen table index + 1, or 0 if no candidates pass.
-uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * pUnit) {
+uint32_t __thiscall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * pUnit) {
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
@@ -825,7 +825,7 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
 }
 
 // Selects a random valid rare affix index for an item. Iterates the prefix (this==0) or suffix (this!=0) range of the rare-affix table, calls ITEMMOD_CanApplyAffix for each entry to build a candidate list (up to 511), then rolls a random index via the item's seed. Returns the 1-based affix table index of the chosen affix, or 0 if no valid affix found.
-uint32_t __fastcall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
+uint32_t __thiscall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
@@ -1700,7 +1700,7 @@ BOOL __fastcall ITEMMOD_GenerateSetOrUniqueVersioned(D2UnitStrc * pUnit, D2ItemG
 
 // @returns BOOL in EAX (1/0 on both cookie-checked exits)
 // Randomly selects and applies a superior-quality mod row from QualityItems.txt to pUnit. Limits the table to 4 entries for throwable or no-durability items. Uses the item's own seed in a rejection-sampling loop (tracks visited slots in aVisitedSlots[12]) to find a row that passes ITEMMOD_MatchesRepairType, then writes the file index, applies rune/gem stats via ApplyRuneAndGemStats, and calls StaffMod(pUnit, pItemGenContext). Protected by a stack-guard cookie.
-static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
+static BOOL __thiscall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     D2SeedStrc DVar1;
     int32_t iVar2;
     D2SeedStrc* pDVar7;
@@ -1801,7 +1801,10 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
     }
 
     D2ItemsTxt* pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
-    if (!pnLowQualCount || !pItemsTxt) {
+    if (!pnLowQualCount) {
+      return 0;
+    }
+    if (!pItemsTxt) {
       return 0;
     }
 

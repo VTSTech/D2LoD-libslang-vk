@@ -117,11 +117,12 @@ void __fastcall PLRSKILLS_CheckSkillWhipAndLeap(D2UnitStrc * pUnit, uint32_t nPa
     }
 
     eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\PlrSkills.cpp", 0x26);
-    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    short int sSrvDoFunc = sgptDataTable->pTxtSkills[eSkillId].srvdofunc;
+    short int sSrvDoFunc = pSkillsTxt->srvdofunc;
     if (sSrvDoFunc != 0x43) {
       if (sSrvDoFunc == 0x4c) {
         SKILLS::SkillsBar::SKILL_DrawUnitAtRotatedAngle(pUnit, nParam, 1);
@@ -156,11 +157,12 @@ void __fastcall PLRSKILLS_DrawSkillTrail_Secondary(D2UnitStrc * pUnit, uint32_t 
     }
 
     eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\PlrSkills.cpp", 0x4f);
-    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    short int sSrvDoFunc = sgptDataTable->pTxtSkills[eSkillId].srvdofunc;
+    short int sSrvDoFunc = pSkillsTxt->srvdofunc;
     if (sSrvDoFunc != 0x43) {
       if (sSrvDoFunc == 0x4c) {
         SKILLS::SkillsBar::SKILL_DrawUnitAtRotatedAngle(pUnit, nParam, 0);
@@ -192,7 +194,7 @@ static void __stdcall STATES_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nPara
     }
 
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(i + nParam, pUnit);
+      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, i + nParam);
       i++;
     } while (i < nOverlayCount);
 }
@@ -209,7 +211,7 @@ void __fastcall PLRSKILLS_StateSetFn01_ProgressiveCharge(D2UnitStrc * pUnit, eD2
 
     int i = 0;
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pDVar1->pgsvoverlay + i, pUnit);
+      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + i);
       i++;
     } while (i < 3);
 
@@ -233,7 +235,7 @@ void __fastcall PLRSKILLS_StateRemFn01_ProgressiveCharge(D2UnitStrc * pUnit, eD2
 
     int nOverlayIdx = 0;
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pDVar1->pgsvoverlay + nOverlayIdx, pUnit);
+      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + nOverlayIdx);
       nOverlayIdx++;
     } while (nOverlayIdx < 3);
 }
@@ -251,11 +253,12 @@ void __fastcall PLRSKILLS_StateSetFn02_CloakOfShadows(D2UnitStrc * pUnit, eD2Sta
 
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
     int nSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    int32_t nAuraLen = D2Common::Skills::D2GetSkillCalc(pUnit, sgptDataTable->pTxtSkills[eSkill].auralencalc, eSkill, nSkillLvl);
+    int32_t nAuraLen = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     UI::CmdTbl::CMD_InitKeyConfigUI(5, nAuraLen * 3 / 5, nAuraLen * 2 / 5, eLevelId, 0);
 }
@@ -647,11 +650,12 @@ void __fastcall PLRSKILLS_StateSetFn07_Hurricane(D2UnitStrc * pUnit, eD2States e
     }
 
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    short int sPrgSound = sgptDataTable->pTxtSkills[eSkill].prgsound;
+    short int sPrgSound = pSkillsTxt->prgsound;
     if (sPrgSound <= 0) {
       return;
     }
@@ -666,11 +670,12 @@ void __fastcall PLRSKILLS_StateRemFn04_Hurricane(D2UnitStrc * pUnit, eD2States e
     }
 
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    short int sPrgSound = sgptDataTable->pTxtSkills[eSkill].prgsound;
+    short int sPrgSound = pSkillsTxt->prgsound;
     if (sPrgSound <= 0) {
       return;
     }
@@ -865,11 +870,12 @@ void __fastcall PLRSKILLS_StateSetFn16_StackOverlay(D2UnitStrc * pUnit, eD2State
     int nStackCount = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_skill_frenzy, 0);
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
     int nSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    int32_t nMaxOverlays = D2Common::Skills::D2GetSkillCalc(pUnit, sgptDataTable->pTxtSkills[eSkill].calc[1], eSkill, nSkillLvl);
+    int32_t nMaxOverlays = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[1], eSkill, nSkillLvl);
     if (nMaxOverlays <= 0) {
       return;
     }
@@ -888,7 +894,7 @@ void __fastcall PLRSKILLS_StateSetFn16_StackOverlay(D2UnitStrc * pUnit, eD2State
       if (nSkillLvl > 0) {
         do {
           if (nOverlayIdx != (nStackCount - 1) * nSkillLvl / nMaxOverlays) {
-            Engine::GfxInfo::GFX_RemoveOverlayById(eOverlay, pUnit);
+            Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, eOverlay);
           } else {
             BVar2 = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, eOverlay);
             if (!BVar2) {
@@ -915,7 +921,7 @@ void __fastcall PLRSKILLS_StateSetFn16_StackOverlay(D2UnitStrc * pUnit, eD2State
 
     do {
       if (nSkillLvl != (nStackCount - 1) * nModLvl / nMaxOverlays) {
-        Engine::GfxInfo::GFX_RemoveOverlayById(eOverlay_00, pUnit);
+        Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, eOverlay_00);
       } else {
         bHasOverlay = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, eOverlay_00);
         if (!bHasOverlay) {
@@ -942,7 +948,7 @@ void __fastcall PLRSKILLS_StateRemFn11_StackOverlay(D2UnitStrc * pUnit, eD2State
     int nOverlayIdx = (int)pDVar1->overlay[0];
     if (nOverlayIdx >= 0) {
       for (; nOverlayIdx <= nOverlayMax; nOverlayIdx++) {
-        Engine::GfxInfo::GFX_RemoveOverlayById(nOverlayIdx, pUnit);
+        Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, nOverlayIdx);
       }
     }
 
@@ -953,7 +959,7 @@ void __fastcall PLRSKILLS_StateRemFn11_StackOverlay(D2UnitStrc * pUnit, eD2State
     }
 
     for (; nOverlayId <= nOverlayMax; nOverlayId++) {
-      Engine::GfxInfo::GFX_RemoveOverlayById(nOverlayId, pUnit);
+      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, nOverlayId);
     }
 }
 

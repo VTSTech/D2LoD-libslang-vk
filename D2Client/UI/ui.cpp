@@ -4365,11 +4365,12 @@ static int32_t __stdcall CHAR_AddClassToHitFactor(D2UnitStrc * pUnit, int32_t nV
     }
 
     int iVar1 = pUnit->nClassId;
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtCharStatsSize && sgptDataTable->pTxtCharStats + iVar1)) {
+    D2CharStatsTxt* pCharStatsTxt = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + iVar1 : nullptr;
+    if (!pCharStatsTxt) {
       return nValue;
     }
 
-    nValue += sgptDataTable->pTxtCharStats[iVar1].ToHitFactor;
+    nValue += pCharStatsTxt->ToHitFactor;
     return nValue;
 }
 
@@ -4818,17 +4819,18 @@ static void __stdcall DRAW_UI_StatWindow_II(int32_t bUpperEnabled, int32_t bLowe
     uint16_t* pClearPtr = D2Lang::StrTable::strtable::GetLocaleString(0x103f);
     D2Win::Src::D2WinFont::DRAW_text(pClearPtr, nX, nMonsterIdx, dwColor, bMultiLineCenter);
     nMonsterIdx = GAME::Select::SELECT_GetConstant13_X();
-    if (nMonsterIdx >= 0 && nMonsterIdx < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonsterIdx) {
-      uint16_t* wszFmt;
-      pClearPtr = D2Lang::StrTable::strtable::GetLocaleString(sgptDataTable->pTxtMonStats[nMonsterIdx].NameStr);
-      wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2777);
-      D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMonNameTooltip, wszFmt, pClearPtr, bUpperEnabled);
-      D2Win::Src::D2WinFont::DRAW_text(wszMonNameTooltip, gaStatWindowRowLayout[nBtnIndex * 6 + 4] + gnPanelOffsetX, gaStatWindowRowLayout[nBtnIndex * 6 + 5] + gnPanelOffsetY - 0x1e0 + ScreenSizeY, 0, 0);
-      return;
+    D2MonStatsTxt* pMonStatsTxt = nMonsterIdx >= 0 && nMonsterIdx < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonsterIdx : nullptr;
+    if (!pMonStatsTxt) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xec);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xec);
-    exit(-1);
+    uint16_t* wszFmt;
+    pClearPtr = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
+    wszFmt = D2Lang::StrTable::strtable::GetLocaleString(0x2777);
+    D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x80, wszMonNameTooltip, wszFmt, pClearPtr, bUpperEnabled);
+    D2Win::Src::D2WinFont::DRAW_text(wszMonNameTooltip, gaStatWindowRowLayout[nBtnIndex * 6 + 4] + gnPanelOffsetX, gaStatWindowRowLayout[nBtnIndex * 6 + 5] + gnPanelOffsetY - 0x1e0 + ScreenSizeY, 0, 0);
+    return;
 }
 
 void __stdcall DRAW_UI_StatWindow_I() {

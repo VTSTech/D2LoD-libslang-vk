@@ -82,9 +82,10 @@ typedef void (__fastcall *fpStatListExChangeCb)(::SGAMEDATA * pGame, D2UnitStrc 
 namespace D2Game::Monster {
 
 D2MonPropTxt * __fastcall MONSTER_GetMonPropTxtRecord(int32_t nParam) {
-    if (nParam >= 0 && nParam < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nParam) {
+    D2MonStatsTxt* pMonStatsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nParam : nullptr;
+    if (pMonStatsTxt) {
       short int nMonPropIndex;
-      nMonPropIndex = sgptDataTable->pTxtMonStats[nParam].MonProp;
+      nMonPropIndex = pMonStatsTxt->MonProp;
       if (nMonPropIndex >= 0 && (int)nMonPropIndex < sgptDataTable->nTxtMonPropSize) {
         return sgptDataTable->pTxtMonProp + nMonPropIndex;
       }
@@ -102,7 +103,7 @@ void __fastcall SetAiState(D2UnitStrc * pMonster, D2UnitStrc * nAiState) {
 }
 
 int __fastcall GetAiState(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 1;
     }
 
@@ -118,7 +119,7 @@ void __fastcall SetLevelId(D2UnitStrc * pUnit, eD2LevelId eLevel) {
 }
 
 eD2LevelId __fastcall GetMonsterArea(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return LEVEL_None;
     }
 
@@ -126,7 +127,7 @@ eD2LevelId __fastcall GetMonsterArea(D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall GetMonsterFlags(D2UnitStrc * pUnit, uint16_t eFlag) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -688,7 +689,7 @@ static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
           SKILLS::SkillsServer::SetSkill(pUnit, (int)*(short int*)&pRoom->ppRoomList, (int)pMonStatsTxt->aSkLvl[nTmpInt] + monLevelData.nMonsterSkillBonus, 0);
           if (-1 < pMonStatsTxt->aSkMode[nTmpInt]) {
             nTmpVal = (uint32_t)pMonStatsTxt->aSkMode[nTmpInt];
-            D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum((int)*(short int*)&pRoom->ppRoomList, pUnit), nTmpVal);
+            D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)*(short int*)&pRoom->ppRoomList), nTmpVal);
           }
         }
 

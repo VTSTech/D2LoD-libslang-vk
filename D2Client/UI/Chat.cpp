@@ -1230,7 +1230,7 @@ static void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * sz
 
 // Process chat commands (/fps, /framerate, /players, /nopickup, /ignore, /unignore, /filtermsg, /msg, /help, etc.). Parses command, checks game state, executes handler or sends message via NET_D2GS_CLIENT_Send_Chat.
 // Stack[0x8] nInputOffset is reused as the parse cursor: it is overwritten with pszInputBase + nInputOffset (asm 0047c44c..45b); the caller passes the count of leading spaces it skipped.
-static void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
+static void __thiscall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
     eD2GSGameType eGameType;
     int32_t nCmpResult;
     BOOL BVar1;

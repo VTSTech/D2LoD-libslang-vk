@@ -68,7 +68,7 @@ struct __attribute__((packed)) D2SpeechBankStrc {
 namespace D2Client::UI::npcmenu {
 
 // Function declarations
-void __fastcall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult);
+void __thiscall NPCMENU_ConvertQuestId(short * nInput, uint16_t * pResult);
 struct D2UnitStrc * __stdcall GetInteractedUnit();
 void SetInteractedUnitInfo(struct D2UnitStrc * pUnit);
 int32_t __stdcall GetInteractedUnitClassId();

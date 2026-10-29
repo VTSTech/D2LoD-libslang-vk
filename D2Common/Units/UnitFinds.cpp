@@ -327,7 +327,10 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
     uint32_t nSearchFlags;
     D2UnitFindArgStrc* pArgs = pUnitFindArg;
     D2UnitStrc* pTestUnit = pUnit;
-    if (!pUnitFindArg || pUnitFindArg->nFlags & 0x40 && pUnitFindArg->nIndex >= pUnitFindArg->nMaxArrayEntries) {
+    if (!pUnitFindArg) {
+      return 0;
+    }
+    if (pUnitFindArg->nFlags & 0x40 && pUnitFindArg->nIndex >= pUnitFindArg->nMaxArrayEntries) {
       return 0;
     }
 

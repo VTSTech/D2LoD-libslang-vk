@@ -1722,7 +1722,7 @@ void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUn
 
     pRoom = (D2RoomStrc*)UNIT::SUnit::FindUnitFromTable(pGameOrig, UNIT_ITEM, dwCorpseGUID);
     if ((D2UnitStrc*)pRoom) {
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_IronGolem, pUnit);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_IronGolem);
       if (pSkill) {
         pDrlgAct = (D2DrlgActStrc*)D2Common::Skills::GetSkillLevel(pUnit, pSkill, 1);
         nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);

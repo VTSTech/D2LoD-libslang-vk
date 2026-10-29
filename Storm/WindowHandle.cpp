@@ -81,7 +81,7 @@ uint32_t __stdcall WND_SetActiveWindow(uint32_t dwParam) {
     return 1;
 }
 
-uint32_t __fastcall WND_ResolveListOffset(int * pBase, int * pNode) {
+uint32_t __thiscall WND_ResolveListOffset(int * pNode, int * pBase) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -94,7 +94,7 @@ uint32_t __fastcall WND_ResolveListOffset(int * pBase, int * pNode) {
     return nOffset + (int)pBase;
 }
 
-int32_t __fastcall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode) {
+int32_t __thiscall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode) {
     if (pNode) {
       return pNode;
     }
@@ -103,7 +103,7 @@ int32_t __fastcall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode) {
     return pNode;
 }
 
-void __fastcall WND_InsertListNode(int * * pNode, int32_t nMode, int * * ppAnchor, int * * ppList) {
+void __thiscall WND_InsertListNode(int * * ppList, int * * pNode, int32_t nMode, int * * ppAnchor) {
     int* pBacklink;
     int** ppCur = pNode;
     if (!pNode) {
@@ -160,7 +160,7 @@ void __fastcall WND_InsertListNode(int * * pNode, int32_t nMode, int * * ppAncho
     }
 }
 
-uint32_t __fastcall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
+uint32_t __thiscall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
     if (pNode) {
       return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
     }
@@ -169,7 +169,7 @@ uint32_t __fastcall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
     return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
-void __fastcall WND_UnlinkListNode(int32_t pThis, int * pNode) {
+void __thiscall WND_UnlinkListNode(int32_t pThis, int * pNode) {
     int* pBacklink;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -193,7 +193,7 @@ void __fastcall WND_UnlinkListNode(int32_t pThis, int * pNode) {
     pNode[1] = 0;
 }
 
-uint32_t __fastcall WND_GetNodeData(int32_t pThis, int32_t pNode) {
+uint32_t __thiscall WND_GetNodeData(int32_t pThis, int32_t pNode) {
     if (pNode) {
       return *(uint32_t*)(pNode + 4);
     }
@@ -251,7 +251,7 @@ void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
     pWindow->pNext = 0;
 }
 
-int * * __fastcall WND_AllocRecord(int32_t nMode, int32_t nSize, uint32_t dwFlags, int * * ppList) {
+int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize, uint32_t dwFlags) {
     int** ppRecord = (int**)SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
     if (ppRecord) {
       *ppRecord = 0;
@@ -263,11 +263,11 @@ int * * __fastcall WND_AllocRecord(int32_t nMode, int32_t nSize, uint32_t dwFlag
       return ppRecord;
     }
 
-    WND_InsertListNode(ppRecord, nMode, nullptr, ppList);
+    WND_InsertListNode(ppList, ppRecord, nMode, nullptr);
     return ppRecord;
 }
 
-int * __fastcall WND_UnlinkAndFreeRecord(uint8_t byFreeFlags, int * pRecord) {
+int * __thiscall WND_UnlinkAndFreeRecord(int * pRecord, uint8_t byFreeFlags) {
     uint32_t nOffset;
     int nNext = *pRecord;
     if (nNext) {
@@ -329,7 +329,7 @@ void __stdcall SMSG_AddWindow(uint32_t hWnd) {
     pEntry->hWnd = (HWND)hWnd;
 }
 
-uint32_t __fastcall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * pRecord) {
+uint32_t __thiscall WND_RemoveAndFreeRecord(void * pListHead, StormWndRecStrc * pRecord) {
     uint32_t nOffset;
     StormWndRecStrc* pSVar1 = pRecord;
     if (!pRecord) {
@@ -540,11 +540,11 @@ uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId) {
     return (uint8_t*)WndProcC;
 }
 
-uint32_t __fastcall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes) {
+uint32_t __thiscall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes) {
     return (uint32_t)((uint32_t)(*(int*)(pThis + 0x10) + nAddBytes) < *(uint32_t*)(pThis + 4));
 }
 
-int32_t __fastcall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount) {
+int32_t __thiscall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount) {
     if (pnCount) {
       (*pnCount)++;
     }
@@ -554,11 +554,11 @@ int32_t __fastcall WND_EntryArray_AllocNext(int32_t pThis, int * pnCount) {
     return pThis + nIndex * 0x14;
 }
 
-void __fastcall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount) {
+void __thiscall WND_EntryArray_FreeEntries(int32_t pThis, int32_t nFreeCount) {
     *(int*)(pThis + 0x140) -= nFreeCount;
 }
 
-int32_t __fastcall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew) {
+int32_t __thiscall WND_EntryArray_AllocOrReuse(int32_t pThis, int32_t pReuseEntry, int32_t bAllocNew) {
     if (bAllocNew) {
       int nIndex;
       nIndex = *(int*)(pThis + 0x140);

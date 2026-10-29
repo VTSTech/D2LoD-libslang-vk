@@ -609,7 +609,10 @@ BOOL __stdcall FindDiagonalNonCollisionCoords(D2RoomStrc * pRoom, int * pX, int 
     int nX;
     int nY;
     D2DrlgTileDataStrc* pFloorTiles = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(pRoom, (int*)&nFloorTileCount);
-    if (!pFloorTiles || !nFloorTileCount) {
+    if (!pFloorTiles) {
+      return 0;
+    }
+    if (!nFloorTileCount) {
       return 0;
     }
     if (pRoom) {

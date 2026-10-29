@@ -298,7 +298,10 @@ uint32_t __fastcall MONSTER_IsBossOrChampion(D2UnitStrc * pUnit) {
     }
 
     uint32_t uVar1 = (uint32_t)(uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[pMonData] + 0xd);
-    if (!(!(gadwBitMasks[0] & uVar1) && !(gadwBitMasks[2] & uVar1))) {
+    if (gadwBitMasks[0] & uVar1) {
+      return 1;
+    }
+    if (gadwBitMasks[2] & uVar1) {
       return 1;
     }
 
@@ -311,8 +314,9 @@ BOOL __stdcall MONSTER_IsAndarielNormal(D2UnitStrc * pUnit, int32_t nParam) {
       nBaseId = -1;
     } else {
       nBaseId = pUnit->nClassId;
-      if (nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseId) {
-        nBaseId = (int)sgptDataTable->pTxtMonStats[nBaseId].BaseId;
+      D2MonStatsTxt* pMonStatsTxt = nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
+      if (pMonStatsTxt) {
+        nBaseId = (int)pMonStatsTxt->BaseId;
       }
     }
     if (nBaseId == (sgptDataTable->nTxtMonStatsSize > 0x4e ? 0x4e : -1) && !nParam) {
@@ -492,8 +496,9 @@ int32_t __stdcall GetMonsterBaseId(D2RoomStrc * pRoom, int32_t nMonsterId) {
     }
 
     int nInputBaseId = nMonsterId;
-    if (nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonsterId) {
-      nInputBaseId = (int)sgptDataTable->pTxtMonStats[nMonsterId].BaseId;
+    D2MonStatsTxt* pMonStatsTxt2 = nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonsterId : nullptr;
+    if (pMonStatsTxt2) {
+      nInputBaseId = (int)pMonStatsTxt2->BaseId;
     }
     if (nInputBaseId < 0) {
       return nMonsterId;

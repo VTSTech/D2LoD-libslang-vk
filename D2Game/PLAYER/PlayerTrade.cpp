@@ -2117,7 +2117,10 @@ int32_t __fastcall CopyInventory(D2UnitStrc * pUnit, uint8_t * pUnit2, int32_t n
     D2UnknownStructure0x18* pTradeCopy2;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2UnknownStructure0x18* pTradeCopy = pPlayerData->pTradeCopyInventory;
-    if (!(pTradeCopy && nBufSize >= pTradeCopy->pCopyInventory)) {
+    if (!pTradeCopy) {
+      return 0;
+    }
+    if (!(nBufSize >= pTradeCopy->pCopyInventory)) {
       return 0;
     }
 

@@ -81,11 +81,12 @@
 namespace D2Game::SKILLS::SkillSor {
 
 int32_t __fastcall GetTxtTableParam6(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nParam)) {
+    D2SkillsTxt* pSkillsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nParam : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[nParam].Param[6];
+    return pSkillsTxt->Param[6];
 }
 
 static void SKILLSOR_OnInfernoExpire(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
@@ -97,8 +98,9 @@ static void SKILLSOR_OnInfernoExpire(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
       nMonStatIdx = pUnit->nClassId;
       if (nMonStatIdx >= 0 && nMonStatIdx < sgptDataTable->nTxtMonStatsSize) {
         nMonStatIdx = (int)sgptDataTable->pTxtMonStats[nMonStatIdx].MonStatsEx;
-        if (nMonStatIdx >= 0 && nMonStatIdx < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatIdx) {
-          nFrames = (uint32_t)(uint8_t)sgptDataTable->pTxtMonStatsEx[nMonStatIdx].byInfernoLen;
+        D2MonStats2Txt* pMonStatsExTxt = nMonStatIdx >= 0 && nMonStatIdx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatIdx : nullptr;
+        if (pMonStatsExTxt) {
+          nFrames = (uint32_t)(uint8_t)pMonStatsExTxt->byInfernoLen;
         }
       }
     }
@@ -335,7 +337,7 @@ BOOL __fastcall SKILLSOR_SrvStFn13_ThunderStorm(::SGAMEDATA * pGame, D2UnitStrc 
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eD2Skill, pAttacker);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pAttacker, eD2Skill);
     if (!pSkill) {
       return 0;
     }
@@ -523,9 +525,10 @@ BOOL __fastcall Skills_SrvDoFunc_018_Armor(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 BOOL __fastcall Skills_SrvDoFunc_019_Inferno(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL bResult;
-    if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (pSkillsTxt) {
       eMissilesId eMissileId;
-      eMissileId = (eMissilesId)sgptDataTable->pTxtSkills[eSkill].srvmissile[1];
+      eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
       if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
         bResult = INFERNO_CastInfernoTick(pGame, pUnit, eSkill, nSkillLvl, eMissileId);
         return bResult;
@@ -1225,7 +1228,7 @@ BOOL __fastcall Skills_SrvDoFunc_029_ThunderStorm(::SGAMEDATA * pGame, D2UnitStr
     }
 
     ::SGAMEDATA* pGameCtx = pGame;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -1323,7 +1326,10 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
     bool bNotMonsterOnly;
     short int eSkillAuraState;
     int32_t nValue;
-    if (!pUnit || !pDamage) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (!pDamage) {
       return 0;
     }
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {

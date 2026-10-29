@@ -89,11 +89,12 @@ typedef void (__fastcall *PFN_StatExpireCallback)(D2UnitStrc * pUnit, eD2States 
 namespace D2Game::SKILLS::SkillAss {
 
 D2MonEquipTxt * __fastcall SKILLBAR_GetVelocityAndSpreadForMissile(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nParam)) {
+    D2MonStatsTxt* pMonStatsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nParam : nullptr;
+    if (!pMonStatsTxt) {
       return nullptr;
     }
 
-    short int nMonEquipId = sgptDataTable->pTxtMonStats[nParam].nMonEquipId;
+    short int nMonEquipId = pMonStatsTxt->nMonEquipId;
     if (nMonEquipId < 0) {
       return nullptr;
     }
@@ -341,7 +342,7 @@ static void __stdcall SKILLBAR_HandleWarCryStun(D2StatListExStrc * pStatList, D2
     }
 
     int nEffSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    int nCurrentSkillLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit), 1);
+    int nCurrentSkillLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill), 1);
     if (nCurrentSkillLvl > nEffSkillLvl) {
       nEffSkillLvl = nCurrentSkillLvl;
     }
@@ -387,7 +388,7 @@ void __stdcall SKILLASS_AddChargeUpDamageRange(D2UnitStrc * pUnit, D2StatListExS
     }
 
     int nEffSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    int nActualSkillLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit), 1);
+    int nActualSkillLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill), 1);
     if (nActualSkillLvl > nEffSkillLvl) {
       nEffSkillLvl = nActualSkillLvl;
     }
@@ -435,7 +436,7 @@ void __stdcall SKILLASS_ApplyChargeUpDamage(D2UnitStrc * pUnit, D2StatListExStrc
     }
 
     int nSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    int nChargeLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit), 1);
+    int nChargeLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill), 1);
     if (nChargeLevel > nSkillLvl) {
       nSkillLvl = nChargeLevel;
     }
@@ -480,7 +481,7 @@ static void __stdcall SKILLASS_ApplyChargeUpConvertDamage(D2UnitStrc * pUnit, D2
     }
 
     int nSkillLvl = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
-    int nChargeLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit), 1);
+    int nChargeLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill), 1);
     if (nChargeLevel > nSkillLvl) {
       nSkillLvl = nChargeLevel;
     }
@@ -1241,7 +1242,10 @@ void __fastcall SKILLASS_SpawnSpiralMissileRing(uint32_t dwParam, D2UnitStrc * p
 
 BOOL __fastcall Skills_SrvDoFunc_036_ChargeRelease_MissileRing(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!(pTarget && nSkillLvl > 0)) {
+    if (!pTarget) {
+      return 0;
+    }
+    if (nSkillLvl <= 0) {
       return 0;
     }
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
@@ -1338,7 +1342,10 @@ BOOL __fastcall Skills_SrvDoFunc_040_ChargeRelease_SingleMissile(::SGAMEDATA * p
     uint32_t nTargetX;
     uint32_t nTargetY;
     BOOL bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, &nTargetX, &nTargetY);
-    if (!(bHasPos && nSkillLvl > 0)) {
+    if (!bHasPos) {
+      return 0;
+    }
+    if (nSkillLvl <= 0) {
       return 0;
     }
 
@@ -1472,7 +1479,7 @@ void __fastcall SKILLASS_ReleaseChargeUpAttack(::SGAMEDATA * pGame, D2UnitStrc *
               nChargeLvlMax = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_level, 0);
               bInMeleeRange = 1;
               nEffectiveSkillLvl = nChargeLvlMax;
-              nChargeLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(eSkillId, pUnit), bInMeleeRange);
+              nChargeLvl = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkillId), bInMeleeRange);
               if (nChargeLvl > nChargeLvlMax) {
                 nChargeLvlMax = nChargeLvl;
                 nEffectiveSkillLvl = nChargeLvl;
@@ -2445,7 +2452,7 @@ BOOL __fastcall Skills_SrvDoFunc_047_CloakOfShadows(::SGAMEDATA * pGame, D2UnitS
 BOOL __fastcall Skills_SrvDoFunc_048_BladeFury(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     uint32_t nCursorY;
     uint32_t nCursorX;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -2515,7 +2522,7 @@ BOOL __fastcall SKILLASS_SrvStFn26_BladeFury(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return 0;
     }
@@ -3134,15 +3141,18 @@ BOOL __fastcall Skills_SrvDoFunc_051_MindBlast(::SGAMEDATA * pGame, D2UnitStrc *
     sDamage.dwHitFlags |= pSkillTxt->HitFlags;
     sMindBlastArgs.pDamage = &sDamage;
     sMindBlastArgs.nStunLength = D2Common::Skills::SKILLS_GetParam45WithDiminishing(nSkillLvlOrig, eSkill);
-    if ((int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
-      sMindBlastArgs.nConvertChance = sgptDataTable->pTxtSkills[eSkill].Param[2];
-    } else {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       sMindBlastArgs.nConvertChance = 0;
-    }
-    if ((int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill) {
-      sMindBlastArgs.nStunChance = sgptDataTable->pTxtSkills[eSkill].Param[3];
     } else {
+      sMindBlastArgs.nConvertChance = pSkillsTxt->Param[2];
+    }
+
+    D2SkillsTxt* pSkillsTxt2 = (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt2) {
       sMindBlastArgs.nStunChance = 0;
+    } else {
+      sMindBlastArgs.nStunChance = pSkillsTxt2->Param[3];
     }
 
     SkillsServer::SKILLS_ApplyAreaEffect(pGameCopy, pUnitCopy, nCursorX, nCursorY, nSkillLvl, pSkillTxt->aurafilter, SKILLAMZ_HandleStrafeDamageAndNextDelay, &sMindBlastArgs, 0, ".\\SKILLS\\SkillAss.cpp", 0xb43);
@@ -3245,7 +3255,7 @@ BOOL __fastcall SKILLASS_SrvStFn28_BladeShield(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    D2SkillStrc* pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pDVar1) {
       return 0;
     }
@@ -3391,16 +3401,17 @@ BOOL __fastcall Skills_SrvDoFunc_142_BladeShield_SpinDamage(::SGAMEDATA * pGame,
 
 BOOL __fastcall Skills_SrvDoFunc_054_BladeShield_Activate(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL bIsInTown;
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    short int eAuraState = sgptDataTable->pTxtSkills[eSkill].aurastate;
+    short int eAuraState = pSkillsTxt->aurastate;
     if (!(eAuraState >= 0 && (int)eAuraState < sgptDataTable->nTxtStatesSize)) {
       return 0;
     }
 
-    D2SkillStrc* pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (pDVar1) {
       D2RoomStrc* pRoom;
       pRoom = D2Common::Units::UNITS_GetRoom(pUnit);

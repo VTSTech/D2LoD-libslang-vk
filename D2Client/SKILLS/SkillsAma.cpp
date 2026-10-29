@@ -48,11 +48,12 @@
 namespace D2Client::SKILLS::SkillsAma {
 
 int32_t __fastcall GetTxtSkillParam5(int32_t nParam) {
-    if (!(nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nParam)) {
+    D2SkillsTxt* pSkillsTxt = nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nParam : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[nParam].Param[5];
+    return pSkillsTxt->Param[5];
 }
 
 BOOL __fastcall Skills_CltStFunc_CheckThrowableAmmo(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {

@@ -635,7 +635,7 @@ uint32_t __stdcall PLAYER_CheckSkillUsability(int * pnUsabilityCode, D2UnitStrc 
         return 0;
       }
       if (nUsabilityCode > 0 && (nUsabilityCode <= 2 || nUsabilityCode == 4) && *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[4]) {
-        pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_Attack, pUnit);
+        pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_Attack);
         *ppSkill = pSkill;
         nUsabilityCode = PlrSkills::PLRSKILLS_CanUseSkillCheck(pUnit, pSkill);
       }
@@ -2742,11 +2742,12 @@ int __fastcall PLAYER_GetMonsterOwnerId(D2UnitStrc * pnParam) {
 }
 
 int32_t __fastcall TXT_MonStats_GetBaseId_NoChecks(int32_t nMonsterId) {
-    if (!(nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonsterId)) {
+    D2MonStatsTxt* pMonStatsTxt = nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonsterId : nullptr;
+    if (!pMonStatsTxt) {
       return nMonsterId;
     }
 
-    nMonsterId = (int32_t)sgptDataTable->pTxtMonStats[nMonsterId].BaseId;
+    nMonsterId = (int32_t)pMonStatsTxt->BaseId;
     return nMonsterId;
 }
 
@@ -2756,11 +2757,12 @@ int32_t __fastcall TXT_MonStats_GetBaseId(D2UnitStrc * pUnit) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!pMonStatsTxt) {
       return nClassId;
     }
 
-    return (int)sgptDataTable->pTxtMonStats[nClassId].BaseId;
+    return (int)pMonStatsTxt->BaseId;
 }
 
 // The parameter arrives in a whole register; typing it from the single byte the body reads made the decompiler splice the indeterminate upper bytes back in as an uninitialised local, which then indexed an array with garbage in its high bits.
@@ -2770,11 +2772,12 @@ BOOL __fastcall TXT_MonStats_MonStats2_GetFlagsByBitOffset(int32_t nMonStatsId, 
     }
 
     int nMonStats2Id = (int)sgptDataTable->pTxtMonStats[nMonStatsId].MonStatsEx;
-    if (!(nMonStats2Id >= 0 && nMonStats2Id < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStats2Id)) {
+    D2MonStats2Txt* pMonStatsExTxt = nMonStats2Id >= 0 && nMonStats2Id < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStats2Id : nullptr;
+    if (!pMonStatsExTxt) {
       return 0;
     }
 
-    return (uint32_t)sgptDataTable->pTxtMonStatsEx[nMonStats2Id].aComponents[((int)nBitOffset >> 3) - 0x11] & gadwBitMasks[nBitOffset & corpseSel];
+    return (uint32_t)pMonStatsExTxt->aComponents[((int)nBitOffset >> 3) - 0x11] & gadwBitMasks[nBitOffset & corpseSel];
 }
 
 int32_t __fastcall ValidateClassId(int32_t nClassId) {

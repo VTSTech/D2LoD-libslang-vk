@@ -461,8 +461,10 @@ void __stdcall MISSILE_SpawnFromMaggot(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     if (nClassId < 0) {
       return;
     }
-    if (nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId) {
-      nClassId = (int)sgptDataTable->pTxtMonStats[nClassId].BaseId;
+
+    D2MonStatsTxt* pMonStatsTxt = nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (pMonStatsTxt) {
+      nClassId = (int)pMonStatsTxt->BaseId;
     }
     if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && nClassId == 0x3f)) {
       return;
@@ -1613,8 +1615,9 @@ void __fastcall MONSTER_EndOfFrameAiDispatch(::SGAMEDATA * pGame, D2UnitStrc * p
         nBaseMonClassId = -1;
       } else {
         nBaseMonClassId = pUnit->nClassId;
-        if (nBaseMonClassId >= 0 && nBaseMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nBaseMonClassId) {
-          nBaseMonClassId = (int)sgptDataTable->pTxtMonStats[nBaseMonClassId].BaseId;
+        D2MonStatsTxt* pMonStatsTxt = nBaseMonClassId >= 0 && nBaseMonClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseMonClassId : nullptr;
+        if (pMonStatsTxt) {
+          nBaseMonClassId = (int)pMonStatsTxt->BaseId;
         }
         if (nBaseMonClassId >= 0) {
           nResolvedBaseId = nBaseMonClassId;
@@ -1887,8 +1890,9 @@ void __fastcall MONSTER_ProcessGetHitRecovery(::SGAMEDATA * pGame, D2UnitStrc * 
     }
     if (pUnit->eUnitType == UNIT_MONSTER && nMonClassId >= 0) {
       eD2States eState;
-      if (nMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonClassId) {
-        nMonClassId = (int32_t)sgptDataTable->pTxtMonStats[nMonClassId].BaseId;
+      D2MonStatsTxt* pMonStatsTxt = nMonClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonClassId : nullptr;
+      if (pMonStatsTxt) {
+        nMonClassId = (int32_t)pMonStatsTxt->BaseId;
       }
       if (nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize && nMonClassId == 0x4e) {
         eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_stunned);

@@ -356,7 +356,7 @@ static void __stdcall SPELLSEL_DrawKeyBindingsForLeftHand(int32_t nSlotIndex, sh
     SPELLSEL_DrawKeyBindingText(0x35, nIconX + 0x22, nIconY - 0x23, 4);
 }
 
-void __fastcall SPELLSEL_DrawSkillLevel(int32_t pThis, int32_t nScreenX, int32_t nIconY) {
+void __thiscall SPELLSEL_DrawSkillLevel(int32_t pThis, int32_t nScreenX, int32_t nIconY) {
     uint16_t wszLevelBuf[16];
     char szLevelBuf[16];
     memset(wszLevelBuf, 0, 16 * sizeof(wszLevelBuf[0]));
@@ -444,16 +444,18 @@ void __fastcall SPELLSEL_DrawSkillIconWithQuantity(DC6 * pDC6, short * pSkillId,
     D2GfxDataStrc sGfxData;
     D2InventoryStrc* pInventory;
     int nMouseXCheck = (int)*pSkillId;
-    if (!(nMouseXCheck >= 0 && nMouseXCheck < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nMouseXCheck)) {
+    D2SkillsTxt* pSkillsTxt = nMouseXCheck >= 0 && nMouseXCheck < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nMouseXCheck : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    nMouseXCheck = (int)sgptDataTable->pTxtSkills[nMouseXCheck].skilldesc;
-    if (!(nMouseXCheck >= 0 && nMouseXCheck < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nMouseXCheck)) {
+    nMouseXCheck = (int)pSkillsTxt->skilldesc;
+    D2SkillDescTxt* pSkillDescTxt = nMouseXCheck >= 0 && nMouseXCheck < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nMouseXCheck : nullptr;
+    if (!pSkillDescTxt) {
       return;
     }
 
-    uint8_t bVar1 = sgptDataTable->pTxtSkillDesc[nMouseXCheck].iconcel;
+    uint8_t bVar1 = pSkillDescTxt->iconcel;
     nMouseXCheck = ui::GetMouseX();
     int nMouseX = ui::GetMouseY();
     if (nMouseXCheck >= nSkillIdSlot && nMouseXCheck <= nSkillIdSlot + 0x30 && nMouseX >= nIconX - 0x30 && nMouseX <= nIconX) {
@@ -536,16 +538,18 @@ void __fastcall SPELLSEL_DrawSkillIcon(short * pSkillId, int32_t nSlotIndex, int
     }
 
     int nMouseX = (int)*pSkillId;
-    if (!(nMouseX >= 0 && nMouseX < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nMouseX)) {
+    D2SkillsTxt* pSkillsTxt = nMouseX >= 0 && nMouseX < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nMouseX : nullptr;
+    if (!pSkillsTxt) {
       return;
     }
 
-    nMouseX = (int)sgptDataTable->pTxtSkills[nMouseX].skilldesc;
-    if (!(nMouseX >= 0 && nMouseX < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nMouseX)) {
+    nMouseX = (int)pSkillsTxt->skilldesc;
+    D2SkillDescTxt* pSkillDescTxt = nMouseX >= 0 && nMouseX < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + nMouseX : nullptr;
+    if (!pSkillDescTxt) {
       return;
     }
 
-    uint8_t byIconCel = sgptDataTable->pTxtSkillDesc[nMouseX].iconcel;
+    uint8_t byIconCel = pSkillDescTxt->iconcel;
     nMouseX = ui::GetMouseX();
     int nMouseY = ui::GetMouseY();
     if (nMouseX >= nIconX && nMouseX <= nIconX + 0x30 && nMouseY >= nIconY - 0x30 && nMouseY <= nIconY) {
@@ -899,7 +903,7 @@ void __stdcall SPELLSEL_AutoBindNonChargedSkills() {
     int nFreeSlot = 0;
     int nGridIdx = 0;
     do {
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(gSpellSelGridRegion.aLeftHandSlots[nGridIdx], pUnit);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, gSpellSelGridRegion.aLeftHandSlots[nGridIdx]);
       if (pSkill) {
         pSkillsTxt = D2Common::Skills::GetSkillsTxt(pSkill);
         if (pSkillsTxt && !(*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[4]) && nFreeSlot <= 0xf) {
@@ -1003,8 +1007,10 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
         pSkillsTxt = D2Common::Skills::GetSkillsTxt(pCurSkill);
         if (pSkillsTxt) {
           nSkillId = (int)pSkillsTxt->skill;
-          if (-1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nSkillId) {
-            nSkillId = (int)sgptDataTable->pTxtSkills[nSkillId].skilldesc;
+          D2SkillsTxt* pSkillsTxt2;
+          pSkillsTxt2 = -1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
+          if (pSkillsTxt2) {
+            nSkillId = (int)pSkillsTxt2->skilldesc;
             if (-1 < nSkillId && nSkillId < sgptDataTable->nTxtSkillDescSize) {
               pSkillDescTxt = sgptDataTable->pTxtSkillDesc + nSkillId;
               if (pSkillDescTxt && (!bWeaponSwap || *((uint8_t*)pSkillsTxt + 0x7) & (uint8_t)gadwBitMasks[6]) && !(*((uint8_t*)pSkillsTxt + 0x4) & (uint8_t)gadwBitMasks[4])) {

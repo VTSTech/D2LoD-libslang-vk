@@ -1157,7 +1157,10 @@ D2ItemsTableStrc * __stdcall TXT_Items_GetSize() {
 }
 
 uint32_t __stdcall TXT_Items_GetVersion(int32_t nItemClassId) {
-    if (!(nItemClassId < gsItemsTable.nSize && nItemClassId >= 0)) {
+    if (!(nItemClassId < gsItemsTable.nSize)) {
+      return -1;
+    }
+    if (nItemClassId < 0) {
       return -1;
     }
     if (!pTxtItemsVersion) {

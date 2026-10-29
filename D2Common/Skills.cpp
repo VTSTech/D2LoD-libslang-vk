@@ -143,11 +143,12 @@ static D2StatListExStrc * __stdcall SKILLS_GetOrAllocStateStatList(int32_t bAllo
 
 // Returns the passivestate field from D2SkillsTxt for the given skill ID. Returns 0 if invalid or no passive state.
 int __stdcall TXT_Skills_GetPassiveState(int nSkillId) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nSkillId)) {
+    D2SkillsTxt* pSkillsTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    short int nPassiveState = sgptDataTable->pTxtSkills[nSkillId].passivestate;
+    short int nPassiveState = pSkillsTxt->passivestate;
     if (nPassiveState <= 0) {
       return 0;
     }
@@ -256,7 +257,10 @@ int __stdcall GetSkillMode(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
 }
 
 int32_t __stdcall SKILLS_GetSkillsTxtField0x14(int * pnParam) {
-    if (!(pnParam && *pnParam)) {
+    if (!pnParam) {
+      return 0;
+    }
+    if (!*pnParam) {
       return 0;
     }
 
@@ -348,7 +352,7 @@ D2SkillStrc * __fastcall GetSkillByIdAndOwner(D2UnitStrc * pUnit, eD2Skills eSki
 }
 
 // Thin wrapper around UNIT_GetSkill. Takes (eSkill, pUnit) in fastcall register order and calls UNIT_GetSkill(pUnit, eSkill). Called from 82+ sites including skill spawn, hit calculation, etc.
-D2SkillStrc * SKILLS_GetSkillByEnum(eD2Skills eSkill, D2UnitStrc * pUnit) {
+D2SkillStrc * __fastcall SKILLS_GetSkillByEnum(D2UnitStrc * pUnit, eD2Skills eSkill) {
     D2SkillStrc* pSkill = GetSkill(pUnit, eSkill);
     return pSkill;
 }
@@ -369,7 +373,10 @@ D2LightMapStrc * __stdcall SwapLightMap(D2UnitStrc * pUnit, D2LightMapStrc * pLi
 }
 
 uint32_t __stdcall SKILLS_GetUnitField0xa8_0x14(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->pSkillsList)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (!pUnit->pSkillsList) {
       return 0;
     }
 
@@ -1118,19 +1125,21 @@ static int32_t UNIT_GetSkillBySkillId(D2SkillsTxt * pSkillsTxt, D2UnitStrc * pUn
 }
 
 int32_t __stdcall TXT_Skills_GetReqLevel(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0x7fffffff;
     }
 
-    return (int)sgptDataTable->pTxtSkills[eSkill].reqlevel;
+    return (int)pSkillsTxt->reqlevel;
 }
 
 int32_t __stdcall SKILL_GetRequiredLevel(D2UnitStrc * pUnit, eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0x7fffffff;
     }
 
-    int32_t nReqLevel = (int32_t)sgptDataTable->pTxtSkills[eSkill].reqlevel;
+    int32_t nReqLevel = (int32_t)pSkillsTxt->reqlevel;
     D2SkillStrc* pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
     if (!pSkill) {
       return nReqLevel;
@@ -1780,7 +1789,10 @@ void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, in
 }
 
 int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
-    if (!pSkill || !pSkill->pRecord) {
+    if (!pSkill) {
+      return 0;
+    }
+    if (!pSkill->pRecord) {
       return 0;
     }
 
@@ -2492,11 +2504,12 @@ int32_t __stdcall SKILL_GetConcentrationDamageBonus(D2UnitStrc * pUnit, int32_t 
     }
 
     int32_t nDamagePct = Stats::StatsEx::STATLIST_GetBaseStatValue(pConcentrationStatList, UNITSTAT_damagepercent, 0);
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nSkillId)) {
+    D2SkillsTxt* pSkillsTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    int nScaledBonus = sgptDataTable->pTxtSkills[nSkillId].Param[0] * nDamagePct;
+    int nScaledBonus = pSkillsTxt->Param[0] * nDamagePct;
     return nScaledBonus / 8;
 }
 
@@ -2984,7 +2997,10 @@ uint32_t __fastcall SKILLS_EvalSkillDescCalc_Chained(eD2Skills eSkill, uint8_t b
 
 int32_t __stdcall D2GetSkillCalc(D2UnitStrc * pUnit, int32_t calc, eD2Skills eSkill, int32_t nSkillLvl) {
     D2SkillCalcContextStrc sCalcCtx;
-    if (!(sgptDataTable->pSkillsCode && (uint32_t)calc < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
+    if (!sgptDataTable->pSkillsCode) {
+      return 0;
+    }
+    if (!((uint32_t)calc < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
       return 0;
     }
 
@@ -2997,7 +3013,10 @@ int32_t __stdcall D2GetSkillCalc(D2UnitStrc * pUnit, int32_t calc, eD2Skills eSk
 
 uint32_t __stdcall SKILLS_EvalDescCalcBytecode(D2UnitStrc * pUnit, uint32_t nCalcOffset, eD2Skills eSkillId, int32_t nSkillLevel) {
     D2SkillCalcContextStrc sCalcCtx;
-    if (!(sgptDataTable->pSkillDescCode && nCalcOffset < (uint32_t)sgptDataTable->nSkillDescCodeSize)) {
+    if (!sgptDataTable->pSkillDescCode) {
+      return 0;
+    }
+    if (!(nCalcOffset < (uint32_t)sgptDataTable->nSkillDescCodeSize)) {
       return 0;
     }
 
@@ -3103,8 +3122,9 @@ void __stdcall SKILLS_UpdateAllPassiveSkills(D2UnitStrc * pUnit) {
     do {
       short int nSkillId = nPassiveSkillCount < 0 || nPassiveSkillCount >= pDataTable->nPassiveSkillsCount ? -1 : pDataTable->pPassiveSkillsPerClassStrc[nPassiveSkillCount].nSkillId;
       eSkill = (eD2Skills)nSkillId;
-      if ((int)eSkill >= 0 && (int)eSkill < pDataTable->nTxtSkillsCount && pDataTable->pTxtSkills + eSkill) {
-        nSkillId = pDataTable->pTxtSkills[eSkill].passivestate;
+      D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < pDataTable->nTxtSkillsCount ? pDataTable->pTxtSkills + eSkill : nullptr;
+      if (pSkillsTxt) {
+        nSkillId = pSkillsTxt->passivestate;
         if (nSkillId > 0) {
           pSkillInst = GetSkill(pUnit, eSkill);
           if (pSkillInst) {
@@ -3603,7 +3623,10 @@ static uint32_t SKILLS_CheckItemChargesRemaining(D2UnitStrc * pUnit, D2SkillStrc
     }
 
     D2InventoryStrc* pInventory = pUnit->pInventory;
-    if (!(pInventory && pSkillStrc->nOwnerGUID != -1)) {
+    if (!pInventory) {
+      return 1;
+    }
+    if (pSkillStrc->nOwnerGUID == -1) {
       return 1;
     }
 

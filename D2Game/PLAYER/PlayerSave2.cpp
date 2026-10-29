@@ -116,7 +116,10 @@ int __stdcall PLAYERSAVE2_LoadOldSavegame_ReturnZero() {
 // Returns the 1-based index of the carried item matching nItemGUID in the player's inventory list, by iterating INVENTORY_GetFirstItem/GetNextItem/GetCarriedItem. Returns 0 if GUID is -1, inventory is null, or item not found. Halts with an internal error if the index would exceed 0x7FFE.
 int16_t __fastcall GetItemIndexInList(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nItemGUID) {
     int nGUID;
-    if (nItemGUID == -1 || !pUnit->pInventory) {
+    if (nItemGUID == -1) {
+      return 0;
+    }
+    if (!pUnit->pInventory) {
       return 0;
     }
 
@@ -971,7 +974,7 @@ static int32_t __stdcall PLAYERSAVE_CreateNewCharacter(D2ClientStrc * pSaveConte
       if (nClassIdx >= 0 && nClassIdx < sgptDataTable->nTxtCharStatsSize) {
         pCharStatsTxt = sgptDataTable->pTxtCharStats + nClassIdx;
         if (pCharStatsTxt && pCharStatsTxt->StartSkill) {
-          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum((int)pCharStatsTxt->StartSkill, pUnit);
+          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)pCharStatsTxt->StartSkill);
           if (pDVar1) {
             SKILLS::SkillsServer::Server_SelectSkill(pUnit, 0, (int)pCharStatsTxt->StartSkill, -1);
             pPlayerData->eRightSkillId = (int)pCharStatsTxt->StartSkill;
@@ -1148,7 +1151,10 @@ int __fastcall ReadWaypoints(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short 
 // NOTE: Register param types inferred (medium confidence): pGameStrc (ECX): SGAMEDATA *, pUnit (EDX): D2UnitStrc *
 int __fastcall LoadPlayerIntro(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam) {
     short int* pBufStart = *ppReadPos;
-    if (!(pBufStart + 0x1a <= pEndBuf && *pBufStart == 0x7701)) {
+    if (!(pBufStart + 0x1a <= pEndBuf)) {
+      return 0x11;
+    }
+    if (*pBufStart != 0x7701) {
       return 0x11;
     }
 
@@ -1179,7 +1185,10 @@ static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, sho
     uint8_t* pBytes;
     uint8_t byCsvBitWidth;
     uint8_t* pBufStart = (uint8_t*)(*ppReadPos + 1);
-    if (!(pBufStart <= (unsigned char*)pEndBuf && **ppReadPos == 0x6667)) {
+    if (!(pBufStart <= (unsigned char*)pEndBuf)) {
+      return 0x12;
+    }
+    if (**ppReadPos != 0x6667) {
       return 0x12;
     }
 
@@ -1285,7 +1294,10 @@ void __fastcall PLRSAVE_SetSkillIfNonZero(uint32_t dwParam, D2UnitStrc * pUnit, 
 int __fastcall LoadHardSkills(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam, uint32_t bParam) {
     int32_t nTotalClassSkills;
     short int* psVar1 = *ppReadPos + 1;
-    if (psVar1 > pEndBuf || **ppReadPos != 0x6669) {
+    if (psVar1 > pEndBuf) {
+      return 0x13;
+    }
+    if (**ppReadPos != 0x6669) {
       return 0x13;
     }
 
@@ -1690,7 +1702,7 @@ int __fastcall LoadGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * * ppRe
     if ((char)((D2UnitStrc*)(pReadPos + 1))->eUnitType != UNIT_PLAYER) {
       D2SkillStrc* pSkill;
       pEndBuf = 0;
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_IronGolem, pUnit);
+      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_IronGolem);
       if (!pSkill) {
         return 0x17;
       }

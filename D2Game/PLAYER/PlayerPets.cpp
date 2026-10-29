@@ -647,7 +647,10 @@ D2UnitStrc * __fastcall SERVER_GetUnitPetByTypeId(::SGAMEDATA * pGame, D2UnitStr
 int32_t __fastcall PETS_GetTotalPetCount(D2UnitStrc * pUnit) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     int nTotal = 0;
-    if (!(pPlayerData && pPlayerData->pPets)) {
+    if (!pPlayerData) {
+      return 0;
+    }
+    if (!pPlayerData->pPets) {
       return 0;
     }
 
@@ -766,11 +769,13 @@ void __fastcall RemovePetByGuidAndNotify(::SGAMEDATA * pGame, D2UnitStrc * pPlay
     } else if (nErrLine < 0) {
       return;
     }
-    if (!(nErrLine < sgptDataTable->nTxtPetTypeSize && pPets->pPetList + nErrLine)) {
+
+    D2PetListStrc* pPetListRecord = nErrLine < sgptDataTable->nTxtPetTypeSize ? pPets->pPetList + nErrLine : nullptr;
+    if (!pPetListRecord) {
       return;
     }
 
-    KillingPets(nPetGUID, pPets->pPetList + nErrLine, bKillHandler, pGame);
+    KillingPets(nPetGUID, pPetListRecord, bKillHandler, pGame);
     memset(nIterArgs + 1, 0, 6 * sizeof(nIterArgs[0]));
     nIterArgs[0] = nPetGUID;
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Send0x7aSummonLog, nIterArgs);
@@ -1083,11 +1088,12 @@ static void __stdcall PLAYERPETS_RemoveConflictingPetsByGroup(int32_t nParam, ::
     }
 
     int32_t nPetTypeSize = sgptDataTable->nTxtPetTypeSize;
-    if (!(nParam < nPetTypeSize && sgptDataTable->pTxtPetType + nParam)) {
+    D2PetTypeTxt* pPetTypeTxt = nParam < nPetTypeSize ? sgptDataTable->pTxtPetType + nParam : nullptr;
+    if (!pPetTypeTxt) {
       return;
     }
 
-    short int wGroup = sgptDataTable->pTxtPetType[nParam].group;
+    short int wGroup = pPetTypeTxt->group;
     if (0 >= wGroup) {
       return;
     }

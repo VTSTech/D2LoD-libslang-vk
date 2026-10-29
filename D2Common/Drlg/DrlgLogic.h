@@ -31,7 +31,7 @@ namespace D2Common::Drlg::DrlgLogic {
 
 // Function declarations
 // @sourcefile .\DRLG\DrlgLogic.cpp
-struct D2DrlgCoordListStrc * __fastcall AllocEmptyDrlgCoordList_Unused(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx);
+struct D2DrlgCoordListStrc * __thiscall AllocEmptyDrlgCoordList_Unused(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx);
 // @sourcefile .\DRLG\DrlgLogic.cpp
 void AllocEmptyRoomCoordList_Unused(struct D2PoolManagerStrc * pMemory, struct D2DrlgCoordListStrc * pDrlgCoordList, int32_t nSize);
 // @sourcefile .\DRLG\DrlgLogic.cpp

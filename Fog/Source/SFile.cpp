@@ -444,7 +444,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     }
 }
 
-int32_t __fastcall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset) {
+int32_t __thiscall SFILE_CalculateBufferOffset(int32_t pThis, int32_t nBufferOffset) {
     return nBufferOffset * 0x400 + 0x80c + pThis;
 }
 

@@ -15,7 +15,7 @@
 
 namespace Storm {
 
-uint32_t __fastcall BITBUFFER_PeekBits(uint16_t * nBitCount, uint32_t nMask, uint16_t * * pBitBuffer) {
+uint32_t __thiscall BITBUFFER_PeekBits(uint16_t * * pBitBuffer, uint16_t * nBitCount, uint32_t nMask) {
     uint16_t* nBitPos = pBitBuffer[2];
     if (nBitPos > nBitCount) {
       return (uint32_t)pBitBuffer[1] & nMask;
@@ -32,7 +32,7 @@ int32_t __fastcall BITBUFFER_GetRemainingBits(int * pBitStream) {
     return pBitStream[2] - *pBitStream;
 }
 
-uint32_t __fastcall HUFFMAN_GetDecodedOffset(int * pBase, int * pNode) {
+uint32_t __thiscall HUFFMAN_GetDecodedOffset(int * pNode, int * pBase) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -45,7 +45,7 @@ uint32_t __fastcall HUFFMAN_GetDecodedOffset(int * pBase, int * pNode) {
     return nOffset + (int)pBase;
 }
 
-uint32_t __fastcall BITBUFFER_ReadBits(uint16_t * nBits, uint32_t nMask, uint16_t * * pBitBuf) {
+uint32_t __thiscall BITBUFFER_ReadBits(uint16_t * * pBitBuf, uint16_t * nBits, uint32_t nMask) {
     uint16_t* pBitPos = pBitBuf[2];
     if (pBitPos <= nBits) {
       uint16_t wWord;
@@ -65,7 +65,7 @@ void __stdcall SCOMP_DecompressSimple(uint32_t * pDst, uint32_t * pnDstSize, uin
     Source::SSComp::SCompDecompress(pDst, pnDstSize, pSrc, nSrcSize, 0);
 }
 
-int32_t __fastcall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrDefault) {
+int32_t __thiscall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrDefault) {
     if (nChildOrDefault) {
       return nChildOrDefault;
     }
@@ -74,7 +74,7 @@ int32_t __fastcall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrD
     return nChildOrDefault;
 }
 
-int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
+int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     uint16_t** pTreeNode;
     int nQuickStep;
     uint32_t nBitCount;
@@ -157,14 +157,14 @@ int32_t __fastcall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     return (int32_t)pTreeNode[2];
 }
 
-int * * __fastcall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode) {
+int * * __thiscall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode) {
     int** pNode = *(int***)(pThis + 0x3058);
     if ((int)pNode <= 0 || !pNode) {
       pNode = (int**)(pThis + 8 + *(int*)(pThis + 0x3068) * 0x18);
       (*(int*)(pThis + 0x3068))++;
     }
 
-    Source::SSystem::LINKEDLIST_MoveNode(pNode, nInsertMode, nullptr, (int**)(pThis + 0x305c));
+    Source::SSystem::LINKEDLIST_MoveNode((int**)(pThis + 0x305c), pNode, nInsertMode, nullptr);
     pNode[4] = 0;
     pNode[5] = 0;
     return pNode;
@@ -188,7 +188,7 @@ int32_t __fastcall HUFFMAN_InitContext(D2CompressEncoderStrc * pEncoder) {
     return (int32_t)pEncoder;
 }
 
-int __fastcall HUFFMAN_DecompressBlock(uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf, uint32_t * pDecoderCtx) {
+int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf) {
     uint16_t wRefill;
     uint16_t** pBitBufAlias = pBitBuf;
     if (!nDstMax) {

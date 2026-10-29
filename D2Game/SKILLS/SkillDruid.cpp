@@ -209,7 +209,7 @@ void __fastcall SKILLDRUID_OnShapeshiftExpire(D2UnitStrc * pUnit, eD2States eSta
     }
 
     eD2Skills eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(param_1, UNITSTAT_modifierlist_skill, 0);
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
     if (!pSkill) {
       return;
     }
@@ -335,7 +335,7 @@ BOOL __fastcall Skills_SrvDoFunc_116_Werewolf(::SGAMEDATA * pGame, D2UnitStrc * 
           D2SetAurastatsFromSkills(pUnit, pStatList, pSkillTxt, eSkill, nSkillLvl);
           D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, UNITSTAT_modifierlist_skill, eSkill, 0);
           D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatList, UNITSTAT_modifierlist_level, nSkillLvl, 0);
-          pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+          pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
           if (!pSkill) {
             return 1;
           }
@@ -1256,7 +1256,7 @@ BOOL __fastcall Skills_SrvDoFunc_146_CycloneArmor(::SGAMEDATA * pGame, D2UnitStr
             } else {
               eMissileId = SkillAss::SKILLASS_GetChargeUpMissile(pUnit, eSkill);
               if ((int)eMissileId > 0) {
-                pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pUnit);
+                pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, eSkill);
                 if (pSkill && pUnit != (D2UnitStrc*)-32) {
                   nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->aurarangecalc, eSkill, nSkillLvl);
                   if (nAuraRange > 0) {
@@ -1346,7 +1346,10 @@ BOOL __fastcall ITEMEVENT_DruidSummonHpAura(::SGAMEDATA * pGame, uint32_t nUnitE
     int32_t nAbsorbCtx1;
     int32_t nAbsorbCtx2;
     int32_t nAbsorbCtxPrev;
-    if (!pUnit || !pDamage) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (!pDamage) {
       return 0;
     }
     if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {

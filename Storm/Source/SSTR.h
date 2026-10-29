@@ -186,7 +186,7 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
 int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUTF8In, int nInBytes, int * pnCharsWritten, int * pnBytesRead);
 uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam);
 void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut);
-void __stdcall UTF8_StepBackOneChar(int str_base, int position, uint32_t ecx_passthru);
+void __thiscall UTF8_StepBackOneChar(uint32_t ecx_passthru, int str_base, int position);
 void __stdcall UTF8_StepForwardOneChar(int str_base, int position, uint32_t ecx_passthru);
 void __stdcall TRANSTBL_UnicodeToLatin1(uint8_t * pbOut, void * pSrcUTF16, int nCount);
 void __stdcall TRANSTBL_UnicodeToLatin2(uint8_t * pbOut, void * pSrcUTF16, int nCount);

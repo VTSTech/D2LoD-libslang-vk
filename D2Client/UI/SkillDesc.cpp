@@ -2439,50 +2439,57 @@ void __fastcall SKILLDESC_BuildMagicAffixDesc(D2UnitStrc * pUnit, uint16_t * wsz
 }
 
 int32_t __fastcall GetSkillParam4(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtSkills[eSkill].Param[4];
+    return pSkillsTxt->Param[4];
 }
 
 uint16_t __fastcall SKILLDESC_GetStatNameString(int32_t nSkillId, int32_t nStatOffset) {
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + nSkillId)) {
+    D2SkillsTxt* pSkillsTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
+    if (!pSkillsTxt) {
       return 0x1506;
     }
 
-    int iVar1 = (int)sgptDataTable->pTxtSkills[nSkillId].skilldesc;
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + iVar1)) {
+    int iVar1 = (int)pSkillsTxt->skilldesc;
+    D2SkillDescTxt* pSkillDescTxt = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + iVar1 : nullptr;
+    if (!pSkillDescTxt) {
       return 0x1506;
     }
 
-    return *(uint16_t*)(sgptDataTable->pTxtSkillDesc[iVar1].dmelem + nStatOffset * 2 - 0x18);
+    return *(uint16_t*)(pSkillDescTxt->dmelem + nStatOffset * 2 - 0x18);
 }
 
 int16_t GetSkillLongDescription(eD2Skills eSkill) {
-    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
+    if (!pSkillsTxt) {
       return 0x1506;
     }
 
-    int iVar1 = (int)sgptDataTable->pTxtSkills[eSkill].skilldesc;
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + iVar1)) {
+    int iVar1 = (int)pSkillsTxt->skilldesc;
+    D2SkillDescTxt* pSkillDescTxt = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + iVar1 : nullptr;
+    if (!pSkillDescTxt) {
       return 0x1506;
     }
 
-    return sgptDataTable->pTxtSkillDesc[iVar1].strLong;
+    return pSkillDescTxt->strLong;
 }
 
 static int16_t GetAltSkillDescription(eD2Skills eSkillId) {
-    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId)) {
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (!pSkillsTxt) {
       return 0x1506;
     }
 
-    int iVar1 = (int)sgptDataTable->pTxtSkills[eSkillId].skilldesc;
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + iVar1)) {
+    int iVar1 = (int)pSkillsTxt->skilldesc;
+    D2SkillDescTxt* pSkillDescTxt = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtSkillDescSize ? sgptDataTable->pTxtSkillDesc + iVar1 : nullptr;
+    if (!pSkillDescTxt) {
       return 0x1506;
     }
 
-    return sgptDataTable->pTxtSkillDesc[iVar1].strAlt;
+    return pSkillDescTxt->strAlt;
 }
 
 static void __stdcall ApplyPassiveFireMasteryDamage(int32_t nParam, int32_t * nMinElemDamage, int32_t * nMaxElemDamage) {

@@ -4136,7 +4136,7 @@ int32_t __fastcall PATH_FindPathToward(D2PathTypeArg * pPathTypeArg) {
         }
 
         bWaypointAdded = 0;
-        Path::DRLGPATH_GetPathDirectionTripletPacked((uint32_t)d2_bits_of(ptSrc), (uint32_t)d2_bits_of(ptDst), aDirTriplet);
+        Path::DRLGPATH_GetPathDirectionTripletPacked(aDirTriplet, (uint32_t)d2_bits_of(ptSrc), (uint32_t)d2_bits_of(ptDst));
         bReachable = Path::DRLGPATH_FindNonBlockedDirectionFromTriplet((uint32_t)d2_bits_of(ptCur), aDirTriplet, (int*)&nChosenDir, pPathTypeArgLocal);
         if (!bReachable || (nChosenDir - 4 & 7) == nPrevDir) {
           goto append_end_point;
@@ -4853,8 +4853,8 @@ void __fastcall DRLGROOMEX_AllocAndInitRoomGrids(D2RoomExStrc * pRoomEx) {
       } while (nColX < nHeight);
     }
 
-    DrlgGrid::FlagOperations(pWallGrid, 0, 4);
-    DrlgGrid::FlagOperations(pFloorGrid, 0, 4);
+    DrlgGrid::FlagOperations(pWallGrid, 4, 0);
+    DrlgGrid::FlagOperations(pFloorGrid, 4, 0);
 }
 
 void __fastcall DRLGROOMEX_InitializeMazeRoom(D2RoomExStrc * pRoomEx) {

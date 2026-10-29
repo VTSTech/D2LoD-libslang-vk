@@ -1058,8 +1058,9 @@ static int SKILLMONST_TriggerModeChange(D2UnitStrc * pUnit, ::SGAMEDATA * pGame)
       nMonStatsExIdx = pUnit->nClassId;
       if (nMonStatsExIdx >= 0 && nMonStatsExIdx < sgptDataTable->nTxtMonStatsSize) {
         nMonStatsExIdx = (int)sgptDataTable->pTxtMonStats[nMonStatsExIdx].MonStatsEx;
-        if (nMonStatsExIdx >= 0 && nMonStatsExIdx < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatsExIdx) {
-          nEventDelay = (uint32_t)(uint8_t)sgptDataTable->pTxtMonStatsEx[nMonStatsExIdx].byInfernoLen;
+        D2MonStats2Txt* pMonStatsExTxt = nMonStatsExIdx >= 0 && nMonStatsExIdx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatsExIdx : nullptr;
+        if (pMonStatsExTxt) {
+          nEventDelay = (uint32_t)(uint8_t)pMonStatsExTxt->byInfernoLen;
         }
       }
     }
@@ -2650,7 +2651,7 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         nPathFlags = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nPathFlags);
         abyDirLookup[4] = abyDirLookup[nPathFlags & 0xff];
         D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[nPathFlags & 0xff], &nOffsetX, &nOffsetY);
-        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit), 1);
+        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_SpiderLay), 1);
         eUnitType = pUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           nPosX = pUnit->pPath.pStaticPath->nPosX;

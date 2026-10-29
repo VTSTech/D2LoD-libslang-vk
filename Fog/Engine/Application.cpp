@@ -559,7 +559,7 @@ static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInf
 }
 
 // Unwinds stack frames for crash dumps. Walks EBP chain up to 128 frames, validates stack pointers, skips first N frames. Captures EIP, ESP, EBP for each frame. Handles current thread or remote thread via OpenThread/SuspendThread.
-int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames, CONTEXT * pContext) {
+int __thiscall DEBUG_UnwindStackFrames(CONTEXT * pContext, DWORD dwThreadId, D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames) {
     // Frame slots -780..-752 are ONE object: &nStackLimit is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -985,7 +985,7 @@ void __stdcall CloseDiablo() {
     exit(-1);
 }
 
-void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2IniData, char * szText) {
+void __thiscall MISC_ParseCommandLineAndPutIntoD2IniData(char * szText, D2IniConfigStrc * pD2IniData) {
     char* pcVar4;
     long int nConfigIdx;
     int nDstOffset;
@@ -1044,7 +1044,7 @@ void __fastcall MISC_InitD2IniAndIgnorelist(D2IniConfigStrc * D2IniData, char * 
     memset(D2IniData, 0, 0x3cd);
     MISC_GetValueFromD2Ini(D2IniData);
     D2Common::Chat::Ignorelist::MISC_InitIgnorelist();
-    MISC_ParseCommandLineAndPutIntoD2IniData(D2IniData, szCommandLine);
+    MISC_ParseCommandLineAndPutIntoD2IniData(szCommandLine, D2IniData);
 }
 
 // Dispatch current app mode via ApplicationBootstrapArray: init -> run -> shutdown for selected mode.

@@ -299,8 +299,9 @@ int32_t __stdcall GetHitClass(D2UnitStrc * pUnit) {
     if (pUnit && pUnit->eUnitType == UNIT_MISSILE) {
       int nMissileClassId;
       nMissileClassId = pUnit->nClassId;
-      if (nMissileClassId >= 0 && nMissileClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileClassId) {
-        return (uint32_t)(uint8_t)sgptDataTable->pTxtMissiles[nMissileClassId].HitClass;
+      D2MissilesTxt* pMissilesTxt = nMissileClassId >= 0 && nMissileClassId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nMissileClassId : nullptr;
+      if (pMissilesTxt) {
+        return (uint32_t)(uint8_t)pMissilesTxt->HitClass;
       }
     }
 
@@ -772,11 +773,12 @@ int32_t __stdcall GetMaxDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int32_t 
 }
 
 uint8_t __stdcall GetElemTypeFromMissileId(int32_t nMissileId) {
-    if (!(nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileId)) {
+    D2MissilesTxt* pMissilesTxt = nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize ? sgptDataTable->pTxtMissiles + nMissileId : nullptr;
+    if (!pMissilesTxt) {
       return 0;
     }
 
-    return sgptDataTable->pTxtMissiles[nMissileId].EType;
+    return pMissilesTxt->EType;
 }
 
 // Returns the minimum elemental damage for a missile at a given level. Same structure as GetMinDamage but reads D2MissilesTxt EMin + MinELev1 level breakpoint and EDmgSymPerCalc calc expression. Result is shifted left by HitShift. Returns 0 for non-missile units or invalid IDs.
@@ -1046,7 +1048,7 @@ int32_t __fastcall GetSpecialParamValueForSkillMissile(eD2Skills eSkill, uint8_t
     uint32_t nSkillLevel = 0;
     if (pMissileCalc->pOwner) {
       D2SkillStrc* pSkill;
-      pSkill = Skills::SKILLS_GetSkillByEnum(eSkill, pMissileCalc->pOwner);
+      pSkill = Skills::SKILLS_GetSkillByEnum(pMissileCalc->pOwner, eSkill);
       if (pSkill) {
         nSkillLevel = Skills::GetSkillLevel(pMissileCalc->pOwner, pSkill, 1);
       }
