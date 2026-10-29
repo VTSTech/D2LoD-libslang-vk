@@ -50,6 +50,18 @@ resolution — is the same one proven in
   without a preset chain; while hidden the conf-panel hotkeys park too and
   the arrow keys stay the game's; every press is logged
   (`overlay: on/off (Scroll Lock)`).
+- **PrintScreen saves a screenshot (0.4.6)**: press **PrintScreen** in-game and
+  the current frame lands in `screenshots\` beside the game exe as a PNG
+  (`D2_YYYYMMDD_HHMMSS.png`, same-second re-shots walk `_1`..`_9`), with a
+  `saved ...` toast and a log line. The captured frame is the gamma-corrected
+  game raster at native game resolution, taken before the overlay draws — no
+  version tag, conf panel or toast in the file, ever (Scroll Lock composes,
+  but is no longer required for a clean shot). Works with or without a preset
+  chain; foreground-gated and edge-latched like every hotkey; the encode+write
+  is a few ms (dependency-free PNG encoder, host-verified end to end). Disable
+  with `screenshots=0`. A slang-FILTERED capture (post-shader pixels) needs a
+  GPU readback pass and stays future work — the shot is the pre-shader game
+  frame.
 - **The overlay shows the active shader (0.4.2)**: while a preset filters
   frames, the fallback box's second line reads the preset's file name — pushed
   on chain ready (first open, conf change, hot reload), cleared whenever the
@@ -110,6 +122,16 @@ resolution — is the same one proven in
   current preset's folder subtree in the panel (current preset starred,
   `(none)` at the front, scrolling), **Up/Down** to move, **Right** loads the
   highlighted preset live, **Left** goes back to the option list.
+- **Preset cycling, Ctrl+Left/Right (0.4.6)**: list up to eight presets in
+  `d2slangvk.conf` (`preset_1=` .. `preset_8=`) and step through them in-game —
+  **Ctrl+Right** forward, **Ctrl+Left** back, wrapping, each press reloading
+  the chain exactly like a hand edit of `preset=` (shader line + conf panel
+  follow on their own), with a toast naming the preset. The pick is a session
+  override that survives D2's context re-opens and yields to `preset=` the
+  moment the file's value changes. No chain required — cycling from a
+  preset-less conf builds the chain on the spot. Works while the conf panel is
+  up or down (plain arrows still edit the panel's selected option; the Ctrl
+  part of the chord routes to the cycler).
 - **Window size presets (0.4.5)**: `window=native|240p|480p|576p|720p|768p|1080p|desktop|WxH`
   and `borderless=0|1` in `d2slangvk.conf` size the OS window the game presents
   into — canonical sizes (240p=320x240 ... 1080p=1920x1080; `desktop` =
@@ -242,17 +264,19 @@ ignored (forward compatibility); a malformed value keeps the previous/default
 one and never fails the session. No file at all — or no `preset=` line — means
 the chain stays disabled and frames present unfiltered, exactly the 0.3.x look.
 
-Every key (0.4.5):
+Every key (0.4.6):
 
 | Key | Values (default first) | What it does |
 |-----|------------------------|--------------|
 | `preset=` | *(empty)* = off, or a path to a `.slangp` | The libretro slang preset every presented frame runs through. Relative paths resolve against the game exe folder; drive-letter (`F:\...`) and UNC paths work as-is. Empty or missing line = chain disabled. Changing it (in the file) triggers a full preset reload. |
+| `preset_1=` .. `preset_8=` | *(empty)* = slot unused, or a `.slangp` path each | The Ctrl+Left/Right cycle list (0.4.6): up to eight presets to step through in-game, wrapping, with a toast. Same path rules as `preset=`; empty slots are skipped, order is 1..8; a current preset not in the list starts the walk at `preset_1` (Right) or the last entry (Left) — add `preset=` itself to the list to include it in the rotation. A pick lives for the session (survives D2's context re-opens) and yields to `preset=` when the file's value changes. No chain required — cycling from a preset-less conf builds the chain on the spot; a bad preset file fails soft (logged, unfiltered present, next press moves on). Hot-reloads like every key. |
 | `scale=` | `fit` \| `integer` \| `stretch` | How the chain's output sits in the window: `fit` fits + centers with letterbox; `integer` picks the largest whole-number multiple of the game resolution, centered; `stretch` fills the window edge to edge. Ignored while an explicit `aspect=` (or an F11 pick) is active. |
 | `vsync=` | *(empty)* = FIFO \| `0` \| `1` | Present mode of the swapchain the chain renders into: empty = default FIFO (vsync on); `0` prefers IMMEDIATE (uncapped, silently falls back to FIFO where unsupported); `1` = FIFO. Takes effect when the swapchain is (re)created — game start or resolution change. |
 | `aspect=` | `auto` \| `4:3` \| `16:10` \| `16:9` | Content-aspect override (0.4.3). `auto` keeps the `scale=` geometry. A fixed ratio letterboxes the chain output into the largest centered rectangle of that ratio inside the window: `4:3` on a 16:9 window = pillarbox with correct proportions; `16:9` on a 16:9 window = full-bleed. F11 cycles this live. |
 | `base_res=` | `1x` \| `2x` \| `3x` \| `4x` (bare `1`..`4` accepted) | Shader base resolution (0.4.3). The game frame is linearly upscaled N-x on the GPU before the chain sees it, so every source-relative pass FBO renders at N-x — scanline pitch, glow and blur radii get finer as N rises; the final pass is fit back into the output rect. Costs one extra fullscreen blit. F12 cycles this live. |
 | `window=` | *(empty)* = `native` \| `240p` \| `480p` \| `576p` \| `720p` \| `768p` \| `1080p` \| `desktop` \| `WxH` | Present-window preset (0.4.5). Sizes the OS window: `240p`=320x240, `480p`=640x480, `576p`=720x576, `720p`=1280x720, `768p`=1366x768, `1080p`=1920x1080, `desktop` = the current monitor's size (borderless), `WxH` = any explicit client size (e.g. `1600x1200`). Windowed presets are centered on the current monitor; the game's own 800x600 window is untouched at `native`. DPI-aware (physical pixels, see the presets bullet above); reapplied at every renderer (re)open, and conf edits hot-reload live (file is the source of truth). Config-only — no hotkey. This is output sizing only — the game keeps rendering 800x600. |
 | `borderless=` | `0` \| `1` | Strip the caption/borders on preset windows (0.4.5): `WS_POPUP` instead of the game's overlapped style, centered like the windowed presets. `desktop` is borderless regardless. `0`/empty keeps the game's own frame. |
+| `screenshots=` | `1` \| `0` | The PrintScreen PNG key (0.4.6, on by default): pressing PrintScreen in-game saves the gamma-corrected game frame at native resolution into `screenshots\` beside the exe (`D2_YYYYMMDD_HHMMSS.png`, `_1`..`_9` on same-second collisions), captured before the overlay draws (no tag/panel/toast in the file) — see the screenshot bullet above. `0` parks the hotkey: a press logs once (`shot: PrintScreen ignored (screenshots=0 ...)`) and does nothing. The panel's `screenshots` row (Shift+V) toggles this live. |
 | `controller=` | `0` \| `1` | Gamepad-to-mouse/keys input injection (0.4.5, off by default). `1` starts a background XInput poller (pad 0) that injects ordinary mouse/keyboard events — the game sees a normal mouse and keyboard, so every screen works. Map: left stick = walk (cursor + held LMB while deflected), right stick = fine aim, LT = LMB, RT = RMB, A = hold Shift+LMB (attack in place toward the cursor), B = hold Alt (item labels), X = tap Space, Y = tap I, D-pad = belt 1-4, LB = tap C, RB = tap T, L3 = tap R (run/walk), Start = Esc, Back = Tab (automap). Injects only while the game window is foreground; focus loss / disable / shutdown release everything held; taps are one clean keystroke (no auto-repeat flips). XInput loads dynamically (`xinput1_4` / `xinput9_1_0` / `xinput1_3`; none = logged once, feature stays off). Settings hot-reload with the conf (~2 s). |
 | `controller_sens=` | float (default `1.0`, clamp `16`) | Cursor speed multiplier for the left stick (0.4.5). Full-tilt base speed is ~1200 px/s before the multiplier; the squared response curve keeps precision near center. Missing/`0` = default. Hot-reloads. |
 | `controller_aimsens=` | float (default `0.35`, clamp `0.05`..`4`) | Right-stick fine-aim speed as a multiplier of the left-stick speed (0.4.5). Same curve and deadzone; slower by default so the cursor can be placed on a monster, portal or item label. Missing/`0` = default. Hot-reloads. |
@@ -274,8 +298,8 @@ base_res=1x
 ### Hotkeys (in-game, 0.4.3 + 0.4.5 + 0.4.6)
 
 While the game window has focus — the same scheme as Chocolate-Doom-VK
-(Scroll Lock and Shift+V work always; F11/F12 require a chain to be
-filtering frames):
+(Scroll Lock, Shift+V and the arrows work always; F11/F12 require a chain to
+be filtering frames):
 
 - **Scroll Lock** (0.4.6) — toggle the overlay: every overlay box (the tag,
   the shader / hostver / FPS lines, the toast and the conf panel) hides or
@@ -283,6 +307,12 @@ filtering frames):
   survives D2's context re-opens; the `overlay=` ini key still decides the
   state at startup and after a relaunch. See [The version stamp](#the-version-stamp)
   for the details.
+- **PrintScreen** (0.4.6) — save a screenshot: the current frame lands in
+  `screenshots\` beside the game exe as a PNG, captured before the overlay
+  draws (no tag/panel/toast in the file) and at native game resolution, with
+  or without a preset chain. Toast + log; `screenshots=0` disables (the press
+  logs once instead). Works while the overlay is toggled off — the log line
+  is the feedback there.
 - **F11** — cycle content aspect: `4:3 -> 16:10 -> 16:9 -> auto -> ...`
 - **F12** — cycle shader base resolution: `1x -> 2x -> 3x -> 4x -> 1x`
 - **Shift+V** (0.4.5) — toggle the conf panel: a box on the left edge listing
@@ -302,6 +332,11 @@ filtering frames):
   and failed writes touch nothing and are logged. On the preset row they
   open the preset browser instead (below); inside the browser **Right**
   loads and **Left** backs out.
+- **Ctrl+Left/Right** (0.4.6) — cycle the preset through the conf's
+  `preset_1=`..`preset_8=` list, wrapping, with a toast and a live chain
+  reload (see the preset-cycling bullet above). Works with the conf panel up
+  or down; the Ctrl part of the chord routes to the cycler, so the panel's
+  plain Left/Right value edits never double-fire on the same press.
 - **Preset browser** (0.4.5) — while the conf panel is up and the cursor
   sits on the preset row, **Left/Right** open it: the `*.slangp` files of
   the **current preset's folder subtree** listed in the panel

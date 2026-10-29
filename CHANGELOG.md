@@ -38,6 +38,74 @@ branch `libslang-vk` of VTSTech/D2LoD-libslang-vk.
   would draw into a box that just died) — `overlay: on/off (Scroll Lock)`
   lands in glide3x.log either way. The OS-side Scroll Lock LED is untouched.
 
+- **PrintScreen screenshot key** (new g3x_shot module + g3x_frame + g3x_slang):
+  press **PrintScreen** in-game (game window focused) to save the current frame
+  as a PNG into `screenshots\` beside the game exe — `D2_YYYYMMDD_HHMMSS.png`
+  (same-second re-shots walk `_1`..`_9` instead of overwriting), with a
+  `saved D2_....png` toast and a
+  `shot: saved screenshots\... (WxH RGB PNG)` line in glide3x.log. The captured
+  frame is the gamma-corrected game raster at NATIVE game resolution, taken at
+  the capture point BEFORE the overlay draws, so a saved PNG never carries the
+  version tag, the conf panel or the toast — the Scroll Lock toggle (0.4.6) and
+  the shot key compose, but no longer have to be used together. Both present
+  paths feed the same seam: the P3 slang path submits its chain-input buffer
+  (the chain renders straight into the acquired GPU swapchain image, which a
+  CPU-side capture cannot reach — a slang-FILTERED capture stays documented
+  future work), and the legacy path makes the identical native-res copy on
+  demand, so the output shape never depends on which path is live. The poll
+  rides the present seam (`g3x_frame_present`, `g3x_shot_poll`) — always-on
+  like the Scroll Lock toggle, and deliberately NOT parked while the overlay is
+  toggled off (clean shots are the point; while the boxes are hidden the toast
+  simply cannot draw and the log line is the only feedback). Foreground-gated
+  and edge-latched like every polled hotkey (a press in another window never
+  queues; a held PrintScreen is one shot, not a machine gun). The encode+write
+  is synchronous by design — the pixels are copied at the capture point, the
+  ~1.4 MB PNG (a hand-rolled, dependency-free encoder: 8-bit truecolor RGB,
+  filter-0 rows, STORED zlib blocks, table CRC-32 + adler-32; host-verified
+  end to end with a chunk/CRC/inflate/pixel-round-trip validator) lands a few
+  ms later on the game thread, at most one frame of hitch per press. Fail-soft:
+  an unwritable file logs `shot: PNG write FAILED ...` and the game rolls on.
+  Conf-gated by the new `screenshots=` key (below).
+
+- **Preset cycling, Ctrl+Left/Right** (g3x_slang): list up to eight presets in
+  `d2slangvk.conf` (`preset_1=` .. `preset_8=`, same relative/absolute path
+  rules as `preset=`, empty slots skipped, order 1..8) and step through them
+  in-game — **Ctrl+Right** forward, **Ctrl+Left** back, both wrapping, each
+  press reloading the chain through the exact machinery a hand edit of
+  `preset=` takes (the overlay's shader line and the conf panel follow on
+  their own), with a `preset <name>.slangp` toast (basename — the 8px font has
+  no room for paths) and the full value in
+  `slang: preset cycle -> ... (session pick; Ctrl+arrow)`. The pick is a
+  SESSION override with a deliberate lifetime rule (the same family as every
+  hotkey here — file wins at load, key wins in flight): it survives D2's
+  constant context re-opens, which a plain session value like the F11/F12
+  picks would not (a context-open reread would snap a cycled preset back on
+  every menu->game transition), but it yields to `preset=` the moment the
+  file's value moves underneath it (a hand edit, a panel-browser pick, a
+  deleted conf). A current preset not in the list starts the walk at
+  `preset_1` (Right) or the last entry (Left) — add `preset=` itself to the
+  list to include it in the rotation. NO chain is required: cycling from a
+  preset-less conf builds the chain on the spot, and a bad preset file fails
+  soft (logged, unfiltered present, next press moves on). With no list the
+  press toasts `no preset_1..8 in conf` once. Key routing: the cycler is
+  polled from the conf-panel poll (the always-on present seam), and the
+  panel's plain Left/Right value edits are gated off while Ctrl is down, so
+  arrows edit the selected option and Ctrl+arrows cycle presets — never both
+  on one press. The cycler parks with every other panel hotkey while the
+  overlay is Scroll-Lock-toggled off or the game window is unfocused.
+
+### Changed
+
+- `d2slangvk.conf` gained two key groups (parsed by the same portable parser,
+  hot-reloaded like everything else): `preset_1=`..`preset_8=` (the cycle
+  list) and `screenshots=` (default `1`; `0` parks the PrintScreen hotkey — a
+  press then logs once, `shot: PrintScreen ignored (screenshots=0 ...)`, and
+  does nothing). The Shift+V conf panel lists both: a `screenshots` row
+  (Left/Right toggles it, like the other toggles) and the `preset` row that
+  now shows the session pick while one is live (the browser stars it too).
+- The overlay box version string is `glide3xvk 0.4.6 (<build>)` (session
+  banner, `grGetString(GR_RENDERER)` and the tag line all report it).
+
 ## [0.4.5] - 2026-10-25
 
 ### Added

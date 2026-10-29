@@ -6,4 +6,5 @@ sites2.tsv
 *.cpp.map
 /build/
 /build-g3x/
+/glide3xvk/build-i686/
 *.bak
