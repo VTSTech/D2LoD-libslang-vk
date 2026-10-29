@@ -13,17 +13,6 @@ no config file the game behaves like retail, and every extra (Alt-key item label
 portable saves, auto gold pickup, persistent globe text, more as they land) ships OFF and
 is enabled in `d2vp.ini` — or in-game on the Vanilla+ Options page.
 
-It is the **whole** game. Up to 1.13 Diablo II shipped as a small `Game.exe` plus a dozen
-DLLs (`D2Client`, `D2Common`, `D2Game`, `D2Win`, `D2gfx`, `Storm`, `Fog`, ...). Patch 1.14
-linked all of them into one `Game.exe`, and that single executable is what is recovered
-here: the client, the game server that single player runs in the same process, map
-generation, the renderers, sound, networking, Battle.net, and Blizzard's Storm and Fog
-libraries. The source tree keeps those module names as its top-level directories.
-
-The code is machine-generated from a reverse-engineered database and then corrected by
-hand where needed. It is not the original source: the names, types and structure are
-reconstructions, and some functions read like a decompiler wrote them, because one did.
-
 ## This fork
 
 This repository is VTSTech's working fork of
