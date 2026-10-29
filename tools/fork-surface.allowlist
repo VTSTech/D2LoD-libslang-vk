@@ -50,7 +50,7 @@
 31	31	D2Client/BNGatewayAccess.cpp
 19	19	D2Client/BNGatewayAccess.h
 117	117	D2Client/ButtonWrapper.h
-560	565	D2Client/ClientModeInGame.cpp
+565	565	D2Client/ClientModeInGame.cpp
 86	86	D2Client/ClientModeInGame.h
 26	26	D2Client/ComCallback.cpp
 15	15	D2Client/ComCallback.h
@@ -609,7 +609,7 @@
 56	56	D2Direct3D/d3dSubtileCache.h
 295	295	D2Direct3D/d3dTextureCache.cpp
 48	48	D2Direct3D/d3dTextureCache.h
-5558	5355	D2Direct3D/Renderer/Direct3D.cpp
+5590	5355	D2Direct3D/Renderer/Direct3D.cpp
 1228	1228	D2Direct3D/Renderer/Direct3D.h
 856	868	D2Game/Ai/AiGeneral.cpp
 77	77	D2Game/Ai/AiGeneral.h
@@ -855,7 +855,7 @@
 137	137	D2Game/UNIT/sunitproxy.h
 1423	1445	D2Gdi/Renderer/Windowed.cpp
 132	132	D2Gdi/Renderer/Windowed.h
-1582	1562	D2gfx/D2GFX.cpp
+1587	1562	D2gfx/D2GFX.cpp
 152	152	D2gfx/D2GFX.h
 136	136	D2gfx/D2GfxHelperStrc.cpp
 22	22	D2gfx/D2GfxHelperStrc.h
