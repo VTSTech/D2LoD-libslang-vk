@@ -146,7 +146,7 @@ static const VPPFeatureRow gaVanillaPlusRows[4] = {
     { "alt_toggle", L"Alt-Show Items" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
-    { "globe_values", L"Globe Hover Values" },
+    { "globe_persistent", L"Persistent Globe Text" },
 };
 static const int VPP_ROW_COUNT = 4;
 static const int VPP_ROW_BACK = 4; // hit-test index of the Previous Menu row

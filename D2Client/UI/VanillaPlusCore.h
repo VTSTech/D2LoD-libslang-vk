@@ -53,12 +53,14 @@ BOOL __stdcall ALTTOGGLE_BuildIniPath(char* szIniPath);
 // the retail walk-to-item mode (strict radius + collision parity).
 BOOL __stdcall AUTO_GOLD_Active();   // config: auto_gold on?
 void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
-// [globe-values] HP/MP orb hover readout (FEATURES.md row 1, D2R parity).
-// With [features] globe_values=1, hovering a bottom-bar orb prints its
-// current/max value on the orb face. Display-only: reads the same stat pair
-// the orb fill renders (8.8 fixed-point stat + its TXT max, shown >> 8);
-// touches no input, no stats, no game state; default off = vanilla.
-void __stdcall VANILLAPLUS_DrawGlobeValues(); // per-frame, DRAW_UI after the orbs
+// [globe-persistent] always-on orb text (FEATURES.md row 1, repurposed
+// post-0.0.4). The 0.0.4 orb-face readout was removed after the first field
+// round - retail already prints the same cur/max above each orb on hover,
+// so ours was a duplicate display. With [features] globe_persistent=1,
+// Panel.cpp's two orb-text draw conditions also fire without hover, so
+// retail's above-orb Life/Mana text shows persistently; 0 = vanilla
+// hover-only. Display-only, no state, no input changes.
+BOOL __stdcall VANILLAPLUS_GlobeTextPersistent(); // per-frame, Panel.cpp draw conditions
 // [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
 // page reads/flips the same [features] keys the gates consume; writes use
 // WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.

@@ -78,12 +78,16 @@ gate "fork-api include in ShowItems.cpp"  D2Client/UI/ShowItems.cpp       'inclu
 gate "fork-api include in Application.cpp" D2Client/Engine/Application.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in D2Client.cpp"   D2Client/D2Client.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
-# ---- globe hover values (FEATURES.md row 1) --------------------------------
-gate "globe values: draw wired in DRAW_UI" D2Client/UI/Draw.cpp            'VANILLAPLUS_DrawGlobeValues\(\);' 1
-gate "globe values: helper defined"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VANILLAPLUS_DrawGlobeValues' 1
-gate "ini template: globe_values key"      D2Client/UI/VanillaPlusCore.cpp 'globe_values=0'                1
-gate "globe values: decl + cache busted on write" D2Client/UI/VanillaPlusCore.cpp 'dwGlobeValuesLastCheck = 0'   2
-gate "options page: globe row present"     D2Client/UI/VanillaPlusOptions.cpp '"globe_values"'             1
+# ---- persistent orb text (FEATURES.md row 1, repurposed post-0.0.4) --------
+# The 0.0.4 orb-face readout was removed after the field round - retail
+# already prints cur/max above each orb on hover. The row now pins retail's
+# own above-orb text on instead (a stale globe_values ini line is inert).
+gate "persistent: gate fn defined"         D2Client/UI/VanillaPlusCore.cpp '__stdcall VANILLAPLUS_GlobeTextPersistent' 1
+gate "ini template: globe_persistent key"  D2Client/UI/VanillaPlusCore.cpp 'globe_persistent=0'                1
+gate "persistent: decl + cache busted on write" D2Client/UI/VanillaPlusCore.cpp 'dwGlobeTextPersistentLastCheck = 0' 2
+gate "persistent wired in Panel.cpp (hp+mp)" D2Client/UI/Panel.cpp          'VANILLAPLUS_GlobeTextPersistent\(\)' 2
+gate "fork-api include in Panel.cpp"       D2Client/UI/Panel.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "options page: persistent row present" D2Client/UI/VanillaPlusOptions.cpp '"globe_persistent"'          1
 
 # ---- D2Client.cpp must stay hollow ----------------------------------------
 gate "hooks marked in D2Client.cpp"       D2Client/D2Client.cpp           'VP-BEGIN \[alt-toggle\]'    2

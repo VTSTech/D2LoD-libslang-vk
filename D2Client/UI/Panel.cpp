@@ -17,6 +17,7 @@
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Text.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus globe_persistent gate
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT.h"
@@ -1269,7 +1270,7 @@ void __stdcall PANEL_DrawPanelLayout() {
       pwszBuf += 2;
     }
 
-    if (bShowHpText || nMouseX - 0x1eU < 0x51 && ScreenSizeY - 0x4b <= nMouseY && nMouseY <= ScreenSizeY - 0xf) {
+    if (bShowHpText || VANILLAPLUS_GlobeTextPersistent() || nMouseX - 0x1eU < 0x51 && ScreenSizeY - 0x4b <= nMouseY && nMouseY <= ScreenSizeY - 0xf) { // VP: globe_persistent - retail orb text pinned on, 0 = vanilla
       D2UnitStrc* pPlayerUnit_lcl;
       nTextWidth = PANEL_GetSmoothedStatValue(UNITSTAT_hitpoints);
       nStatValue = nTextWidth >> 8;
@@ -1288,7 +1289,7 @@ void __stdcall PANEL_DrawPanelLayout() {
       nMouseY = nMouseYSaved;
       nMouseX = nMouseXSaved;
     }
-    if (!(bShowmpText || ScreenSizeX - 0x6f <= nMouseX && nMouseX <= ScreenSizeX - 0x1f && ScreenSizeY - 0x4b <= nMouseY && nMouseY <= ScreenSizeY - 0xf)) {
+    if (!(bShowmpText || VANILLAPLUS_GlobeTextPersistent() || ScreenSizeX - 0x6f <= nMouseX && nMouseX <= ScreenSizeX - 0x1f && ScreenSizeY - 0x4b <= nMouseY && nMouseY <= ScreenSizeY - 0xf)) { // VP: globe_persistent - retail orb text pinned on, 0 = vanilla
       return;
     }
 

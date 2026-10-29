@@ -126,14 +126,15 @@ each can be fixed, replaced and released independently.
   Vanilla+ Options page ("Auto Gold Pickup"). **Default OFF**: set
   `[features] auto_gold=1` in `d2vp.ini` (hot-re-read at most every 2 s; missing
   file/section/key/garbage value = vanilla).
-- **Globe Hover Values** (D2R orb-hover parity) — hover the life or mana orb and
-  its current/max value prints on the orb face (e.g. `412/498`), white, centered.
-  Reads the exact stat pair the orb fill itself renders (the 8.8 fixed-point
-  current stat and its TXT max, shown at display scale), so the numbers always
-  agree with the liquid level you see — including mid-potion-regen frames. Pure
-  readout: nothing is written, no input changes, no state changes. Managed from
-  the Vanilla+ Options page ("Globe Hover Values"). **Default OFF**: set
-  `[features] globe_values=1` in `d2vp.ini` (hot-re-read at most every 2 s;
+- **Persistent Globe Text** — retail prints the Life/Mana values above the orbs
+  when you hover them; with the gate on, that text is pinned on, no hover needed
+  (the 0.0.4 orb-face readout was removed — retail already shows the same values
+  above the orbs on hover, so ours was a duplicate display, and a stale
+  `globe_values=1` line left in an existing `d2vp.ini` is inert). Pure display:
+  nothing is written, no input changes, no state changes, and retail's own
+  "Show HP/MP Text" video-option toggle keeps working unchanged. Managed from
+  the Vanilla+ Options page ("Persistent Globe Text"). **Default OFF**: set
+  `[features] globe_persistent=1` in `d2vp.ini` (hot-re-read at most every 2 s;
   missing file/section/key/garbage value = vanilla).
 
 ## Build

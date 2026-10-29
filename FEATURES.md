@@ -32,7 +32,7 @@ Every slate row must satisfy all of these before it ships:
 |---|---|---|---|---|---|---|
 | 0a | Z-key camera zoom | Controls | D2R launch feature (Z / wheel) | M | Med | `camera_zoom` |
 | 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | `shift_compare` |
-| 1 | HP/MP globe hover values | HUD | D2R globe hover shows current/max | S | Low | **Implemented** (2026-10-29: ledger row 35; patches 0013+0014, field-verified; options page row 4) |
+| 1 | Persistent globe text (was: hover values) | HUD | D2R globe hover shows current/max | S | Low | **Repurposed 2026-10-30** — orb-face readout removed (retail already prints cur/max above each orb on hover); `globe_persistent` now pins that text on (ledger row 40; options page row 4) |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
 | 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | `ilvl_tooltip` |
 | 4 | Transparent bottom bar | HUD | None — owner suggestion; see-through-HUD staple elsewhere | S–M | Low–Med | `transparent_hud` |
@@ -44,15 +44,23 @@ Every slate row must satisfy all of these before it ships:
 | 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
-the slate's head, not new scope. Rows 1–9 were the new candidates; rows 1 and 6 shipped for 0.0.4 (see the Gate key column).
+the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipped for 0.0.4, and row 1 shipped as the orb-face readout and was repurposed post-release (see §1).
 
 ---
 
-### 1. HP/MP globe hover values — `[features] globe_values`
+### 1. Persistent globe text (was: HP/MP globe hover values) — `[features] globe_persistent`
 
-- **SHIPPED 2026-10-29 for 0.0.4**: handoff ledger row 35 — patches 0013 (implementation)
-  + 0014 (cursor-namespace build fix), field-verified by the owner. The scoping below is
-  kept verbatim as the row's record; the as-built notes live in handoff Rev 22.
+- **REPURPOSED 2026-10-30 (post-0.0.4 field round, ledger row 40)**: the orb-face
+  readout (patches 0013+0014, shipped 2026-10-29, field-verified) duplicated what
+  retail already does — PANEL_DrawPanelLayout prints the same cur/max ABOVE each orb
+  on hover (locale 0x1045/0x1046, baseline ScreenSizeY-0x5f), and retail even ships
+  its own always-on toggle ("Show HP/MP Text", the bShowHpText/bShowmpText registry
+  keys). The orb-face draw, its decl, the DRAW_UI call and the old ini key are
+  removed; the row is now `[features] globe_persistent` ("Persistent Globe Text"):
+  the gate is ||'d into Panel.cpp's two draw conditions so retail's above-orb text
+  shows without hovering. `0` = vanilla hover-only; retail's own toggle still works;
+  a stale `globe_values=1` ini line is inert. The as-built notes live in handoff
+  Rev 22 / Rev 26.
 - **D2R behavior**: hovering the life/mana globes shows numeric current/max values.
 - **Proposed**: while the cursor is over either bulb, draw `cur / max` text beside it,
   using the same tooltip/text primitives the alt-toggle label path already uses
@@ -265,7 +273,7 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; rows 1 and 
 - **Behavior (owner suggestion, 2026-10-29)**: a "Vanilla+ Options" row on the Esc
   Options page (directly above "Previous Menu") opening a ControlConfig-style text
   screen with one toggle row per shipped `[features]` key (`alt_toggle`,
-  `auto_gold`, `portable_save`, `globe_values`; grows as slate rows land). Click = flip + write
+  `auto_gold`, `portable_save`, `globe_persistent`; grows as slate rows land). Click = flip + write
   `d2vp.ini` (`WritePrivateProfileStringA`, first ini writer in tree) + flush the
   2 s gate caches, so changes apply same-frame instead of on the next ini edit.
 - **Tree-verify complete (2026-10-29, draft anchor map)**: the Esc-menu loader

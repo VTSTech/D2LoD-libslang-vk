@@ -2150,11 +2150,6 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     }
 
     Panel::DRAW_UI_BordersAndOrbsAndFillers();
-    // VP-BEGIN [globe-values]: current/max readout on orb hover. Runs right
-    // after the orb draw so the text lands on top of the fresh pixels;
-    // inert (no read, no draw) unless [features] globe_values=1 in d2vp.ini.
-    VANILLAPLUS_DrawGlobeValues();
-    // VP-END [globe-values]
     if (GFX_bShowUIFlag.QuickSkill) {
       SpellSel::SPELLSEL_RenderAllSkillGrids();
     }

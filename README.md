@@ -10,7 +10,7 @@ bundled with a Vulkan render wrapper (`glide3x.dll`). The base is
 taken apart function by function and turned back into C++ that builds — plus this fork's
 growing set of crash fixes and opt-in quality-of-life features. Vanilla comes first: with
 no config file the game behaves like retail, and every extra (Alt-key item labels,
-portable saves, auto gold pickup, globe hover values, more as they land) ships OFF and
+portable saves, auto gold pickup, persistent globe text, more as they land) ships OFF and
 is enabled in `d2vp.ini` — or in-game on the Vanilla+ Options page.
 
 It is the **whole** game. Up to 1.13 Diablo II shipped as a small `Game.exe` plus a dozen
@@ -59,11 +59,12 @@ The wrapper line tags its own releases separately.
 - Opt-in features so far: Alt-key item-label toggle, portable saves (single-player
   saves pinned to the game folder), auto gold pickup (walk over gold piles to collect
   them, D2R "Gold Pickup" style — never moves your character, never fires in combat),
-  globe hover values (current/max printed on the life/mana orb face, D2R-style), and
-  the **Vanilla+ Options** page (Esc → Options → "Vanilla+ Options") that flips any of
-  them in-game — click a row and it writes `d2vp.ini` and applies same-frame. All ship
-  OFF — with no config file the game behaves like retail; the documented `d2vp.ini`
-  template self-creates on first start.
+  persistent globe text (keeps the Life/Mana readout above the orbs visible without
+  hovering — retail already prints it on hover), and the **Vanilla+ Options** page
+  (Esc → Options → "Vanilla+ Options") that flips any of them in-game — click a row
+  and it writes `d2vp.ini` and applies same-frame. All ship OFF — with no config file
+  the game behaves like retail; the documented `d2vp.ini` template self-creates on
+  first start.
 - It is not finished. Some areas and features still crash. A crash writes a symbolised
   report to `d2crash-<date>-<time>.txt` next to the executable; see
   [Known issues](#known-issues).

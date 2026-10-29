@@ -210,11 +210,10 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";       gold never sits on the cursor\r\n"
         "auto_gold=0\r\n"
         "\r\n"
-        "; Globe hover values:\r\n"
-        ";   0 = off                                     (vanilla behavior)\r\n"
-        ";   1 = hover the life/mana orbs to see their current/max values\r\n"
-        ";       printed on the orb face (D2R globe hover parity)\r\n"
-        "globe_values=0\r\n";
+        "; Persistent globe text:\r\n"
+        ";   0 = the Life/Mana text above the orbs shows on hover only (vanilla)\r\n"
+        ";   1 = keep the Life/Mana text above the orbs always visible\r\n"
+        "globe_persistent=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -431,83 +430,27 @@ void __stdcall AUTO_GOLD_Tick() {
     }
 }
 
-// ===== [globe-values] HP/MP orb hover readout (FEATURES.md row 1) ==========
-// D2R's globe hover ("current/max on hover") backported to the retail bottom
-// bar. Display-only: reads the exact stat pair the orb fill renders (the
-// 8.8 fixed-point stat and its TXT max, both shown >> 8 - SCmd.cpp's
-// `<< 8` stores are the scale precedent) and prints "cur/max" on the orb
-// face while the cursor is over it. No writes, no input changes, and the
-// gate defaults to off, so an untouched install stays byte-for-byte vanilla.
-// Anchors: Panel.cpp PANEL_DrawHealthOrb / PANEL_DrawManaOrb - life fill and
-// overlay at x 0x1c..0x6c with orb bottom ScreenSizeY-5, mana at
-// ScreenSizeX-0x6f.. with orb bottom ScreenSizeY-9, fill height 0x50; called
-// from DRAW_UI right after Panel::DRAW_UI_BordersAndOrbsAndFillers so the
-// text lands on top of the freshly drawn orbs.
-static int gbGlobeValuesMode = 0;
-static DWORD dwGlobeValuesLastCheck = 0;
+// ===== [globe-persistent] always-on orb text (FEATURES.md row 1) ============
+// History: the 0.0.4 orb-face readout (patches 0013+0014) was removed after
+// the first field round - retail's own PANEL_DrawPanelLayout already prints
+// the same cur/max ABOVE each orb on hover (locale 0x1045/0x1046, baseline
+// ScreenSizeY-0x5f, fed by its own "Show HP/MP Text" registry toggle), so
+// the orb-face copy was a duplicate display. The slate row is repurposed:
+// with globe_persistent=1, Panel.cpp's two orb-text draw conditions also
+// fire without hover, pinning retail's above-orb Life/Mana text on (the
+// consumer reads this gate directly; there is no draw code in this TU and
+// nothing reads the retired 0.0.4 key a stale d2vp.ini may still carry).
+static int gbGlobeTextPersistentMode = 0;
+static DWORD dwGlobeTextPersistentLastCheck = 0;
 
-void __stdcall VANILLAPLUS_DrawGlobeValues() {
+BOOL __stdcall VANILLAPLUS_GlobeTextPersistent() {
     // 2 s hot-read cache (the shared gate pattern; this runs per frame).
     DWORD dwNow = GetTickCount();
-    if (dwNow - dwGlobeValuesLastCheck >= 2000) {
-        dwGlobeValuesLastCheck = dwNow;
-        gbGlobeValuesMode = D2VP_GetFeatureToggle("globe_values");
+    if (dwNow - dwGlobeTextPersistentLastCheck >= 2000) {
+        dwGlobeTextPersistentLastCheck = dwNow;
+        gbGlobeTextPersistentMode = D2VP_GetFeatureToggle("globe_persistent");
     }
-    if (!gbGlobeValuesMode) {
-        return;
-    }
-    D2UnitStrc* pUnit = D2Client::UNIT::Player::GetPlayerUnit_UI();
-    if (!pUnit) {
-        return;   // not in a game: nothing to read, nothing to draw
-    }
-
-    const int nMouseX = D2Client::UI::ui::GetMouseX();
-    const int nMouseY = D2Client::UI::ui::GetMouseY();
-    // One shared vertical band for both orbs (top of the taller orb to its
-    // bottom edge), then the per-orb horizontal span with +-4 px slack.
-    if (nMouseY < ScreenSizeY - 0x59 || nMouseY >= ScreenSizeY - 0x5) {
-        return;
-    }
-
-    int nCur = 0;
-    int nMax = 0;
-    int nCenterX = 0;
-    if (nMouseX >= 0x18 && nMouseX < 0x70) {
-        // Life orb: same read pair the fill uses (Panel.cpp lines 452-453).
-        nCur = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
-        nMax = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-        nCenterX = 0x1c + 0x28;              // overlay x + fill width / 2
-    } else if (nMouseX >= ScreenSizeX - 0x74 && nMouseX < ScreenSizeX - 0x24) {
-        // Mana orb (Panel.cpp lines 515-516).
-        nCur = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
-        nMax = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
-        nCenterX = ScreenSizeX - 0x6e + 0x28;
-    } else {
-        return;   // cursor elsewhere on the bottom bar
-    }
-    if (nMax <= 0) {
-        return;   // mirror the orb fills' own zero-max guard
-    }
-    nCur >>= 8;   // 8.8 fixed point -> display scale
-    nMax >>= 8;
-    if (nCur < 0) {
-        nCur = 0;
-    }
-    if (nCur > nMax) {
-        nCur = nMax;
-    }
-
-    wchar_t wszValue[16];
-    swprintf(wszValue, 16, L"%d/%d", nCur, nMax);
-
-    // FontInGameChat (the options page's font): small, always loaded, and
-    // proven in this fork. White (0), baseline near the orb's middle - the
-    // same DRAW_text0 width probe + DRAW_text pair the row label uses.
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
-    int nTextWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)wszValue);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszValue, nCenterX - nTextWidth / 2,
-                                     ScreenSizeY - 0x2d, 0, 0);
-    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
+    return gbGlobeTextPersistentMode;
 }
 
 // ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ===========
@@ -550,7 +493,7 @@ void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue) {
 void __stdcall D2VP_ConfigReloaded() {
     dwAltToggleLastCheck = 0;     // next ALTTOGGLE_Active() re-reads alt_toggle
     dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
-    dwGlobeValuesLastCheck = 0;   // next VANILLAPLUS_DrawGlobeValues() re-reads globe_values
+    dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }
 
