@@ -657,7 +657,7 @@ void __stdcall SetupMiniPanel() {
       nResolution = 1;
     }
 
-    DWORD nScreenMode_lcl = 2;
+    DWORD nScreenMode_lcl = 4; //VP 720p test
     if (!nResolution) {
       nScreenMode_lcl = 0;
     }
