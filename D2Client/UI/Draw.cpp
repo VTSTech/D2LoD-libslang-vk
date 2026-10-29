@@ -2063,13 +2063,21 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
 
     DWORD dwResolutionMode;
     dwResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
-    if (dwResolutionMode == 2) {
-      gnPanelOffsetX = 80;
+    // VP-BEGIN [resolution site-5]: wide modes (3/4) reuse the retail
+    // 800x600 panel layout, re-centered on the playfield. gnPanelOffsetX/Y
+    // anchor every 800-class panel expression ("gnPanelOffsetX + const" /
+    // "ScreenSizeX - gnPanelOffsetX - const"), so bumping gnPanelOffsetX by
+    // the centering offset moves the whole panel set as one rigid unit.
+    // At retail 800x600 VPRES_GetWideUiOffsetX() is 0 and this matches the
+    // vanilla (80, -60) byte-for-byte; 640x480 keeps (0, 0).
+    if (VPRES_IsWideLayoutMode(dwResolutionMode)) {
+      gnPanelOffsetX = 80 + VPRES_GetWideUiOffsetX();
       gnPanelOffsetY = -60;
     } else {
       gnPanelOffsetX = 0;
       gnPanelOffsetY = 0;
     }
+    // VP-END [resolution site-5]
 
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
     /* Render ingame ESC menu */ gU16ImmunityStringBuffer1[0] = 0;

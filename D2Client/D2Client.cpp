@@ -2356,7 +2356,8 @@ uint32_t __stdcall DRAW_ShouldDrawEdges(int32_t nParam) {
     }
 
     DWORD dwResMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
-    if (dwResMode != 2) {
+    // VP: [resolution site-5] wide modes draw level edges like 800x600
+    if (!VPRES_IsWideLayoutMode(dwResMode)) {
       return 0;
     }
 

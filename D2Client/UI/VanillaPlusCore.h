@@ -39,6 +39,23 @@ BOOL __stdcall VPRES_BuildBlankPlaceholder(struct DC6** ppOut);
 // and caches the result per process for the given target pointer (the
 // retail label DC6 lives from ESCMENU_Initialize to shutdown).
 int __stdcall VPRES_PickFontMatchingDC6(struct DC6* pTargetDC6);
+// [resolution site-5] TRUE when eResolutionMode renders the retail 800x600
+// UI class (the "800*" art set + nScreenMode=1 D2Common layout tables +
+// count-based stat/skill button input): mode 2 (retail 800x600), mode 3
+// (dormant 1344x700, same class) and mode 4 (Vanilla Plus 1280x720). Every
+// retail D2GFX_GetResolutionMode() consumer that tests == 2 / != 2 to pick
+// the 800-vs-640 layout routes through here, so a future wide mode is
+// added in exactly one place.
+BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode);
+// [resolution site-5] Horizontal offset that centers the exactly-800-px-wide
+// retail UI class on the current playfield: (ScreenSizeX - 800) / 2, clamped
+// to 0 on narrower widths. 0 at modes 0/1/2 (retail math stays
+// byte-identical), 240 at mode 4 (1280x720), 272 at mode 3 (1344x700).
+// Add it to left-anchored X coordinates and subtract it from
+// ScreenSizeX-relative right anchors. Screen-center-anchored widgets and
+// everything hanging off gnPanelOffsetX/gnPanelOffsetY (set once per frame
+// in DRAW_UI) needs no per-site change.
+int __stdcall VPRES_GetWideUiOffsetX();
 
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:

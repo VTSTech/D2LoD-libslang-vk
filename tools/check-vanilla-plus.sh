@@ -144,6 +144,37 @@ gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
+# ---- resolution site-5: wide-layout classification + centered 800-px UI ----
+# Wide modes (3=1344x700 dormant, 4=1280x720) join the retail 800x600 UI
+# class via VPRES_IsWideLayoutMode and re-center the exactly-800-px-wide UI
+# with VPRES_GetWideUiOffsetX() = (ScreenSizeX-800)/2. The offset is 0 at
+# modes 0/1/2, so retail behavior stays byte-identical.
+gate "site-5: classifier defined"          D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_IsWideLayoutMode' 1
+gate "site-5: centering offset defined"    D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetX' 1
+gate "site-5: DRAW_UI gnPanelOffset block" D2Client/UI/Draw.cpp            'VP-BEGIN \[resolution site-5\]' 1
+gate "site-5: panel offset ride"           D2Client/UI/Draw.cpp            '80 \+ VPRES_GetWideUiOffsetX' 1
+gate "site-5: bar branch + borders gate"   D2Client/UI/Panel.cpp           'VPRES_IsWideLayoutMode' 2
+gate "site-5: bar/orb/belt X shifts"       D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetX' 37
+gate "site-5: ui.cpp 800-class gates"      D2Client/UI/ui.cpp              'VPRES_IsWideLayoutMode' 20
+gate "site-5: help art + text shifts"      D2Client/UI/Help.cpp            'VPRES_GetWideUiOffsetX' 75
+gate "site-5: questlog 800-class gates"    D2Client/UI/QuestLog.cpp        'VPRES_IsWideLayoutMode' 6
+gate "site-5: inventory table shifts"      D2Client/UI/Inv.cpp             'VP_SHIFT_Inv' 43
+gate "site-5: inv drop-click gate"         D2Client/UI/Inv.cpp             'VPRES_IsWideLayoutMode' 1
+gate "site-5: inv coord cache key"         D2Client/UI/Inv.cpp             'nCoordPageKey' 3
+gate "site-5: spell grid shifts"           D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 4
+gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
+gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
+gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
+gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
+gate "site-5: fork-api include in ui.cpp"  D2Client/UI/ui.cpp              'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in Help.cpp" D2Client/UI/Help.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in QuestLog.cpp" D2Client/UI/QuestLog.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in Inv.cpp" D2Client/UI/Inv.cpp             'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in SpellSel.cpp" D2Client/UI/SpellSel.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in View.cpp" D2Client/GAME/View.cpp         'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in GAME Draw.cpp" D2Client/GAME/Draw.cpp    'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in ListBox" D2Client/UI/ListBox/ListBoxImplementation.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

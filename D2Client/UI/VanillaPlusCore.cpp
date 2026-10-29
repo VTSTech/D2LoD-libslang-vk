@@ -772,3 +772,35 @@ void __stdcall VANILLAPLUS_SelfCheck() {
         exit(-1);
     }
 }
+// ---------------------------------------------------------------------------
+// [resolution site-5] Wide-layout classification + 800-UI centering offset.
+//
+// Retail D2 UI code classifies layouts by D2GFX_GetResolutionMode(): the
+// 640x480 class (mode 0) vs the 800x600 class (mode 2). Every gate that
+// picks art ("Panel\\800CtrlPnl7" vs "Panel\\CtrlPnl7"), input handling
+// (count-based vs geometric stat/skill button tests) or layout tables
+// (nScreenMode 0/1 variants from D2Common) tests == 2 / != 2. The Vanilla
+// Plus wide modes reuse the 800x600 art and tables (mode 4 sets
+// nScreenMode = 1 in CLIENT_SetScreenResolution), so they must join the
+// 800 class everywhere; this classifier is the single place that defines
+// "renders like retail 800x600".
+//
+// The 800-class UI is exactly 800 px wide (interface bar pieces span
+// 0..800, side panels and border frames tile 0..800), so on wider
+// playfields it is re-centered as one rigid unit: every X anchor that is
+// not already screen-center- or ScreenSizeX-relative gets
+// VPRES_GetWideUiOffsetX() (= (ScreenSizeX - 800) / 2) added. The offset
+// is 0 at 800x600 and clamped to 0 at 640x480, so retail modes keep
+// byte-identical behavior; only modes 3 (1344x700) and 4 (1280x720) see a
+// non-zero shift (240 px at 1280x720).
+// ---------------------------------------------------------------------------
+BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode) {
+    // 2 = retail 800x600; 3 = dormant 1344x700 (same 800-class UI, already
+    // in the D2GFX mode table); 4 = Vanilla Plus 1280x720.
+    return eResolutionMode == 2 || eResolutionMode == 3 || eResolutionMode == 4;
+}
+
+int __stdcall VPRES_GetWideUiOffsetX() {
+    int nOffsetX = (ScreenSizeX - 800) / 2;
+    return 0 < nOffsetX ? nOffsetX : 0;
+}
