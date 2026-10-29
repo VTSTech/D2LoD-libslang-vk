@@ -68,7 +68,7 @@ namespace D2Game::Quests::QUESTS::A2Q2 {
 // all players. Uses the internal D2QuestDataStrc state machine, NOT QuestRecord bits.
 void __fastcall Q09_AICallback_GreaterMummy(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RadamentsLair);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && (pQuestData->nStateFlag < 3 || pQuestData->nStateFlagPrev < 2))) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction == '\x01' && (pQuestData->nStateFlag < 3 || pQuestData->nStateFlagPrev < 2))) {
       return;
     }
 
@@ -103,7 +103,7 @@ void __fastcall Q09_AICallback_GreaterMummy(::SGAMEDATA * pGame, D2UnitStrc * pU
 // Gate used so The Horadric Staff dialog/flow only proceeds once Radament is dealt with.
 bool __fastcall Q10_IsRadamentCompleted(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RadamentsLair);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return true;
     }
 
@@ -904,7 +904,7 @@ void __fastcall Q10_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (!pSevenTombsQuestData) {
       return;
     }
-    if (!pSevenTombsQuestData->bIsNotIntroduction) {
+    if (pSevenTombsQuestData->bIsNotIntroduction == '\0') {
       return;
     }
     if (pSevenTombsQuestData->pQuestSpecificData.pA2Q6->bPortalCreated) {
@@ -968,7 +968,7 @@ void __fastcall Q10_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     }
 
     D2QuestDataStrc* pSevenTombsQuest = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSevenTombs);
-    if (!(pSevenTombsQuest && pSevenTombsQuest->bIsNotIntroduction && pSevenTombsQuest->pQuestSpecificData.pA2Q6->bStaffInserted != 1)) {
+    if (!(pSevenTombsQuest && pSevenTombsQuest->bIsNotIntroduction != '\0' && pSevenTombsQuest->pQuestSpecificData.pA2Q6->bStaffInserted != 1)) {
       return;
     }
 
@@ -1022,7 +1022,7 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
     }
 
     pOtherQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSevenTombs);
-    if (pOtherQuestData && pOtherQuestData->bIsNotIntroduction) {
+    if (pOtherQuestData && pOtherQuestData->bIsNotIntroduction != '\0') {
       D2QuestDataA2Q6Strc* pA4Q1Data;
       pA4Q1Data = pOtherQuestData->pQuestSpecificData.pA2Q6;
       if (pA4Q1Data->bStaffInserted != 1) {
@@ -1058,7 +1058,7 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
 void __fastcall Q10_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->pNpcMessages = A2Q2::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     D2QuestDataA2Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q2.cpp", 0x3ed);
     pQuestData->pQuestSpecificData.pA2Q2 = pQuestSpecificData;
     pQuestData->nQuestIdReal = QUEST_TheHoradricStaff;

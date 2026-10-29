@@ -104,8 +104,6 @@
 
 namespace D2Client::UI::Draw {
 
-static bool gbAutomapPanelOpened = 0; D2_STATIC_GUARD(gbAutomapPanelOpened, "D2Client::UI::Draw::gbAutomapPanelOpened");
-
 void __stdcall PALETTE_LoadLoadingScreenPalette() {
     char acStack_20c[260];
     char szPalPl2Path[260];
@@ -187,12 +185,8 @@ int32_t __stdcall DRAW_GetBottomPanelY() {
 }
 
 void __stdcall DRAW_RegisterDrawHandlers() {
-    int32_t nCount = 0xd;
-    HWND pHwnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 5, nCount);
-    nCount = 1;
-    pHwnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawPanelInit, nCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gaUIFlagInitTable + 5, 0xd);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &gUIFlagDrawPanelInit, 1);
 }
 
 void __stdcall DRAW_RefreshNpcDialog() {
@@ -501,14 +495,19 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
 
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nX, nY, 0, &__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
       nResult = Path::DRAW_GetTypeOfBorder();
-      if (nResult != 1) {
-        if (nResult == 2) {
-          nClassId = ScreenSizeX / 4;
-          __frame0.nScreenX += nClassId;
-        }
-      } else {
-        nClassId = -(ScreenSizeX / 4);
-        __frame0.nScreenX += nClassId;
+      switch (nResult) {
+        case 1:
+          {
+            nClassId = -(ScreenSizeX / 4);
+            __frame0.nScreenX += nClassId;
+            break;
+          }
+        case 2:
+          {
+            nClassId = ScreenSizeX / 4;
+            __frame0.nScreenX += nClassId;
+            break;
+          }
       }
 
       gnMercenaryHealthBarScreenY = (int)__frame0.pLevelTxtResult->MonLvl;
@@ -713,7 +712,7 @@ void __stdcall DRAW_Overlay_EnteringAreaX() {
     static int gnQuestAreaIntroCount = 0x2; D2_STATIC_GUARD(gnQuestAreaIntroCount, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnQuestAreaIntroCount");
     static uint32_t gnAreaNameCurrentLevelId; D2_STATIC_GUARD_BSS(gnAreaNameCurrentLevelId, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameCurrentLevelId");
     static D2ClientTimerStrc gnAreaNameOverlay = D2ClientTimerStrc(); D2_STATIC_GUARD(gnAreaNameOverlay, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameOverlay");
-    static bool gbAreaNameOverlayInitialized; D2_STATIC_GUARD_BSS(gbAreaNameOverlayInitialized, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gbAreaNameOverlayInitialized");
+    static unsigned int gbAreaNameOverlayInitialized; D2_STATIC_GUARD_BSS(gbAreaNameOverlayInitialized, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gbAreaNameOverlayInitialized");
 
     eD2LevelId eRoomLevel;
     uint32_t uResult;
@@ -1762,9 +1761,7 @@ void __stdcall UI_ToggleMiniPanel() {
         return;
       }
     } else if (!GFX_bShowUIFlag.MiniPanel) {
-      nLine = 2;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nLine);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitDrawUnknown, 2);
     }
 
     ui::GetMouseX();
@@ -1964,8 +1961,6 @@ void __stdcall InitializeUI() {
 }
 
 void __stdcall FreeDraw() {
-    HWND pHwnd;
-    int32_t nLine;
     BOOL bWasGameUiOpen = GFX_bShowUIFlag.Game;
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (bIsExpansion) {
@@ -1979,9 +1974,7 @@ void __stdcall FreeDraw() {
     UNIT::Player::GetPlayerUnit_UI();
     GFX_bShowUIFlag.Game = 0;
     if (bWasGameUiOpen) {
-      nLine = 4;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nLine);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitDrawMouseDown, 4);
     }
 
     ui::GetMouseX();

@@ -315,21 +315,29 @@ void __stdcall PARTICLE_UpdatePosition(D2UnitStrc * pUnit) {
         } else {
           eUnitType = pUnit->eUnitType;
         }
-        if (eUnitType == UNIT_MONSTER) {
-          bySpriteLayer = '\x0e';
-        } else if (eUnitType == UNIT_MISSILE) {
-          if (pOwner->eUnitType != UNIT_MONSTER) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
-            exit(-1);
-          }
-          if (pOwner->eAnimMode.ePlayerMode == Death) {
-            return;
-          }
-          if (pOwner->eAnimMode.ePlayerMode == Kick) {
-            return;
-          }
 
-          bySpriteLayer = '\x0e';
+        switch (eUnitType) {
+          case UNIT_MONSTER:
+            {
+              bySpriteLayer = '\x0e';
+              break;
+            }
+          case UNIT_MISSILE:
+            {
+              if (pOwner->eUnitType != UNIT_MONSTER) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1a9);
+                exit(-1);
+              }
+              if (pOwner->eAnimMode.ePlayerMode == Death) {
+                return;
+              }
+              if (pOwner->eAnimMode.ePlayerMode == Kick) {
+                return;
+              }
+
+              bySpriteLayer = '\x0e';
+              break;
+            }
         }
 
         Gfx::GFX_GetUnitSpriteOffset(pOwner, bySpriteLayer, &nSpriteOffsetX, &nSpriteOffsetY);

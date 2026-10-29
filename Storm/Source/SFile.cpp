@@ -4,8 +4,6 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Sound/Sound.h"
 #include "D2Sound/Src/D2SoundSmp.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/Debug.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
@@ -1366,19 +1364,29 @@ DWORD __stdcall SFileSetFilePointer(D2MPQFileStrc * pMPQFile, int32_t nParam, in
       seek_absolute:
       pnParam[0x48] = nParam;
     } else {
-      if (dwParam != 1) {
-        if (dwParam != 2) {
-          goto finish_seek;
-        }
-        if (-1 < nParam || *(uint32_t*)(pnParam[0x46] + 8) >= (uint32_t)-nParam) {
-          nParam = *(int*)(pnParam[0x46] + 8) + nParam;
-          goto seek_absolute;
-        }
-      } else {
-        if (-1 < nParam || (uint32_t)pnParam[0x48] >= (uint32_t)-nParam) {
-          pnParam[0x48] += nParam;
-          goto finish_seek;
-        }
+      switch (dwParam) {
+        case 1:
+          {
+            if (-1 < nParam || (uint32_t)pnParam[0x48] >= (uint32_t)-nParam) {
+              pnParam[0x48] += nParam;
+              goto finish_seek;
+            }
+
+            break;
+          }
+        default:
+          {
+            goto finish_seek;
+          }
+        case 2:
+          {
+            if (-1 < nParam || *(uint32_t*)(pnParam[0x46] + 8) >= (uint32_t)-nParam) {
+              nParam = *(int*)(pnParam[0x46] + 8) + nParam;
+              goto seek_absolute;
+            }
+
+            break;
+          }
       }
 
       pnParam[0x48] = 0;
@@ -2103,30 +2111,37 @@ void __fastcall TSList_FILEREC_LinkNode(int * * pNode, int32_t nInsertMode, int 
     if (!ppListHead) {
       ppListHead = ppListContainer + 1;
     }
-    if (nInsertMode != 1) {
-      pEntry = *ppListHead;
-      *ppSlot = pEntry;
-      ppSlot[1] = (int*)pEntry[1];
-      pEntry[1] = (int)pNode;
-      *ppListHead = (int*)ppSlot;
-      return;
-    }
 
-    *ppSlot = (int*)ppListHead;
-    ppSlot[1] = ppListHead[1];
-    pEntry = *ppListContainer;
-    pLink = ppListHead[1];
-    if ((int)pLink < 0) {
-      *(int***)~(uint32_t)pLink = (int**)ppSlot;
-      ppListHead[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pEntry < 0) {
-      pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *ppSlot = (int*)ppListHead;
+          ppSlot[1] = ppListHead[1];
+          pEntry = *ppListContainer;
+          pLink = ppListHead[1];
+          if ((int)pLink < 0) {
+            *(int***)~(uint32_t)pLink = (int**)ppSlot;
+            ppListHead[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pEntry < 0) {
+            pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
+          }
 
-    *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
-    ppListHead[1] = (int*)pNode;
+          *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
+          ppListHead[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pEntry = *ppListHead;
+          *ppSlot = pEntry;
+          ppSlot[1] = (int*)pEntry[1];
+          pEntry[1] = (int)pNode;
+          *ppListHead = (int*)ppSlot;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink) {
@@ -2148,6 +2163,7 @@ int __fastcall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink) {
 }
 
 void __fastcall SFILE_InsertFileRecordIntoList2(int * * pNode, int32_t nInsertMode, int * * ppListHead, D2StormListHead * ppListContainer) {
+    int nLinkOffset;
     uint32_t uPrevLinkRaw;
     StormLinkStrc* ppSlot = (StormLinkStrc*)pNode;
     if (!pNode) {
@@ -2172,30 +2188,37 @@ void __fastcall SFILE_InsertFileRecordIntoList2(int * * pNode, int32_t nInsertMo
     if (!ppListHead) {
       ppListHead = (int**)&ppListContainer->pPrevLink;
     }
-    if (nInsertMode != 1) {
-      pEntry = ((StormLinkStrc*)ppListHead)->pPrevLink;
-      ppSlot->pPrevLink = pEntry;
-      ppSlot->pNext = pEntry->pNext;
-      pEntry->pNext = (int)pNode;
-      ((StormLinkStrc*)ppListHead)->pPrevLink = ppSlot;
-      return;
-    }
 
-    ppSlot->pPrevLink = (StormLinkStrc*)ppListHead;
-    ppSlot->pNext = ((StormLinkStrc*)ppListHead)->pNext;
-    int nLinkOffset = ppListContainer->nLinkOffset;
-    uPrevLinkRaw = ((StormLinkStrc*)ppListHead)->pNext;
-    if ((int)uPrevLinkRaw < 0) {
-      *(StormLinkStrc**)~uPrevLinkRaw = (StormLinkStrc*)ppSlot;
-      ((StormLinkStrc*)ppListHead)->pNext = (int)pNode;
-      return;
-    }
-    if (nLinkOffset < 0) {
-      nLinkOffset = (int)ppListHead - ((StormLinkStrc*)ppListHead)->pPrevLink->pNext;
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          ppSlot->pPrevLink = (StormLinkStrc*)ppListHead;
+          ppSlot->pNext = ((StormLinkStrc*)ppListHead)->pNext;
+          nLinkOffset = ppListContainer->nLinkOffset;
+          uPrevLinkRaw = ((StormLinkStrc*)ppListHead)->pNext;
+          if ((int)uPrevLinkRaw < 0) {
+            *(StormLinkStrc**)~uPrevLinkRaw = (StormLinkStrc*)ppSlot;
+            ((StormLinkStrc*)ppListHead)->pNext = (int)pNode;
+            return;
+          }
+          if (nLinkOffset < 0) {
+            nLinkOffset = (int)ppListHead - ((StormLinkStrc*)ppListHead)->pPrevLink->pNext;
+          }
 
-    *(StormLinkStrc**)(uPrevLinkRaw + nLinkOffset) = (StormLinkStrc*)ppSlot;
-    ((StormLinkStrc*)ppListHead)->pNext = (int)pNode;
+          *(StormLinkStrc**)(uPrevLinkRaw + nLinkOffset) = (StormLinkStrc*)ppSlot;
+          ((StormLinkStrc*)ppListHead)->pNext = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pEntry = ((StormLinkStrc*)ppListHead)->pPrevLink;
+          ppSlot->pPrevLink = pEntry;
+          ppSlot->pNext = pEntry->pNext;
+          pEntry->pNext = (int)pNode;
+          ((StormLinkStrc*)ppListHead)->pPrevLink = ppSlot;
+          return;
+        }
+    }
 }
 
 int __fastcall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink) {
@@ -2231,30 +2254,37 @@ void __fastcall SFILE_InsertFileRecordIntoList3(int * * pNode, int32_t nInsertMo
     if (!ppListHead) {
       ppListHead = ppListContainer + 1;
     }
-    if (nInsertMode != 1) {
-      pEntry = *ppListHead;
-      *ppSlot = pEntry;
-      ppSlot[1] = (int*)pEntry[1];
-      pEntry[1] = (int)pNode;
-      *ppListHead = (int*)ppSlot;
-      return;
-    }
 
-    *ppSlot = (int*)ppListHead;
-    ppSlot[1] = ppListHead[1];
-    pEntry = *ppListContainer;
-    pLink = ppListHead[1];
-    if ((int)pLink < 0) {
-      *(int***)~(uint32_t)pLink = (int**)ppSlot;
-      ppListHead[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pEntry < 0) {
-      pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *ppSlot = (int*)ppListHead;
+          ppSlot[1] = ppListHead[1];
+          pEntry = *ppListContainer;
+          pLink = ppListHead[1];
+          if ((int)pLink < 0) {
+            *(int***)~(uint32_t)pLink = (int**)ppSlot;
+            ppListHead[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pEntry < 0) {
+            pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
+          }
 
-    *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
-    ppListHead[1] = (int*)pNode;
+          *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
+          ppListHead[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pEntry = *ppListHead;
+          *ppSlot = pEntry;
+          ppSlot[1] = (int*)pEntry[1];
+          pEntry[1] = (int)pNode;
+          *ppListHead = (int*)ppSlot;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink) {
@@ -2299,30 +2329,37 @@ void __fastcall SFILE_InsertFileRecordIntoList4(int * * pNode, int32_t nInsertMo
     if (!ppListHead) {
       ppListHead = ppListContainer + 1;
     }
-    if (nInsertMode != 1) {
-      pEntry = *ppListHead;
-      *ppSlot = pEntry;
-      ppSlot[1] = (int*)pEntry[1];
-      pEntry[1] = (int)pNode;
-      *ppListHead = (int*)ppSlot;
-      return;
-    }
 
-    *ppSlot = (int*)ppListHead;
-    ppSlot[1] = ppListHead[1];
-    pEntry = *ppListContainer;
-    pLink = ppListHead[1];
-    if ((int)pLink < 0) {
-      *(int***)~(uint32_t)pLink = (int**)ppSlot;
-      ppListHead[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pEntry < 0) {
-      pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *ppSlot = (int*)ppListHead;
+          ppSlot[1] = ppListHead[1];
+          pEntry = *ppListContainer;
+          pLink = ppListHead[1];
+          if ((int)pLink < 0) {
+            *(int***)~(uint32_t)pLink = (int**)ppSlot;
+            ppListHead[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pEntry < 0) {
+            pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
+          }
 
-    *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
-    ppListHead[1] = (int*)pNode;
+          *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
+          ppListHead[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pEntry = *ppListHead;
+          *ppSlot = pEntry;
+          ppSlot[1] = (int*)pEntry[1];
+          pEntry[1] = (int)pNode;
+          *ppListHead = (int*)ppSlot;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink) {
@@ -2615,30 +2652,37 @@ void __fastcall SFILE_InsertFileRecordIntoList5(int * * pNode, int32_t nInsertMo
     if (!ppListHead) {
       ppListHead = ppListContainer + 1;
     }
-    if (nInsertMode != 1) {
-      pEntry = *ppListHead;
-      *ppSlot = pEntry;
-      ppSlot[1] = (int*)pEntry[1];
-      pEntry[1] = (int)pNode;
-      *ppListHead = (int*)ppSlot;
-      return;
-    }
 
-    *ppSlot = (int*)ppListHead;
-    ppSlot[1] = ppListHead[1];
-    pEntry = *ppListContainer;
-    pLink = ppListHead[1];
-    if ((int)pLink < 0) {
-      *(int***)~(uint32_t)pLink = (int**)ppSlot;
-      ppListHead[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pEntry < 0) {
-      pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *ppSlot = (int*)ppListHead;
+          ppSlot[1] = ppListHead[1];
+          pEntry = *ppListContainer;
+          pLink = ppListHead[1];
+          if ((int)pLink < 0) {
+            *(int***)~(uint32_t)pLink = (int**)ppSlot;
+            ppListHead[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pEntry < 0) {
+            pEntry = (int*)((int)ppListHead - (*ppListHead)[1]);
+          }
 
-    *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
-    ppListHead[1] = (int*)pNode;
+          *(int***)((int)pLink + (int)pEntry) = (int**)ppSlot;
+          ppListHead[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pEntry = *ppListHead;
+          *ppSlot = pEntry;
+          ppSlot[1] = (int*)pEntry[1];
+          pEntry[1] = (int)pNode;
+          *ppListHead = (int*)ppSlot;
+          return;
+        }
+    }
 }
 
 void __fastcall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink) {
@@ -3376,7 +3420,7 @@ int __stdcall SFILE_EnumFilesInternal(D2ArchiveStrc * pArchive, char * szText, v
 // @blizzard SFileOpenFileEx (SFILE.CPP)
 int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint32_t dwFlags, void * * phFile) {
     // Static local variables (originally global data)
-    static char gbSFileStreamCallbackPending; D2_STATIC_GUARD_BSS(gbSFileStreamCallbackPending, "Storm::Source::SFile::SFileOpenFileEx::gbSFileStreamCallbackPending");
+    static uint32_t gbSFileStreamCallbackPending; D2_STATIC_GUARD_BSS(gbSFileStreamCallbackPending, "Storm::Source::SFile::SFileOpenFileEx::gbSFileStreamCallbackPending");
 
     uint32_t* puVar1;
     int nOpenResult;

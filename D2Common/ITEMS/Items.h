@@ -23,6 +23,7 @@ struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2ItemCmd;
 typedef int eD2ItemFlag;
+typedef int eD2PlayerClassIDDWORD;
 typedef uint8_t eD2BodyLoc;
 typedef uint8_t eInventoryPage;
 #ifndef RECON_FPTD_pfnItemTransactionCb

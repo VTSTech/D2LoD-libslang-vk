@@ -797,9 +797,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x04(MCPPacketSrv0x04 * pBytes, size_t nS
       return 1;
     }
 
-    int32_t nIpStringMaxLen = 0x12;
-    char* szGameIpString = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)pBytes->nGameIp);
-    Storm::Source::SSTR::SStrCopy(D2Client::MCP::D2GSConnectIp, szGameIpString, nIpStringMaxLen);
+    Storm::Source::SSTR::SStrCopy(D2Client::MCP::D2GSConnectIp, Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)pBytes->nGameIp), 0x12);
     return 1;
 }
 
@@ -940,7 +938,6 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x0F(char * pBytes, size_t nSize) {
 }
 
 BOOL __fastcall NET_MCP_CLIENT_Incoming0x10(char * pBytes, size_t nSize) {
-    int32_t nIpStringMaxLen;
     uint32_t dwGameHash = *(uint32_t*)(pBytes + 5);
     uint32_t dwGameToken = *(uint32_t*)(pBytes + 1);
     int nResult = *(int*)(pBytes + 0xd);
@@ -960,10 +957,7 @@ BOOL __fastcall NET_MCP_CLIENT_Incoming0x10(char * pBytes, size_t nSize) {
       return 1;
     }
 
-    char* szGameIpString;
-    nIpStringMaxLen = 0x12;
-    szGameIpString = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)sAddr);
-    Storm::Source::SSTR::SStrCopy(D2Client::MCP::D2GSConnectIp, szGameIpString, nIpStringMaxLen);
+    Storm::Source::SSTR::SStrCopy(D2Client::MCP::D2GSConnectIp, Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly((in_addr)sAddr), 0x12);
     MCPSTATE_SetD2GSConnectReady(1);
     return 1;
 }

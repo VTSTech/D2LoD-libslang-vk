@@ -173,9 +173,6 @@ int __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_
     uint16_t* wszAllocDst;
     int nCurLineNode;
     uint16_t wszLocalBuf[1024];
-    int32_t nLine;
-    int32_t nLine_00;
-    int32_t nZero;
     if (!pnTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f9);
       exit(-1);
@@ -207,10 +204,7 @@ int __fastcall D2WINTEXTBOX_SetLineCellTextW(::D2WinTextBox * pnTextBox, uint16_
         exit(-1);
       }
 
-      nZero = 0;
-      nLine = 0x210;
-      nLine_00 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocalBuf);
-      wszAllocDst = (uint16_t*)Fog::Memory::AllocClientMemory(nLine_00 * 2 + 2, ".\\Src\\D2WinTextBox.cpp", nLine, nZero);
+      wszAllocDst = (uint16_t*)D2_ALLOC_AT(D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszLocalBuf) * 2 + 2, ".\\Src\\D2WinTextBox.cpp", 0x210);
       *(uint16_t**)(nCurLineNode + nCol * 4) = (uint16_t*)wszAllocDst;
       D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszAllocDst, wszLocalBuf);
       return 1;

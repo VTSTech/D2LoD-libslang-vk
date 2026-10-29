@@ -3097,6 +3097,8 @@ uint32_t gaMonsterModePrecacheEntries[15] = {
 
 eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
 
+eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00 = CLASS_SORCERESS; D2_GLOBAL_GUARD(eD2PlayerClassIDDWORD_00712f00, "eD2PlayerClassIDDWORD_00712f00");
+
 D2UIFlagInitStrc gUIFlagChatInit = {
     /* .eEventType = */ 0x0,
     /* .nMessageOrKeyCode = */ 0x102,
@@ -43157,10 +43159,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xd,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x9a,
@@ -43169,10 +43171,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x92,
@@ -43181,10 +43183,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x93,
@@ -43193,10 +43195,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x96,
@@ -43205,10 +43207,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x9b,
@@ -43217,10 +43219,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x14b,
@@ -43229,10 +43231,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x10a,
@@ -43241,10 +43243,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x198,
@@ -43253,10 +43255,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xaf,
@@ -43265,10 +43267,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb0,
@@ -43277,10 +43279,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xa,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb1,
@@ -43289,10 +43291,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc7,
@@ -43301,10 +43303,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc8,
@@ -43313,10 +43315,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc6,
@@ -43325,10 +43327,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xe,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc9,
@@ -43337,10 +43339,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xa,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xca,
@@ -43349,10 +43351,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb2,
@@ -43361,10 +43363,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xd2,
@@ -43373,10 +43375,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x109,
@@ -43385,10 +43387,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf4,
@@ -43397,10 +43399,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf5,
@@ -43409,10 +43411,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x8,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf6,
@@ -43421,10 +43423,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfb,
@@ -43433,10 +43435,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfc,
@@ -43445,10 +43447,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfd,
@@ -43457,10 +43459,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfe,
@@ -43469,10 +43471,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xff,
@@ -43481,10 +43483,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x196,
@@ -43493,10 +43495,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x101,
@@ -43505,10 +43507,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x108,
@@ -43517,10 +43519,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x129,
@@ -43529,10 +43531,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x6,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x16f,
@@ -43541,10 +43543,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x195,
@@ -43553,10 +43555,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x101,
@@ -43565,10 +43567,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x1ff,
@@ -43577,10 +43579,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x200,
@@ -43589,10 +43591,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x201,
@@ -43601,10 +43603,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x10,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x202,
@@ -43613,10 +43615,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x203,
@@ -43625,10 +43627,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x209,
@@ -43637,10 +43639,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x208,
@@ -43649,10 +43651,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x20f,
@@ -43661,10 +43663,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x219,
@@ -43673,10 +43675,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x21a,
@@ -43685,10 +43687,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x21b,
@@ -43697,10 +43699,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     }
 }; D2_GLOBAL_GUARD(D2NPCSpeech, "D2NPCSpeech");
 
@@ -45149,6 +45151,7 @@ uint32_t gbLoadScreenLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gbLoadScreenLevelL
 int gnPanelOffsetX = 0; D2_GLOBAL_GUARD(gnPanelOffsetX, "gnPanelOffsetX");
 // also labelled: g_nMouseY
 int gnPanelOffsetY = 0; D2_GLOBAL_GUARD(gnPanelOffsetY, "gnPanelOffsetY");
+BOOL gbAutomapPanelOpened = 0; D2_GLOBAL_GUARD(gbAutomapPanelOpened, "gbAutomapPanelOpened");
 uint32_t gnLastOpenPanelId = 0; D2_GLOBAL_GUARD(gnLastOpenPanelId, "gnLastOpenPanelId");
 DC6 * gpUiCursorFocus16DC6 = 0; D2_GLOBAL_GUARD(gpUiCursorFocus16DC6, "gpUiCursorFocus16DC6");
 DC6 * pUi_Panel_buysellbtn = 0; D2_GLOBAL_GUARD(pUi_Panel_buysellbtn, "pUi_Panel_buysellbtn");
@@ -45466,6 +45469,7 @@ DC6 * gpUIStatLevelUpButtonImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpButtonImag
 BOOL gbUIStatButtonHovered = 0; D2_GLOBAL_GUARD(gbUIStatButtonHovered, "gbUIStatButtonHovered");
 BOOL gbUISkillButtonHovered = 0; D2_GLOBAL_GUARD(gbUISkillButtonHovered, "gbUISkillButtonHovered");
 BOOL gbUIStatScreenMouseDown = 0; D2_GLOBAL_GUARD(gbUIStatScreenMouseDown, "gbUIStatScreenMouseDown");
+int gbSpellSelActiveRightSkillSlot = 0; D2_GLOBAL_GUARD(gbSpellSelActiveRightSkillSlot, "gbSpellSelActiveRightSkillSlot");
 DC6 * gpSpellSelSkillIconDC6 = 0; D2_GLOBAL_GUARD(gpSpellSelSkillIconDC6, "gpSpellSelSkillIconDC6");
 unsigned int gbSpellSelMouseHandFlag = {}; D2_GLOBAL_GUARD(gbSpellSelMouseHandFlag, "gbSpellSelMouseHandFlag");
 BOOL gbSpellSelSkillTreeBackground = 0; D2_GLOBAL_GUARD(gbSpellSelSkillTreeBackground, "gbSpellSelSkillTreeBackground");

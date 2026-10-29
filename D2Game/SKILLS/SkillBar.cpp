@@ -591,8 +591,7 @@ BOOL __fastcall Skills_SrvDoFunc_074_DoubleThrow(::SGAMEDATA * pGame, D2UnitStrc
     }
 
     int16_t nLayer = 0;
-    bIsPotion = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, bIsPotion, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_tohit, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), nLayer);
     int32_t nValue = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pWeaponOrMissile, UNITSTAT_damagepercent, nValue, 0);
     return 1;
@@ -913,10 +912,9 @@ BOOL __fastcall SKILLBAR_SrvStFn38_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc * p
 
     int32_t nLine = 0x3d9;
     char* pSkillAssTable = ".\\SKILLS\\SkillBar.cpp";
-    int32_t nCalcResult = SkillsServer::SKILLS_GetUnitWalkVelocity(pUnit);
-    D2Common::PATH::DynamicPath::SetVelocities(pDynPath, nCalcResult, pSkillAssTable, nLine);
+    D2Common::PATH::DynamicPath::SetVelocities(pDynPath, SkillsServer::SKILLS_GetUnitWalkVelocity(pUnit), pSkillAssTable, nLine);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynPath, 0x401);
-    nCalcResult = D2Common::PATH::DynamicPath::GetPathPoint(pDynPath, &pPathPoints);
+    int32_t nCalcResult = D2Common::PATH::DynamicPath::GetPathPoint(pDynPath, &pPathPoints);
     if (nCalcResult <= 0) {
       UNIT::SUnitMsg::UnitQueuePacket0xA5(pUnit, wSkillId);
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynPath, (int32_t)pNearbyTarget);
@@ -1070,8 +1068,6 @@ static int32_t __stdcall SKILLAMZ_CreatePlagueJavelinClouds(int32_t nParam, D2Sk
 
 // Cleans up a transport/charge-type skill on the caster: clears skill flags, removes the uninterruptable state, broadcasts packet 0xA5 (skill end), removes the temporary collision footprint at (nCollideX, nCollideY), and resets the dynamic path's collision type and pattern to the normal player/monster defaults. Also removes and frees any aura stat-list associated with the skill's aurastate.
 void __fastcall SKILL_DeactivateAndRestoreCollision(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, D2SkillStrc * pSkill, eD2Skills eSkill, int32_t nCollideX, int32_t nCollideY) {
-    D2RoomStrc* pRoom;
-    int eCollisionFlag_00;
     D2Common::Skills::SKILL_SetFlags(pSkill, 0);
     UNIT::SUnit::SetUninterruptableState(pUnit, 0);
     UNIT::SUnitMsg::UnitQueuePacket0xA5(pUnit, (uint16_t)eSkill);
@@ -1083,11 +1079,7 @@ void __fastcall SKILL_DeactivateAndRestoreCollision(::SGAMEDATA * pGameStrc, D2U
     bool bIsPlayerUnit = pUnit->eUnitType == UNIT_PLAYER;
     int eCollisionFlag = (bIsPlayerUnit ? -128 : 0) + 0x100;
     if (nCollideX && nCollideY) {
-      eD2CollisionShapeType nUnitWidth;
-      eCollisionFlag_00 = eCollisionFlag;
-      nUnitWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::Collision::RemoveCollision_Type(pRoom, nCollideX, nCollideY, nUnitWidth, eCollisionFlag_00);
+      D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nCollideX, nCollideY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), eCollisionFlag);
     }
 
     D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, eCollisionFlag);
@@ -1315,7 +1307,6 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // For a leap-style skill (Leap/Leap Attack/Teleport-like), clamps and validates the requested target coord (*pnParam1,*pnParam2) to a reachable destination. Clamps the target along the source->target line to the skill's max range (aurarangecalc via D2GetSkillCalc, eSkill@EAX), then tries up to 3 candidate cells (the clamped point and two perpendicular-offset fallbacks) seeking one that is free of player-collision (GetFreeCoordinates/CheckCollision_BlockPlayer), has line-of-sight from source (SKILLS_HasLineOfSight), and is within range. On success overwrites *pnParam1/*pnParam2 with the chosen cell and returns 1; returns 0 if no valid cell or invalid skill. Reads unit position from static/dynamic path.
 static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t nParam, int * pnParam1, int * pnParam2, eD2Skills eSkill) {
     D2RoomStrc* pRoom;
-    eD2CollisionShapeType nRangeOrSize;
     uint32_t bHasLOS;
     LONG LVar1;
     POINT sCandidatePos;
@@ -1402,8 +1393,7 @@ static BOOL __stdcall SKILLBAR_FindValidLeapTarget(D2UnitStrc * pUnit, int32_t n
       LVar1 = sCandidatePos.x;
       if (pRoom) {
         nRange = 0x1c09;
-        nRangeOrSize = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-        nRange = D2Common::Collision::CheckCollision_BlockPlayer_Type(pRoom, LVar1, nY, nRangeOrSize, nRange);
+        nRange = D2Common::Collision::CheckCollision_BlockPlayer_Type(pRoom, LVar1, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), nRange);
         if (!nRange) {
           bHasLOS = D2Common::Skills::SKILLS_HasLineOfSight(nSrcX, nSrcY, LVar1, nY, pRoom, 0x804);
           if (bHasLOS) {
@@ -1576,8 +1566,7 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, eSkill, nDestYSaved);
     nCoordOrWidth = 0x80;
-    eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-    D2Common::Collision::AddCollision_Type(pRoom, eSkill, nDestY, nType, nCoordOrWidth);
+    D2Common::Collision::AddCollision_Type(pRoom, eSkill, nDestY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), nCoordOrWidth);
     UNIT::SUnit::SetUninterruptableState(pUnit, 1);
     D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_skill_move, 1);
     D2Common::Skills::SKILL_SetParam1(pSkill, eSkill);
@@ -1644,8 +1633,7 @@ static void __stdcall SKILLBAR_CalculateChargePath(::SGAMEDATA * pGame, int32_t 
     }
 
     uint32_t nTargetGUID = D2Common::Skills::SKILL_GetParam4(pSkill);
-    eD2UnitType eTargetUnitType = D2Common::Skills::SKILL_GetParam3(pSkill);
-    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGame, eTargetUnitType, nTargetGUID);
+    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Skills::SKILL_GetParam3(pSkill), nTargetGUID);
     if (!pTarget) {
       return;
     }
@@ -1715,9 +1703,7 @@ static BOOL __stdcall SKILLBAR_ArriveAtChargeTarget(::SGAMEDATA * pGame, D2Skill
       nCollisionWidth = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
       if (nCollisionWidth == nY) {
         if (!bIsNotMonster) {
-          nCollisionWidth = 0x100;
-          eVar1 = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-          D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, eVar1, nCollisionWidth);
+          D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x100);
           D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, 0x100);
           D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, 0x3c01);
           D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 2);

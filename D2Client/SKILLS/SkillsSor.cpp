@@ -628,15 +628,19 @@ void __fastcall SKILLSSOR_CltCreateBlazeMissile(D2UnitStrc * pUnit) {
     if (-1 < pSkillTxt->cltmissile[2]) {
       if (pSkillTxt->cltmissile[3] >= 0) {
         nPathFlags = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
-        if (!nPathFlags) {
-          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
-          UNIT::Missile::MakeMissile(&sSkillArg);
-          return;
-        }
-        if (nPathFlags == 1) {
-          sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[3];
-          UNIT::Missile::MakeMissile(&sSkillArg);
-          return;
+        switch (nPathFlags) {
+          case 0:
+            {
+              sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
+              UNIT::Missile::MakeMissile(&sSkillArg);
+              return;
+            }
+          case 1:
+            {
+              sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[3];
+              UNIT::Missile::MakeMissile(&sSkillArg);
+              return;
+            }
         }
       } else {
         nPathFlags = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 2);

@@ -361,9 +361,7 @@ BOOL __fastcall Skills_CltStFunc_SpawnCltMissileAtSelf(D2UnitStrc * pUnit, eD2Sk
       return 1;
     }
 
-    int32_t nY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    UNIT::Missile::CastAttack(pUnit, nMissileId, nX, nY, eSkill, nSkillLvl);
+    UNIT::Missile::CastAttack(pUnit, nMissileId, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nSkillLvl);
     return 1;
 }
 
@@ -377,10 +375,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_CastAttackMissileB(D2UnitStrc * pUnit, eD2
       return 1;
     }
 
-    int32_t nForcedLvl1 = 1;
-    int32_t nY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    D2UnitStrc* pMissileUnit = UNIT::Missile::CastAttack(pUnit, nMissileId, nX, nY, eSkill, nForcedLvl1);
+    D2UnitStrc* pMissileUnit = UNIT::Missile::CastAttack(pUnit, nMissileId, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, 1);
     return (uint32_t)(pMissileUnit != 0);
 }
 
@@ -876,6 +871,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_HomingToOwner(D2UnitStrc * pUnit, eD2Skill
 // Client-side do-function for the Evil Monster vine-attack skill. Ensures the monster has a SKILL_VineAttack skill entry (creating it if absent), then increments the hit-count param. In Neutral anim mode fires a collision-based hit (MISSILE_ClientHitExplode) when range or hit-count threshold is reached, then selects missile type cltmissiled; in Walk mode picks randomly between cltmissilec variants. Spawns the chosen missile via SKILLSEMON_CltCreateMissileAtUnit when the fire condition is met, resetting params.
 // @sourcefile .\SKILLS\SkillsEMon.cpp
 BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    uint32_t nRandMod;
     D2RoomStrc* pRoom;
     D2UnitStrc* pHitUnit;
     eMissilesId nMissileId;
@@ -913,30 +909,37 @@ BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills e
     int32_t nDistToTarget = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->cltcalc[1], eVineSkillId, nVineSkillLvl);
     nTargetX = D2Common::Collision::GetDistanceToXY(pUnit, nTargetX, nTargetY);
     bool bVineFireCondition = nTargetX >= nDistToTarget || nHitCount >= nRangeCalc;
-    if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
-      uint32_t nRandMod;
-      if (pUnit->eAnimMode.ePlayerMode != Walk) {
-        return 1;
-      }
+    switch (pUnit->eAnimMode.ePlayerMode) {
+      case eD2PlayerAnimMode_ns::Neutral:
+        {
+          if (bVineFireCondition) {
+            nTargetY = 1;
+            pNullGameArg = 0;
+            fpSkillValidCheck = (fpMissileSrvDoFuncData)SKILLSCLT_CheckSkillIsValid;
+            nHitCount = Units::GetYPosFromDynamicPathUnit(pUnit);
+            nTargetX = Units::GetXPosFromDynamicPathUnit(pUnit);
+            pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+            pHitUnit = D2Common::Collision::CallCollisionFunction(pRoom, nTargetX, nHitCount, fpSkillValidCheck, pNullGameArg, nTargetY);
+            if (pHitUnit) {
+              UNIT::Missile::MISSILE_ClientHitExplode(pHitUnit, nullptr, 0);
+            }
+          }
 
-      nRandMod = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 2);
-      nMissileId = (int)pSkillTxt->cltmissile[3] + nRandMod;
-    } else {
-      if (bVineFireCondition) {
-        nTargetY = 1;
-        pNullGameArg = 0;
-        fpSkillValidCheck = (fpMissileSrvDoFuncData)SKILLSCLT_CheckSkillIsValid;
-        nHitCount = Units::GetYPosFromDynamicPathUnit(pUnit);
-        nTargetX = Units::GetXPosFromDynamicPathUnit(pUnit);
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        pHitUnit = D2Common::Collision::CallCollisionFunction(pRoom, nTargetX, nHitCount, fpSkillValidCheck, pNullGameArg, nTargetY);
-        if (pHitUnit) {
-          UNIT::Missile::MISSILE_ClientHitExplode(pHitUnit, nullptr, 0);
+          nMissileId = (eMissilesId)pSkillTxt->cltmissiled;
+          break;
         }
-      }
-
-      nMissileId = (eMissilesId)pSkillTxt->cltmissiled;
+      default:
+        {
+          return 1;
+        }
+      case Walk:
+        {
+          nRandMod = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 2);
+          nMissileId = (int)pSkillTxt->cltmissile[3] + nRandMod;
+          break;
+        }
     }
+
     if (!(bVineFireCondition && (int)nMissileId > 0)) {
       return 1;
     }

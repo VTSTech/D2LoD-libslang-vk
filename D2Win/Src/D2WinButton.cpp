@@ -210,7 +210,6 @@ static BOOL D2WINBUTTON_IsPointInside(::D2WinButton * pButton, int32_t nX, int32
 // Renders button text with centering and optional dual-label display. Handles hotkey text (flag 0x40), text offset when images loaded, font selection (field 0x60), and color (field 0x264). Draws main label plus optional secondary string (field 0x270).
 static void __stdcall D2WINBUTTON_DrawText(::D2WinButton * pButton, int nOffsetY) {
     GLOBALPALLETE eGlobalPalette;
-    int32_t bDrawBackground;
     int32_t nSecondaryXCenter;
     DRAWMODE eDrawMode;
     int nPosY;
@@ -260,9 +259,7 @@ static void __stdcall D2WINBUTTON_DrawText(::D2WinButton * pButton, int nOffsetY
 
       eGlobalPalette = pButton->nTextColor;
       eDrawMode = DRAW_DARKTRANSPARENT;
-      bDrawBackground = 0;
-      nSecondaryTextWidth = D2Lang::StrTable::strtable::GetLocaleString(pButton->nHotkeyStringId);
-      D2WinFont::D2WINFONT_DrawTextWithOptionalBackground(nSecondaryTextWidth, nSecondaryXCenter, nSecondLabelY, eGlobalPalette, bDrawBackground, eDrawMode);
+      D2WinFont::D2WINFONT_DrawTextWithOptionalBackground(D2Lang::StrTable::strtable::GetLocaleString(pButton->nHotkeyStringId), nSecondaryXCenter, nSecondLabelY, eGlobalPalette, 0, eDrawMode);
     }
 
     D2WinFont::D2WINFONT_DrawTextWithOptionalBackground(wszText, nPrimaryXCenter, nDrawY, pButton->nTextColor, 0, DRAW_DARKTRANSPARENT);

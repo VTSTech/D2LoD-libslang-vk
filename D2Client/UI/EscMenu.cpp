@@ -63,45 +63,59 @@ void __fastcall UI_SLIDER_ApplyPositionalBiasFromSlider(D2EscMenuItemStrc * pIte
 void __fastcall UI_SLIDER_ApplyLightQuality(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Light Quality", 0, pItem->nImageIndex);
     int nLightQuality = pItem->nImageIndex;
-    if (!nLightQuality) {
-      D2gfx::D2GFX::D2GFX_SetLowQuality(1);
-      UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
-      return;
+    switch (nLightQuality) {
+      default:
+        {
+          return;
+        }
+      case 0:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(1);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
+          return;
+        }
+      case 1:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(0);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
+          return;
+        }
+      case 2:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(0);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(1);
+          return;
+        }
     }
-    if (nLightQuality != 1) {
-      if (nLightQuality != 2) {
-        return;
-      }
-
-      D2gfx::D2GFX::D2GFX_SetLowQuality(0);
-      UNIT::Missile::LIGHTMAP_SetQualityLevel(1);
-      return;
-    }
-
-    D2gfx::D2GFX::D2GFX_SetLowQuality(0);
-    UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
 }
 
 void __fastcall UI_SLIDER_InitLightQuality(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     Storm::Source::SReg::SRegLoadValue("Diablo II", "Light Quality", 0, &pItem->nImageIndex);
     int iVar1 = pItem->nImageIndex;
-    if (!iVar1) {
-      D2gfx::D2GFX::D2GFX_SetLowQuality(1);
-      UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
-      return;
+    switch (iVar1) {
+      default:
+        {
+          return;
+        }
+      case 0:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(1);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
+          return;
+        }
+      case 1:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(0);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
+          return;
+        }
+      case 2:
+        {
+          D2gfx::D2GFX::D2GFX_SetLowQuality(0);
+          UNIT::Missile::LIGHTMAP_SetQualityLevel(1);
+          return;
+        }
     }
-    if (iVar1 != 1) {
-      if (iVar1 != 2) {
-        return;
-      }
-
-      D2gfx::D2GFX::D2GFX_SetLowQuality(0);
-      UNIT::Missile::LIGHTMAP_SetQualityLevel(1);
-      return;
-    }
-
-    D2gfx::D2GFX::D2GFX_SetLowQuality(0);
-    UNIT::Missile::LIGHTMAP_SetQualityLevel(0);
 }
 
 void __fastcall UI_SLIDER_ApplyBlendedShadows(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
@@ -302,24 +316,29 @@ static void __stdcall ESCMENU_ClickMenuItem(D2UIMouseMsgStrc * pMsg) {
     }
 
     D2EscMenuItemStrc* pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
-    if (pItemData->nMenuItemType) {
-      if (pItemData->nMenuItemType == 1) {
-        pItemData->nImageIndex++;
-        if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
-          pItemData->nImageIndex = 0;
-        }
-        if (pItemData->fpClickCallback) {
-          pItemData->fpClickCallback(pItemData, pMsg);
-        }
+    switch (pItemData->nMenuItemType) {
+      case 0:
+        {
+          if (pItemData->fpClickCallback) {
+            pItemData->fpClickCallback(pItemData, pMsg);
+            Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
+          }
 
-        Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-        return;
-      }
-    } else {
-      if (pItemData->fpClickCallback) {
-        pItemData->fpClickCallback(pItemData, pMsg);
-        Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
-      }
+          break;
+        }
+      case 1:
+        {
+          pItemData->nImageIndex++;
+          if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
+            pItemData->nImageIndex = 0;
+          }
+          if (pItemData->fpClickCallback) {
+            pItemData->fpClickCallback(pItemData, pMsg);
+          }
+
+          Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+          return;
+        }
     }
 }
 
@@ -510,19 +529,26 @@ void __stdcall INPUT_EscMenuOptionIncrease(D2UIMouseMsgStrc * pMsg) {
     nItemIndex = gnEscMenuSelectedIndex;
     D2EscMenuItemStrc* pItemData;
     pItemData = gpEscMenuCurrentTable + gnEscMenuSelectedIndex;
-    if (pItemData->nMenuItemType != 1) {
-      if (pItemData->nMenuItemType == 2) {
-        pItemData->nImageIndex++;
-        uVar1 = pItemData->nSubImageCount - 1;
-        if ((uint32_t)pItemData->nImageIndex > uVar1) {
-          pItemData->nImageIndex = uVar1;
+    switch (pItemData->nMenuItemType) {
+      case 1:
+        {
+          pItemData->nImageIndex++;
+          if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
+            pItemData->nImageIndex = 0;
+          }
+
+          break;
         }
-      }
-    } else {
-      pItemData->nImageIndex++;
-      if ((uint32_t)pItemData->nImageIndex > pItemData->nSubImageCount - 1U) {
-        pItemData->nImageIndex = 0;
-      }
+      case 2:
+        {
+          pItemData->nImageIndex++;
+          uVar1 = pItemData->nSubImageCount - 1;
+          if ((uint32_t)pItemData->nImageIndex > uVar1) {
+            pItemData->nImageIndex = uVar1;
+          }
+
+          break;
+        }
     }
 
     notify_if_changed:

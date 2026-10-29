@@ -159,23 +159,33 @@ static void __fastcall MONSTER_OnCreateAttachQuests(D2UnknownCreateMonsterStrc *
         Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pMonster, QUESTINT_RescueOnMountArreat);
         return;
       }
-      if (nBaseId != 0x20e) {
-        if (nBaseId == 0x21c) {
-          MONSTER_EquipFromClassTable(pMonster);
-          return;
-        }
-        if (nBaseId != 0x220) {
-          return;
-        }
-        if (nUmodId == 0x2c5) {
-          Monsters::InitUmods(pGame, pMonster, 0x16, 1);
-          nRawClassId = 0x12;
-          goto add_uber_boss_umods;
-        }
 
-        nQuestNoInternal = QUESTINT_EveOfDestruction;
-      } else {
-        nQuestNoInternal = QUESTINT_BetrayalOfHaggorath;
+      switch (nBaseId) {
+        case 0x20e:
+          {
+            nQuestNoInternal = QUESTINT_BetrayalOfHaggorath;
+            break;
+          }
+        case 0x21c:
+          {
+            MONSTER_EquipFromClassTable(pMonster);
+            return;
+          }
+        default:
+          {
+            return;
+          }
+        case 0x220:
+          {
+            if (nUmodId != 0x2c5) {
+              nQuestNoInternal = QUESTINT_EveOfDestruction;
+              break;
+            }
+
+            Monsters::InitUmods(pGame, pMonster, 0x16, 1);
+            nRawClassId = 0x12;
+            goto add_uber_boss_umods;
+          }
       }
 
       attach_quest:
@@ -645,7 +655,7 @@ BOOL __stdcall FindDiagonalNonCollisionCoords(D2RoomStrc * pRoom, int * pX, int 
               pDiagOffset++;
               nStopTileIdx = nWrapAroundIdx;
               nSearchTileIdx = nSavedSearchIdx;
-            } while ((int)pDiagOffset < (uintptr_t)((char*)&gaPathDiagonalOffsets + sizeof(gaPathDiagonalOffsets)));
+            } while ((int)pDiagOffset < (intptr_t)((char*)&gaPathDiagonalOffsets + sizeof(gaPathDiagonalOffsets)));
           }
         }
       }
@@ -1000,16 +1010,24 @@ D2UnitStrc * __fastcall CreateMonster(D2UnknownCreateMonsterStrc * pMonsterSpawn
     }
 
     Objects::MONSTER_SetSpawnCoordList(pUnit, pCoordList);
-    if (pMonStatsTxt->Align != '\x01') {
-      if (pMonStatsTxt->Align != '\x02') {
-        UNIT::SUnit::SetAlignment(pUnit, '\0', 1);
-      } else {
-        UNIT::SUnit::SetAlignment(pUnit, '\x01', 1);
-      }
-    } else {
-      UNIT::SUnit::SetAlignment(pUnit, '\x02', 1);
-      pUnit->eUnitFlags |= UNITFLAG_NOTC;
+    switch (pMonStatsTxt->Align) {
+      case '\x01':
+        {
+          UNIT::SUnit::SetAlignment(pUnit, '\x02', 1);
+          pUnit->eUnitFlags |= UNITFLAG_NOTC;
+          break;
+        }
+      case '\x02':
+        {
+          UNIT::SUnit::SetAlignment(pUnit, '\x01', 1);
+          break;
+        }
+      default:
+        {
+          UNIT::SUnit::SetAlignment(pUnit, '\0', 1);
+        }
     }
+
     if (!(nSpawnFlags & 2)) {
       MONSTER_ApplySpecialUmods(pUnit, pMonsterSpawnData);
     }
@@ -1189,8 +1207,6 @@ BOOL __fastcall SpawnMinions_AtXY(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32
 
 BOOL __fastcall SpawnMonsterAtUnitOffset(::SGAMEDATA * pGame, D2RoomStrc * pRoom, int32_t nOffsetX, int32_t nOffsetY, D2UnitStrc * pUnit, int32_t nClassId, eD2MonsterAnimMode eMode, int * pParam, uint16_t nParam) {
     uint32_t nSpawnType;
-    eD2UnitType eUnitType;
-    int32_t nOwnerGUID;
     D2UnitStrc* pSpawnedMonster;
     D2UnknownCreateMonsterStrc sCreateMonsterParams;
     int* pNextSpawnEntry;
@@ -1284,9 +1300,7 @@ BOOL __fastcall SpawnMonsterAtUnitOffset(::SGAMEDATA * pGame, D2RoomStrc * pRoom
             if (pUnit && (pSpawnedMonster = SpawnMonsterAtRoomPos(pGame, pWorkingRoom, *pNextSpawnEntry + nOffsetX, pCurrentEntry[4] + nOffsetY, nClassId, eMode, -1, 0) , pSpawnedMonster != 0)) {
               bSetBossOwner = 0;
               nGUID = 0;
-              eUnitType = D2Client::Units::GetType(pUnit);
-              nOwnerGUID = D2Client::UNIT::GetGUID(pUnit);
-              Ai::AiGeneral::AssignMinionOwner(pGame, pSpawnedMonster, nOwnerGUID, eUnitType, nGUID, bSetBossOwner);
+              Ai::AiGeneral::AssignMinionOwner(pGame, pSpawnedMonster, D2Client::UNIT::GetGUID(pUnit), D2Client::Units::GetType(pUnit), nGUID, bSetBossOwner);
               nResult = 1;
             }
         }

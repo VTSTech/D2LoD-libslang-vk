@@ -1089,8 +1089,7 @@ void __fastcall GetBnetIp(char * szText, int32_t nParam) {
     *szText = '\0';
     BNGatewayAccess::Load(&ActualRealmInfo);
     int32_t bHasRegistryOverride = nParam;
-    char* szDnsStr = BNGatewayAccess::DNS(&ActualRealmInfo, ActualRealmInfo.nCurGatewayIdx);
-    Storm::Source::SSTR::SStrCopy(szText, szDnsStr, bHasRegistryOverride);
+    Storm::Source::SSTR::SStrCopy(szText, BNGatewayAccess::DNS(&ActualRealmInfo, ActualRealmInfo.nCurGatewayIdx), bHasRegistryOverride);
     bHasRegistryOverride = Storm::Source::SReg::SRegLoadString("Diablo II", "BNETIP", 0, szRegistryBuf, 0x100);
     if (bHasRegistryOverride) {
       Storm::Source::SSTR::SStrCopy(szText, szRegistryBuf, nParam);
@@ -1108,20 +1107,26 @@ void __fastcall BNSEND_GetConnectionState(uint32_t * pdwOutState) {
 }
 
 int __fastcall BNCLIENT_SendLogonRequest(char * szUsername, char * szPassword) {
+    int nSendResult;
     DWORD dwClientToken = BNCLIENT_GetBNetClientToken();
-    if (dwClientToken) {
-      if (dwClientToken != 1) {
-        return 0;
-      }
-
-      _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x54);
-      int nSendResult = _net_sid::NET_SID_CLIENT_Send_0x53_AuthAccountLogon(szUsername, szPassword);
-      return nSendResult;
+    switch (dwClientToken) {
+      case 0:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x3a);
+          NET_SID_CLIENT_Send_0x3A_LogonResponse2(szUsername, szPassword);
+          return 1;
+        }
+      case 1:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x54);
+          nSendResult = _net_sid::NET_SID_CLIENT_Send_0x53_AuthAccountLogon(szUsername, szPassword);
+          return nSendResult;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x3a);
-    NET_SID_CLIENT_Send_0x3A_LogonResponse2(szUsername, szPassword);
-    return 1;
 }
 
 BOOL __stdcall BNCLIENT_WaitForLogonResponse() {
@@ -1131,13 +1136,17 @@ BOOL __stdcall BNCLIENT_WaitForLogonResponse() {
     } else {
       DWORD DVar1;
       DVar1 = BNCLIENT_GetBNetClientToken();
-      if (!DVar1) {
-        bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x3a);
-        return bGotAnswer;
-      }
-      if (DVar1 == 1) {
-        bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x54);
-        return bGotAnswer;
+      switch (DVar1) {
+        case 0:
+          {
+            bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x3a);
+            return bGotAnswer;
+          }
+        case 1:
+          {
+            bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x54);
+            return bGotAnswer;
+          }
       }
     }
 
@@ -1145,20 +1154,26 @@ BOOL __stdcall BNCLIENT_WaitForLogonResponse() {
 }
 
 int __fastcall BNCLIENT_SendCreateAccountRequest(char * szUsername, char * szPassword) {
+    int nSendResult;
     DWORD dwClientToken = BNCLIENT_GetBNetClientToken();
-    if (dwClientToken) {
-      if (dwClientToken != 1) {
-        return 0;
-      }
-
-      _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x52);
-      int nSendResult = _net_sid::NET_SID_CLIENT_Send_0x52_AuthAccountCreate(szUsername, szPassword);
-      return nSendResult;
+    switch (dwClientToken) {
+      case 0:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x3d);
+          NET_SID_CLIENT_Send_0x3D_CreateAccount2(szUsername, szPassword);
+          return 1;
+        }
+      case 1:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x52);
+          nSendResult = _net_sid::NET_SID_CLIENT_Send_0x52_AuthAccountCreate(szUsername, szPassword);
+          return nSendResult;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x3d);
-    NET_SID_CLIENT_Send_0x3D_CreateAccount2(szUsername, szPassword);
-    return 1;
 }
 
 BOOL __fastcall BNCLIENT_WaitForCreateAccountResponse(uint32_t * pOutResponseCount) {
@@ -1166,33 +1181,45 @@ BOOL __fastcall BNCLIENT_WaitForCreateAccountResponse(uint32_t * pOutResponseCou
     uint32_t nResponseCount = _net_sid::NET_SID_CLIENT_GetResponseCount2();
     *pOutResponseCount = nResponseCount;
     DWORD dwClientToken = BNCLIENT_GetBNetClientToken();
-    if (!dwClientToken) {
-      bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x3d);
-      return bGotAnswer;
+    switch (dwClientToken) {
+      case 0:
+        {
+          bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x3d);
+          return bGotAnswer;
+        }
+      default:
+        {
+          return 0;
+        }
+      case 1:
+        {
+          bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x52);
+          return bGotAnswer;
+        }
     }
-    if (dwClientToken != 1) {
-      return 0;
-    }
-
-    bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x52);
-    return bGotAnswer;
 }
 
 int __fastcall BNCLIENT_SendChangePasswordRequest(char * szUsername, char * szOldPassword, char * szNewPassword) {
+    int nSendResult;
     DWORD dwClientToken = BNCLIENT_GetBNetClientToken();
-    if (dwClientToken) {
-      if (dwClientToken != 1) {
-        return 0;
-      }
-
-      _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x56);
-      int nSendResult = _net_sid::NET_SID_CLIENT_Send_0x55_AuthAccountChange(szUsername, szOldPassword, szNewPassword);
-      return nSendResult;
+    switch (dwClientToken) {
+      case 0:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x31);
+          NET_SID_CLIENT_Send_0x31_ChangePassword(szUsername, szOldPassword, szNewPassword);
+          return 1;
+        }
+      case 1:
+        {
+          _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x56);
+          nSendResult = _net_sid::NET_SID_CLIENT_Send_0x55_AuthAccountChange(szUsername, szOldPassword, szNewPassword);
+          return nSendResult;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    _net_sid::NET_SID_CLIENT_ResetRequireResponse(0x31);
-    NET_SID_CLIENT_Send_0x31_ChangePassword(szUsername, szOldPassword, szNewPassword);
-    return 1;
 }
 
 BOOL __fastcall BNCLIENT_WaitForChangePasswordResponse(uint32_t * pOutResponseCount) {
@@ -1200,16 +1227,22 @@ BOOL __fastcall BNCLIENT_WaitForChangePasswordResponse(uint32_t * pOutResponseCo
     uint32_t nResponseCount = _net_sid::NET_SID_CLIENT_GetResponseCount1();
     *pOutResponseCount = nResponseCount;
     DWORD dwClientToken = BNCLIENT_GetBNetClientToken();
-    if (!dwClientToken) {
-      bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x31);
-      return bGotAnswer;
+    switch (dwClientToken) {
+      case 0:
+        {
+          bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x31);
+          return bGotAnswer;
+        }
+      default:
+        {
+          return 0;
+        }
+      case 1:
+        {
+          bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x56);
+          return bGotAnswer;
+        }
     }
-    if (dwClientToken != 1) {
-      return 0;
-    }
-
-    bGotAnswer = _net_sid::NET_SID_CLIENT_GetRequiredAnswer(0x56);
-    return bGotAnswer;
 }
 
 int __fastcall BNCLIENT_EnterChatAndJoinChannel(char * szUsername, char * szStatstring, char * szAccountName, char * szChannelName, uint32_t dwFlags) {

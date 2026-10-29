@@ -299,7 +299,7 @@ void __stdcall D2GFX_ClearYBuffer() {
       *pRow = nRowOffset;
       pRow++;
       nRowOffset += nPitch;
-    } while ((int)pRow < (uintptr_t)((char*)&gaYBufferRowOffsets + sizeof(gaYBufferRowOffsets)));
+    } while ((int)pRow < (intptr_t)((char*)&gaYBufferRowOffsets + sizeof(gaYBufferRowOffsets)));
 }
 
 int __stdcall INIT_SetWndProcBGlobalPointer(::WndProcB pWndProcB) {

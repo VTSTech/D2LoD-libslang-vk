@@ -512,9 +512,8 @@ static void __stdcall DAMAGE_ApplyCold(D2UnitStrc * pUnit, int32_t nParam, D2Uni
 
 // Server-side application of the Freeze effect to a target (pUnit2) from attacker pUnit for nParam frames. Players and bosses/special/uninterruptable/merc monsters fall back to DAMAGE_ApplyCold instead of being frozen. For eligible monsters: bails if a monster delay-by-difficulty check passes, divides duration by the difficulty's MonsterFreezeDivisor, and computes an expire game-frame. Creates+attaches a STATE_freeze statlist with expire callback SUNITDMG_StatExpireCallback_ResumeAI (or extends an existing freeze's timeout to the later expiry). Fires game events: event 0xc with the expire frame, an AITHINK timer trigger, and event 2 one frame after expiry to resume AI. Halts via Fog::ErrorManager on a zero freeze divisor or a non-monster reaching the event stage.
 static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2UnitStrc * pUnit2) {
-    D2MonStatsTxt* pMonStatsTxt;
+    eD2States eFrozenState;
     uint32_t nCheckResult;
-    D2DifficultyLevelsTxt* pDiffLevels;
     int32_t nFreezeDelay;
     int32_t nMonStatsId;
     int32_t nAttackerGUID;
@@ -527,35 +526,40 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
     if (pUnit2) {
       eTargetType = pUnit2->eUnitType;
     }
-    if (eTargetType == UNIT_PLAYER) {
-      DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
-      return;
-    }
-    if (eTargetType == UNIT_MONSTER) {
-      eD2States eFrozenState;
-      eFrozenState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
-      if (eFrozenState != STATE_none) {
-        return;
-      }
-      if (!pUnit2) {
-        nMonStatsId = -1;
-      } else {
-        nMonStatsId = pUnit2->nClassId;
-      }
 
-      pVictimCopy = pUnit2;
-      pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonStatsId);
-      nCheckResult = D2Common::Monsters::MONSTERS::UnitIsMarkedBoss(pMonStatsTxt, pVictimCopy);
-      if (nCheckResult || (nCheckResult = Monsters::CheckMonsterType(pUnit2, 8) , nCheckResult != 0)) {
-        DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
-        return;
-      }
+    switch (eTargetType) {
+      case UNIT_PLAYER:
+        {
+          DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+          return;
+        }
+      case UNIT_MONSTER:
+        {
+          eFrozenState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
+          if (eFrozenState != STATE_none) {
+            return;
+          }
+          if (!pUnit2) {
+            nMonStatsId = -1;
+          } else {
+            nMonStatsId = pUnit2->nClassId;
+          }
 
-      nCheckResult = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit2);
-      if (nCheckResult) {
-        DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
-        return;
-      }
+          pVictimCopy = pUnit2;
+          nCheckResult = D2Common::Monsters::MONSTERS::UnitIsMarkedBoss(D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonStatsId), pVictimCopy);
+          if (nCheckResult || (nCheckResult = Monsters::CheckMonsterType(pUnit2, 8) , nCheckResult != 0)) {
+            DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+            return;
+          }
+
+          nCheckResult = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit2);
+          if (nCheckResult) {
+            DAMAGE_ApplyCold(pUnit, nParam, pUnit2);
+            return;
+          }
+
+          break;
+        }
     }
 
     D2StatListExStrc* pFreezeStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit2, STATE_freeze);
@@ -565,6 +569,7 @@ static void __stdcall DAMAGE_ApplyFreeze(D2UnitStrc * pUnit, int32_t nParam, D2U
       return;
     }
     if (pUnit2 && pUnit2->eUnitType == UNIT_MONSTER) {
+      D2DifficultyLevelsTxt* pDiffLevels;
       pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)pGame->nDifficulty);
       if (!pDiffLevels->MonsterFreezeDivisor) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x254);
@@ -1038,12 +1043,17 @@ static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageC
         nResistTotal += pCtx->pDiffLevels->ResistPenalty;
       } else {
         nDifficulty = pCtx->pGame->nDifficulty;
-        if (nDifficulty != 1) {
-          if (nDifficulty == 2) {
-            nResistTotal += -0x32;
-          }
-        } else {
-          nResistTotal += -0x14;
+        switch (nDifficulty) {
+          case 1:
+            {
+              nResistTotal += -0x14;
+              break;
+            }
+          case 2:
+            {
+              nResistTotal += -0x32;
+              break;
+            }
         }
       }
     }
@@ -2007,8 +2017,7 @@ static void __stdcall DAMAGE_RemoveObjectAtSameCoords(int32_t nClassId, D2UnitSt
 // Server-side kill handler for player and monster units. Guards against already-dead or unkillable units (MonStats killable flag). For monsters: optionally removes the unit from its owner's pet list, awards kill XP and arena credit to the attacker, fires the Death lifecycle transition (computing facing direction from attacker position), triggers quest callbacks, and handles objCol-flagged monster cleanup (e.g. removing companion objects at coords 0x23B/0x23C). No-ops on invalid unit types.
 void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pAttacker, BOOL bRemoveFromOwner) {
     bool bCanKill;
-    int32_t nAttackerYPos;
-    int32_t nAttackerXPos;
+    D2UnitStrc* pOwner;
     int32_t nDirection;
     BOOL bMonStats2_objCol;
     D2MonsterKillStrc pMonsterKill;
@@ -2016,41 +2025,52 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
     if (pUnit) {
       eVictimType = pUnit->eUnitType;
     }
-    if (eVictimType != UNIT_PLAYER) {
-      D2UnitStrc* pOwner;
-      if (eVictimType != UNIT_MONSTER) {
-        return;
-      }
-      if (!pUnit) {
-        return;
-      }
-      if (pUnit->eAnimMode.ePlayerMode == Death) {
-        return;
-      }
-      if (pUnit->eAnimMode.ePlayerMode == Kick) {
-        return;
-      }
 
-      bMonStats2_objCol = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetFlagsByBitOffset(pUnit->nClassId, killable);
-      if (!bMonStats2_objCol) {
-        return;
-      }
+    switch (eVictimType) {
+      case UNIT_PLAYER:
+        {
+          if (!pUnit) {
+            return;
+          }
+          if (pUnit->eAnimMode.ePlayerMode == Death) {
+            return;
+          }
+          if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
+            return;
+          }
 
-      pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
-      if (bRemoveFromOwner && pOwner && pOwner->eUnitType == UNIT_PLAYER) {
-        PLAYER::PlayerPets::SERVERUNIT_RemovePetFromUnit(pGame, pOwner, pUnit);
-      }
-    } else {
-      if (!pUnit) {
-        return;
-      }
-      if (pUnit->eAnimMode.ePlayerMode == Death) {
-        return;
-      }
-      if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
-        return;
-      }
+          break;
+        }
+      default:
+        {
+          return;
+        }
+      case UNIT_MONSTER:
+        {
+          if (!pUnit) {
+            return;
+          }
+          if (pUnit->eAnimMode.ePlayerMode == Death) {
+            return;
+          }
+          if (pUnit->eAnimMode.ePlayerMode == Kick) {
+            return;
+          }
+
+          bMonStats2_objCol = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetFlagsByBitOffset(pUnit->nClassId, killable);
+          if (!bMonStats2_objCol) {
+            return;
+          }
+
+          pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
+          if (bRemoveFromOwner && pOwner && pOwner->eUnitType == UNIT_PLAYER) {
+            PLAYER::PlayerPets::SERVERUNIT_RemovePetFromUnit(pGame, pOwner, pUnit);
+          }
+
+          break;
+        }
     }
+
     if (pAttacker) {
       Monsters::SERVER_AwardKillExperience(pAttacker, pUnit, pGame);
       GAME::Arena::SERVER_ARENA_KillHandler(pGame, pAttacker, pUnit);
@@ -2064,9 +2084,9 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
 
     GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &pMonsterKill);
     if (pAttacker) {
+      int32_t nAttackerYPos;
       nAttackerYPos = D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker);
-      nAttackerXPos = D2Client::Units::GetXPosFromDynamicPathUnit(pAttacker);
-      nDirection = D2Common::Units::GetDirectionToCoords(pUnit, nAttackerXPos, nAttackerYPos);
+      nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pAttacker), nAttackerYPos);
       *(uint8_t*)(char*)&nDirection = (uint8_t)nDirection;
     } else {
       *(uint8_t*)(char*)&nDirection = D2Common::PATH::DynamicPath::GetDirection(pUnit->pPath.pDynamicPath);
@@ -3371,42 +3391,51 @@ static void __stdcall SERVER_PartyShareExperience(int32_t nBaseExperience, D2Uni
 
 // Resolves the player owner responsible for a kill, for XP/credit attribution. Returns pAttacker directly if it is a player. For monsters, walks the ownership chain (GetOwnerUnit) and checks curse stat lists (flag 0x800) on both attacker and victim to find a cursing player owner. Returns null if no player owner is found.
 static D2UnitStrc * __stdcall SERVER_GetOwnerFromMonsterUnit(::SGAMEDATA * pGame, D2UnitStrc * pVictim, D2UnitStrc * pAttacker) {
+    D2UnitStrc* pMonsterOwner;
+    BOOL bHasCurse;
+    eD2UnitType eUnitType_00;
     uint32_t nOwnerGUID;
+    D2StatListExStrc* pStatList;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pAttacker) {
       eUnitType = pAttacker->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return nullptr;
-      }
 
-      D2UnitStrc* pMonsterOwner = Ai::AiGeneral::GetOwnerUnit(pAttacker);
-      D2StatListExStrc* pStatList = 0;
-      BOOL bHasCurse = D2Common::DATATBLS::ItemStats::STATES_HasCurseState(pAttacker);
-      if (bHasCurse) {
-        pStatList = D2Common::Stats::StatsEx::GetStatsByFlags(pAttacker, 0x800);
-      }
-      if (pVictim) {
-        bHasCurse = D2Common::DATATBLS::ItemStats::STATES_HasCurseState(pVictim);
-        if (bHasCurse) {
-          pStatList = D2Common::Stats::StatsEx::GetStatsByFlags(pVictim, 0x800);
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          return pAttacker;
         }
-      }
-      if (pStatList) {
-        eD2UnitType eUnitType_00;
-        eUnitType_00 = D2Common::Stats::StatsEx::GetOwnerType(pStatList);
-        nOwnerGUID = D2Common::Stats::StatsEx::GetOwnerGUID(pStatList);
-        pMonsterOwner = SUnit::FindUnitFromTable(pGame, eUnitType_00, nOwnerGUID);
-      }
-      if (!(pMonsterOwner && pMonsterOwner->eUnitType == UNIT_PLAYER)) {
-        return nullptr;
-      }
+      case UNIT_MONSTER:
+        {
+          pMonsterOwner = Ai::AiGeneral::GetOwnerUnit(pAttacker);
+          pStatList = 0;
+          bHasCurse = D2Common::DATATBLS::ItemStats::STATES_HasCurseState(pAttacker);
+          if (bHasCurse) {
+            pStatList = D2Common::Stats::StatsEx::GetStatsByFlags(pAttacker, 0x800);
+          }
+          if (pVictim) {
+            bHasCurse = D2Common::DATATBLS::ItemStats::STATES_HasCurseState(pVictim);
+            if (bHasCurse) {
+              pStatList = D2Common::Stats::StatsEx::GetStatsByFlags(pVictim, 0x800);
+            }
+          }
+          if (pStatList) {
+            eUnitType_00 = D2Common::Stats::StatsEx::GetOwnerType(pStatList);
+            nOwnerGUID = D2Common::Stats::StatsEx::GetOwnerGUID(pStatList);
+            pMonsterOwner = SUnit::FindUnitFromTable(pGame, eUnitType_00, nOwnerGUID);
+          }
+          if (!(pMonsterOwner && pMonsterOwner->eUnitType == UNIT_PLAYER)) {
+            return nullptr;
+          }
 
-      return pMonsterOwner;
+          return pMonsterOwner;
+        }
+      default:
+        {
+          return nullptr;
+        }
     }
-
-    return pAttacker;
 }
 
 // Sends the mercenary its share of an experience award. Non-standard convention: the experience amount arrives in EAX and the second unit in EDI, with three stack arguments (RET 0xc). Declaring only the stack arguments left the award looking like an unassigned local in the 'if (0 >= x) return' guard, so the merc experience gate ran on whatever EAX happened to hold.
@@ -3446,8 +3475,7 @@ static void __stdcall SERVER_SEND_MercExperience(int32_t nExperience, D2UnitStrc
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_experience, nValue, 0);
     uint16_t wPacketType = 0xd;
     uint32_t nNewMercXp = nValue;
-    D2ClientStrc* pClient = SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(pClient, pUnit2, wPacketType, nMercGUID_00, nNewMercXp);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd), pUnit2, wPacketType, nMercGUID_00, nNewMercXp);
     int32_t nLevel = nMercLevel;
     do {
       nOwnerLevel = nLevel + 1;

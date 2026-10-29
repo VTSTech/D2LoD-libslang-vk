@@ -125,7 +125,7 @@ void __fastcall Q30_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q30_Callback00_NpcActivate;
     pQuestData->pNpcMessages = &A4Q4::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->pQuestSpecificData.pA4Q4 = 0;

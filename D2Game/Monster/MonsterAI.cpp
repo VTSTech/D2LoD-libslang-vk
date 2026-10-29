@@ -327,8 +327,7 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     _bFirstInteraction = (uint32_t)!pExistingAiSub;
     pAi->pAiSub = pNewAiSub;
     D2UnitStrc* pNpcUnitTmp = pNpcUnit;
-    ::SGAMEDATA* pClientGameCtx = GAME::Clients::CLIENT_GetGame(pClient);
-    UNIT::SUNITNPC::SendMercForHireList(pClientGameCtx, pClient, pNpcUnitTmp, _bFirstInteraction);
+    UNIT::SUNITNPC::SendMercForHireList(GAME::Clients::CLIENT_GetGame(pClient), pClient, pNpcUnitTmp, _bFirstInteraction);
     UNIT::SUnit::SetInteractInfo(pPlayer, UNIT_MONSTER, pNpcUnit->nUnitGUID);
     pNewAiSub->nState = 0;
     D2GSPacketSrv0x27_TextStrc* pTxtMsg = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(pGame->pMemoryPool);
@@ -341,8 +340,7 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(pTxtMsg);
     Quests::QUESTS::NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(pGame, pClient);
     dwTmp = pNpcUnit->nUnitGUID;
-    D2BitBufferStrc* pBitBuffer = Quests::QUESTS::GetQuestBitBuffer(pGame, pPlayer);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(pClient, 0x28, 1, dwTmp, pBitBuffer, questActionType);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(pClient, 0x28, 1, dwTmp, Quests::QUESTS::GetQuestBitBuffer(pGame, pPlayer), questActionType);
     return 0;
 }
 
@@ -688,14 +686,11 @@ void __fastcall ClearAISub(::SGAMEDATA * pGame, D2UnitStrc * pUnit, fpAiClear fp
 // @sourcefile .\MONSTER\MonsterAI.cpp
 void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pMinion, int16_t nMercLevelOverride, D2MercForHire * pHireInfo, BOOL bSkipUnitNodeCreate) {
     D2UnitStrc* pExistingMerc;
-    D2RoomStrc* pRoom;
     int32_t nAct;
     BOOL BVar1;
-    D2HirelingTxt* pHirelingTxt;
     D2HirelingHireData sMercHireData;
     D2PetDataStrc sPetData;
     eD2UnitType eOldMercUnitType;
-    uint32_t dwZeroReviveCost;
     int nOldMercGUID;
     if (!(pUnit && pMinion && pHireInfo && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
@@ -709,16 +704,12 @@ void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 
     pExistingMerc = PLAYER::PlayerPets::SERVER_GetUnitPetByTypeId(pGame, pUnit, PETTYPE_hireable, 1);
     if (pExistingMerc) {
-      D2ClientStrc* pClient;
-      dwZeroReviveCost = 0;
-      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\MONSTER\\MonsterAI.cpp", 0x52);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x9B_MercReviveCost(pClient, 0xffff, dwZeroReviveCost);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x9B_MercReviveCost(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\MONSTER\\MonsterAI.cpp", 0x52), 0xffff, 0);
       Ai::AiGeneral::AssignMinionOwner(pGame, pExistingMerc, -1, UNIT_MONSTER, 0, 0);
       PLAYER::PlayerPets::RemovePetByGuidAndNotify(pGame, pUnit, pExistingMerc->nUnitGUID, 0);
       nOldMercGUID = pExistingMerc->nUnitGUID;
       eOldMercUnitType = UNIT_MONSTER;
-      pRoom = D2Common::Units::UNITS_GetRoom(pExistingMerc);
-      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eOldMercUnitType, nOldMercGUID);
+      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pExistingMerc), eOldMercUnitType, nOldMercGUID);
       UNIT::SUnit::FreeServerUnit(pGame, pExistingMerc);
     }
 
@@ -735,6 +726,7 @@ void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     pMinion->eUnitFlags |= UNITFLAG_ISREVIVE;
     Ai::AiGeneral::AssignMinionOwner(pGame, pMinion, pUnit->nUnitGUID, pUnit->eUnitType, 0, 0);
     if (nMercLevelOverride == -1) {
+      D2HirelingTxt* pHirelingTxt;
       pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, sMercHireData.nId & 0xffff, sMercHireData.nLevel);
       if (!pHirelingTxt) {
         return;

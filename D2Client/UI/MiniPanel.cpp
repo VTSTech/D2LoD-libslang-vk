@@ -56,6 +56,7 @@ void __stdcall UpdateGlobalAlwaysRun() {
 }
 
 void MINIPANEL_DrawBackground(int32_t nPanelSection) {
+    int nXOffset;
     D2GfxDataStrc sGfxData;
     if (!nPanelSection) {
       return;
@@ -63,30 +64,34 @@ void MINIPANEL_DrawBackground(int32_t nPanelSection) {
 
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = gpMiniPanelBackgroundDC6;
-    if (nPanelSection != 1) {
-      int nXOffset;
-      if (nPanelSection == 2) {
-        if (gbMiniPanelSinglePlayer) {
-          nXOffset = -0x4a;
-        } else {
-          nXOffset = -0x54;
+    switch (nPanelSection) {
+      case 1:
+        {
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xcd, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          break;
         }
+      case 2:
+        {
+          if (gbMiniPanelSinglePlayer) {
+            nXOffset = -0x4a;
+          } else {
+            nXOffset = -0x54;
+          }
 
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + nXOffset - 3, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
-        return;
-      }
-      if (nPanelSection == 3) {
-        if (gbMiniPanelSinglePlayer) {
-          nXOffset = ScreenSizeX / 2 + 0x38;
-        } else {
-          nXOffset = ScreenSizeX / 2 + 0x23;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + nXOffset - 3, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          return;
         }
+      case 3:
+        {
+          if (gbMiniPanelSinglePlayer) {
+            nXOffset = ScreenSizeX / 2 + 0x38;
+          } else {
+            nXOffset = ScreenSizeX / 2 + 0x23;
+          }
 
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nXOffset - 2, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
-        return;
-      }
-    } else {
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xcd, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nXOffset - 2, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          return;
+        }
     }
 }
 

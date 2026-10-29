@@ -715,32 +715,41 @@ static void __fastcall SBMP_UncompressPcxImage(int dstSize, uint8_t * dst, int s
           if (nRLECount >= width - nRunLen) {
             _Size = width - nRunLen;
           }
-          if (bytesPerPixel != 1) {
-            if (bytesPerPixel != 3) {
-              nDstOff = nRunLen * bytesPerPixel + nPlaneIdx;
-              nRowBytes = _Size * bytesPerPixel;
-              if (nDstRemaining < (int)(_Size * bytesPerPixel)) {
-                nRowBytes = nDstRemaining;
-              }
 
-              nRowBytes += nDstOff;
-              for (; nDstOff < nRowBytes; nDstOff += bytesPerPixel) {
-                dst[nDstOff] = bVar1;
+          switch (bytesPerPixel) {
+            case 1:
+              {
+                memset(dst + nRunLen, (uint32_t)bVar1, _Size);
+                break;
               }
-            } else {
-              nDstOff = nPlaneIdx + nRunLen * 3;
-              nRowBytes = _Size * 3;
-              if (nDstRemaining < (int)(_Size * 3)) {
-                nRowBytes = nDstRemaining;
-              }
+            case 3:
+              {
+                nDstOff = nPlaneIdx + nRunLen * 3;
+                nRowBytes = _Size * 3;
+                if (nDstRemaining < (int)(_Size * 3)) {
+                  nRowBytes = nDstRemaining;
+                }
 
-              nRowBytes += nDstOff;
-              for (; nDstOff < nRowBytes; nDstOff += 3) {
-                dst[nDstOff] = bVar1;
+                nRowBytes += nDstOff;
+                for (; nDstOff < nRowBytes; nDstOff += 3) {
+                  dst[nDstOff] = bVar1;
+                }
+
+                break;
               }
-            }
-          } else {
-            memset(dst + nRunLen, (uint32_t)bVar1, _Size);
+            default:
+              {
+                nDstOff = nRunLen * bytesPerPixel + nPlaneIdx;
+                nRowBytes = _Size * bytesPerPixel;
+                if (nDstRemaining < (int)(_Size * bytesPerPixel)) {
+                  nRowBytes = nDstRemaining;
+                }
+
+                nRowBytes += nDstOff;
+                for (; nDstOff < nRowBytes; nDstOff += bytesPerPixel) {
+                  dst[nDstOff] = bVar1;
+                }
+              }
           }
 
           nRunLen += _Size;
@@ -758,18 +767,26 @@ static void __fastcall SBMP_UncompressPcxImage(int dstSize, uint8_t * dst, int s
         } while (nRLECount);
       } else {
         if (nRunLen < width) {
-          if (bytesPerPixel != 1) {
-            if (bytesPerPixel != 3) {
-              if (dst + nRunLen * bytesPerPixel + nPlaneIdx < pDstEnd) {
-                dst[nRunLen * bytesPerPixel + nPlaneIdx] = byVal;
+          switch (bytesPerPixel) {
+            case 1:
+              {
+                dst[nRunLen] = byVal;
+                break;
               }
-            } else {
-              if (dst + nPlaneIdx + nRunLen * 3 < pDstEnd) {
-                dst[nPlaneIdx + nRunLen * 3] = byVal;
+            case 3:
+              {
+                if (dst + nPlaneIdx + nRunLen * 3 < pDstEnd) {
+                  dst[nPlaneIdx + nRunLen * 3] = byVal;
+                }
+
+                break;
               }
-            }
-          } else {
-            dst[nRunLen] = byVal;
+            default:
+              {
+                if (dst + nRunLen * bytesPerPixel + nPlaneIdx < pDstEnd) {
+                  dst[nRunLen * bytesPerPixel + nPlaneIdx] = byVal;
+                }
+              }
           }
         }
 
@@ -1291,17 +1308,23 @@ int __stdcall SBmpDecodeImage(int nFormat, void * pData, uint32_t nDataSize, voi
       if (!nFormat && nDataSize >= 2) {
         nFormat = SBMP_DetermineImageType(*(short int*)pData);
       }
-      if (nFormat == 1) {
-        iResult = SBMP_DecodeBmpMem((int*)pnWidth, (int*)pnHeight, pnBpp, (uint8_t*)pData, (int)pPalette, pbPixels, nPixelBufSize);
-        return iResult;
-      }
-      if (nFormat == 2) {
-        iResult = SBMP_DecodePcxMem(pnWidth, pData, nDataSize, (int)pPalette, pbPixels, nPixelBufSize, (int*)pnHeight, (int*)pnBpp);
-        return iResult;
-      }
-      if (nFormat == 3) {
-        iResult = SBMP_LoadFromMemory((uint8_t*)pData, nDataSize, (uint32_t*)pPalette, pbPixels, nPixelBufSize, pnWidth, pnHeight, pnBpp);
-        return iResult;
+
+      switch (nFormat) {
+        case 1:
+          {
+            iResult = SBMP_DecodeBmpMem((int*)pnWidth, (int*)pnHeight, pnBpp, (uint8_t*)pData, (int)pPalette, pbPixels, nPixelBufSize);
+            return iResult;
+          }
+        case 2:
+          {
+            iResult = SBMP_DecodePcxMem(pnWidth, pData, nDataSize, (int)pPalette, pbPixels, nPixelBufSize, (int*)pnHeight, (int*)pnBpp);
+            return iResult;
+          }
+        case 3:
+          {
+            iResult = SBMP_LoadFromMemory((uint8_t*)pData, nDataSize, (uint32_t*)pPalette, pbPixels, nPixelBufSize, pnWidth, pnHeight, pnBpp);
+            return iResult;
+          }
       }
     }
 
@@ -1346,19 +1369,24 @@ uint32_t __stdcall SBmpLoadImage(int * pszPath, void * pPalette, void * pPixels,
         }
 
         nDetectedFormat = 0;
-        if (nFormat != 1) {
-          if (nFormat == 2) {
-            iReadResult = SBMP_DecodePcxFile((D2MPQFileStrc*)pszPath, (uint8_t*)pPixels, (int*)pnHeight, (int)pPalette, iReadResult, pnWidth, (int*)pnBpp);
-            SFile::SFileCloseFile((D2MPQFileStrc*)pszPath);
-            return iReadResult;
-          }
-          if (nFormat == 3) {
-            iReadResult = SBMP_ReadTGA((D2MPQFileStrc*)pszPath, pnWidth, pPixels, (uint8_t*)pPalette, iReadResult, pnHeight, pnBpp);
-            SFile::SFileCloseFile((D2MPQFileStrc*)pszPath);
-            return iReadResult;
-          }
-        } else {
-          nDetectedFormat = SBMP_DecodeBmpFile((int*)pnWidth, pPalette, (D2MPQFileStrc*)pszPath, pPixels, iReadResult, (int*)pnHeight, pnBpp);
+        switch (nFormat) {
+          case 1:
+            {
+              nDetectedFormat = SBMP_DecodeBmpFile((int*)pnWidth, pPalette, (D2MPQFileStrc*)pszPath, pPixels, iReadResult, (int*)pnHeight, pnBpp);
+              break;
+            }
+          case 2:
+            {
+              iReadResult = SBMP_DecodePcxFile((D2MPQFileStrc*)pszPath, (uint8_t*)pPixels, (int*)pnHeight, (int)pPalette, iReadResult, pnWidth, (int*)pnBpp);
+              SFile::SFileCloseFile((D2MPQFileStrc*)pszPath);
+              return iReadResult;
+            }
+          case 3:
+            {
+              iReadResult = SBMP_ReadTGA((D2MPQFileStrc*)pszPath, pnWidth, pPixels, (uint8_t*)pPalette, iReadResult, pnHeight, pnBpp);
+              SFile::SFileCloseFile((D2MPQFileStrc*)pszPath);
+              return iReadResult;
+            }
         }
 
         SFile::SFileCloseFile((D2MPQFileStrc*)pszPath);

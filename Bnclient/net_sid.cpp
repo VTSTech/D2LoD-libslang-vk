@@ -823,6 +823,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountCreate(char * pPacketData, si
 // On status 0, client computes SRP proof using salt and server public key, then sends proof packet.
 // On status 1, account doesn't exist. On status 5, initiates account upgrade flow.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountLogon(char * pPacketData, size_t nPacketSize) {
+    BOOL dwStatusCode;
     int32_t iVar2;
     if (nPacketSize < 0x44) {
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountLogon");
@@ -830,33 +831,40 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountLogon(char * pPacketData, siz
     }
 
     int iVar1 = *(int*)pPacketData;
-    if (iVar1) {
-      if (iVar1 != 1) {
-        BOOL dwStatusCode;
-        if (iVar1 != 5) {
+    switch (iVar1) {
+      case 0:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Logon requires proof");
+          iVar2 = NET_SID_CLIENT_Send_0x54_AuthAccountLogonProof(pPacketData + 4, pPacketData + 0x24);
+          return iVar2;
+        }
+      case 1:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Logon failed: Account unknown");
+          BNMESSQUEUE_SetStateIfZero(0xd);
+          g_nRealmLogonResult = 1;
+          break;
+        }
+      case 5:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Logon requires upgrade");
+          dwStatusCode = NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(1);
+          if (!dwStatusCode) {
+            BNMESSQUEUE_SetStateIfZero(0x12);
+            return 0;
+          }
+
+          break;
+        }
+      default:
+        {
           Debug::DEBUG_UnusedDebugFunction("Logon failed: Unknown result");
           BNMESSQUEUE_SetStateIfZero(0x12);
           return 0;
         }
-
-        Debug::DEBUG_UnusedDebugFunction("Logon requires upgrade");
-        dwStatusCode = NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(1);
-        if (!dwStatusCode) {
-          BNMESSQUEUE_SetStateIfZero(0x12);
-          return 0;
-        }
-      } else {
-        Debug::DEBUG_UnusedDebugFunction("Logon failed: Account unknown");
-        BNMESSQUEUE_SetStateIfZero(0xd);
-        g_nRealmLogonResult = 1;
-      }
-
-      return 1;
     }
 
-    Debug::DEBUG_UnusedDebugFunction("Logon requires proof");
-    iVar2 = NET_SID_CLIENT_Send_0x54_AuthAccountLogonProof(pPacketData + 4, pPacketData + 0x24);
-    return iVar2;
+    return 1;
 }
 
 // SID_AUTH_ACCOUNTLOGONPROOF (0x54) packet handler - SRP server proof verification
@@ -906,34 +914,40 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountLogonProof(char * pPacketData
 // On status 0, client computes SRP proof with new password and sends change proof packet.
 // On status 1, account doesn't exist. On status 5, initiates account upgrade before allowing change.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChange(char * pPacketData, size_t nPacketSize) {
+    BOOL bUpgradeSent;
+    int32_t iVar1;
     if (nPacketSize < 0x44) {
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountChange");
       return 0;
     }
 
     int dwStatusCode = *(int*)pPacketData;
-    if (dwStatusCode) {
-      if (dwStatusCode != 1) {
-        if (dwStatusCode != 5) {
+    switch (dwStatusCode) {
+      case 0:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Change requires proof");
+          iVar1 = NET_SID_CLIENT_Send_0x56_AuthAccountChangeProof(pPacketData + 4, pPacketData + 0x24);
+          return iVar1;
+        }
+      case 1:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Change failed: Account unknown");
+          BNMESSQUEUE_SetStateIfZero(0xd);
+          return 1;
+        }
+      case 5:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Change requires upgrade");
+          bUpgradeSent = NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(0);
+          return bUpgradeSent;
+        }
+      default:
+        {
           Debug::DEBUG_UnusedDebugFunction("Change failed: Unknown result");
           BNMESSQUEUE_SetStateIfZero(0x12);
           return 0;
         }
-
-        Debug::DEBUG_UnusedDebugFunction("Change requires upgrade");
-        BOOL bUpgradeSent = NET_SID_CLIENT_Send_0x57_AuthAccountUpgrade(0);
-        return bUpgradeSent;
-      }
-
-      Debug::DEBUG_UnusedDebugFunction("Change failed: Account unknown");
-      BNMESSQUEUE_SetStateIfZero(0xd);
-      return 1;
     }
-
-    int32_t iVar1;
-    Debug::DEBUG_UnusedDebugFunction("Change requires proof");
-    iVar1 = NET_SID_CLIENT_Send_0x56_AuthAccountChangeProof(pPacketData + 4, pPacketData + 0x24);
-    return iVar1;
 }
 
 // SID_AUTH_ACCOUNTCHANGEPROOF (0x56) packet handler - Password change proof verification
@@ -944,6 +958,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChange(char * pPacketData, si
 // If verification succeeds, password change complete and old credentials cleared from memory.
 // On status 2, old password was incorrect. Sets global gbAuthChangeProofComplete to signal UI completion.
 BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketData, size_t nPacketSize) {
+    int32_t bProofValid;
     char* szFailureMessage;
     if (nPacketSize < 0x18) {
       Debug::DEBUG_UnusedDebugFunction("INVALID: AuthAccountChangeProof");
@@ -952,25 +967,30 @@ BOOL __fastcall NET_SID_CLIENT_Incoming_AuthAccountChangeProof(char * pPacketDat
 
     int dwStatusCode = *(int*)pPacketData;
     NET_SID_ClearSrpPassword();
-    if (dwStatusCode) {
-      if (dwStatusCode == 2) {
-        Debug::DEBUG_UnusedDebugFunction("Change Proof failed: Invalid password");
-        g_SIDPacketResponseFlags[0x55] = 1;
-        BNMESSQUEUE_SetStateIfZero(0xe);
-        return 1;
-      }
+    switch (dwStatusCode) {
+      case 0:
+        {
+          bProofValid = NET_SID_CLIENT_VerifyServerProof(pPacketData + 4);
+          if (bProofValid) {
+            Debug::DEBUG_UnusedDebugFunction("Change Proof success");
+            g_SIDPacketResponseFlags[0x55] = 1;
+            return 1;
+          }
 
-      szFailureMessage = "Change Proof failed: Unknown result";
-    } else {
-      int32_t bProofValid;
-      bProofValid = NET_SID_CLIENT_VerifyServerProof(pPacketData + 4);
-      if (bProofValid) {
-        Debug::DEBUG_UnusedDebugFunction("Change Proof success");
-        g_SIDPacketResponseFlags[0x55] = 1;
-        return 1;
-      }
-
-      szFailureMessage = "Change Proof failed: Server didn\'t know our password but told us it did!";
+          szFailureMessage = "Change Proof failed: Server didn\'t know our password but told us it did!";
+          break;
+        }
+      case 2:
+        {
+          Debug::DEBUG_UnusedDebugFunction("Change Proof failed: Invalid password");
+          g_SIDPacketResponseFlags[0x55] = 1;
+          BNMESSQUEUE_SetStateIfZero(0xe);
+          return 1;
+        }
+      default:
+        {
+          szFailureMessage = "Change Proof failed: Unknown result";
+        }
     }
 
     Debug::DEBUG_UnusedDebugFunction(szFailureMessage);
@@ -1406,8 +1426,7 @@ int32_t __stdcall NET_SID_CLIENT_Send_0x51_AuthCheck() {
     }
 
     pKeyOwnerStr = (int)pPacketEnd - (int)szBufferOutput;
-    pPacketEnd = NET_SID_CLIENT_GetCdKeyOwner();
-    Storm::Source::SSTR::SStrCopy((char*)szBufferOutput, pPacketEnd, pKeyOwnerStr);
+    Storm::Source::SSTR::SStrCopy((char*)szBufferOutput, NET_SID_CLIENT_GetCdKeyOwner(), pKeyOwnerStr);
     FreeKeys();
     bHasPatchFile = Storm::Source::SSTR::SStrLen((char*)szBufferOutput);
     BnSend::NET_SID_CLIENT_Send(0x51, (char*)&dwClientToken, (size_t)(szBufferOutput + (bHasPatchFile + 1 - (uintptr_t)&dwClientToken)));

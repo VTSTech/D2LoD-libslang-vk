@@ -294,13 +294,18 @@ int __stdcall SRegLoadValue(char * pTree, char * pKey, uint8_t byFlags, int32_t 
       __frame0.valueBuf[0] &= -256;
       bReadOk = SREG_InternalLoadEntry(&__frame0.dwType, (LPBYTE)__frame0.valueBuf, pTree, byFlags, 0x100, pKey, &__frame0.dwDataLen);
       if (bReadOk) {
-        if (__frame0.dwType != 1) {
-          if (__frame0.dwType == 4) {
-            *__frame0.pnOutVal = __frame0.valueBuf[0];
-          }
-        } else {
-          nParsed = strtoul((char*)__frame0.valueBuf, nullptr, 0);
-          *__frame0.pnOutVal = nParsed;
+        switch (__frame0.dwType) {
+          case 1:
+            {
+              nParsed = strtoul((char*)__frame0.valueBuf, nullptr, 0);
+              *__frame0.pnOutVal = nParsed;
+              break;
+            }
+          case 4:
+            {
+              *__frame0.pnOutVal = __frame0.valueBuf[0];
+              break;
+            }
         }
 
         return 1;

@@ -118,13 +118,11 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/MiniPanel.h"
-#include "D2Client/UNIT/UnitSnd.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Launch/CharSel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -141,18 +139,12 @@
 #define RECON_FPTD_fpRequiredUserAction
 typedef BOOL (*fpRequiredUserAction)();
 #endif
-#ifndef RECON_FPTD_fpDialogFunc
-#define RECON_FPTD_fpDialogFunc
-typedef int (__stdcall *fpDialogFunc)();
-#endif
 #ifndef RECON_FPTD_fnBinkFrameCallback
 #define RECON_FPTD_fnBinkFrameCallback
 typedef void (__stdcall *fnBinkFrameCallback)();
 #endif
 
 namespace D2Client {
-
-static eD2PlayerClassID eD2PlayerClassID_00712f00 = CLASS_SORCERESS; D2_STATIC_GUARD(eD2PlayerClassID_00712f00, "D2Client::eD2PlayerClassID_00712f00");
 
 // @sourcefile .\CORE\WINMAIN.CPP
 BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
@@ -900,7 +892,7 @@ void __stdcall CMD_RebuildDerivedBindings() {
       }
 
       pBinding++;
-      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
+      if ((int)pBinding >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
         return;
       }
     } while (true);
@@ -1004,13 +996,13 @@ uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {
     return gaChattablePlayers;
 }
 
-void __fastcall ROSTER_SetArenaKillCountGlobal(uint32_t dwValue) {
-    eD2PlayerClassID_00712f00 = dwValue;
+void __fastcall ROSTER_SetArenaKillCountGlobal(eD2PlayerClassIDDWORD dwValue) {
+    eD2PlayerClassIDDWORD_00712f00 = dwValue;
 }
 
 // Returns the default player class ID stored in global _eD2PlayerClassID_00712f00, used when creating a new character without an explicit class selection.
-eD2PlayerClassID __stdcall CLIENT_GetDefaultCharClass() {
-    return (eD2PlayerClassID)eD2PlayerClassID_00712f00;
+eD2PlayerClassIDDWORD __stdcall CLIENT_GetDefaultCharClass() {
+    return eD2PlayerClassIDDWORD_00712f00;
 }
 
 // Returns 1 if arena mode is active (bit 8 of CLIENT_ArenaFlags is set), indicating the game session is running in arena/PvP mode.
@@ -1094,8 +1086,7 @@ void __stdcall INPUT_HandleIMEComposition(D2UIMouseMsgStrc * pMsg) {
         }
       }
 
-      /* HIMC param_2 for ImmReleaseContext */ hWnd = D2gfx::D2GFX::GetHwnd();
-      /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(hWnd, hImc);
+      /* HIMC param_2 for ImmReleaseContext */ /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(D2gfx::D2GFX::GetHwnd(), hImc);
     }
 
     pMsg->bHandled = 1;
@@ -1196,9 +1187,25 @@ void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
     if (!nActionType) {
       return;
     }
-    if (eTargetType != UNIT_PLAYER) {
-      if (eTargetType != UNIT_MONSTER) {
-        if (eTargetType != UNIT_OBJECT) {
+
+    switch (eTargetType) {
+      case UNIT_PLAYER:
+        {
+          fInteractResult = UNIT::UnitMode::UNITMODE_HandleItemOrObjectInteraction(nActionType, 0, nUnitGUID, pTargetUnit, pUnit);
+          break;
+        }
+      case UNIT_MONSTER:
+        {
+          fInteractResult = UNIT::UnitMode::UNITMODE_HandleSkillTargetInteraction(nActionType, 1, pUnit, pTargetUnit, nUnitGUID);
+          break;
+        }
+      case UNIT_OBJECT:
+        {
+          fInteractResult = UNITMODE_TryInteractWithObject(pUnit, (D2PathPointStrc)0x2, nActionType, pTargetUnit, nUnitGUID);
+          break;
+        }
+      default:
+        {
           bTargetable = UNIT::CheckFlags(pTargetUnit, UNITFLAG_TARGETABLE);
           if (!bTargetable) {
             GAME::Select::SELECT_UpdateUnitSelection(nullptr);
@@ -1207,14 +1214,8 @@ void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
 
           goto execute_action;
         }
-
-        fInteractResult = UNITMODE_TryInteractWithObject(pUnit, (D2PathPointStrc)0x2, nActionType, pTargetUnit, nUnitGUID);
-      } else {
-        fInteractResult = UNIT::UnitMode::UNITMODE_HandleSkillTargetInteraction(nActionType, 1, pUnit, pTargetUnit, nUnitGUID);
-      }
-    } else {
-      fInteractResult = UNIT::UnitMode::UNITMODE_HandleItemOrObjectInteraction(nActionType, 0, nUnitGUID, pTargetUnit, pUnit);
     }
+
     if (!fInteractResult) {
       return;
     }
@@ -1902,20 +1903,12 @@ void __stdcall TEXT_SetUnknownFlag(D2UIMouseMsgStrc * pMsg) {
 }
 
 void ITEM_ToggleHandState(D2UnitStrc * pUnit) {
-    int32_t nSoundArg1;
-    int32_t nSoundArg2;
-    int32_t nSoundArg3;
     if (gnPlayerCashDisplay == 1) {
-      eD2Sounds nSoundId;
       gnPlayerCashDisplay = 2;
       UI::ui::ITEM_SetItemOnHand(nullptr);
       if (pUnit) {
         gnCursorItemUnitId = pUnit->nUnitGUID;
-        nSoundArg3 = 0;
-        nSoundArg2 = 0;
-        nSoundArg1 = 0;
-        nSoundId = UNIT::SOUND_GetIdFromUnit(pUnit);
-        Sound::SOUND_PlaySound(nSoundId, nullptr, nSoundArg1, nSoundArg2, nSoundArg3);
+        Sound::SOUND_PlaySound(UNIT::SOUND_GetIdFromUnit(pUnit), nullptr, 0, 0, 0);
         return;
       }
     } else if (gnPlayerCashDisplay == 2) {
@@ -1938,14 +1931,7 @@ void __stdcall TEXT_HandleMouseMove() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
     UI::Dialog::gpHoradricCubeDialog = UI::Dialog::AllocDialogStrc(0x96, 0x82, TEXT_EmptyCallback, nullptr, 1, 0, 1, 0, 0, 0, 1);
     UI::Dialog::DIALOG_SetHighlightStyle(UI::Dialog::gpHoradricCubeDialog, 0);
-    int32_t nDialogY = 0;
-    fpDialogFunc uTransFlag = 0;
-    uint32_t uAlignment = 1;
-    int32_t nDialogX = 0;
-    uint32_t uShadow = 0;
-    uint32_t uTextColor = 0xf;
-    uint16_t* pszDialogTitle = D2Lang::StrTable::strtable::GetLocaleString(0xd19);
-    UI::Dialog::AddStringData(UI::Dialog::gpHoradricCubeDialog, pszDialogTitle, uTextColor, uShadow, nDialogX, uAlignment, uTransFlag, nDialogY);
+    UI::Dialog::AddStringData(UI::Dialog::gpHoradricCubeDialog, D2Lang::StrTable::strtable::GetLocaleString(0xd19), 0xf, 0, 0, 1, 0, 0);
     gnPlayerCashDisplay = 3;
     if (!nHoradricCubeUIState) {
       D2UnitStrc* pPlayerUnit_lcl;
@@ -2289,12 +2275,17 @@ void __stdcall dSceneTransitionDraw() {
     int nTimeRemaining = gdwWarpFadeExpireTime - dwTickCount;
     int nYEnd = ScreenSizeY - 0x2f;
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    if (nBorderType != 1) {
-      if (nBorderType == 2) {
-        nXStart = ScreenSizeX / 2;
-      }
-    } else {
-      nXEnd -= ScreenSizeX / 2;
+    switch (nBorderType) {
+      case 1:
+        {
+          nXEnd -= ScreenSizeX / 2;
+          break;
+        }
+      case 2:
+        {
+          nXStart = ScreenSizeX / 2;
+          break;
+        }
     }
 
     D2gfx::D2GFX::D2GFX_DrawSolidRectAlpha(nXStart, 0, nXEnd, nYEnd, 0, nTimeRemaining * 0xff / 500);

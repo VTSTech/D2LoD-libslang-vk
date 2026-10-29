@@ -646,9 +646,7 @@ void __stdcall MONSTER_ApplyDifficultyScaling(D2UnitStrc * pUnit, int32_t nParam
 }; D2_STATIC_GUARD(gMonLvl_U_UniqueMonsterLevelChance2, "D2Common::Monsters::MONSTERS::MONSTER_ApplyDifficultyScaling::gMonLvl_U_UniqueMonsterLevelChance2");
 
     uint32_t nDivisor;
-    int32_t nValue;
     int nPercent;
-    int32_t nStatLayer;
     if (!(!nParam && bParam && pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
     }
@@ -671,9 +669,7 @@ void __stdcall MONSTER_ApplyDifficultyScaling(D2UnitStrc * pUnit, int32_t nParam
         nDivisor = pScalingEntry[2];
       }
 
-      nStatLayer = 0;
-      nValue = D2Client::Stats::D2ApplyPercent(nCurrentStatVal, nPercent, nDivisor);
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, (*(int (*)[5])(pScalingEntry - 2))[0], nValue, nStatLayer);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, (*(int (*)[5])(pScalingEntry - 2))[0], D2Client::Stats::D2ApplyPercent(nCurrentStatVal, nPercent, nDivisor), 0);
       pScalingEntry += 5;
       nEntriesLeft--;
     } while (nEntriesLeft);
@@ -684,7 +680,6 @@ void __stdcall MONSTER_ApplyDifficultyScaling(D2UnitStrc * pUnit, int32_t nParam
 // Computes the monster class id, spawn X/Y position and spawn-mode for a unit that spawns/generates other monsters (super-uniques and generator-type monsters such as nests, spawners, statues, Blood Raven, Maggot Queen, Izual, etc.). Outputs via pnMonId/pnPosX/pnPosY/pdwSpawnMode. Resolves the unit's MonStats BaseId, then switches on it: each generator case picks the spawned monster (via GetMonsterClassByDifficulty/upgrade data, clamped to MonStats table size) and an offset position relative to the parent's path coords, using the unit seed for randomized cases. pfnCallback supplies the class id for hut/NPC cases. Default/unknown returns monId 0, pos (0,0), mode 1. Uses nRandSeed for seeded variants.
 void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uint32_t * pnPosX, uint32_t * pnPosY, uint32_t * pdwSpawnMode, int32_t nRandSeed, pfnMonsterSpawnClassIdCb pfnCallback) {
     eD2MonsterClassId nMonStatsId;
-    D2RoomStrc* pMonRoom;
     uint32_t nPosX;
     uint32_t nPosJitter;
     int32_t nSpawnMonId;
@@ -826,8 +821,7 @@ void __stdcall MONSTER_GetSpawnParameters(D2UnitStrc * pUnit, int * pnMonId, uin
       return;
       case MonsterUnitMummyGenerator:
         nClassId = sgptDataTable->nTxtMonStatsSize > 0x60 ? 0x60 : -1;
-      pMonRoom = Units::UNITS_GetRoom(pUnit);
-      nErrorLine = GetMonsterBaseId(pMonRoom, nClassId);
+      nErrorLine = GetMonsterBaseId(Units::UNITS_GetRoom(pUnit), nClassId);
       *pnMonId = nErrorLine;
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnitIn);
       *pnPosX = nPosX;

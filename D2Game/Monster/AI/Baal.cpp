@@ -323,13 +323,12 @@ static D2UnitStrc * __stdcall SelectTargetBaal(::SGAMEDATA * pGame, int * pnPara
 }
 
 uint32_t __fastcall AI_BAAL_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam) {
-    uint32_t nDist;
     int32_t nLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11d);
       exit(-1);
     } else {
-      int32_t nX;
+      uint32_t nDist;
       if (!pnParam) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
         exit(-1);
@@ -339,8 +338,7 @@ uint32_t __fastcall AI_BAAL_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam) {
       }
 
       nLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      nDist = GetCollisionDistanceFromXY((D2UnitStrc*)pnParam, nX, nLine);
+      nDist = GetCollisionDistanceFromXY((D2UnitStrc*)pnParam, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nLine);
       return (uint32_t)(nDist < 0x3fc);
     }
 }
@@ -688,9 +686,7 @@ static int32_t __stdcall AI_Baal_SelectActionWeighted(::SGAMEDATA * pGame, int32
 
     D2UnitStrc* pUnitForRoom;
     pUnitForRoom = pUnit2;
-    D2RoomStrc* pRoom;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
-    MONSTER_InitLevelDifficultyScaling(pGame, &levelDiffData, pRoom, pUnitForRoom);
+    MONSTER_InitLevelDifficultyScaling(pGame, &levelDiffData, D2Common::Units::UNITS_GetRoom(pUnit2), pUnitForRoom);
     if (nParam2 < 2 && (int)levelDiffData.nDifficulty < 2) {
       anWeights[8] = 0;
     }
@@ -966,8 +962,7 @@ static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2
     }
 
     nSpawnYJitter = __frame1.nSpawnYOut;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, __frame1.pMemoryTmp, nSpawnYJitter);
+    D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), __frame1.pMemoryTmp, nSpawnYJitter);
     pTargetUnit = Create::SpawnMonsterAtRoomPos(pGame, pSpawnRoom, __frame1.pMemoryTmp, __frame1.nSpawnYOut, __frame0.nCloneClassId, eSpawnAnimMode, -1, 0);
     if (!pTargetUnit) {
       return false;
@@ -1024,11 +1019,9 @@ void __fastcall AI_Baal_ExecuteAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
     __frame0_t __frame0;
     int32_t nMaxMana;
     int nMonClassId;
-    D2RoomStrc* pRoom;
     BOOL BVar1;
     uint32_t nClassId;
     int32_t nTeleportParam;
-    D2RoomCoordListStrc* pRoomCoordList;
     int* pnX;
     int* pnY;
     while (true) {
@@ -1146,9 +1139,7 @@ void __fastcall AI_Baal_ExecuteAction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
           nTeleportParam = 0;
           pnY = &__frame0.nUnitY;
           pnX = &__frame0.nUnitX;
-          pRoomCoordList = 0;
-          pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-          BVar1 = Monsters::Spawn::SPAWN_FindRandomPositionForMonster(pGame, pRoom, pRoomCoordList, nClassId, pnX, pnY, nTeleportParam);
+          BVar1 = Monsters::Spawn::SPAWN_FindRandomPositionForMonster(pGame, D2Common::Units::UNITS_GetRoom(pUnit), 0, nClassId, pnX, pnY, nTeleportParam);
           if (BVar1) {
             SERVER_UNIT_CastSkill(pGame, pUnit, pMonStats->aSkMode[4], (int)pMonStats->aSkill[4], nullptr, __frame0.nUnitX, __frame0.nUnitY);
             return;

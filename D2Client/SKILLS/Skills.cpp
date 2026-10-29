@@ -262,7 +262,6 @@ D2UnitStrc * __fastcall CastAttackWithDistanceCheck(D2UnitStrc * pUnit, eMissile
 // Client-side check that the player has usable throwable/stackable ammo for the current skill. Returns 0 if no ammo, 1 if infinite (magic arrow stat, non-throwable weapon, or NPC), or the remaining quantity from ITEM_ValidateItemQuantity for the right-hand or left-hand belt/ammo slot. Skips non-player units.
 // @sourcefile .\SKILLS\Skills.cpp
 BOOL __fastcall SKILLS_CltCheckThrowableAmmo(D2UnitStrc * pUnit) {
-    eD2Skills eSkillId;
     int32_t nQuantity;
     BOOL nMagicArrowStat;
     char* szName;
@@ -281,12 +280,11 @@ BOOL __fastcall SKILLS_CltCheckThrowableAmmo(D2UnitStrc * pUnit) {
 
     int32_t nShoots = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_shoots(pWeapon);
     if (nShoots) {
-      D2SkillStrc* pCurSkill;
+      eD2Skills eSkillId;
       nShoots = 0xb6;
       szName = ".\\SKILLS\\Skills.cpp";
       bVar1 = false;
-      pCurSkill = D2Common::Units::GetCurrentSkill(pUnit);
-      eSkillId = D2Common::Skills::GetSkillId(pCurSkill, szName, nShoots);
+      eSkillId = D2Common::Skills::GetSkillId(D2Common::Units::GetCurrentSkill(pUnit), szName, nShoots);
       if (eSkillId == SKILL_Attack) {
         nShoots = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pWeapon, UNITSTAT_item_magicarrow, 0);
         if (nShoots) {

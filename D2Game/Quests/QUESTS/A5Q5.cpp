@@ -183,8 +183,7 @@ static bool Q35_KillAndRemoveAncient(::SGAMEDATA * pGame, DWORD dwParam) {
     GAME::Event::Dispatch::Monster::SetCurrentSkill(pAncientUnit, eD2MonsterAnimMode_ns::Dead, &sMonsterKill);
     GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
     eD2UnitType eUnitType = UNIT_MONSTER;
-    pRoom = D2Common::Units::UNITS_GetRoom(pAncientUnit);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, dwParam);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pAncientUnit), eUnitType, dwParam);
     D2Common::Units::RemoveCollision_Vector(pAncientUnit);
     D2Common::Unit::RemoveUnitFromRoom(pAncientUnit);
     return true;
@@ -194,20 +193,16 @@ static bool Q35_KillAndRemoveAncient(::SGAMEDATA * pGame, DWORD dwParam) {
 BOOL __stdcall Q35_PrepareAncientsForBattle(D2QuestDataStrc * pQuestData, D2QuestDataA5Q5Strc * pQuestDataA5Q5) {
     D2UnitStrc* pStatue;
     D2UnitStrc* apStatues[3];
-    BOOL bClearPortal;
     int nStatueIdx = 0;
     int* pStatueGUID = pQuestDataA5Q5->anStatueObjectGUID;
     do {
-      D2RoomStrc* pRoom;
       pStatue = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, *pStatueGUID);
       apStatues[nStatueIdx] = pStatue;
       if (!pStatue) {
         return 0;
       }
 
-      bClearPortal = 0;
-      pRoom = D2Common::Units::UNITS_GetRoom(pStatue);
-      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bClearPortal);
+      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pStatue), 0);
       nStatueIdx++;
       pStatueGUID++;
     } while (nStatueIdx < 3);
@@ -291,21 +286,30 @@ void __fastcall Q35_SpawnAncientTimer(D2QuestDataStrc * pQuestData, D2UnitStrc *
     } else {
       nClassId = pUnit->nClassId;
     }
-    if (nClassId != 0x1da) {
-      if (nClassId != 0x1db) {
-        if (nClassId != 0x1dc) {
+
+    switch (nClassId) {
+      case 0x1da:
+        {
+          nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2d];
+          nAncientSlot = 1;
+          break;
+        }
+      case 0x1db:
+        {
+          nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2b];
+          nAncientSlot = 0;
+          break;
+        }
+      default:
+        {
           return;
         }
-
-        nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2c];
-        nAncientSlot = 2;
-      } else {
-        nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2b];
-        nAncientSlot = 0;
-      }
-    } else {
-      nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2d];
-      nAncientSlot = 1;
+      case 0x1dc:
+        {
+          nSuperUniqueId = (uint32_t)(uint16_t)sgptDataTable->aTxtSuperUniquesHardcoded[0x2c];
+          nAncientSlot = 2;
+          break;
+        }
     }
 
     D2QuestDataStrc* pQuestDataLocal = pQuestData;
@@ -380,7 +384,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q5;
     if (nMessageIndex == 0x4eb9) {
       if (nNpcId == 0x203) {
-        if (!pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction == '\0') {
           return;
         }
         if (pQuestData->nStateFlag != 1) {
@@ -400,7 +404,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     } else {
       int nAncientIdx;
       if (nMessageIndex == 0x4e22) {
-        if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 4 && pQuestData->nStateFlagPrev != 3) {
+        if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 4 && pQuestData->nStateFlagPrev != 3) {
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q35_NotifyQuestState, true);
         }
@@ -501,7 +505,7 @@ void __fastcall Q35_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     } else {
       nNpcId = pQuestArgs->pTarget->nClassId;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
     if (!bIsCompleted) {
@@ -791,21 +795,30 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     } else {
       nKilledClassId = pQuestArgs->pTarget->nClassId;
     }
-    if (nKilledClassId != 0x21c) {
-      if (nKilledClassId != 0x21d) {
-        if (nKilledClassId != 0x21e) {
+
+    switch (nKilledClassId) {
+      case 0x21c:
+        {
+          pQuestSpecificData->abAncientDead[2] = 1;
+          dwParam = pQuestSpecificData->anStatueObjectGUID[2];
+          break;
+        }
+      case 0x21d:
+        {
+          pQuestSpecificData->abAncientDead[0] = 1;
+          dwParam = pQuestSpecificData->anStatueObjectGUID[0];
+          break;
+        }
+      default:
+        {
           return;
         }
-
-        pQuestSpecificData->abAncientDead[1] = 1;
-        dwParam = pQuestSpecificData->anStatueObjectGUID[1];
-      } else {
-        pQuestSpecificData->abAncientDead[0] = 1;
-        dwParam = pQuestSpecificData->anStatueObjectGUID[0];
-      }
-    } else {
-      pQuestSpecificData->abAncientDead[2] = 1;
-      dwParam = pQuestSpecificData->anStatueObjectGUID[2];
+      case 0x21e:
+        {
+          pQuestSpecificData->abAncientDead[1] = 1;
+          dwParam = pQuestSpecificData->anStatueObjectGUID[1];
+          break;
+        }
     }
 
     Q35_FireAncientDeathMissile(pQuestArgs, pQuestData, dwParam);
@@ -817,7 +830,7 @@ void __fastcall Q35_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     }
 
     pQuestSpecificData->bAncientsDefeated = 1;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
     if (pQuestArgs->pPlayer) {
@@ -876,7 +889,7 @@ void __fastcall Q35_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x6d) {
       D2UnitDataPlayerStrc* pPlayerData;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (pQuestData->nStateFlag == 2) {
@@ -933,7 +946,7 @@ bool __fastcall Q35_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
 // [A5Q5 = Rite of Passage] Q35_SequenceFilter: quest-chain gate. While nStateFlag != 5 (Ancients not dead), parks the quest at nStateFlag 1; once finished, chains into the next quest (nSequenceQuestId = RescueOnMountArreat) sequence filter. No quest-record writes.
 bool __fastcall Q35_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       if (pQuestData->nStateFlag) {
         return true;
       }
@@ -1000,7 +1013,7 @@ void __fastcall Q35_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q35_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q35_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = A5Q5::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q5.cpp", 0x41d);
     pQuestData->pQuestSpecificData.pA5Q5 = pQuestSpecificData;
@@ -1122,7 +1135,7 @@ D2UnitStrc * __fastcall Q35_FindAncientByClassId(::SGAMEDATA * pGame, int32_t nC
 // [A5Q5 = Rite of Passage] Q35_CheckQuestNotStarted: predicate (returns BOOL in EAX) — true if quest is active but the Ancients fight hasn't been started yet. No quest-state writes.
 BOOL __fastcall Q35_CheckQuestNotStarted(::SGAMEDATA * pGame, D2UnitStrc * pUnitStrc, uint32_t dwParam) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return 0;
     }
 
@@ -1138,17 +1151,23 @@ static void Q35_SetStatueAnimMode(uint32_t dwParam, D2QuestDataA5Q5Strc * pQuest
     } else {
       nClassId = pUnit->nClassId;
     }
-    if (nClassId != 0x1da) {
-      if (nClassId == 0x1db) {
-        D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[0]);
-        return;
-      }
-      if (nClassId == 0x1dc) {
-        D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[2]);
-        return;
-      }
-    } else {
-      D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[1]);
+
+    switch (nClassId) {
+      case 0x1da:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[1]);
+          break;
+        }
+      case 0x1db:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[0]);
+          return;
+        }
+      case 0x1dc:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, pQuestData->anStatueMode[2]);
+          return;
+        }
     }
 }
 
@@ -1282,7 +1301,7 @@ BOOL __fastcall OBJOP_A5Q5_AncientsAltarActivate(D2ObjectOperateFnArg * pOperati
     if (!(!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       return 0;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       if (pQuestSpecificData->nResurrectionCount > 0) {
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q35_BootPlayerFromSummit);
       }
@@ -1334,7 +1353,7 @@ BOOL __fastcall OBJOP_A5Q5_WorldstonePortalActivate(D2ObjectOperateFnArg * pOper
     }
 
     D2QuestDataA5Q5Strc* pA5Q5Specific = pQuestData->pQuestSpecificData.pA5Q5;
-    if (pQuestData->bIsNotIntroduction && !pA5Q5Specific->bAncientsDefeated || pA5Q5Specific->bAncientsSpawned && !pA5Q5Specific->bAncientsDefeated) {
+    if (pQuestData->bIsNotIntroduction != '\0' && !pA5Q5Specific->bAncientsDefeated || pA5Q5Specific->bAncientsSpawned && !pA5Q5Specific->bAncientsDefeated) {
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
@@ -1346,21 +1365,26 @@ BOOL __fastcall OBJOP_A5Q5_WorldstonePortalActivate(D2ObjectOperateFnArg * pOper
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode == Opened) {
-        A2Q7::TakeStairs(pOperation);
-        bQuestState = 1;
-        pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
-        return 0;
-      }
-    } else {
-      D2Common::Units::SetupUpdateFlag(pUnit, 1);
-      bQuestState = 0;
-      pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-      D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
-      pGame = pOperation->sArg.pGame;
-      GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
+
+    switch (eAnimMode) {
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, 1);
+          bQuestState = 0;
+          pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
+          D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
+          pGame = pOperation->sArg.pGame;
+          GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
+          break;
+        }
+      case Opened:
+        {
+          A2Q7::TakeStairs(pOperation);
+          bQuestState = 1;
+          pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
+          D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bQuestState);
+          return 0;
+        }
     }
 
     return 0;
@@ -1397,7 +1421,7 @@ void __fastcall Q35_OnPlayerLeavesSummit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RiteOfPassage);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -1476,35 +1500,46 @@ BOOL __fastcall OBJOP_A5Q5_WorldstoneStairPortal(D2ObjectOperateFnArg * pOperati
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode != Operating) {
-        if (eAnimMode != Opened) {
+
+    switch (eAnimMode) {
+      default:
+        {
           return 0;
         }
-        if (!pQuestSpecificData->bAncientsDefeated) {
-          UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-        } else if (pQuestSpecificData->bAncientsSpawned) {
-          D2Common::Units::SetupUpdateFlag(pUnit, 0);
-          pQuestSpecificData->nSummitDoorObjectMode = 0;
+      case Opened:
+        {
+          if (!pQuestSpecificData->bAncientsDefeated) {
+            UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+          } else if (pQuestSpecificData->bAncientsSpawned) {
+            D2Common::Units::SetupUpdateFlag(pUnit, 0);
+            pQuestSpecificData->nSummitDoorObjectMode = 0;
+          }
         }
-      }
-      if (!pQuestSpecificData->bAncientsDefeated) {
-        UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-        return 0;
-      }
+      case Operating:
+        {
+          if (!pQuestSpecificData->bAncientsDefeated) {
+            UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+            D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+            return 0;
+          }
 
-      pQuestSpecificData->nSummitDoorObjectMode = 0;
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
-      return 0;
-    }
-    if (!pQuestSpecificData->bAncientsDefeated) {
-      D2Common::Units::SetupUpdateFlag(pUnit, 1);
-      pQuestSpecificData->nSummitDoorObjectMode = 2;
-      return 0;
+          pQuestSpecificData->nSummitDoorObjectMode = 0;
+          D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
+          return 0;
+        }
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          if (!pQuestSpecificData->bAncientsDefeated) {
+            D2Common::Units::SetupUpdateFlag(pUnit, 1);
+            pQuestSpecificData->nSummitDoorObjectMode = 2;
+            return 0;
+          }
+
+          A2Q7::TakeStairs(pOperation);
+          break;
+        }
     }
 
-    A2Q7::TakeStairs(pOperation);
     return 0;
 }
 

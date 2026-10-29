@@ -2296,7 +2296,6 @@ D2UnitStrc * __fastcall CLIENT_GetAttachedUnit(::SGAMEDATA * pGame, D2ClientStrc
 // Dead code / unused client join path. Sets pClient->nClass to bParam, resolves the player unit and its spawn coords, then deletes the existing unit from the room (AllocDrlgDelete + FreeServerUnit) and reloads it from scratch via CLIENT_LoadCharacterAndSendGameData + CLIENT_PlacePlayerInRoom. Clears the lowest fClientFlags bit and fires GAME_OnClientRoomChange if the room changed. Halts with an internal error if pClient is null. Not referenced by any active join flow.
 void __fastcall UnusedClientJoinGame(D2ClientStrc * pClient, uint8_t bParam) {
     D2RoomStrc* pRoom;
-    D2RoomStrc* pRoom_00;
     uint32_t nSpawnX;
     uint32_t nSpawnY;
     eD2UnitType eUnitType;
@@ -2333,8 +2332,7 @@ void __fastcall UnusedClientJoinGame(D2ClientStrc * pClient, uint8_t bParam) {
     nOldUnitGUID = pUnit->nUnitGUID;
     eUnitType = pUnit->eUnitType;
     pGame = pClient->pGame;
-    pRoom_00 = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom_00, eUnitType, nOldUnitGUID);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pUnit), eUnitType, nOldUnitGUID);
     UNIT::SUnit::FreeServerUnit(pGame, pUnit);
     CLIENT_LoadCharacterAndSendGameData(pClient, pGame, 0, pRoom, nSpawnX, nSpawnY);
     CLIENT_PlacePlayerInRoom(pClient, pClient->pPlayer, pGame, pRoom, (D2DrlgActStrc*)nSpawnX, (::SGAMEDATA*)nSpawnY, nSpawnY);
@@ -2370,8 +2368,7 @@ void __fastcall UnusedClientJoinGame2(::SGAMEDATA * pGame, D2ClientStrc * pClien
 
     int nOldUnitGUID = pUnit->nUnitGUID;
     eUnitType = pUnit->eUnitType;
-    D2RoomStrc* pRoom_00 = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom_00, eUnitType, nOldUnitGUID);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pUnit), eUnitType, nOldUnitGUID);
     UNIT::SUnit::FreeServerUnit(pGame, pUnit);
     CLIENT_LoadCharacterAndSendGameData(pClient, pGame, 0, pRoom, (uint32_t)*(uint32_t*)&bActNo, nSpawnY);
     CLIENT_PlacePlayerInRoom(pClient, pClient->pPlayer, pGame, pRoom, *(D2DrlgActStrc**)&bActNo, (::SGAMEDATA*)nSpawnY, (uint32_t)*(uint32_t*)&bActNo);
@@ -2560,7 +2557,6 @@ void __fastcall FreePendingDrlgDeletes(::SGAMEDATA * pGame) {
 
 // Reveals a room to a client and sends init-unit packets for all units in it. Sends SCMD 0x07 (MapReveal) with the room's level ID and tile coordinates, adds the client to the room's client count, and if this is the first or second client in the room triggers MONSTERAI_TriggerMageThink for all monsters. Then iterates the room's unit list and calls SERVER_SendInitUnitPacket for every unit except the client's own player. Halts fatally if pRoom is null.
 void __fastcall CLIENT_RevealRoomAndSendUnits(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2ClientStrc * pClient) {
-    eD2UnitType eUnitType;
     D2UnitStrc* pPlayerUnit_lcl;
     D2DrlgRoomCoordsStrc sRoomCoords;
     D2UnitStrc* pRoomUnit;
@@ -2571,17 +2567,20 @@ void __fastcall CLIENT_RevealRoomAndSendUnits(::SGAMEDATA * pGame, D2RoomStrc * 
     }
 
     {
-      eD2LevelId eLevelId;
+      eD2UnitType eUnitType;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
-      eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, eLevelId, (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
+      SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom), (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
       D2Common::DUNGEON::Dungeon::DRLGROOM_AddClientToRoom(pRoom, (int32_t)pClient);
       if ((uint32_t)pRoom->nClientsCount <= 1) {
         for (pRoomUnit = pRoom->pUnitList; pRoomUnit; pRoomUnit = pRoomUnit->pRoomNext) {
           eUnitType = UNIT_COUNT;
           eUnitType = pRoomUnit->eUnitType;
-          if (eUnitType == UNIT_MONSTER) {
-            Monster::MONSTERAI_TriggerMageThink(pGameSave, pRoomUnit);
+          switch (eUnitType) {
+            case UNIT_MONSTER:
+              {
+                Monster::MONSTERAI_TriggerMageThink(pGameSave, pRoomUnit);
+                break;
+              }
           }
         }
       }
@@ -2600,7 +2599,6 @@ void __fastcall CLIENT_RevealRoomAndSendUnits(::SGAMEDATA * pGame, D2RoomStrc * 
 
 // Hides a room from a client and cleans up its units. Sends SendRemoveObject for every unit in the room, removes the client from the room's client count, and if nClientsCount drops to zero calls MONSTER_StartAiAndRegenTimers for all monsters (re-enabling AI/regen). Finally sends SCMD 0x08 (MapHide) with the room's level ID and tile coordinates. Halts fatally if pRoom is null.
 void __fastcall RoomClearForClientAndHideMap(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2ClientStrc * pClient) {
-    eD2LevelId eLevelId;
     D2DrlgRoomCoordsStrc sRoomCoords;
     D2UnitStrc* pRoomUnit;
     ::SGAMEDATA* pGameSave = pGame;
@@ -2625,8 +2623,12 @@ void __fastcall RoomClearForClientAndHideMap(::SGAMEDATA * pGame, D2RoomStrc * p
 
           eUnitType = UNIT_COUNT;
           eUnitType = pRoomUnit->eUnitType;
-          if (eUnitType == UNIT_MONSTER) {
-            Monster::MONSTER_StartAiAndRegenTimers(pGameSave, pRoomUnit);
+          switch (eUnitType) {
+            case UNIT_MONSTER:
+              {
+                Monster::MONSTER_StartAiAndRegenTimers(pGameSave, pRoomUnit);
+                break;
+              }
           }
 
           pRoomUnit = pRoomUnit->pRoomNext;
@@ -2634,8 +2636,7 @@ void __fastcall RoomClearForClientAndHideMap(::SGAMEDATA * pGame, D2RoomStrc * p
       }
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
-      eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      SCmd::NET_D2GS_SERVER_Send_0x08_REMOVEROOM(pClient, eLevelId, (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
+      SCmd::NET_D2GS_SERVER_Send_0x08_REMOVEROOM(pClient, D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom), (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
       return;
     }
 }
@@ -2651,12 +2652,17 @@ void __fastcall MovementUpdateForClient(::SGAMEDATA * pGame, D2RoomStrc * * ppRo
     for (pRoomUnit = (D2UnitStrc*)ppRoom[0x1d]; pRoomUnit; pRoomUnit = pRoomUnit->pRoomNext) {
       eUnitType = UNIT_COUNT;
       eUnitType = pRoomUnit->eUnitType;
-      if (eUnitType != UNIT_PLAYER) {
-        if (eUnitType == UNIT_MONSTER) {
-          Monster::MONSTER_ClearTargetIfMatch(pGame, pRoomUnit, pUnit);
-        }
-      } else {
-        PLAYER::Player::PLAYER_ClearTargetIfMatch(pGame, pRoomUnit, pUnit);
+      switch (eUnitType) {
+        case UNIT_PLAYER:
+          {
+            PLAYER::Player::PLAYER_ClearTargetIfMatch(pGame, pRoomUnit, pUnit);
+            break;
+          }
+        case UNIT_MONSTER:
+          {
+            Monster::MONSTER_ClearTargetIfMatch(pGame, pRoomUnit, pUnit);
+            break;
+          }
       }
     }
 }

@@ -1088,16 +1088,22 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
 
                   nFieldValue = GetClassIdFromName(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, dwCodePadded, 1);
                   eFieldType2 = pBinFieldInput[nFieldMapIdx].eType;
-                  if (eFieldType2 == FIELDTYPE_CODE_INT) {
-                    store_int:
-                    *(uint32_t*)pFieldCursor = nFieldValue;
-                  } else {
-                    if (eFieldType2 == FIELDTYPE_CODE_CHAR) {
-                      goto case_FIELDTYPE_CHAR;
-                    }
-                    if (eFieldType2 == FIELDTYPE_CODE_SHORT) {
-                      *(short int*)pFieldCursor = (short int)nFieldValue;
-                    }
+                  switch (eFieldType2) {
+                    case FIELDTYPE_CODE_INT:
+                      {
+                        store_int:
+                        *(uint32_t*)pFieldCursor = nFieldValue;
+                        break;
+                      }
+                    case FIELDTYPE_CODE_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
+                    case FIELDTYPE_CODE_SHORT:
+                      {
+                        *(short int*)pFieldCursor = (short int)nFieldValue;
+                        break;
+                      }
                   }
 
                   break;
@@ -1119,14 +1125,19 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                   pDstChar = pCurDataPos + 1;
                   nFieldValue = GetLinkNodeIndex(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, (char*)&dwCodeBuf, 1);
                   eFieldType = pBinFieldInput[nFieldMapIdx].eType;
-                  if (eFieldType == FIELDTYPE_NAME_INT) {
-                    goto store_int;
-                  }
-                  if (eFieldType == FIELDTYPE_NAME_SHORT) {
-                    goto case_FIELDTYPE_SHORT;
-                  }
-                  if (eFieldType == FIELDTYPE_NAME_CHAR) {
-                    goto case_FIELDTYPE_CHAR;
+                  switch (eFieldType) {
+                    case FIELDTYPE_NAME_INT:
+                      {
+                        goto store_int;
+                      }
+                    case FIELDTYPE_NAME_SHORT:
+                      {
+                        goto case_FIELDTYPE_SHORT;
+                      }
+                    case FIELDTYPE_NAME_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
                   }
 
                   break;

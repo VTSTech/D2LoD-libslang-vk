@@ -383,9 +383,7 @@ void __fastcall MONUNIQUE_ApplyModifierBloodRaven(D2UnitStrc * pUnit, int32_t eM
     }
 
     D2Common::Skills::AddSkill(pUnit, SKILL_MonTeleport, 1, 1, ".\\UNIT\\MonUnique.cpp", 0x157);
-    uint32_t nMode = 4;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit);
-    D2Common::Skills::SetSkillMode(pSkill, nMode);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit), 4);
 }
 
 // Applies a unique/champion monster resistance modifier to a unit (eModifier = the monster modifier/affix id). For mod 0x1c (stone skin) also doubles armorclass. Reads the unit's current fire/light/cold/poison/magic/damage resists and counts how many are already >=100 (maxed); if 2+ are maxed it skips additive mods (prevents over-stacking). mod 8 = +40 cold/fire/light (cold-resistant style), mod 0x1b = +20 to those, mods 9/0x12/0x11/0x17 = +75 single elemental resist, 0x19 = +20 magic resist, 0x1c = +50 damage resist. Does nothing unless bApply is non-zero. Mutates unit stats via STATLIST_SetUnitStat and returns nothing. __fastcall: pUnit in ECX, eModifier in EDX, bApply on the stack.
@@ -571,7 +569,7 @@ void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
       }
 
       pInitFuncIter++;
-    } while ((int)pInitFuncIter < (uintptr_t)((char*)&gaMonUniqueBaseModIds + sizeof(gaMonUniqueBaseModIds)));
+    } while ((int)pInitFuncIter < (intptr_t)((char*)&gaMonUniqueBaseModIds + sizeof(gaMonUniqueBaseModIds)));
 
     int i = 0;
     do {
@@ -687,8 +685,7 @@ void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifie
     }
 
     nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(0x77, 0);
-    nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Coldunique, ~MISSILE_Arrow, SKILL_Attack, nLevel, nVelocity);
+    SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Coldunique, ~MISSILE_Arrow, SKILL_Attack, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nVelocity);
 }
 
 void __fastcall MONUNIQUE_DurielDeathAndSpawn(D2UnitStrc * pUnit, int32_t nUMod, int32_t nParam2) {
@@ -906,11 +903,9 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     }
 
     nOwnerPos = D2Common::Units::Missile::GetLevel(pMissileSelf);
-    eD2Skills eMissileSkillId = D2Common::Units::Missile::GetSkillId(pMissileSelf);
-    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nMissileTargetX - nDirX, nDirY + nMissileTargetY, eMissileSkillId, nOwnerPos);
+    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nMissileTargetX - nDirX, nDirY + nMissileTargetY, D2Common::Units::Missile::GetSkillId(pMissileSelf), nOwnerPos);
     nOwnerPos = D2Common::Units::Missile::GetLevel(pMissileSelf);
-    eMissileSkillId = D2Common::Units::Missile::GetSkillId(pMissileSelf);
-    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nDirX + nMissileTargetX, nMissileTargetY - nDirY, eMissileSkillId, nOwnerPos);
+    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nDirX + nMissileTargetX, nMissileTargetY - nDirY, D2Common::Units::Missile::GetSkillId(pMissileSelf), nOwnerPos);
     if (!(pOwnerUnit->eUnitType == UNIT_MONSTER && pOwnerUnit->pUnitData.pUnitDataMonster)) {
       return;
     }

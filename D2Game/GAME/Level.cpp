@@ -146,8 +146,7 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
 
             nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
             wPosY = (uint16_t)nErrorLine;
-            nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-            PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)nErrorLine, wPosY);
+            PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), wPosY);
             return;
           }
 

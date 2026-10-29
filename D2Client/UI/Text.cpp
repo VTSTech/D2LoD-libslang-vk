@@ -521,10 +521,7 @@ void __stdcall TEXT_ClearNpcMenuSelection() {
 }
 
 ScreenMessage_t * __fastcall TEXT_AllocScreenMessage(uint16_t * * ppwszText) {
-    uint16_t* pwszCopy;
     uint16_t** ppwszSrcLine;
-    int32_t nLine;
-    int32_t nZero;
     ScreenMessage_t* pMessage = D2_NEW_AT(ScreenMessage_t, ".\\UI\\text.cpp", 0x9d0);
     memset(pMessage->apwszLines, 0, 6 * sizeof(pMessage->apwszLines[0]));
     *(uint32_t*)&pMessage->nLineCount = 0;
@@ -533,13 +530,10 @@ ScreenMessage_t * __fastcall TEXT_AllocScreenMessage(uint16_t * * ppwszText) {
     *(uint16_t*)((uintptr_t)&pMessage->pNext + 2) = 0;
     int i = 0;
     if ((uint16_t)*(short int*)(ppwszText + 6) > 0) {
-      int32_t nLen;
+      uint16_t* pwszCopy;
       ppwszSrcLine = ppwszText;
       do {
-        nZero = 0;
-        nLine = 0x9d4;
-        nLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(*ppwszSrcLine);
-        pwszCopy = (uint16_t*)Fog::Memory::AllocClientMemory(nLen * 2 + 2, ".\\UI\\text.cpp", nLine, nZero);
+        pwszCopy = (uint16_t*)D2_ALLOC_AT(D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(*ppwszSrcLine) * 2 + 2, ".\\UI\\text.cpp", 0x9d4);
         *(uint16_t**)((int)pMessage - (int)ppwszText + (int)ppwszSrcLine) = (uint16_t*)pwszCopy;
         D2Lang::Unicode::UNISYS::STRING_CopyWideString(pwszCopy, *ppwszSrcLine);
         i++;
@@ -1301,8 +1295,7 @@ static BOOL TEXT_FormatEventMessage(int32_t pEventData, uint16_t * wszText) {
 
     int32_t nPlayerGUID = pPlayerUnit_lcl->nUnitGUID;
     uint32_t nIgnoreFlag = 4;
-    int32_t nRosterGUID = GAME::Roster::GetRosterGUID(pRoster);
-    nIgnoreFlag = UNIT::PlayerList::GetFlag(nPlayerGUID, nRosterGUID, nIgnoreFlag);
+    nIgnoreFlag = UNIT::PlayerList::GetFlag(nPlayerGUID, GAME::Roster::GetRosterGUID(pRoster), nIgnoreFlag);
     if (!nIgnoreFlag) {
       return 1;
     }
@@ -1319,7 +1312,6 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
     D2MonStatsTxt* pMonStatsTxt;
     D2SuperUniquesTxt* pSuperUniqueTxt;
     uint16_t* pwszArg;
-    D2RoomStrc* pRoom;
     uint16_t nNameStrId;
     int nNameCmp;
     uint16_t nKillFmtStrId;
@@ -1624,8 +1616,7 @@ void __fastcall TEXT_HandleEventMessagePacket(D2Packet0x5aEventStructure * pMess
         bEclipseEvent = 1;
         nMonNameLen = 0;
         nLine = 5;
-        pRoom = UNIT::CUnit::GetCurrentRoom();
-        D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, pRoom, nLine, nMonNameLen, bEclipseEvent);
+        D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), nLine, nMonNameLen, bEclipseEvent);
       }
 
       GAME::View::SetShake(6, 4000, 10000, 4000);
@@ -3998,7 +3989,6 @@ uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
 }
 
 void __stdcall TEXT_CloseScrollingText() {
-    HWND hWnd;
     int32_t nHandlerCount;
     GAME::Select::SELECT_SetExclusionRect(nullptr);
     D2TextBoxStrc* pMemoryToFree = gpTextScrollingBox;
@@ -4021,8 +4011,7 @@ void __stdcall TEXT_CloseScrollingText() {
     if (gbTextEventHandlersRegistered == 1) {
       nHandlerCount = 7;
       gbTextEventHandlersRegistered = 0;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUITextFlagInit, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nHandlerCount);
     }
     if (!gpTextScrollBoxImage) {
       return;
@@ -4296,9 +4285,7 @@ int __stdcall TEXT_CloseMessageLogDialog() {
 }
 
 void __stdcall TEXT_OpenMessageLogDialog() {
-    ::ListBoxWrapper* pLogListAlloc;
     fpDialogFunc pfnCloseCallback;
-    fpDialogFunc nCbArg;
     uint32_t nEnabled;
     int32_t nEntryIdx;
     int32_t nField;
@@ -4308,26 +4295,18 @@ void __stdcall TEXT_OpenMessageLogDialog() {
     pfnEHHandlerRoutine puStack12 = __GSHandlerCheck_EH_6ca07b;
     void* pSavedExceptionList = ExceptionList;
     if (!Dialog::DialogHandle) {
-      uint16_t* pwszLabel;
+      ::ListBoxWrapper* pLogListAlloc;
       ExceptionList = &pSavedExceptionList;
       Dialog::DialogHandle = Dialog::AllocDialogStrc(5, 0x1e, TEXT_CloseMessageLogDialog, nullptr, 0, 0, 0, ScreenSizeX - 0x14, ScreenSizeY - 0x82, 0, 0);
       Dialog::DIALOG_SetHighlightStyle(Dialog::DialogHandle, 1);
-      nEntryIdx = 0;
-      nCbArg = 0;
-      nEnabled = 1;
-      nField = 4;
-      nPosY = 0;
-      nPosX = 0x15;
-      pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0xfc3);
-      Dialog::AddStringData(Dialog::DialogHandle, pwszLabel, nPosX, nPosY, nField, nEnabled, nCbArg, nEntryIdx);
+      Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0xfc3), 0x15, 0, 4, 1, 0, 0);
       nEntryIdx = 1;
       pfnCloseCallback = TEXT_CloseMessageLogDialog;
       nEnabled = 1;
       nField = 0;
       nPosY = 0;
       nPosX = ScreenSizeY - 0xa5;
-      pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1030);
-      Dialog::AddStringData(Dialog::DialogHandle, pwszLabel, nPosX, nPosY, nField, nEnabled, pfnCloseCallback, nEntryIdx);
+      Dialog::AddStringData(Dialog::DialogHandle, D2Lang::StrTable::strtable::GetLocaleString(0x1030), nPosX, nPosY, nField, nEnabled, pfnCloseCallback, nEntryIdx);
       pLogListAlloc = (::ListBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
       nSehTryLevel = 0;
       if (pLogListAlloc) {
@@ -5202,7 +5181,6 @@ void __stdcall TEXT_FreeEverything() {
 }
 
 static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
-    HWND pHwnd;
     int32_t nCount;
     if (bClose) {
       *(uint32_t*)((int)pParam + 0x16) = 2;
@@ -5251,8 +5229,7 @@ static int __stdcall TEXT_UpdateScrollingText(int32_t bClose, void * pParam) {
 
     nCount = 7;
     gbTextEventHandlersRegistered = 0;
-    pHwnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nCount);
     return 0;
 }
 
@@ -5271,7 +5248,6 @@ void __stdcall TEXT_CloseNpcInteraction() {
 
 int __stdcall TEXT_HandleEscapeKey() {
     int iVar1;
-    HWND pHwnd;
     int32_t nLine;
     gbTextScrollBoxAnimating = 1;
     if (gnTextNpcInteractGuid || gbTextScrollBoxActive == 1) {
@@ -5300,8 +5276,7 @@ int __stdcall TEXT_HandleEscapeKey() {
       if (gbTextEventHandlersRegistered == 1) {
         nLine = 7;
         gbTextEventHandlersRegistered = 0;
-        pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nLine);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nLine);
       }
 
       gpTextDismissCallback = 0;
@@ -5395,18 +5370,25 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
     ptScreenPos2.x -= lprcTextOverheadRect.left;
     ptScreenPos2.y += -0x1e - lprcTextOverheadRect.top;
     nBorderType = Path::DRAW_GetTypeOfBorder();
-    if (nBorderType != 1) {
-      if (nBorderType != 2) {
-        if (nBorderType == 3) {
+    switch (nBorderType) {
+      case 1:
+        {
+          nXOffset = -(ScreenSizeX / 4);
+          break;
+        }
+      case 3:
+        {
           return;
         }
-
-        goto draw_if_on_screen;
-      }
-
-      nXOffset = ScreenSizeX / 4;
-    } else {
-      nXOffset = -(ScreenSizeX / 4);
+      default:
+        {
+          goto draw_if_on_screen;
+        }
+      case 2:
+        {
+          nXOffset = ScreenSizeX / 4;
+          break;
+        }
     }
 
     ptScreenPos2.x += nXOffset;
@@ -5462,18 +5444,25 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
     ptScreenPos.x -= lprcTextOverheadRect.left;
     ptScreenPos.y += -10 - lprcTextOverheadRect.top;
     nBorderType = Path::DRAW_GetTypeOfBorder();
-    if (nBorderType != 1) {
-      if (nBorderType != 2) {
-        if (nBorderType == 3) {
+    switch (nBorderType) {
+      case 1:
+        {
+          nXOffset = -(ScreenSizeX / 4);
+          break;
+        }
+      case 3:
+        {
           return;
         }
-
-        goto draw_if_on_screen;
-      }
-
-      nXOffset = ScreenSizeX / 4;
-    } else {
-      nXOffset = -(ScreenSizeX / 4);
+      default:
+        {
+          goto draw_if_on_screen;
+        }
+      case 2:
+        {
+          nXOffset = ScreenSizeX / 4;
+          break;
+        }
     }
 
     ptScreenPos.x += nXOffset;
@@ -5499,7 +5488,6 @@ void __fastcall TEXT_DrawObjectHoverText(D2UnitStrc * pUnit) {
 }
 
 void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
-    HWND pHwnd;
     DWORD dwTickCount;
     D2UnitStrc* pNpcUnit;
     bool bPopupAlive;
@@ -5545,8 +5533,7 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
         if (gbTextEventHandlersRegistered == 1) {
           nErrorLine = 7;
           gbTextEventHandlersRegistered = 0;
-          pHwnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nErrorLine);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nErrorLine);
         }
       }
     }
@@ -5576,8 +5563,7 @@ void __fastcall TEXT_DrawMessageLogAndOverhead(D2GameViewStrc * pGameView) {
       if (gbTextEventHandlersRegistered == 1) {
         nErrorLine = 7;
         gbTextEventHandlersRegistered = 0;
-        pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nErrorLine);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nErrorLine);
       }
     }
 
@@ -5689,13 +5675,10 @@ void __fastcall TEXT_ShowNpcDialog(D2UnitStrc * pUnit, uint16_t nParam, uint32_t
 
     gbTextEventHandlersRegistered = 1;
     gbTextNpcMenuActive = GetTickCount();
-    nPrevFont = 7;
-    HWND pHwnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nPrevFont);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, 7);
 }
 
 void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t bShowImage) {
-    HWND pHwnd;
     D2UnitStrc* pUnit;
     int32_t nVolume;
     RECT nExclusionLeft;
@@ -5755,8 +5738,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
       gbTextEventHandlersRegistered = 1;
       gbTextNpcMenuActive = GetTickCount();
       nPrevFont = 7;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUITextFlagInit, nPrevFont);
+      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUITextFlagInit, nPrevFont);
     }
 
     eD2Sounds nSoundId = UI_GetDialogLineCount(nParam);
@@ -5817,7 +5799,7 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
     if (pPacket->eUnitType == 1) {
       D2HoverTextStrc* pHoverText;
       pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_MONSTER);
-      if (pUnit && pPacket->nMessageCount == 1 && pPacket->aMessages[0].bShow) {
+      if (pUnit && pPacket->nMessageCount == 1 && pPacket->aMessages[0].bShow == '\x03') {
         if (pUnit->pHoverText) {
           D2Common::Chat::Free(nullptr, pUnit->pHoverText);
         }
@@ -5843,7 +5825,7 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
     }
 
     pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_OBJECT);
-    if (pPacket->aMessages[0].bShow) {
+    if (pPacket->aMessages[0].bShow == '\x03') {
       TEXT_ShowStaticTextPopup(pPacket->aMessages[0].nMessage);
       return;
     }

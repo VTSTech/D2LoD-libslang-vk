@@ -1055,16 +1055,14 @@ bool __fastcall OBJECT_ClientFn_RiteOfPassageAncients(D2UnitStrc * pUnit) {
 
     eD2QuestState eQuestState = QUESTSTATE_Completed;
     eD2Quests eQuestId = QUEST_RiteOfPassage;
-    D2BitBufferStrc* pQuestRecord = UI::npcmenu::GetQuestInfo();
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestId, eQuestState);
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
     if (!bQuestState) {
       return true;
     }
 
     eQuestState = QUESTSTATE_Step0x04;
     eQuestId = QUEST_RiteOfPassage;
-    pQuestRecord = UI::npcmenu::GetQuestInfo();
-    bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, eQuestId, eQuestState);
+    bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
     if (bQuestState) {
       return true;
     }

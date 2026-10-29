@@ -1826,10 +1826,8 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
     D2RoomStrc* pCurrentRoom;
     BOOL nCollisionMask;
     D2ClientStrc* pPlayerClient;
-    eD2LevelId eTargetLevelId;
     D2UnitDataPlayerStrc* pPlayerData;
     DWORD dwTickCount;
-    int32_t eCollisionFlag_00;
     D2DrlgRoomCoordsStrc roomCoords;
     POINT ptTarget;
     D2DynamicPathStrc* pDynamicPath;
@@ -1857,9 +1855,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
         }
         if (!bFindFreeSpace) {
           nCollisionMask = 0;
-          eCollisionFlag_00 = 0x1c09;
-          dwErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
-          pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptTarget, dwErrorLine, eCollisionFlag_00, nCollisionMask);
+          pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptTarget, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, nCollisionMask);
         }
         if (!pRoom) {
           return 0;
@@ -1872,8 +1868,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
         if (pUnit->eUnitType == UNIT_PLAYER) {
           pPlayerClient = SUNIT_GetClient(pUnit, ".\\UNIT\\SUnit.cpp", 0xc3c);
           D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
-          eTargetLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pPlayerClient, eTargetLevelId, (uint16_t)roomCoords.sTileRect.left, (uint16_t)roomCoords.sTileRect.top);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pPlayerClient, D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom), (uint16_t)roomCoords.sTileRect.left, (uint16_t)roomCoords.sTileRect.top);
           D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
           if (nRelocMode) {
             pUnit->eUnitFlagsEx |= 0x800;
@@ -2011,14 +2006,21 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
     uint32_t dwSavedESI;
     uint32_t dwSavedRetAddr;
     eD2UnitType eUnitTypeCopy;
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType == UNIT_MONSTER && (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !sgptDataTable->pTxtMonStats[nClassId].enabled)) {
-        return nullptr;
-      }
-    } else {
-      if ((uint32_t)nClassId >= 7) {
-        return nullptr;
-      }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          if ((uint32_t)nClassId >= 7) {
+            return nullptr;
+          }
+
+          break;
+        }
+      default:
+        {
+          if (eUnitType == UNIT_MONSTER && (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !sgptDataTable->pTxtMonStats[nClassId].enabled)) {
+            return nullptr;
+          }
+        }
     }
 
     D2UnitStrc* pAllocUnit = D2Common::Units::AllocUnit(pGame->pMemoryPool, eUnitType);

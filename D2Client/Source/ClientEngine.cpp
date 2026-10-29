@@ -373,9 +373,7 @@ void __stdcall CLIENT_QuestEvent_FreeAnyaFromIce() {
 
     int32_t nSkillLevel = 1;
     eD2Skills eSkill = SKILL_Attack;
-    int32_t nY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nX = Units::GetXPosFromDynamicPathUnit(pUnit);
-    pPlayer = UNIT::Missile::CastAttack(pPlayer, MISSILE_AnyaCenter, nX, nY, eSkill, nSkillLevel);
+    pPlayer = UNIT::Missile::CastAttack(pPlayer, MISSILE_AnyaCenter, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nSkillLevel);
     if (!pPlayer) {
       return;
     }
@@ -418,18 +416,26 @@ void __fastcall CLIENT_SpawnAncientDeathMissile(D2UnitStrc * pUnit) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (nClassId != 0x21c) {
-      if (nClassId != 0x21d) {
-        if (nClassId != 0x21e) {
+    switch (nClassId) {
+      case 0x21c:
+        {
+          nTargetClassId = 0x1db;
+          break;
+        }
+      case 0x21d:
+        {
+          nTargetClassId = 0x1dc;
+          break;
+        }
+      default:
+        {
           return;
         }
-
-        nTargetClassId = 0x1da;
-      } else {
-        nTargetClassId = 0x1dc;
-      }
-    } else {
-      nTargetClassId = 0x1db;
+      case 0x21e:
+        {
+          nTargetClassId = 0x1da;
+          break;
+        }
     }
 
     eD2UnitType eFindType = UNIT_OBJECT;
@@ -806,8 +812,7 @@ void __stdcall CLIENT_BossDeath_Baal() {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_Net();
     int32_t nSearchRange = 0x220;
     eD2UnitType eSearchType = UNIT_MONSTER;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pPlayerUnit_lcl);
-    D2UnitStrc* pBaalUnit = D2Common::Units::UnitFinds::FindUnitInNeighboredRooms(pRoom, eSearchType, nSearchRange);
+    D2UnitStrc* pBaalUnit = D2Common::Units::UnitFinds::FindUnitInNeighboredRooms(D2Common::Units::UNITS_GetRoom(pPlayerUnit_lcl), eSearchType, nSearchRange);
     if (!pBaalUnit) {
       return;
     }
@@ -1413,8 +1418,7 @@ static uint32_t __stdcall MONSTER_TryMoveTowardTarget(D2UnitStrc * pUnit, uint8_
     eD2CollisionUnitSize nWidth = COLLISION_UNIT_SIZE_POINT;
     int nY = nStepY + local_c;
     int nX = nStepX + nMonsterY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    eCollisionFlags eVar2 = D2Common::Collision::CheckCollision_BlockAll_Width(pRoom, nX, nY, nWidth, eCollisionFlag);
+    eCollisionFlags eVar2 = D2Common::Collision::CheckCollision_BlockAll_Width(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, nWidth, eCollisionFlag);
     if (eVar2 != COLLIDE_NONE) {
       return 0;
     }
@@ -1957,8 +1961,7 @@ static void CLIENT_MonsterSeekCorpse(D2UnitStrc * pUnit) {
     }
 
     eCollisionFlags eCollision = COLLISION_LOS_THREAT | COLLIDE_MISSILE;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(pRoom, nX, nY, eCollision);
+    eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, eCollision);
     if (eCollision != COLLIDE_NONE) {
       CLIENT_SendMonsterAttackMessage(pUnit);
       return;

@@ -151,7 +151,6 @@ D2SoundEnvironTxt * __fastcall GetSoundEnvironLine(int32_t nSoundEnviron) {
 
 // @sourcefile .\Sound\SoundHdr.cpp
 void __stdcall TXT_AllocTxt_sounds_soundenviron() {
-    D2PoolManagerStrc* pMpq;
     D2ArchiveStrc* pD2File;
     D2BinFieldExcelStrc* pBinExcel;
     D2SoundsTxt* pSounds;
@@ -422,8 +421,7 @@ void __stdcall TXT_AllocTxt_sounds_soundenviron() {
     nLine = 0x101;
     szSourceFile = ".\\Sound\\SoundHdr.cpp";
     pFileSize = &nFileSize;
-    pMpq = D2Win::Src::D2WinArchive::ReturnZero();
-    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
+    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, pFileSize, szSourceFile, nLine);
     pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
     nTxtSoundsSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
     pSounds = (D2SoundsTxt*)D2_ALLOC_AT(nTxtSoundsSize * 0x8e, ".\\Sound\\SoundHdr.cpp", 0x106);
@@ -435,8 +433,7 @@ void __stdcall TXT_AllocTxt_sounds_soundenviron() {
     nLine = 0x10d;
     szSourceFile = ".\\Sound\\SoundHdr.cpp";
     pFileSize = &nFileSize;
-    pMpq = D2Win::Src::D2WinArchive::ReturnZero();
-    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMpq, szPath, pFileSize, szSourceFile, nLine);
+    pD2File = (D2ArchiveStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, pFileSize, szSourceFile, nLine);
     pBinExcel = Fog::Src::Excel::STRUCT_CreateBinFieldExcelAndFillData(pD2File, nFileSize);
     nTxtSoundEnvironSize = Fog::Src::Excel::TXT_GetLinesCountFromBinFieldExcel(pBinExcel);
     pSoundEnviron = (D2SoundEnvironTxt*)D2_ALLOC_AT(nTxtSoundEnvironSize * 0x58, ".\\Sound\\SoundHdr.cpp", 0x112);
@@ -887,7 +884,6 @@ void __stdcall SOUNDHDR_ShutdownCleanup() {
 
 // @sourcefile .\Sound\SoundHdr.cpp
 void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int32_t bRespectRecency) {
-    D2PoolManagerStrc* pMpqMgr;
     void* pSoundData;
     D2SoundsTxt* pSound;
     char szPath[80];
@@ -945,8 +941,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
       nResult = 0x301;
       szSourceFile = ".\\Sound\\SoundHdr.cpp";
       pSoundDataBytes = &pSound->nSoundDataBytes;
-      pMpqMgr = D2Win::Src::D2WinArchive::ReturnZero();
-      pSoundData = Fog::Archive::D2FILE_AllocAndLoadD2File(pMpqMgr, szPath, (uint32_t*)pSoundDataBytes, szSourceFile, nResult);
+      pSoundData = Fog::Archive::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, (uint32_t*)pSoundDataBytes, szSourceFile, nResult);
       pSound->pSoundDataBuffer = pSoundData;
       if (pSoundData) {
         nLoadStateOrBytes = pSound->nSoundDataBytes;

@@ -250,8 +250,7 @@ BOOL __fastcall SKILLMONST_SrvStFn44_MaggotUp(::SGAMEDATA * pGame, D2UnitStrc * 
 
     int32_t nNewPosX = 0;
     int32_t nNewPosY = 0;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    BOOL bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, pRoom, nPosX, nPosY, nNewPosY, nNewPosX);
+    BOOL bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, nNewPosY, nNewPosX);
     if (!bRelocated) {
       return 0;
     }
@@ -277,8 +276,7 @@ BOOL __fastcall SKILLMONST_SrvStFn44_MaggotUp(::SGAMEDATA * pGame, D2UnitStrc * 
 
     eCollisionFlag = 0x1000;
     nType = COLLISION_PATTERN_SMALL_UNIT_PRESENCE;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::AddCollision_Type(pRoom, nNewPosX, nNewPosY, nType, eCollisionFlag);
+    D2Common::Collision::AddCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nNewPosX, nNewPosY, nType, eCollisionFlag);
     return 1;
 }
 
@@ -310,8 +308,7 @@ BOOL __fastcall SKILLMONST_SrvStFn45_MaggotDown(::SGAMEDATA * pGame, D2UnitStrc 
 
     int32_t eCollisionFlag = 0x1000;
     eD2CollisionShapeType nCollisionSize = COLLISION_PATTERN_SMALL_NO_PRESENCE;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, nCollisionSize, eCollisionFlag);
+    D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, nCollisionSize, eCollisionFlag);
     return 1;
 }
 
@@ -370,8 +367,7 @@ BOOL __fastcall Skills_SrvDoFunc_087_SpawnBehindTarget(::SGAMEDATA * pGame, D2Un
     }
 
     int32_t nTargetY = D2Client::Units::GetYPosFromDynamicPathUnit(pTargetUnit);
-    int32_t nTargetX = D2Client::Units::GetXPosFromDynamicPathUnit(pTargetUnit);
-    int nSpawnX = D2Common::Units::GetDirectionToCoords(pUnit, nTargetX, nTargetY);
+    int nSpawnX = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTargetUnit), nTargetY);
     uint32_t nGfxOffset = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nSpawnX);
     uint32_t nGfxDirMasked = nGfxOffset & 7;
     D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(BYTE_ARRAY_006e3138[nGfxDirMasked & 0xff], &nSkillLvl, &nOffsetY);
@@ -575,9 +571,7 @@ BOOL __fastcall SKILLMONST_SrvStFn47_Jump(::SGAMEDATA * pGame, D2UnitStrc * pUni
     }
 
     D2Common::Skills::SKILL_SetParam4(pSkill, nParam4);
-    nCalcTmp = 0x100;
-    eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-    D2Common::Collision::AddCollision_Type(pRoom, nLeapX, nLeapY, nType, nCalcTmp);
+    D2Common::Collision::AddCollision_Type(pRoom, nLeapX, nLeapY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x100);
     UNIT::SUnit::SetUninterruptableState(pUnit, 1);
     D2Common::Skills::SKILL_SetParam1(pSkill, nLeapX);
     D2Common::Skills::SKILL_SetParam2(pSkill, nLeapY);
@@ -588,13 +582,11 @@ BOOL __fastcall SKILLMONST_SrvStFn47_Jump(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // Server-side skill DoFunc #89: drives the monster charge/leap-attack state machine (used e.g. by Duriel charge, classid 0x4e). Requires a current skill and a dynamic path. On action-frame 2 it resolves the stored target (skill param3=type, param4=guid) and processes the combat/damage queue entry. Otherwise, gated by skill flags: phase 0x100 walks the unit toward the saved param1/param2 tile (setting the windup sequence frame) until arrival, then clears collision, switches to charge collision/path type, and for the charging class snaps position, sets SP1 from target delta and recalculates the leap path; the high-bit flag path sets a no-collision launch path with walk velocity. Returns 1 (BOOL).
 BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     uint32_t nTargetGuid;
-    eD2UnitType eTargetType;
     D2UnitStrc* pTargetUnit;
+    uint32_t nSkillFlags;
     int32_t nMonBaseId;
     int32_t nLandX;
     int32_t nLandY;
-    eD2CollisionShapeType nType;
-    D2RoomStrc* pRoom;
     int16_t nX;
     int16_t nY;
     char* pVelTable;
@@ -610,6 +602,7 @@ BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2Uni
 
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
     if (pUnit->nActionFrame == 2) {
+      eD2UnitType eTargetType;
       pUnit->nActionFrame = 0;
       nTargetGuid = D2Common::Skills::SKILL_GetParam4(pSkill);
       eTargetType = D2Common::Skills::SKILL_GetParam3(pSkill);
@@ -619,7 +612,6 @@ BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2Uni
         return 1;
       }
     } else {
-      uint32_t nSkillFlags;
       nSkillFlags = D2Common::Skills::SKILL_GetFlags(pSkill);
       nMonBaseId = D2Common::Skills::SKILL_GetParam1(pSkill);
       nLandX = D2Common::Skills::SKILL_GetParam2(pSkill);
@@ -642,10 +634,7 @@ BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2Uni
 
         D2Common::Skills::SKILL_SetFlags(pSkill, 0);
         UNIT::SUnit::SetUninterruptableState(pUnit, 0);
-        nLandY = 0x100;
-        nType = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        D2Common::Collision::RemoveCollision_Type(pRoom, nMonBaseId, nLandX, nType, nLandY);
+        D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nMonBaseId, nLandX, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x100);
         D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, 0x100);
         D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, 0x3c01);
         D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0x65);
@@ -656,8 +645,7 @@ BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2Uni
         }
 
         nTargetGuid = D2Common::Skills::SKILL_GetParam4(pSkill);
-        eTargetType = D2Common::Skills::SKILL_GetParam3(pSkill);
-        pTargetUnit = UNIT::SUnit::FindUnitFromTable(pGame, eTargetType, nTargetGuid);
+        pTargetUnit = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Skills::SKILL_GetParam3(pSkill), nTargetGuid);
         if (!pTargetUnit) {
           return 1;
         }
@@ -685,8 +673,7 @@ BOOL __fastcall Skills_SrvDoFunc_089_ChargeLeapAttack(::SGAMEDATA * pGame, D2Uni
         D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 9);
         nLandX = 0x282;
         pVelTable = ".\\SKILLS\\SkillMonst.cpp";
-        nMonBaseId = SkillsServer::SKILLS_GetUnitWalkVelocity(pUnit);
-        D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, nMonBaseId, pVelTable, nLandX);
+        D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, SkillsServer::SKILLS_GetUnitWalkVelocity(pUnit), pVelTable, nLandX);
         D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
         return 1;
       }
@@ -1305,8 +1292,6 @@ BOOL __fastcall Skills_SrvDoFunc_096_HealTarget(::SGAMEDATA * pGame, D2UnitStrc 
 // Resurrects a dead monster or player unit: restores HP to max, sets ISVALIDTARGET/CANBEATTACKED/TARGETABLE flags, and re-registers collision in the room. For monsters also sets NOXP+NOTC flags, triggers AI think, decrements kill count, attaches quest hooks, and sets monster collision type. Returns 1 on success, 0 if the unit has no room.
 int __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int nX;
-    eD2CollisionShapeType nCollisionWidth;
-    int32_t iVar1;
     int32_t nPosY;
     eD2UnitType eUnitType;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -1343,9 +1328,7 @@ int __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
           nMaxHp = 0;
         }
 
-        iVar1 = 0x100;
-        nCollisionWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-        D2Common::Collision::AddCollision_Type(pRoom, nMaxHp, nPosY, nCollisionWidth, iVar1);
+        D2Common::Collision::AddCollision_Type(pRoom, nMaxHp, nPosY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x100);
         return 1;
       }
     }
@@ -1370,9 +1353,7 @@ int __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
       nX = 0;
     }
 
-    iVar1 = 0x80;
-    nCollisionWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-    D2Common::Collision::AddCollision_Type(pRoom, nX, nMaxHp, nCollisionWidth, iVar1);
+    D2Common::Collision::AddCollision_Type(pRoom, nX, nMaxHp, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x80);
     return 1;
 }
 
@@ -1630,7 +1611,6 @@ BOOL __fastcall Skills_SrvDoFunc_101_FireDirectionalMissile(::SGAMEDATA * pGame,
     int32_t nSrcOrDelta;
     uint32_t nTargetY;
     D2SkillArgStrc sSkillArg;
-    int32_t nFaceDir;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1661,10 +1641,7 @@ BOOL __fastcall Skills_SrvDoFunc_101_FireDirectionalMissile(::SGAMEDATA * pGame,
     D2UnitStrc* pUnit_00 = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (pUnit_00) {
       int32_t nTargetX;
-      nFaceDir = 0;
-      nSrcOrDelta = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-      nTargetX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, nTargetX, nSrcOrDelta, nFaceDir);
+      D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0);
       nSrcOrDelta = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
       nTargetX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
       sSkillArg.nUnitX = nSrcOrDelta - nTargetX;
@@ -1803,7 +1780,6 @@ BOOL __fastcall SKILLMONST_SrvStFn54_DiabRun(::SGAMEDATA * pGame, D2UnitStrc * p
 // Server-side skill DoFunc 103: per-frame state machine for a charge-then-melee-strike skill. Reads the unit's current skill; on skill flag bit 2 it resets and jumps the animation to Param[0]/Param[1]. Otherwise it inspects the shifted sequence frame: on Param[2] it sets up the charge by computing a velocity (D2GetSkillCalc * velocitypercent), assigning it to the dynamic path, switching path type and recalculating the path (flag 1). On Param[3] it advances the animation to Param[4]/Param[5]. On the action frame it resolves the stored target GUID; if in melee range it rolls to-hit, builds the damage (HitFlags/HitClass + random skill damage), applies it (DAMAGE_ApplyDamageToUnit) and computes the hit result. Returns TRUE while active, FALSE on invalid skill/state.
 BOOL __fastcall Skills_SrvDoFunc_103_ChargeAndMeleeStrike(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     int nCalcOrHp;
-    eD2UnitType eUnitType;
     D2UnitStrc* pTarget;
     BOOL bInMeleeRange;
     D2DamageStrc sDamage;
@@ -1855,8 +1831,7 @@ BOOL __fastcall Skills_SrvDoFunc_103_ChargeAndMeleeStrike(::SGAMEDATA * pGame, D
       nCalcOrHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
       nVelLineRef = 0x731;
       pVelFileRef = ".\\SKILLS\\SkillMonst.cpp";
-      nVelocity = D2Client::Stats::D2ApplyPercent(nVelocity, nCalcOrHp, 100);
-      D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, nVelocity, pVelFileRef, nVelLineRef);
+      D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, D2Client::Stats::D2ApplyPercent(nVelocity, nCalcOrHp, 100), pVelFileRef, nVelLineRef);
       D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 1);
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
       D2Common::Skills::SKILL_SetFlags(pSkillSaved, 1);
@@ -1874,8 +1849,7 @@ BOOL __fastcall Skills_SrvDoFunc_103_ChargeAndMeleeStrike(::SGAMEDATA * pGame, D
     }
 
     dwFindGUID = D2Common::Skills::SKILL_GetParam1(pSkill);
-    eUnitType = D2Common::Skills::SKILL_GetParam2(pSkill);
-    pTarget = UNIT::SUnit::FindUnitFromTable(pGameSaved, eUnitType, dwFindGUID);
+    pTarget = UNIT::SUnit::FindUnitFromTable(pGameSaved, D2Common::Skills::SKILL_GetParam2(pSkill), dwFindGUID);
     if (!pTarget) {
       return 1;
     }
@@ -1958,10 +1932,7 @@ BOOL __fastcall Skills_SrvDoFunc_104_SpawnPredefinedAtTarget(::SGAMEDATA * pGame
       return 0;
     }
 
-    int32_t dwSpawnY = 0;
-    int32_t dwSpawnX = 0;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit_00);
-    Monster::Create::MONSTER_SpawnPredefinedAtUnit(pGame, pRoom, dwSpawnX, dwSpawnY, pUnit_00, nMonClassId, (uint16_t)bIsTown);
+    Monster::Create::MONSTER_SpawnPredefinedAtUnit(pGame, D2Common::Units::UNITS_GetRoom(pUnit_00), 0, 0, pUnit_00, nMonClassId, (uint16_t)bIsTown);
     return 1;
 }
 
@@ -2175,8 +2146,7 @@ BOOL __fastcall Skills_SrvDoFunc_107_LeechMeleeMultiHit(::SGAMEDATA * pGame, D2U
     }
 
     uint32_t dwFindGUID = D2Common::Skills::SKILL_GetParam2(pSkill);
-    eD2UnitType eUnitType = D2Common::Skills::SKILL_GetParam3(pSkill);
-    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGame, eUnitType, dwFindGUID);
+    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Skills::SKILL_GetParam3(pSkill), dwFindGUID);
     if (!pTarget) {
       return 0;
     }
@@ -2261,8 +2231,7 @@ BOOL __fastcall Skills_SrvDoFunc_108_DevourMinionForHP(::SGAMEDATA * pGame, D2Un
     int32_t nTargetMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pTarget);
     int nMaxHp = pTarget->nUnitGUID;
     eD2UnitType eUnitType = UNIT_MONSTER;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pTarget);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nMaxHp);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pTarget), eUnitType, nMaxHp);
     UNIT::SUnit::FreeServerUnit(pGame, pTarget);
     int nCurHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     nMaxHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
@@ -2270,9 +2239,7 @@ BOOL __fastcall Skills_SrvDoFunc_108_DevourMinionForHP(::SGAMEDATA * pGame, D2Un
       return 1;
     }
 
-    nMercOrPct = 100;
-    int32_t nPercent = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl);
-    nTargetMaxHp = D2Client::Stats::D2ApplyPercent(nTargetMaxHp, nPercent, nMercOrPct);
+    nTargetMaxHp = D2Client::Stats::D2ApplyPercent(nTargetMaxHp, D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt[eSkill].calc[0], eSkill, nSkillLvl), 100);
     nCurHp += nTargetMaxHp;
     nNewHpClamped = nCurHp;
     if (nCurHp <= 1) {
@@ -2655,11 +2622,9 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc
 
 // Server tick function called each frame for spider-type monsters: if the unit is moving (path flags non-zero), computes a directional offset from the spider's current facing, then spawns a MISSILE_Spidergoolay missile (SKILL_SpiderLay) at the offset position behind the spider, forming a persistent web trail.
 void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    D2SkillStrc* pSkill;
     int nPosX;
     int nPosY;
     D2RoomStrc* pRoom;
-    BOOL bApplyBonus;
     D2SkillArgStrc sSkillArg;
     int nOffsetY;
     int nOffsetX;
@@ -2675,9 +2640,7 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
         nPathFlags = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nPathFlags);
         abyDirLookup[4] = abyDirLookup[nPathFlags & 0xff];
         D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[nPathFlags & 0xff], &nOffsetX, &nOffsetY);
-        bApplyBonus = 1;
-        pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit);
-        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bApplyBonus);
+        *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit), 1);
         eUnitType = pUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
           nPosX = pUnit->pPath.pStaticPath->nPosX;

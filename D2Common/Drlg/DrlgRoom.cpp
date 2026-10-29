@@ -652,13 +652,18 @@ D2RoomExStrc * __fastcall DRLGROOMEX_AllocRoomEx(D2DrlgLevelStrc * pLevel, int n
     if (pLevel->dwFlags & 0x10) {
       pRoomEx->eRoomExFlags |= 0x40000;
     }
-    if (nPresetType != 1) {
-      if (nPresetType == 2) {
-        Preset::DRLGROOMEX_AllocRoomExDataPresetArea(pRoomEx);
-        return pRoomEx;
-      }
-    } else {
-      OutRoom::DRLGOUTROOM_AllocOutdoorRoomData(pRoomEx);
+
+    switch (nPresetType) {
+      case 1:
+        {
+          OutRoom::DRLGOUTROOM_AllocOutdoorRoomData(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGROOMEX_AllocRoomExDataPresetArea(pRoomEx);
+          return pRoomEx;
+        }
     }
 
     return pRoomEx;
@@ -1018,27 +1023,38 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
 }
 
 uint32_t __fastcall CheckLOSDraw(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 1) {
-      if (pRoomEx->nPresetType != 2) {
-        return 0;
-      }
-
-      return pRoomEx->eRoomExFlags & 0x80000;
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          return 1;
+        }
+      case 2:
+        {
+          return pRoomEx->eRoomExFlags & 0x80000;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    return 1;
 }
 
 // Returns whether a RoomEx is preset type 1 and has the outdoor border flag.
 // Delegates to DRLGOUTROOM_HasOutdoorBorderFlag if nPresetType == 1.
 // Caller: DRLGROOM_HasOutdoorBorder
 uint32_t __fastcall DRLGROOMEX_IsPresetWithOutdoorBorder(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 1) {
-      return 0;
+    uint32_t bHasOutdoorBorder;
+    switch (pRoomEx->nPresetType) {
+      default:
+        {
+          return 0;
+        }
+      case 1:
+        {
+          bHasOutdoorBorder = DRLGOUTROOM_HasOutdoorBorderFlag(pRoomEx);
+          return bHasOutdoorBorder;
+        }
     }
-
-    uint32_t bHasOutdoorBorder = DRLGOUTROOM_HasOutdoorBorderFlag(pRoomEx);
-    return bHasOutdoorBorder;
 }
 
 uint32_t __fastcall GetWaypointFlags(D2RoomExStrc * pRoomEx) {
@@ -1414,12 +1430,18 @@ void __fastcall DRLGROOMEX_FreeDrlgRoomEx(D2RoomExStrc * pRoomEx) {
       pRoomEx->nDrlgRoomsExNearCount = 0;
       pRoomEx->ppDrlgRoomsExNear = 0;
     }
-    /* nPresetType */ if (pRoomEx->nPresetType != 1) {
-      if (pRoomEx->nPresetType == 2) {
-        Preset::DRLGROOMEX_FreeRoomExDataPresetArea(pRoomEx);
-      }
-    } else {
-      OutRoom::DRLGOUTROOM_FreeDrlgOutdoorRoomData(pRoomEx);
+
+    /* nPresetType */ switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          OutRoom::DRLGOUTROOM_FreeDrlgOutdoorRoomData(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGROOMEX_FreeRoomExDataPresetArea(pRoomEx);
+          break;
+        }
     }
 
     D2PresetUnitStrc* pPresetIter = pRoomEx->pPresetUnit;

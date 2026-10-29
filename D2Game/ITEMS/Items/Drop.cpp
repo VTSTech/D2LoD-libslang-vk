@@ -153,7 +153,7 @@ static BOOL __stdcall ITEMDROP_IsItemClassEligible(D2SeedStrc * pSeed, int32_t b
     if ((int)eLevel <= 0) {
       eLevel = LEVEL_RogueEncampment;
     }
-    if (!(pItemsTxt->bSpawnable != '\0' && !pItemsTxt->bQuest && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel <= (int)eLevel)) {
+    if (!(pItemsTxt->bSpawnable != '\0' && pItemsTxt->bQuest == '\0' && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel <= (int)eLevel)) {
       return 0;
     }
     if (!bSkipRarityRoll) {
@@ -531,7 +531,7 @@ static BOOL __stdcall ITEM_MarkUniqueAsDropped(::SGAMEDATA * pGame, D2UnitStrc *
     if (sgptDataTable->pTxtUniqueItems[nFileIndex].nolimit) {
       return 1;
     }
-    if (!pItemsTxt->bQuest) {
+    if (pItemsTxt->bQuest == '\0') {
       nClassId = ITEM_IsUniqueAlreadyDropped(pGame, pUnit);
       if (nClassId) {
         return 0;
@@ -588,7 +588,6 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
     bool bAlreadyUnique;
     int32_t nRollResult;
     int nCandidateCount;
-    D2SeedStrc* pItemSeed;
     BOOL BVar1;
     int32_t nWeightAccum;
     D2DataTableTxtStrc* pDataTable;
@@ -684,8 +683,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
 
           if (nRarityWeight > 0) {
             if ((int)nChosenUniqueIdx < 0) {
-              pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-              nRollResult = D2Client::Seed::RollBetweenMinAndMax(pItemSeed, 0, nTotalRarityWeight);
+              nRollResult = D2Client::Seed::RollBetweenMinAndMax(D2Common::ITEMS::Items::GetItemSeed(pUnit), 0, nTotalRarityWeight);
               nWeightAccum = 1;
               if (1 < nRarityWeight) {
                 do {
@@ -700,7 +698,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
               nChosenUniqueIdx = gUniqueCandidatePool.aCandidates[nWeightAccum - 1].nUniqueIdx;
               pDataTable = sgptDataTable;
             }
-            if (pItemsTxt->bQuest || !pGame || nChosenUniqueIdx <= 0x1000 && !(pGame->fUniqueSpawn[(int)nChosenUniqueIdx >> 5] & gadwBitMasks[nChosenUniqueIdx & 0x1f])) {
+            if (pItemsTxt->bQuest != '\0' || !pGame || nChosenUniqueIdx <= 0x1000 && !(pGame->fUniqueSpawn[(int)nChosenUniqueIdx >> 5] & gadwBitMasks[nChosenUniqueIdx & 0x1f])) {
               if ((int)nChosenUniqueIdx < 0) {
                 return 0;
               }
@@ -744,7 +742,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
       }
 
       pUniqueEntryPtr = (uint8_t*)sgptDataTable->pTxtUniqueItems + 0x2c;
-      while (*(uint16_t*)(pUniqueEntryPtr - 8) >= 100 || !(*pUniqueEntryPtr & (uint8_t)1) || pGame->nGameType == SGAMETYPE_BNET_HOST && pGame->eGameType == GAMETYPE_SINGLEPLAYER && *pUniqueEntryPtr & (uint8_t)8 || pItemsTxt->dwCode != *(int*)(pUniqueEntryPtr - 4) || (bHasDurability = ITEM_CheckUniqueBitmask(bDurabilityCheck, pGame) , bHasDurability && !pItemsTxt->bQuest)) {
+      while (*(uint16_t*)(pUniqueEntryPtr - 8) >= 100 || !(*pUniqueEntryPtr & (uint8_t)1) || pGame->nGameType == SGAMETYPE_BNET_HOST && pGame->eGameType == GAMETYPE_SINGLEPLAYER && *pUniqueEntryPtr & (uint8_t)8 || pItemsTxt->dwCode != *(int*)(pUniqueEntryPtr - 4) || (bHasDurability = ITEM_CheckUniqueBitmask(bDurabilityCheck, pGame) , bHasDurability && pItemsTxt->bQuest == '\0')) {
         bDurabilityCheck++;
         pUniqueEntryPtr += 0x14c;
         if ((int)bDurabilityCheck >= nRarityWeight) {
@@ -958,8 +956,6 @@ static void ITEM_ApplyEthereal(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemG
 static void __stdcall ITEM_ApplySpecialTypeProperties(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2ItemGenContextStrc * pItemGenContext) {
     uint32_t dwFileIndex_00;
     uint32_t dwFileIndex;
-    int32_t nScrollBookIdx;
-    int32_t nScrollIdx;
     int32_t nIndex;
     int32_t nSuffixParam;
     eD2ItemTypes eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pUnit);
@@ -978,13 +974,11 @@ static void __stdcall ITEM_ApplySpecialTypeProperties(D2UnitStrc * pUnit, ::SGAM
       return;
       case ITEMTYPE_Book:
         nIndex = 0;
-      nScrollIdx = SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0);
-      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)nScrollIdx, nIndex);
+      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0), nIndex);
       return;
       case ITEMTYPE_Scroll:
         nSuffixParam = 0;
-      nScrollBookIdx = SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 1);
-      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)nScrollBookIdx, nSuffixParam);
+      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 1), nSuffixParam);
       return;
       case ITEMTYPE_BodyPart:
         dwFileIndex_00 = pItemGenContext->dwFileIndex;
@@ -1002,11 +996,7 @@ static void __stdcall ITEM_ApplySpecialTypeProperties(D2UnitStrc * pUnit, ::SGAM
 
 // Expansion variant of ITEM_ApplySpecialTypeProperties. Applies all type-specific fixups non-exclusively using IsOfType checks (no switch): Charm gets forced magic affix, BodyPart/PlayerBodyPart get file index from ctx, Scroll/Book get magic suffix from scroll-book index. Does NOT roll sockets; always falls through to StaffMod.
 static void ITEM_ApplySpecialTypePropertiesExp(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
-    int32_t nScrollIdx;
-    DWORD dwFileIndex_00;
     uint32_t dwFileIndex;
-    int32_t nIndex;
-    int32_t nSuffixSlot;
     uint32_t bIsType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Charm);
     if (bIsType) {
       ITEM_RollForcedMagicAffix(pItemGenContext, pUnit);
@@ -1014,6 +1004,7 @@ static void ITEM_ApplySpecialTypePropertiesExp(D2UnitStrc * pUnit, D2ItemGenCont
 
     uint32_t bTypeCheck = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_BodyPart);
     if (bTypeCheck) {
+      DWORD dwFileIndex_00;
       dwFileIndex_00 = pItemGenContext->dwFileIndex;
       if (pItemGenContext->pUnit) {
         dwFileIndex_00 = pItemGenContext->pUnit->nClassId;
@@ -1035,17 +1026,12 @@ static void ITEM_ApplySpecialTypePropertiesExp(D2UnitStrc * pUnit, D2ItemGenCont
 
     bTypeCheck = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Scroll);
     if (bTypeCheck) {
-      int32_t nScrollBookIdx;
-      nSuffixSlot = 0;
-      nScrollBookIdx = SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 1);
-      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)nScrollBookIdx, nSuffixSlot);
+      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 1), 0);
     }
 
     bTypeCheck = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Book);
     if (bTypeCheck) {
-      nIndex = 0;
-      nScrollIdx = SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0);
-      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)nScrollIdx, nIndex);
+      D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (int16_t)SKILLS::Items::ITEMMOD_GetScrollBookIndex(pUnit, 0), 0);
     }
 
     SKILLS::Items::StaffMod(pUnit, pItemGenContext);
@@ -1115,7 +1101,7 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x489);
           exit(-1);
         }
-        if (pItemTxt->bQuest) {
+        if (pItemTxt->bQuest != '\0') {
           return 2;
         }
 
@@ -1805,7 +1791,7 @@ int __fastcall ITEM_InitItemBaseStats(::SGAMEDATA * pGame, D2UnitStrc * * ppItem
     }
 
     pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nTmp);
-    if (!(pItemsTxt && pItemsTxt->bQuest && pItemsTxt->bQuestDiffCheck != '\0')) {
+    if (!(pItemsTxt && pItemsTxt->bQuest != '\0' && pItemsTxt->bQuestDiffCheck != '\0')) {
       return nAmount;
     }
 
@@ -1934,7 +1920,7 @@ D2UnitStrc * __fastcall HasQuestItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
           /* Iterate over all items in inventory and check them one by one: do code and
                          mode (norm, nightmare, hell) match ? */ return pItem;
         }
-        if (!pItemData->bQuest) {
+        if (pItemData->bQuest == '\0') {
           /* Iterate over all items in inventory and check them one by one: do code and
                          mode (norm, nightmare, hell) match ? */ return pItem;
         }
@@ -1969,7 +1955,7 @@ D2UnitStrc * __fastcall HasQuestItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
           if (!pItemData) {
             return pCarriedItem;
           }
-          if (!pItemData->bQuest) {
+          if (pItemData->bQuest == '\0') {
             return pCarriedItem;
           }
           if (pItemData->bQuestDiffCheck == '\0') {
@@ -2291,10 +2277,10 @@ static int32_t __stdcall GAME_GetItemQuality(uint32_t nItemClassId, int32_t nVic
     if (pItemTypeTxt->normal != '\0') {
       return 2;
     }
-    if (pItemTxt->bUnique) {
+    if (pItemTxt->bUnique != '\0') {
       return 7;
     }
-    if (pItemTypeTxt->magic != '\0' && pItemTxt->bQuest) {
+    if (pItemTypeTxt->magic != '\0' && pItemTxt->bQuest != '\0') {
       return 7;
     }
 
@@ -3507,11 +3493,7 @@ void __fastcall ITEM_DropEarOnPvpDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit) 
       return;
     }
 
-    int32_t nCreateFlags = 0;
-    int32_t nModSeed = 0;
-    int32_t nInitSeed = 0;
-    int nVictimLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    D2UnitStrc* pUnit_00 = ITEM_CreateFromTemplate(pUnit, nEarClassId, pGame, 4, QUALITY_NORMAL, 1, 1, nVictimLevel, nInitSeed, nModSeed, nCreateFlags);
+    D2UnitStrc* pUnit_00 = ITEM_CreateFromTemplate(pUnit, nEarClassId, pGame, 4, QUALITY_NORMAL, 1, 1, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), 0, 0, 0);
     if (!pUnit_00) {
       return;
     }

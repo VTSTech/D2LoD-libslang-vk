@@ -1997,19 +1997,25 @@ void __fastcall SKILLDESC_BuildStatBuffDesc(D2UnitStrc * pUnit, uint16_t * wszOu
                 if (!pStatDescResult) {
                   BVar1 = ItemStatCost_DescFunc_DGrpFunc(pUnit, pStatListNew, nStatId, (uint32_t)wStatLayer, nStatBonusCount, wszDescLine);
                   if (BVar1) {
-                    if (nStatId != 0x17) {
-                      if (nStatId == 0x18) {
-                        eUnitStat = UNITSTAT_maxdamage;
-                        goto skip_if_base_damage;
-                      }
-                    } else {
-                      eUnitStat = UNITSTAT_mindamage;
-                      skip_if_base_damage:
-                      nStatBonusCount = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListNew, eUnitStat, 0);
-                      if (nStatBonusCount) {
-                        goto next_stat_entry;
-                      }
+                    switch (nStatId) {
+                      case 0x17:
+                        {
+                          eUnitStat = UNITSTAT_mindamage;
+                          skip_if_base_damage:
+                          nStatBonusCount = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListNew, eUnitStat, 0);
+                          if (nStatBonusCount) {
+                            goto next_stat_entry;
+                          }
+
+                          break;
+                        }
+                      case 0x18:
+                        {
+                          eUnitStat = UNITSTAT_maxdamage;
+                          goto skip_if_base_damage;
+                        }
                     }
+
                     if (bAppendNewline) {
                       D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescLine, wszNewline);
                     }
@@ -2183,6 +2189,7 @@ void __fastcall SKILLDESC_AppendItemBuffText(D2UnitStrc * pUnit, D2UnitStrc * pI
 }; D2_STATIC_GUARD(gnPopCountBitTable, "D2Client::UI::SkillDesc::SKILLDESC_AppendItemBuffText::gnPopCountBitTable");
 
     uint32_t nEquippedSetMask;
+    int32_t iVar1;
     int nSetStateIndex;
     if (!(pItem && pItem->eUnitType == UNIT_ITEM)) {
       return;
@@ -2197,43 +2204,50 @@ void __fastcall SKILLDESC_AppendItemBuffText(D2UnitStrc * pUnit, D2UnitStrc * pI
     if (!pSetItemsTxt) {
       return;
     }
-    if (pSetItemsTxt->addFunc != 1) {
-      if (pSetItemsTxt->addFunc == 2) {
-        nEquippedSetMask = D2Common::ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pItem, 1);
-        if (nEquippedSetMask >= 0x40) {
+
+    switch (pSetItemsTxt->addFunc) {
+      case 1:
+        {
+          nEquippedSetMask = D2Common::ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pItem, 0);
+          iVar1 = D2Common::ITEMS::Items::ITEM_GetTxtSetItems_setIndex(pItem);
           nItemQuality = 0;
-        } else {
-          nItemQuality = gnPopCountBitTable[nEquippedSetMask];
-        }
-
-        nSetStateIndex = 0;
-        if (nItemQuality - 1 > 0) {
           do {
-            SKILLDESC_BuildStatBuffDesc(pItem, wszOutputBuffer, nMaxBufferSize, 0, gaeSetBonusStates[nSetStateIndex], STATE_none, 0, 1);
-            nSetStateIndex++;
-          } while (nSetStateIndex < nItemQuality - 1);
+            nSetStateIndex = nItemQuality * 4;
+            if (nItemQuality != iVar1) {
+              if (iVar1 < nItemQuality) {
+                nSetStateIndex += -4;
+              }
+              if (nEquippedSetMask & 1 << ((uint8_t)nItemQuality & 0x1f)) {
+                SKILLDESC_BuildStatBuffDesc(pItem, wszOutputBuffer, nMaxBufferSize, 0, *(eD2States*)((int)gaeSetBonusStates + nSetStateIndex), STATE_none, 0, 1);
+              }
+            }
 
-          return;
-        }
-      }
-    } else {
-      int32_t iVar1;
-      nEquippedSetMask = D2Common::ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pItem, 0);
-      iVar1 = D2Common::ITEMS::Items::ITEM_GetTxtSetItems_setIndex(pItem);
-      nItemQuality = 0;
-      do {
-        nSetStateIndex = nItemQuality * 4;
-        if (nItemQuality != iVar1) {
-          if (iVar1 < nItemQuality) {
-            nSetStateIndex += -4;
-          }
-          if (nEquippedSetMask & 1 << ((uint8_t)nItemQuality & 0x1f)) {
-            SKILLDESC_BuildStatBuffDesc(pItem, wszOutputBuffer, nMaxBufferSize, 0, *(eD2States*)((int)gaeSetBonusStates + nSetStateIndex), STATE_none, 0, 1);
-          }
-        }
+            nItemQuality++;
+          } while (nItemQuality < 6);
 
-        nItemQuality++;
-      } while (nItemQuality < 6);
+          break;
+        }
+      case 2:
+        {
+          nEquippedSetMask = D2Common::ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pItem, 1);
+          if (nEquippedSetMask >= 0x40) {
+            nItemQuality = 0;
+          } else {
+            nItemQuality = gnPopCountBitTable[nEquippedSetMask];
+          }
+
+          nSetStateIndex = 0;
+          if (nItemQuality - 1 > 0) {
+            do {
+              SKILLDESC_BuildStatBuffDesc(pItem, wszOutputBuffer, nMaxBufferSize, 0, gaeSetBonusStates[nSetStateIndex], STATE_none, 0, 1);
+              nSetStateIndex++;
+            } while (nSetStateIndex < nItemQuality - 1);
+
+            return;
+          }
+
+          break;
+        }
     }
 }
 
@@ -3603,7 +3617,7 @@ void __stdcall SKILLDESC_CalcElemDamageRange(D2UnitStrc * pUnit, int * pnParam1,
 
       pElemDmgTypeTable++;
       pElemStatTable += 3;
-    } while ((int)pElemStatTable < (uintptr_t)((char*)&gaSkillElemDamageStatTriples + sizeof(gaSkillElemDamageStatTriples) + 8));
+    } while ((int)pElemStatTable < (intptr_t)((char*)&gaSkillElemDamageStatTriples + sizeof(gaSkillElemDamageStatTriples) + 8));
 
     nElemMinDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_poisonmindam, 0);
     nElemMaxDmg = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_poisonmaxdam, 0);
@@ -4434,11 +4448,9 @@ void __fastcall SKILLDESC_DrawSkillDmgWithElem(D2UnitStrc * pUnit, D2SkillStrc *
     int nMaxDamage = 0;
     int32_t nElemType = 0;
     int32_t nDamageShifted = nSkillLevel;
-    eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x98c);
-    uint32_t uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nDamageShifted);
+    uint32_t uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x98c), nDamageShifted);
     nDamageShifted = nSkillLevel;
-    eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x98d);
-    uint32_t uDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nDamageShifted);
+    uint32_t uDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x98d), nDamageShifted);
     SKILLDESC_CalcWeaponDamageRange(pUnit, &nMinDamage, &nMaxDamage, &nElemType, uDamCalc2, pSkill, 0x80, nullptr, 0, uDamCalc1);
     SKILLDESC_CalcElemDamageRange(pUnit, &nMinDamage, &nMaxDamage, (uint32_t*)&nElemType, pSkill);
     uint8_t byDmgShiftFactor = pSkillsTxt->SrcDam;
@@ -4460,7 +4472,6 @@ void __fastcall SKILLDESC_DrawSkillDmgWithElem(D2UnitStrc * pUnit, D2SkillStrc *
 
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillDmgType1(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight) {
-    uint32_t uDamCalc1;
     uint32_t pDamCalc2;
     int32_t nSkillLevelTmp;
     if (!(pSkill && pSkillsTxt)) {
@@ -4474,13 +4485,11 @@ void __fastcall SKILLDESC_DrawSkillDmgType1(D2UnitStrc * pUnit, D2SkillStrc * pS
 
     BOOL bCanDualWield = D2Common::Units::CanDualWield(pUnit);
     if (bCanDualWield) {
-      eD2Skills eSkillId;
+      uint32_t uDamCalc1;
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9b8);
-      uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nSkillLevelTmp);
+      uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9b8), nSkillLevelTmp);
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9b9);
-      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nSkillLevelTmp);
+      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9b9), nSkillLevelTmp);
       SKILLDESC_DrawSkillDmgPhysical((int32_t)pSkill, pUnit, nSkillLevel, (pfnSkillDescWeaponDmgCalc)SKILLDESC_DrawDamageWithRange, uDamCalc1, pDamCalc2, nXLeft, nY, nXRight, 1, &pSkillsTxt->skill);
       return;
     }
@@ -4490,7 +4499,6 @@ void __fastcall SKILLDESC_DrawSkillDmgType1(D2UnitStrc * pUnit, D2SkillStrc * pS
 
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillDmgType2(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight) {
-    uint32_t uDamCalc1;
     uint32_t pDamCalc2;
     int32_t nSkillLevelTmp;
     if (!(pSkill && pSkillsTxt)) {
@@ -4504,13 +4512,11 @@ void __fastcall SKILLDESC_DrawSkillDmgType2(D2UnitStrc * pUnit, D2SkillStrc * pS
 
     BOOL bCanDualWield = D2Common::Units::CanDualWield(pUnit);
     if (bCanDualWield) {
-      eD2Skills eSkillId;
+      uint32_t uDamCalc1;
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9dd);
-      uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nSkillLevelTmp);
+      uDamCalc1 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9dd), nSkillLevelTmp);
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9de);
-      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nSkillLevelTmp);
+      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0x9de), nSkillLevelTmp);
       SKILLDESC_DrawSkillDmgPhysical((int32_t)pSkill, pUnit, nSkillLevel, (pfnSkillDescWeaponDmgCalc)SKILLDESC_DrawDamageWithRange, uDamCalc1, pDamCalc2, nXLeft, nY, nXRight, 0, &pSkillsTxt->skill);
       return;
     }
@@ -4520,7 +4526,6 @@ void __fastcall SKILLDESC_DrawSkillDmgType2(D2UnitStrc * pUnit, D2SkillStrc * pS
 
 // @sourcefile .\UI\SkillDesc.cpp
 void __fastcall SKILLDESC_DrawSkillDmgType3(D2UnitStrc * pUnit, D2SkillStrc * pSkill, D2SkillsTxt * pSkillsTxt, int32_t nSkillLevel, int32_t nXLeft, int32_t nY, int32_t nXRight) {
-    eD2Skills eSkillId;
     uint32_t pDamCalc2;
     uint32_t nMinDamage;
     int32_t nSkillLevelTmp;
@@ -4536,11 +4541,9 @@ void __fastcall SKILLDESC_DrawSkillDmgType3(D2UnitStrc * pUnit, D2SkillStrc * pS
     BOOL bCanDualWield = D2Common::Units::CanDualWield(pUnit);
     if (bCanDualWield) {
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa02);
-      nMinDamage = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nSkillLevelTmp);
+      nMinDamage = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa02), nSkillLevelTmp);
       nSkillLevelTmp = nSkillLevel;
-      eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa03);
-      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nSkillLevelTmp);
+      pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa03), nSkillLevelTmp);
       SKILLDESC_DrawSkillDmgPhysical((int32_t)pSkill, pUnit, nSkillLevel, (pfnSkillDescWeaponDmgCalc)SKILLDESC_DrawDamageWithRange, nMinDamage, pDamCalc2, nXLeft, nY, nXRight, 1, &pSkillsTxt->skill);
       return;
     }
@@ -4549,11 +4552,9 @@ void __fastcall SKILLDESC_DrawSkillDmgType3(D2UnitStrc * pUnit, D2SkillStrc * pS
     int nMaxDamage = 0;
     pSkillsTxt = 0;
     nSkillLevelTmp = nSkillLevel;
-    eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa0c);
-    pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nSkillLevelTmp);
+    pDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa0c), nSkillLevelTmp);
     nSkillLevelTmp = nSkillLevel;
-    eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa0d);
-    uint32_t uDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nSkillLevelTmp);
+    uint32_t uDamCalc2 = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xa0d), nSkillLevelTmp);
     SKILLDESC_DrawDamageWithRange(pUnit, (int*)&nMinDamage, &nMaxDamage, (uint32_t*)&pSkillsTxt, pDamCalc2, uDamCalc2, pSkill, 0, nullptr);
     SKILLDESC_DrawDamageNumbers(nMinDamage, nMaxDamage, (int32_t)pSkillsTxt, nY, nXRight, nXLeft);
 }
@@ -5072,14 +5073,12 @@ void __fastcall SKILLDESC_DrawSkillDmgPoisonRange(D2UnitStrc * pUnit, D2SkillStr
     int32_t nMaxDmgShifted = D2Common::Skills::SERVER_MaxDamage(pUnit, (int)pSkillsTxt->skill, nSkillLevel, 1);
     uint32_t nElemType = SKILLDESC_ElemTypeToColorIndex((eD2ElementalDamageTypeDWORD)pSkillsTxt->EType);
     int32_t nSkillLevelTmp = nSkillLevel;
-    eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xc2a);
-    uint32_t uDuration = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, eSkillId, nSkillLevelTmp);
+    uint32_t uDuration = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc1, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xc2a), nSkillLevelTmp);
     if (!uDuration) {
       uDuration = 1;
     }
 
-    eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xc2f);
-    uint32_t uDurationMax = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, eSkillId, nSkillLevel);
+    uint32_t uDurationMax = D2Common::Skills::SKILLS_EvalDescCalcBytecode(pUnit, (uint32_t)pSkillDescTxt->ddamCalc2, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\SkillDesc.cpp", 0xc2f), nSkillLevel);
     if (!uDurationMax) {
       uDurationMax = 1;
     }
@@ -5559,9 +5558,7 @@ static void __stdcall SKILLDESC_DescLineD_AppendDuration(uint16_t * wszText, int
     memset(&sMonStats, 0, 0x38);
     int nMonLevel = (int)pMonStatsTxt[nParam3].aLevel[nDifficultyIdx];
     D2MonStatsInitStrc* pnScaledStats = &sMonStats;
-    uint32_t nStatCount = 1;
-    uint32_t nGameType = GAME::Game::GAMEDATA_GetLadderOrGameType();
-    BOOL BVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nParam3, nGameType, nDifficultyIdx, nMonLevel, nStatCount, pnScaledStats);
+    BOOL BVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nParam3, GAME::Game::GAMEDATA_GetLadderOrGameType(), nDifficultyIdx, nMonLevel, 1, pnScaledStats);
     if (!BVar2) {
       return;
     }
@@ -6113,8 +6110,7 @@ void __stdcall SKILLDESC_DescLine29_FormatMonster(uint16_t * wszText, D2SkillsTx
     D2MonStatsInitStrc* pnScaledStats = &sMonStats;
     uint32_t nStatCount = 8;
     nMaxDmgResult = (int)pMonStatsTxt[nMaxDmgResult].aLevel[nDifficultyIdx];
-    uint32_t nGameType = GAME::Game::GAMEDATA_GetLadderOrGameType();
-    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nTxtMonCount > 0x124 ? 0x124 : -1, nGameType, nDifficultyIdx, nMaxDmgResult, nStatCount, pnScaledStats);
+    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nTxtMonCount > 0x124 ? 0x124 : -1, GAME::Game::GAMEDATA_GetLadderOrGameType(), nDifficultyIdx, nMaxDmgResult, nStatCount, pnScaledStats);
     nMaxDmgResult = sMonStats.nA1MinD + nSkillLevel;
     nTxtMonCount = sMonStats.nA1MaxD + nParam2;
     memset(wszFormattedW, 0, 32 * sizeof(wszFormattedW[0]));

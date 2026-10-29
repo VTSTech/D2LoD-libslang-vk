@@ -181,7 +181,6 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    uint8_t byDirection;
     int32_t bAssigned;
     bool bShow;
     D2GfxDataStrc sGfxData;
@@ -239,8 +238,7 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
           pAssignOut = &__frame0.nAssignResult;
           sGfxData.nOverlayId = __frame0.nOverlayIdSaved;
           nPass = nFrameField >> 8;
-          byDirection = D2Common::Units::GetDirection(__frame0.pUnitSaved);
-          bAssigned = DC6_AssignParams(&sGfxData, nullptr, nullptr, (uint32_t)byDirection, nPass, pAssignOut, byOne, pDVar11);
+          bAssigned = DC6_AssignParams(&sGfxData, nullptr, nullptr, (uint32_t)D2Common::Units::GetDirection(__frame0.pUnitSaved), nPass, pAssignOut, byOne, pDVar11);
           if (!bAssigned) {
             return;
           }
@@ -259,7 +257,6 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
 }
 
 void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t bSecondPass, int32_t nScreenX, int32_t nScreenY, int32_t bRaiseY) {
-    uint8_t byDirection;
     int32_t nOffset;
     BOOL BVar1;
     D2OverlayTxt* pOverlayTxt;
@@ -309,15 +306,19 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
       nOffset = D2Common::Units::GetPrecisionX(pUnit);
       D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nOffset, iVar2, nTmpZ, pAdjustX, pAdjustY);
       bPerspective = UI::Path::DRAW_GetTypeOfBorder();
-      if (bPerspective != 1) {
-        if (bPerspective == 2) {
-          nScreenX += ScreenSizeX / 4;
-          nDrawY = nScreenY + 0x10;
-          nDrawX = nScreenX;
-          goto draw_overlays;
-        }
-      } else {
-        nScreenX -= ScreenSizeX / 4;
+      switch (bPerspective) {
+        case 1:
+          {
+            nScreenX -= ScreenSizeX / 4;
+            break;
+          }
+        case 2:
+          {
+            nScreenX += ScreenSizeX / 4;
+            nDrawY = nScreenY + 0x10;
+            nDrawX = nScreenX;
+            goto draw_overlays;
+          }
       }
 
       nDrawX = nScreenX;
@@ -354,8 +355,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
         pAdjustY = &nScreenX;
         nFrame = nFrameField >> 8;
         sGfxData.nOverlayId = nThisOverlayId;
-        byDirection = D2Common::Units::GetDirection(pUnit);
-        nOffset = DC6_AssignParams(&sGfxData, nullptr, nullptr, (uint32_t)byDirection, nFrame, pAdjustY, byOne, pDVar9);
+        nOffset = DC6_AssignParams(&sGfxData, nullptr, nullptr, (uint32_t)D2Common::Units::GetDirection(pUnit), nFrame, pAdjustY, byOne, pDVar9);
         if (!nOffset) {
           return;
         }

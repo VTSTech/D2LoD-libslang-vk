@@ -1263,19 +1263,25 @@ void __stdcall ERRORMANAGER_ServiceControlHandler(int32_t nServiceControl) {
     // Static local variables (originally global data)
     static BOOL gbApplicationModeCommandLineArgumentFound = 0x1; D2_STATIC_GUARD(gbApplicationModeCommandLineArgumentFound, "Fog::Engine::Application::ERRORMANAGER_ServiceControlHandler::gbApplicationModeCommandLineArgumentFound");
 
-    if (nServiceControl != 1) {
-      if (nServiceControl == 4) {
-        /* LPSERVICE_STATUS lpServiceStatus for SetServiceStatus */ /* SERVICE_STATUS_HANDLE hServiceStatus for SetServiceStatus */ SetServiceStatus(ghServiceCtrlHandler, &lpServiceStatus_007065fc);
-        return;
-      }
-      if (nServiceControl != 5) {
-        return;
-      }
+    switch (nServiceControl) {
+      case 4:
+        {
+          /* LPSERVICE_STATUS lpServiceStatus for SetServiceStatus */ /* SERVICE_STATUS_HANDLE hServiceStatus for SetServiceStatus */ SetServiceStatus(ghServiceCtrlHandler, &lpServiceStatus_007065fc);
+          return;
+        }
+      default:
+        {
+          return;
+        }
+      case 1:
+        case 5:
+          {
+            /* LPSERVICE_STATUS lpServiceStatus for SetServiceStatus */ /* SERVICE_STATUS_HANDLE hServiceStatus for SetServiceStatus */ lpServiceStatus_007065fc.dwCurrentState = 3;
+            SetServiceStatus(ghServiceCtrlHandler, &lpServiceStatus_007065fc);
+            gbApplicationModeCommandLineArgumentFound = 1;
+            return;
+          }
     }
-
-    /* LPSERVICE_STATUS lpServiceStatus for SetServiceStatus */ /* SERVICE_STATUS_HANDLE hServiceStatus for SetServiceStatus */ lpServiceStatus_007065fc.dwCurrentState = 3;
-    SetServiceStatus(ghServiceCtrlHandler, &lpServiceStatus_007065fc);
-    gbApplicationModeCommandLineArgumentFound = 1;
 }
 
 // Early app bootstrap: set log path, parse cmdline/registry for app mode, init INI, then ApplicationMain.

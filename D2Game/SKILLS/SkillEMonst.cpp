@@ -454,7 +454,6 @@ void __fastcall SKILLEMONST_AttachToHost(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
 // Detaches a parasite monster (MonStats id 0x1EC) from its host (ids 0x1B3 or 0x1B9): clears STATE_attached, nulls owner links on both units, and either kills the parasite if below 10% HP or re-enables its targetable flags, fires ACTIVESTATE timer, and reattaches its AI function.
 void __fastcall SKILLEMONST_DetachFromHost(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pHostUnit, int32_t nEventParam, int32_t nSkillLvl) {
-    D2AiGeneralStrc* pMonsterAiGeneral;
     if (!(pUnit && pHostUnit)) {
       return;
     }
@@ -488,9 +487,7 @@ void __fastcall SKILLEMONST_DetachFromHost(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
     pUnit->eUnitFlags |= UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE;
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ACTIVESTATE, nEventParam);
-    nParasiteBaseId = 0;
-    pMonsterAiGeneral = UNIT::Monster::GetAiGeneral(pUnit);
-    Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, pMonsterAiGeneral, nParasiteBaseId);
+    Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, UNIT::Monster::GetAiGeneral(pUnit), 0);
 }
 
 // SrvDoFunc 129: parasite attach/detach dispatch. If unit already has an owner, relocates it to target coords and calls SKILLEMONST_DetachFromHost. If no target exists, falls back to SrvDoFunc_098 teleport. Otherwise relocates unit onto the target and calls SKILLEMONST_AttachToHost.
@@ -838,9 +835,7 @@ void __fastcall SKILLEMONST_OnDeathSpawnExpire(D2UnitStrc * pUnit, eD2States eSt
     }
 
     int16_t nSpawnY = 0;
-    int32_t nSpawnFlags = 1;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    Monster::Create::SpawnMonsterBase(pGame, pUnit, nSummonMonStatsId, eSpawnAnimMode, nSpawnFlags, nSpawnY);
+    Monster::Create::SpawnMonsterBase(UNIT::SUnit::GetGamePointer(pUnit), pUnit, nSummonMonStatsId, eSpawnAnimMode, 1, nSpawnY);
 }
 
 BOOL __fastcall Skills_SrvDoFunc_133_SetDeathSpawnState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -1253,7 +1248,6 @@ void __fastcall SKILLEMONST_ProcessBloodMana(D2UnitStrc * pUnit, int32_t nParam)
 
 // Server-side skill DoFunc 140: scatters a difficulty-scaled number of minion monsters around the caster. Advances the caster unit's RNG seed; the spawn count is (2 + difficulty + seedLow mod 3). Determines the base spawn position from the caster's (or its current target's) static/dynamic path X/Y, then loops spawning monsters at randomized +-9 tile offsets via SpawnMonster, snapping each to a valid nearby room (DRLGROOM_FindBetterNearbyRoom). Each spawned minion is flagged NOXP|NOTC, given AI think mode 0xF (RestartAiThink), and has its owner stored as the caster. Returns 0 if pUnit is null, else 1.
 BOOL __fastcall Skills_SrvDoFunc_140_BaalTentacle(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2RoomStrc* pRoom;
     uint32_t nMonStatsId;
     eD2MonsterAnimMode eSpawnAnimMode;
     uint32_t nOffsetY;
@@ -1333,8 +1327,7 @@ BOOL __fastcall Skills_SrvDoFunc_140_BaalTentacle(::SGAMEDATA * pGame, D2UnitStr
       pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, nOffsetX, nSpawnYOffset);
       if (pSpawnRoom) {
         nSpawnYOffset = nOffsetY;
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nOffsetX, nSpawnYOffset);
+        D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nOffsetX, nSpawnYOffset);
         pSpawnedMinion = Monster::Create::SpawnMonsterAtRoomPos(pGameLocal, pSpawnRoom, nOffsetX, nOffsetY, nMonStatsId, eSpawnAnimMode, -1, 0);
         if (pSpawnedMinion) {
           pSpawnedMinion->eUnitFlags |= UNITFLAG_NOXP | UNITFLAG_NOTC;

@@ -711,7 +711,7 @@ void __stdcall DRAW_HideTaskbarAppBars() {
       }
 
       nEdge++;
-    } while ((int)&gaD2GFXWindowPlacements[nEdge] < (uintptr_t)((char*)&gaD2GFXWindowPlacements + sizeof(gaD2GFXWindowPlacements)));
+    } while ((int)&gaD2GFXWindowPlacements[nEdge] < (intptr_t)((char*)&gaD2GFXWindowPlacements + sizeof(gaD2GFXWindowPlacements)));
 }
 
 void D2GFX_ResetViewport() {
@@ -726,7 +726,7 @@ void D2GFX_ResetViewport() {
       }
 
       pWindowPlacement++;
-    } while ((int)pWindowPlacement < (uintptr_t)((char*)&gaD2GFXWindowPlacements + sizeof(gaD2GFXWindowPlacements)));
+    } while ((int)pWindowPlacement < (intptr_t)((char*)&gaD2GFXWindowPlacements + sizeof(gaD2GFXWindowPlacements)));
 }
 
 void __stdcall D2GFX_EndCutScene() {
@@ -1478,7 +1478,7 @@ void __stdcall D2GFX_InitializeLineBuffer() {
       pbCurTileEntry += 0x20;
       iTileRow++;
       nNegColorBase += -0x1000000;
-      if ((int)pbCurTileEntry >= (uintptr_t)((char*)&gpLineBufferTileArray + sizeof(gpLineBufferTileArray))) {
+      if ((int)pbCurTileEntry >= (intptr_t)((char*)&gpLineBufferTileArray + sizeof(gpLineBufferTileArray))) {
         return;
       }
     } while (true);
@@ -1513,7 +1513,7 @@ void __fastcall PALETTE_InitColorLookupTables(BYTE * * ppPaletteTable) {
       }
 
       pDst += 0x100;
-    } while ((int)pPaletteEntry < (uintptr_t)((char*)&gaPaletteBlendEntries + 208));
+    } while ((int)pPaletteEntry < (intptr_t)((char*)&gaPaletteBlendEntries + 208));
 }
 
 void __stdcall D2GFX_InitializeWindowSize() {

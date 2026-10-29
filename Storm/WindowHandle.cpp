@@ -127,30 +127,37 @@ void __fastcall WND_InsertListNode(int * * pNode, int32_t nMode, int * * ppAncho
     if (!ppAnchor) {
       ppAnchor = ppList + 1;
     }
-    if (nMode != 1) {
-      piNext = *ppAnchor;
-      *ppCur = piNext;
-      ppCur[1] = (int*)piNext[1];
-      piNext[1] = (int)pNode;
-      *ppAnchor = (int*)ppCur;
-      return;
-    }
 
-    *ppCur = (int*)ppAnchor;
-    ppCur[1] = ppAnchor[1];
-    piNext = *ppList;
-    pBacklink = ppAnchor[1];
-    if ((int)pBacklink < 0) {
-      *(int***)~(uint32_t)pBacklink = (int**)ppCur;
-      ppAnchor[1] = (int*)pNode;
-      return;
-    }
-    if ((int)piNext < 0) {
-      piNext = (int*)((int)ppAnchor - (*ppAnchor)[1]);
-    }
+    switch (nMode) {
+      case 1:
+        {
+          *ppCur = (int*)ppAnchor;
+          ppCur[1] = ppAnchor[1];
+          piNext = *ppList;
+          pBacklink = ppAnchor[1];
+          if ((int)pBacklink < 0) {
+            *(int***)~(uint32_t)pBacklink = (int**)ppCur;
+            ppAnchor[1] = (int*)pNode;
+            return;
+          }
+          if ((int)piNext < 0) {
+            piNext = (int*)((int)ppAnchor - (*ppAnchor)[1]);
+          }
 
-    *(int***)((int)pBacklink + (int)piNext) = (int**)ppCur;
-    ppAnchor[1] = (int*)pNode;
+          *(int***)((int)pBacklink + (int)piNext) = (int**)ppCur;
+          ppAnchor[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          piNext = *ppAnchor;
+          *ppCur = piNext;
+          ppCur[1] = (int*)piNext[1];
+          piNext[1] = (int)pNode;
+          *ppAnchor = (int*)ppCur;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {

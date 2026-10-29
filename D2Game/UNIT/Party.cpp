@@ -75,20 +75,27 @@ void __fastcall ChangeGoldForPlayer(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, i
     }
     if (pUnit->eUnitType == UNIT_PLAYER) {
       uint32_t nGoldLimit;
-      if (eUnitStat != UNITSTAT_gold) {
-        if (eUnitStat == UNITSTAT_goldbank) {
-          nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit);
-          if (nCurrentGold > (int)nGoldLimit) {
-            D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_goldbank, 0, 0);
-            return;
+      switch (eUnitStat) {
+        case UNITSTAT_gold:
+          {
+            nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
+            if (nCurrentGold > (int)nGoldLimit) {
+              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_gold, 0, 0);
+              return;
+            }
+
+            break;
           }
-        }
-      } else {
-        nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
-        if (nCurrentGold > (int)nGoldLimit) {
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_gold, 0, 0);
-          return;
-        }
+        case UNITSTAT_goldbank:
+          {
+            nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit);
+            if (nCurrentGold > (int)nGoldLimit) {
+              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_goldbank, 0, 0);
+              return;
+            }
+
+            break;
+          }
       }
     }
 

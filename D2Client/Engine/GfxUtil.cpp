@@ -240,28 +240,37 @@ void __fastcall GFXUTIL_FreeGfxNodeList(void * * pParam, int * pnParam) {
 // NOTE: Register param types inferred (medium confidence): pUnitStrc (ECX): D2UnitStrc *, eUnitType (EDX): eD2UnitType
 int32_t __fastcall GFXUTIL_GetUnitToken(D2UnitStrc * pUnitStrc, eD2UnitType eUnitType, uint32_t nId) {
     D2ObjTypeTxt* pTokenLine;
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType == UNIT_MONSTER) {
-        if ((int)nId < 0) {
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          pTokenLine = (D2ObjTypeTxt*)D2Common::DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nId, 0);
+          break;
+        }
+      case UNIT_MONSTER:
+        {
+          if ((int)nId < 0) {
+            return 0;
+          }
+          if ((int)nId >= sgptDataTable->nTxtMonStatsSize) {
+            return 0;
+          }
+          if (sgptDataTable->pTxtMonStats + nId) {
+            return *(int32_t*)sgptDataTable->pTxtMonStats[nId].Code;
+          }
+
           return 0;
         }
-        if ((int)nId >= sgptDataTable->nTxtMonStatsSize) {
+      default:
+        {
           return 0;
         }
-        if (sgptDataTable->pTxtMonStats + nId) {
-          return *(int32_t*)sgptDataTable->pTxtMonStats[nId].Code;
+      case UNIT_OBJECT:
+        {
+          pTokenLine = D2Common::DATATBLS::TokTbls::TxtGetObjTypeModeLine(nId, 0);
+          break;
         }
-
-        return 0;
-      }
-      if (eUnitType != UNIT_OBJECT) {
-        return 0;
-      }
-
-      pTokenLine = D2Common::DATATBLS::TokTbls::TxtGetObjTypeModeLine(nId, 0);
-    } else {
-      pTokenLine = (D2ObjTypeTxt*)D2Common::DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nId, 0);
     }
+
     if (pTokenLine) {
       return *(int32_t*)pTokenLine->token;
     }
@@ -911,9 +920,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    int32_t nXpos;
     uint32_t uVar1;
-    int32_t nWorldOffset;
     BOOL bHasState0x25;
     D2UnitStrc* pOwnerUnit;
     D2InventoryStrc* pInventory;
@@ -926,22 +933,24 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
     uint32_t nDirection = nParam;
     uint32_t bIsPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
     if (bIsPerspective) {
-      int32_t nCoord;
       pYAdjust = &__frame0.nScreenY;
       pXAdjust = &__frame0.nScreenX;
-      nBais = 0;
-      nCoord = D2Common::Units::GetPrecisionY(pUnit);
-      nXpos = D2Common::Units::GetPrecisionX(pUnit);
-      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nXpos, nCoord, nBais, pXAdjust, pYAdjust);
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), 0, pXAdjust, pYAdjust);
       uVar1 = UI::Path::DRAW_GetTypeOfBorder();
-      if (uVar1 != 1) {
-        if (uVar1 == 2) {
-          __frame0.nScreenX += ScreenSizeX / 4;
-        }
-      } else {
-        __frame0.nScreenX -= ScreenSizeX / 4;
+      switch (uVar1) {
+        case 1:
+          {
+            __frame0.nScreenX -= ScreenSizeX / 4;
+            break;
+          }
+        case 2:
+          {
+            __frame0.nScreenX += ScreenSizeX / 4;
+            break;
+          }
       }
     } else {
+      int32_t nWorldOffset;
       nBais = D2Common::Units::GetTargetX(pUnit);
       nWorldOffset = UI::Path::DRAW_GetWorldOffsetX();
       __frame0.nScreenX = nBais - nWorldOffset;

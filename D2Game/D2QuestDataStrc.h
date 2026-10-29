@@ -44,7 +44,7 @@ struct __attribute__((packed)) D2QuestDataA1Q1Strc {
     /* 0x00 */ D2QuestGUIDStrc sQuestGUID; // Player tracking for den area
     /* 0x84 */ bool bQuestCompleted; // Set when all den monsters killed
     /* 0x85 */ bool bEnteredDen; // Set when player enters den area
-    /* 0x86 */ bool bAcceptedQuest; // Set when Akara gives quest (msg 0x40)
+    /* 0x86 */ uint8_t bAcceptedQuest; // Set when Akara gives quest (msg 0x40)
     /* 0x87 */ bool bNotifiedCompletion; // Set when timer notification sent
     /* 0x88 */ int32_t nDenMonstersLeftToKillCount; // Remaining monsters = spawn - kill count
 };
@@ -53,14 +53,14 @@ struct D2QuestDataA1Q2Strc {
     /* 0x00 */ bool bBloodRavenKilled; // Set when Blood Raven is killed
     /* 0x01 */ bool bQuestCompleted; // Quest completion flag
     /* 0x02 */ bool bRewardGiven; // Reward distribution flag
-    /* 0x03 */ bool bAcceptedQuest; // Set when Kashya gives quest (msg 0x51)
+    /* 0x03 */ uint8_t bAcceptedQuest; // Set when Kashya gives quest (msg 0x51)
     /* 0x04 */ int32_t bNotifiedCompletion; // Completion notification sent
     /* 0x08 */ int32_t nBloodRavenGUID; // GUID of Blood Raven unit
 };
 
 struct __attribute__((packed)) D2QuestDataA1Q3Strc {
     /* 0x00 */ uint8_t field_0x00;
-    /* 0x01 */ bool bMalusTaken; // Set when Horadric Malus has been picked up
+    /* 0x01 */ uint8_t bMalusTaken; // Set when Horadric Malus has been picked up
     /* 0x02 */ uint8_t bCharsiNotified; // Set in Callback_02 when Charsi interacted
     /* 0x03 */ uint8_t bQuestAccepted; // Set in Callback_11 when quest accepted (msg 0x92)
     /* 0x04 */ int32_t nMalusGUID; // GUID of the Horadric Malus object
@@ -119,7 +119,7 @@ struct __attribute__((packed)) D2QuestDataA1Q5Strc {
     /* 0x118 */ bool bRewardDistributed; // Set after rewards given to players
     /* 0x119 */ bool bDeathEffectPlayed; // Countess death visual effect played
     /* 0x11A */ bool bQuestCompleted; // Quest completion flag
-    /* 0x11B */ bool bTalkedToNPC; // NPC conversation triggered
+    /* 0x11B */ uint8_t bTalkedToNPC; // NPC conversation triggered
     /* 0x11C */ uint8_t field_0x11c; // only access: MOV byte ptr [ESI+0x11c],0 in Q05_TimerNotifyCompletion (005954e3)
     /* 0x11D */ uint8_t pad_0x11d[3];
 };
@@ -132,7 +132,7 @@ struct __attribute__((packed)) D2QuestDataA1Q6Strc {
     /* 0x190 */ int16_t nPortalTimer; // Incremented by timer, portal spawns at 10, notify at 12
     /* 0x192 */ int16_t nDeathEventCounter; // Post-death event counter
     /* 0x194 */ bool bAndarielKilled; // Set when Andariel is killed
-    /* 0x195 */ bool bQuestAccepted; // Set when quest accepted via Cain (msg 0xA6)
+    /* 0x195 */ uint8_t bQuestAccepted; // Set when quest accepted via Cain (msg 0xA6)
     /* 0x196 */ uint8_t field_0x196;
     /* 0x197 */ uint8_t field_0x197;
 };
@@ -180,7 +180,7 @@ struct __attribute__((packed)) D2QuestDataA2Q3Strc {
     /* 0x00 */ uint8_t field_0x00;
     /* 0x01 */ uint8_t field_0x01;
     /* 0x02 */ bool bSunDarkened; // Set when sun goes dark, cleared when sun restored
-    /* 0x03 */ bool bViperAmuletInitPending; // Set when viper amulet chest initialized but not yet triggered
+    /* 0x03 */ uint8_t bViperAmuletInitPending; // Set when viper amulet chest initialized but not yet triggered
     /* 0x04 */ bool bTaintedSunStartedFailed; // Set when BeginTaintedSun returns false (no act2 DRLG)
     /* 0x05 */ bool bViperAmuletInitialized; // Set when viper amulet object is initialized
     /* 0x06 */ uint8_t field_0x06;
@@ -198,17 +198,17 @@ struct D2QuestDataA2Q4Strc {
     /* 0x01 */ uint8_t field_0x01;
     /* 0x02 */ uint8_t field_0x02;
     /* 0x03 */ uint8_t field_0x03;
-    /* 0x04 */ bool bAtmaSpokeToJerhyn; // Set when Atma dialogue triggers Jerhyn gate opening
+    /* 0x04 */ uint8_t bAtmaSpokeToJerhyn; // Set when Atma dialogue triggers Jerhyn gate opening
     /* 0x05 */ uint8_t field_0x05;
     /* 0x06 */ uint8_t field_0x06;
     /* 0x07 */ uint8_t field_0x07;
     /* 0x08 */ struct D2RoomStrc * pPortalSpawnRoom; // struct D2RoomStrc* for portal spawning location
-    /* 0x0C */ bool bJerhynAiActive; // Set when Jerhyn AI sub is active
-    /* 0x0D */ bool bShouldSpawnJerhyn; // Flag for Jerhyn spawning logic
+    /* 0x0C */ uint8_t bJerhynAiActive; // Set when Jerhyn AI sub is active
+    /* 0x0D */ uint8_t bShouldSpawnJerhyn; // Flag for Jerhyn spawning logic
     /* 0x0E */ uint8_t bDrognanSummonerHint; // Drognan Summoner-location hint flag: when set, Q12_Callback_00 gives Drognan one of 3 random Summoner-hint gossip lines (8..10) instead of line 7
-    /* 0x0F */ bool bJerhynInitial; // Jerhyn initial state flag (checked in CheckJerhynGateOpen)
+    /* 0x0F */ uint8_t bJerhynInitial; // Jerhyn initial state flag (checked in CheckJerhynGateOpen)
     /* 0x10 */ bool bJerhynGateOpened; // Set when Jerhyn palace gate is opened
-    /* 0x11 */ bool bPortalJerhynSpawned; // Set when Jerhyn should be spawned at portal location
+    /* 0x11 */ uint8_t bPortalJerhynSpawned; // Set when Jerhyn should be spawned at portal location
     /* 0x12 */ uint8_t field_0x12;
     /* 0x13 */ uint8_t field_0x13;
     /* 0x14 */ uint8_t field_0x14;
@@ -299,7 +299,11 @@ struct D2QuestDataA2Q6Strc {
 };
 
 struct D2QuestDataA2Q7Strc {
-    /* 0x00 */ bool bGossipAwaits;
+    D2QuestDataA2Q7Strc() = default;
+    D2QuestDataA2Q7Strc(uint8_t v) { *reinterpret_cast<uint8_t*>(this) = v; }
+    operator uint8_t() const { return *reinterpret_cast<const uint8_t*>(this); }
+
+    /* 0x00 */ uint8_t bGossipAwaits;
 };
 
 struct D2QuestDataA2Q8Strc {
@@ -315,7 +319,7 @@ struct D2QuestDataA2Q8Strc {
 struct D2QuestDataA3Q0Strc {
     /* 0x00 */ bool bHratliSpawned; // Set when Hratli is spawned
     /* 0x01 */ bool bHratliMapAiSet; // Set when Hratli map AI has been configured
-    /* 0x02 */ bool bHratliCoordsValid; // Set to 1 when Hratli coords are valid
+    /* 0x02 */ uint8_t bHratliCoordsValid; // Set to 1 when Hratli coords are valid
     /* 0x03 */ bool bHasHratliCoords; // Set when coords have been populated
     /* 0x04 */ int32_t nHratliX; // Hratli X coordinate
     /* 0x08 */ int32_t nHratliY; // Hratli Y coordinate
@@ -329,16 +333,16 @@ struct D2QuestDataA3Q0Strc {
 };
 
 struct __attribute__((packed)) D2QuestDataA3Q1Strc {
-    /* 0x00 */ bool bCanComplete; // Set to true in InitData, cleared when tome turned in
+    /* 0x00 */ uint8_t bCanComplete; // Set to true in InitData, cleared when tome turned in
     /* 0x01 */ bool bCheckPartyForTome; // Party check flag for tome ownership
-    /* 0x02 */ bool bNotifiedPlayers; // Set when players notified
+    /* 0x02 */ uint8_t bNotifiedPlayers; // Set when players notified
     /* 0x03 */ uint8_t field_0x3;
     /* 0x04 */ bool nPlayersWithTome; // Players with tome flag
     /* 0x05 */ bool bAllPlayersLeft; // Set in Callback_09 when all players left area
     /* 0x06 */ uint8_t field_0x6;
     /* 0x07 */ uint8_t field_0x7;
     /* 0x08 */ int32_t nPlayersInArea; // Decremented when player leaves, triggers notification at 0
-    /* 0x0C */ bool bTomePickedUp; // Set when tome is picked up from altar
+    /* 0x0C */ uint8_t bTomePickedUp; // Set when tome is picked up from altar
     /* 0x0D */ uint8_t field_0xD;
     /* 0x0E */ uint8_t field_0xE;
     /* 0x0F */ uint8_t field_0xF;
@@ -349,8 +353,8 @@ struct __attribute__((packed)) D2QuestDataA3Q1Strc {
 };
 
 struct __attribute__((packed)) D2QuestDataA3Q2Strc {
-    /* 0x00 */ bool bOrbPlaced; // Compelling orb placed flag
-    /* 0x01 */ bool bQuestCompleted; // Set true in Q19_Callback_11 (dialog 0x21f) via pA1Q2 cast; checked in Q19_Callback_02 to trigger RewardAwaits broadcast
+    /* 0x00 */ uint8_t bOrbPlaced; // Compelling orb placed flag
+    /* 0x01 */ uint8_t bQuestCompleted; // Set true in Q19_Callback_11 (dialog 0x21f) via pA1Q2 cast; checked in Q19_Callback_02 to trigger RewardAwaits broadcast
     /* 0x02 */ uint8_t field_0x2;
     /* 0x03 */ uint8_t field_0x3;
     /* 0x04 */ int32_t nOrbGUID; // GUID of compelling orb object
@@ -370,7 +374,7 @@ struct __attribute__((packed)) D2QuestDataA3Q2Strc {
 };
 
 struct D2QuestDataA3Q3Strc {
-    /* 0x00 */ bool bSerpentItemDropped; // Set when serpent drops Gidbinn
+    /* 0x00 */ uint8_t bSerpentItemDropped; // Set when serpent drops Gidbinn
     /* 0x01 */ bool bAcceptedQuest; // Set when Hratli gives quest (msg 0x23B)
     /* 0x02 */ bool bCanDropBlade; // Enables serpent boss drop check in Callback_08
     /* 0x03 */ bool bSerpentArrived; // Set when serpent spawns near player
@@ -397,15 +401,15 @@ struct D2QuestDataA3Q3Strc {
 };
 
 struct D2QuestDataA3Q4Strc {
-    /* 0x00 */ bool bBirdDropped; // Set when golden bird has been dropped; checked by Q22_IsGoldenBirdQuestActive
-    /* 0x01 */ bool bCanDropBird; // Init to 1; enables bird drop in CheckGoldenBirdDropConditions
+    /* 0x00 */ uint8_t bBirdDropped; // Set when golden bird has been dropped; checked by Q22_IsGoldenBirdQuestActive
+    /* 0x01 */ uint8_t bCanDropBird; // Init to 1; enables bird drop in CheckGoldenBirdDropConditions
     /* 0x02 */ bool bBossKillTracking; // Boss kill tracking flag for Callback_08
     /* 0x03 */ uint8_t field_0x3;
     /* 0x04 */ int32_t nBirdKillerGUID; // GUID of monster that dropped the bird
-    /* 0x08 */ bool bRewardGivenToAlchemist; // Set when golden bird given to Alchemist
-    /* 0x09 */ bool bCainToldAboutTome; // Set when Cain talks about jade figurine (msg 0x20F)
-    /* 0x0A */ bool bAlchemistTradedBird; // Set when Alchemist takes jade figurine (msg 0x213)
-    /* 0x0B */ bool bJadeGivenToMeshif; // Set when jade figurine traded for golden bird
+    /* 0x08 */ uint8_t bRewardGivenToAlchemist; // Set when golden bird given to Alchemist
+    /* 0x09 */ uint8_t bCainToldAboutTome; // Set when Cain talks about jade figurine (msg 0x20F)
+    /* 0x0A */ uint8_t bAlchemistTradedBird; // Set when Alchemist takes jade figurine (msg 0x213)
+    /* 0x0B */ uint8_t bJadeGivenToMeshif; // Set when jade figurine traded for golden bird
     /* 0x0C */ bool bBirdDropEnabled; // Init to 1; master enable for bird drop logic
     /* 0x0D */ uint8_t field_0xD;
     /* 0x0E */ uint8_t field_0xE;
@@ -421,9 +425,9 @@ struct D2QuestDataA3Q4Strc {
 struct D2QuestDataA3Q5Strc {
     /* 0x00 */ bool bLastKilledCouncilByte0; // Low byte of council tracking
     /* 0x01 */ bool bCouncilMemberKillNotify; // Set in OnCouncilMemberKilled
-    /* 0x02 */ bool bCouncilMemberTracking; // Council member being tracked
+    /* 0x02 */ uint8_t bCouncilMemberTracking; // Council member being tracked
     /* 0x03 */ bool field_0x3;
-    /* 0x04 */ bool nTrackedCouncilByte0; // Byte 0 of tracked council GUID / notify flag from Callback_11
+    /* 0x04 */ uint8_t nTrackedCouncilByte0; // Byte 0 of tracked council GUID / notify flag from Callback_11
     /* 0x05 */ bool bCouncilTrackingActive; // Council-kill / Compelling-Orb sequence active. Set in Q22_TrackCouncilKill; read (as bViperAmuletInitialized) by Q22_PlayerUpdateBlackenedTempleState to advance log to Step0x03
     /* 0x06 */ uint8_t field_0x6;
     /* 0x07 */ uint8_t field_0x7;
@@ -449,7 +453,7 @@ struct D2QuestDataA3Q6Strc {
     /* 0x00 */ bool bQuestTimerActive; // Set in Callback_08 when quest timer started, cleared in QuestUpdate
     /* 0x01 */ bool bBridgeObjectValid; // Bridge/orb object 1 is valid (HandleKhalimsWillCompletion)
     /* 0x02 */ bool bBridge2Valid; // Bridge/orb object 2 is valid (HandleKhalimsWillCompletion)
-    /* 0x03 */ bool bAcceptedQuest; // Set when Ormus gives quest (msg 0x274 in Callback_11)
+    /* 0x03 */ uint8_t bAcceptedQuest; // Set when Ormus gives quest (msg 0x274 in Callback_11)
     /* 0x04 */ uint32_t nBridgeObjectGUID; // GUID of bridge/compelling orb object 1
     /* 0x08 */ int32_t nBridge2ObjectGUID; // GUID of bridge/compelling orb object 2
     /* 0x0C */ int32_t nMephistoApproachMode; // Mephisto approach state (2=approaching, checked in TimerCallback)
@@ -783,8 +787,8 @@ struct __attribute__((packed)) D2QuestDataStrc {
     /* 0x00 */ eD2QuestsInternal nQuestNoInternal;
     /* 0x04 */ struct SGAMEDATA * pGame;
     /* 0x08 */ uint8_t nAct;
-    /* 0x09 */ bool bIsNotIntroduction;
-    /* 0x0A */ bool bIsActive;
+    /* 0x09 */ uint8_t bIsNotIntroduction;
+    /* 0x0A */ uint8_t bIsActive;
     /* 0x0B */ uint8_t nStateFlagPrev;
     /* 0x0C */ uint8_t nStateFlag;
     /* 0x0D */ uint8_t nInitNo;

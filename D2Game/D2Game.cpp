@@ -205,7 +205,7 @@ int __stdcall QSERVER_CountClientsWithStatusFlag0x20() {
       }
 
       ppClientBucket++;
-    } while ((int)ppClientBucket < (uintptr_t)((char*)&QServerClientBucketById + sizeof(QServerClientBucketById)));
+    } while ((int)ppClientBucket < (intptr_t)((char*)&QServerClientBucketById + sizeof(QServerClientBucketById)));
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gQServerClientByIdCs);
     return nMatchCount;
@@ -934,7 +934,7 @@ uint8_t __fastcall Q11_TimerCheckDarkness(::SGAMEDATA * pGame, D2QuestDataStrc *
 
     bool nResult = (bool)Quests::QUESTS::A2Q3::Q11_BeginTaintedSun(pQuestData);
     if (!nResult) {
-      pA2Q3Data->bViperAmuletInitPending = true;
+      pA2Q3Data->bViperAmuletInitPending = '\x01';
       return '\x01';
     }
 
@@ -1064,7 +1064,7 @@ void __fastcall QUEST_StateHandler_PlayTomeHandInSound(D2QuestDataStrc * pQuestD
     }
 
     D2QuestDataA3Q1Strc* pA3Q1Data = pQuestData->pQuestSpecificData.pA3Q1;
-    if (!pA3Q1Data->bTomePickedUp) {
+    if (pA3Q1Data->bTomePickedUp != '\x01') {
       return;
     }
 
@@ -1081,7 +1081,7 @@ void __fastcall QUEST_StateHandler_PlayTomeHandInSound(D2QuestDataStrc * pQuestD
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pQuestArgs->pPlayer, 0x43, pQuestArgs->pPlayer);
     }
 
-    pA3Q1Data->bTomePickedUp = false;
+    pA3Q1Data->bTomePickedUp = '\0';
 }
 
 void __fastcall Q22_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {

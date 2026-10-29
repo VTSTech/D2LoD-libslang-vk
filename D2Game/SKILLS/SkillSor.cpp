@@ -178,9 +178,7 @@ BOOL __fastcall INFERNO_CastInfernoTick(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Starts or sustains a channelled Inferno cast. On first call (no STATE_inferno stat list), allocates a stat list, schedules a 0xC event at frame+20, attaches it, sets the expire callback, and activates STATE_inferno. On subsequent calls, refreshes the stat-list timeout to frame+6, reschedules the event, and calls INFERNO_CastInfernoTick to spawn the next missile tick. For monster casters, param1 is set to game-frame + calc[1] duration.
 BOOL __fastcall INFERNO_BeginOrContinueChannel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl2, eMissilesId eMissileId) {
     int nCalcDuration;
-    D2SkillStrc* pSkill;
     eD2UnitType eUnitType;
-    int32_t nInitParam;
     if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
@@ -191,8 +189,7 @@ BOOL __fastcall INFERNO_BeginOrContinueChannel(::SGAMEDATA * pGame, D2UnitStrc *
       }
 
       nCalcDuration = pGame->dwGameFrame + nCalcDuration;
-      pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-      D2Common::Skills::SKILL_SetParam1(pSkill, nCalcDuration);
+      D2Common::Skills::SKILL_SetParam1(D2Common::Units::GetCurrentSkill(pUnit), nCalcDuration);
     }
 
     D2StatListExStrc* pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_inferno);
@@ -217,9 +214,7 @@ BOOL __fastcall INFERNO_BeginOrContinueChannel(::SGAMEDATA * pGame, D2UnitStrc *
       D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStatList, SKILLSSOR_StatExpireCallback_ClearStateSetFlag);
       D2Common::Stats::StatsEx::SetState(pStatList, STATE_inferno);
       D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_inferno, 1);
-      nInitParam = 0;
-      pSkill = D2Common::Units::GetCurrentSkill(pUnit);
-      D2Common::Skills::SKILL_SetParam1(pSkill, nInitParam);
+      D2Common::Skills::SKILL_SetParam1(D2Common::Units::GetCurrentSkill(pUnit), 0);
       return 1;
     }
 
@@ -1379,15 +1374,14 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
       }
 
       pAbsorbEntry += 2;
-    } while ((int)pAbsorbEntry < (uintptr_t)((char*)&gnAuraManaAbsorbIndex + sizeof(gnAuraManaAbsorbIndex)));
+    } while ((int)pAbsorbEntry < (intptr_t)((char*)&gnAuraManaAbsorbIndex + sizeof(gnAuraManaAbsorbIndex)));
 
     nCurMana = (int)nCurMana <= 0 ? 0 : nCurMana;
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nCurMana, 0);
     if (pTarget && (int)eSkill > 0 && -1 < pSkillTxt->prgoverlay && (int)pSkillTxt->prgoverlay <= sgptDataTable->nTxtOverlaySize) {
       int nDirection;
       nAbsorbPct = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
-      nValue = D2Client::Units::GetXPosFromDynamicPathUnit(pTarget);
-      nDirection = D2Common::Units::GetDirectionToCoords(pUnit, nValue, nAbsorbPct);
+      nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), nAbsorbPct);
       bIsMerc = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection);
       D2Common::Units::SetOverlay(pUnit, (int)pSkillTxt->prgoverlay + (bIsMerc & 0xff), 0);
     }

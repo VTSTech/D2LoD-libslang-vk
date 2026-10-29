@@ -33,7 +33,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
-#include "D2Common/D2SkillStrc.h"
 #include "D2Common/Unit/Unit.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -187,27 +186,34 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
     if (!(nVelocity > 0 && nIndex != 0x24)) {
       return;
     }
-    if (nIndex != 0x24) {
-      if (nIndex != 0x25) {
-        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 0x14, 0);
-        return;
-      }
 
-      nBaseMonId = (int)(0x800 / (int64_t)(int)nVelocity) - 0x80;
-      if (nBaseMonId > 10) {
-        if (nBaseMonId >= 100) {
-          nBaseMonId = 100;
+    switch (nIndex) {
+      case 0x24:
+        {
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, -0x21, 0);
+          break;
         }
+      case 0x25:
+        {
+          nBaseMonId = (int)(0x800 / (int64_t)(int)nVelocity) - 0x80;
+          if (nBaseMonId > 10) {
+            if (nBaseMonId >= 100) {
+              nBaseMonId = 100;
+            }
 
-        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nBaseMonId, 0);
-        return;
-      }
+            D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nBaseMonId, 0);
+            return;
+          }
 
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
-      return;
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
+          return;
+        }
+      default:
+        {
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 0x14, 0);
+          return;
+        }
     }
-
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, -0x21, 0);
 }
 
 // Applies the Cold Enchanted monster modifier (umod) to pUnit. Validates the unit is a live UNIT_MONSTER with a game pointer and that bUnknown (apply flag) is set, then ORs 0x40 into the monster-data type flags, sets a 80% (0x50) damage-resist stat, applies champion stats, and adds cold min/max damage scaled from monlvl.txt DM[] by difficulty (clamped 0-2) using GetUmodConstant(diff+0x16/+0x19) percentages, plus a fixed 150-frame (0x96) cold length. No-op if unit/game null or apply flag clear. Server-side monster spawn modifier.
@@ -278,8 +284,7 @@ void __fastcall MONUMOD_ApplyColdEnchant(D2UnitStrc * pUnit, int32_t nIndex, BOO
     nLvlDmgBase = pMonLvl->DM[nLvlDmgBase * 3 + bUnknown];
     int32_t nMaxDamConst = GetUmodConstant(bUnknown + 0x19);
     int16_t nLayer = 0;
-    int32_t nColdMinConst = GetUmodConstant(bUnknown + 0x16);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, nColdMinConst * nLvlDmgBase / 100, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, GetUmodConstant(bUnknown + 0x16) * nLvlDmgBase / 100, nLayer);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmaxdam, nMaxDamConst * nLvlDmgBase / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldlength, 0x96, 0);
 }
@@ -460,9 +465,7 @@ void __fastcall TeleHeal(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     SKILLS::SkillsServer::SetSkill(pUnit, SKILL_MonTeleport, 1, 1);
-    uint32_t nMode = 4;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit);
-    D2Common::Skills::SetSkillMode(pSkill, nMode);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit), 4);
     Monster::AI::SetUnsetAiFlags0x20(pUnit, 1);
 }
 

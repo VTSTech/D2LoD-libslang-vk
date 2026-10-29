@@ -577,7 +577,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
       *ppCtlSlot = pCtl;
       ppCtlSlot++;
       pFormDef++;
-    } while ((int)ppCtlSlot <= (uintptr_t)((char*)&gpCtlLobbyChat + 4));
+    } while ((int)ppCtlSlot <= (intptr_t)((char*)&gpCtlLobbyChat + 4));
 
     gpCtlConfirmDialog = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x13);
     uint16_t* pwszLocaleStr = wszClassName;
@@ -621,13 +621,11 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
     D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, sLevelLineText.wszLevelLine, 0, false, 0);
     nDifficultyDone = 0;
     bool bCentered = false;
-    int32_t dwTextColor = 0;
-    /* Last Difficulty Setting Completed: */ pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b74);
-    D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, pwszLocaleStr, dwTextColor, bCentered, nDifficultyDone);
+    /* Last Difficulty Setting Completed: */ D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, D2Lang::StrTable::strtable::GetLocaleString(0x2b74), 0, bCentered, nDifficultyDone);
     nDifficultyDone = (int)((uint64_t)(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus >> 8 & 0x1f) / (uint64_t)(int64_t)(int)((D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & 0x20 | 0x80) >> 5));
     int nVertAlign = 0;
     bCentered = false;
-    dwTextColor = 0;
+    int32_t dwTextColor = 0;
     switch (nDifficultyDone) {
       case 0:
         {
@@ -659,9 +657,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
 
     nDifficultyDone = 0;
     bCentered = false;
-    dwTextColor = 3;
-    /* Battle.net News Updates */ pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b73);
-    D2Win::Src::D2WinTextBox::SetText(BattleNetNews, pwszLocaleStr, dwTextColor, bCentered, nDifficultyDone);
+    /* Battle.net News Updates */ D2Win::Src::D2WinTextBox::SetText(BattleNetNews, D2Lang::StrTable::strtable::GetLocaleString(0x2b73), 3, bCentered, nDifficultyDone);
 }
 
 void __stdcall CHATDLG_DestroyAllForms() {
@@ -673,7 +669,7 @@ void __stdcall CHATDLG_DestroyAllForms() {
       }
 
       pForm++;
-    } while ((int)pForm <= (uintptr_t)((char*)&gpCtlLobbyChat + 4));
+    } while ((int)pForm <= (intptr_t)((char*)&gpCtlLobbyChat + 4));
 
     if (!gpCtlConfirmDialog) {
       return;

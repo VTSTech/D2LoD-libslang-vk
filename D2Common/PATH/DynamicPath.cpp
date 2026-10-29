@@ -120,12 +120,17 @@ int32_t __stdcall GetInteractSize(D2UnitStrc * pUnit, int32_t nSizeX) {
       if (bHasInteractFlag) {
         return nBaseSize;
       }
-      if (nBaseSize != 1) {
-        if (nBaseSize == 2) {
-          return 4;
-        }
-      } else {
-        nBaseSize = 3;
+
+      switch (nBaseSize) {
+        case 1:
+          {
+            nBaseSize = 3;
+            break;
+          }
+        case 2:
+          {
+            return 4;
+          }
       }
 
       return nBaseSize;
@@ -142,9 +147,22 @@ void __fastcall PATH_SetDirection(D2DynamicPathStrc * pDynamicPath, uint8_t bRaw
     } else {
       eUnitType = pDynamicPath->pOwner->eUnitType;
     }
-    if (eUnitType != UNIT_OBJECT) {
-      if (eUnitType != UNIT_MISSILE) {
-        if (eUnitType != UNIT_ITEM) {
+
+    switch (eUnitType) {
+      case UNIT_MISSILE:
+        {
+          if (pDynamicPath->nFlags & 0x40) {
+            return;
+          }
+        }
+      case UNIT_OBJECT:
+        case UNIT_ITEM:
+          {
+            pDynamicPath->nDirection = bDirection;
+            return;
+          }
+      default:
+        {
           if (bDirection == pDynamicPath->nNewDirection) {
             return;
           }
@@ -153,14 +171,7 @@ void __fastcall PATH_SetDirection(D2DynamicPathStrc * pDynamicPath, uint8_t bRaw
           pDynamicPath->nDiffDirection = DIFFDIRECTIONS[((uint8_t)(bDirection - pDynamicPath->nDirection) & 0x3f) * 4];
           return;
         }
-      } else {
-        if (pDynamicPath->nFlags & 0x40) {
-          return;
-        }
-      }
     }
-
-    pDynamicPath->nDirection = bDirection;
 }
 
 void __stdcall PATH_InterpolateDirection(D2DynamicPathStrc * pDynamicPath) {
@@ -276,9 +287,22 @@ void __stdcall PATH_SetNewDirection(D2DynamicPathStrc * pDynamicPath, uint8_t bR
     } else {
       eUnitType = pDynamicPath->pOwner->eUnitType;
     }
-    if (eUnitType != UNIT_OBJECT) {
-      if (eUnitType != UNIT_MISSILE) {
-        if (eUnitType != UNIT_ITEM) {
+
+    switch (eUnitType) {
+      case UNIT_MISSILE:
+        {
+          if (pDynamicPath->nFlags & 0x40) {
+            return;
+          }
+        }
+      case UNIT_OBJECT:
+        case UNIT_ITEM:
+          {
+            pDynamicPath->nDirection = bDirection;
+            return;
+          }
+      default:
+        {
           if (bDirection == pDynamicPath->nNewDirection) {
             return;
           }
@@ -287,14 +311,7 @@ void __stdcall PATH_SetNewDirection(D2DynamicPathStrc * pDynamicPath, uint8_t bR
           pDynamicPath->nDiffDirection = DIFFDIRECTIONS[((uint8_t)(bDirection - pDynamicPath->nDirection) & 0x3f) * 4];
           return;
         }
-      } else {
-        if (pDynamicPath->nFlags & 0x40) {
-          return;
-        }
-      }
     }
-
-    pDynamicPath->nDirection = bDirection;
 }
 
 void __stdcall SetDirectionAndNewDirection(D2DynamicPathStrc * pDynamicPath, uint8_t nDirection) {
@@ -1011,9 +1028,7 @@ void __stdcall PATH_AddUnitCollision(D2UnitStrc * pUnit) {
     }
 
     nPosX = Units::GetCollisionType(pUnit);
-    int32_t nUnitSizeX = Units::GetUnitSizeX(pUnit);
-    pRoom = Units::UNITS_GetRoom(pUnit);
-    Collision::AddCollision_Width(pRoom, nPosY, iVar1, nUnitSizeX, nPosX);
+    Collision::AddCollision_Width(Units::UNITS_GetRoom(pUnit), nPosY, iVar1, Units::GetUnitSizeX(pUnit), nPosX);
 }
 
 // Removes a unit's collision footprint from its room's collision grid, choosing the removal method by unit type. For players (Dead anim) and monsters (Kick/Death anim), and any unit when forced via nParam, it removes using the dynamic path's target coords + nUnitWidth (RemoveCollision_Type). For objects it removes a size-X box at the unit's position (RemoveCollision_Width). For other unit types it removes a full sizeX-by-sizeY rectangle (RemoveCollision_Vector). Objects/monsters that have no collision and aren't forced (nParam==0) return 0 without acting. Position is read from the static path (objects/types 4-5) or dynamic path Get X/YPos. Returns 1 if collision was removed, 0 if skipped. Called before moving a unit so its old footprint is cleared.
@@ -1024,6 +1039,7 @@ BOOL __stdcall PATH_RemoveUnitCollision(D2UnitStrc * pUnit, int32_t nParam) {
     int32_t nPosY;
     int32_t nPosX;
     int32_t nCollisionType;
+    int32_t nUnitSizeX;
     uint32_t nVectorY;
     uint32_t nVectorX;
     eD2PlayerAnimMode eAnimMode;
@@ -1034,10 +1050,65 @@ BOOL __stdcall PATH_RemoveUnitCollision(D2UnitStrc * pUnit, int32_t nParam) {
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      int32_t nUnitSizeX;
-      if (eUnitType != UNIT_MONSTER) {
-        if (eUnitType != UNIT_OBJECT) {
+
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          if (pUnit) {
+            eAnimMode = pUnit->eAnimMode.ePlayerMode;
+            bIsDeadOrKick = eAnimMode == eD2PlayerAnimMode_ns::Dead;
+            goto check_dead_mode;
+          }
+
+          break;
+        }
+      case UNIT_MONSTER:
+        {
+          if (pUnit) {
+            eAnimMode = pUnit->eAnimMode.ePlayerMode;
+            bIsDeadOrKick = eAnimMode == Kick;
+            check_dead_mode:
+            if (!bIsDeadOrKick && eAnimMode != Death) {
+              goto remove_type_collision;
+            }
+          }
+
+          break;
+        }
+      case UNIT_OBJECT:
+        {
+          _bHasCollision = Units::HasCollision(pUnit);
+          if (!_bHasCollision && !nParam) {
+            return 0;
+          }
+
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPosY = pUnit->pPath.pStaticPath->nPosY;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPosY = GetYPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPosY = 0;
+          }
+
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPosX = pUnit->pPath.pStaticPath->nPosX;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPosX = GetXPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPosX = 0;
+          }
+
+          nCollisionType = Units::GetCollisionType(pUnit);
+          nVectorY = Units::GetUnitSizeY(pUnit);
+          nVectorX = Units::GetUnitSizeX(pUnit);
+          pRoom1 = Units::UNITS_GetRoom(pUnit);
+          Collision::RemoveCollision_Vector(pRoom1, nPosX, nPosY, nVectorX, nVectorY, nCollisionType);
+          return 1;
+        }
+      default:
+        {
           eUnitType = pUnit->eUnitType;
           if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
             nPosY = pUnit->pPath.pStaticPath->nPosY;
@@ -1062,52 +1133,8 @@ BOOL __stdcall PATH_RemoveUnitCollision(D2UnitStrc * pUnit, int32_t nParam) {
           Collision::RemoveCollision_Width(pRoom1, nPosX, nPosY, nUnitSizeX, nCollisionType);
           return 1;
         }
-
-        _bHasCollision = Units::HasCollision(pUnit);
-        if (!_bHasCollision && !nParam) {
-          return 0;
-        }
-
-        eUnitType = pUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-          nPosY = pUnit->pPath.pStaticPath->nPosY;
-        } else if (pUnit->pPath.pDynamicPath) {
-          nPosY = GetYPos(pUnit->pPath.pDynamicPath);
-        } else {
-          nPosY = 0;
-        }
-
-        eUnitType = pUnit->eUnitType;
-        if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-          nPosX = pUnit->pPath.pStaticPath->nPosX;
-        } else if (pUnit->pPath.pDynamicPath) {
-          nPosX = GetXPos(pUnit->pPath.pDynamicPath);
-        } else {
-          nPosX = 0;
-        }
-
-        nCollisionType = Units::GetCollisionType(pUnit);
-        nVectorY = Units::GetUnitSizeY(pUnit);
-        nVectorX = Units::GetUnitSizeX(pUnit);
-        pRoom1 = Units::UNITS_GetRoom(pUnit);
-        Collision::RemoveCollision_Vector(pRoom1, nPosX, nPosY, nVectorX, nVectorY, nCollisionType);
-        return 1;
-      }
-      if (pUnit) {
-        eAnimMode = pUnit->eAnimMode.ePlayerMode;
-        bIsDeadOrKick = eAnimMode == Kick;
-        check_dead_mode:
-        if (!bIsDeadOrKick && eAnimMode != Death) {
-          goto remove_type_collision;
-        }
-      }
-    } else {
-      if (pUnit) {
-        eAnimMode = pUnit->eAnimMode.ePlayerMode;
-        bIsDeadOrKick = eAnimMode == eD2PlayerAnimMode_ns::Dead;
-        goto check_dead_mode;
-      }
     }
+
     if (!nParam) {
       return 0;
     }
@@ -1486,43 +1513,48 @@ void __stdcall AllocDynamicPath(D2PoolManagerStrc * pMemory, D2RoomStrc * pRoom,
     eD2UnitType eUnitType;
     eUnitType = pUnit_00->eUnitType;
     if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType == UNIT_MONSTER) {
-        pDynamicPath->nCollisionFlag = 0x100;
-        if (!pDynamicPath->pOwner || pDynamicPath->pOwner->eUnitType != UNIT_PLAYER) {
-          pDynamicPath->nFlags &= -524033;
-          pDynamicPath->ePathType = 2;
-          pDynamicPath->nDirOffset = 0;
-          if (pDynamicPath->dwPrevPathType == 0xb) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x871);
-            exit(-1);
-          } else {
-            if (pDynamicPath->dwPrevPathType == 8) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x872);
+      switch (eUnitType) {
+        case UNIT_MONSTER:
+          {
+            pDynamicPath->nCollisionFlag = 0x100;
+            if (!pDynamicPath->pOwner || pDynamicPath->pOwner->eUnitType != UNIT_PLAYER) {
+              pDynamicPath->nFlags &= -524033;
+              pDynamicPath->ePathType = 2;
+              pDynamicPath->nDirOffset = 0;
+              if (pDynamicPath->dwPrevPathType == 0xb) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x871);
+                exit(-1);
+              } else {
+                if (pDynamicPath->dwPrevPathType == 8) {
+                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x872);
+                  exit(-1);
+                }
+
+                nUnitWidth = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit_00);
+                if (nUnitWidth < 0 || nUnitWidth >= sgptDataTable->nTxtMonStatsSize || nUnitWidth != 0x26) {
+                  nUnitWidth = PATH_GetCollisionPatternFromMonStats(pUnit_00);
+                  pDynamicPath->nCollisionPattern = nUnitWidth;
+                  pDynamicPath->nDistMax = 0xe;
+                } else {
+                  pUnit_00->pPath.pDynamicPath->nUnitWidth = 5;
+                  pDynamicPath->nCollisionPattern = 0x804;
+                  pDynamicPath->nDistMax = 0xe;
+                }
+
+                goto place_and_set_screen_pos;
+              }
+            } else {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x861);
               exit(-1);
             }
-
-            nUnitWidth = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit_00);
-            if (nUnitWidth < 0 || nUnitWidth >= sgptDataTable->nTxtMonStatsSize || nUnitWidth != 0x26) {
-              nUnitWidth = PATH_GetCollisionPatternFromMonStats(pUnit_00);
-              pDynamicPath->nCollisionPattern = nUnitWidth;
-              pDynamicPath->nDistMax = 0xe;
-            } else {
-              pUnit_00->pPath.pDynamicPath->nUnitWidth = 5;
-              pDynamicPath->nCollisionPattern = 0x804;
-              pDynamicPath->nDistMax = 0xe;
-            }
-
-            goto place_and_set_screen_pos;
           }
-        } else {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x861);
-          exit(-1);
-        }
-      }
-      if (eUnitType == UNIT_MISSILE) {
-        pDynamicPath->nCollisionFlag = 0;
-        pDynamicPath->nCollisionPattern = 0;
-        PATH_SetPathType(pDynamicPath, 4);
+        case UNIT_MISSILE:
+          {
+            pDynamicPath->nCollisionFlag = 0;
+            pDynamicPath->nCollisionPattern = 0;
+            PATH_SetPathType(pDynamicPath, 4);
+            break;
+          }
       }
     } else {
       pDynamicPath->nCollisionFlag = 0x80;

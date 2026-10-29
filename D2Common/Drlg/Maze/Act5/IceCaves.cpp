@@ -157,17 +157,22 @@ void ReplaceRooms(D2DrlgLevelStrc * pLevel) {
     ReplaceRoom(DRLG_ICECAVES_REPLACE_TWO + nRoll, pLevel, &nRoll);
     ReplaceRoom(DRLG_ICECAVES_REPLACE_THREE + nRoll, pLevel, &nRoll);
     int nLevelId = pLevel->eD2LevelId;
-    if (nLevelId != 0x71) {
-      if (nLevelId != 0x73) {
-        if (nLevelId != 0x76) {
+    switch (nLevelId) {
+      case 0x73:
+        {
+          ReplaceRoom(DRLG_ICECAVES_REPLACE_FOUR + nRoll, pLevel, &nRoll);
+        }
+      case 0x71:
+        case 0x76:
+          {
+            ReplaceRoom(DRLG_ICECAVES_REPLACE_FIVE + nRoll, pLevel, &nRoll);
+            return;
+          }
+      default:
+        {
           return;
         }
-      } else {
-        ReplaceRoom(DRLG_ICECAVES_REPLACE_FOUR + nRoll, pLevel, &nRoll);
-      }
     }
-
-    ReplaceRoom(DRLG_ICECAVES_REPLACE_FIVE + nRoll, pLevel, &nRoll);
 }
 
 } // namespace D2Common::Drlg::Maze::Act5::IceCaves

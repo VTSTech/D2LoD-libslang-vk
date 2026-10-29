@@ -169,8 +169,7 @@ void __stdcall CMD_ToggleMercInventory() {
     }
 
     int32_t nMercGUID = 0;
-    D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    nMercGUID = GAME::RosterPets::GetRosterPetGUID(pUnit, 7, nMercGUID);
+    nMercGUID = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nMercGUID);
     if (nMercGUID == -1) {
       return;
     }
@@ -353,11 +352,7 @@ void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam) {
     int nLine;
     nLine = 0x51e;
     pScan = ".\\UI\\CmdTbl.cpp";
-    uint32_t* pFileSize;
-    pFileSize = 0;
-    D2PoolManagerStrc* pMPQ;
-    pMPQ = D2Win::Src::D2WinArchive::ReturnZero();
-    pKeyData = (D2CmdTbl_Line0x50f*)Fog::Archive::D2FILE_AllocAndLoadD2File(pMPQ, szPath, pFileSize, pScan, nLine);
+    pKeyData = (D2CmdTbl_Line0x50f*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2Win::Src::D2WinArchive::ReturnZero(), szPath, 0, pScan, nLine);
     apply_key_data:
     if (pKeyData) {
       if (pKeyData->wMagic == 0x5357 && pKeyData->wVersion == 0x25 && pKeyData->wSize == 0x47a) {
@@ -384,7 +379,7 @@ void __fastcall CMD_ResetKeyBindingsToDefaults(DWORD dwParam) {
     do {
       *pWKeyCode = 0xffff;
       pWKeyCode += 5;
-    } while ((int)pWKeyCode < (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 4));
+    } while ((int)pWKeyCode < (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 4));
 
     int* pSrcDefault = gaKeyBindingsDefault;
     D2KeyBindStrc* pDstBinding = g_KeyBindingsTable;
@@ -403,7 +398,7 @@ uint16_t __fastcall CMD_GetKeyForCommand(int32_t nCmdIndex, int32_t nSlot) {
     while (((D2KeyBindStrc*)((char*)pBinding - 0x6))->nCmdIndex != nCmdIndex || ((D2KeyBindStrc*)((char*)pBinding - 0x6))->nSlot != nSlot) {
       pBinding = (PD2KeyBindSlot)((int)pBinding + 10);
       nIndex++;
-      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
+      if ((int)pBinding >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
         return 0xffff;
       }
     }
@@ -652,14 +647,14 @@ BOOL __fastcall CMD_SetKeyBinding(int32_t nCmdIndex, int32_t nSlot, uint32_t nKe
           }
 
           nIndex++;
-        } while ((int)&g_KeyBindingsTable[nIndex].wKeyCode < (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 4));
+        } while ((int)&g_KeyBindingsTable[nIndex].wKeyCode < (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 4));
 
         nIndex = 0;
         pBinding2 = &g_KeyBindingsTable[0].nSlot;
         while (((D2KeyBindStrc*)((char*)pBinding2 - 0x6))->nCmdIndex != nCmdIndex || ((D2KeyBindStrc*)((char*)pBinding2 - 0x6))->nSlot != nSlot) {
           pBinding2 = (PD2KeyBindSlot)((int)pBinding2 + 10);
           nIndex++;
-          if ((int)pBinding2 >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
+          if ((int)pBinding2 >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
             if (iVar1 == 0x72) {
               return 0;
             }
@@ -720,7 +715,7 @@ void __fastcall CMD_UnbindCommand(int32_t nCmdIndex, int32_t nSlot) {
       }
 
       pBinding = (PD2KeyBindSlot)((int)pBinding + 10);
-    } while ((int)pBinding < (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6));
+    } while ((int)pBinding < (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6));
 }
 
 uint32_t __fastcall CMD_IsCommandBound(int32_t nCmdIndex, int32_t nSlot) {
@@ -729,7 +724,7 @@ uint32_t __fastcall CMD_IsCommandBound(int32_t nCmdIndex, int32_t nSlot) {
     while (((D2KeyBindStrc*)((char*)pBinding - 0x6))->nCmdIndex != nCmdIndex || ((D2KeyBindStrc*)((char*)pBinding - 0x6))->nSlot != nSlot) {
       pBinding = (PD2KeyBindSlot)((int)pBinding + 10);
       nIndex++;
-      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
+      if ((int)pBinding >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
         return 0;
       }
     }
@@ -744,7 +739,7 @@ uint16_t * __fastcall CMD_GetKeyNameForCommand(int32_t nCmdIndex, int32_t nSlot)
     while (((D2KeyBindStrc*)((char*)pBinding - 0x6))->nCmdIndex != nCmdIndex || ((D2KeyBindStrc*)((char*)pBinding - 0x6))->nSlot != nSlot) {
       pBinding = (PD2KeyBindSlot)((int)pBinding + 10);
       nIndex++;
-      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
+      if ((int)pBinding >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
         pName = D2Lang::StrTable::strtable::GetLocaleString(0xeb2);
         return pName;
       }
@@ -1078,7 +1073,7 @@ uint16_t * __fastcall CMD_GetKeyDescForCommand(int32_t nCmdIndex, int32_t nSlot)
     while (((D2KeyBindStrc*)((char*)pBinding - 0x6))->nCmdIndex != nCmdIndex || ((D2KeyBindStrc*)((char*)pBinding - 0x6))->nSlot != nSlot) {
       pBinding = (PD2KeyBindSlot)((int)pBinding + 10);
       nIndex++;
-      if ((int)pBinding >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
+      if ((int)pBinding >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable) + 6)) {
         wKeyCode = 0xffff;
         describe_key:
         {
@@ -1197,7 +1192,7 @@ void __stdcall WindowsKeyPressedEvent(D2UIMouseMsgStrc * pMsg) {
     int nIndex = 0;
     while ((uint32_t)g_KeyBindingsTable[nIndex].wKeyCode != pMsg->nWParam || (iVar1 = g_KeyBindingsTable[nIndex].nCmdIndex , iVar1 == 0xffff) || iVar1 >= 0x39 || iVar1 > 0xdf || !gaCmdBindings[iVar1].pfnHandler) {
       nIndex++;
-      if ((int)&g_KeyBindingsTable[nIndex] >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
+      if ((int)&g_KeyBindingsTable[nIndex] >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
         return;
       }
     }
@@ -1224,7 +1219,7 @@ void __stdcall INPUT_DispatchKeyCommand(D2UIMouseMsgStrc * pMsg) {
     int nBindingIndex = 0;
     while ((uint32_t)g_KeyBindingsTable[nBindingIndex].wKeyCode != pMsg->nWParam || (nCmdIndex = g_KeyBindingsTable[nBindingIndex].nCmdIndex , nCmdIndex == 0xffff) || nCmdIndex >= 0x39 || nCmdIndex > 0xdf || !gaCmdBindings[nCmdIndex].pfnAltHandler) {
       nBindingIndex++;
-      if ((int)&g_KeyBindingsTable[nBindingIndex] >= (uintptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
+      if ((int)&g_KeyBindingsTable[nBindingIndex] >= (intptr_t)((char*)&g_KeyBindingsTable + sizeof(g_KeyBindingsTable))) {
         return;
       }
     }
@@ -1254,25 +1249,21 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
 }; D2_STATIC_GUARD(gUIFlagCmdTableInit, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gUIFlagCmdTableInit");
     static unsigned int gbNormalUIHandlersRegistered; D2_STATIC_GUARD_BSS(gbNormalUIHandlersRegistered, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gbNormalUIHandlersRegistered");
 
-    HWND hWnd;
     int32_t nHandlerCount;
     gbKeyBindingsEnabled = nEnable;
     if (nEnable) {
       if (!gbKeyConfigModeActive) {
         gbKeyConfigModeActive = 1;
         if (bUpdateUIHandlers && gbNormalUIHandlersRegistered) {
-          nHandlerCount = 2;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &gUIFlagCmdTableInit, nHandlerCount);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &gUIFlagCmdTableInit, 2);
           gbNormalUIHandlersRegistered = 0;
         }
 
-        nHandlerCount = 4;
-        hWnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUICmdTblFlagInit, nHandlerCount);
+        _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUICmdTblFlagInit, 4);
         return;
       }
     } else {
+      HWND hWnd;
       if (gbKeyConfigModeActive == 1) {
         nHandlerCount = 4;
         gbKeyConfigModeActive = 0;
@@ -1352,7 +1343,7 @@ void __stdcall CMD_LoadUserKeyBindings() {
                 do {
                   *pDstTable = 0xffff;
                   pDstTable += 5;
-                } while ((int)pDstTable < (uintptr_t)&g_KeyBindingsTable + 1144);
+                } while ((int)pDstTable < (intptr_t)&g_KeyBindingsTable + 1144);
 
                 pBindingRow = wFileMagic.aBindings;
                 pDstCopy = g_KeyBindingsTable;
@@ -1377,7 +1368,7 @@ void __stdcall CMD_LoadUserKeyBindings() {
     do {
       *pDstTable = 0xffff;
       pDstTable += 5;
-    } while ((int)pDstTable < (uintptr_t)&g_KeyBindingsTable + 1144);
+    } while ((int)pDstTable < (intptr_t)&g_KeyBindingsTable + 1144);
 
     int* piVar1 = gaKeyBindingsDefault;
     pBindingRow = g_KeyBindingsTable;
@@ -1400,8 +1391,7 @@ void __stdcall CMD_InitKeyBindings() {
 
     int32_t nHandlerCount = 4;
     gbKeyConfigModeActive = 1;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUICmdTblFlagInit, nHandlerCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUICmdTblFlagInit, nHandlerCount);
 }
 
 void __stdcall CMD_ExitKeyConfigMode() {
@@ -1412,8 +1402,7 @@ void __stdcall CMD_ExitKeyConfigMode() {
 
     int32_t nHandlerCount = 4;
     gbKeyConfigModeActive = 0;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUICmdTblFlagInit, nHandlerCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUICmdTblFlagInit, nHandlerCount);
 }
 
 void __fastcall CMD_InitKeyConfigUI(int32_t nFadeInDuration, int32_t nHoldDuration, int32_t nFadeOutDuration, eD2LevelId eLevelId, int32_t bForce) {

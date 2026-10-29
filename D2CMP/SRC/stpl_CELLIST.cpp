@@ -302,8 +302,9 @@ template<> void TSHashObject<CELLIST, HASHKEY_NONE>::Destructor() {
 }
 
 template<> void TSExplicitList<CELLIST, -572662307>::LinkNode(::CELLIST * pNode, uint32_t nLinkType, ::CELLIST * pExisting) {
+    TSLink<::CELLIST>* pTVar1;
     TSLink<::CELLIST>* pSrcSlot;
-    int* pBackLink;
+    int pSrcEntry;
     uint32_t pTailLink;
     if (pNode) {
       pSrcSlot = (TSLink<::CELLIST>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
@@ -313,6 +314,7 @@ template<> void TSExplicitList<CELLIST, -572662307>::LinkNode(::CELLIST * pNode,
 
     TSLink<::CELLIST>* pDstSlot = pSrcSlot->m_prevlink;
     if (pDstSlot) {
+      int* pBackLink;
       pTailLink = pSrcSlot->m_next;
       if ((int)pTailLink < 0) {
         pBackLink = (int*)~pTailLink;
@@ -330,31 +332,37 @@ template<> void TSExplicitList<CELLIST, -572662307>::LinkNode(::CELLIST * pNode,
     } else {
       pDstSlot = &this->m_terminator;
     }
-    if (nLinkType != 1) {
-      TSLink<::CELLIST>* pTVar1;
-      pTVar1 = pDstSlot->m_prevlink;
-      pSrcSlot->m_prevlink = pTVar1;
-      pSrcSlot->m_next = pTVar1->m_next;
-      pTVar1->m_next = (int)pNode;
-      pDstSlot->m_prevlink = pSrcSlot;
-      return;
-    }
 
-    pSrcSlot->m_prevlink = pDstSlot;
-    pSrcSlot->m_next = pDstSlot->m_next;
-    int pSrcEntry = this->m_linkoffset;
-    pTailLink = pDstSlot->m_next;
-    if ((int)pTailLink < 0) {
-      *(TSLink<::CELLIST>**)~pTailLink = (TSLink<::CELLIST>*)pSrcSlot;
-      pDstSlot->m_next = (int)pNode;
-      return;
-    }
-    if (pSrcEntry < 0) {
-      pSrcEntry = (int)pDstSlot - pDstSlot->m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          pSrcSlot->m_prevlink = pDstSlot;
+          pSrcSlot->m_next = pDstSlot->m_next;
+          pSrcEntry = this->m_linkoffset;
+          pTailLink = pDstSlot->m_next;
+          if ((int)pTailLink < 0) {
+            *(TSLink<::CELLIST>**)~pTailLink = (TSLink<::CELLIST>*)pSrcSlot;
+            pDstSlot->m_next = (int)pNode;
+            return;
+          }
+          if (pSrcEntry < 0) {
+            pSrcEntry = (int)pDstSlot - pDstSlot->m_prevlink->m_next;
+          }
 
-    *(TSLink<::CELLIST>**)(pTailLink + pSrcEntry) = (TSLink<::CELLIST>*)pSrcSlot;
-    pDstSlot->m_next = (int)pNode;
+          *(TSLink<::CELLIST>**)(pTailLink + pSrcEntry) = (TSLink<::CELLIST>*)pSrcSlot;
+          pDstSlot->m_next = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pTVar1 = pDstSlot->m_prevlink;
+          pSrcSlot->m_prevlink = pTVar1;
+          pSrcSlot->m_next = pTVar1->m_next;
+          pTVar1->m_next = (int)pNode;
+          pDstSlot->m_prevlink = pSrcSlot;
+          return;
+        }
+    }
 }
 
 // stpl-orphan: a COMDAT copy in TSExplicitList<CELLIST, -572662307> that no member owns
@@ -855,8 +863,9 @@ template<> TSExplicitList<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>, 16>* TSExp
 }
 
 template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::LinkNode(TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* pNode, uint32_t nLinkType, TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* pExisting) {
+    TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* pTVar1;
     TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* ppSrcSlot;
-    int* pBackLinkSrc;
+    int pOldNext;
     uint32_t pBackLinkDst;
     if (pNode) {
       ppSrcSlot = (TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>*)((uintptr_t)&pNode->nArrayAlloc + this->m_linkoffset);
@@ -866,6 +875,7 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Li
 
     TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* ppDstSlot = ppSrcSlot->m_prevlink;
     if (ppDstSlot) {
+      int* pBackLinkSrc;
       pBackLinkDst = ppSrcSlot->m_next;
       if ((int)pBackLinkDst < 0) {
         pBackLinkSrc = (int*)~pBackLinkDst;
@@ -883,31 +893,37 @@ template<> void TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::Li
     } else {
       ppDstSlot = &this->m_terminator;
     }
-    if (nLinkType != 1) {
-      TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>* pTVar1;
-      pTVar1 = ppDstSlot->m_prevlink;
-      ppSrcSlot->m_prevlink = pTVar1;
-      ppSrcSlot->m_next = pTVar1->m_next;
-      pTVar1->m_next = (int)pNode;
-      ppDstSlot->m_prevlink = ppSrcSlot;
-      return;
-    }
 
-    ppSrcSlot->m_prevlink = ppDstSlot;
-    ppSrcSlot->m_next = ppDstSlot->m_next;
-    int pOldNext = this->m_linkoffset;
-    pBackLinkDst = ppDstSlot->m_next;
-    if ((int)pBackLinkDst < 0) {
-      *(TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>**)~pBackLinkDst = (TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>*)ppSrcSlot;
-      ppDstSlot->m_next = (int)pNode;
-      return;
-    }
-    if (pOldNext < 0) {
-      pOldNext = (int)ppDstSlot - ppDstSlot->m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          ppSrcSlot->m_prevlink = ppDstSlot;
+          ppSrcSlot->m_next = ppDstSlot->m_next;
+          pOldNext = this->m_linkoffset;
+          pBackLinkDst = ppDstSlot->m_next;
+          if ((int)pBackLinkDst < 0) {
+            *(TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>**)~pBackLinkDst = (TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>*)ppSrcSlot;
+            ppDstSlot->m_next = (int)pNode;
+            return;
+          }
+          if (pOldNext < 0) {
+            pOldNext = (int)ppDstSlot - ppDstSlot->m_prevlink->m_next;
+          }
 
-    *(TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>**)(pBackLinkDst + pOldNext) = (TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>*)ppSrcSlot;
-    ppDstSlot->m_next = (int)pNode;
+          *(TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>**)(pBackLinkDst + pOldNext) = (TSLink<TSHashObjectChunk<::CELLIST, HASHKEY_NONE>>*)ppSrcSlot;
+          ppDstSlot->m_next = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pTVar1 = ppDstSlot->m_prevlink;
+          ppSrcSlot->m_prevlink = pTVar1;
+          ppSrcSlot->m_next = pTVar1->m_next;
+          pTVar1->m_next = (int)pNode;
+          ppDstSlot->m_prevlink = ppSrcSlot;
+          return;
+        }
+    }
 }
 
 // Static data members

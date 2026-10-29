@@ -444,7 +444,7 @@ BOOL __stdcall SOUND_IsAnySoundEffectPlaying() {
       }
 
       ppSoundBuffer++;
-    } while ((int)ppSoundBuffer < (uintptr_t)&gpaSoundEffectBuffers + 32);
+    } while ((int)ppSoundBuffer < (intptr_t)&gpaSoundEffectBuffers + 32);
 
     return 0;
 }
@@ -463,7 +463,7 @@ void __stdcall SOUND_FadeOutAllSoundEffects() {
       }
 
       ppSoundBuffer++;
-    } while ((int)ppSoundBuffer < (uintptr_t)&gpaSoundEffectBuffers + 32);
+    } while ((int)ppSoundBuffer < (intptr_t)&gpaSoundEffectBuffers + 32);
 }
 
 int __stdcall SOUND_IsSoundEffectsInitialized() {
@@ -480,14 +480,14 @@ void __stdcall SOUND_FreeSoundEffectBuffers() {
     do {
       D2SoundSmp::SOUNDSMP_Stop(*ppSoundBuffer);
       ppSoundBuffer++;
-    } while ((int)ppSoundBuffer < (uintptr_t)&gpaSoundEffectBuffers + 32);
+    } while ((int)ppSoundBuffer < (intptr_t)&gpaSoundEffectBuffers + 32);
 
     ppSoundBuffer = gpaSoundEffectBuffers;
     do {
       D2SoundSmp::SOUNDSMP_Destroy(*ppSoundBuffer);
       *ppSoundBuffer = 0;
       ppSoundBuffer++;
-    } while ((int)ppSoundBuffer < (uintptr_t)&gpaSoundEffectBuffers + 32);
+    } while ((int)ppSoundBuffer < (intptr_t)&gpaSoundEffectBuffers + 32);
 
     while (gpWavFileCacheListHead) {
       void* nNextCacheEntry;

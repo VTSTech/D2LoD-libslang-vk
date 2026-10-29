@@ -27,7 +27,6 @@ struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
 typedef int eD2ArenaFlags;
 typedef int eD2States;
-typedef uint8_t eD2PlayerClassID;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32
@@ -128,9 +127,9 @@ void __fastcall CLIENT_SetArenaFlags(eD2ArenaFlags eArenaFlags);
 // Sets or clears the ARENAFLAG_DefaultActive bit in CLIENT_ArenaFlags. bSet!=0 clears the bit (marks client as not default-active); bSet==0 sets the bit.
 void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet);
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal();
-void __fastcall ROSTER_SetArenaKillCountGlobal(uint32_t dwValue);
+void __fastcall ROSTER_SetArenaKillCountGlobal(eD2PlayerClassIDDWORD dwValue);
 // Returns the default player class ID stored in global _eD2PlayerClassID_00712f00, used when creating a new character without an explicit class selection.
-eD2PlayerClassID __stdcall CLIENT_GetDefaultCharClass();
+eD2PlayerClassIDDWORD __stdcall CLIENT_GetDefaultCharClass();
 // Returns 1 if arena mode is active (bit 8 of CLIENT_ArenaFlags is set), indicating the game session is running in arena/PvP mode.
 uint32_t __stdcall CLIENT_IsArenaMode();
 void __stdcall INPUT_HandleIMEComposition(struct D2UIMouseMsgStrc * pMsg);

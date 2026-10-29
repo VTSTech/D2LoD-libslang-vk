@@ -72,7 +72,7 @@ static int32_t __fastcall QUESTLOG_FindQuestIndexById(int32_t nQuestId) {
       }
 
       nIndex++;
-    } while ((int)&gaQuestInfoTable[nIndex].nStringIndex < (uintptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 8));
+    } while ((int)&gaQuestInfoTable[nIndex].nStringIndex < (intptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 8));
 
     return -1;
 }
@@ -103,7 +103,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     nActIndex = 0;
     while (gaQuestInfoTable[nActIndex].nQuestId != pEntry->eQuestId) {
       nActIndex++;
-      if ((int)&gaQuestInfoTable[nActIndex].nQuestId >= (uintptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 12)) {
+      if ((int)&gaQuestInfoTable[nActIndex].nQuestId >= (intptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 12)) {
         pEntry->nDisplayState = 2;
         return;
       }
@@ -120,7 +120,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     pBitBuffer = npcmenu::GetQuestInfo();
     D2BitBufferStrc* pBitBuffer_00;
     pBitBuffer_00 = npcmenu::Merc::NPCMENU_GetMercHireCost();
-    bool bQuestActive;
+    uint8_t bQuestActive;
     bQuestActive = gQuestLog.abQuestUnknownArray1[nActIndex];
     pEntry->bQuestActive = bQuestActive;
     if (!gaQuestInfoTable[nActIndex].pQuestDescData) {
@@ -136,15 +136,15 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     uint16_t* pQuestDataTbl;
     pQuestDataTbl = gaQuestInfoTable[nActIndex].pQuestDescData;
     if (pQuestDataTbl == gaQuestDescData_SiegeOnHarrogath && bRewardAwaits) {
-      if (!bQuestActive) {
-        bQuestActive = true;
+      if (!(bool)bQuestActive) {
+        bQuestActive = '\x04';
       }
     } else {
       uint8_t byQuestState;
       if (pQuestDataTbl == gaQuestDescData_SevenTombs && !*(uint32_t*)(char*)&szNumberString) {
         if (!bStateResult) {
           bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_Completed);
-          if (!bArcaneState && (bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted) , !bArcaneState) || !bQuestActive) {
+          if (!bArcaneState && (bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_JustCompleted) , !bArcaneState) || !(bool)bQuestActive) {
             bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
             if (bArcaneState == 1) {
               pEntry->wTitleStringId = gaQuestDescData_SevenTombs[0];
@@ -221,12 +221,12 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
           }
 
           wQuestStep = 0xe8e;
-          bQuestActive = true;
+          bQuestActive = '\r';
           goto show_completed_desc;
         }
         if (*(uint32_t*)(char*)&szNumberString) {
           wQuestStep = 0xe90;
-          bQuestActive = true;
+          bQuestActive = '\v';
           show_completed_desc:
           pEntry->bQuestActive = bQuestActive;
           if (pQuestDataTbl) {
@@ -236,7 +236,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
             D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
             pEntry->wszDescription[299] = L'\0';
             pEntry->wDescStringId = pQuestDataTbl[1];
-            *(bool*)(nActIndex + (int)((char*)&gQuestLog + 232)) = bQuestActive;
+            gQuestLog.abQuestUnknownArray2[nActIndex] = (bool)bQuestActive;
             pEntry->bHasDescription = '\x01';
             nQuestIdLookup = gaQuestInfoTable[nActIndex].nQuestId;
             goto apply_box_grayed;
@@ -286,7 +286,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
           return;
         }
       }
-      if (!bQuestActive) {
+      if (!(bool)bQuestActive) {
         bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer_00, gaQuestInfoTable[nActIndex].nQuestId, QUESTSTATE_JustCompleted);
         if (bRewardAwaits) {
           if (pEntry->eQuestId == 0x15) {
@@ -379,16 +379,16 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
 
       pEntry->wszDescription[299] = L'\0';
       pEntry->bStepAdvanced = '\0';
-      if (bQuestActive != gQuestLog.abQuestUnknownArray2[nActIndex] && gaQuestInfoTable[nActIndex].pQuestDescData) {
+      if ((bool)bQuestActive != gQuestLog.abQuestUnknownArray2[nActIndex] && gaQuestInfoTable[nActIndex].pQuestDescData) {
         pEntry->bStepAdvanced = '\x01';
       }
 
       wQuestStep = pQuestDataTbl[(uint32_t)bQuestActive * 2 + 2];
-      *(bool*)(nActIndex + (int)((char*)&gQuestLog + 232)) = bQuestActive;
+      gQuestLog.abQuestUnknownArray2[nActIndex] = (bool)bQuestActive;
       pEntry->wDescStringId = wQuestStep;
       pEntry->nDisplayState = 3;
       pEntry->bHasDescription = '\x01';
-      if (!bQuestActive) {
+      if (bQuestActive != '\r') {
         return;
       }
 
@@ -423,16 +423,16 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
 
     pEntry->wTitleStringId = *pQuestDataTbl;
     pEntry->bStepAdvanced = '\0';
-    if (bQuestActive != gQuestLog.abQuestUnknownArray2[nActIndex]) {
+    if ((bool)bQuestActive != gQuestLog.abQuestUnknownArray2[nActIndex]) {
       pEntry->bStepAdvanced = '\x01';
     }
 
-    *(bool*)(nActIndex + (int)((char*)&gQuestLog + 232)) = bQuestActive;
+    gQuestLog.abQuestUnknownArray2[nActIndex] = (bool)bQuestActive;
     pEntry->wDescStringId = pQuestDataTbl[nQuestStepIdx * 2 + 2];
     pEntry->nDisplayState = 3;
     pEntry->bHasDescription = '\x01';
     pEntry->bQuestActive = bQuestActive;
-    if (!bQuestActive) {
+    if (bQuestActive != '\r') {
       return;
     }
 
@@ -647,7 +647,7 @@ void __stdcall FreeQuestImages() {
       }
 
       ppActImage++;
-    } while ((int)ppActImage < (uintptr_t)((char*)&gQuestLog + 181));
+    } while ((int)ppActImage < (intptr_t)((char*)&gQuestLog + 181));
 }
 
 // JMP thunk
@@ -906,7 +906,6 @@ void __stdcall QUESTLOG_OnQuestLogMouseDown(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall QUESTLOG_DrawQuestLogButton() {
-    int bInQuestLog;
     D2GfxDataStrc sGfxData;
     uint32_t nDrawPos;
     nDrawPos = UNIT::Player::IsPlayerDead();
@@ -969,10 +968,9 @@ void __stdcall QUESTLOG_DrawQuestLogButton() {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nTextX, iVar1, -1, DRAW_SOLID, nullptr);
     sGfxData.pDC6 = gpUIStatLevelUpPanelImages;
     if (gQuestLog.bQuestLogWindowOpen != '\0') {
-      int nX;
+      int bInQuestLog;
       bInQuestLog = ui::GetMouseY();
-      nX = ui::GetMouseX();
-      bInQuestLog = QUESTLOG_IsPointInQuestLog(nX, bInQuestLog);
+      bInQuestLog = QUESTLOG_IsPointInQuestLog(ui::GetMouseX(), bInQuestLog);
       sGfxData.nFrameNumber = 1;
       if ((char)bInQuestLog != '\0') {
         goto draw_button_frame;
@@ -997,7 +995,7 @@ void __fastcall QUESTLOG_SelectQuestByIndex(int32_t nQuestId) {
       }
 
       nActIndex++;
-    } while ((int)&gaQuestInfoTable[nActIndex].nStringIndex < (uintptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 8));
+    } while ((int)&gaQuestInfoTable[nActIndex].nStringIndex < (intptr_t)((char*)&gaQuestInfoTable + sizeof(gaQuestInfoTable) + 8));
 }
 
 void __fastcall QUESTLOG_ClearMissileFlagCb_Missile146(void * pUnit) {
@@ -1025,13 +1023,13 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
     int32_t nQuestIndex;
     int32_t nQuestIndex1;
     int32_t nQuestIndex2;
-    bool byToggleFlags;
+    uint8_t byToggleFlags;
     int nPrevMonsterCount;
     nPrevMonsterCount = gQuestLog.MonstersleftInDenOfEvil;
     if (pPacket) {
       short int sVar1;
       byToggleFlags = pPacket->bToggle;
-      if (byToggleFlags & 1U) {
+      if (byToggleFlags & 1) {
         switch (pPacket->nActionType) {
           case 3:
             pText = D2Lang::StrTable::strtable::GetLocaleString(0xe7c);
@@ -1060,7 +1058,7 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
           return;
         }
       }
-      if (byToggleFlags & 2U) {
+      if (byToggleFlags & 2) {
         switch (pPacket->nActionType) {
           case 4:
             Sound::SOUND_PlaySound(SOUND_WEAPON_PUNCH_4, nullptr, 0, 0, 0);
@@ -1101,7 +1099,7 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
           return;
         }
       }
-      if (byToggleFlags) {
+      if (byToggleFlags == 0x10) {
         if (pPacket->nActionType == 10) {
           Sound::SOUND_PlaySound(SOUND_NECROMANCER_NEEDKEY_1, nullptr, 0, 0, 0);
           Sound::SOUND_PlaySound(SOUND_NECROMANCER_ACT1_FIND_TREE, nullptr, 0, 0, 0);
@@ -1114,7 +1112,7 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
         Sound::SOUND_PlaySound((int)*(short int*)((uintptr_t)&pPacket->nPlayerGUID + 1), nullptr, 0, 0, 0);
         return;
       }
-      if (byToggleFlags & 0x20U) {
+      if (byToggleFlags & 0x20) {
         if (pPacket->nActionType != 0x20) {
           if (pPacket->nActionType == 0x21) {
             UNIT::CUnit::CUNIT_IterateMissilesWithCallback(QUESTLOG_ClearMissileFlagCb_Missile527);
@@ -1479,12 +1477,11 @@ void __stdcall DRAW_UI_Quest() {
     static uint32_t gQuestUIDescInitB = -0x1; D2_STATIC_GUARD(gQuestUIDescInitB, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitB");
     static unsigned int gQuestUIDescInitA = 0xffffffff; D2_STATIC_GUARD(gQuestUIDescInitA, "D2Client::UI::QuestLog::DRAW_UI_Quest::gQuestUIDescInitA");
     static uint32_t gnQuestLogUnknownField; D2_STATIC_GUARD_BSS(gnQuestLogUnknownField, "D2Client::UI::QuestLog::DRAW_UI_Quest::gnQuestLogUnknownField");
-    static bool gbQuestLogDrawFlag; D2_STATIC_GUARD_BSS(gbQuestLogDrawFlag, "D2Client::UI::QuestLog::DRAW_UI_Quest::gbQuestLogDrawFlag");
+    static int gbQuestLogDrawFlag; D2_STATIC_GUARD_BSS(gbQuestLogDrawFlag, "D2Client::UI::QuestLog::DRAW_UI_Quest::gbQuestLogDrawFlag");
 
     uint8_t bInvDescDirty;
     D2BitBufferStrc* pQuestInfo;
     DWORD dwTickCount;
-    int32_t nTextWidth;
     D2TextLineStrc* pWordWrapList;
     uint16_t* pwszText;
     int nDrawX;
@@ -1496,7 +1493,6 @@ void __stdcall DRAW_UI_Quest() {
     int aTabXOffsets[6];
     char bDoneIterating;
     uint8_t byIconId;
-    int32_t dwTextColor;
     eD2Quests eQuest;
     eD2QuestState eQuestState;
     D2TextLineStrc* pNextWrappedLine;
@@ -1753,9 +1749,7 @@ void __stdcall DRAW_UI_Quest() {
                 pwszText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
                 nDrawY = gQuestUIDescInitC - gnPanelOffsetY;
                 bFlag = 0;
-                dwTextColor = 0;
-                nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
-                D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - nTextWidth / 2 + 0xa0, nDrawY, dwTextColor, bFlag);
+                D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - D2Win::Src::D2WinFont::DRAW_text0(pwszText) / 2 + 0xa0, nDrawY, 0, bFlag);
               }
               if (gQuestLog.bQuestLogButtonDown == '\0' && gQuestLog.aQuestLogEntries[nQuestSlot].wszDescription[0] != L'\0') {
                 pWordWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gQuestLog.aQuestLogEntries[nQuestSlot].wszDescription, aTabXOffsets + 5, 0x10e);
@@ -2008,9 +2002,7 @@ BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex)
     }
 
     eD2QuestState eQuestStateArg = QUESTSTATE_JustCompleted;
-    eD2Quests eQuestIdArg = eQuestIdFromIcon;
-    nMercHireCost = npcmenu::Merc::NPCMENU_GetMercHireCost();
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdArg, eQuestStateArg);
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(npcmenu::Merc::NPCMENU_GetMercHireCost(), eQuestIdFromIcon, eQuestStateArg);
     if (bQuestState) {
       return 0;
     }
@@ -2021,24 +2013,18 @@ BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex)
     }
 
     eD2QuestState eQueryState = QUESTSTATE_RewardAwaits;
-    eD2Quests eQuestIdCheckArg = eQuestIdFromIcon;
-    nMercHireCost = npcmenu::GetQuestInfo();
-    eQueryState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
+    eQueryState = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestIdFromIcon, eQueryState);
     if (eQueryState != QUESTSTATE_Completed) {
       return 0;
     }
 
-    eQuestIdCheckArg = eQuestIdFromIcon;
-    nMercHireCost = npcmenu::GetQuestInfo();
-    bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
+    bQuestState = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestIdFromIcon, eQueryState);
     if (bQuestState) {
       return 0;
     }
 
     eQueryState = QUESTSTATE_CannotCompleteQuestInGame;
-    eQuestIdCheckArg = eQuestIdFromIcon;
-    nMercHireCost = npcmenu::GetQuestInfo();
-    bQuestState = D2Common::QuestRecord::GetQuestState(nMercHireCost, eQuestIdCheckArg, eQueryState);
+    bQuestState = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestIdFromIcon, eQueryState);
     if (bQuestState) {
       return 0;
     }

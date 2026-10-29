@@ -782,7 +782,6 @@ static D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlock
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 32, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    uint8_t nDirectionCur;
     BOOL nCallResult;
     D2UnitStrc* pOwnerUnit;
     D2InventoryStrc* pInventoryUsed;
@@ -857,8 +856,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_AsyncLoadUnitSprites(int32_t nAsyncBlock
                   pFrameResult = &__frame0.nFrameResult;
                   nErrLineVal = 0;
                   pOwnerUnit = (D2UnitStrc*)nAnimMode;
-                  nDirectionCur = D2Common::Units::GetDirection(pUnit);
-                  nErrLineVal = DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)nDirectionCur, nErrLineVal, pFrameResult, nDirection, pOwnerUnit);
+                  nErrLineVal = DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)D2Common::Units::GetDirection(pUnit), nErrLineVal, pFrameResult, nDirection, pOwnerUnit);
                   if (nErrLineVal) {
                     nStateFlagResult = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sSpriteParams, nAsyncBlockId, nAsyncBlockId);
                     if (!nStateFlagResult) {
@@ -1205,17 +1203,24 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       pOverlay->neOverlayId = eOverlay;
       nRandomValue = GFXUTIL_GetOverlayFrameDelay(pUnit, (int32_t)pOverlay);
       pOverlay->nFrameDelay = nRandomValue;
-      if (nOverlayType != 2) {
-        if (nOverlayType != 6) {
-          pOverlay->nValue0 = nValue0;
-          pOverlay->nValue1 = nValue1;
-          pOverlay->nValue2 = nValue2;
-        } else {
-          nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nRandomValue);
-          pOverlay->nRandomOffset = nRandomValue;
-        }
-      } else {
-        pOverlay->nValue0 = 1;
+      switch (nOverlayType) {
+        case 2:
+          {
+            pOverlay->nValue0 = 1;
+            break;
+          }
+        case 6:
+          {
+            nRandomValue = Archive::RANDOM_RandomNumberSelector(&pPlayer->sSeed, nRandomValue);
+            pOverlay->nRandomOffset = nRandomValue;
+            break;
+          }
+        default:
+          {
+            pOverlay->nValue0 = nValue0;
+            pOverlay->nValue1 = nValue1;
+            pOverlay->nValue2 = nValue2;
+          }
       }
 
       pOverlay->nOffsetX = pOverlayTxt->Xoffset;
@@ -1287,6 +1292,7 @@ void __fastcall GFX_LoadUnitModeCof(D2UnitStrc * pUnit) {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    int bLoaded;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
@@ -1298,29 +1304,31 @@ void __fastcall GFX_LoadUnitModeCof(D2UnitStrc * pUnit) {
     uint32_t nSeqMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eUnitType, &__frame0.nClassId, (int*)&nSeqMode, ".\\ENGINE\\Gfx.cpp", 0xd17);
     uint32_t nSeqModeCopy = nSeqMode;
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        if (eUnitType != UNIT_OBJECT) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd26);
-          exit(-1);
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          bLoaded = GfxInfo::GFX_LoadCompositCof(&__frame0.nCompositResult, nSeqMode, pUnit);
+          if (!bLoaded) {
+            return;
+          }
+
+          GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nSeqModeCopy, '\x01');
+          return;
         }
-
-        GfxInfo::GFX_LoadObjectModeCof(pUnit, nSeqMode);
-        return;
-      }
-
-      GFX_LoadMonsterModeCofByState(pUnit, nSeqMode);
-      return;
+      case UNIT_MONSTER:
+        {
+          GFX_LoadMonsterModeCofByState(pUnit, nSeqMode);
+          return;
+        }
+      case UNIT_OBJECT:
+        {
+          GfxInfo::GFX_LoadObjectModeCof(pUnit, nSeqMode);
+          return;
+        }
     }
 
-    int bLoaded;
-    bLoaded = GfxInfo::GFX_LoadCompositCof(&__frame0.nCompositResult, nSeqMode, pUnit);
-    if (!bLoaded) {
-      return;
-    }
-
-    GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nSeqModeCopy, '\x01');
-    return;
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd26);
+    exit(-1);
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -1385,8 +1393,7 @@ void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, uint8_t byComponent,
     pOwnerUnit = (D2UnitStrc*)-1;
     int* pResolvedAnimMode = &__frame0.nFrameResult;
     int nResultTmp = pUnit->nGfxCurrentFrame >> 8;
-    uint8_t nDirection = D2Common::PATH::DynamicPath::GetDirection(__frame0.uPathUnion.pDynamicPath);
-    nErrLine = DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)nDirection, nResultTmp, pResolvedAnimMode, byComponent, pOwnerUnit);
+    nErrLine = DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)D2Common::PATH::DynamicPath::GetDirection(__frame0.uPathUnion.pDynamicPath), nResultTmp, pResolvedAnimMode, byComponent, pOwnerUnit);
     if (!nErrLine) {
       return;
     }
@@ -1778,14 +1785,21 @@ static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint
     uint32_t nBorderType;
     nBorderType = UI::Path::DRAW_GetTypeOfBorder();
     if (nCofFrameCount) {
-      if (nBorderType != 1) {
-        if (nBorderType != 2) {
-          goto draw_components;
-        }
-
-        nCallResult = ScreenSizeX / 4;
-      } else {
-        nCallResult = -(ScreenSizeX / 4);
+      switch (nBorderType) {
+        case 1:
+          {
+            nCallResult = -(ScreenSizeX / 4);
+            break;
+          }
+        default:
+          {
+            goto draw_components;
+          }
+        case 2:
+          {
+            nCallResult = ScreenSizeX / 4;
+            break;
+          }
       }
 
       nDrawX += nCallResult;
@@ -2069,14 +2083,19 @@ BOOL __fastcall GFX_DrawUnitShadow(D2UnitStrc * pUnit) {
     iVar1 += nOffsetY;
     if (bPerspective) {
       nBorderType = UI::Path::DRAW_GetTypeOfBorder();
-      if (nBorderType != 1) {
-        if (nBorderType == 2) {
-          nOffsetX = ScreenSizeX / 4;
-          nDrawX += nOffsetX;
-        }
-      } else {
-        nOffsetX = -(ScreenSizeX / 4);
-        nDrawX += nOffsetX;
+      switch (nBorderType) {
+        case 1:
+          {
+            nOffsetX = -(ScreenSizeX / 4);
+            nDrawX += nOffsetX;
+            break;
+          }
+        case 2:
+          {
+            nOffsetX = ScreenSizeX / 4;
+            nDrawX += nOffsetX;
+            break;
+          }
       }
 
       iVar1 += 0x10;
@@ -2227,14 +2246,21 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
     nResult = nDrawY;
     if (pCofLayerDataBase) {
       nCallResult2 = UI::Path::DRAW_GetTypeOfBorder();
-      if (nCallResult2 != 1) {
-        if (nCallResult2 != 2) {
-          goto draw_shadow;
-        }
-
-        nPrecisionX = ScreenSizeX / 4;
-      } else {
-        nPrecisionX = -(ScreenSizeX / 4);
+      switch (nCallResult2) {
+        case 1:
+          {
+            nPrecisionX = -(ScreenSizeX / 4);
+            break;
+          }
+        default:
+          {
+            goto draw_shadow;
+          }
+        case 2:
+          {
+            nPrecisionX = ScreenSizeX / 4;
+            break;
+          }
       }
 
       nCoordTmp += nPrecisionX;
@@ -2386,14 +2412,21 @@ BOOL __fastcall GFX_DrawUnitColoredShape(D2UnitStrc * pUnit) {
     nDrawY = iVar6 + nOffsetY;
     if (nPerspActive) {
       nBorderType = UI::Path::DRAW_GetTypeOfBorder();
-      if (nBorderType != 1) {
-        if (nBorderType != 2) {
-          goto draw_shape;
-        }
-
-        nBorderAdj = ScreenSizeX / 4;
-      } else {
-        nBorderAdj = -(ScreenSizeX / 4);
+      switch (nBorderType) {
+        case 1:
+          {
+            nBorderAdj = -(ScreenSizeX / 4);
+            break;
+          }
+        default:
+          {
+            goto draw_shape;
+          }
+        case 2:
+          {
+            nBorderAdj = ScreenSizeX / 4;
+            break;
+          }
       }
 
       nDrawX += nBorderAdj;
@@ -2432,7 +2465,6 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
     uint8_t uVar1;
     uint8_t byLayerComponent;
     int32_t nCoord;
-    int32_t nWorldOffsetVal;
     int32_t nParticleXY;
     int nParticleOffset;
     D2GfxInfoUnkStrc* pGfxInfoUnk;
@@ -2468,18 +2500,21 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
       nCoord = Particle::PARTICLE_GetScreenZ(pUnit);
       pScreenYOut = &__frame0.nScreenY;
       pScreenXOut = &__frame0.nScreenX;
-      nWorldOffsetVal = D2Common::Units::GetPrecisionY(pUnit);
-      nParticleXY = D2Common::Units::GetPrecisionX(pUnit);
-      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nParticleXY, nWorldOffsetVal, nCoord, pScreenXOut, pScreenYOut);
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), nCoord, pScreenXOut, pScreenYOut);
       nCallResult = UI::Path::DRAW_GetTypeOfBorder();
-      if (nCallResult != 1) {
-        if (nCallResult == 2) {
-          nParticleOffset = ScreenSizeX / 4;
-          __frame0.nScreenX += nParticleOffset;
-        }
-      } else {
-        nParticleOffset = -(ScreenSizeX / 4);
-        __frame0.nScreenX += nParticleOffset;
+      switch (nCallResult) {
+        case 1:
+          {
+            nParticleOffset = -(ScreenSizeX / 4);
+            __frame0.nScreenX += nParticleOffset;
+            break;
+          }
+        case 2:
+          {
+            nParticleOffset = ScreenSizeX / 4;
+            __frame0.nScreenX += nParticleOffset;
+            break;
+          }
       }
 
       __frame0.nScreenY += 0x10;
@@ -2487,6 +2522,7 @@ BOOL __fastcall GFX_DrawUnitSelectionShape(D2UnitStrc * pUnit) {
       __frame0.nScreenX += nCoord;
       nParticleOffset = Particle::PARTICLE_GetY(pUnit);
     } else {
+      int32_t nWorldOffsetVal;
       nCoord = D2Common::Units::GetTargetX(pUnit);
       nWorldOffsetVal = UI::Path::DRAW_GetWorldOffsetX();
       nParticleXY = Particle::PARTICLE_GetX(pUnit);
@@ -2693,14 +2729,21 @@ D2GfxInfoUnkStrc * __fastcall DRAW_WORLD_Unit_1(D2UnitStrc * pUnit, uint32_t nGa
     nDrawY = nDrawY + nYoffset - nErrLine;
     if (bPerspective) {
       nGfxTimerOrBorder = UI::Path::DRAW_GetTypeOfBorder();
-      if (nGfxTimerOrBorder != 1) {
-        if (nGfxTimerOrBorder != 2) {
-          goto draw_sprite;
-        }
-
-        nPaletteOrFlag = ScreenSizeX / 4;
-      } else {
-        nPaletteOrFlag = -(ScreenSizeX / 4);
+      switch (nGfxTimerOrBorder) {
+        case 1:
+          {
+            nPaletteOrFlag = -(ScreenSizeX / 4);
+            break;
+          }
+        default:
+          {
+            goto draw_sprite;
+          }
+        case 2:
+          {
+            nPaletteOrFlag = ScreenSizeX / 4;
+            break;
+          }
       }
 
       nCallResult += nPaletteOrFlag;

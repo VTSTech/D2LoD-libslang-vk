@@ -160,7 +160,7 @@ void __fastcall Q33_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
       QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q33_NotifyQuestState, true);
       pA5Q3Data->bMalachaiTalked = 0;
     }
-    if (!(pQuestData->bIsNotIntroduction && pA5Q3Data->bIceScrollCollected && pQuestData->nStateFlagPrev < 4)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pA5Q3Data->bIceScrollCollected && pQuestData->nStateFlagPrev < 4)) {
       return;
     }
 
@@ -219,7 +219,7 @@ BOOL __fastcall Q33_OnFrozenAnyaKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 // stateFlag 0->1. Once past that, chains to the next quest's sequence filter (nSequenceQuestId) so dependent quests
 // (Betrayal of Harrogath) get re-evaluated. Halts on IsBadCodePtr of the chained fn ptr.
 bool __fastcall Q33_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag < 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag < 5 && pQuestData->bIsNotIntroduction != '\0') {
       if (pQuestData->nStateFlag) {
         return true;
       }
@@ -344,7 +344,6 @@ static void __fastcall A5Q3_KillMonsterInstantly(D2UnitStrc * pUnitStrc, ::SGAME
 static void Q33_CleanupQuestMonsters(D2QuestDataStrc * pQuestData) {
     D2UnitStrc* pAnyaUnit;
     BOOL bHasAiSubsystem;
-    D2RoomStrc* pUnitRoom;
     D2MonsterKillStrc sMonsterKill;
     eD2UnitType eUnitType;
     int32_t nAnyaGUID;
@@ -368,8 +367,7 @@ static void Q33_CleanupQuestMonsters(D2QuestDataStrc * pQuestData) {
         GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pQuestData->pGame, &sMonsterKill, 1);
         nAnyaGUID = pSpecificData->nFrozenAnyaGUID;
         eUnitType = pAnyaUnit->eUnitType;
-        pUnitRoom = D2Common::Units::UNITS_GetRoom(pAnyaUnit);
-        D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pUnitRoom, eUnitType, nAnyaGUID);
+        D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pAnyaUnit), eUnitType, nAnyaGUID);
         D2Common::Units::RemoveCollision_Vector(pAnyaUnit);
         D2Common::Unit::RemoveUnitFromRoom(pAnyaUnit);
       } else {
@@ -606,7 +604,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
               /* SetQuestState(Completed): PrisonOfIce fully finished (Malah + Anya rewards
                          both claimed) */ D2Common::QuestRecord::SetQuestState(pBitBufferRecord, QUEST_PrisonOfIce, QUESTSTATE_Completed);
             } else {
-              if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 6) {
+              if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 6) {
                 pQuestData->nQuestPacketFlags = '\0';
                 QUEST_SetStateAndBroadcast(pQuestData, 6, nullptr, (::fpExecuteOnUnitFunction)Q33_NotifyQuestState, true);
               }
@@ -734,7 +732,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
                          re-rolled */ D2Common::QuestRecord::SetQuestState(pBitBufferRecord, QUEST_PrisonOfIce, QUESTSTATE_Step0x10);
       return;
     }
-    if (!((short int)nMessageIndex == 0x4ea3 && pQuestData->bIsNotIntroduction)) {
+    if (!((short int)nMessageIndex == 0x4ea3 && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
     if (pQuestData->nStateFlag < 4) {
@@ -891,7 +889,7 @@ void __fastcall Q33_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (pQuestData->nStateFlag >= 5 && !bIsCompleted) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -944,14 +942,14 @@ void __fastcall Q33_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2GSPacketSrv0x27_TextStrc* pTextControl;
     pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     if (nNpcIndex == 0x70) {
-      if (!pQuestData->bIsNotIntroduction || pQuestData->nStateFlag) {
+      if (pQuestData->bIsNotIntroduction == '\0' || pQuestData->nStateFlag) {
         goto check_town_and_temple;
       }
 
       pQuestData->nStateFlag = 1;
     } else {
       bool bStatePast2;
-      if (nNpcIndex != 0x71 && nNpcIndex != 0x72 || !pQuestData->bIsNotIntroduction) {
+      if (nNpcIndex != 0x71 && nNpcIndex != 0x72 || pQuestData->bIsNotIntroduction == '\0') {
         goto check_town_and_temple;
       }
 
@@ -994,7 +992,7 @@ void __fastcall Q33_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q33_UpdateQuestStep);
     }
-    if (!(nNpcIndex - 0x79U <= 3 && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 5)) {
+    if (!(nNpcIndex - 0x79U <= 3 && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 5)) {
       return;
     }
 
@@ -1042,7 +1040,7 @@ bool __fastcall Q33_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     } else {
       D2UnitStrc* pScrollItem;
       if (nTargetClassId == 0x20f) {
-        if (!pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction == '\0') {
           return false;
         }
         if (pQuestData->nStateFlag >= 5) {
@@ -1164,7 +1162,7 @@ void __fastcall Q33_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       pA1Q6Data->nAnyaStateExtra = 1;
       return;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -1199,12 +1197,12 @@ void __fastcall Q33_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
       pnScrollCount = &pQuestData->pQuestSpecificData.pA5Q3->nIceItemCount;
       (*pnScrollCount)++;
     }
-    if (!(!pQuestData->bIsNotIntroduction || pQuestData->nStateFlag >= 5)) {
+    if (!(pQuestData->bIsNotIntroduction == '\0' || pQuestData->nStateFlag >= 5)) {
       return;
     }
 
     D2QuestDataStrc* pDependentQuest = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_BetrayalOfHaggorath);
-    if (!(pDependentQuest && pDependentQuest->bIsNotIntroduction)) {
+    if (!(pDependentQuest && pDependentQuest->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -1284,7 +1282,7 @@ bool __fastcall Q33_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       uint32_t bPartyHasScroll;
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
       if (!bQuestState) {
-        if (!pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction == '\0') {
           return true;
         }
 
@@ -1342,7 +1340,7 @@ void __fastcall Q33_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q33_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q33_Callback14_PlayerJoinedGame;
     pQuestData->pNpcMessages = A5Q3::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGameTmp->pMemoryPool, D2QuestDataA5Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q3.cpp", 0x5ca);
     pQuestData->pQuestSpecificData.pA5Q3 = pQuestSpecificData;
@@ -1362,7 +1360,7 @@ void __fastcall Q33_InitData(D2QuestDataStrc * pQuestData) {
 // resurrect/init and storing its GUID. On failure retries via a +0x19-frame timer event. This is the ice-block Anya.
 void __fastcall SpawnFrozenAnya(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_PrisonOfIce);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -1374,10 +1372,7 @@ void __fastcall SpawnFrozenAnya(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     void* pSpawnArg = 0;
     int32_t nSpawnArg6 = 0;
     bool bInitUnit = true;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    int32_t nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    int32_t nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    D2UnitStrc* pFrozenAnya = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x22e, nPosX, nPosY, pGame, pRoom, bInitUnit, nSpawnArg6, pSpawnArg);
+    D2UnitStrc* pFrozenAnya = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x22e, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), pGame, D2Common::Units::UNITS_GetRoom(pUnit), bInitUnit, nSpawnArg6, pSpawnArg);
     if (pFrozenAnya) {
       pFrozenAnya->eUnitFlags |= UNITFLAG_ISRESURRECT | UNITFLAG_ISINIT;
       pQuestSpecificData->bFrozenAnyaSpawning = '\x01';
@@ -1394,7 +1389,7 @@ void __fastcall Objects_InitFn67(D2ObjectInitFnArg * pInitArg) {
     int32_t nObjectGUID;
     int32_t nFrozenAnyaGUID;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_PrisonOfIce);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -1488,37 +1483,47 @@ void __fastcall Q33_AnyaTimerCallback(D2QuestDataStrc * pQuestData, D2UnitStrc *
     } else {
       eCurrentMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eCurrentMode != eD2MonsterAnimMode_ns::Neutral) {
-      if (eCurrentMode != Walk) {
-        if (eCurrentMode != eD2MonsterAnimMode_ns::GetHit) {
+
+    switch (eCurrentMode) {
+      case eD2MonsterAnimMode_ns::Neutral:
+        {
+          nAnimMode = Walk;
+          break;
+        }
+      case Walk:
+        {
+          pA5Q3Data = pQuestData->pQuestSpecificData.pA5Q3;
+          pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+          eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pUnitRoom);
+          if (eLevelId == LEVEL_Harrogath) {
+            pA5Q3Data->nWalkTickCount++;
+            if (pA5Q3Data->nWalkTickCount > 5) {
+              pA5Q3Data->bAnyaCanRun = 1;
+            }
+            if (!pA5Q3Data->bAnyaCanRun) {
+              goto rearm_timer;
+            }
+
+            nAnimMode = eD2MonsterAnimMode_ns::GetHit;
+          } else {
+            if (!pA5Q3Data->bAnyaReachable) {
+              goto rearm_timer;
+            }
+
+            nAnimMode = eD2MonsterAnimMode_ns::GetHit;
+          }
+
+          break;
+        }
+      default:
+        {
           goto rearm_timer;
         }
-
-        nAnimMode = eD2MonsterAnimMode_ns::Attack1;
-      } else {
-        pA5Q3Data = pQuestData->pQuestSpecificData.pA5Q3;
-        pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pUnitRoom);
-        if (eLevelId == LEVEL_Harrogath) {
-          pA5Q3Data->nWalkTickCount++;
-          if (pA5Q3Data->nWalkTickCount > 5) {
-            pA5Q3Data->bAnyaCanRun = 1;
-          }
-          if (!pA5Q3Data->bAnyaCanRun) {
-            goto rearm_timer;
-          }
-
-          nAnimMode = eD2MonsterAnimMode_ns::GetHit;
-        } else {
-          if (!pA5Q3Data->bAnyaReachable) {
-            goto rearm_timer;
-          }
-
-          nAnimMode = eD2MonsterAnimMode_ns::GetHit;
+      case eD2MonsterAnimMode_ns::GetHit:
+        {
+          nAnimMode = eD2MonsterAnimMode_ns::Attack1;
+          break;
         }
-      }
-    } else {
-      nAnimMode = Walk;
     }
 
     D2Common::Units::SetupUpdateFlag(pUnit, nAnimMode);
@@ -1530,7 +1535,7 @@ void __fastcall Q33_AnyaTimerCallback(D2QuestDataStrc * pQuestData, D2UnitStrc *
 // running. Used to locate the rescue portal.
 uint32_t __thiscall Q33_GetAnyaCoordinates(void * pThis, int32_t * pOutCoords) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_PrisonOfIce);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return 0;
     }
 
@@ -1669,7 +1674,7 @@ uint32_t __fastcall Q33_IsFrozenAnyaAlive(::SGAMEDATA * pGame) {
 // found / Malah-told) via Q33_NotifyQuestState.
 void __fastcall Q33_OnNpcNotifyPlayers(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_PrisonOfIce);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 2)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 2)) {
       return;
     }
 
@@ -1692,7 +1697,7 @@ void __fastcall Objects_InitFn74(D2ObjectInitFnArg * pInitArg) {
     }
 
     pQuestData->pQuestSpecificData.pA5Q3->nPresetObjectUnit = nObjectGUID;
-    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 2)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 2)) {
       return;
     }
 
@@ -1705,11 +1710,9 @@ void __fastcall Objects_InitFn74(D2ObjectInitFnArg * pInitArg) {
 // over its DRLG map AI, delete the ice object, store GUIDs, mark bShieldDropActive, re-run Q33_SequenceFilter. Plays the
 // "Anya thaws out of the ice" sequence after the Scroll of Resistance is used.
 uint8_t __fastcall Q33_TransformFrozenAnya(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData) {
-    D2RoomStrc* pAnyaRoom;
     D2UnitStrc* pAnyaMonster;
     D2MapAIStrc** ppMapAi;
     uint32_t dwReturnVal;
-    int32_t nAnyaRescuedClassId;
     eD2UnitType eUnitType;
     D2QuestDataA5Q3Strc* pA1Q4Specific = pQuestData->pQuestSpecificData.pA5Q3;
     if (pA1Q4Specific->bAnyaTransformed) {
@@ -1726,14 +1729,11 @@ uint8_t __fastcall Q33_TransformFrozenAnya(::SGAMEDATA * pGame, D2QuestDataStrc 
 
       pA1Q4Specific->nTransformStep = 1;
     } else if (nFrozenAnyaGUID == 1 && (pA1Q4Specific->nTransformStep = 2 , pFrozenAnyaObj != 0)) {
-      nAnyaRescuedClassId = 0x20f;
-      pAnyaRoom = D2Common::Units::UNITS_GetRoom(pFrozenAnyaObj);
-      pAnyaMonster = QUEST_SpawnMonsterNearCoords(pGame, pA1Q4Specific->nTransformX, pA1Q4Specific->nTransformY, pAnyaRoom, nFrozenAnyaGUID, nAnyaRescuedClassId);
+      pAnyaMonster = QUEST_SpawnMonsterNearCoords(pGame, pA1Q4Specific->nTransformX, pA1Q4Specific->nTransformY, D2Common::Units::UNITS_GetRoom(pFrozenAnyaObj), nFrozenAnyaGUID, 0x20f);
       if (pAnyaMonster) {
         nFrozenAnyaGUID = pFrozenAnyaObj->nUnitGUID;
         eUnitType = pFrozenAnyaObj->eUnitType;
-        pAnyaRoom = D2Common::Units::UNITS_GetRoom(pFrozenAnyaObj);
-        D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pAnyaRoom, eUnitType, nFrozenAnyaGUID);
+        D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pFrozenAnyaObj), eUnitType, nFrozenAnyaGUID);
         D2Common::Unit::RemoveUnitFromRoom(pFrozenAnyaObj);
         ppMapAi = Ai::AiGeneral::GetMonsterMapAi(pAnyaMonster);
         if (pA1Q4Specific->pDrlgMap && pA1Q4Specific->pDrlgMap->pPosition && !pA1Q4Specific->bDrlgMapTaken) {
@@ -1761,7 +1761,6 @@ uint8_t __fastcall Q33_TransformFrozenAnya(::SGAMEDATA * pGame, D2QuestDataStrc 
 BOOL __fastcall OBJOP_A5Q3_RescueAnyaFromPortal(D2ObjectOperateFnArg * pOperation) {
     BOOL bQuestStateResult;
     int32_t nTransformCoord;
-    D2RoomStrc* pPortalRoom;
     D2BitBufferStrc* pBitBuffer;
     ::SGAMEDATA* pGame;
     D2QuestDataStrc* pPrisonQuest = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_PrisonOfIce);
@@ -1809,9 +1808,7 @@ BOOL __fastcall OBJOP_A5Q3_RescueAnyaFromPortal(D2ObjectOperateFnArg * pOperatio
               nTransformCoord = D2Client::Units::GetYPosFromDynamicPathUnit(pOperation->sArg.pVictim);
               pA5Q3Data->nTransformY = nTransformCoord;
               AddQuestTimer(pPrisonQuest, Q33_TransformFrozenAnya, 1);
-              bQuestStateResult = 0;
-              pPortalRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-              D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pPortalRoom, bQuestStateResult);
+              D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim), 0);
             }
           }
         }

@@ -146,7 +146,7 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
           do {
             Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, *pStateEntry, 1);
             pStateEntry++;
-          } while ((int)pStateEntry < (uintptr_t)((char*)&gaSetItemBonusStates + 20));
+          } while ((int)pStateEntry < (intptr_t)((char*)&gaSetItemBonusStates + 20));
 
           return;
         }

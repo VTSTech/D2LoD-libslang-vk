@@ -24,41 +24,49 @@ namespace D2Client::SRC::CelCmp {
 
 void __fastcall GFX_ClearAllModeFlags(D2UnitStrc * pUnit, int32_t nMaxMode) {
     int nComponent;
+    uint32_t nComponentPlayer;
     if (nMaxMode >= 0x10) {
       return;
     }
 
     eD2UnitType eUnitType = Source::ClientEngine::CLIENT_GetEffectiveUnitType(pUnit);
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        if (eUnitType != UNIT_OBJECT) {
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          nComponentPlayer = 0;
+          do {
+            Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponentPlayer, '\0');
+            nComponentPlayer++;
+          } while (nComponentPlayer < 0x14);
+
+          break;
+        }
+      case UNIT_MONSTER:
+        {
+          nComponent = 0;
+          do {
+            Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
+            nComponent++;
+          } while (nComponent < 0x10);
+
+          return;
+        }
+      case UNIT_OBJECT:
+        {
+          nComponent = 0;
+          do {
+            Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
+            nComponent++;
+          } while (nComponent < 8);
+
+          return;
+        }
+      default:
+        {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd3e);
           exit(-1);
         }
-
-        nComponent = 0;
-        do {
-          Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
-          nComponent++;
-        } while (nComponent < 8);
-
-        return;
-      }
-
-      nComponent = 0;
-      do {
-        Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponent, '\0');
-        nComponent++;
-      } while (nComponent < 0x10);
-
-      return;
     }
-
-    uint32_t nComponentPlayer = 0;
-    do {
-      Engine::GfxUtil::GFXUTIL_SetGfxInfoComponent(pUnit, nComponentPlayer, '\0');
-      nComponentPlayer++;
-    } while (nComponentPlayer < 0x14);
 }
 
 // Builds the COF archive path for a monster COF name index and loads it. The index is a single byte: the prologue does MOVZX EAX, CL before indexing the name table at 0x6d6c30, so the upper 24 bits of ECX are dead.

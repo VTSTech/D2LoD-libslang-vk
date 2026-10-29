@@ -91,7 +91,7 @@ bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (!BVar1) {
       BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_BetrayalOfHaggorath, QUESTSTATE_JustCompleted);
       if (!BVar1) {
-        if (!pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction == '\0') {
           return true;
         }
 
@@ -118,7 +118,6 @@ bool __fastcall Q34_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 void __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     int nPosY;
     int nPosX;
-    D2RoomStrc* pRoom;
     D2QuestDataA5Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA5Q4;
     if (pQuestSpecificData->bPortalSpawned) {
       return;
@@ -148,8 +147,7 @@ void __stdcall Q34_SpawnNihlathakPortal(D2QuestDataStrc * pQuestData, D2UnitStrc
     eD2LevelId eLevel = LEVEL_NihlathaksTemple;
     nPosY += 5;
     nPosX += 10;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    BVar1 = SKILLS::SkillsServer::SERVER_SpawnPortal(pQuestData->pGame, nullptr, pRoom, nPosX, nPosY, eLevel, ppPortal, nClassId, BVar1);
+    BVar1 = SKILLS::SkillsServer::SERVER_SpawnPortal(pQuestData->pGame, nullptr, D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, eLevel, ppPortal, nClassId, BVar1);
     if (!BVar1) {
       return;
     }
@@ -260,7 +258,7 @@ BOOL __fastcall Q34_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
 // Q34_SequenceFilter (Betrayal of Harrogath). Sequence/advance handler. If still in intro (nStateFlag<4) bumps nStateFlag 0->1. Otherwise chains to the predecessor quest's sequence filter (nSequenceQuestId = Siege on Harrogath / kill Shenk) to keep act-5 quest ordering. No QuestRecord access.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
 bool __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag < 4 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag < 4 && pQuestData->bIsNotIntroduction != '\0') {
       if (pQuestData->nStateFlag) {
         return true;
       }
@@ -289,7 +287,6 @@ bool __fastcall Q34_SequenceFilter(D2QuestDataStrc * pQuestData) {
 void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2UnitDataPlayerStrc* pGame;
     BOOL bQuestState;
-    D2BitBufferStrc* pBitBuffer;
     eD2Quests nQuestId;
     eD2QuestState eQuestState;
     ::SGAMEDATA* pQuestSpecific;
@@ -300,7 +297,7 @@ void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     }
     if (nMsgIndex == 0x4ea9) {
       D2QuestDataA5Q4Strc* pPlayerData = pQuestData->pQuestSpecificData.pA5Q4;
-      if (pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0x11b);
         pPlayerData->bAcceptedQuest = 1;
         pPlayerData->bNotifiedCompletion = 1;
@@ -323,12 +320,11 @@ void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         Q34_SequenceFilter(pQuestData);
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         eQuestState = QUESTSTATE_RewardAwaits;
         nQuestId = QUEST_BetrayalOfHaggorath;
-        pBitBuffer = GetQuestBitBuffer(pQuestData->pGame, pQuestArgs->pPlayer);
         /* GetQuestState(Betrayal q0x26, RewardAwaits=1): intro-path fallback — reward
-                         already pending also -> state-flag 5 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, nQuestId, eQuestState);
+                         already pending also -> state-flag 5 */ bQuestState = D2Common::QuestRecord::GetQuestState(GetQuestBitBuffer(pQuestData->pGame, pQuestArgs->pPlayer), nQuestId, eQuestState);
         if (bQuestState) {
           goto set_final_state;
         }
@@ -394,7 +390,7 @@ void __fastcall Q34_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
         return;
       }
-      if (bPrisonComplete != 1 && (pQuestData->nStateFlag < 4 || bIsCompleted) && pQuestData->bIsNotIntroduction) {
+      if (bPrisonComplete != 1 && (pQuestData->nStateFlag < 4 || bIsCompleted) && pQuestData->bIsNotIntroduction != '\0') {
         nMessageIndex = gdwQuestCallbackAddressQ34[pQuestData->nStateFlag];
         if (nMessageIndex != -1 && nMessageIndex < 8) {
           AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nMessageIndex);
@@ -554,7 +550,7 @@ uint8_t __fastcall Q34_OnNihlathakSpeak(::SGAMEDATA * pGame, D2QuestDataStrc * p
 // Q34_Callback_08 (Betrayal of Harrogath) — Nihlathak death handler. Fired when Nihlathak dies: stores his room, then runs the full completion sweep over all players — Q34_CheckNearNihlathak (set RewardAwaits/JustCompleted for nearby), Q34_PropagateCompleteToParty, Q34_SetCannotComplete (absent players forfeit), Q34_PlayCompletionSound. Sets the shared QuestRecord JustCompleted bit (QUEST_SetQuestRecordState), notifies players (event 0x11), sets state-flag 4, and schedules Q34_OnNihlathakSpeak timer. Core quest-completion entry point.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q4.cpp
 void __fastcall Q34_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -694,7 +690,7 @@ void __fastcall Q34_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     ::SGAMEDATA* pGame;
     D2QuestDataA5Q4Strc* pA5Q4Data = pQuestData->pQuestSpecificData.pA5Q4;
     int32_t nWaypointId = (int32_t)pQuestData;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       D2WaypointStrc* pWaypoint;
       pQuestData->nStateFlag = 5;
       pGame = pQuestArgs->pGame;
@@ -763,7 +759,7 @@ void __fastcall Q34_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q34_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q34_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = &A5Q4::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA5Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q4.cpp", 0x30d);
     pQuestData->pQuestSpecificData.pA5Q4 = pQuestSpecificData;
@@ -792,7 +788,7 @@ void __fastcall Q34_ClaimReward(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 // Q34_OnNihlathakAI (Betrayal of Harrogath). Nihlathak AI hook: while in intro and prev-state < 3, broadcasts state-flag 3 (Q34_NotifyQuestState) — advances the quest when the player engages Nihlathak. No QuestRecord access.
 void __fastcall Q34_OnNihlathakAI(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_BetrayalOfHaggorath);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 3)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 3)) {
       return;
     }
 

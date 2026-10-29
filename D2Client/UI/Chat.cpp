@@ -384,8 +384,7 @@ void __stdcall CHAT_ShutdownIME() {
         /* DWORD param_3 for ImmSetConversionStatus */ /* DWORD param_2 for ImmSetConversionStatus */ /* HIMC param_1 for ImmSetConversionStatus */ ImmSetConversionStatus(hIMC, 0, __frame0.dwSentenceMode);
       }
 
-      /* HIMC param_2 for ImmReleaseContext */ hWnd = D2gfx::D2GFX::GetHwnd();
-      /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(hWnd, hIMC);
+      /* HIMC param_2 for ImmReleaseContext */ /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(D2gfx::D2GFX::GetHwnd(), hIMC);
     }
 
     gwcImeCompositionBuffer[0] = L'\0';
@@ -828,7 +827,7 @@ BOOL __stdcall CHAT_ParseCommand(char * * ppszText, uint8_t * pbCommandType, cha
       }
 
       nCmdIndex++;
-      if ((int)&gaChatCommandTable[nCmdIndex] >= (uintptr_t)((char*)&gaChatCommandTable + sizeof(gaChatCommandTable))) {
+      if ((int)&gaChatCommandTable[nCmdIndex] >= (intptr_t)((char*)&gaChatCommandTable + sizeof(gaChatCommandTable))) {
         return 0;
       }
     } while (true);
@@ -849,15 +848,20 @@ void __stdcall INPUT_HandleChatScroll(D2UIMouseMsgStrc * pMsg) {
     if (pMsg->uLParam.nLParam & 0x40000000U) {
       return;
     }
-    if (pMsg->nWParam != 0x26) {
-      if (pMsg->nWParam == 0x28) {
-        CHAT_ScrollHistory(-1);
-        CHAT_RestoreFromHistory();
-        return;
-      }
-    } else {
-      CHAT_RestoreFromHistory();
-      CHAT_ScrollHistory(1);
+
+    switch (pMsg->nWParam) {
+      case 0x26:
+        {
+          CHAT_RestoreFromHistory();
+          CHAT_ScrollHistory(1);
+          break;
+        }
+      case 0x28:
+        {
+          CHAT_ScrollHistory(-1);
+          CHAT_RestoreFromHistory();
+          return;
+        }
     }
 }
 
@@ -1649,23 +1653,30 @@ void __fastcall ESCMENU_InitEaxSoundItem(D2EscMenuItemStrc * pItem, D2UIMouseMsg
 void __fastcall UI_SLIDER_ApplyNpcSpeech(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     D2Sound::Src::D2SoundFast::SOUND_SetNpcSpeech(pItem->nImageIndex);
     int nSpeechVal = pItem->nImageIndex;
-    if (!nSpeechVal) {
-      Warden::WARDEN_SetGlobalFlag(1);
-      Text::TEXT_SetTextDisplayMode(0);
-      return;
+    switch (nSpeechVal) {
+      default:
+        {
+          return;
+        }
+      case 0:
+        {
+          Warden::WARDEN_SetGlobalFlag(1);
+          Text::TEXT_SetTextDisplayMode(0);
+          return;
+        }
+      case 1:
+        {
+          Warden::WARDEN_SetGlobalFlag(0);
+          Text::TEXT_SetTextDisplayMode(1);
+          return;
+        }
+      case 2:
+        {
+          Warden::WARDEN_SetGlobalFlag(1);
+          Text::TEXT_SetTextDisplayMode(1);
+          return;
+        }
     }
-    if (nSpeechVal != 1) {
-      if (nSpeechVal != 2) {
-        return;
-      }
-
-      Warden::WARDEN_SetGlobalFlag(1);
-      Text::TEXT_SetTextDisplayMode(1);
-      return;
-    }
-
-    Warden::WARDEN_SetGlobalFlag(0);
-    Text::TEXT_SetTextDisplayMode(1);
 }
 
 } // namespace D2Client::UI::Chat

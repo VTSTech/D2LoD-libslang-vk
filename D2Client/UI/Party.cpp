@@ -346,16 +346,12 @@ void __fastcall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY,
 }
 
 void __stdcall UI_DrawPartyLeaveButton() {
-    int32_t nTextFlags;
     D2RosterStrc* pRoster = GAME::Roster::GetNextRosterPlayer(nullptr);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(0);
     int16_t nPartyId = GAME::Roster::GetRosterPartyId(pRoster);
     if (nPartyId != -1) {
-      uint16_t* wszMessage;
       UI_DrawPartyButtonFrame(pMenu_partybuttons, 0xe3, 0, 0x23);
-      nTextFlags = 2;
-      wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x1038);
-      ui::UI_DrawTextCentered(gnPanelOffsetX + 0xe3, 0x21 - gnPanelOffsetY, gnPanelOffsetX + 0x118, wszMessage, nTextFlags);
+      ui::UI_DrawTextCentered(gnPanelOffsetX + 0xe3, 0x21 - gnPanelOffsetY, gnPanelOffsetX + 0x118, D2Lang::StrTable::strtable::GetLocaleString(0x1038), 2);
     }
 
     D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
@@ -571,7 +567,7 @@ void __stdcall SetEachPlayerRosterGlobalPartyId() {
 
       pPartyId++;
       nY += 0x26;
-    } while ((int)pPartyId < (uintptr_t)&gaEachplayerRosterPartyId + 28);
+    } while ((int)pPartyId < (intptr_t)&gaEachplayerRosterPartyId + 28);
 }
 
 BOOL __stdcall UI_CheckMouseInRectangle(int32_t nX, int32_t nY, int32_t nWidth, int32_t nHeight) {
@@ -777,7 +773,6 @@ void __stdcall DRAW_UI_PartyWindow_II() {
 
 static void __stdcall UI_DrawPartyButtonTextWithTooltip(uint16_t nLocaleId1, uint16_t nLocaleId2, uint32_t dwUnused, int32_t nLine2Y, int32_t nColor, int32_t nOffsetX, int32_t nLine1Y) {
     int32_t nCenterX;
-    uint16_t* pText;
     int nX2;
     BOOL bCenter;
     int nX;
@@ -787,8 +782,7 @@ static void __stdcall UI_DrawPartyButtonTextWithTooltip(uint16_t nLocaleId1, uin
       nX2 = nLine1Y - gnPanelOffsetY;
       bCenter = 0;
       nX = gnPanelOffsetX + nCenterX;
-      pText = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId1);
-      D2Win::Src::D2WinFont::DRAW_text(pText, nX, nX2, nColor, bCenter);
+      D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(nLocaleId1), nX, nX2, nColor, bCenter);
       return;
     }
 
@@ -798,14 +792,12 @@ static void __stdcall UI_DrawPartyButtonTextWithTooltip(uint16_t nLocaleId1, uin
     bCenter = 0;
     nX = gnPanelOffsetX + nCenterX;
     nCenterX = nColor;
-    pText = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId1);
-    D2Win::Src::D2WinFont::DRAW_text(pText, nX, nX2, nCenterX, bCenter);
+    D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(nLocaleId1), nX, nX2, nCenterX, bCenter);
     nCenterX = UI_CalculateCenteredTextXPosition(nLocaleId2, nOffsetX);
     bCenter = 0;
     nX2 = nLine2Y - gnPanelOffsetY;
     nX = gnPanelOffsetX + nCenterX;
-    pText = D2Lang::StrTable::strtable::GetLocaleString(nLocaleId2);
-    D2Win::Src::D2WinFont::DRAW_text(pText, nX, nX2, nColor, bCenter);
+    D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(nLocaleId2), nX, nX2, nColor, bCenter);
 }
 
 static void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
@@ -1632,8 +1624,7 @@ void __stdcall DRAW_UI_PartyWindow() {
     nMouseY = 0x182 - gnPanelOffsetY;
     int32_t nTooltipFlag = 0;
     nMouseX = gnPanelOffsetX + 0x125;
-    uint16_t* wszBuffer = D2Lang::StrTable::strtable::GetLocaleString(0x102f);
-    D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszBuffer, nMouseX, nMouseY, nTooltipFlag, nTooltipFlag2);
+    D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x102f), nMouseX, nMouseY, nTooltipFlag, nTooltipFlag2);
 }
 
 } // namespace D2Client::UI::Party

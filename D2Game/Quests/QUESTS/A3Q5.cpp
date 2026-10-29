@@ -79,7 +79,7 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     D2QuestArgStrc* pQuestArgsSaved = pQuestArgs;
     QUEST_DebugPrint(pQuestData->pGame, "killed boss for quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x354);
     D2QuestDataA3Q4Strc* pQuestSpecificDataA3Q5 = pQuestData->pQuestSpecificData.pA3Q4;
-    if (!(pQuestData->bIsNotIntroduction && pQuestSpecificDataA3Q5->bBossKillTracking && pQuestSpecificDataA3Q5->bBirdDropEnabled)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestSpecificDataA3Q5->bBossKillTracking && pQuestSpecificDataA3Q5->bBirdDropEnabled)) {
       return;
     }
     if (pQuestArgs->pPlayer) {
@@ -110,7 +110,7 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
         return;
       }
     } else {
-      pQuestSpecificDataA3Q5->bCanDropBird = true;
+      pQuestSpecificDataA3Q5->bCanDropBird = '\x01';
     }
 
     pQuestSpecificDataA3Q5->bBossKillTracking = false;
@@ -119,7 +119,7 @@ void __fastcall Q21_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 // Q21_CheckGoldenBirdDropConditions (GOLDEN BIRD helper, Q1/internal Q21) — gate that arms the Jade Figurine drop on a boss/Council kill. Returns 1 if the bird drop should be armed: requires bIsNotIntroduction, bBirdDropEnabled, bCanDropBird, AND that the "Blade of the Old Religion" (Gidbinn) quest has NOT failed its Tainted-Sun start. On success: attaches the Golden Bird quest to the killed unit, installs Q21_Callback_08 as handler[8], clears bCanDropBird, sets bBossKillTracking, records killer GUID. No GetQuestState/SetQuestState here.
 void __fastcall Q21_CheckGoldenBirdDropConditions(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     D2QuestDataA3Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q4;
-    if (!(pQuestData->bIsNotIntroduction && pQuestSpecificData->bBirdDropEnabled && pQuestSpecificData->bCanDropBird)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestSpecificData->bBirdDropEnabled && pQuestSpecificData->bCanDropBird == '\x01')) {
       return;
     }
 
@@ -130,7 +130,7 @@ void __fastcall Q21_CheckGoldenBirdDropConditions(D2QuestDataStrc * pQuestData, 
 
     QUEST_AttachToUnitByQuestId(pQuestData->pGame, pUnit, QUESTINT_TheGoldenBird);
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q21_Callback08_MonsterKilled;
-    pQuestSpecificData->bCanDropBird = false;
+    pQuestSpecificData->bCanDropBird = '\0';
     pQuestSpecificData->bBossKillTracking = true;
     if (!pUnit) {
       pQuestSpecificData->nBirdKillerGUID = -1;
@@ -145,7 +145,7 @@ void __fastcall Q22_OnCouncilMemberKilled(D2QuestDataStrc * pQuestData, D2UnitSt
     int iVar1;
     int nKillerGUID;
     D2QuestDataA3Q5Strc* pCouncilQuestData = pQuestData->pQuestSpecificData.pA3Q5;
-    if (!pCouncilQuestData->bCouncilMemberTracking) {
+    if (pCouncilQuestData->bCouncilMemberTracking != '\x01') {
       return;
     }
     if (!pKillerUnit) {
@@ -162,14 +162,14 @@ void __fastcall Q22_OnCouncilMemberKilled(D2QuestDataStrc * pQuestData, D2UnitSt
       return;
     }
 
-    pCouncilQuestData->bCouncilMemberTracking = false;
+    pCouncilQuestData->bCouncilMemberTracking = '\0';
     pCouncilQuestData->bCouncilMemberKillNotify = true;
 }
 
 // Q22_IsGoldenBirdQuestActive — returns 1 if the Golden Bird quest data exists and its bBloodRavenKilled-aliased flag is set. Cross-quest probe used by Blackened Temple flow; pure read of in-memory quest-specific data, no quest-record state calls.
 BOOL __fastcall Q22_IsGoldenBirdQuestActive(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGoldenBird);
-    if (!(pQuestData && pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped)) {
+    if (!(pQuestData && pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped != '\0')) {
       return 0;
     }
 
@@ -183,7 +183,7 @@ void __fastcall Q22_ClearGoldenBirdQuestFlag(::SGAMEDATA * pGame) {
       return;
     }
 
-    pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped = false;
+    pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped = '\0';
 }
 
 // Q22_ActiveFilter (BLACKENED TEMPLE, real quest id 0x15=21) — fpActiveFilter: decides whether the quest log entry is "active"/should react for a given target. Returns false once the quest is Completed. Otherwise: target 0xff (special/self) is active while internal nStateFlag!=0; target 0xf5 (Ormus NPC class) is active only when quest is at Step0x04 AND Jerhyn/Ormus AI not yet active (bJerhynAiActive==0). Read-only quest-record probe.
@@ -402,7 +402,7 @@ void __fastcall Q22_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nNPCClassId, 6);
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -425,13 +425,13 @@ void __fastcall Q22_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA3Q5Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA3Q5;
-    if (!pA2Q3Data->nTrackedCouncilByte0) {
+    if (pA2Q3Data->nTrackedCouncilByte0 != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);
-    pA2Q3Data->nTrackedCouncilByte0 = false;
+    pA2Q3Data->nTrackedCouncilByte0 = '\0';
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerUpdateBlackenedTempleState);
@@ -443,7 +443,7 @@ void __fastcall Q22_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     int32_t nState;
     uint32_t nSourceLine;
     D2GSPacketSrv0x27_TextStrc* pDVar1 = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x52 && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x52 && pQuestData->bIsNotIntroduction != '\0' && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
       pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q22_Callback02_NpcDeactivate;
     }
@@ -519,7 +519,7 @@ void __fastcall Q22_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       }
 
       QUEST_SetStateFlag(pQuestData, nSetStateFlag, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", dwSrcLine);
-      pQuestData->pQuestSpecificData.pA3Q5->nTrackedCouncilByte0 = true;
+      pQuestData->pQuestSpecificData.pA3Q5->nTrackedCouncilByte0 = '\x01';
     } else {
       if (nNPCNo != 0xf5) {
         return;
@@ -583,7 +583,7 @@ void __fastcall Q22_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 
 // Q22_SequenceFilter (BLACKENED TEMPLE) — fpSequenceFilter chained to the next quest in the sequence (nSequenceQuestId = QUEST_TheGoldenBird). Only fires once this quest reaches nStateFlag 7 (fully complete) and is past intro; then looks up the sequenced quest's data and invokes its own sequence filter. No quest-record state calls.
 bool __fastcall Q22_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 7 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 7 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
@@ -621,7 +621,7 @@ void __fastcall Q22_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
                          path */ if (bQuestState == 1 || (bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheBlackenedTemple, QUESTSTATE_Step0x04) , bQuestState == 1)) {
       /* SetQuestRecordState(Blackened Temple=0x15, JustCompleted=0xd): finalize path
                          for already-Completed/Step0x04 record */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_TheBlackenedTemple, QUESTSTATE_JustCompleted);
-      pQuestData->bIsNotIntroduction = false;
+      pQuestData->bIsNotIntroduction = '\0';
       return;
     }
 
@@ -676,7 +676,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
     if (!pQuestData) {
       return;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -1030,7 +1030,7 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
           } while (nDropLoop < pDVar1->nBoxDropPlayerCount);
         }
       }
-      if (pQuestData->bIsNotIntroduction && pDVar1->nCouncilKillsRemaining > 0) {
+      if (pQuestData->bIsNotIntroduction != '\0' && pDVar1->nCouncilKillsRemaining > 0) {
         nCouncilKillsRemaining = pDVar1->nCouncilKillsRemaining - 1;
         pDVar1->nCouncilKillsRemaining = nCouncilKillsRemaining;
         if (!nCouncilKillsRemaining) {
@@ -1042,7 +1042,7 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
           pDVar1->bLastKilledCouncilByte0 = (bool)(char)iVar2;
           pDVar1->bCouncilMemberKillNotify = (bool)(char)((uint32_t)iVar2 >> 8);
-          pDVar1->bCouncilMemberTracking = (bool)(char)((uint32_t)iVar2 >> 0x10);
+          pDVar1->bCouncilMemberTracking = (char)((uint32_t)iVar2 >> 0x10);
           pDVar1->field_0x3 = (bool)(char)((uint32_t)iVar2 >> 0x18);
           pQuestData->nQuestPacketFlags = '\0';
           if (pDVar1->bJerhynAiActive) {
@@ -1107,7 +1107,7 @@ void __fastcall Q22_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->pNpcMessages = &A3Q5::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q22_Callback08_MonsterKilled;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q22_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q22_Callback11_ScrollMessage;

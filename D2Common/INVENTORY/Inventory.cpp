@@ -642,18 +642,26 @@ static BOOL __stdcall INVENTORY_PlaceItemInGrid(int32_t nnX, int32_t nnY, int32_
     if (nParam1 >= 2) {
       ITEMS::Items::ITEM_SetItemData_ePage(pUnit, (char)nParam1 - INVPAGE_MERC);
     }
-    if (nParam1) {
-      if (nParam1 != 1) {
-        *(uint8_t*)((int)ppItemDataPtr + 0xd) = 1;
-        return 1;
-      }
 
-      *(uint8_t*)((int)ppItemDataPtr + 0xd) = 2;
-      return 1;
+    switch (nParam1) {
+      case 0:
+        {
+          *(char*)((int)ppItemDataPtr + 0xd) = (nnX >= 11) + '\x03';
+          return 1;
+        }
+      case 1:
+        {
+          *(uint8_t*)((int)ppItemDataPtr + 0xd) = 2;
+          return 1;
+        }
+      default:
+        {
+          *(uint8_t*)((int)ppItemDataPtr + 0xd) = 1;
+          return 1;
+        }
     }
 
-    *(char*)((int)ppItemDataPtr + 0xd) = (nnX >= 11) + '\x03';
-    return 1;
+    return 0;
 }
 
 BOOL __stdcall PutItemInInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUnit, uint32_t dwParam) {
@@ -1968,7 +1976,7 @@ BOOL __stdcall INVENTORY_CheckBeltSlotAndGetItem(D2InventoryStrc * pInventory, D
     }
 
     D2ItemsTxt* pItemsTxtLine = DATATBLS::ItemTbls::TXT_Items_GetLine(pCurItem->nClassId);
-    if (!(pItemsTxtLine && pItemsTxtLine->bUseable && pItemsTxtLine->bBelt)) {
+    if (!(pItemsTxtLine && pItemsTxtLine->bUseable == '\x01' && pItemsTxtLine->bBelt == '\x01')) {
       return 0;
     }
 

@@ -146,7 +146,7 @@ void __fastcall Q40_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       if (pSiegeQuestData->nStateFlag) {
         return;
       }
-      if (!pSiegeQuestData->bIsNotIntroduction) {
+      if (pSiegeQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -184,7 +184,7 @@ void __fastcall Q40_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q40_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q40_Callback11_ScrollMessage;
     pQuestData->pNpcMessages = &Quest40::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->pQuestSpecificData.pA1Q1 = 0;
@@ -214,21 +214,26 @@ void __fastcall Objects_InitFn66(D2ObjectInitFnArg * pInitArg) {
       pQuestSpecificA1Q4->bObjectPresetLoaded = 1;
       pQuestSpecificA1Q4->field_0xE8 = pInitArg->nX;
       pQuestSpecificA1Q4->field_0xEC = pInitArg->nY;
-      if (pQuestSpecificA1Q4->nAnyaState == 2) {
-        A5Q3::Q33_SequenceFilter(pQuestData);
-        if (!pQuestSpecificA1Q4->bFrozenAnyaSpawned) {
-          pSpawnedUnit = QUEST_SpawnMonsterNearCoords(pInitArg->pGame, pInitArg->nX, pInitArg->nY, pInitArg->pRoom, 1, 0x200);
-          if (pSpawnedUnit) {
-            pQuestSpecificA1Q4->nFrozenAnyaGUID = pSpawnedUnit->nUnitGUID;
-            pQuestSpecificA1Q4->bFrozenAnyaSpawned = 1;
-            ppDrlgMapAi = Ai::AiGeneral::GetMonsterMapAi(pSpawnedUnit);
-            pDrlgFile = (D2DrlgFileStrc*)pQuestSpecificA1Q4->pDrlgMap;
-            if (pDrlgFile && pDrlgFile->pDS1File && !pQuestSpecificA1Q4->bDrlgMapTaken) {
-              D2Common::Drlg::Preset::DRLGPRESET_TransferMapAI(&pQuestSpecificA1Q4->pDrlgMap, ppDrlgMapAi);
-              pQuestSpecificA1Q4->bDrlgMapTaken = 1;
+      switch (pQuestSpecificA1Q4->nAnyaState) {
+        case 2:
+          {
+            A5Q3::Q33_SequenceFilter(pQuestData);
+            if (!pQuestSpecificA1Q4->bFrozenAnyaSpawned) {
+              pSpawnedUnit = QUEST_SpawnMonsterNearCoords(pInitArg->pGame, pInitArg->nX, pInitArg->nY, pInitArg->pRoom, 1, 0x200);
+              if (pSpawnedUnit) {
+                pQuestSpecificA1Q4->nFrozenAnyaGUID = pSpawnedUnit->nUnitGUID;
+                pQuestSpecificA1Q4->bFrozenAnyaSpawned = 1;
+                ppDrlgMapAi = Ai::AiGeneral::GetMonsterMapAi(pSpawnedUnit);
+                pDrlgFile = (D2DrlgFileStrc*)pQuestSpecificA1Q4->pDrlgMap;
+                if (pDrlgFile && pDrlgFile->pDS1File && !pQuestSpecificA1Q4->bDrlgMapTaken) {
+                  D2Common::Drlg::Preset::DRLGPRESET_TransferMapAI(&pQuestSpecificA1Q4->pDrlgMap, ppDrlgMapAi);
+                  pQuestSpecificA1Q4->bDrlgMapTaken = 1;
+                }
+              }
             }
+
+            break;
           }
-        }
       }
     }
 

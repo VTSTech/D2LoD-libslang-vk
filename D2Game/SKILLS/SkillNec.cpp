@@ -315,13 +315,10 @@ void __fastcall SKILLNEC_OnCurseExpire(D2UnitStrc * pUnit, eD2States eState, int
 
     int32_t bReattach = 1;
     eD2States pStateAsUnit = eState;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(pGame, pUnit, bReattach, pStateAsUnit);
+    UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(UNIT::SUnit::GetGamePointer(pUnit), pUnit, bReattach, pStateAsUnit);
     if (pUnit->eUnitType == UNIT_MONSTER) {
       D2AiGeneralStrc* pMonsterAiGeneral = !pUnit->pUnitData.pUnitDataMonster ? 0 : pUnit->pUnitData.pUnitDataMonster->pAiGeneral;
-      bReattach = 0;
-      pGame = UNIT::SUnit::GetGamePointer(pUnit);
-      Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, pMonsterAiGeneral, bReattach);
+      Monster::AI::AttachCorrectAiFunctionToMonster(UNIT::SUnit::GetGamePointer(pUnit), pUnit, pMonsterAiGeneral, 0);
     }
 
     SkillsServer::DefaultExpireFunction(pUnit, eState, dwParam);
@@ -1076,13 +1073,17 @@ static void __stdcall SKILLNEC_SpawnSkeletonsForRevive(int * pnParam, D2UnitStrc
 
 void __fastcall SKILLNEC_DispatchSummonMastery(D2UnitStrc * pUnit, int * pnParam, int32_t nSkillLevel, int32_t nSkillLvl2) {
     int nSummonSkillId = !pnParam ? -1 : pnParam[1];
-    if (nSummonSkillId != 0x16b) {
-      if (nSummonSkillId == 0x16c) {
-        SKILLNEC_SpawnSkeletonsForRevive(pnParam, pUnit);
-        return;
-      }
-    } else {
-      SKILLNEC_RollSkeletonMastery(pUnit, pnParam, nSkillLvl2, nSkillLevel);
+    switch (nSummonSkillId) {
+      case 0x16b:
+        {
+          SKILLNEC_RollSkeletonMastery(pUnit, pnParam, nSkillLvl2, nSkillLevel);
+          break;
+        }
+      case 0x16c:
+        {
+          SKILLNEC_SpawnSkeletonsForRevive(pnParam, pUnit);
+          return;
+        }
     }
 }
 
@@ -1412,8 +1413,7 @@ BOOL __fastcall Skills_SrvDoFunc_031_RaiseSkeletonFromCorpse(::SGAMEDATA * pGame
     sPet.pSkillTxt = (D2SkillsTxt*)D2Client::Units::GetYPosFromDynamicPathUnit(pCorpse);
     eD2UnitType eUnitType = pCorpse->eUnitType;
     int nUnitGUID = pCorpse->nUnitGUID;
-    D2RoomStrc* pCorpseRoom = D2Common::Units::UNITS_GetRoom(pCorpse);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pCorpseRoom, eUnitType, nUnitGUID);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pCorpse), eUnitType, nUnitGUID);
     UNIT::SUnit::FreeServerUnit(pGame, pCorpse);
     sPet.nSkillCalc = 0;
     sPet.nFunctionId = 0;
@@ -1668,7 +1668,6 @@ BOOL __fastcall Skills_SrvDoFunc_056_SummonGolem(::SGAMEDATA * pGame, D2UnitStrc
 BOOL __fastcall Skills_SrvDoFunc_057_IronGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2SkillsTxt* pSkillsTxt;
     D2MonsterCastPetStrc sPetCastParams;
-    eD2UnitType eUnitType;
     int nUnitGUID;
     ::SGAMEDATA* pGameSaved = pGame;
     BOOL bIsGroundItem = Skills_SrvStFunc_20_IsGroundItemForIronGolem(pGame, pUnit, eSkill, nSkillLvl);
@@ -1723,11 +1722,10 @@ BOOL __fastcall Skills_SrvDoFunc_057_IronGolem(::SGAMEDATA * pGame, D2UnitStrc *
 
     pGamePostCreate = pGameSaved;
     if (pTargetItem) {
-      D2RoomStrc* pRoom;
+      eD2UnitType eUnitType;
       nUnitGUID = pTargetItem->nUnitGUID;
       eUnitType = pTargetItem->eUnitType;
-      pRoom = D2Common::Units::UNITS_GetRoom(pTargetItem);
-      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nUnitGUID);
+      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pTargetItem), eUnitType, nUnitGUID);
       D2Common::Units::RemoveCollision_Vector(pTargetItem);
       D2Common::Unit::RemoveUnitFromRoom(pTargetItem);
       D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(pTargetItem, (eD2BodyLoc*)&sPetCastParams.nPetType, &byBodyLoc2Out);
@@ -1768,10 +1766,7 @@ void __stdcall SKILLNEC_ReviveCorpse(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       nX = 0;
     }
 
-    int32_t eCollisionFlag = 0x8000;
-    eD2CollisionShapeType nUnitWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::RemoveCollision_Type(pRoom, nX, nPosY, nUnitWidth, eCollisionFlag);
+    D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nX, nPosY, D2Common::PATH::DynamicPath::GetUnitWidth(pUnit), 0x8000);
     eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       ptRevivePos.x = pUnit->pPath.pStaticPath->nPosX;
@@ -1794,7 +1789,7 @@ void __stdcall SKILLNEC_ReviveCorpse(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     nX = 0x3c01;
     nPosY = D2Common::Units::GetUnitSizeX(pUnit);
     POINT* pPtRevivePos = &ptRevivePos;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, pPtRevivePos, nPosY, nX, bAllowNeighborRooms);
     if (!pRoom) {
       return;
@@ -1911,8 +1906,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
     }
 
     uint32_t nTargetY = nCursorYRaw;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2RoomStrc* pTargetRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetX, nTargetY);
+    D2RoomStrc* pTargetRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nTargetX, nTargetY);
     if (!pTargetRoom) {
       return 0;
     }
@@ -2349,6 +2343,7 @@ BOOL __fastcall ITEMEVENT_AuraThornsWithLifeSteal(::SGAMEDATA * pGame, uint32_t 
 
 // Item-event callback for aura-based healing (e.g. Necromancer Life Tap). Given a target unit, looks up the aura's target state on pUnit to find the caster's stat list, computes heal amount via the skill's calc[0] expression scaled by a percentage from pParam, clamps result to [1, maxHP], and writes it back via STATLIST_SetUnitStat UNITSTAT_hitpoints. Also plays the skill's prgoverlay effect on the target. Returns TRUE if heal was applied.
 BOOL __fastcall ITEMEVENT_AuraHealTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pSkillLvlCast, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+    eD2UnitType eUnitType;
     int nHpMin;
     D2UnitStrc* pTargetUnit = pSkillLvlCast;
     if (!(pUnit && pSkillLvlCast && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER) && (pSkillLvlCast->eUnitType == UNIT_PLAYER || pSkillLvlCast->eUnitType == UNIT_MONSTER))) {
@@ -2385,8 +2380,7 @@ BOOL __fastcall ITEMEVENT_AuraHealTarget(::SGAMEDATA * pGame, uint32_t nUnitEven
     }
 
     uint32_t nOwnerGUID = D2Common::Stats::StatsEx::GetOwnerGUID(pStatList);
-    eD2UnitType eUnitType = D2Common::Stats::StatsEx::GetOwnerType(pStatList);
-    D2UnitStrc* pAuraCaster = UNIT::SUnit::FindUnitFromTable(pGame, eUnitType, nOwnerGUID);
+    D2UnitStrc* pAuraCaster = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Stats::StatsEx::GetOwnerType(pStatList), nOwnerGUID);
     int32_t nHealCalc = D2Common::Skills::D2GetSkillCalc(pAuraCaster, pSkillTxt->calc[0], eSkill, nSkillLvlCast);
     nHealCalc = D2Client::Stats::D2ApplyPercent(pDamage->dwPhysDamage, nHealCalc, 100);
     int nCurHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTargetUnit, UNITSTAT_hitpoints, 0);

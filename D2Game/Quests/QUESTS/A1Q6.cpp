@@ -64,7 +64,7 @@ namespace D2Game::Quests::QUESTS::A1Q6 {
 void __fastcall Objects_InitFn04(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_ForgottenTower);
     if (pQuestData) {
-      if (pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
         return;
       }
 
@@ -144,13 +144,13 @@ void __fastcall Q06_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA1Q6Strc* pA1Q6Data = pQuestData->pQuestSpecificData.pA1Q6;
-    if (!pA1Q6Data->bQuestAccepted) {
+    if (pA1Q6Data->bQuestAccepted != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q06_NotifyQuestStateToPlayer, true);
-    pA1Q6Data->bQuestAccepted = false;
+    pA1Q6Data->bQuestAccepted = '\0';
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
 }
 
@@ -212,7 +212,7 @@ void __fastcall Q06_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     if (nNPCClassId == 0x109) {
       if (nMessageIndex == 0xa6) {
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0xc0);
-        pQuestGUID->bQuestAccepted = true;
+        pQuestGUID->bQuestAccepted = '\x01';
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q06_SyncQuestStepToPlayer);
         QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
         return;
@@ -351,7 +351,7 @@ void __fastcall Q06_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     ::SGAMEDATA* pPlayerData;
     int nAreaIndex;
     nAreaIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (nAreaIndex - 0x22U > 3 || !pQuestData->bIsNotIntroduction) {
+    if (nAreaIndex - 0x22U > 3 || pQuestData->bIsNotIntroduction == '\0') {
       D2BitBufferStrc* pBitBuffer;
       if (pQuestData->nStateFlag == 4 && nAreaIndex == 0x28) {
         QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0x187);
@@ -439,8 +439,7 @@ static void __stdcall Q06_SetQuestCompletedAndReward(::SGAMEDATA * pQuestControl
     /* SetQuestState(RewardAwaits): flag reward pending so Warriv offers Act2
                          travel; SetClientStatus then unlocks act progress */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersToTheSlaughter, QUESTSTATE_RewardAwaits);
     uint32_t nDifficulty = (uint32_t)pQuestControl->nDifficulty;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0x1c3);
-    GAME::Clients::SetClientStatus(pClient, 1, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0x1c3), 1, nDifficulty);
 }
 
 // A1Q6 per-player callback: if player record not Completed/FinishedInPreviousGame and player is in Catacombs Level 4, register them on all three NPC GUID lists (Cain/Akara/Kashya) and call Q06_SetQuestCompletedAndReward. Credits players present in the boss room when Andariel dies.
@@ -579,14 +578,12 @@ BOOL __fastcall Q06_SpawnReturnPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A1Q6 post-Andariel-death quest timer. Increments nDeathEventCounter each tick: at 10, spawns return portals for all players in L4 (Q06_SpawnReturnPortal); at 12, if stateFlag not already 3/0xd, broadcasts state 3 (final) via QUEST_SetStateAndBroadcast(Q06_NotifyQuestStateToPlayer) and ends the timer. Drives the celebratory portal + completion broadcast.
 uint8_t __fastcall Q06_TimerSpawnPortalAndNotify(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData) {
-    ::fpExecuteOnUnitFunction pfnCallback;
     D2QuestDataA1Q6Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q6;
     pDVar1->nDeathEventCounter++;
     if (pDVar1->nDeathEventCounter == 10) {
-      D2UnitStrc* pCallbackArg;
+      ::fpExecuteOnUnitFunction pfnCallback;
       pfnCallback = Q06_SpawnReturnPortal;
-      pCallbackArg = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pDVar1->nAndarielGUID);
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, pCallbackArg, pfnCallback);
+      UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pDVar1->nAndarielGUID), pfnCallback);
     } else if (pDVar1->nDeathEventCounter == 0xc) {
       if (!(pQuestData->nStateFlagPrev != 3 && pQuestData->nStateFlagPrev != 0xd)) {
         return '\x01';
@@ -627,10 +624,10 @@ void __fastcall Q06_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     ::SGAMEDATA* pGame;
     ::SGAMEDATA* pGame2;
     D2SeedStrc sNextSeed;
-    bool bIsIntroduced = pQuestData->bIsNotIntroduction;
+    uint8_t bIsIntroduced = pQuestData->bIsNotIntroduction;
     D2QuestDataA1Q6Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q6;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
-    if (bIsIntroduced) {
+    if (bIsIntroduced != '\0') {
       D2UnitDataPlayerStrc* pKillerPlayerData;
       if (pQuestArgs->pPlayer) {
         pGame = pQuestData->pGame;
@@ -677,7 +674,7 @@ void __fastcall Q06_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
     pQuestSpecific->nAndarielGUID = nAndarielGUID;
     pQuestSpecific->nDeathEventCounter = 1;
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       AddQuestTimer(pQuestData, Q06_TimerSpawnPortalAndNotify, 1);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q06_PlayCompletionSound);
     }
@@ -732,7 +729,7 @@ bool __fastcall Q06_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
 // A1Q6 small accessor: returns a quest-specific flag byte ([pQuestSpecific+0x194]) when the quest's active byte (+9) is set, else returns 1 (default). No quest-record state access.
 uint32_t __fastcall Q06_GetQuestSpecificFlag(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       return (uint32_t)pQuestData->pQuestSpecificData.pA1Q6->bAndarielKilled;
     }
 
@@ -741,7 +738,7 @@ uint32_t __fastcall Q06_GetQuestSpecificFlag(D2QuestDataStrc * pQuestData) {
 
 // A1Q6 fpSequenceFilter: if stateFlag==0 and quest is live (bIsNotIntroduction), schedules Q06_QuestUpdate on a 0x14-tick timer to introduce the quest. No quest-record access.
 bool __fastcall Q06_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
+    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01')) {
       return true;
     }
 
@@ -801,7 +798,7 @@ void __fastcall Q06_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpSequenceFilter = Q06_SequenceFilter;
     pQuestData->nQuestIdReal = QUEST_SistersToTheSlaughter;
     pQuestData->pNpcMessages = &A1Q6::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlagPrev = 0;
     pQuestData->nStateFlag = 0;
     D2QuestDataA1Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA1Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q6.cpp", 0x345);
@@ -814,7 +811,7 @@ void __fastcall Q06_InitData(D2QuestDataStrc * pQuestData) {
     pQuestSpecificData->nPortalTimer = 0;
     pQuestSpecificData->nDeathEventCounter = 0;
     pQuestSpecificData->bAndarielKilled = false;
-    pQuestSpecificData->bQuestAccepted = false;
+    pQuestSpecificData->bQuestAccepted = '\0';
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUIDCain);
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUIDAkara);
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUIDKashya);

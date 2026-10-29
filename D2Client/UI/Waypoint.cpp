@@ -90,7 +90,7 @@ static int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMous
     while ((pHitTestData = (uint32_t*)(piVar1 + 6) , gaWaypointListEntries[nIndex].bActivated == '\0' || nMouseX <= (int)pHitTestData[-1]) || nMouseX >= (int)(pHitTestData[-1] + 0x118) || nMouseY <= (int)*pHitTestData || nMouseY >= (int)(*pHitTestData + 0x1e)) {
       nIndex++;
       piVar1 = (int*)pHitTestData;
-      if ((int)&gaWaypointListEntries[nIndex].bActivated >= (uintptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4)) {
+      if ((int)&gaWaypointListEntries[nIndex].bActivated >= (intptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4)) {
         return -1;
       }
     }
@@ -326,7 +326,7 @@ void __stdcall WAYPOINT_PopulateList() {
       *pPageEntry = '\0';
       nActIdx = WaypointCurrentSelectedAct;
       pPageEntry += 5;
-    } while ((int)pPageEntry < (uintptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4));
+    } while ((int)pPageEntry < (intptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4));
 
     if (WaypointCurrentSelectedAct > 5) {
       D2Client::Waypoint::bNeedAllocation = false;
@@ -401,11 +401,9 @@ void __stdcall DRAW_UI_Waypoint() {
     D2UnitStrc* pPlayerUnit_lcl;
     D2RoomStrc* pDrlgRoom;
     D2BitBufferStrc* pQuestInfo;
-    D2BitBufferStrc* pBitBuffer;
     int nWaypointIndex;
     D2RoomStrc* pRoom;
     eD2LevelId eCurrentLevel;
-    uint16_t* wMessage;
     uint16_t* pwszText;
     int32_t nTextWidth;
     int nY;
@@ -498,8 +496,7 @@ void __stdcall DRAW_UI_Waypoint() {
             case 4:
               eVar2 = QUESTSTATE_Completed;
             eVar1 = QUEST_TerrorsEnd;
-            pBitBuffer = npcmenu::GetQuestInfo();
-            nWaypointIndex = D2Common::QuestRecord::GetQuestState(pBitBuffer, eVar1, eVar2);
+            nWaypointIndex = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eVar1, eVar2);
             _bIsExpansionCheck = Fog::D2CheckExpansionGame();
             if (_bIsExpansionCheck) {
               _bIsExpansionCheck = GAME::Game::CLIENT_CheckExpansion();
@@ -566,8 +563,7 @@ void __stdcall DRAW_UI_Waypoint() {
         nY = pDrawOffsets[3] - gnPanelOffsetY;
         _bIsExpansionCheck = 0;
         nTextX = pDrawOffsets[2] + gnPanelOffsetX;
-        wMessage = ui::CLIENT_GetLevelNameByLevelId(gaWaypointListEntries[nWaypointIndex].eLevelId);
-        D2Win::Src::D2WinFont::DRAW_text(wMessage, nTextX, nY, dwColor, _bIsExpansionCheck);
+        D2Win::Src::D2WinFont::DRAW_text(ui::CLIENT_GetLevelNameByLevelId(gaWaypointListEntries[nWaypointIndex].eLevelId), nTextX, nY, dwColor, _bIsExpansionCheck);
         ActsInGame++;
         nWaypointIndex++;
         pDrawOffsets += 6;

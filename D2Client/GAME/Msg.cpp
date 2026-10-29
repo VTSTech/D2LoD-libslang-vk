@@ -67,7 +67,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x67(char * szGameName) {
 
     uint32_t bIsArena = CLIENT_IsArenaMode();
     if (bIsArena) {
-      packet.nCharClass = CLIENT_GetDefaultCharClass();
+      eD2PlayerClassIDDWORD eVar1;
+      eVar1 = CLIENT_GetDefaultCharClass();
+      packet.nCharClass = (uint8_t)eVar1;
     } else {
       packet.nCharClass = nD2PlayerClassID;
     }
@@ -212,7 +214,9 @@ void __fastcall NET_D2GS_CLIENT_Send_0x68(int16_t nGameToken, int32_t nGameHash)
     packet.nLanguageCode = (uint8_t)nLangOrArena;
     nLangOrArena = CLIENT_IsArenaMode();
     if (nLangOrArena) {
-      packet.nCharClass = CLIENT_GetDefaultCharClass();
+      eD2PlayerClassIDDWORD eVar1;
+      eVar1 = CLIENT_GetDefaultCharClass();
+      packet.nCharClass = (uint8_t)eVar1;
     } else {
       packet.nCharClass = nD2PlayerClassID;
     }
@@ -613,10 +617,10 @@ void __fastcall NET_D2GS_CLIENT_Send_0x5D(int nActionType, uint32_t nPlayerGUID,
     NET_D2GS_CLIENT_Send(&local_c.nId, 7);
 }
 
-void __fastcall NET_D2GS_CLIENT_Send_0x5E(uint8_t nActionType, int32_t nPlayerGUID) {
+void __fastcall NET_D2GS_CLIENT_Send_0x5E(int nActionType, int32_t nPlayerGUID) {
     D2GSPacketClt0x5E local_c;
     local_c.nId = 0x5e;
-    local_c.nActionType = nActionType;
+    local_c.nActionType = (uint8_t)nActionType;
     local_c.nPlayerGUID = nPlayerGUID;
     NET_D2GS_CLIENT_Send(&local_c.nId, 6);
 }

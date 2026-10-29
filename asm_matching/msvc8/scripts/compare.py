@@ -27,6 +27,7 @@ Status classes (shared with the sibling projects' audit TSVs):
   OUR+N / OUR-N     we have N more / fewer instructions
 """
 import difflib
+import re
 import struct
 
 import capstone
@@ -154,6 +155,29 @@ def our_view(f, sym_to_start):
     return out
 
 
+# ws2_32 exports its classic Winsock API by ordinal, and Game.exe imports it so.
+WS2_32_ORDINALS = {
+    1: 'accept', 2: 'bind', 3: 'closesocket', 4: 'connect', 5: 'getpeername', 6: 'getsockname',
+    7: 'getsockopt', 8: 'htonl', 9: 'htons', 10: 'ioctlsocket', 11: 'inet_addr', 12: 'inet_ntoa',
+    13: 'listen', 14: 'ntohl', 15: 'ntohs', 16: 'recv', 17: 'recvfrom', 18: 'select', 19: 'send',
+    20: 'sendto', 21: 'setsockopt', 22: 'shutdown', 23: 'socket', 51: 'gethostbyaddr',
+    52: 'gethostbyname', 53: 'getprotobyname', 54: 'getprotobynumber', 55: 'getservbyname',
+    56: 'getservbyport', 57: 'gethostname', 111: 'WSAGetLastError', 112: 'WSASetLastError',
+    115: 'WSAStartup', 116: 'WSACleanup', 151: '__WSAFDIsSet',
+}
+
+
+def import_name(tgt):
+    """'dll!name' as our objects name the same import (objfuncs._IMP): a C name
+    without its leading underscore and stdcall decoration (binkw32 and smackw32
+    export `_SmackClose@4`), and a ws2_32 ordinal as the function it is."""
+    dll, name = tgt.split('!', 1)
+    if name.startswith('#') and dll.lower() == 'ws2_32.dll':
+        return WS2_32_ORDINALS.get(int(name[1:]), name)
+    m = re.match(r'^_([A-Za-z_]\w*)@\d+$', name)
+    return m.group(1) if m else name
+
+
 def ref_view(start, model_entry):
     """model_entry: (decoded function, refs) from refimage.Reference.model()."""
     dec, refs = model_entry
@@ -164,7 +188,7 @@ def ref_view(start, model_entry):
         elif kind == 'string':
             tok = ('str', tgt)
         elif kind == 'import':
-            tok = ('import', tgt.split('!', 1)[1])
+            tok = ('import', import_name(tgt))
         elif kind == 'self':
             tok = ('self', tgt)
         else:
@@ -225,7 +249,7 @@ def ref_view_span(start, end, model):
             elif kind == 'string':
                 tok = ('str', tgt)
             elif kind == 'import':
-                tok = ('import', tgt.split('!', 1)[1])
+                tok = ('import', import_name(tgt))
             else:
                 tok = ('self', tgt - start) if isinstance(tgt, int) and start <= tgt < end else ('data', tgt)
             per_insn.setdefault(a, []).append((off, size, tok, kind == 'call'))

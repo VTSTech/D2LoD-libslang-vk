@@ -481,6 +481,7 @@ static BOOL SPRITECACHE_FindOrLoad(char * szText, D2GfxDataStrc * pGfxData) {
 }
 
 static BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxData, LPSTR szText2) {
+    uint8_t bVar1;
     int iVar2;
     int32_t nStrCmpResult;
     char* szBasePath;
@@ -496,148 +497,164 @@ static BOOL __stdcall SPRITECACHE_LoadDC6(char * szText, D2GfxDataStrc * pGfxDat
 
     eD2UnitType nSpriteType;
     nSpriteType = pGfxData->eUnitType;
-    if (nSpriteType != UNIT_MISSILE) {
-      uint8_t bVar1;
-      if (nSpriteType == UNIT_ITEM) {
-        if (!pGfxData->szFilename) {
-          *szText2 = '\0';
-          return 0;
-        }
-        if (pGfxData->nMode == 4) {
-          szBasePath = "DATA\\GLOBAL";
-          szFormat = "%s\\items\\%s.dc6";
-        } else {
-          if (pGfxData->nMode != 3) {
+    switch (nSpriteType) {
+      case UNIT_MISSILE:
+        {
+          szText = pGfxData->szFilename;
+          if (!szText) {
             *szText2 = '\0';
             return 0;
           }
 
-          szBasePath = "DATA\\GLOBAL";
-          szFormat = "%s\\items\\%s.dc6";
-        }
-
-        /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, szFormat, szBasePath, szText);
-        return 1;
-      }
-      if (nSpriteType != UNIT_COUNT) {
-        if (bUseCompressedData) {
-          nStrCmpResult = Storm::Source::SSTR::SStrCmpI(szText, "OYTRlitTNhth", 0x7fffffff);
-          if (!nStrCmpResult) {
-            bUseCompressed = 0;
-            pGfxData->dwRenderFlags &= -2;
+          szBasePath = "DATA\\GLOBAL\\MISSILES";
+          build_flat_path:
+          if (bUseCompressedData) {
+            /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s.dcc", szBasePath, szText);
+            pGfxData->dwRenderFlags |= 1;
+            return 1;
           }
+          break;
         }
-
-        nSpriteType = pGfxData->eUnitType;
-        if (nSpriteType == UNIT_PLAYER) {
-          szBasePath = "DATA\\GLOBAL\\CHARS";
-          goto build_token_path;
-        }
-        if (nSpriteType != UNIT_MONSTER) {
-          if (nSpriteType != UNIT_OBJECT) {
+      case UNIT_ITEM:
+        {
+          if (!pGfxData->szFilename) {
             *szText2 = '\0';
             return 0;
           }
-          if (pGfxData->nClassId == 0x156 || pGfxData->nClassId == 0x233) {
-            bUseCompressed = 0;
-          }
-
-          szBasePath = "DATA\\GLOBAL\\OBJECTS";
-          goto build_token_path;
-        }
-
-        iVar2 = pGfxData->nClassId;
-        szBasePath = "DATA\\GLOBAL\\MONSTERS";
-        if (iVar2 <= 0x209) {
-          if (iVar2 != 0x209) {
-            switch (iVar2) {
-              case 0xf2:
-
-              case 0xfb:
-
-              case 0x16f:
-                break;
-              case 0xf3:
-
-              case 0x11c:
-
-              case 0x14d:
-                goto case_0x220;
-              default:
-                goto build_token_path;
+          if (pGfxData->nMode == 4) {
+            szBasePath = "DATA\\GLOBAL";
+            szFormat = "%s\\items\\%s.dc6";
+          } else {
+            if (pGfxData->nMode != 3) {
+              *szText2 = '\0';
+              return 0;
             }
+
+            szBasePath = "DATA\\GLOBAL";
+            szFormat = "%s\\items\\%s.dc6";
           }
-        } else {
-          switch (iVar2) {
-            case 0x220:
 
-            case 0x22f:
-
-            case 0x23a:
-
-            case 0x2c1:
-
-            case 0x2c5:
-              case_0x220:
-              if (pGfxData->nMode) {
-                goto build_token_path;
-              }
-            break;
-            default:
-              goto build_token_path;
-            case 0x2c0:
-              break;
-          }
-        }
-
-        bUseCompressed = 0;
-        build_token_path:
-        bVar1 = (uint8_t)pGfxData->nUnitToken;
-        szToken0[3] = '\0';
-        szToken1[3] = '\0';
-        szToken0[0] = bVar1 == 0x20 ? 0 : bVar1;
-        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
-        szToken0[1] = bVar1 == 0x20 ? 0 : bVar1;
-        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
-        szToken0[2] = bVar1 == 0x20 ? 0 : bVar1;
-        bVar1 = (uint8_t)pGfxData->nCompositToken;
-        szToken1[0] = bVar1 == 0x20 ? 0 : bVar1;
-        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
-        szToken1[1] = bVar1 == 0x20 ? 0 : bVar1;
-        bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
-        szToken1[2] = bVar1 == 0x20 ? 0 : bVar1;
-        if (bUseCompressed) {
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, szToken0, szToken1, szText);
-          pGfxData->dwRenderFlags |= 1;
+          /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, szFormat, szBasePath, szText);
           return 1;
         }
+      default:
+        {
+          if (bUseCompressedData) {
+            nStrCmpResult = Storm::Source::SSTR::SStrCmpI(szText, "OYTRlitTNhth", 0x7fffffff);
+            if (!nStrCmpResult) {
+              bUseCompressed = 0;
+              pGfxData->dwRenderFlags &= -2;
+            }
+          }
 
-        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, szToken0, szToken1, szText);
-        return 1;
-      }
-      if (!(pGfxData->dwFlags & 2)) {
-        *szText2 = '\0';
-        return 0;
-      }
+          nSpriteType = pGfxData->eUnitType;
+          switch (nSpriteType) {
+            case UNIT_PLAYER:
+              {
+                szBasePath = "DATA\\GLOBAL\\CHARS";
+                goto build_token_path;
+              }
+            default:
+              {
+                *szText2 = '\0';
+                return 0;
+              }
+            case UNIT_OBJECT:
+              {
+                if (pGfxData->nClassId == 0x156 || pGfxData->nClassId == 0x233) {
+                  bUseCompressed = 0;
+                }
 
-      szBasePath = "DATA\\GLOBAL\\OVERLAYS";
-      if (pGfxData->nOverlayId != 0x7a) {
-        goto build_flat_path;
-      }
-    } else {
-      szText = pGfxData->szFilename;
-      if (!szText) {
-        *szText2 = '\0';
-        return 0;
-      }
+                szBasePath = "DATA\\GLOBAL\\OBJECTS";
+                goto build_token_path;
+              }
+            case UNIT_MONSTER:
+              {
+                iVar2 = pGfxData->nClassId;
+                szBasePath = "DATA\\GLOBAL\\MONSTERS";
+                if (iVar2 <= 0x209) {
+                  if (iVar2 != 0x209) {
+                    switch (iVar2) {
+                      case 0xf2:
 
-      szBasePath = "DATA\\GLOBAL\\MISSILES";
-      build_flat_path:
-      if (bUseCompressedData) {
-        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s.dcc", szBasePath, szText);
-        pGfxData->dwRenderFlags |= 1;
-        return 1;
-      }
+                      case 0xfb:
+
+                      case 0x16f:
+                        break;
+                      case 0xf3:
+
+                      case 0x11c:
+
+                      case 0x14d:
+                        goto case_0x220;
+                      default:
+                        goto build_token_path;
+                    }
+                  }
+                } else {
+                  switch (iVar2) {
+                    case 0x220:
+
+                    case 0x22f:
+
+                    case 0x23a:
+
+                    case 0x2c1:
+
+                    case 0x2c5:
+                      case_0x220:
+                      if (pGfxData->nMode) {
+                        goto build_token_path;
+                      }
+                    break;
+                    default:
+                      goto build_token_path;
+                    case 0x2c0:
+                      break;
+                  }
+                }
+
+                bUseCompressed = 0;
+                build_token_path:
+                bVar1 = (uint8_t)pGfxData->nUnitToken;
+                szToken0[3] = '\0';
+                szToken1[3] = '\0';
+                szToken0[0] = bVar1 == 0x20 ? 0 : bVar1;
+                bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 1);
+                szToken0[1] = bVar1 == 0x20 ? 0 : bVar1;
+                bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nUnitToken + 2);
+                szToken0[2] = bVar1 == 0x20 ? 0 : bVar1;
+                bVar1 = (uint8_t)pGfxData->nCompositToken;
+                szToken1[0] = bVar1 == 0x20 ? 0 : bVar1;
+                bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 1);
+                szToken1[1] = bVar1 == 0x20 ? 0 : bVar1;
+                bVar1 = *(uint8_t*)((uintptr_t)&pGfxData->nCompositToken + 2);
+                szToken1[2] = bVar1 == 0x20 ? 0 : bVar1;
+                if (bUseCompressed) {
+                  /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dcc", szBasePath, szToken0, szToken1, szText);
+                  pGfxData->dwRenderFlags |= 1;
+                  return 1;
+                }
+
+                /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szText2, "%s\\%s\\%s\\%s.dc6", szBasePath, szToken0, szToken1, szText);
+                return 1;
+              }
+          }
+        }
+      case UNIT_COUNT:
+        {
+          if (!(pGfxData->dwFlags & 2)) {
+            *szText2 = '\0';
+            return 0;
+          }
+
+          szBasePath = "DATA\\GLOBAL\\OVERLAYS";
+          if (pGfxData->nOverlayId != 0x7a) {
+            goto build_flat_path;
+          }
+
+          break;
+        }
     }
 
     szFormat = "%s\\%s.dc6";

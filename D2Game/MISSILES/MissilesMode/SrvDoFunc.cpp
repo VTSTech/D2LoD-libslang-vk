@@ -42,6 +42,7 @@ int32_t __fastcall fpMissileSrvDoFuncData_MonsterOnly(D2UnitStrc * pUnit, D2Miss
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
+    int32_t nUnitAlignment;
     BOOL bHitResult;
     if (!(pCtx && pCtx->pMissileTxt)) {
       return 0;
@@ -51,21 +52,26 @@ int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType == UNIT_PLAYER) {
-      bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-      return (uint32_t)(bHitResult != 0);
-    }
-    if (eUnitType != UNIT_MONSTER) {
-      return 0;
+
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+          return (uint32_t)(bHitResult != 0);
+        }
+      case UNIT_MONSTER:
+        {
+          nUnitAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
+          if (nUnitAlignment == 2) {
+            bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+            return (uint32_t)(bHitResult != 0);
+          }
+
+          break;
+        }
     }
 
-    int32_t nUnitAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
-    if (nUnitAlignment != 2) {
-      return 0;
-    }
-
-    bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-    return (uint32_t)(bHitResult != 0);
+    return 0;
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {

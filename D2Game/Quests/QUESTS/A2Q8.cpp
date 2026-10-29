@@ -64,12 +64,12 @@ void __fastcall Q16_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     D2QuestDataStrc* pPlayerData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSevenTombs);
-    if (!(pPlayerData && pPlayerData->bIsNotIntroduction && pPlayerData->nStateFlag < 2)) {
+    if (!(pPlayerData && pPlayerData->bIsNotIntroduction != '\0' && pPlayerData->nStateFlag < 2)) {
       return;
     }
 
     pPlayerData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheTaintedSun);
-    if (!(!pPlayerData || !pPlayerData->bIsNotIntroduction || pPlayerData->nStateFlag >= 4)) {
+    if (!(!pPlayerData || pPlayerData->bIsNotIntroduction == '\0' || pPlayerData->nStateFlag >= 4)) {
       return;
     }
 
@@ -101,7 +101,7 @@ bool __fastcall Q16_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer_00 = pPlayerData->pQuestRecord[pGame->nDifficulty];
     D2QuestDataStrc* pSevenTombsQuest = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSevenTombs);
-    if (!(pSevenTombsQuest && pSevenTombsQuest->bIsNotIntroduction && pSevenTombsQuest->nStateFlag < 2)) {
+    if (!(pSevenTombsQuest && pSevenTombsQuest->bIsNotIntroduction != '\0' && pSevenTombsQuest->nStateFlag < 2)) {
       return false;
     }
 
@@ -131,7 +131,7 @@ void __fastcall Q16_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q16_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q16_Callback00_NpcActivate;
     pQuestData->pNpcMessages = &A2Q8::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     D2QuestDataA2Q8Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q8Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q8.cpp", 0x96);

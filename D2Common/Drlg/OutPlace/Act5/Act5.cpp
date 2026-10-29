@@ -328,7 +328,7 @@ void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(D2DrlgLevelStrc * pLevel) {
 
       next_entry:
       pTableEntry += 7;
-      if ((int)pTableEntry >= (uintptr_t)((char*)&gaAct5SceneryPresetTable_0 + sizeof(gaAct5SceneryPresetTable_0) + 4)) {
+      if ((int)pTableEntry >= (intptr_t)((char*)&gaAct5SceneryPresetTable_0 + sizeof(gaAct5SceneryPresetTable_0) + 4)) {
         return;
       }
     } while (true);

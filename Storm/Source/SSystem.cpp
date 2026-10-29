@@ -206,30 +206,37 @@ void __fastcall SSYSTEM_ListUnlinkAndInsert(int * * pNode, int32_t nInsertMode, 
     if (!ppTarget) {
       ppTarget = pList + 1;
     }
-    if (nInsertMode != 1) {
-      pLink = *ppTarget;
-      *pEffectiveNode = pLink;
-      pEffectiveNode[1] = (int*)pLink[1];
-      pLink[1] = (int)pNode;
-      *ppTarget = (int*)pEffectiveNode;
-      return;
-    }
 
-    *pEffectiveNode = (int*)ppTarget;
-    pEffectiveNode[1] = ppTarget[1];
-    pLink = *pList;
-    ppPrevLink = ppTarget[1];
-    if ((int)ppPrevLink < 0) {
-      *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
-      ppTarget[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pLink < 0) {
-      pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pEffectiveNode = (int*)ppTarget;
+          pEffectiveNode[1] = ppTarget[1];
+          pLink = *pList;
+          ppPrevLink = ppTarget[1];
+          if ((int)ppPrevLink < 0) {
+            *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
+            ppTarget[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pLink < 0) {
+            pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
 
-    *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
-    ppTarget[1] = (int*)pNode;
+          *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
+          ppTarget[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pLink = *ppTarget;
+          *pEffectiveNode = pLink;
+          pEffectiveNode[1] = (int*)pLink[1];
+          pLink[1] = (int)pNode;
+          *ppTarget = (int*)pEffectiveNode;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
@@ -554,30 +561,37 @@ void __fastcall LINKEDLIST_MoveNode(int * * pNode, int32_t nInsertAtHead, int * 
     if (!pInsertRef) {
       pInsertRef = pListHead + 1;
     }
-    if (nInsertAtHead != 1) {
-      pNeighbor = *pInsertRef;
-      *pNodeCur = pNeighbor;
-      pNodeCur[1] = (int*)pNeighbor[1];
-      pNeighbor[1] = (int)pNode;
-      *pInsertRef = (int*)pNodeCur;
-      return;
-    }
 
-    *pNodeCur = (int*)pInsertRef;
-    pNodeCur[1] = pInsertRef[1];
-    pNeighbor = *pListHead;
-    pLinkTarget = pInsertRef[1];
-    if ((int)pLinkTarget < 0) {
-      *(int***)~(uint32_t)pLinkTarget = (int**)pNodeCur;
-      pInsertRef[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pNeighbor < 0) {
-      pNeighbor = (int*)((int)pInsertRef - (*pInsertRef)[1]);
-    }
+    switch (nInsertAtHead) {
+      case 1:
+        {
+          *pNodeCur = (int*)pInsertRef;
+          pNodeCur[1] = pInsertRef[1];
+          pNeighbor = *pListHead;
+          pLinkTarget = pInsertRef[1];
+          if ((int)pLinkTarget < 0) {
+            *(int***)~(uint32_t)pLinkTarget = (int**)pNodeCur;
+            pInsertRef[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pNeighbor < 0) {
+            pNeighbor = (int*)((int)pInsertRef - (*pInsertRef)[1]);
+          }
 
-    *(int***)((int)pLinkTarget + (int)pNeighbor) = (int**)pNodeCur;
-    pInsertRef[1] = (int*)pNode;
+          *(int***)((int)pLinkTarget + (int)pNeighbor) = (int**)pNodeCur;
+          pInsertRef[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pNeighbor = *pInsertRef;
+          *pNodeCur = pNeighbor;
+          pNodeCur[1] = (int*)pNeighbor[1];
+          pNeighbor[1] = (int)pNode;
+          *pInsertRef = (int*)pNodeCur;
+          return;
+        }
+    }
 }
 
 void __fastcall LINKEDLIST_UnlinkAll(int32_t pList) {
@@ -729,30 +743,37 @@ void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t n
     if (!ppTargetList) {
       ppTargetList = pList + 1;
     }
-    if (nInsertMode != 1) {
-      pPrevNode = *ppTargetList;
-      *pTargetNode = pPrevNode;
-      pTargetNode[1] = (int*)pPrevNode[1];
-      pPrevNode[1] = (int)ppNodeSlot;
-      *ppTargetList = (int*)pTargetNode;
-      return;
-    }
 
-    *pTargetNode = (int*)ppTargetList;
-    pTargetNode[1] = ppTargetList[1];
-    pPrevNode = *pList;
-    pLinkSlot = ppTargetList[1];
-    if ((int)pLinkSlot < 0) {
-      *(int***)~(uint32_t)pLinkSlot = (int**)pTargetNode;
-      ppTargetList[1] = (int*)ppNodeSlot;
-      return;
-    }
-    if ((int)pPrevNode < 0) {
-      pPrevNode = (int*)((int)ppTargetList - (*ppTargetList)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pTargetNode = (int*)ppTargetList;
+          pTargetNode[1] = ppTargetList[1];
+          pPrevNode = *pList;
+          pLinkSlot = ppTargetList[1];
+          if ((int)pLinkSlot < 0) {
+            *(int***)~(uint32_t)pLinkSlot = (int**)pTargetNode;
+            ppTargetList[1] = (int*)ppNodeSlot;
+            return;
+          }
+          if ((int)pPrevNode < 0) {
+            pPrevNode = (int*)((int)ppTargetList - (*ppTargetList)[1]);
+          }
 
-    *(int***)((int)pLinkSlot + (int)pPrevNode) = (int**)pTargetNode;
-    ppTargetList[1] = (int*)ppNodeSlot;
+          *(int***)((int)pLinkSlot + (int)pPrevNode) = (int**)pTargetNode;
+          ppTargetList[1] = (int*)ppNodeSlot;
+          return;
+        }
+      default:
+        {
+          pPrevNode = *ppTargetList;
+          *pTargetNode = pPrevNode;
+          pTargetNode[1] = (int*)pPrevNode[1];
+          pPrevNode[1] = (int)ppNodeSlot;
+          *ppTargetList = (int*)pTargetNode;
+          return;
+        }
+    }
 }
 
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
@@ -972,18 +993,25 @@ void __fastcall LINKEDLIST_InsertNode(void * pNewItem, int32_t nInsertMode, void
     } else {
       pAnchorLink = &pList->head;
     }
-    if (nInsertMode != 1) {
-      pPrevLinkField = pAnchorLink->pPrevLink;
-      pNodeLink->pPrevLink = pPrevLinkField;
-      pNodeLink->pNext = pPrevLinkField->pNext;
-      pPrevLinkField->pNext = (int)pNewItem;
-      pAnchorLink->pPrevLink = pNodeLink;
-    } else {
-      pNodeLink->pPrevLink = pAnchorLink;
-      pNodeLink->pNext = pAnchorLink->pNext;
-      pPrevLinkField = LINKEDLIST_GetNodePointer(pList->nLinkOffset, pAnchorLink);
-      pPrevLinkField->pPrevLink = pNodeLink;
-      pAnchorLink->pNext = (int)pNewItem;
+
+    switch (nInsertMode) {
+      case 1:
+        {
+          pNodeLink->pPrevLink = pAnchorLink;
+          pNodeLink->pNext = pAnchorLink->pNext;
+          pPrevLinkField = LINKEDLIST_GetNodePointer(pList->nLinkOffset, pAnchorLink);
+          pPrevLinkField->pPrevLink = pNodeLink;
+          pAnchorLink->pNext = (int)pNewItem;
+          break;
+        }
+      default:
+        {
+          pPrevLinkField = pAnchorLink->pPrevLink;
+          pNodeLink->pPrevLink = pPrevLinkField;
+          pNodeLink->pNext = pPrevLinkField->pNext;
+          pPrevLinkField->pNext = (int)pNewItem;
+          pAnchorLink->pPrevLink = pNodeLink;
+        }
     }
 }
 

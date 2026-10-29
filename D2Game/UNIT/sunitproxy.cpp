@@ -1322,7 +1322,7 @@ void __stdcall SUNITPROXY_FreeAllNpcItemTables() {
       }
 
       nNpcIdx++;
-    } while ((int)&gaNpcItemTables[nNpcIdx].pQuestItems < (uintptr_t)((char*)&gaNpcItemTables + sizeof(gaNpcItemTables) + 8));
+    } while ((int)&gaNpcItemTables[nNpcIdx].pQuestItems < (intptr_t)((char*)&gaNpcItemTables + sizeof(gaNpcItemTables) + 8));
 }
 
 // Removes a specific player's proxy trade inventory from an NPC's trade list. Looks up the NPC by pProxyUnit->nClassId, then searches the trade-node linked list (unk0x08) for the node matching pPlayerUnit->nUnitGUID. If found, unlinks the node, frees its inventory via SUNITPROXY_FreeInventoryItems + STRUCT_FreeInventory, and returns the memory to pGame->pMemoryPool.

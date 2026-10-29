@@ -69,7 +69,6 @@
 #include "D2Common/Unit/Unit.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/SKILLS/SkillAss.h"
 #include "D2Launch/MainMenus.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -306,7 +305,6 @@ void __fastcall SPELLSEL_DrawSkillIcon(D2UnitStrc * pUnit, D2SkillStrc * pSkill,
 
 void __stdcall PANEL_DrawSkillIcons() {
     int nSkillLevel;
-    eD2Skills eSkillId;
     int32_t nLine;
     char* pszContext;
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
@@ -320,8 +318,7 @@ void __stdcall PANEL_DrawSkillIcons() {
       if (nSkillLevel <= 0) {
         nLine = 0x289;
         pszContext = ".\\UI\\panel.cpp";
-        eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\panel.cpp", 0x289);
-        D2Common::Skills::SKILL_RemoveSkillCallback(pUnit, eSkillId, pszContext, nLine);
+        D2Common::Skills::SKILL_RemoveSkillCallback(pUnit, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\panel.cpp", 0x289), pszContext, nLine);
         D2Common::Skills::SelectSkillLeft(pUnit, SKILL_Attack, -1);
         pSkill = D2Common::Units::GetLeftSkill(pUnit);
       }
@@ -334,8 +331,7 @@ void __stdcall PANEL_DrawSkillIcons() {
       if (nSkillLevel <= 0) {
         nLine = 0x294;
         pszContext = ".\\UI\\panel.cpp";
-        eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UI\\panel.cpp", 0x294);
-        D2Common::Skills::SKILL_RemoveSkillCallback(pUnit, eSkillId, pszContext, nLine);
+        D2Common::Skills::SKILL_RemoveSkillCallback(pUnit, D2Common::Skills::GetSkillId(pSkill, ".\\UI\\panel.cpp", 0x294), pszContext, nLine);
         D2Common::Skills::SelectSkillRight(pUnit, 0, -1);
         pSkill = D2Common::Units::GetRightSkill(pUnit);
       }
@@ -354,23 +350,32 @@ static int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
     bool bSkipLowClamp = true;
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
     int nCurValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
-    if (eUnitStat != UNITSTAT_hitpoints) {
-      if (eUnitStat != UNITSTAT_mana) {
-        if (eUnitStat != UNITSTAT_stamina) {
+    switch (eUnitStat) {
+      case UNITSTAT_hitpoints:
+        {
+          nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
+          nSlotOffset = 0;
+          bSkipLowClamp = false;
+          break;
+        }
+      case UNITSTAT_mana:
+        {
+          nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
+          nSlotOffset = 1;
+          break;
+        }
+      default:
+        {
           return 0;
         }
-
-        nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
-        nSlotOffset = 2;
-      } else {
-        nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxMana(pUnit);
-        nSlotOffset = 1;
-      }
-    } else {
-      nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-      nSlotOffset = 0;
-      bSkipLowClamp = false;
+      case UNITSTAT_stamina:
+        {
+          nMaxValue = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
+          nSlotOffset = 2;
+          break;
+        }
     }
+
     if (!nMaxValue) {
       return 0;
     }
@@ -468,14 +473,12 @@ void __stdcall PANEL_DrawHealthOrb() {
     sGfxData.nDirection = 0;
     sGfxData.pDC6 = Hlthmana;
     sGfxData.nFrameNumber = 0;
-    pUnit = UNIT::Player::GetPlayerUnit_UI();
-    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState);
+    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(UNIT::Player::GetPlayerUnit_UI(), eState);
     if (eState != STATE_none) {
       int nRegenWidth;
       nLayer = 0;
       eUnitStat = UNITSTAT_hpregen;
-      pUnit = UNIT::Player::GetPlayerUnit_UI();
-      nRegenWidth = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, nLayer);
+      nRegenWidth = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(UNIT::Player::GetPlayerUnit_UI(), eUnitStat, nLayer);
       nRegenWidth = nRegenWidth * 0x50 / 100;
       if (nRegenWidth > 0x50) {
         nRegenWidth = 0x50;
@@ -493,8 +496,7 @@ void __stdcall PANEL_DrawHealthOrb() {
     }
 
     eState = STATE_poison;
-    pUnit = UNIT::Player::GetPlayerUnit_UI();
-    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState);
+    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(UNIT::Player::GetPlayerUnit_UI(), eState);
     sGfxData.nFrameNumber = eState != STATE_none ? 2 : 0;
     if (nPercentHideFromBottom) {
       D2gfx::D2GFX::D2GFX_GetRendererMode();
@@ -527,14 +529,12 @@ void __stdcall PANEL_DrawManaOrb() {
     sGfxData.nDirection = 0;
     sGfxData.pDC6 = Hlthmana;
     sGfxData.nFrameNumber = 1;
-    pUnit = UNIT::Player::GetPlayerUnit_UI();
-    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, eState);
+    eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(UNIT::Player::GetPlayerUnit_UI(), eState);
     if (eState != STATE_none) {
       int nRegenWidth;
       nLayer = 0;
       eUnitStat = UNITSTAT_manarecovery;
-      pUnit = UNIT::Player::GetPlayerUnit_UI();
-      nRegenWidth = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, nLayer);
+      nRegenWidth = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(UNIT::Player::GetPlayerUnit_UI(), eUnitStat, nLayer);
       nRegenWidth = nRegenWidth * 0x50 / 100;
       if (nRegenWidth > 0x50) {
         nRegenWidth = 0x50;
@@ -1184,7 +1184,7 @@ void __stdcall Draw_EquipmentNeedToRepairBody() {
       }
 
       pSlotLocEntry++;
-      if ((int)pSlotLocEntry >= (uintptr_t)((char*)&gaBodySlotLocTable + sizeof(gaBodySlotLocTable))) {
+      if ((int)pSlotLocEntry >= (intptr_t)((char*)&gaBodySlotLocTable + sizeof(gaBodySlotLocTable))) {
         return;
       }
     } while (true);
@@ -1224,7 +1224,7 @@ void __stdcall Draw_EquipmentNeedToRepairBody() {
       }
 
       pSlotLocEntry2++;
-      if ((int)pSlotLocEntry2 >= (uintptr_t)((char*)&gaBodySlotLocTable + sizeof(gaBodySlotLocTable))) {
+      if ((int)pSlotLocEntry2 >= (intptr_t)((char*)&gaBodySlotLocTable + sizeof(gaBodySlotLocTable))) {
         return;
       }
     }
@@ -1332,55 +1332,62 @@ static void PANEL_DrawCharacterInfo(int32_t nPanelOffsetY) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
     DWORD eResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
-    if (eResolutionMode != 2) {
-      if (!CtrlPnl7) {
-        CtrlPnl7 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\CtrlPnl7");
-      }
-      if (_00CtrlPnl7) {
-        Core::Archive::DC6_FreeAndDelete(_00CtrlPnl7);
-        _00CtrlPnl7 = 0;
-      }
-      if (_00BorderFrame) {
-        Core::Archive::DC6_FreeAndDelete(_00BorderFrame);
-        _00BorderFrame = 0;
-      }
+    switch (eResolutionMode) {
+      case 2:
+        {
+          if (CtrlPnl7) {
+            Core::Archive::DC6_FreeAndDelete(CtrlPnl7);
+            CtrlPnl7 = 0;
+          }
+          if (!_00CtrlPnl7) {
+            _00CtrlPnl7 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\800CtrlPnl7");
+          }
 
-      sGfxData.pDC6 = CtrlPnl7;
-      sGfxData.nDirection = 0;
-      sGfxData.nFrameNumber = 0;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
-      sGfxData.nFrameNumber = 1;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x9b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-      sGfxData.nFrameNumber = 2;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x1b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-      sGfxData.nFrameNumber = 3;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x65, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-      sGfxData.nFrameNumber = 4;
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - 0x75, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
-      return;
-    }
-    if (CtrlPnl7) {
-      Core::Archive::DC6_FreeAndDelete(CtrlPnl7);
-      CtrlPnl7 = 0;
-    }
-    if (!_00CtrlPnl7) {
-      _00CtrlPnl7 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\800CtrlPnl7");
-    }
+          sGfxData.nDirection = 0;
+          sGfxData.nFrameNumber = 0;
+          sGfxData.pDC6 = _00CtrlPnl7;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 1;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xeb, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 2;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x6b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 3;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x15, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 4;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x95, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 5;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - 0x75, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          return;
+        }
+      default:
+        {
+          if (!CtrlPnl7) {
+            CtrlPnl7 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\CtrlPnl7");
+          }
+          if (_00CtrlPnl7) {
+            Core::Archive::DC6_FreeAndDelete(_00CtrlPnl7);
+            _00CtrlPnl7 = 0;
+          }
+          if (_00BorderFrame) {
+            Core::Archive::DC6_FreeAndDelete(_00BorderFrame);
+            _00BorderFrame = 0;
+          }
 
-    sGfxData.nDirection = 0;
-    sGfxData.nFrameNumber = 0;
-    sGfxData.pDC6 = _00CtrlPnl7;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
-    sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xeb, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-    sGfxData.nFrameNumber = 2;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x6b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-    sGfxData.nFrameNumber = 3;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x15, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-    sGfxData.nFrameNumber = 4;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x95, ScreenSizeY, -1, DRAW_SOLID, nullptr);
-    sGfxData.nFrameNumber = 5;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - 0x75, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          sGfxData.pDC6 = CtrlPnl7;
+          sGfxData.nDirection = 0;
+          sGfxData.nFrameNumber = 0;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 1;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x9b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 2;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0x1b, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 3;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + 0x65, ScreenSizeY, -1, DRAW_SOLID, nullptr);
+          sGfxData.nFrameNumber = 4;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX - 0x75, ScreenSizeY - nPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          return;
+        }
+    }
 }
 
 void __stdcall DRAW_UI_BorderLeft() {
@@ -1508,8 +1515,7 @@ void __stdcall ClickBelt(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t 
     nSoundArg3 = 0;
     int32_t nSoundArg2 = 0;
     nSoundArg1 = 0;
-    eD2Sounds nSoundId = UNIT::SOUND_GetIdFromUnit(pCursorItem_lcl);
-    Sound::SOUND_PlaySound(nSoundId, nullptr, nSoundArg1, nSoundArg2, nSoundArg3);
+    Sound::SOUND_PlaySound(UNIT::SOUND_GetIdFromUnit(pCursorItem_lcl), nullptr, nSoundArg1, nSoundArg2, nSoundArg3);
 }
 
 static void CLIENT_HandleBeltMouseDown(D2InventoryStrc * pInventory, int32_t nMouseY, int32_t nMouseX) {
@@ -1565,10 +1571,10 @@ static BOOL __fastcall PANEL_CheckEquipmentClickable(D2ItemsTxt * pItemTxt, D2Un
     }
 
     BOOL bClickable = 1;
-    if (pItemTxt->bUnique || pItemTxt->bQuest) {
+    if (pItemTxt->bUnique == '\x01' || pItemTxt->bQuest == '\x01') {
       Text::TEXT_OpenQuestScroll(nItemSlot, (int32_t)pItemTxt);
       bClickable = 0;
-    } else if (!pItemTxt->bUseable) {
+    } else if (pItemTxt->bUseable != '\x01') {
       UNIT::UnitSnd::UNITSND_PlayPlayerSound(pUnit, 0x14);
       return 0;
     }

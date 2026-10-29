@@ -5,8 +5,6 @@
 #include "Bnclient/Cache.h"
 #include "Bnclient/net_sid.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/Debug.h"
 #include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"

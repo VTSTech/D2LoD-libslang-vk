@@ -103,30 +103,37 @@ void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget
     if (!ppTarget) {
       ppTarget = ppList + 1;
     }
-    if (nMode != 1) {
-      pNext = *ppTarget;
-      *ppCurNode = pNext;
-      ppCurNode[1] = (int*)pNext[1];
-      pNext[1] = (int)ppNode;
-      *ppTarget = (int*)ppCurNode;
-      return;
-    }
 
-    *ppCurNode = (int*)ppTarget;
-    ppCurNode[1] = ppTarget[1];
-    pNext = *ppList;
-    pPrevLink = ppTarget[1];
-    if ((int)pPrevLink < 0) {
-      *(int***)~(uint32_t)pPrevLink = (int**)ppCurNode;
-      ppTarget[1] = (int*)ppNode;
-      return;
-    }
-    if ((int)pNext < 0) {
-      pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
-    }
+    switch (nMode) {
+      case 1:
+        {
+          *ppCurNode = (int*)ppTarget;
+          ppCurNode[1] = ppTarget[1];
+          pNext = *ppList;
+          pPrevLink = ppTarget[1];
+          if ((int)pPrevLink < 0) {
+            *(int***)~(uint32_t)pPrevLink = (int**)ppCurNode;
+            ppTarget[1] = (int*)ppNode;
+            return;
+          }
+          if ((int)pNext < 0) {
+            pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
 
-    *(int***)((int)pPrevLink + (int)pNext) = (int**)ppCurNode;
-    ppTarget[1] = (int*)ppNode;
+          *(int***)((int)pPrevLink + (int)pNext) = (int**)ppCurNode;
+          ppTarget[1] = (int*)ppNode;
+          return;
+        }
+      default:
+        {
+          pNext = *ppTarget;
+          *ppCurNode = pNext;
+          ppCurNode[1] = (int*)pNext[1];
+          pNext[1] = (int)ppNode;
+          *ppTarget = (int*)ppCurNode;
+          return;
+        }
+    }
 }
 
 uint32_t __fastcall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {

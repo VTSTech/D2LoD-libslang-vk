@@ -253,16 +253,12 @@ void __fastcall PLAYER_MoveToLocationWithTimeout(::SGAMEDATA * pGame, D2UnitStrc
 
 // @sourcefile .\PLAYER\Player.cpp
 static uint32_t __stdcall PLAYER_PlaceItemInInventory(::SGAMEDATA * pGame, int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    int32_t nItemX;
-    int bItemPlaced;
-    int32_t bPlaced;
     int32_t nErrorLine;
-    D2InventoryStrc* pInventory;
     if (!pUnit2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb4);
       exit(-1);
     } else {
-      int32_t nItemY;
+      int bItemPlaced;
       if (!pUnit) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb5);
         exit(-1);
@@ -270,11 +266,7 @@ static uint32_t __stdcall PLAYER_PlaceItemInInventory(::SGAMEDATA * pGame, int32
 
       D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit2, INVPAGE_INVENTORY);
       nErrorLine = pUnit2->nUnitGUID;
-      pInventory = 0;
-      bPlaced = 1;
-      nItemY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2);
-      nItemX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit2);
-      bItemPlaced = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\Player.cpp", 0xba, pGame, pUnit, nErrorLine, nItemX, nItemY, nParam, bPlaced, pInventory);
+      bItemPlaced = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\Player.cpp", 0xba, pGame, pUnit, nErrorLine, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit2), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit2), nParam, 1, 0);
       return (uint32_t)(bItemPlaced != 0);
     }
 }
@@ -821,14 +813,17 @@ uint32_t __fastcall CheckItemMovePermission(::SGAMEDATA * pGame, D2UnitStrc * pU
       D2UnitStrc* pInteractUnit;
       pInteractUnit = UNIT::SUnit::FindUnitFromTable(pGame, eInteractUnitType, nInteractUnitId);
       if (pInteractUnit) {
-        if (eInteractUnitType != UNIT_PLAYER) {
-          if (eInteractUnitType == UNIT_MONSTER) {
-            bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, (int32_t)pUnit);
-            return bCanMove;
-          }
-
-          bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);
-          return bCanMove;
+        switch (eInteractUnitType) {
+          case UNIT_PLAYER:
+            {
+              bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);
+              return bCanMove;
+            }
+          case UNIT_MONSTER:
+            {
+              bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, (int32_t)pUnit);
+              return bCanMove;
+            }
         }
 
         bCanMove = PlayerTrade::PLRTRADE_ValidateAndInitiateTrade(pGame, pUnit, pItem);

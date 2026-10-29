@@ -30,8 +30,8 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x28 */ uint32_t nPortalGUID;
     /* 0x2C */ int16_t nStoneAttemptCount; // Cairn-stone wrong-attempt counter (masked &0x3f, incremented per click); OBJOP_A1Q4_ActivateHoradricMalusSmith
     /* 0x2E */ bool bRogueGuardTimerArmed;
-    /* 0x2F */ bool bTreeObjectSaved;
-    /* 0x30 */ bool bCairnStonesObjectSaved;
+    /* 0x2F */ uint8_t bTreeObjectSaved;
+    /* 0x30 */ uint8_t bCairnStonesObjectSaved;
     /* 0x31 */ bool bRescueArmed;
     /* 0x32 */ uint8_t field_0x32;
     /* 0x33 */ uint8_t field_0x33;
@@ -39,20 +39,20 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x35 */ uint8_t field_0x35;
     /* 0x36 */ uint8_t field_0x36;
     /* 0x37 */ uint8_t field_0x37;
-    /* 0x38 */ bool bQuestObjectsActivated;
-    /* 0x39 */ bool bCairnMonsterSaved;
-    /* 0x3A */ bool bPendingCairnActivation;
+    /* 0x38 */ uint8_t bQuestObjectsActivated;
+    /* 0x39 */ uint8_t bCairnMonsterSaved;
+    /* 0x3A */ uint8_t bPendingCairnActivation;
     /* 0x3B */ uint8_t bNpcDialogState2;
     /* 0x3C */ int32_t nCairnAnimState;
     /* 0x40 */ uint32_t nStonesUnitGUID; // Cairn Stones object GUID used for red-portal placement; Q04_SpawnTristramPortal FindUnitFromTable(UNIT_OBJECT)
     /* 0x44 */ uint8_t bPortalSpawnPending[5]; // Red Tristram portal spawn pending; cleared by Q04_SpawnTristramPortal on spawn/abort
-    /* 0x49 */ bool bPortalArmed;
+    /* 0x49 */ uint8_t bPortalArmed;
     /* 0x4A */ bool bStonesRolled;
     /* 0x4B */ uint8_t bRewardReady;
     /* 0x4C */ uint8_t field_0x4C;
     /* 0x4D */ uint8_t field_0x4D;
     /* 0x4E */ bool bPortalSpawned;
-    /* 0x4F */ bool bAllStonesActivated;
+    /* 0x4F */ uint8_t bAllStonesActivated;
     /* 0x50 */ int field_0x50;
     /* 0x54 */ int field_0x54;
     /* 0x58 */ uint8_t bCairnObjectSaved;

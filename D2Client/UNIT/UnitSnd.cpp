@@ -779,7 +779,6 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     int32_t nSoundChannelPrev;
     int32_t nSoundChannelNext;
     int32_t iVar2;
-    eD2Sounds nSoundId;
     D2UnitStrc* pLocalPlayer;
     bool bIsRunOrRespawn;
     int32_t nRunCheck;
@@ -881,8 +880,7 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     nRunCheck = 0;
     iVar2 = 0;
     nSoundChannelNext = 0;
-    nSoundId = UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev);
-    nAnimSpeed = Sound::SOUND_PlaySound(nSoundId, pUnit, nSoundChannelNext, iVar2, nRunCheck);
+    nAnimSpeed = Sound::SOUND_PlaySound(UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev), pUnit, nSoundChannelNext, iVar2, nRunCheck);
     if (nAnimSpeed) {
       nFrameCount = 0xff;
       pLocalPlayer = Player::GetPlayerUnit_UI();
@@ -1403,11 +1401,8 @@ static void UNITSND_PlayFleeSound(D2UnitStrc * pUnit) {
       return;
     }
 
-    int32_t nSfxTick = 0;
-    nRecordingIdx = 0;
-    uint32_t nFleeDelay = _Utils::RollRandomNumerUpToArgument(3);
-    Sound::SOUND_PlaySound(pMonSoundsLine->Flee, pUnit, nFleeDelay + 6, nRecordingIdx, nSfxTick);
-    nFleeDelay = GAME::Game::gnRecordingIndex();
+    Sound::SOUND_PlaySound(pMonSoundsLine->Flee, pUnit, _Utils::RollRandomNumerUpToArgument(3) + 6, 0, 0);
+    uint32_t nFleeDelay = GAME::Game::gnRecordingIndex();
     SetSfxTicks(nFleeDelay, pUnit);
     gdwSoundChannelIndex = GAME::Game::gnRecordingIndex();
 }
@@ -1900,7 +1895,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
       } while (nTableIdx < 10);
 
       pMusicTableRow++;
-      if ((int)pMusicTableRow >= (uintptr_t)((char*)&gaLanguageNames_0072a300 + 20)) {
+      if ((int)pMusicTableRow >= (intptr_t)((char*)&gaLanguageNames_0072a300 + 20)) {
         return;
       }
     } while (true);

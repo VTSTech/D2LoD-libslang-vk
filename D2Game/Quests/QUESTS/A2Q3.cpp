@@ -251,7 +251,7 @@ void __fastcall Q11_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (!pQuestData->nStateFlag) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -295,7 +295,7 @@ uint8_t __stdcall Q11_BeginTaintedSun(D2QuestDataStrc * pQuestData) {
       return '\x01';
     }
 
-    pQuestData->pQuestSpecificData.pA2Q3->bViperAmuletInitPending = true;
+    pQuestData->pQuestSpecificData.pA2Q3->bViperAmuletInitPending = '\x01';
     return '\0';
 }
 
@@ -326,12 +326,12 @@ void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2UnitStrc *
     }
 
     pA2Q3Data->nViperAmuletUnitGUID = nViperAmuletGUID;
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\x01') {
       bool bDarkeningStarted;
       if (pQuestData->nStateFlag < 2) {
         bDarkeningStarted = (bool)Q11_BeginTaintedSun(pQuestData);
         if (!bDarkeningStarted) {
-          pA2Q3Data->bViperAmuletInitPending = true;
+          pA2Q3Data->bViperAmuletInitPending = '\x01';
         } else {
           pA2Q3Data->bSunDarkened = true;
         }
@@ -352,7 +352,7 @@ void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2UnitStrc *
 // stateFlag==5 (finished) or intro not done, looks up the sequence-linked quest data and invokes its own
 // fpSequenceFilter (asserting the fn ptr is valid first). No quest-record access.
 bool __fastcall Q11_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
@@ -415,7 +415,7 @@ static void __stdcall Q11_OnPlayerInteract(D2QuestDataStrc * pQuestData, D2UnitS
     bool bTaintedSunStarted = (bool)Q11_BeginTaintedSun(pQuestData);
     if (!bTaintedSunStarted) {
       D2ClientStrc* pClient;
-      pA2Q3Data->bViperAmuletInitPending = true;
+      pA2Q3Data->bViperAmuletInitPending = '\x01';
       abyQuestStatePacket.nExtra = 0;
       abyQuestStatePacket.nPacketId = ']';
       abyQuestStatePacket.nQuestId = '\n';
@@ -587,7 +587,7 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
       pPlayerData = pOperation->sArg.pVictim;
       if (!pPlayerData || pPlayerData->eAnimMode.ePlayerMode == Death) {
         pDVar1 = pHoradricStaffQuestData->pQuestSpecificData.pA2Q3;
-        if (pTaintedSunQuestData->bIsNotIntroduction) {
+        if (pTaintedSunQuestData->bIsNotIntroduction != '\0') {
           pRoom = D2Common::Units::UNITS_GetRoom(pPlayerData);
           pDVar1->pAltarRoom = pRoom;
           eAltarLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -604,7 +604,7 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
 
           pDVar1->nViperAmuletUnitGUID = nAltarGUID;
           pDVar1->bTaintedSunStartedFailed = true;
-          if (pTaintedSunQuestData->bIsNotIntroduction) {
+          if (pTaintedSunQuestData->bIsNotIntroduction != '\0') {
             pGame3 = pTaintedSunQuestData->pGame;
             if (pGame3->pAct[1]) {
               pTaintedSunQuestData->pQuestSpecificData.pA1Q2->bRewardGiven = false;
@@ -619,7 +619,7 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
 
           pDVar1->nViperAmuletDropCount = 0;
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q11_OnStaffViperPickup);
-          if (pTaintedSunQuestData->bIsNotIntroduction) {
+          if (pTaintedSunQuestData->bIsNotIntroduction != '\0') {
             /* GetQuestState(buf, A2Q3, 0=Completed) - only write completion if not already
                          Completed */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_Completed);
             if (!bQuestState) {
@@ -728,7 +728,7 @@ BOOL __fastcall OBJOP_A2Q3_ActivateHoradricStaffAltar(D2ObjectOperateFnArg * pOp
 // (i.e. altar destroyed / quest finished), or true if quest data missing / intro not started. Read-only.
 bool __fastcall Q11_IsTaintedSunComplete(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheTaintedSun);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return true;
     }
 
@@ -788,7 +788,7 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
         /* GetQuestState(buf, A2Q3, 0xd=JustCompleted) - turn-in: finalize (display
-                         state 0xd, stateFlag 5, run sequence filter) */ if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+                         state 0xd, stateFlag 5, run sequence filter) */ if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction == '\x01') {
           bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
           if (bQuestState) {
             pQuestData->nQuestPacketFlags = '\0';
@@ -817,14 +817,14 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           }
 
           QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nPlayerGUID);
-          if (!pQuestData->bIsNotIntroduction) {
+          if (pQuestData->bIsNotIntroduction == '\0') {
             /* SetQuestRecordState(game, A2Q3, 0xd=JustCompleted) - pre-intro turn-in:
                          broadcast completion */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_TheTaintedSun, QUESTSTATE_JustCompleted);
           }
         }
       }
     } else {
-      if (pQuestData->bIsNotIntroduction && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0xb1) {
+      if (pQuestData->bIsNotIntroduction != '\0' && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0xb1) {
         if (pQuestData->nStateFlagPrev == 1) {
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q11_NotifyTaintedSunComplete, false);
@@ -861,15 +861,15 @@ void __fastcall Q11_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     int nLevelIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
     D2GSPacketSrv0x27_TextStrc* pSpecificData = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     D2QuestDataA2Q3Strc* pGossipControl = pQuestData->pQuestSpecificData.pA2Q3;
-    if ((nLevelIndex == 0x2c || nLevelIndex == 0x2d) && !pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if ((nLevelIndex == 0x2c || nLevelIndex == 0x2d) && !pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       Q11_StartDarknessTimer((uint8_t*)pQuestData);
     }
-    if (nLevelIndex == 0x28 && pGossipControl->bViperAmuletInitPending) {
+    if (nLevelIndex == 0x28 && pGossipControl->bViperAmuletInitPending == '\x01') {
       uint8_t uVar1;
       uVar1 = Q11_BeginTaintedSun(pQuestData);
       if (uVar1 != '\0') {
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q11_UpdateQuestRecord);
-        pGossipControl->bViperAmuletInitPending = false;
+        pGossipControl->bViperAmuletInitPending = '\0';
       }
     }
     if (pSpecificData != (D2GSPacketSrv0x27_TextStrc*)0x28) {
@@ -898,7 +898,7 @@ void __fastcall Q11_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q11_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q11_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = &A2Q3::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA2Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q3.cpp", 0x323);
     pQuestData->pQuestSpecificData.pA2Q3 = pQuestSpecificData;

@@ -1705,7 +1705,7 @@ void __stdcall TXT_UnloadUniqueMonsterNameTables() {
       }
 
       ppEntry = (D2UniqueNameTablesStrc*)(ppEntry->apTable + 1);
-    } while ((int)ppEntry < (uintptr_t)((char*)&gsTxtUniqueNameTables + 16));
+    } while ((int)ppEntry < (intptr_t)((char*)&gsTxtUniqueNameTables + 16));
 }
 
 uint16_t * __fastcall MONSTER_GetRandomUniquePrefix(D2UnitStrc * pUnit) {
@@ -1907,7 +1907,7 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
                 if (pnTotalItems->nSize > 0) {
                   do {
                     pItemsTxt = ItemTbls::TXT_Items_GetLine(nItemClassIdx);
-                    if (pItemsTxt && !pItemsTxt->bQuest && pItemsTxt->bSpawnable != '\0') {
+                    if (pItemsTxt && pItemsTxt->bQuest == '\0' && pItemsTxt->bSpawnable != '\0') {
                       bTypeMatch = ITEMS::Items::TXT_ItemTypes_CheckEquivalence(nItemClassIdx, nRecordId);
                       if (bTypeMatch && (nItemTypeStride == 0x21d8 || (bIsMissilePotion = ITEMS::Items::TXT_ItemTypes_CheckEquivalence(nItemClassIdx, ITEMTYPE_MissilePotion) , !bIsMissilePotion)) && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel > nLevelStep - 3 && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel <= nLevelStep) {
                         pItemTypesTxt = D2Game::ITEMS::Items::Drop::ItemTypes_GetLine((int)pItemsTxt->wType);
@@ -2777,7 +2777,7 @@ void __fastcall TXT_AllocTxt_superuniques(D2PoolManagerStrc * pMemory) {
       }
 
       pHardcodedEntry++;
-    } while ((int)pHardcodedEntry < (uintptr_t)((char*)&sgtDataTable + 2916));
+    } while ((int)pHardcodedEntry < (intptr_t)((char*)&sgtDataTable + 2916));
 }
 
 D2SuperUniquesTxt * __stdcall TXT_SuperUniques_GetLine(int32_t nSuperUnique) {
@@ -3153,7 +3153,7 @@ void __fastcall TXT_AllocTxt_hireling(D2PoolManagerStrc * pMemory) {
       pIdLineInit[-0x100] = -1;
       *pIdLineInit = -1;
       pIdLineInit++;
-    } while ((int)pIdLineInit < (uintptr_t)((char*)&sgtDataTable + 2472));
+    } while ((int)pIdLineInit < (intptr_t)((char*)&sgtDataTable + 2472));
 
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     int nCounter = 0;
@@ -3205,7 +3205,7 @@ void __stdcall MONSTERTBLS_FreeMonLvlTxt() {
       pIdLine[-0x100] = -1;
       *pIdLine = -1;
       pIdLine++;
-    } while ((int)pIdLine < (uintptr_t)((char*)&sgtDataTable + 2472));
+    } while ((int)pIdLine < (intptr_t)((char*)&sgtDataTable + 2472));
 }
 
 D2HirelingTxt * __stdcall GetHirelingText(int32_t bIsExpansion, int32_t nHirelingId, int32_t nLevel) {
@@ -5349,15 +5349,20 @@ D2MonPresetTxt * __stdcall MONSTERTBLS_GetMonPresetRecord(uint32_t nParam, int *
 }
 
 int32_t __stdcall MONSTERTBLS_GetPresetActValue(int32_t nParam1, int32_t nParam2) {
-    if (nParam1) {
-      if (nParam1 != 2) {
-        return nParam2;
-      }
-    } else {
-      nParam2 += sgtDataTable.nTxtSuperUniquesSize;
+    switch (nParam1) {
+      case 0:
+        {
+          nParam2 += sgtDataTable.nTxtSuperUniquesSize;
+        }
+      case 2:
+        {
+          return nParam2 + sgptDataTable->nTxtMonStatsSize;
+        }
+      default:
+        {
+          return nParam2;
+        }
     }
-
-    return nParam2 + sgptDataTable->nTxtMonStatsSize;
 }
 
 void __fastcall TXT_AllocTxt_sounds(D2PoolManagerStrc * pMemory) {
@@ -5699,11 +5704,11 @@ void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
           *(D2ParsedTreasureClassStrc**)pTCDest = (D2ParsedTreasureClassStrc*)pTCEntry;
           pszChestId++;
           pTCDest = (D2ParsedTreasureClassStrc*)&pTCDest->nEntriesCount;
-        } while ((int)pszChestId < (uintptr_t)((char*)&gaszTreasureClassChestColumnNames + sizeof(gaszTreasureClassChestColumnNames)));
+        } while ((int)pszChestId < (intptr_t)((char*)&gaszTreasureClassChestColumnNames + sizeof(gaszTreasureClassChestColumnNames)));
       } while (nActNum < 5);
 
       szDifficulty = (D2TxtLinkStrc*)&szDifficulty->nCapacity;
-    } while ((int)szDifficulty < (uintptr_t)&gapTreasureClassChestParsedData[3]);
+    } while ((int)szDifficulty < (intptr_t)&gapTreasureClassChestParsedData[3]);
 }
 
 void __stdcall TXT_AllocItemDropData(D2PoolManagerStrc * pMemory) {

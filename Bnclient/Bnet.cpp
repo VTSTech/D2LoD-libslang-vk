@@ -2,8 +2,6 @@
 
 #include "Bnclient/Bnet.h"
 #include "Bnclient/Bnclient.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/Debug.h"
 #include "Storm/Source/SSComp.h"
 #include "Storm/Storm.h"

@@ -2282,7 +2282,7 @@ void __stdcall D2COMP_InitEmblemColorTables() {
       gaGlideEmblemPrimaryColorTableEntries[i] = (uint8_t)nPaletteColor;
       pColorEntry += 3;
       i++;
-    } while ((int)pColorEntry < (uintptr_t)&gbD2CompColorInitR + 31);
+    } while ((int)pColorEntry < (intptr_t)&gbD2CompColorInitR + 31);
 
     pColorEntry = gbCompItemEmblemColorTableTemp3 + 1;
     i = 0;
@@ -2291,7 +2291,7 @@ void __stdcall D2COMP_InitEmblemColorTables() {
       gaGlideEmblemSecondaryColorTableEntries[i] = (uint8_t)nPaletteColor;
       pColorEntry += 3;
       i++;
-    } while ((int)pColorEntry < (uintptr_t)&gbCompItemEmblemColorTableTemp3 + 31);
+    } while ((int)pColorEntry < (intptr_t)&gbCompItemEmblemColorTableTemp3 + 31);
 }
 
 char * __stdcall D2COMP_GetTitlePrefix(uint32_t nCharClass, uint32_t nTitleRank, int32_t nParam) {

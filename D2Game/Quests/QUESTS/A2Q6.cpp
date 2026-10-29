@@ -71,7 +71,7 @@ namespace D2Game::Quests::QUESTS::A2Q6 {
 // a2q5.cpp - AI callback for The Summoner. When Summoner is killed, advances quest state and notifies players.
 void __fastcall Q13_AICallback_Summoner(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSummoner);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction == '\x01')) {
       return;
     }
     if (!pQuestData->pQuestSpecificData.pA2Q5->field_0x1) {
@@ -328,8 +328,7 @@ static void __stdcall Q14_SetDurielComplete(::SGAMEDATA * pQuestControl, D2UnitS
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_JustCompleted);
     /* SetQuestState(TheSevenTombs, 3=Step0x03) — Duriel-dead progress bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
     uint32_t nDifficulty = (uint32_t)pQuestControl->nDifficulty;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x182);
-    GAME::Clients::SetClientStatus(pClient, 2, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x182), 2, nDifficulty);
 }
 
 // A2Q6 "The Seven Tombs" — per-player check: if this player is standing in Duriel's Lair and their record has none of JustCompleted/Step0x03/Step0x04 set yet, stamp completion via Q14_SetDurielComplete. Iterated after Duriel dies so anyone present in the lair gets credit. Asserts the quest-data pointer is non-null.
@@ -479,7 +478,7 @@ bool __fastcall Q14_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       *nUnknown = '\x06';
       return true;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return true;
     }
 
@@ -515,7 +514,7 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
     if (nNpcNo == 0xfb) {
       int32_t nPlayerX;
-      if (pQuestData->bIsNotIntroduction && nMessageIndex == 0x12e && !pSpecificData->bTyraelPortalSpawnLock) {
+      if (pQuestData->bIsNotIntroduction != '\0' && nMessageIndex == 0x12e && !pSpecificData->bTyraelPortalSpawnLock) {
         bPortalSpawned = 0;
         nPortalClassId = 0x3b;
         ppSpawnedPortal = 0;
@@ -768,7 +767,7 @@ void __fastcall Q14_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     D2ObjectsTxt* pObjectsTxt;
     ::SGAMEDATA* pGame;
     QUEST_DebugPrint(pQuestData->pGame, "killed duriel for quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x305);
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       D2BitBufferStrc* pBitBuffer;
       QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x308);
       AddQuestTimer(pQuestData, Q14_OnEndCallback, 8);
@@ -830,7 +829,7 @@ void __fastcall Q14_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28) {
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -917,7 +916,7 @@ bool __fastcall Q14_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
     } else {
       if (nTargetClassId != MonsterUnitMeshif) {
         if (nTargetClassId == MonsterUnitTyrael2) {
-          if (!pQuestData->bIsNotIntroduction) {
+          if (pQuestData->bIsNotIntroduction != '\x01') {
             return false;
           }
           if (pQuestData->pQuestSpecificData.pA2Q6->bTombEntered != 1) {
@@ -999,7 +998,7 @@ bool __fastcall Q14_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
 // A2Q6 "The Seven Tombs" — fpSequenceFilter: if quest not yet started (nStateFlag==0) and introduced, sets nStateFlag 1 (quest visible/started). Then chains into TheTaintedSun's sequence filter (the two Act2 quests are linked). No bitbuffer record changes.
 bool __fastcall Q14_SequenceFilter(D2QuestDataStrc * pQuestData) {
     BOOL BVar2;
-    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x3e9);
     }
 
@@ -1087,7 +1086,7 @@ void __fastcall Q14_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q14_Callback14_PlayerJoinedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q14_Callback08_MonsterKilled;
     pQuestData->pNpcMessages = &A2Q6::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA2Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q6.cpp", 0x442);
     pQuestData->pQuestSpecificData.pA2Q6 = pQuestSpecificData;

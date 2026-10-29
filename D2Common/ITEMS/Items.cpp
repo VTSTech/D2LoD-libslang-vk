@@ -62,6 +62,7 @@
 #include "Fog/Skills.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/GAME/SCmd.h"
@@ -1641,7 +1642,7 @@ uint32_t __stdcall TXT_Items_IsNotQuestOrHammerType(uint32_t nItemClassId) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x105e);
       exit(-1);
     }
-    if (!(!pItemsTxt->bQuest && pItemsTxt->wType != 0x27)) {
+    if (!(pItemsTxt->bQuest == '\0' && pItemsTxt->wType != 0x27)) {
       return 0;
     }
 
@@ -2457,7 +2458,7 @@ static int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t n
       if (!pItemsTxt) {
         return -1;
       }
-      if (pItemsTxt->bQuest && pItemsTxt->bQuestDiffCheck != '\0') {
+      if (pItemsTxt->bQuest != '\0' && pItemsTxt->bQuestDiffCheck != '\0') {
         if (sgptDataTable->nTxtItemStatCostSize <= 0x164 || (pStatCostTxt = sgptDataTable->pTxtItemStatCost , pStatCostTxt == (D2ItemStatCostTxt*)-115344)) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1607);
           exit(-1);
@@ -2872,7 +2873,7 @@ static void __stdcall SerializeSimpleItem(D2UnitStrc * pItem, D2BitBufferStrc * 
         txtLine = pItemsTxtLine;
       } while (cNameChar != '\0');
     }
-    if (txtLine->bQuest && txtLine->bQuestDiffCheck != '\0') {
+    if (txtLine->bQuest != '\0' && txtLine->bQuestDiffCheck != '\0') {
       if (sgptDataTable->nTxtItemStatCostSize <= 0x164 || (pStatCostTxt = sgptDataTable->pTxtItemStatCost , pStatCostTxt == (D2ItemStatCostTxt*)-115344)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c7a);
         exit(-1);
@@ -2973,7 +2974,7 @@ uint32_t __stdcall ITEMS_CheckIfUpgradeable(uint32_t nItemClassId) {
       return 0;
     }
 
-    return (uint32_t)!pItemsTxt->bQuest;
+    return (uint32_t)(pItemsTxt->bQuest == '\0');
 }
 
 uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
@@ -3556,7 +3557,7 @@ D2RuneTableStrc * __stdcall CalculateRunewordByItem(D2UnitStrc * pItem) {
 
     D2ItemsTxt* pItemsTxt;
     pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
-    if (pItemsTxt->bQuest || !pItem->pInventory) {
+    if (pItemsTxt->bQuest != '\0' || !pItem->pInventory) {
       return nullptr;
     }
 
@@ -3951,7 +3952,7 @@ BOOL __stdcall IsValidImbumeItem(D2UnitStrc * pUnit) {
     }
 
     D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
-    if (pItemsTxt->bQuest) {
+    if (pItemsTxt->bQuest != '\0') {
       uVar1 = ITEM_GetItemsTxt_szCode(pUnit);
       if (uVar1 != 0x2067656c) {
         return 0;
@@ -4049,7 +4050,7 @@ BOOL __stdcall ITEM_CheckIfItemCanHaveSockets(D2UnitStrc * pUnit) {
     }
 
     D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (pItemsTxt->bQuest) {
+    if (pItemsTxt->bQuest != '\0') {
       uVar1 = ITEM_GetItemsTxt_szCode(pUnit);
       if (uVar1 != 0x2067656c) {
         return 0;
@@ -6501,31 +6502,41 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
       if (__frame0.nBuyPrice > pNpcTxt->maxBuy[nDifficulty]) {
         iVar7 = pNpcTxt->maxBuy[nDifficulty];
       }
-      if (nTransactionType != 1) {
-        if (nTransactionType != 3) {
-          if (nReducedPrices) {
-            iVar3 = D2Client::Stats::D2ApplyPercent(__frame0.nSellPrice, nReducedPrices, 100);
-            __frame0.nSellPrice = iVar6 - iVar3;
-          }
-          if (__frame0.nSellPrice < 1) {
-            return 1;
-          }
-        } else {
-          if (nReducedPrices) {
-            iVar3 = D2Client::Stats::D2ApplyPercent(iVar1, nReducedPrices, 100);
-            iVar1 -= iVar3;
-          }
 
-          __frame0.nSellPrice = 1;
-          if (iVar1 >= 1) {
-            return iVar1;
+      switch (nTransactionType) {
+        case 1:
+          {
+            __frame0.nSellPrice = 1;
+            if (iVar7 >= 1) {
+              return iVar7;
+            }
+
+            break;
           }
-        }
-      } else {
-        __frame0.nSellPrice = 1;
-        if (iVar7 >= 1) {
-          return iVar7;
-        }
+        case 3:
+          {
+            if (nReducedPrices) {
+              iVar3 = D2Client::Stats::D2ApplyPercent(iVar1, nReducedPrices, 100);
+              iVar1 -= iVar3;
+            }
+
+            __frame0.nSellPrice = 1;
+            if (iVar1 >= 1) {
+              return iVar1;
+            }
+
+            break;
+          }
+        default:
+          {
+            if (nReducedPrices) {
+              iVar3 = D2Client::Stats::D2ApplyPercent(__frame0.nSellPrice, nReducedPrices, 100);
+              __frame0.nSellPrice = iVar6 - iVar3;
+            }
+            if (__frame0.nSellPrice < 1) {
+              return 1;
+            }
+          }
       }
 
       return __frame0.nSellPrice;

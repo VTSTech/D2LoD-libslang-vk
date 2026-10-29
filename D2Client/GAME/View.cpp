@@ -612,7 +612,7 @@ static void DRAW_Background_Ancients(D2UnitStrc * pPlayerUnit) {
     static int gnAncientsScrollDelta; D2_STATIC_GUARD_BSS(gnAncientsScrollDelta, "D2Client::GAME::View::DRAW_Background_Ancients::gnAncientsScrollDelta");
     static uint8_t gbAncientsScrollBaseXSet; D2_STATIC_GUARD_BSS(gbAncientsScrollBaseXSet, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollBaseXSet");
     static int gnAncientsScrollBaseX; D2_STATIC_GUARD_BSS(gnAncientsScrollBaseX, "D2Client::GAME::View::DRAW_Background_Ancients::gnAncientsScrollBaseX");
-    static bool gbAncientsScrollInitialized; D2_STATIC_GUARD_BSS(gbAncientsScrollInitialized, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollInitialized");
+    static unsigned int gbAncientsScrollInitialized; D2_STATIC_GUARD_BSS(gbAncientsScrollInitialized, "D2Client::GAME::View::DRAW_Background_Ancients::gbAncientsScrollInitialized");
 
     DWORD dwResMode;
     int nCloudIdx;

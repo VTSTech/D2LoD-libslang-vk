@@ -886,7 +886,6 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
     eD2UnitFlags eUpdatedFlags;
     D2SkillListStrc* pSkillsList;
     D2DifficultyLevelsTxt* pDiffLevels;
-    D2SkillStrc* pSkill;
     int i;
     int32_t nErrLine;
     if (nClassId < 0) {
@@ -997,8 +996,7 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
       if (*pSkillIdPtr >= 0 && pMonStatsTxt->aSkLvl[i] > '\0') {
         D2Common::Skills::AddSkill(pUnit, (int)*pSkillIdPtr, pMonStatsTxt->aSkLvl[i] + nMonStats2Idx, 1, ".\\UNIT\\Monster.cpp", 0x23f);
         nRandStartFrame = (uint32_t)pMonStatsTxt->aSkMode[i];
-        pSkill = D2Common::Skills::SKILLS_GetSkillByEnum((int)*pSkillIdPtr, pUnit);
-        D2Common::Skills::SetSkillMode(pSkill, nRandStartFrame);
+        D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum((int)*pSkillIdPtr, pUnit), nRandStartFrame);
       }
 
       pSkillIdPtr++;
@@ -1239,18 +1237,25 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
       pick_difficulty_palette:
       *(uint8_t*)(char*)&nDifficultyForPal = GAME::Game::GetDificulity();
       nDifficultyForPal = (uint32_t)(uint8_t)nDifficultyForPal;
-      if (nDifficultyForPal) {
-        if (nDifficultyForPal != 1) {
-          if (nDifficultyForPal == 2) {
+      switch (nDifficultyForPal) {
+        case 1:
+          {
+            nPalShiftIdx = 3;
+            goto apply_pal_shift;
+          }
+        case 2:
+          {
             nPalShiftIdx = 4;
             goto apply_pal_shift;
           }
-
-          goto clamp_pal_shift;
-        }
-
-        nPalShiftIdx = 3;
-        goto apply_pal_shift;
+        default:
+          {
+            goto clamp_pal_shift;
+          }
+        case 0:
+          {
+            break;
+          }
       }
     } else {
       if (nMonStats2Idx <= 0xf3) {
@@ -2002,11 +2007,11 @@ static void MONSTER_SpawnDeathEffectMissiles(D2UnitStrc * pUnit) {
 static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
     int32_t nPosY;
     int32_t nPosX;
-    D2RoomStrc* pRoom;
     eCollisionFlags eAddCollisionFlag;
     eD2UnitType eUnitType;
+    int32_t nRemoveCollisionFlags;
     if (nParam == 0xc) {
-      int32_t nRemoveCollisionFlags;
+      D2RoomStrc* pRoom;
       if (pUnit) {
         pUnit->eUnitFlags &= ~(UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE);
       }
@@ -2029,9 +2034,7 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
         nPosX = 0;
       }
 
-      nRemoveCollisionFlags = 0x1000;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::Collision::RemoveCollision(pRoom, nPosX, nPosY, nRemoveCollisionFlags);
+      D2Common::Collision::RemoveCollision(D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, 0x1000);
       eUnitType = pUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPosY = pUnit->pPath.pStaticPath->nPosY;
@@ -2088,8 +2091,7 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
       }
 
       eAddCollisionFlag = COLLIDE_UNIT_RELATED;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::Collision::AddCollision(pRoom, nPosX, nPosY, eAddCollisionFlag);
+      D2Common::Collision::AddCollision(D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, eAddCollisionFlag);
       eUnitType = pUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPosY = pUnit->pPath.pStaticPath->nPosY;
@@ -2109,8 +2111,7 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
       }
 
       eAddCollisionFlag = COLLIDE_MONSTER;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::Collision::AddCollision(pRoom, nPosX, nPosY, eAddCollisionFlag);
+      D2Common::Collision::AddCollision(D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, eAddCollisionFlag);
       D2Common::PATH::DynamicPath::SetUnitWidth(pUnit, 1);
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pUnit->pPath.pDynamicPath, 0x3c01);
       nPosY = Engine::Particle::PARTICLE_GetScreenZ(pUnit);
@@ -2127,9 +2128,9 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
 void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessageHandleStrc * pMessage) {
     uint8_t nDirection;
     D2UnitStrc* pPlayerUnit_lcl;
+    uint32_t uVar1;
     BOOL bHasMaxState;
     D2MonStatsTxt* pMonStats;
-    uint32_t uVar1;
     D2UnitStrc* pConfirmedTarget;
     int32_t nPosY;
     uint32_t bPathCalcResult;
@@ -2463,8 +2464,8 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       pUnit->dwLastHitClass = pMessage->nTargetX;
       pPlayerUnit_lcl = GAME::Select::GetSelectedUnit();
       if (pPlayerUnit_lcl == pUnit) {
-        nDirection = GAME::Game::GAME_GetPrimaryClickState();
-        if (!(nDirection & 8) && (nDirection = GAME::Game::GAME_GetMouseButtonEventState() , !(nDirection & 8))) {
+        bPathCalcResult = GAME::Game::GAME_GetPrimaryClickState();
+        if (!(bPathCalcResult & 8) && (uVar1 = GAME::Game::GAME_GetMouseButtonEventState() , !(uVar1 & 8))) {
           GAME::Select::ClearSelectedUnit();
         } else {
           GAME::Game::UI_ResetInputState();
@@ -2877,7 +2878,6 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, D2MercInitArgStrc 
     uint32_t nDifficulty;
     D2UnitStrc* pPlayerUnit_lcl;
     int32_t nLevel;
-    D2SkillStrc* pSkill;
     uint16_t* pMercName;
     uint16_t nNameId;
     uint32_t nSkillModeVal;
@@ -2911,8 +2911,7 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, D2MercInitArgStrc 
     }
 
     nLevel = sHireData.nLevel;
-    bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
-    pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(bIsExpansion, sHireData.nId, nLevel);
+    pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(GAME::Game::CLIENT_CheckExpansion(), sHireData.nId, nLevel);
     if (!pHirelingTxt) {
       return;
     }
@@ -2938,8 +2937,7 @@ void __fastcall MERC_InitializeFromPacket(D2UnitStrc * pUnit, D2MercInitArgStrc 
 
       nSkillModeVal = (uint32_t)(char)pHirelingTxt->nSkillMode[nSkillIdx];
       D2Common::Skills::AddSkill(pMercUnit, eSkill, nLevel, 0, ".\\UNIT\\Monster.cpp", 0x9c8);
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pMercUnit);
-      D2Common::Skills::SetSkillMode(pSkill, nSkillModeVal);
+      D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pMercUnit), nSkillModeVal);
       pSkillIdPtr++;
       nSkillIdx++;
       pUnit = pMercUnit;

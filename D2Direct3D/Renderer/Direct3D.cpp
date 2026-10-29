@@ -137,19 +137,27 @@ void __fastcall RENDERER_D3D_SetBlendMode(int nBlendMode) {
     if (!(!g_nCurrentTextureOpMode || nBlendMode != g_nCurrentTextureOpMode)) {
       return;
     }
-    if (nBlendMode != 1) {
-      if (nBlendMode != 2) {
-        g_nCurrentTextureOpMode = nBlendMode;
-        return;
-      }
 
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 1, 3);
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 4, 3);
-      dwValue = 0;
-    } else {
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 1, 4);
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 4, 4);
-      dwValue = 1;
+    switch (nBlendMode) {
+      case 1:
+        {
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 1, 4);
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 4, 4);
+          dwValue = 1;
+          break;
+        }
+      default:
+        {
+          g_nCurrentTextureOpMode = nBlendMode;
+          return;
+        }
+      case 2:
+        {
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 1, 3);
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 4, 3);
+          dwValue = 0;
+          break;
+        }
     }
 
     g_pD3DDevice->lpVtbl->SetRenderState(g_pD3DDevice, 0xf, dwValue);
@@ -202,17 +210,25 @@ void __fastcall RENDERER_D3D_SetTextureFilterMode(int nFilterMode) {
     if (!(!g_nCurrentFilterMode || nFilterMode != g_nCurrentFilterMode)) {
       return;
     }
-    if (nFilterMode != 1) {
-      if (nFilterMode != 2) {
-        g_nCurrentFilterMode = nFilterMode;
-        return;
-      }
 
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x10, 2);
-      dwValue = 2;
-    } else {
-      g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x10, 1);
-      dwValue = 1;
+    switch (nFilterMode) {
+      case 1:
+        {
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x10, 1);
+          dwValue = 1;
+          break;
+        }
+      default:
+        {
+          g_nCurrentFilterMode = nFilterMode;
+          return;
+        }
+      case 2:
+        {
+          g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x10, 2);
+          dwValue = 2;
+          break;
+        }
     }
 
     g_pD3DDevice->lpVtbl->SetTextureStageState(g_pD3DDevice, 0, 0x11, dwValue);
@@ -2160,8 +2176,15 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       RENDERER_nWindowWidth = 800;
       RENDERER_nWindowHeight = 600;
       g_bPerspectiveMode = 0;
-      if (nResolutionMode != 2) {
-        goto setup_device;
+      switch (nResolutionMode) {
+        default:
+          {
+            goto setup_device;
+          }
+        case 2:
+          {
+            break;
+          }
       }
     }
 
@@ -4018,13 +4041,17 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
     if (!nParam1) {
       pRect->bottom += 0x20;
       pRect->left = -0x20;
-      if (nScreenPanels == 1) {
-        pRect->right -= RENDERER_nWindowWidth / 2;
-        return;
-      }
-      if (nScreenPanels == 2) {
-        pRect->left = RENDERER_nWindowWidth / 2 - 0x20;
-        return;
+      switch (nScreenPanels) {
+        case 1:
+          {
+            pRect->right -= RENDERER_nWindowWidth / 2;
+            return;
+          }
+        case 2:
+          {
+            pRect->left = RENDERER_nWindowWidth / 2 - 0x20;
+            return;
+          }
       }
     } else {
       int nQuarterWidth;
@@ -4034,17 +4061,21 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
       }
 
       nQuarterWidth = RENDERER_nWindowWidth / 4;
-      if (nScreenPanels != 1) {
-        if (nScreenPanels == 2) {
-          *pOffset = nQuarterWidth;
-          pRect->right -= nQuarterWidth;
-          pRect->left += nQuarterWidth;
-          return;
-        }
-      } else {
-        *pOffset = -nQuarterWidth;
-        pRect->right -= nQuarterWidth;
-        pRect->left += nQuarterWidth;
+      switch (nScreenPanels) {
+        case 1:
+          {
+            *pOffset = -nQuarterWidth;
+            pRect->right -= nQuarterWidth;
+            pRect->left += nQuarterWidth;
+            break;
+          }
+        case 2:
+          {
+            *pOffset = nQuarterWidth;
+            pRect->right -= nQuarterWidth;
+            pRect->left += nQuarterWidth;
+            return;
+          }
       }
     }
 }
@@ -4095,7 +4126,7 @@ void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer() {
       } while (nNextCol < 3);
 
       iRow++;
-    } while ((int)pNextVertexRHW < (uintptr_t)((char*)&gaD3DPerspectiveStripVertices + sizeof(gaD3DPerspectiveStripVertices) + 12));
+    } while ((int)pNextVertexRHW < (intptr_t)((char*)&gaD3DPerspectiveStripVertices + sizeof(gaD3DPerspectiveStripVertices) + 12));
 
     uint32_t* pWallCornerFixup = (uint32_t*)&gaD3DWallCornerTable[1].nY;
     do {
@@ -4112,7 +4143,7 @@ void __stdcall RENDERER_D3D_InitPerspectiveVertexBuffer() {
       pWallCornerFixup[0xb] <<= 0x10;
       pWallCornerFixup[0xc] <<= 0x10;
       pWallCornerFixup += 0x12;
-    } while ((int)pWallCornerFixup < (uintptr_t)&gaD3DWallCornerTable + 736);
+    } while ((int)pWallCornerFixup < (intptr_t)&gaD3DWallCornerTable + 736);
 }
 
 // NOTE: Register params: pTileLibraryEntryStrc (ECX): D2TileLibraryEntryStrc *, nTilePosX (EDX): int
@@ -4234,7 +4265,7 @@ int __fastcall RENDERER_D3D_RenderShadowTileWithPerspective(D2TileLibraryEntrySt
 
           nFixedScreenX += 0x8000;
           _bRendered += 0x8000;
-        } while ((int)pfVertex < (uintptr_t)((char*)&gaD3DPerspectiveStripVertices + sizeof(gaD3DPerspectiveStripVertices)));
+        } while ((int)pfVertex < (intptr_t)((char*)&gaD3DPerspectiveStripVertices + sizeof(gaD3DPerspectiveStripVertices)));
 
         g_pD3DDevice->lpVtbl->DrawIndexedPrimitive(g_pD3DDevice, 5, 0x1c4, gaD3DPerspectiveStripVertices, 0xf, gaD3DPerspectiveStripIndices, 0x16, 0x1c);
         _bRendered = 1;
@@ -4442,7 +4473,7 @@ static BOOL __stdcall RENDERER_D3D_RenderWallTileWithPerspective(int nScreenPane
 
             fLayerIndex.nValue++;
             pfVertexOuter += 3;
-          } while ((int)pfVertexOuter < (uintptr_t)((char*)&gaD3DPerspectiveVertices + 64));
+          } while ((int)pfVertexOuter < (intptr_t)((char*)&gaD3DPerspectiveVertices + 64));
 
           g_pD3DDevice->lpVtbl->DrawIndexedPrimitive(g_pD3DDevice, 5, 0x1c4, gaD3DPerspectiveStripVertices, 0xf, gaD3DPerspectiveStripIndices, 0x16, 0x1c);
           nMidZ = 1;
@@ -4783,7 +4814,7 @@ void __stdcall RENDERER_D3D_InitLightingTable() {
 
       pTableRow += 0x100;
       nRow++;
-    } while ((int)pTableRow < (uintptr_t)((char*)&g_aLightingTable + sizeof(g_aLightingTable)));
+    } while ((int)pTableRow < (intptr_t)((char*)&g_aLightingTable + sizeof(g_aLightingTable)));
 }
 
 void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue) {

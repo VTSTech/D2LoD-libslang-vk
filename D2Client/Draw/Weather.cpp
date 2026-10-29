@@ -382,7 +382,7 @@ void __stdcall WEATHER_FreeDC6Graphics() {
       }
 
       ppBubbleDC6Cur++;
-    } while ((int)ppBubbleDC6Cur < (uintptr_t)&DC6_UncompOverlays_bubble[4]);
+    } while ((int)ppBubbleDC6Cur < (intptr_t)&DC6_UncompOverlays_bubble[4]);
 }
 
 void __fastcall WEATHER_ClearParticleArrays(int bUpdateAct5) {
@@ -604,19 +604,25 @@ static void __stdcall WEATHER_GetLightingTint(uint8_t * pOutAlpha, int nIntensit
     }
 
     uint32_t nSignBits = nScaled >> 0x1f;
-    if (nPeriodOfDay != 1) {
-      if (nPeriodOfDay == 2) {
-        *pOutAlpha = gWeatherPaletteLightingNightColors[(int)(nIndex + (nSignBits & 3)) >> 2];
-        return;
-      }
-      if (nPeriodOfDay != 3) {
-        *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
-        return;
-      }
+    switch (nPeriodOfDay) {
+      case 2:
+        {
+          *pOutAlpha = gWeatherPaletteLightingNightColors[(int)(nIndex + (nSignBits & 3)) >> 2];
+          return;
+        }
+      default:
+        {
+          *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
+          return;
+        }
+      case 1:
+        case 3:
+          {
+            nIndex = (int)(nIndex - nSignBits) >> 1;
+            *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
+            return;
+          }
     }
-
-    nIndex = (int)(nIndex - nSignBits) >> 1;
-    *pOutAlpha = gWeatherPaletteLightingNightColors[nIndex];
 }
 
 static void WEATHER_SpawnParticle(D2SeedStrc * pSeed) {
@@ -830,12 +836,17 @@ void __stdcall WEATHER_DrawParticles() {
 
     int nClipLeft = 0;
     uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    if (eBorderType != 1) {
-      if (eBorderType == 2) {
-        nClipLeft = ScreenSizeX / 4 * 2;
-      }
-    } else {
-      nClipRight += ScreenSizeX / 4 * -2;
+    switch (eBorderType) {
+      case 1:
+        {
+          nClipRight += ScreenSizeX / 4 * -2;
+          break;
+        }
+      case 2:
+        {
+          nClipLeft = ScreenSizeX / 4 * 2;
+          break;
+        }
     }
 
     D2WeatherParticleStrc* pParticleData = (D2WeatherParticleStrc*)pEnvironmentParticles->pData;
@@ -971,11 +982,9 @@ void __stdcall DRAW_Overlay_Weather() {
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     int nClipLeft;
-    int32_t nPosX;
     int nYEnd;
     int nXStart;
     int32_t nLineOrCoord;
-    int32_t nSoundPosZ;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_Net();
     bool bVar2 = false;
     if (pPlayer) {
@@ -1007,10 +1016,7 @@ void __stdcall DRAW_Overlay_Weather() {
             nLineOrCoord = Seed::RollBetweenMinAndMax(pSeed, 0x19, 0x32);
             nClipLeft = Sound::SOUND_PlaySound(SOUND_ITEM_BOOTSCHAIN, nullptr, nLineOrCoord, 0, 0);
             if (nClipLeft) {
-              nSoundPosZ = 0;
-              nLineOrCoord = Seed::RollBetweenMinAndMax(pSeed, -200, 400);
-              nPosX = Seed::RollBetweenMinAndMax(pSeed, -200, 400);
-              Sound::SOUND_PlayEnvironmentSound(nClipLeft, nPosX, nLineOrCoord, nSoundPosZ);
+              Sound::SOUND_PlayEnvironmentSound(nClipLeft, Seed::RollBetweenMinAndMax(pSeed, -200, 400), Seed::RollBetweenMinAndMax(pSeed, -200, 400), 0);
             }
           } else {
             gnBlizzardSoundPlayed = 1;
@@ -1023,12 +1029,17 @@ void __stdcall DRAW_Overlay_Weather() {
         nXStart = 0;
         nYEnd = ScreenSizeY - 0x2f;
         eBorderType = UI::Path::DRAW_GetTypeOfBorder();
-        if (eBorderType != 1) {
-          if (eBorderType == 2) {
-            nXStart = ScreenSizeX / 4 * 2;
-          }
-        } else {
-          nClipLeft += ScreenSizeX / 4 * -2;
+        switch (eBorderType) {
+          case 1:
+            {
+              nClipLeft += ScreenSizeX / 4 * -2;
+              break;
+            }
+          case 2:
+            {
+              nXStart = ScreenSizeX / 4 * 2;
+              break;
+            }
         }
 
         D2gfx::D2GFX::D2GFX_DrawSolidRectEx(nXStart, 0, nClipLeft, nYEnd, 0xff, DRAW_SOLID);
@@ -1070,15 +1081,20 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
     __frame0.nMaxX = ScreenSizeX;
     uint32_t eBorderType;
     eBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    if (eBorderType != 1) {
-      if (eBorderType == 2) {
-        nXOffset = ScreenSizeX / 4;
-        __frame0.nMinX = nXOffset * 2;
-      }
-    } else {
-      nPositionX = ScreenSizeX / 4;
-      nXOffset = -nPositionX;
-      __frame0.nMaxX = nScreenWidth + nPositionX * -2;
+    switch (eBorderType) {
+      case 1:
+        {
+          nPositionX = ScreenSizeX / 4;
+          nXOffset = -nPositionX;
+          __frame0.nMaxX = nScreenWidth + nPositionX * -2;
+          break;
+        }
+      case 2:
+        {
+          nXOffset = ScreenSizeX / 4;
+          __frame0.nMinX = nXOffset * 2;
+          break;
+        }
     }
 
     memset(&sGfxData, 0, 0x48);

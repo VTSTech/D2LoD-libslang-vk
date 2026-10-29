@@ -110,7 +110,7 @@ int __stdcall CHARSEL_UpdateSelectionExpansion();
 BOOL __stdcall CHARSEL_UpdateSelectedCharDisplay();
 void __fastcall UIMENU_SelectDifficultySinglePlayerOrTcpip(int32_t nCharLevel, int32_t bExpansion);
 BOOL __stdcall SelectCharHandler(struct D2ControlMsg * pControlMsg);
-void __fastcall UIMENU_CALLBACK_SetDificultySingleplayerTcpIp(struct D2ControlMsg * pControlMsg, uint8_t byDifficulty);
+void __fastcall UIMENU_CALLBACK_SetDificultySingleplayerTcpIp(struct D2ControlMsg * pControlMsg, int byDifficulty);
 BOOL __stdcall UIMENU_Callback_NormalButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall UIMENU_Callback_NightmareButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall UIMENU_Callback_HellButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);

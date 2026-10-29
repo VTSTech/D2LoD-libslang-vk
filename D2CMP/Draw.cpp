@@ -465,14 +465,21 @@ void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
     int nAlphaValue;
     uint32_t nAlphaLevel = 0;
     do {
-      if (nAlphaLevel) {
-        if (nAlphaLevel != 1) {
-          nAlphaValue = 0x3f;
-        } else {
-          nAlphaValue = 0x7f;
-        }
-      } else {
-        nAlphaValue = 0xbf;
+      switch (nAlphaLevel) {
+        case 0:
+          {
+            nAlphaValue = 0xbf;
+            break;
+          }
+        case 1:
+          {
+            nAlphaValue = 0x7f;
+            break;
+          }
+        default:
+          {
+            nAlphaValue = 0x3f;
+          }
       }
 
       iAlphaFactor = 0xff - nAlphaValue;

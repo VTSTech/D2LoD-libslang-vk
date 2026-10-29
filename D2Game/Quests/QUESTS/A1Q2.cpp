@@ -60,7 +60,7 @@ namespace D2Game::Quests::QUESTS::A1Q2 {
 // status flag has advanced past the "boss killed" stage (nStateFlag > 3, i.e.
 // the reward/turn-in stages 4/5). Used to gate whether the quest is finalizable.
 bool __fastcall QuestDataBool(D2QuestDataStrc * pQuestData) {
-    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlag >= 4)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag >= 4)) {
       return false;
     }
 
@@ -141,13 +141,13 @@ void __fastcall Q02_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA1Q2Strc* pvVar1 = pQuestData->pQuestSpecificData.pA1Q2;
-    if (!pvVar1->bAcceptedQuest) {
+    if (pvVar1->bAcceptedQuest != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q02_NotifyQuestStateToPlayer, true);
-    pvVar1->bAcceptedQuest = false;
+    pvVar1->bAcceptedQuest = '\0';
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q02_SyncQuestStepToPlayer);
@@ -166,7 +166,7 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
     if (nQuestMsg == 0x51) {
-      pQuestData->pQuestSpecificData.pA1Q2->bAcceptedQuest = true;
+      pQuestData->pQuestSpecificData.pA1Q2->bAcceptedQuest = '\x01';
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0xc0);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q02_SyncQuestStepToPlayer);
       QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
@@ -424,7 +424,7 @@ BOOL __fastcall Q02_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
 void __fastcall Q02_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nTargetGUID;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -457,7 +457,7 @@ void __fastcall Q02_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 void __fastcall Q02_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2GSPacketSrv0x27_TextStrc* pTextControl;
     pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x11 && pQuestData->bIsNotIntroduction) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x11 && pQuestData->bIsNotIntroduction == '\x01') {
       bool bStateFlagLow;
       bStateFlagLow = pQuestData->nStateFlag < 3;
       if (bStateFlagLow) {
@@ -548,9 +548,9 @@ bool __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bVar1;
     D2QuestDataStrc* pNextQuestData;
     BOOL bBadFnPtr;
-    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0x230);
-    } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
+    } else if (pQuestData->nStateFlag == 5 || pQuestData->bIsNotIntroduction == '\0') {
       pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (pNextQuestData) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -632,7 +632,7 @@ void __fastcall Q02_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->fpSequenceFilter = Q02_SequenceFilter;
     pQuestData->pNpcMessages = &A1Q2::aNpcGossipData;
     pQuestData->nQuestIdReal = QUEST_SistersBurialGrounds;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     D2QuestDataA1Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA1Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0x27f);
     pQuestData->fpStatusFilter = 0;
     pQuestData->pQuestSpecificData.pA1Q2 = pQuestSpecificData;
@@ -641,7 +641,7 @@ void __fastcall Q02_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nSequenceQuestId = QUEST_TheSearchForCain;
     pQuestSpecificData->bQuestCompleted = false;
     pQuestSpecificData->bBloodRavenKilled = false;
-    pQuestSpecificData->bAcceptedQuest = false;
+    pQuestSpecificData->bAcceptedQuest = '\0';
     pQuestSpecificData->bRewardGiven = false;
     pQuestSpecificData->nBloodRavenGUID = 0;
     pQuestData->nStateFlag = 0;

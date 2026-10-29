@@ -2017,9 +2017,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x7E_LoadMonsterCof(D2ClientStrc * pClient)
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x82_PortalOwnership(::SGAMEDATA * pGame, D2ClientStrc * pClient, uint32_t dwPortalObjGUID, uint32_t dwPortalGUIDArg) {
-    D2UnitDataPlayerStrc* pPlayerData;
     uint8_t aPacket[29];
-    int32_t nBufferOutputLength;
     aPacket[0] = 0x82;
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_OBJECT, dwPortalObjGUID);
     aPacket[5] = 0;
@@ -2028,9 +2026,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x82_PortalOwnership(::SGAMEDATA * pGame, D
       nOwnerGUID = Objects::GetUnitGUIDFromUnitTimerArg(pUnit);
       pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, nOwnerGUID);
       if (pUnit) {
-        nBufferOutputLength = 0x10;
-        pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-        Storm::Source::SSTR::SStrCopy((char*)(aPacket + 5), pPlayerData->szCharName, nBufferOutputLength);
+        Storm::Source::SSTR::SStrCopy((char*)(aPacket + 5), D2Common::Units::GetPlayerData(pUnit)->szCharName, 0x10);
         *(uint32_t*)((char*)&aPacket + 1) = pUnit->nUnitGUID;
         *(uint32_t*)((char*)&aPacket + 21) = dwPortalObjGUID;
         *(uint32_t*)((char*)&aPacket + 25) = dwPortalGUIDArg;
@@ -2323,8 +2319,6 @@ void __thiscall SCMD_WriteBooleanToBitBuffer(void * pThis, int32_t nBoolValue) {
 // Server-to-client packet builder/sender for D2GS message 0xAC (spawn/add a monster on the client). For a UNIT_MONSTER, bit-packs into a temp BitBuffer: animation mode (clamped to Attack2/Block/Kick/Death/Neutral), component/equipment indices, boss/champion/unique/superunique/minion/ghostly type flags, superunique boss number, the UMod list, the monster name seed, pet ownership (owner GUID when the owner is a player whose pet type==7), an optional owner GUID for player-owned units, and the network-visible stat list (only stats flagged ITEMSTATCOSTFLAG_SEND_OTHER, written using each stat's sendBits/sendParamBits). Prepends the 0xAC header (id, GUID, classId, X/Y, hp%, total size) and dispatches via NET_D2GS_SERVER_SendPacket_Helper to the given client. No-op for null/non-monster units. Stack-guarded.
 void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
     bool bHasComponents;
-    uint16_t wNameSeed;
-    int32_t nScratch;
     uint32_t nComponentData;
     uint8_t* pbVar2;
     D2UnitStrc* pOwner;
@@ -2348,7 +2342,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
     BOOL BVar1;
     D2ClientStrc* pClientSaved = pClient;
     if (!(!pUnit || pUnit->eUnitType != UNIT_MONSTER)) {
-      int16_t nBossNo;
+      int32_t nScratch;
       *(uint32_t*)((char*)&aPacket + 1) = pUnit->nUnitGUID;
       aPacket[0] = 0xac;
       *(uint16_t*)((char*)&aPacket + 5) = (uint16_t)pUnit->nClassId;
@@ -2436,9 +2430,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
         Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)(nComponentIdx != 0), 1);
         nComponentIdx = Monsters::CheckMonsterType(pUnit, MONTYPE_SUPERUNIQUE);
         if (nComponentIdx) {
-          nScratch = 0x10;
-          nBossNo = Monsters::GetBossNo(pUnit);
-          Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (int)nBossNo, nScratch);
+          Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (int)Monsters::GetBossNo(pUnit), 0x10);
         }
 
         pbVar2 = Monsters::GetMonUModList(pUnit);
@@ -2456,8 +2448,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
 
         Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, 0, 8);
         nScratch = 0x10;
-        wNameSeed = Monsters::GetNameSeed(pUnit);
-        Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)wNameSeed, nScratch);
+        Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)Monsters::GetNameSeed(pUnit), nScratch);
         pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
         if (!pOwner || pOwner->eUnitType != UNIT_PLAYER || (nScratch = PLAYER::PlayerPets::GetOwnersPetType(pOwner, *(uint32_t*)((char*)&aPacket + 1)) , nScratch != 7)) {
           nScratch = 1;
@@ -2577,8 +2568,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x59_AssignPlayer(D2ClientStrc * pClient, u
     *(uint16_t*)((char*)&byPacketId + 24) = wSrcPosY;
     SCMD_QueuePacketForClient(byPacketId, 0x1a, pClient);
     D2UnitStrc* pUnit = Clients::CLIENTS_GetControlUnit(pClient, 0);
-    ::SGAMEDATA* pGame = Clients::CLIENT_GetGame(pClient);
-    D2UnitStrc* pTargetUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, nUnitGUID);
+    D2UnitStrc* pTargetUnit = UNIT::SUnit::FindUnitFromTable(Clients::CLIENT_GetGame(pClient), UNIT_PLAYER, nUnitGUID);
     if (pTargetUnit) {
       NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(pUnit, pTargetUnit);
     }
@@ -2774,29 +2764,33 @@ void __thiscall Send0x9CItemToCursor(void * pThis, D2UnitStrc * pUnit) {
 void __thiscall Send0x9CItemHandleInShop(void * pThis, D2UnitStrc * pUnit, char cParam) {
     eInventoryPage eCurrentPage;
     eInventoryPage ePreviousPage;
+    int32_t iVar1;
     BOOL bIsIdentified;
     uint32_t nUnidentifiedFlag;
-    if (cParam != '8') {
-      if (cParam == '9') {
-        eCurrentPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pUnit);
-        ePreviousPage = D2Common::ITEMS::Items::ITEM_GetItemData_ePreviousPage(pUnit);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, ePreviousPage);
-        NET_D2GS_SERVER_Send_0x9C_ITEMEX((D2ClientStrc*)pThis, pUnit, 0xc, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD), 0);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, eCurrentPage);
-        return;
-      }
-    } else {
-      int32_t iVar1;
-      nUnidentifiedFlag = 0;
-      iVar1 = D2Common::ITEMS::Items::ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pUnit);
-      if (iVar1) {
-        bIsIdentified = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0x9c2, ".\\GAME\\SCmd.cpp");
-        if (!bIsIdentified) {
-          nUnidentifiedFlag = 1;
-        }
-      }
+    switch (cParam) {
+      case '8':
+        {
+          nUnidentifiedFlag = 0;
+          iVar1 = D2Common::ITEMS::Items::ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pUnit);
+          if (iVar1) {
+            bIsIdentified = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0x9c2, ".\\GAME\\SCmd.cpp");
+            if (!bIsIdentified) {
+              nUnidentifiedFlag = 1;
+            }
+          }
 
-      NET_D2GS_SERVER_Send_0x9C_ITEMEX((D2ClientStrc*)pThis, pUnit, 0xb, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD), nUnidentifiedFlag);
+          NET_D2GS_SERVER_Send_0x9C_ITEMEX((D2ClientStrc*)pThis, pUnit, 0xb, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD), nUnidentifiedFlag);
+          break;
+        }
+      case '9':
+        {
+          eCurrentPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pUnit);
+          ePreviousPage = D2Common::ITEMS::Items::ITEM_GetItemData_ePreviousPage(pUnit);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, ePreviousPage);
+          NET_D2GS_SERVER_Send_0x9C_ITEMEX((D2ClientStrc*)pThis, pUnit, 0xc, ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD), 0);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, eCurrentPage);
+          return;
+        }
     }
 }
 

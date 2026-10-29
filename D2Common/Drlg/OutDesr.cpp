@@ -368,7 +368,7 @@ static void PlaceTombEntriesInCanyon(D2DrlgLevelStrc * pLevel) {
     do {
       Outdoors::SpawnOutdoorLevelPresetEx(pLevel, pTombTableEntry[-1], *pTombTableEntry, pTombTableEntry[-3], pTombTableEntry[-2], 0);
       pTombTableEntry += 4;
-    } while ((int)pTombTableEntry < (uintptr_t)((char*)&gaTombCanyonPresetOffsets + 156));
+    } while ((int)pTombTableEntry < (intptr_t)((char*)&gaTombCanyonPresetOffsets + 156));
 
     Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 4, 4, 0x18a, -1, 0);
 }

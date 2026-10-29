@@ -28,8 +28,8 @@ namespace D2Client::UI::ControlConfig {
 void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouseYStack) {
     // Static local variables (originally global data)
     static int32_t gnUICtrlConfigHoveredControl; D2_STATIC_GUARD_BSS(gnUICtrlConfigHoveredControl, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gnUICtrlConfigHoveredControl");
-    static bool gbUICtrlConfigNeedRefresh; D2_STATIC_GUARD_BSS(gbUICtrlConfigNeedRefresh, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigNeedRefresh");
-    static bool gbUICtrlConfigPendingKey; D2_STATIC_GUARD_BSS(gbUICtrlConfigPendingKey, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigPendingKey");
+    static int gbUICtrlConfigNeedRefresh; D2_STATIC_GUARD_BSS(gbUICtrlConfigNeedRefresh, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigNeedRefresh");
+    static int gbUICtrlConfigPendingKey; D2_STATIC_GUARD_BSS(gbUICtrlConfigPendingKey, "D2Client::UI::ControlConfig::UI_UpdateConfigControlsState::gbUICtrlConfigPendingKey");
 
     uint32_t* piVar1;
     uint32_t dwNowTick;
@@ -64,7 +64,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (!nMouseInTopScroll && !nMouseInBottomScroll && !nMouseInLeftScroll && !nMouseInRightScroll && !nMouseInScrollbar && !nMouseInButton && nHoveredTab == 3) {
       gnUICtrlConfigButton3State = gnUICtrlConfigMouseButtonState;
@@ -79,7 +79,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       piVar1++;
-    } while ((int)piVar1 < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)piVar1 < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (nMouseInTopScroll || gaControlConfigRegionMouseState[0]) {
       int32_t nRowAtY;
@@ -113,13 +113,13 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (nMouseInBottomScroll) {
       gaControlConfigRegionMouseState[1] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwNowTick = GetTickCount();
-        if (dwNowTick > gbUICtrlConfigPendingKey + 0x32) {
+        if (dwNowTick > gbUICtrlConfigPendingKey + 0x32U) {
           gbUICtrlConfigPendingKey = GetTickCount();
           nMaxScrollRows = ui::UI_GetControlConfigRowCount();
           nMouseInTopScroll = gnUICtrlConfigScrollOffset;
@@ -143,13 +143,13 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (nMouseInLeftScroll) {
       gaControlConfigRegionMouseState[2] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwTickCount = GetTickCount();
-        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32U) {
           gbUICtrlConfigPendingKey = GetTickCount();
           nMaxScrollRows = ui::UI_GetControlConfigRowCount();
           nMouseInBottomScroll = (int)nMaxScrollRows;
@@ -174,13 +174,13 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (nMouseInRightScroll) {
       gaControlConfigRegionMouseState[3] = gnUICtrlConfigMouseButtonState;
       if (gnUICtrlConfigMouseButtonState) {
         dwTickCount = GetTickCount();
-        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32U) {
           gbUICtrlConfigPendingKey = GetTickCount();
           ui::UI_ScrollConfigListVertical(-0xe);
         }
@@ -196,7 +196,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (!nMouseInScrollbar) {
       if (!gaControlConfigRegionMouseState[4]) {
@@ -220,13 +220,13 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
       }
 
       pButtonState++;
-    } while ((int)pButtonState < (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
+    } while ((int)pButtonState < (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState)));
 
     if (nMouseInButton) {
       gaControlConfigRegionMouseState[5] = nMouseInTopScroll;
       if (nMouseInTopScroll) {
         dwTickCount = GetTickCount();
-        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32) {
+        if (dwTickCount > gbUICtrlConfigPendingKey + 0x32U) {
           gbUICtrlConfigPendingKey = GetTickCount();
           ui::UI_ScrollConfigListVertical(0xe);
         }
@@ -237,7 +237,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
     pButtonState = gaControlConfigRegionMouseState;
     while (!*pButtonState || pButtonState == gaControlConfigRegionMouseState + 6) {
       pButtonState++;
-      if ((int)pButtonState >= (uintptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState))) {
+      if ((int)pButtonState >= (intptr_t)((char*)&gaControlConfigRegionMouseState + sizeof(gaControlConfigRegionMouseState))) {
         if (nHoveredTab == 3) {
           return;
         }

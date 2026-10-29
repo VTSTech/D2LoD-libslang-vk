@@ -124,7 +124,6 @@ BOOL __fastcall SKILLAMA_SrvStFn06_PowerStrike(::SGAMEDATA * pGame, D2UnitStrc *
 // Amazon skill helper that probabilistically consumes weapon quantity or durability on use. For stackable weapons: if the RNG roll (based on pUnit's seed vs. nParam1 threshold) triggers, removes one charge via RemoveQuanityOnUse. For non-stackable weapons with durability: on a trigger, decrements durability by nParam2 and sends stat update 0x3E to the client; if durability reaches zero, calls ITEMMODE_SendItemUpdate (item break). Returns non-zero if an action was taken.
 static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nCurrentDurability;
-    uint16_t wLayer;
     bool bSendStatUpdate;
     int32_t nDurabilityStat;
     D2SeedStrc sNewSeed;
@@ -145,7 +144,7 @@ static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nPara
         }
       }
     } else {
-      D2ClientStrc* pClient;
+      uint16_t wLayer;
       bIsWeapon = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pUnit2);
       if (bIsWeapon) {
         sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
@@ -158,8 +157,7 @@ static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nPara
             wLayer = 0;
             nDurabilityStat = 0x48;
             bSendStatUpdate = true;
-            pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillAma.cpp", 0x9b);
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pUnit2, bSendStatUpdate, nDurabilityStat, bIsWeapon, wLayer);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillAma.cpp", 0x9b), pUnit2, bSendStatUpdate, nDurabilityStat, bIsWeapon, wLayer);
             return;
           }
 
@@ -842,8 +840,7 @@ BOOL __fastcall Skills_SrvDoFunc_012_StrafeContinue(::SGAMEDATA * pGame, D2UnitS
 
     uint32_t nTargetGUID = D2Common::Skills::SKILL_GetParam3(pActiveSkill);
     eMissilesId eMissileId = nTargetGUID;
-    eD2UnitType ePrevTargetUnitType = D2Common::Skills::SKILL_GetParam2(pActiveSkill);
-    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGameSave, ePrevTargetUnitType, nTargetGUID);
+    D2UnitStrc* pTarget = UNIT::SUnit::FindUnitFromTable(pGameSave, D2Common::Skills::SKILL_GetParam2(pActiveSkill), nTargetGUID);
     if (!pTarget) {
       pTarget = SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGameSave, pUnit, 0, 0, nStrafeRadius, 3, eMissileId, nullptr);
       if (!pTarget) {
@@ -1088,16 +1085,14 @@ BOOL __fastcall Skills_SrvDoFunc_015_SummonDecoy(::SGAMEDATA * pGame, D2UnitStrc
 
     D2Common::Units::StoreOwner(pSummon, pUnit);
     int32_t nDecoyHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    uint32_t nDivisor100 = 100;
-    int32_t nHpPct = D2Common::Skills::D2GetSkillCalc(pUnit, sSummonParams.pSkillTxt->calc[2], eSkill, nSkillLvl);
-    nDecoyHp = D2Client::Stats::D2ApplyPercent(nDecoyHp, nHpPct, nDivisor100);
+    nDecoyHp = D2Client::Stats::D2ApplyPercent(nDecoyHp, D2Common::Skills::D2GetSkillCalc(pUnit, sSummonParams.pSkillTxt->calc[2], eSkill, nSkillLvl), 100);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pSummon, UNITSTAT_hitpoints, nDecoyHp, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pSummon, UNITSTAT_maxhp, nDecoyHp, 0);
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pSummon, UNITSTAT_level, nLevel, 0);
     SkillNec::SKILLNEC_ReviveCorpseAsMinion(pGame, pUnit, pSummon, 0, nSkillLvl);
     SkillNec::SKILLNEC_ApplySummonBuffs(pGame, pUnit, pSummon, eSkill, nSkillLvl, 0);
-    nHpPct = D2Common::Skills::D2GetSkillCalc(pUnit, sSummonParams.pSkillTxt->calc[1], eSkill, nSkillLvl);
+    int32_t nHpPct = D2Common::Skills::D2GetSkillCalc(pUnit, sSummonParams.pSkillTxt->calc[1], eSkill, nSkillLvl);
     GAME::Event::SetEvent(pGame, pSummon, 7, pGame->dwGameFrame + nHpPct, 0, 0);
     Monsters::InitUmods(pGame, pSummon, 0x15, 0);
     D2Common::Units::SetOverlay(pSummon, 0xab, 0);

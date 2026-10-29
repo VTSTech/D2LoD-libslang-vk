@@ -32,6 +32,7 @@ template<> TSLink<::TCELENTRY>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Link(::
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * ptr, uint32_t nLinkType, ::TCELENTRY * pExisting) {
+    int nLinkBase;
     uint32_t pTmp;
     ::TCELENTRY* pEntry = ptr;
     if (!ptr) {
@@ -56,30 +57,37 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * 
     if (!pExisting) {
       pExisting = (::TCELENTRY*)&this->m_terminator;
     }
-    if (nLinkType != 1) {
-      pHead = pExisting->m_link.m_prevlink;
-      pEntry->m_link.m_prevlink = pHead;
-      pEntry->m_link.m_next = pHead->m_next;
-      pHead->m_next = (int)ptr;
-      pExisting->m_link.m_prevlink = &pEntry->m_link;
-      return;
-    }
 
-    pEntry->m_link.m_prevlink = &pExisting->m_link;
-    pEntry->m_link.m_next = pExisting->m_link.m_next;
-    int nLinkBase = this->m_linkoffset;
-    pTmp = pExisting->m_link.m_next;
-    if ((int)pTmp < 0) {
-      *(::TCELENTRY**)~pTmp = (::TCELENTRY*)pEntry;
-      pExisting->m_link.m_next = (int)ptr;
-      return;
-    }
-    if (nLinkBase < 0) {
-      nLinkBase = (int)pExisting - pExisting->m_link.m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          pEntry->m_link.m_prevlink = &pExisting->m_link;
+          pEntry->m_link.m_next = pExisting->m_link.m_next;
+          nLinkBase = this->m_linkoffset;
+          pTmp = pExisting->m_link.m_next;
+          if ((int)pTmp < 0) {
+            *(::TCELENTRY**)~pTmp = (::TCELENTRY*)pEntry;
+            pExisting->m_link.m_next = (int)ptr;
+            return;
+          }
+          if (nLinkBase < 0) {
+            nLinkBase = (int)pExisting - pExisting->m_link.m_prevlink->m_next;
+          }
 
-    *(::TCELENTRY**)(pTmp + nLinkBase) = (::TCELENTRY*)pEntry;
-    pExisting->m_link.m_next = (int)ptr;
+          *(::TCELENTRY**)(pTmp + nLinkBase) = (::TCELENTRY*)pEntry;
+          pExisting->m_link.m_next = (int)ptr;
+          return;
+        }
+      default:
+        {
+          pHead = pExisting->m_link.m_prevlink;
+          pEntry->m_link.m_prevlink = pHead;
+          pEntry->m_link.m_next = pHead->m_next;
+          pHead->m_next = (int)ptr;
+          pExisting->m_link.m_prevlink = &pEntry->m_link;
+          return;
+        }
+    }
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENTRY * ptr) {

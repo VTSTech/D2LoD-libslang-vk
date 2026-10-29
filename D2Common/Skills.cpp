@@ -196,6 +196,7 @@ int __fastcall SKILLS_GetMissileSpecialParam(int32_t nParamIndex, uint8_t bParam
 
 int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShiftCount, uint32_t nUnused, D2UnitStrc * * ppContext) {
     int32_t nResult;
+    int nStatValue;
     if (!ppContext) {
       return 0;
     }
@@ -214,19 +215,24 @@ int32_t __fastcall SKILLS_GetUnitStatValue(eD2UnitStat eUnitStat, int32_t nShift
       nResult = Units::GetAttackRate(pUnit);
       return nResult;
     }
-    if (nShiftCount != 1) {
-      int nStatValue;
-      if (nShiftCount != 2) {
-        nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
-        return nStatValue;
-      }
 
-      nResult = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, eUnitStat, 0);
-      return nResult;
+    switch (nShiftCount) {
+      case 1:
+        {
+          nResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, eUnitStat, 0);
+          return nResult;
+        }
+      case 2:
+        {
+          nResult = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, eUnitStat, 0);
+          return nResult;
+        }
+      default:
+        {
+          nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, 0);
+          return nStatValue;
+        }
     }
-
-    nResult = Stats::StatsEx::SERVER_GetUnitStat(pUnit, eUnitStat, 0);
-    return nResult;
 }
 
 static D2SkillStrc * GetSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
@@ -1692,32 +1698,36 @@ void __stdcall SKILLS_GetStateTransformGfx(D2UnitStrc * pUnit, eD2UnitType * pUn
       if (eUnitState != STATE_none && (int)eTransformState >= 0 && (int)eTransformState < sgptDataTable->nTxtStatesSize) {
         pDVar1 = sgptDataTable->pTxtStates + eTransformState;
         if (pDVar1) {
-          if (pDVar1->gfxtype == '\x01') {
-            *pUnitType = UNIT_MONSTER;
-            sVar2 = pDVar1->gfxclass;
-            *pGfxClass = (int)sVar2;
-            if (pUnit->eUnitType != UNIT_PLAYER) {
-              return;
-            }
+          switch (pDVar1->gfxtype) {
+            case '\x01':
+              {
+                *pUnitType = UNIT_MONSTER;
+                sVar2 = pDVar1->gfxclass;
+                *pGfxClass = (int)sVar2;
+                if (pUnit->eUnitType != UNIT_PLAYER) {
+                  return;
+                }
 
-            nValidatedAnimMode = SKILLS_ValidateAnimModeForMonster(*pAnimMode, (int)sVar2);
-            *pAnimMode = nValidatedAnimMode;
-            return;
-          }
-          if (pDVar1->gfxtype == '\x02') {
-            *pUnitType = UNIT_PLAYER;
-            sGfxClass = pDVar1->gfxclass;
-            *pGfxClass = (int)sGfxClass;
-            if (pUnit->eUnitType != UNIT_MONSTER) {
-              return;
-            }
-            if (sGfxClass == 6 && *pAnimMode == 4) {
-              *pAnimMode = 0xc;
-              return;
-            }
+                nValidatedAnimMode = SKILLS_ValidateAnimModeForMonster(*pAnimMode, (int)sVar2);
+                *pAnimMode = nValidatedAnimMode;
+                return;
+              }
+            case '\x02':
+              {
+                *pUnitType = UNIT_PLAYER;
+                sGfxClass = pDVar1->gfxclass;
+                *pGfxClass = (int)sGfxClass;
+                if (pUnit->eUnitType != UNIT_MONSTER) {
+                  return;
+                }
+                if (sGfxClass == 6 && *pAnimMode == 4) {
+                  *pAnimMode = 0xc;
+                  return;
+                }
 
-            *pAnimMode = INT_ARRAY_006eb308[*pAnimMode];
-            return;
+                *pAnimMode = INT_ARRAY_006eb308[*pAnimMode];
+                return;
+              }
           }
         }
       }
@@ -1953,18 +1963,27 @@ int32_t __stdcall SKILL_GetThrownWeaponBonus(D2UnitStrc * pUnit, D2UnitStrc * pU
     if (!(uStatOrResult && pSkillTxt->range == '\x02')) {
       return 0;
     }
-    if (nParam) {
-      if (nParam != 1) {
-        if (nParam != 2) {
+
+    switch (nParam) {
+      case 0:
+        {
+          uStatOrResult = 0x159;
+          break;
+        }
+      case 1:
+        {
+          uStatOrResult = 0x15a;
+          break;
+        }
+      default:
+        {
           return 0;
         }
-
-        uStatOrResult = 0x15b;
-      } else {
-        uStatOrResult = 0x15a;
-      }
-    } else {
-      uStatOrResult = 0x159;
+      case 2:
+        {
+          uStatOrResult = 0x15b;
+          break;
+        }
     }
 
     _bIsThrowable = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, uStatOrResult, aBonusEntries, 0x20);
@@ -2009,18 +2028,27 @@ int32_t __stdcall SKILLS_GetItemBonusDamage(D2UnitStrc * pUnit, D2UnitStrc * pIt
     if (pUnit) {
       return nThrownBonus;
     }
-    if (nBonusCount) {
-      if (nBonusCount != 1) {
-        if (nBonusCount != 2) {
+
+    switch (nBonusCount) {
+      case 0:
+        {
+          uStatId = 0x156;
+          break;
+        }
+      case 1:
+        {
+          uStatId = 0x157;
+          break;
+        }
+      default:
+        {
           return 0;
         }
-
-        uStatId = 0x158;
-      } else {
-        uStatId = 0x157;
-      }
-    } else {
-      uStatId = 0x156;
+      case 2:
+        {
+          uStatId = 0x158;
+          break;
+        }
     }
 
     nBonusCount = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pCaster, uStatId, aBonusEntries, 0x20);
@@ -2549,9 +2577,7 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
 
         nDexBonus = ITEMS::Items::ITEM_GetItemsTxt_wDexBonus(pOffHandWeapon);
         if (nDexBonus) {
-          bIsWeaponType = 100;
-          nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_dexterity, 0);
-          nDexDamBonus = D2Client::Stats::D2ApplyPercent(nStatValue, (int)nDexBonus, bIsWeaponType);
+          nDexDamBonus = D2Client::Stats::D2ApplyPercent(Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_dexterity, 0), (int)nDexBonus, 100);
           nTotalDamageBonus += nDexDamBonus;
         }
 
@@ -3899,21 +3925,30 @@ uint32_t __stdcall SKILL_GetPassiveElementCalc(D2UnitStrc * pUnit, eD2Skills eSk
     if (nSkillLevel <= 0) {
       return 0;
     }
-    if (nElementType) {
-      if (nElementType != 1) {
-        if (nElementType != 2) {
+
+    switch (nElementType) {
+      case 0:
+        {
+          nMinStatId = 0x156;
+          nElementType = 0x159;
+          break;
+        }
+      case 1:
+        {
+          nMinStatId = 0x157;
+          nElementType = 0x15a;
+          break;
+        }
+      default:
+        {
           return 0;
         }
-
-        nMinStatId = 0x158;
-        nElementType = 0x15b;
-      } else {
-        nMinStatId = 0x157;
-        nElementType = 0x15a;
-      }
-    } else {
-      nMinStatId = 0x156;
-      nElementType = 0x159;
+      case 2:
+        {
+          nMinStatId = 0x158;
+          nElementType = 0x15b;
+          break;
+        }
     }
 
     int nPassiveSlot = 0;

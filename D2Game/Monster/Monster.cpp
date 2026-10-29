@@ -69,7 +69,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Chat.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -451,17 +450,13 @@ void __fastcall MONSTER_CreateAndEquipItem(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
     uint32_t nItemUnitGUID = pItemUnit->nUnitGUID;
     D2MonEquipEntryStrc** ppItemCodeEntry = &ppItemId;
-    int32_t bDoEquip = 1;
-    eD2BodyLoc eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItemUnit);
-    BOOL bEquipped = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, nItemUnitGUID, eBodyLoc, bDoEquip, (uint32_t*)ppItemCodeEntry);
+    BOOL bEquipped = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, nItemUnitGUID, D2Common::ITEMS::Items::GetBodyLocation(pItemUnit), 1, (uint32_t*)ppItemCodeEntry);
     if (!bEquipped) {
       UNIT::SUnit::FreeServerUnit(pGame, pItemUnit);
       return;
     }
 
-    int32_t nDurStatLayer = 0;
-    int32_t nMaxDurability = D2Common::Stats::StatsEx::GetTxtMaxDurability(pItemUnit);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItemUnit, UNITSTAT_durability, nMaxDurability, nDurStatLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItemUnit, UNITSTAT_durability, D2Common::Stats::StatsEx::GetTxtMaxDurability(pItemUnit), 0);
 }
 
 // Force-kills all living, non-boss, neutral-alignment monsters of class nAltMonClassId or nAltMonClassId2 in the specified level (or all rooms of the act if eLevel==LEVEL_None). For each match, sets the Death skill and executes the lifecycle transition via MONSTERAI_ExecuteLifecycleTransition.
@@ -510,11 +505,9 @@ void __fastcall MONSTER_KillAllInLevel(::SGAMEDATA * pGame, int32_t nAltMonClass
 static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint32_t nParam, D2UnitStrc * pUnit) {
     uint32_t dwTmpStat;
     uint32_t nTmpVal;
-    eD2LevelId eRoomLevelId;
     D2StatListExStrc* pStatsEx;
     D2InventoryStrc* pNpcInventory;
     D2SkillListStrc* pSkillsList;
-    D2SkillStrc* pSkill;
     D2MonStatsInitStrc sMonStats;
     D2MonsterLevelDataStrc monLevelData;
     D2MonStatsExTxtSlot uMonTxt;
@@ -614,8 +607,7 @@ static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
     nTmpInt = pGame->bExpansion;
     if (nTmpInt && nParam && !pMonStatsTxt->noRatio && !pMonStatsTxt->boss) {
       nTmpVal = nParam;
-      eRoomLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      nMonLevel = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eRoomLevelId, (eD2Difficulty)nTmpVal, nTmpInt);
+      nMonLevel = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom), (eD2Difficulty)nTmpVal, nTmpInt);
     }
 
     D2Common::Stats::StatsEx::AllocStatListEx(pUnit, 0, (fpStatListExChangeCb)ITEMS::ItemMode::STATSLISTEX_FunctionCallback, pGame);
@@ -695,8 +687,7 @@ static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
           SKILLS::SkillsServer::SetSkill(pUnit, (int)*(short int*)&pRoom->ppRoomList, (int)pMonStatsTxt->aSkLvl[nTmpInt] + monLevelData.nMonsterSkillBonus, 0);
           if (-1 < pMonStatsTxt->aSkMode[nTmpInt]) {
             nTmpVal = (uint32_t)pMonStatsTxt->aSkMode[nTmpInt];
-            pSkill = D2Common::Skills::SKILLS_GetSkillByEnum((int)*(short int*)&pRoom->ppRoomList, pUnit);
-            D2Common::Skills::SetSkillMode(pSkill, nTmpVal);
+            D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum((int)*(short int*)&pRoom->ppRoomList, pUnit), nTmpVal);
           }
         }
 

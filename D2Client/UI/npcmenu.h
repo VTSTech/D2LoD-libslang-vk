@@ -51,10 +51,10 @@ struct __attribute__((packed)) D2NPCSpeechStrc {
     /* 0x09 */ int nCount;
     /* 0x0D */ int nGossip;
     /* 0x11 */ bool field5_0x11;
-    /* 0x12 */ bool bUpdated;
+    /* 0x12 */ uint8_t bUpdated;
     /* 0x13 */ bool bActPortal; // npc is a 'act portal'
     /* 0x14 */ bool bNoIntro; // npc doesnt have an introduction
-    /* 0x15 */ bool bGreeting;
+    /* 0x15 */ uint8_t bGreeting;
 };
 
 struct __attribute__((packed)) D2SpeechBankStrc {

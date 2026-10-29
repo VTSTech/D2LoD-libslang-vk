@@ -410,6 +410,7 @@ void __stdcall LogCpuInfo() {
     // Static local variables (originally global data)
     static char * gaCpuVendorNames[5] = { s_Unknown_006cc780, s_Intel_006cdebc, s_AMD_006cdeb8, s_Cyrix_006cdeb0, nullptr }; D2_STATIC_GUARD(gaCpuVendorNames, "Fog::Src::LogManager::LogCpuInfo::gaCpuVendorNames");
 
+    int nVendorIndex;
     uint32_t nVersionLow;
     uint32_t nModel;
     uint32_t nBrandId;
@@ -418,27 +419,33 @@ void __stdcall LogCpuInfo() {
     uint64_t uVar1;
     char szModelName[256];
     char* Format;
-    if (gSystemInfo.wProcessorLevel != 3) {
-      int nVendorIndex;
-      if (gSystemInfo.wProcessorLevel != 4) {
-        nVendorIndex = DetectCpuVendor();
-        uVar1 = GetCpuVersionInfo();
-        nVersionLow = (uint32_t)uVar1;
-        nModel = nVersionLow >> 4 & 0xf;
-        nType = nVersionLow >> 0xc & 3;
-        nFamily = nVersionLow >> 8 & 0xf;
-        nBrandId = GetCpuBrandId();
-        DecodeCpuModelName(nModel, nBrandId & 0xff, szModelName, nVendorIndex, nFamily, nType);
-        LOGFILE_WriteStringToFile("Vendor:  %s", gaCpuVendorNames[nVendorIndex]);
-        LOGFILE_WriteStringToFile("Version: %s (Type %X, Family %X, Model %X, Stepping %X, Brand %X)", szModelName, nType, nFamily, nModel, nVersionLow & 0xf, nBrandId & 0xff);
-        nBrandId = BenchmarkCpuSpeed();
-        LOGFILE_WriteStringToFile("Speed: Approx. %d MHz", nBrandId);
-        return;
-      }
-
-      Format = "Intel 486";
-    } else {
-      Format = "Intel 386";
+    switch (gSystemInfo.wProcessorLevel) {
+      case 3:
+        {
+          Format = "Intel 386";
+          break;
+        }
+      case 4:
+        {
+          Format = "Intel 486";
+          break;
+        }
+      default:
+        {
+          nVendorIndex = DetectCpuVendor();
+          uVar1 = GetCpuVersionInfo();
+          nVersionLow = (uint32_t)uVar1;
+          nModel = nVersionLow >> 4 & 0xf;
+          nType = nVersionLow >> 0xc & 3;
+          nFamily = nVersionLow >> 8 & 0xf;
+          nBrandId = GetCpuBrandId();
+          DecodeCpuModelName(nModel, nBrandId & 0xff, szModelName, nVendorIndex, nFamily, nType);
+          LOGFILE_WriteStringToFile("Vendor:  %s", gaCpuVendorNames[nVendorIndex]);
+          LOGFILE_WriteStringToFile("Version: %s (Type %X, Family %X, Model %X, Stepping %X, Brand %X)", szModelName, nType, nFamily, nModel, nVersionLow & 0xf, nBrandId & 0xff);
+          nBrandId = BenchmarkCpuSpeed();
+          LOGFILE_WriteStringToFile("Speed: Approx. %d MHz", nBrandId);
+          return;
+        }
     }
 
     LOGFILE_WriteStringToFile(Format);
@@ -620,7 +627,7 @@ FILE * __fastcall FindOrOpenLogFileSlot(uint8_t * szFileName, uint32_t * pnSlotI
         nSlotOffset += 4;
         pSearchName = pSavedFileName;
         pSlotNameBase = pStoredName;
-      } while ((int)pStoredName < (uintptr_t)((char*)&gLogFileNameArray + sizeof(gLogFileNameArray)));
+      } while ((int)pStoredName < (intptr_t)((char*)&gLogFileNameArray + sizeof(gLogFileNameArray)));
 
       nSlot = nEmptySlot;
       if ((int)nEmptySlot >= 0) {
@@ -980,9 +987,7 @@ void __fastcall LogToFile(uint32_t pLogRecord) {
       fprintf(pFile, "%02d:%02d:%02d.%03d  ", (uint32_t)*(uint16_t*)(pLogRecord + 0x1c), (uint32_t)*(uint16_t*)(pLogRecord + 0x1e), (uint32_t)*(uint16_t*)(pLogRecord + 0x20), (uint32_t)*(uint16_t*)(pLogRecord + 0x22));
     }
 
-    size_t _Count = 1;
-    uint32_t nMsgLen = Storm::Source::SSTR::SStrLen((char*)(szFileName + nNameLen + 1));
-    fwrite(szFileName + nNameLen + 1, nMsgLen, _Count, pFile);
+    fwrite(szFileName + nNameLen + 1, Storm::Source::SSTR::SStrLen((char*)(szFileName + nNameLen + 1)), 1, pFile);
     DWORD dwNow = GetTickCount();
     gLogFileLastAccessTimeArray[nSlot] = dwNow;
 }
@@ -1050,7 +1055,7 @@ void __stdcall ExitOrCrashCleanup() {
 
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gLogFileCS);
       openFileHandleArray++;
-    } while ((int)openFileHandleArray < (uintptr_t)((char*)&globalOpenFileHandleArray + sizeof(globalOpenFileHandleArray)));
+    } while ((int)openFileHandleArray < (intptr_t)((char*)&globalOpenFileHandleArray + sizeof(globalOpenFileHandleArray)));
 }
 
 // JMP thunk
@@ -1162,30 +1167,37 @@ void __fastcall InsertListNode(int * * pNode, int32_t bInsertAtHead, int * * ppT
     if (!ppTarget) {
       ppTarget = ppListHead + 1;
     }
-    if (bInsertAtHead != 1) {
-      pNext = *ppTarget;
-      *ppCurNode = pNext;
-      ppCurNode[1] = (int*)pNext[1];
-      pNext[1] = (int)pNode;
-      *ppTarget = (int*)ppCurNode;
-      return;
-    }
 
-    *ppCurNode = (int*)ppTarget;
-    ppCurNode[1] = ppTarget[1];
-    pNext = *ppListHead;
-    pBackLink = ppTarget[1];
-    if ((int)pBackLink < 0) {
-      *(int***)~(uint32_t)pBackLink = (int**)ppCurNode;
-      ppTarget[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pNext < 0) {
-      pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
-    }
+    switch (bInsertAtHead) {
+      case 1:
+        {
+          *ppCurNode = (int*)ppTarget;
+          ppCurNode[1] = ppTarget[1];
+          pNext = *ppListHead;
+          pBackLink = ppTarget[1];
+          if ((int)pBackLink < 0) {
+            *(int***)~(uint32_t)pBackLink = (int**)ppCurNode;
+            ppTarget[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pNext < 0) {
+            pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
 
-    *(int***)((int)pBackLink + (int)pNext) = (int**)ppCurNode;
-    ppTarget[1] = (int*)pNode;
+          *(int***)((int)pBackLink + (int)pNext) = (int**)ppCurNode;
+          ppTarget[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pNext = *ppTarget;
+          *ppCurNode = pNext;
+          ppCurNode[1] = (int*)pNext[1];
+          pNext[1] = (int)pNode;
+          *ppTarget = (int*)ppCurNode;
+          return;
+        }
+    }
 }
 
 void __fastcall RemoveListNode(int32_t pListHead, int * pNode) {

@@ -412,8 +412,6 @@ void __fastcall SERVER_ITEM_SendStackableUsagePackets(D2UnitStrc * pUnit, char *
     D2UnitStrc* pInvItem;
     BOOL bHasCursorFlag;
     eD2UnitType eUnitType;
-    D2ClientStrc* pClient;
-    int32_t nQuantityMax;
     int16_t sQuantity;
     if (!(pUnit && pUnit->pInventory)) {
       return;
@@ -429,9 +427,7 @@ void __fastcall SERVER_ITEM_SendStackableUsagePackets(D2UnitStrc * pUnit, char *
         if (eUnitType == UNIT_PLAYER) {
           sQuantity = -1;
           bHasCursorFlag = 1;
-          nQuantityMax = 0xff;
-          pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1da);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(pClient, pCarriedItem, nQuantityMax, bHasCursorFlag, eUnitType, sQuantity);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1da), pCarriedItem, 0xff, bHasCursorFlag, eUnitType, sQuantity);
         }
       }
     }
@@ -478,7 +474,6 @@ static eD2Skills ITEMMODE_GetItemSkillId(D2UnitStrc * pUnit) {
 static void __stdcall ITEMMODE_UpdateBookSkillQuantity(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2SkillStrc* pSkill;
     int32_t nSkillQuantity;
-    D2ClientStrc* pClient;
     int nQuantity;
     eD2UnitType eUnitType;
     int nUnitGuid;
@@ -507,8 +502,7 @@ static void __stdcall ITEMMODE_UpdateBookSkillQuantity(int32_t nParam, D2UnitStr
       D2Common::Skills::SKILL_SetQuantity(pSkill, nQuantity);
       nUnitGuid = pUnit->nUnitGUID;
       eUnitType = pUnit->eUnitType;
-      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x20b);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(pClient, (uint8_t)eUnitType, nUnitGuid, eSkill, nQuantity);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x20b), (uint8_t)eUnitType, nUnitGuid, eSkill, nQuantity);
       return;
     }
 }
@@ -571,9 +565,7 @@ static void __stdcall ITEMMODE_UpdateItemSkill(int32_t nParam, D2UnitStrc * pUni
       nUnitGUID = pUnit2->nUnitGUID;
     }
 
-    int nNewSkillQty = nQuantity;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x234);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(pClient, (uint8_t)nParam, nUnitGUID, eSkill, nNewSkillQty);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x234), (uint8_t)nParam, nUnitGUID, eSkill, nQuantity);
     if (nQuantity) {
       return;
     }
@@ -993,8 +985,7 @@ static void __stdcall PickingGold(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
       nPlayerGold = pUnit->nUnitGUID;
       eUnitType = pUnit->eUnitType;
     }
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nPlayerGold);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pUnit), eUnitType, nPlayerGold);
     D2Common::Units::RemoveCollision_Vector(pUnit);
     D2Common::Unit::RemoveUnitFromRoom(pUnit);
     if (pUnit) {
@@ -1021,8 +1012,7 @@ static void __stdcall ITEMMODE_GetItemPageForUnit(int32_t nParam, D2UnitStrc * p
       eUnitType = pUnit2->eUnitType;
     }
 
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nUnit2Guid);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pUnit2), eUnitType, nUnit2Guid);
     D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit2, INVPAGE_None);
     if (pUnit2) {
       pUnit2->eUnitFlags |= UNITFLAG_SENDREFRESHMSG;
@@ -1094,7 +1084,7 @@ static BOOL __stdcall ITEMMODE_CheckDuplicateQuestItem(D2UnitStrc * pUnit, D2Uni
         }
 
         pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pInvItem->nClassId);
-        if (pItemsTxt->bQuest) {
+        if (pItemsTxt->bQuest != '\0') {
           eContainingPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pInvItem);
           if (eContainingPage != INVPAGE_CORPSE && pItemsTxt->bQuest == pOtherItemsTxt->bQuest) {
             nItemQuality = pOtherItemsTxt->dwCode;
@@ -1230,7 +1220,7 @@ BOOL __fastcall SERVER_CheckIfPickable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
         }
       }
     }
-    if (!pItemsTxt->bQuest) {
+    if (pItemsTxt->bQuest == '\0') {
       return 1;
     }
 
@@ -1320,7 +1310,7 @@ BOOL __fastcall SERVER_CheckIfPickable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     } else {
       nQuestRuleIdx = 0;
       do {
-        if (pItemsTxt->bQuest == (bool)gaQuestItemPickupRules[nQuestRuleIdx].nQuestItemBit) {
+        if (pItemsTxt->bQuest == gaQuestItemPickupRules[nQuestRuleIdx].nQuestItemBit) {
           pPlayerData = D2Common::Units::GetPlayerData(pUnit);
           bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], gaQuestItemPickupRules[nQuestRuleIdx].eQuestId, QUESTSTATE_Completed);
           if (bQuestState) {
@@ -1366,7 +1356,6 @@ BOOL __fastcall SERVER_CheckIfPickable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 void __fastcall SERVER_PickToCursor(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nItemGUID, uint32_t * pbResult) {
     D2UnitStrc* pItem;
     int nPickable;
-    D2RoomStrc* pRoom;
     eD2ItemTypes eItemType;
     int nUnitGUID;
     eD2UnitType eUnitType;
@@ -1414,8 +1403,7 @@ void __fastcall SERVER_PickToCursor(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWO
 
       nUnitGUID = pItem->nUnitGUID;
       eUnitType = pItem->eUnitType;
-      pRoom = D2Common::Units::UNITS_GetRoom(pItem);
-      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nUnitGUID);
+      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pItem), eUnitType, nUnitGUID);
       eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pItem);
       if (eItemType == ITEMTYPE_Gold) {
         PickingGold(pGame, pItem, pUnit);
@@ -1645,8 +1633,7 @@ BOOL __stdcall ITEMMODE_CheckAutoStack(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                 wStatLayer = 0;
                 iVar7 = 0x46;
                 bSendStatUpdate = '\x01';
-                pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x648);
-                GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pDstBook, bSendStatUpdate, iVar7, nNewQty, wStatLayer);
+                GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x648), pDstBook, bSendStatUpdate, iVar7, nNewQty, wStatLayer);
                 ITEMMODE_UpdateBookSkillQuantity(nSrcQty, pUnit, pDstBook);
                 pRoom = D2Common::Units::UNITS_GetRoom(pUnit2);
                 if (pRoom) {
@@ -2225,9 +2212,7 @@ void __fastcall ITEMS_RecalcAndRefreshInventory(::SGAMEDATA * pGame, D2UnitStrc 
 void __fastcall ITEMMODE_DeleteItemFromInventory(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pItem, int32_t bSendRemovePacket) {
     eInventoryPage eDestPage;
     D2UnitStrc* pItemInInv;
-    int32_t nItemPosX;
     D2ClientStrc* pClient;
-    uint32_t dwReserved;
     int32_t iVar1;
     int32_t nErrLine;
     D2InventoryStrc* pInventory;
@@ -2249,10 +2234,7 @@ void __fastcall ITEMMODE_DeleteItemFromInventory(::SGAMEDATA * pGame, D2UnitStrc
           nItem = (int32_t)(uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&pItem + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)eInvPage);
           iVar1 = D2Common::Units::GetInventoryPage(pUnit, nItem, pGame->bExpansion);
           eDestPage = (eInventoryPage)iVar1;
-          dwReserved = 0;
-          iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pItemSaved);
-          nItemPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pItemSaved);
-          D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0xf7b, pInventory, nItemPosX, iVar1, eDestPage, dwReserved, nItem);
+          D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0xf7b, pInventory, D2Client::Units::GetXPosFromDynamicPathUnit(pItemSaved), D2Client::Units::GetYPosFromDynamicPathUnit(pItemSaved), eDestPage, 0, nItem);
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItemSaved, INVPAGE_None);
           if (bSendRemovePacket) {
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xf7e);
@@ -2318,7 +2300,6 @@ static eD2Skills ITEMMODE_GetItemCastSkill(D2UnitStrc * pUnit) {
 static void __stdcall ITEMMODE_CastItemSkill(eD2Skills eSkill, D2UnitStrc * pUnit) {
     int32_t nRemainingQty;
     int nUnitGUID;
-    D2ClientStrc* pClient;
     uint8_t byUnitType;
     D2SkillStrc* pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
     if (pSkill) {
@@ -2343,8 +2324,7 @@ static void __stdcall ITEMMODE_CastItemSkill(eD2Skills eSkill, D2UnitStrc * pUni
         byUnitType = (uint8_t)pUnit->eUnitType;
       }
 
-      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xfc2);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(pClient, byUnitType, nUnitGUID, eSkill, nRemainingQty);
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xfc2), byUnitType, nUnitGUID, eSkill, nRemainingQty);
       return;
     }
 
@@ -2617,8 +2597,7 @@ static void __stdcall ITEMMODE_MergeStackableItems(::SGAMEDATA * pGame, D2UnitSt
             wStatLayer = 0;
             nErrorLine = 0x46;
             bSendStatUpdate = '\x01';
-            pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x1179);
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pUnit1, bSendStatUpdate, nErrorLine, nCombinedQty, wStatLayer);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x1179), pUnit1, bSendStatUpdate, nErrorLine, nCombinedQty, wStatLayer);
             eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pUnit);
             if (eItemType == ITEMTYPE_Book) {
               eItemType = D2Common::ITEMS::Items::ITEM_GetItemData_wType(pUnit1);
@@ -3529,8 +3508,7 @@ D2UnitStrc * __fastcall ITEMMODE_HandleItemDurability(uint32_t dwParam, D2UnitSt
     uint16_t wStatLayer = 0;
     eD2UnitStat eStatId = UNITSTAT_quantity;
     bool bSendStatUpdate = true;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1905);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pBookItem, bSendStatUpdate, eStatId, nNewBookQty, wStatLayer);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1905), pBookItem, bSendStatUpdate, eStatId, nNewBookQty, wStatLayer);
     ITEMMODE_UpdateBookSkillQuantity(nScrollQty, pUnit, pBookItem);
     return pBookItem;
 }
@@ -3553,8 +3531,7 @@ void __fastcall ITEMMODE_SendItemUpdate(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     uint32_t nNewDurability = 0;
     int32_t nStatId = 0x48;
     bool bUpdateFlag = true;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x191e);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pItem, bUpdateFlag, nStatId, nNewDurability, wStatLayer);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x191e), pItem, bUpdateFlag, nStatId, nNewDurability, wStatLayer);
     D2Common::ITEM_ProcessSetItemEquip(pUnit, pItem, 1, 1);
     UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, UNITEVENTCALLBACK_PERIODICSTATS, pUnit);
 }
@@ -3562,7 +3539,6 @@ void __fastcall ITEMMODE_SendItemUpdate(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Repairs/restores an item: sets ITEMFLAG_RESTORED and clears ITEMFLAG_BROKEN, recalculates equipped-item states, queues inventory refresh, restores durability to max (sending 0x3E stat packet to the owning client), re-applies set-item equip bonuses, and validates weapon skills.
 // @sourcefile .\ITEMS\ItemMode.cpp
 void __fastcall ITEMMODE_ProcessItemFlags(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pItem) {
-    bool bUpdateFlag;
     eD2UnitStat eStatId;
     uint16_t wStatLayer;
     D2InventoryStrc* pInventory = 0;
@@ -3581,14 +3557,13 @@ void __fastcall ITEMMODE_ProcessItemFlags(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     uint32_t nValue = D2Common::Stats::StatsEx::GetTxtMaxDurability(pItem);
     if ((int)nValue > 0) {
-      D2ClientStrc* pClient;
+      bool bUpdateFlag;
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_durability, nValue, 0);
       if (pUnit) {
         wStatLayer = 0;
         eStatId = UNITSTAT_durability;
         bUpdateFlag = true;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x193c);
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(pClient, pItem, bUpdateFlag, eStatId, nValue, wStatLayer);
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x193c), pItem, bUpdateFlag, eStatId, nValue, wStatLayer);
       }
     }
 
@@ -3624,9 +3599,7 @@ void __fastcall ITEMMODE_SetItemFlags(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
       nOwnerGUID = pUnit->nUnitGUID;
     }
 
-    int32_t nZeroSkillQty = 0;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1962);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(pClient, (uint8_t)byUnitType, nOwnerGUID, eSkill, nZeroSkillQty);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0x1962), (uint8_t)byUnitType, nOwnerGUID, eSkill, 0);
 }
 
 // Iterates the unit's inventory; for each carried item whose eAnimMode equals Death (expired/consumed flag), calls ITEMMODE_SetItemFlags. Counts how many such expired items were in INVPAGE_INVENTORY and for each calls ITEMMODE_UpdateItemSkill to clean up associated skill entries.
@@ -4063,12 +4036,17 @@ int __fastcall SERVER_ItemToInventory(char * szSourceFile, int32_t bAutoPlaceGri
     bool bCopyInv = true;
     int32_t eInvPage = D2Common::Units::GetInventoryPage(pOwnerUnit, (int32_t)pUnit, pGame->bExpansion);
     if (pOwnerUnit->eUnitType == UNIT_PLAYER) {
-      if (eSrcPage != INVPAGE_CORPSE) {
-        if (eSrcPage == INVPAGE_MERC) {
-          bIsMerc = true;
-        }
-      } else {
-        bCopyInv = false;
+      switch (eSrcPage) {
+        case INVPAGE_CORPSE:
+          {
+            bCopyInv = false;
+            break;
+          }
+        case INVPAGE_MERC:
+          {
+            bIsMerc = true;
+            break;
+          }
       }
     }
     if (nParam1) {
@@ -4146,9 +4124,7 @@ BOOL __fastcall SERVER_TakeItemToCursor(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     int32_t iVar1;
     uint32_t bIsActiveCharm;
     eInventoryPage eDestPage;
-    int32_t nPosX;
     int bHasSocketedItems;
-    int32_t nReserved;
     BOOL BVar2;
     bool bCopyInv;
     bool bIsMercPage;
@@ -4228,10 +4204,7 @@ BOOL __fastcall SERVER_TakeItemToCursor(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
             bCopyInv = false;
           }
 
-          nReserved = 0;
-          iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
-          nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-          D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0x965, pTargetInventory, nPosX, iVar1, eDestPage, nReserved, nInventory);
+          D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0x965, pTargetInventory, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), eDestPage, 0, nInventory);
           D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pItem, eSrcPage);
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
           if (bCopyInv) {
@@ -4380,7 +4353,6 @@ void __fastcall ITEMMODE_RemoveItemFromBelt(::SGAMEDATA * pGame, D2UnitStrc * pU
     bool bIsDisabled;
     eInventoryPage eInvPage;
     D2UnitStrc* pUnit_00;
-    D2ClientStrc* pClient;
     D2UnitStrc* pItemInInv;
     int nPutResult;
     int* pGridSlot;
@@ -4433,8 +4405,7 @@ void __fastcall ITEMMODE_RemoveItemFromBelt(::SGAMEDATA * pGame, D2UnitStrc * pU
         D2Common::ITEMS::Items::ITEM_SetServerSideFlag((uint32_t*)&eItemFlagMask, 0x20, 1);
         pItemInInv = pUnit_00;
         eItemFlag = eItemFlagMask;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xc1f);
-        GAME::SCmd::Send0x9CItemRemoveFromBelt(pClient, pItemInInv, eItemFlag);
+        GAME::SCmd::Send0x9CItemRemoveFromBelt(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\ITEMS\\ItemMode.cpp", 0xc1f), pItemInInv, eItemFlag);
         pItemInInv = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pInventory, pUnit_00);
         if (!pItemInInv) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc22);
@@ -5193,7 +5164,6 @@ int __fastcall ITEMMODE_ExchangeInventoryItem(::SGAMEDATA * pGame, D2UnitStrc * 
     uint32_t bIsActiveCharm;
     uint32_t uVar1;
     uint32_t nPlaceFlags;
-    int nPlaceFlags2;
     int32_t nErrorLine;
     D2InventoryStrc* pInventory;
     if (!pGame) {
@@ -5272,9 +5242,7 @@ int __fastcall ITEMMODE_ExchangeInventoryItem(::SGAMEDATA * pGame, D2UnitStrc * 
           }
 
           D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pDestItem);
-          nPlaceFlags2 = 0;
-          nErrorLine = D2Common::Units::GetInventoryPage(pUnit, nX, pGame->bExpansion);
-          nPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_PlaceItemAtCoords(pInventory, pSrcItem, nDestX, nDestY, nErrorLine, nPlaceFlags2, (uint8_t)nX);
+          nPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_PlaceItemAtCoords(pInventory, pSrcItem, nDestX, nDestY, D2Common::Units::GetInventoryPage(pUnit, nX, pGame->bExpansion), 0, (uint8_t)nX);
           if (nPlaceResult) {
             D2Common::ITEMS::Items::ITEM_SetItemData_eExchangePage(pSrcItem, 0);
             D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pSrcItem, eSrcInvPage);
@@ -5926,10 +5894,7 @@ BOOL __fastcall ITEMMODE_ProcessItemBuy(D2UnitStrc * * ppUnit, D2UnitStrc * pUni
     D2UnitStrc* pVerifiedItem;
     eInventoryPage eInvPage;
     int32_t iVar1;
-    int32_t nItemPosX;
     uint32_t bIsCharm;
-    uint32_t nDbgArg1;
-    int32_t nDbgArg2;
     int32_t nLine;
     D2InventoryStrc* pInventory;
     if (ppUnit && pUnit) {
@@ -5960,11 +5925,7 @@ BOOL __fastcall ITEMMODE_ProcessItemBuy(D2UnitStrc * * ppUnit, D2UnitStrc * pUni
       } else {
         iVar1 = D2Common::Units::GetInventoryPage(pUnit, 0, (BOOL)ppUnit[0x1c]);
         eInvPage = (eInventoryPage)iVar1;
-        nDbgArg2 = 0;
-        nDbgArg1 = 0;
-        iVar1 = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
-        nItemPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-        D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0x1515, pInventory, nItemPosX, iVar1, eInvPage, nDbgArg1, nDbgArg2);
+        D2Common::INVENTORY::Inventory::UnusedDebug(".\\ITEMS\\ItemMode.cpp", 0x1515, pInventory, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), eInvPage, 0, 0);
         D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
         nEquipResult = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pInventory, pItem, (uint32_t)eBodyLoc);
         if (nEquipResult) {
@@ -6424,6 +6385,7 @@ BOOL __fastcall ITEMMODE_ProcessCorpsePickup(::SGAMEDATA * pGame, D2UnitStrc * p
 
 // @sourcefile .\ITEMS\ItemMode.cpp
 void __fastcall ITEM_RemoveItemFromCurrentLocation(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, D2UnitStrc * pRuneword) {
+    eInventoryPage ePreviousPage;
     int32_t nBodyLocOrXPos;
     D2ClientStrc* pClient;
     D2UnitStrc* pItemRef = pRuneword;
@@ -6432,30 +6394,34 @@ void __fastcall ITEM_RemoveItemFromCurrentLocation(::SGAMEDATA * pGame, D2UnitSt
     }
 
     eD2ItemAnimMode eItemAnimMode = pRuneword->eAnimMode.eItemMode;
-    if (eItemAnimMode != Container) {
-      if (eItemAnimMode == Equipment) {
-        nBodyLocOrXPos = D2Common::INVENTORY::Inventory::INVENTORY_GetItemXPosition(pPlayer->pInventory, pRuneword);
-        EquipItem(pGame, pPlayer, (eD2BodyLoc)nBodyLocOrXPos, 1, (uint32_t*)&pRuneword);
-        return;
-      }
-      if (eItemAnimMode == Cursor) {
-        ToCursorItem(pGame, pPlayer, pRuneword);
-        return;
-      }
-    } else {
-      eInventoryPage ePreviousPage;
-      ePreviousPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pRuneword);
-      D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pItemRef, ePreviousPage);
-      if (pPlayer->eUnitType == UNIT_PLAYER) {
-        pClient = UNIT::SUnit::SUNIT_GetClient(pPlayer, ".\\ITEMS\\ItemMode.cpp", 0x1a75);
-        if (pClient) {
-          pRuneword = 0;
-          D2Common::ITEMS::Items::ITEM_SetServerSideFlag((uint32_t*)&pRuneword, 0x20, 1);
-          GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pPlayer, pItemRef, (eD2ItemFlag)pRuneword);
-        }
-      }
+    switch (eItemAnimMode) {
+      case Container:
+        {
+          ePreviousPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pRuneword);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pItemRef, ePreviousPage);
+          if (pPlayer->eUnitType == UNIT_PLAYER) {
+            pClient = UNIT::SUnit::SUNIT_GetClient(pPlayer, ".\\ITEMS\\ItemMode.cpp", 0x1a75);
+            if (pClient) {
+              pRuneword = 0;
+              D2Common::ITEMS::Items::ITEM_SetServerSideFlag((uint32_t*)&pRuneword, 0x20, 1);
+              GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pPlayer, pItemRef, (eD2ItemFlag)pRuneword);
+            }
+          }
 
-      ITEMMODE_DeleteItemFromInventory(pGame, pPlayer, pItemRef, 0);
+          ITEMMODE_DeleteItemFromInventory(pGame, pPlayer, pItemRef, 0);
+          break;
+        }
+      case Equipment:
+        {
+          nBodyLocOrXPos = D2Common::INVENTORY::Inventory::INVENTORY_GetItemXPosition(pPlayer->pInventory, pRuneword);
+          EquipItem(pGame, pPlayer, (eD2BodyLoc)nBodyLocOrXPos, 1, (uint32_t*)&pRuneword);
+          return;
+        }
+      case Cursor:
+        {
+          ToCursorItem(pGame, pPlayer, pRuneword);
+          return;
+        }
     }
 }
 
@@ -6534,8 +6500,7 @@ void __fastcall SERVER_PickToInventory(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
             if (pRoom) {
               iVar1 = pItem->nUnitGUID;
               eUnitType = pItem->eUnitType;
-              pRoom = D2Common::Units::UNITS_GetRoom(pItem);
-              D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, iVar1);
+              D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pItem), eUnitType, iVar1);
               D2Common::Units::RemoveCollision_Vector(pItem);
               D2Common::Unit::RemoveUnitFromRoom(pItem);
             }
@@ -6604,7 +6569,6 @@ static void __stdcall ITEMMODE_RemoveItemsFromCube(::SGAMEDATA * pGame, D2UnitSt
     eInventoryPage eInvPage;
     bool bIsDisabled;
     D2UnitStrc* pCarriedItem;
-    D2ClientStrc* pClient;
     int nPutResult;
     int* pGridPos;
     BOOL BVar1;
@@ -6658,8 +6622,7 @@ static void __stdcall ITEMMODE_RemoveItemsFromCube(::SGAMEDATA * pGame, D2UnitSt
         D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pUnit, 3);
         pCubeItem = pCarriedItem;
         eItemFlag = eItemFlagMask;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x80d);
-        GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pUnit2, pCubeItem, eItemFlag);
+        GAME::SCmd::Send0x9DRemoveItemFromContainer(UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\ITEMS\\ItemMode.cpp", 0x80d), pUnit2, pCubeItem, eItemFlag);
         pCubeItem = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pCubeInventory, pCarriedItem);
         if (!pCubeItem) {
           ITEMMODE_RemoveItemsFromCube_HaltTail(0x80f);

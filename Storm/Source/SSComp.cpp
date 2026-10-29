@@ -320,22 +320,32 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
       if ((char)byCode < '\0') {
         nStepSize = byCode & 0x7f;
         if (byCode & 0x7f) {
-          if (nStepSize != 1) {
-            if (nStepSize != 2) {
-              continue;
-            }
+          switch (nStepSize) {
+            case 1:
+              {
+                aChannelState[nChannel + 2] += 8;
+                if (0x58 < aChannelState[nChannel + 2]) {
+                  aChannelState[nChannel + 2] = 0x58;
+                }
 
-            piVar1 = aChannelState + nChannel + 2;
-            *piVar1 += -8;
-            if (*piVar1 < 0) {
-              aChannelState[nChannel + 2] = 0;
-            }
-          } else {
-            aChannelState[nChannel + 2] += 8;
-            if (0x58 < aChannelState[nChannel + 2]) {
-              aChannelState[nChannel + 2] = 0x58;
-            }
+                break;
+              }
+            default:
+              {
+                continue;
+              }
+            case 2:
+              {
+                piVar1 = aChannelState + nChannel + 2;
+                *piVar1 += -8;
+                if (*piVar1 < 0) {
+                  aChannelState[nChannel + 2] = 0;
+                }
+
+                break;
+              }
           }
+
           if (nChannels == 2) {
             nChannel = (uint32_t)!nChannel;
           }
@@ -531,14 +541,21 @@ static int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32
 
 void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen, uint32_t pSrc, uint32_t nSrcLen, uint32_t * pUserData, int32_t nLevel) {
     uint32_t nZlibLevel;
-    if (nLevel != 1) {
-      if (nLevel != 2) {
-        nZlibLevel = -1;
-      } else {
-        nZlibLevel = 1;
-      }
-    } else {
-      nZlibLevel = 9;
+    switch (nLevel) {
+      case 1:
+        {
+          nZlibLevel = 9;
+          break;
+        }
+      case 2:
+        {
+          nZlibLevel = 1;
+          break;
+        }
+      default:
+        {
+          nZlibLevel = -1;
+        }
     }
 
     nLevel = *pnDstLen;
@@ -774,7 +791,7 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
           pSrc += 2;
           pSrcCur = _Src;
           nSrcLenCur = _Size;
-        } while ((int)pSrc < (uintptr_t)((char*)&paSCompCompressCodecTable + sizeof(paSCompCompressCodecTable)));
+        } while ((int)pSrc < (intptr_t)((char*)&paSCompCompressCodecTable + sizeof(paSCompCompressCodecTable)));
 
         if (_Src != pDst) {
           if (_Src != (uint32_t*)((int)pDst + 1)) {
@@ -911,7 +928,7 @@ BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t *
 
         ppMethodEntry += -2;
         pSrcCur = pStageBuf;
-      } while ((int)ppMethodEntry >= (uintptr_t)((char*)&paSCompDecompressCodecTable + 4));
+      } while ((int)ppMethodEntry >= (intptr_t)((char*)&paSCompDecompressCodecTable + 4));
 
       if (pStageBuf != pDst) {
         SSystem::SMemCopy(pDst, pStageBuf, nSrcSize);

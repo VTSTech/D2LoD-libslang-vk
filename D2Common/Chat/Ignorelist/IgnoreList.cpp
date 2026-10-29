@@ -43,11 +43,9 @@ void __thiscall SavePersistentSetting(::IgnoreList * pThis, int32_t nPersistent)
 int32_t __thiscall AppendLineToFile(::IgnoreList * pThis, char * szLine) {
     int32_t bIsEnabled;
     FILE* _File;
-    uint32_t nStrLen;
     int iVar1;
     uint32_t uVar2;
     char szPath[256];
-    size_t _Count;
     if (szLine && *szLine != '\0') {
       bIsEnabled = pThis->_vfptr->GetPersistentSetting(pThis);
       if (bIsEnabled) {
@@ -57,9 +55,7 @@ int32_t __thiscall AppendLineToFile(::IgnoreList * pThis, char * szLine) {
         _File = fopen(pThis->szIgnoreFilePath, "at+");
         pThis->pAppendFile = _File;
         if (_File) {
-          _Count = 1;
-          nStrLen = Storm::Source::SSTR::SStrLen(szPath);
-          fwrite(szPath, nStrLen, _Count, _File);
+          fwrite(szPath, Storm::Source::SSTR::SStrLen(szPath), 1, _File);
           iVar1 = fclose(pThis->pAppendFile);
           uVar2 = (uint32_t)!iVar1;
         }

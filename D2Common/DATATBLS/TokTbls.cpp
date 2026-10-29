@@ -281,78 +281,111 @@ void __stdcall FreeTokenTables() {
 }
 
 D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nModeIndex) {
+    int32_t nLine;
     if (nMode >= (uint32_t)nTxtPlrTypeModeSize) {
       return nullptr;
     }
     if (!pTxtPlrTypeMode1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x110);
-      exit(-1);
-    } else if (nModeIndex) {
-      if (nModeIndex != 1) {
-        return nullptr;
-      }
-      if (!(pTxtPlrTypeMode3 + nMode)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x116);
-        exit(-1);
-      }
-
-      return pTxtPlrTypeMode3 + nMode;
+      nLine = 0x110;
     } else {
-      if (!(pTxtPlrTypeMode2 + nMode)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x113);
-        exit(-1);
-      }
+      switch (nModeIndex) {
+        case 0:
+          {
+            if (pTxtPlrTypeMode2 + nMode) {
+              return pTxtPlrTypeMode2 + nMode;
+            }
 
-      return pTxtPlrTypeMode2 + nMode;
+            nLine = 0x113;
+            break;
+          }
+        default:
+          {
+            return nullptr;
+          }
+        case 1:
+          {
+            if (pTxtPlrTypeMode3 + nMode) {
+              return pTxtPlrTypeMode3 + nMode;
+            }
+
+            nLine = 0x116;
+            break;
+          }
+      }
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+    exit(-1);
 }
 
 D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
+    int32_t nLine;
     if (nId >= (uint32_t)nTxtMonModeSize) {
       return nullptr;
     }
-    if (nModeIndex) {
-      if (nModeIndex != 1) {
-        return nullptr;
-      }
-      if (!(pTxtMonMode3 + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x129);
-        exit(-1);
-      }
 
-      return pTxtMonMode3 + nId;
-    } else {
-      if (!(pTxtMonMode2 + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x126);
-        exit(-1);
-      }
+    switch (nModeIndex) {
+      case 0:
+        {
+          if (pTxtMonMode2 + nId) {
+            return pTxtMonMode2 + nId;
+          }
 
-      return pTxtMonMode2 + nId;
+          nLine = 0x126;
+          break;
+        }
+      default:
+        {
+          return nullptr;
+        }
+      case 1:
+        {
+          if (pTxtMonMode3 + nId) {
+            return pTxtMonMode3 + nId;
+          }
+
+          nLine = 0x129;
+          break;
+        }
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+    exit(-1);
 }
 
 D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex) {
+    int32_t nLine;
     if (nId >= (uint32_t)nTxtObjTypeModeSize) {
       return nullptr;
     }
-    if (nModeIndex) {
-      if (nModeIndex != 1) {
-        return nullptr;
-      }
-      if (!(pTxtObjMode + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13c);
-        exit(-1);
-      }
 
-      return (D2ObjTypeTxt*)(pTxtObjMode + nId);
-    } else {
-      if (!(pTxtObjType + nId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x139);
-        exit(-1);
-      }
+    switch (nModeIndex) {
+      case 0:
+        {
+          if (pTxtObjType + nId) {
+            return pTxtObjType + nId;
+          }
 
-      return pTxtObjType + nId;
+          nLine = 0x139;
+          break;
+        }
+      default:
+        {
+          return nullptr;
+        }
+      case 1:
+        {
+          if (pTxtObjMode + nId) {
+            return (D2ObjTypeTxt*)(pTxtObjMode + nId);
+          }
+
+          nLine = 0x13c;
+          break;
+        }
     }
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+    exit(-1);
 }
 
 D2CompositTxt * __stdcall TxtCompositGetLine(int32_t nId) {

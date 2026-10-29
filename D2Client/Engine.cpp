@@ -113,9 +113,7 @@ void __stdcall DrawOkCancel(int32_t nParam) {
 
 void __stdcall LOADER_DrawInsertDiscMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int32_t nColor_lcl = 0;
-    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x170, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x170, D2Lang::StrTable::strtable::GetLocaleString(0x13ee), 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -206,17 +204,13 @@ void __stdcall INPUT_CharScreenOkCancel(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall LOADER_DrawConnectionLostMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int32_t nColor_lcl = 0;
-    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x1430);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0);
     uint16_t wStrTableId = 0x1432;
     if (gbConnectionLost) {
       wStrTableId = 0x5578;
     }
 
-    nColor_lcl = 0;
-    wszMessage = D2Lang::StrTable::strtable::GetLocaleString(wStrTableId);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, D2Lang::StrTable::strtable::GetLocaleString(wStrTableId), 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -233,12 +227,8 @@ void __stdcall LOADER_DrawOkCancelButtons(int32_t nOkFrame, int32_t nCancelFrame
 
 void __stdcall DRAW_UI_OkCancel() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int32_t nColor_lcl = 0;
-    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x12e, wszMessage, nColor_lcl);
-    nColor_lcl = 0;
-    wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ef);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x1b2, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x12e, D2Lang::StrTable::strtable::GetLocaleString(0x13ee), 0);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x1b2, D2Lang::StrTable::strtable::GetLocaleString(0x13ef), 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -410,13 +400,9 @@ bool fpRequiredUserAction() {
     IMG_okcancelbtn = (D2ArchiveStrc*)Core::Archive::IMAGE_LoadDC6Ex("Data\\Global\\UI\\Menu\\okcancelbtn", 0);
     D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(0);
     GAME::Game::GAMEDATA_SetDrawFunction(1);
-    int32_t nHandlerCount = 4;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     _Message::MessageGameLoop((::fpGameLoopFunction)fpGameLoopFunction);
-    nHandlerCount = 4;
-    hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return true;
@@ -425,13 +411,9 @@ bool fpRequiredUserAction() {
 // Sets draw function mode, registers event handlers, runs game loop with custom fpGameLoopFunction, then cleans up
 uint32_t __fastcall ENGINE_RunDrawModeGameLoop(int32_t nDrawMode) {
     GAME::Game::GAMEDATA_SetDrawFunction(nDrawMode);
-    int32_t nHandlerCount = 4;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     _Message::MessageGameLoop((::fpGameLoopFunction)fpGameLoopFunction);
-    nHandlerCount = 4;
-    hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return 1;
@@ -440,17 +422,13 @@ uint32_t __fastcall ENGINE_RunDrawModeGameLoop(int32_t nDrawMode) {
 // Alternate draw mode game loop with different event handler table and loop function
 uint32_t ENGINE_RunDrawModeGameLoopAlt(int32_t nDrawMode, uint32_t dwRetVal) {
     GAME::Game::GAMEDATA_SetDrawFunction(nDrawMode);
-    int32_t nHandlerCount = 4;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit2, nHandlerCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit2, 4);
     _Message::MessageGameLoop((::fpGameLoopFunction)LOADER_PopupGameLoopCallback);
     if (gbCharScreenCancelPressed) {
       dwRetVal = 0;
     }
 
-    nHandlerCount = 4;
-    hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit2, nHandlerCount);
+    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit2, 4);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return dwRetVal;

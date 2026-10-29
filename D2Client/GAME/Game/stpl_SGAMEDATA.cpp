@@ -489,8 +489,9 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::Destructor() {
 }
 
 template<> void TSExplicitList<SGAMEDATA, -572662307>::LinkNode(::SGAMEDATA * pNode, uint32_t nLinkType, ::SGAMEDATA * pExisting) {
+    TSLink<::SGAMEDATA>* pTVar1;
     TSLink<::SGAMEDATA>* pNodeLink;
-    int* pPrevLink;
+    int pTarget;
     uint32_t piVar2;
     if (pNode) {
       pNodeLink = (TSLink<::SGAMEDATA>*)(pNode->szGameName + this->m_linkoffset - 0x2a);
@@ -500,6 +501,7 @@ template<> void TSExplicitList<SGAMEDATA, -572662307>::LinkNode(::SGAMEDATA * pN
 
     TSLink<::SGAMEDATA>* pAnchorLink = pNodeLink->m_prevlink;
     if (pAnchorLink) {
+      int* pPrevLink;
       piVar2 = pNodeLink->m_next;
       if ((int)piVar2 < 0) {
         pPrevLink = (int*)~piVar2;
@@ -517,31 +519,37 @@ template<> void TSExplicitList<SGAMEDATA, -572662307>::LinkNode(::SGAMEDATA * pN
     } else {
       pAnchorLink = &this->m_terminator;
     }
-    if (nLinkType != 1) {
-      TSLink<::SGAMEDATA>* pTVar1;
-      pTVar1 = pAnchorLink->m_prevlink;
-      pNodeLink->m_prevlink = pTVar1;
-      pNodeLink->m_next = pTVar1->m_next;
-      pTVar1->m_next = (int)pNode;
-      pAnchorLink->m_prevlink = pNodeLink;
-      return;
-    }
 
-    pNodeLink->m_prevlink = pAnchorLink;
-    pNodeLink->m_next = pAnchorLink->m_next;
-    int pTarget = this->m_linkoffset;
-    piVar2 = pAnchorLink->m_next;
-    if ((int)piVar2 < 0) {
-      *(TSLink<::SGAMEDATA>**)~piVar2 = (TSLink<::SGAMEDATA>*)pNodeLink;
-      pAnchorLink->m_next = (int)pNode;
-      return;
-    }
-    if (pTarget < 0) {
-      pTarget = (int)pAnchorLink - pAnchorLink->m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          pNodeLink->m_prevlink = pAnchorLink;
+          pNodeLink->m_next = pAnchorLink->m_next;
+          pTarget = this->m_linkoffset;
+          piVar2 = pAnchorLink->m_next;
+          if ((int)piVar2 < 0) {
+            *(TSLink<::SGAMEDATA>**)~piVar2 = (TSLink<::SGAMEDATA>*)pNodeLink;
+            pAnchorLink->m_next = (int)pNode;
+            return;
+          }
+          if (pTarget < 0) {
+            pTarget = (int)pAnchorLink - pAnchorLink->m_prevlink->m_next;
+          }
 
-    *(TSLink<::SGAMEDATA>**)(piVar2 + pTarget) = (TSLink<::SGAMEDATA>*)pNodeLink;
-    pAnchorLink->m_next = (int)pNode;
+          *(TSLink<::SGAMEDATA>**)(piVar2 + pTarget) = (TSLink<::SGAMEDATA>*)pNodeLink;
+          pAnchorLink->m_next = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pTVar1 = pAnchorLink->m_prevlink;
+          pNodeLink->m_prevlink = pTVar1;
+          pNodeLink->m_next = pTVar1->m_next;
+          pTVar1->m_next = (int)pNode;
+          pAnchorLink->m_prevlink = pNodeLink;
+          return;
+        }
+    }
 }
 
 template<> ::SGAMEDATA * TSExplicitList<SGAMEDATA, -572662307>::NewNode(uint32_t nLocation, uint32_t nExtraBytes, uint32_t dwFlags) {
@@ -875,8 +883,9 @@ template<> uint32_t __stdcall TSGrowableArray<SGAMEDATA>::RoundToMultiple(uint32
 }
 
 template<> void TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16>::LinkNode(TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>* pNode, uint32_t nLinkType, TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>* pExisting) {
+    TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>* pTVar1;
     TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>* ppNodeLink;
-    int* ppPrevLink;
+    int pExistingReg;
     uint32_t piVar2;
     if (pNode) {
       ppNodeLink = (TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>*)((uintptr_t)&pNode->nArrayAlloc + this->m_linkoffset);
@@ -886,6 +895,7 @@ template<> void TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16>::
 
     TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>* ppTargetLink = ppNodeLink->m_prevlink;
     if (ppTargetLink) {
+      int* ppPrevLink;
       piVar2 = ppNodeLink->m_next;
       if ((int)piVar2 < 0) {
         ppPrevLink = (int*)~piVar2;
@@ -903,31 +913,37 @@ template<> void TSExplicitList<TSHashObjectChunk<SGAMEDATA, HASHKEY_NONE>, 16>::
     } else {
       ppTargetLink = &this->m_terminator;
     }
-    if (nLinkType != 1) {
-      TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>* pTVar1;
-      pTVar1 = ppTargetLink->m_prevlink;
-      ppNodeLink->m_prevlink = pTVar1;
-      ppNodeLink->m_next = pTVar1->m_next;
-      pTVar1->m_next = (int)pNode;
-      ppTargetLink->m_prevlink = ppNodeLink;
-      return;
-    }
 
-    ppNodeLink->m_prevlink = ppTargetLink;
-    ppNodeLink->m_next = ppTargetLink->m_next;
-    int pExistingReg = this->m_linkoffset;
-    piVar2 = ppTargetLink->m_next;
-    if ((int)piVar2 < 0) {
-      *(TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>**)~piVar2 = (TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>*)ppNodeLink;
-      ppTargetLink->m_next = (int)pNode;
-      return;
-    }
-    if (pExistingReg < 0) {
-      pExistingReg = (int)ppTargetLink - ppTargetLink->m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          ppNodeLink->m_prevlink = ppTargetLink;
+          ppNodeLink->m_next = ppTargetLink->m_next;
+          pExistingReg = this->m_linkoffset;
+          piVar2 = ppTargetLink->m_next;
+          if ((int)piVar2 < 0) {
+            *(TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>**)~piVar2 = (TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>*)ppNodeLink;
+            ppTargetLink->m_next = (int)pNode;
+            return;
+          }
+          if (pExistingReg < 0) {
+            pExistingReg = (int)ppTargetLink - ppTargetLink->m_prevlink->m_next;
+          }
 
-    *(TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>**)(piVar2 + pExistingReg) = (TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>*)ppNodeLink;
-    ppTargetLink->m_next = (int)pNode;
+          *(TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>**)(piVar2 + pExistingReg) = (TSLink<TSHashObjectChunk<::SGAMEDATA, HASHKEY_NONE>>*)ppNodeLink;
+          ppTargetLink->m_next = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pTVar1 = ppTargetLink->m_prevlink;
+          ppNodeLink->m_prevlink = pTVar1;
+          ppNodeLink->m_next = pTVar1->m_next;
+          pTVar1->m_next = (int)pNode;
+          ppTargetLink->m_prevlink = ppNodeLink;
+          return;
+        }
+    }
 }
 
 // Static data members

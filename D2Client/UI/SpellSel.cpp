@@ -63,7 +63,6 @@
 
 namespace D2Client::UI::SpellSel {
 
-static bool gbSpellSelActiveRightSkillSlot = 0; D2_STATIC_GUARD(gbSpellSelActiveRightSkillSlot, "D2Client::UI::SpellSel::gbSpellSelActiveRightSkillSlot");
 static int32_t gSpellSelLeftSkillSlot1[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot1, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot1");
 static int32_t gSpellSelLeftSkillSlot2[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot2, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot2");
 static int32_t gSpellSelLeftSkillSlot3[16] = { 0 }; D2_STATIC_GUARD(gSpellSelLeftSkillSlot3, "D2Client::UI::SpellSel::gSpellSelLeftSkillSlot3");
@@ -202,7 +201,7 @@ void __stdcall SPELLSEL_Cleanup() {
       }
 
       pClassIconEntry++;
-    } while ((int)pClassIconEntry < (uintptr_t)((char*)&pSpellsClassSkillicon + sizeof(pSpellsClassSkillicon)));
+    } while ((int)pClassIconEntry < (intptr_t)((char*)&pSpellsClassSkillicon + sizeof(pSpellsClassSkillicon)));
 }
 
 DC6 * __fastcall ARCHIVE_LoadSpellsClassSkillicon(short * pSkillId) {
@@ -265,8 +264,7 @@ void __fastcall SPELLSEL_DrawSkillTooltip(short * pSkillId, int32_t bShowExpande
     }
 
     short int wSkillId = *pSkillId;
-    D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    SkillDesc::SKILLDESC_BuildSkillShortTooltip(pPlayerUnit_lcl, (int)wSkillId, nSkillDescId, nStatId, nDrawMode, nIconX, nIconY);
+    SkillDesc::SKILLDESC_BuildSkillShortTooltip(UNIT::Player::GetPlayerUnit_UI(), (int)wSkillId, nSkillDescId, nStatId, nDrawMode, nIconX, nIconY);
 }
 
 void __fastcall SPELLSEL_DrawKeyBindingText(int32_t nCmdIndex, int32_t nX, int32_t nY, int32_t dwColor) {
@@ -699,7 +697,7 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
       }
 
       pSlotSkillIdPtr++;
-      if ((int)pSlotSkillIdPtr >= (uintptr_t)((char*)&gSpellSelGridRegion + 960)) {
+      if ((int)pSlotSkillIdPtr >= (intptr_t)((char*)&gSpellSelGridRegion + 960)) {
         if (nInitialMouseY <= ScreenSizeY - 0x31 && !bHandled) {
           bHasCharges = ui::GetUIFlag(UI_SKILLSELECT);
           if (bHasCharges) {
@@ -738,7 +736,7 @@ void __stdcall SPELLSEL_ClearSkillBinding(short * pSkillId, int32_t nChargesLeft
       }
 
       pSlotSkillId++;
-    } while ((int)pSlotSkillId < (uintptr_t)((char*)&gSpellSelGridRegion + 720));
+    } while ((int)pSlotSkillId < (intptr_t)((char*)&gSpellSelGridRegion + 720));
 }
 
 void __stdcall SPELLSEL_ClearChargedSkillBindings() {
@@ -808,7 +806,7 @@ void __fastcall SPELLSEL_HandleSkillSelection(int32_t nSlotIndex) {
       }
 
       pSlotSkillXPtr = (D2SpellSelGridRegionStrc*)(pSlotSkillXPtr->aSkillGrid + 1);
-    } while ((int)pSlotSkillXPtr < (uintptr_t)((char*)&gSpellSelGridRegion + 240));
+    } while ((int)pSlotSkillXPtr < (intptr_t)((char*)&gSpellSelGridRegion + 240));
 }
 
 static int SPELLSEL_IsSkillSlotValid(int32_t nSlot) {
@@ -973,7 +971,6 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
     uint32_t dwSkillFlags;
     BOOL bIsChargedOrValid;
     GLOBALPALLETE nGlobalPaletteShift;
-    int nSkillDescId;
     D2SkillDescTxt* pSkillDescTxt;
     char aListPoolSeen[256];
     D2SkillStrc* pNextSkill;
@@ -1060,8 +1057,7 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
                           nCanUse = nChargesLeft;
                           nSkillId = nCurX;
                           nTooltipX = nCurY;
-                          nSkillDescId = D2Common::Skills::GetSkillLevel(pLocalUnit, pCurSkill, 1);
-                          SPELLSEL_DrawSkillTooltip(&pSkillsTxt->skill, nGlobalPaletteShift, nSkillDescId, nCanUse, nSkillId, nTooltipX);
+                          SPELLSEL_DrawSkillTooltip(&pSkillsTxt->skill, nGlobalPaletteShift, D2Common::Skills::GetSkillLevel(pLocalUnit, pCurSkill, 1), nCanUse, nSkillId, nTooltipX);
                         } else {
                           SPELLSEL_DrawSkillRequirementTooltip(&pSkillsTxt->skill, nGlobalPaletteShift, nChargeQty, nCurX, nCurY);
                         }
@@ -1303,7 +1299,6 @@ void __stdcall SPELLSEL_DrawSkilltreeBackground(DC6 * pDC6, int32_t nParam) {
 }
 
 void __stdcall DRAW_UI_SkillsWindow_II() {
-    int32_t nTabYOffset;
     uint16_t* pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1083);
     ui::UI_DrawTextCentered(WindowSizeX - gnPanelOffsetX - 0x5a, gnPanelOffsetY - 0x1c7 + ScreenSizeY, WindowSizeX - gnPanelOffsetX, pwszTabLabel, 0);
     pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1084);
@@ -1347,99 +1342,47 @@ void __stdcall DRAW_UI_SkillsWindow_II() {
       return;
     }
     if (nD2PlayerClassID == CLASS_NECROMANCER) {
-      nTabYOffset = 0x9c;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1092);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0xa8;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1087);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x102;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1093);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x10e;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1094);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x11a;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1087);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x178;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1095);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1092), 0x9c);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1087), 0xa8);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1093), 0x102);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1094), 0x10e);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1087), 0x11a);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1095), 0x178);
       return;
     }
     if (nD2PlayerClassID == CLASS_BARBARIAN) {
-      nTabYOffset = 0xa2;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1096);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x108;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1097);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x114;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1098);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x172;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1097);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x17e;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1086);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1096), 0xa2);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1097), 0x108);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1098), 0x114);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1097), 0x172);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1086), 0x17e);
       return;
     }
     if (nD2PlayerClassID == CLASS_SORCERESS) {
-      nTabYOffset = 0x9c;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1099);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0xa8;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1087);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x108;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x109a);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x114;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1087);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x172;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x109b);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x17e;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1087);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1099), 0x9c);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1087), 0xa8);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x109a), 0x108);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1087), 0x114);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x109b), 0x172);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x1087), 0x17e);
       return;
     }
     if (nD2PlayerClassID == CLASS_ASSASSIN) {
-      nTabYOffset = 0x96;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f4);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0xa2;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f5);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x108;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f2);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x114;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f3);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-      nTabYOffset = 0x172;
-      pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f1);
-      SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f4), 0x96);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f5), 0xa2);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f2), 0x108);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f3), 0x114);
+      SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f1), 0x172);
       return;
     }
     if (nD2PlayerClassID != CLASS_DRUID) {
       return;
     }
 
-    nTabYOffset = 0xa2;
-    pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57f0);
-    SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-    nTabYOffset = 0x108;
-    pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57ee);
-    SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-    nTabYOffset = 0x114;
-    pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57ef);
-    SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
-    nTabYOffset = 0x172;
-    pwszTabLabel = D2Lang::StrTable::strtable::GetLocaleString(0x57ed);
-    SPELLSEL_DrawTabHeader(pwszTabLabel, nTabYOffset);
+    SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57f0), 0xa2);
+    SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57ee), 0x108);
+    SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57ef), 0x114);
+    SPELLSEL_DrawTabHeader(D2Lang::StrTable::strtable::GetLocaleString(0x57ed), 0x172);
 }
 
 void __stdcall thunk_D2GFX_GetColorFromPalette_C() {
@@ -2057,9 +2000,7 @@ void __stdcall SKILLTREE_DrawSkillNode(eD2Skills eSkill, D2SkillsTxt * pSkillTxt
     }
 
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    BOOL bCountBonuses = 0;
-    D2SkillStrc* pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
-    int nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bCountBonuses);
+    int nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1), 0);
     int32_t nSkillBonus = D2Common::Skills::GetSkillBonus(pUnit, eSkill);
     if (!nSkillLevel && nSkillBonus && nSkillIconState != -1) {
       nGlobalPaletteShift = PALETTE_BLUE;

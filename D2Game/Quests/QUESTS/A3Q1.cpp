@@ -107,7 +107,7 @@ uint32_t __fastcall Q17_GetHratliCoords(::SGAMEDATA * pGame, int32_t * pdwParam)
     }
 
     D2QuestDataA3Q0Strc* pA1Q2Data = pQuestData->pQuestSpecificData.pA3Q0;
-    if (!(pA1Q2Data->bHratliCoordsValid && pA1Q2Data->bHasHratliCoords)) {
+    if (!(pA1Q2Data->bHratliCoordsValid == '\x01' && pA1Q2Data->bHasHratliCoords)) {
       return 0;
     }
 
@@ -126,7 +126,7 @@ void __fastcall Objects_InitFn50(int32_t * pdwParam) {
     }
 
     D2QuestDataA3Q0Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA3Q0;
-    pA1Q3Data->bHratliCoordsValid = true;
+    pA1Q3Data->bHratliCoordsValid = '\x01';
     pA1Q3Data->nHratliX = pdwParam[5];
     pA1Q3Data->nHratliY = pdwParam[6];
     int bIsJustCompleted = QUEST_GetQuestRecordState((::SGAMEDATA*)*pdwParam, QUEST_SpokeToHratli, 0xd);
@@ -213,7 +213,7 @@ void __fastcall Q18_InitObjectMode(D2QuestDataStrc * pQuestData, D2ObjectInitFnA
     if (!pQuestData) {
       return;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pObjectInitFnArg->pObject, 2);
       return;
     }
@@ -309,7 +309,7 @@ void __fastcall Q18_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (pQuestData->nStateFlag >= 4) {
@@ -415,7 +415,7 @@ void __fastcall Q18_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q1.cpp
 void __fastcall Q18_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2GSPacketSrv0x27_TextStrc* pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x4f && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x4f && pQuestData->bIsNotIntroduction != '\0' && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
     }
     if (pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x4b) {
@@ -487,7 +487,7 @@ void __fastcall Q18_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitStrc* pTomeItem = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20626262);
     if (pTomeItem) {
       QUEST_RemoveQuestItemFromPlayer(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20626262);
-      pA3Q1Data->bTomePickedUp = true;
+      pA3Q1Data->bTomePickedUp = '\x01';
       if (!pQuestArgs->pPlayer) {
         pA3Q1Data->nTomePickerGUID = -1;
         pQuestData->sStateFunctions.fpQuestStateHandler[2] = QUEST_StateHandler_PlayTomeHandInSound;
@@ -496,9 +496,9 @@ void __fastcall Q18_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         pQuestData->sStateFunctions.fpQuestStateHandler[2] = QUEST_StateHandler_PlayTomeHandInSound;
       }
     }
-    if (pA3Q1Data->bCanComplete) {
+    if (pA3Q1Data->bCanComplete == '\x01') {
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)CompleteQuestStates);
-      pA3Q1Data->bCanComplete = false;
+      pA3Q1Data->bCanComplete = '\0';
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)RewardStatPoints);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)LockCompletingQuest);
     }
@@ -516,7 +516,7 @@ void __fastcall Q18_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
                          sequence if completed self game */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_LamEsensTome, QUESTSTATE_JustCompleted);
     /* SetQuestRecordState(0x544720)(game, LamEsensTome, 0xd=JustCompleted) —
                          persist fresh-completion before advancing to live state 5 + sequence next
-                         quest */ if (!(bQuestState && pQuestData->bIsNotIntroduction)) {
+                         quest */ if (!(bQuestState && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -539,7 +539,7 @@ void __fastcall Q18_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q1.cpp
 void __fastcall Q18_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2QuestDataA3Q1Strc* pvVar1 = pQuestData->pQuestSpecificData.pA3Q1;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -560,7 +560,7 @@ void __fastcall Q18_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 void __fastcall Q18_Callback05_ItemDropped(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nPlayerGUID = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
     QUESTGUID_RemovePlayerFromList(&pQuestData->pQuestSpecificData.pA3Q1->sQuestGUID, nPlayerGUID);
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -575,7 +575,7 @@ BOOL __fastcall OBJOP_A3Q1_KhalimsRelicAltar(D2ObjectOperateFnArg * pOperation) 
     int32_t nVictimGUID;
     D2ObjectOperateFnArg* pDropCountOut = pOperation;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_LamEsensTome);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return 0;
     }
 
@@ -601,7 +601,7 @@ BOOL __fastcall OBJOP_A3Q1_KhalimsRelicAltar(D2ObjectOperateFnArg * pOperation) 
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     D2QuestDataA3Q1Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
     pA1Q3Data->nPlayersInArea++;
-    pA1Q3Data->bNotifiedPlayers = true;
+    pA1Q3Data->bNotifiedPlayers = '\x01';
     pA1Q3Data->bCheckPartyForTome = true;
     pA1Q3Data->nTomeObjectMode = 2;
     pVictim = pOperation->sArg.pVictim;
@@ -632,7 +632,7 @@ void __fastcall Q18_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
     D2QuestDataA3Q1Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
     int32_t* piVar1 = &pA2Q3Data->nPlayersInArea;
     (*piVar1)--;
-    if (!(!*piVar1 && pQuestData->bIsNotIntroduction && pA2Q3Data->bNotifiedPlayers && pQuestData->nStateFlag <= 3)) {
+    if (!(!*piVar1 && pQuestData->bIsNotIntroduction != '\0' && pA2Q3Data->bNotifiedPlayers != '\0' && pQuestData->nStateFlag <= 3)) {
       return;
     }
 
@@ -650,7 +650,7 @@ void __fastcall Q18_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     }
 
     pA2Q3Data->nPlayersInArea++;
-    if (!(pA2Q3Data->nPlayersInArea == 1 && pQuestData->bIsNotIntroduction && pA2Q3Data->bAllPlayersLeft)) {
+    if (!(pA2Q3Data->nPlayersInArea == 1 && pQuestData->bIsNotIntroduction != '\0' && pA2Q3Data->bAllPlayersLeft)) {
       return;
     }
 
@@ -679,7 +679,7 @@ void __fastcall Q18_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       pA1Q3Data = pQuestData->pQuestSpecificData.pA3Q1;
       pA1Q3Data->nPlayersInArea++;
       pA1Q3Data->nTomeObjectMode = 2;
-      pA1Q3Data->bNotifiedPlayers = true;
+      pA1Q3Data->bNotifiedPlayers = '\x01';
       if (!pQuestArgs->pPlayer) {
         QUESTGUID_AddPlayerToList(&pA1Q3Data->sQuestGUID, -1);
         return;
@@ -709,7 +709,7 @@ void __fastcall Q18_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 
 // Q18_SequenceFilter — Lam Esen's Tome quest-chain link. Once this quest is fully complete (live nStateFlag==5, or not in intro), looks up the next quest (nSequenceQuestId = QUEST_BladeOfTheOldReligion) and invokes its sequence filter, propagating quest unlock down the chain. Halts via Fog ErrorManager if the next filter pointer is bad. No quest-record bits.
 bool __fastcall Q18_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
@@ -775,12 +775,12 @@ bool __fastcall Q18_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         return true;
       }
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return true;
     }
     if (pQuestData->nStateFlag < 4) {
       *nUnknown = '\x01';
-      if (pLamEsenData->bNotifiedPlayers && !pLamEsenData->nPlayersInArea) {
+      if (pLamEsenData->bNotifiedPlayers == '\x01' && !pLamEsenData->nPlayersInArea) {
         *nUnknown = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + '\b';
         return true;
       }
@@ -805,7 +805,7 @@ bool __fastcall Q18_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 void __fastcall Q18_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->pNpcMessages = &A3Q1::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_LamEsensTome;
     pQuestData->nInitNo = 4;
@@ -826,8 +826,8 @@ void __fastcall Q18_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[9] = Q18_Callback09_PlayerDroppedWithQuestItem;
     memset(pQuestSpecificData, 0, 0xa0);
     pQuestSpecificData->bCheckPartyForTome = false;
-    pQuestSpecificData->bNotifiedPlayers = false;
-    pQuestSpecificData->bCanComplete = true;
+    pQuestSpecificData->bNotifiedPlayers = '\0';
+    pQuestSpecificData->bCanComplete = '\x01';
     QUESTGUID_SetPlayerCountToZero(&pQuestSpecificData->sQuestGUID);
 }
 

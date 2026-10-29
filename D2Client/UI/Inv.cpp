@@ -961,7 +961,6 @@ void __stdcall INV_DrawSocketedItems(D2UnitStrc * pUnit, D2GridScreenCoordinates
 }
 
 static BOOL INV_IsQuestItemConsumable(int32_t pUnit) {
-    D2BitBufferStrc* pQuestInfo;
     BOOL bQuestState;
     eD2Quests eQuest;
     eD2QuestState eQuestState;
@@ -976,16 +975,14 @@ static BOOL INV_IsQuestItemConsumable(int32_t pUnit) {
 
         eQuestState = QUESTSTATE_Step0x08;
         eQuest = QUEST_PrisonOfIce;
-        pQuestInfo = npcmenu::GetQuestInfo();
-        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuest, eQuestState);
+        bQuestState = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuest, eQuestState);
         if (!bQuestState) {
           return 1;
         }
 
         eQuestState = QUESTSTATE_Step0x07;
         eQuest = QUEST_PrisonOfIce;
-        pQuestInfo = npcmenu::GetQuestInfo();
-        bQuestState = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuest, eQuestState);
+        bQuestState = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuest, eQuestState);
         if (!bQuestState) {
           return 0;
         }
@@ -997,7 +994,7 @@ static BOOL INV_IsQuestItemConsumable(int32_t pUnit) {
     }
 
     eQuestState = QUESTSTATE_Step0x05;
-    pQuestInfo = npcmenu::GetQuestInfo();
+    D2BitBufferStrc* pQuestInfo = npcmenu::GetQuestInfo();
     bQuestState = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuest, eQuestState);
     if (bQuestState) {
       return 0;
@@ -1028,35 +1025,44 @@ void __stdcall DRAW_UI_InventoryContent(D2UnitStrc * pUnit) {
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return;
-      }
 
-      pCoords = &pNpcInventoryGridScreenCoordinates;
-    } else {
-      switch (CurrentInventoryPage) {
-        case INVPAGE_CORPSE:
-          pCoords = &pTradePage1GridScreenCoordinates;
-        break;
-        case INVPAGE_MERC:
-          pCoords = &pTradePage2GridScreenCoordinates;
-        break;
-        case INVPAGE_CUBE:
-          pCoords = &pTransmogrifyBoxGridScreenCoordinates;
-        break;
-        case INVPAGE_STASH:
-          bEquipReqMet = GAME::Game::CLIENT_CheckExpansion();
-        if (bEquipReqMet) {
-          pCoords = &pBigBankPageGridScreenCoordinates;
-        } else {
-          pCoords = &pBankPageGridScreenCoordinates;
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          switch (CurrentInventoryPage) {
+            case INVPAGE_CORPSE:
+              pCoords = &pTradePage1GridScreenCoordinates;
+            break;
+            case INVPAGE_MERC:
+              pCoords = &pTradePage2GridScreenCoordinates;
+            break;
+            case INVPAGE_CUBE:
+              pCoords = &pTransmogrifyBoxGridScreenCoordinates;
+            break;
+            case INVPAGE_STASH:
+              bEquipReqMet = GAME::Game::CLIENT_CheckExpansion();
+            if (bEquipReqMet) {
+              pCoords = &pBigBankPageGridScreenCoordinates;
+            } else {
+              pCoords = &pBankPageGridScreenCoordinates;
+            }
+
+            break;
+            default:
+              pCoords = &pInventoryGridScreenCoordinated;
+          }
+
+          break;
         }
-
-        break;
-        default:
-          pCoords = &pInventoryGridScreenCoordinated;
-      }
+      default:
+        {
+          return;
+        }
+      case UNIT_MONSTER:
+        {
+          pCoords = &pNpcInventoryGridScreenCoordinates;
+          break;
+        }
     }
 
     D2InventoryStrc* pInventory;
@@ -1126,7 +1132,7 @@ void __stdcall DRAW_UI_InventoryContent(D2UnitStrc * pUnit) {
                 } else {
                   pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
                   iVar1 = 2;
-                  if (pItemsTxt->bQuest) {
+                  if (pItemsTxt->bQuest != '\0') {
                     bEquipReqMet = INV_IsQuestItemConsumable((int32_t)pItemsTxt);
                     if (bEquipReqMet) {
                       iVar1 = 0;
@@ -2492,7 +2498,7 @@ static void __stdcall INV_FormatAttackSpeedText(uint16_t * wszText, D2UnitStrc *
       }
 
       nWeaponSpeed++;
-    } while ((int)&gnAttackSpeedBoostDisplayValue[nWeaponSpeed] < (uintptr_t)((char*)&gnAttackSpeedBoostDisplayValue + sizeof(gnAttackSpeedBoostDisplayValue)));
+    } while ((int)&gnAttackSpeedBoostDisplayValue[nWeaponSpeed] < (intptr_t)((char*)&gnAttackSpeedBoostDisplayValue + sizeof(gnAttackSpeedBoostDisplayValue)));
 
     puTmp = wszSpeedLabel;
     for (nWeaponSpeed = 0x80; nWeaponSpeed; nWeaponSpeed--) {
@@ -3222,7 +3228,7 @@ void __stdcall INV_HandleMouseMove(D2UIMouseMsgStrc * pMsg) {
 
         while ((int)nMouseX < (int)(uint32_t)gaPlayerBodySlotScreenCoords[nBodyLoc].nLeft || (int)nMouseX > (int)(uint32_t)gaPlayerBodySlotScreenCoords[nBodyLoc].nRight || nMouseY < (int)(uint32_t)gaPlayerBodySlotScreenCoords[nBodyLoc].nTop || nMouseY > (int)(uint32_t)gaPlayerBodySlotScreenCoords[nBodyLoc].nBottom) {
           nBodyLoc++;
-          if ((int)(uint32_t*)&gaPlayerBodySlotScreenCoords[nBodyLoc].nRight >= (uintptr_t)((char*)&gaPlayerBodySlotScreenCoords + sizeof(gaPlayerBodySlotScreenCoords) + 4)) {
+          if ((int)(uint32_t*)&gaPlayerBodySlotScreenCoords[nBodyLoc].nRight >= (intptr_t)((char*)&gaPlayerBodySlotScreenCoords + sizeof(gaPlayerBodySlotScreenCoords) + 4)) {
             gnInvBodySlotUnderCursor = 0;
             pMsg->bHandled = 0;
             gnItemDescTitleMaxWidth = 1;
@@ -3348,11 +3354,9 @@ int32_t __stdcall ClickItemRight(D2UnitStrc * pItem, D2InventoryStrc * pGridCoor
     int32_t nPosX;
     int nItemCode;
     uint32_t nSendResult;
-    eD2Sounds nSoundId;
     D2ItemsTxt* pItemsTxt;
     uint8_t* pTmp;
     uint32_t nCellHeightDivisor;
-    int32_t nParam;
     int nCellX;
     int nCellY;
     eD2UnitType eUnitType;
@@ -3430,11 +3434,7 @@ int32_t __stdcall ClickItemRight(D2UnitStrc * pItem, D2InventoryStrc * pGridCoor
 
           GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x20, pItemAtCell->nUnitGUID, nPosX, nPosY);
           UNIT::ITEM_RemoveClientSide(pItemAtCell);
-          nParam = 0;
-          nPosY = 0;
-          nPosX = 0;
-          nSoundId = UNIT::ITEM_PlayItemUseSound(pItemAtCell);
-          Sound::SOUND_PlaySound(nSoundId, nullptr, nPosX, nPosY, nParam);
+          Sound::SOUND_PlaySound(UNIT::ITEM_PlayItemUseSound(pItemAtCell), nullptr, 0, 0, 0);
           gpInvItemUnderCursor = 0;
           return 1;
         }
@@ -4105,8 +4105,7 @@ void __stdcall INV_DrawNpcButtonTooltip() {
       nNpcTypeId = 0;
       nButtonX = gnPanelOffsetY - 100 + ScreenSizeY;
       nTooltipX = NPCButtonArray[nButtonIdx + CurrentNpcButtonSelection * 4] + gnPanelOffsetX;
-      pwFormatStr = D2Lang::StrTable::strtable::GetLocaleString(gaNpcShopButtons[nButtonIdx].wStringId);
-      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(pwFormatStr, nTooltipX, nButtonX, nNpcTypeId, nTooltipColor);
+      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(gaNpcShopButtons[nButtonIdx].wStringId), nTooltipX, nButtonX, nNpcTypeId, nTooltipColor);
     }
 }
 
@@ -5547,12 +5546,11 @@ BOOL __stdcall INV_IsMouseInRectLTRB(int32_t nLeft, int32_t nTop, int32_t nRight
 
 void __stdcall INV_DrawHirelingName(D2UnitStrc * pUnit) {
     int nTextWidth;
+    uint16_t* pwTruncate;
     uint16_t wszNameBuf[32];
     memset(wszNameBuf, 0, 32 * sizeof(wszNameBuf[0]));
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(6);
-    size_t nMaxChars = 0x20;
-    uint16_t* pwTruncate = UNIT::CUnit::GetName(pUnit);
-    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszNameBuf, pwTruncate, nMaxChars);
+    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszNameBuf, UNIT::CUnit::GetName(pUnit), 0x20);
     *(uint32_t*)((char*)&wszNameBuf + 60) &= 0xffff;
     pwTruncate = wszNameBuf + 0x1f;
     nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
@@ -6360,7 +6358,7 @@ void __fastcall INV_DrawHirelingCursorHighlight(D2UnitStrc * pUnit) {
       }
 
       nBodySlotIdx++;
-    } while ((int)&gaHirelingBodySlotScreenCoords[nBodySlotIdx].nHeight < (uintptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords) + 17));
+    } while ((int)&gaHirelingBodySlotScreenCoords[nBodySlotIdx].nHeight < (intptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords) + 17));
 }
 
 static void INV_DrawHirelingEquippedItems(D2UnitStrc * pMercUnit) {
@@ -6400,7 +6398,7 @@ static void INV_DrawHirelingEquippedItems(D2UnitStrc * pMercUnit) {
       }
 
       local_10++;
-    } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[local_10].nLeft < (uintptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords)));
+    } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[local_10].nLeft < (intptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords)));
 }
 
 void __stdcall INV_HandleMercInvLeftDown(D2UIMouseMsgStrc * pMsg) {
@@ -6455,7 +6453,6 @@ void __stdcall INV_HandleMercInvLeftClick(D2UIMouseMsgStrc * pMsg) {
     int iMouseY;
     D2UnitStrc* pEquippedItem;
     BOOL BVar1;
-    eD2Sounds eSoundId;
     int iScreenBottom;
     int iScreenHalfWidth;
     uint32_t iCanEquip;
@@ -6524,8 +6521,7 @@ void __stdcall INV_HandleMercInvLeftClick(D2UIMouseMsgStrc * pMsg) {
                       nSoundParam2 = 0;
                       nSoundParam1 = 0;
                       nMercGuid = 0;
-                      eSoundId = UNIT::SOUND_GetIdFromUnit(pPlayerUnit_lcl);
-                      Sound::SOUND_PlaySound(eSoundId, nullptr, nMercGuid, nSoundParam1, nSoundParam2);
+                      Sound::SOUND_PlaySound(UNIT::SOUND_GetIdFromUnit(pPlayerUnit_lcl), nullptr, nMercGuid, nSoundParam1, nSoundParam2);
                       GAME::Msg::NET_D2GS_CLIENT_Send_SHORT('a', 0);
                       goto consume_click;
                     }
@@ -6558,7 +6554,7 @@ void __stdcall INV_HandleMercInvLeftClick(D2UIMouseMsgStrc * pMsg) {
           }
 
           nBodySlotIdx++;
-        } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[nBodySlotIdx].nRight < (uintptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords) + 4));
+        } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[nBodySlotIdx].nRight < (intptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords) + 4));
 
         GAME::Game::GAMEDATA_ClearQueuedClicks();
         consume_click:
@@ -6633,7 +6629,7 @@ void __stdcall INV_HandleMercInvMouseMove(D2UIMouseMsgStrc * pMsg) {
           }
 
           nMouseX++;
-        } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[nMouseX].nLeft < (uintptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords)));
+        } while ((int)(uint32_t*)&gaHirelingBodySlotScreenCoords[nMouseX].nLeft < (intptr_t)((char*)&gaHirelingBodySlotScreenCoords + sizeof(gaHirelingBodySlotScreenCoords)));
 
         return;
       }
@@ -7351,7 +7347,7 @@ void __fastcall GetItemName(D2UnitStrc * pUnit, uint16_t * wBuffer, size_t nSize
     pwOutCursor = pwOutBuffer;
     INV_FormatPlayerNameOnItem(pwOutBuffer, pUnit);
     ui::MoveArgumentToEAX(pwOutCursor);
-    if (!pItemsTxt->bQuest) {
+    if (pItemsTxt->bQuest == '\0') {
       return;
     }
     if (pItemsTxt->bQuestDiffCheck != '\0') {
@@ -7968,8 +7964,8 @@ void __stdcall INV_ShowTransmogrifyTooltip() {
     }
 
     uint16_t* pwLineEnd = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
-    int32_t dwErrorLine = D2Common::ITEMS::Items::ITEM_CheckItemsTxt_bTransmogrify(pItemToDescribe);
-    if (!dwErrorLine) {
+    int32_t iVar1 = D2Common::ITEMS::Items::ITEM_CheckItemsTxt_bTransmogrify(pItemToDescribe);
+    if (!iVar1) {
       return;
     }
     if (!pItemToDescribe) {
@@ -7978,7 +7974,7 @@ void __stdcall INV_ShowTransmogrifyTooltip() {
       nCurrentItemClassId = pItemToDescribe->nClassId;
     }
 
-    dwErrorLine = 0x48dbd3;
+    iVar1 = 0x48dbd3;
     D2ItemsTxt* pTransmogItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nCurrentItemClassId);
     if (pTransmogItemsTxt) {
       uint16_t* pwString;
@@ -8016,10 +8012,10 @@ void __stdcall INV_ShowTransmogrifyTooltip() {
         return;
       }
 
-      dwErrorLine = 0xe64;
+      iVar1 = 0xe64;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwErrorLine);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), iVar1);
     exit(-1);
 }
 
@@ -8622,7 +8618,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
       }
 
       nTmpResult = nReturnValue;
-      if (pItemsTxt->bQuest) {
+      if (pItemsTxt->bQuest != '\0') {
         nTmp = pItemsTxt->dwCode;
         if (nTmp != 0x2067656c) {
           if (!g_nCurrentInventoryPage && (!pItemToDescribe || pItemToDescribe->eAnimMode.ePlayerMode == Death)) {
@@ -10362,17 +10358,13 @@ void __stdcall ClickItemHandler(D2UIMouseMsgStrc * pMsg) {
     uint32_t nPage;
     D2UnitStrc* pCursorItem_lcl;
     D2UnitStrc* pSlotItem;
-    eD2Sounds nSoundId;
     int iVar1;
     int nSocketGuid;
     int nGridBottom;
     int32_t y;
     uint32_t nBodySlotIdx;
-    int32_t nDelay;
     D2GridScreenCoordinates* pInvLayout;
     uint32_t nClickResult;
-    int32_t nSoundParam;
-    int32_t nSoundParam3;
     BOOL bResult;
     bResult = GAME::Game::GAMEDATA_GetExitFlag3();
     if (bResult || (nPage = UNIT::Player::IsPlayerDead() , nPage != 0)) {
@@ -10461,11 +10453,7 @@ void __stdcall ClickItemHandler(D2UIMouseMsgStrc * pMsg) {
 
                       /* 28 [DWORD item to socket id] [DWORD socketable item id] */ GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x28, nSocketGuid, iVar1);
                       UNIT::ITEM_RemoveClientSide(pCursorItem_lcl);
-                      nSoundParam3 = 0;
-                      nSoundParam = 0;
-                      nDelay = 0;
-                      nSoundId = UNIT::SOUND_GetIdFromUnit(pSlotItem);
-                      Sound::SOUND_PlaySound(nSoundId, nullptr, nDelay, nSoundParam, nSoundParam3);
+                      Sound::SOUND_PlaySound(UNIT::SOUND_GetIdFromUnit(pSlotItem), nullptr, 0, 0, 0);
                       bHandled = true;
                     }
                   }
@@ -10486,7 +10474,7 @@ void __stdcall ClickItemHandler(D2UIMouseMsgStrc * pMsg) {
           }
 
           nBodySlotIdx++;
-        } while ((int)(uint32_t*)&gaPlayerBodySlotScreenCoords[nBodySlotIdx].nRight < (uintptr_t)((char*)&gaPlayerBodySlotScreenCoords + sizeof(gaPlayerBodySlotScreenCoords) + 4));
+        } while ((int)(uint32_t*)&gaPlayerBodySlotScreenCoords[nBodySlotIdx].nRight < (intptr_t)((char*)&gaPlayerBodySlotScreenCoords + sizeof(gaPlayerBodySlotScreenCoords) + 4));
 
         nClickResult = 0;
         bResult = GAME::Game::CLIENT_CheckExpansion();
@@ -11509,14 +11497,13 @@ void __stdcall DrawMercInventory() {
     }
 
     int32_t nMercGuid = 0;
-    D2UnitStrc* pMercUnit = UNIT::Player::GetPlayerUnit_UI();
-    nMercGuid = GAME::RosterPets::GetRosterPetGUID(pMercUnit, 7, nMercGuid);
+    nMercGuid = GAME::RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nMercGuid);
     if (nMercGuid == -1) {
       Draw::SetUIFlag(UI_MERCINV, UI_TOGGLE, 0);
       return;
     }
 
-    pMercUnit = UNIT::Player::UNITS_FindClientSideUnit(nMercGuid, UNIT_MONSTER);
+    D2UnitStrc* pMercUnit = UNIT::Player::UNITS_FindClientSideUnit(nMercGuid, UNIT_MONSTER);
     if (!pMercUnit) {
       Draw::SetUIFlag(UI_MERCINV, UI_TOGGLE, 0);
       return;

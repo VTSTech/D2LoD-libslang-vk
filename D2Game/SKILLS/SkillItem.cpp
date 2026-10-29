@@ -449,10 +449,7 @@ BOOL __fastcall SKILLITEM_ItemSpellInit_UseStackable(::SGAMEDATA * pGame, D2Unit
       return 1;
     }
 
-    int32_t nParam = 1;
-    BOOL bUseUnitGUID = 0;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x40);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(pClient, pItem, nSpellIcon, bUseUnitGUID, nParam, (uint16_t)eSkill);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x40), pItem, nSpellIcon, 0, 1, (uint16_t)eSkill);
     return 1;
 }
 
@@ -483,8 +480,6 @@ static D2InventoryStrc * SKILLITEM_FindItemInInventory(D2UnitStrc * pUnit, D2Uni
 static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
     D2UnitStrc* pUnitTmp;
     BOOL bHasCursorFlag;
-    D2ClientStrc* pClient;
-    int32_t nItemSlot;
     int32_t nParam;
     int16_t nSkillId;
     if (!pUnit->pInventory) {
@@ -500,9 +495,7 @@ static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
         nSkillId = -1;
         nParam = 0;
         bHasCursorFlag = 1;
-        nItemSlot = 0xff;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x7a);
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(pClient, pUnitTmp2, nItemSlot, bHasCursorFlag, nParam, nSkillId);
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x7a), pUnitTmp2, 0xff, bHasCursorFlag, nParam, nSkillId);
       }
     }
 }
@@ -535,10 +528,7 @@ BOOL __fastcall SKILLITEM_TownPortalScrollSpell(::SGAMEDATA * pGame, D2UnitStrc 
     D2RoomStrc* pRoom;
     eD2LevelId eLevelId;
     BOOL bInTown;
-    int32_t nPortalY;
-    int32_t nPortalX;
     D2UnitStrc* pPrevPortalOwner;
-    D2ClientStrc* pClient;
     uint32_t nPortalGUID;
     D2UnitStrc* pNewPortal;
     uint8_t byItemUnitType;
@@ -564,9 +554,7 @@ BOOL __fastcall SKILLITEM_TownPortalScrollSpell(::SGAMEDATA * pGame, D2UnitStrc 
         nPortalObjId = 0x3b;
         ppNewPortal = &pNewPortal;
         pNewPortal = 0;
-        nPortalY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        nPortalX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        bInTown = SkillsServer::SERVER_SpawnPortal(pGame, pUnit, pRoom, nPortalX, nPortalY, eLevelId, ppNewPortal, nPortalObjId, bInTown);
+        bInTown = SkillsServer::SERVER_SpawnPortal(pGame, pUnit, pRoom, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), eLevelId, ppNewPortal, nPortalObjId, bInTown);
         UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, UNITEVENTCALLBACK_MONUMOD, nullptr);
         if (bInTown) {
           if (!pNewPortal) {
@@ -593,8 +581,7 @@ BOOL __fastcall SKILLITEM_TownPortalScrollSpell(::SGAMEDATA * pGame, D2UnitStrc 
 
         nItemGUID = pItem->nUnitGUID;
         byItemUnitType = (uint8_t)pItem->eUnitType;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0xda);
-        GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0x7c, byItemUnitType, nItemGUID);
+        GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0xda), 0x7c, byItemUnitType, nItemGUID);
         return bInTown;
       }
     }
@@ -1371,20 +1358,24 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
 // Scans the player's inventory item list for a book or scroll whose spell (Books.txt spell column) matches the requested spell id at *(nParam+8). For scrolls matches at +8; for books matches at +0xc and requires quantity>0. On a hit, reads the item's inventory grid type: grid 1 routes to SpecialItemsBonuses, grid 2 routes to SERVER_UseItemAtCoords (with the item's GUID and dynamic-path X/Y). Returns 1 if a matching item was used, 0 otherwise. Server-side helper for casting a spell from a scroll/tome in the inventory.
 BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pUnit_00;
+    uint32_t uVar3;
     uint32_t uVar4;
     void* pvVar5;
     int iVar6;
+    int32_t iVar7;
     int32_t iVar8;
     DWORD DVar9;
     int32_t bUseMerc;
+    eD2Skills* bResult;
     if (!pUnit->pInventory) {
       return 0;
     }
 
-    D2UnitStrc* pDVar2 = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
-    eD2Skills eVar1 = eSkill;
+    D2UnitStrc* pDVar2;
+    pDVar2 = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
+    eD2Skills eVar1;
+    eVar1 = eSkill;
     do {
-      uint32_t uVar3;
       if (!pDVar2) {
         return 0;
       }
@@ -1397,7 +1388,46 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
         if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 0xc) == eVar1) {
           iVar6 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit_00, UNITSTAT_quantity, 0);
           if (iVar6 > 0) {
-            break;
+            LAB_005bf43c:
+            if (!pDVar2) {
+              return 0;
+            }
+            iVar7 = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pDVar2);
+            switch (iVar7) {
+              default:
+                {
+                  return 0;
+                }
+              case 2:
+                {
+                  if (!pUnit_00) {
+                    DVar9 = -1;
+                  } else {
+                    DVar9 = pUnit_00->nUnitGUID;
+                  }
+
+                  bUseMerc = 0;
+                  pDVar2 = (D2UnitStrc*)&eSkill;
+                  iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
+                  iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
+                  ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, iVar8, iVar7, pDVar2, bUseMerc);
+                  return 1;
+                }
+              case 1:
+                {
+                  if (!pUnit_00) {
+                    DVar9 = -1;
+                  } else {
+                    DVar9 = pUnit_00->nUnitGUID;
+                  }
+
+                  bResult = &eSkill;
+                  iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
+                  iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
+                  ITEMS::ItemMode::SpecialItemsBonuses(pGame, pUnit, DVar9, iVar8, iVar7, (BOOL*)bResult);
+                  return 1;
+                }
+            }
           }
         }
       } else {
@@ -1406,47 +1436,13 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
           uVar4 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
           pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(uVar4 & 0xffff);
           if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 8) == eVar1) {
-            break;
+            goto LAB_005bf43c;
           }
         }
       }
 
       pDVar2 = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pDVar2);
     } while (true);
-
-    if (!pDVar2) {
-      return 0;
-    }
-
-    int32_t iVar7 = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pDVar2);
-    if (iVar7 != 1) {
-      if (iVar7 != 2) {
-        return 0;
-      }
-      if (!pUnit_00) {
-        DVar9 = -1;
-      } else {
-        DVar9 = pUnit_00->nUnitGUID;
-      }
-
-      bUseMerc = 0;
-      pDVar2 = (D2UnitStrc*)&eSkill;
-      iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-      iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, iVar8, iVar7, pDVar2, bUseMerc);
-      return 1;
-    }
-    if (!pUnit_00) {
-      DVar9 = -1;
-    } else {
-      DVar9 = pUnit_00->nUnitGUID;
-    }
-
-    eD2Skills* bResult = &eSkill;
-    iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-    iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-    ITEMS::ItemMode::SpecialItemsBonuses(pGame, pUnit, DVar9, iVar8, iVar7, (BOOL*)bResult);
-    return 1;
 }
 
 void __fastcall SKILL_ProcessPeriodicAuraTick(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t param_1, eD2Skills eSkill, int32_t nParam) {
@@ -2227,7 +2223,6 @@ BOOL __fastcall ITEMEVENT_SetRestInPeace(::SGAMEDATA * pGame, uint32_t nUnitEven
 
 // Server-side Necromancer Revive handler: validates the corpse (consumable check, MonStats bounds), removes its collision, spawns a monster of class eSkill in a nearby room, sets ISREVIVE flags and STATE_revive, attaches minion AI, assigns the owner (GUID in nSkillLvl) and schedules AI-think and expiry events. Returns 1 on success, 0 on any validation failure.
 BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pAttacker, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2AiGeneralStrc* pReviveAiGeneral;
     uint32_t dwAlignPad = nUnitEvent;
     D2MonsterKillStrc sKillStrc;
     if (!(pAttacker && pAttacker->eUnitType == UNIT_MONSTER)) {
@@ -2258,21 +2253,14 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
       return 0;
     }
 
-    int32_t eCollisionFlag = 0x8000;
-    eD2CollisionShapeType nType = D2Common::PATH::DynamicPath::GetUnitWidth(pAttacker);
-    nCollY = D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker);
-    int32_t nCollX = D2Client::Units::GetXPosFromDynamicPathUnit(pAttacker);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pAttacker);
-    D2Common::Collision::RemoveCollision_Type(pRoom, nCollX, nCollY, nType, eCollisionFlag);
+    D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pAttacker), D2Client::Units::GetXPosFromDynamicPathUnit(pAttacker), D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker), D2Common::PATH::DynamicPath::GetUnitWidth(pAttacker), 0x8000);
     D2UnitStrc* pRevived = Monster::Create::SpawnMonsterAtRoomPos(pGame, pTargetRoom, nCorpseSpawnX, nCorpseY, eSkill, eD2MonsterAnimMode_ns::Neutral, -1, 0x4a);
     if (!pRevived) {
       return 0;
     }
 
     pRevived->eUnitFlags |= UNITFLAG_NOXP | UNITFLAG_NOTC | UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE;
-    nCollY = 0;
-    pReviveAiGeneral = UNIT::Monster::GetAiGeneral(pRevived);
-    Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pRevived, pReviveAiGeneral, nCollY);
+    Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pRevived, UNIT::Monster::GetAiGeneral(pRevived), 0);
     Monster::MONSTERAI_TriggerMageThink(pGame, pRevived);
     Ai::AiGeneral::AssignMinionOwner(pGame, pRevived, pOwnerUnit->nUnitGUID, pOwnerUnit->eUnitType, 0, 0);
     Monster::AI::MONSTERAI_SetTargetUnit(pRevived, pOwnerUnit);

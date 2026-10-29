@@ -156,7 +156,7 @@ int * __stdcall SOUND_GetChannelArray() {
       }
 
       pChannel++;
-    } while ((int)pChannel < (uintptr_t)((char*)&gaSoundChannelPool + sizeof(gaSoundChannelPool)));
+    } while ((int)pChannel < (intptr_t)((char*)&gaSoundChannelPool + sizeof(gaSoundChannelPool)));
 
     return nullptr;
 }

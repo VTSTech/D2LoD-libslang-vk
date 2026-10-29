@@ -46,7 +46,7 @@ void __fastcall Q07_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     D2QuestDataStrc* pQ1Data = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_DenOfEvil);
     int bDenJustCompleted = QUEST_GetQuestRecordState(pQuestArgs->pGame, QUEST_DenOfEvil, 0xd);
-    if (!bDenJustCompleted && pQ1Data->bIsNotIntroduction) {
+    if (!bDenJustCompleted && pQ1Data->bIsNotIntroduction != '\0') {
       D2UnitDataPlayerStrc* pPlayerData;
       pGame = pQuestArgs->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
@@ -97,7 +97,7 @@ bool __fastcall Q07_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     D2QuestDataStrc* pQ1Data = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_DenOfEvil);
-    /* If not introduction to Q1 */ if (!pQ1Data->bIsNotIntroduction) {
+    /* If not introduction to Q1 */ if (pQ1Data->bIsNotIntroduction == '\0') {
       return false;
     }
 
@@ -137,7 +137,7 @@ void __fastcall Q07_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q07_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q07_Callback08_MonsterKilled;
     pQuestData->pNpcMessages = &A1Q7::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->nQuestIdReal = QUEST_UnknownDuplicate2;

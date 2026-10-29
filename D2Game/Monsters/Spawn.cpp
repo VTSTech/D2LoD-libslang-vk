@@ -154,9 +154,7 @@ static BOOL __stdcall CheckWarpSpawnCoords(D2RoomStrc * pRoom, ::SGAMEDATA * pGa
 
     int* pActSpawnY = &__frame0.nActSpawnY;
     int* pActSpawnX = &__frame0.nActSpawnX;
-    int32_t nActSpawnSearchRadius = 0xb;
-    eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    D2Common::DUNGEON::Dungeon::FindActSpawnLocation(pGame->pAct[neAct], eLevel, nActSpawnSearchRadius, pActSpawnX, pActSpawnY);
+    D2Common::DUNGEON::Dungeon::FindActSpawnLocation(pGame->pAct[D2Common::Drlg::GetActNoFromLevelNumber(eLevel)], eLevel, 0xb, pActSpawnX, pActSpawnY);
     if (!(__frame0.nActSpawnX > 0 && __frame0.nActSpawnY > 0)) {
       return 0;
     }
@@ -352,7 +350,6 @@ BOOL __stdcall SPAWN_SpawnMonsterGroupAtRandom(::SGAMEDATA * pGame, D2RoomStrc *
 
 // Spawns a monster of nClassId at a random valid position in pRoom/pCoordList, then spawns a random number of minions around it (count drawn from [bParam1-1, bParam2-1]). Also places an object (0x232) near the boss if it has the ObjCol flag and ValidateClassId returns 0x210. Returns the spawned boss unit, or NULL if no position found or params are invalid.
 static D2UnitStrc * __stdcall SPAWN_SpawnMonsterWithMinions(::SGAMEDATA * pGame, D2RoomStrc * pRoom, D2RoomCoordListStrc * pCoordList, uint8_t bParam1, uint8_t bParam2, uint32_t nClassId) {
-    int32_t nValidatedClassId;
     int nMinionIdx;
     int32_t nFoundX;
     int32_t nFoundY;
@@ -383,9 +380,7 @@ static D2UnitStrc * __stdcall SPAWN_SpawnMonsterWithMinions(::SGAMEDATA * pGame,
         nObjClassId = 0;
         bActive = true;
         pGameCopy = pGame;
-        bHasObjColFlag = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        nValidatedClassId = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x232, nValidatedClassId, bHasObjColFlag, pGameCopy, pRoom, bActive, nObjClassId, pNullArg);
+        UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x232, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), pGameCopy, pRoom, bActive, nObjClassId, pNullArg);
       }
     }
 
@@ -556,9 +551,7 @@ static D2UnitStrc * __stdcall SPAWN_SpawnMonsterWithCollisionObj(::SGAMEDATA * p
     bool _bObjColFlag;
     bool bRescueQuestDone;
     bool bObjColFlag;
-    int32_t nColObjPosX2;
     int32_t nValidatedClassId;
-    bool bActive;
     void* pNullExtra;
     if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
       return nullptr;
@@ -604,13 +597,11 @@ static D2UnitStrc * __stdcall SPAWN_SpawnMonsterWithCollisionObj(::SGAMEDATA * p
       return pMonster;
     }
     if (nClassId < sgptDataTable->nTxtMonStatsSize && nClassId == 0x1b0) {
-      int32_t nColObjPosY;
+      bool bActive;
       pNullExtra = 0;
       nValidatedClassId = 0;
       bActive = true;
-      nColObjPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pMonster);
-      nColObjPosX2 = D2Client::Units::GetXPosFromDynamicPathUnit(pMonster);
-      UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x23b, nColObjPosX2, nColObjPosY, pGame, pRoom, bActive, nValidatedClassId, pNullExtra);
+      UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x23b, D2Client::Units::GetXPosFromDynamicPathUnit(pMonster), D2Client::Units::GetYPosFromDynamicPathUnit(pMonster), pGame, pRoom, bActive, nValidatedClassId, pNullExtra);
       return pMonster;
     }
 
@@ -622,9 +613,7 @@ static D2UnitStrc * __stdcall SPAWN_SpawnMonsterWithCollisionObj(::SGAMEDATA * p
     pNullExtra = 0;
     int32_t nInitialMode = 0;
     bool bActive2 = true;
-    nValidatedClassId = D2Client::Units::GetYPosFromDynamicPathUnit(pMonster);
-    int32_t nColObjPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pMonster);
-    UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x23c, nColObjPosX, nValidatedClassId, pGame, pRoom, bActive2, nInitialMode, pNullExtra);
+    UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x23c, D2Client::Units::GetXPosFromDynamicPathUnit(pMonster), D2Client::Units::GetYPosFromDynamicPathUnit(pMonster), pGame, pRoom, bActive2, nInitialMode, pNullExtra);
     return pMonster;
 }
 
@@ -795,12 +784,17 @@ D2UnitStrc * __fastcall SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, in
       case 0x1a:
         if ((uint8_t)pGameLocal->nDifficulty <= 0) {
           nValidClassId = 0;
-          if (nMonCode != 0x18) {
-            if (nMonCode == 0x1a) {
-              nValidClassId = 0x1c5;
-            }
-          } else {
-            nValidClassId = (eLevelId != LEVEL_BloodyFoothills ? -37 : 0) + 0x211;
+          switch (nMonCode) {
+            case 0x18:
+              {
+                nValidClassId = (eLevelId != LEVEL_BloodyFoothills ? -37 : 0) + 0x211;
+                break;
+              }
+            case 0x1a:
+              {
+                nValidClassId = 0x1c5;
+                break;
+              }
           }
 
           nResolvedClassId = D2Client::DataTbls::CheckMonStatId(nValidClassId);

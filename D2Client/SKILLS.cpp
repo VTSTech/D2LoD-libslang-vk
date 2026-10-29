@@ -151,8 +151,7 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
     sUnitFindArg.pAttacker = pUnit;
     sUnitFindArg.nY = nPosY;
     sUnitFindArg.nDistance = nExplosionRadius;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &local_3c, pRoom, nCorpsePosY, nPosY, nExplosionRadius, fpUnitTest, pUnitFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &local_3c, D2Common::Units::UNITS_GetRoom(pUnit), nCorpsePosY, nPosY, nExplosionRadius, fpUnitTest, pUnitFindArg);
     local_3c.nFlags = sUnitFindArg.nFlags;
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&local_3c);
     nCorpseIdx = 0;
@@ -253,12 +252,19 @@ static void __stdcall SKILLSCLT_CreateMultiMissileDirected(int32_t nParam1, eD2S
         seedNext = D2_SEED_NEXT(*pSeed);
         *pSeed = seedNext;
         nRandIdx2 = seedNext.nSeedLow % 3;
-        if (nRandIdx2) {
-          if (nRandIdx2 == 1) {
-            eMissileSelected = (int)*(short int*)(nParam1 + 0xee);
-          }
-
-          goto spawn_selected_missile;
+        switch (nRandIdx2) {
+          case 1:
+            {
+              eMissileSelected = (int)*(short int*)(nParam1 + 0xee);
+            }
+          default:
+            {
+              goto spawn_selected_missile;
+            }
+          case 0:
+            {
+              break;
+            }
         }
       } else {
         seedNext = D2_SEED_NEXT(*pSeed);
@@ -1233,8 +1239,7 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
     }
 
     uint32_t nSP1Y = D2Common::PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
-    uint32_t nSP1X = D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
-    uint32_t nCurDir = D2Common::Units::GetDirectionToCoords(pUnit, nSP1X, nSP1Y);
+    uint32_t nCurDir = D2Common::Units::GetDirectionToCoords(pUnit, D2Common::PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath), nSP1Y);
     nCurDir &= 0xff;
     ullSeedTemp = (uint64_t)pSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pUnit->sSeed.nSeedHigh;
     nSerpentineSign = ullSeedTemp & 1 ? 0x1 : -0x1;

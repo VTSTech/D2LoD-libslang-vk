@@ -2565,22 +2565,27 @@ void __fastcall COLLISION_FindFreeCoordSpiral(D2RoomStrc * pRoom, POINT * pPoint
 }
 
 void __stdcall AddCollision_Width(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eD2CollisionUnitSize nWidth, int32_t eCollisionFlag) {
-    if (nWidth != COLLISION_UNIT_SIZE_POINT) {
-      D2BoundingBoxStrc sBox;
-      if (nWidth == COLLISION_UNIT_SIZE_SMALL) {
-        AddCollision_Cross(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
-        return;
-      }
-      if (nWidth == COLLISION_UNIT_SIZE_BIG) {
-        sBox.nLeft = nX - 1;
-        sBox.nRight = nX + 1;
-        sBox.nBottom = nY - 1;
-        sBox.nTop = nY + 1;
-        AddCollision_BoundingBox(pRoom, &sBox, eCollisionFlag);
-        return;
-      }
-    } else {
-      COLLISN_SetCellMask(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
+    D2BoundingBoxStrc sBox;
+    switch (nWidth) {
+      case COLLISION_UNIT_SIZE_POINT:
+        {
+          COLLISN_SetCellMask(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
+          break;
+        }
+      case COLLISION_UNIT_SIZE_SMALL:
+        {
+          AddCollision_Cross(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
+          return;
+        }
+      case COLLISION_UNIT_SIZE_BIG:
+        {
+          sBox.nLeft = nX - 1;
+          sBox.nRight = nX + 1;
+          sBox.nBottom = nY - 1;
+          sBox.nTop = nY + 1;
+          AddCollision_BoundingBox(pRoom, &sBox, eCollisionFlag);
+          return;
+        }
     }
 }
 

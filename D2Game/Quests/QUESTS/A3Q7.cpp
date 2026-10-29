@@ -102,7 +102,7 @@ void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cPara
     uint8_t nBroadcastState;
     int32_t nPrevStateFlag;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 6)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 6)) {
       return;
     }
     if (cParam != '\0') {
@@ -296,7 +296,7 @@ void __fastcall Q24_InitData(D2QuestDataStrc * pQuestData) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q24_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = 0;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     D2QuestDataA3Q7Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q7Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q7.cpp", 0xb9);

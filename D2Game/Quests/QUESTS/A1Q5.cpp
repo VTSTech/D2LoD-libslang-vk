@@ -229,10 +229,10 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     sVar2 = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     D2QuestDataA1Q5Strc* pQuestSpecific;
     pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q5;
-    if (sVar1 == 0x7f && pQuestData->bIsNotIntroduction) {
+    if (sVar1 == 0x7f && pQuestData->bIsNotIntroduction != '\0') {
       bool bStateChanged;
       bStateChanged = false;
-      if (pQuestSpecific->bTalkedToNPC) {
+      if (pQuestSpecific->bTalkedToNPC == '\x01') {
         bStateChanged = !pQuestData->nStateFlagPrev;
         if (bStateChanged) {
           pQuestData->nQuestPacketFlags = '\0';
@@ -381,7 +381,7 @@ void __fastcall Q05_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     int nPlayerGUID;
     int32_t local_c;
     uint32_t nGossipLineIdx;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -552,7 +552,7 @@ BOOL __fastcall OBJOP_A1Q5_ActivateCairnStone(D2ObjectOperateFnArg * pOperation)
     }
 
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_ForgottenTower);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return 0;
     }
 
@@ -566,7 +566,7 @@ BOOL __fastcall OBJOP_A1Q5_ActivateCairnStone(D2ObjectOperateFnArg * pOperation)
       return 0;
     }
 
-    pQuestData->pQuestSpecificData.pA1Q5->bTalkedToNPC = true;
+    pQuestData->pQuestSpecificData.pA1Q5->bTalkedToNPC = '\x01';
     return 0;
 }
 
@@ -632,7 +632,7 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
                          quest record */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
     D2QuestDataA1Q5Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q5;
     if (!pQuestData->pQuestSpecificData.pA1Q5->nPlayersForRewardCount) {
-      pQuestData->bIsActive = false;
+      pQuestData->bIsActive = '\0';
       return (int)pDVar1;
     }
 
@@ -649,7 +649,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2QuestDataA1Q5Strc* pvVar2;
     int nIndex;
     nIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       D2UnitDataPlayerStrc* pPlayerData;
       handle_left_town:
       if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1) {
@@ -661,7 +661,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
             QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x28d);
             return;
           }
-        } else if (pQuestData->nStateFlag == 5 && pQuestData->bIsNotIntroduction) {
+        } else if (pQuestData->nStateFlag == 5 && pQuestData->bIsNotIntroduction != '\0') {
           pvVar2 = pQuestData->pQuestSpecificData.pA1Q5;
           if (!pQuestArgs->pPlayer) {
             nIndex = -1;
@@ -671,7 +671,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
           bQuestState = Q05_RemovePlayerFromTrackingList(0, (int32_t)pvVar2, nIndex);
           if (bQuestState && !pvVar2->nPlayersInTowerCount && !pvVar2->nPlayersForRewardCount) {
-            pQuestData->bIsActive = false;
+            pQuestData->bIsActive = '\0';
           }
         }
       }
@@ -716,7 +716,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nAreaFlag) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_ForgottenTower);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 4)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 4)) {
       return;
     }
 
@@ -743,7 +743,7 @@ void __fastcall Q05_CheckAndUpdateOnAreaEntry(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 bool __fastcall Q05_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag < 2 && pQuestData->bIsNotIntroduction || pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag < 2 && pQuestData->bIsNotIntroduction == '\x01' || pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
@@ -955,7 +955,7 @@ void __fastcall Q05_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     short int nRewardPlayerCount;
     D2QuestDataA1Q5Strc* pA1Q5Data = pQuestData->pQuestSpecificData.pA1Q5;
     D2Common::Units::GetCoords(pQuestArgs->pTarget, &pA1Q5Data->ptCountessDeath);
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       eD2Quests nQuestId;
       QUEST_DebugPrint(pQuestData->pGame, "Finished quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x3b1);
       pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
@@ -964,7 +964,7 @@ void __fastcall Q05_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q05_MarkCompleteForPlayersInTower);
       QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_ForgottenTower, QUESTSTATE_JustCompleted);
       if (!pQuestData->pQuestSpecificData.pA1Q5->nPlayersForRewardCount) {
-        pQuestData->bIsActive = false;
+        pQuestData->bIsActive = '\0';
       } else {
         pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q05_Callback10_PlayerLeavesGame;
       }
@@ -1050,7 +1050,7 @@ void __fastcall Q05_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nQuestIdReal = QUEST_ForgottenTower;
     pQuestData->pNpcMessages = &A1Q5::aNpcGossipData;
     pQuestData->nStateFlagPrev = 0;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 4;

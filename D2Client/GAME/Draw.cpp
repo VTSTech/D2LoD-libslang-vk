@@ -121,14 +121,21 @@ static void __stdcall GetIntensityFlagsForTile(int32_t nTileX, int32_t nTileY, i
 // Fills a 6×6 grid of D2GfxLightExStrc entries with full-white (RGB 0xFF, intensity 0xFF) light positions for roof/ortho lighting. When bBorderOnly is set, only the border cells are written. nSplitSide (1=left, 2=right) shifts nScreenX by ±ScreenSizeX/4 for split-screen support. Each cell position is computed from the (col, row) index and the base screen coords.
 static void __stdcall DRAW_CalcRoofLightGridOrtho(D2GfxLightExStrc * pLightEntry, int32_t nScreenX, int32_t nScreenY, int32_t bBorderOnly, int32_t nSplitSide) {
     int nHalfWidthAdj;
-    if (nSplitSide != 1) {
-      if (nSplitSide != 2) {
-        goto fill_light_grid;
-      }
-
-      nHalfWidthAdj = ScreenSizeX / 4;
-    } else {
-      nHalfWidthAdj = -(ScreenSizeX / 4);
+    switch (nSplitSide) {
+      case 1:
+        {
+          nHalfWidthAdj = -(ScreenSizeX / 4);
+          break;
+        }
+      default:
+        {
+          goto fill_light_grid;
+        }
+      case 2:
+        {
+          nHalfWidthAdj = ScreenSizeX / 4;
+          break;
+        }
     }
 
     nScreenX += nHalfWidthAdj;
@@ -163,14 +170,21 @@ void __stdcall DRAW_CalcRoofLightOrtho(D2GfxLightExStrc * pParam, int32_t nScree
     int32_t nIntensity;
     nIntensity = D2Common::Environment::DRLGENV_GetIntensityFromAct(sgpDrlgAct);
     dwLightColor = (uint32_t)((uint32_t)(uint8_t)(char)nIntensity << 24 | (uint32_t)((uint32_t)dwLightColor & 0xffffffu));
-    if (nSplitSide != 1) {
-      if (nSplitSide != 2) {
-        goto fill_light_grid;
-      }
-
-      nHalfWidthAdj = ScreenSizeX / 4;
-    } else {
-      nHalfWidthAdj = -(ScreenSizeX / 4);
+    switch (nSplitSide) {
+      case 1:
+        {
+          nHalfWidthAdj = -(ScreenSizeX / 4);
+          break;
+        }
+      default:
+        {
+          goto fill_light_grid;
+        }
+      case 2:
+        {
+          nHalfWidthAdj = ScreenSizeX / 4;
+          break;
+        }
     }
 
     nScreenX += nHalfWidthAdj;
@@ -250,12 +264,17 @@ void __stdcall DRAW_CalcRoofLightPerspective(uint8_t * nRow, int32_t nTileX, int
     int32_t nIntensity = D2Common::Environment::DRLGENV_GetIntensityFromAct(sgpDrlgAct);
     uint8_t byIntensity = (uint8_t)nIntensity;
     int nScreenHalfAdj = 0;
-    if (nSplitSide != 1) {
-      if (nSplitSide == 2) {
-        nScreenHalfAdj = ScreenSizeX / 4;
-      }
-    } else {
-      nScreenHalfAdj = -(ScreenSizeX / 4);
+    switch (nSplitSide) {
+      case 1:
+        {
+          nScreenHalfAdj = -(ScreenSizeX / 4);
+          break;
+        }
+      case 2:
+        {
+          nScreenHalfAdj = ScreenSizeX / 4;
+          break;
+        }
     }
 
     D2Common::Environment::DRLGENV_GetLightColorFromAct(sgpDrlgAct, &byGreen, &byRed, &byBlue);

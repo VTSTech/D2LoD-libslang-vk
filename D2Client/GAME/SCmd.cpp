@@ -526,14 +526,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x52(char * pBytes) {
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x0A_RemoveObject(char * pBytes) {
-    uint32_t nPetGUID;
-    int32_t nPetIndex;
     uint32_t nUnitGUID = *(uint32_t*)(pBytes + 2);
     if (pBytes[1] == '\x01') {
-      D2UnitStrc* pUnit;
-      nPetIndex = 1;
-      pUnit = UNIT::Player::GetPlayerUnit_UI();
-      nPetGUID = RosterPets::GetRosterPetGUID(pUnit, 7, nPetIndex);
+      uint32_t nPetGUID;
+      nPetGUID = RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, 1);
       if (nUnitGUID == nPetGUID) {
         return;
       }
@@ -705,9 +701,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x6D_UNITCHANGE_MONSTERNEUTRAL(D2UnitStr
     sMsg.nMaxDistance = 4;
     sMsg.nTargetX = 0;
     UNIT::Path::PATH_MoveUnitToPoint(pUnit, *(uint16_t*)(pBytes + 5), sMsg.nItemId, 0, 0, 0);
-    int32_t nStatLayer = 0;
-    int32_t nPierceCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nPierceCount + 1, nStatLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     UNIT::UnitMode::HandleMessage(7, pUnit, &sMsg, 1);
 }
 
@@ -1591,8 +1585,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x53(char * pBytes) {
     }
 
     uint32_t nState = (uint32_t)(uint8_t)pBytes[9];
-    D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
-    D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, pRoom, nIndex, nAngle, nState);
+    D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), nIndex, nAngle, nState);
     UNIT::CUnit::UpdateObjectAutoLightOnPeriodChange();
     pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayer) {
@@ -2324,7 +2317,6 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
     uint32_t nNameId;
     uint32_t nTmpBit;
     uint32_t bIsGhostly;
-    D2UnitStrc* pPlayerUnit_lcl;
     eD2UnitType eUnitType;
     char* pNameWrite;
     uint16_t wMonsterFlagBits;
@@ -2470,8 +2462,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
     nReadBits = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit);
     if (nReadBits) {
       nSignedBits = 1;
-      pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-      nSignedBits = RosterPets::GetRosterPetGUID(pPlayerUnit_lcl, 7, nSignedBits);
+      nSignedBits = RosterPets::GetRosterPetGUID(UNIT::Player::GetPlayerUnit_UI(), 7, nSignedBits);
       if (nPacketUnitGUID == nSignedBits) {
         goto finish_unit_setup;
       }
@@ -2578,7 +2569,7 @@ static D2ServerCmdStrc * STRUCT_CreateAndPreprareServerCmd(D2UnitStrc * pUnit) {
         }
 
         pTableEntry += 0xf;
-      } while ((int)pTableEntry < (uintptr_t)((char*)&NET_D2GS_CLIENT_INCOMING + sizeof(NET_D2GS_CLIENT_INCOMING) + 4));
+      } while ((int)pTableEntry < (intptr_t)((char*)&NET_D2GS_CLIENT_INCOMING + sizeof(NET_D2GS_CLIENT_INCOMING) + 4));
 
       nD2PacketsClientBufferSize = nMaxPacketSize + 5;
     }

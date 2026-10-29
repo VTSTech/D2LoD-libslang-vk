@@ -20,6 +20,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
@@ -1764,6 +1765,7 @@ extern uint32_t gnBlizzardSoundPlayed;
 extern uint32_t gbLightmapColorEnabled;
 extern D2SeedStrc * gpArcaneStarsSeed;
 extern eD2ArenaFlags CLIENT_ArenaFlags;
+extern eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00;
 extern int gnChatHistoryReadIndex;
 extern uint32_t gnChatHistoryWriteIndex;
 extern D2UIFlagInitStrc gUIFlagChatInit;
@@ -2667,7 +2669,7 @@ extern uint32_t gbCharSelectInProgress;
 extern int nCharacterSelectionIndex;
 extern uint32_t gnCharSelBNetLoadState;
 extern char * gszPendingRealmName;
-extern char gbCharSelScreenWaitTimeout;
+extern uint32_t gbCharSelScreenWaitTimeout;
 extern uint32_t gbCharSelArrowsHidden;
 extern D2CharSelStrc * gpCharSelPendingEntry;
 extern int32_t g_nCharSelNavigationIndex;
@@ -3011,6 +3013,7 @@ extern uint32_t gbLoadScreenLevelLoadInProgress;
 extern D2UIFlagStrc GFX_bShowUIFlag;
 extern int gnPanelOffsetX;
 extern int gnPanelOffsetY;
+extern BOOL gbAutomapPanelOpened;
 extern uint32_t gnLastOpenPanelId;
 extern DC6 * gpUiCursorFocus16DC6;
 extern DC6 * pUi_Panel_buysellbtn;
@@ -3447,6 +3450,7 @@ extern uint64_t gbUIStatWindowDrawFlag;
 extern D2SpellSelGridRegionStrc gSpellSelGridRegion;
 // Spell selection UI state array — skill IDs for each slot. Part of large 1396-byte spell selection state (0x007c06c8-0x007c0c3c). Initialized to 0xFFFFFFFF by SpellSel initialization. Indexed by slot number, values sent to server via packet 0x3C.
 extern int gSpellSelectionSkillIDs[16];
+extern int gbSpellSelActiveRightSkillSlot;
 extern int32_t gSpellSelLeftSkillBindings[16];
 extern int gSpellSelRightSkillBindings[16];
 extern DC6 * gpSpellSelSkillIconDC6;
@@ -3959,7 +3963,7 @@ extern D2BNetGatewayAccessStr ActualRealmInfo;
 // lpCriticalSection parameter of DeleteCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_00881860;
 extern int gnBnetLogFileHandle;
-extern bool gbBnetLogInitialized;
+extern unsigned int gbBnetLogInitialized;
 extern D2BnCacheFileHeaderStrc * gpCacheFileHeader;
 extern void * gpCacheBlockTable;
 extern void * g_pCacheCryptTable;
@@ -5332,15 +5336,6 @@ extern unsigned int gnD3DTextureCapFlags;
 extern unsigned int g_bCutscenePlaying;
 
 } // namespace D2Direct3D::Renderer
-
-// =============================================================================
-// Globals recovered from multi-function body references
-// (classified static-local by xref count, but named in other bodies too)
-// =============================================================================
-
-extern eD2PlayerClassID eD2PlayerClassID_00712f00;
-extern bool gbAutomapPanelOpened;
-extern bool gbSpellSelActiveRightSkillSlot;
 
 // =============================================================================
 // Declaration closure

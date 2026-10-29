@@ -77,21 +77,29 @@ static BOOL STATES_IsUnitTransformable(D2UnitStrc * pUnit) {
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (!pUnit) {
-        return 0;
-      }
 
-      return (uint32_t)(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2);
-    }
-    if (!pUnit) {
-      return 0;
-    }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          if (!pUnit) {
+            return 0;
+          }
 
-    return (uint32_t)(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Sequence);
+          return (uint32_t)(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Sequence);
+        }
+      case UNIT_MONSTER:
+        {
+          if (!pUnit) {
+            return 0;
+          }
+
+          return (uint32_t)(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Skill2);
+        }
+      default:
+        {
+          return 0;
+        }
+    }
 }
 
 // @sourcefile .\UNIT\PlrSkills.cpp
@@ -744,8 +752,7 @@ void __fastcall PLRSKILLS_StateRemFn07_Uninterruptable(D2UnitStrc * pUnit, eD2St
     D2Common::Skills::SKILL_SetParam2(pSkill, 0);
     D2Common::Skills::SKILL_SetParam3(pSkill, 0);
     int32_t nYSaved = nY;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2RoomStrc* pNestRoom = Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nYSaved);
+    D2RoomStrc* pNestRoom = Player::DRLGROOM_FindBetterNearbyRoom(D2Common::Units::UNITS_GetRoom(pUnit), nX, nYSaved);
     if (!pNestRoom) {
       return;
     }

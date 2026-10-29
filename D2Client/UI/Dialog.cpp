@@ -591,22 +591,16 @@ void __stdcall DIALOG_InitializeSystem() {
 }
 
 void __stdcall DIALOG_CleanupSystem() {
-    int32_t nHandlerCount;
-    D2DialogStrc* pNextDialog;
     D2DialogStrc* pDialogNode = gpDialogActual;
     if (gnDialogStructAllocCount) {
-      HWND hWnd;
-      nHandlerCount = 0xe;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIDialogFlagInit, nHandlerCount);
-      nHandlerCount = 1;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &g_UIFlagInitDialogMouseWheel, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDialogFlagInit, 0xe);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, 1);
       gnDialogCounter--;
       pDialogNode = gpDialogActual;
     }
 
     while (pDialogNode) {
+      D2DialogStrc* pNextDialog;
       pNextDialog = pDialogNode->pPrev;
       D2_FREE_AT(pDialogNode, ".\\UI\\dialog.cpp", 0x333);
       pDialogNode = pNextDialog;
@@ -658,7 +652,6 @@ D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, 
     int32_t nHandler;
     char szBgPath[260];
     D2GfxDataStrc sBgGfxData;
-    LONG nDialogX = nX;
     LONG nDialogY = nY;
     ui::UI_RegisterAutoMapEventHandlers(0);
     Inv::INV_SetInventoryActive(0);
@@ -704,7 +697,7 @@ D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, 
     if (!pBgBlock) {
       nHandler = 0x3b3;
     } else {
-      HWND hWnd;
+      LONG nDialogX = nX;
       nHandler = D2CMP::SRC::CelCmp::GetDC6Width(pBgBlock);
       pDialog->nBackgroundWidth = nHandler;
       nHandler = D2CMP::SRC::CelCmp::GetDC6Height(pBgBlock);
@@ -715,12 +708,8 @@ D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, 
       pDialog->pCoords2.y = nDialogY;
       gnDialogStructAllocCount = 1;
       DIALOG_RegisterHandler();
-      nHandler = 0xe;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIDialogFlagInit, nHandler);
-      nHandler = 1;
-      hWnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &g_UIFlagInitDialogMouseWheel, nHandler);
+      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDialogFlagInit, 0xe);
+      _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, 1);
       gnDialogCounter++;
       if (gnDialogCounter_b == 1) {
         return pDialog;
@@ -776,12 +765,9 @@ D2DialogStrc * __fastcall AllocDialogStrc(int32_t nX, int32_t nY, fpDialogFunc f
     pDialog->dwExtraParam3 = nExtraParam3;
     gnDialogStructAllocCount = 1;
     DIALOG_RegisterHandler();
-    int32_t nCount = 0xe;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIDialogFlagInit, nCount);
-    nCount = 1;
-    hWnd = D2gfx::D2GFX::GetHwnd();
-    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &g_UIFlagInitDialogMouseWheel, nCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDialogFlagInit, 0xe);
+    int32_t nCount = 1;
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, nCount);
     gnDialogCounter++;
     if (gnDialogCounter_b != 1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x408);
@@ -793,22 +779,16 @@ D2DialogStrc * __fastcall AllocDialogStrc(int32_t nX, int32_t nY, fpDialogFunc f
 }
 
 void __fastcall FreeDialogStrc(D2DialogStrc * pDialog) {
-    int32_t nHandlerCount;
-    D2DialogStrc* pCurrentDialog;
     D2DialogSubStrc* pNextSub;
     D2DialogStrc* pPrevDialogNode;
     D2DialogSubStrc* pSubNode;
     gnDialogCounter_b--;
     if (!gnDialogCounter_b) {
       {
-        HWND hWnd;
+        D2DialogStrc* pCurrentDialog;
         ui::UI_RegisterAutoMapEventHandlers(1);
-        nHandlerCount = 0xe;
-        hWnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIDialogFlagInit, nHandlerCount);
-        nHandlerCount = 1;
-        hWnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, &g_UIFlagInitDialogMouseWheel, nHandlerCount);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDialogFlagInit, 0xe);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, 1);
         Inv::INV_SetInventoryActive(1);
         GAME::Select::SELECT_SetExclusionRect(nullptr);
         pCurrentDialog = gpDialogActual;

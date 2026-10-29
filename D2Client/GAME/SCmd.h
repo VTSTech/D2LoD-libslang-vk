@@ -44,7 +44,7 @@ typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT_Unit)(struct D2UnitStrc * pUnit
 struct __attribute__((packed)) D2GSPacketClt0x5D {
     /* 0x00 */ uint8_t nId;
     /* 0x01 */ uint8_t nActionType;
-    /* 0x02 */ bool bToggle;
+    /* 0x02 */ uint8_t bToggle;
     /* 0x03 */ int nPlayerGUID;
 };
 

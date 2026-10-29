@@ -131,18 +131,26 @@ void __fastcall DRLGACTMISC_LoadTileProjects(D2DrlgStrc * pDrlg) {
     szPath[0] = '\0';
     memset(szPath + 1, 0, 0x103);
     uint8_t byActNo = pDrlg->nActNo;
-    if (byActNo) {
-      if (byActNo != 1) {
-        if (byActNo != 2) {
+    switch (byActNo) {
+      case 0:
+        {
+          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ pszFmtStr = "%s\\Tiles\\Act1\\Town\\Floor.dt1";
+          break;
+        }
+      case 1:
+        {
+          pszFmtStr = "%s\\Tiles\\Act2\\Town\\Ground.dt1";
+          break;
+        }
+      default:
+        {
           return;
         }
-
-        pszFmtStr = "%s\\Tiles\\ACT3\\Kurast\\sets.dt1";
-      } else {
-        pszFmtStr = "%s\\Tiles\\Act2\\Town\\Ground.dt1";
-      }
-    } else {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ pszFmtStr = "%s\\Tiles\\Act1\\Town\\Floor.dt1";
+      case 2:
+        {
+          pszFmtStr = "%s\\Tiles\\ACT3\\Kurast\\sets.dt1";
+          break;
+        }
     }
 
     wsprintfA(szPath, pszFmtStr, "DATA\\GLOBAL");
@@ -415,21 +423,26 @@ static void DRLGWARP_InitLevelWarpCoordinates(D2DrlgLevelStrc * pDrlgLevelStrc) 
 void __stdcall InitLevel(D2DrlgLevelStrc * pLevel) {
     Seed::InitSeed_Param_666(&pLevel->sSeed, pLevel->pDrlg->dwStartSeed + pLevel->eD2LevelId);
     int drlgType = pLevel->eDrlgType;
-    if (drlgType != 1) {
-      if (drlgType == 2) {
-        Preset::DRLGPRESET_InitializeRoomEx(pLevel);
-        DRLG_ApplyRoomExStateFlags(pLevel);
-        DRLGWARP_InitLevelWarpCoordinates(pLevel);
-        return;
-      }
-      if (drlgType == 3) {
-        Outdoors::DRLGOUTDOOR_GenerateLevel(pLevel);
-        DRLG_ApplyRoomExStateFlags(pLevel);
-        DRLGWARP_InitLevelWarpCoordinates(pLevel);
-        return;
-      }
-    } else {
-      Maze::DRLGMAZE_GenerateLevel(pLevel);
+    switch (drlgType) {
+      case 1:
+        {
+          Maze::DRLGMAZE_GenerateLevel(pLevel);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGPRESET_InitializeRoomEx(pLevel);
+          DRLG_ApplyRoomExStateFlags(pLevel);
+          DRLGWARP_InitLevelWarpCoordinates(pLevel);
+          return;
+        }
+      case 3:
+        {
+          Outdoors::DRLGOUTDOOR_GenerateLevel(pLevel);
+          DRLG_ApplyRoomExStateFlags(pLevel);
+          DRLGWARP_InitLevelWarpCoordinates(pLevel);
+          return;
+        }
     }
 
     DRLG_ApplyRoomExStateFlags(pLevel);
@@ -716,15 +729,22 @@ void __fastcall InitCache(D2DrlgStrc * pDrlg, D2DrlgTileDataStrc * pDrlgActSub18
       nParam3 = 0;
       nTileSubType = 0;
       if (byActNo) {
-        if (byActNo != 1) {
-          if (byActNo != 2) {
-            return;
-          }
-
-          nParam3 = 0x1d;
-          nTileSubType = 0xc;
-        } else {
-          nTileSubType = 1;
+        switch (byActNo) {
+          case 1:
+            {
+              nTileSubType = 1;
+              break;
+            }
+          default:
+            {
+              return;
+            }
+          case 2:
+            {
+              nParam3 = 0x1d;
+              nTileSubType = 0xc;
+              break;
+            }
         }
       }
 
@@ -1683,12 +1703,17 @@ void __fastcall FreeRoomEx(D2RoomExStrc * pRoomEx, BOOL bServerSide) {
     pnRoomDataFreeGen = &pDrlg->nRoomDataFreeGeneration;
     (*pnRoomDataFreeGen)++;
     RoomTile::DRLGROOMTILE_FreeRoomTilesAll(pRoomEx);
-    if (pRoomEx->nPresetType != 1) {
-      if (pRoomEx->nPresetType == 2) {
-        Preset::DRLGPRESET_FreePresetRoomGridsFromRoomEx(pRoomEx);
-      }
-    } else {
-      OutRoom::DRLGOUTROOM_FreeOutRoomEx(pRoomEx);
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          OutRoom::DRLGOUTROOM_FreeOutRoomEx(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGPRESET_FreePresetRoomGridsFromRoomEx(pRoomEx);
+          break;
+        }
     }
 
     for (pAnimTileGrid = pRoomEx->pRoomTileNodes; pAnimTileGrid; pAnimTileGrid = pAnimTileGrid->pRoomTileNext) {
@@ -3270,6 +3295,8 @@ int32_t __fastcall DRLGPLACE_ACT1_ValidatePlacementList1(D2DrlgLevelPlacementStr
 
     bool _bNoOverlap;
     bool bNoOverlap;
+    int* pLevelDataEntryPtr;
+    int* pCurrentDirPtr;
     int nPrevId = ACT1_D2DrlgLevelData1.aEntry[nIndexMax].nNodeLevelEntryIdPrev;
     int i = 0;
     if (nIndexMax > 0) {
@@ -3289,28 +3316,31 @@ int32_t __fastcall DRLGPLACE_ACT1_ValidatePlacementList1(D2DrlgLevelPlacementStr
     }
 
     eD2LevelId eLevelId = ACT1_D2DrlgLevelData1.aEntry[nIndexMax].neD2LevelId;
-    if (eLevelId != LEVEL_RogueEncampment) {
-      if (eLevelId != LEVEL_BurialGrounds) {
-        return 1;
-      }
-
-      i = 0;
-      int* pLevelDataEntryPtr = &ACT1_D2DrlgLevelData1.aEntry[0].nNodeLevelEntryIdPrev;
-      int* pCurrentDirPtr = pLevelUnknown->aCurrentDir;
-      do {
-        if (i != nIndexMax && *pLevelDataEntryPtr == nPrevId && pLevelUnknown->aCurrentDir[nIndexMax] == *pCurrentDirPtr) {
-          return 0;
+    switch (eLevelId) {
+      case LEVEL_RogueEncampment:
+        {
+          return RogueEncampentLayout[pLevelUnknown->aCurrentDir[nIndexMax] + (pLevelUnknown->aStepCounter[nIndexMax] + (pLevelUnknown->aCurrentDir[nPrevId] + pLevelUnknown->aStepCounter[nPrevId] * 4) * 2) * 4];
         }
+      case LEVEL_BurialGrounds:
+        {
+          i = 0;
+          pLevelDataEntryPtr = &ACT1_D2DrlgLevelData1.aEntry[0].nNodeLevelEntryIdPrev;
+          pCurrentDirPtr = pLevelUnknown->aCurrentDir;
+          do {
+            if (i != nIndexMax && *pLevelDataEntryPtr == nPrevId && pLevelUnknown->aCurrentDir[nIndexMax] == *pCurrentDirPtr) {
+              return 0;
+            }
 
-        pLevelDataEntryPtr += 4;
-        i++;
-        pCurrentDirPtr++;
-      } while ((int)pLevelDataEntryPtr < (uintptr_t)((char*)&ACT1_D2DrlgLevelData2 + 8));
+            pLevelDataEntryPtr += 4;
+            i++;
+            pCurrentDirPtr++;
+          } while ((int)pLevelDataEntryPtr < (intptr_t)((char*)&ACT1_D2DrlgLevelData2 + 8));
 
-      return 1;
+          break;
+        }
     }
 
-    return RogueEncampentLayout[pLevelUnknown->aCurrentDir[nIndexMax] + (pLevelUnknown->aStepCounter[nIndexMax] + (pLevelUnknown->aCurrentDir[nPrevId] + pLevelUnknown->aStepCounter[nPrevId] * 4) * 2) * 4];
+    return 1;
 }
 
 // Validates that the candidate node at nIndexMax does not overlap any previously placed nodes (excluding its predecessor). As a special Act 1 rule, it also temporarily inflates node 0's bounding box by 200 units north/south and checks non-overlap against the last node, enforcing a minimum gap between the dungeon entrance and exit.
@@ -3514,7 +3544,7 @@ void __fastcall ACT1_fpLevelDataFn2_A(D2DrlgLevelStrc * pLevel, int nNodeOffset,
       }
 
       pWildernessEntry += 0x1e;
-    } while ((int)pWildernessEntry < (uintptr_t)((char*)&gaWildernessLevelSeedOffsets + 360));
+    } while ((int)pWildernessEntry < (intptr_t)((char*)&gaWildernessLevelSeedOffsets + 360));
 }
 
 // Lays out a connected group of DRLG levels from a level-data list. Seeds a temporary placement struct from the DRLG seed, fills each node's world size from LevelDefs (per difficulty), then drives a placement callback per node with backtracking (failed placement rewinds to the previous node). Second pass allocates each level (GetLevelAndAlloc), copies computed world position/size, sets the preset file for Rogue Encampment (1) / Lut Gholein (0x28) from the placement direction, and for Black Marsh (6) picks the Outer Cloister (0x1b) layout file via seed advance, invokes the optional per-level callback, and wires prev/next warp connections (skipped for act 4). Inputs: level-data list, two optional callbacks, target DRLG.
@@ -3635,15 +3665,22 @@ static void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData,
       /* pDrlgLevel spilled into EBP-0x4, the slot the placement loop used as its list
                          cursor. */ pDrlgLevel->sCoordinatesAndSize.WorldSize.y = *(LONG*)((uintptr_t)&pLevelUnknown.aCoordsAndSize[0].WorldSize.y + nNodeOffset);
       if (eDrlgType == DRLGTYPE_PresetArea) {
-        if (pDrlgLevel->eD2LevelId != 1) {
-          if (pDrlgLevel->eD2LevelId != 0x28) {
-            goto pick_outer_cloister_file;
-          }
-
-          /* aCurrentDir[index+1] - base EBP-0x104 is &aCurrentDir[1], index scaled by 4.
+        switch (pDrlgLevel->eD2LevelId) {
+          case 1:
+            {
+              /* aCurrentDir[index] - base EBP-0x108 is &aCurrentDir[0]. */ nNodeOffset = pLevelUnknown.aCurrentDir[(int)fnPlacementValidator];
+              break;
+            }
+          default:
+            {
+              goto pick_outer_cloister_file;
+            }
+          case 0x28:
+            {
+              /* aCurrentDir[index+1] - base EBP-0x104 is &aCurrentDir[1], index scaled by 4.
                           */ nNodeOffset = pLevelUnknown.aCurrentDir[(int)((uint8_t*)fnPlacementValidator + 1)];
-        } else {
-          /* aCurrentDir[index] - base EBP-0x108 is &aCurrentDir[0]. */ nNodeOffset = pLevelUnknown.aCurrentDir[(int)fnPlacementValidator];
+              break;
+            }
         }
 
         pDrlgLevel->pDrlgLevelData.pDrlgLevelPresetData->nPickedFile = nNodeOffset;
@@ -4820,14 +4857,19 @@ uint32_t __fastcall DRLGOUTROOM_HasOutdoorBorderFlag(D2RoomExStrc * pRoomEx) {
 
 // NOTE: Callee-saved register params inferred (medium confidence): pint (ESI): int*
 int32_t __stdcall DRLGOUTROOM_SetupRoomCoordsFromTable(int * pOutCoords, int32_t nDirection, int * pSrcCoords, int32_t nTableRow) {
-    if (nDirection) {
-      if (nDirection == 1) {
-        pOutCoords[2] = 0xa0;
-        pOutCoords[3] = 0x40;
-      }
-    } else {
-      pOutCoords[2] = 0x40;
-      pOutCoords[3] = 0xa0;
+    switch (nDirection) {
+      case 0:
+        {
+          pOutCoords[2] = 0x40;
+          pOutCoords[3] = 0xa0;
+          break;
+        }
+      case 1:
+        {
+          pOutCoords[2] = 0xa0;
+          pOutCoords[3] = 0x40;
+          break;
+        }
     }
 
     int nTableOffset = nDirection + nTableRow * 2;
@@ -4846,9 +4888,13 @@ BOOL __fastcall DRLGPLACE_OrientedFixedOffset(D2DrlgLevelPlacementStrc * pLevelU
     pLevelUnknown->aInitialDir[pLevelUnknown->nCurrentNode] = nOrientation;
     D2DrlgCoordsStrc* pCurNode = pLevelUnknown->aCoordsAndSize + pLevelUnknown->nCurrentNode;
     if (tNextSeed.nSeedLow & 1) {
-      if (nOrientation == 1) {
-        pCurNode->WorldSize.x = 0xa0;
-        pCurNode->WorldSize.y = 0x40;
+      switch (nOrientation) {
+        case 1:
+          {
+            pCurNode->WorldSize.x = 0xa0;
+            pCurNode->WorldSize.y = 0x40;
+            break;
+          }
       }
     } else {
       pCurNode->WorldSize.x = 0x40;
@@ -4869,9 +4915,13 @@ BOOL __fastcall DRLGPLACE_OrientedAbsolutePos(D2DrlgLevelPlacementStrc * pLevelU
     pLevelUnknown->aInitialDir[pLevelUnknown->nCurrentNode] = nOrientDir;
     int nNodeIdx = pLevelUnknown->nCurrentNode;
     if (DVar1.nSeedLow & 1) {
-      if (nOrientDir == 1) {
-        pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0xa0;
-        pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0x40;
+      switch (nOrientDir) {
+        case 1:
+          {
+            pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0xa0;
+            pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0x40;
+            break;
+          }
       }
     } else {
       pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0x40;
@@ -4907,14 +4957,19 @@ BOOL __fastcall DRLGPLACE_OrientedTableLookup(D2DrlgLevelPlacementStrc * pLevelU
     nCurDir = pLevelUnknown->aCurrentDir[nNodeIdx];
     int nPrevNodeIdx = pLevelUnknown->pLevelData->aEntry[nNodeIdx].nNodeLevelEntryIdPrev;
     int nPrevDir = pLevelUnknown->aCurrentDir[nPrevNodeIdx];
-    if (nCurDir) {
-      if (nCurDir == 1) {
-        pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0xa0;
-        pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0x40;
-      }
-    } else {
-      pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0x40;
-      pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0xa0;
+    switch (nCurDir) {
+      case 0:
+        {
+          pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0x40;
+          pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0xa0;
+          break;
+        }
+      case 1:
+        {
+          pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.x = 0xa0;
+          pLevelUnknown->aCoordsAndSize[nNodeIdx].WorldSize.y = 0x40;
+          break;
+        }
     }
 
     nCurDir += nPrevDir * 2;
@@ -5008,7 +5063,7 @@ int32_t __fastcall DRLGOUTDOOR_GetSecondaryBorderPresetFromLvlSub(D2DrlgLevelStr
         }
 
         pLvlSubEntry += 5;
-      } while ((int)pLvlSubEntry < (uintptr_t)((char*)&gaAct5BorderPresetTable + sizeof(gaAct5BorderPresetTable)));
+      } while ((int)pLvlSubEntry < (intptr_t)((char*)&gaAct5BorderPresetTable + sizeof(gaAct5BorderPresetTable)));
 
       nErrorCode = 0x1a5;
     }
@@ -5420,14 +5475,21 @@ void DRLGOUTROOM_MarkBorderJunctions(D2DrlgLevelStrc * pLevel) {
 static BOOL __stdcall DRLGOUTROOM_SpawnCornerFillPreset(int nY, int nX, D2DrlgLevelStrc * dwParam3) {
     D2DrlgLevelDataWildernessLevel* pWildData = dwParam3->pDrlgLevelData.pDrlgLevelOutdoorsData;
     int nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridPreset, nX, nY);
-    if (nGridFlags != 0x10) {
-      if (nGridFlags != 0x11) {
-        return 0;
-      }
-
-      nGridFlags = 0x18;
-    } else {
-      nGridFlags = 0x19;
+    switch (nGridFlags) {
+      case 0x10:
+        {
+          nGridFlags = 0x19;
+          break;
+        }
+      case 0x11:
+        {
+          nGridFlags = 0x18;
+          break;
+        }
+      default:
+        {
+          return 0;
+        }
     }
 
     Outdoors::SpawnOutdoorLevelPresetEx(dwParam3, nX, nY, nGridFlags, -1, 0);

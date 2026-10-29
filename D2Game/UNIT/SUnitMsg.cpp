@@ -136,9 +136,7 @@ void __fastcall PLAYER_InitBaseStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxstamina, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, 1, 0);
-    int32_t nLayer = 0;
-    DWORD nNextExp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(pUnit->nClassId, 1);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, nNextExp, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(pUnit->nClassId, 1), 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_attackrate, 100, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_velocitypercent, 100, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_other_animrate, 100, 0);
@@ -173,9 +171,7 @@ void __fastcall UpdateGameInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nExperience = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_experience, 0);
     int nNewLevel = D2Common::DATATBLS::DataTbls::DATATBLS_GetLevelFromExperience(nCurHp, nExperience);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, nNewLevel, 0);
-    int32_t nLayer = 0;
-    DWORD nNextExp = D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, nNewLevel);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, nNextExp, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, nNewLevel), 0);
     int nLevelDelta = nNewLevel - nCurrentStat;
     if (nLevelDelta <= 0) {
       return;
@@ -1108,7 +1104,6 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
     eD2UnitType eUnitType;
     uint32_t dwTmp;
     D2UnitStrc* pUnitEx;
-    ::SGAMEDATA* pGame;
     uint32_t dwUnitGUID;
     eD2UnitType ePacketUnitType;
     uint32_t dwAttackerGUID;
@@ -1179,8 +1174,7 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
           pUnitEx = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
           if (pUnitEx) {
             pAttackTarget = pUnit;
-            pGame = SUnit::GetGamePointer(pUnitEx);
-            DVar5 = SUnit::UNITS_CheckIfCanAttackTarget(pGame, pUnitEx, pAttackTarget);
+            DVar5 = SUnit::UNITS_CheckIfCanAttackTarget(SUnit::GetGamePointer(pUnitEx), pUnitEx, pAttackTarget);
             if (DVar5) {
               GAME::SCmd::NET_D2GS_SERVER_Send_0xAB_HEALTH_UPDATE(pClient, pMsg->uArgs.sAB.nUnitType, pMsg->uArgs.sAB.nUnitGUID, pMsg->uArgs.sAB.field_0x8);
             }
@@ -1192,7 +1186,6 @@ void __fastcall SERVER_UnitQueuePacketSend(D2UnitStrc * pUnit, D2ClientStrc * pC
 
 // @sourcefile .\UNIT\SUnitMsg.cpp
 void __fastcall SERVER_UnitQueuePacketFree(D2UnitStrc * pUnit) {
-    int32_t nLine;
     int32_t nNull;
     D2SUnitMsgStrc* pMsgNext;
     char* szFile;
@@ -1202,13 +1195,12 @@ void __fastcall SERVER_UnitQueuePacketFree(D2UnitStrc * pUnit) {
     }
 
     do {
-      D2PoolManagerStrc* pMemory;
+      int32_t nLine;
       nNull = 0;
       nLine = 0x3ce;
       pMsgNext = pMemoryToFree->pNext;
       szFile = ".\\UNIT\\SUnitMsg.cpp";
-      pMemory = D2Client::UNIT::CUnitEvent::GetMemPool(pUnit);
-      Fog::Memory::FreeServerMemory(pMemory, pMemoryToFree, szFile, nLine, nNull);
+      Fog::Memory::FreeServerMemory(D2Client::UNIT::CUnitEvent::GetMemPool(pUnit), pMemoryToFree, szFile, nLine, nNull);
       pMemoryToFree = pMsgNext;
     } while (pMsgNext);
 

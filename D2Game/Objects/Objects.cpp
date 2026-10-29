@@ -172,65 +172,75 @@ D2UnitStrc * __fastcall MakeRandomChest(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
     D2SeedStrc* pCtrlSeed;
     pCtrlSeed = ObjectsRgn::GetObjectControlSeed(pGame);
     eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    if (neAct != ACT_II) {
-      if (neAct != ACT_III) {
-        seedTmp = D2_SEED_NEXT(*pCtrlSeed);
-        *pCtrlSeed = seedTmp;
-        aDefaultChestIds[0] = 5;
-        aDefaultChestIds[1] = 6;
-        aDefaultChestIds[2] = 0x8b;
-        aDefaultChestIds[3] = 0x8c;
-        aDefaultChestIds[4] = 0x8d;
-        aDefaultChestIds[5] = 0x90;
-        aDefaultChestIds[6] = 0xb0;
-        aDefaultChestIds[7] = 0xb1;
-        aDefaultChestIds[8] = 0xc6;
-        aDefaultChestIds[9] = 0xf0;
-        aDefaultChestIds[10] = 0xf1;
-        aDefaultChestIds[0xb] = 0xf2;
-        aDefaultChestIds[0xc] = 0xf3;
-        nChestId = aDefaultChestIds[seedTmp.nSeedLow % 0xd];
-        goto create_chest;
-      }
-      if (eLevelId == LEVEL_Travincal) {
-        ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
-        nSeedLow2 = (uint32_t)ullSeedProduct;
-        pCtrlSeed->nSeedLow = nSeedLow2;
-        nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
-        aChestIdTable[0] = 0x149;
-        aChestIdTable[1] = 0x14a;
-        aChestIdTable[2] = 0x14b;
-        aChestIdTable[3] = 0x14c;
-        nChestId = aChestIdTable[nSeedLow2 & 3];
-      } else {
-        ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
-        nSeedLow2 = (uint32_t)ullSeedProduct;
-        pCtrlSeed->nSeedLow = nSeedLow2;
-        nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
-        aChestIdTable[2] = 0xb5;
-        aChestIdTable[3] = 0xb7;
-        nChestId = aChestIdTable[(nSeedLow2 & 1) + 2];
-      }
-    } else {
-      if (eLevelId == LEVEL_ArcaneSanctuary) {
-        ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
-        nSeedLow = (uint32_t)ullSeedProduct;
-        pCtrlSeed->nSeedLow = nSeedLow;
-        nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
-        aChestIdTable[0] = 0x183;
-        aChestIdTable[1] = 0x185;
-        aChestIdTable[2] = 0x186;
-        aChestIdTable[3] = 0x187;
-        nChestId = aChestIdTable[nSeedLow & 3];
-      } else {
-        ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
-        nSeedLow2 = (uint32_t)ullSeedProduct;
-        pCtrlSeed->nSeedLow = nSeedLow2;
-        nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
-        aChestIdTable[2] = 0x57;
-        aChestIdTable[3] = 0x58;
-        nChestId = aChestIdTable[(nSeedLow2 & 1) + 2];
-      }
+    switch (neAct) {
+      case ACT_II:
+        {
+          if (eLevelId == LEVEL_ArcaneSanctuary) {
+            ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
+            nSeedLow = (uint32_t)ullSeedProduct;
+            pCtrlSeed->nSeedLow = nSeedLow;
+            nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
+            aChestIdTable[0] = 0x183;
+            aChestIdTable[1] = 0x185;
+            aChestIdTable[2] = 0x186;
+            aChestIdTable[3] = 0x187;
+            nChestId = aChestIdTable[nSeedLow & 3];
+          } else {
+            ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
+            nSeedLow2 = (uint32_t)ullSeedProduct;
+            pCtrlSeed->nSeedLow = nSeedLow2;
+            nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
+            aChestIdTable[2] = 0x57;
+            aChestIdTable[3] = 0x58;
+            nChestId = aChestIdTable[(nSeedLow2 & 1) + 2];
+          }
+
+          break;
+        }
+      case ACT_III:
+        {
+          if (eLevelId == LEVEL_Travincal) {
+            ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
+            nSeedLow2 = (uint32_t)ullSeedProduct;
+            pCtrlSeed->nSeedLow = nSeedLow2;
+            nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
+            aChestIdTable[0] = 0x149;
+            aChestIdTable[1] = 0x14a;
+            aChestIdTable[2] = 0x14b;
+            aChestIdTable[3] = 0x14c;
+            nChestId = aChestIdTable[nSeedLow2 & 3];
+          } else {
+            ullSeedProduct = (uint64_t)pCtrlSeed->nSeedLow * 0x6ac690c5 + (uint64_t)pCtrlSeed->nSeedHigh;
+            nSeedLow2 = (uint32_t)ullSeedProduct;
+            pCtrlSeed->nSeedLow = nSeedLow2;
+            nSeedHigh = (int32_t)((uint64_t)ullSeedProduct >> 0x20);
+            aChestIdTable[2] = 0xb5;
+            aChestIdTable[3] = 0xb7;
+            nChestId = aChestIdTable[(nSeedLow2 & 1) + 2];
+          }
+
+          break;
+        }
+      default:
+        {
+          seedTmp = D2_SEED_NEXT(*pCtrlSeed);
+          *pCtrlSeed = seedTmp;
+          aDefaultChestIds[0] = 5;
+          aDefaultChestIds[1] = 6;
+          aDefaultChestIds[2] = 0x8b;
+          aDefaultChestIds[3] = 0x8c;
+          aDefaultChestIds[4] = 0x8d;
+          aDefaultChestIds[5] = 0x90;
+          aDefaultChestIds[6] = 0xb0;
+          aDefaultChestIds[7] = 0xb1;
+          aDefaultChestIds[8] = 0xc6;
+          aDefaultChestIds[9] = 0xf0;
+          aDefaultChestIds[10] = 0xf1;
+          aDefaultChestIds[0xb] = 0xf2;
+          aDefaultChestIds[0xc] = 0xf3;
+          nChestId = aDefaultChestIds[seedTmp.nSeedLow % 0xd];
+          goto create_chest;
+        }
     }
 
     pCtrlSeed->nSeedHigh = nSeedHigh;
@@ -631,21 +641,28 @@ void __fastcall Objects_InitFn01(D2ObjectInitFnArg * pInitArg) {
     int nShrineId = pInitArg->pObjectTxt->Parm[0];
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pInitArg->pRoom);
     if (nShrineId) {
-      if (nShrineId != 1) {
-        if (nShrineId != 2) {
-          pRandSeed = pInitArg->pSeed;
-          seedRolled = D2_SEED_NEXT(*pRandSeed);
-          *pRandSeed = seedRolled;
-          if (seedRolled.nSeedLow % 10 == 0) {
-            *(uint8_t*)(char*)&nShrineTypeArg = 1;
-          } else {
-            *(uint8_t*)(char*)&nShrineTypeArg = 4;
+      switch (nShrineId) {
+        case 1:
+          {
+            *(uint8_t*)(char*)&nShrineTypeArg = 2;
+            break;
           }
-        } else {
-          *(uint8_t*)(char*)&nShrineTypeArg = 3;
-        }
-      } else {
-        *(uint8_t*)(char*)&nShrineTypeArg = 2;
+        case 2:
+          {
+            *(uint8_t*)(char*)&nShrineTypeArg = 3;
+            break;
+          }
+        default:
+          {
+            pRandSeed = pInitArg->pSeed;
+            seedRolled = D2_SEED_NEXT(*pRandSeed);
+            *pRandSeed = seedRolled;
+            if (seedRolled.nSeedLow % 10 == 0) {
+              *(uint8_t*)(char*)&nShrineTypeArg = 1;
+            } else {
+              *(uint8_t*)(char*)&nShrineTypeArg = 4;
+            }
+          }
       }
 
       nShrineId = OBJECT_SelectRandomShrineType(pInitArg->pGame, eLevelId, (uint8_t)nShrineTypeArg, pInitArg->pRoom);
@@ -1274,6 +1291,7 @@ void __fastcall Objects_InitFn46(D2ObjectInitFnArg * pInitArg) {
 D2UnitStrc * __stdcall OBJECT_PlaceAtBiasedPosition(::SGAMEDATA * pGame, int32_t nClassId, int32_t nSizeX, int32_t nSizeY, D2RoomStrc * pRoom, int32_t nBiasMode, uint32_t dwCallbackArg, pfnObjectPlaceTestCallback pfnProc) {
     eCollisionFlags wCollisionResult;
     BOOL bBadCodePtr;
+    uint32_t nCallbackResult;
     D2UnitStrc* pSpawnedUnit;
     D2SeedStrc* pSeed;
     uint32_t nCandidateX;
@@ -1281,7 +1299,6 @@ D2UnitStrc * __stdcall OBJECT_PlaceAtBiasedPosition(::SGAMEDATA * pGame, int32_t
     D2DrlgRoomCoordsStrc sRoomCoords;
     int nRetries;
     int32_t nLine;
-    int nRoomWidth;
     int nYSize;
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
     if (!(sRoomCoords.dwXSize >= nSizeX + 2 && sRoomCoords.dwYSize >= nSizeY + 2)) {
@@ -1296,28 +1313,37 @@ D2UnitStrc * __stdcall OBJECT_PlaceAtBiasedPosition(::SGAMEDATA * pGame, int32_t
     }
 
     do {
-      uint32_t nCallbackResult;
+      int nRoomWidth;
       nYSize = sRoomCoords.dwYSize;
       nRoomWidth = sRoomCoords.dwXSize;
-      if (nBiasMode != 1) {
-        if (nBiasMode != 2) {
-          nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, sRoomCoords.dwXSize - nSizeX - 1);
-          nCandidateX = nCallbackResult + sRoomCoords.dwXStart;
-          nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nYSize - nSizeY - 1);
-          nCandidateY = nCallbackResult + sRoomCoords.dwYStart;
-        } else {
-          nLine = D2Client::SEED_RollRange(pSeed, 1, 2);
-          nCandidateX = nLine + sRoomCoords.dwXStart;
-          nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nYSize / 2);
-          nCandidateY = nYSize / 4 + nCallbackResult + sRoomCoords.dwYStart;
-        }
-      } else {
-        nCandidateX = sRoomCoords.dwXSize >> 0x1f;
-        nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, sRoomCoords.dwXSize / 2);
-        nCandidateX = ((int)(nRoomWidth + (nCandidateX & 3)) >> 2) + nCallbackResult + sRoomCoords.dwXStart;
-        nCallbackResult = D2Client::SEED_RollRange(pSeed, 1, 2);
-        nCandidateY = nCallbackResult + sRoomCoords.dwYStart;
+      switch (nBiasMode) {
+        case 1:
+          {
+            nCandidateX = sRoomCoords.dwXSize >> 0x1f;
+            nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, sRoomCoords.dwXSize / 2);
+            nCandidateX = ((int)(nRoomWidth + (nCandidateX & 3)) >> 2) + nCallbackResult + sRoomCoords.dwXStart;
+            nCallbackResult = D2Client::SEED_RollRange(pSeed, 1, 2);
+            nCandidateY = nCallbackResult + sRoomCoords.dwYStart;
+            break;
+          }
+        case 2:
+          {
+            nLine = D2Client::SEED_RollRange(pSeed, 1, 2);
+            nCandidateX = nLine + sRoomCoords.dwXStart;
+            nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nYSize / 2);
+            nCandidateY = nYSize / 4 + nCallbackResult + sRoomCoords.dwYStart;
+            break;
+          }
+        default:
+          {
+            nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, sRoomCoords.dwXSize - nSizeX - 1);
+            nCandidateX = nCallbackResult + sRoomCoords.dwXStart;
+            nCallbackResult = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nYSize - nSizeY - 1);
+            nCandidateY = nCallbackResult + sRoomCoords.dwYStart;
+            break;
+          }
       }
+
       if (nCandidateX && nCandidateY && (int)(nCandidateX & 0xffff) >= sRoomCoords.dwXStart + 1 && (int)(nCandidateY & 0xffff) >= sRoomCoords.dwYStart + 1 && (int)(nCandidateX & 0xffff) < sRoomCoords.dwXStart - 1 + sRoomCoords.dwXSize && (int)(nCandidateY & 0xffff) < sRoomCoords.dwYStart - 1 + sRoomCoords.dwYSize) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pfnProc);
         if (bBadCodePtr) {

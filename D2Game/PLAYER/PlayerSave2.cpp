@@ -577,9 +577,7 @@ BOOL __fastcall SaveStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * pStar
 // Serialises hard skill point allocations for the player's class to the save buffer (magic header 0x6669, then one byte per class skill). Iterates all class skills via SKILLS_GetClassSkillByIndex and writes the base (hard) level only. Returns 0 on success, 1 if buffer too small, 2 if class ID invalid.
 // @sourcefile .\PLAYER\PlrSave2.cpp
 int __fastcall SaveSkills(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * pStartAddress, DWORD pEndAddress) {
-    D2SkillStrc* pSkill;
     int nHardPoints;
-    BOOL bCountBonuses;
     uint16_t* pWriteCursor = (uint16_t*)*pStartAddress;
     if ((uint32_t)(sgptDataTable->nSkillCountMaxPerClass + 2 + (int)pWriteCursor) > pEndAddress) {
       return 1;
@@ -599,9 +597,7 @@ int __fastcall SaveSkills(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD * pStar
       eD2Skills eSkill;
       do {
         eSkill = D2Common::Skills::SKILLS_GetClassSkillByIndex(nClassId, iSkill);
-        bCountBonuses = 0;
-        pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
-        nHardPoints = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bCountBonuses);
+        nHardPoints = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1), 0);
         *(char*)pWriteCursor = (char)nHardPoints;
         pWriteCursor = (uint16_t*)((int)pWriteCursor + 1);
         iSkill++;
@@ -1066,8 +1062,7 @@ int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, D2Cl
       *pOutUnit = pUnit;
       PLAYERSAVE_LinkPlayerToUnit(pGame, pUnit, pClient);
       D2ClientStrc* pClientLocal = pClient;
-      ::SGAMEDATA* pClientGameCtx = GAME::Clients::CLIENT_GetGame(pClient);
-      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(pClientGameCtx, *pOutUnit, pClientLocal);
+      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(GAME::Clients::CLIENT_GetGame(pClient), *pOutUnit, pClientLocal);
       D2SaveHotKeyStrc* pHotKey = pSaveFile->pHotKeys;
       nResult = 0;
       do {
@@ -1541,7 +1536,6 @@ D2UnitStrc * __fastcall LoadMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Merc
 // Loads a mercenary's equipped items from the save buffer into the given merc unit (expansion-only, magic 0x666a). Calls PLRSAVE_LoadItemsFromBuffer, then recalculates the merc's inventory stats and sets HP to max if the merc is alive. Skipped entirely in classic (non-expansion) games.
 int __thiscall LoadMerc2(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * * ppUnit, D2UnitStrc * pUnit2, uint32_t nParam, int * pnParam) {
     BOOL bIsDead;
-    int32_t nValue;
     D2UnitStrc* pMercUnit = pUnit2;
     D2UnitStrc** ppReadPosOut = ppUnit;
     if (!*(int*)((int)pThis + 0x70)) {
@@ -1579,8 +1573,7 @@ int __thiscall LoadMerc2(void * pThis, D2UnitStrc * pUnit, D2UnitStrc * * ppUnit
       ITEMS::ItemMode::ITEMMODE_ReturnZero3(0);
       bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
       if (!bIsDead) {
-        nValue = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nValue, bIsDead);
+        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit), bIsDead);
       }
     }
 

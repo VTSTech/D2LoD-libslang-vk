@@ -279,8 +279,7 @@ static uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t 
     D2UnitStrc* pDVar6 = (D2UnitStrc*)-1;
     int* pFrameCountOut = &__frame0.nFrameCountOut;
     uint32_t nFrameLocal = nFrame;
-    uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
-    int32_t nOffset = DC6_AssignParams(&spriteParams, pUnit, nullptr, (uint32_t)byDirection, nFrameLocal, pFrameCountOut, (uint8_t)nAnimMode, pDVar6);
+    int32_t nOffset = DC6_AssignParams(&spriteParams, pUnit, nullptr, (uint32_t)D2Common::Units::GetDirection(pUnit), nFrameLocal, pFrameCountOut, (uint8_t)nAnimMode, pDVar6);
     if (!nOffset) {
       return 0;
     }
@@ -368,8 +367,7 @@ static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc 
 
     int32_t nErrorLine = 0x68a;
     char* szSrcFile = ".\\UNIT\\CUnit.cpp";
-    D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
-    eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, szSrcFile, nErrorLine);
+    eD2Skills eSkillId = D2Common::Skills::GetSkillId(D2Common::Units::GetLeftSkill(pUnit), szSrcFile, nErrorLine);
     uint32_t nProcResult = SKILL_ExecuteSelectProc(pUnit, eSkillId, pTargetUnit);
     if (nProcResult) {
       return 1;
@@ -377,8 +375,7 @@ static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc 
 
     int32_t nRightSkillLine = 0x68e;
     szSrcFile = ".\\UNIT\\CUnit.cpp";
-    pSkill = D2Common::Units::GetRightSkill(pUnit);
-    eSkillId = D2Common::Skills::GetSkillId(pSkill, szSrcFile, nRightSkillLine);
+    eSkillId = D2Common::Skills::GetSkillId(D2Common::Units::GetRightSkill(pUnit), szSrcFile, nRightSkillLine);
     uint32_t nRightProcResult = SKILL_ExecuteSelectProc(pUnit, eSkillId, pTargetUnit);
     return (uint32_t)(nRightProcResult != 0);
 }
@@ -615,7 +612,7 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
       }
 
       ppObjListBucket++;
-    } while ((int)ppObjListBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 1536));
+    } while ((int)ppObjListBucket < (intptr_t)((char*)&ServerSideUnitHashTables + 1536));
 
     D2UnitStrc** ppDynamicLightObjBucket = ClientSideUnitHashTables[2];
     do {
@@ -632,7 +629,7 @@ void __stdcall UpdateObjectAutoLightOnPeriodChange() {
       }
 
       ppDynamicLightObjBucket++;
-    } while ((int)ppDynamicLightObjBucket < (uintptr_t)((char*)&ClientSideUnitHashTables + 1536));
+    } while ((int)ppDynamicLightObjBucket < (intptr_t)((char*)&ClientSideUnitHashTables + 1536));
 }
 
 D2ServerCmdStrc * __fastcall GetServerCmd(D2UnitStrc * pUnit) {
@@ -1024,13 +1021,17 @@ void __fastcall UnitDoOverlay(D2UnitStrc * pUnit, eOverlayId eOverlay, uint32_t 
     }
 
     Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay, nOverlayType, 0, nDuration, 0, 0, 0);
-    if (eOverlay != OVERLAY_steallife) {
-      if (eOverlay == OVERLAY_stealmana) {
-        Sound::SOUND_PlaySound(SOUND_EXPLOSION_LARGE_1, pUnit, 0, 0, 0);
-        return;
-      }
-    } else {
-      Sound::SOUND_PlaySound(SOUND_EXPLOSION_MEDIUM_3, pUnit, 0, 0, 0);
+    switch (eOverlay) {
+      case OVERLAY_steallife:
+        {
+          Sound::SOUND_PlaySound(SOUND_EXPLOSION_MEDIUM_3, pUnit, 0, 0, 0);
+          break;
+        }
+      case OVERLAY_stealmana:
+        {
+          Sound::SOUND_PlaySound(SOUND_EXPLOSION_LARGE_1, pUnit, 0, 0, 0);
+          return;
+        }
     }
 }
 
@@ -1222,95 +1223,114 @@ void __fastcall CLIENT_SyncPathFromServer(D2DynamicPathStrc * pDynamicPath) {
     *(uint16_t*)((char*)&eNewMode + 2) = pDynamicPath->nTargetY;
     eD2PlayerAnimMode nAnimMode;
     nAnimMode = pUnit->eAnimMode.ePlayerMode;
-    if (eNewMode != nAnimMode) {
-      ePathType = pDynamicPath->Coords.tFixed.x;
-      if (ePathType) {
-        if (ePathType != 1) {
-          goto clear_path_flag;
-        }
-        if (nAnimMode == eD2PlayerAnimMode_ns::Neutral) {
-          if (eNewMode != Walk && eNewMode != eD2PlayerAnimMode_ns::Skill3) {
-            goto clear_path_flag;
-          }
-
-          nAnimMode = eD2PlayerAnimMode_ns::Neutral;
-        } else if (nAnimMode == Walk) {
-          if (eNewMode != eD2PlayerAnimMode_ns::Neutral) {
-            goto clear_path_flag;
-          }
-
-          nAnimMode = Walk;
-        } else {
-          if (nAnimMode != eD2PlayerAnimMode_ns::Skill3 || eNewMode != eD2PlayerAnimMode_ns::Neutral) {
-            goto clear_path_flag;
-          }
-
-          nAnimMode = eD2PlayerAnimMode_ns::Skill3;
-        }
-      } else {
-        switch (nAnimMode) {
-          case eD2PlayerAnimMode_ns::Neutral:
-
-          case TownNeutral:
-            if (eNewMode < Walk || eNewMode > eD2PlayerAnimMode_ns::Run && eNewMode != TownWalk) {
-              goto clear_path_flag;
-            }
-          pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
-          bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-          if (!bIsInTown) {
-            nAnimMode = eD2PlayerAnimMode_ns::Neutral;
-            break;
-          }
-
-          nAnimMode = TownNeutral;
-          break;
-          case Walk:
-
-          case TownWalk:
-            if (eNewMode != eD2PlayerAnimMode_ns::Neutral && eNewMode != TownNeutral) {
-              goto clear_path_flag;
-            }
-          pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
-          bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
-          if (!bIsInTown) {
-            nAnimMode = Walk;
-            break;
-          }
-
-          nAnimMode = TownWalk;
-          break;
-          case eD2PlayerAnimMode_ns::Run:
-            if (eNewMode != eD2PlayerAnimMode_ns::Neutral && eNewMode != eD2PlayerAnimMode_ns::Run && eNewMode != TownNeutral) {
-              goto clear_path_flag;
-            }
-          nAnimMode = eD2PlayerAnimMode_ns::Run;
-          break;
-          default:
-            if (eNewMode != KnockBack) {
-              pSkill = D2Common::Units::GetCurrentSkill((D2UnitStrc*)pDynamicPath);
-              pUnitSkill = D2Common::Units::GetCurrentSkill(pUnit);
-              if (pSkill && (!pUnitSkill || (nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pUnitSkill) , !(nSkillFlagsLocal & 1)) || (nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pUnitSkill) , (nSkillFlagsLocal & 2) != 0))) {
-                nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pSkill);
-                if (nSkillFlagsLocal & 1) {
-                  D2Common::Skills::SKILL_SetFlags(pSkill, nSkillFlagsLocal | 2);
-                  D2Common::PATH::DynamicPath::PATH_SetOrClearFlag0x2000(pDynamicPath, 0);
-                  return;
-                }
-              }
-
-              goto clear_path_flag;
-            }
-          break;
-          case eD2PlayerAnimMode_ns::Sequence:
-            goto clear_path_flag;
-        }
-      }
-
-      D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pDynamicPath, nAnimMode);
+    if (eNewMode == nAnimMode) {
+      goto clear_path_flag;
     }
 
-    clear_path_flag:
-    D2Common::PATH::DynamicPath::PATH_SetOrClearFlag0x2000(pDynamicPath, 0);
+    ePathType = pDynamicPath->Coords.tFixed.x;
+    switch (ePathType) {
+      default:
+        {
+          goto clear_path_flag;
+        }
+      case 1:
+        {
+          if (nAnimMode != eD2PlayerAnimMode_ns::Neutral) {
+            if (nAnimMode != Walk) {
+              if (nAnimMode != eD2PlayerAnimMode_ns::Skill3 || eNewMode != eD2PlayerAnimMode_ns::Neutral) {
+                goto clear_path_flag;
+              }
+
+              nAnimMode = eD2PlayerAnimMode_ns::Skill3;
+            } else {
+              switch (eNewMode) {
+                default:
+                  {
+                    goto clear_path_flag;
+                  }
+                case eD2PlayerAnimMode_ns::Neutral:
+                  {
+                    LAB_004652d3:
+                    nAnimMode = Walk;
+                    break;
+                  }
+              }
+            }
+          } else {
+            if (eNewMode != Walk && eNewMode != eD2PlayerAnimMode_ns::Skill3) {
+              goto clear_path_flag;
+            }
+
+            LAB_004652e8:
+            nAnimMode = eD2PlayerAnimMode_ns::Neutral;
+          }
+
+          goto LAB_004653bb;
+        }
+      case 0:
+        {
+          switch (nAnimMode) {
+            case eD2PlayerAnimMode_ns::Neutral:
+
+            case TownNeutral:
+              if (eNewMode < Walk || eNewMode > eD2PlayerAnimMode_ns::Run && eNewMode != TownWalk) {
+                goto clear_path_flag;
+              }
+            pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
+            bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+            if (!bIsInTown) {
+              goto LAB_004652e8;
+            }
+
+            nAnimMode = TownNeutral;
+            break;
+            case Walk:
+
+            case TownWalk:
+              if (eNewMode != eD2PlayerAnimMode_ns::Neutral && eNewMode != TownNeutral) {
+                goto clear_path_flag;
+              }
+            pRoom = D2Common::Units::UNITS_GetRoom((D2UnitStrc*)pDynamicPath);
+            bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+            if (!bIsInTown) {
+              goto LAB_004652d3;
+            }
+
+            nAnimMode = TownWalk;
+            break;
+            case eD2PlayerAnimMode_ns::Run:
+              if (eNewMode != eD2PlayerAnimMode_ns::Neutral && eNewMode != eD2PlayerAnimMode_ns::Run && eNewMode != TownNeutral) {
+                goto clear_path_flag;
+              }
+            nAnimMode = eD2PlayerAnimMode_ns::Run;
+            break;
+            default:
+              if (eNewMode != KnockBack) {
+                pSkill = D2Common::Units::GetCurrentSkill((D2UnitStrc*)pDynamicPath);
+                pUnitSkill = D2Common::Units::GetCurrentSkill(pUnit);
+                if (pSkill && (!pUnitSkill || (nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pUnitSkill) , !(nSkillFlagsLocal & 1)) || (nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pUnitSkill) , (nSkillFlagsLocal & 2) != 0))) {
+                  nSkillFlagsLocal = D2Common::Skills::SKILL_GetFlags(pSkill);
+                  if (nSkillFlagsLocal & 1) {
+                    D2Common::Skills::SKILL_SetFlags(pSkill, nSkillFlagsLocal | 2);
+                    D2Common::PATH::DynamicPath::PATH_SetOrClearFlag0x2000(pDynamicPath, 0);
+                    return;
+                  }
+                }
+
+                goto clear_path_flag;
+              }
+            break;
+            case eD2PlayerAnimMode_ns::Sequence:
+              goto clear_path_flag;
+          }
+
+          LAB_004653bb:
+          D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pDynamicPath, nAnimMode);
+          clear_path_flag:
+          D2Common::PATH::DynamicPath::PATH_SetOrClearFlag0x2000(pDynamicPath, 0);
+          return;
+        }
+    }
 }
 
 int16_t __fastcall GetPlayerUnitPartyId(D2UnitStrc * pUnit) {
@@ -1630,7 +1650,7 @@ void __stdcall FreeAllUnits() {
       } while (nBucket < 0x80);
 
       pFreeOrder++;
-    } while ((int)pFreeOrder < (uintptr_t)((char*)&gFreeUnitsOrder + sizeof(gFreeUnitsOrder)));
+    } while ((int)pFreeOrder < (intptr_t)((char*)&gFreeUnitsOrder + sizeof(gFreeUnitsOrder)));
 
     pFreeOrder = gFreeUnitsOrder;
     do {
@@ -1650,7 +1670,7 @@ void __stdcall FreeAllUnits() {
       } while (nBucket < 0x80);
 
       pFreeOrder++;
-    } while ((int)pFreeOrder < (uintptr_t)((char*)&gFreeUnitsOrder + sizeof(gFreeUnitsOrder)));
+    } while ((int)pFreeOrder < (intptr_t)((char*)&gFreeUnitsOrder + sizeof(gFreeUnitsOrder)));
 }
 
 // Client-side per-frame graphics update: iterates all client unit hash tables (objects, missiles, players, items) calling CLIENT_UpdateUnitFrame, then clears changed-stat flags on selected units/items/players. In singleplayer, also syncs server-side path data to client for players and missiles.
@@ -1669,28 +1689,28 @@ void __stdcall CLIENT_UpdateUnitGfxState() {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
-    } while ((int)ppBucket < (uintptr_t)((char*)&ClientSideUnitHashTables + 1024));
+    } while ((int)ppBucket < (intptr_t)((char*)&ClientSideUnitHashTables + 1024));
 
     ppBucket = ServerSideUnitHashTables[4];
     do {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
-    } while ((int)ppBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 2560));
+    } while ((int)ppBucket < (intptr_t)((char*)&ServerSideUnitHashTables + 2560));
 
     D2UnitStrc* (*papDVar1)[128] = ServerSideUnitHashTables;
     do {
       for (pTmp = (*papDVar1)[0]; pTmp; pTmp = pTmp->pListNext) {}
 
       papDVar1 = (D2UnitStrc* (*)[128])((int)papDVar1 + 4);
-    } while ((int)papDVar1 < (uintptr_t)((char*)&ServerSideUnitHashTables + 512));
+    } while ((int)papDVar1 < (intptr_t)((char*)&ServerSideUnitHashTables + 512));
 
     ppBucket = ServerSideUnitHashTables[1];
     do {
       for (pTmp = *ppBucket; pTmp; pTmp = pTmp->pListNext) {}
 
       ppBucket++;
-    } while ((int)ppBucket < (uintptr_t)((char*)&ServerSideUnitHashTables + 1024));
+    } while ((int)ppBucket < (intptr_t)((char*)&ServerSideUnitHashTables + 1024));
 
     Player::CUNIT_IterateHashTableWithCallback(ClientSideUnitHashTables[1], (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
     Player::CUNIT_IterateHashTableWithCallback(ServerSideUnitHashTables[4], (fnUnitIterCallback)CLIENT_ClearChangedStatFlags_Thunk);
@@ -1704,7 +1724,6 @@ void __stdcall CLIENT_UpdateUnitGfxState() {
 }
 
 void __fastcall FaceTarget(D2UnitStrc * pUnit, int32_t nParam) {
-    int32_t nTargetY;
     Path::ConfirmTarget(pUnit);
     if (!pUnit->pPath.pDynamicPath) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x946);
@@ -1722,9 +1741,7 @@ void __fastcall FaceTarget(D2UnitStrc * pUnit, int32_t nParam) {
       exit(-1);
     }
 
-    nTargetY = Units::GetYPosFromDynamicPathUnit(pTarget);
-    int32_t nTargetX = Units::GetXPosFromDynamicPathUnit(pTarget);
-    D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, nTargetX, nTargetY, nParam);
+    D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pDynamicPath, Units::GetXPosFromDynamicPathUnit(pTarget), Units::GetYPosFromDynamicPathUnit(pTarget), nParam);
 }
 
 // Determines whether pUnit may interact with / target pUnit2 (hostility & targetability check). Returns nonzero if interaction allowed, 0 if not. Resolves pets to their player owner via RosterPets::GetRosterOwnerGUID and charmed/owned units. In town: only allows player-vs-player when ROSTER_CheckPlayerCanLoot permits looting a dead party member. Out of town: rejects self/same-unit; player-vs-player uses loot rights then PlayerList party flag (8); against monsters consults MonStats2 alSel/noSel flags (always-selectable / never-selectable); players may always interact with items and objects; otherwise falls back to Path::IsAllyOf (returns true only if NOT an ally). Also blocks a player from interacting with an enemy pet they don't own.
@@ -2478,36 +2495,45 @@ uint32_t __fastcall HitTestScreen(D2UnitStrc * pUnit, int32_t nClickX, int32_t n
     bMultiPiece = false;
     if (eUnitType != UNIT_PLAYER) {
       eD2PlayerAnimMode eVar1;
-      if (eUnitType != UNIT_MONSTER) {
-        if (eUnitType != UNIT_OBJECT) {
-          goto test_frame_bounds;
-        }
-        if (!pObjectsTxt) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x741);
-          exit(-1);
-        }
-        if (pObjectsTxt->IsDoor) {
-          eVar1 = pUnit->eAnimMode.ePlayerMode;
-          if (eVar1 == Walk || eVar1 == eD2PlayerAnimMode_ns::GetHit || eVar1 == TownNeutral) {
-            uResult = CUNIT_IsClickInSpriteBounds(nClickY, (int*)pUnitSaved, pObjectsTxt, nClickXSaved);
-            return uResult;
-          }
-        } else {
-          if (pObjectsTxt->CollisionSubst) {
-            uResult = CUNIT_IsClickInSpriteBounds(nClickY, (int*)pUnitSaved, pObjectsTxt, nClickXSaved);
-            return uResult;
-          }
-        }
+      switch (eUnitType) {
+        case UNIT_MONSTER:
+          {
+            pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
+            if (!pMonStats2) {
+              goto test_frame_bounds;
+            }
 
-        byTotalPieces = pObjectsTxt->TotalPieces;
-      } else {
-        pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-        if (!pMonStats2) {
-          goto test_frame_bounds;
-        }
+            byTotalPieces = pMonStats2->TotalPieces;
+            break;
+          }
+        default:
+          {
+            goto test_frame_bounds;
+          }
+        case UNIT_OBJECT:
+          {
+            if (!pObjectsTxt) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x741);
+              exit(-1);
+            }
+            if (pObjectsTxt->IsDoor) {
+              eVar1 = pUnit->eAnimMode.ePlayerMode;
+              if (eVar1 == Walk || eVar1 == eD2PlayerAnimMode_ns::GetHit || eVar1 == TownNeutral) {
+                uResult = CUNIT_IsClickInSpriteBounds(nClickY, (int*)pUnitSaved, pObjectsTxt, nClickXSaved);
+                return uResult;
+              }
+            } else {
+              if (pObjectsTxt->CollisionSubst) {
+                uResult = CUNIT_IsClickInSpriteBounds(nClickY, (int*)pUnitSaved, pObjectsTxt, nClickXSaved);
+                return uResult;
+              }
+            }
 
-        byTotalPieces = pMonStats2->TotalPieces;
+            byTotalPieces = pObjectsTxt->TotalPieces;
+            break;
+          }
       }
+
       if (byTotalPieces < 2) {
         goto test_frame_bounds;
       }

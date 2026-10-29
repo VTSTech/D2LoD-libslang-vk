@@ -1286,8 +1286,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
 
     int32_t pBlendTable = 0;
     nWidth = nDrawLines;
-    uint8_t* pPalettePtr = RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, gnDDrawSurfaceXMin, gnDDrawRenderWidth, gpRenderBackBufferBits, bSpriteLoaded, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nSkipLines, nWidth, pBlendTable);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, gnDDrawSurfaceXMin, gnDDrawRenderWidth, gpRenderBackBufferBits, bSpriteLoaded, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines), nSkipLines, nWidth, pBlendTable);
 }
 
 void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode) {
@@ -1315,10 +1314,7 @@ void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t n
       return;
     }
 
-    int32_t nSkipTopCopy = __frame0.nSkipTop;
-    int32_t nDrawHeightCopy = __frame0.nDrawHeight;
-    uint8_t* pPalettePtr = RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nClipLeft, __frame0.nClipRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nSkipTopCopy, nDrawHeightCopy, iVar1);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nClipLeft, __frame0.nClipRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_DIRECTDRAW_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect), __frame0.nSkipTop, __frame0.nDrawHeight, iVar1);
 }
 
 void __fastcall DrawShadow(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY) {
@@ -1427,7 +1423,7 @@ void __stdcall D2ddDebugFont_Alloc() {
       *pCharOffsetEntry = nFontDataOffset;
       pCharOffsetEntry++;
       nFontDataOffset += 0x80;
-    } while ((int)pCharOffsetEntry <= (uintptr_t)((char*)&gaD2ddDebugFontCharOffsets + 380));
+    } while ((int)pCharOffsetEntry <= (intptr_t)((char*)&gaD2ddDebugFontCharOffsets + 380));
 
     /* LPINT lpBuffer for GetCharWidthA */ /* UINT iLast for GetCharWidthA */ /* UINT iFirst for GetCharWidthA */ /* HDC hdc for GetCharWidthA */ GetCharWidthA(hdc, 0x20, 0x7f, (LPINT)lpBuffer_00881428);
     /* HGDIOBJ ho for DeleteObject */ DeleteObject(h_00);
@@ -1559,48 +1555,57 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
 
     int nColIdx = nClipTop - nClipRightEnd;
     uint8_t* pScanline = gpRenderBackBufferBits + nClipLeft + RENDERER_nWindowWidth * nClipRightEnd;
-    if (nDrawMode2 != 1) {
-      if (nDrawMode2 != 2) {
-        if (nColIdx) {
-          do {
+    switch (nDrawMode2) {
+      case 1:
+        {
+          while (nColIdx) {
             nColIdx--;
-            memset(pScanline, dwColor & 0xff, nClipRight - nClipLeft);
-            pScanline += RENDERER_nWindowWidth;
-          } while (nColIdx);
-
-          return;
-        }
-      } else {
-        if (nColIdx) {
-          do {
-            nColIdx--;
-            if (nClipRight - nClipLeft) {
-              pRowPixel = pScanline;
-              nPixelCount = nClipRight - nClipLeft;
-              do {
-                nPixelCount--;
-                *pRowPixel = pBlendTable[(uint32_t)*pRowPixel * 0x100 + (dwColor & 0xff)];
-                pRowPixel++;
-              } while (nPixelCount);
+            pRowPixel = pScanline;
+            for (nPixelCount = nClipRight - nClipLeft; nPixelCount; nPixelCount--) {
+              *pRowPixel = pBlendTable[*pRowPixel];
+              pRowPixel++;
             }
 
             pScanline += RENDERER_nWindowWidth;
-          } while (nColIdx);
+          }
 
-          return;
+          break;
         }
-      }
-    } else {
-      while (nColIdx) {
-        nColIdx--;
-        pRowPixel = pScanline;
-        for (nPixelCount = nClipRight - nClipLeft; nPixelCount; nPixelCount--) {
-          *pRowPixel = pBlendTable[*pRowPixel];
-          pRowPixel++;
-        }
+      case 2:
+        {
+          if (nColIdx) {
+            do {
+              nColIdx--;
+              if (nClipRight - nClipLeft) {
+                pRowPixel = pScanline;
+                nPixelCount = nClipRight - nClipLeft;
+                do {
+                  nPixelCount--;
+                  *pRowPixel = pBlendTable[(uint32_t)*pRowPixel * 0x100 + (dwColor & 0xff)];
+                  pRowPixel++;
+                } while (nPixelCount);
+              }
 
-        pScanline += RENDERER_nWindowWidth;
-      }
+              pScanline += RENDERER_nWindowWidth;
+            } while (nColIdx);
+
+            return;
+          }
+
+          break;
+        }
+      default:
+        {
+          if (nColIdx) {
+            do {
+              nColIdx--;
+              memset(pScanline, dwColor & 0xff, nClipRight - nClipLeft);
+              pScanline += RENDERER_nWindowWidth;
+            } while (nColIdx);
+
+            return;
+          }
+        }
     }
 }
 
@@ -2103,15 +2108,22 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     BOOL bDrawResult = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
     if (bDrawResult) {
       int a2 = nPosX - 0x50;
-      if (nScreenPanels != 1) {
-        if (nScreenPanels != 2) {
-          bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
-          return bDrawResult;
-        }
-
-        nPanelOffset = RENDERER_nWindowWidth / 4;
-      } else {
-        nPanelOffset = -(RENDERER_nWindowWidth / 4);
+      switch (nScreenPanels) {
+        case 1:
+          {
+            nPanelOffset = -(RENDERER_nWindowWidth / 4);
+            break;
+          }
+        default:
+          {
+            bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
+            return bDrawResult;
+          }
+        case 2:
+          {
+            nPanelOffset = RENDERER_nWindowWidth / 4;
+            break;
+          }
       }
 
       a2 += nPanelOffset;

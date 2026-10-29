@@ -2783,6 +2783,7 @@ int * __fastcall MATH_RandomRange(int * pnParam, int32_t nParam, uint32_t nRange
 
 int32_t __fastcall UNITS_GetStatValueByType(eD2UnitStat eUnitStat, int32_t nQueryMode, uint32_t dwContext, D2UnitStrc * * ppUnit) {
     int32_t nStatValue;
+    int nStatValue2;
     if (!ppUnit) {
       return 0;
     }
@@ -2801,19 +2802,24 @@ int32_t __fastcall UNITS_GetStatValueByType(eD2UnitStat eUnitStat, int32_t nQuer
       nStatValue = Units::GetAttackRate(pUnitDeref);
       return nStatValue;
     }
-    if (nQueryMode != 1) {
-      int nStatValue2;
-      if (nQueryMode != 2) {
-        nStatValue2 = STATSEX_GetCurrentStat(pUnitDeref, eUnitStat, 0);
-        return nStatValue2;
-      }
 
-      nStatValue = ITEM_GetMinimalStatValueShifted(pUnitDeref, eUnitStat, 0);
-      return nStatValue;
+    switch (nQueryMode) {
+      case 1:
+        {
+          nStatValue = SERVER_GetUnitStat(pUnitDeref, eUnitStat, 0);
+          return nStatValue;
+        }
+      case 2:
+        {
+          nStatValue = ITEM_GetMinimalStatValueShifted(pUnitDeref, eUnitStat, 0);
+          return nStatValue;
+        }
+      default:
+        {
+          nStatValue2 = STATSEX_GetCurrentStat(pUnitDeref, eUnitStat, 0);
+          return nStatValue2;
+        }
     }
-
-    nStatValue = SERVER_GetUnitStat(pUnitDeref, eUnitStat, 0);
-    return nStatValue;
 }
 
 } // namespace D2Common::Stats::StatsEx

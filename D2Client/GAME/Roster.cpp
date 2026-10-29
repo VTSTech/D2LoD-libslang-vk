@@ -861,7 +861,7 @@ void __fastcall ROSTER_ToggleMuteAndSend(D2RosterStrc * pRoster) {
 // Handles a UI party-button click for a roster entry. Transitions bInParty state: 0→4 sends invite (NET 0x5E action 6), 4→0 cancels invite (action 7), 2/3 send accept/decline actions (8/9). State 1 (pending) is an internal error that halts. Always calls ROSTER_RebuildPlayerParty and ResetPartyUi after any state change.
 void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
     int32_t nLine;
-    uint8_t nActionType;
+    int nActionType;
     nActionType = 0;
     if (!pRoster) {
       return;

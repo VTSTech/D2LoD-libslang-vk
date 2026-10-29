@@ -96,9 +96,7 @@ static void InitFontCache(int32_t nFontIndex) {
 
     int32_t nAllocLine = 0xb5;
     char* szAllocFile = ".\\Src\\D2WinFont.cpp";
-    uint32_t* pOutFileSize = 0;
-    D2PoolManagerStrc* pPoolMgr = D2WinArchive::ReturnZero();
-    D2FontTableHeaderStrc* pFontTable = (D2FontTableHeaderStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(pPoolMgr, szFontTablePath, pOutFileSize, szAllocFile, nAllocLine);
+    D2FontTableHeaderStrc* pFontTable = (D2FontTableHeaderStrc*)Fog::Archive::D2FILE_AllocAndLoadD2File(D2WinArchive::ReturnZero(), szFontTablePath, 0, szAllocFile, nAllocLine);
     gaFontCache[nFontIndex].pFontTable = pFontTable;
     gaFontCache[nFontIndex].pFontTableHeader = pFontTable;
     gaFontCache[nFontIndex].pGlyphs = (D2FontGlyphStrc*)(pFontTable + 1);
@@ -118,7 +116,7 @@ void __stdcall D2WINFONT_FreeFontCache() {
       }
 
       ppFontTable += 5;
-    } while ((int)ppFontTable < (uintptr_t)((char*)&gaFontCache + sizeof(gaFontCache) + 4));
+    } while ((int)ppFontTable < (intptr_t)((char*)&gaFontCache + sizeof(gaFontCache) + 4));
 
     D2WinArchive::IMAGE_FreeImage(gpMonsterIndicatorDC6);
     gpMonsterIndicatorDC6 = 0;
@@ -1368,7 +1366,7 @@ int32_t __fastcall SetAndReturnLastFont(int32_t nFontId) {
 
         nCacheIdx++;
         pReturnFont = pSavedFont;
-      } while ((int)&gaFontCache[nCacheIdx] < (uintptr_t)((char*)&gaFontCache + sizeof(gaFontCache)));
+      } while ((int)&gaFontCache[nCacheIdx] < (intptr_t)((char*)&gaFontCache + sizeof(gaFontCache)));
     }
 
     gppDC6FontCache = (DC6**)&pNewCacheEntry->pFontDC6;

@@ -134,13 +134,9 @@ static D2UnitStrc * PLRSAVE_CreateItemFromSaveData(::SGAMEDATA * pGame, D2Unknow
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnknownItemRelatedStruct * pItemUnknownStructure, D2UnitStrc * * ppItemOut, uint32_t * pnParam) {
     int32_t nItemGUID;
-    int32_t _unknownMightBeY;
-    int32_t _unknownMightBeX;
     int iVar1;
     BOOL bPlaceResult;
     char byItemWidth;
-    int32_t bNoOverlap;
-    int32_t bSendUpdate;
     uint32_t nX;
     uint32_t nY;
     D2InventoryStrc* pInventory;
@@ -166,11 +162,7 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
       D2Common::Units::SetYForStaticUnit(pUnit_00, nY);
       nItemGUID = pUnit_00->nUnitGUID;
       pInventory = 0;
-      bSendUpdate = 1;
-      bNoOverlap = 0;
-      _unknownMightBeY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-      _unknownMightBeX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, _unknownMightBeX, _unknownMightBeY, bNoOverlap, bSendUpdate, pInventory);
+      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0, 1, pInventory);
       break;
       case eD2PlayerAnimMode_ns::Neutral:
         D2Common::Units::SetupUpdateFlag(pUnit_00, 4);
@@ -222,7 +214,6 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
 // Server-side: restores one saved item onto a player by its saved animMode (storage location), dispatching: Death/default=drop to ground at the item's path position (SERVER_ItemToInventory); Neutral=equip to its body-loc (SERVER_EquipItemToBodyLoc); Walk=place in belt (ITEM_TryPlaceInBelt at the item's X); GetHit=copy into player inventory and apply as a quest reward (ITEMMODE_ApplyQuestReward); TownWalk=nest into the container item identified by eBodyLocation (PutItemInItem, container GUID at +0xc). Run/TownNeutral and any mode > TownWalk fail. Returns 0 on success, 0xc on failure. Used during character load to repopulate a player's items.
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pSourceItem, int32_t eBodyLocation) {
-    eD2BodyLoc eBodyLoc;
     eD2ItemAnimMode eAnimMode;
     int32_t nPosY;
     int32_t _unknownMightBeX;
@@ -270,8 +261,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       pBodyLocParam = &eBodyLocation;
       nPosY = 1;
-      eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit_00);
-      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, eBodyLoc, nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, D2Common::ITEMS::Items::GetBodyLocation(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
       break;
       case Belt:
         D2Common::Units::SetupUpdateFlag(pSourceItem, 4);
@@ -324,19 +314,16 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 // Server-side: re-instates one saved item onto a loaded player during character load. Recreates the item via PLRSAVE_CreateItemFromSaveData, then by the item's animMode places it: Death=drop to ground at recorded pos (SERVER_ItemToInventory); Neutral=equip to its saved body-loc (validates via INVENTORY_GetItemAtBodyLoc, puts in inv slot 3, or 4 for swapped weapon set, clears TARGETABLE/ISRESURRECT, refreshes inv, fires QUEST_OnItemPickedUp); TownWalk=nest into a container item (PutItemInItem). Returns 0 on success, 0xd on any failure. Writes the placed item back into pGame2->nToken (container cursor) and the storage-type byte into *pnParam.
 // @sourcefile .\PLAYER\PlrSave.cpp
 static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownItemRelatedStruct * pItemUnknownStructure, D2UnitStrc * * pGame2, uint32_t * pnParam, D2UnitStrc * pUnit) {
+    int32_t nItemGUID;
     eD2BodyLoc eBodyLoc;
     BOOL bPlaceResult;
     int nInventorySlot;
-    int nUnitPosY;
-    int nUnitPosX;
     int nPlaceResult;
     DWORD dwContainerGUID;
     uint32_t nBodyLocId;
-    int32_t nParam1;
     D2InventoryStrc* pCurInventory;
     int nBodyLocSlot;
     int nEquipResult;
-    int32_t nSendUpdate;
     D2InventoryStrc* pInventory;
     D2UnitStrc* pItem;
     pItem = PLRSAVE_CreateItemFromSaveData(pGame, pItemUnknownStructure);
@@ -346,70 +333,75 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
 
     eD2ItemAnimMode eItemMode;
     eItemMode = pItem->eAnimMode.eItemMode;
-    if (eItemMode != Container) {
-      if (eItemMode == Equipment) {
-        pCurInventory = pUnit->pInventory;
-        eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItem);
-        nBodyLocId = (uint32_t)eBodyLoc;
-        if (!nBodyLocId) {
+    switch (eItemMode) {
+      case Container:
+        {
+          D2Common::Units::SetupUpdateFlag(pItem, 4);
+          nBodyLocId = pItemUnknownStructure->nPosY;
+          D2Common::Units::SetXForStaticUnit(pItem, pItemUnknownStructure->nPosX);
+          D2Common::Units::SetYForStaticUnit(pItem, nBodyLocId);
+          nItemGUID = pItem->nUnitGUID;
+          pInventory = 0;
+          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), 0, 0, pInventory);
+          break;
+        }
+      case Equipment:
+        {
+          pCurInventory = pUnit->pInventory;
+          eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItem);
+          nBodyLocId = (uint32_t)eBodyLoc;
+          if (!nBodyLocId) {
+            return 0xd;
+          }
+
+          bPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pCurInventory, pItem, nBodyLocId);
+          if (!bPlaceResult) {
+            return 0xd;
+          }
+
+          nInventorySlot = 3;
+          if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
+            nInventorySlot = 4;
+          }
+
+          bPlaceResult = D2Common::INVENTORY::Inventory::PutItemInInventory(pCurInventory, pItem, nInventorySlot);
+          if (!bPlaceResult) {
+            return 0xd;
+          }
+
+          D2Common::ITEMS::Items::SetBodyLoc(pItem, eBodyLoc);
+          pItem->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+          D2Common::Units::SetupUpdateFlag(pItem, 1);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
+          D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pItem, ITEMCMD_BODYLOC_PUT_ITEM, 1);
+          pItem->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
+          D2Common::INVENTORY::Inventory::UpsertToUpdateList(pCurInventory, pItem);
+          D2Common::Units::RefreshInventory(pUnit, 1);
+          Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit, pItem);
+          goto item_restored;
+        }
+      default:
+        {
           return 0xd;
         }
+      case InItem:
+        {
+          if (!*pGame2) {
+            return 0xd;
+          }
 
-        bPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pCurInventory, pItem, nBodyLocId);
-        if (!bPlaceResult) {
-          return 0xd;
+          D2Common::Units::SetupUpdateFlag(pItem, 4);
+          if (!*pGame2) {
+            dwContainerGUID = -1;
+          } else {
+            dwContainerGUID = (*pGame2)->nUnitGUID;
+          }
+
+          nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, pItem->nUnitGUID, dwContainerGUID, (int32_t*)&pCurInventory, 0, 1, 0, 0);
+          break;
         }
-
-        nInventorySlot = 3;
-        if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
-          nInventorySlot = 4;
-        }
-
-        bPlaceResult = D2Common::INVENTORY::Inventory::PutItemInInventory(pCurInventory, pItem, nInventorySlot);
-        if (!bPlaceResult) {
-          return 0xd;
-        }
-
-        D2Common::ITEMS::Items::SetBodyLoc(pItem, eBodyLoc);
-        pItem->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        D2Common::Units::SetupUpdateFlag(pItem, 1);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
-        D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pItem, ITEMCMD_BODYLOC_PUT_ITEM, 1);
-        pItem->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
-        D2Common::INVENTORY::Inventory::UpsertToUpdateList(pCurInventory, pItem);
-        D2Common::Units::RefreshInventory(pUnit, 1);
-        Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit, pItem);
-        goto item_restored;
-      }
-      if (eItemMode != InItem) {
-        return 0xd;
-      }
-      if (!*pGame2) {
-        return 0xd;
-      }
-
-      D2Common::Units::SetupUpdateFlag(pItem, 4);
-      if (!*pGame2) {
-        dwContainerGUID = -1;
-      } else {
-        dwContainerGUID = (*pGame2)->nUnitGUID;
-      }
-
-      nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, pItem->nUnitGUID, dwContainerGUID, (int32_t*)&pCurInventory, 0, 1, 0, 0);
-    } else {
-      int32_t nItemGUID;
-      D2Common::Units::SetupUpdateFlag(pItem, 4);
-      nBodyLocId = pItemUnknownStructure->nPosY;
-      D2Common::Units::SetXForStaticUnit(pItem, pItemUnknownStructure->nPosX);
-      D2Common::Units::SetYForStaticUnit(pItem, nBodyLocId);
-      nItemGUID = pItem->nUnitGUID;
-      pInventory = 0;
-      nSendUpdate = 0;
-      nParam1 = 0;
-      nUnitPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
-      nUnitPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, nUnitPosX, nUnitPosY, nParam1, nSendUpdate, pInventory);
     }
+
     if (!nPlaceResult) {
       return 0xd;
     }
@@ -425,6 +417,7 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
 // Restores an item from a save onto a body location.
 // @sourcefile .\PLAYER\PlrSave.cpp
 static int __stdcall PLRSAVE_RestoreItemToBodyLoc(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2, int32_t nParam) {
+    eD2BodyLoc eBodyLoc;
     eD2ItemAnimMode eAnimMode;
     int nPlaceResult;
     BOOL BVar1;
@@ -441,85 +434,94 @@ static int __stdcall PLRSAVE_RestoreItemToBodyLoc(D2UnitStrc * pUnit, ::SGAMEDAT
     }
 
     D2UnitStrc* pItem = pUnit;
-    if (eAnimMode != Container) {
-      eD2BodyLoc eBodyLoc;
-      if (eAnimMode == Equipment) {
-        pInventory = pUnit2->pInventory;
-        eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit);
-        nBodyLocId = (uint32_t)eBodyLoc;
-        if (!nBodyLocId) {
+    switch (eAnimMode) {
+      case Container:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, 4);
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPlaceResult = pUnit->pPath.pStaticPath->nPosY;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPlaceResult = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPlaceResult = 0;
+          }
+
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPosX = pUnit->pPath.pStaticPath->nPosX;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPosX = 0;
+          }
+
+          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x218, pGame, pUnit2, pUnit->nUnitGUID, nPosX, nPlaceResult, 0, 0, nullptr);
+          break;
+        }
+      case Equipment:
+        {
+          pInventory = pUnit2->pInventory;
+          eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit);
+          nBodyLocId = (uint32_t)eBodyLoc;
+          if (!nBodyLocId) {
+            return 0xd;
+          }
+
+          BVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pInventory, pUnit, nBodyLocId);
+          if (!BVar1) {
+            return 0xd;
+          }
+
+          nInventorySlot = 3;
+          if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
+            nInventorySlot = 4;
+          }
+
+          BVar1 = D2Common::INVENTORY::Inventory::PutItemInInventory(pInventory, pUnit, nInventorySlot);
+          if (!BVar1) {
+            return 0xd;
+          }
+
+          D2Common::ITEMS::Items::SetBodyLoc(pUnit, eBodyLoc);
+          if (pUnit) {
+            pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+          }
+
+          D2Common::Units::SetupUpdateFlag(pUnit, 1);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, INVPAGE_None);
+          D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit, ITEMCMD_BODYLOC_PUT_ITEM, 1);
+          if (pUnit) {
+            pUnit->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
+          }
+
+          D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pUnit);
+          D2Common::Units::RefreshInventory(pUnit2, 1);
+          Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit2, pUnit);
+          return 0;
+        }
+      default:
+        {
           return 0xd;
         }
+      case InItem:
+        {
+          if (!nParam) {
+            return 0xd;
+          }
 
-        BVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pInventory, pUnit, nBodyLocId);
-        if (!BVar1) {
-          return 0xd;
+          D2Common::Units::SetupUpdateFlag(pUnit, 4);
+          if (!pUnit) {
+            dwItemGUID = -1;
+          } else {
+            dwItemGUID = pUnit->nUnitGUID;
+          }
+
+          nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit2, dwItemGUID, *(DWORD*)(nParam + 0xc), (int32_t*)&pItem, 0, 1, 0, 0);
+          break;
         }
-
-        nInventorySlot = 3;
-        if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
-          nInventorySlot = 4;
-        }
-
-        BVar1 = D2Common::INVENTORY::Inventory::PutItemInInventory(pInventory, pUnit, nInventorySlot);
-        if (!BVar1) {
-          return 0xd;
-        }
-
-        D2Common::ITEMS::Items::SetBodyLoc(pUnit, eBodyLoc);
-        if (pUnit) {
-          pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        }
-
-        D2Common::Units::SetupUpdateFlag(pUnit, 1);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, INVPAGE_None);
-        D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit, ITEMCMD_BODYLOC_PUT_ITEM, 1);
-        if (pUnit) {
-          pUnit->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
-        }
-
-        D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pUnit);
-        D2Common::Units::RefreshInventory(pUnit2, 1);
-        Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit2, pUnit);
-        return 0;
-      }
-      if (eAnimMode != InItem) {
-        return 0xd;
-      }
-      if (!nParam) {
-        return 0xd;
-      }
-
-      D2Common::Units::SetupUpdateFlag(pUnit, 4);
-      if (!pUnit) {
-        dwItemGUID = -1;
-      } else {
-        dwItemGUID = pUnit->nUnitGUID;
-      }
-
-      nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit2, dwItemGUID, *(DWORD*)(nParam + 0xc), (int32_t*)&pItem, 0, 1, 0, 0);
-    } else {
-      D2Common::Units::SetupUpdateFlag(pUnit, 4);
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        nPlaceResult = pUnit->pPath.pStaticPath->nPosY;
-      } else if (pUnit->pPath.pDynamicPath) {
-        nPlaceResult = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      } else {
-        nPlaceResult = 0;
-      }
-
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        nPosX = pUnit->pPath.pStaticPath->nPosX;
-      } else if (pUnit->pPath.pDynamicPath) {
-        nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-      } else {
-        nPosX = 0;
-      }
-
-      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x218, pGame, pUnit2, pUnit->nUnitGUID, nPosX, nPlaceResult, 0, 0, nullptr);
     }
+
     if (nPlaceResult) {
       return 0;
     }
@@ -1331,8 +1333,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       *ppUnitOut = pUnit;
       SERVER_InitPlayer(pGameCopy, pUnit, pClient);
       pClient_00 = pClient;
-      pGameCopy = GAME::Clients::CLIENT_GetGame(pClient);
-      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(pGameCopy, *ppUnitOut, pClient_00);
+      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(GAME::Clients::CLIENT_GetGame(pClient), *ppUnitOut, pClient_00);
       *pnParam2 = 0x10;
       *pnParam3 = sgptDataTable->nTxtSkillsCount;
       if (sOldSaveHeader.wSkillTabCount <= 0x10) {
@@ -2200,7 +2201,6 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
     D2UnitStrc* pMercUnit;
     uint32_t nCurrentExp;
     int nLevel;
-    int32_t nLayer;
     D2PetDataStrc sPetData;
     int nMercLevel;
     int32_t nErrorLine;
@@ -2304,9 +2304,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
 
           ITEMS::ItemMode::ITEMS_RecalcAndRefreshInventory(pGame, pMercUnit, 0, 0);
           ITEMS::ItemMode::ITEMMODE_ReturnZero3(0);
-          nLayer = 0;
-          nErrorLine = D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit);
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, nErrorLine, nLayer);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit), 0);
           Monster::MonsterAI::SendMercPackets(pGame, pUnit, 1);
           *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2 + (int)puVar1);
           nErrorLine = 0;

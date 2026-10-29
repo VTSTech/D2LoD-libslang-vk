@@ -43,7 +43,7 @@ void __fastcall AddMercForHireToGlobalList(D2GSPacketSrv0x4E * pPacket) {
     int nMercSlot = 0;
     while (D2Client::Merc::D2MercForHire[nMercSlot].bActive) {
       nMercSlot++;
-      if ((int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive >= (uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 8)) {
+      if ((int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive >= (intptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 8)) {
         return;
       }
     }
@@ -78,7 +78,7 @@ void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam) {
       }
 
       pMercEntry++;
-    } while ((int)pMercEntry < (uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire)));
+    } while ((int)pMercEntry < (intptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire)));
 
     Hireables::UI_InitializeHirelingIconsUI();
 }

@@ -28,9 +28,7 @@ namespace D2Common::DATATBLS::ObjectTbls {
 
 // Builds the field-descriptor table for Objects.txt (158 columns: name, animation frame counts/deltas, per-mode flags, components, parms, draw/AI function indices, etc.) and compiles it into the global sgpTxtObjects bin table via CompileTxt (row stride 0x1c0). Post-compile per row: zeroes the wide-name buffer, resolves the localized display name from the string table into it, and left-shifts the eight FrameCnt fields by 8 (fixed-point scale). Side-effects: writes sgpTxtObjects / nTxtObjectsSize. __fastcall, pMemory = the data-table memory pool. Called once at data-table load.
 void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
-    size_t nSizeMaybe;
     D2BinFieldInputStrc objects[158];
-    char* pObjRow;
     objects[0].eType = FIELDTYPE_ASCII;
     objects[1].eType = FIELDTYPE_ASCII;
     objects[0].szName = "Name";
@@ -829,12 +827,10 @@ void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
 
     int nRowOffset = 0;
     do {
-      uint16_t* wszLetter;
+      char* pObjRow;
       pObjRow = sgpTxtObjects->Name + nRowOffset;
       memset(pObjRow + 0x40, 0, 0x80);
-      nSizeMaybe = 0x40;
-      wszLetter = D2Lang::StrTable::strtable::STRTABLE_GetStringByKey((uint8_t*)pObjRow);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)(pObjRow + 0x40), wszLetter, nSizeMaybe);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)(pObjRow + 0x40), D2Lang::StrTable::strtable::STRTABLE_GetStringByKey((uint8_t*)pObjRow), 0x40);
       *(uint32_t*)(pObjRow + 0xd8) <<= 8;
       *(uint32_t*)(pObjRow + 0xdc) <<= 8;
       *(uint32_t*)(pObjRow + 0xe0) <<= 8;

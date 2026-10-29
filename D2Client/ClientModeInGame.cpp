@@ -335,8 +335,7 @@ int32_t __stdcall fAPPMODE_client_ReturnAppMode(HMODULE hModule, D2IniConfigStrc
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation((char*)&D2IniData, 0);
     uint32_t bIsOBNetHost = (uint32_t)(pIniData->nGAMETYPE == GAMETYPE_OBNET_HOST);
     int32_t dwErrorLine = 0;
-    pArchive = D2Win::Src::D2WinArchive::ReturnZero();
-    D2Common::DATATBLS::DataTbls::TXT_InitTxtFiles(pArchive, dwErrorLine, bIsOBNetHost);
+    D2Common::DATATBLS::DataTbls::TXT_InitTxtFiles(D2Win::Src::D2WinArchive::ReturnZero(), dwErrorLine, bIsOBNetHost);
     gdwAppMode = APPMODE_SAVE;
     gbQuitGame = 1;
     do {
@@ -389,16 +388,22 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     if (RequestedScreenModeMaybe == dwScreenSize) {
       return;
     }
-    if (RequestedScreenModeMaybe) {
-      if (RequestedScreenModeMaybe == 2) {
-        ScreenSizeX = 800;
-        ScreenSizeY = 600;
-        nScreenMode = 1;
-      }
-    } else {
-      ScreenSizeX = 0x280;
-      ScreenSizeY = 0x1e0;
-      nScreenMode = 0;
+
+    switch (RequestedScreenModeMaybe) {
+      case 0:
+        {
+          ScreenSizeX = 0x280;
+          ScreenSizeY = 0x1e0;
+          nScreenMode = 0;
+          break;
+        }
+      case 2:
+        {
+          ScreenSizeX = 800;
+          ScreenSizeY = 600;
+          nScreenMode = 1;
+          break;
+        }
     }
 
     WindowSizeY = ScreenSizeY - 0x28;

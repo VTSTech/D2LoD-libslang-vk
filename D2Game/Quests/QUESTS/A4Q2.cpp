@@ -83,7 +83,7 @@ namespace D2Game::Quests::QUESTS::A4Q2 {
 // [A4Q3 Terror's End — kill Diablo] Q26 Izual-kill notify (shared A4Q1 helper reused here): on Izual death, if The Fallen Angel quest is in intro state and step<2, advance its internal nStateFlag to 2 and broadcast via Q26_PlayerNotifyCompleted. NOTE: Q26_* belong to A4Q1 (Izual); they live here because A4Q2.cpp bundles the Act4 Diablo questline.
 void __fastcall Q26_NotifyIzualKilledToPlayers(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheFallenAngel);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 2)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 2)) {
       return;
     }
 
@@ -192,7 +192,7 @@ bool __fastcall Q27_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // [A4Q3 Terror's End] SequenceFilter: when the quest log is first opened and quest not yet started (nStateFlag==0) but introduced, bump internal nStateFlag to 1 (quest now in-progress / step0x02 displayable).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 bool __fastcall Q27_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
+    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01')) {
       return true;
     }
 
@@ -234,10 +234,7 @@ BOOL __fastcall Q27_PlayerUpdateTerrorsEndState(::SGAMEDATA * pGame, D2UnitStrc 
 
 // [A4Q3 Terror's End — expansion] Spawn the red Pandemonium town portal (object class 0x236) next to Diablo's corpse / Tyrael: find a spawnable tile +5x from target, CreateUnit the portal, clear bExpansionPortalCheck and set bPortalSpawned. This is the portal back to the Pandemonium Fortress shown after Diablo dies in LoD.
 static void __stdcall Q27_SpawnDiabloPortal(D2QuestArgStrc * pQuestArgs, D2QuestDataA4Q2Strc * pQuestSpecificData) {
-    D2RoomStrc* pRoom;
     D2UnitStrc* pPortalUnit;
-    uint32_t nScanRadius;
-    int32_t eCollisionFlags;
     D2RoomStrc** pRoomsNear;
     int32_t nSearchIterations;
     POINT ptSpawnPos;
@@ -249,10 +246,7 @@ static void __stdcall Q27_SpawnDiabloPortal(D2QuestArgStrc * pQuestArgs, D2Quest
     nSearchIterations = 100;
     nSpawnMaxTries = 0xc;
     pRoomsNear = &pPortalRoom;
-    eCollisionFlags = 0x400;
-    nScanRadius = 2;
-    pRoom = D2Common::Units::UNITS_GetRoom(pQuestArgs->pTarget);
-    FindSpawnableLocation(pRoom, &ptSpawnPos, nScanRadius, eCollisionFlags, pRoomsNear, nSpawnMaxTries, nSearchIterations);
+    FindSpawnableLocation(D2Common::Units::UNITS_GetRoom(pQuestArgs->pTarget), &ptSpawnPos, 2, 0x400, pRoomsNear, nSpawnMaxTries, nSearchIterations);
     if (!pPortalRoom) {
       return;
     }
@@ -271,14 +265,13 @@ static void __stdcall Q27_SpawnDiabloPortal(D2QuestArgStrc * pQuestArgs, D2Quest
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 void __fastcall Q27_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2UnitDataPlayerStrc* pPlayerData;
-    eD2Quests nQuestId;
     eD2QuestState eQuestState;
     ::SGAMEDATA* pGame;
     short int nNpcId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     short int nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA4Q2Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA4Q2;
     if (nNpcId == 0x16f) {
-      D2BitBufferStrc* pBitBuffer;
+      eD2Quests nQuestId;
       if (nMessageId == 0x2a9) {
         pQuestSpecificData->bTyraelTalked = 1;
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0xe1);
@@ -296,9 +289,8 @@ void __fastcall Q27_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       if (nMessageId == 20000 && pQuestData->pGame->bExpansion) {
         eQuestState = QUESTSTATE_Step0x09;
         nQuestId = QUEST_TerrorsEnd;
-        pBitBuffer = GetQuestBitBuffer(pQuestData->pGame, pQuestArgs->pPlayer);
         /* SetQuestState(TerrorsEnd, Step0x09) — Tyrael str 0x4e20 (expansion): grant
-                         go-to-Act5 / spawn Pandemonium portal flag */ D2Common::QuestRecord::SetQuestState(pBitBuffer, nQuestId, eQuestState);
+                         go-to-Act5 / spawn Pandemonium portal flag */ D2Common::QuestRecord::SetQuestState(GetQuestBitBuffer(pQuestData->pGame, pQuestArgs->pPlayer), nQuestId, eQuestState);
         if (!pQuestSpecificData->bPortalSpawned) {
           Q27_SpawnDiabloPortal(pQuestArgs, pQuestSpecificData);
           return;
@@ -390,7 +382,7 @@ void __fastcall Q27_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nStateFlag >= 4 && !bStep0x08) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (!nStateFlag) {
@@ -541,11 +533,7 @@ D2UnitStrc * __fastcall Q27_SpawnDiablo(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
 
 // Already documented: [A4Q3 Terror's End] Quest timer tick after Diablo's death. Two phases: (a) spawn-Diablo retry loop once seals are active; (b) post-kill teardown — after ~75s sends savefile to client, after ~90s re-runs Q27_PlayerEnterGame on the party, after ~95s leaves the server (classic D2 auto-quits ~roll-credits).
 uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQuestData) {
-    int32_t nY;
-    int32_t nX;
-    D2RoomStrc* pRoom;
     DWORD dwNowTick;
-    D2QuestDataA1Q1Strc* pQuestSpecificA4Q2;
     int* pnSpawnRetryCount;
     D2QuestDataA1Q1Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (*(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) != '\0') {
@@ -555,11 +543,7 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
       if ((uint32_t)pDVar1->sQuestGUID.aPlayerGUID[6] >= 10 && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 6) != '\0') {
         pDVar2 = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pDVar1->sQuestGUID.aPlayerGUID[2]);
         if (pDVar2) {
-          pQuestSpecificA4Q2 = pDVar1;
-          nY = D2Client::Units::GetYPosFromDynamicPathUnit(pDVar2);
-          nX = D2Client::Units::GetXPosFromDynamicPathUnit(pDVar2);
-          pRoom = D2Common::Units::UNITS_GetRoom(pDVar2);
-          pDVar2 = Q27_SpawnDiablo(pQuestData->pGame, pRoom, nX, nY, pQuestSpecificA4Q2);
+          pDVar2 = Q27_SpawnDiablo(pQuestData->pGame, D2Common::Units::UNITS_GetRoom(pDVar2), D2Client::Units::GetXPosFromDynamicPathUnit(pDVar2), D2Client::Units::GetYPosFromDynamicPathUnit(pDVar2), pDVar1);
           if (pDVar2) {
             *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 2) = 0;
             *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 1) = 0;
@@ -612,7 +596,6 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
 // [A4Q3 Terror's End] Mark QUEST_TerrorsEnd done for one player's record: set JustCompleted + Completed, clear step states. Classic (non-expansion): also set steps 0x06/0x07 and bump client status to 4 (act complete / go-to-credits). Increments a counter in the A4Q2 quest struct.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 static void __stdcall Q27_SetTerrorsEndCompleted(D2BitBufferStrc * pBitBuffer, ::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    D2ClientStrc* pClient;
     /* SetQuestState(TerrorsEnd, JustCompleted=0xd) — Diablo just died self game
                           */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
     /* SetQuestState(TerrorsEnd, Completed=0) — quest done permanently */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
@@ -625,8 +608,7 @@ static void __stdcall Q27_SetTerrorsEndCompleted(D2BitBufferStrc * pBitBuffer, :
       /* SetQuestState(TerrorsEnd, Step0x07) — classic-only: Tyrael-dialog-seen
                          marker */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Step0x07);
       nDifficulty = (uint32_t)pGame->nDifficulty;
-      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x250);
-      GAME::Clients::SetClientStatus(pClient, 4, nDifficulty);
+      GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x250), 4, nDifficulty);
     }
 
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
@@ -721,7 +703,7 @@ void __fastcall Q27_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q27_PlayerUpdateTerrorsEndState);
     }
-    if (!(nDialogIndex == 0x6c && pQuestData->bIsNotIntroduction)) {
+    if (!(nDialogIndex == 0x6c && pQuestData->bIsNotIntroduction != '\0')) {
       return;
     }
     if (pQuestData->nStateFlag < 3) {
@@ -1002,7 +984,7 @@ void __fastcall Q27_Callback_08_KillHandler(D2QuestDataStrc * pQuestData, D2Ques
             pQuestData->pQuestSpecificData.pA4Q2->nDiabloKillTick = dwKillTick;
             AddQuestTimer(pQuestData, QuitGameAfterDia, 1);
           }
-          if (!pQuestData->bIsNotIntroduction) {
+          if (pQuestData->bIsNotIntroduction == '\0') {
             return;
           }
 
@@ -1013,7 +995,7 @@ void __fastcall Q27_Callback_08_KillHandler(D2QuestDataStrc * pQuestData, D2Ques
             bKillerNotCompleted = true;
           }
         }
-        if (pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction != '\0') {
           pQuestSpecificData->nPlayerCompletionCount = 0;
           QUEST_SetStateAndBroadcast(pQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q27_PlayerNotifyCompleted, true);
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q27_PlayerCheckNearDiablo);
@@ -1047,7 +1029,7 @@ void __fastcall Q27_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q27_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q27_Callback14_PlayerJoinedGame;
     pQuestData->pNpcMessages = &A4Q2::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_TerrorsEnd;
     pQuestData->nInitNo = 4;

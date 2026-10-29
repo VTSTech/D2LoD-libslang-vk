@@ -358,8 +358,7 @@ void __fastcall Send0x8bRelationshipStatus(D2UnitStrc * pUnit, D2UnitStrc * pUni
     }
 
     bool bIsPartied = (uint8_t)(uint32_t)pListEntry->bIsPartied;
-    D2ClientStrc* pClient = SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(pClient, dwTargetArg, bIsPartied);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b), dwTargetArg, bIsPartied);
 }
 
 // Looks up the relationship list entry for pOtherUnit in pUnit's player list and sends packet 0x8C (RelationshipUpdate) with the current nRelationshipFlags to pOtherUnit's client. Read-only: does not modify flags. No-op if units are the same or no entry exists.

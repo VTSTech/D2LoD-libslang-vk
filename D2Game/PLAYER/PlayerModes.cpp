@@ -643,7 +643,6 @@ static uint32_t __stdcall PLRMODES_IsCorpseOwnedByPlayer(::SGAMEDATA * pGame, D2
 void __fastcall PLRMODES_PickupCorpse(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCorpseUnit) {
     int nPendingExperience;
     int32_t nCorpseExp;
-    eD2UnitType eCorpseUnitType;
     eD2States eCorpseState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pCorpseUnit, STATE_playerbody);
     if (eCorpseState == STATE_none) {
       return;
@@ -670,12 +669,11 @@ void __fastcall PLRMODES_PickupCorpse(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
 
     int32_t bItemsEquipped = ITEMS::ItemMode::ITEMMODE_EquipCorpseItems(pGame, pUnit, (int32_t)pCorpseUnit);
     if (bItemsEquipped) {
-      D2RoomStrc* pRoom;
+      eD2UnitType eCorpseUnitType;
       D2Common::INVENTORY::Inventory::INVENTORY_RemoveCorpse(pUnit->pInventory, pCorpseUnit->nUnitGUID, 1);
       nPendingExperience = pCorpseUnit->nUnitGUID;
       eCorpseUnitType = pCorpseUnit->eUnitType;
-      pRoom = D2Common::Units::UNITS_GetRoom(pCorpseUnit);
-      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eCorpseUnitType, nPendingExperience);
+      D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pCorpseUnit), eCorpseUnitType, nPendingExperience);
       GAME::SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign_Sender(pGame, pUnit->nUnitGUID, pCorpseUnit->nUnitGUID, 0);
       D2Common::Units::RemoveCollision_Vector(pCorpseUnit);
       UNIT::SUnit::FreeServerUnit(pGame, pCorpseUnit);
@@ -1228,9 +1226,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
 
 // Per-tick mana regeneration for a player unit (called from the player-mode timer). Reads current mana and max mana; if STATE_nomanaregen is absent, computes base regen from CharStatsTxt.ManaRegen scaled by manarecoverybonus stat. Adds flat manarecovery stat on top. Removes the active mana-potion stat list once mana is full. Clamps the delta to not exceed max or go below zero, then applies via STATLIST_AddUnitStat.
 static void PLRMODES_RegenMana(D2UnitStrc * pUnit) {
-    D2StatListExStrc* pStatList;
     int nCharClassId;
-    uint32_t n100Percent;
     if (!pUnit) {
       return;
     }
@@ -1240,7 +1236,6 @@ static void PLRMODES_RegenMana(D2UnitStrc * pUnit) {
     int32_t nBaseRegen = 0;
     eD2States eManaPotState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_nomanaregen);
     if (eManaPotState == STATE_none) {
-      int nCurrentMana;
       nCharClassId = pUnit->nClassId;
       if (nCharClassId < 0) {
         return;
@@ -1262,14 +1257,13 @@ static void PLRMODES_RegenMana(D2UnitStrc * pUnit) {
         nCharClassId = 1;
       }
 
-      n100Percent = 100;
-      nCurrentMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecoverybonus, 0);
-      nBaseRegen = D2Client::Stats::D2ApplyPercent(nCharClassId, nCurrentMana + 100, n100Percent);
+      nBaseRegen = D2Client::Stats::D2ApplyPercent(nCharClassId, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecoverybonus, 0) + 100, 100);
     }
 
     nCharClassId = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_manarecovery, 0);
     nCharClassId = nBaseRegen + nCharClassId;
     if (nMaxMana <= nManaRegen && nCharClassId > 0) {
+      D2StatListExStrc* pStatList;
       pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_manapot);
       if (pStatList) {
         D2Common::Stats::StatsEx::STATLIST_RemoveAndRecalc(pUnit, pStatList);

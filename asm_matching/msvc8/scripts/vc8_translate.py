@@ -137,6 +137,17 @@ FILE_PATCHES = {
 }
 
 
+# Game.exe calls binkw32, smackw32 and ijl11 through the IAT
+# (`call [__imp__SmackClose@4]`): their own headers declare them dllimport, and
+# d2_platform.h (written for mingw) does not.
+RAD_IJL_IMPORTS = ('SmackOpen', 'SmackClose', 'SmackDoFrame', 'SmackNextFrame', 'SmackWait',
+                   'SmackToBuffer', 'BinkOpen', 'BinkClose', 'BinkDoFrame', 'BinkNextFrame',
+                   'BinkWait', 'BinkCopyToBuffer', 'BinkSetSoundSystem', 'BinkOpenDirectSound',
+                   'BinkDDSurfaceType', 'ijlInit', 'ijlFree', 'ijlWrite')
+FILE_PATCHES['d2_platform.h'] += [
+    (r'^extern "C" (?=[^;(]* __stdcall %s\()' % name, 'extern "C" __declspec(dllimport) ')
+    for name in RAD_IJL_IMPORTS]
+
 def apply_patches(rel, text):
     for pattern, repl in FILE_PATCHES.get(rel, ()):
         rx = re.compile(pattern, re.M)

@@ -512,8 +512,7 @@ static void CLIENT_OnPlayerEnterRoom(D2UnitStrc * pUnit) {
     uint32_t nLevelPortalFlag = D2Common::DUNGEON::Dungeon::GetPortalFlagFromLevelId(eLevel);
     D2Common::Units::SetPlayerPortalFlags(pUnit, nPortalFlags | nLevelPortalFlag);
     D2RoomStrc* pCurrentRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2RoomStrc* pNextRoom = D2Common::PATH::DynamicPath::GetNextRoom(pUnit->pPath.pDynamicPath);
-    D2Common::DUNGEON::Dungeon::InitRoomTileAnimation(sgpDrlgAct, pNextRoom, pCurrentRoom);
+    D2Common::DUNGEON::Dungeon::InitRoomTileAnimation(sgpDrlgAct, D2Common::PATH::DynamicPath::GetNextRoom(pUnit->pPath.pDynamicPath), pCurrentRoom);
     BOOL bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
     uint32_t bInTownUint = (uint32_t)(bIsInTown != 0);
     if (BOOL_007a5260 != bInTownUint && !bInTownUint) {
@@ -569,10 +568,7 @@ static void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
       return;
     }
 
-    BOOL bAllowNeighboorRooms = 1;
-    int32_t eCollisionFlag = 0xc01;
-    iVar1 = D2Common::Units::GetUnitSizeX(pUnit);
-    D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sTilePos, iVar1, eCollisionFlag, bAllowNeighboorRooms);
+    D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sTilePos, D2Common::Units::GetUnitSizeX(pUnit), 0xc01, 1);
     CUnit::CLIENT_TeleportUnitToPosition(pUnit, sTilePos.x, sTilePos.y, 0);
 }
 
@@ -696,10 +692,10 @@ static void __stdcall PLAYER_ApplyCurrentSkillFlags(int32_t bIsLocalPlayer, D2Un
 
 // Client-side player message/command dispatcher: applies a queued action (nMessageType) to a player unit from a D2ServerMessageHandleStrc. Frees any active light map and clears the current skill (except for type 0x13), restores path velocity, and resolves town vs non-town neutral mode. Switches on the message type to: set move/attack/interact targets (0/1/2/0x17/0x18), play a get-hit (6) / block (0x12) / cold-hit overlay+sound (0x13) / knockback (0x14) reaction, run skill cast/validate paths (0x15/0x16) , handle death (8/9) including closing panels and clearing trade/selection, and set run/skill anim modes (0x19). Returns 1 on success; on a failed skill/target it falls through to CLIENT_SetAnimModeAndMoveToCurrentPos and returns 0. Halts via Fog ErrorManager on an invalid message type.
 BOOL __fastcall PlayerMessage(int32_t nMessageType, D2UnitStrc * pUnit, D2ServerMessageHandleStrc * pMessage, int32_t eNeutralMode) {
-    uint8_t bVar1;
     int bIsActive;
     D2ServerMessageHandleStrc* pMessageHandle;
     uint32_t bSkillValid;
+    uint32_t uVar1;
     int32_t pnSoundId;
     eD2PlayerAnimMode eAnimMode;
     D2LightMapStrc* pLightMap;
@@ -781,8 +777,8 @@ BOOL __fastcall PlayerMessage(int32_t nMessageType, D2UnitStrc * pUnit, D2Server
       pUnit->dwLastHitClass = pMessage->nTargetUnitType;
       pPlayerUnit_lcl = GAME::Select::GetSelectedUnit();
       if (pPlayerUnit_lcl == pUnit) {
-        bVar1 = GAME::Game::GAME_GetPrimaryClickState();
-        if (!(bVar1 & 8) && (bVar1 = GAME::Game::GAME_GetMouseButtonEventState() , !(bVar1 & 8))) {
+        bSkillValid = GAME::Game::GAME_GetPrimaryClickState();
+        if (!(bSkillValid & 8) && (uVar1 = GAME::Game::GAME_GetMouseButtonEventState() , !(uVar1 & 8))) {
           GAME::Select::ClearSelectedUnit();
         } else {
           GAME::Game::UI_ResetInputState();
@@ -1001,8 +997,7 @@ static void __stdcall PLAYER_InteractWithObject(int32_t nParam1, D2UnderMouseStr
     bool bCanInteract = true;
     if (pObject->nClassId == 0x3b) {
       eState = STATE_just_portaled;
-      pObject = GetPlayerUnit_UI();
-      eCurseState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pObject, eState);
+      eCurseState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(GetPlayerUnit_UI(), eState);
       if (eCurseState != STATE_none) {
         bCanInteract = false;
       }
@@ -1510,17 +1505,23 @@ static void INPUT_ContinuePlayerMovement(D2UnderMouseStrc * pMouse) {
     }
 
     eD2PlayerAnimMode ePlayerMode = pUnit->eAnimMode.ePlayerMode;
-    if (ePlayerMode != Walk) {
-      if (ePlayerMode == eD2PlayerAnimMode_ns::Run) {
-        CLIENT_MovePlayerToPosition(pUnit, (int16_t)pMouse->nX, (int16_t)pMouse->nY, 3);
-        return;
-      }
-      if (ePlayerMode != TownWalk) {
-        return;
-      }
+    switch (ePlayerMode) {
+      case eD2PlayerAnimMode_ns::Run:
+        {
+          CLIENT_MovePlayerToPosition(pUnit, (int16_t)pMouse->nX, (int16_t)pMouse->nY, 3);
+          return;
+        }
+      default:
+        {
+          return;
+        }
+      case Walk:
+        case TownWalk:
+          {
+            CLIENT_MovePlayerToPosition(pUnit, (int16_t)pMouse->nX, (int16_t)pMouse->nY, 1);
+            break;
+          }
     }
-
-    CLIENT_MovePlayerToPosition(pUnit, (int16_t)pMouse->nX, (int16_t)pMouse->nY, 1);
 }
 
 // Computes the effective movement target for a player unit given the current mouse context. Reads the player's current tile position (static or dynamic path), computes the X/Y delta to the mouse cursor, clamps the minimum step distance based on mouse context flags (e.g. run/walk/attack modifiers), and writes the adjusted target back into pMouseCtx. Returns 1 if the movement should be committed (delta large enough and run-frame throttle not exceeded), 0 otherwise.

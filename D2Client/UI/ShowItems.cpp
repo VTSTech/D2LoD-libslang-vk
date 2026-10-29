@@ -118,14 +118,18 @@ void __stdcall DRAW_AltItems() {
                 D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nColorOrCoord, __frame0.nPrecisionX, 0, &__frame0.nItemPosX, &__frame0.nPerspY);
                 uBorderType = Path::DRAW_GetTypeOfBorder();
                 nColorIdx = __frame0.nPerspY;
-                if (uBorderType != 1) {
-                  if (uBorderType == 2) {
-                    __frame0.nItemPosX += ScreenSizeX / 4;
-                    __frame0.nItemX = __frame0.nItemPosX;
-                    goto layout_label;
-                  }
-                } else {
-                  __frame0.nItemPosX -= ScreenSizeX / 4;
+                switch (uBorderType) {
+                  case 1:
+                    {
+                      __frame0.nItemPosX -= ScreenSizeX / 4;
+                      break;
+                    }
+                  case 2:
+                    {
+                      __frame0.nItemPosX += ScreenSizeX / 4;
+                      __frame0.nItemX = __frame0.nItemPosX;
+                      goto layout_label;
+                    }
                 }
 
                 __frame0.nItemX = __frame0.nItemPosX;
@@ -144,12 +148,17 @@ void __stdcall DRAW_AltItems() {
               __frame0.nItemVisY = nColorIdx;
               __frame0.nMaxX = ScreenSizeX;
               uBorderType = Path::DRAW_GetTypeOfBorder();
-              if (uBorderType != 1) {
-                if (uBorderType == 2) {
-                  __frame0.nItemPosY = ScreenSizeX / 2;
-                }
-              } else {
-                __frame0.nMaxX = ScreenSizeX / 2 - 0x20;
+              switch (uBorderType) {
+                case 1:
+                  {
+                    __frame0.nMaxX = ScreenSizeX / 2 - 0x20;
+                    break;
+                  }
+                case 2:
+                  {
+                    __frame0.nItemPosY = ScreenSizeX / 2;
+                    break;
+                  }
               }
 
               nDrawCount = gItemDrawFlags;
@@ -235,7 +244,7 @@ void __stdcall DRAW_AltItems() {
                     }
 
                     pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
-                    if (pItemTxt->bQuest && pItemTxt->dwCode != 0x2067656c) {
+                    if (pItemTxt->bQuest != '\0' && pItemTxt->dwCode != 0x2067656c) {
                       nColorIdx = 4;
                     }
 

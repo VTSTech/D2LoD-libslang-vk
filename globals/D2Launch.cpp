@@ -3945,7 +3945,7 @@ int nCharacterSelectionIndex = 0; D2_GLOBAL_GUARD(nCharacterSelectionIndex, "nCh
 uint32_t gnCharSelBNetLoadState = 0; D2_GLOBAL_GUARD(gnCharSelBNetLoadState, "gnCharSelBNetLoadState");
 // also labelled: gpPendingRealmArchive
 char * gszPendingRealmName = 0; D2_GLOBAL_GUARD(gszPendingRealmName, "gszPendingRealmName");
-char gbCharSelScreenWaitTimeout = 0; D2_GLOBAL_GUARD(gbCharSelScreenWaitTimeout, "gbCharSelScreenWaitTimeout");
+uint32_t gbCharSelScreenWaitTimeout = 0; D2_GLOBAL_GUARD(gbCharSelScreenWaitTimeout, "gbCharSelScreenWaitTimeout");
 uint32_t gbCharSelArrowsHidden = 0; D2_GLOBAL_GUARD(gbCharSelArrowsHidden, "gbCharSelArrowsHidden");
 D2CharSelStrc * gpCharSelPendingEntry = 0; D2_GLOBAL_GUARD(gpCharSelPendingEntry, "gpCharSelPendingEntry");
 int32_t g_nCharSelNavigationIndex = 0; D2_GLOBAL_GUARD(g_nCharSelNavigationIndex, "g_nCharSelNavigationIndex");

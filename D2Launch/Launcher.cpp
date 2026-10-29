@@ -281,12 +281,44 @@ void __stdcall CHARSEL_ParseRealmCharList(char * szRealmName, char * szText, int
 
 BOOL __stdcall CHARSEL_OnPressPumpRealmCharListLoad(D2ControlMsg * pControlMsg) {
     char* szText;
+    uint32_t nMcpThreadStatus;
     int iVar1;
     int32_t nStatusCode;
     bool bVar2;
-    if (gnCharSelBNetLoadState != 1) {
-      if (gnCharSelBNetLoadState != 2) {
-        if (gnCharSelBNetLoadState == 3) {
+    switch (gnCharSelBNetLoadState) {
+      case 1:
+        {
+          if (gnCharSelSelectedIndex) {
+            D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineColor(gpWinTextBoxRealmSelect, -1, 4);
+          }
+
+          CharSel::CHARSEL_SelectRealmInDropdown(gszPendingRealmName);
+          MainMenus::MAINMENU_ConnectToRealm((uint8_t*)gszPendingRealmName, 1);
+          gnCharSelBNetLoadState = 2;
+          gbCharSelScreenWaitTimeout = GetTickCount();
+          return 1;
+        }
+      case 2:
+        {
+          CharSel::CHARSEL_ShowWaitTimeout();
+          nMcpThreadStatus = MainMenus::MAINMENU_PollMCPThreadStatus();
+          if (nMcpThreadStatus) {
+            bVar2 = nMcpThreadStatus == 2;
+          } else {
+            D2MCPClient::McpConnect::CopyCharListToGlobal(nullptr, 0);
+            gnCharSelBNetLoadState = 3;
+            iVar1 = D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x19_CharList2();
+            bVar2 = !iVar1;
+          }
+          if (bVar2) {
+            nStatusCode = D2MCPClient::McpConnect::GetD2GSJoinResult();
+            CharSel::CHARSEL_SetStatusMessage(nStatusCode);
+          }
+
+          break;
+        }
+      case 3:
+        {
           CharSel::CHARSEL_ShowWaitTimeout();
           D2MCPClient::McpConnect::NET_MCP_CLIENT_ReadAndParsePacket();
           szText = (char*)D2MCPClient::McpConnect::MCPCONNECT_GetCharListPacket();
@@ -302,34 +334,8 @@ BOOL __stdcall CHARSEL_OnPressPumpRealmCharListLoad(D2ControlMsg * pControlMsg) 
           CHARSEL_ParseRealmCharList(gszPendingRealmName, szText, 1);
           return 1;
         }
-      } else {
-        uint32_t nMcpThreadStatus;
-        CharSel::CHARSEL_ShowWaitTimeout();
-        nMcpThreadStatus = MainMenus::MAINMENU_PollMCPThreadStatus();
-        if (nMcpThreadStatus) {
-          bVar2 = nMcpThreadStatus == 2;
-        } else {
-          D2MCPClient::McpConnect::CopyCharListToGlobal(nullptr, 0);
-          gnCharSelBNetLoadState = 3;
-          iVar1 = D2MCPClient::McpConnect::NET_MCP_CLIENT_Send_0x19_CharList2();
-          bVar2 = !iVar1;
-        }
-        if (bVar2) {
-          nStatusCode = D2MCPClient::McpConnect::GetD2GSJoinResult();
-          CharSel::CHARSEL_SetStatusMessage(nStatusCode);
-        }
-      }
-
-      return 1;
-    }
-    if (gnCharSelSelectedIndex) {
-      D2Win::Src::D2WinTextBox::D2WINTEXTBOX_SetLineColor(gpWinTextBoxRealmSelect, -1, 4);
     }
 
-    CharSel::CHARSEL_SelectRealmInDropdown(gszPendingRealmName);
-    MainMenus::MAINMENU_ConnectToRealm((uint8_t*)gszPendingRealmName, 1);
-    gnCharSelBNetLoadState = 2;
-    gbCharSelScreenWaitTimeout = GetTickCount();
     return 1;
 }
 
@@ -1084,18 +1090,12 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
       nPopupType = 2;
     }
 
-    cchBufferSize = 0x200;
-    pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString(nBodyStrId);
-    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, pwszClearCursor, cchBufferSize);
+    D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszBody, D2Lang::StrTable::strtable::GetLocaleString(nBodyStrId), 0x200);
     if (nFooterStrId != -1) {
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nFooterStrId);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, pwszClearCursor, cchBufferSize);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszFooter, D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nFooterStrId), 0x200);
     }
     if (nTitleStrId != -1) {
-      cchBufferSize = 0x200;
-      pwszClearCursor = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nTitleStrId);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, pwszClearCursor, cchBufferSize);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(awszTitle, D2Lang::StrTable::strtable::GetLocaleString((uint16_t)nTitleStrId), 0x200);
     }
     if (!nPopupType) {
       MainMenus::MAINMENU_ShowPopupWithCancel(awszBody, pfnOnClose);

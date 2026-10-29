@@ -426,7 +426,7 @@ void __fastcall STRTABLE_NormalizeLanguageCode(char * szText) {
 
       nIndex++;
       pcNormalized = gaLanguageTable[0].pszLangCodeNormalized;
-    } while ((int)&gaLanguageTable[nIndex] < (uintptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable)));
+    } while ((int)&gaLanguageTable[nIndex] < (intptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable)));
 
     do {
       cChar = *pcNormalized;
@@ -446,7 +446,7 @@ uint32_t __fastcall STRTABLE_GetLanguageId(char * szText) {
       }
 
       nIndex++;
-    } while ((int)&gaLanguageTable[nIndex] < (uintptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable)));
+    } while ((int)&gaLanguageTable[nIndex] < (intptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable)));
 
     return 0;
 }
@@ -535,47 +535,56 @@ void __stdcall TABLES_GetLangAbbreviation(char * szOutAbbrev, int32_t nFormat) {
         }
 
         nLangIdx++;
-      } while ((int)&gaLanguageTable[nLangIdx].dwLangId < (uintptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable) + 20));
+      } while ((int)&gaLanguageTable[nLangIdx].dwLangId < (intptr_t)((char*)&gaLanguageTable + sizeof(gaLanguageTable) + 20));
 
       if (nLangIdx >= 0xe) {
         nLangIdx = 0;
       }
     }
-    if (nFormat == 1) {
-      pcAbbrev = gaLanguageTable[nLangIdx].pszLangNameEng;
-      do {
-        cChar = *pcAbbrev;
-        *szOutAbbrev = cChar;
-        pcAbbrev++;
-        szOutAbbrev++;
-      } while (cChar != '\0');
 
-      return;
+    switch (nFormat) {
+      case 1:
+        {
+          pcAbbrev = gaLanguageTable[nLangIdx].pszLangNameEng;
+          do {
+            cChar = *pcAbbrev;
+            *szOutAbbrev = cChar;
+            pcAbbrev++;
+            szOutAbbrev++;
+          } while (cChar != '\0');
+
+          return;
+        }
+      case 2:
+        {
+          pcAbbrev = gaLanguageTable[nLangIdx].pszLangAbbrev;
+          do {
+            cChar = *pcAbbrev;
+            *szOutAbbrev = cChar;
+            pcAbbrev++;
+            szOutAbbrev++;
+          } while (cChar != '\0');
+
+          return;
+        }
+      case 3:
+        {
+          *(uint32_t*)szOutAbbrev = *(uint32_t*)gaLanguageTable[nLangIdx].szLangTag;
+          return;
+        }
+      default:
+        {
+          pcAbbrev = gaLanguageTable[nLangIdx].pszLangCodeNormalized;
+          do {
+            cChar = *pcAbbrev;
+            *szOutAbbrev = cChar;
+            pcAbbrev++;
+            szOutAbbrev++;
+          } while (cChar != '\0');
+
+          return;
+        }
     }
-    if (nFormat != 2) {
-      if (nFormat != 3) {
-        pcAbbrev = gaLanguageTable[nLangIdx].pszLangCodeNormalized;
-        do {
-          cChar = *pcAbbrev;
-          *szOutAbbrev = cChar;
-          pcAbbrev++;
-          szOutAbbrev++;
-        } while (cChar != '\0');
-
-        return;
-      }
-
-      *(uint32_t*)szOutAbbrev = *(uint32_t*)gaLanguageTable[nLangIdx].szLangTag;
-      return;
-    }
-
-    pcAbbrev = gaLanguageTable[nLangIdx].pszLangAbbrev;
-    do {
-      cChar = *pcAbbrev;
-      *szOutAbbrev = cChar;
-      pcAbbrev++;
-      szOutAbbrev++;
-    } while (cChar != '\0');
 }
 
 void __stdcall STRTABLE_FormatNumber(uint16_t * wszText, uint32_t nValue, int32_t nMaxLen) {

@@ -68,10 +68,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ResetAnimSpeed(D2UnitStrc * pUnit, eD2Skill
 BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2RoomStrc* pRoom;
     eD2LevelId eLevelId;
-    int32_t nY;
-    int32_t nCollisionType;
     POINT ptSpawnPos;
-    eD2Skills eSkillSaved;
     short int sMissileB;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
@@ -101,10 +98,7 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
         }
       }
 
-      eSkillSaved = eSavedSkill;
-      nCollisionType = Units::GetYPosFromDynamicPathUnit(pUnit);
-      nY = Units::GetXPosFromDynamicPathUnit(pUnit);
-      UNIT::Missile::MakeMissileAtXY(pUnit, eMissileId, nY, nCollisionType, eSkillSaved, nSkillLvl);
+      UNIT::Missile::MakeMissileAtXY(pUnit, eMissileId, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSavedSkill, nSkillLvl);
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
@@ -126,8 +120,8 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
     }
 
     BOOL bAllowNeighborRooms = 1;
-    nY = 0x1c09;
-    nCollisionType = D2Common::Units::GetUnitSizeX(pUnit);
+    int32_t nY = 0x1c09;
+    int32_t nCollisionType = D2Common::Units::GetUnitSizeX(pUnit);
     POINT* pSpawnPoint = &ptSpawnPos;
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, pSpawnPoint, nCollisionType, nY, bAllowNeighborRooms);
@@ -142,10 +136,7 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
 
     int32_t eCollisionFlag = 0x1000;
     eD2CollisionShapeType nCollSubType = COLLISION_PATTERN_SMALL_UNIT_PRESENCE;
-    nCollisionType = Units::GetYPosFromDynamicPathUnit(pUnit);
-    nY = Units::GetXPosFromDynamicPathUnit(pUnit);
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::AddCollision_Type(pRoom, nY, nCollisionType, nCollSubType, eCollisionFlag);
+    D2Common::Collision::AddCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), nCollSubType, eCollisionFlag);
     return 1;
 }
 
@@ -176,8 +167,7 @@ BOOL __fastcall Skills_CltStFunc_ClearTargetableAndCollision(D2UnitStrc * pUnit,
 
     int32_t eCollisionFlag = 0x1000;
     eD2CollisionShapeType nCollSubType = COLLISION_PATTERN_SMALL_NO_PRESENCE;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::RemoveCollision_Type(pRoom, nX, nY, nCollSubType, eCollisionFlag);
+    D2Common::Collision::RemoveCollision_Type(D2Common::Units::UNITS_GetRoom(pUnit), nX, nY, nCollSubType, eCollisionFlag);
     return 1;
 }
 
@@ -1069,7 +1059,6 @@ BOOL __fastcall Skills_CltDoFunc_Mon_DirectionalBeam(D2UnitStrc * pUnit, eD2Skil
     int32_t nSrcY;
     uint32_t nSP1Coord;
     D2SkillArgStrc sSkillArg;
-    int32_t bFaceTarget;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -1100,10 +1089,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_DirectionalBeam(D2UnitStrc * pUnit, eD2Skil
     D2UnitStrc* pTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
     if (pTarget) {
       int32_t nTargetX;
-      bFaceTarget = 0;
-      nSrcY = Units::GetYPosFromDynamicPathUnit(pTarget);
-      nTargetX = Units::GetXPosFromDynamicPathUnit(pTarget);
-      D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, nTargetX, nSrcY, bFaceTarget);
+      D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, Units::GetXPosFromDynamicPathUnit(pTarget), Units::GetYPosFromDynamicPathUnit(pTarget), 0);
       nSrcY = Units::GetXPosFromDynamicPathUnit(pTarget);
       nTargetX = Units::GetXPosFromDynamicPathUnit(pUnit);
       sSkillArg.nUnitX = nSrcY - nTargetX;
@@ -1276,8 +1262,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ChargeAnim(D2UnitStrc * pUnit, eD2Skills eS
         nPercent = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
         nLine = 0x466;
         szFile = ".\\SKILLS\\SkillsMon.cpp";
-        nDist = Stats::D2ApplyPercent(nDist, nPercent, 100);
-        D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, nDist, szFile, nLine);
+        D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, Stats::D2ApplyPercent(nDist, nPercent, 100), szFile, nLine);
         D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 1);
         D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
         D2Common::Skills::SKILL_SetFlags(pSkill, 1);
@@ -2439,7 +2424,6 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ArrowModifier_MakeMissile(D2UnitStrc * pUni
 
 // Client-side handler that spawns a Spider Lay (web) missile for a spider monster. Requires a valid dynamic path with non-zero 8-flags (direction). Reads the unit's SpiderLay skill level, determines the unit's facing direction via UpdateDirection+MONSTERS_GetGfxOffsetTable2, looks up a fixed per-direction offset table to offset the spawn point, rejects town rooms, then fires MISSILE_Spidergoolay via MakeMissile with nFlags=0x25, playing SOUND_SORCERESS_ENERGYSHIELD_HIT_3 on success.
 D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
-    int nUnitX;
     int nUnitY;
     D2RoomStrc* pRoom;
     BOOL bHasRoom;
@@ -2458,10 +2442,8 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
 
     uint32_t nDirRaw = D2Common::PATH::Path::Get8FlagsFromDynamicPath(nCompositeDir);
     if (nDirRaw) {
-      D2SkillStrc* pSkill;
-      bHasRoom = 1;
-      pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit);
-      nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, pSkill, bHasRoom);
+      int nUnitX;
+      nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_SpiderLay, pUnit), 1);
       pStartRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       eUnitType = pUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {

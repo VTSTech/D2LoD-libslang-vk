@@ -122,14 +122,14 @@ void __fastcall Q17_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q17_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q17_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = &A3Q0::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     D2QuestDataA3Q0Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q0Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q0.cpp", 0x94);
     pQuestData->pQuestSpecificData.pA3Q0 = pQuestSpecificData;
     pQuestSpecificData->bHratliSpawned = false;
     pQuestSpecificData->bHratliMapAiSet = false;
-    pQuestSpecificData->bHratliCoordsValid = false;
+    pQuestSpecificData->bHratliCoordsValid = '\0';
     pQuestSpecificData->bHasHratliCoords = false;
     pQuestSpecificData->nHratliX = 0;
     pQuestSpecificData->nHratliY = 0;

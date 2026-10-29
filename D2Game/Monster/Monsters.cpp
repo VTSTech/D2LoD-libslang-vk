@@ -734,7 +734,6 @@ static int32_t MONSTER_GetMinion1MonstatId(D2UnitDataMonsterStrc * pMonData) {
 
 // Spawns a random number of minions (in range [nMinionCountMin, nMinionCountMax]) for a boss monster. Picks the minion class from MONSTER_GetMinion1MonstatId. For each minion: calls SpawnMonster (at a coord or near the boss), transfers enchantments via MONSTER_TransferEnchantments, sets the boss as owner via AssignMinionOwner/AddMinionToList, targets the boss, and marks the minion with MONTYPE_MINION. Skips spawning if the boss already has its minion list populated.
 static void __stdcall MONSTER_SpawnMinionsForBoss(D2RoomCoordListStrc * pCoordList, int32_t nMinionCountMin, int32_t nMinionCountMax, D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
-    int32_t nUnitGUID;
     int32_t bAddToList;
     BOOL bSetOwner;
     eD2UnitType eUnitType;
@@ -761,8 +760,7 @@ static void __stdcall MONSTER_SpawnMinionsForBoss(D2RoomCoordListStrc * pCoordLi
         bSetOwner = 0;
         bAddToList = 0;
         eUnitType = UNIT_MONSTER;
-        nUnitGUID = D2Client::UNIT::GetGUID(pUnit);
-        Ai::AiGeneral::AssignMinionOwner(pGame, pMinion, nUnitGUID, eUnitType, bAddToList, bSetOwner);
+        Ai::AiGeneral::AssignMinionOwner(pGame, pMinion, D2Client::UNIT::GetGUID(pUnit), eUnitType, bAddToList, bSetOwner);
         Ai::AiGeneral::AddMinionToList(pGame, pUnit, pMinion);
         Monster::AI::MONSTERAI_SetTargetUnit(pMinion, pUnit);
         if (pMinion->eUnitType == UNIT_MONSTER && pMinion->pUnitData.pUnitDataMonster) {
@@ -803,7 +801,7 @@ static void __stdcall UMOD_ApplyEnchantmentsToMonster(int32_t nParam1, D2RoomCoo
 
       Ai::AiGeneral::CallForEachMinion(pUnit, pContext, nullptr, (pfnMinionForEachCallback)UMOD_DispatchInitFunction);
       pEnchantEntry++;
-    } while ((int)pEnchantEntry < (uintptr_t)((char*)&gnEnchantmentEffectOffset_Lightning + sizeof(gnEnchantmentEffectOffset_Lightning)));
+    } while ((int)pEnchantEntry < (intptr_t)((char*)&gnEnchantmentEffectOffset_Lightning + sizeof(gnEnchantmentEffectOffset_Lightning)));
 
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return;
@@ -1819,20 +1817,12 @@ void __fastcall MONSTER_MissileSplitOnHit(::SGAMEDATA * pGame, D2UnitStrc * pUni
     int32_t nMissileFlags = 0;
     int nSpawn1Y = nTargetY + nOwnerDirSignX;
     int nSpawn1X = nTargetX - nDirSignX;
-    int32_t nActivateFrame = 0;
-    int32_t nVelocityOverride = 0;
-    nMissileLevel = D2Common::Units::Missile::GetLevel(pMissileUnit);
-    eD2Skills eSkillId = D2Common::Units::Missile::GetSkillId(pMissileUnit);
-    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, eSkillId, nMissileLevel, nVelocityOverride, nActivateFrame, nSpawn1X, nSpawn1Y, nMissileFlags);
+    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pMissileUnit), D2Common::Units::Missile::GetLevel(pMissileUnit), 0, 0, nSpawn1X, nSpawn1Y, nMissileFlags);
     pTarget = pMissileUnit;
     int32_t nParam5 = 0;
     nOwnerDirSignX = nTargetY - nOwnerDirSignX;
     nDirSignX += nTargetX;
-    nActivateFrame = 0;
-    nVelocityOverride = 0;
-    nMissileLevel = D2Common::Units::Missile::GetLevel(pMissileUnit);
-    eSkillId = D2Common::Units::Missile::GetSkillId(pTarget);
-    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, eSkillId, nMissileLevel, nVelocityOverride, nActivateFrame, nDirSignX, nOwnerDirSignX, nParam5);
+    SKILLS::SkillsServer::CreatingAMissile(pGameLocal, eMissileId, pOwnerUnit, D2Common::Units::Missile::GetSkillId(pTarget), D2Common::Units::Missile::GetLevel(pMissileUnit), 0, 0, nDirSignX, nOwnerDirSignX, nParam5);
     if (!(pOwnerUnit->eUnitType == UNIT_MONSTER && pOwnerUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
@@ -2164,9 +2154,7 @@ void __fastcall MONSTER_SuicideExplosion(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     D2MonStatsInitStrc* pScaledStats = &sMonStats;
-    int32_t bIsMultiplayer = 8;
-    int nPosX = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonClassId, bIsMultiplayerB, (uint32_t)nDifficulty, nPosX, bIsMultiplayer, pScaledStats);
+    D2Common::DATATBLS::MonsterTbls::MONSTER_CalculateLevelScaledStats(nMonClassId, bIsMultiplayerB, (uint32_t)nDifficulty, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), 8, pScaledStats);
     uint32_t nDmgRange = sMonStats.nA1MaxD - sMonStats.nA1MinD;
     if ((int)nDmgRange <= 0) {
       nDmgRange = 0;
@@ -2185,7 +2173,7 @@ void __fastcall MONSTER_SuicideExplosion(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       }
     }
 
-    nPosX = (nDmgRange + sMonStats.nA1MinD) * 0x100;
+    int nPosX = (nDmgRange + sMonStats.nA1MinD) * 0x100;
     memset(&sDamage, 0, 0x70);
     sDamage.wResultFlags |= 8;
     eUnitType = pUnit->eUnitType;
@@ -2642,7 +2630,6 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
     int32_t nUModCount;
     int nUModIdx;
     uint32_t nBoneCount;
-    D2RoomStrc* pUnitRoom;
     int nGroupMin;
     int* pModEntry;
     D2AiGeneralStrc* pMonsterAiGeneral;
@@ -2805,8 +2792,7 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
       case 0x3c:
         Ai::AiGeneral::AssignMinionOwner(pGame, pUnit, pUnit->nUnitGUID, UNIT_MONSTER, 1, 0);
       nUModCount = 0x1c5;
-      pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      nUModCount = D2Common::Monsters::MONSTERS::GetMonsterBaseId(pUnitRoom, nUModCount);
+      nUModCount = D2Common::Monsters::MONSTERS::GetMonsterBaseId(D2Common::Units::UNITS_GetRoom(pUnit), nUModCount);
       Monster::Create::SpawnMinions_BySlot(pGame, pUnit, nUModCount, eD2MonsterAnimMode_ns::Neutral, 10, 0x14, 0x40);
       Quests::QUESTS::QUEST_AttachToUnitByQuestId(pGame, pUnit, QUESTINT_BetrayalOfHaggorath);
       InitUmods(pGame, pUnit, 0x16, 1);

@@ -251,7 +251,7 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       pDstRgbQuad->rgbBlue = *pSrcPaletteByte;
       pDstRgbQuad++;
       pSrcPaletteByte += 4;
-    } while ((int)pDstRgbQuad < (uintptr_t)((char*)&prgbq_00989c40 + sizeof(prgbq_00989c40)));
+    } while ((int)pDstRgbQuad < (intptr_t)((char*)&prgbq_00989c40 + sizeof(prgbq_00989c40)));
 
     /* PALETTEENTRY * pPalEntries for SetPaletteEntries */ /* UINT cEntries for SetPaletteEntries */ /* UINT iStart for SetPaletteEntries */ /* HPALETTE hpal for SetPaletteEntries */ SetPaletteEntries(RENDERER_WINDOWED_hPalette, 0, 0x100, pPalette);
     tagPALETTEENTRY* pDitherRemapEntry = (tagPALETTEENTRY*)gaDirectDrawDitherPaletteRemap;
@@ -611,8 +611,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPos
 
     uint32_t pLookupTable2 = 0;
     int nClipBottom = nDrawLines;
-    uint8_t* pBlendTable = RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, iVar1, RENDERER_nWindowWidth, 0, (int32_t)pBlendTable, nSkipLines, nClipBottom, pLookupTable2);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, RENDERER_WINDOWED_nScaleOffsetY, RENDERER_WINDOWED_nScaleWidth, gpRenderBackBufferBits, iVar1, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&nDrawLines), nSkipLines, nClipBottom, pLookupTable2);
 }
 
 void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, void * pCropRect, int32_t nDrawMode) {
@@ -640,10 +639,7 @@ void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t n
       return;
     }
 
-    int32_t nClipTop_00 = __frame0.nClipTop;
-    int32_t nClipBottom_00 = __frame0.nClipBottom;
-    uint8_t* pPalettePtr = RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect);
-    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nCropLeft, __frame0.nCropRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)pPalettePtr, nClipTop_00, nClipBottom_00, bOutOfBounds);
+    D2CMP::SRC::CelCmp::CELCMP_DrawCelFrameFromGfxData(pData, nPosX, nPosY, __frame0.nCropLeft, __frame0.nCropRight, gpRenderBackBufferBits, RENDERER_nWindowHeight, RENDERER_nWindowWidth, 0, (int32_t)RENDERER_WINDOWED_GetPalettePointer(nDrawMode, (uint32_t*)&pCropRect), __frame0.nClipTop, __frame0.nClipBottom, bOutOfBounds);
 }
 
 void __fastcall DrawShadow(D2GfxDataStrc * pData, int nPosX, int nPosY) {
@@ -777,48 +773,57 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
 
     int nWidth = uMaxY - uClampedXStart;
     uint8_t* pbScanline = gpRenderBackBufferBits + uClampedYStart + RENDERER_nWindowWidth * uClampedXStart;
-    if (nBlendMode != 1) {
-      if (nBlendMode != 2) {
-        if (nWidth) {
-          do {
+    switch (nBlendMode) {
+      case 1:
+        {
+          while (nWidth) {
             nWidth--;
-            memset(pbScanline, dwColor & 0xff, uMaxX - uClampedYStart);
-            pbScanline += RENDERER_nWindowWidth;
-          } while (nWidth);
-
-          return;
-        }
-      } else {
-        if (nWidth) {
-          do {
-            nWidth--;
-            if (uMaxX - uClampedYStart) {
-              pbPixel = pbScanline;
-              nRowsLeft = uMaxX - uClampedYStart;
-              do {
-                nRowsLeft--;
-                *pbPixel = pPaletteTable[(uint32_t)*pbPixel * 0x100 + (dwColor & 0xff)];
-                pbPixel++;
-              } while (nRowsLeft);
+            pbPixel = pbScanline;
+            for (nRowsLeft = uMaxX - uClampedYStart; nRowsLeft; nRowsLeft--) {
+              *pbPixel = pPaletteTable[*pbPixel];
+              pbPixel++;
             }
 
             pbScanline += RENDERER_nWindowWidth;
-          } while (nWidth);
+          }
 
-          return;
+          break;
         }
-      }
-    } else {
-      while (nWidth) {
-        nWidth--;
-        pbPixel = pbScanline;
-        for (nRowsLeft = uMaxX - uClampedYStart; nRowsLeft; nRowsLeft--) {
-          *pbPixel = pPaletteTable[*pbPixel];
-          pbPixel++;
-        }
+      case 2:
+        {
+          if (nWidth) {
+            do {
+              nWidth--;
+              if (uMaxX - uClampedYStart) {
+                pbPixel = pbScanline;
+                nRowsLeft = uMaxX - uClampedYStart;
+                do {
+                  nRowsLeft--;
+                  *pbPixel = pPaletteTable[(uint32_t)*pbPixel * 0x100 + (dwColor & 0xff)];
+                  pbPixel++;
+                } while (nRowsLeft);
+              }
 
-        pbScanline += RENDERER_nWindowWidth;
-      }
+              pbScanline += RENDERER_nWindowWidth;
+            } while (nWidth);
+
+            return;
+          }
+
+          break;
+        }
+      default:
+        {
+          if (nWidth) {
+            do {
+              nWidth--;
+              memset(pbScanline, dwColor & 0xff, uMaxX - uClampedYStart);
+              pbScanline += RENDERER_nWindowWidth;
+            } while (nWidth);
+
+            return;
+          }
+        }
     }
 }
 
@@ -1315,15 +1320,22 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     BOOL bDrawResult = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
     if (bDrawResult) {
       int a2 = nPosX - 0x50;
-      if (nScreenPanels != 1) {
-        if (nScreenPanels != 2) {
-          bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
-          return bDrawResult;
-        }
-
-        nPanelOffsetX = RENDERER_nWindowWidth / 4;
-      } else {
-        nPanelOffsetX = -(RENDERER_nWindowWidth / 4);
+      switch (nScreenPanels) {
+        case 1:
+          {
+            nPanelOffsetX = -(RENDERER_nWindowWidth / 4);
+            break;
+          }
+        default:
+          {
+            bDrawResult = D2GfxRendereInitFunctionsStrc->nfpDrawGroundTile((int)pTile, a2, nPosY, (int)pLight);
+            return bDrawResult;
+          }
+        case 2:
+          {
+            nPanelOffsetX = RENDERER_nWindowWidth / 4;
+            break;
+          }
       }
 
       a2 += nPanelOffsetX;

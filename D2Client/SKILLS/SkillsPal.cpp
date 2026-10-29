@@ -608,11 +608,15 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
           if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
             nFrameRate = UNIT::Player::TXT_MonStats_GetBaseId(pUnit);
             nFrameRate = UNIT::Player::ValidateClassId(nFrameRate);
-            if (nFrameRate == 0x1b4) {
-              return 1;
-            }
-            if (nFrameRate == 0x1b9) {
-              return 1;
+            switch (nFrameRate) {
+              case 0x1b4:
+                {
+                  return 1;
+                }
+              case 0x1b9:
+                {
+                  return 1;
+                }
             }
           }
 
@@ -640,10 +644,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
       D2Common::Skills::SKILL_SetParam2(pSkill, 0);
       pUnit->nFrameCount = (nFrameRate - ((int)pUnit->nSeqFrame >> 8)) * 0x100;
       if (pCurrentTarget || (pCurrentTarget = Skills::SKILL_FindClosestTargetWithStats(pUnit, 0, 0, 3, 3, -1, nullptr) , pCurrentTarget != 0)) {
-        pSavedTarget = 0;
-        nFrameRate = Units::GetYPosFromDynamicPathUnit(pCurrentTarget);
-        nEventFrame = Units::GetXPosFromDynamicPathUnit(pCurrentTarget);
-        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, nEventFrame, nFrameRate, pSavedTarget);
+        D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, Units::GetXPosFromDynamicPathUnit(pCurrentTarget), Units::GetYPosFromDynamicPathUnit(pCurrentTarget), 0);
         return 1;
       }
     } else {

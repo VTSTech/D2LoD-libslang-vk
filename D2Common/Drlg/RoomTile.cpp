@@ -781,26 +781,33 @@ void __fastcall DRLGROOMTILE_CountWallTilesFromGrid(D2RoomExStrc * pRoomEx, D2Dr
 
 void __fastcall InitGridCells(D2RoomExStrc * pRoomEx) {
     Seed::InitSeed_Param_666(&pRoomEx->sSeed, pRoomEx->nSeed);
-    if (pRoomEx->nPresetType == 1) {
-      DRLGROOMEX_AllocAndInitRoomGrids(pRoomEx);
-      return;
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          DRLGROOMEX_AllocAndInitRoomGrids(pRoomEx);
+          return;
+        }
+      case 2:
+        {
+          Preset::DRLGPRESET_InitGridsFromDS1File(pRoomEx);
+          return;
+        }
     }
-    if (pRoomEx->nPresetType != 2) {
-      return;
-    }
-
-    Preset::DRLGPRESET_InitGridsFromDS1File(pRoomEx);
 }
 
 void __fastcall InitializorForDrlgType(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 1) {
-      if (pRoomEx->nPresetType == 2) {
-        Preset::DRLGROOMEX_InitializePresetRoom(pRoomEx);
-        pRoomEx->eRoomExFlags |= 0x100000;
-        return;
-      }
-    } else {
-      DRLGROOMEX_InitializeMazeRoom(pRoomEx);
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          DRLGROOMEX_InitializeMazeRoom(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGROOMEX_InitializePresetRoom(pRoomEx);
+          pRoomEx->eRoomExFlags |= 0x100000;
+          return;
+        }
     }
 
     pRoomEx->eRoomExFlags |= 0x100000;

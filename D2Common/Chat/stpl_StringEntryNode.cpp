@@ -105,8 +105,9 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::SetLinkOffset(int32
 }
 
 template<> void TSExplicitList<StringEntryNode, -572662307>::LinkNode(::StringEntryNode * pNode, uint32_t nLinkType, ::StringEntryNode * pExisting) {
+    TSLink<::StringEntryNode>* pTVar1;
     TSLink<::StringEntryNode>* pSrcSlot;
-    int* pPrevLink;
+    int pCurHead;
     uint32_t pTailLink;
     if (pNode) {
       pSrcSlot = (TSLink<::StringEntryNode>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
@@ -116,6 +117,7 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::LinkNode(::StringEn
 
     TSLink<::StringEntryNode>* pDstSlot = pSrcSlot->m_prevlink;
     if (pDstSlot) {
+      int* pPrevLink;
       pTailLink = pSrcSlot->m_next;
       if ((int)pTailLink < 0) {
         pPrevLink = (int*)~pTailLink;
@@ -133,31 +135,37 @@ template<> void TSExplicitList<StringEntryNode, -572662307>::LinkNode(::StringEn
     } else {
       pDstSlot = &this->m_terminator;
     }
-    if (nLinkType != 1) {
-      TSLink<::StringEntryNode>* pTVar1;
-      pTVar1 = pDstSlot->m_prevlink;
-      pSrcSlot->m_prevlink = pTVar1;
-      pSrcSlot->m_next = pTVar1->m_next;
-      pTVar1->m_next = (int)pNode;
-      pDstSlot->m_prevlink = pSrcSlot;
-      return;
-    }
 
-    pSrcSlot->m_prevlink = pDstSlot;
-    pSrcSlot->m_next = pDstSlot->m_next;
-    int pCurHead = this->m_linkoffset;
-    pTailLink = pDstSlot->m_next;
-    if ((int)pTailLink < 0) {
-      *(TSLink<::StringEntryNode>**)~pTailLink = (TSLink<::StringEntryNode>*)pSrcSlot;
-      pDstSlot->m_next = (int)pNode;
-      return;
-    }
-    if (pCurHead < 0) {
-      pCurHead = (int)pDstSlot - pDstSlot->m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          pSrcSlot->m_prevlink = pDstSlot;
+          pSrcSlot->m_next = pDstSlot->m_next;
+          pCurHead = this->m_linkoffset;
+          pTailLink = pDstSlot->m_next;
+          if ((int)pTailLink < 0) {
+            *(TSLink<::StringEntryNode>**)~pTailLink = (TSLink<::StringEntryNode>*)pSrcSlot;
+            pDstSlot->m_next = (int)pNode;
+            return;
+          }
+          if (pCurHead < 0) {
+            pCurHead = (int)pDstSlot - pDstSlot->m_prevlink->m_next;
+          }
 
-    *(TSLink<::StringEntryNode>**)(pTailLink + pCurHead) = (TSLink<::StringEntryNode>*)pSrcSlot;
-    pDstSlot->m_next = (int)pNode;
+          *(TSLink<::StringEntryNode>**)(pTailLink + pCurHead) = (TSLink<::StringEntryNode>*)pSrcSlot;
+          pDstSlot->m_next = (int)pNode;
+          return;
+        }
+      default:
+        {
+          pTVar1 = pDstSlot->m_prevlink;
+          pSrcSlot->m_prevlink = pTVar1;
+          pSrcSlot->m_next = pTVar1->m_next;
+          pTVar1->m_next = (int)pNode;
+          pDstSlot->m_prevlink = pSrcSlot;
+          return;
+        }
+    }
 }
 
 template<> ::StringEntryNode * TSExplicitList<StringEntryNode, -572662307>::RawNext(::StringEntryNode * pNode) {

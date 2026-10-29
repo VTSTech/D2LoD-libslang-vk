@@ -591,7 +591,7 @@ BOOL __fastcall Q04_DespawnRogueGuards(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       return 1;
     }
 
-    pQuestData->pQuestSpecificData.pA1Q4->sSub.bPortalArmed = true;
+    pQuestData->pQuestSpecificData.pA1Q4->sSub.bPortalArmed = '\x01';
     return 1;
 }
 
@@ -736,7 +736,7 @@ void __fastcall Q04_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
 static void __stdcall Q04_DeactivateCairnStones(D2QuestDataStrc * pQuestData) {
     D2QuestDataA1Q4Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q4;
-    if (pQuestSpecific->sSub.bTreeObjectSaved) {
+    if (pQuestSpecific->sSub.bTreeObjectSaved == '\x01') {
       D2UnitStrc* pUnit;
       pUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pQuestSpecific->sSub.nTreeObjectGUID);
       if (pUnit && pUnit->nClassId == 0x1e) {
@@ -764,7 +764,7 @@ static void __stdcall Q04_DeactivateCairnStones(D2QuestDataStrc * pQuestData) {
 // the puzzle back down via Q04_DeactivateCairnStones and resets step flag to 3.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
 void __fastcall Q04_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlag != 6)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag != 6)) {
       return;
     }
 
@@ -775,7 +775,7 @@ void __fastcall Q04_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
       pnScrollCount = &pA1Q1Data->sSub.nRewardRetryCount;
       (*pnScrollCount)--;
     }
-    if (!(!pA1Q1Data->sSub.nRewardRetryCount && pQuestData->nStateFlag <= 5 && pA1Q1Data->sSub.field_0x37 != 1 && pA1Q1Data->sSub.bTreeObjectSaved)) {
+    if (!(!pA1Q1Data->sSub.nRewardRetryCount && pQuestData->nStateFlag <= 5 && pA1Q1Data->sSub.field_0x37 != 1 && pA1Q1Data->sSub.bTreeObjectSaved == '\x01')) {
       return;
     }
 
@@ -862,7 +862,7 @@ uint8_t __fastcall Q04_SpawnTristramPortal(::SGAMEDATA * pGame, D2QuestDataStrc 
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q4.cpp
 void __fastcall Q04_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     QUEST_DebugPrint(pQuestData->pGame, "cairn stone item acquired", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x4c6);
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -939,22 +939,18 @@ bool __fastcall Q04_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     bool bJustCompleted;
     bool bFoundInList;
     bool bInRewardList;
-    D2UnitStrc* pFoundItem;
     int32_t nPlayerGUID;
     int32_t iValue;
-    uint32_t dwItemCode;
     D2QuestDataA1Q4Strc* pA1Q4Data;
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_JustCompleted);
     BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_Completed);
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_RewardAwaits);
     /* If target is Akara */ if (nTargetClassId == 0x94) {
-      ::SGAMEDATA* pGame;
+      D2UnitStrc* pFoundItem;
       /* If the red portal at Cairn Stones is open (status 4), the quest is not
                          complete and the reward not available and the hero carries the Horadric
                          Scroll: active */ if (pQuestData->nStateFlag == 4 && !bCompleted && !bRewardAwaits) {
-        dwItemCode = 0x20736b62;
-        pGame = UNIT::SUnit::GetGamePointer(pUnit);
-        pFoundItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, dwItemCode);
+        pFoundItem = ITEMS::Items::Drop::HasQuestItem(UNIT::SUnit::GetGamePointer(pUnit), pUnit, 0x20736b62);
         if (pFoundItem) {
           return true;
         }
@@ -1156,7 +1152,7 @@ void __fastcall MakeTownPortalFromScroolTree(::SGAMEDATA * pGame, D2UnitStrc * p
     if (pQuestData) {
       bool bPortalSpawned;
       pQuestSpecificData = pQuestData->pQuestSpecificData.pA1Q4;
-      if (!(pQuestData->bIsNotIntroduction && !pQuestSpecificData->sSub.bQuestObjectsActivated)) {
+      if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestSpecificData->sSub.bQuestObjectsActivated != '\x01')) {
         return;
       }
 
@@ -1177,8 +1173,8 @@ void __fastcall MakeTownPortalFromScroolTree(::SGAMEDATA * pGame, D2UnitStrc * p
             pQuestSpecificData->sSub.bPortalSpawned = true;
           }
         }
-        if (!pQuestSpecificData->sSub.bCairnMonsterSaved) {
-          pQuestSpecificData->sSub.bPendingCairnActivation = true;
+        if (pQuestSpecificData->sSub.bCairnMonsterSaved == '\0') {
+          pQuestSpecificData->sSub.bPendingCairnActivation = '\x01';
         }
 
         pQuestSpecificData->sSub.bStonesRolled = true;
@@ -1214,10 +1210,9 @@ BOOL __fastcall OBJOP_A1Q4_ActivateInifussTree(D2ObjectOperateFnArg * pOperation
     bool bQuestState;
     D2ObjectsTxt* pPlayerData;
     int32_t nAttackerGUID;
-    D2RoomStrc* pRoom;
     D2QuestDataStrc* pQuestDataFound = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TheSearchForCain);
     D2QuestDataA1Q4Strc* pA1Q4Data = 0;
-    if (!(!pQuestDataFound || (pA1Q4Data = pQuestDataFound->pQuestSpecificData.pA1Q4 , pQuestDataFound->bIsNotIntroduction && !pA1Q4Data->sSub.bQuestObjectsActivated) && pQuestDataFound->nStateFlag < 6)) {
+    if (!(!pQuestDataFound || (pA1Q4Data = pQuestDataFound->pQuestSpecificData.pA1Q4 , pQuestDataFound->bIsNotIntroduction != '\0' && pA1Q4Data->sSub.bQuestObjectsActivated != '\x01') && pQuestDataFound->nStateFlag < 6)) {
       return 0;
     }
 
@@ -1247,8 +1242,7 @@ BOOL __fastcall OBJOP_A1Q4_ActivateInifussTree(D2ObjectOperateFnArg * pOperation
         pGame = pOperation->sArg.pGame;
         GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 7, pGame->dwGameFrame + 0x11, 0, 0);
         _bQuestState = 0;
-        pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, _bQuestState);
+        D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim), _bQuestState);
         D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_JustCompleted);
         D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSearchForCain, QUESTSTATE_RewardAwaits);
         QUEST_SendQuestInfoToUnit(pOperation->sArg.pGame, pOperation->pAttacker);
@@ -1283,7 +1277,7 @@ void __fastcall Objects_InitFn06(uint32_t * pdwParam) {
       }
 
       pObject = pQuestData->pQuestSpecificData.pA1Q4;
-      if (!pQuestData->bIsNotIntroduction || pObject->sSub.field_0x34) {
+      if (pQuestData->bIsNotIntroduction == '\0' || pObject->sSub.field_0x34) {
         cFlagByte = *(char*)((uintptr_t)&pObject->sSub.nStoneAttemptCount + 1);
         pObject->sSub.field_0x34 = 0;
         if (cFlagByte == '\0' && nClassId == 0x11) {
@@ -1303,7 +1297,7 @@ void __fastcall Objects_InitFn06(uint32_t * pdwParam) {
         D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pdwParam[1], 2);
         return;
       }
-      if (!pObject->sSub.field_0x35 && !pObject->sSub.bQuestObjectsActivated) {
+      if (!pObject->sSub.field_0x35 && pObject->sSub.bQuestObjectsActivated == '\0') {
         if (pObject->sSub.bPortalSpawnPending[nClassId - 0x11] == 1) {
           pObject->sSub.bPortalSpawnPending[nClassId - 0x11] = 0;
           D2Common::Units::SetupUpdateFlag((D2UnitStrc*)pdwParam[1], 0);
@@ -1433,7 +1427,7 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
       pSubData->nStoneAttemptCount++;
       return 0;
     }
-    if (!__frame0.pQuestData->bIsNotIntroduction) {
+    if (__frame0.pQuestData->bIsNotIntroduction == '\0') {
       return 0;
     }
     if (__frame0.pQuestData->nStateFlag >= 6) {
@@ -1441,10 +1435,10 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
     }
 
     __frame0.pExistingPortal = 0;
-    if (pSubData->bPortalArmed) {
+    if (pSubData->bPortalArmed == '\x01') {
       __frame0.pExistingPortal = UNIT::SUnit::FindUnitFromTable(pOperation->sArg.pGame, UNIT_OBJECT, pSubData->nPortalGUID);
       if (!pSubData->bPortalSpawned && __frame0.pExistingPortal && __frame0.pExistingPortal->nClassId == 0x3d) {
-        if (!pGame->nStateFlag && pGame->bIsNotIntroduction) {
+        if (!pGame->nStateFlag && pGame->bIsNotIntroduction == '\x01') {
           QuestStartDebugNotify(pGame);
           QUEST_SetStateFlag(pGame, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x793);
         }
@@ -1455,11 +1449,11 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
         }
       }
     }
-    if (pSubData->bAllStonesActivated) {
+    if (pSubData->bAllStonesActivated == '\x01') {
       return 0;
     }
     if (pGame->nStateFlag != 5) {
-      if (!pGame->nStateFlag && pGame->bIsNotIntroduction) {
+      if (!pGame->nStateFlag && pGame->bIsNotIntroduction == '\x01') {
         QuestStartDebugNotify(pGame);
         QUEST_SetStateFlag(pGame, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x7a5);
       }
@@ -1508,7 +1502,7 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
       D2Common::Units::SetupUpdateFlag(__frame0.pExistingPortal, 6);
     }
 
-    pSubData->bAllStonesActivated = true;
+    pSubData->bAllStonesActivated = '\x01';
     QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x20646b62);
     pSubData->field_0x7C--;
     __frame0.pExistingPortal = (D2UnitStrc*)&pSubData->nUnitGUID;
@@ -1602,7 +1596,7 @@ BOOL __fastcall OBJOP_A1Q4_UseScrollOfInifuss(D2ObjectOperateFnArg * pOperation)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x828);
       exit(-1);
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
       return 0;
     }
@@ -1653,7 +1647,7 @@ BOOL __fastcall OBJOP_A1Q4_UseScrollOfInifuss(D2ObjectOperateFnArg * pOperation)
           D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
         }
 
-        pDVar2->sSub.bTreeObjectSaved = true;
+        pDVar2->sSub.bTreeObjectSaved = '\x01';
         pScrollItemEx = pOperation->sArg.pVictim;
         if (!pScrollItemEx) {
           pDVar2->sSub.nTreeObjectGUID = -1;
@@ -1717,10 +1711,10 @@ bool __fastcall Q04_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bVar1;
     D2QuestDataStrc* pQuestData_00;
     BOOL BVar2;
-    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_DebugPrint(pQuestData->pGame, "Started quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 599);
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x891);
-    } else if (pQuestData->nStateFlag == 6 || !pQuestData->bIsNotIntroduction) {
+    } else if (pQuestData->nStateFlag == 6 || pQuestData->bIsNotIntroduction == '\0') {
       pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (pQuestData_00) {
         /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -1831,7 +1825,7 @@ void __fastcall Q04_SetScrollActivatedFlag(::SGAMEDATA * pGame) {
       return;
     }
 
-    pQuestData->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = true;
+    pQuestData->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = '\x01';
 }
 
 // A1Q4 — Q04_GetPortalCreatedFlag: returns the quest sub-struct flag at offset 0x62
@@ -1854,8 +1848,8 @@ void __fastcall Objects_InitFn09(D2ObjectInitFnArg * pInitArg) {
     if (pDVar2) {
       D2QuestDataA1Q4Strc* pDVar1;
       pDVar1 = pDVar2->pQuestSpecificData.pA1Q4;
-      pDVar1->sSub.bTreeObjectSaved = true;
-      if (!pDVar2->bIsNotIntroduction || pDVar1->sSub.bQuestObjectsActivated) {
+      pDVar1->sSub.bTreeObjectSaved = '\x01';
+      if (pDVar2->bIsNotIntroduction == '\0' || pDVar1->sSub.bQuestObjectsActivated != '\0') {
         pDVar1->sSub.nStonesUnitGUID = 1;
       }
 
@@ -2049,40 +2043,50 @@ void __fastcall Q33_UpdateFrozenAnyaNpcState(D2QuestDataStrc * pQuestData, D2Uni
     } else {
       eUnitAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eUnitAnimMode != eD2MonsterAnimMode_ns::Neutral) {
-      if (eUnitAnimMode != Walk) {
-        if (eUnitAnimMode != eD2MonsterAnimMode_ns::GetHit) {
+
+    switch (eUnitAnimMode) {
+      case eD2MonsterAnimMode_ns::Neutral:
+        {
+          nTargetAnimMode = 2;
+          break;
+        }
+      case Walk:
+        {
+          pA5Q3Specific = pQuestData->pQuestSpecificData.pA5Q3;
+          pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+          eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+          if (eLevelId == LEVEL_RogueEncampment) {
+            pnPlayerArrivalCount = &pA5Q3Specific->sQuestGUID.nPlayerCount;
+            (*(int*)pnPlayerArrivalCount)++;
+            *(uint16_t*)(char*)&nPlayerArrivalCount = pA5Q3Specific->sQuestGUID.nPlayerCount;
+            *(uint16_t*)((char*)&nPlayerArrivalCount + 2) = pA5Q3Specific->sQuestGUID.field2_0x82;
+            if (nPlayerArrivalCount > 5) {
+              pA5Q3Specific->bFrozensteinSpawned = 1;
+            }
+            if (!pA5Q3Specific->bFrozensteinSpawned) {
+              goto schedule_next_update;
+            }
+
+            nTargetAnimMode = 3;
+          } else {
+            if (!pA5Q3Specific->bFrozenAnyaSpawned) {
+              goto schedule_next_update;
+            }
+
+            nTargetAnimMode = 3;
+          }
+
+          break;
+        }
+      default:
+        {
           goto schedule_next_update;
         }
-
-        nTargetAnimMode = 4;
-      } else {
-        pA5Q3Specific = pQuestData->pQuestSpecificData.pA5Q3;
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-        if (eLevelId == LEVEL_RogueEncampment) {
-          pnPlayerArrivalCount = &pA5Q3Specific->sQuestGUID.nPlayerCount;
-          (*(int*)pnPlayerArrivalCount)++;
-          *(uint16_t*)(char*)&nPlayerArrivalCount = pA5Q3Specific->sQuestGUID.nPlayerCount;
-          *(uint16_t*)((char*)&nPlayerArrivalCount + 2) = pA5Q3Specific->sQuestGUID.field2_0x82;
-          if (nPlayerArrivalCount > 5) {
-            pA5Q3Specific->bFrozensteinSpawned = 1;
-          }
-          if (!pA5Q3Specific->bFrozensteinSpawned) {
-            goto schedule_next_update;
-          }
-
-          nTargetAnimMode = 3;
-        } else {
-          if (!pA5Q3Specific->bFrozenAnyaSpawned) {
-            goto schedule_next_update;
-          }
-
-          nTargetAnimMode = 3;
+      case eD2MonsterAnimMode_ns::GetHit:
+        {
+          nTargetAnimMode = 4;
+          break;
         }
-      }
-    } else {
-      nTargetAnimMode = 2;
     }
 
     D2Common::Units::SetupUpdateFlag(pUnit, nTargetAnimMode);
@@ -2095,7 +2099,7 @@ void __fastcall Q33_UpdateFrozenAnyaNpcState(D2QuestDataStrc * pQuestData, D2Uni
 // set, and not suppressed. Returns 1 on success, 0 otherwise. Getter.
 BOOL __thiscall Q04_GetCainPortalCoordinates(void * pThis, uint32_t * pOutCoords) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal((::SGAMEDATA*)pThis, QUESTINT_TheSearchForCain);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return 0;
     }
 
@@ -2174,12 +2178,12 @@ BOOL __fastcall Q04_StoreCairnStonesPosition(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     D2QuestDataA1Q4Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q4;
-    if (pQuestSpecific->sSub.bAllStonesActivated) {
+    if (pQuestSpecific->sSub.bAllStonesActivated != '\0') {
       return 0;
     }
 
     D2Common::Units::GetCoords(pUnit, &pQuestSpecific->ptCainPos);
-    pQuestSpecific->sSub.bAllStonesActivated = true;
+    pQuestSpecific->sSub.bAllStonesActivated = '\x01';
     return 1;
 }
 
@@ -2197,7 +2201,7 @@ void __fastcall Q04_InitializeTristramObjects(::SGAMEDATA * pGame, D2UnitStrc * 
 
     D2QuestDataA1Q4Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q4;
     pDVar1->sSub.bTristramInitialized = 1;
-    pDVar1->sSub.bPendingCairnActivation = true;
+    pDVar1->sSub.bPendingCairnActivation = '\x01';
     if (pDVar1->sSub.bCairnObjectSaved != 1) {
       return;
     }
@@ -2213,7 +2217,7 @@ void __fastcall Q04_InitializeTristramObjects(::SGAMEDATA * pGame, D2UnitStrc * 
     sInitArgGame.nX = D2Client::Units::GetXPosFromDynamicPathUnit(pFoundUnit);
     sInitArgGame.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pFoundUnit);
     Objects_InitFn54(&sInitArgGame);
-    if (!pDVar1->sSub.bCairnMonsterSaved) {
+    if (pDVar1->sSub.bCairnMonsterSaved != '\x01') {
       return;
     }
 
@@ -2267,15 +2271,13 @@ uint32_t __fastcall Q04_IsTristramActive(::SGAMEDATA * pGame) {
 // counter is exhausted. No quest record transition.
 void __fastcall Q04_DropShieldRewards(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pDroppedItemOut;
-    int32_t nShieldCount;
     D2QuestDataA1Q4Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA1Q4;
     if (!pQuestSpecificData->sSub.bShieldDropActive) {
-      D2SeedStrc* pSeed;
+      int32_t nShieldCount;
       pQuestSpecificData->sSub.bShieldDropActive = true;
       nShieldCount = 0x14;
       pDroppedItemOut = pQuestData;
-      pSeed = GetQuestControlSeed(pQuestData->pGame);
-      nShieldCount = D2Client::SEED_RollRange(pSeed, 10, nShieldCount);
+      nShieldCount = D2Client::SEED_RollRange(GetQuestControlSeed(pQuestData->pGame), 10, nShieldCount);
       pQuestSpecificData->sSub.nShieldsRemaining = nShieldCount;
       pUnit->dwDropItemCode = 0x20646c67;
     }
@@ -2318,7 +2320,7 @@ void __thiscall Q04_SetCainUnitGUID(void * pThis, int32_t nCainGUID) {
 static void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2, D2QuestDataStrc * pQuestData) {
     D2UnitStrc* pTreeUnit;
     D2QuestDataA1Q4Strc* pA1Q4Sub = pQuestData->pQuestSpecificData.pA1Q4;
-    if (pA1Q4Sub->sSub.bCairnStonesObjectSaved && (pTreeUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pA1Q4Sub->sSub.nCairnStonesObjectGUID) , pTreeUnit != 0) && pTreeUnit->nClassId == 0x1a) {
+    if (pA1Q4Sub->sSub.bCairnStonesObjectSaved == '\x01' && (pTreeUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pA1Q4Sub->sSub.nCairnStonesObjectGUID) , pTreeUnit != 0) && pTreeUnit->nClassId == 0x1a) {
       if (pTreeUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
         D2Common::Units::SetupUpdateFlag(pTreeUnit, 3);
         pA1Q4Sub->sSub.nCairnAnimState = 3;
@@ -2326,7 +2328,7 @@ static void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2,
     } else {
       pA1Q4Sub->sSub.nCairnAnimState = 3;
     }
-    if (pA1Q4Sub->sSub.bTreeObjectSaved) {
+    if (pA1Q4Sub->sSub.bTreeObjectSaved == '\x01') {
       pTreeUnit = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, pA1Q4Sub->sSub.nTreeObjectGUID);
       if (pTreeUnit) {
         D2Common::Units::SetupUpdateFlag(pTreeUnit, 1);
@@ -2339,27 +2341,27 @@ static void __stdcall Q04_ActivateCairnStonesAndTree(char cParam1, char cParam2,
       }
     } else {
       if (cParam2 == '\0') {
-        pA1Q4Sub->sSub.bQuestObjectsActivated = true;
+        pA1Q4Sub->sSub.bQuestObjectsActivated = '\x01';
         return;
       }
 
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 1, nullptr, (::fpExecuteOnUnitFunction)Q04_DespawnRogueGuards);
     }
     if (cParam2 != '\0') {
-      if (!pA1Q4Sub->sSub.bPortalArmed) {
+      if (pA1Q4Sub->sSub.bPortalArmed == '\0') {
         UNIT::SUnitInactive::SUNITINACTIVE_RemoveInactiveUnitByTypeAndId(pQuestData->pGame, 1, 0x92, 0);
       }
 
-      pA1Q4Sub->sSub.bQuestObjectsActivated = true;
-      if (pA1Q4Sub->sSub.bCairnMonsterSaved) {
+      pA1Q4Sub->sSub.bQuestObjectsActivated = '\x01';
+      if (pA1Q4Sub->sSub.bCairnMonsterSaved != '\0') {
         return;
       }
 
-      pA1Q4Sub->sSub.bPendingCairnActivation = true;
+      pA1Q4Sub->sSub.bPendingCairnActivation = '\x01';
       return;
     }
 
-    pA1Q4Sub->sSub.bQuestObjectsActivated = true;
+    pA1Q4Sub->sSub.bQuestObjectsActivated = '\x01';
 }
 
 // A1Q4 — Q04_ForceStartQuestProgression: one-shot (guarded by flag 0x65) debug/forced
@@ -2407,7 +2409,7 @@ void __fastcall Q04_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2GSPacketSrv0x27_TextStrc* pGossipText = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
     D2QuestDataA1Q4Strc* pA1Q4Sub = pQuestData->pQuestSpecificData.pA1Q4;
     int nGossipIndex = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (nGossipIndex == 0x26 && !pA1Q4Sub->sSub.bCairnMonsterSaved && !pA1Q4Sub->sSub.bQuestObjectsActivated && pQuestData->nStateFlag >= 6) {
+    if (nGossipIndex == 0x26 && pA1Q4Sub->sSub.bCairnMonsterSaved == '\0' && pA1Q4Sub->sSub.bQuestObjectsActivated == '\0' && pQuestData->nStateFlag >= 6) {
       QUEST_DebugPrint(pQuestData->pGame, "Started quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 599);
       QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x422);
       pQuestData->nQuestPacketFlags = '\0';
@@ -2444,7 +2446,7 @@ void __fastcall Q04_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       pA1Q4SubCast = pQuestData->pQuestSpecificData.pA1Q4;
       if (pA1Q4SubCast->sSub.bCairnObjectSaved) {
         pUnit = UNIT::SUnit::FindUnitFromTable(pQuestArgs->pGame, UNIT_OBJECT, pA1Q4SubCast->sSub.field_0x54);
-        if (pUnit && pA1Q4SubCast->sSub.bPendingCairnActivation && !pA1Q4SubCast->sSub.bCairnMonsterSaved) {
+        if (pUnit && pA1Q4SubCast->sSub.bPendingCairnActivation == '\x01' && pA1Q4SubCast->sSub.bCairnMonsterSaved == '\0') {
           nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
           nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
           pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -2459,7 +2461,7 @@ void __fastcall Q04_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
       if (bQuestState != 1) {
         bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-        if (bQuestState != 1 && !pA1Q4Sub->sSub.bQuestObjectsActivated && pQuestData->nStateFlag < 6) {
+        if (bQuestState != 1 && pA1Q4Sub->sSub.bQuestObjectsActivated == '\0' && pQuestData->nStateFlag < 6) {
           QuestStartDebugNotify(pQuestData);
           Q04_ActivateCairnStonesAndTree('\0', '\x01', pQuestData);
           QUEST_SetStateFlag(pQuestData, 7, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q4.cpp", 0x458);
@@ -2497,7 +2499,7 @@ void __fastcall Q04_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (bQuestState == 1) {
       pCainQuestData2 = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSearchForCain);
       if (pCainQuestData2) {
-        pCainQuestData2->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = true;
+        pCainQuestData2->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = '\x01';
       }
 
       QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_TheSearchForCain, QUESTSTATE_JustCompleted);
@@ -2509,7 +2511,7 @@ void __fastcall Q04_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       if (bQuestState == 1) {
         pCainQuestData2 = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSearchForCain);
         if (pCainQuestData2) {
-          pCainQuestData2->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = true;
+          pCainQuestData2->pQuestSpecificData.pA1Q4->sSub.bPendingCairnActivation = '\x01';
         }
 
         pCainQuestData2 = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_TheSearchForCain);
@@ -2598,7 +2600,7 @@ void __fastcall Q04_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->pNpcMessages = A1Q4::aNpcGossipData;
     pQuestData->nQuestIdReal = QUEST_TheSearchForCain;
     pQuestData->nStateFlagPrev = 0;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->fpStatusFilter = 0;
     pQuestData->nInitNo = 6;
     pQuestData->fpActiveFilter = Q04_ActiveFilter;
@@ -2621,15 +2623,15 @@ void __fastcall Q04_InitData(D2QuestDataStrc * pQuestData) {
     pQuestSpecificData->sSub.bRescueArmed = false;
     pQuestSpecificData->sSub.nTreeObjectGUID = 0;
     pQuestSpecificData->sSub.nScrollItemGUID = 0;
-    pQuestSpecificData->sSub.bTreeObjectSaved = false;
+    pQuestSpecificData->sSub.bTreeObjectSaved = '\0';
     pQuestSpecificData->sSub.bRogueGuardTimerArmed = false;
     pQuestSpecificData->sSub.nStonesUnitGUID = 0;
     pQuestSpecificData->sSub.nCairnAnimState = 0;
-    pQuestSpecificData->sSub.bQuestObjectsActivated = false;
+    pQuestSpecificData->sSub.bQuestObjectsActivated = '\0';
     memset(pQuestSpecificData->sSub.bPortalSpawnPending, 0, 5 * sizeof(pQuestSpecificData->sSub.bPortalSpawnPending[0]));
-    pQuestSpecificData->sSub.bCairnMonsterSaved = false;
-    pQuestSpecificData->sSub.bPendingCairnActivation = false;
-    pQuestSpecificData->sSub.bPortalArmed = false;
+    pQuestSpecificData->sSub.bCairnMonsterSaved = '\0';
+    pQuestSpecificData->sSub.bPendingCairnActivation = '\0';
+    pQuestSpecificData->sSub.bPortalArmed = '\0';
     pQuestSpecificData->sSub.bStonesRolled = false;
     pQuestSpecificData->sSub.bNpcDialogState2 = 0;
     pQuestSpecificData->sSub.field_0x4C = 0;
@@ -2652,7 +2654,7 @@ void __fastcall ForceStartQuest(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!(bQuestState != 1 && !pQuestData->pQuestSpecificData.pA1Q4->sSub.bQuestObjectsActivated && pQuestData->nStateFlag < 6)) {
+    if (!(bQuestState != 1 && pQuestData->pQuestSpecificData.pA1Q4->sSub.bQuestObjectsActivated == '\0' && pQuestData->nStateFlag < 6)) {
       return;
     }
 

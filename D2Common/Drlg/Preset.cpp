@@ -266,17 +266,27 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
                   if (pMonPresetTxt && (int)pBuffer < (int)nPresetCount) {
                     byPresetType = pMonPresetTxt[(int)pBuffer].nType;
                     pBuffer = (char*)(uint32_t)pMonPresetTxt[(int)pBuffer].wPlace;
-                    if (byPresetType) {
-                      if (byPresetType != 1) {
-                        if (byPresetType != 2) {
-                          pBuffer = (char*)-1;
-                        } else {
-                          pBuffer += sgptDataTable->nTxtMonStatsSize;
+                    switch (byPresetType) {
+                      case 0:
+                        {
+                          nClassId = DATATBLS::MonsterTbls::MONSTERTBLS_ReturnZero();
+                          pBuffer = pBuffer + sgptDataTable->nTxtMonStatsSize + nClassId;
+                          break;
                         }
-                      }
-                    } else {
-                      nClassId = DATATBLS::MonsterTbls::MONSTERTBLS_ReturnZero();
-                      pBuffer = pBuffer + sgptDataTable->nTxtMonStatsSize + nClassId;
+                      case 2:
+                        {
+                          pBuffer += sgptDataTable->nTxtMonStatsSize;
+                          break;
+                        }
+                      default:
+                        {
+                          pBuffer = (char*)-1;
+                          break;
+                        }
+                      case 1:
+                        {
+                          break;
+                        }
                     }
                   }
 
@@ -2181,7 +2191,7 @@ int32_t __stdcall DRLGPRESET_FindPresetTypeIndex(int32_t nLevelType, uint32_t nO
       }
 
       pTableEntry += 3;
-      if ((int)pTableEntry >= (uintptr_t)((char*)&gPresetTypeTables + 452)) {
+      if ((int)pTableEntry >= (intptr_t)((char*)&gPresetTypeTables + 452)) {
         return -1;
       }
     } while (true);

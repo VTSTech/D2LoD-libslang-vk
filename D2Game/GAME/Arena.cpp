@@ -195,6 +195,7 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     D2ArenaTxt* pArenaTxt;
     D2UnitDataPlayerArenaStrc* pArenaData;
     D2ArenaControlStrc* pArenaCtrl;
+    eD2ArenaFlags* peArenaFlagsPtr;
     if (!pGame->pArenaCtrl) {
       return;
     }
@@ -204,61 +205,17 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     if (pUnit) {
       eKillerUnitType = pUnit->eUnitType;
     }
-    if (eKillerUnitType == UNIT_PLAYER) {
-      eD2ArenaFlags* peArenaFlagsPtr;
-      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      if (!pPlayerData->pArena) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xac);
-        exit(-1);
-      }
-      if (pUnit == pVictim) {
-        if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
-          exit(-1);
-        }
 
-        pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-        pArenaData = pPlayerData->pArena;
-        if (pArenaData) {
-          if (!pGame->pArenaCtrl) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-            exit(-1);
-          }
-
-          pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-          pArenaData->nScore += pArenaTxt->dwSuicide;
-          goto mark_score_dirty;
-        }
-      } else {
-        if (!pVictim) {
-          return;
-        }
-        if (pVictim->eUnitType == UNIT_PLAYER) {
-          if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
-            exit(-1);
-          }
-
+    switch (eKillerUnitType) {
+      case UNIT_PLAYER:
+        {
           pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-          pArenaData = pPlayerData->pArena;
-          if (pArenaData) {
-            if (!pGame->pArenaCtrl) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-              exit(-1);
-            }
-
-            pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-            pArenaData->nScore += pArenaTxt->dwPlayerKill;
-            pArenaData->bScoreDirty = 1;
-            if (!pGame->pArenaCtrl) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
-              exit(-1);
-            }
-
-            peArenaFlagsPtr = &pGame->pArenaCtrl->eArenaFlags;
-            *peArenaFlagsPtr |= ARENAFLAG_ScoresDirty;
-            D2Common::Unit::ROOM_LinkUnitToUpdateList(pVictim);
-            if (pUnit->eUnitType != UNIT_PLAYER) {
+          if (!pPlayerData->pArena) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xac);
+            exit(-1);
+          }
+          if (pUnit == pVictim) {
+            if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
               exit(-1);
             }
@@ -272,28 +229,20 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
               }
 
               pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-              pPlayerData = D2Common::Units::GetPlayerData(pVictim);
-              if (!pPlayerData->pArena) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
-                exit(-1);
-              }
-
-              pArenaData->nScore += pArenaTxt->dwPlayerKillPercent * pPlayerData->pArena->nScore / 100;
-              pArenaData->bScoreDirty = 1;
-              if (!pGame->pArenaCtrl) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
-                exit(-1);
-              }
-
-              peArenaFlagsPtr = &pGame->pArenaCtrl->eArenaFlags;
-              *peArenaFlagsPtr |= ARENAFLAG_ScoresDirty;
-              D2Common::Unit::ROOM_LinkUnitToUpdateList(pVictim);
-              if (pVictim->eUnitType != UNIT_PLAYER) {
+              pArenaData->nScore += pArenaTxt->dwSuicide;
+              goto mark_score_dirty;
+            }
+          } else {
+            if (!pVictim) {
+              return;
+            }
+            if (pVictim->eUnitType == UNIT_PLAYER) {
+              if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
                 exit(-1);
               }
 
-              pPlayerData = D2Common::Units::GetPlayerData(pVictim);
+              pPlayerData = D2Common::Units::GetPlayerData(pUnit);
               pArenaData = pPlayerData->pArena;
               if (pArenaData) {
                 if (!pGame->pArenaCtrl) {
@@ -302,7 +251,7 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                 }
 
                 pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-                pArenaData->nScore += pArenaTxt->dwPlayerDeath;
+                pArenaData->nScore += pArenaTxt->dwPlayerKill;
                 pArenaData->bScoreDirty = 1;
                 if (!pGame->pArenaCtrl) {
                   Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
@@ -311,13 +260,13 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
                 peArenaFlagsPtr = &pGame->pArenaCtrl->eArenaFlags;
                 *peArenaFlagsPtr |= ARENAFLAG_ScoresDirty;
-                D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-                if (pVictim->eUnitType != UNIT_PLAYER) {
+                D2Common::Unit::ROOM_LinkUnitToUpdateList(pVictim);
+                if (pUnit->eUnitType != UNIT_PLAYER) {
                   Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
                   exit(-1);
                 }
 
-                pPlayerData = D2Common::Units::GetPlayerData(pVictim);
+                pPlayerData = D2Common::Units::GetPlayerData(pUnit);
                 pArenaData = pPlayerData->pArena;
                 if (pArenaData) {
                   if (!pGame->pArenaCtrl) {
@@ -326,30 +275,117 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
                   }
 
                   pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-                  pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+                  pPlayerData = D2Common::Units::GetPlayerData(pVictim);
                   if (!pPlayerData->pArena) {
                     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
                     exit(-1);
                   }
 
-                  pArenaData->nScore += pArenaTxt->dwPlayerDeathPercent * pPlayerData->pArena->nScore / 100;
+                  pArenaData->nScore += pArenaTxt->dwPlayerKillPercent * pPlayerData->pArena->nScore / 100;
                   pArenaData->bScoreDirty = 1;
-                  pArenaCtrl = pGame->pArenaCtrl;
-                  goto link_arena_for_update;
+                  if (!pGame->pArenaCtrl) {
+                    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
+                    exit(-1);
+                  }
+
+                  peArenaFlagsPtr = &pGame->pArenaCtrl->eArenaFlags;
+                  *peArenaFlagsPtr |= ARENAFLAG_ScoresDirty;
+                  D2Common::Unit::ROOM_LinkUnitToUpdateList(pVictim);
+                  if (pVictim->eUnitType != UNIT_PLAYER) {
+                    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
+                    exit(-1);
+                  }
+
+                  pPlayerData = D2Common::Units::GetPlayerData(pVictim);
+                  pArenaData = pPlayerData->pArena;
+                  if (pArenaData) {
+                    if (!pGame->pArenaCtrl) {
+                      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+                      exit(-1);
+                    }
+
+                    pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
+                    pArenaData->nScore += pArenaTxt->dwPlayerDeath;
+                    pArenaData->bScoreDirty = 1;
+                    if (!pGame->pArenaCtrl) {
+                      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
+                      exit(-1);
+                    }
+
+                    peArenaFlagsPtr = &pGame->pArenaCtrl->eArenaFlags;
+                    *peArenaFlagsPtr |= ARENAFLAG_ScoresDirty;
+                    D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+                    if (pVictim->eUnitType != UNIT_PLAYER) {
+                      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
+                      exit(-1);
+                    }
+
+                    pPlayerData = D2Common::Units::GetPlayerData(pVictim);
+                    pArenaData = pPlayerData->pArena;
+                    if (pArenaData) {
+                      if (!pGame->pArenaCtrl) {
+                        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+                        exit(-1);
+                      }
+
+                      pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
+                      pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+                      if (!pPlayerData->pArena) {
+                        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
+                        exit(-1);
+                      }
+
+                      pArenaData->nScore += pArenaTxt->dwPlayerDeathPercent * pPlayerData->pArena->nScore / 100;
+                      pArenaData->bScoreDirty = 1;
+                      pArenaCtrl = pGame->pArenaCtrl;
+                      goto link_arena_for_update;
+                    }
+                  }
                 }
+              }
+            } else {
+              if (pVictim->eUnitType != UNIT_MONSTER) {
+                return;
+              }
+              if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
+                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
+                exit(-1);
+              }
+
+              pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+              pArenaData = pPlayerData->pArena;
+              if (pArenaData) {
+                if (!pGame->pArenaCtrl) {
+                  Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
+                  exit(-1);
+                }
+
+                pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
+                pArenaData->nScore += pArenaTxt->dwMonsterKill;
+                pArenaData->bScoreDirty = 1;
+                pArenaCtrl = pGame->pArenaCtrl;
+                pUnit = pVictim;
+                goto link_arena_for_update;
               }
             }
           }
-        } else {
-          if (pVictim->eUnitType != UNIT_MONSTER) {
+
+          break;
+        }
+      default:
+        {
+          return;
+        }
+      case UNIT_MONSTER:
+        {
+          if (!pVictim) {
             return;
           }
-          if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x73);
-            exit(-1);
+          if (pVictim->eUnitType != UNIT_PLAYER) {
+            return;
           }
 
-          pPlayerData = D2Common::Units::GetPlayerData(pUnit);
+          pPlayerData = D2Common::Units::GetPlayerData(pVictim);
           pArenaData = pPlayerData->pArena;
           if (pArenaData) {
             if (!pGame->pArenaCtrl) {
@@ -358,47 +394,22 @@ void __fastcall SERVER_ARENA_KillHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit
             }
 
             pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-            pArenaData->nScore += pArenaTxt->dwMonsterKill;
+            pArenaData->nScore += pArenaTxt->dwMonsterDeath;
+            mark_score_dirty:
             pArenaData->bScoreDirty = 1;
             pArenaCtrl = pGame->pArenaCtrl;
-            pUnit = pVictim;
-            goto link_arena_for_update;
+            link_arena_for_update:
+            if (pArenaCtrl) {
+              pArenaCtrl->eArenaFlags |= ARENAFLAG_ScoresDirty;
+              D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+              return;
+            }
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
+            exit(-1);
           }
-        }
-      }
-    } else {
-      if (eKillerUnitType != UNIT_MONSTER) {
-        return;
-      }
-      if (!pVictim) {
-        return;
-      }
-      if (pVictim->eUnitType != UNIT_PLAYER) {
-        return;
-      }
 
-      pPlayerData = D2Common::Units::GetPlayerData(pVictim);
-      pArenaData = pPlayerData->pArena;
-      if (pArenaData) {
-        if (!pGame->pArenaCtrl) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x6c);
-          exit(-1);
+          break;
         }
-
-        pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-        pArenaData->nScore += pArenaTxt->dwMonsterDeath;
-        mark_score_dirty:
-        pArenaData->bScoreDirty = 1;
-        pArenaCtrl = pGame->pArenaCtrl;
-        link_arena_for_update:
-        if (pArenaCtrl) {
-          pArenaCtrl->eArenaFlags |= ARENAFLAG_ScoresDirty;
-          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-          return;
-        }
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
-        exit(-1);
-      }
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x77);

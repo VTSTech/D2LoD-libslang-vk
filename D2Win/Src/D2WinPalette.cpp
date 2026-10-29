@@ -33,7 +33,7 @@ void __stdcall D2WINPALETTE_LoadPalettes() {
       *pPaletteTableEntry = pPaletteData;
       pPaletteData += 0x100;
       pPaletteTableEntry++;
-    } while ((int)pPaletteData < (uintptr_t)&gPaletteDataBase[12544]);
+    } while ((int)pPaletteData < (intptr_t)&gPaletteDataBase[12544]);
 
     pPaletteTableEntry = aPaletteTable + 0x34;
     pPaletteData = gPaletteTransposeBase;
@@ -41,7 +41,7 @@ void __stdcall D2WINPALETTE_LoadPalettes() {
       *pPaletteTableEntry = pPaletteData;
       pPaletteData += 0x100;
       pPaletteTableEntry++;
-    } while ((int)pPaletteData < (uintptr_t)&gPaletteTransposeBase[3328]);
+    } while ((int)pPaletteData < (intptr_t)&gPaletteTransposeBase[3328]);
 
     aPaletteTable[0x41] = gPaletteAct2;
     aPaletteTable[0x42] = gPaletteAct5;

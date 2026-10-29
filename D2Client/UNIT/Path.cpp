@@ -113,53 +113,67 @@ void __fastcall PATH_MoveUnitToPoint(D2UnitStrc * pUnit, uint16_t nX, int32_t nY
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     uint32_t nCurX = Units::GetXPosFromDynamicPathUnit(pUnit);
     uint32_t nCurY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    if (eMoveType != 1) {
-      if (eMoveType != 2) {
-        pPlayerUnit_lcl = Player::GetPlayerUnit_UI();
-        if (pUnit == pPlayerUnit_lcl) {
-          if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
-            if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
-              bOnScreen = GAME::Game::GetPing();
-              nArriveThreshold = (bOnScreen + 0x32 >> 7) + 5;
-            } else {
-              bOnScreen = GAME::Game::GetPing();
-              nArriveThreshold = (bOnScreen + 0x32 >> 7) + 7;
+    switch (eMoveType) {
+      case 1:
+        {
+          nArriveThreshold = 10;
+          break;
+        }
+      case 2:
+        {
+          nArriveThreshold = 0;
+          break;
+        }
+      default:
+        {
+          pPlayerUnit_lcl = Player::GetPlayerUnit_UI();
+          if (pUnit == pPlayerUnit_lcl) {
+            switch (pUnit->eAnimMode.ePlayerMode) {
+              case eD2PlayerAnimMode_ns::Neutral:
+                {
+                  bOnScreen = GAME::Game::GetPing();
+                  nArriveThreshold = (bOnScreen + 0x32 >> 7) + 3;
+                  break;
+                }
+              case eD2PlayerAnimMode_ns::Run:
+                {
+                  bOnScreen = GAME::Game::GetPing();
+                  nArriveThreshold = (bOnScreen + 0x32 >> 7) + 7;
+                  break;
+                }
+              default:
+                {
+                  bOnScreen = GAME::Game::GetPing();
+                  nArriveThreshold = (bOnScreen + 0x32 >> 7) + 5;
+                }
             }
           } else {
-            bOnScreen = GAME::Game::GetPing();
-            nArriveThreshold = (bOnScreen + 0x32 >> 7) + 3;
-          }
-        } else {
-          nArriveThreshold = 0xf;
-          if (pUnit->eUnitType == UNIT_MONSTER) {
-            switch (pUnit->eAnimMode.ePlayerMode) {
-              case eD2PlayerAnimMode_ns::Run:
+            nArriveThreshold = 0xf;
+            if (pUnit->eUnitType == UNIT_MONSTER) {
+              switch (pUnit->eAnimMode.ePlayerMode) {
+                case eD2PlayerAnimMode_ns::Run:
 
-              case eD2PlayerAnimMode_ns::GetHit:
+                case eD2PlayerAnimMode_ns::GetHit:
 
-              case TownNeutral:
-                nArriveThreshold = 5;
-              break;
-              case TownWalk:
+                case TownNeutral:
+                  nArriveThreshold = 5;
+                break;
+                case TownWalk:
 
-              case eD2PlayerAnimMode_ns::Attack1:
+                case eD2PlayerAnimMode_ns::Attack1:
 
-              case eD2PlayerAnimMode_ns::Attack2:
+                case eD2PlayerAnimMode_ns::Attack2:
 
-              case eD2PlayerAnimMode_ns::Block:
+                case eD2PlayerAnimMode_ns::Block:
 
-              case eD2PlayerAnimMode_ns::Cast:
+                case eD2PlayerAnimMode_ns::Cast:
 
-              case Throw:
-                nArriveThreshold = 7;
+                case Throw:
+                  nArriveThreshold = 7;
+              }
             }
           }
         }
-      } else {
-        nArriveThreshold = 0;
-      }
-    } else {
-      nArriveThreshold = 10;
     }
 
     int32_t nClickYSaved = nY;

@@ -83,7 +83,7 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       pDst32++;
       pPal16Bit++;
       pSrcEntry += 4;
-    } while ((int)pDst32 < (uintptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
+    } while ((int)pDst32 < (intptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
 }
 
 void __fastcall SetPaletteTable(BYTE * * ppPaletteTable) {

@@ -190,12 +190,17 @@ void __fastcall OBJMODE_CreateRedPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
     D2RoomStrc* eLevel = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId nLevelId2 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(eLevel);
     eLevel = (D2RoomStrc*)0x7f;
-    if (nLevelId2 != LEVEL_FrigidHighlands) {
-      if (nLevelId2 == LEVEL_ArreatPlateau) {
-        eLevel = (D2RoomStrc*)0x7e;
-      }
-    } else {
-      eLevel = (D2RoomStrc*)0x7d;
+    switch (nLevelId2) {
+      case LEVEL_FrigidHighlands:
+        {
+          eLevel = (D2RoomStrc*)0x7d;
+          break;
+        }
+      case LEVEL_ArreatPlateau:
+        {
+          eLevel = (D2RoomStrc*)0x7e;
+          break;
+        }
     }
 
     D2UnitStrc* pPortalUnit = SKILLS::SkillsServer::LinkPortal(pGame, pUnit, eLevel, nLevelId2);
@@ -205,12 +210,8 @@ void __fastcall OBJMODE_CreateRedPortal(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
       D2Common::Units::SetObjectPortalFlags(pPortalUnit, byPortalFlags | 3);
     }
 
-    BOOL bFalse = 0;
-    eLevel = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(eLevel, bFalse);
-    bFalse = 0;
-    eLevel = D2Common::Units::UNITS_GetRoom(pPortalUnit);
-    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(eLevel, bFalse);
+    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pUnit), 0);
+    D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pPortalUnit), 0);
 }
 
 void __fastcall OBJMODE_OpenObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
@@ -403,7 +404,6 @@ void __fastcall OBJMODE_DispatchChestType(::SGAMEDATA * pGame, D2UnitStrc * pUni
 // Per-frame server update for a proximity-triggered object (e.g. trap/shrine reacting to nearby players), driven by a 3-state machine stored in the object's data byte at szCharName[4] (0=idle,1=armed,2=fired). Scans the object's room for live players within collision range: in idle/armed it either plays the activation event (REFRESHVENDOR sound, -> mark armed) or, when already activated, runs MONSTERAI_CalculateCounterAttackDamage against the player (the trap's hit) and transitions to fired+update-flag; state 2 clears the update flag and returns to idle. Reschedules its own update event (event 3) using the object's txt FrameCnt timing (~0x19 frames when active, ~0xf otherwise).
 void __fastcall OBJMODE_UpdateProximityStateMachine(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nNextEventFrame;
-    D2ObjectsTxt* pObjectTxt;
     D2UnitStrc* pTarget;
     POINT ptUnitCoords;
     int nCounterAttacked;
@@ -472,8 +472,7 @@ void __fastcall OBJMODE_UpdateProximityStateMachine(::SGAMEDATA * pGame, D2UnitS
 
         pEventData = 0;
         nCollisionDist = 0;
-        pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId);
-        GAME::Event::SetEvent(pGame, pUnit, 3, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, nCollisionDist, pEventData);
+        GAME::Event::SetEvent(pGame, pUnit, 3, (D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId)->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, nCollisionDist, pEventData);
         return;
       }
     }
@@ -559,8 +558,7 @@ static void AUTOMAP_RevealAfterTeleport(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
     int32_t nRelocateFlag1 = 0;
     int32_t nRelocateFlag2 = 0;
     pFreeRoom = pRoom;
-    ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit2);
-    BOOL bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit2, pFreeRoom, ptCoords.x, ptCoords.y, nRelocateFlag2, nRelocateFlag1);
+    BOOL bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(UNIT::SUnit::GetGamePointer(pUnit2), pUnit2, pFreeRoom, ptCoords.x, ptCoords.y, nRelocateFlag2, nRelocateFlag1);
     if (!bRelocated) {
       return;
     }
@@ -722,27 +720,32 @@ BOOL __fastcall OBJOP_UseStairway(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pWarpUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode == Opened) {
-        pRoom = D2Common::Units::UNITS_GetRoom(pWarpUnit);
-        pWarpUnit = pRoom->pUnitList;
-        while (true) {
-          if (!pWarpUnit) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40e);
-            exit(-1);
-          }
-          if (pWarpUnit->eUnitType == UNIT_WARP) {
-            break;
-          }
 
-          pWarpUnit = pWarpUnit->pRoomNext;
+    switch (eAnimMode) {
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          D2Common::Units::SetupUpdateFlag(pWarpUnit, 2);
+          break;
         }
+      case Opened:
+        {
+          pRoom = D2Common::Units::UNITS_GetRoom(pWarpUnit);
+          pWarpUnit = pRoom->pUnitList;
+          while (true) {
+            if (!pWarpUnit) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40e);
+              exit(-1);
+            }
+            if (pWarpUnit->eUnitType == UNIT_WARP) {
+              break;
+            }
 
-        UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
-        return 1;
-      }
-    } else {
-      D2Common::Units::SetupUpdateFlag(pWarpUnit, 2);
+            pWarpUnit = pWarpUnit->pRoomNext;
+          }
+
+          UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
+          return 1;
+        }
     }
 
     return 1;
@@ -751,6 +754,7 @@ BOOL __fastcall OBJOP_UseStairway(D2ObjectOperateFnArg * pOperation) {
 // Object operate-fn for waygate interaction. If the waygate is in Death mode (inactive/just activated), marks it updated and schedules its opening animation. If in Walk mode (active), searches the waygate's room and adjacent rooms for the first UNIT_WARP and calls TakeStairs on the attacking player to warp them. Returns 1 on success.
 BOOL __fastcall OBJOP_UseWaygate(D2ObjectOperateFnArg * pOperation) {
     ::SGAMEDATA* pGame;
+    D2ObjectsTxt* pObjectTxt;
     eD2ObjectAnimMode eAnimMode;
     uint32_t uAdjRoomIdx;
     POINT ptCoords;
@@ -768,47 +772,54 @@ BOOL __fastcall OBJOP_UseWaygate(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pWarpUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode == Opened) {
-        for (pWarpUnit = pRoom->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
-          if (pWarpUnit->eUnitType == UNIT_WARP) {
-            use_found_warp:
-            UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
-            return 1;
-          }
+
+    switch (eAnimMode) {
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          D2Common::Units::SetupUpdateFlag(pWarpUnit, 1);
+          pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
+          pGame = pOperation->sArg.pGame;
+          GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+          break;
         }
-
-        D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRooms, (int*)&nAdjRoomCount);
-        uAdjRoomIdx = 0;
-        if (nAdjRoomCount > 0) {
-          do {
-            if (pAdjRooms[uAdjRoomIdx] != pRoom) {
-              for (pWarpUnit = pAdjRooms[uAdjRoomIdx]->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
-                if (pWarpUnit->eUnitType == UNIT_WARP) {
-                  goto use_found_warp;
-                }
-              }
-            }
-
-            uAdjRoomIdx++;
-            if (uAdjRoomIdx >= nAdjRoomCount) {
+      case Opened:
+        {
+          for (pWarpUnit = pRoom->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
+            if (pWarpUnit->eUnitType == UNIT_WARP) {
+              use_found_warp:
+              UNIT::SUnit::TakeStairs(pOperation->sArg.pGame, pOperation->pAttacker, pWarpUnit);
               return 1;
             }
-          } while (true);
+          }
+
+          D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjRooms, (int*)&nAdjRoomCount);
+          uAdjRoomIdx = 0;
+          if (nAdjRoomCount > 0) {
+            do {
+              if (pAdjRooms[uAdjRoomIdx] != pRoom) {
+                for (pWarpUnit = pAdjRooms[uAdjRoomIdx]->pUnitList; pWarpUnit; pWarpUnit = pWarpUnit->pRoomNext) {
+                  if (pWarpUnit->eUnitType == UNIT_WARP) {
+                    goto use_found_warp;
+                  }
+                }
+              }
+
+              uAdjRoomIdx++;
+              if (uAdjRoomIdx >= nAdjRoomCount) {
+                return 1;
+              }
+            } while (true);
+          }
+
+          break;
         }
-      }
-    } else {
-      D2ObjectsTxt* pObjectTxt;
-      D2Common::Units::SetupUpdateFlag(pWarpUnit, 1);
-      pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
-      pGame = pOperation->sArg.pGame;
-      GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
     }
 
     return 1;
 }
 
 BOOL __fastcall OBJOP_OpenTimedDoor(D2ObjectOperateFnArg * pOperation) {
+    ::SGAMEDATA* pGame;
     POINT ptCoords;
     eD2ObjectAnimMode eAnimMode;
     D2UnitStrc* pVictimUnit;
@@ -828,20 +839,23 @@ BOOL __fastcall OBJOP_OpenTimedDoor(D2ObjectOperateFnArg * pOperation) {
     }
 
     D2ObjectsTxt* pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode == Opened) {
-        D2Common::Units::BlockCollisionPath(pOperation->sArg.pVictim, pRoom, ptCoords.x, ptCoords.y);
-        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
-        pOperation->sArg.pVictim->dwTickCount = dwTickNow;
-        return 1;
-      }
-    } else {
-      ::SGAMEDATA* pGame;
-      D2Common::Units::RemoveCollision_Vector(pOperation->sArg.pVictim);
-      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-      pOperation->sArg.pVictim->dwTickCount = dwTickNow;
-      pGame = pOperation->sArg.pGame;
-      GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+    switch (eAnimMode) {
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          D2Common::Units::RemoveCollision_Vector(pOperation->sArg.pVictim);
+          D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
+          pOperation->sArg.pVictim->dwTickCount = dwTickNow;
+          pGame = pOperation->sArg.pGame;
+          GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+          break;
+        }
+      case Opened:
+        {
+          D2Common::Units::BlockCollisionPath(pOperation->sArg.pVictim, pRoom, ptCoords.x, ptCoords.y);
+          D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 0);
+          pOperation->sArg.pVictim->dwTickCount = dwTickNow;
+          return 1;
+        }
     }
 
     return 1;
@@ -895,10 +909,7 @@ BOOL __fastcall OBJOP_OpenBreakableContainer(D2ObjectOperateFnArg * pOperation) 
     }
 
     ::SGAMEDATA* pGame = pOperation->sArg.pGame;
-    int32_t pEventData = 0;
-    int32_t nEventArgZero = 0;
-    pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId);
-    GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectTxt->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, nEventArgZero, pEventData);
+    GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pOperation->nObjectClassId)->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
     return 1;
 }
 
@@ -983,8 +994,7 @@ void __fastcall OBJMODE_SpawnCompanionChests(::SGAMEDATA * pGame, D2UnitStrc * p
     void* pCreateArg = 0;
     int32_t arg6 = 1;
     uint8_t bShouldCreate = 1;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    pNewChest = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0xa0, nChestPosX, ptCoords.y, pGame, pRoom, bShouldCreate, arg6, pCreateArg);
+    pNewChest = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0xa0, nChestPosX, ptCoords.y, pGame, D2Common::Units::UNITS_GetRoom(pUnit), bShouldCreate, arg6, pCreateArg);
     UNIT::SUnit::SetSparklyChestFlag(pNewChest, true);
 }
 
@@ -1004,10 +1014,7 @@ static void OBJMODE_SpawnMonsterAtObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     D2RoomStrc** ppFreeRoom = &pFreeRoom;
-    int32_t eCollisionFlag = 0x3f11;
-    int32_t nSearchRadius = 0;
-    pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Collision::COLLISION_FindFreeCoordSpiral(pRoom, &ptCoords, nSearchRadius, eCollisionFlag, ppFreeRoom);
+    D2Common::Collision::COLLISION_FindFreeCoordSpiral(D2Common::Units::UNITS_GetRoom(pUnit), &ptCoords, 0, 0x3f11, ppFreeRoom);
     if (!pFreeRoom) {
       return;
     }
@@ -1293,7 +1300,6 @@ void __fastcall Shrines_PortalShrineFunction(D2ObjectOperateFnArg * pArguments, 
 // Two GuardStack tails: GuardStack(1) after successful spawn/removal, GuardStack(nReturnValue) where nReturnValue is explicitly set to 0 (no spawn spot) or 1 (spawned) elsewhere.
 static BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
     BOOL BVar1;
-    D2ClientStrc* pClient;
     POINT ptUnitCoords;
     POINT ptSpawnPos;
     D2ItemGenContextStrc sItemGenCtx;
@@ -1338,8 +1344,7 @@ static BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStr
         D2Common::ITEMS::Items::ITEM_SetItemData_ePreviousPage(pUnit, ePreviousPage);
         pOldGemItem = pUnit;
         pNewGemItem = pSpawnedItem;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\OBJECTS\\ObjMode.cpp", 0x80f);
-        GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pUnit2, pOldGemItem, (eD2ItemFlag)pNewGemItem);
+        GAME::SCmd::Send0x9DRemoveItemFromContainer(UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\OBJECTS\\ObjMode.cpp", 0x80f), pUnit2, pOldGemItem, (eD2ItemFlag)pNewGemItem);
         ITEMS::ItemMode::ITEMMODE_DeleteItemFromInventory(pGame, pUnit2, pUnit, 0);
         return 1;
       }
@@ -2221,8 +2226,7 @@ BOOL __fastcall OBJOP_SpawnExceptionalItemDrop(D2ObjectOperateFnArg * pOperation
     int32_t nDropLevel = 0;
     int32_t nPlayerGUID = -1;
     POINT* pPtPos = &ptPos;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-    ITEMS::Items::Drop::DROP_SpawnExceptionalItem(pOperation->sArg.pGame, pRoom, pPtPos, nPlayerGUID, nDropLevel, pUnit);
+    ITEMS::Items::Drop::DROP_SpawnExceptionalItem(pOperation->sArg.pGame, D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim), pPtPos, nPlayerGUID, nDropLevel, pUnit);
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     pUnit = pOperation->sArg.pVictim;
     if (pUnit) {
@@ -2247,8 +2251,7 @@ BOOL __fastcall OBJOP_SpawnNormalItemDrop(D2ObjectOperateFnArg * pOperation) {
     int32_t nDropLevel = 0;
     int32_t nPlayerGUID = -1;
     POINT* pPtPos = &ptPos;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim);
-    ITEMS::Items::Drop::DROP_SpawnNormalItem(pOperation->sArg.pGame, pRoom, pPtPos, nPlayerGUID, nDropLevel, pUnit);
+    ITEMS::Items::Drop::DROP_SpawnNormalItem(pOperation->sArg.pGame, D2Common::Units::UNITS_GetRoom(pOperation->sArg.pVictim), pPtPos, nPlayerGUID, nDropLevel, pUnit);
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     pUnit = pOperation->sArg.pVictim;
     if (pUnit) {
@@ -2336,13 +2339,18 @@ BOOL __fastcall OBJOP_ActivateSimple(D2ObjectOperateFnArg * pOperation) {
     } else {
       eAnimMode = pUnit->eAnimMode.ePlayerMode;
     }
-    if (eAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-      if (eAnimMode == Operating) {
-        D2Common::Units::SetupUpdateFlag(pUnit, 0);
-        return 0;
-      }
-    } else {
-      D2Common::Units::SetupUpdateFlag(pUnit, 1);
+
+    switch (eAnimMode) {
+      case eD2ObjectAnimMode_ns::Neutral:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, 1);
+          break;
+        }
+      case Operating:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, 0);
+          return 0;
+        }
     }
 
     return 0;
@@ -2572,7 +2580,6 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
     int32_t nPortalObjGUID;
     uint32_t uVar1;
     eD2LevelId eLevelId;
-    eAct eDestAct;
     eD2LevelId eEnteredLevelId;
     eD2LevelId ePreviousLevelId;
     D2ObjectsTxt* pTxtObjects;
@@ -2704,8 +2711,7 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
       pnSpawnY = &__frame0.nSpawnPosY;
       pnSpawnX = (uint32_t*)&__frame0.pQuestRecord;
       nAttackerUID = 0;
-      eDestAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevelId);
-      pRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(pOperation->sArg.pGame->pAct[eDestAct], eLevelId, nAttackerUID, (int*)pnSpawnX, (int*)pnSpawnY, nCollisionFlagsArg);
+      pRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(pOperation->sArg.pGame->pAct[D2Common::Drlg::GetActNoFromLevelNumber(eLevelId)], eLevelId, nAttackerUID, (int*)pnSpawnX, (int*)pnSpawnY, nCollisionFlagsArg);
       ptDest.x = (LONG)__frame0.pQuestRecord;
       ptDest.y = __frame0.nSpawnPosY;
     } else {
@@ -2954,7 +2960,6 @@ void __fastcall TakeWaypoint(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nwpI
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint16_t _nWaypointMasks;
-    D2RoomStrc* pRoomSpawn;
     D2ClientStrc* pClient;
     POINT ptPos;
     int* pX;
@@ -2996,11 +3001,10 @@ void __fastcall TakeWaypoint(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nwpI
     GAME::Level::InitLevel(pGame, pUnit, eLevel, _nWaypointMasks);
     pRoomOther = D2Common::Units::UNITS_GetRoom(pUnit);
     if (pRoomOther) {
-      eAct eVar1;
+      D2RoomStrc* pRoomSpawn;
       pY = &__frame0.nSpawnY;
       pX = &__frame0.nSpawnX;
-      eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-      pRoomSpawn = D2Common::DUNGEON::Dungeon::FindActSpawnLocation(pGame->pAct[eVar1], eLevel, _nWaypointMasks, pX, pY);
+      pRoomSpawn = D2Common::DUNGEON::Dungeon::FindActSpawnLocation(pGame->pAct[D2Common::Drlg::GetActNoFromLevelNumber(eLevel)], eLevel, _nWaypointMasks, pX, pY);
       if (pRoomOther == pRoomSpawn) {
         pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\OBJECTS\\ObjMode.cpp", 0x1072);
         if (!pUnit) {
@@ -3355,10 +3359,9 @@ void __thiscall OBJMODE_FinalizePortalLink(void * pThis, DWORD dwBluePortalGUID,
     D2Common::Units::SetupUpdateFlag(pBluePortal, 3);
     int nUnitGUID = pUnit->nUnitGUID;
     eD2UnitType eUnitType = UNIT_OBJECT;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, eUnitType, nUnitGUID);
+    D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pUnit), eUnitType, nUnitGUID);
     UNIT::SUnit::FreeServerUnit((::SGAMEDATA*)pThis, pUnit);
-    pRoom = D2Common::Units::UNITS_GetRoom(pBluePortal);
+    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pBluePortal);
     eD2LevelId nLevelId2 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     pBluePortal = SKILLS::SkillsServer::LinkPortal(pThis, pBluePortal, (D2RoomStrc*)eLevel, nLevelId2);
     if (!pBluePortal) {

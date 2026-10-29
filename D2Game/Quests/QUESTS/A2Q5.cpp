@@ -96,7 +96,7 @@ void __fastcall Q13_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 2);
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (!pQuestData->nStateFlag) {
@@ -390,7 +390,7 @@ BOOL __fastcall Q13_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // A2Q5 "The Summoner" - Summoner-death event handler (sStateFunctions[8]). When the quest is introduced/active: debug-print, set state flag 2, record the Summoner's room (pA2Q5->pRadamentRoom/sQuestGUID), and on first death schedule the end-callback timer (Q13_OnEndCallbackAndNotify). Then fans out over all players running the three credit/notify passes: Q13_CheckSummonerKillAndReward (grant credit to nearby), Q13_PropagateRewardToParty (share with party), Q13_SetCannotComplete (lock out absent players). Always notifies clients of event 7 at the end. (Reused A2Q1/A1Q4 struct fields named for Radament/Cain - here they hold Summoner room/kill state.)
 void __fastcall Q13_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2RoomStrc* pDVar2;
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       D2QuestDataA2Q5Strc* pDVar1;
       QUEST_DebugPrint(pQuestData->pGame, "killed summoner for quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q5.cpp", 0x1be);
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q5.cpp", 0x1bf);
@@ -414,7 +414,7 @@ void __fastcall Q13_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
 // A2Q5 "The Summoner" - state-3 handler (sStateFunctions[3]). When the quest is introduced and the gossip args indicate a player-leave condition (nIndex > 0x27, pTextControl == 0x28 sentinel), removes the player from the quest participation GUID list (QUESTGUID_RemovePlayerFromList). Cleanup when a participant departs.
 void __fastcall Q13_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!(pQuestData->bIsNotIntroduction && 0x27 < pQuestArgs->sQuestArgs.sNpcActivate.nIndex && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && 0x27 < pQuestArgs->sQuestArgs.sNpcActivate.nIndex && pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x28)) {
       return;
     }
 
@@ -451,7 +451,7 @@ void __fastcall Q13_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 void __fastcall Q13_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->pNpcMessages = &A2Q5::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA2Q5Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA2Q5Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q5.cpp", 0x212);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q13_Callback00_NpcActivate;

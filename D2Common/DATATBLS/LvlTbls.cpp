@@ -2888,7 +2888,7 @@ static int32_t LVLTBLS_GetAutomapLevelId(char * szLevelName) {
       nLevelId++;
       pbScan = (uint8_t*)szLevelName;
       pRowStart = (uint8_t*)pTableEntry;
-      if ((int)pTableEntry >= (uintptr_t)((char*)&gaAutomapLevelNames + sizeof(gaAutomapLevelNames))) {
+      if ((int)pTableEntry >= (intptr_t)((char*)&gaAutomapLevelNames + sizeof(gaAutomapLevelNames))) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a5);
         exit(-1);
       }
@@ -2916,7 +2916,7 @@ static int32_t LVLTBLS_GetAutomapTileId(char * szTileName) {
       nTileId++;
       pbSzCur = (uint8_t*)szTileName;
       pEntryStart = (uint8_t*)pCurEntry;
-      if ((int)pCurEntry >= (uintptr_t)((char*)&gaAutomapTileNames + sizeof(gaAutomapTileNames))) {
+      if ((int)pCurEntry >= (intptr_t)((char*)&gaAutomapTileNames + sizeof(gaAutomapTileNames))) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4d0);
         exit(-1);
       }
@@ -3042,7 +3042,7 @@ void __fastcall TXT_AllocTxt_automap(D2PoolManagerStrc * pMemory) {
       ((D2AutomapRelatedTxt*)(pMiddlePointer - 1))->nIndex = -1;
       *pMiddlePointer = -1;
       pMiddlePointer += 2;
-    } while ((int)pMiddlePointer < (uintptr_t)&gpaAutoMapRelated + 292);
+    } while ((int)pMiddlePointer < (intptr_t)&gpaAutoMapRelated + 292);
 
     int nAutoMapRow = 0;
     if (0 < nTxtAutomapSize) {

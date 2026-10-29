@@ -135,8 +135,7 @@ static void __stdcall SCMD_ConvertString(char * str, D2UnitDataMonsterStrc * cmd
     uint32_t nFlags = 0;
     uint32_t nLine = 0x8c;
     char* pcVar2 = ".\\SOURCE\\SCMD.CPP";
-    uVar1 = SSTR::SStrLen(str);
-    pcVar2 = (char*)SMem::SMemAlloc(uVar1 + 1, pcVar2, nLine, nFlags);
+    pcVar2 = (char*)SMem::SMemAlloc(SSTR::SStrLen(str) + 1, pcVar2, nLine, nFlags);
     cmdDef->nOwnerGUID = (int32_t)pcVar2;
     SSTR::SStrCopy(pcVar2, str, 0x7fffffff);
     if (!cmdDef->pPathParamOrName.wszMonsterName) {
@@ -267,30 +266,37 @@ void __thiscall SCMD_MoveToList(::SCMD * pThis, ::SCMD * pNode, int nParam, ::SC
     if (!pScmd) {
       pScmd = (::SCMD*)(pThis + 4);
     }
-    if (nParam != 1) {
-      pListHead = *(int*)pScmd;
-      *(int*)pPrevLink = pListHead;
-      *(int*)(pPrevLink + 4) = *(int*)(pListHead + 4);
-      *(::SCMD**)(pListHead + 4) = (::SCMD*)pNode;
-      *(::SCMD**)pScmd = (::SCMD*)pPrevLink;
-      return;
-    }
 
-    *(::SCMD**)pPrevLink = (::SCMD*)pScmd;
-    *(int*)(pPrevLink + 4) = *(int*)(pScmd + 4);
-    pListHead = *(int*)pThis;
-    nNextOffset = *(uint32_t*)(pScmd + 4);
-    if ((int)nNextOffset < 0) {
-      *(::SCMD**)~nNextOffset = (::SCMD*)pPrevLink;
-      *(::SCMD**)(pScmd + 4) = (::SCMD*)pNode;
-      return;
-    }
-    if (pListHead < 0) {
-      pListHead = (int)pScmd - *(int*)(*(int*)pScmd + 4);
-    }
+    switch (nParam) {
+      case 1:
+        {
+          *(::SCMD**)pPrevLink = (::SCMD*)pScmd;
+          *(int*)(pPrevLink + 4) = *(int*)(pScmd + 4);
+          pListHead = *(int*)pThis;
+          nNextOffset = *(uint32_t*)(pScmd + 4);
+          if ((int)nNextOffset < 0) {
+            *(::SCMD**)~nNextOffset = (::SCMD*)pPrevLink;
+            *(::SCMD**)(pScmd + 4) = (::SCMD*)pNode;
+            return;
+          }
+          if (pListHead < 0) {
+            pListHead = (int)pScmd - *(int*)(*(int*)pScmd + 4);
+          }
 
-    *(::SCMD**)(nNextOffset + pListHead) = (::SCMD*)pPrevLink;
-    *(::SCMD**)(pScmd + 4) = (::SCMD*)pNode;
+          *(::SCMD**)(nNextOffset + pListHead) = (::SCMD*)pPrevLink;
+          *(::SCMD**)(pScmd + 4) = (::SCMD*)pNode;
+          return;
+        }
+      default:
+        {
+          pListHead = *(int*)pScmd;
+          *(int*)pPrevLink = pListHead;
+          *(int*)(pPrevLink + 4) = *(int*)(pListHead + 4);
+          *(::SCMD**)(pListHead + 4) = (::SCMD*)pNode;
+          *(::SCMD**)pScmd = (::SCMD*)pPrevLink;
+          return;
+        }
+    }
 }
 
 uint32_t __thiscall SCMD_GetNextOffset(::SCMD * pThis, ::SCMD * pNode) {
@@ -648,7 +654,6 @@ uint32_t __thiscall SCMD_RemoveNode(::SCMD * pThis, ::SCMD * pNode) {
 // @blizzard PerformConversion (SCMD.CPP)
 static BOOL __fastcall SCMD_PerformConversion(char * str, StormCmdArgDefStrc * cmdDef, int * outConsumed) {
     D2StormListHead* pListHead;
-    uint32_t szNewBuf;
     uint32_t nLine;
     uint32_t nFlags;
     CMDPARAMS sParams;
@@ -706,8 +711,7 @@ static BOOL __fastcall SCMD_PerformConversion(char * str, StormCmdArgDefStrc * c
               nFlags = 0;
               nLine = 0x121;
               szSrcFile = ".\\SOURCE\\SCMD.CPP";
-              szNewBuf = SSTR::SStrLen(cmdDef->uValue.szStringValue);
-              szSrcFile = (char*)SMem::SMemAlloc(szNewBuf + 1, szSrcFile, nLine, nFlags);
+              szSrcFile = (char*)SMem::SMemAlloc(SSTR::SStrLen(cmdDef->uValue.szStringValue) + 1, szSrcFile, nLine, nFlags);
               pOtherCmd->uValue.szStringValue = szSrcFile;
               SSTR::SStrCopy(szSrcFile, cmdDef->uValue.szStringValue, 0x7fffffff);
             } else {

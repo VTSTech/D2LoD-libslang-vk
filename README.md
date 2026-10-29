@@ -76,8 +76,8 @@ At this commit:
 
 |Measure|Byte-identical to the original|
 |-|-|
-|Functions|5,059 of 15,521 (32.6%)|
-|Code|356,888 of 2,678,537 bytes (13.32%)|
+|Functions|5,275 of 15,521 (34.0%)|
+|Code|383,215 of 2,678,537 bytes (14.31%)|
 
 The rest compiles and runs but differs somewhere in its instructions. Each difference
 that the same generator rule or database gap causes everywhere is fixed there, so the

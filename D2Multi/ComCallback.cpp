@@ -759,17 +759,23 @@ BOOL __stdcall COMCALLBACK_ValidateGameJoinability() {
     if (!nResult) {
       return 0;
     }
-    if (nMsgType) {
-      if (nMsgType == 2) {
-        Storm::Source::SSTR::SStrCopy(gbChannelUserCountFormatPadding, (char*)msgBuffer, 0x32);
-        return 1;
-      }
-      if (nMsgType == 3) {
-        COMCALLBACK_HandleBannerAdFile(msgBuffer);
-        return 1;
-      }
-    } else {
-      COMCALLBACK_CheckUserListFlags(msgBuffer);
+
+    switch (nMsgType) {
+      case 0:
+        {
+          COMCALLBACK_CheckUserListFlags(msgBuffer);
+          break;
+        }
+      case 2:
+        {
+          Storm::Source::SSTR::SStrCopy(gbChannelUserCountFormatPadding, (char*)msgBuffer, 0x32);
+          return 1;
+        }
+      case 3:
+        {
+          COMCALLBACK_HandleBannerAdFile(msgBuffer);
+          return 1;
+        }
     }
 
     return 1;
@@ -2148,7 +2154,7 @@ BOOL __fastcall COMCALLBACK_HandleJoinedChannel(uint32_t dwParam1, uint32_t dwPa
     do {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(&(*ppChatUserBtn)->sControl, 1);
       ppChatUserBtn++;
-    } while ((int)ppChatUserBtn < (uintptr_t)((char*)&gaChatUserListButtonArray + sizeof(gaChatUserListButtonArray)));
+    } while ((int)ppChatUserBtn < (intptr_t)((char*)&gaChatUserListButtonArray + sizeof(gaChatUserListButtonArray)));
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(gpCtlLobbyAccountList, 0);
     COMCALLBACK_ClearAllChannelUsers();

@@ -258,7 +258,6 @@ static void __stdcall SELECT_ScreenToWorldCoords(int * pnX, int * pnY) {
 // Client-side mouse-input gate for the selection system. If the UI border type is 3 (full-screen/npc-scroll), handles NPC menu deselection and warp deselection, then returns 1 (input consumed). Otherwise reads raw mouse X/Y, clamps to the playable area excluding the HUD exclusion rect and split-screen half, projects through SELECT_ScreenToWorldCoords, and returns 0 (pass through). Clears the selected unit when the cursor is over UI chrome.
 static BOOL SELECT_HandleMouseInput(int * pnMouseX, int * pnMouseY) {
     D2UnitStrc* pUnit;
-    D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
     if (nBorderType == 3) {
@@ -281,8 +280,7 @@ static BOOL SELECT_HandleMouseInput(int * pnMouseX, int * pnMouseY) {
         pUnit = UNIT::Player::UNITS_FindClientSideUnit(_Selection::nSelectedUnitGUID, UNIT_WARP);
         if (pUnit) {
           eLevel = pUnit->nClassId;
-          pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-          D2Common::DUNGEON::Dungeon::UpdateWarpRoomDeselect(pRoom, eLevel);
+          D2Common::DUNGEON::Dungeon::UpdateWarpRoomDeselect(D2Common::Units::UNITS_GetRoom(pUnit), eLevel);
           View::SetFlag0x1(D2GameView);
         }
       }
@@ -484,8 +482,7 @@ static D2UnitStrc * __stdcall SKILL_FindTargetInRange(D2SkillStrc * pSkill, D2Un
     sUnitFindArg.nDistance = 9;
     sUnitFindArg.nX = nX;
     sUnitFindArg.nY = nY;
-    D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
-    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &sUnitFindData, pRoom, nX, nY, nRadius, nfpUnitTest, pFindArg);
+    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &sUnitFindData, UNIT::CUnit::GetCurrentRoom(), nX, nY, nRadius, nfpUnitTest, pFindArg);
     sUnitFindData.nFlags = nFindFlags;
     D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
     nFindFlags = 0;
@@ -581,7 +578,7 @@ static D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pP
       }
 
       pDirTableEntry++;
-      if ((int)pDirTableEntry >= (uintptr_t)((char*)&gaTargetSelectionAngleTable + sizeof(gaTargetSelectionAngleTable))) {
+      if ((int)pDirTableEntry >= (intptr_t)((char*)&gaTargetSelectionAngleTable + sizeof(gaTargetSelectionAngleTable))) {
         return nullptr;
       }
     }

@@ -74,17 +74,23 @@ void __fastcall SetAiArgument(D2UnitStrc * pMonster, int32_t nArgNumber, int32_t
     if (!pAiGeneral) {
       return;
     }
-    if (nArgNumber != 1) {
-      if (nArgNumber == 2) {
-        pAiGeneral->dwArg1 = nValue;
-        return;
-      }
-      if (nArgNumber == 3) {
-        pAiGeneral->dwArg2 = nValue;
-        return;
-      }
-    } else {
-      pAiGeneral->dwArg0 = nValue;
+
+    switch (nArgNumber) {
+      case 1:
+        {
+          pAiGeneral->dwArg0 = nValue;
+          break;
+        }
+      case 2:
+        {
+          pAiGeneral->dwArg1 = nValue;
+          return;
+        }
+      case 3:
+        {
+          pAiGeneral->dwArg2 = nValue;
+          return;
+        }
     }
 }
 
@@ -97,19 +103,23 @@ int __fastcall GetAiArgument(D2UnitStrc * pMonster, int32_t nArgNumber) {
     if (!pAiGeneral) {
       return 0;
     }
-    if (nArgNumber != 1) {
-      if (nArgNumber != 2) {
-        if (nArgNumber == 3) {
+
+    switch (nArgNumber) {
+      case 1:
+        {
+          return pAiGeneral->dwArg0;
+        }
+      case 2:
+        {
+          return pAiGeneral->dwArg1;
+        }
+      case 3:
+        {
           return pAiGeneral->dwArg2;
         }
-
-        return 0;
-      }
-
-      return pAiGeneral->dwArg1;
     }
 
-    return pAiGeneral->dwArg0;
+    return 0;
 }
 
 // @sourcefile .\Ai\AiGeneral.cpp

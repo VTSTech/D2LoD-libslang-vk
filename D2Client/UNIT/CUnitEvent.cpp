@@ -43,7 +43,6 @@ D2PoolManagerStrc * __fastcall GetMemPool(D2UnitStrc * pUnit) {
 
 // @sourcefile .\UNIT\CUnitEvent.cpp
 void __fastcall FreeEventList(D2UnitStrc * pUnit) {
-    int32_t nLine;
     int32_t nNull;
     D2CUnitEventStrc* pvVar1;
     char* szFile;
@@ -53,13 +52,12 @@ void __fastcall FreeEventList(D2UnitStrc * pUnit) {
 
     D2CUnitEventStrc* pMemoryToFree = pUnit->uSideData.pClientSide.pCUnitEventList;
     while (pMemoryToFree) {
-      D2PoolManagerStrc* pMemory;
+      int32_t nLine;
       pvVar1 = pMemoryToFree->pPrev;
       nNull = 0;
       nLine = 0x2f;
       szFile = ".\\UNIT\\CUnitEvent.cpp";
-      pMemory = GetMemPool(pUnit);
-      Fog::Memory::FreeServerMemory(pMemory, pMemoryToFree, szFile, nLine, nNull);
+      Fog::Memory::FreeServerMemory(GetMemPool(pUnit), pMemoryToFree, szFile, nLine, nNull);
       pMemoryToFree = pvVar1;
     }
 
@@ -95,7 +93,6 @@ D2CUnitEventStrc * __fastcall CUNITEVENT_Alloc(D2UnitStrc * pUnit, D2UnitStrc * 
 
 // @sourcefile .\UNIT\CUnitEvent.cpp
 void __fastcall CUNITEVENT_RemoveByTypeAndState(D2UnitStrc * pUnit, int32_t nEventType, int32_t nEventState) {
-    D2PoolManagerStrc* pMemory;
     int32_t nLine;
     int32_t nNull;
     char* szFile;
@@ -125,8 +122,7 @@ void __fastcall CUNITEVENT_RemoveByTypeAndState(D2UnitStrc * pUnit, int32_t nEve
         nNull = 0;
         nLine = 0x80;
         szFile = ".\\UNIT\\CUnitEvent.cpp";
-        pMemory = GetMemPool(pUnit);
-        Fog::Memory::FreeServerMemory(pMemory, pMemoryToFree, szFile, nLine, nNull);
+        Fog::Memory::FreeServerMemory(GetMemPool(pUnit), pMemoryToFree, szFile, nLine, nNull);
       }
     }
 }

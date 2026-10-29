@@ -101,8 +101,8 @@ void __fastcall GAMEDATA_SetClickModifier(int32_t bModifierDown);
 // Compute mouse click modifier flags (run/always-run, modifier key).
 uint32_t __stdcall GetMouseClickFlags();
 void __stdcall GAME_SetMouseButtonEventPending();
-uint8_t __stdcall GAME_GetPrimaryClickState();
-uint8_t __stdcall GAME_GetMouseButtonEventState();
+uint32_t __stdcall GAME_GetPrimaryClickState();
+int __stdcall GAME_GetMouseButtonEventState();
 int __stdcall GAMEDATA_GetQueuedPrimaryClick();
 // Handle under-mouse primary click: set queued click, build flags, call ClickMap(0,...).
 void __stdcall UnderMouse_PrimaryClick(struct D2UIMouseMsgStrc * pMsg);

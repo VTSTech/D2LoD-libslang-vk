@@ -169,7 +169,7 @@ void __fastcall Q03_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           if (nPartyId != -1) {
             UNIT::Party::ExecuteFunctionForEveryPartyMember(pQuestArgs->pGame, nPartyId, (::fpExecuteOnUnitFunction)Q03_AutoCompleteIfHighLevel, 0);
           }
-          if (pQuestData->bIsNotIntroduction) {
+          if (pQuestData->bIsNotIntroduction != '\0') {
             if (pQuestData->nStateFlag == 4) {
               QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0xf7);
               pA1Q3Data->bQuestAccepted = 1;
@@ -275,7 +275,7 @@ void __fastcall DeactivateToolsOfTrade(::SGAMEDATA * pGame, D2UnitStrc * pUnit) 
       exit(-1);
     }
 
-    pQuestData->bIsActive = false;
+    pQuestData->bIsActive = '\0';
     QUEST_DebugPrint(pGame, "deactivated tools of trade", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x164);
 }
 
@@ -285,7 +285,7 @@ void __fastcall Q03_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2UnitDataPlayerStrc* pPlayerData;
     BOOL bQuestState;
     ::SGAMEDATA* pGame;
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       D2BitBufferStrc* pBitBuffer;
       if (!(pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x1 && pQuestData->nStateFlag == 2)) {
         return;
@@ -321,13 +321,13 @@ void __fastcall Q03_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 // MallusHandler (A1Q3) — invoked when the Malus item count drops to 0 (see Q03_Callback_06). If the Malus had been taken: advance nStateFlag to 3, set eFlags, broadcast state 1 (RewardAwaits/intro), clear bMalusTaken-area flag, then locate the dropped Malus unit (FindUnitFromTable, classId 0x6c = the Malus object) and flag it for update; if not found, clear bMalusTaken. No quest-record bit writes (state via broadcast).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 static bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return false;
     }
 
     D2QuestDataA1Q3Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
     pA1Q3Data->nMalusMode = 0;
-    if (!pA1Q3Data->bMalusTaken) {
+    if (pA1Q3Data->bMalusTaken == '\0') {
       return false;
     }
 
@@ -335,7 +335,7 @@ static bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
     pQuestData->nQuestPacketFlags = '\x01';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, true);
     pA1Q3Data->field_0x08 = '\0';
-    if (!pA1Q3Data->bMalusTaken) {
+    if (pA1Q3Data->bMalusTaken != '\x01') {
       return true;
     }
 
@@ -345,7 +345,7 @@ static bool __stdcall MallusHandler(D2QuestDataStrc * pQuestData) {
       return true;
     }
 
-    pA1Q3Data->bMalusTaken = false;
+    pA1Q3Data->bMalusTaken = '\0';
     return true;
 }
 
@@ -367,13 +367,13 @@ void __fastcall Q03_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 // Q03_Callback_14 (A1Q3) — item-pickup hook (handler slot 0xe). When the player picks up the Horadric Malus ('hdm ') and the quest is in-progress (nStateFlag != 5): increment nQuestItemCount; if count>0 and bMalusTaken and nMalusMode==2, set nStateFlagPrev=2 (arm the "Malus in hand" sub-state). No quest-record writes.
 void __fastcall Q03_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2UnitStrc* pDVar2 = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x206d6468);
-    if (!(pDVar2 && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag != 5)) {
+    if (!(pDVar2 && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag != 5)) {
       return;
     }
 
     D2QuestDataA1Q3Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q3;
     pDVar1->nQuestItemCount++;
-    if (!(pDVar1->nQuestItemCount == 1 && pDVar1->bMalusTaken && pDVar1->nMalusMode == 2)) {
+    if (!(pDVar1->nQuestItemCount == 1 && pDVar1->bMalusTaken != '\0' && pDVar1->nMalusMode == 2)) {
       return;
     }
 
@@ -382,14 +382,14 @@ void __fastcall Q03_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
 
 // Q03_Callback_09 (A1Q3) — item-drop/remove hook (handler slot 9). When the Malus leaves the player (and nStateFlag != 5): decrement nQuestItemCount; if it hits 0 and bMalusTaken and nMalusMode==2, broadcast state 3 via Q03_NpcGossipHandler. No quest-record writes.
 void __fastcall Q03_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlag != 5)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag != 5)) {
       return;
     }
 
     D2QuestDataA1Q3Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
     int32_t* pnQuestItemCount = &pA1Q3Data->nQuestItemCount;
     (*pnQuestItemCount)--;
-    if (!(!*pnQuestItemCount && pA1Q3Data->bMalusTaken && pA1Q3Data->nMalusMode == 2)) {
+    if (!(!*pnQuestItemCount && pA1Q3Data->bMalusTaken != '\0' && pA1Q3Data->nMalusMode == 2)) {
       return;
     }
 
@@ -409,7 +409,7 @@ void __fastcall Q03_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 
 // Q03_Callback_06 (A1Q3) — handler slot 6; another Malus-count decrement path. If in-progress: decrement nQuestItemCount; when it reaches 0 and nMalusMode==2, call MallusHandler (which advances nStateFlag to 3 and broadcasts RewardAwaits). No direct quest-record writes.
 void __fastcall Q03_Callback06_Unused(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -439,7 +439,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
     } else {
       ePlayerAnimMode = pDVar2->eAnimMode.ePlayerMode;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pDVar2, 2);
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
@@ -476,7 +476,7 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
 
     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
     D2QuestDataA1Q3Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
-    pA1Q3Data->bMalusTaken = true;
+    pA1Q3Data->bMalusTaken = '\x01';
     pA1Q3Data->nMalusMode = 2;
     pDVar2 = pOperation->sArg.pVictim;
     if (!pDVar2) {
@@ -521,9 +521,7 @@ bool __fastcall Q03_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
         return false;
       }
 
-      uint32_t dwItemCode = 0x206d6468;
-      ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-      D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(pGame, pUnit, dwItemCode);
+      D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(UNIT::SUnit::GetGamePointer(pUnit), pUnit, 0x206d6468);
       /* If the player carries the Horadric Hammer: active */ if (!pMalusItem) {
         return false;
       }
@@ -588,7 +586,7 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       }
     } else {
       int iVar1;
-      if (pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
         /* GetQuestState(JustCompleted=0xd) — just turned in self game */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_JustCompleted);
         if (bQuestState) {
           /* GetQuestState(RewardAwaits=1) — status 0x10a if reward pending else 0xd */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
@@ -623,9 +621,9 @@ bool __fastcall Q03_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bVar1;
     D2QuestDataStrc* pQuestData_00;
     BOOL BVar2;
-    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x35a);
-    } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
+    } else if (pQuestData->nStateFlag == 5 || pQuestData->bIsNotIntroduction == '\0') {
       pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (pQuestData_00) {
         /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
@@ -703,7 +701,7 @@ void __fastcall Q03_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q03_Callback13_PlayerStartedGame;
     pQuestData->fpSequenceFilter = Q03_SequenceFilter;
     pQuestData->pNpcMessages = &A1Q3::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nQuestIdReal = QUEST_ToolsOfTheTrade;
     D2QuestDataA1Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pSVar1->pMemoryPool, D2QuestDataA1Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x3ae);
     pQuestData->pQuestSpecificData.pA1Q3 = pQuestSpecificData;
@@ -717,7 +715,7 @@ void __fastcall Q03_InitData(D2QuestDataStrc * pQuestData) {
     pQuestSpecificData->nMalusGUID = 0;
     pQuestSpecificData->field_0x10 = '\0';
     pQuestSpecificData->field_0x12 = 0;
-    pQuestSpecificData->bMalusTaken = false;
+    pQuestSpecificData->bMalusTaken = '\0';
     pQuestSpecificData->field_0x08 = '\0';
     pQuestSpecificData->bCharsiNotified = 0;
     pQuestSpecificData->bQuestAccepted = 0;

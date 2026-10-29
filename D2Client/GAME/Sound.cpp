@@ -171,7 +171,7 @@ void __stdcall CleanUpGame() {
       }
 
       pChannel += 8;
-    } while ((int)pChannel < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)pChannel < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 
     D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0xff);
 }
@@ -209,7 +209,7 @@ void __stdcall SOUND_UpdateNonLoopingStreams() {
       }
 
       pChannelEntry += 8;
-    } while ((int)pChannelEntry < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)pChannelEntry < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 }
 
 uint32_t __fastcall SOUND_GetStreamProgress(D2ClientSoundChannelStrc * pnParam) {
@@ -260,7 +260,7 @@ int * __fastcall SOUND_FindPlayingByIdSafe(int32_t nId) {
       }
 
       ppDVar3 += 8;
-    } while ((int)ppDVar3 < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)ppDVar3 < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 
     return (int*)pDVar4;
 }
@@ -285,7 +285,7 @@ void __stdcall SOUND_ShutdownAudio() {
       D2Sound::Src::D2SoundSmp::SOUNDSMP_Destroy(ppSampleInst->pSoundSmp);
       ppSampleInst->pSoundSmp = 0;
       ppSampleInst++;
-    } while ((int)ppSampleInst < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels)));
+    } while ((int)ppSampleInst < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels)));
 
     pAudioMixerInterface = 0;
 }
@@ -320,7 +320,7 @@ static BOOL SOUND_InitStreamChannels(int32_t nParam) {
       }
 
       nChannelIdx++;
-      if ((int)&gaSoundChannels[nChannelIdx].nChannelType >= (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 4)) {
+      if ((int)&gaSoundChannels[nChannelIdx].nChannelType >= (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 4)) {
         SOUND_SetEaxEnvironment(0);
         pAudioMixerInterface = 1;
         return 1;
@@ -347,7 +347,7 @@ static D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t 
       }
 
       pBestChannel++;
-    } while ((int)pBestChannel < (uintptr_t)&gaSoundChannels[16]);
+    } while ((int)pBestChannel < (intptr_t)&gaSoundChannels[16]);
 
     pBestChannel = 0;
     D2SoundChannelStrc** pChannelEntry;
@@ -366,7 +366,7 @@ static D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t 
 
       next_channel:
       pChannelEntry += 8;
-      if ((int)pChannelEntry >= (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8)) {
+      if ((int)pChannelEntry >= (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8)) {
         if (!pBestChannel) {
           return nullptr;
         }

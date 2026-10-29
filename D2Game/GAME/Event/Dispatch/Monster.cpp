@@ -189,9 +189,6 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 
 // Dead-code wrapper (marked Unused) that validates the victim unit from pUnitKill->sArg.pVictim, skips units with flag bit 0x11 set (already processed) and classId 0x158 (bonewall), checks COLLISION_ITEMS at the victim's position, then delegates to SERVER_ITEM_DecideDrops. Not called in shipping 1.14d.
 void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnArg * pUnitKill, uint32_t dwParam) {
-    int32_t nY;
-    int32_t nX;
-    D2RoomStrc* pRoom;
     D2RoomStrc* pFreeCoordRoom;
     D2MonStatsTxt* pVictimMonStats;
     eCollisionFlags eCollisionFlag;
@@ -209,10 +206,7 @@ void __fastcall DropItemForVictim_Unused(::SGAMEDATA * pGame, D2ObjectOperateFnA
         exit(-1);
       } else {
         eCollisionFlag = COLLISION_ITEMS;
-        nY = D2Client::Units::GetYPosFromDynamicPathUnit(pVictim);
-        nX = D2Client::Units::GetXPosFromDynamicPathUnit(pVictim);
-        pRoom = D2Common::Units::UNITS_GetRoom(pVictim);
-        eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(pRoom, nX, nY, eCollisionFlag);
+        eCollision = D2Common::Collision::CheckCollision_BlockPlayerMissile(D2Common::Units::UNITS_GetRoom(pVictim), D2Client::Units::GetXPosFromDynamicPathUnit(pVictim), D2Client::Units::GetYPosFromDynamicPathUnit(pVictim), eCollisionFlag);
         if (eCollision != COLBIT_NONE) {
           return;
         }
@@ -685,8 +679,7 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
       nClassId = pVictim->nUnitGUID;
     }
 
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pVictim);
-    D2Common::DUNGEON::Dungeon::SaveKilledUnitGUID(pRoom, nClassId);
+    D2Common::DUNGEON::Dungeon::SaveKilledUnitGUID(D2Common::Units::UNITS_GetRoom(pVictim), nClassId);
     if (!pVictim) {
       return 1;
     }
@@ -780,6 +773,7 @@ BOOL __fastcall MONSTER_OnDeathDispatch(::SGAMEDATA * pGame, D2MonsterKillStrc *
 
 void __fastcall MONMODE_HandleSpecialEndDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2UnitStrc* pOwner;
+    short int nMinionClassId;
     if (!pUnit) {
       return;
     }
@@ -795,21 +789,28 @@ void __fastcall MONMODE_HandleSpecialEndDeath(::SGAMEDATA * pGame, D2UnitStrc * 
     if (!pMonStats) {
       return;
     }
-    if (pMonStats->SplEndDeath != '\x01') {
-      if (pMonStats->SplEndDeath == '\x02') {
-        pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-        if (pOwner) {
-          UNIT::SUnitDmg::SERVER_KillMonster(pGame, pOwner, nullptr, 1);
+
+    switch (pMonStats->SplEndDeath) {
+      case '\x01':
+        {
+          nMinionClassId = pMonStats->minion1;
+          if (nMinionClassId >= 0 && (int)nMinionClassId <= sgptDataTable->nTxtMonStatsSize) {
+            D2Game::Monster::MONSTER_TransformMonsterClass(pGame, pUnit, (int)nMinionClassId, 1);
+            D2Game::Monster::MONSTERAI_TriggerMageThink(pGame, pUnit);
+            return;
+          }
+
+          break;
         }
-      }
-    } else {
-      short int nMinionClassId;
-      nMinionClassId = pMonStats->minion1;
-      if (nMinionClassId >= 0 && (int)nMinionClassId <= sgptDataTable->nTxtMonStatsSize) {
-        D2Game::Monster::MONSTER_TransformMonsterClass(pGame, pUnit, (int)nMinionClassId, 1);
-        D2Game::Monster::MONSTERAI_TriggerMageThink(pGame, pUnit);
-        return;
-      }
+      case '\x02':
+        {
+          pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
+          if (pOwner) {
+            UNIT::SUnitDmg::SERVER_KillMonster(pGame, pOwner, nullptr, 1);
+          }
+
+          break;
+        }
     }
 }
 

@@ -167,17 +167,21 @@ D2SkillStrc * __stdcall GetCurrentSkill(D2UnitStrc * pUnit) {
 
 // @sourcefile .\UNITS\Units.cpp
 D2UnitStrc * __stdcall AllocUnit(D2PoolManagerStrc * pMemory, eD2UnitType eUnitType) {
+    D2UnitDataMonsterStrc* local_EAX_79;
     D2UnitStrc* pUnit = D2_NEW_POOL_AT(pMemory, D2UnitStrc, ".\\UNITS\\Units.cpp", 0x66e);
     memset(pUnit, 0, 0xf4);
     pUnit->eUnitType = eUnitType;
     pUnit->pMemory = pMemory;
-    if (eUnitType != UNIT_MONSTER) {
-      return pUnit;
+    switch (eUnitType) {
+      case UNIT_MONSTER:
+        {
+          local_EAX_79 = D2_NEW_POOL_AT(pMemory, D2UnitDataMonsterStrc, ".\\UNITS\\Units.cpp", 0x67b);
+          pUnit->pUnitData.pUnitDataMonster = local_EAX_79;
+          memset(local_EAX_79, 0, 0x60);
+          break;
+        }
     }
 
-    D2UnitDataMonsterStrc* local_EAX_79 = D2_NEW_POOL_AT(pMemory, D2UnitDataMonsterStrc, ".\\UNITS\\Units.cpp", 0x67b);
-    pUnit->pUnitData.pUnitDataMonster = local_EAX_79;
-    memset(local_EAX_79, 0, 0x60);
     return pUnit;
 }
 
@@ -539,32 +543,37 @@ int32_t __fastcall GetCollisionType(D2UnitStrc * pUnit) {
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType != UNIT_OBJECT) {
-      if (eUnitType != UNIT_ITEM) {
-        if (eUnitType != UNIT_WARP) {
+    switch (eUnitType) {
+      case UNIT_OBJECT:
+        {
+          pObjectsTxt = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
+          if (pObjectsTxt->IsDoor) {
+            if (pObjectsTxt->BlocksVis) {
+              return 0x806;
+            }
+
+            return pObjectsTxt->BlockMissile != '\0' ? 0x804 : 0x400;
+          }
+          if (pObjectsTxt->SubClass & 4U) {
+            return 0x8000;
+          }
+
+          return (uint32_t)(pObjectsTxt->BlockMissile != '\0') * 4 + 0x400;
+        }
+      case UNIT_ITEM:
+        {
+          return 0x200;
+        }
+      case UNIT_WARP:
+        {
+          return 1;
+        }
+      default:
+        {
           nLine = PATH::DynamicPath::GetCollisionType(pUnit->pPath.pDynamicPath);
           return nLine;
         }
-
-        return 1;
-      }
-
-      return 0x200;
     }
-
-    pObjectsTxt = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
-    if (pObjectsTxt->IsDoor) {
-      if (pObjectsTxt->BlocksVis) {
-        return 0x806;
-      }
-
-      return pObjectsTxt->BlockMissile != '\0' ? 0x804 : 0x400;
-    }
-    if (pObjectsTxt->SubClass & 4U) {
-      return 0x8000;
-    }
-
-    return (uint32_t)(pObjectsTxt->BlockMissile != '\0') * 4 + 0x400;
 }
 
 // Returns nothing: every exit leaves AddCollision_Vector's or GetUnitSizeY's EAX, and none of the 17 call sites reads it.
@@ -861,44 +870,50 @@ int32_t __stdcall GetInventoryPage(D2UnitStrc * pUnit, int32_t nInvPage, BOOL bL
 
     eD2UnitType eUnitType = pUnit->eUnitType;
     int iVar1 = -1;
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType == UNIT_MONSTER) {
-        return 5;
-      }
-      if (eUnitType == UNIT_OBJECT) {
-        /* Guild Vault */ if (pUnit->nClassId != 0x152) {
-          /* Trophy Case */ if (pUnit->nClassId != 0x153) {
-            return -1;
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          switch (nInvPage & 0xff) {
+            case 1:
+              return 6;
+            case 2:
+              return 7;
+            case 3:
+              return 9;
+            case 4:
+              /* Lod/Classic inventory sizes decide */ return (uint32_t)(bLoD != 0) * 4 + 8;
           }
 
-          return 0xb;
-        }
+          i = 0;
+          if ((uint32_t)nPlayerInventoryPageSize > 0) {
+            while (pUnit->nClassId != aPlayerInventoryPage[i * 2]) {
+              i++;
+              if (i >= nPlayerInventoryPageSize) {
+                return iVar1;
+              }
+            }
 
-        return 10;
-      }
-    } else {
-      switch (nInvPage & 0xff) {
-        case 1:
-          return 6;
-        case 2:
-          return 7;
-        case 3:
-          return 9;
-        case 4:
-          /* Lod/Classic inventory sizes decide */ return (uint32_t)(bLoD != 0) * 4 + 8;
-      }
-
-      i = 0;
-      if ((uint32_t)nPlayerInventoryPageSize > 0) {
-        while (pUnit->nClassId != aPlayerInventoryPage[i * 2]) {
-          i++;
-          if (i >= nPlayerInventoryPageSize) {
-            return iVar1;
+            iVar1 = aPlayerInventoryPage[i * 2 + 1];
           }
-        }
 
-        iVar1 = aPlayerInventoryPage[i * 2 + 1];
-      }
+          break;
+        }
+      case UNIT_MONSTER:
+        {
+          return 5;
+        }
+      case UNIT_OBJECT:
+        {
+          /* Guild Vault */ if (pUnit->nClassId != 0x152) {
+            /* Trophy Case */ if (pUnit->nClassId != 0x153) {
+              return -1;
+            }
+
+            return 0xb;
+          }
+
+          return 10;
+        }
     }
 
     return iVar1;
@@ -1000,42 +1015,55 @@ void __stdcall SetFrameNonRate(D2UnitStrc * pUnit, int32_t nRate, int32_t nFailR
 }
 
 static int32_t UNITS_GetBaseWalkVelocity(eD2UnitType eUnitType, int32_t nClassId) {
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
-        return (int)*(volatile uint8_t*)0x32 << 8;
-      }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtCharStatsSize)) {
+            return (uint32_t)*(volatile uint8_t*)0x40 << 8;
+          }
 
-      return (int)sgptDataTable->pTxtMonStats[nClassId].Velocity << 8;
-    }
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtCharStatsSize)) {
-      return (uint32_t)*(volatile uint8_t*)0x40 << 8;
-    }
+          return (uint32_t)(uint8_t)sgptDataTable->pTxtCharStats[nClassId].WalkVelocity << 8;
+        }
+      case UNIT_MONSTER:
+        {
+          if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
+            return (int)*(volatile uint8_t*)0x32 << 8;
+          }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtCharStats[nClassId].WalkVelocity << 8;
+          return (int)sgptDataTable->pTxtMonStats[nClassId].Velocity << 8;
+        }
+      default:
+        {
+          return 0;
+        }
+    }
 }
 
 static int32_t UNITS_GetAnimFrameTime(eD2UnitType eUnitType, int32_t nClassId, int32_t nAnimMode) {
     D2MonStatsTxt* pMonStatsTxt;
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize) {
-        pMonStatsTxt = 0;
-      } else {
-        pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId;
-      }
-      if (nAnimMode != 0xf) {
-        return (int)pMonStatsTxt->wWalkAnimSpeed;
-      }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          return nAnimMode != 3 ? 0xd5 : 0x65;
+        }
+      case UNIT_MONSTER:
+        {
+          if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize) {
+            pMonStatsTxt = 0;
+          } else {
+            pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId;
+          }
+          if (nAnimMode != 0xf) {
+            return (int)pMonStatsTxt->wWalkAnimSpeed;
+          }
 
-      return (int)pMonStatsTxt->wRunAnimSpeed;
+          return (int)pMonStatsTxt->wRunAnimSpeed;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    return nAnimMode != 3 ? 0xd5 : 0x65;
 }
 
 uint8_t * __stdcall UNITS_GetAnimTableEntry(int32_t nClassId, int32_t nAnimMode) {
@@ -1062,14 +1090,18 @@ static BOOL __stdcall CanPlayAnimMode(D2UnitStrc * pUnit, int32_t nClassId, eD2U
         return 0;
       }
       if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId && sgptDataTable->pTxtMonStats[nClassId].npc) {
-        if (nAnimMode == 2) {
-          return 1;
-        }
-        if (nAnimMode != 0xf) {
-          return 0;
+        switch (nAnimMode) {
+          case 2:
+            {
+              return 1;
+            }
+          case 0xf:
+            {
+              return 1;
+            }
         }
 
-        return 1;
+        return 0;
       }
       if (nClassId < 0x19a) {
         pAnimModeEntry = gaAnimTableClassic + nAnimMode * 5;
@@ -1141,18 +1173,24 @@ uint32_t __fastcall UNITS_CheckAnimateAtFrameEnd(int32_t nAnimMode, eD2UnitType 
 }
 
 static int __stdcall UNITS_GetAnimFrameSkip(int32_t nAnimMode, int32_t nParam, eD2UnitType eUnitType) {
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (nParam < 0x19a) {
-        return gaAnimTableClassic[nAnimMode * 5 + 4];
-      }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          return gaPlayerAnimModeCheckTable[nAnimMode * 5 + 4];
+        }
+      case UNIT_MONSTER:
+        {
+          if (nParam < 0x19a) {
+            return gaAnimTableClassic[nAnimMode * 5 + 4];
+          }
 
-      return gaAnimTableExpansion[nAnimMode * 5 + 4];
+          return gaAnimTableExpansion[nAnimMode * 5 + 4];
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    return gaPlayerAnimModeCheckTable[nAnimMode * 5 + 4];
 }
 
 // @sourcefile .\UNITS\Units.cpp
@@ -1468,8 +1506,8 @@ static void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUni
       return;
     }
 
-    pUnit->eOwnerType = nOwnerGUID;
-    pUnit->nOwnerGUID = eUnitType;
+    pUnit->eOwnerType = eUnitType;
+    pUnit->nOwnerGUID = nOwnerGUID;
     if (pUnit->pStatsEx) {
       DATATBLS::ItemStats::SetState(pUnit, STATE_sourceunit, 1);
       pStatsEx = Stats::StatsEx::GetStatsByState(pUnit, STATE_sourceunit);
@@ -1483,15 +1521,15 @@ static void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUni
         Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatsEx, 1);
       }
 
-      Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_type, nOwnerGUID, 0);
-      Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_id, eUnitType, 0);
+      Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_type, eUnitType, 0);
+      Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_id, nOwnerGUID, 0);
     }
 
     pUnit->eUnitFlagsEx |= UNITFLAGEX_STOREOWNERINFO;
 }
 
 void __stdcall StoreOwnerInfo(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nOwnerId) {
-    StoreOwnerTypeAndGUID(pUnit, nOwnerId, eUnitType);
+    StoreOwnerTypeAndGUID(pUnit, eUnitType, nOwnerId);
 }
 
 void __stdcall StoreOwner(D2UnitStrc * pUnit, D2UnitStrc * pOwner) {
@@ -1516,7 +1554,7 @@ void __stdcall StoreOwner(D2UnitStrc * pUnit, D2UnitStrc * pOwner) {
       return;
     }
 
-    StoreOwnerTypeAndGUID(pUnit, pOwner->nUnitGUID, pOwner->eUnitType);
+    StoreOwnerTypeAndGUID(pUnit, pOwner->eUnitType, pOwner->nUnitGUID);
 }
 
 void __stdcall StoreLastAttacker(D2UnitStrc * pUnit, D2UnitStrc * pKiller) {
@@ -1828,30 +1866,36 @@ BOOL __stdcall CheckObjectPortalFlag(D2UnitStrc * pUnit, uint8_t nPortalFlag) {
 }
 
 int32_t __stdcall GetOverlayHeight(D2UnitStrc * pUnit) {
+    D2MonStats2Txt* pMonStats2Txt;
     int32_t nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (!pUnit) {
-        nClassId = -1;
-      } else {
-        nClassId = pUnit->nClassId;
-      }
 
-      D2MonStats2Txt* pMonStats2Txt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-      if (!pMonStats2Txt) {
-        return 0;
-      }
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          return 1;
+        }
+      case UNIT_MONSTER:
+        {
+          if (!pUnit) {
+            nClassId = -1;
+          } else {
+            nClassId = pUnit->nClassId;
+          }
 
-      return (uint8_t)pMonStats2Txt->overlayHeight - 1;
+          pMonStats2Txt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
+          if (pMonStats2Txt) {
+            return (uint8_t)pMonStats2Txt->overlayHeight - 1;
+          }
+
+          break;
+        }
     }
 
-    return 1;
+    return 0;
 }
 
 // Computes the effective defense rating for a unit. Starts from UNITSTAT_armorclass, adds dex/4, then applies skill_armor_percent and item_armor_percent bonuses. If the unit has the Holy Shield state active and a shield equipped, adds the Holy Shield calc[0] bonus. Applies armor_override_percent on top. Returns total defense; returns at least 0 (negative base is divided, not floored).
@@ -1984,6 +2028,7 @@ BOOL __fastcall HasShield(D2UnitStrc * pUnit) {
 int32_t __stdcall GetBlockRate(D2UnitStrc * pUnit, BOOL bExpansion) {
     BOOL nClassId;
     int nToBlock;
+    int32_t nShieldResult;
     D2CharStatsTxt* pCharStats;
     int iVar1;
     int nLevel;
@@ -1991,44 +2036,54 @@ int32_t __stdcall GetBlockRate(D2UnitStrc * pUnit, BOOL bExpansion) {
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType != UNIT_PLAYER) {
-      if (eUnitType != UNIT_MONSTER) {
-        return 0;
-      }
-      if (!pUnit || (iVar1 = pUnit->nClassId , iVar1 < 0) || iVar1 >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + iVar1) || !sgptDataTable->pTxtMonStats[iVar1].NoShldBlock) {
-        nClassId = HasShield(pUnit);
-        if (!nClassId) {
+
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          nShieldResult = INVENTORY::Inventory::INVENTORY_GetEquippedShield(pUnit->pInventory, nullptr);
+          if (!nShieldResult) {
+            return 0;
+          }
+
+          nToBlock = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_toblock, 0);
+          iVar1 = pUnit->nClassId;
+          if (iVar1 < 0 || iVar1 >= sgptDataTable->nTxtCharStatsSize) {
+            pCharStats = 0;
+          } else {
+            pCharStats = sgptDataTable->pTxtCharStats + iVar1;
+          }
+
+          nToBlock += (uint32_t)(uint8_t)pCharStats->BlockFactor;
+          if (bExpansion) {
+            iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_dexterity, 0);
+            nLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+            if (nLevel <= 1) {
+              nLevel = 1;
+            }
+
+            nToBlock = (iVar1 - 0xf) * nToBlock / (nLevel * 2);
+          }
+
+          break;
+        }
+      default:
+        {
           return 0;
         }
-      }
+      case UNIT_MONSTER:
+        {
+          if (!pUnit || (iVar1 = pUnit->nClassId , iVar1 < 0) || iVar1 >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + iVar1) || !sgptDataTable->pTxtMonStats[iVar1].NoShldBlock) {
+            nClassId = HasShield(pUnit);
+            if (!nClassId) {
+              return 0;
+            }
+          }
 
-      nToBlock = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_toblock, 0);
-    } else {
-      int32_t nShieldResult;
-      nShieldResult = INVENTORY::Inventory::INVENTORY_GetEquippedShield(pUnit->pInventory, nullptr);
-      if (!nShieldResult) {
-        return 0;
-      }
-
-      nToBlock = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_toblock, 0);
-      iVar1 = pUnit->nClassId;
-      if (iVar1 < 0 || iVar1 >= sgptDataTable->nTxtCharStatsSize) {
-        pCharStats = 0;
-      } else {
-        pCharStats = sgptDataTable->pTxtCharStats + iVar1;
-      }
-
-      nToBlock += (uint32_t)(uint8_t)pCharStats->BlockFactor;
-      if (bExpansion) {
-        iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_dexterity, 0);
-        nLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-        if (nLevel <= 1) {
-          nLevel = 1;
+          nToBlock = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_toblock, 0);
+          break;
         }
-
-        nToBlock = (iVar1 - 0xf) * nToBlock / (nLevel * 2);
-      }
     }
+
     if (nToBlock >= 0x4b) {
       return 0x4b;
     }
@@ -2340,7 +2395,6 @@ BOOL __stdcall IsInMovingMode(D2UnitStrc * pUnit) {
         {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1325);
           exit(-1);
-          break;
         }
     }
 
@@ -2737,11 +2791,15 @@ BOOL __stdcall CanDualWield(D2UnitStrc * pUnit) {
         return 1;
       }
     } else {
-      if (nClassId == 4) {
-        return 1;
-      }
-      if (nClassId == 6) {
-        return 1;
+      switch (nClassId) {
+        case 4:
+          {
+            return 1;
+          }
+        case 6:
+          {
+            return 1;
+          }
       }
     }
 
@@ -2940,8 +2998,7 @@ int32_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
     }
 
     nCurPos = PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
-    nTargetPos = PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
-    int nDirection = GetDirectionToCoords(pUnit, nTargetPos, nCurPos);
+    int nDirection = GetDirectionToCoords(pUnit, PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath), nCurPos);
     return nDirection;
 }
 

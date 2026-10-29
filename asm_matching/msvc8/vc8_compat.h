@@ -52,6 +52,15 @@ extern "C" void __cpuid(int cpuInfo[4], int infoType);
 // winsock2.h declares them itself; claiming the guard skips the mingw copy.
 #define _MINGW_IP_TYPES_H
 
+// Winsock linkage. Game.exe calls ws2_32 through the linker's import stubs
+// (`call 006b012c`, a `jmp [__imp_closesocket]`), which is what a declaration
+// WITHOUT dllimport produces; the Platform SDK declares every Winsock function
+// dllimport (`call [__imp_closesocket]`). Only crashy (Fog/3rdparty, 0x4016c0)
+// calls through the IAT directly, and flags.tsv gives it the SDK's linkage back.
+#ifndef WINSOCK_API_LINKAGE
+#define WINSOCK_API_LINKAGE
+#endif
+
 // The tree declares `typedef int _EXCEPTION_DISPOSITION` (d2_enums.h); VC8's
 // excpt.h declares an enum of that tag. Rename the CRT's while the Windows
 // headers are read; vc8_after_windows.h drops the rename again.

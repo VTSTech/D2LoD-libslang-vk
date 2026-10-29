@@ -120,153 +120,165 @@ int __stdcall COMPOSIT_GetItemTypeIndex(int32_t iItemType) {
 
 // Resolves a unit's weapon-class token - the hth/1hs/2hs four-character code that forms the last component of every COF and AnimData name. Returns the token itself and writes the matching weapon-class INDEX through pnParam. Monsters take BaseW from MonStats2, objects and unarmed units take hth, and a player's is resolved from the equipped weapons: dual-wield pairs for the Assassin and Barbarian get the 1js/1jt/1st/1ss/2ht combinations, everything else comes from the item's own WClass or 2HandedWClass by handedness. The two by-handedness returns save the token in EDX across the GetItemTypeIndex call, which is why this function needs its callee typed __stdcall_edxsafe.
 uint32_t __stdcall COMPOSIT_ResolveWeaponClass(D2UnitStrc * pUnit, int32_t nUnitType, int32_t nClassIndex, int32_t nMode, D2InventoryStrc * pInventory, int32_t * pnParam) {
+    int16_t nRightAnimClass;
     int16_t nLeftAnimClass;
     D2MonStats2Txt* pMonStats2;
     BOOL bItemValid;
+    D2UnitStrc* pRightArmItem;
+    D2UnitStrc* pLeftArmItem;
     uint32_t bIsWeapon;
     int nHandedness;
     D2CharStatsTxt* pCharStatsTxt;
     uint32_t nWClassCode2H;
     uint32_t nWClassCode1H;
+    D2UnitStrc* pEquippedItem;
     uint8_t bHasComponent;
     bHasComponent = '\0';
-    if (nUnitType) {
-      if (nUnitType != 1) {
-        if (nUnitType != 2) {
-          *pnParam = 0;
-          return 0;
-        }
-      } else {
-        pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassIndex);
-        if (!pMonStats2) {
-          nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
-          *pnParam = nHandedness;
-          return 0x20687468;
-        }
-        if (nMode && nMode != 0xc || pMonStats2->compositeDeath) {
-          nHandedness = COMPOSIT_GetItemTypeIndex(pMonStats2->BaseW);
-          *pnParam = nHandedness;
-          return pMonStats2->BaseW;
-        }
-      }
-
-      nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
-      *pnParam = nHandedness;
-      return 0x20687468;
-    }
-
-    D2UnitStrc* pEquippedItem;
-    pEquippedItem = 0;
-    if (pInventory) {
-      pEquippedItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
-      if (pEquippedItem) {
-        bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEquippedItem);
-        if (bItemValid) {
-          if (pEquippedItem->eUnitType != UNIT_ITEM) {
-            return 0;
-          }
-
-          bHasComponent = ITEMS::Items::ITEM_GetItemsTxt_bComponent(pEquippedItem);
-          if (bHasComponent == '\x05' || bHasComponent == '\x06') {
-            goto pick_weapon_class;
+    switch (nUnitType) {
+      default:
+        {
+          switch (nUnitType) {
+            case 1:
+              {
+                pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassIndex);
+                if (!pMonStats2) {
+                  nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
+                  *pnParam = nHandedness;
+                  return 0x20687468;
+                }
+                if (nMode && nMode != 0xc || pMonStats2->compositeDeath) {
+                  nHandedness = COMPOSIT_GetItemTypeIndex(pMonStats2->BaseW);
+                  *pnParam = nHandedness;
+                  return pMonStats2->BaseW;
+                }
+              }
+            case 2:
+              {
+                nHandedness = COMPOSIT_GetItemTypeIndex(0x20687468);
+                *pnParam = nHandedness;
+                return 0x20687468;
+              }
+            default:
+              {
+                *pnParam = 0;
+                return 0;
+              }
           }
         }
-      }
-
-      pEquippedItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
-      if (pEquippedItem) {
-        bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEquippedItem);
-        if (!bItemValid) {
+      case 0:
+        {
           pEquippedItem = 0;
-        } else {
-          bHasComponent = ITEMS::Items::ITEM_GetItemsTxt_bComponent(pEquippedItem);
-        }
-      }
-    }
+          if (pInventory) {
+            pEquippedItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
+            if (pEquippedItem) {
+              bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEquippedItem);
+              if (bItemValid) {
+                if (pEquippedItem->eUnitType != UNIT_ITEM) {
+                  return 0;
+                }
 
-    pick_weapon_class:
-    if (nClassIndex < 0 || nClassIndex >= sgptDataTable->nTxtCharStatsSize) {
-      pCharStatsTxt = 0;
-    } else {
-      pCharStatsTxt = sgptDataTable->pTxtCharStats + nClassIndex;
-    }
-    if (!nMode || nMode == 0x11 || !pEquippedItem || bHasComponent != '\x05' && bHasComponent != '\x06') {
-      nHandedness = COMPOSIT_GetItemTypeIndex(*(int32_t*)pCharStatsTxt->basewclass);
-      *pnParam = nHandedness;
-      return *(uint32_t*)pCharStatsTxt->basewclass;
-    }
-
-    D2UnitStrc* pRightArmItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
-    bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pRightArmItem);
-    if (!bItemValid) {
-      pRightArmItem = 0;
-    }
-
-    D2UnitStrc* pLeftArmItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
-    bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pLeftArmItem);
-    if (!bItemValid) {
-      pLeftArmItem = 0;
-    }
-    if (nClassIndex == 4) {
-      int16_t nRightAnimClass;
-      bIsWeapon = ITEMS::Items::ITEMS_IsA(pRightArmItem, ITEMTYPE_Weapon);
-      if (bIsWeapon) {
-        bIsWeapon = ITEMS::Items::ITEMS_IsA(pLeftArmItem, ITEMTYPE_Weapon);
-        if (bIsWeapon) {
-          pEquippedItem = INVENTORY::Inventory::GetEquipedWeapon(pInventory);
-          if (!pEquippedItem) {
-            INVENTORY::Inventory::INVENTORY_UpdatePrimaryWeapon(pInventory, pRightArmItem);
-            pEquippedItem = pRightArmItem;
-          }
-
-          nRightAnimClass = ITEMS::Items::ITEM_GetWeaponAnimClass(pEquippedItem);
-          if (pRightArmItem == pEquippedItem) {
-            pRightArmItem = pLeftArmItem;
-          }
-
-          nLeftAnimClass = ITEMS::Items::ITEM_GetWeaponAnimClass(pRightArmItem);
-          if (nRightAnimClass == 2) {
-            if (nLeftAnimClass != 2 && nLeftAnimClass == 3) {
-              nHandedness = COMPOSIT_GetItemTypeIndex(0x20736a31);
-              *pnParam = nHandedness;
-              return 0x20736a31;
+                bHasComponent = ITEMS::Items::ITEM_GetItemsTxt_bComponent(pEquippedItem);
+                if (bHasComponent == '\x05' || bHasComponent == '\x06') {
+                  goto pick_weapon_class;
+                }
+              }
             }
-          } else if (nRightAnimClass == 3) {
-            if (nLeftAnimClass == 3) {
-              nHandedness = COMPOSIT_GetItemTypeIndex(0x20746a31);
-              *pnParam = nHandedness;
-              return 0x20746a31;
-            }
-            if (nLeftAnimClass == 2) {
-              nHandedness = COMPOSIT_GetItemTypeIndex(0x20747331);
-              *pnParam = nHandedness;
-              return 0x20747331;
+
+            pEquippedItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
+            if (pEquippedItem) {
+              bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEquippedItem);
+              if (!bItemValid) {
+                pEquippedItem = 0;
+              } else {
+                bHasComponent = ITEMS::Items::ITEM_GetItemsTxt_bComponent(pEquippedItem);
+              }
             }
           }
 
-          nHandedness = COMPOSIT_GetItemTypeIndex(0x20737331);
+          pick_weapon_class:
+          if (nClassIndex < 0 || nClassIndex >= sgptDataTable->nTxtCharStatsSize) {
+            pCharStatsTxt = 0;
+          } else {
+            pCharStatsTxt = sgptDataTable->pTxtCharStats + nClassIndex;
+          }
+          if (!nMode || nMode == 0x11 || !pEquippedItem || bHasComponent != '\x05' && bHasComponent != '\x06') {
+            nHandedness = COMPOSIT_GetItemTypeIndex(*(int32_t*)pCharStatsTxt->basewclass);
+            *pnParam = nHandedness;
+            return *(uint32_t*)pCharStatsTxt->basewclass;
+          }
+
+          pRightArmItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
+          bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pRightArmItem);
+          if (!bItemValid) {
+            pRightArmItem = 0;
+          }
+
+          pLeftArmItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
+          bItemValid = ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pLeftArmItem);
+          if (!bItemValid) {
+            pLeftArmItem = 0;
+          }
+          if (nClassIndex == 4) {
+            bIsWeapon = ITEMS::Items::ITEMS_IsA(pRightArmItem, ITEMTYPE_Weapon);
+            if (bIsWeapon) {
+              bIsWeapon = ITEMS::Items::ITEMS_IsA(pLeftArmItem, ITEMTYPE_Weapon);
+              if (bIsWeapon) {
+                pEquippedItem = INVENTORY::Inventory::GetEquipedWeapon(pInventory);
+                if (!pEquippedItem) {
+                  INVENTORY::Inventory::INVENTORY_UpdatePrimaryWeapon(pInventory, pRightArmItem);
+                  pEquippedItem = pRightArmItem;
+                }
+
+                nRightAnimClass = ITEMS::Items::ITEM_GetWeaponAnimClass(pEquippedItem);
+                if (pRightArmItem == pEquippedItem) {
+                  pRightArmItem = pLeftArmItem;
+                }
+
+                nLeftAnimClass = ITEMS::Items::ITEM_GetWeaponAnimClass(pRightArmItem);
+                if (nRightAnimClass == 2) {
+                  if (nLeftAnimClass != 2 && nLeftAnimClass == 3) {
+                    nHandedness = COMPOSIT_GetItemTypeIndex(0x20736a31);
+                    *pnParam = nHandedness;
+                    return 0x20736a31;
+                  }
+                } else if (nRightAnimClass == 3) {
+                  if (nLeftAnimClass == 3) {
+                    nHandedness = COMPOSIT_GetItemTypeIndex(0x20746a31);
+                    *pnParam = nHandedness;
+                    return 0x20746a31;
+                  }
+                  if (nLeftAnimClass == 2) {
+                    nHandedness = COMPOSIT_GetItemTypeIndex(0x20747331);
+                    *pnParam = nHandedness;
+                    return 0x20747331;
+                  }
+                }
+
+                nHandedness = COMPOSIT_GetItemTypeIndex(0x20737331);
+                *pnParam = nHandedness;
+                return 0x20737331;
+              }
+            }
+          } else if (nClassIndex == 6 && (bIsWeapon = ITEMS::Items::ITEMS_IsA(pRightArmItem, ITEMTYPE_Weapon) , bIsWeapon != 0) && (bIsWeapon = ITEMS::Items::ITEMS_IsA(pLeftArmItem, ITEMTYPE_Weapon) , bIsWeapon != 0)) {
+            nHandedness = COMPOSIT_GetItemTypeIndex(0x20327468);
+            *pnParam = nHandedness;
+            return 0x20327468;
+          }
+
+          nHandedness = INVENTORY::Inventory::INVENTORY_GetWeaponHandedness(pUnit, pInventory);
+          if (nHandedness == 2) {
+            bIsWeapon = ITEMS::Items::ITEM_GetItemsTxt_dw2HandedWClass(pEquippedItem);
+            nHandedness = COMPOSIT_GetItemTypeIndex(bIsWeapon);
+            *pnParam = nHandedness;
+            return bIsWeapon;
+          }
+
+          bIsWeapon = ITEMS::Items::ITEM_GetItemsTxt_dwWClass(pEquippedItem);
+          nHandedness = COMPOSIT_GetItemTypeIndex(bIsWeapon);
           *pnParam = nHandedness;
-          return 0x20737331;
+          return bIsWeapon;
         }
-      }
-    } else if (nClassIndex == 6 && (bIsWeapon = ITEMS::Items::ITEMS_IsA(pRightArmItem, ITEMTYPE_Weapon) , bIsWeapon != 0) && (bIsWeapon = ITEMS::Items::ITEMS_IsA(pLeftArmItem, ITEMTYPE_Weapon) , bIsWeapon != 0)) {
-      nHandedness = COMPOSIT_GetItemTypeIndex(0x20327468);
-      *pnParam = nHandedness;
-      return 0x20327468;
     }
-
-    nHandedness = INVENTORY::Inventory::INVENTORY_GetWeaponHandedness(pUnit, pInventory);
-    if (nHandedness == 2) {
-      bIsWeapon = ITEMS::Items::ITEM_GetItemsTxt_dw2HandedWClass(pEquippedItem);
-      nHandedness = COMPOSIT_GetItemTypeIndex(bIsWeapon);
-      *pnParam = nHandedness;
-      return bIsWeapon;
-    }
-
-    bIsWeapon = ITEMS::Items::ITEM_GetItemsTxt_dwWClass(pEquippedItem);
-    nHandedness = COMPOSIT_GetItemTypeIndex(bIsWeapon);
-    *pnParam = nHandedness;
-    return bIsWeapon;
 }
 
 // @sourcefile .\COMPOSIT\Composit.cpp
@@ -377,6 +389,7 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
     D2MonModeTxt* pMonModeLine;
     BOOL bHasCompositeDeath;
     uint32_t uVar1;
+    D2PlrTypeModeTxt* pPlrModeLine;
     uint32_t i;
     uint32_t* pszModeToken;
     uint32_t* pszTypeToken;
@@ -399,161 +412,168 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
     int32_t* pnWeaponClass;
     uint32_t nResolvedClass = nItemCode;
     uint32_t nItemCodeCopy = nPlrClass;
-    if (nCompType) {
-      if (nCompType != 1) {
-        if (nCompType != 2) {
-          return;
-        }
-
-        pObjModeLine = DATATBLS::TokTbls::TxtGetObjTypeModeLine(nPlrClass, 0);
-        nResolvedClass = nItemCode;
-        nModeOrClass = *(uint32_t*)pObjModeLine->token;
-        byObjTypeToken0 = (uint8_t)nModeOrClass;
-        pObjModeLine = DATATBLS::TokTbls::TxtGetObjTypeModeLine(nItemCode, 1);
-        nMode2 = *(uint32_t*)pObjModeLine->token;
-        szModeToken[0] = (char)nMode2;
-        szModeToken[1] = (char)((uint32_t)nMode2 >> 8);
-        szModeToken[2] = (char)((uint32_t)nMode2 >> 0x10);
-        szModeToken[3] = (char)((uint32_t)nMode2 >> 0x18);
-        nResolvedClass = COMPOSIT_ResolveWeaponClass(pUnit, 2, nItemCodeCopy, nResolvedClass, pInventory, (int32_t*)&pInventory);
-        *pOutWeaponClass = nResolvedClass;
-        szWeaponTokenObj[3] = '\0';
-        szModeTokenObj[3] = '\0';
-        szWeaponTokenObj[0] = (uint8_t)nResolvedClass == 0x20 ? 0 : (uint8_t)nResolvedClass;
-        szWeaponTokenObj[1] = *(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1);
-        szWeaponTokenObj[2] = *(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2);
-        byRawTokenChar1 = (uint8_t)((uint32_t)nModeOrClass >> 8);
-        byRawTokenChar2 = (uint8_t)((uint32_t)nModeOrClass >> 0x10);
-        nCompType = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)(byObjTypeToken0 == 0x20 ? 0 : byObjTypeToken0))) & 0xffffffu);
-        szModeTokenObj[0] = szModeToken[0] == ' ' ? 0 : szModeToken[0];
-        szModeTokenObj[1] = szModeToken[1] == ' ' ? 0 : szModeToken[1];
-        szModeTokenObj[2] = szModeToken[2] == ' ' ? 0 : szModeToken[2];
-        if (bBuildFullPath) {
-          pszWeaponToken = (uint32_t*)szWeaponTokenObj;
-          pszModeToken = (uint32_t*)szModeTokenObj;
-          pszTypeToken = &nCompType;
-          nTypeToken = (uint32_t)gszDirObjects;
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
-          return;
-        }
-
-        pszWeaponToken = (uint32_t*)szWeaponTokenObj;
-        pszModeToken = (uint32_t*)szModeTokenObj;
-        pszTypeToken = &nCompType;
-      } else {
-        if ((int)nPlrClass < 0) {
-          return;
-        }
-        if ((int)nPlrClass >= sgptDataTable->nTxtMonStatsSize) {
-          return;
-        }
-        if (!(sgptDataTable->pTxtMonStats + nPlrClass)) {
-          return;
-        }
-
-        nPlrClassCopy = *(uint32_t*)sgptDataTable->pTxtMonStats[nPlrClass].Code;
-        pMonModeLine = DATATBLS::TokTbls::TxtGetMonModeLine(nItemCode, 1);
-        dwModeToken = *(uint32_t*)pMonModeLine->token;
-        if ((!nResolvedClass || nResolvedClass == 0xc) && (bHasCompositeDeath = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nItemCodeCopy, compositeDeath) , !bHasCompositeDeath)) {
-          *pOutWeaponClass = 0x20687468;
-        } else {
-          uVar1 = COMPOSIT_ResolveWeaponClass(pUnit, 1, nItemCodeCopy, nResolvedClass, pInventory, (int32_t*)&pInventory);
-          *pOutWeaponClass = uVar1;
-        }
-
-        i = 0;
-        if ((uint32_t)gnMonsterCompositeOverrideCount > 0) {
-          do {
-            if (nResolvedClass == gaMonsterCompositeOverrideGfx[i].nMode) {
-              dwModeToken = gaMonsterCompositeOverrideGfx[i].dwToken;
+    switch (nCompType) {
+      case 0:
+        {
+          pPlrModeLine = DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nPlrClass, 0);
+          nResolvedClass = nItemCode;
+          nModeItemCode = *(uint32_t*)pPlrModeLine->szToken;
+          pPlrModeLine = DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nItemCode, 1);
+          pnWeaponClass = pOutWeaponClass;
+          nMonModeItemCode = *(uint32_t*)pPlrModeLine->szToken;
+          if (bSpecialHandling) {
+            if (!nResolvedClass || nResolvedClass == 0x11) {
+              *pOutWeaponClass = 0x20687468;
+            } else {
+              uVar1 = COMPOSIT_ResolveWeaponClass(pUnit, 0, nPlrClass, nResolvedClass, pInventory, (int32_t*)&pOutWeaponClass);
+              *pnWeaponClass = uVar1;
             }
+          }
 
-            i++;
-          } while (i < gnMonsterCompositeOverrideCount);
+          i = 0;
+          if ((uint32_t)gnPlayerCompositeOverrideCount > 0) {
+            do {
+              if (nResolvedClass == gaPlayerCompositeOverrideGfx[i].nMode) {
+                nMonModeItemCode = gaPlayerCompositeOverrideGfx[i].dwToken;
+              }
+
+              i++;
+            } while (i < gnPlayerCompositeOverrideCount);
+          }
+          if (nResolvedClass == 0xb) {
+            nWeaponClassCode = *pnWeaponClass;
+            if (nWeaponClassCode != 0x20736831 && nWeaponClassCode != 0x20746831 && nWeaponClassCode != 0x20736a31 && nWeaponClassCode != 0x20746a31 && nWeaponClassCode != 0x20737331 && nWeaponClassCode != 0x20747331) {
+              *pnWeaponClass = 0x20687468;
+            }
+          }
+
+          szWeaponToken[3] = '\0';
+          szTypeToken[3] = '\0';
+          szModeToken[3] = '\0';
+          szWeaponToken[0] = (uint8_t)*pnWeaponClass == 0x20 ? 0 : (uint8_t)*pnWeaponClass;
+          szWeaponToken[1] = *(uint8_t*)((int)pnWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 1);
+          szWeaponToken[2] = *(uint8_t*)((int)pnWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 2);
+          szTypeToken[0] = (uint8_t)nModeItemCode == 0x20 ? 0 : (uint8_t)nModeItemCode;
+          byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 8);
+          szTypeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+          byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 0x10);
+          szTypeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+          szModeToken[0] = (uint8_t)nMonModeItemCode == 0x20 ? 0 : (uint8_t)nMonModeItemCode;
+          byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 8);
+          szModeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+          byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 0x10);
+          szModeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
+          if (bBuildFullPath) {
+            pszWeaponToken = (uint32_t*)szWeaponToken;
+            pszModeToken = (uint32_t*)szModeToken;
+            pszTypeToken = (uint32_t*)szTypeToken;
+            nTypeToken = (uint32_t)"DATA\\GLOBAL\\CHARS";
+            /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
+            return;
+          }
+
+          pszWeaponToken = (uint32_t*)szWeaponToken;
+          pszModeToken = (uint32_t*)szModeToken;
+          pszTypeToken = (uint32_t*)szTypeToken;
+          break;
         }
+      case 1:
+        {
+          if ((int)nPlrClass < 0) {
+            return;
+          }
+          if ((int)nPlrClass >= sgptDataTable->nTxtMonStatsSize) {
+            return;
+          }
+          if (!(sgptDataTable->pTxtMonStats + nPlrClass)) {
+            return;
+          }
 
-        nItemCode = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(*(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2)) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(*(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1)) << 8 | (uint16_t)(uint8_t)((uint8_t)*pOutWeaponClass == 0x20 ? 0 : (uint8_t)*pOutWeaponClass))) & 0xffffffu);
-        byRawTokenChar1 = (uint8_t)((uint32_t)nPlrClassCopy >> 8);
-        byRawTokenChar2 = (uint8_t)((uint32_t)nPlrClassCopy >> 0x10);
-        nPlrClass = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)((uint8_t)nPlrClassCopy == 0x20 ? 0 : (uint8_t)nPlrClassCopy))) & 0xffffffu);
-        byRawTokenChar1 = (uint8_t)(dwModeToken >> 8);
-        byRawTokenChar2 = (uint8_t)(dwModeToken >> 0x10);
-        bSpecialHandling = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)((uint8_t)dwModeToken == 0x20 ? 0 : (uint8_t)dwModeToken))) & 0xffffffu);
-        if (bBuildFullPath) {
+          nPlrClassCopy = *(uint32_t*)sgptDataTable->pTxtMonStats[nPlrClass].Code;
+          pMonModeLine = DATATBLS::TokTbls::TxtGetMonModeLine(nItemCode, 1);
+          dwModeToken = *(uint32_t*)pMonModeLine->token;
+          if ((!nResolvedClass || nResolvedClass == 0xc) && (bHasCompositeDeath = D2Client::UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nItemCodeCopy, compositeDeath) , !bHasCompositeDeath)) {
+            *pOutWeaponClass = 0x20687468;
+          } else {
+            uVar1 = COMPOSIT_ResolveWeaponClass(pUnit, 1, nItemCodeCopy, nResolvedClass, pInventory, (int32_t*)&pInventory);
+            *pOutWeaponClass = uVar1;
+          }
+
+          i = 0;
+          if ((uint32_t)gnMonsterCompositeOverrideCount > 0) {
+            do {
+              if (nResolvedClass == gaMonsterCompositeOverrideGfx[i].nMode) {
+                dwModeToken = gaMonsterCompositeOverrideGfx[i].dwToken;
+              }
+
+              i++;
+            } while (i < gnMonsterCompositeOverrideCount);
+          }
+
+          nItemCode = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(*(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2)) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(*(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1)) << 8 | (uint16_t)(uint8_t)((uint8_t)*pOutWeaponClass == 0x20 ? 0 : (uint8_t)*pOutWeaponClass))) & 0xffffffu);
+          byRawTokenChar1 = (uint8_t)((uint32_t)nPlrClassCopy >> 8);
+          byRawTokenChar2 = (uint8_t)((uint32_t)nPlrClassCopy >> 0x10);
+          nPlrClass = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)((uint8_t)nPlrClassCopy == 0x20 ? 0 : (uint8_t)nPlrClassCopy))) & 0xffffffu);
+          byRawTokenChar1 = (uint8_t)(dwModeToken >> 8);
+          byRawTokenChar2 = (uint8_t)(dwModeToken >> 0x10);
+          bSpecialHandling = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)((uint8_t)dwModeToken == 0x20 ? 0 : (uint8_t)dwModeToken))) & 0xffffffu);
+          if (bBuildFullPath) {
+            pszWeaponToken = &nItemCode;
+            pszModeToken = &bSpecialHandling;
+            pszTypeToken = &nPlrClass;
+            nTypeToken = (uint32_t)"DATA\\GLOBAL\\MONSTERS";
+            /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
+            return;
+          }
+
           pszWeaponToken = &nItemCode;
           pszModeToken = &bSpecialHandling;
           pszTypeToken = &nPlrClass;
-          nTypeToken = (uint32_t)"DATA\\GLOBAL\\MONSTERS";
-          /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
+          break;
+        }
+      default:
+        {
           return;
         }
-
-        pszWeaponToken = &nItemCode;
-        pszModeToken = &bSpecialHandling;
-        pszTypeToken = &nPlrClass;
-      }
-    } else {
-      D2PlrTypeModeTxt* pPlrModeLine;
-      pPlrModeLine = DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nPlrClass, 0);
-      nResolvedClass = nItemCode;
-      nModeItemCode = *(uint32_t*)pPlrModeLine->szToken;
-      pPlrModeLine = DATATBLS::TokTbls::TxtGetPlrTypeModeLine(nItemCode, 1);
-      pnWeaponClass = pOutWeaponClass;
-      nMonModeItemCode = *(uint32_t*)pPlrModeLine->szToken;
-      if (bSpecialHandling) {
-        if (!nResolvedClass || nResolvedClass == 0x11) {
-          *pOutWeaponClass = 0x20687468;
-        } else {
-          uVar1 = COMPOSIT_ResolveWeaponClass(pUnit, 0, nPlrClass, nResolvedClass, pInventory, (int32_t*)&pOutWeaponClass);
-          *pnWeaponClass = uVar1;
-        }
-      }
-
-      i = 0;
-      if ((uint32_t)gnPlayerCompositeOverrideCount > 0) {
-        do {
-          if (nResolvedClass == gaPlayerCompositeOverrideGfx[i].nMode) {
-            nMonModeItemCode = gaPlayerCompositeOverrideGfx[i].dwToken;
+      case 2:
+        {
+          pObjModeLine = DATATBLS::TokTbls::TxtGetObjTypeModeLine(nPlrClass, 0);
+          nResolvedClass = nItemCode;
+          nModeOrClass = *(uint32_t*)pObjModeLine->token;
+          byObjTypeToken0 = (uint8_t)nModeOrClass;
+          pObjModeLine = DATATBLS::TokTbls::TxtGetObjTypeModeLine(nItemCode, 1);
+          nMode2 = *(uint32_t*)pObjModeLine->token;
+          szModeToken[0] = (char)nMode2;
+          szModeToken[1] = (char)((uint32_t)nMode2 >> 8);
+          szModeToken[2] = (char)((uint32_t)nMode2 >> 0x10);
+          szModeToken[3] = (char)((uint32_t)nMode2 >> 0x18);
+          nResolvedClass = COMPOSIT_ResolveWeaponClass(pUnit, 2, nItemCodeCopy, nResolvedClass, pInventory, (int32_t*)&pInventory);
+          *pOutWeaponClass = nResolvedClass;
+          szWeaponTokenObj[3] = '\0';
+          szModeTokenObj[3] = '\0';
+          szWeaponTokenObj[0] = (uint8_t)nResolvedClass == 0x20 ? 0 : (uint8_t)nResolvedClass;
+          szWeaponTokenObj[1] = *(uint8_t*)((int)pOutWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 1);
+          szWeaponTokenObj[2] = *(uint8_t*)((int)pOutWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pOutWeaponClass + 2);
+          byRawTokenChar1 = (uint8_t)((uint32_t)nModeOrClass >> 8);
+          byRawTokenChar2 = (uint8_t)((uint32_t)nModeOrClass >> 0x10);
+          nCompType = (uint32_t)(uint32_t)((uint32_t)((uint32_t)(uint8_t)(byRawTokenChar2 == 0x20 ? 0 : byRawTokenChar2) << 16 | (uint32_t)(uint16_t)((uint16_t)(uint8_t)(byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1) << 8 | (uint16_t)(uint8_t)(byObjTypeToken0 == 0x20 ? 0 : byObjTypeToken0))) & 0xffffffu);
+          szModeTokenObj[0] = szModeToken[0] == ' ' ? 0 : szModeToken[0];
+          szModeTokenObj[1] = szModeToken[1] == ' ' ? 0 : szModeToken[1];
+          szModeTokenObj[2] = szModeToken[2] == ' ' ? 0 : szModeToken[2];
+          if (bBuildFullPath) {
+            pszWeaponToken = (uint32_t*)szWeaponTokenObj;
+            pszModeToken = (uint32_t*)szModeTokenObj;
+            pszTypeToken = &nCompType;
+            nTypeToken = (uint32_t)gszDirObjects;
+            /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
+            return;
           }
 
-          i++;
-        } while (i < gnPlayerCompositeOverrideCount);
-      }
-      if (nResolvedClass == 0xb) {
-        nWeaponClassCode = *pnWeaponClass;
-        if (nWeaponClassCode != 0x20736831 && nWeaponClassCode != 0x20746831 && nWeaponClassCode != 0x20736a31 && nWeaponClassCode != 0x20746a31 && nWeaponClassCode != 0x20737331 && nWeaponClassCode != 0x20747331) {
-          *pnWeaponClass = 0x20687468;
+          pszWeaponToken = (uint32_t*)szWeaponTokenObj;
+          pszModeToken = (uint32_t*)szModeTokenObj;
+          pszTypeToken = &nCompType;
+          break;
         }
-      }
-
-      szWeaponToken[3] = '\0';
-      szTypeToken[3] = '\0';
-      szModeToken[3] = '\0';
-      szWeaponToken[0] = (uint8_t)*pnWeaponClass == 0x20 ? 0 : (uint8_t)*pnWeaponClass;
-      szWeaponToken[1] = *(uint8_t*)((int)pnWeaponClass + 1) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 1);
-      szWeaponToken[2] = *(uint8_t*)((int)pnWeaponClass + 2) == 0x20 ? 0 : *(uint8_t*)((int)pnWeaponClass + 2);
-      szTypeToken[0] = (uint8_t)nModeItemCode == 0x20 ? 0 : (uint8_t)nModeItemCode;
-      byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 8);
-      szTypeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
-      byRawTokenChar1 = (uint8_t)((uint32_t)nModeItemCode >> 0x10);
-      szTypeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
-      szModeToken[0] = (uint8_t)nMonModeItemCode == 0x20 ? 0 : (uint8_t)nMonModeItemCode;
-      byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 8);
-      szModeToken[1] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
-      byRawTokenChar1 = (uint8_t)(nMonModeItemCode >> 0x10);
-      szModeToken[2] = byRawTokenChar1 == 0x20 ? 0 : byRawTokenChar1;
-      if (bBuildFullPath) {
-        pszWeaponToken = (uint32_t*)szWeaponToken;
-        pszModeToken = (uint32_t*)szModeToken;
-        pszTypeToken = (uint32_t*)szTypeToken;
-        nTypeToken = (uint32_t)"DATA\\GLOBAL\\CHARS";
-        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s\\%s\\COF\\%s%s%s.COF", nTypeToken, pszTypeToken, pszTypeToken, pszModeToken, pszWeaponToken);
-        return;
-      }
-
-      pszWeaponToken = (uint32_t*)szWeaponToken;
-      pszModeToken = (uint32_t*)szModeToken;
-      pszTypeToken = (uint32_t*)szTypeToken;
     }
 
     /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szOutCofPath, "%s%s%s", pszTypeToken, pszModeToken, pszWeaponToken);

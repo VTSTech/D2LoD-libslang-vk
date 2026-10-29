@@ -36,6 +36,7 @@
 #include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
@@ -810,9 +811,7 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
       return nCanApply & -65536;
     }
 
-    uint32_t nMax = nCandidateCount;
-    D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nCanApply = D2Client::Seed::RollBetweenMinAndMax(pSeed, 0, nMax);
+    nCanApply = D2Client::Seed::RollBetweenMinAndMax(D2Common::ITEMS::Items::GetItemSeed(pUnit), 0, nCandidateCount);
     if ((int)nCanApply >= (int)nCandidateCount) {
       return nCanApply & -65536;
     }
@@ -875,9 +874,7 @@ uint32_t __fastcall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
       return nCanApply & -65536;
     }
 
-    uint32_t nMax = nCandidateCount;
-    D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nCanApply = D2Client::Seed::RollBetweenMinAndMax(pSeed, 0, nMax);
+    nCanApply = D2Client::Seed::RollBetweenMinAndMax(D2Common::ITEMS::Items::GetItemSeed(pUnit), 0, nCandidateCount);
     if ((int)nCanApply >= (int)nCandidateCount) {
       return nCanApply & -65536;
     }
@@ -1874,9 +1871,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
       nStatValue = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_mindamage, 0);
       nStatValue = SKILLITEMS_ApplyPercentWithMinimum(nStatValue, 2, iVar1);
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nStatValue, 0);
-      iVar1 = 0x4b;
-      nStatValue = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_maxdamage, 0);
-      nScaledStat = SKILLITEMS_ApplyPercentWithMinimum(nStatValue, 1, iVar1);
+      nScaledStat = SKILLITEMS_ApplyPercentWithMinimum(D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_maxdamage, 0), 1, 0x4b);
       eUnitStat = UNITSTAT_item_throw_maxdamage;
     } else {
       nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
