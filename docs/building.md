@@ -1,20 +1,8 @@
 # Building and running Redivivus
 
-Diablo II 1.14d shipped as two builds of the same source, each from its own compiler:
-
-|Build|Compiler|Identified by|
-|-|-|-|
-|Windows `Game.exe`|Visual C++ 2005 SP1 (cl 14.00.50727.762), CRT linked statically|Rich header, then the linked CRT read function by function|
-|Intel Mac `DiabloII_macho`|Apple LLVM 4.2 (clang-425.0.28, Xcode 4.6.2), i386, `-Os`, libc++|Load commands and the SDK, then reproduced: recompiled functions come out byte-identical|
-
-The goal is that the tree builds with those, the original compilers, and with modern ones.
-Where that stands:
-
-|Compiler|What it does with the tree today|
-|-|-|
-|mingw-w64 g++ (C++17)|Builds and links the whole tree into a runnable `d2.exe`. This is the build below.|
-|Visual C++ 2005 SP1|Compiles the tree translation unit by translation unit, and every function is compared byte for byte with the shipped `Game.exe`: [asm_matching/msvc8](../asm_matching/msvc8/README.md). It does not link an executable yet.|
-|Apple LLVM 4.2|Identified and reproduced on single functions; the tree does not build for the Mac yet.|
+This is the build that delivers a runnable `d2.exe` today, with a modern compiler. To compile
+with the compilers that built the original, Visual C++ 2005 SP1 and Apple LLVM 4.2, with their
+flags, see [original-compilers.md](original-compilers.md).
 
 ## You need
 
@@ -36,7 +24,7 @@ Where that stands:
   - Debian/Ubuntu: `apt install g++-mingw-w64-i686 cmake ninja-build`
   - Windows: an MSYS2 MinGW32 shell
 
-## Build with mingw-w64
+## Build
 
 ```sh
 cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
@@ -56,17 +44,3 @@ d2.exe -w
 ```
 
 `-w` runs it in a window.
-
-## Build with Visual C++ 2005 SP1
-
-The original Windows compiler runs under wine, on Linux and on macOS, without a Windows machine
-and without running Microsoft's installer:
-
-```sh
-asm_matching/msvc8/oracle setup     # once: Game.exe 1.14d from Blizzard's patch, and VC8 from Microsoft's packages
-asm_matching/msvc8/oracle all       # compile every translation unit, pair the functions, compare
-asm_matching/msvc8/oracle diff <function>
-```
-
-The full guide, what `setup` downloads and how the comparison works:
-[asm_matching/msvc8/README.md](../asm_matching/msvc8/README.md).
