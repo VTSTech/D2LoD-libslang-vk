@@ -258,11 +258,12 @@ The inner loop exists twice only if we let it. Instead:
 
 ## 6. Verification protocol
 
-1. **CI (every push)**: Lavapipe executes the kernel over the fxparity
-   220-frame deterministic replay; per-frame hash == the CPU path's pinned
-   hash. The existing harness already replays all blend classes, chroma,
-   palettes, rebind storms and table-full stress — the same corpus, two
-   backends.
+1. **CI (every push)**: Lavapipe executes the kernel over the 16-frame
+   overlapping corpus — per-frame hashes diffed against each other AND the
+   committed pin (`spike/raster_hashes_stage1.txt`) — and replays the
+   committed field capture `spike/fxparity.cap` through both backends in
+   one harness run (`raster_regress replay`): every frame boundary must
+   come back CPU == GPU, bit-exact.
 2. **Field**: `raster=gpu` frames log `frame N: ghash=<hex>` alongside the
    CPU pins; the first mismatched frame auto-dumps both PNGs
    (CPU vs GPU) into `screenshots\rasterdiff\` and logs the first divergent
@@ -275,7 +276,7 @@ The inner loop exists twice only if we let it. Instead:
 | Stage | Content | Exit criterion | Size |
 |---|---|---|---|
 | 0 — spike | core template extraction (CPU behavior unchanged, byte-identical hashes) + `gen_raster_glsl.py` + binless kernel (non-overlapping synthetic scene) rendered to an offscreen image; Lavapipe CI proof | CI hash == CPU hash on the synthetic scene | ~800 LOC |
-| 1 — binned raster | SHIPPED: host-side pass-1 binning (32x32 tiles) + per-(tile,row) pass 2 with the write-filter attribute design; record sink + fxparity capture/replay (`fxcapture=1`); corpus v2 with deliberate overlaps + rebind storms. The "OPAQUE/ADD first" scoping dissolved: the Stage 0 kernel already mirrored all five blend classes, chroma, P_8/565 texel paths and the fill-rect/point pixel ops verbatim — subsetting them would have added filter machinery without removing any real risk. Legacy present via `g3x_vk_present_image` is Stage 3's chain seam and stayed untouched. | CI: 16-frame overlapping corpus hashes clean on Lavapipe (both gates + the cap round-trip); fxparity replay gate armed, waiting on the first field capture | ~1300 LOC |
+| 1 — binned raster | SHIPPED: host-side pass-1 binning (32x32 tiles) + per-(tile,row) pass 2 with the write-filter attribute design; record sink + fxparity capture/replay (`fxcapture=1`); corpus v2 with deliberate overlaps + rebind storms. The "OPAQUE/ADD first" scoping dissolved: the Stage 0 kernel already mirrored all five blend classes, chroma, P_8/565 texel paths and the fill-rect/point pixel ops verbatim — subsetting them would have added filter machinery without removing any real risk. Legacy present via `g3x_vk_present_image` is Stage 3's chain seam and stayed untouched. | CI: 16-frame overlapping corpus hashes clean on Lavapipe (both gates + the cap round-trip). CLOSED — first field capture landed (`spike/fxparity.cap`, 16381 api events, 1 frame) and replays CPU == GPU bit-exact on Lavapipe | ~1300 LOC |
 | 2 — integration | REMAINING (shrunk by Stage 1's as-built): `scripts/gen_raster_glsl.py` structural single-source; the DLL-side GPU record path (pack + dispatch inside the DLL behind `raster=gpu`, off by default); `g3x_vk_present_image` storage-image seam; 8332/other texel formats if the field captures contain any | full field capture replays hash-clean; `raster=gpu` usable chain-off on real hardware | ~600 LOC |
 | 3 — chain + overlay | storage-usage chain input, layout round-trips, gamma+overlay pass, slang-path shots | chain-on replay clean; WYSIWYG shot byte-identical to CPU path | ~500 LOC |
 | 4 — field round | `raster=gpu` default-off conf flag, ghash log lines, dump-on-mismatch, RX 560 field log (frame `work=` before/after) | a full field session with zero ghash mismatches and a measured present-path win | ~200 LOC |
