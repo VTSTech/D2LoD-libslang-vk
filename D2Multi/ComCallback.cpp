@@ -507,7 +507,7 @@ void __fastcall COMCALLBACK_AddOrUpdateChannelUser(char * szUsername, uint8_t * 
     } while (true);
 
     void* pNewNode = gpChannelUserLinkedListHead;
-    if ((int)gnChannelUserTotalCount >= 0x400) {
+    if (gnChannelUserTotalCount >= 0x400) {
       gpChannelUserLinkedListHead = *(void**)((int)gpChannelUserLinkedListHead + 0x44);
       D2_FREE_AT(pNewNode, ".\\Src\\ComCallback.cpp", 0x936);
       gnChannelUserTotalCount--;
@@ -1609,7 +1609,7 @@ void __fastcall COMCALLBACK_ScrollChannelUserList(int32_t nScrollDelta) {
     uint32_t nOldOffset = gnChannelUserListScrollOffset;
     BOOL bShowUpArrows = 0;
     BOOL bShowDownArrows = 0;
-    if ((int)gnChannelUserCount <= 0xb) {
+    if (gnChannelUserCount <= 0xb) {
       gnChannelUserListScrollOffset = 0;
     } else {
       uint32_t nNewOffset;
@@ -1690,7 +1690,7 @@ BOOL __stdcall COMCALLBACK_HandleUserListClick(int * pnClickMsg) {
         COMCALLBACK_ClearChannelListView();
         return 1;
       }
-      if (nUserIndex < (int)gnChannelUserCount) {
+      if (nUserIndex < gnChannelUserCount) {
         COMCALLBACK_ClearChannelListView();
         nIndex = 0;
         for (pUser = gpChannelUserListHead; pUser; pUser = pUser->pNext) {

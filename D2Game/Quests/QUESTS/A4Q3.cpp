@@ -324,7 +324,7 @@ void __fastcall Q28_PlayerCompleteForgeInAct4(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
 
-    int* pForgeCompletedCount = &pHellsForgeQuest->pQuestSpecificData.pA4Q3->nItemsToDrop;
+    int* pForgeCompletedCount = &pHellsForgeQuest->pQuestSpecificData.pA2Q6->nStatusCode;
     (*pForgeCompletedCount)++;
 }
 
@@ -593,7 +593,7 @@ void __fastcall Q28_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int32_t nLine;
     short int nNpcClassId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    short int nGossipMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nGossipMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     if (nNpcClassId != 0xf6) {

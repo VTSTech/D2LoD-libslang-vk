@@ -107,7 +107,7 @@ void __fastcall Q19_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 // Q19_Callback_11 (Khalim's Will). NPC-gossip handler for Ormus-style relic NPC (monstat 0xf5). Maps the chosen dialog stringIndex to a QuestRecord sub-step bit: 0x21f=Step0x02 (intro/started; also sets StateFlag=2, marks bQuestCompleted, installs Q19_Callback_02), 0x220=Step0x06, 0x221=Step0x03, 0x222=Step0x04, 0x223=Step0x05, 0x224=Step0x07. Each step tracks which Khalim relic has been discussed/turned in.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);

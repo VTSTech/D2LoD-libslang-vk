@@ -4085,9 +4085,9 @@ namespace D2Client::CharScreen {
 // Initialized scalars
 // =============================================================================
 
-uint32_t nSelectedCharIndex = -0x1; D2_GLOBAL_GUARD(nSelectedCharIndex, "D2Client::CharScreen::nSelectedCharIndex");
+int nSelectedCharIndex = -0x1; D2_GLOBAL_GUARD(nSelectedCharIndex, "D2Client::CharScreen::nSelectedCharIndex");
 D2CharSelStrc * D2CharSelStrcFirst = 0; D2_GLOBAL_GUARD(D2CharSelStrcFirst, "D2Client::CharScreen::D2CharSelStrcFirst");
-uint32_t TotalCurrentChars = 0; D2_GLOBAL_GUARD(TotalCurrentChars, "D2Client::CharScreen::TotalCurrentChars");
+int TotalCurrentChars = 0; D2_GLOBAL_GUARD(TotalCurrentChars, "D2Client::CharScreen::TotalCurrentChars");
 
 } // namespace D2Client::CharScreen
 

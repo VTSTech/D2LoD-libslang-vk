@@ -375,7 +375,7 @@ void __fastcall Q35_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     eD2QuestState eQuestState;
     eD2Quests nQuestId;
     ::SGAMEDATA* pGame;
-    short int nMessageIndex;
+    uint16_t nMessageIndex;
     nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     short int nNpcId;
     nNpcId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;

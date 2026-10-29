@@ -37,7 +37,7 @@ uint32_t __stdcall BNDOWNLOAD_HasActiveDownloads();
 int32_t __fastcall BNDOWNLOAD_PerformCheckRevision(uint32_t * pdwVersionOut, uint32_t * pdwChecksumOut, uint8_t * pbResultOut);
 void __fastcall BNDOWNLOAD_ExtractFileFromArchive(char * szFileName, struct D2ArchiveStrc * pArchive, LPCSTR szFilePath);
 void __fastcall BNDOWNLOAD_UpdateProgressPercent(uint32_t dwUnused, int32_t nBytesDone, uint32_t nTotalSize);
-void __fastcall BNDOWNLOAD_ResetState(int nResetValue);
+void __fastcall BNDOWNLOAD_ResetState(uint32_t nResetValue);
 int __stdcall BNDOWNLOAD_GetProgress();
 int __fastcall BNDOWNLOAD_SetPatchFilename(char * szText);
 uint32_t __stdcall BNDOWNLOAD_HasPatchFilename();

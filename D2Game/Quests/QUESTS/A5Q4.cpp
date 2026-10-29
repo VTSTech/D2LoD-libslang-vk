@@ -291,7 +291,7 @@ void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     eD2Quests nQuestId;
     eD2QuestState eQuestState;
     ::SGAMEDATA* pQuestSpecific;
-    short int nMsgIndex;
+    uint16_t nMsgIndex;
     nMsgIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x200) {
       return;

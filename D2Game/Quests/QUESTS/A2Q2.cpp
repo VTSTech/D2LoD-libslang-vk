@@ -326,7 +326,7 @@ void __fastcall Q10_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int32_t nPlayerGUID;
     eD2QuestState eQuestState;
     short int nNPCClassId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nDialogMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nDialogMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2UnitDataPlayerStrc* pGame = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     ::SGAMEDATA* pPlayerData = pQuestArgs->pGame;
     D2BitBufferStrc* pBitBuffer = pGame->pQuestRecord[pPlayerData->nDifficulty];
@@ -1030,17 +1030,11 @@ void __fastcall Q10_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
         pA4Q1Data->bIzualLocationSet = 1;
         if (eGameType == SGAMETYPE_SINGLEPLAYER) {
           pA4Q1Data->nStatusCode = 8;
-          pA4Q1Data->field_0x15 = 0;
-          pA4Q1Data->field_0x16 = 0;
-          pA4Q1Data->field_0x17 = 0;
           pA2Q2Data->bAllItemsAccountedFor = true;
           return;
         }
 
         pA4Q1Data->nStatusCode = 9;
-        pA4Q1Data->field_0x15 = 0;
-        pA4Q1Data->field_0x16 = 0;
-        pA4Q1Data->field_0x17 = 0;
       }
     }
 

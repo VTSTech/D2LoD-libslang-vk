@@ -454,7 +454,7 @@ void __fastcall Q18_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 void __fastcall Q18_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nPlayerGUID;
     D2QuestDataA3Q1Strc* pA3Q1DataUnused;
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2QuestDataA3Q1Strc* pA3Q1Data = pQuestData->pQuestSpecificData.pA3Q1;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;

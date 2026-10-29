@@ -2541,7 +2541,7 @@ void __stdcall AUTOMAP_InitPaletteColors() {
     // Static local variables (originally global data)
     static uint8_t nAutoMapColorGray; D2_STATIC_GUARD_BSS(nAutoMapColorGray, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGray");
     static uint8_t nAutoMapColorPortal; D2_STATIC_GUARD_BSS(nAutoMapColorPortal, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorPortal");
-    static short nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
+    static uint8_t nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
 
     int32_t nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     nAutoMapColorSelf = (uint8_t)nColorIndex;
@@ -2564,7 +2564,7 @@ void __stdcall AUTOMAP_InitPaletteColors() {
     nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     nAutoMapColorPortal = (uint8_t)nColorIndex;
     nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
-    *(uint8_t*)(char*)&nAutoMapColorGreen = (char)nColorIndex;
+    nAutoMapColorGreen = (uint8_t)nColorIndex;
 }
 
 int __stdcall AUTOMAP_GetMiniMapType() {

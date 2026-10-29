@@ -32,7 +32,7 @@ namespace D2Game::Quests::QUESTS::A1Q0 {
 
 // Q00_Callback_11 (QUEST_SpokeToWarriv, state-handler slot 0x0b). On a dialog/gossip event from Warriv (NPC class 0x9b) with msg index 0 or 1, marks the "spoke to Warriv" flag SET. Sets QUESTSTATE_Completed on QUEST_SpokeToWarriv (used here as a one-shot "already greeted" bit, not a real player-quest completion). Pseudo-quest: Act 1 intro greeting, no reward/journal.
 void __fastcall Q00_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (!(pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo == 0x9b && (!nMessageIndex || nMessageIndex == 1))) {
       return;
     }

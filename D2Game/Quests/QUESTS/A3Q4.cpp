@@ -370,7 +370,7 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitStrc* pQuestItem;
     int32_t nUnitGUID;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -381,7 +381,6 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
     D2QuestDataA3Q4Strc* pA3Q4Data = pQuestData->pQuestSpecificData.pA3Q4;
     if (nNPCNo == 0xf5) {
-      uint16_t nPartyId;
       if (nMsgId == 0x20f) {
         /* SetQuestState Step0x02(2) -- Meshif (msg 0x20f): player handed over the Jade
                          Figurine */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x02);
@@ -394,9 +393,9 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
         pA3Q4Data->nGoldenBirdState = 2;
         pGame = pQuestArgs->pGame;
-        nPartyId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
-        if (nPartyId != 0xffff) {
-          UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q21_PlayerSetGoldenBirdQuestState, 0);
+        nMsgId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
+        if (nMsgId != 0xffff) {
+          UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nMsgId, (::fpExecuteOnUnitFunction)Q21_PlayerSetGoldenBirdQuestState, 0);
           return;
         }
       } else if (nMsgId == 0x213) {

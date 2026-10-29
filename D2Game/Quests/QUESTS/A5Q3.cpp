@@ -536,7 +536,7 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     char nRewardClassId[4];
     eD2ItemQuality eRewardQuality;
     int32_t* pnIceScrollCount;
-    uint32_t nMessageIndex = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint32_t nMessageIndex = (uint32_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2QuestDataA5Q3Strc* pRewardList = pQuestData->pQuestSpecificData.pA5Q3;
     *(uint32_t*)(char*)&nNpcNo = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;

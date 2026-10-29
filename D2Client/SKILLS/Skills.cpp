@@ -1693,15 +1693,15 @@ void __stdcall SKILLS_CreateMissileRing(D2SkillArgStrc * pSkillArg1, D2SkillArgS
     int nTableOffset = 0;
     if (!pSkillArg1) {
       do {
-        pSkillArg2->nUnitX = *(int*)(ganMissileRingCosOffsets + nTableOffset);
-        pSkillArg2->nUnitY = *(int*)(ganMissileRingSinOffsets + nTableOffset);
+        pSkillArg2->nUnitX = ganMissileRingCosOffsets[nTableOffset];
+        pSkillArg2->nUnitY = ganMissileRingSinOffsets[nTableOffset];
         if (pSkillArg2->nMissileTxtNo == MISSILE_Diabfire) {
           pSkillArg2->nFlags ^= 0x4000;
         }
 
         UNIT::Missile::MakeMissile(pSkillArg2);
-        nTableOffset += 4;
-      } while (nTableOffset < 0x100);
+        nTableOffset++;
+      } while (nTableOffset < 64);
 
       return;
     }
@@ -1713,18 +1713,18 @@ void __stdcall SKILLS_CreateMissileRing(D2SkillArgStrc * pSkillArg1, D2SkillArgS
       sRandSeed = D2_SEED_NEXT(pMissileUnit->sSeed);
       pMissileUnit->sSeed = sRandSeed;
       if (sRandSeed.nSeedLow % 6 != 0) {
-        pSkillArg2->nUnitX = *(int*)(ganMissileRingCosOffsets + nRingTableOffset);
-        pSkillArg2->nUnitY = *(int*)(ganMissileRingSinOffsets + nRingTableOffset);
+        pSkillArg2->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
+        pSkillArg2->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
         pChosenArg = pSkillArg2;
       } else {
-        pSkillArg1->nUnitX = *(int*)(ganMissileRingCosOffsets + nRingTableOffset);
-        pSkillArg1->nUnitY = *(int*)(ganMissileRingSinOffsets + nRingTableOffset);
+        pSkillArg1->nUnitX = ganMissileRingCosOffsets[nRingTableOffset];
+        pSkillArg1->nUnitY = ganMissileRingSinOffsets[nRingTableOffset];
         pChosenArg = pSkillArg1;
       }
 
       UNIT::Missile::MakeMissile(pChosenArg);
-      nRingTableOffset += 4;
-    } while (nRingTableOffset < 0x100);
+      nRingTableOffset++;
+    } while (nRingTableOffset < 64);
 }
 
 // Fires one or two missile types at a target unit's world position. Builds a D2SkillArgStrc from the target's path (static or dynamic), sets owner/skill/level. If eMissilesId2 is -2 (sentinel), fires a full 360° ring via ganMissileRingCosOffsets/SinOffsets (64 missiles). Otherwise copies the arg and fires a second missile ring via SKILLS_CreateMissileRing using eMissilesId2. Optional nParam overrides missile velocity.
@@ -1763,8 +1763,8 @@ void __fastcall SKILL_SpawnMissilesAtTarget(D2UnitStrc * pUnit, D2UnitStrc * pUn
     if (eMissilesId2 == ~MISSILE_Arrow) {
       nRingIdx = 0;
       do {
-        sSkillArg.nUnitX = *(int*)(ganMissileRingCosOffsets + nRingIdx);
-        sSkillArg.nUnitY = *(int*)(ganMissileRingSinOffsets + nRingIdx);
+        sSkillArg.nUnitX = *(int*)((int)ganMissileRingCosOffsets + nRingIdx);
+        sSkillArg.nUnitY = *(int*)((int)ganMissileRingSinOffsets + nRingIdx);
         if (sSkillArg.nMissileTxtNo == MISSILE_Diabfire) {
           sSkillArg.nFlags ^= 0x4000;
         }

@@ -683,7 +683,7 @@ uint32_t __stdcall OOGMENU_RestoreMCPConnection() {
 int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     // Static local variables (originally global data)
     static uint8_t gnOogReplyCommandIndex; D2_STATIC_GUARD_BSS(gnOogReplyCommandIndex, "D2Multi::OOGUtilities::CHATDLG_RunChatLobbyScreen::gnOogReplyCommandIndex");
-    static int gnLobbyTabCompletionIndex; D2_STATIC_GUARD_BSS(gnLobbyTabCompletionIndex, "D2Multi::OOGUtilities::CHATDLG_RunChatLobbyScreen::gnLobbyTabCompletionIndex");
+    static uint8_t gnLobbyTabCompletionIndex; D2_STATIC_GUARD_BSS(gnLobbyTabCompletionIndex, "D2Multi::OOGUtilities::CHATDLG_RunChatLobbyScreen::gnLobbyTabCompletionIndex");
 
     D2ControlStrc* pCreatedForm;
     ::D2WinButton* pUserListButton;
@@ -790,7 +790,7 @@ int __fastcall CHATDLG_RunChatLobbyScreen(D2IniConfigStrc * pD2IniConfig) {
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetFormFourth(gpLobbyForm0.pCtlLobbyGameModePanel);
-    *(uint8_t*)(char*)&gnLobbyTabCompletionIndex = 0;
+    gnLobbyTabCompletionIndex = '\0';
     gnOogReplyCommandIndex = 0;
     D2Sound::Src::D2SoundFast::SOUND_InitSoundEffectBuffers();
     D2Sound::Src::D2SoundFast::SOUND_LoadWavFile("data\\global\\sfx\\cursor\\button.wav");

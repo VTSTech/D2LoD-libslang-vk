@@ -165,7 +165,7 @@ void __fastcall DeactivateRespecQuest(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q1.cpp
 void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nLine;
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA1Q1Strc* pQuestDataA1Q1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x94) {
       return;

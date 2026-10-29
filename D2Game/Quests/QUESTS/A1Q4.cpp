@@ -217,7 +217,7 @@ void __fastcall Q04_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     nNpcClassIdRaw = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame;
     pGame = pQuestArgs->pGame;
-    short int nMessageIndex;
+    uint16_t nMessageIndex;
     nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA1Q4Strc* pA1Q4Data;
     pA1Q4Data = pQuestData->pQuestSpecificData.pA1Q4;

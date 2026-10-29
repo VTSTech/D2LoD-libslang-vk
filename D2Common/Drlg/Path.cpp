@@ -1426,24 +1426,24 @@ void __fastcall DRLGPATH_GetMissileTargetPosition(short * pOutPos, D2UnitStrc * 
 // Computes a weighted distance between two packed coordinates. Uses a lookup table for distances within 8 tiles, falls back to a simple heuristic (minor + major*2) for larger distances.
 int32_t __stdcall DRLGPATH_GetWeightedDistancePacked(uint32_t nParam1, uint32_t nParam2) {
     // Static local variables (originally global data)
-    static uint32_t gaPathWeightTable[64] = {
-    0xffffffff,
-    0xffffffff,
-    0xffffffff,
+    static int gaPathWeightTable[64] = {
+    -0x1,
+    -0x1,
+    -0x1,
     0x0,
     0x2,
     0x4,
     0x6,
     0x8,
-    0xffffffff,
-    0xffffffff,
+    -0x1,
+    -0x1,
     0x0,
     0x1,
     0x2,
     0x4,
     0x6,
     0x8,
-    0xffffffff,
+    -0x1,
     0x0,
     0x0,
     0x2,
@@ -1503,7 +1503,7 @@ int32_t __stdcall DRLGPATH_GetWeightedDistancePacked(uint32_t nParam1, uint32_t 
       nAbsDY = -nAbsDY;
     }
     if (nAbsDX < 8 && nAbsDY < 8) {
-      if ((int)gaPathWeightTable[nAbsDX + nAbsDY * 8] < 0) {
+      if (gaPathWeightTable[nAbsDX + nAbsDY * 8] < 0) {
         return 0;
       }
 

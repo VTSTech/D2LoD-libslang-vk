@@ -1359,9 +1359,9 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
     g_pDirect3D7 = 0;
     nExceptionState = 0;
     Fog::Source::SFile::SFILE_GetGlobalPointer();
-    uint32_t uVar4;
-    uVar4 = gnDirect3DDeviceCount;
-    if ((int)gnDirect3DDeviceCount >= 2) {
+    int iVar4;
+    iVar4 = gnDirect3DDeviceCount;
+    if (gnDirect3DDeviceCount >= 2) {
       Fog::Src::LogManager::LOGFILE_WriteStringToFile("***** Exceeded Maximum Display Count (%d >= %d)", gnDirect3DDeviceCount, 2);
       ExceptionList = __frame0.pPrevExceptionRecord;
       return 0;
@@ -1376,12 +1376,12 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
       pDeviceBlock->dwFlags |= gadwBitMasks[0];
     } else {
       pDeviceBlock->dwFlags &= gadwInvBitMasks[0];
-      gD3DDeviceBlock0[uVar4].guid.Data1 = lpGUID->Data1;
+      gD3DDeviceBlock0[iVar4].guid.Data1 = lpGUID->Data1;
       uVar3 = lpGUID->Data3;
-      gD3DDeviceBlock0[uVar4].guid.Data2 = lpGUID->Data2;
-      gD3DDeviceBlock0[uVar4].guid.Data3 = uVar3;
-      *(uint32_t*)gD3DDeviceBlock0[uVar4].guid.Data4 = *(uint32_t*)lpGUID->Data4;
-      *(uint32_t*)(gD3DDeviceBlock0[uVar4].guid.Data4 + 4) = *(uint32_t*)(lpGUID->Data4 + 4);
+      gD3DDeviceBlock0[iVar4].guid.Data2 = lpGUID->Data2;
+      gD3DDeviceBlock0[iVar4].guid.Data3 = uVar3;
+      *(uint32_t*)gD3DDeviceBlock0[iVar4].guid.Data4 = *(uint32_t*)lpGUID->Data4;
+      *(uint32_t*)(gD3DDeviceBlock0[iVar4].guid.Data4 + 4) = *(uint32_t*)(lpGUID->Data4 + 4);
     }
 
     DWORD hResult;
@@ -1400,12 +1400,12 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
           lpDriverName = sDeviceIdentifier.szDescription;
         }
 
-        strncpy(gD3DDeviceBlock0[uVar4].szName, lpDriverName, 0x100);
+        strncpy(gD3DDeviceBlock0[iVar4].szName, lpDriverName, 0x100);
         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\tChecking capabilities of %s...");
         bSupportsUIDisplayMode = false;
         if (!hDeviceIdResult) {
-          gD3DDeviceBlock0[uVar4].dwVendorId = sDeviceIdentifier.dwVendorId;
-          gD3DDeviceBlock0[uVar4].dwDeviceId = sDeviceIdentifier.dwDeviceId;
+          gD3DDeviceBlock0[iVar4].dwVendorId = sDeviceIdentifier.dwVendorId;
+          gD3DDeviceBlock0[iVar4].dwDeviceId = sDeviceIdentifier.dwDeviceId;
           Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVendorID = 0x%08x, DeviceID = 0x%08x", sDeviceIdentifier.dwVendorId);
         }
 
@@ -1421,7 +1421,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
             if (hResult) {
               pszErrorMsg = "IDirectDraw_EnumDisplayModes";
             } else {
-              if (!gD3DDeviceBlock0[uVar4].nModeCount) {
+              if (!gD3DDeviceBlock0[iVar4].nModeCount) {
                 Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tCouldn\'t find any valid display modes.");
                 goto ReleaseD3DInterfacesCleanup;
               }
@@ -1429,7 +1429,7 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
               bSupports32BitCutscene = false;
               bVar2 = false;
               bSupportsGameDisplayMode = false;
-              for (nDisplayModeIndex = 0; nDisplayModeIndex < gD3DDeviceBlock0[uVar4].nModeCount; nDisplayModeIndex++) {
+              for (nDisplayModeIndex = 0; nDisplayModeIndex < gD3DDeviceBlock0[iVar4].nModeCount; nDisplayModeIndex++) {
                 uVar1 = *(uint32_t*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 316) + nDisplayModeIndex * 0x14);
                 if (gadwBitMasks[2] & uVar1) {
                   bSupports32BitCutscene = true;
@@ -1464,8 +1464,8 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                 goto ReleaseD3DInterfacesCleanup;
               }
 
-              nDisplayModeIndex = nDeviceNameOffset + (intptr_t)&gD3DDeviceBlock0[0].dwTextureMemFree + gD3DDeviceBlock0[uVar4].nModeCount * 0x14;
-              hResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, *(DWORD*)(nDisplayModeIndex + 8), *(DWORD*)(nDisplayModeIndex + 0xc), *(DWORD*)(nDisplayModeIndex + 4), *(DWORD*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 312) + gD3DDeviceBlock0[uVar4].nModeCount * 0x14), 0);
+              nDisplayModeIndex = nDeviceNameOffset + (intptr_t)&gD3DDeviceBlock0[0].dwTextureMemFree + gD3DDeviceBlock0[iVar4].nModeCount * 0x14;
+              hResult = g_pDirectDraw7->lpVtbl->SetDisplayMode(g_pDirectDraw7, *(DWORD*)(nDisplayModeIndex + 8), *(DWORD*)(nDisplayModeIndex + 0xc), *(DWORD*)(nDisplayModeIndex + 4), *(DWORD*)(nDeviceNameOffset + (int)((char*)&gD3DDeviceBlock0 + 312) + gD3DDeviceBlock0[iVar4].nModeCount * 0x14), 0);
               if (hResult) {
                 pszErrorMsg = "IDirectDraw4_SetDisplayMode";
               } else {
@@ -1543,8 +1543,8 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                       }
 
                       fFreeBytes = (float)(int)nDDCapsSize.dwVidMemFree;
-                      gD3DDeviceBlock0[uVar4].nVideoMemTotal = nDDCapsSize.dwVidMemTotal;
-                      gD3DDeviceBlock0[uVar4].dwVideoMemFree = nDDCapsSize.dwVidMemFree;
+                      gD3DDeviceBlock0[iVar4].nVideoMemTotal = nDDCapsSize.dwVidMemTotal;
+                      gD3DDeviceBlock0[iVar4].dwVideoMemFree = nDDCapsSize.dwVidMemFree;
                       if ((int)nDDCapsSize.dwVidMemFree < 0) {
                         fFreeBytes += 4.2949673e+09;
                       }
@@ -1555,11 +1555,11 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                       }
 
                       Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tVideo Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
-                      pdwTotalMemOut = &gD3DDeviceBlock0[uVar4].dwTextureMemFree;
+                      pdwTotalMemOut = &gD3DDeviceBlock0[iVar4].dwTextureMemFree;
                       dwMemCapsFlags.dwCaps2 = 0;
                       dwMemCapsFlags.dwCaps3 = 0;
                       dwMemCapsFlags.dwCaps4 = 0;
-                      ppMemInterface = &gD3DDeviceBlock0[uVar4].dwTextureMemTotal;
+                      ppMemInterface = &gD3DDeviceBlock0[iVar4].dwTextureMemTotal;
                       dwMemCapsFlags.dwCaps = 0x5000;
                       hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                       if (hResult) {
@@ -1576,11 +1576,11 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                         }
 
                         Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tTexture Memory Total= %2.3f MB, Free= %2.3f MB", (double)(fTotalBytes * 9.536743e-07), (double)(fFreeBytes * 9.536743e-07));
-                        pdwTotalMemOut = &gD3DDeviceBlock0[uVar4].dwLocalMemFree;
+                        pdwTotalMemOut = &gD3DDeviceBlock0[iVar4].dwLocalMemFree;
                         dwMemCapsFlags.dwCaps2 = 0;
                         dwMemCapsFlags.dwCaps3 = 0;
                         dwMemCapsFlags.dwCaps4 = 0;
-                        ppMemInterface = &gD3DDeviceBlock0[uVar4].dwLocalMemTotal;
+                        ppMemInterface = &gD3DDeviceBlock0[iVar4].dwLocalMemTotal;
                         dwMemCapsFlags.dwCaps = 0x10005000;
                         hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                         if (!hResult) {
@@ -1599,11 +1599,11 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                             Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\t\tDoes not support texturing from AGP memory.");
                           } else {
                             pDeviceBlock->dwFlags |= gadwBitMasks[1];
-                            pdwTotalMemOut = &gD3DDeviceBlock0[uVar4].dwAgpMemFree;
+                            pdwTotalMemOut = &gD3DDeviceBlock0[iVar4].dwAgpMemFree;
                             dwMemCapsFlags.dwCaps2 = 0;
                             dwMemCapsFlags.dwCaps3 = 0;
                             dwMemCapsFlags.dwCaps4 = 0;
-                            ppMemInterface = &gD3DDeviceBlock0[uVar4].dwAgpMemTotal;
+                            ppMemInterface = &gD3DDeviceBlock0[iVar4].dwAgpMemTotal;
                             dwMemCapsFlags.dwCaps = 0x20005000;
                             hResult = g_pDirectDraw7->lpVtbl->GetAvailableVidMem(g_pDirectDraw7, &dwMemCapsFlags, (DWORD*)ppMemInterface, (DWORD*)pdwTotalMemOut);
                             if (hResult) {
@@ -1631,14 +1631,14 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                               Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tSupports 1555 textures.");
                               if (!gnDirect3DDeviceCount) {
                                 gdwD3DDeviceFlags[2].dwFlags = pDeviceBlock->dwFlags;
-                                gdwD3DDeviceFlags[2].guid.Data1 = gD3DDeviceBlock0[uVar4].guid.Data1;
-                                gdwD3DDeviceFlags[2].guid.Data2 = gD3DDeviceBlock0[uVar4].guid.Data2;
-                                gdwD3DDeviceFlags[2].guid.Data3 = gD3DDeviceBlock0[uVar4].guid.Data3;
-                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[2].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar4].guid.Data4 + 4);
-                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[2].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar4].guid.Data4;
-                                gdwD3DDeviceFlags[2].dwDeviceId = gD3DDeviceBlock0[uVar4].dwDeviceId;
-                                gdwD3DDeviceFlags[2].dwVendorId = gD3DDeviceBlock0[uVar4].dwVendorId;
-                                szDeviceNameDst = gD3DDeviceBlock0[uVar4].szName;
+                                gdwD3DDeviceFlags[2].guid.Data1 = gD3DDeviceBlock0[iVar4].guid.Data1;
+                                gdwD3DDeviceFlags[2].guid.Data2 = gD3DDeviceBlock0[iVar4].guid.Data2;
+                                gdwD3DDeviceFlags[2].guid.Data3 = gD3DDeviceBlock0[iVar4].guid.Data3;
+                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[2].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[iVar4].guid.Data4 + 4);
+                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[2].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[iVar4].guid.Data4;
+                                gdwD3DDeviceFlags[2].dwDeviceId = gD3DDeviceBlock0[iVar4].dwDeviceId;
+                                gdwD3DDeviceFlags[2].dwVendorId = gD3DDeviceBlock0[iVar4].dwVendorId;
+                                szDeviceNameDst = gD3DDeviceBlock0[iVar4].szName;
                                 pszErrorMsg = gdwD3DDeviceFlags[2].szName;
                                 do {
                                   cNameChar = *szDeviceNameDst;
@@ -1651,14 +1651,14 @@ BOOL __stdcall Direct3DCallBack(GUID * lpGUID, char * lpDriverDescription, char 
                                 gnD3DBytesPerPixelDevice0 = 2;
                               } else if (gnDirect3DDeviceCount == 1) {
                                 gdwD3DDeviceFlags[3].dwFlags = pDeviceBlock->dwFlags;
-                                gdwD3DDeviceFlags[3].guid.Data1 = gD3DDeviceBlock0[uVar4].guid.Data1;
-                                gdwD3DDeviceFlags[3].guid.Data2 = gD3DDeviceBlock0[uVar4].guid.Data2;
-                                gdwD3DDeviceFlags[3].guid.Data3 = gD3DDeviceBlock0[uVar4].guid.Data3;
-                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[3].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[uVar4].guid.Data4;
-                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[3].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[uVar4].guid.Data4 + 4);
-                                gdwD3DDeviceFlags[3].dwVendorId = gD3DDeviceBlock0[uVar4].dwVendorId;
-                                gdwD3DDeviceFlags[3].dwDeviceId = gD3DDeviceBlock0[uVar4].dwDeviceId;
-                                szDeviceNameDst = gD3DDeviceBlock0[uVar4].szName;
+                                gdwD3DDeviceFlags[3].guid.Data1 = gD3DDeviceBlock0[iVar4].guid.Data1;
+                                gdwD3DDeviceFlags[3].guid.Data2 = gD3DDeviceBlock0[iVar4].guid.Data2;
+                                gdwD3DDeviceFlags[3].guid.Data3 = gD3DDeviceBlock0[iVar4].guid.Data3;
+                                *(uint32_t*)(char*)&gdwD3DDeviceFlags[3].guid.Data4 = *(uint32_t*)gD3DDeviceBlock0[iVar4].guid.Data4;
+                                *(uint32_t*)((char*)&gdwD3DDeviceFlags[3].guid.Data4 + 4) = *(uint32_t*)(gD3DDeviceBlock0[iVar4].guid.Data4 + 4);
+                                gdwD3DDeviceFlags[3].dwVendorId = gD3DDeviceBlock0[iVar4].dwVendorId;
+                                gdwD3DDeviceFlags[3].dwDeviceId = gD3DDeviceBlock0[iVar4].dwDeviceId;
+                                szDeviceNameDst = gD3DDeviceBlock0[iVar4].szName;
                                 pszErrorMsg = gdwD3DDeviceFlags[3].szName;
                                 do {
                                   cNameChar = *szDeviceNameDst;

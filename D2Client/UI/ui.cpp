@@ -2072,7 +2072,7 @@ void __stdcall UI_HandleCursorMouseDown(int32_t pMsg) {
 }
 
 void __stdcall UI_HandleCursorMouseMove(uint8_t * pMsgEvent) {
-    MouseX = (uint32_t)*(uint16_t*)(pMsgEvent + 0xc);
+    MouseX = (int)*(uint16_t*)(pMsgEvent + 0xc);
     MouseY = (int)*(uint16_t*)(pMsgEvent + 0xe);
     gnCursorAnimStartTick = GetTickCount();
     if (ItemTypeOnHand != 5) {
@@ -2091,7 +2091,7 @@ void __stdcall UI_HandleCursorMouseMove(uint8_t * pMsgEvent) {
 }
 
 void __stdcall UI_HandleCursorMouseUp(D2UIMouseMsgStrc * pMsg) {
-    MouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    MouseX = (int)pMsg->uLParam.sMousePos.nMouseX;
     MouseY = (int)pMsg->uLParam.sMousePos.nMouseY;
     gnCursorAnimStartTick = GetTickCount();
     if (ItemTypeOnHand == 5) {
@@ -2137,7 +2137,7 @@ D2UnitStrc * __stdcall GetCursorItem() {
 
 void __fastcall UI_InitializeCursor(int32_t nCursorType) {
     // Static local variables (originally global data)
-    static uint32_t gwCursorAnimUnknownField; D2_STATIC_GUARD_BSS(gwCursorAnimUnknownField, "D2Client::UI::ui::UI_InitializeCursor::gwCursorAnimUnknownField");
+    static unsigned short gwCursorAnimUnknownField; D2_STATIC_GUARD_BSS(gwCursorAnimUnknownField, "D2Client::UI::ui::UI_InitializeCursor::gwCursorAnimUnknownField");
 
     char szPath[80];
     int32_t nEventCount = 3;
@@ -2159,7 +2159,7 @@ void __fastcall UI_InitializeCursor(int32_t nCursorType) {
     ItemTypeOnHand = 1;
     Cursor::nCursorDataIndex = 5;
     gCursorAnimationFrame = 0;
-    *(uint16_t*)(char*)&gwCursorAnimUnknownField = 0;
+    gwCursorAnimUnknownField = 0;
     gnCursorAnimStartTick = GetTickCount();
     MouseX = ScreenSizeX / 2;
     MouseY = ScreenSizeY / 2;
@@ -2478,28 +2478,28 @@ int __stdcall GetItemType() {
 }
 
 void __stdcall UI_HandleMousePositionUpdate(D2UIMouseMsgStrc * pMsg) {
-    uint32_t nMaxX;
     int32_t nMaxFrames;
     int nClampedX;
-    uint32_t nSavedMouseX;
-    MouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    int nClampedY;
+    int nSavedMouseX;
+    MouseX = (int)pMsg->uLParam.sMousePos.nMouseX;
     MouseY = (int)pMsg->uLParam.sMousePos.nMouseY;
     gnCursorInitialized = 1;
     uint32_t bWindowActive = D2gfx::D2GFX::D2GFX_IsWindowActive();
     if (bWindowActive) {
-      uint32_t uVar1;
+      int nMaxX;
       bWindowActive = Fog::Src::ErrorManager::GetErrorState();
-      uVar1 = MouseX;
+      nClampedX = MouseX;
       if (!bWindowActive) {
         nMaxX = ScreenSizeX - 1;
-        if ((int)MouseX > (int)nMaxX) {
+        if (MouseX > nMaxX) {
           MouseX = nMaxX;
         }
 
         nSavedMouseX = MouseX;
-        nClampedX = ScreenSizeY - 1;
-        if (MouseY > ScreenSizeY - 1 || (nClampedX = MouseY , (int)nMaxX < (int)uVar1)) {
-          /* int Y for SetCursorPos */ MouseY = nClampedX;
+        nClampedY = ScreenSizeY - 1;
+        if (MouseY > ScreenSizeY - 1 || (nClampedY = MouseY , nMaxX < nClampedX)) {
+          /* int Y for SetCursorPos */ MouseY = nClampedY;
           nClampedX = MouseY;
           /* int X for SetCursorPos */ SetCursorPos(MouseX, MouseY);
           MouseX = nSavedMouseX;

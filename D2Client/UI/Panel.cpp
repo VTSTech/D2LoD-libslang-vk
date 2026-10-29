@@ -345,7 +345,6 @@ static int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
     int32_t nNow;
     int nAbsDiff;
     int32_t nInterp;
-    int nStoredVal;
     int nSlotOffset;
     bool bSkipLowClamp = true;
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
@@ -382,59 +381,55 @@ static int32_t PANEL_GetSmoothedStatValue(eD2UnitStat eUnitStat) {
 
     uint32_t nFrameIndex = GAME::Game::GetEntryIndex();
     if (nFrameIndex <= 1) {
-      *(int*)(gaPanelImageLoadFlags + nSlotOffset * 0x10 + 8) = nCurValue;
-      *(int*)(gaPanelImageLoadFlags + nSlotOffset * 0x10) = nCurValue;
+      gaPanelImageLoadFlags[nSlotOffset * 4 + 2] = nCurValue;
+      gaPanelImageLoadFlags[nSlotOffset * 4] = nCurValue;
     }
-    if (!bSkipLowClamp) {
-      nStoredVal = nSlotOffset * 0x10;
-      if (nCurValue < *(int*)(gaPanelImageLoadFlags + nStoredVal)) {
-        *(int*)(gaPanelImageLoadFlags + nStoredVal + 8) = nCurValue;
-        *(int*)(gaPanelImageLoadFlags + nStoredVal) = nCurValue;
-        nNow = GAME::Game::GetEntryIndex();
-        *(int32_t*)(gaPanelImageLoadFlags + nStoredVal + 4) = nNow;
-        *(int32_t*)(gaPanelImageLoadFlags + nStoredVal + 0xc) = nNow;
-      }
+    if (!bSkipLowClamp && nCurValue < gaPanelImageLoadFlags[nSlotOffset * 4]) {
+      gaPanelImageLoadFlags[nSlotOffset * 4 + 2] = nCurValue;
+      gaPanelImageLoadFlags[nSlotOffset * 4] = nCurValue;
+      nNow = GAME::Game::GetEntryIndex();
+      gaPanelImageLoadFlags[nSlotOffset * 4 + 1] = nNow;
+      gaPanelImageLoadFlags[nSlotOffset * 4 + 3] = nNow;
     }
 
-    nSlotOffset *= 0x10;
-    nStoredVal = *(int*)(gaPanelImageLoadFlags + nSlotOffset);
-    if (nStoredVal != nCurValue) {
-      nAbsDiff = nStoredVal - nCurValue;
+    int iVar2 = gaPanelImageLoadFlags[nSlotOffset * 4];
+    if (iVar2 != nCurValue) {
+      nAbsDiff = iVar2 - nCurValue;
       if (nAbsDiff < 0) {
         nAbsDiff = -nAbsDiff;
       }
       if (!(nAbsDiff < nMaxValue / 8)) {
-        *(int*)(gaPanelImageLoadFlags + nSlotOffset + 8) = nCurValue;
+        gaPanelImageLoadFlags[nSlotOffset * 4 + 2] = nCurValue;
         nNow = GAME::Game::GetEntryIndex();
-        *(int32_t*)(gaPanelImageLoadFlags + nSlotOffset + 0xc) = nNow;
+        gaPanelImageLoadFlags[nSlotOffset * 4 + 3] = nNow;
       } else {
-        *(uint32_t*)(gaPanelImageLoadFlags + nSlotOffset + 0xc) = *(uint32_t*)(gaPanelImageLoadFlags + nSlotOffset + 4);
+        gaPanelImageLoadFlags[nSlotOffset * 4 + 3] = gaPanelImageLoadFlags[nSlotOffset * 4 + 1];
         if (nCurValue == nMaxValue) {
-          *(int*)(gaPanelImageLoadFlags + nSlotOffset + 8) = nCurValue;
+          gaPanelImageLoadFlags[nSlotOffset * 4 + 2] = nCurValue;
         } else {
-          *(int*)(gaPanelImageLoadFlags + nSlotOffset + 8) = nStoredVal;
+          gaPanelImageLoadFlags[nSlotOffset * 4 + 2] = iVar2;
         }
       }
 
-      *(int*)(gaPanelImageLoadFlags + nSlotOffset) = nCurValue;
+      gaPanelImageLoadFlags[nSlotOffset * 4] = nCurValue;
       nNow = GAME::Game::GetEntryIndex();
-      *(int32_t*)(gaPanelImageLoadFlags + nSlotOffset + 4) = nNow;
+      gaPanelImageLoadFlags[nSlotOffset * 4 + 1] = nNow;
     }
 
-    nStoredVal = *(int*)(gaPanelImageLoadFlags + nSlotOffset + 4);
+    iVar2 = gaPanelImageLoadFlags[nSlotOffset * 4 + 1];
     nNow = GAME::Game::GetEntryIndex();
-    nAbsDiff = nNow - nStoredVal;
-    nStoredVal -= *(int*)(gaPanelImageLoadFlags + nSlotOffset + 0xc);
-    if (nStoredVal < 7) {
-      nStoredVal = 7;
-    } else if (nStoredVal > 0xf) {
-      nStoredVal = 0xf;
+    nAbsDiff = nNow - iVar2;
+    iVar2 -= gaPanelImageLoadFlags[nSlotOffset * 4 + 3];
+    if (iVar2 < 7) {
+      iVar2 = 7;
+    } else if (iVar2 > 0xf) {
+      iVar2 = 0xf;
     }
-    if (nCurValue > 0 && nAbsDiff < nStoredVal) {
+    if (nCurValue > 0 && nAbsDiff < iVar2) {
       int iVar1;
-      iVar1 = *(int*)(gaPanelImageLoadFlags + nSlotOffset) - *(int*)(gaPanelImageLoadFlags + nSlotOffset + 8);
+      iVar1 = gaPanelImageLoadFlags[nSlotOffset * 4] - gaPanelImageLoadFlags[nSlotOffset * 4 + 2];
       if (iVar1) {
-        nCurValue = (int)((long double)(nAbsDiff + 1) / (long double)nStoredVal * (long double)iVar1) + *(int*)(gaPanelImageLoadFlags + nSlotOffset + 8);
+        nCurValue = (int)((long double)(nAbsDiff + 1) / (long double)iVar2 * (long double)iVar1) + gaPanelImageLoadFlags[nSlotOffset * 4 + 2];
       }
     }
     if (nCurValue < 0) {

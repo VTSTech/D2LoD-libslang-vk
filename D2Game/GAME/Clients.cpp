@@ -908,7 +908,7 @@ void __fastcall SetFileFlags(D2ClientStrc * pClient, int16_t nParam) {
 }
 
 uint32_t __fastcall GetCharacterStatus(D2ClientStrc * pClient) {
-    return (uint32_t)(uint16_t)pClient->nCharacterStatus;
+    return (uint32_t)pClient->nCharacterStatus;
 }
 
 void __fastcall SetFlagIf(D2ClientStrc * pClient, uint16_t nFlag, BOOL nSet) {
@@ -925,12 +925,12 @@ uint32_t __fastcall CLIENT_TestFileFlags(D2ClientStrc * pClient, uint16_t fFileF
 }
 
 void __fastcall SetClientStatus(D2ClientStrc * pClient, int32_t nQuestProgress, int32_t nDifficulty) {
-    uint32_t nDifficultyBase = ((uint16_t)pClient->nCharacterStatus & 0x20 | 0x80) >> 5;
-    if ((int)(nDifficultyBase * nDifficulty + nQuestProgress) < (int)((uint16_t)pClient->nCharacterStatus >> 8 & 0x1f)) {
+    uint32_t nDifficultyBase = (pClient->nCharacterStatus & 0x20 | 0x80) >> 5;
+    if ((int)(nDifficultyBase * nDifficulty + nQuestProgress) < (int)(pClient->nCharacterStatus >> 8 & 0x1f)) {
       return;
     }
 
-    pClient->nCharacterStatus = ((short int)nDifficulty * (short int)nDifficultyBase + (short int)nQuestProgress) * 0x100 | pClient->nCharacterStatus & 0xe0ffU;
+    pClient->nCharacterStatus = ((short int)nDifficulty * (short int)nDifficultyBase + (short int)nQuestProgress) * 0x100 | pClient->nCharacterStatus & 0xe0ff;
 }
 
 // Sets client connection state (0=Initial, 1=GameCreated, 2=LoadingAct, 3=WaitingRooms, 4=FullyPlaying, 5/6=ChangingAct teardown). Simple state machine transition with validation. Part of 6-state join flow from Initial through FullyPlaying.

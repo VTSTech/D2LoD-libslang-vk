@@ -49,7 +49,7 @@ struct D2QuestLogPanelRectStrc {
 struct __attribute__((packed)) D2QuestLogStrc {
     /* 0x000 */ uint32_t bQuestLogOpen;
     /* 0x004 */ uint32_t dwUnused04; // no references
-    /* 0x008 */ uint32_t nQuestLogQuestCount;
+    /* 0x008 */ int nQuestLogQuestCount;
     /* 0x00C */ int MonstersleftInDenOfEvil;
     /* 0x010 */ int32_t nQuestLogSpecialState;
     /* 0x014 */ uint32_t pQuestLogData;

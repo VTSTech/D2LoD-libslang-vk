@@ -3184,7 +3184,7 @@ static uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, u
         /* .nModeFlags = */ 0x1
     }
 }; D2_STATIC_GUARD(gaObjectsModeFuncTable, "D2Game::Objects::ObjectsMode::OBJMODE_DispatchOperateFunction::gaObjectsModeFuncTable");
-    static uint32_t gnObjectsModeFunctionDispatchTableCount = 0x15; D2_STATIC_GUARD(gnObjectsModeFunctionDispatchTableCount, "D2Game::Objects::ObjectsMode::OBJMODE_DispatchOperateFunction::gnObjectsModeFunctionDispatchTableCount");
+    static int gnObjectsModeFunctionDispatchTableCount = 0x15; D2_STATIC_GUARD(gnObjectsModeFunctionDispatchTableCount, "D2Game::Objects::ObjectsMode::OBJMODE_DispatchOperateFunction::gnObjectsModeFunctionDispatchTableCount");
 
     uint32_t dwResult;
     uint32_t nModeIdx = (uint32_t)bParam;

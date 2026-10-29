@@ -168,7 +168,7 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int nRewardCount;
     bool bRewardGranted;
     int32_t nErrorLine;
-    short int sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t uVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA1Q1Strc* pDVar2 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x203) {
       return;
@@ -178,13 +178,13 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     *(uint32_t*)(char*)&pBitBuffer2 = (uint32_t)(uintptr_t)pBitBuffer;
-    if (sVar1 == 0x4e80) {
+    if (uVar1 == 0x4e80) {
       pDVar2->bQuestCompleted = true;
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x100);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q32_UpdateQuestStep);
     } else {
       bool bVar3;
-      if (sVar1 != 0x4e8e) {
+      if (uVar1 != 0x4e8e) {
         return;
       }
 

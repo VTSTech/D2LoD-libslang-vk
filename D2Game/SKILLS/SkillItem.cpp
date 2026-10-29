@@ -1493,7 +1493,7 @@ void __fastcall SKILL_DeactivateAura(::SGAMEDATA * pGame, D2UnitStrc * pUnit, in
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSTATS, param_1);
 }
 
-BOOL __fastcall ITEMEVENT_PhysDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_PhysDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     if (!(pUnit && pTarget && pTarget->eUnitFlags >> 2 & 1)) {
       return 0;
@@ -1513,7 +1513,7 @@ BOOL __fastcall ITEMEVENT_PhysDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUn
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_LightningDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_LightningDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     if (!(pUnit && pTarget && pTarget->eUnitFlags >> 2 & 1)) {
       return 0;
@@ -1533,7 +1533,7 @@ BOOL __fastcall ITEMEVENT_LightningDamageOnAttacked(::SGAMEDATA * pGame, uint32_
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_FireDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_FireDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     if (!(pUnit && pTarget && pTarget->eUnitFlags >> 2 & 1)) {
       return 0;
@@ -1553,7 +1553,7 @@ BOOL __fastcall ITEMEVENT_FireDamageOnAttacked(::SGAMEDATA * pGame, uint32_t nUn
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_ColdDamageWithFreezeLength(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ColdDamageWithFreezeLength(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     D2UnitStrc* pAttacker = pUnit;
     if (!(pUnit && pTarget && pTarget->eUnitFlags >> 2 & 1)) {
@@ -1582,7 +1582,7 @@ BOOL __fastcall ITEMEVENT_ColdDamageWithFreezeLength(::SGAMEDATA * pGame, uint32
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_CrushingBlowChance(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_CrushingBlowChance(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!(pUnit && pTarget && pDamage)) {
       return 0;
     }
@@ -1617,7 +1617,7 @@ BOOL __fastcall ITEMEVENT_CrushingBlowChance(::SGAMEDATA * pGame, uint32_t nUnit
     return 0;
 }
 
-BOOL __fastcall ITEMEVENT_ChanceToFear(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ChanceToFear(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     bool _bIsUndead;
     bool bIsUndead;
     if (!(pUnit && pTarget && pTarget->eUnitType == UNIT_MONSTER)) {
@@ -1644,7 +1644,7 @@ BOOL __fastcall ITEMEVENT_ChanceToFear(::SGAMEDATA * pGame, uint32_t nUnitEvent,
 }
 
 // Item hit-event handler for "Chance to cast Dim Vision on striking". Only applies to monster targets. Reads the item's proc chance stat, computes an effective % from attacker/target levels, rolls the unit seed; on success calls SKILLNEC_ApplyDimVision with a duration scaled by how much the roll was beaten. Halves effective % when param1==6 (ranged hit). Returns 1 if Dim Vision was applied.
-BOOL __fastcall ITEMEVENT_ChanceToDimVision(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ChanceToDimVision(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!pUnit || !pTarget || pTarget->eUnitType != UNIT_MONSTER) {
       return 0;
     }
@@ -1686,7 +1686,7 @@ BOOL __fastcall ITEMEVENT_ChanceToDimVision(::SGAMEDATA * pGame, uint32_t nUnitE
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_ReplenishManaOnKill(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ReplenishManaOnKill(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && pDamage && pDamage->dwDmgTotal > 0)) {
       return 0;
     }
@@ -1714,7 +1714,7 @@ BOOL __fastcall ITEMEVENT_ReplenishManaOnKill(::SGAMEDATA * pGame, uint32_t nUni
 }
 
 // Item hit-event handler for "Freeze Target" modifier. Reads freeze level from the item stat, computes a chance % from attacker/target levels (reduced by 1/3 for ranged hits, param1==6). On a successful seed roll, calculates freeze duration (25–250 frames) proportional to the margin, fills a D2DamageStrc with dwFrzLength, and applies it via DAMAGE_ApplyDamageToUnit. Returns 1 if freeze was applied.
-BOOL __fastcall ITEMEVENT_FreezeTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_FreezeTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2DamageStrc sDamage;
     if (!pUnit || !pTarget) {
       return 0;
@@ -1788,7 +1788,7 @@ int32_t __fastcall SKILLITEM_CalculateStaminaPotionValue(int32_t nParam, int * p
 }
 
 // Item-event handler that applies the Open Wounds on-hit effect. Reads the proc chance from ITEM_GetMinimalStatValueShifted, rolls the unit's seed against it, then computes a level-scaled HP-regen-drain magnitude (via SKILLITEM_CalculateStaminaPotionValue with a 5-tier table). Halves damage for players (non-attack hit) or undead monsters. Applies STATE_openwounds via SetStateWithExpiryTime with UNITSTAT_hpregen as the drain stat for 200 frames.
-BOOL __fastcall ITEMEVENT_OpenWounds(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_OpenWounds(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t bIsUndead;
     D2StateExArgStrc sStateArg;
     int nDmgTable[6];
@@ -1847,7 +1847,7 @@ BOOL __fastcall ITEMEVENT_OpenWounds(::SGAMEDATA * pGame, uint32_t nUnitEvent, D
 }
 
 // Item-event handler that applies the Crushing Blow effect. Reads the chance from ITEM_GetMinimalStatValueShifted and rolls against the unit seed. Computes the divisor (1/4 vs monsters, 1/8 vs bosses/champions, 1/10 vs players/mercs) scaled by player-count multiplier; doubles for open wounds (param1==6). Reduces target HP by (current_HP / divisor) after subtracting physical resistance, clamped to 1 HP minimum. Sets an overlay (0x93) and marks the damage-result struct (pParam+4 |= 2) if the target would die.
-BOOL __fastcall ITEMEVENT_CrushingBlow(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_CrushingBlow(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t bIsBoss;
     int nTargetHP;
     uint32_t nNewHP;
@@ -1928,7 +1928,7 @@ BOOL __fastcall ITEMEVENT_CrushingBlow(::SGAMEDATA * pGame, uint32_t nUnitEvent,
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_ReplenishManaFlat(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ReplenishManaFlat(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!pUnit || !pTarget || pUnit->eUnitType != UNIT_PLAYER) {
       return 0;
     }
@@ -1955,7 +1955,7 @@ BOOL __fastcall ITEMEVENT_ReplenishManaFlat(::SGAMEDATA * pGame, uint32_t nUnitE
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_ReplenishLifeFlat(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ReplenishLifeFlat(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!pUnit || !pTarget) {
       return 0;
     }
@@ -1982,7 +1982,7 @@ BOOL __fastcall ITEMEVENT_ReplenishLifeFlat(::SGAMEDATA * pGame, uint32_t nUnitE
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_LifeDrainDemon(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_LifeDrainDemon(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t nMaxLife;
     int nCurLife;
     uint32_t nNewLife;
@@ -2020,7 +2020,7 @@ BOOL __fastcall ITEMEVENT_LifeDrainDemon(::SGAMEDATA * pGame, uint32_t nUnitEven
 
 // Server-side item hit-event handler that applies a slow state to a target. Reads the slow percentage from the item's stat (via ITEM_GetMinimalStatValueShifted). Clamps the slow to 50% for players/bosses/mercs/champions, 75% for normal monsters, 90% for others. Applies STATE_slowed with UNITSTAT_velocitypercent, attackrate, and other_animrate for 750 frames. Returns 1 if state was successfully applied.
 // @sourcefile .\SKILLS\SkillItem.cpp
-BOOL __fastcall ITEMEVENT_SlowTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_SlowTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     D2StateExArgStrc sStateArg;
     if (!pUnit || !pTarget) {
       return 0;
@@ -2095,7 +2095,7 @@ BOOL __fastcall ITEMEVENT_SlowTarget(::SGAMEDATA * pGame, uint32_t nUnitEvent, D
 }
 
 // Item hit-event handler for "Cast on Attack" procs. Reads proc chance and proc skill/level from the item stat encoding. Only fires when pParam indicates an attack swing (bit 0x20 clear or pParam null). Rolls unit seed against chance; on success spawns the proc skill on the target unit via SKILL_CastOnTargetUnit, or at the caster's position via MONSTERAI_CastItemEffectSkill if no target. Self-targeted skills (flags4 bit 0x20) cast on pTarget instead.
-BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t nCastX;
     if (!pUnit) {
       return 0;
@@ -2106,7 +2106,7 @@ BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent,
       return 0;
     }
 
-    eD2Skills eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
+    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
     eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
     if (!(!pDamage || pDamage->dwHitFlags & 0x20)) {
       return 0;
@@ -2144,7 +2144,7 @@ BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent,
 }
 
 // Item hit-event handler for "Cast when Striking" procs. Reads proc chance and proc skill/level from the item stat encoding. Only fires when pParam bit 0x4 (striking flag) is set. Rolls unit seed against chance; on success casts the proc skill on pTarget via SKILL_CastOnTargetUnit, or at the caster's position via MONSTERAI_CastItemEffectSkill if no target. Returns 1 if the skill was cast.
-BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!pUnit) {
       return 0;
     }
@@ -2154,7 +2154,7 @@ BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEven
       return 0;
     }
 
-    eD2Skills eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
+    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
     eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
     if (!(pDamage && pDamage->wResultFlags & 4)) {
       return 0;
@@ -2183,7 +2183,7 @@ BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEven
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     uint32_t nCastX;
     if (!pUnit) {
       return 0;
@@ -2195,7 +2195,7 @@ BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, 
     }
 
     eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
-    eD2Skills eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
+    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
     D2SeedStrc DVar1 = D2_SEED_NEXT(pUnit->sSeed);
     pUnit->sSeed = DVar1;
     if (!((int)(DVar1.nSeedLow % 100) < nProcChance && (int)eProcSkill >= 0 && (int)eProcSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eProcSkill)) {
@@ -2293,7 +2293,7 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
     return 1;
 }
 
-BOOL __fastcall ITEMEVENT_ReviveMonster(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, eD2Skills eSkill, int32_t nSkillLvl) {
+BOOL __fastcall ITEMEVENT_ReviveMonster(::SGAMEDATA * pGame, uint32_t nUnitEvent, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2DamageStrc * pDamage, uint32_t eSkill, int32_t nSkillLvl) {
     if (!(pUnit && pTarget && pTarget->eUnitType == UNIT_MONSTER)) {
       return 0;
     }

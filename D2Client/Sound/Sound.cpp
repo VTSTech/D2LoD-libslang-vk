@@ -1582,7 +1582,7 @@ static void SOUND_SetVolumeForChannel(int32_t nChannelIndex) {
 void __stdcall SOUND_TogglePauseAll() {
     int32_t_007c8c7c = 0;
     int32_t_007c8c90 = 0;
-    int32_t_007c8c94 = 0;
+    UINT_007c8c94 = 0;
     int32_t_007c8c98 = 0;
     if (gnActiveSoundChannelCount) {
       SOUND_StopById(gnActiveSoundChannelCount);
@@ -1744,12 +1744,12 @@ void __fastcall SOUND_UpdateEnvironmentAmbience(int32_t nTick) {
       int32_t nPanAngle;
       if (nEventSoundId != int32_t_007c8c90) {
         nDayCycleIndex = _Utils::RollRandomNumberTimesTwo((uint32_t)pSoundEnvLine->Event_Delay / 3);
-        int32_t_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
-        nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(int32_t_007c8c94);
+        UINT_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
+        nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(UINT_007c8c94);
         int32_t_007c8c98 = nTick - nSoundEnvIndex;
         int32_t_007c8c90 = nEventSoundId;
       }
-      if ((uint32_t)(nTick - int32_t_007c8c98) >= (uint32_t)int32_t_007c8c94) {
+      if ((uint32_t)(nTick - int32_t_007c8c98) >= UINT_007c8c94) {
         nVolume = SOUND_PlaySound(int32_t_007c8c90, nullptr, 0, 0, 0);
         if (nVolume) {
           nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(2);
@@ -1758,7 +1758,7 @@ void __fastcall SOUND_UpdateEnvironmentAmbience(int32_t nTick) {
           SOUND_PlayEnvironmentSound(nVolume, nDayCycleIndex * (nSoundEnvIndex ? 0x1 : -0x1), nPanAngle, 0);
           int32_t_007c8c98 = nTick;
           nDayCycleIndex = _Utils::RollRandomNumberTimesTwo((uint32_t)pSoundEnvLine->Event_Delay / 3);
-          int32_t_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
+          UINT_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
         }
       }
     }

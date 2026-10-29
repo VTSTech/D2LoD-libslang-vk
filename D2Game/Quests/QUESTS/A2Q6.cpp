@@ -458,7 +458,7 @@ bool __fastcall Q14_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       return true;
     }
     if (pQuestData->pQuestSpecificData.pA2Q6->bIzualLocationSet) {
-      *nUnknown = pQuestData->pQuestSpecificData.pA2Q6->nStatusCode;
+      *nUnknown = (uint8_t)pQuestData->pQuestSpecificData.pA2Q6->nStatusCode;
       return true;
     }
 
@@ -511,7 +511,7 @@ void __fastcall Q14_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     short int nNpcNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
     if (nNpcNo == 0xfb) {
       int32_t nPlayerX;

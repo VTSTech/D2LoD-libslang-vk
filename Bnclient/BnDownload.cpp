@@ -312,7 +312,7 @@ void __fastcall BNDOWNLOAD_UpdateProgressPercent(uint32_t dwUnused, int32_t nByt
     gnNetworkSendState = (uint32_t)(nBytesDone * 100) / nTotalSize;
 }
 
-void __fastcall BNDOWNLOAD_ResetState(int nResetValue) {
+void __fastcall BNDOWNLOAD_ResetState(uint32_t nResetValue) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881f64);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gbBnetFtpFileTransferActive = 0;
     bBnetFtpDownloadActive = '\0';
@@ -904,7 +904,7 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
     }
 
     Storm::SMem::SMemFree(pDownloadCtxCopy, ".\\BnDownload.cpp", 0x368, 0);
-    if (nConnResult == -0x7ffffffe && (uint32_t)gnNetworkSendState < 100) {
+    if (nConnResult == -0x7ffffffe && gnNetworkSendState < 100) {
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881f64);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gbBnetFtpFileTransferActive = 0;
       bBnetFtpDownloadActive = '\0';

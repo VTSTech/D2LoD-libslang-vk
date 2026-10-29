@@ -222,7 +222,7 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int nPlayerGuid;
     D2QuestDataA1Q5Strc* pA1Q4Data;
     ::SGAMEDATA* pGame;
-    short int sVar1;
+    uint16_t sVar1;
     sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     short int sVar2;
     sVar2 = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;

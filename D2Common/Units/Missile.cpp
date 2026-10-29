@@ -481,23 +481,24 @@ static BOOL __stdcall HasBonusStats(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
 }
 
 // Accumulates all elemental damage stats from pUnit into pMissileDamageData, left-shifted by nShift. Reads fire/lightning/magic/cold/poison/life-drain/mana-drain/burning min+max stats and their durations from pUnit via GetStatUnsignedValue, then adds each (shifted) value to the corresponding field of D2MissileDamageDataStrc. Poison length uses skill_poison_override_length if present, otherwise poisonlength+poison_count. Custom register calling convention: pMissileDamageData=ESI, pUnit=EDI, nShift=BL.
-static void AddStatsToDamage(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc * pUnit, BYTE nShift) {
+static void AddStatsToDamage(D2MissileDamageDataStrc * pMissileDamageData, D2UnitStrc * pUnit, int32_t nShift) {
     int nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_firemindam, 0);
-    pMissileDamageData->nFireMinDamage += nStatValue << (nShift & 0x1f);
+    uint8_t nShiftTmp = (uint8_t)nShift;
+    pMissileDamageData->nFireMinDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_firemaxdam, 0);
-    pMissileDamageData->nFireMaxDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nFireMaxDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_lightmindam, 0);
-    pMissileDamageData->nLightMinDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nLightMinDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_lightmaxdam, 0);
-    pMissileDamageData->nLightMaxDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nLightMaxDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_magicmindam, 0);
-    pMissileDamageData->nMagicMinDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nMagicMinDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_magicmaxdam, 0);
-    pMissileDamageData->nMagicMaxDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nMagicMaxDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_coldmindam, 0);
-    pMissileDamageData->nColdMinDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nColdMinDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_coldmaxdam, 0);
-    pMissileDamageData->nColdMaxDamage += nStatValue << (nShift & 0x1f);
+    pMissileDamageData->nColdMaxDamage += nStatValue << (nShiftTmp & 0x1f);
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_coldlength, 0);
     pMissileDamageData->nColdLength += nStatValue;
     nStatValue = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_poisonmindam, 0);
@@ -1391,7 +1392,7 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
     }
     if (nSourceDamage) {
       UpdateDualWieldStats(pOwner, 1);
-      AddStatsToDamage(pMissileDamageData, pOwner, '\b');
+      AddStatsToDamage(pMissileDamageData, pOwner, 8);
       CalculateFinalDamage(pMissileDamageData, nSourceDamage);
       D2Common::Units::Return(pOwner, 1);
       return;
@@ -1400,7 +1401,7 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
       return;
     }
 
-    AddStatsToDamage(pMissileDamageData, pUnit2, '\0');
+    AddStatsToDamage(pMissileDamageData, pUnit2, 0);
     CalculateFinalDamage(pMissileDamageData, nSrcMissDmgPct);
 }
 

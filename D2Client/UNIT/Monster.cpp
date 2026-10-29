@@ -599,7 +599,7 @@ static void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
 // Allocates and attaches a D2LightMapStrc to a monster unit. Computes the final light radius as the max of the monster's equipment light and its MonStats2 byLight value; special-cases Den of Evil quest monsters (clamped to radius 3). Replaces any existing light map and updates the unit's stored light radius.
 void __fastcall MONSTER_InitLightMap(D2UnitStrc * pUnit) {
     uint32_t uVar1;
-    char cAlign;
+    uint8_t cAlign;
     if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
       return;
     }

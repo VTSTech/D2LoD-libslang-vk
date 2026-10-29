@@ -647,16 +647,10 @@ void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
       pSevenTombsData->bIzualLocationSet = 1;
       if (eGameType == SGAMETYPE_SINGLEPLAYER) {
         pSevenTombsData->nStatusCode = 8;
-        pSevenTombsData->field_0x15 = 0;
-        pSevenTombsData->field_0x16 = 0;
-        pSevenTombsData->field_0x17 = 0;
         return;
       }
 
       pSevenTombsData->nStatusCode = 9;
-      pSevenTombsData->field_0x15 = 0;
-      pSevenTombsData->field_0x16 = 0;
-      pSevenTombsData->field_0x17 = 0;
       return;
     }
 
@@ -679,7 +673,7 @@ void __fastcall Q15_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     if (nMessageIndex != 0x3b && nMessageIndex != 0x3c) {

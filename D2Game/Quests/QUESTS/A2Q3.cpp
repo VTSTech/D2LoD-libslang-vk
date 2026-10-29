@@ -785,7 +785,7 @@ void __fastcall Q11_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     BOOL bQuestState;
     int nPlayerGUID;
     ::SGAMEDATA* pGame;
-    uint32_t nMsgIndex = (uint32_t)(uint16_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint32_t nMsgIndex = (uint32_t)pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (nMsgIndex != 0x15c) {
       if (nMsgIndex - 0x16a <= 0xa) {
         pGame = pQuestArgs->pGame;

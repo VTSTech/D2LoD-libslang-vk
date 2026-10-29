@@ -797,7 +797,7 @@ void __stdcall TEXT_DrawPartyMessages() {
 static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount, RECT * pRect, uint32_t nDefaultResult) {
     // Static local variables (originally global data)
     static uint32_t gaTextNonOverlapRects[8] = { 0x1, 0x1, 0xffffffff, 0x1, 0x1, 0xffffffff, 0xffffffff, 0xffffffff }; D2_STATIC_GUARD(gaTextNonOverlapRects, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gaTextNonOverlapRects");
-    static uint32_t gnTextNonOverlapRectCount = 0x8; D2_STATIC_GUARD(gnTextNonOverlapRectCount, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gnTextNonOverlapRectCount");
+    static int gnTextNonOverlapRectCount = 0x8; D2_STATIC_GUARD(gnTextNonOverlapRectCount, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gnTextNonOverlapRectCount");
 
     int i;
     int32_t nRemaining;
@@ -3954,7 +3954,7 @@ uint16_t * __fastcall TEXT_LookupSoundStringIndex(uint16_t nSoundId) {
         /* .nStringKey = */ 0x5871
     )
 }; D2_STATIC_GUARD(gaSoundStringKeys, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gaSoundStringKeys");
-    static uint32_t gSoundStringLookupPrevIdx = 0x20f; D2_STATIC_GUARD(gSoundStringLookupPrevIdx, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gSoundStringLookupPrevIdx");
+    static int gSoundStringLookupPrevIdx = 0x20f; D2_STATIC_GUARD(gSoundStringLookupPrevIdx, "D2Client::UI::Text::TEXT_LookupSoundStringIndex::gSoundStringLookupPrevIdx");
 
     int nIdx;
     uint16_t* pWVar1;

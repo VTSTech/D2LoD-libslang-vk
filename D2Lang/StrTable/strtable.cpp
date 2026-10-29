@@ -453,7 +453,7 @@ uint32_t __fastcall STRTABLE_GetLanguageId(char * szText) {
 // @sourcefile .\StrTable\strtable.cpp
 uint32_t __stdcall MISC_GetLanguageCode() {
     // Static local variables (originally global data)
-    static uint32_t gnLanguageCode; D2_STATIC_GUARD_BSS(gnLanguageCode, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gnLanguageCode");
+    static int gnLanguageCode; D2_STATIC_GUARD_BSS(gnLanguageCode, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gnLanguageCode");
     static uint8_t gbLanguageCodeCached; D2_STATIC_GUARD_BSS(gbLanguageCodeCached, "D2Lang::StrTable::strtable::MISC_GetLanguageCode::gbLanguageCodeCached");
 
     if (gbLanguageCodeCached != '\0') {
@@ -463,10 +463,10 @@ uint32_t __stdcall MISC_GetLanguageCode() {
     gbLanguageCodeCached = '\x01';
     uint8_t* pMemoryToFree = (uint8_t*)Fog::Archive::D2FILE_AllocAndLoadD2File((D2PoolManagerStrc*)MPQ_d2data, "data\\local\\use", nullptr, ".\\StrTable\\strtable.cpp", 1099);
     if (pMemoryToFree) {
-      gnLanguageCode = (uint32_t)*pMemoryToFree;
+      gnLanguageCode = (int)*pMemoryToFree;
       D2_FREE_AT(pMemoryToFree, ".\\StrTable\\strtable.cpp", 0x450);
     }
-    if ((int)gnLanguageCode >= 0xe) {
+    if (gnLanguageCode >= 0xe) {
       gnLanguageCode = 0;
       return 0;
     }

@@ -665,13 +665,13 @@ static int32_t QUESTLOG_HitTestCloseButton(int32_t nParam1, int32_t nParam2) {
 }
 
 static int32_t QUESTLOG_HitTestQuestIcon(int32_t nX, int32_t nY) {
-    if (gQuestLog.nQuestLogQuestCount > 6) {
+    if ((uint32_t)gQuestLog.nQuestLogQuestCount > 6) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x738);
       exit(-1);
     }
 
     int nIconIndex = 0;
-    if ((int)gQuestLog.nQuestLogQuestCount <= 0) {
+    if (gQuestLog.nQuestLogQuestCount <= 0) {
       return -1;
     }
 
@@ -681,7 +681,7 @@ static int32_t QUESTLOG_HitTestQuestIcon(int32_t nX, int32_t nY) {
       }
 
       nIconIndex++;
-    } while (nIconIndex < (int)gQuestLog.nQuestLogQuestCount);
+    } while (nIconIndex < gQuestLog.nQuestLogQuestCount);
 
     return -1;
 }

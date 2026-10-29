@@ -3631,7 +3631,7 @@ void __stdcall INV_SelectDefaultNpcButton() {
     int nButtonIdx = 0;
     gnInvShopButton = -1;
     int nSelectedButton = gnInvShopButton;
-    if ((int)gaNpcShopButtonTable[0] > 0) {
+    if (gaNpcShopButtonTable[0] > 0) {
       int32_t* pButtonCallback;
       pButtonCallback = &gaNpcShopButtons[0].nDrawCallback;
       do {
@@ -3643,7 +3643,7 @@ void __stdcall INV_SelectDefaultNpcButton() {
         nButtonIdx++;
         pButtonCallback += 5;
         nSelectedButton = gnInvShopButton;
-      } while (nButtonIdx < (int)gaNpcShopButtonTable[0]);
+      } while (nButtonIdx < gaNpcShopButtonTable[0]);
     }
 
     gnInvShopButton = nSelectedButton;
@@ -3992,12 +3992,12 @@ void __stdcall DRAW_UI_Inventory_DrawShop() {
 
     sGfxData.pDC6 = ui::GetBuySellBtnDC6();
     int nI = 0;
-    if (0 < (int)gaNpcShopButtonTable[0]) {
+    if (0 < gaNpcShopButtonTable[0]) {
       do {
         sGfxData.nFrameNumber = (uint32_t)gaNpcShopButtons[nI].wCurrentSelection + gaNpcShopButtons[nI].nDrawCallback;
         /* Draws the buttons of a npc */ D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, NPCButtonArray[nI + CurrentNpcButtonSelection * 4] - 1 + gnPanelOffsetX, gnPanelOffsetY - 0x3f + ScreenSizeY, -1, DRAW_SOLID, nullptr);
         nI++;
-      } while (nI < (int)gaNpcShopButtonTable[0]);
+      } while (nI < gaNpcShopButtonTable[0]);
     }
 
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
@@ -4059,13 +4059,13 @@ void __stdcall INV_DrawNpcButtonTooltip() {
     }
 
     int nButtonIdx = 0;
-    if ((int)gaNpcShopButtonTable[0] <= 0) {
+    if (gaNpcShopButtonTable[0] <= 0) {
       return;
     }
 
     while (gaNpcShopButtons[nButtonIdx].nSelectedState != 1 || gnInvMouseX <= NPCButtonArray[nButtonIdx + CurrentNpcButtonSelection * 4] + gnPanelOffsetX || gnInvMouseX >= NPCButtonArray[nButtonIdx + CurrentNpcButtonSelection * 4] + gnPanelOffsetX + 0x2d || gpInvCursorItem <= nButtonX || gpInvCursorItem >= gnPanelOffsetY - 0x41 + ScreenSizeY) {
       nButtonIdx++;
-      if (nButtonIdx >= (int)gaNpcShopButtonTable[0]) {
+      if (nButtonIdx >= gaNpcShopButtonTable[0]) {
         return;
       }
     }
@@ -4190,9 +4190,8 @@ void __stdcall INV_HandleShopMouseMove(D2UIMouseMsgStrc * pMsg) {
 void __stdcall INV_HandleShopLeftClick(D2UIMouseMsgStrc * pMsg) {
     BOOL BVar2;
     int32_t* ppDVar4;
-    uint32_t nButtonCount;
+    int nButtonCount;
     PD2NpcShopButtonAction pButton;
-    int nButtonIdx;
     int32_t dwMouseX;
     int32_t dwMouseY;
     DWORD dwArg6;
@@ -4216,7 +4215,7 @@ void __stdcall INV_HandleShopLeftClick(D2UIMouseMsgStrc * pMsg) {
     }
     if (gShopTradeUIState == 1) {
       int iVar1;
-      if (nMouseX < pNpcInventoryScreenCoordinates.nLeft || nMouseX > pNpcInventoryScreenCoordinates.nRight || nMouseY < gnPanelOffsetY - 0x6d + ScreenSizeY || nMouseY > pNpcInventoryScreenCoordinates.nBottom || (nButtonIdx = 0 , (int)gaNpcShopButtonTable[0] < 1)) {
+      if (nMouseX < pNpcInventoryScreenCoordinates.nLeft || nMouseX > pNpcInventoryScreenCoordinates.nRight || nMouseY < gnPanelOffsetY - 0x6d + ScreenSizeY || nMouseY > pNpcInventoryScreenCoordinates.nBottom || (nButtonCount = 0 , gaNpcShopButtonTable[0] < 1)) {
         release_buttons:
         BVar2 = INV_CanReturnToShop();
         if (BVar2) {
@@ -4224,7 +4223,7 @@ void __stdcall INV_HandleShopLeftClick(D2UIMouseMsgStrc * pMsg) {
           pUnit = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pUnit->pInventory);
           ui::ITEM_SetItemOnHand(pUnit);
         }
-        if (0 < (int)gaNpcShopButtonTable[0]) {
+        if (0 < gaNpcShopButtonTable[0]) {
           ppDVar4 = &gaNpcShopButtons[0].nDrawCallback;
           nButtonCount = gaNpcShopButtonTable[0];
           do {
@@ -4239,7 +4238,7 @@ void __stdcall INV_HandleShopLeftClick(D2UIMouseMsgStrc * pMsg) {
       } else {
         pButton = &gaNpcShopButtons[0].nActionType;
         do {
-          if (((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nSelectedState == 1 && gnInvMouseX > gnPanelOffsetX + NPCButtonArray[nButtonIdx + CurrentNpcButtonSelection * 4] && gnInvMouseX < gnPanelOffsetX + NPCButtonArray[nButtonIdx + CurrentNpcButtonSelection * 4] + 0x2d && gpInvCursorItem > gnPanelOffsetY - 0x6d + ScreenSizeY && gpInvCursorItem < gnPanelOffsetY - 0x41 + ScreenSizeY && ((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nDrawCallback == 1) {
+          if (((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nSelectedState == 1 && gnInvMouseX > gnPanelOffsetX + NPCButtonArray[nButtonCount + CurrentNpcButtonSelection * 4] && gnInvMouseX < gnPanelOffsetX + NPCButtonArray[nButtonCount + CurrentNpcButtonSelection * 4] + 0x2d && gpInvCursorItem > gnPanelOffsetY - 0x6d + ScreenSizeY && gpInvCursorItem < gnPanelOffsetY - 0x41 + ScreenSizeY && ((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nDrawCallback == 1) {
             iVar1 = ((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nActionType;
             if (iVar1 == 9) {
               pMsg->bHandled = 1;
@@ -4287,14 +4286,14 @@ void __stdcall INV_HandleShopLeftClick(D2UIMouseMsgStrc * pMsg) {
               } else {
                 ui::UI_SetCursorToSpecialIcon(((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->nIconId, 0);
                 gnInvShopButton2 = (uint32_t)((D2NpcShopButtonStrc*)((char*)pButton - 0xa))->wCurrentSelection;
-                gnInvShopButton = nButtonIdx;
+                gnInvShopButton = nButtonCount;
               }
             }
           }
 
-          nButtonIdx++;
+          nButtonCount++;
           pButton += 5;
-        } while (nButtonIdx < (int)gaNpcShopButtonTable[0]);
+        } while (nButtonCount < gaNpcShopButtonTable[0]);
 
         if (!bButtonHandled) {
           goto release_buttons;
@@ -4394,7 +4393,7 @@ void __stdcall INV_HandleShopReturnAction() {
     pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pCursorItem_lcl->pInventory);
     ui::ITEM_SetItemOnHand(pCursorItem_lcl);
     nItemType = gnInvShopButton;
-    if (-1 < gnInvShopButton && gnInvShopButton < (int)gaNpcShopButtonTable[0] && gaNpcShopButtons[gnInvShopButton].wStringId != 0x276f) {
+    if (-1 < gnInvShopButton && gnInvShopButton < gaNpcShopButtonTable[0] && gaNpcShopButtons[gnInvShopButton].wStringId != 0x276f) {
       INV_UpdateNpcButtonHighlightState(gnInvShopButton2);
       g_nCurrentInventoryPage = gaNpcShopButtons[nItemType].nActionType;
       ui::UI_SetCursorToSpecialIcon(gaNpcShopButtons[nItemType].nIconId, 0);
@@ -10892,7 +10891,7 @@ void __stdcall INPUT_InventoryLeftClick(D2UIMouseMsgStrc * pMsg) {
           bHasSelectedTab = 0;
           __frame0.nSelectedShopTab = 0;
           pMsg = (D2UIMouseMsgStrc*)-1;
-          if ((int)gaNpcShopButtonTable[0] > 0) {
+          if (gaNpcShopButtonTable[0] > 0) {
             pnButtonState = &gaNpcShopButtons[0].nDrawCallback;
             pnButtonXOffsets = NPCButtonArray + CurrentNpcButtonSelection * 4;
             do {
@@ -10908,7 +10907,7 @@ void __stdcall INPUT_InventoryLeftClick(D2UIMouseMsgStrc * pMsg) {
               nShopButtonIdx = (uintptr_t)&((D2UIMouseMsgStrc*)nShopButtonIdx)->hWnd + 1;
               pnButtonXOffsets++;
               pnButtonState += 5;
-            } while (nShopButtonIdx < (int)gaNpcShopButtonTable[0]);
+            } while (nShopButtonIdx < gaNpcShopButtonTable[0]);
 
             if (pMsg != (D2UIMouseMsgStrc*)-1) {
               if (gaNpcShopButtons[(int)pMsg].nSelectedState == 1) {

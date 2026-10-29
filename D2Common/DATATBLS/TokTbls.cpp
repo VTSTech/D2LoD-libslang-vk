@@ -49,7 +49,7 @@ void __fastcall TXT_AllocTxt_plrmode_plrtype(D2PoolManagerStrc * pMemory) {
     plr[2].fpLinker = 0;
     D2PlrTypeModeTxt* pTxtPlrType = (D2PlrTypeModeTxt*)DataTbls::CompileTxt(pMemory, "plrtype", plr, &nTxtPlrTypeSize, 0x34);
     D2PlrTypeModeTxt* pTxtPlrMode = (D2PlrTypeModeTxt*)DataTbls::CompileTxt(pMemory, "plrmode", plr, &nTxtPlrModeSize, 0x34);
-    int nTotalSize = nTxtPlrModeSize + nTxtPlrTypeSize;
+    uint32_t nTotalSize = nTxtPlrModeSize + nTxtPlrTypeSize;
     D2PlrTypeModeTxt* pTxtPlrTypeMode = (D2PlrTypeModeTxt*)D2_ALLOC_POOL_AT(nullptr, nTotalSize * 0x34, ".\\DATATBLS\\TokTbls.cpp", 0x37);
     if (!pTxtPlrTypeMode) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x38);
@@ -69,7 +69,7 @@ void __fastcall TXT_AllocTxt_plrmode_plrtype(D2PoolManagerStrc * pMemory) {
 // Defines the field schema for the monmode.txt data table and compiles it. Builds a D2BinFieldInputStrc array (name, token, and the per-mode direction-count bytes DT/NU/WL/GH/A1/A2/BL/SC/S1-S4/DD/KB/SQ/RN_Dir) describing each monster animation mode, then calls CompileTxt to load and pack the rows into a struct of stride 0x34. Stores the result and row count into the global pTxtMonMode1/2/3 and nTxtMonModeSize.
 void __fastcall TXT_AllocTxt_monmode(D2PoolManagerStrc * pMemory) {
     D2BinFieldInputStrc monmode[19];
-    int nMonModeSize;
+    uint32_t nMonModeSize;
     monmode[0].szName = "name";
     monmode[0].eType = FIELDTYPE_ASCII;
     monmode[0].nSize = 0x1f;
@@ -165,7 +165,7 @@ void __fastcall TXT_AllocTxt_monmode(D2PoolManagerStrc * pMemory) {
     monmode[0x11].szName = "RN_Dir";
     monmode[0x11].nOffset = 0x33;
     monmode[0x12].szName = "end";
-    pTxtMonMode1 = (D2MonModeTxt*)DataTbls::CompileTxt(pMemory, "monmode", monmode, &nMonModeSize, 0x34);
+    pTxtMonMode1 = (D2MonModeTxt*)DataTbls::CompileTxt(pMemory, "monmode", monmode, (int*)&nMonModeSize, 0x34);
     nTxtMonModeSize = nMonModeSize;
     pTxtMonMode2 = pTxtMonMode1;
     pTxtMonMode3 = pTxtMonMode1;
@@ -194,7 +194,7 @@ void __fastcall TXT_AllocTxt_objtype_objmode(D2PoolManagerStrc * pMemory) {
     obj[2].fpLinker = 0;
     D2ObjTypeTxt* pTxtObjType_lcl = (D2ObjTypeTxt*)DataTbls::CompileTxt(pMemory, "objtype", obj, &nObjTypeSize, 0x34);
     D2ObjModeTxt* pTxtObjMode_lcl = (D2ObjModeTxt*)DataTbls::CompileTxt(pMemory, "objmode", obj, &nObjModeSize, 0x34);
-    int nTotalSize = nObjModeSize + nObjTypeSize;
+    uint32_t nTotalSize = nObjModeSize + nObjTypeSize;
     D2ObjTypeTxt* pTxtObjType2 = (D2ObjTypeTxt*)D2_ALLOC_POOL_AT(nullptr, nTotalSize * 0x34, ".\\DATATBLS\\TokTbls.cpp", 0x94);
     if (!pTxtObjType2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x95);
@@ -282,7 +282,7 @@ void __stdcall FreeTokenTables() {
 
 D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nModeIndex) {
     int32_t nLine;
-    if (nMode >= (uint32_t)nTxtPlrTypeModeSize) {
+    if (nMode >= nTxtPlrTypeModeSize) {
       return nullptr;
     }
     if (!pTxtPlrTypeMode1) {
@@ -320,7 +320,7 @@ D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nMode
 
 D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
     int32_t nLine;
-    if (nId >= (uint32_t)nTxtMonModeSize) {
+    if (nId >= nTxtMonModeSize) {
       return nullptr;
     }
 
@@ -355,7 +355,7 @@ D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
 
 D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex) {
     int32_t nLine;
-    if (nId >= (uint32_t)nTxtObjTypeModeSize) {
+    if (nId >= nTxtObjTypeModeSize) {
       return nullptr;
     }
 

@@ -511,7 +511,7 @@ void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int32_t iVar1;
     uint8_t nDifficulty;
     int* piQuestCounter;
-    short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     short int nNPCId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     D2UnitDataPlayerStrc* pGame = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     ::SGAMEDATA* pGamePtr = pQuestArgs->pGame;
@@ -521,7 +521,6 @@ void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
     if (nNPCId == 0xff) {
-      uint16_t nPartyId;
       if (nNPCNo == 0x24b) {
         pPlayerData = ITEMS::Items::Drop::HasQuestItem(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20333367);
         if (pPlayerData) {
@@ -535,9 +534,9 @@ void __fastcall Q20_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
               (*piQuestCounter)--;
               /* SetQuestState Step0x06: Khalim's Will consumed / Compelling Orb smashed
                          (quest climax) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_BladeOfTheOldReligion, QUESTSTATE_Step0x06);
-              nPartyId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
-              if (nPartyId != 0xffff) {
-                UNIT::Party::ExecuteFunctionForEveryPartyMember(pQuestData->pGame, nPartyId, (::fpExecuteOnUnitFunction)Q20_PlayerCheckInAct3SetStep06, 0);
+              nNPCNo = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
+              if (nNPCNo != 0xffff) {
+                UNIT::Party::ExecuteFunctionForEveryPartyMember(pQuestData->pGame, nNPCNo, (::fpExecuteOnUnitFunction)Q20_PlayerCheckInAct3SetStep06, 0);
               }
 
               UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q20_PlayerCheckBladeQuestCannotComplete);

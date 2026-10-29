@@ -46,7 +46,7 @@ namespace D2Game::Quests::QUESTS::A2Q0 {
 void __fastcall Q08_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pPlayerData;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (nNPCNo == 0xc9) {
       D2UnitDataPlayerStrc* pGame;
       if (nMessageIndex == 0xfd) {

@@ -2497,10 +2497,10 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
 
                 Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, 9);
                 if (pStatCostTxt->sendParamBits) {
-                  Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pComponentBytes & 0xffff, (uint32_t)(uint8_t)pStatCostTxt->sendParamBits);
+                  Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pComponentBytes & 0xffff, (uint32_t)pStatCostTxt->sendParamBits);
                 }
 
-                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatValue, (uint32_t)(uint8_t)pStatCostTxt->sendBits);
+                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatValue, (uint32_t)pStatCostTxt->sendBits);
                 nScratch = nStatCount;
                 pDataTable = sgptDataTable;
               }

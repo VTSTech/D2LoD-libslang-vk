@@ -1285,7 +1285,7 @@ static void UpdateClients(::SGAMEDATA * pGame) {
                   if (pPlayerUnit_lcl) {
                     ppfpEnterGame = &BattleNetServerService->fpEnterGame;
                     if (*ppfpEnterGame) {
-                      dwFrameMod8192 = (uint32_t)(uint16_t)pClient->nCharacterStatus;
+                      dwFrameMod8192 = (uint32_t)pClient->nCharacterStatus;
                       iVar1 = pPlayerUnit_lcl->nClassId;
                       dwArenaUpdateFlag = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit_lcl, UNITSTAT_level, 0);
                       (**ppfpEnterGame)(pGame->nServerToken, szCharNameLoop, (uint16_t)iVar1, dwArenaUpdateFlag, dwFrameMod8192);

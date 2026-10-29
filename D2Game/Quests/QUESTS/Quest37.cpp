@@ -37,7 +37,7 @@ void __fastcall Q37_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     bool bMsgMatch;
     int32_t nMonStatsId;
     nMonStatsId = pQuestArgs->sQuestArgs.sLevelChange.nOldLevel;
-    short int nMessageIndex;
+    uint16_t nMessageIndex;
     nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
       case 0x94:

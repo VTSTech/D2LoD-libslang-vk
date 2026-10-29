@@ -28,7 +28,7 @@ void __fastcall Q38_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     bool bNpcMatch;
     eD2MonsterClassId nMonStatsId;
     nMonStatsId = pQuestArgs->sQuestArgs.sLevelChange.nOldLevel;
-    short int wMessageIndex;
+    uint16_t wMessageIndex;
     wMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
       case MonsterUnitElzix:

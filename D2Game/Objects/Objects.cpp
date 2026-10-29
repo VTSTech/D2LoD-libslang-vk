@@ -318,7 +318,7 @@ D2UnitStrc * __fastcall SERVER_InitUnitObject(::SGAMEDATA * pGame, D2RoomStrc * 
     &D2Game::Objects::MakeRandomChest,
     &D2Game::Objects::OBJECT_CreateTombPortal
 }; D2_STATIC_GUARD(RandomObjectsInit, "D2Game::Objects::SERVER_InitUnitObject::RandomObjectsInit");
-    static uint32_t gnObjectSpawnChanceInitVal = 0x9; D2_STATIC_GUARD(gnObjectSpawnChanceInitVal, "D2Game::Objects::SERVER_InitUnitObject::gnObjectSpawnChanceInitVal");
+    static int gnObjectSpawnChanceInitVal = 0x9; D2_STATIC_GUARD(gnObjectSpawnChanceInitVal, "D2Game::Objects::SERVER_InitUnitObject::gnObjectSpawnChanceInitVal");
 
     if (nMonStatsId <= 0x23d) {
       return nullptr;

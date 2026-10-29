@@ -187,7 +187,7 @@ BOOL __fastcall SKILLBAR_SrvStFn33_TargetRevivableCorpse(::SGAMEDATA * pGame, D2
 // Resolves the Lightning Fury bolt-count offset for the Find Potion item-code table. Determines act from the unit's room level, rolls the unit's RNG seed mod 100, compares against SkilParam2/SkilParam3 thresholds to pick bolt-count offset (0/1/2), and returns the corresponding entry from gaMapAiDirectionHandlersPtr table indexed by [act*3 + offset]. Returns 0 if out of bounds.
 static uint32_t __stdcall SKILLAMZ_CreateLightningFuryBolts(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
-    static uint32_t gnLightningFuryBoltCount = 0xf; D2_STATIC_GUARD(gnLightningFuryBoltCount, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gnLightningFuryBoltCount");
+    static int gnLightningFuryBoltCount = 0xf; D2_STATIC_GUARD(gnLightningFuryBoltCount, "D2Game::SKILLS::SkillBar::SKILLAMZ_CreateLightningFuryBolts::gnLightningFuryBoltCount");
     static uint32_t gaAmzLightningFuryBoltTable[15][3] = {
     { 0x20327068, 0x2032706d, 0x20737672 },
     { 0x20337068, 0x2033706d, 0x20737672 },

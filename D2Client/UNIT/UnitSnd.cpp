@@ -1856,7 +1856,6 @@ void __stdcall SOUND_UpdateAmbientMusic() {
     uint16_t wSoundHighWord;
     int32_t iVar3;
     int* nMusicTableEntryPtr;
-    uint8_t* pbPlayedFlag;
     D2UnitStrc* pUnit;
     pUnit = Player::GetPlayerUnit_UI();
     D2RoomStrc* pRoom;
@@ -1875,7 +1874,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
     }
 
     geLastProcessedAmbientMusicLevelId = eCurrentLevelId;
-    if (*(int*)(gaLevelAmbientMusicPlayedFlags + eCurrentLevelId * 4)) {
+    if (gaLevelAmbientMusicPlayedFlags[eCurrentLevelId]) {
       return;
     }
 
@@ -1908,11 +1907,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
 
     while (true) {
       nTableIdx++;
-      pbPlayedFlag = gaLevelAmbientMusicPlayedFlags + *piVar1 * 4;
-      pbPlayedFlag[0] = 1;
-      pbPlayedFlag[1] = 0;
-      pbPlayedFlag[2] = 0;
-      pbPlayedFlag[3] = 0;
+      gaLevelAmbientMusicPlayedFlags[*piVar1] = 1;
       if (nTableIdx >= 10) {
         break;
       }

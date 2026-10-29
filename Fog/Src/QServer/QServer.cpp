@@ -1129,20 +1129,20 @@ D2QServerStrc * __stdcall NET_QServer_Init(eD2GSConnectionType neD2GSConnectionT
     WSADATA wsaData;
     D2QServerStrc* pQServer_lcl = D2_NEW_AT(D2QServerStrc, ".\\Src\\QServer\\QServer.cpp", 0x94);
     memset(pQServer_lcl, 0, 0xc4c);
-    uint32_t nIpConnCountMod = gnQServerIpConnCountModulo;
-    uint32_t nTokenBucketCount = TokenHashMapBucketSize;
+    uint32_t nTokenBucketCount = gnQServerIpConnCountModulo;
+    int nTempIdx = TokenHashMapBucketSize;
     pQServer_lcl->nClientHashMask = nTokenBucketMask;
-    int nTempIdx = gbQServerUseDedicatedIoWorkers;
-    pQServer_lcl->nIpConnCountModulo = nIpConnCountMod;
-    pQServer_lcl->bUseDedicatedIoWorkers = nTempIdx;
-    pQServer_lcl->nClientBucketCount = nTokenBucketCount;
-    pQServer_lcl->nClientBucketCountForScan = nTokenBucketCount;
-    D2QServerClientConnectionStrc** pQServerClientList = (D2QServerClientConnectionStrc**)D2_ALLOC_AT(nTokenBucketCount * 4, ".\\Src\\QServer\\QServer.cpp", 0x9f);
-    nTokenBucketCount = TokenHashMapBucketSize;
+    int iVar1 = gbQServerUseDedicatedIoWorkers;
+    pQServer_lcl->nIpConnCountModulo = nTokenBucketCount;
+    pQServer_lcl->bUseDedicatedIoWorkers = iVar1;
+    pQServer_lcl->nClientBucketCount = nTempIdx;
+    pQServer_lcl->nClientBucketCountForScan = nTempIdx;
+    D2QServerClientConnectionStrc** pQServerClientList = (D2QServerClientConnectionStrc**)D2_ALLOC_AT(nTempIdx * 4, ".\\Src\\QServer\\QServer.cpp", 0x9f);
+    nTempIdx = TokenHashMapBucketSize;
     size_t nAllocSize = TokenHashMapBucketSize * 4;
     pQServer_lcl->pQServerClientList = pQServerClientList;
     memset(pQServerClientList, 0, nAllocSize);
-    CRITICAL_SECTION* pBucketLocks = (CRITICAL_SECTION*)D2_ALLOC_AT(nTokenBucketCount * 0x18, ".\\Src\\QServer\\QServer.cpp", 0xa2);
+    CRITICAL_SECTION* pBucketLocks = (CRITICAL_SECTION*)D2_ALLOC_AT(nTempIdx * 0x18, ".\\Src\\QServer\\QServer.cpp", 0xa2);
     nTokenBucketCount = TokenHashMapBucketSize;
     nAllocSize = TokenHashMapBucketSize * 0x18;
     pQServer_lcl->pClientBucketLocks = pBucketLocks;
@@ -1155,7 +1155,7 @@ D2QServerStrc * __stdcall NET_QServer_Init(eD2GSConnectionType neD2GSConnectionT
         nTempIdx += 0x18;
         nBucketInitIdx++;
         nTokenBucketCount = TokenHashMapBucketSize;
-      } while (nBucketInitIdx < (int)TokenHashMapBucketSize);
+      } while (nBucketInitIdx < TokenHashMapBucketSize);
     }
 
     pQServer_lcl->nGameTokenHashMask = nTokenBucketCount;

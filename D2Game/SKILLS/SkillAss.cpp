@@ -564,7 +564,7 @@ void __fastcall SKILLASS_DispatchChargeUpDamage(D2UnitStrc * pUnit, D2DamageStrc
     D2StatListExStrc* pStatList;
     eD2Skills eSkill;
     D2SkillsTxt* pSkillTxt;
-    char nProgressiveDamageType;
+    uint8_t nProgressiveDamageType;
     if (!(pDamage && pDamage->wResultFlags & 1)) {
       return;
     }

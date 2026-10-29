@@ -2189,7 +2189,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(char * pBytes) {
 
       nStatParam = 0;
       if ((uint8_t)pItemStatCost->sendParamBits > 0) {
-        nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
+        nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
         nStatParam = nParamRaw & 0xffff;
       }
 
@@ -2264,7 +2264,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(char * pBytes) {
 
           nStatParam = 0;
           if ((uint8_t)pItemStatCost->sendParamBits > 0) {
-            nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
+            nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
             nStatParam = nParamRaw & 0xffff;
           }
 
@@ -2504,7 +2504,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
 
       nPosX = 0;
       if ((uint8_t)pItemStatCost->sendParamBits > 0) {
-        nPosX = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)(uint8_t)pItemStatCost->sendParamBits);
+        nPosX = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
         nPosX &= 0xffff;
       }
 
@@ -2615,7 +2615,7 @@ static void __stdcall NET_D2GS_CLIENT_PutIncomingBytesIntoServerCmdStructure(siz
 // Special decode: 0x18 (HP), 0x95/0x96 (Mana/Stamina)
 void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize) {
     // Static local variables (originally global data)
-    static uint32_t gbyLastProcessedPacketId; D2_STATIC_GUARD_BSS(gbyLastProcessedPacketId, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gbyLastProcessedPacketId");
+    static uint8_t gbyLastProcessedPacketId; D2_STATIC_GUARD_BSS(gbyLastProcessedPacketId, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gbyLastProcessedPacketId");
     static uint32_t gnTotalPacketBytesProcessed; D2_STATIC_GUARD_BSS(gnTotalPacketBytesProcessed, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnTotalPacketBytesProcessed");
     static int gnNetPacketZeroSizeCount; D2_STATIC_GUARD_BSS(gnNetPacketZeroSizeCount, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnNetPacketZeroSizeCount");
     static unsigned int gnOversizedPacketCount; D2_STATIC_GUARD_BSS(gnOversizedPacketCount, "D2Client::GAME::SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF::gnOversizedPacketCount");
@@ -2721,7 +2721,7 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
         gnTotalPacketBytesProcessed += uVar1;
         nRemaining -= uVar1;
         pBytes += uVar1;
-        *(uint8_t*)(char*)&gbyLastProcessedPacketId = byPacketId;
+        gbyLastProcessedPacketId = byPacketId;
         nSize = nTotalSize;
         pCurrentPacket = (uint8_t*)pBytes;
         if ((int)nRemaining <= 0) {

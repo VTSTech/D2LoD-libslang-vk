@@ -266,7 +266,7 @@ void __fastcall Q27_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     eD2QuestState eQuestState;
     ::SGAMEDATA* pGame;
     short int nNpcId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA4Q2Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA4Q2;
     if (nNpcId == 0x16f) {
       eD2Quests nQuestId;

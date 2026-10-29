@@ -1254,7 +1254,7 @@ void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
 // here.
 void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     // Static local variables (originally global data)
-    static uint32_t gnCutsceneCount = 0x8; D2_STATIC_GUARD(gnCutsceneCount, "D2Client::ExitGamePlayCutScene::gnCutsceneCount");
+    static int gnCutsceneCount = 0x8; D2_STATIC_GUARD(gnCutsceneCount, "D2Client::ExitGamePlayCutScene::gnCutsceneCount");
     static uint8_t bExitCutsceneActive; D2_STATIC_GUARD_BSS(bExitCutsceneActive, "D2Client::ExitGamePlayCutScene::bExitCutsceneActive");
 
     char* pszSrcName;
@@ -1376,7 +1376,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
           D2gfx::D2GFX::D2GFX_PlayCutScene((char*)szSoundPath, nPlayMode, pfFrame);
           bCutscenePlayed = 1;
         }
-        if (nCurrentCutsceneId != 5 || (char)geCutsceneCurrentSoundId == '\0') {
+        if (nCurrentCutsceneId != 5 || geCutsceneCurrentSoundId == '\0') {
           dwResult = D2gfx::D2GFX::D2GFX_GetResolutionMode();
           D2Win::D2GFX::SetResolutionModeWithEndCutScene(dwResult);
           UI::Draw::SetUIFlag(UI_NODRAW, UI_RESET, 0);
@@ -1421,11 +1421,11 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         D2Win::D2GFX::SetResolutionModeWithEndCutScene(dwResult);
         UI::Draw::SetUIFlag(UI_NODRAW, UI_RESET, 0);
         bExitCutsceneActive = '\0';
-        *(uint8_t*)(char*)&geCutsceneCurrentSoundId = '\0';
+        geCutsceneCurrentSoundId = '\0';
         D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(4);
       } else {
         check_chained_cutscene:
-        if ((char)geCutsceneCurrentSoundId != '\0') {
+        if (geCutsceneCurrentSoundId != '\0') {
           if (bMpqLoaded) {
             goto unload_before_chained;
           }
@@ -1462,12 +1462,12 @@ void __stdcall INV_ResetItemDescFlags() {
     gbCutsceneActive = '\0';
     BOOL nLoggerState = Fog::Src::LogManager::GetLoggerState_Stub();
     gbLoggerStateInactive = !nLoggerState;
-    *(uint8_t*)(char*)&geCutsceneCurrentSoundId = 0;
+    geCutsceneCurrentSoundId = '\0';
     gbItemDescDirtyFlag = 0;
 }
 
 void __stdcall INV_SetItemDescHighlight() {
-    *(uint8_t*)(char*)&geCutsceneCurrentSoundId = 1;
+    geCutsceneCurrentSoundId = '\x01';
 }
 
 uint8_t __stdcall INV_GetItemDescDirtyFlag() {

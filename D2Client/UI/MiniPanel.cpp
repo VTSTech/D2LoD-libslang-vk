@@ -117,7 +117,7 @@ static void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
     }
 
     int nButtonIndex = ScreenSizeX / 2;
-    uint32_t nButtonX = nButtonIndex - 0x54;
+    int nButtonX = nButtonIndex - 0x54;
     if (gbMiniPanelSinglePlayer) {
       nButtonX = nButtonIndex - 0x4a;
     }
@@ -475,7 +475,7 @@ void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
         nCenterX = 0;
         if (nButtonCount) {
           do {
-            if (nMouseX > (int)gnMiniPanelButtonX[nCenterX] && nMouseX < (int)(gnMiniPanelButtonX[nCenterX] + 0x14)) {
+            if (nMouseX > gnMiniPanelButtonX[nCenterX] && nMouseX < gnMiniPanelButtonX[nCenterX] + 0x14) {
               nButtonId = gnMiniPanelButtonFrame[nCenterX];
               if (nButtonId == 7 || (eUnitType = Units::GetType(pPlayer) , eUnitType == UNIT_PLAYER && (eAnimMode = UNIT::GetAnimMode(pPlayer) , eAnimMode != eD2PlayerAnimMode_ns::Dead))) {
                 MINIPANEL_HandleButtonClick(nButtonId);
@@ -573,7 +573,7 @@ void __stdcall INPUT_MiniPanelMouseDown(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    while (nMouseX <= (int)gnMiniPanelButtonX[nButtonIndex] || nMouseX >= (int)(gnMiniPanelButtonX[nButtonIndex] + 0x14)) {
+    while (nMouseX <= gnMiniPanelButtonX[nButtonIndex] || nMouseX >= gnMiniPanelButtonX[nButtonIndex] + 0x14) {
       nButtonIndex++;
       if (nButtonIndex >= nButtonCount) {
         return;
@@ -809,10 +809,9 @@ static void MINIPANEL_HandleMouseHover(int32_t nLayout) {
     }
 
     do {
-      uint32_t nX;
-      nX = gnMiniPanelButtonX[nButtonIndex];
-      if (nMouseX > (int)nX && nMouseX < (int)(nX + 0x14)) {
-        MINIPANEL_ShowTooltip(nX, gnMiniPanelButtonY[nButtonIndex], gnMiniPanelButtonFrame[nButtonIndex]);
+      nMouseY = gnMiniPanelButtonX[nButtonIndex];
+      if (nMouseX > nMouseY && nMouseX < nMouseY + 0x14) {
+        MINIPANEL_ShowTooltip(nMouseY, gnMiniPanelButtonY[nButtonIndex], gnMiniPanelButtonFrame[nButtonIndex]);
       }
 
       nButtonIndex++;

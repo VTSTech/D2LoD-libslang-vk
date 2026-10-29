@@ -173,7 +173,7 @@ BOOL __fastcall Q13_UpdateQuestRecord(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A2Q5 "The Summoner" - reward turn-in / gossip handler (sStateFunctions[0xb]). Fires when the player talks to an Arcane Sanctuary spirit (msg ids 0x1a3-0x1ad). If RewardAwaits is set: when JustCompleted is also set this is the moment of fresh completion -> broadcast state 0xd via QUEST_SetStateAndBroadcast (notify=Q13_NotifySummonerComplete), mark the server quest record JustCompleted (SetQuestRecordState 0x544720), and set the state flag to 3 (final stage). Then add this player to the participation GUID list, and in the per-player record set Completed and clear RewardAwaits. Finally sends the NPC gossip packet. This is the canonical Summoner-quest completion path.
 void __fastcall Q13_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (!(nMessageId == 0x1ab || nMessageId == 0x1a8 || nMessageId == 0x1a3 || nMessageId == 0x1a7 || nMessageId == 0x1a6 || nMessageId == 0x1aa || nMessageId == 0x1ad || nMessageId == 0x1a9 || nMessageId == 0x1a5 || nMessageId == 0x1a4 || nMessageId == 0x1ac)) {
       return;
     }

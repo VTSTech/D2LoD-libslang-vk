@@ -44,7 +44,7 @@ namespace D2Game::Quests::QUESTS::A3Q0 {
 
 // A3Q0 handler [0x0b] — dialog/quote-finished event. If the speaking NPC is Hratli (0xfd) and the played message is 0x1d1/0x1d2 (Hratli's intro quotes), mark QUEST_SpokeToHratli Completed for this player and broadcast it as JustCompleted to the game. Transition: SpokeToHratli -> Completed.
 void __fastcall Q17_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0xfd) {
       return;
     }

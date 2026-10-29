@@ -128,7 +128,7 @@ void __fastcall Q40_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     bool bMsgMatched;
     eD2MonsterClassId nMonStatsId;
     nMonStatsId = pQuestArgs->sQuestArgs.sLevelChange.nOldLevel;
-    short int nMsgIndex;
+    uint16_t nMsgIndex;
     nMsgIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
       case MonsterUnitDeckardCain6:

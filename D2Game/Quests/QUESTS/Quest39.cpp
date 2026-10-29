@@ -28,7 +28,7 @@ void __fastcall Q39_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     bool bDialogIndexMatch;
     eD2MonsterClassId nMonStatsId;
     nMonStatsId = pQuestArgs->sQuestArgs.sLevelChange.nOldLevel;
-    short int nMessageIndex;
+    uint16_t nMessageIndex;
     nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     switch (nMonStatsId) {
       case MonsterUnitAlkor:

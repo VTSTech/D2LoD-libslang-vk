@@ -161,7 +161,7 @@ void __fastcall Q26_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2QuestDataA4Q1Strc* pA2Q4Data = pQuestData->pQuestSpecificData.pA4Q1;
     ::SGAMEDATA* pGame = pQuestData->pGame;
     short int sNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int sMsgIdx = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t sMsgIdx = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     if (sNPCNo == 0x16f) {

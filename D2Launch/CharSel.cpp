@@ -1491,7 +1491,7 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
 
     switch (*(uint32_t*)(pKeyMsg + 8)) {
       case 0x28:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex < D2Client::CharScreen::TotalCurrentChars - 1 && (nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex + 2 , (int)nNewSelectedIndex <= D2Client::CharScreen::TotalCurrentChars - 1)) {
+        if (D2Client::CharScreen::nSelectedCharIndex < D2Client::CharScreen::TotalCurrentChars - 1 && (nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex + 2 , (int)nNewSelectedIndex <= D2Client::CharScreen::TotalCurrentChars - 1)) {
           D2Client::CharScreen::nSelectedCharIndex = nNewSelectedIndex;
           if ((int)nNewSelectedIndex < g_nCharSelNavigationIndex) {
             goto scroll_view_to;
@@ -1519,7 +1519,7 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
         }
       break;
       case 0x26:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex <= 0 || (nCandidateIndex = D2Client::CharScreen::nSelectedCharIndex - 2 , (int)nCandidateIndex < 0)) {
+        if (D2Client::CharScreen::nSelectedCharIndex <= 0 || (nCandidateIndex = D2Client::CharScreen::nSelectedCharIndex - 2 , (int)nCandidateIndex < 0)) {
           break;
         }
       if ((int)nCandidateIndex < g_nCharSelNavigationIndex) {
@@ -1549,7 +1549,7 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
       nNewSelectedIndex = nCandidateIndex - gnCharSelScreenSlotCount + 2;
       goto scroll_view_to;
       case 0x27:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex >= D2Client::CharScreen::TotalCurrentChars - 1) {
+        if (D2Client::CharScreen::nSelectedCharIndex >= D2Client::CharScreen::TotalCurrentChars - 1) {
           break;
         }
       nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex & 0x80000001;
@@ -1580,7 +1580,7 @@ BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg) {
 
       break;
       case 0x25:
-        if ((int)D2Client::CharScreen::nSelectedCharIndex <= 0) {
+        if (D2Client::CharScreen::nSelectedCharIndex <= 0) {
           break;
         }
       nNewSelectedIndex = D2Client::CharScreen::nSelectedCharIndex & 0x80000001;
