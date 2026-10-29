@@ -957,9 +957,9 @@ static void __stdcall PickingGold(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Uni
     D2UnitStrc* pOwner;
     pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
     if (!pOwner || pOwner->eUnitType != UNIT_PLAYER) {
-      int16_t sPartyId;
+      uint16_t sPartyId;
       sPartyId = UNIT::SUnit::GetPartyId(pUnit2);
-      if (sPartyId == -1) {
+      if (sPartyId == 0xffff) {
         if (pUnit2) {
           nPlayerGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_gold, 0);
           if (nPlayerGold + nGoldToAdd < 0) {

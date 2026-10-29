@@ -694,22 +694,22 @@ static void SetupBaalChamber(D2DrlgLevelStrc * pLevel) {
 void __stdcall GenerateWolrdstoneAndTombs(D2DrlgLevelStrc * pLevel) {
     // Static local variables (originally global data)
     static D2CoordStrc gnMazeRoomCountX[4] = {
-    {
+    D2CoordStrc(
         /* .nX = */ 0x1bf,
         /* .nY = */ 0x433
-    },
-    {
+    ),
+    D2CoordStrc(
         /* .nX = */ 0x1bc,
         /* .nY = */ 0x435
-    },
-    {
+    ),
+    D2CoordStrc(
         /* .nX = */ 0x1be,
         /* .nY = */ 0x434
-    },
-    {
+    ),
+    D2CoordStrc(
         /* .nX = */ 0x1bd,
         /* .nY = */ 0x432
-    }
+    )
 }; D2_STATIC_GUARD(gnMazeRoomCountX, "D2Common::Drlg::Maze::GenerateWolrdstoneAndTombs::gnMazeRoomCountX");
 
     D2DrlgPresetRoomStrc* pDVar1;

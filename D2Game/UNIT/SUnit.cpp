@@ -1368,17 +1368,17 @@ D2RoomStrc * __fastcall UNITS_GetTargetRoom(::SGAMEDATA * pGame, D2UnitStrc * pU
 }
 
 // 2022.01.09 - dzik
-int16_t __fastcall GetPartyId(D2UnitStrc * pUnit) {
+uint16_t __fastcall GetPartyId(D2UnitStrc * pUnit) {
     if (!pUnit) {
-      return -1;
+      return 0xffff;
     }
 
     ::SGAMEDATA* pGame = pUnit->uSideData.pServerSide.pGame;
     if (!(pGame && pUnit->eUnitType == UNIT_PLAYER)) {
-      return -1;
+      return 0xffff;
     }
 
-    int16_t nPartyId = Party::GetPartyIdFromUnit(pGame, pUnit);
+    uint16_t nPartyId = Party::GetPartyIdFromUnit(pGame, pUnit);
     return nPartyId;
 }
 
@@ -1758,8 +1758,8 @@ uint32_t __fastcall UNITS_CanUseSkillOnTarget(::SGAMEDATA * pGame, D2UnitStrc * 
       }
     }
 
-    int16_t nCasterPartyId = GetPartyId(pUnit);
-    if (nCasterPartyId == -1) {
+    uint16_t nCasterPartyId = GetPartyId(pUnit);
+    if (nCasterPartyId == 0xffff) {
       return 0;
     }
 
@@ -1768,7 +1768,7 @@ uint32_t __fastcall UNITS_CanUseSkillOnTarget(::SGAMEDATA * pGame, D2UnitStrc * 
       return 0;
     }
 
-    int16_t nTargetPartyId = GetPartyId(pTargetUnit);
+    uint16_t nTargetPartyId = GetPartyId(pTargetUnit);
     return (uint32_t)(nCasterPartyId == nTargetPartyId);
 }
 

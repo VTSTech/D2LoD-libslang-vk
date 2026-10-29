@@ -100,18 +100,19 @@ void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
 // A3Q7 / slot QUESTINT_TheGuardian (Mephisto). Q23_NotifyGuardianStateToPlayers(pGame, cParam): drives/broadcasts the quest's state-flag machine. While quest is active (bIsNotIntroduction) and nStateFlag<6: if cParam==0 it saves the current prev-flag and advances state to 6 (or 7 in multiplayer); else it restores the saved prev-flag. Calls QUEST_SetStateAndBroadcast with A3Q6::Q23_PlayerNotifyCompleted as the per-player notify cb. No GetQuestState/SetQuestState calls here (uses the broadcast helper instead).
 void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cParam) {
     uint8_t nBroadcastState;
+    int32_t nPrevStateFlag;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
     if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 6)) {
       return;
     }
     if (cParam == '\0') {
       pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev = (uint32_t)pQuestData->nStateFlagPrev;
-      nBroadcastState = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
+      nPrevStateFlag = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
     } else {
-      nBroadcastState = (uint8_t)pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
+      nPrevStateFlag = pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
     }
 
-    QUEST_SetStateAndBroadcast(pQuestData, nBroadcastState, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, pQuestData->nStateFlag != 0);
+    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, pQuestData->nStateFlag != 0);
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.

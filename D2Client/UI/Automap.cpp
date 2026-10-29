@@ -211,9 +211,10 @@ int32_t __stdcall AUTOMAP_GetCenters() {
     return nAutoMapCenters;
 }
 
-void __fastcall AUTOMAP_SetCenters(int32_t nAutoMapCenters) {
+int32_t __fastcall AUTOMAP_SetCenters(int32_t nAutoMapCenters) {
     Storm::Source::SReg::SRegSaveValue("Diablo II", "AutoMap Centers", 0, nAutoMapCenters);
     Automap::nAutoMapCenters = nAutoMapCenters;
+    return nAutoMapCenters;
 }
 
 int32_t __stdcall AUTOMAP_GetLeft() {
@@ -410,16 +411,16 @@ void __stdcall AUTOMAP_RebalanceTreeLeft(D2AutomapCellStrc * * ppCell) {
 // using wWeight as the balance factor (-1, 0, +1).
 // Duplicate cells at the same position with equivalent priority are rejected.
 // Source: .\\UI\\automap.cpp
-int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1, D2AutomapCellStrc * pAutomapCell2) {
+int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1, D2AutomapCellStrc * * pAutomapCell2) {
     int32_t nInserted;
     short int wWeight;
-    D2AutomapCellStrc* pNode = *(D2AutomapCellStrc**)pAutomapCell2;
+    D2AutomapCellStrc* pNode = *pAutomapCell2;
     if (!pNode) {
       pAutomapCell1->pLess = 0;
       pAutomapCell1->pMore = 0;
       pAutomapCell1->wWeight = 0;
       nInserted = 1;
-      *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pAutomapCell1;
+      *pAutomapCell2 = pAutomapCell1;
       return nInserted;
     }
 
@@ -428,7 +429,7 @@ int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1,
       nCompare = (int)pAutomapCell1->xPixel - (int)pNode->xPixel;
       if (!nCompare) {
         if (gnAutoMapCellPriority[pAutomapCell1->nCellNo] == -1 || gnAutoMapCellPriority[pAutomapCell1->nCellNo] == gnAutoMapCellPriority[pNode->nCellNo]) {
-          *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pNode;
+          *pAutomapCell2 = pNode;
           return 0;
         }
 
@@ -438,38 +439,38 @@ int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1,
 
     D2AutomapCellStrc* pRebalanceRoot = pNode;
     if (nCompare < 0) {
-      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, (D2AutomapCellStrc*)&pNode->pLess);
+      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pLess);
       pAutomapCell1 = pNode;
       if (!nInserted) {
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pAutomapCell1;
+        *pAutomapCell2 = pAutomapCell1;
         return nInserted;
       }
 
       wWeight = pNode->wWeight;
       if (wWeight == -1) {
         AUTOMAP_RebalanceTreeRight(&pRebalanceRoot);
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pRebalanceRoot;
+        *pAutomapCell2 = pRebalanceRoot;
         return 0;
       }
       if (!wWeight) {
         pNode->wWeight = -1;
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pNode;
+        *pAutomapCell2 = pNode;
         return nInserted;
       }
       if (wWeight != 1) {
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pAutomapCell1;
+        *pAutomapCell2 = pAutomapCell1;
         return nInserted;
       }
     } else {
       if (nCompare < 1) {
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pNode;
+        *pAutomapCell2 = pNode;
         return 0;
       }
 
-      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, (D2AutomapCellStrc*)&pNode->pMore);
+      nInserted = AUTOMAP_InsertCellIntoTree(pAutomapCell1, &pNode->pMore);
       pAutomapCell1 = pNode;
       if (!nInserted) {
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pAutomapCell1;
+        *pAutomapCell2 = pAutomapCell1;
         return nInserted;
       }
 
@@ -477,22 +478,22 @@ int32_t __fastcall AUTOMAP_InsertCellIntoTree(D2AutomapCellStrc * pAutomapCell1,
       if (wWeight != -1) {
         if (!wWeight) {
           pNode->wWeight = 1;
-          *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pNode;
+          *pAutomapCell2 = pNode;
           return nInserted;
         }
         if (wWeight == 1) {
           AUTOMAP_RebalanceTreeLeft(&pRebalanceRoot);
-          *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pRebalanceRoot;
+          *pAutomapCell2 = pRebalanceRoot;
           return 0;
         }
 
-        *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pAutomapCell1;
+        *pAutomapCell2 = pAutomapCell1;
         return nInserted;
       }
     }
 
     pNode->wWeight = 0;
-    *(D2AutomapCellStrc**)pAutomapCell2 = (D2AutomapCellStrc*)pNode;
+    *pAutomapCell2 = pNode;
     return 0;
 }
 
@@ -562,7 +563,7 @@ D2AutomapCellStrc * __stdcall AUTOMAP_AllocCell() {
 // and inserts the cell into the AVL tree. Wall tiles (type >= 15)
 // get a Y offset of +24 pixels.
 // Source: .\\UI\\automap.cpp
-static void __stdcall AUTOMAP_RevealTile(D2RoomExStrc * pRoomEx, D2AutomapCellStrc * pAutomapCell, D2DrlgTileDataStrc * pTileData) {
+static void __stdcall AUTOMAP_RevealTile(D2RoomExStrc * pRoomEx, D2AutomapCellStrc * * pAutomapCell, D2DrlgTileDataStrc * pTileData) {
     int32_t nLevelType;
     int32_t nOrientation;
     int32_t nIndex;
@@ -616,7 +617,7 @@ static void __stdcall AUTOMAP_RevealTile(D2RoomExStrc * pRoomEx, D2AutomapCellSt
     }
 }
 
-void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t nPixelY, D2AutomapCellStrc * pAutomapCell1, D2AutomapCellStrc * pAutomapCell2) {
+void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t nPixelY, D2AutomapCellStrc * * pAutomapCell1, D2AutomapCellStrc * pAutomapCell2) {
     D2AutomapCellStrc* pAutomapCellLocal = AUTOMAP_AllocCell();
     *(D2AutomapCellStrc**)pAutomapCellLocal = (D2AutomapCellStrc*)pAutomapCell2;
     pAutomapCellLocal->nCellNo = nCellNo;
@@ -625,7 +626,7 @@ void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t
     AUTOMAP_InsertCellIntoTree(pAutomapCellLocal, pAutomapCell1);
 }
 
-static void __stdcall AUTOMAP_AddCellForUnit(int32_t nParam, D2AutomapCellStrc * pAutomapCell, D2UnitStrc * pUnit) {
+static void __stdcall AUTOMAP_AddCellForUnit(int32_t nParam, D2AutomapCellStrc * * pAutomapCell, D2UnitStrc * pUnit) {
     D2AutomapCellStrc* pAutomapCell1 = AUTOMAP_AllocCell();
     int32_t nTargetX = D2Common::Units::GetTargetX(pUnit);
     int32_t nTargetY = D2Common::Units::GetTargetY(pUnit);
@@ -1084,7 +1085,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
               pCell->xPixel = (short int)__frame1.nXPixel;
               pCell->yPixel = (short int)__frame1.nYPixel;
               *(uint32_t*)pCell = 1;
-              AUTOMAP_InsertCellIntoTree(pCell, (D2AutomapCellStrc*)ppTreeRoot);
+              AUTOMAP_InsertCellIntoTree(pCell, ppTreeRoot);
               nWordIndex += 3;
             } while (nWordIndex < __frame1.nWordLimit);
           }
@@ -1120,7 +1121,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
               pCell->xPixel = (short int)__frame1.nXPixel;
               pCell->yPixel = (short int)__frame1.nCellNo;
               *(uint32_t*)pCell = 1;
-              AUTOMAP_InsertCellIntoTree(pCell, (D2AutomapCellStrc*)ppDVar1);
+              AUTOMAP_InsertCellIntoTree(pCell, ppDVar1);
               nWordIndex += 3;
             } while (nWordIndex < __frame1.nWordLimit);
           }
@@ -1157,7 +1158,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
                 pCell->xPixel = (short int)__frame1.nXPixel;
                 pCell->yPixel = (short int)__frame1.nCellNo;
                 *(uint32_t*)pCell = 1;
-                AUTOMAP_InsertCellIntoTree(pCell, (D2AutomapCellStrc*)ppDVar1);
+                AUTOMAP_InsertCellIntoTree(pCell, ppDVar1);
                 nWordIndex += 3;
               } while (nWordIndex < __frame1.nWordLimit);
             }
@@ -1198,7 +1199,7 @@ void __stdcall AUTOMAP_LoadLayerFromFile() {
               pCell->xPixel = (short int)__frame1.nXPixel;
               pCell->yPixel = (short int)__frame1.nCellNo;
               *(uint32_t*)pCell = 1;
-              AUTOMAP_InsertCellIntoTree(pCell, (D2AutomapCellStrc*)ppDVar1);
+              AUTOMAP_InsertCellIntoTree(pCell, ppDVar1);
               nWordIndex += 3;
             } while (nWordIndex < __frame1.nWordLimit);
           }
@@ -1262,7 +1263,7 @@ D2AutomapLayerStrc * AUTOMAP_AddLayer(int32_t nLayer) {
     return pLayer;
 }
 
-void __stdcall AUTOMAP_RevealUnitsInRoom(D2RoomStrc * pRoom, D2AutomapCellStrc * pAutomapCell) {
+void __stdcall AUTOMAP_RevealUnitsInRoom(D2RoomStrc * pRoom, D2AutomapCellStrc * * pAutomapCell) {
     eAct neAct;
     D2ObjectsTxt* pObjectTxt;
     eD2LevelId eLevelId;
@@ -1362,7 +1363,7 @@ void __stdcall AUTOMAP_RevealRoom(D2RoomStrc * pRoom, int32_t bForceReveal, D2Au
       pnTileFlags = &pTiles->nFlags;
       do {
         if (!(*pnTileFlags & 8U) && (*pnTileFlags & 0x20000U || bAutoMapRevealAll || bForceReveal)) {
-          AUTOMAP_RevealTile(pRoomEx, (D2AutomapCellStrc*)&pAutomapLayer->pFloors, (D2DrlgTileDataStrc*)(pnTileFlags - 5));
+          AUTOMAP_RevealTile(pRoomEx, &pAutomapLayer->pFloors, (D2DrlgTileDataStrc*)(pnTileFlags - 5));
         }
 
         i++;
@@ -1376,7 +1377,7 @@ void __stdcall AUTOMAP_RevealRoom(D2RoomStrc * pRoom, int32_t bForceReveal, D2Au
       pnTileFlags = &pTiles->nFlags;
       do {
         if (!(*pnTileFlags & 8U) && (*pnTileFlags & 0x20000U || bAutoMapRevealAll || bForceReveal)) {
-          AUTOMAP_RevealTile(pRoomEx, (D2AutomapCellStrc*)&pAutomapLayer->pWalls, (D2DrlgTileDataStrc*)(pnTileFlags - 5));
+          AUTOMAP_RevealTile(pRoomEx, &pAutomapLayer->pWalls, (D2DrlgTileDataStrc*)(pnTileFlags - 5));
         }
 
         i++;
@@ -1384,7 +1385,7 @@ void __stdcall AUTOMAP_RevealRoom(D2RoomStrc * pRoom, int32_t bForceReveal, D2Au
       } while (i < nTileCount);
     }
 
-    AUTOMAP_RevealUnitsInRoom(pRoom, (D2AutomapCellStrc*)&pAutomapLayer->pObjects);
+    AUTOMAP_RevealUnitsInRoom(pRoom, &pAutomapLayer->pObjects);
 }
 
 // AUTOMAP_UpdateCurrentLocation - Periodic automap cell reveal.
@@ -1613,7 +1614,7 @@ void __stdcall AUTOMAP_RevealTownCallback(eD2LevelId eLevel, uint32_t nCellNo, i
             *(uint32_t*)pCell = 0;
             pCell->nCellNo = (short int)nCellNo;
             pCell->xPixel = (short int)nPixelX;
-            AUTOMAP_InsertCellIntoTree(pCell, (D2AutomapCellStrc*)&pLayer->pExtras);
+            AUTOMAP_InsertCellIntoTree(pCell, &pLayer->pExtras);
             next_cell:
             nCellNoCheck++;
             nPixelX += nStepX;

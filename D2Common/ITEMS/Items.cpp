@@ -120,7 +120,7 @@ uint32_t __stdcall ITEMS_SearchItemCodeTable(D2UnitStrc * pUnit, int32_t dwConte
 
     sCalcContext.pUnit = pUnit;
     sCalcContext.nContext = dwContext;
-    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)(sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &sCalcContext);
+    uint32_t nFormulaResult = Fog::Skills::SKILLS_CompileSkillFormula((uint32_t*)((uint8_t*)sgptDataTable->pItemsCode + nOffset), sgptDataTable->nItemsCodeSize - nOffset, Stats::StatsEx::nullsub, aItemsEventMethod, nItemsEventMethodSize, &sCalcContext);
     return nFormulaResult;
 }
 
@@ -332,40 +332,21 @@ BOOL __stdcall CheckItemFlag(D2UnitStrc * pUnit, eD2ItemFlag neD2ItemFlag, int32
     return pUnit->pUnitData.pUnitDataItem->dwItemFlags & neD2ItemFlag;
 }
 
-bool __stdcall ITEM_EditItemData_eItemFlag(D2UnitStrc * pUnit, eD2ItemFlag eItemFlag, BOOL bSet) {
-    uint32_t dwFlagsToClear;
+void __stdcall ITEM_EditItemData_eItemFlag(D2UnitStrc * pUnit, eD2ItemFlag eItemFlag, BOOL bSet) {
     if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-      return (uint8_t)(uint32_t)(uintptr_t)pUnit;
+      return;
     }
 
-    pUnit = (D2UnitStrc*)pUnit->pUnitData.pUnitDataItem;
-    if (!pUnit) {
-      return (uint8_t)(uint32_t)(uintptr_t)pUnit;
+    D2UnitDataItemStrc* pItemDataPtr = pUnit->pUnitData.pUnitDataItem;
+    if (!pItemDataPtr) {
+      return;
     }
     if (bSet) {
-      eD2ItemFlag eFlagsToSet;
-      *(uint8_t*)(char*)&eFlagsToSet = pUnit->nAct;
-      *(uint8_t*)((char*)&eFlagsToSet + 1) = pUnit->unk0x19[0];
-      *(uint8_t*)((char*)&eFlagsToSet + 2) = pUnit->unk0x19[1];
-      *(uint8_t*)((char*)&eFlagsToSet + 3) = pUnit->unk0x19[2];
-      eFlagsToSet |= eItemFlag;
-      pUnit->nAct = (char)eFlagsToSet;
-      pUnit->unk0x19[0] = (char)((uint32_t)eFlagsToSet >> 8);
-      pUnit->unk0x19[1] = (char)((uint32_t)eFlagsToSet >> 0x10);
-      pUnit->unk0x19[2] = (char)((uint32_t)eFlagsToSet >> 0x18);
-      return (uint8_t)(uint32_t)(uintptr_t)pUnit;
+      pItemDataPtr->dwItemFlags |= eItemFlag;
+      return;
     }
 
-    *(uint8_t*)(char*)&dwFlagsToClear = pUnit->nAct;
-    *(uint8_t*)((char*)&dwFlagsToClear + 1) = pUnit->unk0x19[0];
-    *(uint8_t*)((char*)&dwFlagsToClear + 2) = pUnit->unk0x19[1];
-    *(uint8_t*)((char*)&dwFlagsToClear + 3) = pUnit->unk0x19[2];
-    dwFlagsToClear &= ~eItemFlag;
-    pUnit->nAct = (char)dwFlagsToClear;
-    pUnit->unk0x19[0] = (char)(dwFlagsToClear >> 8);
-    pUnit->unk0x19[1] = (char)(dwFlagsToClear >> 0x10);
-    pUnit->unk0x19[2] = (char)(dwFlagsToClear >> 0x18);
-    return (uint8_t)(uint32_t)(uintptr_t)pUnit;
+    pItemDataPtr->dwItemFlags &= ~eItemFlag;
 }
 
 eD2ItemFlag __stdcall ITEM_GetItemData_eD2ItemFlag(D2UnitStrc * pUnit) {
@@ -1573,7 +1554,7 @@ uint32_t __stdcall TXT_ItemTypes_CheckEquivalence(uint32_t nItemClassId, eD2Item
     if (!(-1 < (int)eType1 && (int)eType1 < sgptDataTable->nTxtItemTypesSize)) {
       return 0;
     }
-    if (*(uint32_t*)(sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eType1 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer]) {
+    if (*(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eType1 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer]) {
       return 1;
     }
 
@@ -1582,7 +1563,7 @@ uint32_t __stdcall TXT_ItemTypes_CheckEquivalence(uint32_t nItemClassId, eD2Item
       return 0;
     }
 
-    return *(uint32_t*)(sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eSecondaryType + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
+    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eSecondaryType + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
 }
 
 uint32_t __stdcall ITEMS_CheckItemTypeEquivalence(eD2ItemTypes eItemType1, eD2ItemTypes eItemType2) {
@@ -1590,7 +1571,7 @@ uint32_t __stdcall ITEMS_CheckItemTypeEquivalence(eD2ItemTypes eItemType1, eD2It
       return 0;
     }
 
-    return *(uint32_t*)(sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType2 >> 5)) * 4) & gadwBitMasks[eItemType2 & ITEMTYPE_Hammer];
+    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType2 >> 5)) * 4) & gadwBitMasks[eItemType2 & ITEMTYPE_Hammer];
 }
 
 // @blizzard ITEMSIsA
@@ -1603,7 +1584,7 @@ uint32_t __stdcall ITEMS_IsA(D2UnitStrc * pUnit, eD2ItemTypes eItemType) {
     }
 
     eD2ItemTypes eItemType1 = TXT_Items_GetType(pUnit->nClassId);
-    if (gadwBitMasks[eItemType & ITEMTYPE_Hammer] & *(uint32_t*)(sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType >> 5)) * 4)) {
+    if (gadwBitMasks[eItemType & ITEMTYPE_Hammer] & *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * eItemType1 + ((int)eItemType >> 5)) * 4)) {
       return 1;
     }
 
@@ -1617,7 +1598,7 @@ uint32_t __stdcall ITEMS_IsA(D2UnitStrc * pUnit, eD2ItemTypes eItemType) {
       return 0;
     }
 
-    return *(uint32_t*)(sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * (int)eType2 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
+    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtItemTypesUnknown + (sgptDataTable->nItemTypesEquivRowDwords * (int)eType2 + ((int)eItemType >> 5)) * 4) & gadwBitMasks[eItemType & ITEMTYPE_Hammer];
 }
 
 uint32_t __stdcall TXT_Items_GetBitFieldAnd0x01(uint32_t nItemClassId) {
@@ -1788,38 +1769,38 @@ BOOL __stdcall TXT_Items_CheckIfHasClass(uint32_t nItemClassId) {
 int16_t __stdcall ITEM_GetWeaponAnimClass(D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static D2ItemWeaponClassCodeStrc gaItemWeaponClassCodes[8] = {
-    {
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20776f62,
         /* .nWeaponClass = */ 0x1
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20736831,
         /* .nWeaponClass = */ 0x2
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20746831,
         /* .nWeaponClass = */ 0x3
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20667473,
         /* .nWeaponClass = */ 0x4
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20736832,
         /* .nWeaponClass = */ 0x5
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20746832,
         /* .nWeaponClass = */ 0x6
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20776278,
         /* .nWeaponClass = */ 0x7
-    },
-    {
+    ),
+    D2ItemWeaponClassCodeStrc(
         /* .dwCode = */ 0x20317468,
         /* .nWeaponClass = */ 0xc
-    }
+    )
 }; D2_STATIC_GUARD(gaItemWeaponClassCodes, "D2Common::ITEMS::Items::ITEM_GetWeaponAnimClass::gaItemWeaponClassCodes");
     static uint32_t gnItemWeaponClassCodeCount = 0x8; D2_STATIC_GUARD(gnItemWeaponClassCodeCount, "D2Common::ITEMS::Items::ITEM_GetWeaponAnimClass::gnItemWeaponClassCodeCount");
 

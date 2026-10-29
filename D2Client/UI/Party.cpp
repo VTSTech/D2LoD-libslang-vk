@@ -394,7 +394,7 @@ void __stdcall UI_DrawPlayerNameInParty() {
     D2_FREE_AT(wszMessage, ".\\UI\\Party.cpp", 0x21a);
 }
 
-int32_t __stdcall ResetPartyUi() {
+void __stdcall ResetPartyUi() {
     int nCounter;
     FreeAllUiParty();
     int nPositionY = 0x5a;
@@ -405,8 +405,6 @@ int32_t __stdcall ResetPartyUi() {
       nPositionY += 0x26;
       pRosterPlayer = GAME::Roster::GetNextRosterPlayer(pRosterPlayer);
     }
-
-    return 0;
 }
 
 void __stdcall UI_DrawPartyButtons(D2UiPartyStrc * pUiParty) {

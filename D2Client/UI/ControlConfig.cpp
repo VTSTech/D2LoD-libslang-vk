@@ -35,7 +35,7 @@ void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouse
     uint32_t dwNowTick;
     DWORD dwTickCount;
     int64_t nMaxScrollRows;
-    int32_t nPrevSelection;
+    int nPrevSelection;
     gnUICtrlConfigActiveButton = 3;
     if (gnUICtrlConfigButton3State) {
       gnUICtrlConfigActiveButton = 3;

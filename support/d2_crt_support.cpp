@@ -62,6 +62,7 @@ extern "C" long double CRT_CIPow(long double base, long double exponent) {
   return powl(base, exponent);
 }
 
+#ifndef _MSC_VER
 // ---------------------------------------------------------------------------
 // Three CRT functions whose generated prototype in d2_platform.h is the
 // emitter's unknown-signature fallback `T NAME(...)`. A variadic declaration
@@ -210,3 +211,43 @@ extern "C" int __except_handler4(struct _EXCEPTION_RECORD* pRecord, EH4_EXCEPTIO
   D2Trace("ABORT called");
     abort();
 }
+#else  // _MSC_VER
+// ---------------------------------------------------------------------------
+// The Visual C++ 2005 build links the libcmt the original linked. Where a
+// CRT_ name above is that CRT function itself, the symbol resolves to libcmt's
+// own object: each alternatename applies only while the name is otherwise
+// undefined, and each target is call-compatible with the tree's declaration.
+// ---------------------------------------------------------------------------
+
+// 00683080: floor, SSE2 path and __floor_default fallback, as libcmt's floor.
+#pragma comment(linker, "/alternatename:_CRT_Floor=_floor")
+// 00687740: the word-at-a-time strchr.
+#pragma comment(linker, "/alternatename:_CRT_Strchr=_strchr")
+// 00685637: the printf core with a null locale on (FILE*, format, va_list),
+// which is vfprintf.
+#pragma comment(linker, "/alternatename:_CRT_Vsprintf_L=_vfprintf")
+// 006856e9: _localtime64_s(tm*, const __time64_t*).
+#pragma comment(linker, "/alternatename:_CRT_LocalTime_S=__localtime64_s")
+// 00684af3: _set_se_translator.
+#pragma comment(linker, "/alternatename:_CRT_Encode_Secure_Pointer=?_set_se_translator@@YAP6AXIPAU_EXCEPTION_POINTERS@@@ZP6AXI0@Z@Z")
+// 006877fe: _purecall. Referenced only from vftable slots.
+#pragma comment(linker, "/alternatename:___purecall=__purecall")
+// 00684f50: _except_handler4. Referenced only by address.
+#pragma comment(linker, "/alternatename:___except_handler4=__except_handler4")
+
+// 006b1a30: ATL's AtlThrow, which throws an ATL::CAtlException holding the
+// HRESULT. The toolchain has no ATL; the class is declared to the shape the
+// original's type descriptor gives (.?AVCAtlException@ATL@@, 4 bytes).
+namespace ATL {
+class CAtlException {
+ public:
+  long m_hr;
+};
+}  // namespace ATL
+
+extern "C" unsigned int CRT_ReturnValue(unsigned int dwHResult) {
+  ATL::CAtlException tException;
+  tException.m_hr = static_cast<long>(dwHResult);
+  throw tException;
+}
+#endif  // _MSC_VER

@@ -308,7 +308,7 @@ void __fastcall Q34_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       }
     } else if (nMsgIndex == 0x4eb4) {
       pQuestData->nQuestPacketFlags = '\0';
-      QUEST_SetStateAndBroadcast(pQuestData, pQuestData->nStateFlagPrev, nullptr, (::fpExecuteOnUnitFunction)Q34_NotifyQuestState, true);
+      QUEST_SetStateAndBroadcast(pQuestData, (uint32_t)pQuestData->nStateFlagPrev, nullptr, (::fpExecuteOnUnitFunction)Q34_NotifyQuestState, true);
       pQuestSpecific = pQuestData->pGame;
       pGame = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       /* SetQuestState(Betrayal q0x26, Step0x04=4): on Nihlathak "return after kill"
@@ -493,8 +493,8 @@ BOOL __fastcall Q34_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

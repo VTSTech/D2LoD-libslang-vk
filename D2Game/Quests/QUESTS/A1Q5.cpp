@@ -642,7 +642,6 @@ int __fastcall Q05_OnTowerComplete(::SGAMEDATA * pGame, D2QuestDataStrc * pQuest
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q5.cpp
 void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     BOOL bQuestState;
-    uint8_t nPrevStateFlag;
     D2QuestDataA1Q5Strc* pA1Q4Data;
     ::SGAMEDATA* pGame;
     D2QuestDataA1Q5Strc* pvVar2;
@@ -679,7 +678,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (nIndex == 0x14) {
       if (!pQuestData->nStateFlag) {
         QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x267);
-        nPrevStateFlag = 3;
+        nIndex = 3;
       } else {
         if (3 < pQuestData->nStateFlag) {
           return;
@@ -688,7 +687,7 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
           return;
         }
 
-        nPrevStateFlag = 4;
+        nIndex = 4;
       }
     } else {
       if (nIndex != 0x19) {
@@ -704,11 +703,11 @@ void __fastcall Q05_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x27a);
       }
 
-      nPrevStateFlag = 2;
+      nIndex = 2;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)Q05_NotifyQuestStateToPlayer, true);
+    QUEST_SetStateAndBroadcast(pQuestData, nIndex, nullptr, (::fpExecuteOnUnitFunction)Q05_NotifyQuestStateToPlayer, true);
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q05_SyncQuestStepToPlayer);
 }
 
@@ -807,8 +806,8 @@ BOOL __fastcall Q05_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

@@ -20,10 +20,7 @@ struct D2UnitStrc;
 
 // Data types
 struct D2DynamicPathCoordsStrc {
-    D2DynamicPathCoordsStrc() = default;
-    D2DynamicPathCoordsStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2DynamicPathCoordsStrc(short a0, short a1, short a2, short a3) : nOffsetX(a0), nPosX(a1), nOffsetY(a2), nPosY(a3) {}
 
     /* 0x00 */ short nOffsetX;
     /* 0x02 */ short nPosX;

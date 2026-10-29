@@ -415,8 +415,8 @@ BOOL __fastcall Q14_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -751,8 +751,8 @@ BOOL __fastcall Q14_CheckTombEntryAndPropagate(::SGAMEDATA * pGame, D2UnitStrc *
 
     /* SetQuestState(TheSevenTombs, 5=Step0x05) — entered Duriel's Lair (level
                          0x49): mark tomb-entered, then propagate to party */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x05);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -762,7 +762,7 @@ BOOL __fastcall Q14_CheckTombEntryAndPropagate(::SGAMEDATA * pGame, D2UnitStrc *
 
 // A2Q6 "The Seven Tombs" — state-8 callback: fired when a player enters Duriel's chamber (the true tomb). Sets nStateFlag 3 and arms the Q14_OnEndCallback quest timer (8). For the triggering player, if record lacks Completed/Step0x03/Step0x04/Step0x05, sets record Step0x05 and propagates to party (Q14_SetTombEntryOnPartyMember). Clears handler slots [2] and [8], flags field_0x01, stores the room ptr, notifies players of event 8, fans out CheckTombEntryAndPropagate, and (if viper-amulet object initialized) re-enables the chamber object event. Sets specific-data byte[1]=2.
 void __fastcall Q14_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    int16_t nPartyId;
+    uint16_t nPartyId;
     D2UnitDataPlayerStrc* pQuestSpecificData;
     BOOL bQuestState;
     D2UnitStrc* pUnit;
@@ -789,7 +789,7 @@ void __fastcall Q14_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
                 /* SetQuestState(TheSevenTombs, 5=Step0x05) — player entered Duriel's chamber:
                          mark tomb-entered, then propagate to party */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x05);
                 nPartyId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
-                if (nPartyId != -1) {
+                if (nPartyId != 0xffff) {
                   UNIT::Party::ExecuteFunctionForEveryPartyMember(pQuestArgs->pGame, nPartyId, (::fpExecuteOnUnitFunction)Q14_SetTombEntryOnPartyMember, 0);
                 }
 

@@ -269,3 +269,11 @@ void D2PATCH_InstallAll(void) {
     szNeedle[9] = '\0';
     D2PATCH_RedirectFormatString(szNeedle, kVersionFmt, 2);
 }
+
+#ifdef _MSC_VER
+// The development build installs these from D2CONTROL_Start. The Visual C++
+// build has no control channel, so it installs them from the CRT's initialiser
+// table, before WinMain runs any game code.
+#pragma section(".CRT$XCU", read)
+extern "C" __declspec(allocate(".CRT$XCU")) void (__cdecl* const gpfnD2PatchInstallAll)(void) = D2PATCH_InstallAll;
+#endif

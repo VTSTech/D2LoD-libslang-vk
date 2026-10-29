@@ -37050,7 +37050,7 @@ int gaFormList32InitialItems[4] = {}; D2_GLOBAL_GUARD(gaFormList32InitialItems, 
 
 int32_t gaChatTextBoxFontParams[2] = {}; D2_GLOBAL_GUARD(gaChatTextBoxFontParams, "gaChatTextBoxFontParams");
 
-TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState = {}; D2_GLOBAL_GUARD(gQServerGameState, "gQServerGameState");
+TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState; D2_GLOBAL_GUARD(gQServerGameState, "gQServerGameState");
 
 uint16_t gU16ImmunityStringBuffer2[256] = {}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer2, "gU16ImmunityStringBuffer2");
 
@@ -37062,7 +37062,7 @@ uint16_t gnMonsterHealthBarValue[256] = {}; D2_GLOBAL_GUARD(gnMonsterHealthBarVa
 
 uint16_t gwKeyNameBuffer[4] = {}; D2_GLOBAL_GUARD(gwKeyNameBuffer, "gwKeyNameBuffer");
 
-D2SeedStrc gAncientsCloudSeed = {}; D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
+D2SeedStrc gAncientsCloudSeed = D2SeedStrc(); D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
 
 uint16_t gwcImeCompositionBuffer[32] = {}; D2_GLOBAL_GUARD(gwcImeCompositionBuffer, "gwcImeCompositionBuffer");
 
@@ -37114,7 +37114,7 @@ CRITICAL_SECTION aTaskQueueCriticalSections[32] = {}; D2_GLOBAL_GUARD(aTaskQueue
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0088caa8 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0088caa8, "lpCriticalSection_0088caa8");
 
-TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler = {}; D2_GLOBAL_GUARD(gCelCmpCacheHandler, "gCelCmpCacheHandler");
+TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler; D2_GLOBAL_GUARD(gCelCmpCacheHandler, "gCelCmpCacheHandler");
 
 D2DataTableTxtStrc sgtDataTable = {}; D2_GLOBAL_GUARD(sgtDataTable, "sgtDataTable");
 

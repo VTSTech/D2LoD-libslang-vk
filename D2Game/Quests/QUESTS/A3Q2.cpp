@@ -359,13 +359,13 @@ BOOL __fastcall OBJOP_UseStairDirect(D2ObjectOperateFnArg * pOperation) {
 }
 
 // Q19_IsKhalimsWillNotComplete (Khalim's Will). Predicate: returns true when the in-memory A3Q2 quest data exists, is active, and its GUID-tracked completion marker (aPlayerGUID[2]) != 2 (i.e. relic-pedestal sequence not finished). Reads quest data struct only.
-bool __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame) {
+BOOL __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_KhalimsWill);
     if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
-      return false;
+      return 0;
     }
 
-    return pQuestData->pQuestSpecificData.pA3Q2->nOrbUpdateMode != 2;
+    return (uint32_t)(pQuestData->pQuestSpecificData.pA3Q2->nOrbUpdateMode != 2);
 }
 
 // OBJOP_A3Q2_KhalimRelicPedestal (Khalim's Will object op, OperateFn45). Operate handler for the relic pedestal/Compelling Orb object. When triggered and the quest event flag is set, finds the associated object, schedules the orb's operate+death events, marks the GUID completion field (=2), and NotifyPlayersAboutEvent(9) (orb destroyed -> Mephisto path opens). Drives the physical quest-completion event; QuestRecord transition itself happens via the dialog/callbacks.

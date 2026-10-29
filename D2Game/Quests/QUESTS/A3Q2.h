@@ -44,7 +44,7 @@ void __fastcall Q19_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // OBJOP_UseStairDirect (Khalim's Will object op). Stair/teleport object operate fn: if the operating unit is walking, delegates to A2Q7::TakeStairs. No quest-state logic.
 BOOL __fastcall OBJOP_UseStairDirect(struct D2ObjectOperateFnArg * pOperation);
 // Q19_IsKhalimsWillNotComplete (Khalim's Will). Predicate: returns true when the in-memory A3Q2 quest data exists, is active, and its GUID-tracked completion marker (aPlayerGUID[2]) != 2 (i.e. relic-pedestal sequence not finished). Reads quest data struct only.
-bool __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame);
+BOOL __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame);
 // OBJOP_A3Q2_KhalimRelicPedestal (Khalim's Will object op, OperateFn45). Operate handler for the relic pedestal/Compelling Orb object. When triggered and the quest event flag is set, finds the associated object, schedules the orb's operate+death events, marks the GUID completion field (=2), and NotifyPlayersAboutEvent(9) (orb destroyed -> Mephisto path opens). Drives the physical quest-completion event; QuestRecord transition itself happens via the dialog/callbacks.
 BOOL __fastcall OBJOP_A3Q2_KhalimRelicPedestal(struct D2ObjectOperateFnArg * pOperation);
 // Q19_UpdateCompellingOrbObject (Khalim's Will). Per-frame/refresh updater for the Compelling Orb object: if the orb-event flag is set, locates the orb unit, syncs its update flag, and (if changed) schedules its operate event. Maintains orb object state; no QuestRecord transitions.

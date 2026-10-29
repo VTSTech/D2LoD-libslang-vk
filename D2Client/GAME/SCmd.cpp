@@ -542,7 +542,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x0A_RemoveObject(char * pBytes) {
       }
     }
 
-    UNIT::CUnit::RemoveObjectFromServerObjectTable((eD2UnitType)(uint8_t)pBytes[1], nUnitGUID);
+    UNIT::CUnit::RemoveObjectFromServerObjectTable(nUnitGUID, (eD2UnitType)(uint8_t)pBytes[1]);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x0B_UNITCTRL(char * pBytes) {

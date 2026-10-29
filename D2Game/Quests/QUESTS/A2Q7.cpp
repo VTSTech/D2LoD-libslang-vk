@@ -507,8 +507,8 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20747368);
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20706976);
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x2066736d);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId != -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId != 0xffff) {
       UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q14_CompleteHoradricStaffOnPartyMember, 0);
     }
 

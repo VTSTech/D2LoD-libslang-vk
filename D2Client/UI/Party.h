@@ -26,7 +26,7 @@ void __fastcall UI_DrawPartyMemberName(char * pszName, struct D2UiPartyStrc * pU
 void __fastcall UI_DrawPartyButtonLabelText(int32_t eButtonType, int32_t nBaseY, int32_t bHostileMode, int16_t nPartyId);
 void __stdcall UI_DrawPartyLeaveButton();
 void __stdcall UI_DrawPlayerNameInParty();
-int32_t __stdcall ResetPartyUi();
+void __stdcall ResetPartyUi();
 void __stdcall UI_DrawPartyButtons(struct D2UiPartyStrc * pUiParty);
 void __stdcall UI_DrawPartyAcceptButton();
 void __stdcall SetEachPlayerRosterGlobalPartyId();

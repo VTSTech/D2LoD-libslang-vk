@@ -3635,7 +3635,7 @@ static void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData,
           }
 
           /* aCurrentDir[index+1] - base EBP-0x104 is &aCurrentDir[1], index scaled by 4.
-                          */ nNodeOffset = pLevelUnknown.aCurrentDir[(int)(fnPlacementValidator + 1)];
+                          */ nNodeOffset = pLevelUnknown.aCurrentDir[(int)((uint8_t*)fnPlacementValidator + 1)];
         }
 
         pDrlgLevel->pDrlgLevelData.pDrlgLevelPresetData->nPickedFile = nNodeOffset;
@@ -3687,7 +3687,7 @@ static void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData,
       /* Node index++ in the reused parameter slot; EDI = index*0x10 is the byte
                          offset into pLevelUnknown.aCoordsAndSize (stride 16), recomputed every
                          iteration so the aCurrentDir[] read at 0067747d/00677489 cannot leak into it.
-                          */ fnPlacementValidator++;
+                          */ fnPlacementValidator = (fpLevelDataFn1)((uint8_t*)fnPlacementValidator + 1);
       nNodeOffset = (int)fnPlacementValidator * 0x10;
       /* Second pass cursor advances by ONE 16-byte entry (EDI = index*0x10 added to
                          pLevelData), not by a whole list. */ pLevelData1 = (D2DrlgLevelDataList*)(pLevelData->aEntry + (int)fnPlacementValidator);

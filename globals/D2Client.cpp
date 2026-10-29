@@ -44859,7 +44859,7 @@ eD2GSGameType eD2GSGameType_007a0610 = 0; D2_GLOBAL_GUARD(eD2GSGameType_007a0610
 
 D2ExitCutsceneState gExitCutsceneState = {}; D2_GLOBAL_GUARD(gExitCutsceneState, "gExitCutsceneState");
 
-D2ClientTimerStrc gLoadTimerDurationMs = {}; D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
+D2ClientTimerStrc gLoadTimerDurationMs = D2ClientTimerStrc(); D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
 
 HACCEL gbLanguageDllLoaded = nullptr; D2_GLOBAL_GUARD(gbLanguageDllLoaded, "gbLanguageDllLoaded");
 
@@ -44955,7 +44955,7 @@ D2InventoryEntryStrc gaPlayerBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaPl
 
 D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaHirelingBodySlotScreenCoords, "gaHirelingBodySlotScreenCoords");
 
-RGBQUAD nColor = {}; D2_GLOBAL_GUARD(nColor, "nColor");
+RGBQUAD nColor = RGBQUAD(); D2_GLOBAL_GUARD(nColor, "nColor");
 
 uint8_t gaPanelImageLoadFlags[48] = {}; D2_GLOBAL_GUARD(gaPanelImageLoadFlags, "gaPanelImageLoadFlags");
 
@@ -45318,6 +45318,7 @@ uint8_t gbItemDescDirtyFlag = 0; D2_GLOBAL_GUARD(gbItemDescDirtyFlag, "gbItemDes
 unsigned short geCutsceneCurrentSoundId = {}; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
 unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTickCount, "gdwInvLastActionTickCount");
 int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
+BOOL gbInvOverlayFlag = 0; D2_GLOBAL_GUARD(gbInvOverlayFlag, "gbInvOverlayFlag");
 DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
 uint32_t gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
 int gbInvNpcScreenCoordsInitialized = 0; D2_GLOBAL_GUARD(gbInvNpcScreenCoordsInitialized, "gbInvNpcScreenCoordsInitialized");
@@ -45452,9 +45453,9 @@ uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidt
 uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
 uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
 uint32_t gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
-uint8_t g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
+int g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
 int gnUICtrlConfigActiveButton = 0; D2_GLOBAL_GUARD(gnUICtrlConfigActiveButton, "gnUICtrlConfigActiveButton");
-bool gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
+BOOL gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
 DC6 * gpUICtrlConfigScrollbarDC6 = 0; D2_GLOBAL_GUARD(gpUICtrlConfigScrollbarDC6, "gpUICtrlConfigScrollbarDC6");
 int gnUICtrlConfigPendingKeyStrId = 0; D2_GLOBAL_GUARD(gnUICtrlConfigPendingKeyStrId, "gnUICtrlConfigPendingKeyStrId");
 unsigned int gdwUICtrlConfigKeyBindTimestamp = {}; D2_GLOBAL_GUARD(gdwUICtrlConfigKeyBindTimestamp, "gdwUICtrlConfigKeyBindTimestamp");

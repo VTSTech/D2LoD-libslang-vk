@@ -859,8 +859,8 @@ void __stdcall QUEST_SendQuestUpdateToPlayer_HaltTail(int nLine) {
     exit(-1);
 }
 
-void __fastcall QUEST_SetStateAndBroadcast(D2QuestDataStrc * pQuestData, uint8_t nPrevStateFlag, D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute) {
-    pQuestData->nStateFlagPrev = nPrevStateFlag;
+void __fastcall QUEST_SetStateAndBroadcast(D2QuestDataStrc * pQuestData, int nPrevStateFlag, D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute) {
+    pQuestData->nStateFlagPrev = (uint8_t)nPrevStateFlag;
     if (!bExecute) {
       return;
     }
@@ -1895,7 +1895,7 @@ void __fastcall QUEST_SendNpcInfoPacket(D2UnitStrc * pUnit, D2UnitStrc * pNpcUni
 // @sourcefile .\QUESTS\QUESTS.CPP
 BOOL __fastcall QUESTS_SendQuestInfoAndEventTrigger(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     uint16_t wGameIdHigh = (uint16_t)((uint32_t)pGame >> 0x10);
-    D2GSPacketClt0x89 DStack_8 = (D2GSPacketClt0x89)(uint16_t)((uint16_t)(uint8_t)pGame->pQuestControl->nEventId << 8 | (uint16_t)(uint8_t)0x89);
+    D2GSPacketClt0x89 DStack_8 = d2_bits_as<D2GSPacketClt0x89>((uint16_t)((uint16_t)(uint8_t)pGame->pQuestControl->nEventId << 8 | (uint16_t)(uint8_t)0x89));
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     uint8_t nActionType = 0;
@@ -1988,7 +1988,7 @@ void __fastcall SendQuestState(D2UnitStrc * pUnit, int32_t nQuestId) {
 }
 
 // @sourcefile .\QUESTS\QUESTS.CPP
-void __fastcall QUEST_SendQuestStatePacket(D2UnitStrc * pUnit, uint8_t bQuestId, uint8_t bReasoned) {
+void __fastcall QUEST_SendQuestStatePacket(D2UnitStrc * pUnit, int bQuestId, uint8_t bReasoned) {
     eD2LevelId eLevel;
     uint8_t aPacketBuf[6];
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -2007,7 +2007,7 @@ void __fastcall QUEST_SendQuestStatePacket(D2UnitStrc * pUnit, uint8_t bQuestId,
 
     aPacketBuf[4] = '\0';
     aPacketBuf[5] = '\0';
-    aPacketBuf[1] = bQuestId;
+    aPacketBuf[1] = (uint8_t)bQuestId;
     aPacketBuf[0] = ']';
     aPacketBuf[2] = '\0';
     aPacketBuf[3] = '\f';

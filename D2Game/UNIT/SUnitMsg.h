@@ -91,8 +91,6 @@ struct __attribute__((packed)) D2SUnitMsgA3Strc {
 };
 
 struct D2SUnitMsgA4Strc {
-    D2SUnitMsgA4Strc() = default;
-    D2SUnitMsgA4Strc(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ int16_t nClassId;

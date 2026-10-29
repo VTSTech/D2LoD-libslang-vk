@@ -718,8 +718,8 @@ BOOL __fastcall Q35_OnAncientsDefeated(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                          done for self player, then awards XP (Q35_RewardExperienceFromAncients) and
                          propagates to the party */ D2Common::QuestRecord::SetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
     RewardExperienceFromAncients(pGame, pUnit);
-    int16_t nPlayerPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPlayerPartyId == -1) {
+    uint16_t nPlayerPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPlayerPartyId == 0xffff) {
       return 0;
     }
 

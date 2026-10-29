@@ -5686,13 +5686,13 @@ static void SKILLDESC_DescLine8_AppendMana(int32_t nParam1, D2UnitStrc * pUnit, 
     SKILLDESC_FormatSignedRangeOrValue(nToHitResult, 0x10a6, 0x10b3, 1, wszText);
 }
 
-static void __stdcall SKILLDESC_FormatMissileDamage(int32_t nMinDamage, int32_t nMaxDamage, uint16_t wDmgTypeStringId, uint16_t * wszText) {
+static int __stdcall SKILLDESC_FormatMissileDamage(int32_t nMinDamage, int32_t nMaxDamage, uint16_t wDmgTypeStringId, uint16_t * wszText) {
     uint16_t wszNumBuf[32];
     char szFormattedA[32];
     memset(wszNumBuf, 0, 32 * sizeof(wszNumBuf[0]));
     if (!nMinDamage) {
       if (!nMaxDamage) {
-        return;
+        return 0;
       }
     } else if (nMinDamage == nMaxDamage) {
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFormattedA, "%d", nMinDamage);
@@ -5711,6 +5711,7 @@ static void __stdcall SKILLDESC_FormatMissileDamage(int32_t nMinDamage, int32_t 
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pLocalStr);
     pLocalStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pLocalStr);
+    return 1;
 }
 
 static void __stdcall SKILLDESC_DescLine16_MissileDamage(int32_t nMissileId, D2UnitStrc * pOwner, int32_t nLevel, int32_t nParam, uint16_t * wszText) {

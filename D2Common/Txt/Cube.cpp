@@ -1281,7 +1281,7 @@ void __stdcall FIELDTBLS_AllocPlayerData_NoOp(D2UnitStrc * dwUnused) {
 
 }
 
-void __stdcall FIELDTBLS_FreePlayerData_STUB() {
+void __fastcall FIELDTBLS_FreePlayerData_STUB(D2UnitStrc * pUnit) {
 
 }
 

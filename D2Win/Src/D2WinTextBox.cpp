@@ -433,7 +433,7 @@ uint16_t * __fastcall D2WINTEXTBOX_GetSelectedLineText(::D2WinTextBox * pnTextBo
           return (uint16_t*)*pLineNode;
         }
 
-        nSelectedLine++;
+        nSelectedLine = (::DrawEx)((uint8_t*)nSelectedLine + 1);
       }
 
       return nullptr;
@@ -800,7 +800,7 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
               nNumCols = pTextBox->sStyleControl.fpPush;
               nBaseX = (::ListCheck)pTextBox->sControl.dwSizeX;
               pColWidth = nBaseX;
-              if (nColIndex < (int)(nNumCols - 1)) {
+              if (nColIndex < (int)((uint8_t*)nNumCols - 1)) {
                 pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex];
               }
 
@@ -827,11 +827,11 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
                   nColDrawX = (::ListCheck)(pTextBox->sControl.dwPosX + nLineStride);
                 }
               } else {
-                nColDrawX = nUsableWidth2 + (int)nColOffsetX;
+                nColDrawX = (::ListCheck)((uint8_t*)nUsableWidth2 + (int)nColOffsetX);
                 if (nColIndex + 1 < (int)nNumCols) {
-                  pColWidth = (&pTextBox->sStyleControl.fpListCheck)[nColIndex] - (int)nColOffsetX;
+                  pColWidth = (::ListCheck)((uint8_t*)(&pTextBox->sStyleControl.fpListCheck)[nColIndex] - (int)nColOffsetX);
                 } else {
-                  pColWidth = nBaseX - (int)nColOffsetX;
+                  pColWidth = (::ListCheck)((uint8_t*)nBaseX - (int)nColOffsetX);
                 }
 
                 pStyleFlags = (&pTextBox->sStyleControl.pNext)[nColIndex];
@@ -842,7 +842,7 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
                       nLineStride = 0;
                     }
 
-                    nColDrawX = pColWidth + ((int)nColDrawX - nLineStride);
+                    nColDrawX = (::ListCheck)((uint8_t*)pColWidth + ((int)nColDrawX - nLineStride));
                   }
                 } else {
                   nTextWidth = D2WinFont::DRAW_text0(pCellText);
@@ -851,7 +851,7 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
                     nLineStride = 0;
                   }
 
-                  nColDrawX += nLineStride;
+                  nColDrawX = (::ListCheck)((uint8_t*)nColDrawX + nLineStride);
                 }
               }
 
@@ -1021,14 +1021,14 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
         if ((int)uScrollTop <= (int)pDVar2) {
           uCurSel = uScrollTop;
           if (0 < (int)pDVar2) {
-            uNewScrollTop = (::DrawEx)((int)(pDVar2 + (1 - nVisibleLines)) < 1 ? 0 : (uint32_t)(pDVar2 + (1 - nVisibleLines)));
+            uNewScrollTop = (::DrawEx)((int)((uint8_t*)pDVar2 + (1 - nVisibleLines)) < 1 ? 0 : (uint32_t)((uint8_t*)pDVar2 + (1 - nVisibleLines)));
             uCurSel = uNewScrollTop;
           }
         }
 
         break;
         case 0x22:
-          uPageDownTarget = pDVar2 + nVisibleLines - 1;
+          uPageDownTarget = (::DrawEx)((uint8_t*)pDVar2 + nVisibleLines - 1);
         if ((int)uScrollTop < (int)uPageDownTarget) {
           uCurSel = (::DrawEx)(nLineCount - 1);
           if ((int)uPageDownTarget < nLineCount - 1) {
@@ -1043,8 +1043,8 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
 
             uNewScrollTop = uPageDownTarget;
             uCurSel = (::DrawEx)(nLineCount - 1);
-            if ((int)(uPageDownTarget + nVisibleLines - 1) < nLineCount - 1) {
-              uCurSel = uPageDownTarget + nVisibleLines - 1;
+            if ((int)((uint8_t*)uPageDownTarget + nVisibleLines - 1) < nLineCount - 1) {
+              uCurSel = (::DrawEx)((uint8_t*)uPageDownTarget + nVisibleLines - 1);
             }
           }
         }
@@ -1062,19 +1062,19 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
           if ((int)uScrollTop < 1) {
             break;
           }
-        uCurSel = uScrollTop - 1;
+        uCurSel = (::DrawEx)((uint8_t*)uScrollTop - 1);
         goto scroll_selection_into_view;
         case 0x28:
           if (nLineCount - 1 <= (int)uScrollTop) {
             break;
           }
-        uCurSel = uScrollTop + 1;
+        uCurSel = (::DrawEx)((uint8_t*)uScrollTop + 1);
         scroll_selection_into_view:
         uNewScrollTop = uCurSel;
         if ((int)pDVar2 <= (int)uCurSel) {
           uNewScrollTop = pDVar2;
-          if ((int)(pDVar2 + nVisibleLines - 1) < (int)uCurSel) {
-            uNewScrollTop = uCurSel + (1 - nVisibleLines);
+          if ((int)((uint8_t*)pDVar2 + nVisibleLines - 1) < (int)uCurSel) {
+            uNewScrollTop = (::DrawEx)((uint8_t*)uCurSel + (1 - nVisibleLines));
           }
         }
       }

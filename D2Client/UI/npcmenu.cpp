@@ -381,7 +381,7 @@ int __stdcall NPCMENU_ShowSelectedDialogOption() {
     Text::TEXT_ShowNpcDialog(pNpcUnit, wMessageId, 0);
     gnNpcMenuActiveMode = 1;
     Text::TEXT_SetScrollCompleteCallback(NPCMENU_ScrollCompleteShowNextMessage, nullptr);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
     Dialog::gpNpcGossipDialog = 0;
     return 1;
 }
@@ -404,7 +404,7 @@ int __stdcall NPCMENU_ShowGossipDialog() {
     Text::TEXT_ShowNpcDialog(pNpcUnit, 0xfe, 0);
     gnNpcMenuActiveMode = 1;
     Text::TEXT_SetScrollCompleteCallback(NPCMENU_ScrollCompleteShowNextMessage, nullptr);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
     Dialog::gpNpcGossipDialog = 0;
     return 1;
 }
@@ -427,7 +427,7 @@ int __stdcall NPCMENU_ShowIntroduceDialog() {
     Text::TEXT_ShowNpcDialog(pNpcUnit, 0x152, 0);
     gnNpcMenuActiveMode = 1;
     Text::TEXT_SetScrollCompleteCallback(NPCMENU_ScrollCompleteShowNextMessage, nullptr);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
     Dialog::gpNpcGossipDialog = 0;
     return 1;
 }
@@ -500,7 +500,7 @@ int __stdcall NPCMENU_EmptyDialogDrawHandler() {
 int __stdcall NPCMENU_OpenTradeWithNpc() {
     POINT ptDialogPos;
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -529,7 +529,7 @@ void __stdcall NPCMENU_HireMerc() {
     POINT ptDialogPos;
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x36, gnNpcMenuMercHireCost2, (uint32_t)(uint16_t)D2Client::Merc::D2MercForHire[gnNpcMenuMercHireCost1].nNameStringId);
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -611,7 +611,7 @@ int __stdcall NPCMENU_CainIdentifyOptionCallback() {
     POINT local_c;
     int32_t nColorId;
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
     if (Dialog::gpNpcTransactionWaitDialog) {
@@ -644,38 +644,38 @@ int __stdcall NPCMENU_CainIdentifyOptionCallback() {
 
 void __stdcall NPCMENU_CloseAllDialogs() {
     if (Dialog::gpNpcGossipDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
       Dialog::gpNpcGossipDialog = 0;
     }
     if (Dialog::gpNpcActionConfirmDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcActionConfirmDialog);
       Dialog::gpNpcActionConfirmDialog = 0;
     }
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
     if (Dialog::gpNpcMainMenuDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMainMenuDialog);
       Dialog::gpNpcMainMenuDialog = 0;
     }
     if (Dialog::gpNpcTransactionConfirmDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionConfirmDialog);
       Dialog::gpNpcTransactionConfirmDialog = 0;
     }
     if (Dialog::gpNpcTradeErrorDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTradeErrorDialog);
       Dialog::gpNpcTradeErrorDialog = 0;
     }
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
     if (!Dialog::gpNpcMercListDialog) {
       return;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
     Dialog::gpNpcMercListDialog = 0;
 }
 
@@ -865,38 +865,38 @@ void __stdcall NPCMENU_Cleanup() {
       gpNpcMenuMercListBox = 0;
     }
     if (Dialog::gpNpcTransactionConfirmDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionConfirmDialog);
       Dialog::gpNpcTransactionConfirmDialog = 0;
     }
     if (Dialog::gpNpcTradeErrorDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTradeErrorDialog);
       Dialog::gpNpcTradeErrorDialog = 0;
     }
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       Dialog::gpNpcMercListDialog = 0;
     }
     if (Dialog::gpNpcMainMenuDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMainMenuDialog);
       Dialog::gpNpcMainMenuDialog = 0;
     }
     if (Dialog::gpNpcGossipDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
       Dialog::gpNpcGossipDialog = 0;
     }
     if (!Dialog::gpNpcActionConfirmDialog) {
       return;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcActionConfirmDialog);
     Dialog::gpNpcActionConfirmDialog = 0;
 }
 
@@ -1069,7 +1069,7 @@ void __stdcall NPCMENU_ExecuteShopTransaction(int32_t nParam, uint8_t bParam) {
 
 void __stdcall NPCMENU_CancelShopTransaction() {
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
 
@@ -1102,7 +1102,7 @@ void __stdcall NPCMENU_HandleTransactionComplete() {
       return;
     }
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
 
@@ -1384,7 +1384,7 @@ static int32_t NPCMENU_FindMenuIndexByNpcId(int32_t nParam) {
 BOOL __stdcall NPCMENU_ConfirmTransactionCallback() {
     if (gnNpcMenuTransactionType == 5) {
       if (Dialog::gpNpcTransactionConfirmDialog) {
-        Dialog::FreeDialogStrc();
+        Dialog::FreeDialogStrc(Dialog::gpNpcTransactionConfirmDialog);
         Dialog::gpNpcTransactionConfirmDialog = 0;
       }
 
@@ -1392,7 +1392,7 @@ BOOL __stdcall NPCMENU_ConfirmTransactionCallback() {
     } else {
       if (_Interaction::geNpcUiState == NPCUI_CONFIRM_TRANSACTION) {
         if (Dialog::gpNpcTransactionConfirmDialog) {
-          Dialog::FreeDialogStrc();
+          Dialog::FreeDialogStrc(Dialog::gpNpcTransactionConfirmDialog);
           Dialog::gpNpcTransactionConfirmDialog = 0;
         }
 
@@ -1657,7 +1657,7 @@ void __fastcall NPCMENU_MarkNpcSpeechesUpdated(D2GSPacketSrv0x91 * pBytes) {
 // Evidence: the only 3 references are the NPCMENU_Enable{CharsiImbue,LarzukSocket,AnyaPersonalize}Option stores; which service runs is chosen by the NPC, not here.
 int __stdcall NPCMENU_ItemServiceOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -1993,7 +1993,7 @@ void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nParam) {
 
 int __stdcall NPCMENU_OpenNpcShop() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2125,7 +2125,7 @@ int __stdcall NPCMENU_EmptyDrawCallback1() {
       return 1;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
     Dialog::gpNpcGossipDialog = 0;
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
@@ -2143,7 +2143,7 @@ int __stdcall NPCMENU_CloseConfirmDialogAndInteraction() {
       return 1;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcActionConfirmDialog);
     Dialog::gpNpcActionConfirmDialog = 0;
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
@@ -2159,7 +2159,7 @@ static void __stdcall NPCMENU_SendCainIdentifyItems(char cParam, int32_t nParam)
       if (pNpcUnit) {
         gnNpcMenuActiveMode = 1;
         Text::TEXT_SetScrollCompleteCallback(NPCMENU_ScrollCompleteShowNextMessage, nullptr);
-        Dialog::FreeDialogStrc();
+        Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
         Dialog::gpNpcGossipDialog = 0;
         gpNpcCurrentSpeech->field5_0x11 = true;
         if (gbNpcMenuRandomDialogSeed == '\0') {
@@ -2256,7 +2256,7 @@ int __stdcall NPCMENU_TradeOptionCallback() {
       gnNpcMenuNpcSoundIndex = 0;
     }
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2322,7 +2322,7 @@ void DRAW_UI_NPC_INTERACTION(short * nParam) {
           Inv::INV_HandleGambleMessage(nParam);
           gbNpcMenuShopTransactionActive = GetTickCount();
           gnNpcMenuShopTransactionCost++;
-          Dialog::FreeDialogStrc();
+          Dialog::FreeDialogStrc(Dialog::gpNpcTransactionConfirmDialog);
           Dialog::gpNpcTransactionConfirmDialog = 0;
           return;
         }
@@ -2383,7 +2383,7 @@ void DRAW_UI_NPC_INTERACTION(short * nParam) {
 
 int __stdcall NPCMENU_GambleDrawCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2396,7 +2396,7 @@ int __stdcall NPCMENU_GambleDrawCallback() {
 
 int __stdcall NPCMENU_GambleMouseCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2409,7 +2409,7 @@ int __stdcall NPCMENU_GambleMouseCallback() {
 
 int __stdcall NPCMENU_RepairDrawCallback() {
     if (Dialog::gpNpcMainMenuDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMainMenuDialog);
       Dialog::gpNpcMainMenuDialog = 0;
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, _Interaction::nCurrentInteractedNpcGUID, (uint32_t)gnNpcMenuRepairCostGold);
     }
@@ -2423,7 +2423,7 @@ int __stdcall NPCMENU_RepairDrawCallback() {
 
 int __stdcall NPCMENU_RepairMouseCallback() {
     if (Dialog::gpNpcMainMenuDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMainMenuDialog);
       Dialog::gpNpcMainMenuDialog = 0;
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, _Interaction::nCurrentInteractedNpcGUID, (uint32_t)gnNpcMenuRepairCostGold);
     }
@@ -2437,7 +2437,7 @@ int __stdcall NPCMENU_RepairMouseCallback() {
 
 int __stdcall NPCMENU_TradeDrawCallback() {
     if (Dialog::gpNpcMainMenuDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMainMenuDialog);
       Dialog::gpNpcMainMenuDialog = 0;
     }
     if (_Interaction::bInteractingWithNpc) {
@@ -2858,7 +2858,7 @@ void __stdcall NPCMENU_OpenInteraction(D2UnitStrc * pUnit) {
 // Evidence: stored into D2NpcMenuOptions row 13 (npc 155 Warriv) slot 1 by NPCMENU_EnableWarrivGoEastOption; PUSH 0x28 = level 40; same shape as 004b52c0 (Warriv act 2, string 3383 WarrivMenu1c, level 1).
 int __stdcall NPCMENU_WarrivGoEastOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2874,7 +2874,7 @@ int __stdcall NPCMENU_WarrivGoEastOptionCallback() {
 // Evidence: stored into D2NpcMenuOptions row 15 (npc 210 Meshif) slot 1 by NPCMENU_EnableMeshifSailEastOption; PUSH 0x4b = level 75; same shape as 004b5260 (Meshif act 3, string 3385 MeshifMenuWest, level 40).
 int __stdcall NPCMENU_MeshifSailEastOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2890,7 +2890,7 @@ int __stdcall NPCMENU_MeshifSailEastOptionCallback() {
 // Evidence: stored into D2NpcMenuOptions row 21 (npc 367 Tyrael) slot 1 by NPCMENU_EnableTyraelTravelToHarrogathOption; PUSH 0x6d = level 109.
 int __stdcall NPCMENU_TyraelTravelToHarrogathOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2907,7 +2907,7 @@ int __stdcall NPCMENU_TyraelTravelToHarrogathOptionCallback() {
 // Same body as the other travel option callbacks; only the level id differs.
 int __stdcall NPCMENU_MeshifSailWestOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -2923,7 +2923,7 @@ int __stdcall NPCMENU_MeshifSailWestOptionCallback() {
 // Frees the NPC interaction dialog, resets the NPC UI state, closes the NPC interaction and the NPC menu UI flag, then sends C->S 0x38 (action 0, NPC GUID, level 1 = Rogue Encampment) to travel. Returns 1.
 int __stdcall NPCMENU_WarrivGoWestOptionCallback() {
     if (Dialog::gpNpcInteractionDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
 
@@ -3039,7 +3039,7 @@ void __stdcall NPCMENU_HandleTradeAccepted() {
 
       gnNpcMenuActiveContainer = 0;
       if (Dialog::gpNpcTransactionWaitDialog) {
-        Dialog::FreeDialogStrc();
+        Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
         Dialog::gpNpcTransactionWaitDialog = 0;
       }
 
@@ -3053,7 +3053,7 @@ void __stdcall NPCMENU_HandleTradeAccepted() {
       return;
     }
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
 
@@ -3156,7 +3156,7 @@ void __stdcall NPCMENU_HandleTradeRejected() {
     int32_t nColorArg;
     uint32_t nNpcClass;
     if (Dialog::gpNpcTransactionWaitDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcTransactionWaitDialog);
       Dialog::gpNpcTransactionWaitDialog = 0;
     }
     if (D2GSPacketSrv0x2A_007c0d87.nResult == 5) {
@@ -3259,7 +3259,7 @@ int __stdcall NPCMENU_MercDrawCallback1() {
       return 1;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcGossipDialog);
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
     Dialog::gpNpcGossipDialog = 0;
     NPCMENU_OpenInteractionDialog();
@@ -3276,7 +3276,7 @@ int __stdcall NPCMENU_ConfirmDialogCancelCallback() {
       return 1;
     }
 
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpNpcActionConfirmDialog);
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
     Dialog::gpNpcActionConfirmDialog = 0;
     NPCMENU_OpenInteractionDialog();
@@ -3461,7 +3461,7 @@ int __stdcall NPCMENU_ShowAkaraRespecConfirm_Unused() {
 
 int __stdcall NPCMENU_MercListDrawCallback() {
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -3512,11 +3512,11 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     ExceptionList = &pSehFrame;
     if (Dialog::gpNpcInteractionDialog) {
       ExceptionList = &pSehFrame;
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
       Dialog::gpNpcInteractionDialog = 0;
     }
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -4167,7 +4167,7 @@ void __stdcall NPCMENU_RefreshMenuDialog() {
       return;
     }
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -4274,7 +4274,7 @@ int __stdcall NPCMENU_TalkOptionCallback() {
       pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
       if (pNpcUnit) {
         if (Dialog::gpNpcInteractionDialog) {
-          Dialog::FreeDialogStrc();
+          Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
           Dialog::gpNpcInteractionDialog = 0;
         }
 
@@ -4301,7 +4301,7 @@ int __stdcall NPCMENU_AkaraRespecOptionCallback() {
       pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
       if (pNpcUnit) {
         if (Dialog::gpNpcInteractionDialog) {
-          Dialog::FreeDialogStrc();
+          Dialog::FreeDialogStrc(Dialog::gpNpcInteractionDialog);
           Dialog::gpNpcInteractionDialog = 0;
         }
 

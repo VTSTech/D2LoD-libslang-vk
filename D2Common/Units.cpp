@@ -1677,7 +1677,7 @@ void __stdcall FreePlayerData(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit) {
         iActIdx += 4;
       } while (iActIdx < 0x28);
 
-      Txt::Cube::FIELDTBLS_FreePlayerData_STUB();
+      Txt::Cube::FIELDTBLS_FreePlayerData_STUB(pUnit);
       D2_FREE_POOL_AT(pMemory, pUnit->pUnitData.pUnitDataPlayer, ".\\UNITS\\Units.cpp", 0xf76);
       pUnit->pUnitData.pUnitDataPlayer = 0;
       return;

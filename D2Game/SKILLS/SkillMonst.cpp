@@ -1301,7 +1301,7 @@ BOOL __fastcall Skills_SrvDoFunc_096_HealTarget(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // Resurrects a dead monster or player unit: restores HP to max, sets ISVALIDTARGET/CANBEATTACKED/TARGETABLE flags, and re-registers collision in the room. For monsters also sets NOXP+NOTC flags, triggers AI think, decrements kill count, attaches quest hooks, and sets monster collision type. Returns 1 on success, 0 if the unit has no room.
-void __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+int __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int nX;
     eD2CollisionShapeType nCollisionWidth;
     int32_t iVar1;
@@ -1309,7 +1309,7 @@ void __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     eD2UnitType eUnitType;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom) {
-      return;
+      return 0;
     }
 
     int nMaxHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxhp, 0);
@@ -1344,7 +1344,7 @@ void __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         iVar1 = 0x100;
         nCollisionWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
         D2Common::Collision::AddCollision_Type(pRoom, nMaxHp, nPosY, nCollisionWidth, iVar1);
-        return;
+        return 1;
       }
     }
 
@@ -1371,6 +1371,7 @@ void __fastcall SKILLMONST_ResurrectUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     iVar1 = 0x80;
     nCollisionWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
     D2Common::Collision::AddCollision_Type(pRoom, nX, nMaxHp, nCollisionWidth, iVar1);
+    return 1;
 }
 
 // Server-side skill do-func (index 097) that resurrects the caster's targeted dead monster. Validates the target is dead and not immune, checks collision at the corpse's tile, calls SKILLMONST_ResurrectUnit, triggers the revived monster's AI lifecycle transition (MONSTERAI_ExecuteLifecycleTransition), and applies the skill's srvoverlay visual. Returns 1 on success, 0 on any validation failure.

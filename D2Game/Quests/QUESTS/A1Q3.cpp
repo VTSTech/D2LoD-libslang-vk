@@ -558,8 +558,8 @@ static BOOL Q03_CheckPartyHasMalus(D2UnitStrc * pUnitStrc, D2QuestDataStrc * pQu
     }
 
     D2QuestDataA1Q3Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA1Q3;
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnitStrc);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnitStrc);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

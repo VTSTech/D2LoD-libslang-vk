@@ -151,7 +151,7 @@ void Q31_HandleLarzukRewardState(D2QuestDataStrc * pQuestData, int32_t nParam, D
     uint8_t byUnitLow = (uint8_t)(uintptr_t)pUnit;
     if (pQuestSpecificData->bLarzukTalked == 1) {
       pQuestData->nQuestPacketFlags = byUnitLow;
-      QUEST_SetStateAndBroadcast(pQuestData, byUnitLow + 1, pUnit, (::fpExecuteOnUnitFunction)Q31_NpcGossipHandler, true);
+      QUEST_SetStateAndBroadcast(pQuestData, (int)((uintptr_t)&pUnit->eUnitType + 1), pUnit, (::fpExecuteOnUnitFunction)Q31_NpcGossipHandler, true);
       pQuestSpecificData->bLarzukTalked = byUnitLow;
     }
     if (pQuestSpecificData->bRewardAccepted != 1) {
@@ -396,8 +396,8 @@ BOOL __fastcall Q31_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

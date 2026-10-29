@@ -792,7 +792,7 @@ D2DialogStrc * __fastcall AllocDialogStrc(int32_t nX, int32_t nY, fpDialogFunc f
     return pDialog;
 }
 
-void __stdcall FreeDialogStrc() {
+void __fastcall FreeDialogStrc(D2DialogStrc * pDialog) {
     int32_t nHandlerCount;
     D2DialogStrc* pCurrentDialog;
     D2DialogSubStrc* pNextSub;

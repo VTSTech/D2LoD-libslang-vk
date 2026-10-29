@@ -41,10 +41,7 @@ struct D2BNetRealmEntryStrc {
 };
 
 struct D2UIMsgMousePosStrc {
-    D2UIMsgMousePosStrc() = default;
-    D2UIMsgMousePosStrc(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
-    D2UIMsgMousePosStrc(uint16_t a0, uint16_t a1) : nMouseX(a0), nMouseY(a1) {}
 
     /* 0x00 */ uint16_t nMouseX; // LOWORD(lParam): cursor x
     /* 0x02 */ uint16_t nMouseY; // HIWORD(lParam): cursor y

@@ -1684,7 +1684,7 @@ void __fastcall Atomic64Store(int64_t * pllTarget, int64_t * pllValue) {
     do {
       int64_t llCurrent;
       llCurrent = (uint64_t)((uint64_t)(uint32_t)dwExpectedHi << 32 | (uint64_t)(uint32_t)dwCompareLo);
-      bMatched = __atomic_compare_exchange_n(pllTarget, &llCurrent, llNewValue, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+      bMatched = D2_AtomicCompareExchange(pllTarget, &llCurrent, llNewValue);
       if (bMatched) {} else {
         dwExpectedHi = (uint32_t)((uint64_t)llCurrent >> 0x20);
         dwCompareLo = (uint32_t)llCurrent;
@@ -1706,9 +1706,9 @@ void __fastcall Atomic64Load(int64_t * pllResult, int64_t * pllSource) {
     // writes back what is there, otherwise it loads it, so EDX:EAX is *pllSource either way and
     // the target never changes - an atomic 64-bit read. The comparand (EBX, ECX) is a
     // don't-care; 0 stands in for it, on both sides, so a match still writes back the same value.
+    // D2_AtomicCompareExchange is the sequentially consistent compare-exchange (d2_platform.h).
     int64_t llValue = 0;
-    __atomic_compare_exchange_n((int64_t*)pllSource, &llValue, (int64_t)0, false,
-                                __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST); // 004107d8
+    D2_AtomicCompareExchange((int64_t*)pllSource, &llValue, (int64_t)0); // 004107d8
     *(int64_t*)pllResult = llValue;                                  // 004107dc / 004107de
 }
 

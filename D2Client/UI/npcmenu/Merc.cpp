@@ -148,7 +148,7 @@ void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
 
 void __stdcall NPCMENU_ResurrectMerc() {
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -225,7 +225,7 @@ void __fastcall MERC_ClearHireInventory(D2UnitStrc * pUnit) {
       pCarried = D2Common::INVENTORY::Inventory::GetCarriedItem(pCurrentItem);
       pCurrentItem = pNextItem;
       if (pCarried) {
-        UNIT::CUnit::RemoveObjectFromServerObjectTable(pCarried->eUnitType, pCarried->nUnitGUID);
+        UNIT::CUnit::RemoveObjectFromServerObjectTable(pCarried->nUnitGUID, pCarried->eUnitType);
       }
     }
 

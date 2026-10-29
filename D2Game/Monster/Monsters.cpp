@@ -124,7 +124,7 @@ uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMon
       return 0;
     }
 
-    return *(uint32_t*)(sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
+    return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
 }
 
 int32_t __fastcall GetUmodConstant(int32_t nUmodId) {

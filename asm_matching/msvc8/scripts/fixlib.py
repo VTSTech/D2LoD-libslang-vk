@@ -19,12 +19,14 @@ header the precompiled header includes). apply_batch does the same for many
 TUs at once, each round one parallel build: for edits confined to their .cpp.
 """
 import os
+import re
 import subprocess
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import check            # noqa: E402
+from oracle_config import BUILD, REPO  # noqa: E402
 
 ROUNDS = 4
 SIM_EPS = 0.0005
@@ -188,7 +190,11 @@ def apply_batch(groups, ctx, jobs=4, log=print):
         again = set()
         for tu in sorted(pending):
             if tu not in built:
-                active[tu] = []
+                # Which edit broke the build the TU does not say: try the
+                # first half of them again, the rest dropped.
+                active[tu] = materialise(pristine[tu], active[tu][:len(active[tu]) // 2])
+                if active[tu]:
+                    again.add(tu)
                 continue
             state = check.judge(rows, [tu], model, syms, quarantined)
             lost = (matches(base[tu]) - matches(state)) | vanished(base[tu], state)
@@ -225,6 +231,34 @@ def apply_batch(groups, ctx, jobs=4, log=print):
         else:
             log('%-50s kept 0 of %d' % (tu, len(groups[tu][0])))
     return kept, gained
+
+
+def claim_failed(edits, tus_of, failed):
+    """Give each TU that failed to build to the edits that name its function.
+    An edit labelled `tu:function` that changes the function's signature
+    breaks code elsewhere relying on the old one - a typed function pointer,
+    a declaration of its own -, which names the function: in the compiler's
+    errors (build/obj/<tu>.log), else in the TU's source. tus_of: label ->
+    set of TUs the edit answers for, extended in place. Returns the failed
+    TUs no edit claims."""
+    unclaimed = set()
+    for tu in sorted(failed):
+        texts = []
+        for path in (os.path.join(BUILD, 'obj', tu + '.log'), os.path.join(REPO, tu + '.cpp')):
+            if os.path.exists(path):
+                texts.append(read(path))
+        claimed = False
+        for text in texts:
+            hits = [e for e in edits
+                    if re.search(r'\b%s\b' % re.escape(e.label.rsplit(':', 1)[-1]), text)]
+            for e in hits:
+                tus_of[e.label] = tus_of[e.label] | {tu}
+            if hits:
+                claimed = True
+                break
+        if not claimed:
+            unclaimed.add(tu)
+    return unclaimed
 
 
 FIXES = os.path.join(os.path.dirname(HERE), 'evidence', 'fixes.tsv')

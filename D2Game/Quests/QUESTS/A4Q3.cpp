@@ -350,7 +350,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
     /* GetQuestState(QUEST_HellsForge=0x1b, RewardAwaits=1): reward already pending?
                          bail */ if (bQuestState != 1) {
-      int16_t nAttackerPartyId;
+      uint16_t nAttackerPartyId;
       bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
       if (bQuestState != 1) {
         pQuestItem = pOperation->sArg.pVictim;
@@ -431,7 +431,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
               pA4Q3Data->nGemQuality = 4;
               pA4Q3Data->nItemsToDrop = 1;
               nAttackerPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
-              if (nAttackerPartyId != -1) {
+              if (nAttackerPartyId != 0xffff) {
                 UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nAttackerPartyId, (::fpExecuteOnUnitFunction)Q28_PlayerCompleteForgeInAct4, 0);
               }
 
@@ -735,15 +735,15 @@ void __fastcall Q28_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA4Q3Strc* pA4Q3Data = pQuestData->pQuestSpecificData.pA4Q3;
-    uint8_t nNewStateFlag = 1;
+    int nPrevStateFlag = 1;
     if (pA4Q3Data->bForgeQuestAccepted != 1) {
       return;
     }
     if (pA4Q3Data->bGotHammer) {
-      nNewStateFlag = 4;
+      nPrevStateFlag = 4;
     }
 
-    QUEST_SetStateAndBroadcast(pQuestData, nNewStateFlag, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
+    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
     pQuestData->nQuestPacketFlags = '\0';
     pA4Q3Data->bForgeQuestAccepted = 0;
     ::SGAMEDATA* pGame = pQuestData->pGame;

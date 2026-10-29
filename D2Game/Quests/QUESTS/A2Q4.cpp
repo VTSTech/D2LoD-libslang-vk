@@ -472,8 +472,8 @@ BOOL __fastcall Q12_CheckArcaneAndReward(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     /* UnsetQuestStepStates (0x65c3e0) - clear all step bits before final flags */ D2Common::QuestRecord::UnsetQuestStepStates(pBitBuffer, QUEST_TheArcaneSanctuary);
     /* SetQuestState Step0x08 - re-set journal sub-state after step clear */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x08);
     /* SetQuestState Step0x07 - re-set journal sub-state after step clear */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x07);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

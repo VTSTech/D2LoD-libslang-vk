@@ -1759,7 +1759,7 @@ uint32_t gLogFileLastWriteTimeArray[20] = {}; D2_GLOBAL_GUARD(gLogFileLastWriteT
 
 D2StormListHead gLogMessageQueueHead = {}; D2_GLOBAL_GUARD(gLogMessageQueueHead, "gLogMessageQueueHead");
 
-D2HighResTimestampStrc gHighResTimerInitTimestamp = {}; D2_GLOBAL_GUARD(gHighResTimerInitTimestamp, "gHighResTimerInitTimestamp");
+D2HighResTimestampStrc gHighResTimerInitTimestamp = D2HighResTimestampStrc(); D2_GLOBAL_GUARD(gHighResTimerInitTimestamp, "gHighResTimerInitTimestamp");
 
 CRITICAL_SECTION gHighResTimerCS = {}; D2_GLOBAL_GUARD(gHighResTimerCS, "gHighResTimerCS");
 

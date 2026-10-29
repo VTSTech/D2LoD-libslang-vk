@@ -14,8 +14,7 @@ struct D2DynamicPathStrc;
 struct D2RoomStrc;
 
 // Data types
-#pragma pack(push, 1)
-struct D2PathTypeArg {
+struct __attribute__((packed)) D2PathTypeArg {
     /* 0x00 */ D2DynamicPathCoordsStrc pCoords; // Source + destination coords packed
     /* 0x08 */ struct D2RoomStrc * pRoom; // Source room
     /* 0x0C */ struct D2RoomStrc * pRoomNext; // Destination room
@@ -32,4 +31,3 @@ struct D2PathTypeArg {
     /* 0x2C */ int nCollisionPattern; // Collision check pattern
     /* 0x30 */ struct D2DynamicPathStrc * pDynamicPath; // Owner dynamic path
 };
-#pragma pack(pop)

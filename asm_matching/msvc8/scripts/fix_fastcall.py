@@ -95,8 +95,8 @@ def retype(text, leaf, definition):
         before = head[:name_at.start()]
         if re.search(r'\b__fastcall\b', before):
             continue
-        if re.search(r'\b(?:__stdcall|__cdecl)\b', before):
-            new_before = re.sub(r'\b(?:__stdcall|__cdecl)\b', '__fastcall', before, count=1)
+        if re.search(r'\b(?:__stdcall|__cdecl|__thiscall)\b', before):   # vc8_translate compiles a __thiscall it strips as __cdecl
+            new_before = re.sub(r'\b(?:__stdcall|__cdecl|__thiscall)\b', '__fastcall', before, count=1)
         else:
             new_before = before + '__fastcall '
         out.append(text[last:m.start()] + new_before)

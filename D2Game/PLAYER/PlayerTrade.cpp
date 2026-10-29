@@ -1593,7 +1593,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
 }
 
 // Handles cube transmute button clicks from the client UI. Button 0x17 clears the interact item and checks item levels. Button 0x18 triggers cube transmutation via ItemCubingSetup. This is the entry point for all cube recipe processing.
-static void CUBE_HandleTransmuteButtonClick(D2UnitStrc * pPlayer, int16_t nButtonId, ::SGAMEDATA * pGame) {
+static void CUBE_HandleTransmuteButtonClick(D2UnitStrc * pPlayer, uint16_t nButtonId, ::SGAMEDATA * pGame) {
     bool _bHasInteract;
     bool bHasInteract;
     eD2UnitType eInteractType;

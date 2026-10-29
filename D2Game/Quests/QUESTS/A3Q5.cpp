@@ -666,6 +666,7 @@ void __fastcall Q22_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 // State flow: log council kill; broadcast live state 1/3; nStateFlag -> 4/5 by Lam Esen.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q5.cpp
 void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUnit) {
+    uint8_t _nBroadcastState;
     uint8_t nBroadcastState;
     int32_t nNewStateFlag;
     int nLoopIdx;
@@ -681,10 +682,9 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
 
     D2QuestDataA3Q5Strc* pQuestSpecificData;
     pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q5;
-    int nKillerGUID;
-    nKillerGUID = pQuestSpecificData->nCouncilKillCount;
+    _nBroadcastState = pQuestSpecificData->nCouncilKillCount;
     pQuestSpecificData->bCouncilTrackingActive = true;
-    if (5 < nKillerGUID) {
+    if (5 < _nBroadcastState) {
       return;
     }
     if (!pKillerUnit) {
@@ -695,7 +695,7 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
 
     int nKillerCount;
     nKillerCount = 0;
-    if (0 < nKillerGUID) {
+    if (0 < _nBroadcastState) {
       int32_t* piGUIDSlot;
       piGUIDSlot = pQuestSpecificData->anCouncilKillerGUIDs;
       do {
@@ -705,10 +705,10 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
 
         nKillerCount++;
         piGUIDSlot++;
-      } while (nKillerCount < nKillerGUID);
+      } while (nKillerCount < _nBroadcastState);
     }
 
-    pQuestSpecificData->anCouncilKillerGUIDs[nKillerGUID] = nLoopIdx;
+    pQuestSpecificData->anCouncilKillerGUIDs[_nBroadcastState] = nLoopIdx;
     pQuestSpecificData->nCouncilKillCount++;
     pQuestSpecificData->nCouncilKillsRemaining = pQuestSpecificData->nCouncilKillCount;
     if (pQuestData->nStateFlag < 2) {
@@ -716,20 +716,20 @@ void __fastcall Q22_TrackCouncilKill(::SGAMEDATA * pGame, D2UnitStrc * pKillerUn
         goto set_state_by_lam_esen;
       }
 
-      nBroadcastState = 1;
+      _nBroadcastState = 1;
     } else {
-      nBroadcastState = 3;
+      _nBroadcastState = 3;
       if (pQuestData->nStateFlagPrev == 3) {
         goto set_state_by_lam_esen;
       }
     }
 
     pQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pQuestData, nBroadcastState, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);
+    QUEST_SetStateAndBroadcast(pQuestData, _nBroadcastState, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);
     set_state_by_lam_esen:
     /* GetQuestRecordState(Lam Esen's Tome=0x11, JustCompleted=0xd): pick nStateFlag
-                         4 (Lam Esen done) vs 5 + dialog string */ nKillerGUID = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_LamEsensTome, 0xd);
-    if (nKillerGUID == 1) {
+                         4 (Lam Esen done) vs 5 + dialog string */ _nBroadcastState = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_LamEsensTome, 0xd);
+    if (_nBroadcastState == 1) {
       dwSrcLine = 0x276;
       nNewStateFlag = 4;
     } else {
@@ -1047,13 +1047,13 @@ void __fastcall Q22_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
           pQuestData->nQuestPacketFlags = '\0';
           if (!pDVar1->bJerhynAiActive) {
             QUEST_SetStateFlag(pQuestData, 6, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x3d1);
-            byBroadcastState = 4;
+            iVar2 = 4;
           } else {
             QUEST_SetStateFlag(pQuestData, 7, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q5.cpp", 0x3cc);
-            byBroadcastState = 0xd;
+            iVar2 = 0xd;
           }
 
-          QUEST_SetStateAndBroadcast(pQuestData, byBroadcastState, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);
+          QUEST_SetStateAndBroadcast(pQuestData, iVar2, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerNotifyCompleted, true);
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q22_PlayerCheckNearTravincal);
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q22_PropagateCompletionToParty);
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q22_PartyMember_SetCannotComplete);

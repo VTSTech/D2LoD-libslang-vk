@@ -14,6 +14,7 @@
 
 #include "support/d2_trace.h"
 
+#ifndef _MSC_VER
 // __strrev: reverse in place, returns its argument.
 extern "C" char* __strrev(char* psz) {
     if (!psz) return psz;
@@ -64,6 +65,8 @@ extern "C" uint64_t __ftol2(void) {
     return (uint64_t)r;
 }
 
+#endif  // !_MSC_VER
+
 // MSVC's array construct/destruct helpers. Each walks `nCount` elements of
 // `nElementSize` bytes and calls the per-element constructor or destructor, which
 // take the element in ECX (MSVC types them __thiscall, the same ABI). The
@@ -92,3 +95,30 @@ extern "C" void _eh_vector_destructor_iterator_(void* pArray, uint32_t nElementS
 // ST(0) from the caller and returns through it, and GCC's x87 stack tracking
 // makes that contract easy to get subtly wrong. It stays stubbed in
 // d2_link_support.s until it is worth doing properly.
+
+#ifdef _MSC_VER
+// The Visual C++ 2005 build links the libcmt the original linked, so what is the
+// CRT's own function comes from there. __NLG_Notify, __ValidateEH3RN,
+// ___report_gsfailure and __ftol2 are libcmt's, and defining them here would
+// collide with it. The two vector iterators above stay ours: libcmt's are
+// `eh vector constructor iterator' (??_L) and `eh vector destructor iterator'
+// (??_M), __stdcall, while the tree declares and calls these cdecl.
+
+// _strrev, libcmt's own (strrev.obj).
+#pragma comment(linker, "/alternatename:___strrev=__strrev")
+
+// libcmt's __CIsqrt takes ST(0) and returns in it; the tree declares and calls
+// __CIsqrt as a cdecl function of a stack argument, a different symbol (one more
+// leading underscore). VC8's long double is double.
+extern "C" long double __CIsqrt(long double x) { return sqrt((double)x); }
+
+namespace _Wrappers {
+// The C++ EH frame handlers of the functions that store them (the frame is
+// EHRegistrationNode-shaped: next, handler, state). The tree links that frame
+// onto the global ExceptionList, not onto fs:[0], so the system never
+// dispatches to them and nothing calls them.
+void CRT_ExceptionFilter1(EHExceptionRecord*, EHRegistrationNode*, CONTEXT*, void*) {}
+void CRT_ExceptionFilter2(EHExceptionRecord*, EHRegistrationNode*, CONTEXT*, void*) {}
+void CRT_ExceptionFilter3(EHExceptionRecord*, EHRegistrationNode*, CONTEXT*, void*) {}
+}  // namespace _Wrappers
+#endif  // _MSC_VER

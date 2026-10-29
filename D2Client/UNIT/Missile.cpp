@@ -724,7 +724,7 @@ void __fastcall MISSILE_RemoveClientSide(D2UnitStrc * pUnit) {
       return;
     }
 
-    CUnit::RemoveObjectFromServerObjectTable(pUnit->eUnitType, pUnit->nUnitGUID);
+    CUnit::RemoveObjectFromServerObjectTable(pUnit->nUnitGUID, pUnit->eUnitType);
 }
 
 // Computes and stores the pierce count for missile pUnit against target pUnit2 (player or monster only). Checks MissilesTxt pierce flag (bit 2); if set, sums UNITSTAT_skill_pierce + UNITSTAT_item_pierce on the target, then runs a seeded RNG loop (up to 4 iterations) comparing random%100 against pierce chance to count successful pierces. Writes the result to missile's UNITSTAT_pierce_idx stat. Uses UNITSTAT_pierce_idx on the target as the RNG seed index for non-local players.
@@ -6543,7 +6543,7 @@ D2UnitStrc * __fastcall MISSILE_ClientHitExplode(D2UnitStrc * pUnit, D2UnitStrc 
       return pExplosion;
     }
 
-    CUnit::RemoveObjectFromServerObjectTable(pUnit->eUnitType, pUnit->nUnitGUID);
+    CUnit::RemoveObjectFromServerObjectTable(pUnit->nUnitGUID, pUnit->eUnitType);
     return pExplosion;
 }
 

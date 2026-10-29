@@ -168,7 +168,7 @@ int32_t __fastcall AllocObjectControl(::SGAMEDATA * pGame) {
       pShrinesTxt = D2Common::DATATBLS::ObjectTbls::TXT_Shrines_GetLine(iShrineIdx);
       byEffectClass = pShrinesTxt->nEffectClass;
       if (byEffectClass < 8) {
-        *(int*)(pObjectControl->sShrinesRng.aShrinesRng[byEffectClass] + pObjectControl->sShrinesRng.nShrinesCount[byEffectClass] * 4) = iShrineIdx;
+        *(int*)((uint8_t*)pObjectControl->sShrinesRng.aShrinesRng[byEffectClass] + pObjectControl->sShrinesRng.nShrinesCount[byEffectClass] * 4) = iShrineIdx;
         pnShrineClassCount = pObjectControl->sShrinesRng.nShrinesCount + byEffectClass;
         (*pnShrineClassCount)++;
       }

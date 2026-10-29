@@ -1024,8 +1024,8 @@ BOOL __fastcall Q26_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -1131,8 +1131,8 @@ BOOL __fastcall Q22_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

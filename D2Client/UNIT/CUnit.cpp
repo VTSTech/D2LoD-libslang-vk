@@ -1871,7 +1871,7 @@ void RemoveObject(int32_t nIndex, D2UnitStrc * * ppUnitTable, eD2UnitType eUnitT
     FreeAny(pUnit);
 }
 
-void RemoveObjectFromServerObjectTable(eD2UnitType eUnitType, uint32_t nUnitGUID) {
+void __fastcall RemoveObjectFromServerObjectTable(uint32_t nUnitGUID, eD2UnitType eUnitType) {
     CUnit::RemoveObject(nUnitGUID & 0x7f, ServerSideUnitHashTables[eUnitType], eUnitType, nUnitGUID);
 }
 

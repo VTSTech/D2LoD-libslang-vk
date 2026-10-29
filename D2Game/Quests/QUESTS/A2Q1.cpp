@@ -393,8 +393,8 @@ BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
                          marker */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RadamentsLair, QUESTSTATE_Step0x05);
     D2UnitStrc* pPartyUnit = pPlayerUnit_lcl;
     QUEST_SendQuestInfoToUnit(pRadamentRoom->pGame, pPlayerUnit_lcl);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pPartyUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pPartyUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

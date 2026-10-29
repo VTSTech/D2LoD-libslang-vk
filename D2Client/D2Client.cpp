@@ -1590,7 +1590,7 @@ void __fastcall MONSTER_FreeMonsterPath(int * pThis) {
 }
 
 int __stdcall NPCMENU_ConfirmTransactionReturn() {
-    UI::Dialog::FreeDialogStrc();
+    UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTransactionConfirmDialog);
     UI::Dialog::gpNpcTransactionConfirmDialog = 0;
     if (gnNpcMenuTransactionType == 5) {
       UI::npcmenu::NPCMENU_BuildMercHireMenu();
@@ -1606,7 +1606,7 @@ int __stdcall NPCMENU_ConfirmTransactionReturn() {
 int __stdcall NPCMENU_GetCurrentMenuId() {
     GAME::Select::ClearSelectedUnit();
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-    UI::Dialog::FreeDialogStrc();
+    UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTradeErrorDialog);
     UI::Dialog::gpNpcTradeErrorDialog = 0;
     if (_Interaction::geNpcUiState != NPCUI_TRADE_REJECTED) {
       if (gnNpcMenuTransactionType == 6) {
@@ -4151,6 +4151,138 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
     __frame0.bFailed = 1;
     {
       // __try / __except (EXCEPTION_EXECUTE_HANDLER): scope table 007011a0, filter 004e0977
+      #if defined(_MSC_VER)
+      __try {
+        uint32_t* ppFVar7 = *ppOutput;
+        ppInput[1] = ppFVar7;
+        __frame0.ppInputSaved = ppInput;
+        /* DWORD flProtect for VirtualAlloc */ /* DWORD flAllocationType for VirtualAlloc */ /* SIZE_T dwSize for VirtualAlloc */ /* LPVOID lpAddress for VirtualAlloc */ ppFVar7 = (uint32_t*)VirtualAlloc((LPVOID)0x0, (SIZE_T)ppFVar7, 0x1000, 4);
+        *ppInput = ppFVar7;
+        if (ppFVar7) {
+          HMODULE hModule;
+          ppuVar1 = ppOutput;
+          for (nIterCount = 10; nIterCount; nIterCount--) {
+            *ppFVar7 = (uint32_t)*ppuVar1;
+            ppuVar1++;
+            ppFVar7++;
+          }
+
+          ppFVar7 = *__frame0.ppInputSaved;
+          pImageWritePtr = (void*)((int)ppOutput[10] + (int)ppFVar7);
+          nHeaderSize = *ppFVar7;
+          __frame0.bCopyPass = true;
+          ppuVar1 = __frame0.ppInputSaved;
+          __frame0.ppSectionEntry = ppOutput + ppFVar7[9] * 3 + 10;
+          while (true) {
+            __frame0.pCopyDst = pImageWritePtr;
+            if (pImageWritePtr >= (void*)(nHeaderSize + (int)ppFVar7)) {
+              break;
+            }
+
+            __frame0.pModuleBase = (uint32_t*)(uint32_t)*(uint16_t*)__frame0.ppSectionEntry;
+            ppSectionDataCursor = (uint32_t**)((int)__frame0.ppSectionEntry + 2);
+            if (__frame0.bCopyPass) {
+              __frame0.ppSectionEntry = ppSectionDataCursor;
+              memcpy(pImageWritePtr, ppSectionDataCursor, (size_t)__frame0.pModuleBase);
+              ppSectionDataCursor = (uint32_t**)((int)ppSectionDataCursor + ((uint32_t)__frame0.pModuleBase & 0xffff));
+              ppuVar1 = __frame0.ppInputSaved;
+            }
+
+            pImageWritePtr = (void*)((int)pImageWritePtr + ((uint32_t)__frame0.pModuleBase & 0xffff));
+            __frame0.pCopyDst = pImageWritePtr;
+            __frame0.ppSectionEntry = ppSectionDataCursor;
+            if ((void*)(nHeaderSize + (int)ppFVar7) <= pImageWritePtr) {
+              break;
+            }
+
+            __frame0.bCopyPass = !__frame0.bCopyPass;
+          }
+
+          __frame0.pRelocationEntry = (uint8_t*)((*ppuVar1)[2] + (int)*ppuVar1);
+          __frame0.nRelOffset = 0;
+          __frame0.nRelocationCount = 0;
+          while (true) {
+            __frame0.pModuleBase = *ppuVar1;
+            if (__frame0.pModuleBase[3] <= __frame0.nRelocationCount) {
+              break;
+            }
+
+            nRelocEntryByte = *__frame0.pRelocationEntry;
+            if ((char)nRelocEntryByte < '\0') {
+              __frame0.nRelOffset = (((nRelocEntryByte & 0x7f) * 0x100 + (uint32_t)__frame0.pRelocationEntry[1]) * 0x100 + (uint32_t)__frame0.pRelocationEntry[2]) * 0x100 + (uint32_t)__frame0.pRelocationEntry[3];
+              __frame0.pRelocationEntry += 4;
+              *(int*)((int)__frame0.pModuleBase + __frame0.nRelOffset) += (int)__frame0.pModuleBase;
+              __frame0.nRelocationCount++;
+            } else {
+              __frame0.nRelOffset = (uint32_t)__frame0.pRelocationEntry[1] + __frame0.nRelOffset + (uint32_t)nRelocEntryByte * 0x100;
+              __frame0.pRelocationEntry += 2;
+              *(int*)((int)__frame0.pModuleBase + __frame0.nRelOffset) += (int)__frame0.pModuleBase;
+              __frame0.nRelocationCount++;
+            }
+          }
+
+          __frame0.pModuleBase = (uint32_t*)(__frame0.pModuleBase[7] + (int)__frame0.pModuleBase);
+          for (__frame0.nImportIdx = 0; nHeaderSize = __frame0.nImportIdx , ppFVar7 = __frame0.pModuleBase , __frame0.nImportIdx < (*ppuVar1)[8]; __frame0.nImportIdx++) {
+            /* LPCSTR lpLibFileName for LoadLibraryA */ hModule = LoadLibraryA((LPCSTR)(__frame0.pModuleBase[__frame0.nImportIdx * 2] + (int)*ppuVar1));
+            ppuVar1 = __frame0.ppInputSaved;
+            if (!hModule) {
+              goto release_if_failed;
+            }
+
+            ppFVar7 = (uint32_t*)(ppFVar7[nHeaderSize * 2 + 1] + (int)*__frame0.ppInputSaved);
+            while (true) {
+              nHeaderSize = *ppFVar7;
+              __frame0.pSectionData = ppFVar7;
+              if (!nHeaderSize) {
+                break;
+              }
+              if ((int)nHeaderSize < 0) {
+                /* LPCSTR lpProcName for GetProcAddress */ /* HMODULE hModule for GetProcAddress */ pProcAddress = GetProcAddress(hModule, (LPCSTR)(nHeaderSize & 0x7fffffff));
+                *ppFVar7 = (uint32_t)pProcAddress;
+                ppFVar7++;
+              } else {
+                /* LPCSTR lpProcName for GetProcAddress */ /* HMODULE hModule for GetProcAddress */ pProcAddress = GetProcAddress(hModule, (LPCSTR)((int)*ppuVar1 + nHeaderSize));
+                *ppFVar7 = (uint32_t)pProcAddress;
+                ppFVar7++;
+              }
+            }
+
+            ppuVar1[2] = (uint32_t*)((int)ppuVar1[2] + 1);
+          }
+
+          nHeaderSize = 0;
+          while (true) {
+            ppFVar7 = *__frame0.ppInputSaved;
+            __frame0.nSectionIdx = nHeaderSize;
+            if (ppFVar7[9] <= nHeaderSize) {
+              break;
+            }
+
+            ppuVar1 = ppOutput + nHeaderSize * 3 + 10;
+            lpAddress = (LPVOID)((int)*ppuVar1 + (int)ppFVar7);
+            __frame0.pModuleBase = ppuVar1[1];
+            /* PDWORD lpflOldProtect for VirtualProtect */ /* DWORD flNewProtect for VirtualProtect */ /* SIZE_T dwSize for VirtualProtect */ /* LPVOID lpAddress for VirtualProtect */ VirtualProtect(lpAddress, (SIZE_T)__frame0.pModuleBase, (DWORD)ppuVar1[2], &__frame0.dwOldProtect);
+            if ((uint32_t)ppuVar1[2] & 0xf0) {
+              ppFVar7 = __frame0.pModuleBase;
+              /* SIZE_T dwSize for FlushInstructionCache */ /* LPCVOID lpBaseAddress for FlushInstructionCache */ hProcess = GetCurrentProcess();
+              /* HANDLE hProcess for FlushInstructionCache */ FlushInstructionCache(hProcess, lpAddress, (SIZE_T)ppFVar7);
+            }
+
+            nHeaderSize++;
+          }
+
+          nHeaderSize = ppFVar7[2];
+          if (nHeaderSize < *ppFVar7) {
+            nAlignedSize = nHeaderSize + 0xfff & -4096;
+            if (nHeaderSize <= nAlignedSize && nAlignedSize < *ppFVar7) {
+              /* DWORD dwFreeType for VirtualFree */ /* SIZE_T dwSize for VirtualFree */ /* LPVOID lpAddress for VirtualFree */ VirtualFree((LPVOID)((int)ppFVar7 + nAlignedSize), *ppFVar7 - nAlignedSize, 0x4000);
+            }
+          }
+
+          __frame0.bFailed = 0;
+        }
+      } __except (1) {}
+      #else
       D2SehScope __seh0{1};
       // __except block: the handler 004e097d resumes at 004e0980, after the __try
       if (D2_SEH_SETJMP(__seh0) == 0) {
@@ -4308,6 +4440,7 @@ uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSi
           D2_SEH_FENCE();
         }
       } else {}
+      #endif
     }
     release_if_failed:
     nIterCount = __frame0.bFailed;

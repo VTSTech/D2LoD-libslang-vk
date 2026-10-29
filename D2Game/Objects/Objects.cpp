@@ -550,7 +550,7 @@ static int32_t __stdcall OBJECT_SelectRandomShrineType(::SGAMEDATA * pGame, uint
         nRandIdx = (uint32_t)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) % (uint64_t)nRandIdx);
       }
 
-      nShrineId = *(int*)(pShrinesRng->aShrinesRng[byShrineCategory] + nRandIdx * 4);
+      nShrineId = *(int*)((uint8_t*)pShrinesRng->aShrinesRng[byShrineCategory] + nRandIdx * 4);
       if (!nShrineId) {
         nShrineId = 1;
       }

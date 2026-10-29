@@ -348,106 +348,106 @@ static void __stdcall TILECMP_ExtractIsometricSubTile(int32_t pSubTile, void * p
 static void TILECMP_Generate25SubTiles(D2TileCmpTileSetStrc * pTileSet, void * pDT1Data) {
     // Static local variables (originally global data)
     static D2TileCmpSubTileOffset gaTileCmpSubTileOffsets[25] = {
-    {
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x0
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x8
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x70,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x80,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x8
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x70,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x10,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x38
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x0,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x10,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x38
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x40
-    }
+    )
 }; D2_STATIC_GUARD(gaTileCmpSubTileOffsets, "D2CMP::SRC::Tilecmp::TILECMP_Generate25SubTiles::gaTileCmpSubTileOffsets");
 
     // Frame slots -24..-4 are ONE object: &dwSubTileField4 is passed out and the callee reaches the rest by byte offset.

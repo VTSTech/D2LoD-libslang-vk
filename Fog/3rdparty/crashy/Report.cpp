@@ -68,8 +68,8 @@ int8_t __thiscall Open(::Report * pThis, char * szFileName) {
       return '\0';
     }
 
-    BOOL bFolderCreated = File::FILETOOLS_CreateFolder_UTF8(pThis->szReportDir);
-    if ((char)bFolderCreated == '\0') {
+    uint8_t Var2 = (uint8_t)File::FILETOOLS_CreateFolder_UTF8(pThis->szReportDir);
+    if ((uint8_t)(uint32_t)Var2 == '\0') {
       return '\0';
     }
 

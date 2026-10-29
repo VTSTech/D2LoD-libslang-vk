@@ -2249,7 +2249,7 @@ void __fastcall PLAYER_HandlePlayerDeath(D2GSPacketSrv0x74 * pDeathMsg) {
           nUnitGUID = pItem->nUnitGUID;
         }
 
-        CUnit::RemoveObjectFromServerObjectTable(eUnitType, nUnitGUID);
+        CUnit::RemoveObjectFromServerObjectTable(nUnitGUID, eUnitType);
       }
     }
 }

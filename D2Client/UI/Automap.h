@@ -112,7 +112,7 @@ void __fastcall AUTOMAP_CenterOnPlayer(int32_t bForceCenter);
 int32_t __stdcall AUTOMAP_GetFade();
 int32_t __fastcall AUTOMAP_SetFade(int32_t nAutomapFade);
 int32_t __stdcall AUTOMAP_GetCenters();
-void __fastcall AUTOMAP_SetCenters(int32_t nAutoMapCenters);
+int32_t __fastcall AUTOMAP_SetCenters(int32_t nAutoMapCenters);
 int32_t __stdcall AUTOMAP_GetLeft();
 int32_t __fastcall AUTOMAP_SetLeft(int32_t nAutoMapLeft);
 BOOL __stdcall AUTOMAP_GetParty();
@@ -129,10 +129,10 @@ void __stdcall AUTOMAP_RebalanceTreeLeft(struct D2AutomapCellStrc * * ppCell);
 // using wWeight as the balance factor (-1, 0, +1).
 // Duplicate cells at the same position with equivalent priority are rejected.
 // Source: .\\UI\\automap.cpp
-int32_t __fastcall AUTOMAP_InsertCellIntoTree(struct D2AutomapCellStrc * pAutomapCell1, struct D2AutomapCellStrc * pAutomapCell2);
+int32_t __fastcall AUTOMAP_InsertCellIntoTree(struct D2AutomapCellStrc * pAutomapCell1, struct D2AutomapCellStrc * * pAutomapCell2);
 // @sourcefile .\UI\automap.cpp
 struct D2AutomapCellStrc * __stdcall AUTOMAP_AllocCell();
-void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t nPixelY, struct D2AutomapCellStrc * pAutomapCell1, struct D2AutomapCellStrc * pAutomapCell2);
+void __stdcall AUTOMAP_AddCellByCoords(int16_t nCellNo, int16_t nPixelX, int16_t nPixelY, struct D2AutomapCellStrc * * pAutomapCell1, struct D2AutomapCellStrc * pAutomapCell2);
 HANDLE __stdcall AUTOMAP_GetMapFileHandle();
 void __fastcall AUTOMAP_CalcCellTreeSize(struct D2AutomapCellStrc * pAutomapCell, uint32_t * nSize);
 void __fastcall AUTOMAP_SerializeCellTree(struct D2AutomapCellStrc * pAutomapCell);
@@ -147,7 +147,7 @@ void __stdcall AUTOMAP_SwitchLayer(struct D2AutomapLayerStrc * pAutomapLayer);
 void __stdcall AUTOMAP_AllocLayer(int32_t nLayer);
 // @sourcefile .\UI\automap.cpp
 struct D2AutomapLayerStrc * AUTOMAP_AddLayer(int32_t nLayer);
-void __stdcall AUTOMAP_RevealUnitsInRoom(struct D2RoomStrc * pRoom, struct D2AutomapCellStrc * pAutomapCell);
+void __stdcall AUTOMAP_RevealUnitsInRoom(struct D2RoomStrc * pRoom, struct D2AutomapCellStrc * * pAutomapCell);
 // AUTOMAP_RevealRoom - Reveals all tiles and units in a room on the automap.
 // Iterates floor tiles and wall tiles, checking visibility flags (0x20000).
 // Floor tiles go into pFloors tree, wall tiles into pWalls tree.

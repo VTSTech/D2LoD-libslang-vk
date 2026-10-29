@@ -669,8 +669,8 @@ BOOL __fastcall Q27_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 

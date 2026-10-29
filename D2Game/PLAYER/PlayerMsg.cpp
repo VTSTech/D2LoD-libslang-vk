@@ -3935,18 +3935,18 @@ static uint32_t __stdcall ValidateSyncWarpPath(::SGAMEDATA * pGame, D2UnitStrc *
 static BOOL __stdcall RelocateAndApplySyncWarp(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t nX, uint32_t nY) {
     // Static local variables (originally global data)
     static D2WarpChanceStrc gaWarpOffsetTable[3] = {
-    {
+    D2WarpChanceStrc(
         /* .nChancePct = */ 0x32,
         /* .nOffset = */ 0x5dc
-    },
-    {
+    ),
+    D2WarpChanceStrc(
         /* .nChancePct = */ 0x19,
         /* .nOffset = */ 0xbb8
-    },
-    {
+    ),
+    D2WarpChanceStrc(
         /* .nChancePct = */ 0x19,
         /* .nOffset = */ 0x1194
-    }
+    )
 }; D2_STATIC_GUARD(gaWarpOffsetTable, "D2Game::PLAYER::PlayerMsg::RelocateAndApplySyncWarp::gaWarpOffsetTable");
 
     int iVar3;

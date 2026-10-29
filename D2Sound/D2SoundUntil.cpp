@@ -144,6 +144,54 @@ BOOL __fastcall SOUNDUTIL_ReadVersionResource(LPCSTR szText, uint32_t * pnBuffer
     volatile int bSuccess = 0;
     volatile HANDLE hFile;
     // __finally block: run by the termination handler 00516bfc on unwind and by the normal path; both reach 00516c01
+    #if defined(_MSC_VER)
+    __try {
+      hFile = CreateFileA(szText, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
+      /* LPCSTR lpName for CreateFileMappingA */ /* DWORD dwMaximumSizeLow for CreateFileMappingA */ /* DWORD dwMaximumSizeHigh for CreateFileMappingA */ /* DWORD flProtect for CreateFileMappingA */ /* LPSECURITY_ATTRIBUTES lpFileMappingAttributes for CreateFileMappingA */ /* HANDLE hFile for CreateFileMappingA */ /* SIZE_T dwNumberOfBytesToMap for MapViewOfFile */ /* DWORD dwFileOffsetLow for MapViewOfFile */ /* DWORD dwFileOffsetHigh for MapViewOfFile */ /* DWORD dwDesiredAccess for MapViewOfFile */ /* HANDLE hFileMappingObject for MapViewOfFile */ if (hFile != (HANDLE)-1) {
+        int iVar1;
+        hMapping = CreateFileMappingA(hFile, (LPSECURITY_ATTRIBUTES)0x0, 2, 0, 0, (LPCSTR)0x0);
+        if (hMapping) {
+          pView = MapViewOfFile(hMapping, 4, 0, 0, 0);
+          if (pView) {
+            if (*(short int*)pView == 0x5a4d && (pPeHeader = (int*)(*(int*)((int)pView + 0x3c) + (int)pView) , *pPeHeader == 0x454c)) {
+              if (!pPeHeader[0x2f]) {
+                *pnBufferSize = 0;
+                /* DWORD dwErrCode for SetLastError */ SetLastError(0x714);
+              } else {
+                iVar1 = pPeHeader[0x2e];
+                nResourceSize = *(uint32_t*)((int)pView + iVar1 + 8);
+                if (!pBuffer || *pnBufferSize < nResourceSize) {
+                  *pnBufferSize = nResourceSize;
+                  /* DWORD dwErrCode for SetLastError */ SetLastError(0x7a);
+                } else {
+                  memset(pBuffer, 0, *pnBufferSize);
+                  memcpy(pBuffer, (void*)((int)pView + iVar1 + 0xc), nResourceSize);
+                  *pnBufferSize = nResourceSize;
+                  /* DWORD dwErrCode for SetLastError */ SetLastError(0);
+                  bSuccess = 1;
+                }
+              }
+            } else {
+              /* DWORD dwErrCode for SetLastError */ SetLastError(0xb);
+            }
+          }
+        }
+      }
+    } __finally {
+      DWORD dwErrCode = GetLastError();
+      if (pView) {
+        UnmapViewOfFile(pView);
+      }
+      if (hMapping) {
+        CloseHandle(hMapping);
+      }
+      if (hFile != (HANDLE)-1) {
+        CloseHandle(hFile);
+      }
+
+      SetLastError(dwErrCode);
+    }
+    #else
     auto __finally0 = [&] {
       DWORD dwErrCode = GetLastError();
       if (pView) {
@@ -212,6 +260,7 @@ BOOL __fastcall SOUNDUTIL_ReadVersionResource(LPCSTR szText, uint32_t * pnBuffer
     }
     // normal termination: the parent calls 00516c01 after the __try
     __finally0();
+    #endif
     return bSuccess;
 }
 

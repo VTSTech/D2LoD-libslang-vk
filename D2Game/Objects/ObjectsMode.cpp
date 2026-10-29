@@ -2550,7 +2550,7 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
     bool bResult;
     uint8_t byAttackerUnitType;
     int16_t nAttackerPartyId;
-    int16_t nPortalOwnerPartyId;
+    uint16_t nPortalOwnerPartyId;
     int16_t nOwnerPartyId;
     D2UnitStrc* pPortalOwner;
     D2LevelDefsTxt* pTxtLevelDefs;

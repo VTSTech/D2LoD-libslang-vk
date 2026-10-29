@@ -116,8 +116,8 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     pNewEntry->nUnitGUID = nTargetGUID;
     pNewEntry->nHostileDelay = 0;
-    int16_t sPartyId = SUnit::GetPartyId(pUnit2);
-    pNewEntry->bIsPartied = (uint32_t)(sPartyId != -1);
+    uint16_t sPartyId = SUnit::GetPartyId(pUnit2);
+    pNewEntry->bIsPartied = (uint32_t)(sPartyId != 0xffff);
     pNewEntry->pNext = pPlayerData->pPlayerList;
     pPlayerData->pPlayerList = pNewEntry;
 }
@@ -430,8 +430,8 @@ void __fastcall PLAYERLIST_AddBothWays(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     if (pUnit != pOtherPlayer && pListEntry) {
       pListEntry->bIsPartied = 0;
     }
-    int16_t sPartyId = SUnit::GetPartyId(pUnit);
-    SetPlayerRelationship(pOtherPlayer, pUnit, (uint32_t)(sPartyId != -1));
+    uint16_t sPartyId = SUnit::GetPartyId(pUnit);
+    SetPlayerRelationship(pOtherPlayer, pUnit, (uint32_t)(sPartyId != 0xffff));
     Send0x8bRelationshipStatus(pOtherPlayer, pUnit);
     Send0x8bRelationshipStatus(pUnit, pOtherPlayer);
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);

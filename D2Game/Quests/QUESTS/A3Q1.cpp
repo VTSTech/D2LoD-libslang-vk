@@ -760,8 +760,8 @@ bool __fastcall Q18_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     }
 
     D2QuestDataA3Q1Strc* pLamEsenData = pQuestData->pQuestSpecificData.pA3Q1;
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId != -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId != 0xffff) {
       pLamEsenData->nPlayersWithTome = false;
       UNIT::Party::ExecuteFunctionForEveryPartyMember(pQuestData->pGame, nPartyId, (::fpExecuteOnUnitFunction)Q18_CheckPlayerHasTome, 0);
       if (pLamEsenData->nPlayersWithTome) {
