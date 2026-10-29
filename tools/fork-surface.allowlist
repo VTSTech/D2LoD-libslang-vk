@@ -14,11 +14,11 @@
 6	0	D2Client/Renderer/Direct3D.cpp
 41	8	D2Client/UI/Automap.cpp
 13	0	D2Client/UI/Chat.cpp
-32	6	D2Client/UI/Draw.cpp
+37	6	D2Client/UI/Draw.cpp
 18	1	D2Client/UI/ShowItems.cpp
-545	0	D2Client/UI/VanillaPlusCore.cpp
-65	0	D2Client/UI/VanillaPlusCore.h
-598	0	D2Client/UI/VanillaPlusOptions.cpp
+631	0	D2Client/UI/VanillaPlusCore.cpp
+71	0	D2Client/UI/VanillaPlusCore.h
+599	0	D2Client/UI/VanillaPlusOptions.cpp
 66	0	D2Client/UI/VanillaPlusOptions.h
 2	2	D2Client/UI/ui.cpp
 8	1	D2Client/UNIT/CUnit.cpp
@@ -72,5 +72,5 @@
 217	0	tools/build-local-win11.ps1
 12	0	tools/check-build.sh
 94	0	tools/check-fork-surface.sh
-109	0	tools/check-vanilla-plus.sh
+116	0	tools/check-vanilla-plus.sh
 32	0	vanilla-plus/cmake/sources.cmake

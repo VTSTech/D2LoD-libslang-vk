@@ -53,6 +53,12 @@ BOOL __stdcall ALTTOGGLE_BuildIniPath(char* szIniPath);
 // the retail walk-to-item mode (strict radius + collision parity).
 BOOL __stdcall AUTO_GOLD_Active();   // config: auto_gold on?
 void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
+// [globe-values] HP/MP orb hover readout (FEATURES.md row 1, D2R parity).
+// With [features] globe_values=1, hovering a bottom-bar orb prints its
+// current/max value on the orb face. Display-only: reads the same stat pair
+// the orb fill renders (8.8 fixed-point stat + its TXT max, shown >> 8);
+// touches no input, no stats, no game state; default off = vanilla.
+void __stdcall VANILLAPLUS_DrawGlobeValues(); // per-frame, DRAW_UI after the orbs
 // [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
 // page reads/flips the same [features] keys the gates consume; writes use
 // WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.
