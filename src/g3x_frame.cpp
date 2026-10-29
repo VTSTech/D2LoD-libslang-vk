@@ -5,6 +5,7 @@
 #include "g3x_slang.h"
 #include "g3x_shot.h"
 #include "g3x_raster_core.h"
+#include "g3x_raster_gpu.h"
 
 #include <cstring>
 #include <cstdio>
@@ -81,6 +82,10 @@ bool    s_chroma_dirty = true;
 // Route-B Stage 1 record sink pointer (see g3x_frame.h). Declared before the
 // state it feeds; null by default so every emission is a cold null-check.
 const G3xRouteBSink* s_routeb = nullptr;
+// Route-B Stage 2 (raster=gpu): when on, the dispatcher emits the primitive
+// stream WITHOUT running the CPU raster — the kernel reproduces it
+// bit-exactly (ROUTE-B.md §6/§7). Emissions and their order are untouched.
+bool s_gpu_emit = false;
 unsigned s_chroma_ver = 0;      // chroma content version (bumped per rebuild)
 
 inline void chroma_sync() {
@@ -317,6 +322,10 @@ static void rb_emit_px(float x, float y) {
 // order — the sink emission is additive only.
 static void rt_fire(const RVert& A, const RVert& B, const RVert& C,
                     float tsx, float tsy) {
+    if (s_gpu_emit) {                        // raster=gpu: the kernel draws it
+        rb_emit_tri(A, B, C, tsx, tsy);
+        return;
+    }
     g3xrc::raster_tri(g3xrc_host(), A, B, C, tsx, tsy);
     rb_emit_tri(A, B, C, tsx, tsy);
 }
@@ -357,7 +366,7 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
                     key.src, s_const_alpha, s_blend_sf, s_blend_df);
         }
     }
-    g3xrc::fill_rect_exec(g3xrc_host(), xa, xb, ya, yb);
+    if (!s_gpu_emit) g3xrc::fill_rect_exec(g3xrc_host(), xa, xb, ya, yb);
     rb_emit_rect(xa, ya, xb, yb);
     return true;
 }
@@ -499,6 +508,8 @@ struct GammaInit { GammaInit() { gamma_identity(); } } s_gamma_init;
 // Route-B Stage 1 record sink attach point (see g3x_frame.h). File scope:
 // external linkage, exactly one definition. s_routeb is TU-static.
 void g3x_frame_routeb_sink(const G3xRouteBSink* s) { s_routeb = s; }
+
+void g3x_frame_gpu_emit_only(bool on) { s_gpu_emit = on; }
 
 void g3x_frame_reset(unsigned w, unsigned h) {
     if (!s_px || s_w != w || s_h != h) {
@@ -846,7 +857,7 @@ void g3x_frame_draw_point(float x, float y) {
     if (px < 0 || py < 0 || px >= (int)s_w || py >= (int)s_h) return;
     uint32_t* row = s_px + (size_t)py * s_w;
     auto& h = g3xrc_host();
-    row[px] = g3xrc::blend_px(h, row[px], g3xrc::const_fill_rgb(h));
+    if (!s_gpu_emit) row[px] = g3xrc::blend_px(h, row[px], g3xrc::const_fill_rgb(h));
     rb_emit_px(x, y);
 }
 
@@ -865,7 +876,7 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
     for (;;) {
         if ((unsigned)xa < s_w && (unsigned)ya < s_h) {
             uint32_t* row = s_px + (size_t)ya * s_w;
-            row[xa] = g3xrc::blend_px(h, row[xa], src);
+            if (!s_gpu_emit) row[xa] = g3xrc::blend_px(h, row[xa], src);
             rb_emit_px((float)xa, (float)ya);
         }
         if (xa == xb && ya == yb) break;
@@ -1016,6 +1027,14 @@ bool g3x_frame_present() {
     // while the overlay is toggled off — a hidden panel must not keep editing
     // the conf invisibly, and the arrow keys stay the game's.
     g3x_slang_conf_panel_poll();
+
+    // Route-B Stage 2: raster=gpu frames render here — kernel dispatch, the
+    // out->image copy and the present in one backend submission. A frame with
+    // zero primitives (Bink/LFB) returns false and falls through to the CPU
+    // compose path as always: the mode switch is per-frame and free. The
+    // gamma LUT + overlay boxes join the GPU path in Stage 3 (the log says so
+    // once when a non-identity gamma runs on a GPU frame).
+    if (g3x_raster_gpu_active() && g3x_raster_gpu_end_frame()) return true;
 
     // P3: preset-chain path. The chain receives the gamma-corrected NATIVE
     // game resolution (no pre-scaling) so the preset's own scaling algorithms

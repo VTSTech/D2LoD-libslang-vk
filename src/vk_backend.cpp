@@ -1,6 +1,7 @@
 #include "vk_backend.h"
 #include "g3x_log.h"
 #include "g3x_slang.h"
+#include "g3x_raster_gpu.h"
 
 // volk first: it pulls in <vulkan/vulkan.h> with VK_NO_PROTOTYPES and provides
 // every entry point as a function pointer loaded from vulkan-1.dll at runtime
@@ -534,6 +535,7 @@ bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h) {
 
 void g3x_vk_shutdown() {
     g3x_slang_shutdown();   // chains -> presets -> image -> adopt-release, BEFORE the device goes
+    g3x_raster_gpu_shutdown();   // Route-B Stage 2: kernel objects die with the device
     if (s_device != VK_NULL_HANDLE) destroy_swapchain_objects();
     if (s_device != VK_NULL_HANDLE) { vkDestroyDevice(s_device, nullptr); s_device = VK_NULL_HANDLE; }
     if (s_surface != VK_NULL_HANDLE && s_instance != VK_NULL_HANDLE) {
@@ -651,6 +653,39 @@ const uint8_t* g3x_vk_slang_readback_acquired(uint32_t idx) {
         }
     }
     return s_readback_map;
+}
+
+// ---- Route-B Stage 2: GPU raster services -----------------------------------
+
+bool g3x_vk_routeb_device(void** phys, void** device, unsigned* queue_fam) {
+    if (s_device == VK_NULL_HANDLE || s_phys == VK_NULL_HANDLE) return false;
+    if (phys)       *phys = (void*)s_phys;
+    if (device)     *device = (void*)s_device;
+    if (queue_fam)  *queue_fam = s_queue_fam;
+    return true;
+}
+
+bool g3x_vk_present_image(void* ud, g3x_vk_present_record_fn record,
+                          void* src_image, unsigned sw, unsigned sh) {
+    ++s_frame;
+    if (!g_vk.alive || !s_sync_live || !record || !src_image) return false;
+    uint32_t idx = 0;
+    if (!acquire_image(&idx)) return false;
+    VkCommandBufferBeginInfo bi{}; bi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkBeginCommandBuffer(s_cmd, &bi);
+    transfer_barriers_to_dst(idx);
+    record(ud, (void*)s_cmd, (void*)s_images[idx], s_extent.width, s_extent.height);
+    VkImageBlit blit{};
+    blit.srcSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    blit.dstSubresource = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1};
+    blit.srcOffsets[1] = {(int32_t)sw, (int32_t)sh, 1};
+    blit.dstOffsets[1] = {(int32_t)s_extent.width, (int32_t)s_extent.height, 1};
+    vkCmdBlitImage(s_cmd, (VkImage)src_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   s_images[idx], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1, &blit, VK_FILTER_NEAREST);
+    submit_and_present(idx);
+    return true;
 }
 
 int g3x_vk_slang_swap_format() { return (int)s_format; }

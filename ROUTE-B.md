@@ -238,10 +238,18 @@ The inner loop exists twice only if we let it. Instead:
   (all five blends, chroma, uniform/varying VC, negative winding,
   degenerates, frame clips, texel wrap, fill rects and their declined
   fall-through). 16 frames, one fixed-seed LCG.
-- `scripts/gen_raster_glsl.py` (structural single-source) is the Stage 1
-  refinement: once the binned kernel's shape stabilizes, the generator
-  emits the .comp from the core's expressions and the CI hash gate keeps
-  guarding it.
+- `scripts/gen_raster_glsl.py` (structural single-source, LANDED Stage 2):
+  the generator emits `spike/routeb.comp` FROM the core header — every
+  math-critical line is extracted at generation time, and each structural
+  deviation (heap addressing instead of pointers, switch -> if-chain,
+  `precise` placement, tile slicing) is an explicit per-line override in the
+  script: an auditable map, not a silent rewrite. Lines that survive neither
+  an override nor a transform fail the generation LOUDLY. `--check`
+  byte-diffs the emitted kernel against the committed one (CI gate, both
+  jobs) — a core edit that did not regenerate the kernel is RED. The landing
+  was verified byte-identical against the hand-written Stage 1 kernel (the
+  only delta: a GENERATED-by provenance header), so the SPIR-V — and every
+  hash gate — is unchanged by the generator's arrival.
 
 ## 5. Seams that change, seams that don't
 
@@ -249,7 +257,7 @@ The inner loop exists twice only if we let it. Instead:
 |---|---|
 | 45 exports, gr* semantics | unchanged |
 | slangvk / libslang-vk | unchanged (usage field only) |
-| `d2slangvk.conf` | new `raster=cpu|gpu` (default `cpu` until the hash campaign passes in the field) |
+| `glide3xvk.ini` | new `raster=cpu|gpu` (default `cpu`) + `ghash=0|1` field-hash option — placed in the wrapper's own ini beside `fxcapture=` (the doc's earlier d2slangvk.conf placement followed that key's home) |
 | LFB/Bink frames | unchanged — `grLfbLock(WRITE_ONLY, FRONT)` frames keep the CPU compose buffer + `g3x_vk_present_pixels`; Bink frames never call grDraw* so the mode switch is per-frame and free |
 | PrintScreen | slang path unchanged (swapchain readback); legacy path on GPU frames switches to the same readback (compose buffer no longer holds the frame) |
 | Hotkeys / FPS meter / conf panel / controller | unchanged — the present seam still funnels through `g3x_frame_present` |
@@ -277,7 +285,7 @@ The inner loop exists twice only if we let it. Instead:
 |---|---|---|---|
 | 0 — spike | core template extraction (CPU behavior unchanged, byte-identical hashes) + `gen_raster_glsl.py` + binless kernel (non-overlapping synthetic scene) rendered to an offscreen image; Lavapipe CI proof | CI hash == CPU hash on the synthetic scene | ~800 LOC |
 | 1 — binned raster | SHIPPED: host-side pass-1 binning (32x32 tiles) + per-(tile,row) pass 2 with the write-filter attribute design; record sink + fxparity capture/replay (`fxcapture=1`); corpus v2 with deliberate overlaps + rebind storms. The "OPAQUE/ADD first" scoping dissolved: the Stage 0 kernel already mirrored all five blend classes, chroma, P_8/565 texel paths and the fill-rect/point pixel ops verbatim — subsetting them would have added filter machinery without removing any real risk. Legacy present via `g3x_vk_present_image` is Stage 3's chain seam and stayed untouched. | CI: 16-frame overlapping corpus hashes clean on Lavapipe (both gates + the cap round-trip). CLOSED — first field capture landed (`spike/fxparity.cap`, 16381 api events, 1 frame) and replays CPU == GPU bit-exact on Lavapipe | ~1300 LOC |
-| 2 — integration | REMAINING (shrunk by Stage 1's as-built): `scripts/gen_raster_glsl.py` structural single-source; the DLL-side GPU record path (pack + dispatch inside the DLL behind `raster=gpu`, off by default); `g3x_vk_present_image` storage-image seam; 8332/other texel formats if the field captures contain any | full field capture replays hash-clean; `raster=gpu` usable chain-off on real hardware | ~600 LOC |
+| 2 — integration | LANDED: `scripts/gen_raster_glsl.py` structural single-source (byte-identical landing, `--check` gate in both CI jobs); DLL-side GPU record path (`src/g3x_raster_gpu.cpp`: record sink -> SHARED packer `spike/routeb_pack.h` — one pack implementation for harness and DLL — -> SSBO upload -> dispatch behind `raster=gpu` in glide3xvk.ini, default off, fail-soft to the CPU raster on any failure); `g3x_vk_present_image` (acquire -> recorded dispatch -> out->image copy -> NEAREST blit -> present, ONE backend-owned submission); `ghash=1` field option re-derives the harness's FNV-1a frame hash in-game. The 8332 clause closed by data: field capture #1 is P_8-only (379 downloads, no other format). Deferred to Stage 3 by scope: the gamma pass + overlay boxes on GPU frames; device-local texel heap (the Stage 2 upload path is host-visible per frame — §5's end state, Stage 4 perf round) | CI: corpus + fxparity replay green through the packer split; field: `raster=gpu` usable chain-off on real hardware | ~1600 LOC |
 | 3 — chain + overlay | storage-usage chain input, layout round-trips, gamma+overlay pass, slang-path shots | chain-on replay clean; WYSIWYG shot byte-identical to CPU path | ~500 LOC |
 | 4 — field round | `raster=gpu` default-off conf flag, ghash log lines, dump-on-mismatch, RX 560 field log (frame `work=` before/after) | a full field session with zero ghash mismatches and a measured present-path win | ~200 LOC |
 
@@ -292,6 +300,17 @@ The inner loop exists twice only if we let it. Instead:
 - **Lavapipe vs. real-GPU divergence** — Lavapipe proves the math; the
   field ghash campaign proves the driver. Both gates, both cheap.
 - **Tile-bin overflow** — counted, logged, CPU fallback per frame.
+- **Mid-frame clears** — the kernel has no clear op; the pack model
+  initializes the output once per frame with the frame's clear color. Field
+  capture #1 (77 black clears in one frame — full-screen repaint boundaries)
+  replays bit-exact under this model; if a future capture diverges at a
+  clear, the kernel gains a clear op (bin-passed, submission-ordered like
+  every other write).
+- **raster=gpu gaps by design (Stage 3 scope)** — the gamma LUT and the
+  overlay boxes do not apply to GPU-presented frames yet (identity-gamma
+  sessions are unaffected; the log says so once otherwise), and the fxparity
+  capture is mutually exclusive with `raster=gpu` (a capture replays through
+  the CPU raster by design).
 - **Scope creep** — the 60 fps dream, bilinear filtering, and widescreen
   interpolation are explicitly NOT in this route. GPU raster renders
   640x480 game-res output; everything above it is unchanged.

@@ -62,6 +62,14 @@ bool g3x_slang_present(const uint8_t*, unsigned, unsigned) { return false; }
 void g3x_slang_conf_panel_poll() {}
 void g3x_vk_present_extent(unsigned* w, unsigned* h) { *w = 0; *h = 0; }
 bool g3x_vk_present_pixels(const uint8_t*, unsigned, unsigned) { return false; }
+// Route-B Stage 2 (raster=gpu): the regression never presents — the GPU
+// raster path is stubbed off exactly like the present seam above.
+bool g3x_raster_gpu_active() { return false; }
+bool g3x_raster_gpu_end_frame() { return false; }
+void g3x_raster_gpu_set_ghash(bool) {}
+void g3x_raster_gpu_start(unsigned, unsigned) {}
+void g3x_raster_gpu_stop() {}
+void g3x_raster_gpu_shutdown() {}
 
 // ---- hashing -----------------------------------------------------------------
 

@@ -157,3 +157,11 @@ struct G3xRouteBSink {
 
 // Attach/detach the record sink. Null restores the plain production path.
 void     g3x_frame_routeb_sink(const G3xRouteBSink* s);
+
+// Route-B Stage 2: emit-only mode (raster=gpu). The dispatcher still expands
+// strips, resolves fill-rect shapes and expands lines — the decisions the
+// record stream is DEFINED by — but skips the per-pixel CPU raster (the
+// kernel reproduces it bit-exactly; CI-proven). The primitive stream the
+// sink sees is byte-identical to the CPU-raster mode's: same emissions, same
+// order, same state stamps.
+void     g3x_frame_gpu_emit_only(bool on);

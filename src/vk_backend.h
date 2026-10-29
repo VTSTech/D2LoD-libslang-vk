@@ -59,6 +59,30 @@ bool g3x_vk_present_pixels(const uint8_t* bgra, unsigned w, unsigned h);
 // Tear everything down (grSstWinClose / grGlideShutdown / DLL detach).
 void g3x_vk_shutdown();
 
+// ---- Route-B Stage 2: GPU raster services (consumed by g3x_raster_gpu.cpp) --
+//
+// The kernel module renders on OUR device/queue: its dispatch is recorded
+// into the present-path command buffer by g3x_vk_present_image, so kernel
+// work, the out->image copy and the present are ONE fenced submission on
+// the game thread (the same serialization the legacy present path uses).
+
+// The backend's physical device, logical device and queue family. False when
+// the backend is down (raster=gpu fails soft to the CPU raster).
+bool g3x_vk_routeb_device(void** phys, void** device, unsigned* queue_fam);
+
+// One present built around a caller-recorded dispatch: acquire -> begin ->
+// swapchain image UNDEFINED->TRANSFER_DST -> record(ud, cmd, swapchain image,
+// extent) [the module records bind/push/dispatch, the out-buffer dependency,
+// the buffer->image copy and leaves src_image in TRANSFER_SRC] -> blit
+// src_image (sw x sh, NEAREST — the CPU present path's integer-sampling look)
+// into the swapchain extent -> present. Fail-soft: false on any failure (the
+// frame is lost, the game rolls on, the next frame retries).
+typedef void (*g3x_vk_present_record_fn)(void* ud, void* cmd,
+                                         void* swapchain_image,
+                                         unsigned dw, unsigned dh);
+bool g3x_vk_present_image(void* ud, g3x_vk_present_record_fn record,
+                          void* src_image, unsigned sw, unsigned sh);
+
 // ---- P3 slang services (consumed by g3x_slang.cpp) -------------------------
 //
 // The preset chain renders into OUR swapchain: it needs the acquire step, the

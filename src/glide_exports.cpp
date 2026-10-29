@@ -10,6 +10,7 @@
 #include "g3x_log.h"
 #include "g3x_frame.h"
 #include "g3x_fxcap.h"
+#include "g3x_raster_gpu.h"
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
 #include "g3x_hostver.h"
@@ -194,6 +195,23 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
                 }
                 g3x_fxcap_start(frames);
             }
+
+            // Route-B Stage 2: raster=gpu hands the game-frame raster to the
+            // binned compute kernel (default cpu — byte-identical behavior).
+            // Mutually exclusive with the fxparity capture: a capture replays
+            // through the PRODUCTION CPU raster, so it wins the session.
+            char rraw[8] = "";
+            GetPrivateProfileStringA("glide3xvk", "raster", "", rraw, sizeof(rraw), ini);
+            if (rraw[0] == 'g') {
+                if (fraw[0] == '1') {
+                    g3x_log("raster=gpu: fxparity capture armed — capture wins this session");
+                } else {
+                    char graw[8] = "";
+                    GetPrivateProfileStringA("glide3xvk", "ghash", "", graw, sizeof(graw), ini);
+                    g3x_raster_gpu_set_ghash(graw[0] == '1');
+                    g3x_raster_gpu_start(w, h);   // fail-soft: stays CPU on any failure
+                }
+            }
         }
     }
     // 0.4.5 addendum: name the exe we are running inside on the overlay
@@ -215,6 +233,7 @@ FxBool __stdcall grSstWinClose(GrContext_t context) {
     unsigned ds[9];   // P2.8: 9 slots (same growth as the shutdown summary)
     g3x_frame_draw_stats(ds);
     g3x_fxcap_stop();   // Route-B Stage 1: flush an armed fxparity capture
+    g3x_raster_gpu_stop();   // Route-B Stage 2: detach the GPU raster sink
     g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
             "skip=%u texmiss=%u fill=%u vc0=%u)",
             context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],

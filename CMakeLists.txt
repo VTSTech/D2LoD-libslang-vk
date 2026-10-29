@@ -47,6 +47,7 @@ set(G3XVK_SOURCES
     src/g3x_state.cpp
     src/g3x_frame.cpp
     src/g3x_fxcap.cpp
+    src/g3x_raster_gpu.cpp
     src/g3x_overlay.cpp
     src/g3x_slang.cpp
     src/g3x_shot.cpp

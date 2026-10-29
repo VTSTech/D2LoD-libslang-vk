@@ -36,7 +36,18 @@ jobs:
       - name: Install the toolchain
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build
+          sudo apt-get install -y -qq g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build glslang-tools
+
+      # Route-B Stage 2: the DLL loads routeb.comp.spv from its own directory
+      # (fail-soft to the CPU raster without it) — so the artifact ships the
+      # EXACT kernel blob the routeb job hash-verifies, not a stale copy.
+      - name: Compile the Route-B kernel to SPIR-V (ships beside the DLL)
+        run: |
+          glslangValidator -V spike/routeb.comp -o routeb.comp.spv
+          echo "routeb.comp.spv: $(stat -c %s routeb.comp.spv) bytes"
+
+      - name: Kernel is generated from the core (structural single-source)
+        run: python3 scripts/gen_raster_glsl.py --check
 
       - name: Build glide3x.dll
         run: |
@@ -78,9 +89,10 @@ jobs:
           mkdir -p stage
           cp build-g3x/glide3x.dll stage/
           cp scripts/*.cmd stage/
+          cp routeb.comp.spv stage/
           ls -la stage/
 
-      - name: Upload glide3x.dll + helper scripts
+      - name: Upload glide3x.dll + helper scripts + kernel
         uses: actions/upload-artifact@v4
         with:
           name: glide3x-dll-${{ steps.shortsha.outputs.short }}
@@ -99,6 +111,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Kernel is generated from the core (structural single-source)
+        run: python3 scripts/gen_raster_glsl.py --check
 
       - name: Install the tools (compiler, Vulkan loader + Lavapipe, glslang)
         run: |
