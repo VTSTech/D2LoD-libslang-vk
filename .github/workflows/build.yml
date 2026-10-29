@@ -134,8 +134,21 @@ jobs:
 
       - name: GPU run (the kernel on Lavapipe)
         run: |
-          export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
-          export VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.x86_64.json
+          # mesa >= 24.3 ships the lavapipe ICD as lvp_icd.json (no arch
+          # suffix); older mesas shipped lvp_icd.x86_64.json. A pinned
+          # VK_DRIVER_FILES that names a missing file SUPPRESSES the loader's
+          # default ICD search entirely (vkCreateInstance then fails with
+          # VK_ERROR_INCOMPATIBLE_DRIVER) — so glob, and fall back to plain
+          # discovery if nothing matches.
+          ls -la /usr/share/vulkan/icd.d/ || true
+          icd=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json 2>/dev/null | head -n1)
+          if [ -n "$icd" ]; then
+            echo "pinning VK_DRIVER_FILES to $icd"
+            export VK_DRIVER_FILES="$icd"
+            export VK_ICD_FILENAMES="$icd"
+          else
+            echo "no lvp_icd*.json found — relying on loader auto-discovery"
+          fi
           ./raster_regress gpu routeb.comp.spv | tee gpu.txt
 
       - name: Bit-exactness gate (CPU == GPU, frame by frame)

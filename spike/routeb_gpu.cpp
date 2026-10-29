@@ -49,7 +49,17 @@ static void die3(const char* why) {
     std::exit(3);
 }
 
-int run_gpu_impl(const Corpus& C, const char* spv_path) {
+static void die3_vk(const char* what, VkResult r) {
+    std::fprintf(stderr, "raster_regress gpu: %s failed (VkResult %d)\n", what, (int)r);
+    if (r == VK_ERROR_INCOMPATIBLE_DRIVER)
+        std::fprintf(stderr,
+            "  no ICDs found — if VK_DRIVER_FILES/VK_ICD_FILENAMES is set it must\n"
+            "  name an existing json (mesa >= 24.3 ships lvp_icd.json, no arch\n"
+            "  suffix; older mesas lvp_icd.x86_64.json). Check /usr/share/vulkan/icd.d/\n");
+    std::exit(3);
+}
+
+int run_gpu_impl(const Corpus& C, const char* spv_path, uint32_t** sink = nullptr) {
     if (volkInitialize() != VK_SUCCESS) die3("no Vulkan loader (libvulkan.so.1)");
 
     VkApplicationInfo app{VK_STRUCTURE_TYPE_APPLICATION_INFO};
@@ -57,7 +67,9 @@ int run_gpu_impl(const Corpus& C, const char* spv_path) {
     VkInstanceCreateInfo ici{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     ici.pApplicationInfo = &app;
     VkInstance inst;
-    if (vkCreateInstance(&ici, nullptr, &inst) != VK_SUCCESS) die3("vkCreateInstance failed");
+    VkResult ir;
+    if ((ir = vkCreateInstance(&ici, nullptr, &inst)) != VK_SUCCESS)
+        die3_vk("vkCreateInstance", ir);
     volkLoadInstance(inst);
 
     uint32_t nd = 0;
@@ -97,7 +109,7 @@ int run_gpu_impl(const Corpus& C, const char* spv_path) {
     const size_t heap_words = (C.heap.size() + 3) / 4;
 
     Region r_vxyuv{0, (VkDeviceSize)nverts * 16}, r_vargb, r_tris, r_recs,
-           r_heap, r_pal{0, 1024}, r_chroma{0, 1024}, r_out{0, (VkDeviceSize)W * H * 4};
+           r_heap, r_pal{0, 1024}, r_chroma{0, 1024}, r_out{0, (VkDeviceSize)W * H * 4 + 4096};
     auto align256 = [](VkDeviceSize s) { return (s + ALIGN - 1) & ~(VkDeviceSize)(ALIGN - 1); };
     r_vargb.off  = align256(r_vxyuv.off + r_vxyuv.size);
     r_vargb.size = (VkDeviceSize)nverts * 4;
@@ -175,7 +187,7 @@ int run_gpu_impl(const Corpus& C, const char* spv_path) {
     VkShaderModule sm; vkCreateShaderModule(dev, &smci, nullptr, &sm);
     VkPipelineShaderStageCreateInfo st{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
     st.stage = VK_SHADER_STAGE_COMPUTE_BIT; st.module = sm; st.pName = "main";
-    VkPushConstantRange pcr{VK_SHADER_STAGE_COMPUTE_BIT, 0, 8};
+    VkPushConstantRange pcr{VK_SHADER_STAGE_COMPUTE_BIT, 0, 16};
     VkPipelineLayoutCreateInfo plci{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
     plci.setLayoutCount = 1; plci.pSetLayouts = &dsl;
     plci.pushConstantRangeCount = 1; plci.pPushConstantRanges = &pcr;
@@ -258,8 +270,8 @@ int run_gpu_impl(const Corpus& C, const char* spv_path) {
         vkBeginCommandBuffer(cmd, &bi);
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pipe);
         vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, pl, 0, 1, &dset, 0, nullptr);
-        uint32_t dims[2] = { W, H };
-        vkCmdPushConstants(cmd, pl, VK_SHADER_STAGE_COMPUTE_BIT, 0, 8, dims);
+        uint32_t dims[4] = { W, H, 0u, 0u };
+        vkCmdPushConstants(cmd, pl, VK_SHADER_STAGE_COMPUTE_BIT, 0, 16, dims);
         vkCmdDispatch(cmd, (uint32_t)tris.size(), H, 1);
         vkEndCommandBuffer(cmd);
         VkSubmitInfo si{VK_STRUCTURE_TYPE_SUBMIT_INFO};
@@ -271,6 +283,7 @@ int run_gpu_impl(const Corpus& C, const char* spv_path) {
         vkInvalidateMappedMemoryRanges(dev, 1, &inv);
 
         const uint64_t h = fnv1a_gpu(outw, W * H);
+        if (sink && sink[f]) std::memcpy(sink[f], outw, (size_t)W * H * 4);
         std::printf("frame %u %016" PRIx64 "\n", f, h);
     }
 

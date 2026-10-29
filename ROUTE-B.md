@@ -183,6 +183,13 @@ The inner loop exists twice only if we let it. Instead:
   `spike/raster_regress cpu`; kernel via `raster_regress gpu` on Lavapipe)
   and diffs the per-frame hashes against each other AND against the
   committed pin. A mismatch is red — fix the kernel, never casually re-pin.
+- Divergence triage: `raster_regress cmp <spv>` runs BOTH backends in one
+  process and prints per-frame differing-pixel counts plus the first
+  `(x, y, cpu, gpu)` tuples; `ROUTEB_REGION=x0,y0,x1,y1` scopes the dump to
+  one 80x80 cell. The corpus triangulation rules that keep the scene
+  single-writer (perimeter fans for fill quads, zig-zag strips for textured
+  ones, winding flips on textured cells only) are documented at the
+  expansion site in `spike/routeb_corpus.h`.
 - `scripts/gen_raster_glsl.py` (structural single-source) is the Stage 1
   refinement: once the binned kernel's shape stabilizes, the generator
   emits the .comp from the core's expressions and the CI hash gate keeps

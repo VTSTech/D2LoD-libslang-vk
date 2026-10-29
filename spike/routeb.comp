@@ -149,7 +149,7 @@ void main() {
 
     const uvec4 T   = tris[tri_i];
     const V A0 = load_v(T.x), B0 = load_v(T.y), C0 = load_v(T.z);
-    const uint r0 = T.w * 13u;
+    const uint r0 = T.w;   // record index — recs[][13] strides 13 words per record
 
     const uint sf        = recs[r0][0];
     const uint df        = recs[r0][1];

@@ -11,11 +11,13 @@
 // Scene constraints (Stage 0 is deliberately binless, see ROUTE-B.md §3.2):
 // every pixel is written by AT MOST one triangle, so the unordered compute
 // writes cannot race. The scene still covers the shared-diagonal ownership
-// rule (every quad is a 2-triangle fan/strip — its diagonal is a shared
-// edge), all five blend classes against a varied clear color, chroma on/off,
-// uniform- vs varying-vertex-color paths, negative-area fans, degenerate
-// triangles, frame-edge clipping, texel wrap (the +4096 floor trick), the
-// fill_rect fast path and its triangle fall-through, and palette epochs.
+// rule (quads are fans over the perimeter order or zig-zag strips — the
+// shared edge is always an interior diagonal; triangulation rules at the
+// expansion site), all five blend classes against a varied clear color,
+// chroma on/off, uniform- vs varying-vertex-color paths, negative-winding
+// fans/strips, degenerate triangles, frame-edge clipping, texel wrap (the
+// +4096 floor trick), the fill_rect fast path and its triangle
+// fall-through, and palette epochs.
 //
 // grDrawPoint/grDrawLine are NOT in the corpus: Stage 0 keeps them on the
 // CPU raster (automap-only callers; no kernel support yet).
@@ -23,6 +25,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -185,7 +188,7 @@ struct Corpus {
                     } else {
                         for (unsigned k = 0; k < 4; ++k) vc[k] = vc_u;
                     }
-                    const bool flip = (pick(4u) == 0);  // negative-area fans
+                    const bool flip = (pick(4u) == 0);  // negative winding, see below
 
                     RVert q[4];
                     q[0] = { x0, y0, u0,           v0,           vc[0] };
@@ -199,15 +202,47 @@ struct Corpus {
                         q[1].x += 1.5f;                 // fill_rect declines it,
                         q[1].y += 0.5f;                 // triangles take over
                     }
-                    if (flip) { const RVert t = q[1]; q[1] = q[2]; q[2] = t; }
                     if (type == 5 && pick(9u) == 0) {   // degenerate triangle
                         q[2].y = q[1].y = q[0].y;
+                        if (type >= 4) q[3].y = q[0].y; // fill quad: collapse
+                            // fully — a HALF-collapsed quad is still
+                            // axis-aligned, so the CPU takes fill_rect over the
+                            // whole box while its (one surviving) triangle covers
+                            // only half — coverage no triangle set can mirror.
+                            // Fully collapsed, fill_rect_shape declines it and
+                            // both sides rasterize nothing.
                     }
-                    verts.insert(verts.end(), q, q + 4);
 
                     // ---- draw + state ----------------------------------------
                     DrawSpec d;
                     d.kind = (pick(2u) ? KIND_FAN : KIND_STRIP);
+                    // Triangulation rules (Stage 0's single-writer constraint,
+                    // ROUTE-B.md §3.2 — an unordered compute write must see at
+                    // most one triangle per pixel):
+                    //   - FILL quads (type 4/5) are ALWAYS canonical perimeter
+                    //     fans: their top-left ownership coverage equals
+                    //     fill_rect_exec's box exactly, and the CPU takes the
+                    //     fill_rect fast path for the axis-aligned ones.
+                    //   - TEXTURED strips zig-zag (TL,TR,BL,BR): a perimeter
+                    //     order makes the strip's shared edge v1->v2 a BOUNDARY
+                    //     edge, so its two triangles overlap in a wedge and the
+                    //     CPU's ordered double-blend is unreproducible.
+                    //   - Flips reverse winding without crossing: a fan swaps
+                    //     the two non-apex ends (v0,v1,v2,v3)->(v0,v3,v2,v1),
+                    //     a zig-zag strip swaps the middle pair — same two
+                    //     triangles, opposite winding. Textured cells only:
+                    //     their CPU path is raster_tri, which the kernel
+                    //     mirrors expression-for-expression at any winding.
+                    if (type >= 4) {
+                        d.kind = KIND_FAN;
+                    } else if (d.kind == KIND_STRIP) {
+                        const RVert t = q[2]; q[2] = q[3]; q[3] = t;
+                    }
+                    if (flip && type < 4) {
+                        if (d.kind == KIND_FAN) { const RVert t = q[1]; q[1] = q[3]; q[3] = t; }
+                        else                    { const RVert t = q[1]; q[1] = q[2]; q[2] = t; }
+                    }
+                    verts.insert(verts.end(), q, q + 4);
                     d.count = 4;
                     d.first = vi;
                     d.sf = sf; d.df = df;
