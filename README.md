@@ -69,6 +69,30 @@ chain never engages and the DLL behaves exactly like 0.3.x.
 | `BUILD-32BIT.md` | **P1 spike notes**: building libslang-vk itself as i686 Windows |
 | `FIELD-TEST.md` | The field log: per-round builds, diagnostics, and results on a vanilla retail 1.14d install |
 
+## Hotkeys (quick reference)
+
+Every hotkey below is polled on the present path, **foreground-gated** (the
+game window must be focused — `GetAsyncKeyState` is process-global, so a
+press while another window is in front never fires) and **edge-latched**
+(holding a key counts once). None of them swallow a game bind: F10 stays the
+game's skill slot, Enter/Esc always reach the game, and while the conf panel
+is hidden the arrow keys stay the game's too.
+
+| Key | Action | Notes |
+|---|---|---|
+| **Scroll Lock** | Toggle the whole overlay live — tag box, shader/hostver/FPS lines, toasts, conf panel, bottom credit | Session flip; `overlay=` in the game ini still decides at startup and after a relaunch. The show press toasts `overlay on`; the hide press logs only. Works with or without a preset chain. |
+| **PrintScreen** | Save a WYSIWYG screenshot — the slang-FILTERED pixels with the overlay boxes baked in | `screenshots\D2_YYYYMMDD_HHMMSS.png` beside the game exe (`_1`..`_9` on same-second collisions). `screenshots=0` in d2slangvk.conf parks the key (log line only). The key is NOT parked while the overlay is Scroll-Lock-hidden — hide it first for clean, still-filtered shots (the log line is then the only feedback). |
+| **Ctrl+→ / Ctrl+←** | Cycle the live preset through the conf's `preset_1..8=` list (Ctrl+→ forward, Ctrl+← back, wrapping) | The pick is a session override — editing `preset=` in the conf by hand returns control to the file. A preset not in the list starts the walk at `preset_1`; an empty list toasts `no preset_1..8 in conf`. Each pick toasts `preset <file>`. |
+| **F11** | Cycle content aspect `4:3 → 16:10 → 16:9 → auto` | Only while a preset chain filters frames; session-only — a conf hot-reload snaps it back to the file's `aspect=`. Toasts `aspect 16:9`. |
+| **F12** | Cycle shader base resolution `1x → 2x → 3x → 4x` | Same chain-gate and session-only rules as F11. Toasts `shader base 2x`. |
+| **Shift+V** | Toggle the `d2slangvk.conf` panel (left edge) | Works with the chain off (a fresh parse of the conf from disk every open); honors the `overlay=` ini switch; parks while the overlay is Scroll-Lock-hidden. |
+| **Up / Down** (panel up) | Move the green selection cursor through the option rows | Clamped at the ends, no wrap. |
+| **Left / Right** (panel up) | Step the selected option's value (one press = one step, written into d2slangvk.conf live); on the preset row, open the preset browser | In the browser: Right loads the highlighted preset, Left goes back to the option page; Shift+V hides everything. Ctrl+←/→ keep cycling presets either way. |
+
+Full behavior notes for each of these live in the overlay section below (the
+0.4.3 toast scheme, the 0.4.5 conf panel, and the 0.4.6 Scroll Lock /
+PrintScreen / preset-cycling round).
+
 ## The version stamp (0.4.1) + the overlay's shader line (0.4.2) + hotkey toasts (0.4.3) + the conf panel with its arrows (0.4.5) + the Scroll Lock toggle + PrintScreen + preset cycling (0.4.6)
 
 The primary stamp is the game's own debug line: the `/fps` block ends with
