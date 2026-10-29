@@ -78,12 +78,20 @@ static void blend_reclass() {
 uint8_t s_chroma_hit[256];
 bool    s_chroma_dirty = true;
 
+// Route-B Stage 1 record sink pointer (see g3x_frame.h). Declared before the
+// state it feeds; null by default so every emission is a cold null-check.
+const G3xRouteBSink* s_routeb = nullptr;
+unsigned s_chroma_ver = 0;      // chroma content version (bumped per rebuild)
+
 inline void chroma_sync() {
     if (!s_chroma_dirty) return;
     const uint32_t key = s_chroma_value & 0x00FFFFFFu;
     for (int i = 0; i < 256; ++i)
         s_chroma_hit[i] = (uint8_t)((s_palette[i] & 0x00FFFFFFu) == key);
     s_chroma_hit[0] = 1;   // P2.9: the DC6 transparent index
+    ++s_chroma_ver;
+    if (s_routeb && s_routeb->table_chroma)
+        s_routeb->table_chroma(s_routeb->ud, s_chroma_ver, s_chroma_hit);
     s_chroma_dirty = false;
 }
 
@@ -113,6 +121,9 @@ struct Tex {
     unsigned w, h;                   // texel dims of the base (large) lod
     unsigned lod;                    // largeLodLog2 — the 2^lod coord space
     unsigned bpp;                    // 1 for P_8
+    unsigned ver;                    // Route-B: content version (bumped per
+                                     // re-download — mid-frame rebind storms
+                                     // snapshot per primitive through it)
     bool     used;
 };
 constexpr unsigned kMaxTex = 8192;   // in-game tile churn needs headroom (943+ dl/round-5;
@@ -236,6 +247,80 @@ struct FrameHost {
 };
 static FrameHost& g3xrc_host() { static FrameHost h; return h; }
 
+// ---- Route-B Stage 1 record sink (see g3x_frame.h) -------------------------
+// s_routeb / s_chroma_ver live above chroma_sync (first use). The emitters
+// below stamp primitives with the dispatcher's live state.
+// (g3x_frame_routeb_sink itself is defined at file scope below the anon
+// namespace — the header declares it with external linkage.)
+
+static void rb_pack20(uint32_t* dst, const RVert& v) {
+    std::memcpy(dst, &v, 20);   // RVert is exactly {x,y,u,v,argb}, no padding
+}
+
+static void rb_state_fill(G3xRouteBPrim& p) {
+    p.sf          = s_blend_sf;
+    p.df          = s_blend_df;
+    p.const_alpha = s_const_alpha;
+    p.constant    = s_constant;
+    p.color_fill  = s_color_fill ? 1u : 0u;
+    p.chroma_on   = s_chroma_on ? 1u : 0u;
+    p.tex_slot    = s_cur;
+    if (s_cur >= 0) {
+        const Tex& t = s_tex[s_cur];
+        p.tex_w = t.w; p.tex_h = t.h; p.tex_lod = t.lod;
+        p.tex_bpp = t.bpp; p.tex_ver = t.ver;
+    } else {
+        p.tex_w = 0; p.tex_h = 0; p.tex_lod = 0; p.tex_bpp = 0; p.tex_ver = 0;
+    }
+    p.pal_ver    = s_palette_epoch;
+    p.chroma_ver = s_chroma_ver;
+}
+
+static void rb_emit_tri(const RVert& A, const RVert& B, const RVert& C,
+                        float tsx, float tsy) {
+    if (!s_routeb || !s_routeb->prim) return;
+    G3xRouteBPrim p;
+    p.kind = 0;
+    p.ax = A.x; p.ay = A.y; p.au = A.u; p.av = A.v; p.aargb = A.argb;
+    p.bx = B.x; p.by = B.y; p.bu = B.u; p.bv = B.v; p.bargb = B.argb;
+    p.cx = C.x; p.cy = C.y; p.cu = C.u; p.cv = C.v; p.cargb = C.argb;
+    p.tsx = tsx; p.tsy = tsy;
+    rb_state_fill(p);
+    s_routeb->prim(s_routeb->ud, &p);
+}
+
+static void rb_emit_rect(float xa, float ya, float xb, float yb) {
+    if (!s_routeb || !s_routeb->prim) return;
+    G3xRouteBPrim p;
+    p.kind = 1;
+    p.ax = xa; p.ay = ya; p.au = 0.0f; p.av = 0.0f; p.aargb = 0;
+    p.bx = xb; p.by = yb; p.bu = 0.0f; p.bv = 0.0f; p.bargb = 0;
+    p.cx = 0.0f; p.cy = 0.0f; p.cu = 0.0f; p.cv = 0.0f; p.cargb = 0;
+    p.tsx = 1.0f; p.tsy = 1.0f;
+    rb_state_fill(p);
+    s_routeb->prim(s_routeb->ud, &p);
+}
+
+static void rb_emit_px(float x, float y) {
+    if (!s_routeb || !s_routeb->prim) return;
+    G3xRouteBPrim p;
+    p.kind = 2;
+    p.ax = x; p.ay = y; p.au = 0.0f; p.av = 0.0f; p.aargb = 0;
+    p.bx = 0.0f; p.by = 0.0f; p.bu = 0.0f; p.bv = 0.0f; p.bargb = 0;
+    p.cx = 0.0f; p.cy = 0.0f; p.cu = 0.0f; p.cv = 0.0f; p.cargb = 0;
+    p.tsx = 1.0f; p.tsy = 1.0f;
+    rb_state_fill(p);
+    s_routeb->prim(s_routeb->ud, &p);
+}
+
+// The dispatcher's raster_tri call, mirrored to the sink. Same call, same
+// order — the sink emission is additive only.
+static void rt_fire(const RVert& A, const RVert& B, const RVert& C,
+                    float tsx, float tsy) {
+    g3xrc::raster_tri(g3xrc_host(), A, B, C, tsx, tsy);
+    rb_emit_tri(A, B, C, tsx, tsy);
+}
+
 // The D2 glide vertex: x,y @0 (f32), PARGB @8, oow @12, s,t @16/20 (0x1C stride).
 inline void read_vert(RVert& out, const uint8_t* p) {
     memcpy(&out.x,    p + 0,  4);
@@ -273,6 +358,7 @@ bool fill_rect_fast(unsigned count, const RVert* v) {
         }
     }
     g3xrc::fill_rect_exec(g3xrc_host(), xa, xb, ya, yb);
+    rb_emit_rect(xa, ya, xb, yb);
     return true;
 }
 
@@ -410,6 +496,10 @@ struct GammaInit { GammaInit() { gamma_identity(); } } s_gamma_init;
 
 // ---------------------------------------------------------------------------
 
+// Route-B Stage 1 record sink attach point (see g3x_frame.h). File scope:
+// external linkage, exactly one definition. s_routeb is TU-static.
+void g3x_frame_routeb_sink(const G3xRouteBSink* s) { s_routeb = s; }
+
 void g3x_frame_reset(unsigned w, unsigned h) {
     if (!s_px || s_w != w || s_h != h) {
         delete[] s_px;
@@ -417,9 +507,11 @@ void g3x_frame_reset(unsigned w, unsigned h) {
     }
     s_w = w; s_h = h;
     if (s_px) memset(s_px, 0, (size_t)w * h * 4);
+    if (s_routeb && s_routeb->api_frame) s_routeb->api_frame(s_routeb->ud, w, h);
 }
 
 void g3x_frame_clear(uint32_t color) {
+    if (s_routeb && s_routeb->api_clear) s_routeb->api_clear(s_routeb->ud, color);
     if (!s_px) return;
     if ((color & 0x00FFFFFFu) == 0) {           // observed: clear=0 every time
         memset(s_px, 0, (size_t)s_w * s_h * 4);
@@ -439,6 +531,10 @@ void g3x_frame_set_palette(const void* entries256) {
     if (entries256) memcpy(s_palette, entries256, sizeof(s_palette));
     ++s_palette_epoch;
     s_chroma_dirty = true;
+    if (s_routeb && s_routeb->api_palette)
+        s_routeb->api_palette(s_routeb->ud, s_palette);
+    if (s_routeb && s_routeb->table_pal)
+        s_routeb->table_pal(s_routeb->ud, s_palette_epoch, s_palette);
 }
 
 void g3x_frame_set_chromakey(unsigned mode, unsigned value) {
@@ -446,6 +542,8 @@ void g3x_frame_set_chromakey(unsigned mode, unsigned value) {
     s_chroma_mode = mode; s_chroma_value = value;
     s_chroma_on = (mode == 1);
     s_chroma_dirty = true;
+    if (s_routeb && s_routeb->api_chromakey)
+        s_routeb->api_chromakey(s_routeb->ud, mode, value);
     // P2.8: the game flips chroma OFF around DrawSolidRect/DrawLightMap
     // batches and back ON after; the first 32 transitions show the exact
     // sequence (and whether it is active at label/shadow draws).
@@ -460,15 +558,20 @@ void g3x_frame_set_chromakey(unsigned mode, unsigned value) {
 void g3x_frame_set_blend(unsigned rgb_sf, unsigned rgb_df) {
     s_blend_sf = rgb_sf; s_blend_df = rgb_df;
     blend_reclass();
+    if (s_routeb && s_routeb->api_blend)
+        s_routeb->api_blend(s_routeb->ud, rgb_sf, rgb_df);
 }
 
 void g3x_frame_set_constant(unsigned argb) {
     s_constant = argb;
     s_const_alpha = argb & 0xFFu;   // game packs blend alpha in bits 7..0
+    if (s_routeb && s_routeb->api_constant) s_routeb->api_constant(s_routeb->ud, argb);
 }
 
 void g3x_frame_set_color_fill(bool fill) {
     s_color_fill = fill;
+    if (s_routeb && s_routeb->api_colorfill)
+        s_routeb->api_colorfill(s_routeb->ud, fill ? 1u : 0u);
 }
 
 void g3x_frame_set_gamma(float r, float g, float b) {
@@ -502,6 +605,11 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     }
     if (!bytes) return false;
 
+    if (s_routeb && s_routeb->api_texdown)
+        s_routeb->api_texdown(s_routeb->ud, tmu, addr, info->largeLodLog2,
+                              (int32_t)info->aspectRatioLog2, info->format,
+                              info->data, (uint32_t)bytes, w, h, bpp);
+
     const unsigned key = tex_key(tmu, addr);
     const int slot = tex_slot_alloc(key);
     if (slot < 0) {
@@ -520,13 +628,19 @@ bool g3x_frame_tex_download(unsigned tmu, unsigned addr, const GrTexInfo* info) 
     memcpy(nd, info->data, bytes);
     t.data = nd; t.w = w; t.h = h; t.bpp = bpp; t.used = true;
     t.lod = info->largeLodLog2 > 11 ? 11 : info->largeLodLog2;
+    ++t.ver;
     s_keys[slot] = key;
     tex_hash_insert(key, slot);
     if (slot + 1 > (int)s_tex_used_hwm) s_tex_used_hwm = (unsigned)(slot + 1);
+    if (s_routeb && s_routeb->table_tex)
+        s_routeb->table_tex(s_routeb->ud, slot, t.ver, nd, (uint32_t)bytes,
+                            w, h, t.lod, bpp);
     return true;
 }
 
 void g3x_frame_tex_source(unsigned tmu, unsigned addr) {
+    if (s_routeb && s_routeb->api_texsrc)
+        s_routeb->api_texsrc(s_routeb->ud, tmu, addr);
     const unsigned key = tex_key(tmu, addr);
     // P2.12 perf rebind fast-out: the game re-binds the same texture across
     // consecutive draws constantly (tile strips share a download); the hash
@@ -613,6 +727,11 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
     for (unsigned i = 0; i < count; ++i) {
         read_vert(verts[i], (const uint8_t*)base + (size_t)i * stride);
     }
+    if (s_routeb && s_routeb->api_drawfan) {
+        uint32_t tmp[64 * 5];
+        for (unsigned i = 0; i < count; ++i) rb_pack20(&tmp[i * 5], verts[i]);
+        s_routeb->api_drawfan(s_routeb->ud, count, tmp);
+    }
     if (!fill_rect_fast(count, verts)) {        // P2.4: fades/dim rects
         if (s_cur >= 0) vc0_diag(count, verts, s_tex[s_cur]);   // P2.8 shadows
     } else {
@@ -644,7 +763,7 @@ void g3x_frame_draw_fan(unsigned count, const void* base, unsigned stride) {
         ++s_dumped;
     }
     for (unsigned i = 1; i + 1 < count; ++i) {
-        g3xrc::raster_tri(g3xrc_host(), verts[0], verts[i], verts[i + 1], tsx, tsy);
+        rt_fire(verts[0], verts[i], verts[i + 1], tsx, tsy);
     }
 }
 
@@ -659,6 +778,11 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
         const uint8_t* p = (const uint8_t*)pointers[i];
         if (!p) return;
         read_vert(verts[i], p);   // pointer-array vertices: fixed 0x1C layout
+    }
+    if (s_routeb && s_routeb->api_drawptrs) {
+        uint32_t tmp[64 * 5];
+        for (unsigned i = 0; i < count; ++i) rb_pack20(&tmp[i * 5], verts[i]);
+        s_routeb->api_drawptrs(s_routeb->ud, mode, count, tmp);
     }
     if (!fill_rect_fast(count, verts)) {        // P2.4: fades/dim rects
         if (s_cur >= 0) vc0_diag(count, verts, s_tex[s_cur]);   // P2.8 shadows
@@ -688,7 +812,7 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
     if (mode == G3X_GR_TRIANGLE_FAN) {
         ++s_n_parr_fan;
         for (unsigned i = 1; i + 1 < count; ++i) {
-            g3xrc::raster_tri(g3xrc_host(), verts[0], verts[i], verts[i + 1], tsx, tsy);
+            rt_fire(verts[0], verts[i], verts[i + 1], tsx, tsy);
         }
     } else if (mode == G3X_GR_TRIANGLE_STRIP) {
         ++s_n_parr_strip;
@@ -702,8 +826,8 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
             const RVert& b = verts[i + 1];
             const RVert& c = verts[i + 2];
             const float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-            if (area >= 0.0f) g3xrc::raster_tri(g3xrc_host(), a, b, c, tsx, tsy);
-            else              g3xrc::raster_tri(g3xrc_host(), a, c, b, tsx, tsy);
+            if (area >= 0.0f) rt_fire(a, b, c, tsx, tsy);
+            else              rt_fire(a, c, b, tsx, tsy);
         }
     }
     // other primitives: counted by the caller, not rasterized (as before)
@@ -717,15 +841,19 @@ void g3x_frame_draw_pointers(unsigned mode, unsigned count, void* const* pointer
 // lines, mode 4 = alpha-scaled ones).
 void g3x_frame_draw_point(float x, float y) {
     if (!s_px) return;
+    if (s_routeb && s_routeb->api_point) s_routeb->api_point(s_routeb->ud, x, y);
     const int px = (int)(x + 0.5f), py = (int)(y + 0.5f);
     if (px < 0 || py < 0 || px >= (int)s_w || py >= (int)s_h) return;
     uint32_t* row = s_px + (size_t)py * s_w;
     auto& h = g3xrc_host();
     row[px] = g3xrc::blend_px(h, row[px], g3xrc::const_fill_rgb(h));
+    rb_emit_px(x, y);
 }
 
 void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
     if (!s_px) return;
+    if (s_routeb && s_routeb->api_line)
+        s_routeb->api_line(s_routeb->ud, x0, y0, x1, y1);
     int xa = (int)(x0 + 0.5f), ya = (int)(y0 + 0.5f);
     int xb = (int)(x1 + 0.5f), yb = (int)(y1 + 0.5f);
     int dx = xb - xa; if (dx < 0) dx = -dx;
@@ -738,6 +866,7 @@ void g3x_frame_draw_line(float x0, float y0, float x1, float y1) {
         if ((unsigned)xa < s_w && (unsigned)ya < s_h) {
             uint32_t* row = s_px + (size_t)ya * s_w;
             row[xa] = g3xrc::blend_px(h, row[xa], src);
+            rb_emit_px((float)xa, (float)ya);
         }
         if (xa == xb && ya == yb) break;
         const int e2 = err * 2;

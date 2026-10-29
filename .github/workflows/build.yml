@@ -123,11 +123,11 @@ jobs:
               spike/raster_regress.cpp spike/routeb_gpu.cpp src/g3x_frame.cpp \
               vendor/volk/volk.c -ldl -lpthread -o raster_regress
 
-      - name: CPU pin (the production raster, vs the committed Stage-0 pin)
+      - name: CPU pin (the production raster, vs the committed Stage-1 pin)
         run: |
           ./raster_regress cpu | tee cpu.txt
-          if ! diff -u spike/raster_hashes_stage0.txt cpu.txt; then
-            echo "the CPU raster drifted from the committed Stage-0 pin"
+          if ! diff -u spike/raster_hashes_stage1.txt cpu.txt; then
+            echo "the CPU raster drifted from the committed Stage-1 pin"
             echo "(a deliberate corpus/raster change re-pins the file — with the field log quoted)"
             exit 1
           fi
@@ -157,5 +157,14 @@ jobs:
             echo "ROUTE-B: the kernel diverged from the CPU raster"
             exit 1
           fi
-          echo "ROUTE-B Stage 0: $(wc -l < gpu.txt) frames bit-identical"
+          echo "ROUTE-B Stage 1: $(wc -l < gpu.txt) frames bit-identical (binned, overlapping corpus)"
+
+      - name: fxparity replay gate (a real field capture through BOTH backends)
+        run: |
+          if [ -f spike/fxparity.cap ]; then
+            ./raster_regress replay spike/fxparity.cap routeb.comp.spv
+          else
+            echo "no spike/fxparity.cap committed yet — arm it by recording with"
+            echo "[glide3xvk] fxcapture=1 in glide3xvk.ini, then commit the file here"
+          fi
 

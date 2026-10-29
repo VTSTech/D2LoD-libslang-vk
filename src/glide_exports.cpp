@@ -9,6 +9,7 @@
 #include "g3x_state.h"
 #include "g3x_log.h"
 #include "g3x_frame.h"
+#include "g3x_fxcap.h"
 #include "g3x_overlay.h"
 #include "g3x_slang.h"
 #include "g3x_hostver.h"
@@ -18,6 +19,7 @@
 
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 #include <initializer_list>
 #include <new>
 
@@ -174,6 +176,25 @@ GrContext_t __stdcall grSstWinOpen(FxU32 hWnd, GrScreenResolution_t screen_resol
         g3x_overlay_set_enabled(on);
         g3x_log("grSstWinOpen: overlay=%s (glide3xvk v%s, ini: %s)",
                 on ? "on" : "off", G3XVK_VERSION, ini[0] ? ini : "<exe path unresolved>");
+
+        // Route-B Stage 1: the fxparity capture (ROUTE-B.md §6). fxcapture=1
+        // records the game's exact frame-API call stream to fxcapture.cap
+        // beside the log for fxcap_frames frames (default 10) — drop the file
+        // into spike/ as fxparity.cap to arm the CI replay gate.
+        if (ini[0]) {
+            char fraw[8] = "";
+            GetPrivateProfileStringA("glide3xvk", "fxcapture", "", fraw, sizeof(fraw), ini);
+            if (fraw[0] == '1') {
+                char craw[16] = "";
+                unsigned frames = 10;
+                GetPrivateProfileStringA("glide3xvk", "fxcap_frames", "", craw, sizeof(craw), ini);
+                if (craw[0] >= '0' && craw[0] <= '9') {
+                    const int v = atoi(craw);
+                    if (v > 0 && v < 10000) frames = (unsigned)v;
+                }
+                g3x_fxcap_start(frames);
+            }
+        }
     }
     // 0.4.5 addendum: name the exe we are running inside on the overlay
     // ("d2.exe 1.14d"). Once per process (the exe never changes); fail-soft,
@@ -193,6 +214,7 @@ FxBool __stdcall grSstWinClose(GrContext_t context) {
     // real window — the totals here separate those phases in the log.
     unsigned ds[9];   // P2.8: 9 slots (same growth as the shutdown summary)
     g3x_frame_draw_stats(ds);
+    g3x_fxcap_stop();   // Route-B Stage 1: flush an armed fxparity capture
     g3x_log("grSstWinClose: ctx=%u (swaps=%u vac=%u parr=%u strip=%u fan=%u "
             "skip=%u texmiss=%u fill=%u vc0=%u)",
             context, g_st.n_swaps, ds[0], ds[1], ds[2], ds[3], ds[4],

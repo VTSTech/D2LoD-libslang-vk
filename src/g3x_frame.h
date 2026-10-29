@@ -92,3 +92,68 @@ void     g3x_frame_draw_line(float x0, float y0, float x1, float y1);
 // Scale + gamma the frame into the swapchain and present. Also the Bink
 // unlock path (the video loop never calls grBufferSwap).
 bool     g3x_frame_present();
+
+// ---- Route-B Stage 1 record sink (ROUTE-B.md §4/§6) ------------------------
+// When attached (g3x_frame_routeb_sink), the frame module mirrors two exact
+// streams out of the raster, with ZERO behavior change when the sink is
+// null (every emission is behind a null check on a cold static branch):
+//   api level    the public g3x_frame_* call stream, in call order — what a
+//                replay feeds back into the production API verbatim
+//                (fxparity capture: src/g3x_fxcap.cpp writes fxcapture.cap).
+//   raster level the POST-DISPATCH primitives the dispatcher actually
+//                rasterizes — strips pre-normalized, fill rects
+//                shape-resolved, lines expanded to their written pixels —
+//                each stamped with the state snapshot and table content
+//                versions it ran under. The GPU packer (spike/routeb_gpu.cpp)
+//                bins exactly this stream; it never re-derives dispatcher
+//                decisions, so CPU and GPU can not disagree about WHAT to
+//                draw, only (proven by hash) about the how.
+// Table content is versioned: every palette download bumps the palette
+// version, every chroma rebuild and every texture re-download bumps theirs,
+// and the table_* callbacks deliver the new content under that version —
+// mid-frame rebind storms therefore snapshot correctly per primitive.
+struct G3xRouteBPrim {
+    uint32_t kind;          // 0 = triangle (A,B,C), 1 = fill rect (A=(xa,ya),
+                            //     B=(xb,yb)), 2 = point pixel (A=(x,y))
+    float ax, ay, au, av; uint32_t aargb;
+    float bx, by, bu, bv; uint32_t bargb;
+    float cx, cy, cu, cv; uint32_t cargb;
+    float tsx, tsy;         // texel scale (triangle prims only)
+    uint32_t sf, df;        // GR_BLEND rgb pair as held at draw time
+    uint32_t const_alpha, constant;
+    uint32_t color_fill, chroma_on;
+    int32_t  tex_slot;      // bound texture slot at draw time, -1 = none
+    uint32_t tex_w, tex_h, tex_lod, tex_bpp;
+    uint32_t tex_ver;       // content version of that slot
+    uint32_t pal_ver, chroma_ver;
+};
+
+struct G3xRouteBSink {
+    void* ud;
+    // raster level — the GPU packer consumes these
+    void (*prim)(void* ud, const G3xRouteBPrim* p);
+    void (*table_pal)(void* ud, uint32_t ver, const uint32_t* pal256);
+    void (*table_chroma)(void* ud, uint32_t ver, const uint8_t* hit256);
+    void (*table_tex)(void* ud, int32_t slot, uint32_t ver, const void* data,
+                      uint32_t bytes, uint32_t w, uint32_t h,
+                      uint32_t lod, uint32_t bpp);
+    // api level — the capture writer (and through the file, the replayer)
+    void (*api_frame)(void* ud, uint32_t w, uint32_t h);
+    void (*api_clear)(void* ud, uint32_t color);
+    void (*api_palette)(void* ud, const uint32_t* pal256);
+    void (*api_texdown)(void* ud, uint32_t tmu, uint32_t addr, uint32_t lod,
+                        int32_t aspect, uint32_t fmt, const void* data,
+                        uint32_t bytes, uint32_t w, uint32_t h, uint32_t bpp);
+    void (*api_texsrc)(void* ud, uint32_t tmu, uint32_t addr);
+    void (*api_blend)(void* ud, uint32_t sf, uint32_t df);
+    void (*api_constant)(void* ud, uint32_t argb);
+    void (*api_colorfill)(void* ud, uint32_t flag);
+    void (*api_chromakey)(void* ud, uint32_t mode, uint32_t value);
+    void (*api_drawfan)(void* ud, uint32_t count, const void* verts);  // 20B each
+    void (*api_drawptrs)(void* ud, uint32_t mode, uint32_t count, const void* verts);
+    void (*api_point)(void* ud, float x, float y);
+    void (*api_line)(void* ud, float x0, float y0, float x1, float y1);
+};
+
+// Attach/detach the record sink. Null restores the plain production path.
+void     g3x_frame_routeb_sink(const G3xRouteBSink* s);

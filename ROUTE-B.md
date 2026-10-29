@@ -107,44 +107,61 @@ No samplers, no image samples, no format conversion at download:
   `s_const_alpha`, `s_color_fill`, chroma on/off, tex offset/dims/lod,
   constant-fill RGB. Triangles carry their draw-record index.
 
-### 3.2 Pass 1 — binning (the ordering guarantee)
+### 3.2 Pass 1 — binning (the ordering guarantee) — AS BUILT (Stage 1)
 
-The CPU raster's implicit contract is painter's order: triangles rasterize
-in submission order; a pixel's final value is the **last** triangle's
+The CPU raster's implicit contract is painter's order: primitives rasterize
+in submission order; a pixel's final value is the **last** primitive's
 write. Unordered compute writes would race on every translucent overlap
-(additive glows over tiles). The fix is classic tile binning:
+(additive glows over tiles). As built, binning is **host-side** in the
+packer (`spike/routeb_gpu.cpp`), not a GPU atomicAdd pass — the packer
+already holds the whole primitive stream from the record sink, so:
 
-- one workgroup per triangle (dispatch `ceil(ntri/64)` × ...), each
-  computes the tri's bbox, iterates the 16×16-tile grid cells it overlaps,
-  and `atomicAdd`-appends its tri index to the tile's list;
-- tile lists live in a device-local buffer: `ntiles × (u32 count + u32
-  slots[128])`, counters reset per frame by a tiny fill dispatch (no host
-  round-trip);
-- a per-frame overflow counter (tile with >128 tris) → the frame falls back
-  to CPU raster (fail-soft, log-once; the real mix — 152 fans + 170 strips
-  + 142 quads over 40×30 tiles — sits orders of magnitude under the cap).
+- 32×32-pixel tiles (20×15 = 300 bins at 640×480);
+- per primitive: bbox → tile range (`bx0>>5 .. (bx1-1)>>5`, the same
+  clamp forms `raster_tri` uses; rects bin by their `fill_rect_exec`
+  bounds; point pixels bin once) → append `(buffer_index << 2 | kind)`
+  to each touched tile's list, in submission order;
+- one flat SSBO: `[NT counts][NT offsets][entries]` — counts + exclusive
+  prefix on the host, no overflow counter, no fill dispatch, no fallback
+  path (the host list is exact by construction).
 
-### 3.3 Pass 2 — raster (the port)
+The stream the packer bins is the **record sink's** post-dispatch
+primitive stream (§4) — strips already normalized, fill rects already
+shape-resolved, lines already expanded to their written pixels — so CPU
+and GPU cannot disagree about WHAT to draw, only (proven by hash) about
+the how. Bin entries carry buffer-local indices (tris vs rects/points
+buffers); the record index rides inside each entry's payload.
 
-One workgroup per **tile**, serially walking its triangle list **in
-submission order**. For each triangle: clip the tile's 16 rows against the
-scanline interval, run the row-interval edge math (the P2.5 code —
-per-row `lo`/`hi` from the three directed edges, candidate-window fixups,
-`inside_exact` on boundary pixels only), and fill pixels with the
-`fill_span` body: texel fetch, chroma test, palette × VC multiply, then
-`blend_px(dst, src)` as a storage-image read-modify-write. The image is
-viewed as `rgba8uint` (same 8-bit RGBA format class as the chain input's
-R8G8B8A8_UNORM — legal view; query STORAGE support on
-`R8G8B8A8_UINT` at init, fail-soft to CPU raster if a driver refuses).
+### 3.3 Pass 2 — raster (the port) — AS BUILT (Stage 1)
 
-Per-pixel ordering within a tile = triangle order = CPU order. Adjacent
-tiles share no pixels. Strips keep their per-triangle winding
-normalization (draw_pointers, g3x_frame.cpp:1010) — ported as-is.
+`spike/routeb.comp`: dispatch `(tiles_x, tiles_y)` workgroups of
+`local_size 32` — one **invocation per (tile, row)**. The invocation walks
+its tile's bin in submission order and, per primitive, runs the row body:
+the per-row interval math (P2.5 `lo`/`hi` from the three directed edges,
+candidate-window fixups, `inside_exact` on boundary pixels only), then the
+`fill_span` pixel loop (texel fetch, chroma, palette × VC, `blend_px` as
+an SSBO read-modify-write — the storage IMAGE is Stage 3's chain-input
+seam, deliberately not spent here).
 
-`fill_rect_fast` (the axis-aligned constant-fill fast path) ports as its
-own tiny dispatch or simply as two triangles through the normal path —
-decide in Stage 0 by hash, not by taste. `grDrawPoint`/`grDrawLine` are
-CPU-rasterized into the legacy path for now (rare, automap-only callers).
+**The bit-exactness crux of tiling** (the thing Stage 0's single-writer
+corpus could not test): the CPU fills each row span in one pass with
+attributes stepping `+slope` per pixel FROM the span's first inside pixel.
+A tile only stores its x-slice, so the kernel computes the span and its
+attribute origin EXACTLY as the CPU does (same interval math, same fixups,
+same frame-wide clamps — never tile-clamped), then advances `u/v/vc` to
+its tile window with the identical add sequence before running the
+per-pixel body on the slice. The skipped pre-tile pixels skip only the
+texel fetch and the store — both side-effect-free — so every float the
+tile's pixels see is the bit the CPU saw. The row interval math is direct
+per-row evaluation (no cross-row accumulation), so rows parallelize
+freely.
+
+Per-pixel ordering within a tile = bin order = submission order = CPU
+order. Adjacent tiles share no pixels. Rects port as their own record
+kind (one row of `fill_rect_exec`, sliced the same way — its ceilf bounds
+are pure per-row math, no accumulation to preserve). `grDrawPoint` /
+`grDrawLine` port as per-pixel point records emitted by the sink where
+the CPU writes them (the kernel's point path is one blend_px).
 
 ### 3.4 Pass 3 — gamma + overlay
 
@@ -169,27 +186,58 @@ The inner loop exists twice only if we let it. Instead:
   texel fetch, palette multiply, blend classes — templated on a **host
   state** contract. Zero Vulkan, zero windows.h — the house host-testable
   pattern. **Shipped (Stage 0)**: g3x_frame.cpp keeps the state and feeds
-  the core through a 20-line `FrameHost` accessor struct; behavior pinned
-  byte-identical to the pre-extraction raster by `spike/raster_hashes_stage0.txt`.
+  the core through a 20-line `FrameHost` accessor struct. **Unchanged in
+  Stage 1** — binning, the sink and the capture all live AROUND the core;
+  the math header needed zero edits.
+- **The record sink (Stage 1)**: `G3xRouteBSink` (g3x_frame.h) mirrors two
+  exact streams out of the raster with zero behavior change when detached
+  (CPU pin stayed byte-identical through the seam's landing):
+  the *api level* — the public `g3x_frame_*` call stream, in call order,
+  what a replay feeds back verbatim; and the *raster level* — the
+  post-dispatch primitives the dispatcher actually rasterizes, each
+  stamped with its state snapshot and table content versions. Table
+  content is versioned (palette epoch, chroma rebuild counter, per-slot
+  texture re-download counter), so mid-frame rebind storms snapshot
+  correctly per primitive.
+- **The fxparity capture**: `src/g3x_fxcap.cpp` (DLL, `[glide3xvk]
+  fxcapture=1` + `fxcap_frames=N` in glide3xvk.ini) serializes the api
+  stream to `fxcapture.cap` (spike/fxcap.h format: u32 word stream, one
+  self-describing event per call). A replay feeds the same calls back
+  into the production API in order — the CPU side of the fxparity gate is
+  THE PRODUCTION RASTER, not a reimplementation. The primitive stream is
+  deliberately NOT in the file: a replay re-derives it through the
+  production dispatcher via the sink, so the file cannot drift from what
+  the CPU actually drew.
 - GPU side: `spike/routeb.comp` mirrors the core expression-for-expression
   (the header comment maps each function to its kernel counterpart),
   compiled by glslangValidator **in CI at build time** — the DLL ships no
   shader compiler (i686 budget stays KERNEL32+msvcrt). The kernel carries
   `precise` on every edge/interval/attribute expression; CI asserts the
-  SPIR-V kept its `NoContraction` decorations (132 of them at Stage 0), so
-  a driver cannot FMA-contract the math silently.
+  SPIR-V kept its `NoContraction` decorations (137 at Stage 1), so a
+  driver cannot FMA-contract the math silently.
 - Lockstep is **proven empirically, every push**: the `routeb` CI job
-  rasterizes the deterministic corpus twice (production CPU raster via
+  rasterizes the corpus twice (production CPU raster via
   `spike/raster_regress cpu`; kernel via `raster_regress gpu` on Lavapipe)
   and diffs the per-frame hashes against each other AND against the
-  committed pin. A mismatch is red — fix the kernel, never casually re-pin.
+  committed pin (`spike/raster_hashes_stage1.txt`). A mismatch is red —
+  fix the kernel, never casually re-pin.
 - Divergence triage: `raster_regress cmp <spv>` runs BOTH backends in one
   process and prints per-frame differing-pixel counts plus the first
-  `(x, y, cpu, gpu)` tuples; `ROUTEB_REGION=x0,y0,x1,y1` scopes the dump to
-  one 80x80 cell. The corpus triangulation rules that keep the scene
-  single-writer (perimeter fans for fill quads, zig-zag strips for textured
-  ones, winding flips on textured cells only) are documented at the
-  expansion site in `spike/routeb_corpus.h`.
+  `(x, y, cpu, gpu)` tuples; `ROUTEB_REGION=x0,y0,x1,y1` scopes the dump.
+  `ROUTEB_DEBUG=1` (+ `ROUTEB_TILE=<n>`) prints the packer's per-frame
+  bin/record/vertex dump and the tile's bin entries — the tools that
+  found the Stage 1 packer bugs (bin counts unwritten, prim-index vs
+  buffer-index conflation, region/binding order mismatch) in one session.
+- The Stage 1 corpus (`spike/routeb_corpus.h`) DROPS Stage 0's
+  single-writer constraint — that rule existed only because the binless
+  kernel could not order writes. The corpus now draws deliberate overlaps
+  (an OPAQUE quad UNDER an ADD quad on the same pixels), mid-frame
+  rebind storms (palette re-downloads, chromakey toggles, texture
+  re-downloads with NEW content at the same TMU address), the automap
+  point/line primitives, tex_source misses, and every Stage 0 class
+  (all five blends, chroma, uniform/varying VC, negative winding,
+  degenerates, frame clips, texel wrap, fill rects and their declined
+  fall-through). 16 frames, one fixed-seed LCG.
 - `scripts/gen_raster_glsl.py` (structural single-source) is the Stage 1
   refinement: once the binned kernel's shape stabilizes, the generator
   emits the .comp from the core's expressions and the CI hash gate keeps
@@ -227,8 +275,8 @@ The inner loop exists twice only if we let it. Instead:
 | Stage | Content | Exit criterion | Size |
 |---|---|---|---|
 | 0 — spike | core template extraction (CPU behavior unchanged, byte-identical hashes) + `gen_raster_glsl.py` + binless kernel (non-overlapping synthetic scene) rendered to an offscreen image; Lavapipe CI proof | CI hash == CPU hash on the synthetic scene | ~800 LOC |
-| 1 — binned raster | pass-1 binning + per-tile pass 2 + blend classes OPAQUE/ADD first; P_8 palette path; legacy present via `g3x_vk_present_image` | fxparity replay (which includes overlaps + rebind storms) hashes clean on Lavapipe | ~800 LOC |
-| 2 — full semantics | LERP/MUL/GEN blends, 565/8332 texels, chroma, `fill_rect_fast` decision, strip winding | full replay hash-clean; `raster=gpu` usable chain-off | ~400 LOC |
+| 1 — binned raster | SHIPPED: host-side pass-1 binning (32x32 tiles) + per-(tile,row) pass 2 with the write-filter attribute design; record sink + fxparity capture/replay (`fxcapture=1`); corpus v2 with deliberate overlaps + rebind storms. The "OPAQUE/ADD first" scoping dissolved: the Stage 0 kernel already mirrored all five blend classes, chroma, P_8/565 texel paths and the fill-rect/point pixel ops verbatim — subsetting them would have added filter machinery without removing any real risk. Legacy present via `g3x_vk_present_image` is Stage 3's chain seam and stayed untouched. | CI: 16-frame overlapping corpus hashes clean on Lavapipe (both gates + the cap round-trip); fxparity replay gate armed, waiting on the first field capture | ~1300 LOC |
+| 2 — integration | REMAINING (shrunk by Stage 1's as-built): `scripts/gen_raster_glsl.py` structural single-source; the DLL-side GPU record path (pack + dispatch inside the DLL behind `raster=gpu`, off by default); `g3x_vk_present_image` storage-image seam; 8332/other texel formats if the field captures contain any | full field capture replays hash-clean; `raster=gpu` usable chain-off on real hardware | ~600 LOC |
 | 3 — chain + overlay | storage-usage chain input, layout round-trips, gamma+overlay pass, slang-path shots | chain-on replay clean; WYSIWYG shot byte-identical to CPU path | ~500 LOC |
 | 4 — field round | `raster=gpu` default-off conf flag, ghash log lines, dump-on-mismatch, RX 560 field log (frame `work=` before/after) | a full field session with zero ghash mismatches and a measured present-path win | ~200 LOC |
 

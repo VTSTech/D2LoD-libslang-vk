@@ -1,49 +1,66 @@
-// routeb.comp — the Route-B Stage 0 compute rasterizer (spike).
+// routeb.comp — the Route-B Stage 1 compute rasterizer: BINNED.
 //
-// The GLSL rendering of src/g3x_raster_core.h's raster_tri + fill_span, for
-// ONE (triangle, row) per invocation: identical expressions in identical
-// order, so every float result is bit-identical (IEEE single both sides; the
-// `precise` qualifiers forbid FMA contraction and reassociation — glslang
-// emits NoContraction for them, ROUTE-B.md §2).
+// The GLSL rendering of src/g3x_raster_core.h (raster_tri + fill_span +
+// fill_rect_exec + the point/line pixel op), one (TILE, row) per invocation:
+//   workgroup (tiles_x, tiles_y) x local_size 32 = one invocation per tile
+//   row. The invocation walks its tile's primitive bin in SUBMISSION ORDER
+//   (the order the sink delivered the primitives in) and rasterizes each
+//   primitive's intersection with its row — so every pixel has exactly one
+//   writer and overlapping geometry blends in the CPU's painter order.
+//   (Stage 0 was one (triangle, row) per invocation over a single-writer
+//   corpus; ROUTE-B.md §3.2.)
 //
-// Stage 0 shape (binless, non-overlapping corpus — ROUTE-B.md §3.2): one
-// invocation per (triangle, row); rows outside the tri's clamped bbox
-// early-out. Ordering within a pixel is irrelevant while no two triangles
-// share a pixel; Stage 1 adds tile binning for the painter's-order guarantee.
+// Bit-exactness under tiling (the Stage 1 crux): the CPU fills each row
+// span in one pass, attributes stepping +slope per pixel FROM the span's
+// first inside pixel. A tile only sees its x-slice of that span, so the
+// kernel computes the span and its attribute origin EXACTLY as the CPU does
+// (same interval math, same boundary fixups, same frame-wide clamps), then
+// advances u/v/vc to its tile window with the identical add sequence before
+// running the per-pixel body on the slice. Skipped pre-tile pixels skip
+// only the texel fetch and the store — both side-effect-free — so every
+// float the tile's pixels see is the bit the CPU saw. The row interval
+// math itself is direct per-row evaluation (no cross-row accumulation), so
+// rows parallelize freely.
 //
 // Mirrors, line-for-line (CPU side -> kernel):
-//   blend_class_of        -> blend_class_of
-//   const_fill_rgb        -> fill_src from rec[10]
-//   blend_px / blend_gen  -> blend_px (switch) / blend_gen
-//   owns_edge/inside_exact-> same bodies
-//   tex_space_lod         -> host-precomputed tsx/tsy in the record
-//   fill_span             -> the per-row pixel loop
-//   raster_tri row loop   -> the invocation body (y = the invocation's row)
+//   blend_class_of / blend_px / blend_gen  -> same bodies
+//   owns_edge / inside_exact               -> same bodies
+//   tex_space_lod                          -> host-precomputed tsx/tsy
+//   fill_span                              -> the tile-sliced pixel loop
+//   raster_tri row loop                    -> do_tri (one row, write-filtered)
+//   fill_rect_exec                         -> do_rect (one row, slice)
+//   draw_point / draw_line per-pixel write -> do_point
 // Deviations (value-identical, noted):
 //   - minx/maxx via ternaries exactly as C++ (not min()/max() builtins)
 //   - 565 texels compose from BYTES (the byte heap; LE compose == the CPU's
 //     uint16 load on little-endian, and needs no alignment)
 //   - the uniform-VC path computes the pal_mult LUT-entry formula inline
-//     with the exact vertex dword (vr/vg/vb) — the CPU memoizes the same
-//     formula, so the bits agree by construction
+//     with the exact vertex dword — the CPU memoizes the same formula
+//   - palette/chroma tables live in the shared heap at per-record word
+//     offsets (content-versioned by the packer), not in dedicated bindings
+//   - TEXEL WRAP: (int)(x + 4096) truncation == floor + 4096, the +4096
+//     trick, exactly as fill_span does it
 #version 460
 precision highp float;
 precision highp int;
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, binding = 0) readonly buffer VXYUV { vec4  v_xyuv[];  };
-layout(std430, binding = 1) readonly buffer VARGB { uint  v_argb[];  };
-layout(std430, binding = 2) readonly buffer TRIS   { uvec4 tris[];   };
-// 13 words per record: sf df const_alpha color_fill chroma_on tex_off
-// tex_w tex_h tex_lod tex_bpp fill_rgb tsx tsy (tsx/tsy are float bits)
-layout(std430, binding = 3) readonly buffer RECS   { uint  recs[][13]; };
+layout(std430, binding = 1) readonly buffer VARGB  { uint  v_argb[];  };
+layout(std430, binding = 2) readonly buffer TRIS   { uvec4 tris[];    };
+// 16 words per record: sf df const_alpha color_fill chroma_on tex_byte_off
+// tex_w tex_h tex_lod tex_bpp fill_rgb tsx tsy pal_word_off chroma_word_off
+// kind|has_tex<<8
+layout(std430, binding = 3) readonly buffer RECS   { uint  recs[][16]; };
 layout(std430, binding = 4) readonly buffer HEAP   { uint  heap[];    };
-layout(std430, binding = 5) readonly buffer PAL    { uint  pal[];     };
-layout(std430, binding = 6) readonly buffer CHROMA { uint  chroma[];  };
-layout(std430, binding = 7) buffer OUT   { uint  out_px[];  };
+// rect/point prims, stride 2: {xa,xb,ya,yb | x,y} bits + {rec,0,0,0}
+layout(std430, binding = 5) readonly buffer RRECTS { uvec4 rrects[];  };
+// [NT counts][NT offsets][flat bin entries ((prim<<2)|kind)]
+layout(std430, binding = 6) readonly buffer BINS   { uint  bins[];    };
+layout(std430, binding = 7) buffer OUTPX { uint  out_px[];  };
 
-layout(push_constant) uniform PC { uvec2 dims; } pc;
+layout(push_constant) uniform PC { uvec4 pc0; } pc;   // w, h, tiles_x, tiles_y
 
 uint byte_at(uint i) { return (heap[i >> 2] >> ((i & 3u) * 8u)) & 0xFFu; }
 
@@ -142,14 +159,11 @@ bool inside_exact(int x, float py, V A, V B, V C, float inv,
     return true;
 }
 
-void main() {
-    const uint pw = pc.dims.x, ph = pc.dims.y;
-    const uint tri_i = gl_GlobalInvocationID.x;
-    const int  y     = int(gl_GlobalInvocationID.y);
-
-    const uvec4 T   = tris[tri_i];
+// ---- do_tri: one row of g3xrc::raster_tri, write-filtered to the tile ------
+void do_tri(uint eidx, int y, int tx0, int tx1, uint pw, uint ph) {
+    const uvec4 T   = tris[eidx];
     const V A0 = load_v(T.x), B0 = load_v(T.y), C0 = load_v(T.z);
-    const uint r0 = T.w;   // record index — recs[][13] strides 13 words per record
+    const uint r0 = T.w;   // record index — recs[][16] strides 16 words
 
     const uint sf        = recs[r0][0];
     const uint df        = recs[r0][1];
@@ -163,6 +177,9 @@ void main() {
     const uint fill_rgb  = recs[r0][10];
     const precise float tsx = uintBitsToFloat(recs[r0][11]);
     const precise float tsy = uintBitsToFloat(recs[r0][12]);
+    const uint pal_off    = recs[r0][13];
+    const uint chroma_off = recs[r0][14];
+    const bool has_tex    = (recs[r0][15] >> 8) != 0u;
     const uint cls = blend_class_of(sf, df);
 
     precise float area = (B0.x - A0.x) * (C0.y - A0.y) - (B0.y - A0.y) * (C0.x - A0.x);
@@ -171,7 +188,7 @@ void main() {
     const bool swapped = area < 0.0;
     if (swapped) { B = C0; C = B0; area = -area; }
     const precise float inv = 1.0 / area;
-    const bool textured = (color_fill == 0u);   // corpus: non-fill draws bind
+    const bool textured = (color_fill == 0u) && has_tex;
     if (!textured && color_fill == 0u) return;
 
     precise float minx = A.x < B.x ? (A.x < C.x ? A.x : C.x) : (B.x < C.x ? B.x : C.x);
@@ -271,7 +288,12 @@ void main() {
     const precise float u0 = A.u * wa + B.u * wb + C.u * wc;
     const precise float v0 = A.v * wa + B.v * wb + C.v * wc;
 
-    // ---- fill_span for this row ----------------------------------------------
+    // ---- fill_span for this row, sliced to [tx0, tx1) ------------------------
+    // The CPU runs the pixel loop over the WHOLE span; attributes step +slope
+    // per pixel from sx. This tile only stores its slice, so: advance the
+    // attributes from sx to the slice with the identical add sequence (the
+    // skipped pixels' texel fetch and store are side-effect-free), then run
+    // the exact per-pixel body inside the slice.
     const bool chm    = (chroma_on == 1u) && (bpp == 1u);
     const bool vary = (!uniform_vc) && (color_fill == 0u);
     precise float u = u0, v = v0;
@@ -281,6 +303,13 @@ void main() {
     const uint vr = vc & 0xFFu, vg = (vc >> 8) & 0xFFu, vb2 = (vc >> 16) & 0xFFu;
 
     for (int x = sx; x < ex; ++x) {
+        if (x >= tx0) break;                    // reached the tile window
+        u += dudx; v += dvdx;
+        if (vary) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
+    }
+    int xs = sx > tx0 ? sx : tx0;
+    int xe = ex < tx1 ? ex : tx1;
+    for (int x = xs; x < xe; ++x) {
         uint src;
         if (!textured) {
             src = fill_src;
@@ -288,21 +317,20 @@ void main() {
             uint tx = uint(int(u * tsx + 4096.0)) & (tw - 1u);
             uint ty = uint(int(v * tsy + 4096.0)) & (th - 1u);
             uint idx = byte_at(tex_off + ty * tw + tx);
-            if (chm && chroma[idx] == 1u) {
+            if (chm && heap[chroma_off + idx] == 1u) {
                 u += dudx; v += dvdx;
                 if (vary) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
                 continue;
             }
+            const uint p = heap[pal_off + idx];
             if (vary) {
                 uint q = uint(0.5 + cr); if (q > 255u) q = 255u;
                 uint g8 = uint(0.5 + cg); if (g8 > 255u) g8 = 255u;
                 uint b8 = uint(0.5 + cb); if (b8 > 255u) b8 = 255u;
-                const uint p = pal[idx];
                 src = (((p & 0xFFu) * q + 255u) >> 8)
                     | (((((p >> 8) & 0xFFu) * g8 + 255u) >> 8) << 8)
                     | (((((p >> 16) & 0xFFu) * b8 + 255u) >> 8) << 16);
             } else {
-                const uint p = pal[idx];
                 src = 0xFF000000u
                     | ((((p & 0xFFu) * vr + 255u) >> 8))
                     | (((((p >> 8) & 0xFFu) * vg + 255u) >> 8) << 8)
@@ -325,9 +353,82 @@ void main() {
         }
 
         const uint di = uint(y) * pw + uint(x);
-        const uint dst = out_px[di];       // single-writer corpus (Stage 0)
+        const uint dst = out_px[di];
         out_px[di] = blend_px(cls, sf, df, ca, dst, src);
         u += dudx; v += dvdx;
         if (vary) { cr += dvc[0]; cg += dvc[1]; cb += dvc[2]; }
+    }
+}
+
+// ---- do_rect: one row of g3xrc::fill_rect_exec, sliced to the tile ---------
+void do_rect(uint eidx, int y, int tx0, int tx1, uint pw, uint ph) {
+    const uvec4 R = rrects[2u * eidx];
+    const uint r0 = rrects[2u * eidx + 1u].x;
+    const precise float xa = uintBitsToFloat(R.x);
+    const precise float xb = uintBitsToFloat(R.y);
+    const precise float ya = uintBitsToFloat(R.z);
+    const precise float yb = uintBitsToFloat(R.w);
+
+    // fill_rect_exec, verbatim forms
+    const precise float minx = xa < xb ? xa : xb, maxx = xa > xb ? xa : xb;
+    const precise float miny = ya < yb ? ya : yb, maxy = ya > yb ? ya : yb;
+    int x0 = int(ceil(minx - 0.5)); if (x0 < 0) x0 = 0;
+    int y0 = int(ceil(miny - 0.5)); if (y0 < 0) y0 = 0;
+    int x1 = int(ceil(maxx - 0.5)); if (x1 > int(pw)) x1 = int(pw);
+    int y1 = int(ceil(maxy - 0.5)); if (y1 > int(ph)) y1 = int(ph);
+    if (y < y0 || y >= y1) return;
+
+    const uint sf = recs[r0][0];
+    const uint df = recs[r0][1];
+    const uint ca = recs[r0][2];
+    const uint cls = blend_class_of(sf, df);
+    const uint fill_src = recs[r0][10];         // const_fill_rgb, host-computed
+
+    int xs = x0 > tx0 ? x0 : tx0;
+    int xe = x1 < tx1 ? x1 : tx1;
+    for (int x = xs; x < xe; ++x) {
+        const uint di = uint(y) * pw + uint(x);
+        const uint dst = out_px[di];
+        out_px[di] = blend_px(cls, sf, df, ca, dst, fill_src);
+    }
+}
+
+// ---- do_point: one written pixel of draw_point / draw_line -----------------
+void do_point(uint eidx, int y, int tx0, int tx1, uint pw) {
+    const uvec4 R = rrects[2u * eidx];
+    const uint r0 = rrects[2u * eidx + 1u].x;
+    const precise float xv = uintBitsToFloat(R.x);
+    const precise float yv = uintBitsToFloat(R.y);
+    const int px = int(xv + 0.5), py = int(yv + 0.5);   // (int)(x + 0.5f), verbatim
+    if (py != y) return;                                // another row's worker
+    if (px < tx0 || px >= tx1) return;                  // another tile's worker
+    // The sink only emits WRITTEN pixels (post clip), so px/py are in frame.
+    const uint sf = recs[r0][0];
+    const uint df = recs[r0][1];
+    const uint cls = blend_class_of(sf, df);
+    const uint di = uint(py) * pw + uint(px);
+    const uint dst = out_px[di];
+    out_px[di] = blend_px(cls, sf, df, recs[r0][2], dst, recs[r0][10]);
+}
+
+void main() {
+    const uint pw = pc.pc0.x, ph = pc.pc0.y;
+    const uint tiles_x = pc.pc0.z, tiles_y = pc.pc0.w;
+    const uint NT = tiles_x * tiles_y;
+    const uint tile = gl_WorkGroupID.y * tiles_x + gl_WorkGroupID.x;
+    const int  y    = int(gl_WorkGroupID.y * 32u + gl_LocalInvocationID.x);
+    if (y >= int(ph)) return;
+    const int tx0 = int(gl_WorkGroupID.x * 32u);
+    const int tx1 = tx0 + 32 < int(pw) ? tx0 + 32 : int(pw);
+
+    const uint cnt = bins[tile];
+    const uint off = bins[NT + tile];
+    for (uint k = 0; k < cnt; ++k) {
+        const uint e    = bins[2u * NT + off + k];
+        const uint kind = e & 3u;
+        const uint idx  = e >> 2;
+        if      (kind == 0u) do_tri(idx, y, tx0, tx1, pw, ph);
+        else if (kind == 1u) do_rect(idx, y, tx0, tx1, pw, ph);
+        else                 do_point(idx, y, tx0, tx1, pw);
     }
 }
