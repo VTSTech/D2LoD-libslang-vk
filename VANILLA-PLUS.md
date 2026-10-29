@@ -10,8 +10,7 @@ and overlays on top of whatever `d2.exe` is running. (Branch history: the
 restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
 renamed `libslang-vk` → `Glide3xVK`.)
 
-**Latest release: [`D2LoD-Vanilla-Plus-0.0.3`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3)**
-(2026-10-28, from `569fc5c`) — one 7z with the client, the Glide3xVK 0.4.5 wrapper and
+**Latest release: [`D2LoD-Vanilla-Plus-0.0.5`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5)** — one 7z with the client, the Glide3xVK 0.4.6 wrapper and
 launcher/debug scripts.
 
 ## The two layers
