@@ -248,8 +248,8 @@
 53	53	D2Client/UI/Editbox/EditBoxImplementation.h
 168	168	D2Client/UI/Editbox/EditBoxWrapper.cpp
 285	285	D2Client/UI/Editbox/EditBoxWrapper.h
-1145	1177	D2Client/UI/EscMenu.cpp
-125	125	D2Client/UI/EscMenu.h
+1209	1177	D2Client/UI/EscMenu.cpp
+126	125	D2Client/UI/EscMenu.h
 1300	1108	D2Client/UI/Help.cpp
 49	49	D2Client/UI/Help.h
 1072	1084	D2Client/UI/Hireables.cpp
@@ -260,7 +260,7 @@
 53	53	D2Client/UI/ListBox/ListBoxImplementation.h
 144	144	D2Client/UI/ListBox/ListBoxWrapper.cpp
 264	264	D2Client/UI/ListBox/ListBoxWrapper.h
-873	878	D2Client/UI/MiniPanel.cpp
+881	878	D2Client/UI/MiniPanel.cpp
 33	33	D2Client/UI/MiniPanel.h
 4335	4252	D2Client/UI/npcmenu.cpp
 269	269	D2Client/UI/npcmenu.h
@@ -296,8 +296,8 @@
 19	19	D2Client/UI/UIWidget.h
 238	238	D2Client/UI/UseItem.cpp
 38	38	D2Client/UI/UseItem.h
-574	0	D2Client/UI/VanillaPlusCore.cpp
-73	0	D2Client/UI/VanillaPlusCore.h
+774	0	D2Client/UI/VanillaPlusCore.cpp
+100	0	D2Client/UI/VanillaPlusCore.h
 599	0	D2Client/UI/VanillaPlusOptions.cpp
 66	0	D2Client/UI/VanillaPlusOptions.h
 782	780	D2Client/UI/Waypoint.cpp
@@ -1076,7 +1076,7 @@
 333	0	PLAN.md
 10	10	progress/report.json
 118	51	README.md
-1001	1000	Storm/_unnamespaced.cpp
+1026	1000	Storm/_unnamespaced.cpp
 224	224	Storm/_unnamespaced.h
 1804	1804	Storm/3rdparty/zlib/crc32.cpp
 22	22	Storm/3rdparty/zlib/crc32.h
@@ -1170,6 +1170,6 @@
 217	0	tools/build-local-win11.ps1
 12	0	tools/check-build.sh
 94	0	tools/check-fork-surface.sh
-137	0	tools/check-vanilla-plus.sh
+153	0	tools/check-vanilla-plus.sh
 229	0	VANILLA-PLUS.md
 32	0	vanilla-plus/cmake/sources.cmake
