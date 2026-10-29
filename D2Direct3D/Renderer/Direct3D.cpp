@@ -2202,7 +2202,17 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       RENDERER_nWindowWidth = nModeWidth;
       RENDERER_nWindowHeight = nModeHeight;
       g_bPerspectiveMode = 0;
-      if (nResolutionMode != 2) {
+      // VP: modes 2/3/4 are the 800x600-class UI and must take the SAME
+      // fully-initialized device path as retail 800x600 (the fallthrough
+      // sets g_bPerspectiveMode = 1, which selects the floor/subtile/font
+      // texture caches in RENDERER_D3D_AllocateTextureCaches). The goto path
+      // leaves those caches uninitialized (and InitGroundTileCache divides
+      // by the then-zero gnD3DTextureCacheCount), so the world renders
+      // nothing: field-tested 2026-10-30 as "black screen, sound still
+      // plays" at the new 1280x720 stop. Retail only ever reached the goto
+      // via the dormant registry modes 1/3, which its own else-branch
+      // clamped to 800x600 anyway - the path was never actually exercised.
+      if (nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4) {
         goto setup_device;
       }
     }

@@ -87,3 +87,46 @@ whole UI as ONE RIGID UNIT to the horizontal center:
   restored instead.
 - Glide path: the wrapper must accept 1280x720 from `grSstWinOpen` as-is
   (glide branch owner's side of the interface contract).
+
+## Renderer dispatch fixes (post-field-test, 2026-10-30)
+
+First in-game test of the 1280x720 stop exposed three renderer-side
+defects the static audit had routed around (the client-side chain worked;
+the device/buffer side did not follow). All three are the same disease:
+per-renderer dispatch tables that retail only ever sized for modes 0-2,
+with the dormant modes unreachable in practice.
+
+1. **D2Direct3D fullscreen: black screen, audio alive.** Mode 4 took the
+   `goto setup_device` branch (perspective=0) that retail only reached via
+   dormant registry modes 1/3 - which its own else-branch clamped back to
+   800x600, so the path was never actually exercised. The perspective=0
+   branch of `RENDERER_D3D_AllocateTextureCaches` never initializes the
+   floor cache, subtile cache, font system or
+   `gnD3DTextureCacheBlockSize/Count` (the ground-tile VB init then divides
+   by zero), so the world renders nothing while the game loop and sound
+   keep running. Fix: modes 2/3/4 fall through to the same fully
+   initialized perspective=1 device path as retail 800x600
+   (Direct3D.cpp `RENDERER_D3D_InitializeDevice`).
+
+2. **GDI windowed (-w): 800x600 content in the resized 1280x720 window.**
+   The window resized correctly (D2GFX_ResizeWindow -> site-2 table), but
+   `RENDERER_WINDOWED_AllocateDIBSection` clamped mode 4 to 800x600 and
+   `RENDERER_WINDOWED_UpdateScaleFactor` kept the 800-wide render bound ->
+   player right of center (640 px into an 800 px view), garbled interface
+   bar (drawn below y=600), inventory corner sliver at the right edge
+   (panel anchored at ScreenSizeX-width = 480..1280, clipped at 800). Fix:
+   both functions learn mode 4 = 1280x720 / 1280-wide (Windowed.cpp).
+
+3. **DDraw: out-of-bounds table read.** `InternalOpenWindow` indexed
+   `gdwDirectDrawPaletteSizes[4]` / `gdwDirectDrawSurfaceWidths[4]` (both
+   `[4]` arrays, index = requested mode) - mode 4 read past the arrays and
+   mode 3 read the {0} sentinel. Fix: extended both tables to five entries
+   (mode 3 = 1344x700 as documented, mode 4 = 0x500 x 0x2d0) and taught
+   `RENDERER_DDRAW_SetHorizontalBounds` the full-width 1344/1280 render
+   bounds (DirectDraw.cpp).
+
+Glide needs no client-side change: `D2Glide` forwards the resolution mode
+to the glide DLL (grSstWinOpen receives 1280x720) per the interface
+contract with the glide branch.
+
+Tripwires: `tools/check-vanilla-plus.sh` "resfix:" gates (5).

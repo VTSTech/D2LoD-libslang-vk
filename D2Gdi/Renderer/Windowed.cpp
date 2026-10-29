@@ -84,6 +84,12 @@ static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) 
     } else if (nResolutionMode == 3) {
       iVar2 = 0x540;
       iVar1 = 700;
+    } else if (nResolutionMode == 4) {
+      // Vanilla Plus: 1280x720 (field-tested 2026-10-30: without this the
+      // DIB stays 800x600 inside the 1280x720 -w window -> player right of
+      // center, garbled interface bar, inventory corner at the right edge).
+      iVar2 = 1280;
+      iVar1 = 720;
     } else {
       iVar2 = 800;
       iVar1 = 600;
@@ -436,6 +442,12 @@ void __fastcall RENDERER_WINDOWED_UpdateScaleFactor(int nParam) {
       RENDERER_WINDOWED_nScaleWidth = 0x280;
       return;
     }
+    if (nParam == 4) {
+      // Vanilla Plus: render the full 1280-wide playfield.
+      RENDERER_WINDOWED_nScaleWidth = 1280;
+      return;
+    }
+
     if (nParam != 3) {
       RENDERER_WINDOWED_nScaleWidth = 800;
       return;

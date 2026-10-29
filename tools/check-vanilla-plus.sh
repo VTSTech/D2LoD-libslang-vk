@@ -175,6 +175,17 @@ gate "site-5: fork-api include in View.cpp" D2Client/GAME/View.cpp         'incl
 gate "site-5: fork-api include in GAME Draw.cpp" D2Client/GAME/Draw.cpp    'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "site-5: fork-api include in ListBox" D2Client/UI/ListBox/ListBoxImplementation.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
+# ---- resolution renderer dispatch (post-field-test fixes, 2026-10-30) -------
+# Mode 4 must take the fully-initialized perspective=1 D3D device path (the
+# goto left floor/subtile/font caches uninitialized -> black world), and the
+# software renderers must size their buffers to 1280x720 (GDI DIB stayed
+# 800x600 in the resized -w window; DDraw indexed its size tables OOB).
+gate "resfix: d3d mode-4 perspective path"  D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4' 1
+gate "resfix: gdi dib mode-4 1280x720"      D2Gdi/Renderer/Windowed.cpp   'nResolutionMode == 4' 1
+gate "resfix: gdi scale width 1280"         D2Gdi/Renderer/Windowed.cpp   'nParam == 4' 1
+gate "resfix: ddraw size tables extended"   D2DDraw/Renderer/DirectDraw.cpp '0x540, 0x500' 1
+gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnDDrawRenderWidth = 1280' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"
