@@ -115,6 +115,26 @@ each can be fixed, replaced and released independently.
   ini/section/key or a garbage value = vanilla resolution byte-for-byte. All
   save-path consumers (character list, saves, realm lock, automap) share one
   choke point (`GetAndCreateSavePath`), so the single hook covers everything.
+- **Auto Gold Pickup** (D2R "Gold Pickup" gameplay-option parity) — with the gate
+  on, gold piles inside pickup range are collected when you walk over them, via
+  the game's own server-side pickup path. Never moves your character (the trigger
+  fires only when BOTH of the server's instant-pick conditions hold — pickup
+  distance and collision — so retail's walk-to-item behavior is structurally
+  unreachable), never fires mid-attack or mid-cast (combat guard: neutral / town /
+  walk / run only), and is gold only — ground items untouched, a full inventory
+  leaves the pile where it is, gold never sits on the cursor. Managed from the
+  Vanilla+ Options page ("Auto Gold Pickup"). **Default OFF**: set
+  `[features] auto_gold=1` in `d2vp.ini` (hot-re-read at most every 2 s; missing
+  file/section/key/garbage value = vanilla).
+- **Globe Hover Values** (D2R orb-hover parity) — hover the life or mana orb and
+  its current/max value prints on the orb face (e.g. `412/498`), white, centered.
+  Reads the exact stat pair the orb fill itself renders (the 8.8 fixed-point
+  current stat and its TXT max, shown at display scale), so the numbers always
+  agree with the liquid level you see — including mid-potion-regen frames. Pure
+  readout: nothing is written, no input changes, no state changes. Managed from
+  the Vanilla+ Options page ("Globe Hover Values"). **Default OFF**: set
+  `[features] globe_values=1` in `d2vp.ini` (hot-re-read at most every 2 s;
+  missing file/section/key/garbage value = vanilla).
 
 ## Build
 

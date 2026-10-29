@@ -32,24 +32,27 @@ Every slate row must satisfy all of these before it ships:
 |---|---|---|---|---|---|---|
 | 0a | Z-key camera zoom | Controls | D2R launch feature (Z / wheel) | M | Med | `camera_zoom` |
 | 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | `shift_compare` |
-| 1 | HP/MP globe hover values | HUD | D2R globe hover shows current/max | S | Low | `globe_values` |
+| 1 | HP/MP globe hover values | HUD | D2R globe hover shows current/max | S | Low | **Implemented** (2026-10-29: ledger row 35; patches 0013+0014, field-verified; options page row 4) |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
 | 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | `ilvl_tooltip` |
 | 4 | Transparent bottom bar | HUD | None — owner suggestion; see-through-HUD staple elsewhere | S–M | Low–Med | `transparent_hud` |
 | 5 | Monster HP bar on hover | HUD | D2R enemy health bar (PC) | M | Low–Med | `monster_hp_bar` |
-| 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | `auto_gold` |
+| 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | **Implemented** (2026-10-29: ledger row 33; field-verified, coexists with alt_toggle) |
 | 7 | Automap scale + position | HUD | D2R larger overlay map | M | Med | `automap_scale` |
 | 8 | Quick-cast keys | Controls | D2R-adjacent (PD2 quick cast) | M–L | Med–High | `quick_cast` |
 | 9 | Shared side-file stash | Stash | None — owner suggestion (PlugY-style side file) | L | Med–High | `shared_stash` |
 | 10 | Vanilla+ Options menu page | UI | None — owner suggestion 2026-10-29; in-game settings surface for the gated features | M | Med→Low | **Implemented** (field rev C 2026-10-29: Route B label + cursor fix, field round 2 pending; land: ledger row 34) |
 
 Rows 0a/0b are **Task C** (handoff §9 item 3) — already scoped, awaiting go; they are
-the slate's head, not new scope. Rows 1–9 are the new candidates.
+the slate's head, not new scope. Rows 1–9 were the new candidates; rows 1 and 6 shipped for 0.0.4 (see the Gate key column).
 
 ---
 
 ### 1. HP/MP globe hover values — `[features] globe_values`
 
+- **SHIPPED 2026-10-29 for 0.0.4**: handoff ledger row 35 — patches 0013 (implementation)
+  + 0014 (cursor-namespace build fix), field-verified by the owner. The scoping below is
+  kept verbatim as the row's record; the as-built notes live in handoff Rev 22.
 - **D2R behavior**: hovering the life/mana globes shows numeric current/max values.
 - **Proposed**: while the cursor is over either bulb, draw `cur / max` text beside it,
   using the same tooltip/text primitives the alt-toggle label path already uses
@@ -262,7 +265,7 @@ the slate's head, not new scope. Rows 1–9 are the new candidates.
 - **Behavior (owner suggestion, 2026-10-29)**: a "Vanilla+ Options" row on the Esc
   Options page (directly above "Previous Menu") opening a ControlConfig-style text
   screen with one toggle row per shipped `[features]` key (`alt_toggle`,
-  `auto_gold`, `portable_save`; grows as slate rows land). Click = flip + write
+  `auto_gold`, `portable_save`, `globe_values`; grows as slate rows land). Click = flip + write
   `d2vp.ini` (`WritePrivateProfileStringA`, first ini writer in tree) + flush the
   2 s gate caches, so changes apply same-frame instead of on the next ini edit.
 - **Tree-verify complete (2026-10-29, draft anchor map)**: the Esc-menu loader

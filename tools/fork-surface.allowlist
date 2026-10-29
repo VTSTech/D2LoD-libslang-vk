@@ -44,7 +44,7 @@
 20	0	D2gfx/D2GFX.cpp
 148	0	DRAFT_auto_gold.md
 448	0	DRAFT_vanilla_plus_options.md
-334	0	FEATURES.md
+337	0	FEATURES.md
 13	0	Fog/Engine/Application.cpp
 6	0	Fog/File.cpp
 102	0	Fog/Source/SFile.cpp
@@ -55,7 +55,7 @@
 333	0	PLAN.md
 58	53	README.md
 4	0	Storm/_unnamespaced.cpp
-209	0	VANILLA-PLUS.md
+229	0	VANILLA-PLUS.md
 8	0	d2_enums.h
 56	4	d2_platform.h
 125	0	docs/merge-upstream.md
@@ -63,7 +63,7 @@
 16	0	globals/D2Direct3D.cpp
 46	1	globals/D2Win.cpp
 10	7	globals/globals.h
-187	0	handoff.md
+191	0	handoff.md
 85	0	support/d2_boot.cpp
 12	0	support/d2_boot.h
 117	12	support/d2_crash.cpp
