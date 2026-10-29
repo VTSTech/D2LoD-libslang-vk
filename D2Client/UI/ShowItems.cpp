@@ -6,6 +6,7 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/ui.h"
+#include "D2Client/UNIT/CUnit.h" // VP: vanilla-plus HitTestScreen for the toggle stale-selection unload
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/D2InventoryStrc.h"
@@ -182,11 +183,21 @@ void __stdcall DRAW_AltItems() {
                   gaGroundItemLabels[nItemSlotIdx].nBottom = __frame0.nItemVisY;
                   if (!__frame0.bFoundMatch) {
                     if (nMouseX < __frame0.nItemX || __frame0.nPrecisionX < nMouseX || nMouseY < __frame0.nItemNameHeight || __frame0.nItemVisY + 4 < nMouseY) {
-                      // VP-BEGIN [alt-toggle]: vanilla revokes a stale item
-                      // selection here (selected item whose label is not under
-                      // the cursor). Toggle-latch mode leaves that to the
-                      // normal hover machinery so labels never wipe clicks.
-                      if (__frame0.pCurrentItem != pPlayerUnit_lcl || ALTTOGGLE_LabelClickThrough()) {
+                      // VP-BEGIN [alt-toggle]: vanilla revokes the stale item
+                      // selection here (the selected item's label is no longer
+                      // under the cursor). Toggle mode keeps that revoke - it
+                      // is what makes the selection follow the cursor from one
+                      // label to the next - but spares it when the cursor is
+                      // over the item's SPRITE (the click surface extends below
+                      // the label rect to the sprite; field bug 2026-10-29:
+                      // without an unload the pinned label-hover selection
+                      // survived every cursor move and ClickMap re-targeted
+                      // even a far walk click to the item, picking it up).
+                      // Hold mode: vanilla condition byte-for-byte (the added
+                      // clause is dead there).
+                      if (__frame0.pCurrentItem != pPlayerUnit_lcl ||
+                          (ALTTOGGLE_LabelClickThrough() &&
+                           UNIT::CUnit::HitTestScreen(__frame0.pCurrentItem, nMouseX, nMouseY, nullptr))) {
                         goto color_by_quality;
                       }
                       // VP-END [alt-toggle]
@@ -273,10 +284,25 @@ void __stdcall DRAW_AltItems() {
     // VP-BEGIN [alt-toggle]: vanilla clears the selection whenever the
     // cursor is over no label - that wipe is what turns every click into a
     // walk while labels are shown (attacks/interactions need a selected
-    // unit). Toggle-latch mode skips it: the normal hover machinery owns the
-    // selection again, so clicks attack/interact with labels visible. Hold
-    // mode (feature off): vanilla byte-for-byte.
+    // unit). Toggle mode keeps clicks working but must still unload STALE
+    // item selections: the label-hover select PINS the selection
+    // (bCanSelectUnit - SetSelectedUnit_I refuses all other setters and the
+    // per-frame machinery no-ops) and GetSelectedUnit only re-validates
+    // on-screen, so a pinned item never self-clears; ClickMap then
+    // re-targets the next click to it - rewriting the click coords to the
+    // item's position - so standing on loot and walk-clicking far away
+    // picked the item up (field report 2026-10-29). Vanilla's blanket wipe
+    // would kill sprite-clicks (the sprite extends below the label rect),
+    // so toggle mode clears only a ground-item selection the cursor is
+    // neither on (this path = over no label rect) nor over by sprite hit.
+    // Hold mode (feature off): vanilla byte-for-byte below.
     if (ALTTOGGLE_LabelClickThrough()) {
+      D2UnitStrc* pSelectedStale = GAME::Select::GetSelectedUnit();
+      if (pSelectedStale && pSelectedStale->eUnitType == UNIT_ITEM &&
+          !UNIT::CUnit::HitTestScreen(pSelectedStale, ui::GetMouseX(), ui::GetMouseY(), nullptr)) {
+        GAME::Select::ClearSelectedUnit();
+        D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
+      }
       return;
     }
     // VP-END [alt-toggle]

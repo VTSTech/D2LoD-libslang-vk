@@ -15,7 +15,7 @@
 41	8	D2Client/UI/Automap.cpp
 13	0	D2Client/UI/Chat.cpp
 37	6	D2Client/UI/Draw.cpp
-18	1	D2Client/UI/ShowItems.cpp
+44	1	D2Client/UI/ShowItems.cpp
 631	0	D2Client/UI/VanillaPlusCore.cpp
 71	0	D2Client/UI/VanillaPlusCore.h
 599	0	D2Client/UI/VanillaPlusOptions.cpp
@@ -63,7 +63,7 @@
 16	0	globals/D2Direct3D.cpp
 46	1	globals/D2Win.cpp
 10	7	globals/globals.h
-191	0	handoff.md
+194	0	handoff.md
 85	0	support/d2_boot.cpp
 12	0	support/d2_boot.h
 117	12	support/d2_crash.cpp
