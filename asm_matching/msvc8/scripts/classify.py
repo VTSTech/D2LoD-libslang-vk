@@ -140,6 +140,18 @@ def _slot_pushes(insns):
     return out
 
 
+def _argument_pushes(insns):
+    """Indices of the `push ebx/esi/edi` that pass a value rather than save
+    the register: the function pops it nowhere. VC8 saves a callee-saved
+    register before it writes it and pops it before it returns, so one
+    never popped is never written, and its push reads what the caller left
+    there - an argument (SMEM_Warning, 004117a0: dwErrorCode in ESI, pushed
+    on to fn_0041c340, `ret 8`)."""
+    popped = {i.op_str for i in insns if i.mnemonic == 'pop'}
+    return {k: i.op_str for k, i in enumerate(insns)
+            if i.mnemonic == 'push' and i.op_str in ('ebx', 'esi', 'edi') and i.op_str not in popped}
+
+
 def live_in(decoded):
     """Registers live at the function's entry: those it receives arguments
     in (beyond the stack). A backward data-flow over the instructions'
@@ -148,7 +160,8 @@ def live_in(decoded):
     that writes it is judged by the paths, not by address order
     (SFILE_FindChunk, 0041b210: ESI, EBX, EDI). A `push ecx` that only
     reserves a stack slot reads nothing (_slot_pushes; DEBUG_CrashDumpRequestThreadProc,
-    004027c0, receives no ECX). `decoded` is a funcdecode.DecodedFunction, or
+    004027c0, receives no ECX); a `push esi` never popped passes ESI on
+    (_argument_pushes). `decoded` is a funcdecode.DecodedFunction, or
     its instruction list (no switch tables)."""
     insns = getattr(decoded, 'insns', decoded)
     if not insns:
@@ -172,7 +185,9 @@ def live_in(decoded):
         else:
             out = [nxt] if nxt is not None else []
         succ.append(out)
-    ud = [(frozenset(), frozenset()) if k in slots else _use_def(i) for k, i in enumerate(insns)]
+    passed = _argument_pushes(insns)
+    ud = [(frozenset(), frozenset()) if k in slots else (frozenset({passed[k]}), frozenset()) if k in passed
+          else _use_def(i) for k, i in enumerate(insns)]
     live = [frozenset()] * len(insns)
     changed = True
     while changed:

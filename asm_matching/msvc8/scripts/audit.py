@@ -85,19 +85,34 @@ class SymMap(dict):
         return default if v is None else v
 
 
-def sym_map(rows):
-    """Our symbol -> original start, for symbols that are unambiguous."""
+def sym_map(rows, librows=None):
+    """Our symbol -> original start, for symbols that are unambiguous: the
+    funcmap's, then the library functions evidence/libmap.tsv pairs (a call
+    to _fclose is checked against the original's fclose), then crtmap.tsv's
+    names."""
     import funcmap
     seen = collections.defaultdict(set)
     for s, _e, _n, _tu, sym, _m, _d in rows:
         seen[sym].add(s)
     base = {k: next(iter(v)) for k, v in seen.items() if len(v) == 1}
+    if librows is None:
+        librows = load_funcmap(LIBMAP) if os.path.exists(LIBMAP) else []
+    lib = collections.defaultdict(set)
+    for s, _e, _n, _tu, sym, _m, _d in librows:
+        lib[sym].add(s)
+    for k, v in lib.items():
+        if k not in seen and len(v) == 1:
+            base[k] = next(iter(v))
     return SymMap(base, funcmap.load_crtmap(os.path.join(ORACLE, 'evidence', 'crtmap.tsv')))
+
+
+LIBMAP = os.path.join(ORACLE, 'evidence', 'libmap.tsv')
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--funcmap', default=os.path.join(ORACLE, 'evidence', 'funcmap.tsv'))
+    ap.add_argument('--libmap', default=LIBMAP, help='library pairs (libmap.py); judged like the rest')
     ap.add_argument('--out', default=None)
     args = ap.parse_args()
     if args.out is None:
@@ -109,12 +124,17 @@ def main():
     ref, model = load_context()
     rows = load_funcmap(args.funcmap)
     fns = {f.key: f for f in ourslib.load_all(os.path.join(BUILD, 'obj'))}
-    syms = sym_map(rows)
+    librows = load_funcmap(args.libmap) if os.path.exists(args.libmap) else []
+    if librows:
+        import libmap
+        fns.update((f.key, f) for f in libmap.load_lib_functions())
+    syms = sym_map(rows, librows)
     quarantined = load_quarantine(os.path.join(BUILD, 'quarantine.tsv'))
     out = []
     statuses = collections.Counter()
+    memo = ourslib.PairMemo('audit', BUILD)
     wiring = collections.defaultdict(collections.Counter)   # our global -> implied original address
-    for s, e, name, tu, sym, method, _d in rows:
+    for s, e, name, tu, sym, method, _d in rows + librows:
         f = fns.get(tu + '|' + sym)
         if f is None or s not in model:
             out.append((s, e, name, tu, method, 0, 0, 0, 0.0, 'MISSING', 'object not compiled'))
@@ -126,17 +146,28 @@ def main():
             out.append((s, e, name, tu, method, len(model[s][0].insns), 0, 0, 0.0, 'QUARANTINE', q))
             statuses['QUARANTINE'] += 1
             continue
-        r = compare.compare(compare.our_view(f, syms), compare.ref_view(s, model[s]))
-        for sym, addr in r.wiring:
+        # A library pair may join carved pieces (libmap.py); a funcmap row's
+        # end is its carve's, which makes this ref_view.
+        # A judgement depends on the two functions' code and on where the
+        # functions ours calls are mapped: kept across runs by exactly that.
+        extra = (e, tuple(syms.get(t) for _o, kind, t in f.refs if kind in ('call', 'fptr')))
+        v = memo.get(f, s, extra)
+        if v is None:
+            r = compare.compare(compare.our_view(f, syms), compare.ref_view_span(s, e, model))
+            v = memo.put(f, s, (r.ref_insns, r.our_insns, r.byte_diffs, r.similarity, r.status, r.ref_diffs,
+                                r.unverified, tuple(r.wiring)), extra)
+        ref_insns, our_insns, byte_diffs, similarity, status, ref_diffs, unverified, rwiring = v
+        for sym, addr in rwiring:
             wiring[sym][addr] += 1
         notes = []
-        if r.ref_diffs:
-            notes.append('%d refs differ' % r.ref_diffs)
-        if r.unverified:
-            notes.append('%d refs unverified' % r.unverified)
-        out.append((s, e, name, tu, method, r.ref_insns, r.our_insns, r.byte_diffs, r.similarity, r.status,
+        if ref_diffs:
+            notes.append('%d refs differ' % ref_diffs)
+        if unverified:
+            notes.append('%d refs unverified' % unverified)
+        out.append((s, e, name, tu, method, ref_insns, our_insns, byte_diffs, similarity, status,
                     '; '.join(notes)))
-        statuses[r.status if not r.status.startswith('OUR') else 'OUR+-N'] += 1
+        statuses[status if not status.startswith('OUR') else 'OUR+-N'] += 1
+    memo.save()
     out.sort()
     os.makedirs(os.path.dirname(args.out), exist_ok=True)
     with open(args.out, 'w') as fh:
@@ -158,6 +189,12 @@ def main():
     for k in ('MATCH', 'REF_DIFF', 'INSN_MATCH', 'INSN_COUNT_MATCH', 'OUR+-N', 'QUARANTINE', 'MISSING'):
         lines.append('  %-17s %6d' % (k, statuses.get(k, 0)))
     lines.append('matched code: %d bytes (%.2f%% of the original)' % (match_bytes, 100.0 * match_bytes / ref_bytes))
+    libtus = {r[3] for r in librows}
+    lib = [r for r in out if r[3] in libtus]
+    lib_match = [r for r in lib if r[9] == 'MATCH']
+    lines.append('  of which the statically linked runtime (%s): %d compared (%d bytes), %d MATCH (%d bytes)' % (
+        os.path.basename(args.libmap), len(lib), sum(r[1] - r[0] for r in lib), len(lib_match),
+        sum(r[1] - r[0] for r in lib_match)))
     by_method = collections.Counter(r[4] for r in out)
     lines.append('pairings by funcmap tier: ' + ', '.join('%s %d' % kv for kv in by_method.most_common()))
     # Globals: each of ours must imply one original address wherever it is used.

@@ -112,6 +112,7 @@ class Matcher:
         self.starts = sorted(model)
         self.fns = fns
         self.by_key = {f.key: f for f in fns}
+        self.layout = {f.key: f.layout_key for f in fns}   # computed once: it reads every line record
         self.by_symbol = collections.defaultdict(list)
         for f in fns:
             self.by_symbol[f.symbol].append(f)
@@ -289,8 +290,8 @@ class Matcher:
         """code_key of every function on both sides, computed once."""
         import compare
         if not hasattr(self, '_okey'):
-            self._okey = {f.key: self.code_key(compare.our_view(f, {})) for f in self.fns}
-            self._rkey = {st: self.code_key(compare.ref_view(st, self.model[st])) for st in self.starts}
+            self._okey = {f.key: self.code_key(compare.our_view(f, {}, render=False)) for f in self.fns}
+            self._rkey = {st: self.code_key(compare.ref_view(st, self.model[st], render=False)) for st in self.starts}
         return self._okey, self._rkey
 
     def by_exact(self):
@@ -514,7 +515,7 @@ class Matcher:
         pairs, exact = [], []
         okey, rkey = self.code_keys()
         for tu, lst in per_tu.items():
-            lst.sort(key=lambda f: f.layout_key)
+            lst.sort(key=lambda f: self.layout[f.key])
             anchored = [(i, self.map[f.key][0]) for i, f in enumerate(lst) if f.key in self.map]
             chain = longest_increasing(anchored)
             for (i1, s1), (i2, s2) in zip(chain, chain[1:]):
@@ -532,8 +533,8 @@ class Matcher:
                 # where code of another of our files is mapped inside the gap
                 # (the generator's file split is not the original's object
                 # there), which only rules out pairing by position.
-                same = self.identical(ours_gap, ref_gap, lambda f: self.callfree(okey[f.key]),
-                                      lambda r: self.callfree(rkey[r]))
+                ofree, rfree = self.free_keys()
+                same = self.identical(ours_gap, ref_gap, lambda f: ofree[f.key], rfree.__getitem__)
                 with_callees = not same
                 if not same:
                     # The same code calling different functions (callbacks that
@@ -588,14 +589,27 @@ class Matcher:
             return None
         return key
 
+    def free_keys(self):
+        """callfree() of every code key on both sides, computed once."""
+        if not hasattr(self, '_ofree'):
+            okey, rkey = self.code_keys()
+            self._ofree = {k: self.callfree(v) for k, v in okey.items()}
+            self._rfree = {k: self.callfree(v) for k, v in rkey.items()}
+        return self._ofree, self._rfree
+
     @staticmethod
     def identical(ours_gap, ref_gap, okey, rkey):
-        """Pairs whose keys are equal and unique within the gap on both sides."""
-        ko = collections.Counter(okey(f) for f in ours_gap)
-        kr = collections.Counter(rkey(r) for r in ref_gap)
-        return [(f, r) for f in ours_gap for r in ref_gap
-                if okey(f) is not None and okey(f)[0] is not None and okey(f) == rkey(r)
-                and ko[okey(f)] == 1 and kr[rkey(r)] == 1] if ours_gap and ref_gap else []
+        """Pairs whose keys are equal and unique within the gap on both sides,
+        in gap order. Each key is computed once."""
+        if not ours_gap or not ref_gap:
+            return []
+        ok = [(f, okey(f)) for f in ours_gap]
+        rk = [(r, rkey(r)) for r in ref_gap]
+        ko = collections.Counter(k for _f, k in ok)
+        kr = collections.Counter(k for _r, k in rk)
+        unique_r = {k: r for r, k in rk if kr[k] == 1}
+        return [(f, unique_r[k]) for f, k in ok
+                if k is not None and k[0] is not None and ko[k] == 1 and k in unique_r]
 
     def our_callees(self, f):
         """Original starts of f's callees and function pointers, in code order;
@@ -668,24 +682,35 @@ class Matcher:
         import compare
         votes = collections.defaultdict(collections.Counter)
         self.exact_votes = collections.defaultdict(collections.Counter)
+        memo = ourslib.PairMemo('funcmap-votes', BUILD)
         for k, (s, method, _d) in self.map.items():
             f = self.by_key[k]
-            ours = compare.our_view(f, {})
-            ref = compare.ref_view(s, self.model[s])
-            if len(ours) == len(ref) and all(x.mnemonic == y.mnemonic for x, y in zip(ours, ref)):
-                pairs = list(zip(ours, ref))
-            else:
-                sm = difflib.SequenceMatcher(None, [x.mnemonic for x in ours], [y.mnemonic for y in ref],
-                                             autojunk=False)
-                pairs = [(ours[i], ref[j]) for op, i1, i2, j1, j2 in sm.get_opcodes() if op == 'equal'
-                         for i, j in zip(range(i1, i2), range(j1, j2))]
-            for x, y in pairs:
-                for ta, tb in zip(x.tokens, y.tokens):
-                    if ta[0] == 'fn?' and tb[0] == 'fn':
-                        votes[ta[1]][tb[1]] += 1
-                        if method == 'exact':
-                            self.exact_votes[ta[1]][tb[1]] += 1
+            sites = memo.get(f, s)
+            if sites is None:
+                sites = memo.put(f, s, self.aligned_calls(f, s))
+            for sym, target in sites:
+                votes[sym][target] += 1
+                if method == 'exact':
+                    self.exact_votes[sym][target] += 1
+        memo.save()
         return votes
+
+    def aligned_calls(self, f, s):
+        """(our callee symbol, original target) of every call that lines up
+        between f and the original at s, the two aligned by mnemonic. A
+        function of the two functions' code alone, so PairMemo keeps it."""
+        import compare
+        ours = compare.our_view(f, {}, render=False)
+        ref = compare.ref_view(s, self.model[s], render=False)
+        if len(ours) == len(ref) and all(x.mnemonic == y.mnemonic for x, y in zip(ours, ref)):
+            pairs = list(zip(ours, ref))
+        else:
+            sm = difflib.SequenceMatcher(None, [x.mnemonic for x in ours], [y.mnemonic for y in ref],
+                                         autojunk=False)
+            pairs = [(ours[i], ref[j]) for op, i1, i2, j1, j2 in sm.get_opcodes() if op == 'equal'
+                     for i, j in zip(range(i1, i2), range(j1, j2))]
+        return [(ta[1], tb[1]) for x, y in pairs for ta, tb in zip(x.tokens, y.tokens)
+                if ta[0] == 'fn?' and tb[0] == 'fn']
 
     def pins_from(self, votes, min_votes=2, share=0.75):
         """Callees most call sites agree on; one site is enough when it is in
@@ -771,7 +796,7 @@ class Matcher:
         for k, (s, method, _d) in self.map.items():
             if method not in ('bracket', 'align', 'exact', 'located'):
                 continue
-            if method == 'exact' and self.callfree(okey[k]) is not None:
+            if method == 'exact' and self.free_keys()[0][k] is not None:
                 continue                  # identical code without calls: nothing to contradict it
             ours = self.our_callees(self.by_key[k])
             theirs = self.ref_callees(s)
@@ -873,10 +898,23 @@ def main():
     args = ap.parse_args()
     if EXPERIMENT and os.path.realpath(os.path.dirname(args.out)) == os.path.realpath(os.path.join(ORACLE, 'evidence')):
         sys.exit('funcmap.py: not in an experiment - an A/B audit uses the baseline map (evidence/funcmap.tsv)')
+    import objcache
+    objdir = os.path.join(BUILD, 'obj')
+    objs = ourslib.object_keys(objdir)
+    root = os.path.dirname(os.path.dirname(ORACLE))
+    crtmap = os.path.join(ORACLE, 'evidence', 'crtmap.tsv')
+    # Everything the map is derived from: our objects, the generator's source
+    # maps beside their sources, the CRT map (and the reference, the scripts).
+    key = ourslib.stage_key('funcmap', repr(objs), objcache.sha_file(crtmap),
+                            repr([objcache.sha_file(os.path.join(root, rel[:-4] + '.cpp.map')) for rel, _h in objs]))
+    outputs = [args.out, args.out + '.unmapped']
+    if ourslib.stage_reuse('funcmap', BUILD, key, outputs):
+        print('funcmap: inputs unchanged, %s kept' % args.out)
+        return
     ref = refimage.Reference(os.path.join(ORACLE, 'reference', 'Game.exe'))
     ref.load(os.path.join(REFCACHE, 'functions.tsv'))
     model = ref.model(os.path.join(REFCACHE, 'model.pkl'))
-    fns = ourslib.load_all(os.path.join(BUILD, 'obj'))
+    fns = ourslib.load_all(objdir)
     m = Matcher(ref, model, fns, load_crtmap(os.path.join(ORACLE, 'evidence', 'crtmap.tsv')))
     for tier, n in m.run():
         print('  %-22s +%d' % (tier, n))
@@ -895,6 +933,7 @@ def main():
         for f in sorted(fns, key=lambda f: (f.tu, f.order)):
             if f.key not in m.map:
                 fh.write('%s\t%s\t%d insns\n' % (f.tu, f.name, f.insns))
+    ourslib.stage_done('funcmap', BUILD, key, outputs)
     by = collections.Counter(r[5] for r in rows)
     print('mapped %d of %d compiled functions (%d original functions): %s' % (
         len(rows), len(fns), len(model), ', '.join('%s %d' % kv for kv in by.most_common())))

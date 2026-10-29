@@ -24,7 +24,10 @@ sub ecx, 1; je; sub ecx, 1; jne`): consecutive ifs on one variable whose
 bodies end by leaving (return, goto, exit, a halt) become the cases of one
 switch, and what follows them runs after it as before (`!v` is case 0). A
 chain whose bodies contain `break` is left alone (the switch would catch it).
-Kept, through fixlib's batch loop, only where the function comes out more
+With --single, a chain of one case, `if (v == A) { a } [else { b }]`,
+becomes `switch (v) { case A: ... [default: ...] }` where the original
+subtracts A and branches (`sub eax, N; je`: the single-case switch of
+PANEL_DrawCharacterInfo); a named constant is taken as it is. Kept, through fixlib's batch loop, only where the function comes out more
 similar.
 """
 import argparse
@@ -66,8 +69,23 @@ def subtracts(ours, ref):
     return False
 
 
-def chain_at(text, at):
-    """(end, switch text) for a clean if-chain starting at `at`, or None."""
+def subtracted(ref):
+    """The immediates the original subtracts (or adds, negated) and then branches on."""
+    out = set()
+    for k, y in enumerate(ref[:-1]):
+        m = re.match(r'^(sub|add) \w+, (-?0x[0-9a-f]+|-?\d+)$', y.text)
+        if m and ref[k + 1].mnemonic.startswith('j'):
+            v = int(m.group(2), 0)
+            out.add(v if m.group(1) == 'sub' else -v)
+        elif y.mnemonic == 'dec' and ref[k + 1].mnemonic.startswith('j'):
+            out.add(1)
+    return out
+
+
+def chain_at(text, at, single=None):
+    """(end, switch text) for a clean if-chain starting at `at`, or None.
+    single: the values the original subtracts, to take a chain of one case
+    on one of them (any named constant) as a switch too; None, two cases at least."""
     m = HEAD.match(text, at)
     if not m:
         return None
@@ -104,8 +122,16 @@ def chain_at(text, at):
         else:
             end = close + 1
         break
-    if len(cases) < 2:
+    if len(cases) < (1 if single is not None else 2):
         return None
+    if single is not None:
+        if len(cases) != 1:
+            return None                          # the chains of two or more are the default run's
+        try:
+            if int(cases[0][0], 0) not in single and int(cases[0][0], 0) & 0xffffffff not in single:
+                return None
+        except ValueError:
+            pass
     for _k, b in cases + ([('', default)] if default is not None else []):
         if re.search(r'\bbreak\s*;', b):
             return None
@@ -126,7 +152,7 @@ def chain_at(text, at):
     return end, '\n'.join(l for l in out if l != '')
 
 
-def candidates(rows, model, syms, status, pats):
+def candidates(rows, model, syms, status, pats, single=False):
     """tu -> [(original start, line, old text, new text)]."""
     out = collections.defaultdict(list)
     objs = {}
@@ -140,7 +166,8 @@ def candidates(rows, model, syms, status, pats):
             objs[tu] = {f.symbol: f for f in ourslib.load_object(os.path.join(BUILD, 'obj'), tu + '.obj')} \
                 if os.path.exists(path) else {}
         f = objs[tu].get(sym)
-        if f is None or not subtracts(compare.our_view(f, syms), compare.ref_view(s, model[s])):
+        ref = compare.ref_view(s, model[s]) if f is not None else None
+        if f is None or not subtracts(compare.our_view(f, syms), ref):
             continue
         own = tu.lower() + '.cpp'
         mine = [ln for _o, fn, ln in f.lines if fn.lower().replace('\\', '/').endswith(own)]
@@ -151,7 +178,7 @@ def candidates(rows, model, syms, status, pats):
         for ln in range(min(mine), max(mine) + 1):
             if ln > len(starts) or not HEAD.match(text, starts[ln - 1]):
                 continue
-            r = chain_at(text, starts[ln - 1])
+            r = chain_at(text, starts[ln - 1], subtracted(ref) if single else None)
             if r:
                 out[tu].append((s, ln, text[starts[ln - 1]:r[0]], r[1]))
     return out
@@ -172,6 +199,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--apply', action='store_true')
     ap.add_argument('-j', '--jobs', type=int, default=4)
+    ap.add_argument('--single', action='store_true', help='one-case chains on a value the original subtracts')
     ap.add_argument('patterns', nargs='*')
     args = ap.parse_args()
     rows = audit.load_funcmap(os.path.join(ORACLE, 'evidence', 'funcmap.tsv'))
@@ -182,7 +210,7 @@ def main():
         if p[0] != 'start' and len(p) > 9:
             status[int(p[0], 16)] = p[9]
     _ref, model = audit.load_context()
-    cands = candidates(rows, model, syms, status, args.patterns)
+    cands = candidates(rows, model, syms, status, args.patterns, single=args.single)
     total = sum(len(v) for v in cands.values())
     print('%d chains in %d TUs' % (total, len(cands)))
     if not args.apply:
@@ -201,7 +229,7 @@ def main():
     kept, gained = fixlib.apply_batch(groups, (rows, model, syms, quarantined), jobs=args.jobs,
                                       log=lambda m: print(m, flush=True))
     print('kept %d of %d edits, MATCH %+d' % (kept, total, gained))
-    fixlib.record('fix_switch', total, kept, gained)
+    fixlib.record('fix_switch', total, kept, gained, 'single' if args.single else '')
     return 0
 
 

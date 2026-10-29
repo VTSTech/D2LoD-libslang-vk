@@ -137,6 +137,17 @@ FILE_PATCHES = {
 }
 
 
+# Game.exe calls binkw32, smackw32 and ijl11 through the IAT
+# (`call [__imp__SmackClose@4]`): their own headers declare them dllimport, and
+# d2_platform.h (written for mingw) does not.
+RAD_IJL_IMPORTS = ('SmackOpen', 'SmackClose', 'SmackDoFrame', 'SmackNextFrame', 'SmackWait',
+                   'SmackToBuffer', 'BinkOpen', 'BinkClose', 'BinkDoFrame', 'BinkNextFrame',
+                   'BinkWait', 'BinkCopyToBuffer', 'BinkSetSoundSystem', 'BinkOpenDirectSound',
+                   'BinkDDSurfaceType', 'ijlInit', 'ijlFree', 'ijlWrite')
+FILE_PATCHES['d2_platform.h'] += [
+    (r'^extern "C" (?=[^;(]* __stdcall %s\()' % name, 'extern "C" __declspec(dllimport) ')
+    for name in RAD_IJL_IMPORTS]
+
 def apply_patches(rel, text):
     for pattern, repl in FILE_PATCHES.get(rel, ()):
         rx = re.compile(pattern, re.M)
@@ -603,7 +614,16 @@ def load_quarantine(path):
                 QUARANTINE.setdefault(parts[0], set()).add(int(parts[1]))
 
 
-def mirror(root, out, quarantine=None):
+def mirror_state():
+    """The per-tree state the pre-pass of mirror() leaves for translate()."""
+    return (dict(THISCALL_FUNCS), dict(THISCALL_PTRS), set(STRIP_CTORS), set(CONSTRUCT))
+
+
+def mirror(root, out, quarantine=None, unchanged=None):
+    """Translate every source of `root` into `out`. unchanged(rel, name, text)
+    -> True skips a file whose translation is known to be in place already;
+    it is asked only when the per-tree state came out as the caller expects
+    (the caller compares mirror_state() itself, through the callback)."""
     written = kept = 0
     load_quarantine(quarantine)
     files = list(sources(root))
@@ -625,6 +645,9 @@ def mirror(root, out, quarantine=None):
     for rel, name in files:
         src = os.path.join(root, rel, name)
         dst = os.path.normpath(os.path.join(out, rel, name))
+        if unchanged is not None and os.path.exists(dst) and unchanged(rel, name, texts[(rel, name)]):
+            kept += 1
+            continue
         try:
             new = translate(texts[(rel, name)], os.path.normpath(os.path.join(rel, name)))
         except Exception as e:

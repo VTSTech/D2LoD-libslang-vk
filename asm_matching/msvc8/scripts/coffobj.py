@@ -113,10 +113,15 @@ class CoffObject:
     def symbol(self, index):
         return self.symbols[index]
 
-    def functions(self):
+    def functions(self, labels=False):
         """(symbol, section, start, end) for every function defined here.
         The end is the next function symbol in the same section, or the
-        section end; trailing padding and jump tables are the caller's job."""
+        section end; trailing padding and jump tables are the caller's job.
+
+        labels: also take the public labels of a code section that has no
+        function symbol at all - an assembler object (the CRT's memcpy,
+        _aulldiv, _chkstk), whose PROCs need not carry the function type.
+        Aliases at one address count once."""
         by_sec = {}
         for s in self.symbols:
             if s is None or s.section <= 0 or not s.is_function:
@@ -124,6 +129,18 @@ class CoffObject:
             if s.storage not in (C_EXTERNAL, C_STATIC):
                 continue
             by_sec.setdefault(s.section, []).append(s)
+        if labels:
+            for s in self.symbols:
+                if (s is not None and s.section > 0 and s.storage == C_EXTERNAL and s.section not in by_sec
+                        and self.sections[s.section].is_code):
+                    by_sec.setdefault(-s.section, []).append(s)
+            for secnum in [k for k in by_sec if k < 0]:
+                syms, seen = [], set()
+                for s in sorted(by_sec.pop(secnum), key=lambda s: (s.value, s.index)):
+                    if s.value not in seen:
+                        seen.add(s.value)
+                        syms.append(s)
+                by_sec[-secnum] = syms
         out = []
         for secnum, syms in by_sec.items():
             sec = self.sections[secnum]

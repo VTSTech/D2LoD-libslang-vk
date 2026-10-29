@@ -16,7 +16,13 @@ original has ECX, or ECX and EDX, and nothing else live on entry beyond
 the stack, n >= 1 dword-sized parameters (EDX needs n >= 2), a single
 `ret` popping max(0, n - 2) * 4. A function popping (n - 1) * 4 with only
 ECX was a member function (__thiscall), which VC8 does not allow on a free
-function: those are left for the generator (UPSTREAM.md).
+function: those are left for the generator (UPSTREAM.md). With --thiscall,
+those no original code calls directly - reached through a vtable or a
+handler table only (Warden's callbacks, the ListBox handlers) - become
+`__fastcall` with an unused `int32_t nEdxUnused` after `this`: the callee's
+code is the same as the member function's, and no caller of ours has to
+load EDX. A TU that then fails to compile and names the function (a typed
+function pointer) drops the edit.
 
 The edit: `__fastcall` in place of the definition's convention keyword (or
 before its name), and the same in the declarations in its own header and
@@ -95,8 +101,8 @@ def retype(text, leaf, definition):
         before = head[:name_at.start()]
         if re.search(r'\b__fastcall\b', before):
             continue
-        if re.search(r'\b(?:__stdcall|__cdecl)\b', before):
-            new_before = re.sub(r'\b(?:__stdcall|__cdecl)\b', '__fastcall', before, count=1)
+        if re.search(r'\b(?:__stdcall|__cdecl|__thiscall)\b', before):   # vc8_translate compiles a __thiscall it strips as __cdecl
+            new_before = re.sub(r'\b(?:__stdcall|__cdecl|__thiscall)\b', '__fastcall', before, count=1)
         else:
             new_before = before + '__fastcall '
         out.append(text[last:m.start()] + new_before)
@@ -110,7 +116,22 @@ def retype(text, leaf, definition):
     return ''.join(out)
 
 
-def edit_fn(cpp, hdr, leaf):
+def add_edx(text, leaf):
+    """`text` with `int32_t nEdxUnused` after the first parameter of every
+    definition and declaration of `leaf` (the one the --thiscall edit made
+    __fastcall)."""
+    rx = re.compile(r'^(?P<head>[A-Za-z_][^;{}()\n]*?\b__fastcall\s+' + re.escape(leaf) +
+                    r'\s*\()(?P<params>[^;{}]*)\)', re.M)
+
+    def sub(m):
+        plist = params_of(m.group('params'))
+        if not plist or any('nEdxUnused' in p for p in plist):
+            return m.group(0)
+        return m.group('head') + ', '.join(plist[:1] + ['int32_t nEdxUnused'] + plist[1:]) + ')'
+    return rx.sub(sub, text)
+
+
+def edit_fn(cpp, hdr, leaf, thiscall=False):
     def fn(texts):
         new = retype(texts[cpp], leaf, True)
         if new is None:
@@ -121,11 +142,13 @@ def edit_fn(cpp, hdr, leaf):
             h = retype(texts[hdr], leaf, False)
             if h is not None:
                 out[hdr] = h
+        if thiscall:
+            out = {p: add_edx(t, leaf) for p, t in out.items()}
         return out
     return fn
 
 
-def candidates(rows, model, status, fns, pats):
+def candidates(rows, model, status, fns, pats, thiscall=False):
     """[(original start, tu, leaf, our symbol, n parameters, live-in)]."""
     out = []
     for s, _e, name, tu, sym, _m, _d in rows:
@@ -150,6 +173,13 @@ def candidates(rows, model, status, fns, pats):
             continue
         plist = params_of(m.group('params'))
         n = len(plist)
+        if thiscall:
+            # this in ECX, the rest on the stack, popped: (n - 1) * 4 with n >= 2
+            if theirs != {'ecx'} or n < 2 or WIDE.search(plist[0]) and '*' not in plist[0] or \
+                    rets(model[s][0]) != {(n - 1) * 4}:
+                continue
+            out.append((s, tu, leaf, sym, n, 'ecx'))
+            continue
         if n < 1 or ('edx' in theirs and n < 2) or any(WIDE.search(p) and '*' not in p for p in plist[:2]):
             continue
         r = rets(model[s][0])
@@ -187,6 +217,7 @@ def build_all():
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--apply', action='store_true')
+    ap.add_argument('--thiscall', action='store_true', help='member functions no original code calls directly')
     ap.add_argument('patterns', nargs='*')
     args = ap.parse_args()
     rows = audit.load_funcmap(os.path.join(ORACLE, 'evidence', 'funcmap.tsv'))
@@ -202,9 +233,17 @@ def main():
         if os.path.exists(path):
             for f in ourslib.load_object(os.path.join(BUILD, 'obj'), tu + '.obj'):
                 fns[f.key] = f
-    cands = candidates(rows, model, status, fns, args.patterns)
+    cands = candidates(rows, model, status, fns, args.patterns, args.thiscall)
     tu_of = {r[0]: r[3] for r in rows}
+    by_start = {r[0]: r for r in rows}
     callers = callers_of(model, {c[0] for c in cands}, set(tu_of))
+    note = ''
+    if args.thiscall:
+        # Only functions no original code calls: a caller of ours would have
+        # to pass EDX, which the original's do not.
+        direct = callers_of(model, {c[0] for c in cands}, set(model))
+        cands = [c for c in cands if not direct[c[0]]]
+        note = 'thiscall'
     print('%d functions, %d call sites from mapped functions' % (len(cands), sum(len(v) for v in callers.values())))
     if not args.apply:
         for s, tu, leaf, sym, n, live in cands:
@@ -218,7 +257,7 @@ def main():
     for s, tu, leaf, sym, _n, _live in cands:
         cpp, hdr = os.path.join(REPO, tu + '.cpp'), os.path.join(REPO, tu + '.h')
         aff = {s} | callers[s]
-        edits.append((fixlib.Edit('%s:%s' % (tu, leaf), [s], aff, edit_fn(cpp, hdr, leaf), excused_by_match=True),
+        edits.append((fixlib.Edit('%s:%s' % (tu, leaf), [s], aff, edit_fn(cpp, hdr, leaf, args.thiscall), excused_by_match=True),
                       {tu_of[x] for x in aff}, [cpp, hdr]))
         affected_tus |= {tu_of[x] for x in aff}
     pats = sorted(affected_tus)
@@ -238,6 +277,26 @@ def main():
         lost = (fixlib.matches(base) - fixlib.matches(state)) | fixlib.vanished(base, state)
         won = fixlib.matches(state) - fixlib.matches(base)
         failed -= failed_before
+        if args.thiscall:
+            # The new parameter breaks a typed function pointer: the TU that
+            # fails names the function.
+            texts = {tu: fixlib.read(os.path.join(REPO, tu + '.cpp')) for tu in failed}
+            for e in active:
+                leaf = e.label.rsplit(':', 1)[-1]
+                if any(re.search(r'\b%s\b' % re.escape(leaf), t) for t in texts.values()):
+                    tus_of[e.label] = tus_of[e.label] | failed
+            # The new mangled names stand for the original functions (vtables refer to them).
+            for e in active:
+                s = next(iter(e.owners))
+                tu = tu_of[s]
+                path = os.path.join(BUILD, 'obj', tu + '.obj')
+                if os.path.exists(path):
+                    for f in ourslib.load_object(os.path.join(BUILD, 'obj'), tu + '.obj'):
+                        if f.name == by_start[s][2]:
+                            syms[f.symbol] = s
+            state = check.judge(rows, pats, model, syms, quarantined)
+            lost = (fixlib.matches(base) - fixlib.matches(state)) | fixlib.vanished(base, state)
+            won = fixlib.matches(state) - fixlib.matches(base)
         bad = [e for e in active if tus_of[e.label] & failed or e.affects & lost
                or (fixlib.worse(base, state, e.owners) and not e.affects & won)]
         print('round %d: %d edits, %d TUs failed, %d lost, %d won, %d to drop' % (
@@ -252,14 +311,14 @@ def main():
         fixlib.materialise(pristine, [])
         build_all()
         print('kept 0 of %d edits' % len(edits))
-        fixlib.record('fix_fastcall', len(edits), 0, 0)
+        fixlib.record('fix_fastcall', len(edits), 0, 0, note)
         return 0
     gained = len(fixlib.matches(state) - fixlib.matches(base))
     check.update_rows(state)
     for e in active:
         print('  kept %s' % e.label)
     print('kept %d of %d edits, MATCH %+d' % (len(active), len(edits), gained))
-    fixlib.record('fix_fastcall', len(edits), len(active), gained)
+    fixlib.record('fix_fastcall', len(edits), len(active), gained, note)
     return 0
 
 

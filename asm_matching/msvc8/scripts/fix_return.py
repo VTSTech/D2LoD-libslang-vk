@@ -17,10 +17,19 @@ all of them must hold the one constant. A path that returns 0 from the
 or a callee's result (SKILLDESC_FormatMinMaxRange, 004e7f40), is a function
 whose returns the database has to give one by one; it is left alone. A
 constant in AL alone (`xor al, al`, `mov al, 1`) is a bool's return: the
-function becomes `bool`. Callers did not use a value
+function becomes `bool`. A setter whose original hands back what it was
+given - EAX at every ret the same argument, read from its stack slot or
+copied from ECX/EDX on entry (AUTOMAP_SetFade, Lane E's P2: `mov eax, esi`
+before `ret`) - returns that parameter, as its type, where it is a dword
+the body never assigns (arg_at_returns). A static function may have a
+convention of its own, an argument in any register, the callee-saved ones
+too: there EAX holding one such register unchanged at every ret returns the
+function's one parameter that qualifies. Callers did not use a value
 before and do not now. Only free functions named nowhere but in calls,
-their definition and their own header's declaration are taken (a function
-whose address is taken would no longer fit its pointer type). The return
+their definition and their own header's declaration are taken - or under
+an explicit cast, `(void *)F`, which still compiles with another return
+type, and whose callers through the pointer do not read EAX; a function
+whose address goes uncast into a typed pointer would no longer fit it. The return
 type is part of the mangled name; the judge finds the function by its name
 until the next `oracle map`. Kept, through fixlib's batch loop, only where
 the function comes out more similar.
@@ -62,6 +71,156 @@ def returned_values(ours, ref, rx=SET_EAX):
             if m and j + 1 < len(ref) and ref[j + 1].text.startswith(EPILOGUE):
                 vals.add(0 if m.group(1) is None else int(m.group(1), 0))
     return vals
+
+
+_FRAME_SLOT = re.compile(r'(?:dword|word|byte) ptr \[ebp \+ (0x[0-9a-f]+|\d+)\]')
+
+
+def arg_at_returns(decoded, own_convention=False):
+    """The one argument EAX holds at every ret of the original, or None:
+    ('stack', k) for the k-th stack argument (`mov eax, dword ptr [ebp + 8 +
+    4k]` in a function with an EBP frame, a slot nothing writes or takes the
+    address of), or ('reg', 'ecx'/'edx') for a register argument EAX was
+    copied from on entry. The same forward propagation as
+    classify.eax_at_returns, over symbols instead of constants: a setter
+    that returns what it was given (AUTOMAP_SetFade: `mov eax, esi` before
+    `ret`)."""
+    insns = getattr(decoded, 'insns', decoded)
+    if len(insns) < 3:
+        return None
+    first = [next(classify._MD.disasm(i.bytes, i.addr, 1), None) for i in insns[:2]]
+    if None in first or (first[0].mnemonic, first[0].op_str) != ('push', 'ebp') or \
+            (first[1].mnemonic, first[1].op_str) != ('mov', 'ebp, esp'):
+        frame = False
+    else:
+        frame = True
+    dirty = set()
+    decoded_all = []
+    for i in insns:
+        ins = next(classify._MD.disasm(i.bytes, i.addr, 1), None)
+        if ins is None:
+            return None
+        decoded_all.append(ins)
+        o = ins.op_str.split(', ') if ins.op_str else []
+        for k, op in enumerate(o):
+            m = _FRAME_SLOT.search(op)
+            if m and (ins.mnemonic == 'lea' or (k == 0 and ins.mnemonic not in ('cmp', 'test', 'push'))):
+                dirty.add(int(m.group(1), 0))
+    regs = ('eax', 'ecx', 'edx', 'ebx', 'esi', 'edi')
+    index = {i.addr: k for k, i in enumerate(insns)}
+    tables = {t: entries for t, entries in getattr(decoded, 'tables', ())}
+    state = [None] * len(insns)
+    state[0] = {r: None for r in regs}
+    state[0].update(ecx=('reg', 'ecx'), edx=('reg', 'edx'))
+    if own_convention:
+        # A static function VC8 gave a convention of its own takes arguments in
+        # other registers too, the callee-saved ones. (Not EAX: an argument
+        # there, never written, would be at every ret without being returned.)
+        state[0].update({r: ('reg', r) for r in ('ebx', 'esi', 'edi')})
+    work = [0]
+    while work:
+        k = work.pop()
+        i, ins = insns[k], decoded_all[k]
+        st = dict(state[k])
+        m = ins.mnemonic
+        o = ins.op_str.split(', ') if ins.op_str else []
+        if m == 'call':
+            if getattr(i, 'target', None) not in classify.NOCLOBBER:
+                for r in classify.CALLER_SAVED:
+                    st[r] = None
+        elif m == 'mov' and len(o) == 2 and o[0] in st and o[1] in st:
+            st[o[0]] = st[o[1]]
+        elif m == 'mov' and len(o) == 2 and o[0] in st and frame and \
+                re.fullmatch(r'dword ptr \[ebp \+ (0x[0-9a-f]+|\d+)\]', o[1]):
+            n = int(_FRAME_SLOT.search(o[1]).group(1), 0)
+            st[o[0]] = ('stack', (n - 8) // 4) if n >= 8 and n % 4 == 0 and n not in dirty else None
+        else:
+            try:
+                _rd, wr = ins.regs_access()
+                written = {classify._reg(ins.reg_name(r)) for r in wr}
+            except Exception:
+                written = set(st)
+            for r in written:
+                if r in st:
+                    st[r] = None
+        nxt = index.get(i.addr + i.size)
+        if m.startswith('ret') or m in ('int3', 'hlt', 'ud2'):
+            edges = []
+        elif m == 'jmp':
+            if i.target is not None:
+                edges = [index[i.target]] if i.target in index else []
+            else:
+                edges = [index[t] for t in tables.get(i.table, ()) if t in index]
+        elif m in classify._JCC:
+            edges = ([index[i.target]] if i.target in index else []) + ([nxt] if nxt is not None else [])
+        else:
+            edges = [nxt] if nxt is not None else []
+        for j in edges:
+            old = state[j]
+            new = dict(st) if old is None else {r: (old[r] if old[r] == st[r] else None) for r in regs}
+            if new != old:
+                state[j] = new
+                work.append(j)
+    at = {state[k]['eax'] for k, i in enumerate(insns) if i.mnemonic.startswith('ret') and state[k] is not None}
+    # A jump out of the function is a tail call: it returns what the callee
+    # leaves in EAX (AUTOMAP_SetMiniMapType, 0045a720: `mov eax, ecx` serves
+    # its early ret only; the other path ends `jmp fn_00457640`).
+    if any(i.mnemonic == 'jmp' and i.target is not None and i.target not in index and state[k] is not None
+           for k, i in enumerate(insns)):
+        at.add(None)
+    return at.pop() if len(at) == 1 and None not in at else None
+
+
+def split_params(params):
+    out, depth, cur = [], 0, ''
+    for c in params:
+        if c == ',' and depth == 0:
+            out.append(cur.strip())
+            cur = ''
+            continue
+        depth += {'(': 1, ')': -1, '<': 1, '>': -1}.get(c, 0)
+        cur += c
+    if cur.strip():
+        out.append(cur.strip())
+    return [] if out == ['void'] else out
+
+
+WORD_PARAM = re.compile(r'^(?P<type>(?:const\s+)?(?:unsigned\s+)?[A-Za-z_]\w*(?:\s*\*+\s*|\s+))(?P<name>[A-Za-z_]\w*)$')
+
+
+def returned_param(src, leaf, arg, conv, own_convention=False):
+    """(type, name) of the parameter `arg` (arg_at_returns) of `leaf` as
+    defined in `src`, or None: a dword-sized parameter the body never
+    assigns. Under a convention of the function's own, which parameter a
+    register carries is not known: there it is the one such parameter."""
+    m = re.search(def_pattern(leaf), src, re.M)
+    if not m:
+        return None
+    params = split_params(m.group('params'))
+    pm = [WORD_PARAM.match(p) for p in params]
+    if not all(pm) or any(re.search(r'\b(?:double|float|int64_t|uint64_t|__int64|LONGLONG|ULONGLONG)\b', p.group('type'))
+                          for p in pm):
+        return None                      # not every argument one dword: the slots would not count right
+    kind, k = arg
+    if own_convention:
+        if kind != 'reg':
+            return None
+        fit = [q for q in range(len(pm)) if returned_param(src, leaf, ('stack', q), 'YA')]
+        return returned_param(src, leaf, ('stack', fit[0]), 'YA') if len(fit) == 1 else None
+    if conv == 'YI':
+        k = {'ecx': 0, 'edx': 1}.get(k) if kind == 'reg' else k + 2
+    elif kind == 'reg':
+        return None
+    if k is None or k >= len(pm):
+        return None
+    ptype, name = pm[k].group('type').strip(), pm[k].group('name')
+    if not re.search(r'\*|\b(?:int|int32_t|uint32_t|long|DWORD|BOOL|UINT|LPARAM|WPARAM|HANDLE|size_t)\b', ptype):
+        return None                      # a byte or a word: EAX holds more than it
+    close = match_close(src, m.end() - 1, '{', '}')
+    body = strip_comments(src[m.end():close or len(src)])
+    if re.search(r'(?:\+\+|--|&)\s*%s\b|\b%s\s*(?:[-+*/%%&|^]?=(?!=)|<<=|>>=|\+\+|--)' % (name, name), body):
+        return None                      # assigned, or its address taken: returning it is not the argument
+    return ptype, name
 
 
 def retyped(texts, cpp, hdr, leaf, value, rtype='int'):
@@ -131,19 +290,37 @@ def candidates(rows, model, syms, status, pats):
             at_rets = {v for _a, v in classify.eax_at_returns(model[s][0], 'al')}
             if len(vals) == 1 and next(iter(vals)) not in (0, 1):
                 rtype = 'uint8_t'
-        if len(vals) != 1 or at_rets != {next(iter(vals)) & (0xff if rtype != 'int' else 0xffffffff)}:
-            continue                         # not the one constant on every path
         leaf = name.rsplit('::', 1)[-1]
         cpp, hdr = os.path.join(REPO, tu + '.cpp'), os.path.join(REPO, tu + '.h')
+        if len(vals) != 1 or at_rets != {next(iter(vals)) & (0xff if rtype != 'int' else 0xffffffff)}:
+            # Not one constant on every path: perhaps one argument.
+            arg = arg_at_returns(model[s][0], own_convention=f.static)
+            got = arg and returned_param(fixlib.read(cpp), leaf, arg, rest[:2], own_convention=f.static)
+            if not got:
+                continue
+            rtype, v = got
+            vals = {v}
         files = tree.where.get(leaf, set())
         if any(p.endswith('.h') and p != hdr for p in files):
             continue                         # declared in another header too
-        bare = re.compile(r'\b%s\b(?!\s*\()' % re.escape(leaf))
-        if any(bare.search(strip_comments(fixlib.read(p))) for p in files):
-            continue                         # its address is taken somewhere
+        if not address_safe(leaf, files):
+            continue                         # its address is taken where the type would no longer fit
         v = vals.pop()
         out[tu].append((s, leaf, ('true' if v else 'false') if rtype == 'bool' else v, rtype))
     return out
+
+
+def address_safe(leaf, files):
+    """Every use of `leaf` other than a call names it under an explicit cast
+    (`(void *)F`, `(PFN)&F`): a pointer of another type than the function's
+    then still compiles, and code calling through it does not read EAX.
+    An uncast use (an initialiser of a typed table) would no longer fit."""
+    bare = re.compile(r'(?P<pre>\)\s*&?\s*)?\b%s\b(?!\s*\()' % re.escape(leaf))
+    for p in files:
+        for m in bare.finditer(strip_comments(fixlib.read(p))):
+            if not m.group('pre'):
+                return False
+    return True
 
 
 def main():

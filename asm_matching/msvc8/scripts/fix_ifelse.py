@@ -17,6 +17,14 @@ lines stays the same. An `if` without an else, or followed by `else if`, is
 left alone. (An assertion inside an else-if chain is the common case:
 `else if (tag_ok) { ... } else { halt; }`, ASYNCDATA_GetResult, 0040a9e0.)
 
+With the branches the other way round the two layouts often do not align at
+all, and no inverted jump shows. So every `if (!x) {A} else {B}` - x one
+operand, the if alone or that of an `} else if` - in a function that does not
+match is tried as `if (x) {B} else {A}` too: Blizzard tests the pointer and
+handles its absence after (`if (p) x = f(p); else x = 0;`, Lane E's P15).
+Found by its form alone, such a swap is kept only where its function comes
+out more similar; --sites-only leaves them out.
+
 Without --apply it lists the sites; with --apply they go through fixlib's
 batch loop like every fixer: kept only where nothing that matched stops
 matching and the function gets no less similar.
@@ -119,10 +127,12 @@ def sites(ours, ref):
     return out
 
 
-def candidates(rows, model, syms, status, pats):
-    """tu -> [(original start, line, old text of the statement, new text)]."""
+def candidates(rows, model, syms, status, pats, negated=True):
+    """tu -> [(original start, line, old text of the statement, new text, trial)];
+    trial: found by its form alone, not by an inverted jump."""
     out = collections.defaultdict(list)
     cache = {}
+    texts = {}
     for s, _e, name, tu, sym, _m, _d in rows:
         if pats and not any(p in tu for p in pats):
             continue
@@ -136,19 +146,31 @@ def candidates(rows, model, syms, status, pats):
         if f is None:
             continue
         found = sites(compare.our_view(f, syms), compare.ref_view(s, model[s]))
-        if not found:
-            continue
         cpp = os.path.join(REPO, tu + '.cpp')
         own = tu.lower() + '.cpp'
-        text = fixlib.read(cpp)
+        if not found and not negated:
+            continue
+        if cpp not in texts:
+            texts[cpp] = fixlib.read(cpp)
+        text = texts[cpp]
         starts = [0] + [k + 1 for k, c in enumerate(text) if c == '\n']
-        done = set()
+        lines = []
         for insn in found:
             at = f.line_at(insn.addr)
-            if not at or not at[0].lower().replace('\\', '/').endswith(own) or at[1] in done:
-                continue
-            ln = at[1]
-            if not 0 < ln <= len(starts):
+            if at and at[0].lower().replace('\\', '/').endswith(own):
+                lines.append((at[1], False))
+        if negated:
+            # Every `if (!x) {` in the function's lines, inverted jump or not:
+            # with the branches swapped the jumps rarely align at all.
+            own_lines = [ln for _o, fn, ln in f.lines if fn.lower().replace('\\', '/').endswith(own)]
+            if own_lines:
+                for ln in range(min(own_lines), min(max(own_lines), len(starts)) + 1):
+                    m = NEGATED_IF.match(text, starts[ln - 1])
+                    if m and simple_operand(m.group('x') or m.group('y')):
+                        lines.append((ln, True))
+        done = set()
+        for ln, trial in lines:
+            if ln in done or not 0 < ln <= len(starts):
                 continue
             new = swap_at(text, starts[ln - 1])
             if new is None:
@@ -159,8 +181,24 @@ def candidates(rows, model, syms, status, pats):
             b = 0
             while b < len(text) - a and text[len(text) - 1 - b] == new[len(new) - 1 - b]:
                 b += 1
-            out[tu].append((s, ln, text[a:len(text) - b], new[a:len(new) - b]))
+            out[tu].append((s, ln, text[a:len(text) - b], new[a:len(new) - b], trial))
     return out
+
+
+# `if (!x) {` or `} else if (!x) {`, x one operand: no top-level && || ?: -
+# or the same test written out, `x == 0`, `x == NULL`, `c == '\0'`.
+NEGATED_IF = re.compile(r'[ \t]*(?:\} else )?if \((?:!(?!=)(?P<x>[^&|?\n]+)|(?P<y>[^&|?\n=!<>]+) == '
+                        r'(?:0[uU]?|0x0|NULL|nullptr|\'\\0\'))\) \{[ \t]*$', re.M)
+
+
+def simple_operand(x):
+    """Balanced, and no space outside brackets: one operand, not `!a == b`."""
+    depth = 0
+    for c in x:
+        depth += {'(': 1, ')': -1, '[': 1, ']': -1}.get(c, 0)
+        if depth < 0 or (depth == 0 and c == ' '):
+            return False
+    return depth == 0
 
 
 def file_edit(cpp, ln, before, after):
@@ -168,8 +206,8 @@ def file_edit(cpp, ln, before, after):
     def fn(texts):
         t = texts[cpp]
         starts = [0] + [k + 1 for k, c in enumerate(t) if c == '\n']
-        if ln > len(starts):
-            return None
+        if ln > len(starts) or not t.startswith(before, starts[ln - 1]):
+            return None                  # another swap moved or changed it
         new = swap_at(t, starts[ln - 1])
         return None if new is None else {cpp: new}
     return fn
@@ -179,6 +217,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--apply', action='store_true')
     ap.add_argument('-j', '--jobs', type=int, default=4)
+    ap.add_argument('--sites-only', action='store_true', help='no trial of `if (!x)` forms without an inverted jump')
     ap.add_argument('patterns', nargs='*')
     args = ap.parse_args()
     rows = audit.load_funcmap(os.path.join(ORACLE, 'evidence', 'funcmap.tsv'))
@@ -189,20 +228,23 @@ def main():
         if p[0] != 'start' and len(p) > 9:
             status[int(p[0], 16)] = p[9]
     _ref, model = audit.load_context()
-    cands = candidates(rows, model, syms, status, args.patterns)
+    cands = candidates(rows, model, syms, status, args.patterns, negated=not args.sites_only)
     total = sum(len(v) for v in cands.values())
-    print('%d sites in %d TUs' % (total, len(cands)))
+    trials = sum(1 for v in cands.values() for c in v if c[4])
+    print('%d sites in %d TUs (%d by form alone)' % (total, len(cands), trials))
     if not args.apply:
         for tu in sorted(cands):
-            for s, ln, before, after in cands[tu]:
-                print('%s:%d  %08x\n%s\n---\n%s\n' % (tu, ln, s, before, after))
+            for s, ln, before, after, trial in cands[tu]:
+                print('%s:%d  %08x%s\n%s\n---\n%s\n' % (tu, ln, s, ' (form)' if trial else '', before, after))
         return 0
     quarantined = audit.load_quarantine(os.path.join(BUILD, 'quarantine.tsv'))
     groups = {}
     for tu in sorted(cands):
         cpp = os.path.join(REPO, tu + '.cpp')
-        groups[tu] = ([fixlib.Edit('%s:%d' % (tu, ln), [s], [s], file_edit(cpp, ln, before, after))
-                       for s, ln, before, after in cands[tu]], [cpp])
+        # A swap found by its form alone must make its function more similar:
+        # nothing in the code asked for it.
+        groups[tu] = ([fixlib.Edit('%s:%d' % (tu, ln), [s], [s], file_edit(cpp, ln, before, after), require_gain=trial)
+                       for s, ln, before, after, trial in cands[tu]], [cpp])
     kept, gained = fixlib.apply_batch(groups, (rows, model, syms, quarantined), jobs=args.jobs,
                                       log=lambda m: print(m, flush=True))
     print('kept %d of %d edits, MATCH %+d' % (kept, total, gained))

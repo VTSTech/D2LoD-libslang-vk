@@ -5,8 +5,8 @@
         e.g.  asmdiff.py DRLGENV_UpdateLightIntensity
               asmdiff.py 0045a2b0
 
-Resolves through evidence/funcmap.tsv (a name may be given unqualified when it
-is unique). Left: our object's code; right: the original's. Both columns are
+Resolves through evidence/funcmap.tsv, then evidence/libmap.tsv (the
+statically linked runtime; a name may be given unqualified when it is unique). Left: our object's code; right: the original's. Both columns are
 the normalised view compare.py judges by: references are printed by what they
 refer to (fn_<original address>, "string", __imp_Name, $+offset, globals by
 our symbol / original address), so an address difference that is only layout
@@ -37,8 +37,9 @@ def main(argv):
         sys.exit(__doc__)
     want = argv[1]
     rows = audit.load_funcmap(funcmap)
+    librows = audit.load_funcmap(audit.LIBMAP) if os.path.exists(audit.LIBMAP) else []
     hits = []
-    for row in rows:
+    for row in rows + librows:
         s, _e, name = row[0], row[1], row[2]
         if want.lower().lstrip('0x').lstrip('0') == ('%x' % s) or name == want or name.endswith('::' + want):
             hits.append(row)
@@ -48,13 +49,16 @@ def main(argv):
         sys.exit('%s is ambiguous:\n' % want + '\n'.join('  %08x %s (%s)' % (h[0], h[2], h[3]) for h in hits))
     s, e, name, tu, sym, method, detail = hits[0]
     _ref, model = audit.load_context()
-    objdir = os.path.join(audit.BUILD, 'obj')
-    fns = {f.key: f for f in ourslib.load_object(objdir, tu + '.obj')}
+    if hits[0] in librows:
+        import libmap
+        fns = {f.key: f for f in libmap.load_lib_functions()}
+    else:
+        fns = {f.key: f for f in ourslib.load_object(os.path.join(audit.BUILD, 'obj'), tu + '.obj')}
     f = fns.get(tu + '|' + sym)
     if f is None:
         sys.exit('%s not found in %s.obj - rebuild it' % (sym, tu))
-    ours = compare.our_view(f, audit.sym_map(rows))
-    ref = compare.ref_view(s, model[s])
+    ours = compare.our_view(f, audit.sym_map(rows, librows))
+    ref = compare.ref_view_span(s, e, model)
     r = compare.compare(ours, ref)
     print('%s  [%s]  original %08x..%08x  paired by %s (%s)' % (name, tu, s, e, method, detail))
     print('status %s  insns ours %d / original %d  byte diffs %d  similarity %.3f  refs differ %d, unverified %d' % (

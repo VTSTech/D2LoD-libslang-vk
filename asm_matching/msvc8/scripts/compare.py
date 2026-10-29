@@ -27,6 +27,7 @@ Status classes (shared with the sibling projects' audit TSVs):
   OUR+N / OUR-N     we have N more / fewer instructions
 """
 import difflib
+import re
 import struct
 
 import capstone
@@ -115,8 +116,10 @@ def _addend(f, off):
     return 0
 
 
-def our_view(f, sym_to_start):
-    """f: ours.OurFunc. sym_to_start: our symbol -> original start (funcmap)."""
+def our_view(f, sym_to_start, render=True):
+    """f: ours.OurFunc. sym_to_start: our symbol -> original start (funcmap).
+    render=False leaves text, key and line None: for callers that read only the
+    masked bytes, mnemonics and tokens (disassembling the text is most of the cost)."""
     by_off = {}
     for off, kind, tgt in f.refs:
         if kind in ('call', 'fptr'):
@@ -148,14 +151,38 @@ def our_view(f, sym_to_start):
         masked = bytearray(i.bytes)
         for off, size, _l, _b in fields:
             masked[off:off + size] = b'\0' * size
-        text, key = _render(i.bytes, i.addr, fields)
-        at = f.line_at(i.addr) if hasattr(f, 'line_at') else None
+        text, key = _render(i.bytes, i.addr, fields) if render else (None, None)
+        at = f.line_at(i.addr) if render and hasattr(f, 'line_at') else None
         out.append(NInsn(i.addr, bytes(masked), i.mnemonic, text, key, toks, at[1] if at else None))
     return out
 
 
-def ref_view(start, model_entry):
-    """model_entry: (decoded function, refs) from refimage.Reference.model()."""
+# ws2_32 exports its classic Winsock API by ordinal, and Game.exe imports it so.
+WS2_32_ORDINALS = {
+    1: 'accept', 2: 'bind', 3: 'closesocket', 4: 'connect', 5: 'getpeername', 6: 'getsockname',
+    7: 'getsockopt', 8: 'htonl', 9: 'htons', 10: 'ioctlsocket', 11: 'inet_addr', 12: 'inet_ntoa',
+    13: 'listen', 14: 'ntohl', 15: 'ntohs', 16: 'recv', 17: 'recvfrom', 18: 'select', 19: 'send',
+    20: 'sendto', 21: 'setsockopt', 22: 'shutdown', 23: 'socket', 51: 'gethostbyaddr',
+    52: 'gethostbyname', 53: 'getprotobyname', 54: 'getprotobynumber', 55: 'getservbyname',
+    56: 'getservbyport', 57: 'gethostname', 111: 'WSAGetLastError', 112: 'WSASetLastError',
+    115: 'WSAStartup', 116: 'WSACleanup', 151: '__WSAFDIsSet',
+}
+
+
+def import_name(tgt):
+    """'dll!name' as our objects name the same import (objfuncs._IMP): a C name
+    without its leading underscore and stdcall decoration (binkw32 and smackw32
+    export `_SmackClose@4`), and a ws2_32 ordinal as the function it is."""
+    dll, name = tgt.split('!', 1)
+    if name.startswith('#') and dll.lower() == 'ws2_32.dll':
+        return WS2_32_ORDINALS.get(int(name[1:]), name)
+    m = re.match(r'^_([A-Za-z_]\w*)@\d+$', name)
+    return m.group(1) if m else name
+
+
+def ref_view(start, model_entry, render=True):
+    """model_entry: (decoded function, refs) from refimage.Reference.model().
+    render: as our_view."""
     dec, refs = model_entry
     per_insn = {}
     for a, off, size, kind, tgt in refs:
@@ -164,7 +191,7 @@ def ref_view(start, model_entry):
         elif kind == 'string':
             tok = ('str', tgt)
         elif kind == 'import':
-            tok = ('import', tgt.split('!', 1)[1])
+            tok = ('import', import_name(tgt))
         elif kind == 'self':
             tok = ('self', tgt)
         else:
@@ -178,8 +205,64 @@ def ref_view(start, model_entry):
             masked[off:off + size] = b'\0' * size
         # Rendered at its offset in the function, as our side is, so an internal
         # jump reads the same on both sides.
-        text, key = _render(i.bytes, i.addr - start, fields)
+        text, key = _render(i.bytes, i.addr - start, fields) if render else (None, None)
         out.append(NInsn(i.addr - start, bytes(masked), i.mnemonic, text, key, [t for _o, _s, t, _b in fields]))
+    return out
+
+
+def span_pieces(model, start, end):
+    """The carved functions that tile [start, end) exactly, in order, or None.
+    end == the carve's own end gives [start]."""
+    out, p = [], start
+    while p < end:
+        if p not in model:
+            return None
+        out.append(p)
+        p = model[p][0].end
+    return out if p == end else None
+
+
+def ref_view_span(start, end, model):
+    """ref_view of the original's code from `start` to `end`, where the carve
+    split one function into several: refimage starts a function at every call
+    target, so a CRT function's __finally funclet (`call $LN5`, reached only
+    from its own body) is carved as a function of its own, while our object
+    holds it inside the one COMDAT. Over the joined span a reference is
+    normalised as our object's is: a branch or call into the span carries no
+    relocation in ours, so it is compared by its raw bytes and names nothing;
+    an address taken inside the span is ('self', offset); a call of the span's
+    own entry stays a call. With end == the carve's end this is ref_view."""
+    pieces = span_pieces(model, start, end)
+    if pieces is None:
+        raise ValueError('%08x..%08x is not a run of carved functions' % (start, end))
+    if len(pieces) == 1:
+        return ref_view(start, model[start])
+    out = []
+    for p in pieces:
+        dec, refs = model[p]
+        calls = {i.addr for i in dec.insns if i.bytes[:1] == b'\xe8'}
+        per_insn = {}
+        for a, off, size, kind, tgt in refs:
+            if kind == 'call' and start <= tgt < end and not (tgt == start and a in calls):
+                continue                                    # a branch inside the span: raw bytes
+            if kind == 'self':
+                tok = ('self', tgt + p - start)
+            elif kind in ('call', 'fptr'):
+                tok = ('self', tgt - start) if kind == 'fptr' and start <= tgt < end else ('fn', tgt)
+            elif kind == 'string':
+                tok = ('str', tgt)
+            elif kind == 'import':
+                tok = ('import', import_name(tgt))
+            else:
+                tok = ('self', tgt - start) if isinstance(tgt, int) and start <= tgt < end else ('data', tgt)
+            per_insn.setdefault(a, []).append((off, size, tok, kind == 'call'))
+        for i in dec.insns:
+            fields = sorted(per_insn.get(i.addr, ()))
+            masked = bytearray(i.bytes)
+            for off, size, _t, _b in fields:
+                masked[off:off + size] = b'\0' * size
+            text, key = _render(i.bytes, i.addr - start, fields)
+            out.append(NInsn(i.addr - start, bytes(masked), i.mnemonic, text, key, [t for _o, _s, t, _b in fields]))
     return out
 
 

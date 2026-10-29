@@ -134,8 +134,9 @@ def _string_of(o, sym):
     return data[:k + 1] if k >= 0 else data
 
 
-def functions(path, data=None):
-    """Functions of the object at `path`, or of `data` (an archive member) named `path`."""
+def functions(path, data=None, labels=False):
+    """Functions of the object at `path`, or of `data` (an archive member) named `path`.
+    labels: see coffobj.CoffObject.functions (assembler objects of a library)."""
     if data is None:
         data = open(path, 'rb').read()
     o = coffobj.CoffObject(data, path)
@@ -150,7 +151,12 @@ def functions(path, data=None):
             if r.type == coffobj.DIR32 and s.section > 0 and o.sections[s.section].is_code and s.section != sec.number:
                 addend = struct.unpack_from('<I', sec.data, r.offset)[0]
                 roots.setdefault(s.section, set()).add(s.value + addend)
-    for sym, sec, start, end in o.functions():
+    funcs = o.functions(labels)
+    # Function starts by (section, offset): a section of an assembler or C
+    # library object holds several functions, so an address taken in the
+    # same section is not necessarily the function's own.
+    starts = {(sec.number, start): sym.name for sym, sec, start, _end in funcs}
+    for sym, sec, start, end in funcs:
         if not sec.is_code:
             continue
         f = Function(path, sym, sec, start, end)
@@ -171,7 +177,10 @@ def functions(path, data=None):
                 elif st is not None:
                     kind = ('string', st)
                 elif s.section == sec.number:
-                    kind = ('self', s.value + struct.unpack_from('<I', sec.data, r.offset)[0] - start)
+                    # Modulo 2**32: against a label after the target the addend is negative.
+                    at = (s.value + struct.unpack_from('<I', sec.data, r.offset)[0]) & 0xffffffff
+                    other = starts.get((sec.number, at)) if not start <= at < end else None
+                    kind = ('fptr', other) if other else ('self', (at - start) & 0xffffffff)
                 elif s.section > 0 and o.sections[s.section].is_code and s.is_function:
                     kind = ('fptr', s.name)
                 else:

@@ -12,7 +12,9 @@ again, and when the source is right it chooses as the original did
 (IsOtherAct, 00548a80: pUnit2 in EAX, `ret 4`).
 
 A candidate is a mapped function whose original has registers live on entry
-that its declared convention does not pass arguments in (classify.live_in) -
+that its declared convention does not pass arguments in (classify.live_in;
+an argument register pushed on and never popped counts), or a __fastcall
+leaving a register its convention fills unused (own_convention) -
 a different `ret N` alone is no evidence: a static function the original
 does not pass anything in registers is what --demote undoes - and whose name
 appears in no file but its own TU and its own header's declaration (comments
@@ -96,6 +98,25 @@ class Tree:
         return self.counts.get(path, {}).get(name, 0)
 
 
+def own_convention(conv, insns):
+    """The registers by which the original's convention is not the declared
+    one: live on entry beyond what it passes, or - for __fastcall - a
+    declared register left unused although the function takes more: stack
+    arguments (`ret N`) beside an unused EDX, or its one argument in EDX
+    with ECX unused. An extern __fastcall must use ECX, then EDX; VC8
+    chooses otherwise only for a static function (SOUND_CalculateDistance,
+    004b9760: nothing in EDX, `ret 4`; init_block, 0042b9e0: EDX alone)."""
+    live = classify.live_in(insns)
+    extra = live - CONV_ARGS[conv]
+    if conv == 'YI' and not extra:
+        rets = classify.ret_imm(getattr(insns, 'insns', insns))
+        if 'edx' not in live and rets - {0}:
+            extra = {'stack'}
+        elif 'ecx' not in live and 'edx' in live:
+            extra = {'edx'}
+    return extra
+
+
 def candidates(rows, model, fns, tree, pats):
     out = collections.defaultdict(list)
     for s, _e, name, tu, sym, _m, _d in rows:
@@ -107,7 +128,7 @@ def candidates(rows, model, fns, tree, pats):
         conv = sym[sym.index('@@') + 2:sym.index('@@') + 4]
         if conv not in CONV_ARGS:
             continue                     # members, and anything not a plain namespace function
-        extra = classify.live_in(model[s][0]) - CONV_ARGS[conv]
+        extra = own_convention(conv, model[s][0])
         if not extra:
             continue                     # no register the declaration does not pass: no evidence
         leaf = name.rsplit('::', 1)[-1]
@@ -136,7 +157,7 @@ def demotions(rows, model, fns, pats):
             continue
         theirs = classify.live_in(model[s][0])
         ours = classify.live_in(f.decoded)
-        if theirs - CONV_ARGS[conv] or ours == theirs:
+        if own_convention(conv, model[s][0]) or ours == theirs:
             continue                     # the original has a convention of its own, or ours agrees
         out[tu].append((s, name.rsplit('::', 1)[-1], sorted(ours)))
     return out
@@ -157,8 +178,12 @@ def demote(texts, cpp, hdr, leaf, old_hdr):
         return None
     head = m.group('head')
     new = src[:m.start()] + head[len('static '):] + src[m.start() + len(head):]
-    fwd = '\nstatic ' + head[len('static '):].rstrip() + ';'
-    new = new.replace(fwd, '', 1)
+    fwd = 'static ' + head[len('static '):].rstrip() + ';'
+    # Declared in a namespace block of its own, or after a namespace's first line.
+    new, n = re.subn(r'^(?:namespace[ \t]*[\w:]*[ \t]*\{\n)+%s\n(?:\} // namespace[^\n]*\n)+' % re.escape(fwd), '',
+                     new, count=1, flags=re.M)
+    if not n:
+        new = new.replace('\n' + fwd, '', 1)
     out = {cpp: new}
     if hdr in texts and old_hdr is not None:
         h = texts[hdr]
@@ -194,6 +219,63 @@ def def_pattern(name):
             r'\s*\((?P<params>[^;{}]*)\)[ \t]*)\{')
 
 
+def blank_comments(text):
+    """`text` with its comments blanked out, every offset kept."""
+    return COMMENTS.sub(lambda m: re.sub(r'[^\n]', ' ', m.group(0)), text)
+
+
+NS_OPEN = re.compile(r'^namespace(?:[ \t]+(?P<name>[\w:]+))?[ \t]*\{[ \t]*$', re.M)
+NS_CLOSE = re.compile(r'^\}[ \t]*//[ \t]*namespace\b[^\n]*$', re.M)
+
+
+def namespaces(text):
+    """[(offset after the line, namespace path)] at every namespace opened or
+    closed at the start of a line: the generator's `namespace A::B {` and
+    `} // namespace A::B`."""
+    out, stack = [], []
+    events = sorted([(m.start(), m.end(), m.group('name') or '') for m in NS_OPEN.finditer(text)] +
+                    [(m.start(), m.end(), None) for m in NS_CLOSE.finditer(text)])
+    for start, end, name in events:
+        if name is None:
+            if stack:
+                stack.pop()
+        else:
+            stack.append(name)
+        out.append((start, end, tuple(stack)))
+    return out
+
+
+def namespace_at(text, pos):
+    path = ()
+    for start, _end, p in namespaces(text):
+        if start >= pos:
+            break
+        path = p
+    return path
+
+
+def forward_declare(text, def_pos, use_pos, decl):
+    """`text` with `decl` declared ahead of `use_pos` in the namespace of the
+    definition at `def_pos`: after the first line opening that namespace when
+    it comes before the use (g++ does not find a function declared in another
+    namespace, VC8 does), else in a namespace block of its own ahead of the
+    first namespace the file opens. Declaration only: no code changes."""
+    want = namespace_at(text, def_pos)
+    events = namespaces(text)
+    for start, end, path in events:
+        if start >= use_pos:
+            break
+        if path == want and NS_OPEN.match(text, start):
+            return text[:end] + '\n' + decl + text[end:]
+    if not want:
+        return '\n' + decl + text if not events else text[:events[0][0]] + decl + '\n' + text[events[0][0]:]
+    # The generator's own block form, which vc8_translate knows.
+    opens = ''.join('namespace %s {\n' % n if n else 'namespace {\n' for n in want)
+    closes = ''.join('} // namespace %s\n' % n for n in reversed(want))
+    at = events[0][0] if events and events[0][0] < use_pos else 0
+    return text[:at] + opens + decl + '\n' + closes + text[at:]
+
+
 def promote(texts, cpp, hdr, leaf):
     """The texts with `leaf` made static, or None if it cannot be done."""
     src = texts[cpp]
@@ -204,11 +286,10 @@ def promote(texts, cpp, hdr, leaf):
     new = src[:m.start()] + 'static ' + src[m.start():]
     # A use before the definition - a call, or its address - needs a
     # declaration ahead of it.
-    before = strip_comments(src[:m.start()])
-    if re.search(r'\b%s\b' % re.escape(leaf), before):
-        ns = list(re.finditer(r'^namespace [^\n]*\{[ \t]*$', new[:m.start() + 7], re.M))
-        at = ns[0].end() if ns else 0
-        new = new[:at] + '\nstatic ' + head + ';' + new[at:]
+    before = blank_comments(src[:m.start()])
+    use = re.search(r'\b%s\b' % re.escape(leaf), before)
+    if use:
+        new = forward_declare(new, m.start() + 7, use.start(), 'static ' + head + ';')
     out = {cpp: new}
     if hdr in texts:
         h = texts[hdr]
