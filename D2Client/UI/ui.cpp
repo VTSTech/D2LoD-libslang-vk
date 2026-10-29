@@ -1307,7 +1307,7 @@ void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndices) {
 }
 
 BOOL __fastcall GetUIFlag(eD2UIvars eUI) {
-    if (!(UI_RECIPESCROLL >= eUI)) {
+    if (!(UI_VANILLAPLUS >= eUI)) { // vanilla-plus: bound UI_RECIPESCROLL(37) -> UI_VANILLAPLUS(38)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc34);
       exit(-1);
     }
@@ -1324,7 +1324,7 @@ uint32_t UI_HandleKeyInputAndDismiss(int32_t nKeyAction, int32_t nUIFlagToCheck)
     BOOL bGotInteractGuid;
     int32_t nInteractGuid;
     int32_t nLine;
-    if (gnUIFlagCount != 0x26) {
+    if (gnUIFlagCount != 0x27) { // vanilla-plus: 0x26 -> 0x27 (UI_VANILLAPLUS)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
       exit(-1);
     }

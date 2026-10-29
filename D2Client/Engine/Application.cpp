@@ -55,7 +55,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     /* Here it assign global D2Application mode then param is used as variable to
                          determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
-    D2BOOT_Mark("vanilla-plus 0.0.3"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    D2BOOT_Mark("vanilla-plus 0.0.4"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
     // [vanilla-plus] Create d2vp.ini next to the exe when missing (documented
     // all-defaults template, one attempt per process) so the opt-in feature
     // keys are discoverable at the title screen. Silent no-op when the file

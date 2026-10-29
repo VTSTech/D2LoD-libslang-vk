@@ -32,12 +32,12 @@
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_ALLOC
-#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_AT
+#define D2_ALLOC_AT(size, szFile, nLine) Fog::Memory::AllocClientMemory((size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE
-#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_AT
+#define D2_FREE_AT(p, szFile, nLine) Fog::Memory::FreeClientMemory((p), (szFile), (nLine), 0)
 #endif
 
 
@@ -59,6 +59,9 @@ typedef HRESULT (__stdcall *pfnSHGetKnownFolderPath)(GUID * rfid, DWORD dwFlags,
 #endif
 
 namespace Fog::Engine::Application {
+
+static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo);
+static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo);
 
 bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     pContext->ContextFlags = 0x1003f;
@@ -86,7 +89,7 @@ bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     return false;
 }
 
-uint32_t DEBUG_GetPEImageType(short * nMagic) {
+static uint32_t DEBUG_GetPEImageType(short * nMagic) {
     if (*nMagic != 0x10b) {
       return *nMagic != 0x20b ? 0 : 0x2;
     }
@@ -94,7 +97,7 @@ uint32_t DEBUG_GetPEImageType(short * nMagic) {
     return 1;
 }
 
-uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize, int * pnRVA, short * pOptHeader) {
+static uint32_t DEBUG_ParsePEDebugDirectory(short * * pOutput, uint32_t * pnSize, int * pnRVA, short * pOptHeader) {
     uint32_t nDirSize;
     int nDirRVA;
     if (*pOptHeader == 0x10b) {
@@ -166,7 +169,7 @@ uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t 
     return nParseResult;
 }
 
-uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, int32_t pOutput) {
+static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, int32_t pOutput) {
     BOOL bIsBadPtr;
     uint32_t nParseResult;
     int* pDebugData;
@@ -209,7 +212,7 @@ uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseA
     return nDirIter & -256;
 }
 
-uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short * pModuleBase) {
+static uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short * pModuleBase) {
     /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ *ppModuleBase = pModuleBase;
     uint32_t bIsBadPtr = IsBadReadPtr(pModuleBase, 0x40);
     if (!(!bIsBadPtr && *pModuleBase == 0x5a4d)) {
@@ -273,7 +276,7 @@ uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short * pMod
 }
 
 // Adds a loaded module to the crash dump module list by parsing PE headers
-bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModulePath, int32_t nPathLength, short * pModuleBase) {
+static bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModulePath, int32_t nPathLength, short * pModuleBase) {
     int nCopyCount;
     D2DebugModuleInfo aModuleInfo;
     /* LPBOOL lpUsedDefaultChar for WideCharToMultiByte */ /* LPCSTR lpDefaultChar for WideCharToMultiByte */ /* int cbMultiByte for WideCharToMultiByte */ /* LPSTR lpMultiByteStr for WideCharToMultiByte */ /* int cchWideChar for WideCharToMultiByte */ /* LPCWSTR lpWideCharStr for WideCharToMultiByte */ /* DWORD dwFlags for WideCharToMultiByte */ /* UINT CodePage for WideCharToMultiByte */ aModuleInfo.pBase = 0;
@@ -328,11 +331,9 @@ bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModulePath, in
 
     uint32_t nParseResult = DEBUG_ParseModuleHeaders((short int**)&aModuleInfo, pModuleBase);
     if ((char)nParseResult == '\0') {
-      Debug::GuardStack();
       return true;
     }
     if (!pModuleList) {
-      Debug::GuardStack();
       return false;
     }
 
@@ -346,21 +347,19 @@ bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModulePath, in
 
     (*pModuleList)++;
     nMbLen = *pModuleList;
-    Debug::GuardStack();
     return nMbLen < 0x100;
 }
 
 bool __stdcall DEBUG_EnumerateModulesViaPsapi(int * pnParam) {
-    // Frame slots -556..-8 are ONE object: &nBytesNeeded is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -556..-12 are ONE object: &nBytesNeeded is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
       uint32_t nBytesNeeded;
       int* pList;
       short int* aModuleInfo[3];
       uint16_t szModuleName[262];
-      uint32_t dwSecurityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 548, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 544, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     pfnEnumProcessModules pEnumProcessModules;
     BOOL bResult;
@@ -371,7 +370,6 @@ bool __stdcall DEBUG_EnumerateModulesViaPsapi(int * pnParam) {
     pfnGetModuleBaseNameW pGetModuleBaseNameW;
     uint32_t nModuleCount;
     HANDLE hProcess2;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)&hProcess;
     __frame0.pList = pnParam;
     hProcess = GetCurrentProcess();
     HMODULE hModule = LoadLibraryW(L"psapi.dll");
@@ -406,7 +404,6 @@ bool __stdcall DEBUG_EnumerateModulesViaPsapi(int * pnParam) {
           }
 
           /* HMODULE hLibModule for FreeLibrary */ FreeLibrary(hModule);
-          Debug::GuardStack();
           return true;
         }
       }
@@ -414,7 +411,6 @@ bool __stdcall DEBUG_EnumerateModulesViaPsapi(int * pnParam) {
       /* HMODULE hLibModule for FreeLibrary */ FreeLibrary(hModule);
     }
 
-    Debug::GuardStack();
     return false;
 }
 
@@ -441,11 +437,9 @@ bool DEBUG_EnumerateModulesViaToolhelp32(int * pModuleList) {
       }
 
       /* HANDLE hObject for CloseHandle */ CloseHandle(hSnapshot);
-      Debug::GuardStack();
       return true;
     }
 
-    Debug::GuardStack();
     return false;
 }
 
@@ -525,7 +519,7 @@ void __stdcall DEBUG_ExtractDebugDirectory32(uint32_t dwParam, uint32_t * pnRVA,
     *pnSize = nSize;
 }
 
-uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
+static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
     uint32_t bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x14);
     if (bIsBadPtr) {
       return bIsBadPtr & -256;
@@ -546,7 +540,7 @@ uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
     return 1;
 }
 
-uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
+static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
     uint32_t bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x1c);
     if (bIsBadPtr) {
       return bIsBadPtr & -256;
@@ -686,7 +680,6 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
         }
 
         ExceptionList = tSehFrame.Next;
-        Debug::GuardStack();
         return nFrameCount;
       }
       if (hOpenedThread) {
@@ -697,15 +690,13 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
 
     nFrameCount = 0;
     ExceptionList = tSehFrame.Next;
-    Debug::GuardStack();
     return nFrameCount;
 }
 
-void __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
+bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
     char* pSep;
     char* pBasename;
     char szModulePath[260];
-    uint32_t local_c = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     *(uint32_t*)(pOutput + 0x200) = 0;
     char* pSrcFileField = pOutput + 0x244;
     *pSrcFileField = '\0';
@@ -766,7 +757,7 @@ void __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput) {
     }
 
     _strncpy_s(pSrcFileField, 0x100, pSep, -1);
-    Debug::GuardStack();
+    return true;
 }
 
 // Global operator delete: frees p through Storm SMemFree with the delete source tag, and ignores null. Counterpart of MISC_OperatorNewShim.
@@ -789,7 +780,6 @@ void __stdcall MISC_GetValueFromD2Ini(D2IniConfigStrc * pD2IniData) {
     char* pDestField;
     char szIniPath[260];
     char cVar1;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     Source::SFile::SFILE_GetExecutableDirectory(szIniPath, 0x104);
     Storm::Source::SSTR::SStrPack(szIniPath, "D2.ini", 0x104);
     uint32_t nEntryOffset = 0;
@@ -818,8 +808,6 @@ void __stdcall MISC_GetValueFromD2Ini(D2IniConfigStrc * pD2IniData) {
 
       nEntryOffset += 0x5c;
     } while (nEntryOffset < 0x14d8);
-
-    Debug::GuardStack();
 }
 
 int32_t __stdcall INI_FindConfigValueIndex(uint8_t * pbArgName) {
@@ -861,13 +849,11 @@ uint32_t __fastcall INI_IsDelimiterChar(char cChar) {
     return 0;
 }
 
-void INI_StripDelimiters(char * szText) {
+static void INI_StripDelimiters(char * szText) {
     int nWriteIdx;
     int nDelimIdx;
     char aWorkBuf[260];
     char cChar;
-    uint32_t dwSecurityCookie;
-    dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pCursor;
     pCursor = szText;
     do {
@@ -906,7 +892,6 @@ void INI_StripDelimiters(char * szText) {
         do {
           if (aWorkBuf[nDelimIdx] == aWorkBuf[nReadIdx + 4]) {
             szText[nWriteIdx] = '\0';
-            Debug::GuardStack();
             return;
           }
 
@@ -920,14 +905,12 @@ void INI_StripDelimiters(char * szText) {
     }
 
     szText[nWriteIdx] = '\0';
-    Debug::GuardStack();
 }
 
 int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, int32_t pOutValue) {
     char szArgNameBuf[256];
     char cChar;
     int nDstOffset;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pCursor = szCmdLine;
     pCursor = pCursor + strlen(pCursor) + 1;
     int nCmdLen = (int)pCursor - (int)(szCmdLine + 1);
@@ -998,7 +981,6 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, in
 
     *(uint8_t*)(pOutValue + nCmdLen) = 0;
     INI_StripDelimiters((char*)pOutValue);
-    Debug::GuardStack();
     return nConfigIdx;
 }
 
@@ -1014,7 +996,6 @@ void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2In
     char szArgValue[256];
     uint8_t bVar2;
     char cChar;
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* pCmdEnd = szText;
     pCmdEnd = pCmdEnd + strlen(pCmdEnd) + 1;
     int iVar1 = (int)pCmdEnd - (int)(szText + 1);
@@ -1060,8 +1041,6 @@ void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2In
         nPos++;
       } while (nPos < iVar1);
     }
-
-    Debug::GuardStack();
 }
 
 void __fastcall MISC_InitD2IniAndIgnorelist(D2IniConfigStrc * D2IniData, char * szCommandLine) {
@@ -1110,15 +1089,15 @@ int32_t __stdcall ApplicationRunCurrentMode(D2IniConfigStrc * pD2IniData) {
       Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x133);
       exit(-1);
     } else {
-      if (ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown) {
-        CurrentApplication = ApplicationBootstrapArray[geD2ApplicationMode].pfnInit(WinMain_hInstance);
-        modeResult = (**CurrentApplication)(pD2IniData);
-        ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown();
-        return modeResult;
+      if (!ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown) {
+        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x134);
+        exit(-1);
       }
 
-      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x134);
-      exit(-1);
+      CurrentApplication = ApplicationBootstrapArray[geD2ApplicationMode].pfnInit(WinMain_hInstance);
+      modeResult = (**CurrentApplication)(pD2IniData);
+      ApplicationBootstrapArray[geD2ApplicationMode].pfnShutdown();
+      return modeResult;
     }
 }
 
@@ -1137,7 +1116,6 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
     uint32_t pszLocaleSuffix;
     FILE* pLocaleFile;
     BOOL bIsExpansion;
-    __frame0.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2BOOT_Mark("SystemSurvey fn enter"); // [d2boot]
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation((char*)&__frame0.langInfo, 3);
     D2BOOT_MarkFmt("SystemSurvey: lang abbrev -> %08X", (unsigned)__frame0.langInfo); // [d2boot]
@@ -1185,7 +1163,6 @@ void __stdcall SystemSurvey_WriteProductLanugageToLocaleFile() {
     D2BOOT_Mark("SystemSurvey: spawn done"); // [d2boot]
     D2TRACE("ApplicationMain returned");
     D2BOOT_Mark("SystemSurvey fn end"); // [d2boot]
-    Debug::GuardStack();
 }
 
 BOOL __stdcall ReturnTrue() {
@@ -1201,14 +1178,13 @@ void __stdcall CreateRegedit() {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
-    // Frame slots -268..-4 are ONE object: &szInstallPath is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -268..-8 are ONE object: &szInstallPath is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame1_t {
       char szInstallPath;
       uint8_t szInstallPathBuf[259];
-      uint32_t dwSecurityCookie;
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 264, "frame group __frame1_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 260, "frame group __frame1_t must reproduce the Ghidra frame layout");
     __frame1_t __frame1;
     DWORD dwIndex;
     LPDWORD dwValueInfo;
@@ -1216,7 +1192,6 @@ void __stdcall CreateRegedit() {
     HKEY hKeySrc;
     uint8_t dataBuf[1024];
     char szValueName[260];
-    __frame1.dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     LSTATUS nRegStatus = RegOpenKeyA((HKEY)0x80000002, "SOFTWARE\\Blizzard Entertainment\\Diablo II Beta", &hKeySrc);
     if (!nRegStatus) {
       /* PHKEY phkResult for RegCreateKeyA */ /* LPCSTR lpSubKey for RegCreateKeyA */ /* HKEY hKey for RegCreateKeyA */ RegCreateKeyA((HKEY)0x80000002, "SOFTWARE\\Blizzard Entertainment\\Diablo II", &hKeyDest);
@@ -1244,8 +1219,6 @@ void __stdcall CreateRegedit() {
     if (gnServiceRunning) {
       /* LPCSTR lpPathName for SetCurrentDirectoryA */ SetCurrentDirectoryA(&__frame1.szInstallPath);
     }
-
-    Debug::GuardStack();
 }
 
 uint32_t __stdcall ERRORMANAGER_TryGetProcAddress(HMODULE hModule, FARPROC * ppfnProc, LPCSTR szText) {
@@ -1259,7 +1232,7 @@ uint32_t __stdcall ERRORMANAGER_TryGetProcAddress(HMODULE hModule, FARPROC * ppf
 }
 
 // @sourcefile .\Main.cpp
-void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD2ApplicationMode * eAppMode, char * szText) {
+static int __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD2ApplicationMode * eAppMode, char * szText) {
     // Static local variables (originally global data)
     static char * gApplicationModeCommandLineArgumentArray[6] = { s_modstate0_006cc928, s_client_006cc920, s_server_006cc918, s_multiplayer_006cc90c, s_launcher_006cc900, s_expand_006cc8f8 }; D2_STATIC_GUARD(gApplicationModeCommandLineArgumentArray, "Fog::Engine::Application::CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument::gApplicationModeCommandLineArgumentArray");
 
@@ -1269,7 +1242,7 @@ void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD
     char* pszModeStr;
     char* pszCmdToken = szText;
     pszCmdToken = pszCmdToken + strlen(pszCmdToken) + 1;
-    char* szCmdLineCopy = (char*)D2_ALLOC((size_t)(pszCmdToken + (1 - (int)(szText + 1))));
+    char* szCmdLineCopy = (char*)D2_ALLOC_AT((size_t)(pszCmdToken + (1 - (int)(szText + 1))), ".\\DUNGEON\\Dungeon.cpp", 0x1ba);
     Storm::Source::SSTR::SStrCopy(szCmdLineCopy, szText, (int32_t)(pszCmdToken + (1 - (int)(szText + 1))));
     pszCmdToken = strtok(szCmdLineCopy, "-");
     while (pszCmdToken) {
@@ -1290,7 +1263,8 @@ void __stdcall CLIENT_CheckIfApplicationModeIsInCommandLineAndSetItToArgument(eD
       pszCmdToken = strtok(nullptr, "-");
     }
 
-    D2_FREE(szCmdLineCopy);
+    D2_FREE_AT(szCmdLineCopy, ".\\DUNGEON\\Dungeon.cpp", 0x1e0);
+    return 1;
 }
 
 // lpHandlerProc parameter of RegisterServiceCtrlHandlerA
@@ -1317,7 +1291,6 @@ void __stdcall ERRORMANAGER_ServiceControlHandler(int32_t nServiceControl) {
 void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     D2IniConfigStrc pD2IniData;
     char szVersionString[260];
-    uint32_t dwSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     char* local_4e0 = "";
     if (1 < argc) {
       local_4e0 = argv[argc - 1];
@@ -1356,7 +1329,6 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     D2BOOT_Mark("cmdline/ini ok -> ApplicationMain"); // [d2boot]
     D2Client::Engine::Application::ApplicationMain(WinMain_hInstance, &pD2IniData, eAppMode);
     D2BOOT_Mark("ApplicationMain returned"); // [d2boot]
-    Debug::GuardStack();
 }
 
 // WinMain: decide server/service vs client, load advapi, then PreInitApplication.

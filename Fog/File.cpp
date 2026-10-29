@@ -28,6 +28,8 @@ typedef int (__fastcall *pfnFogExceptionFilter)(D2CrashReportStrc * pExceptionRe
 
 namespace Fog::File {
 
+static char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc);
+
 void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int32_t nBufferSize, CONTAINER_TypeInitialValue fpInitValueCallback) {
     while (true) {
       nBufferSize--;
@@ -129,8 +131,6 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
       aFrameAddrs++;
     }
-
-    Debug::GuardStack();
 }
 
 void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputCallback, ::Report * pReport) {
@@ -143,7 +143,6 @@ void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputC
     uint8_t* nFpuDataOffset;
     CONTEXT sContext;
     char szLineBuffer[1024];
-    uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     bool bVar1 = Engine::Application::DEBUG_CaptureThreadContext(dwThreadId, &sContext);
     if (bVar1) {
       if (sContext.ContextFlags & 0x10002) {
@@ -235,8 +234,6 @@ void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputC
         (*pOutputCallback)(pReport, szLineBuffer);
       }
     }
-
-    Debug::GuardStack();
 }
 
 void __fastcall CRASH_EnumerateThreads(fnCrashOutputLine pOutputCallback, ::Report * pReport, DWORD dwSkipThreadId) {
@@ -268,7 +265,7 @@ void __fastcall CRASH_EnumerateThreads(fnCrashOutputLine pOutputCallback, ::Repo
     /* HANDLE hObject for CloseHandle */ CloseHandle(hObject);
 }
 
-void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
+static void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
     DWORD nMsgLen;
     if (dwExceptionCode < 0xc0000006) {
       if (dwExceptionCode == 0xc0000005) {
@@ -373,7 +370,6 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
     D2CrashReportStrc sCrashReport;
     char aMessageBuffer[512];
     char szExceptionName[256];
-    uint32_t nStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (gpCurrentExceptionFilter) {
       CRASH_GetExceptionName(szExceptionName, pExceptionPointers->ExceptionRecord->ExceptionCode);
       sCrashReport.pszMessage = aMessageBuffer;
@@ -386,7 +382,6 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
       sCrashReport.nSkipFrames = 0;
       nFilterResult = (*gpCurrentExceptionFilter)(&sCrashReport, gpCurrentExceptionContext);
       if (nFilterResult) {
-        Debug::GuardStack();
         return (uint32_t)(nFilterResult != 1) * 2 - 1;
       }
     }
@@ -397,7 +392,6 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
     // fault in a DLL-own thread - no game frames, skipped by the VEH - is
     // still reported with the module list naming the culprit DLL.
     D2CRASH_ReportUnhandled(pExceptionPointers);
-    Debug::GuardStack();
     return 0;
 }
 
@@ -513,7 +507,7 @@ bool __fastcall STRING_AppendBlizzardErrorSubfolderToPath(char * szPath) {
     return pEnd < (char*)0x400;
 }
 
-char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc) {
+static char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * szSrc) {
     char* pSrcScan;
     pSrcScan = szSrc;
     if (nDestSize) {
@@ -590,18 +584,15 @@ bool __fastcall FILETOOLS_StartApplicationWithCommandLine_UTF8(LPCSTR lpApplicat
     _PROCESS_INFORMATION processInfo;
     uint16_t wszCommandLine[32768];
     uint16_t wszAppName[1024];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     if (szCommandLine) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, szCommandLine, -1, (LPWSTR)wszCommandLine, 0x8000);
       if (!nConverted) {
-        Debug::GuardStack();
         return false;
       }
     }
     if (lpApplicationName) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, lpApplicationName, -1, (LPWSTR)wszAppName, 0x400);
       if (!nConverted) {
-        Debug::GuardStack();
         return false;
       }
     }
@@ -616,30 +607,25 @@ bool __fastcall FILETOOLS_StartApplicationWithCommandLine_UTF8(LPCSTR lpApplicat
     if (bCreated) {
       /* HANDLE hObject for CloseHandle */ CloseHandle(processInfo.hProcess);
       /* HANDLE hObject for CloseHandle */ CloseHandle(processInfo.hThread);
-      Debug::GuardStack();
       return true;
     }
 
-    Debug::GuardStack();
     return false;
 }
 
 bool __stdcall FILETOOLS_CheckIfFileExists_UTF8(LPCSTR lpMultiByteStr) {
     _WIN32_FIND_DATAW findData;
     uint16_t wszPath[262];
-    uint32_t local_c = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)&findData;
     int nConverted = MultiByteToWideChar(0xfde9, 0, lpMultiByteStr, -1, (LPWSTR)wszPath, 0x104);
     if (nConverted) {
       HANDLE hFindFile;
       /* LPWIN32_FIND_DATAW lpFindFileData for FindFirstFileW */ /* LPCWSTR lpFileName for FindFirstFileW */ hFindFile = FindFirstFileW((LPCWSTR)wszPath, &findData);
       if (hFindFile != (HANDLE)-1) {
         /* HANDLE hFindFile for FindClose */ FindClose(hFindFile);
-        Debug::GuardStack();
         return true;
       }
     }
 
-    Debug::GuardStack();
     return false;
 }
 
@@ -647,50 +633,40 @@ FILE * __stdcall FILETOOLS_OpenFile_WriteMode_UTF8(LPCSTR lpMultiByteStr) {
     FILE* pFVar1;
     uint16_t wszPath[260];
     uint16_t wszMode[32];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nConverted = MultiByteToWideChar(0xfde9, 0, lpMultiByteStr, -1, (LPWSTR)wszPath, 0x104);
     if (nConverted) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, "w", -1, (LPWSTR)wszMode, 0x20);
       if (nConverted) {
         pFVar1 = __wfopen(wszPath, wszMode);
-        Debug::GuardStack();
         return pFVar1;
       }
     }
 
-    Debug::GuardStack();
     return nullptr;
 }
 
 void __stdcall FILETOOLS_CopyFile_UTF8(LPCSTR szSrcPath, LPCSTR szDestPath) {
     uint16_t wszSrc[260];
     uint16_t wszDest[260];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nConverted = MultiByteToWideChar(0xfde9, 0, szSrcPath, -1, (LPWSTR)wszSrc, 0x104);
     if (nConverted) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, szDestPath, -1, (LPWSTR)wszDest, 0x104);
       if (nConverted) {
         /* BOOL bFailIfExists for CopyFileW */ /* LPCWSTR lpNewFileName for CopyFileW */ /* LPCWSTR lpExistingFileName for CopyFileW */ CopyFileW((LPCWSTR)wszSrc, (LPCWSTR)wszDest, 1);
-        Debug::GuardStack();
         return;
       }
     }
-
-    Debug::GuardStack();
 }
 
 // Writes the process temp path into the caller's buffer and reports success. The result is a single byte in AL (XOR AL,AL / the sole caller does TEST AL,AL); EDX is never written, so declaring an 8-byte return invented a high dword out of nothing.
 bool FILETOOLS_GetTempPath_UTF8(LPSTR szDest) {
     uint16_t wszTempPath[260];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     DWORD nPathLen = GetTempPathW(0x104, (LPWSTR)wszTempPath);
     if (!nPathLen) {
-      Debug::GuardStack();
       return false;
     }
 
     int iVar1 = WideCharToMultiByte(0xfde9, 0, (LPCWSTR)wszTempPath, nPathLen + 1, szDest, 0x400, (LPCSTR)0x0, (LPBOOL)0x0);
-    Debug::GuardStack();
     return iVar1 != 0;
 }
 
@@ -703,50 +679,47 @@ bool FILETOOLS_GetTempPath_UTF8(LPSTR szDest) {
 // WCHAR/wchar_t/wchar16/unicode to uint16_t (D2's own wide strings are ushort in decompiled bodies),
 // so a wcsrchr result inferred as wchar_t * came out as uint16_t * while the parameter stayed
 // LPCWSTR - half of a designed rewrite. LPWSTR is outside that rewrite set, so both sides now agree.
-uint32_t __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName) {
+bool __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName) {
     BOOL bCreated = CreateDirectoryW(lpPathName, (LPSECURITY_ATTRIBUTES)0x0);
     if (bCreated) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)bCreated >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+      return true;
     }
 
     DWORD dwAttribs = GetFileAttributesW(lpPathName);
     if (dwAttribs != -1) {
-      return dwAttribs >> 4 & 1;
+      return (bool)((uint8_t)(dwAttribs >> 4) & 1);
     }
 
     LPWSTR pLastSep = wcsrchr(lpPathName, L'\\');
     LPWSTR pSep = wcsrchr(lpPathName, L'/');
     if (pLastSep < pSep) {
-      pSep = wcsrchr(lpPathName, L'/');
-      pLastSep = pSep;
+      pLastSep = wcsrchr(lpPathName, L'/');
     }
     if (!pLastSep) {
-      return (uint32_t)pSep & -256;
+      return false;
     }
 
     *pLastSep = L'\0';
-    pSep = (LPWSTR)FILETOOLS_CreateDirectoryW(lpPathName);
-    if ((char)(uintptr_t)pSep == '\0') {
-      return (uint32_t)pSep & -256;
+    bool bVar1 = FILETOOLS_CreateDirectoryW(lpPathName);
+    if (!bVar1) {
+      return false;
     }
 
     /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateDirectoryW */ /* LPCWSTR lpPathName for CreateDirectoryW */ *pLastSep = L'\\';
     bCreated = CreateDirectoryW(lpPathName, (LPSECURITY_ATTRIBUTES)0x0);
-    return (uint32_t)(bCreated != 0);
+    return bCreated != 0;
 }
 
 BOOL __stdcall FILETOOLS_CreateFolder_UTF8(LPCSTR szPathName) {
+    uint32_t extraout_var;
     uint16_t wszPath[260];
-    uint32_t local_8 = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     int nConverted = MultiByteToWideChar(0xfde9, 0, szPathName, -1, (LPWSTR)wszPath, 0x104);
     if (!nConverted) {
-      Debug::GuardStack();
       return 0;
     }
 
-    uint32_t uVar1 = FILETOOLS_CreateDirectoryW((LPWSTR)wszPath);
-    Debug::GuardStack();
-    return uVar1;
+    bool bVar1 = FILETOOLS_CreateDirectoryW((LPWSTR)wszPath);
+    return (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
 }
 
 } // namespace Fog::File

@@ -38,21 +38,20 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Game/Objects/ObjectsRgn.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
-#ifndef D2_REALLOC_POOL
-#define D2_REALLOC_POOL(pPool, p, size) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), __FILE__, __LINE__, 0)
+#ifndef D2_REALLOC_POOL_AT
+#define D2_REALLOC_POOL_AT(pPool, p, size, szFile, nLine) Fog::Memory::ReAllocServerMemory((pPool), (p), (size), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_FREE_POOL
-#define D2_FREE_POOL(pPool, p) Fog::Memory::FreeServerMemory((pPool), (p), __FILE__, __LINE__, 0)
+#ifndef D2_FREE_POOL_AT
+#define D2_FREE_POOL_AT(pPool, p, szFile, nLine) Fog::Memory::FreeServerMemory((pPool), (p), (szFile), (nLine), 0)
 #endif
 
-#ifndef D2_ALLOC_POOL
-#define D2_ALLOC_POOL(pPool, size) Fog::Memory::AllocServerMemory((pPool), (size), __FILE__, __LINE__, 0)
+#ifndef D2_ALLOC_POOL_AT
+#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
 #endif
 
 
@@ -61,7 +60,7 @@ namespace D2Common::DATATBLS::MonsterTbls {
 static unsigned int gDelim_A_Act = 0x4341; D2_STATIC_GUARD(gDelim_A_Act, "D2Common::DATATBLS::MonsterTbls::gDelim_A_Act");
 static char gDelim_n_NpcClass[4] = { 'n', 'p', 'c', '\x00' }; D2_STATIC_GUARD(gDelim_n_NpcClass, "D2Common::DATATBLS::MonsterTbls::gDelim_n_NpcClass");
 
-void FilterNameString(char * szText1, char * szText2) {
+static void FilterNameString(char * szText1, char * szText2) {
     char cChar;
     if (*szText1 == '\0') {
       cChar = ' ';
@@ -1779,7 +1778,7 @@ D2ParsedTreasureClassStrc * __fastcall TC_ExtendTreasureClassSize(char * szText)
       nAllocMask = (nAllocMask - 1 | -16) + 1;
     }
     if (!nAllocMask) {
-      sgtDataTable.pParsedTreasureClass = (D2ParsedTreasureClassStrc*)D2_REALLOC_POOL(nullptr, sgtDataTable.pParsedTreasureClass, (sgtDataTable.nParsedTreasureClassSize + 0x10) * 0x2c);
+      sgtDataTable.pParsedTreasureClass = (D2ParsedTreasureClassStrc*)D2_REALLOC_POOL_AT(nullptr, sgtDataTable.pParsedTreasureClass, (sgtDataTable.nParsedTreasureClassSize + 0x10) * 0x2c, ".\\DATATBLS\\MonsterTbls.cpp", 0x3a2);
     }
 
     memset(sgtDataTable.pParsedTreasureClass + sgtDataTable.nParsedTreasureClassSize, 0, 0x2c);
@@ -1789,7 +1788,7 @@ D2ParsedTreasureClassStrc * __fastcall TC_ExtendTreasureClassSize(char * szText)
 }
 
 void __fastcall ResizeParsedTCEntries(D2ParsedTreasureClassStrc * pParsedTC, int32_t nCount) {
-    D2ParsedTreasureClassEntriesStrc* pNewEntries = (D2ParsedTreasureClassEntriesStrc*)D2_REALLOC_POOL(nullptr, pParsedTC->pEntries, nCount * 0x1c);
+    D2ParsedTreasureClassEntriesStrc* pNewEntries = (D2ParsedTreasureClassEntriesStrc*)D2_REALLOC_POOL_AT(nullptr, pParsedTC->pEntries, nCount * 0x1c, ".\\DATATBLS\\MonsterTbls.cpp", 0x3ba);
     pParsedTC->pEntries = pNewEntries;
     memset(pNewEntries + pParsedTC->nEntriesCount, 0, (nCount - pParsedTC->nEntriesCount) * 0x1c);
     pParsedTC->nEntriesCount = nCount;
@@ -1879,7 +1878,6 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
     int nItemTypeStride;
     char szTCName[32];
     char szTCLinkCode[8];
-    uint32_t nSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     TC_ExtendTreasureClassSize("");
     D2ItemsTableStrc* pnTotalItems = ItemTbls::TXT_Items_GetSize();
     int iVar1 = sgptDataTable->nTxtItemTypesSize;
@@ -1955,12 +1953,9 @@ void __stdcall TC_GenerateAutoItemTypeTreasureClasses() {
         nItemTypeStride += 0xe4;
       } while ((int)nRecordId < iVar1);
     }
-
-    DropDiag::NoteAutoItemTypesGenerated(); // [dropdiag v1]
-    Fog::Debug::GuardStack();
 }
 
-int32_t TC_ExtractNextIntModifier(char cParam, uint32_t * * pnParam) {
+static int32_t TC_ExtractNextIntModifier(char cParam, uint32_t * * pnParam) {
     uint32_t* pCurrent = *pnParam;
     char* pSeparator = CRT_Strchr((char*)pCurrent, cParam);
     *pnParam = (uint32_t*)pSeparator;
@@ -1974,7 +1969,7 @@ int32_t TC_ExtractNextIntModifier(char cParam, uint32_t * * pnParam) {
 }
 
 // Parses one TreasureClasses.txt drop entry (item code + probability) into a parsed-TC node and appends it to pParsedTC. Strips quotes, splits the field on ',', and resolves the code: a <5-char item code becomes an item-class entry (tagging TC_Expansion by items.txt version); otherwise it tries the monster-TC, unique-items, then set-items link tables (tagging TC_Monster/TC_Unique/TC_Set and the link node id). Calls AddOneParsedTCEntry then AdjustRarities with the probability and expansion flag. After the base entry it parses optional trailing modifiers ("mul","cu","cs","cr","cm","ce","cg","ma","mg") via _atol / TC_ExtractNextIntModifier, storing them into the entry's nUniqueMod/nSetMod/nRareMod/nMagicMod/etc fields. Returns 1 on success, 0 if prob<1 or no code resolves. Custom convention: szItemCode in EAX, pParsedTC/nProb on stack.
-void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pParsedTC, int32_t nProb, char * szItemCode) {
+static void __stdcall TC_ParseTreasureClassEntry(D2ParsedTreasureClassStrc * pParsedTC, int32_t nProb, char * szItemCode) {
     int16_t nModValue;
     D2ParsedTreasureClassEntriesStrc* pTCEntry;
     uint32_t bIsExpansionItem;
@@ -2420,7 +2415,7 @@ void __stdcall FreeParsedTC() {
       nTCStride = 0;
       do {
         if ((void*)sgtDataTable.pParsedTreasureClass[nTCStride].pEntries) {
-          D2_FREE_POOL(nullptr, (void*)sgtDataTable.pParsedTreasureClass[nTCStride].pEntries);
+          D2_FREE_POOL_AT(nullptr, (void*)sgtDataTable.pParsedTreasureClass[nTCStride].pEntries, ".\\DATATBLS\\MonsterTbls.cpp", 0x643);
         }
 
         nIdx++;
@@ -2428,7 +2423,7 @@ void __stdcall FreeParsedTC() {
       } while (nIdx < sgtDataTable.nParsedTreasureClassSize);
     }
 
-    D2_FREE_POOL(nullptr, sgtDataTable.pParsedTreasureClass);
+    D2_FREE_POOL_AT(nullptr, sgtDataTable.pParsedTreasureClass, ".\\DATATBLS\\MonsterTbls.cpp", 0x647);
     sgtDataTable.pParsedTreasureClass = 0;
     sgtDataTable.nParsedTreasureClassSize = 0;
 }
@@ -4477,7 +4472,7 @@ void __fastcall TXT_AllocTxt_monstats2(D2PoolManagerStrc * pMemory) {
 }
 
 // Breadth-first traversal of the monstypes.txt equiv1/equiv2/equiv3 parent-type hierarchy to test whether monster type nMonTypeId belongs to type nCheckTypeId. Returns 1 if found, 0 if not found, out-of-range, or stack depth exceeds 124. Despite its name, behaves as a monster-type membership test (analogous to ITEMTBLS_CheckItemTypeRecursive but for MonType with three equiv slots).
-BOOL MONSTERTBLS_GetMonSeqFrameCount(int32_t nMonTypeId, int32_t nCheckTypeId) {
+BOOL __fastcall MONSTERTBLS_GetMonSeqFrameCount(int32_t nMonTypeId, int32_t nCheckTypeId) {
     int nNewStackSize;
     int32_t typeStack[128];
     short int wEquiv3;
@@ -4568,7 +4563,7 @@ void __fastcall TXT_AllocTxt_montype(D2PoolManagerStrc * pMemory) {
     sgtDataTable.pTxtMonType = (D2MonTypeTxt*)DataTbls::CompileTxt(pMemory, "montype", aFieldDefs, &sgtDataTable.nTxtMonTypeSize, 0xc);
     sgtDataTable.nMonTypeEquivRowDwords = (int)(sgtDataTable.nTxtMonTypeSize + 0x1f + (sgtDataTable.nTxtMonTypeSize + 0x1f >> 0x1f & 0x1fU)) >> 5;
     size_t nBitMatrixBytes = sgtDataTable.nMonTypeEquivRowDwords * sgtDataTable.nTxtMonTypeSize * 4;
-    sgtDataTable.pTxtMonTypeUnknown = D2_ALLOC_POOL(nullptr, nBitMatrixBytes);
+    sgtDataTable.pTxtMonTypeUnknown = D2_ALLOC_POOL_AT(nullptr, nBitMatrixBytes, ".\\DATATBLS\\MonsterTbls.cpp", 0xafc);
     memset(sgtDataTable.pTxtMonTypeUnknown, 0, nBitMatrixBytes);
     int nRowTypeIdx = 0;
     int nMonTypeTotal = sgtDataTable.nTxtMonTypeSize;
@@ -4604,7 +4599,7 @@ void __stdcall MONSTERTBLS_FreeMonPlaceTxt() {
 
     DataTbls::UnloadBin(sgtDataTable.pTxtMonType);
     Fog::Src::Excel::STRUCT_FreeTxtLink(sgtDataTable.pTxtMonTypeLink);
-    D2_FREE_POOL(nullptr, sgtDataTable.pTxtMonTypeUnknown);
+    D2_FREE_POOL_AT(nullptr, sgtDataTable.pTxtMonTypeUnknown, ".\\DATATBLS\\MonsterTbls.cpp", 0xb16);
     sgtDataTable.pTxtMonType = 0;
     sgtDataTable.pTxtMonTypeLink = 0;
 }
@@ -5438,7 +5433,7 @@ void __fastcall TXT_AllocTxt_monseq(D2PoolManagerStrc * pMemory) {
     }
 
     sgtDataTable.nMonSeqMonsterTblsSize = sgtDataTable.pTxtMonSeq[sgtDataTable.nTxtMonSeqSize - 1].sequence + 1;
-    sgtDataTable.pMonSeqMonsterTbls = (D2MonSeqMonsterTbls*)D2_ALLOC_POOL(nullptr, sgtDataTable.nMonSeqMonsterTblsSize * 0xc);
+    sgtDataTable.pMonSeqMonsterTbls = (D2MonSeqMonsterTbls*)D2_ALLOC_POOL_AT(nullptr, sgtDataTable.nMonSeqMonsterTblsSize * 0xc, ".\\DATATBLS\\MonsterTbls.cpp", 0xccc);
     memset(sgtDataTable.pMonSeqMonsterTbls, 0, sgtDataTable.nMonSeqMonsterTblsSize * 0xc);
     int i = 0;
     if (0 >= sgtDataTable.nTxtMonSeqSize) {
@@ -5469,7 +5464,7 @@ void __stdcall MONSTERTBLS_FreeMonPropTxt() {
       return;
     }
 
-    D2_FREE_POOL(nullptr, sgtDataTable.pMonSeqMonsterTbls);
+    D2_FREE_POOL_AT(nullptr, sgtDataTable.pMonSeqMonsterTbls, ".\\DATATBLS\\MonsterTbls.cpp", 0xcea);
     sgtDataTable.nMonSeqMonsterTblsSize = 0;
 }
 
@@ -5559,7 +5554,12 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
     monequip[0xc].nOffset = 0;
     monequip[0xc].fpLinker = 0;
     sgtDataTable.pTxtMonEquip = (D2MonEquipTxt*)DataTbls::CompileTxt(pMemory, "monequip", monequip, &sgtDataTable.nTxtMonEquipSize, 0x1c);
-    if (sgtDataTable.nTxtMonEquipSize < 0x7fff) {
+    if (!(sgtDataTable.nTxtMonEquipSize < 0x7fff)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1c);
+      exit(-1);
+    }
+
+    {
       int nMonStatCount;
       nMonStatCount = 0;
       if (0 < sgptDataTable->nTxtMonStatsSize) {
@@ -5607,9 +5607,6 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
 
       return;
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd1c);
-    exit(-1);
 }
 
 // Frees all monster-related data tables from sgtDataTable. Unloads MonEquip, Npc, MonLvl, MonPreset, SuperUniques (+ txt link), MonUmod (+ txt link), MonStats (+ txt link), MonStats2 (+ txt link), MonProp (+ txt link), MonSounds (+ txt link), then delegates to MONSTERTBLS_FreeMonPropTxt, FreeParsedTC, and TXT_UnloadUniqueMonsterNameTables. Called during game shutdown or data table reload.
@@ -5685,7 +5682,6 @@ void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
     char** pszChestId;
     char szTCName[256];
     D2TxtLinkStrc* pDiffIter;
-    uint32_t dwStackCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2ParsedTreasureClassStrc* pTCDest = (D2ParsedTreasureClassStrc*)&sgtDataTable.pParsedTreasureClassDiffActChestABC;
     D2TxtLinkStrc* szDifficulty = (D2TxtLinkStrc*)gapTreasureClassChestParsedData;
     DropDiag::NoteChestTableBuildStart(); // [dropdiag v2]
@@ -5712,8 +5708,6 @@ void __stdcall TXT_AllocParsedTreasureClassDiffActChestABC() {
 
       szDifficulty = (D2TxtLinkStrc*)&szDifficulty->nCapacity;
     } while ((int)szDifficulty < (uintptr_t)&gapTreasureClassChestParsedData[3]);
-
-    Fog::Debug::GuardStack();
 }
 
 void __stdcall TXT_AllocItemDropData(D2PoolManagerStrc * pMemory) {

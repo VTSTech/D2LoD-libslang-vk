@@ -1720,7 +1720,52 @@ int gaCompWeaponClassCodeMap[26] = {
 
 eD2RendererMode D2GFX_eRendererMode = 0; D2_GLOBAL_GUARD(D2GFX_eRendererMode, "D2GFX_eRendererMode");
 
-uint8_t gnPaletteIndexCounter[39] = {}; D2_GLOBAL_GUARD(gnPaletteIndexCounter, "gnPaletteIndexCounter");
+// [vanilla-plus fix 24, merged] TRUE extent = 39 bytes: D2WINPAL_LoadPaletteFiles
+// writes 9 PALETTEENTRY (36B) + 1 manual RGB triple (3B) here (D2WinPalette.cpp ~:163-174);
+// the peFlags 4th byte of the 10th slot is never written (merge correction of the earlier
+// 40B note - the write overran a 4B uint32_t decl into gPaletteAct1[0..35], tinting act1
+// plane-0 remap entries 0-8; extent now exact and guarded).
+uint8_t gnPaletteIndexCounter[39] = {
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+}; D2_GLOBAL_GUARD(gnPaletteIndexCounter, "gnPaletteIndexCounter");
 
 uint8_t gPaletteTransposeBase[3328] = {}; D2_GLOBAL_GUARD(gPaletteTransposeBase, "gPaletteTransposeBase");
 

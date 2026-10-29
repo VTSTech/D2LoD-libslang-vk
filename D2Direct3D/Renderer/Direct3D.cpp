@@ -33,6 +33,7 @@
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
+#include "support/d2_boot.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "Fog/Debug.h"
@@ -78,7 +79,16 @@ typedef HRESULT (__stdcall *D3DVB_Lock)(void * This, DWORD dwFlags, void * * lpl
 
 namespace D2Direct3D::Renderer {
 
-static unsigned int gpD3DGroundTileVertexBuffer = {}; D2_STATIC_GUARD(gpD3DGroundTileVertexBuffer, "D2Direct3D::Renderer::gpD3DGroundTileVertexBuffer");
+// [vanilla-plus fix 24, ported onto ad964f3] Real ground-tile index arrays. The
+// Ghidra export split the retail index buffer into three under-extent phantom
+// statics (a 1-byte gpD3DGroundTileVertexBuffer the draw read 130 bytes of index
+// words from, a 2-byte gaD3DGroundTileIndexBuffer the prefill overran by 129
+// bytes, and gdwRendererMode = WORDs [0,5]). Prefill filled one label, the draw
+// read another -> DrawIndexedPrimitiveVB consumed garbage indices -> black
+// ground (D3D fullscreen only). Ported: ad964f3 re-typed the phantoms but kept
+// them under-extent.
+static WORD g_aD3DGroundTileStripIndices[65];               // 5 strip bands x 13 words
+static WORD g_aD3DGroundTileFanIndices[4] = {0, 5, 35, 28}; // low-quality fan: [0,5] verbatim from the retail dword 0x00050000; [35,28] = the two remaining updated vertices (v0,v5,v35,v28) in diamond-perimeter fan order
 
 // Not a CRT/unit function: its ONLY xref is the
 // PUSH at 006b4aff feeding IDirect3DDevice3::EnumTextureFormats in Direct3DCallBack, so it is the
@@ -2205,20 +2215,26 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
     nResult = g_pD3DSurfaceBackbuffer->lpVtbl->GetAttachedSurface(g_pD3DSurfaceBackbuffer, &iidData2, (void**)&D3DSurfaceSecondary);
     if (!nResult) {
       if (gnD3DTextureCapFlags & 0x10) {
+        // [vanilla-plus fix 18, ported onto ad964f3] ad964f3 restored the full
+        // 16-byte gamma IID (first 16 bytes of gszRendererD3DDeviceInitializationCode),
+        // superseding fix 17. Kept: fix 18 - on the field box the emulated DD7
+        // flip chain STILL refuses gamma QI/GetGammaRamp even with the correct
+        // IID (DDERR_INVALIDPARAMS, FOG log 2026-10-27 13:12). Retail treats both
+        // steps as fatal and dies with "Error 25"; we degrade gracefully instead:
+        // log, leave g_pDDGammaControl null, keep booting. Consumers are
+        // null-safe (brightness ramp early-returns; release skips ramp restore);
+        // the only observable loss is an inert brightness slider.
         nResult = g_pD3DSurfaceBackbuffer->lpVtbl->QueryInterface(g_pD3DSurfaceBackbuffer, (GUID*)gszRendererD3DDeviceInitializationCode, (void**)&g_pDDGammaControl);
         if (nResult) {
-          DIRECTD3D_LogError("Failed to get gamma control interface!", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
-        }
-
-        nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
-        if (nResult) {
-          DIRECTD3D_LogError("Failed to get original gamma ramp", nResult);
-          RENDERER_D3D_ReleaseDevice();
-          gnGlideWindowHandle = 0;
-          return 0;
+          DIRECTD3D_LogError("Failed to get gamma control interface - continuing without hardware gamma", nResult);
+          g_pDDGammaControl = 0;
+        } else {
+          nResult = g_pDDGammaControl->lpVtbl->GetGammaRamp(g_pDDGammaControl, 0, g_OriginalGammaRamp);
+          if (nResult) {
+            DIRECTD3D_LogError("Failed to get original gamma ramp - continuing without hardware gamma", nResult);
+            g_pDDGammaControl->lpVtbl->Release(g_pDDGammaControl);
+            g_pDDGammaControl = 0;
+          }
         }
       }
 
@@ -2606,26 +2622,61 @@ void __stdcall RENDERER_D3D_ReleaseTexturePools() {
     } while (iVar1 < 0xc);
 }
 
-void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
-    if (-1 < *pCacheIndices - 1 && -1 < pCacheIndices[1] - 1) {
-      gD3DGenericTextureCache.aCaches[*pCacheIndices - 1].pNodeBuffer[pCacheIndices[1] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[2] - 1 && -1 < pCacheIndices[3] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[2] - 1].pNodeBuffer[pCacheIndices[3] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[4] - 1 && -1 < pCacheIndices[5] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[4] - 1].pNodeBuffer[pCacheIndices[5] - 1].pAssociatedTilePtr = 0;
-    }
-    if (-1 < pCacheIndices[6] - 1 && -1 < pCacheIndices[7] - 1) {
-      gD3DGenericTextureCache.aCaches[pCacheIndices[6] - 1].pNodeBuffer[pCacheIndices[7] - 1].pAssociatedTilePtr = 0;
-    }
-    if (!(-1 < pCacheIndices[8] - 1 && -1 < pCacheIndices[9] - 1)) {
+// [vanilla-plus fix 22, ported onto ad964f3] The callback's per-pair guard had
+// only signed >=1 tests: no class range check, no idx upper bound vs the pool,
+// no owner match - a garbage [class, idx] pair from the recycled descriptor
+// pool wild-writes pAssociatedTilePtr past the node buffer or clears a FOREIGN
+// node's backpointer. Discipline (mirror of the upload path's fix-21 gates):
+// range-check the pair, then require the node's own +4 backpointer to name
+// THIS descriptor (written by UploadTextureToCache and nothing else, so a
+// legit free always matches). Legit frees behave exactly as retail; garbage
+// pairs are skipped and the first of each dangerous shape is reported to the
+// boot log. Glide's twin callback stays as delivered by glide fix 2
+// (field-verified working renderer - deliberately untouched).
+static void D3DTEXCACHE_ClearCacheNodeSlot(int32_t nClass, int32_t nNodeIdx, int32_t* pOwnerDescriptor) {
+    static BOOL s_bWarnedBadClass = FALSE;
+    static BOOL s_bWarnedBadIndex = FALSE;
+    static BOOL s_bWarnedForeignNode = FALSE;
+    if (nClass < 1 || 3 < nClass) {
+      if (!s_bWarnedBadClass && (nClass || nNodeIdx)) {
+        s_bWarnedBadClass = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-range class=%d idx=%d (was a wild write)", nClass, nNodeIdx); // [d2boot]
+      }
       return;
     }
 
-    gD3DGenericTextureCache.aCaches[pCacheIndices[8] - 1].pNodeBuffer[pCacheIndices[9] - 1].pAssociatedTilePtr = 0;
+    D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass - 1];
+    if (!pCache->pNodeBuffer || nNodeIdx < 1 || pCache->nMaxNodes < nNodeIdx) {
+      if (!s_bWarnedBadIndex && nNodeIdx) {
+        s_bWarnedBadIndex = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped out-of-bounds idx=%d class=%d max=%d (was a wild write)", nNodeIdx, nClass, pCache->nMaxNodes); // [d2boot]
+      }
+      return;
+    }
+
+    D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+    if ((uintptr_t)pNode->pAssociatedTilePtr != (uintptr_t)pOwnerDescriptor) {
+      if (!s_bWarnedForeignNode && nNodeIdx) {
+        s_bWarnedForeignNode = TRUE;
+        D2BOOT_MarkFmt("fix22: free-callback skipped foreign node class=%d idx=%d (stale/garbage pair)", nClass, nNodeIdx); // [d2boot]
+      }
+      return;
+    }
+
+    pNode->pAssociatedTilePtr = 0;
 }
 
+void __fastcall D3D_PixelDataFreeCallback_ClearCacheNodes(int * pCacheIndices) {
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[0], pCacheIndices[1], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[2], pCacheIndices[3], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[4], pCacheIndices[5], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[6], pCacheIndices[7], pCacheIndices);
+    D3DTEXCACHE_ClearCacheNodeSlot(pCacheIndices[8], pCacheIndices[9], pCacheIndices);
+}
+
+// [vanilla-plus fix 22 wiring kept over upstream's unguarded inline variant:] the pixel-free
+// callback receives (class,index) pairs from CELCMP; field logs caught live garbage pairs,
+// so the clearing goes through the bounds + owner-backpointer-checked helper above.
 static BOOL __stdcall RENDERER_D3D_ExtractSpriteInfo(D2GfxDataStrc * pSprite, D2D3DSpriteInfoStrc * pOutput) {
     int bSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(pSprite, 0, 1);
     if (!bSpriteLoaded) {
@@ -2664,7 +2715,104 @@ static void __stdcall RENDERER_D3D_CalculateTextureSize(D2D3DSpriteInfoStrc * pS
     pStruct->nTexArea = pStruct->nTexHeight * pStruct->nTexWidth;
 }
 
+// [vanilla-plus fix 22] Self-reporting upload path: before every halt site in
+// UploadTextureToCache, dump mode/mip/class/node + pool identity/bookkeeping +
+// the full node + the apSpriteTex lines to d2boot.log, so a recurring halt
+// names its failing premise from the log alone (this is what decided round 10
+// and rooted fix 23). Zero behavior change when nothing halts.
+static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc* pTexInfo, int32_t nMode, int32_t nMipIdx, int32_t nClass, int32_t nNodeIdx, D3DTextureCacheStrc* pCache) {
+    D2BOOT_MarkFmt("upload-halt %s: mode=%d mip=%d class=%d node=%d w=%d h=%d area=%u", // [d2boot]
+      szSite, nMode, nMipIdx, nClass, nNodeIdx,
+      pTexInfo ? pTexInfo->nWidth : -1, pTexInfo ? pTexInfo->nHeight : -1,
+      pTexInfo ? (unsigned)pTexInfo->nTexArea : 0u);
+    if (!pCache) {
+      return;
+    }
+
+    D2BOOT_MarkFmt("upload-halt %s: pool=%p max=%d used=%d freeHead=%p freeTail=%p usedHead=%p usedTail=%p nodes=%p", // [d2boot]
+      szSite, (void*)pCache, pCache->nMaxNodes, pCache->nUsedCount,
+      (void*)pCache->pFreeHead, (void*)pCache->pFreeTail,
+      (void*)pCache->pUsedHead, (void*)pCache->pUsedTail, (void*)pCache->pNodeBuffer);
+    if (pCache->pNodeBuffer && 1 <= nNodeIdx && nNodeIdx <= pCache->nMaxNodes) {
+      D3DTextureCacheNodeStrc* pNode = &pCache->pNodeBuffer[nNodeIdx - 1];
+      D2BOOT_MarkFmt("upload-halt %s: node[%d] pos=%d tile=%p mip=%p pal=%p surf=%p tex=%p next=%p prev=%p", // [d2boot]
+        szSite, nNodeIdx, pNode->nIndex, pNode->pAssociatedTilePtr, pNode->field_0x08,
+        pNode->field_0x0C, (void*)pNode->pSurface, (void*)pNode->pTexture,
+        (void*)pNode->pNext, (void*)pNode->pPrev);
+    }
+
+    if (1 <= nClass && nClass <= 3) {
+      D2BOOT_MarkFmt("upload-halt %s: spriteTex[class-1]=%p spriteTex[class+2]=%p", // [d2boot]
+        szSite, (void*)gD3DGenericTextureCache.apSpriteTextures[nClass - 1],
+        (void*)gD3DGenericTextureCache.apSpriteTextures[nClass + 2]);
+    }
+}
+
 // Direct3D texture cache: uploads a DC6 frame to video memory. Determines mipmap level based on size, allocates cache slot, renders frame to memory surface, copies to texture via LockRect/memcpy, and sets as active texture.
+// [vanilla-plus fix 27] Flush every cached texture that was baked through a
+// pl2 UI-transpose palette (gpPaletteTable[0x34..0x40], the 13 per-palette
+// text-color remaps consumed by DrawShiftedImage). Those palettes reload IN
+// PLACE on every palette load: the pointer stays stable while the contents
+// change, so the cache's pointer-identity check cannot see a palette change
+// and would keep serving texels baked under the previous palette family
+// forever (the same class as the pre-fix-27 never-rebake text defect).
+// Mirrors the eviction path: clear the sprite descriptor binding, unlink
+// from the used chain, push onto the free tail; surfaces stay allocated for
+// reuse so the re-bake costs only a decode + upload.
+static void RENDERER_D3D_FlushTransposedTextureNodes() {
+    uint8_t* pTransposeLo = (uint8_t*)gPaletteTransposeBase;
+    uint8_t* pTransposeHi = (uint8_t*)gPaletteTransposeBase + 0xD00;
+    for (int nClass = 0; nClass < 3; nClass++) {
+        D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass];
+        D3DTextureCacheNodeStrc* pNode = pCache->pUsedHead;
+        int nGuard = 0;
+        while (pNode && nGuard++ <= pCache->nMaxNodes) {
+            D3DTextureCacheNodeStrc* pNextNode = pNode->pNext;
+            uint8_t* pPal = (uint8_t*)pNode->field_0x0C;
+            if (pPal >= pTransposeLo && pPal < pTransposeHi) {
+                if (pNode->pAssociatedTilePtr) {
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8) = 0;
+                    *(uint32_t*)((int)pNode->pAssociatedTilePtr + (int)pNode->field_0x08 * 8 + 4) = 0;
+                    pNode->pAssociatedTilePtr = nullptr;
+                }
+                if (pNode->pPrev) {
+                    pNode->pPrev->pNext = pNode->pNext;
+                } else {
+                    pCache->pUsedHead = pNode->pNext;
+                }
+                if (pNextNode) {
+                    pNextNode->pPrev = pNode->pPrev;
+                } else {
+                    pCache->pUsedTail = pNode->pPrev;
+                }
+                pNode->pNext = nullptr;
+                pNode->pPrev = nullptr;
+                if (!pCache->pFreeHead) {
+                    pCache->pFreeHead = pNode;
+                } else {
+                    pCache->pFreeTail->pNext = pNode;
+                    pNode->pPrev = pCache->pFreeTail;
+                }
+                pCache->pFreeTail = pNode;
+                pCache->nUsedCount--;
+            }
+            pNode = pNextNode;
+        }
+    }
+}
+
+// [vanilla-plus fix 27] Mixed stamp of family-discriminating g_Palette32Bit
+// sentinels. act1/sky share 0x20/0x40/0x80/0xC0 and differ only at 0xF0;
+// fechar differs at all of them; multiplicative mixing avoids trivial
+// aliasing between near-identical palettes.
+static uint32_t RENDERER_D3D_ComputeLutFamilyStamp() {
+    return g_Palette32Bit[0x20] * 0x9E3779B1u
+         ^ g_Palette32Bit[0x40] * 0x85EBCA77u
+         ^ g_Palette32Bit[0x80] * 0xC2B2AE3Du
+         ^ g_Palette32Bit[0xC0] * 0x27D4EB2Fu
+         ^ g_Palette32Bit[0xF0] * 0x165667B1u;
+}
+
 static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfoStrc * pTexInfo, BYTE * pPalette, uint8_t nOutlineColor, int32_t nMode) {
     uint8_t* pBVar3;
     DWORD dwHResult;
@@ -2681,14 +2829,40 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     void* pMemPool;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
+            RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
       exit(-1);
     }
 
     int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData((int32_t)nParam);
+    // [vanilla-plus fix 26 diag C captured nPal26DFrameKey here for the bake
+    // stamp; the probe is retired in 0.0.3, nothing else consumed the key.]
+    // [vanilla-plus fix 27] Drop transpose-baked nodes when the LUT family
+    // changes (see RENDERER_D3D_FlushTransposedTextureNodes). Runs before any
+    // cache lookup; identical reloads (same palette contents) are no-ops.
+    {
+        static uint32_t s_dwD3DLutFamilyStamp = 0xFFFFFFFFu;
+        uint32_t dwLutStamp = RENDERER_D3D_ComputeLutFamilyStamp();
+        if (dwLutStamp != s_dwD3DLutFamilyStamp) {
+            s_dwD3DLutFamilyStamp = dwLutStamp;
+            RENDERER_D3D_FlushTransposedTextureNodes();
+        }
+    }
     int nMipIdx = nMode;
     if (nMode == 4) {
       nMipIdx = 1;
+    }
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 3
+    // (field-verified in the glide series): the per-frame descriptor slots live
+    // in a non-zeroing/recycled pool, so a first-use header can carry pool
+    // garbage in the size-class slot. The exact-zero test below still skips the
+    // recompute for any garbage NONZERO value, and ad964f3's class flows into
+    // (cache - 0x1c + class*0x1c) - for garbage > 3 that walks off aCaches[0..2]
+    // into the packed struct's apSpriteTextures/apSpriteSurfaces. Treat an
+    // out-of-range class like an unset one (zero the slot) so the recompute
+    // below sticks, instead of skipping the upload forever.
+    if (*(int*)(pbSrcPixel + nMipIdx * 8) < 1 || 3 < *(int*)(pbSrcPixel + nMipIdx * 8)) {
+      *(uint32_t*)(pbSrcPixel + nMipIdx * 8) = 0;
     }
     if (!*(int*)(pbSrcPixel + nMipIdx * 8)) {
       iMipLevel = pTexInfo->nWidth;
@@ -2708,6 +2882,22 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     iMipLevel = *(int*)(pbSrcPixel + nMipIdx * 8);
     int* piVar2 = (int*)(pbSrcPixel + 4 + nMipIdx * 8);
     D3DTextureCacheStrc* pCache = (D3DTextureCacheStrc*)((uint8_t*)&gD3DGenericTextureCache - 0x1c + iMipLevel * 0x1c);
+    D3DTextureCacheNodeStrc* pCacheNodeBase = pCache->pNodeBuffer;
+    int32_t nClassSlot = iMipLevel; // [vanilla-plus fix 22] capture for halt dumps (iMipLevel is reused below)
+    // [vanilla-plus fix 21, ported onto ad964f3] Mirror of glide fix 2: a
+    // recycled sprite header can inherit a stale node index - the sprite-free
+    // callback clears the node's tile backpointer but never the header slots.
+    // Validate the slot against the node's own backpointers (+4 block ptr,
+    // +8 mip idx - written by this very function, so a legit palette-change
+    // re-upload matches by construction) and the pool bound. On mismatch drop
+    // the slot and allocate fresh. Bound check first: it gates the deref.
+    if (*piVar2) {
+      if ((uint32_t)(*piVar2 - 1) >= (uint32_t)pCache->nMaxNodes
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 4) != pbSrcPixel
+        || *(int*)((uint8_t*)pCacheNodeBase + (*piVar2 - 1) * 0x20 + 8) != nMipIdx) {
+        *piVar2 = 0;
+      }
+    }
     if (*piVar2 && (*(uint8_t**)(*piVar2 * 0x20 - 0x14 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7]) == pPalette || nMode == 4)) {
       d3dTextureCache::D3DTEXCACHE_InvalidateByIndex(pCache, *piVar2);
       dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(*piVar2 * 0x20 + ((int*)((uint8_t*)&gD3DGenericTextureCache - 0x4))[iMipLevel * 7] - 0xc));
@@ -2730,6 +2920,7 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     pMemPool = gpD3DTextureSpritePoolMemory0;
     int iVar1 = *piVar2 - 1;
     if (iVar1 < 0) {
+            RENDERER_D3D_UploadHaltDump("0x164-node0", pTexInfo, nMode, nMipIdx, nClassSlot, 0, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x164);
       exit(-1);
     } else if (iVar1 < pCache->nMaxNodes) {
@@ -2741,13 +2932,16 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
       *(int*)(iMipLevel + 8) = nMipIdx;
       *(uint8_t**)(iMipLevel + 0xc) = (uint8_t*)pPalette;
       if (!iVar1) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
+              RENDERER_D3D_UploadHaltDump("0x16d-surface", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16d);
         exit(-1);
       } else if (!*(int*)(iMipLevel + 0x14)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
+              RENDERER_D3D_UploadHaltDump("0x16e-texture", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16e);
         exit(-1);
       } else if (!pMemPool) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
+              RENDERER_D3D_UploadHaltDump("0x171-poolmem", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
         exit(-1);
       } else if (pTexInfo->nTexArea < 0x10001) {
         memset(pMemPool, 0, pTexInfo->nTexArea);
@@ -2778,11 +2972,13 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
             D2CMP::SRC::CelCmp::CELCMP_DrawCelFrame(pTexInfo->pSprite, 1 - pTexInfo->nOffsetX, pTexInfo->nTexHeight - pTexInfo->nOffsetY - 2, 0, 0, (BYTE*)pMemPool, pTexInfo->nTexHeight, pTexInfo->nTexWidth, nullptr, nullptr, nullptr);
           pbPixelData = (uint8_t*)gpD3DTextureSpritePoolMemory1;
           if (!gpD3DTextureSpritePoolMemory1) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
+                  RENDERER_D3D_UploadHaltDump("0x19a-poolmem1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19a);
             exit(-1);
           }
           if (0x10000 < pTexInfo->nTexArea) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
+                  RENDERER_D3D_UploadHaltDump("0x19b-area1", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b);
             exit(-1);
           }
 
@@ -2809,10 +3005,12 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
         }
 
         if (!pDestSurface_00) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
+                RENDERER_D3D_UploadHaltDump("0x1b4-destsurf", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
           exit(-1);
         } else if (!lpD3DTexture_00) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
+                RENDERER_D3D_UploadHaltDump("0x1b5-d3dtex", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b5);
           exit(-1);
         } else {
           sSurfaceDesc.dwSize = 0x7c;
@@ -2825,6 +3023,17 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c0);
             exit(-1);
           }
+
+          // [vanilla-plus fix 26 diag B/C/D bake-stamp probe retired in
+          // 0.0.3: the per-frame-key dedupe table capped at 256 distinct
+          // DC6 frames, but gameplay churns through far more distinct
+          // frame descriptors (and evicted textures re-bake), so past the
+          // cap EVERY text/shifted upload wrote a bake line plus a
+          // synchronous FlushFileBuffers on the render thread - the
+          // "d2boot.log grows rapidly" field report. The stamp verified
+          // fix 27's pl2 UI-transpose bake discipline (field-verified:
+          // "Colors are correct in D3D fullscreen now!"); the probe is
+          // pure logging and its removal changes no retail behavior.]
 
           RENDERER_D3D_ConvertPalettedTo16Bit(pbPixelData, (uint16_t*)sSurfaceDesc.lpSurface, pTexInfo->nTexWidth, pTexInfo->nTexHeight, sSurfaceDesc.lPitch >> 1, pTexInfo->nTexHeight);
           dwHResult = pDestSurface_00->lpVtbl->Unlock(pDestSurface_00, nullptr);
@@ -2846,10 +3055,12 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
           return 1;
         }
       } else {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
+              RENDERER_D3D_UploadHaltDump("0x172-area", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x172);
         exit(-1);
       }
     } else {
+            RENDERER_D3D_UploadHaltDump("0x165-idxbound", pTexInfo, nMode, nMipIdx, nClassSlot, *piVar2, pCache); // [vanilla-plus fix 22]
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
       exit(-1);
     }
@@ -2960,10 +3171,17 @@ static void __stdcall RENDERER_DIRECT3D_DrawPalettedQuad(D2D3DSpriteInfoStrc * p
 
     pVertexData += gd3dVertexBufferOffset * 8;
     if (!nParam4 && !nParam6) {
+      // [vanilla-plus fix 26 diag B pal26B2 solid-color probe retired in
+      // 0.0.3: 24-slot seen-color set served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
       RENDERER_D3D_SetTextureStageColor(pVertexData, nColor, nAlpha);
     } else {
       uint8_t* pPaletteEntry;
       pPaletteEntry = gpPaletteTable[0x45] + nParam4 * 3;
+      // [vanilla-plus fix 26 diag B pal26B slot-probe retired in 0.0.3:
+      // once-per-slot diffuse dump served its purpose (fix 27
+      // field-verified); pure logging removed, retail behavior unchanged.]
+
       pVertexData[4] = (float)(uint32_t)((uint32_t)((uint32_t)((uint32_t)(uint16_t)((uint16_t)(uint8_t)nAlpha << 8 | (uint16_t)(uint8_t)*pPaletteEntry) << 8 | (uint32_t)(uint8_t)gpPaletteTable[0x45][nParam4 * 3 + 1]) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pPaletteEntry[2]);
     }
 
@@ -3171,13 +3389,34 @@ void __fastcall DrawShiftedImage(D2GfxDataStrc * pData, int nPosX, int nPosY, DW
     }
 
     RENDERER_D3D_CalculateTextureSize(&aSpriteInfo);
-    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, nullptr, 0, 1);
+    // [vanilla-plus fix 27] Bake shifted (text) glyphs through the pl2
+    // UI-transpose palette for this color slot, exactly like the GDI renderer
+    // (D2Gdi/Renderer/Windowed.cpp DrawShiftedImage:
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]) and the DirectDraw renderer
+    // (D2DDraw/Renderer/DirectDraw.cpp: pShiftTable =
+    // gpPaletteTable[nGlobalPaletteShift + 0x34]). The 13 transpose palettes
+    // reload from every pal.pl2 and map the font's logical glyph indices onto
+    // the ACTIVE palette's physical text-color ramp, so text colors are
+    // correct under whichever palette family is live. The D3D path was the
+    // only renderer that skipped them: it baked raw glyph indices through
+    // g_Palette16Bit and leaned on the slot-0x45 diffuse multiply, which is
+    // only valid for white-ramp glyph bands and provably wrong for the fonts
+    // whose glyph pixels live in family-dependent bands (a green diffuse
+    // multiply can never yield the field-seen purple; H16-c).
+    BYTE* pBakePalette = nullptr;
+    if (nGlobalPaletteShift) {
+      pBakePalette = (BYTE*)gpPaletteTable[nGlobalPaletteShift + 0x34];
+    }
+    int32_t iVar1 = RENDERER_DIRECT3D_UploadTextureToCache(&aSpriteInfo, pBakePalette, 0, 1);
     if (!iVar1) {
       return;
     }
 
     uint8_t nAlpha = SetDrawModeAndGetAlpha(nDrawMode);
-    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, nGlobalPaletteShift, nAlpha, 0);
+    // Shift 0 at the quad: the transpose already resolved the glyph color at
+    // bake time, so the 0x45 diffuse multiply must not double-apply (GDI
+    // parity - no diffuse is added after the transpose remap).
+    RENDERER_DIRECT3D_DrawPalettedQuad(&aSpriteInfo, nPosX, nPosY, dwGamma, 0, nAlpha, 0);
 }
 
 void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int nPosX, int nPosY, int nSkipLines, int nDrawLines, int nDrawMode) {
@@ -4499,10 +4738,9 @@ BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPos
     return BVar1;
 }
 
-// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at gaD3DGroundTileIndexBuffer.
+// Creates ground tile vertex buffer (6x6 grid = 36 vertices) and index buffer (60 indices for 5x5 tile strips) for perspective tile rendering. Calculates texture coordinates based on window dimensions (gnD3DTextureCacheBlockSize, gnD3DTextureCacheCount). Each vertex has position adjustment flags at corners (±1 in X/Y) for isometric diamond shape. Index buffer stored at g_aD3DGroundTileStripIndices [vanilla-plus fix 24].
 void __stdcall RENDERER_D3D_InitGroundTileCache() {
     // Static local variables (originally global data)
-    static unsigned short gaD3DGroundTileIndexBuffer; D2_STATIC_GUARD_BSS(gaD3DGroundTileIndexBuffer, "D2Direct3D::Renderer::RENDERER_D3D_InitGroundTileCache::gaD3DGroundTileIndexBuffer");
 
     // Frame slots -12..-4 are ONE object: &pLockedVB is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
@@ -4594,19 +4832,24 @@ void __stdcall RENDERER_D3D_InitGroundTileCache() {
           iRow++;
         } while (iRow < 5);
 
-        puDestIndex = &gaD3DGroundTileIndexBuffer;
+        puDestIndex = g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real 65-word array (was the 2-byte phantom)
         psIndexBuf = local_9c;
         iRow = 5;
+        // [vanilla-plus fix 25] The merge spliced upstream's decompiled band loop
+        // (written against the &phantom anchor, which sat 12 words INTO the table)
+        // onto this base-pointer init: bands 1-5 wrote words [-12..52], spilling
+        // 12 words before the array and leaving words 53..64 stale/zero.
+        // DrawIndexedPrimitiveVB then consumed garbage indices for every trailing
+        // band -> evenly spaced diagonal black bars over the perspective floor.
+        // Restore the fix-24 loop: fill words [0..64] from the array base.
         do {
-          *(uint32_t*)(puDestIndex - 0xc) = *(uint32_t*)psIndexBuf;
-          *(uint32_t*)(puDestIndex - 10) = *(uint32_t*)(psIndexBuf + 2);
-          *(uint32_t*)(puDestIndex - 8) = *(uint32_t*)(psIndexBuf + 4);
-          *(uint32_t*)(puDestIndex - 6) = *(uint32_t*)(psIndexBuf + 6);
-          *(uint32_t*)(puDestIndex - 4) = *(uint32_t*)(psIndexBuf + 8);
-          *(uint32_t*)(puDestIndex - 2) = *(uint32_t*)(psIndexBuf + 10);
-          *puDestIndex = puDestIndex[-1];
-          puDestIndex += 0xd;
-          psIndexBuf += 0xc;
+          for (int nPairIdx = 0; nPairIdx < 12; nPairIdx++) {
+            puDestIndex[nPairIdx] = (uint16_t)psIndexBuf[nPairIdx];
+          }
+
+          puDestIndex[12] = puDestIndex[11];
+          puDestIndex += 13;
+          psIndexBuf += 12;
           iRow--;
         } while (iRow);
 
@@ -4631,7 +4874,6 @@ void __stdcall RENDERER_D3D_ReleaseGroundTileCache() {
 
 void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int nPosX, int nPosY, int nWorldXpos, int nWorldYpos, uint32_t nAlpha, int nScreenPanels, void * pTileData) {
     // Static local variables (originally global data)
-    static uint32_t gdwRendererMode = 0x50000; D2_STATIC_GUARD(gdwRendererMode, "D2Direct3D::Renderer::DrawGroundTile::gdwRendererMode");
 
     DWORD DVar2;
     uint32_t* lpwIndices;
@@ -4719,7 +4961,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
 
       dwIndexCount = 0x41;
       DVar2 = 5;
-      lpwIndices = &gpD3DGroundTileVertexBuffer;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileStripIndices; // [vanilla-plus fix 24] real array (was the 1-byte phantom)
     } else {
       DVar2 = (*pVBLockFn)(g_pD3DGroundTileVB, 0x21, (void**)&nAlpha, nullptr);
       if (DVar2) {
@@ -4752,7 +4994,7 @@ void __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
       }
 
       dwIndexCount = 4;
-      lpwIndices = &gdwRendererMode;
+      lpwIndices = (uint32_t*)g_aD3DGroundTileFanIndices; // [vanilla-plus fix 24] real 4-word fan (was the 0x50000 phantom dword)
       DVar2 = 6;
     }
 

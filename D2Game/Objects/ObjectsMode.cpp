@@ -309,7 +309,7 @@ void __fastcall OBJMODE_UpdateHoverTextExpiry(::SGAMEDATA * pGame, D2UnitStrc * 
     GAME::Event::SetEvent(pGame, pUnit, 6, nExpireFrame, 0, 0);
 }
 
-void __stdcall OBJMODE_TriggerProximityEffect(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+static void __stdcall OBJMODE_TriggerProximityEffect(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     int32_t nClassIdOrDist;
     POINT ptUnitCoords;
     D2UnitStrc* pTarget;
@@ -359,44 +359,44 @@ void __fastcall OBJMODE_DispatchChestType(::SGAMEDATA * pGame, D2UnitStrc * pUni
     if (byChestType == 8) {
       if (0x4a < (int)eLevelId) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[2]);
-        if (!bBadCallback) {
-          (*gapObjectOperateCallbacks[2])(pGame, pUnit);
-          return;
+        if (bBadCallback) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x161);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x161);
-        exit(-1);
+        (*gapObjectOperateCallbacks[2])(pGame, pUnit);
+        return;
       }
     } else if (byChestType == 3) {
       if ((int)eLevelId < 0x28 && eLevelId != LEVEL_TowerCellarLevel5) {
         /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[2]);
-        if (!bBadCallback) {
-          (*gapObjectOperateCallbacks[2])(pGame, pUnit);
-          return;
+        if (bBadCallback) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16c);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16c);
-        exit(-1);
-      }
-    } else if ((byChestType == 1 || byChestType == 4) && (int)eLevelId < 0x28) {
-      /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[2]);
-      if (!bBadCallback) {
         (*gapObjectOperateCallbacks[2])(pGame, pUnit);
         return;
       }
+    } else if ((byChestType == 1 || byChestType == 4) && (int)eLevelId < 0x28) {
+      /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[2]);
+      if (bBadCallback) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x176);
+        exit(-1);
+      }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x176);
-      exit(-1);
-    }
-
-    /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[uChestType]);
-    if (!bBadCallback) {
-      (*gapObjectOperateCallbacks[uChestType])(pGame, pUnit);
+      (*gapObjectOperateCallbacks[2])(pGame, pUnit);
       return;
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17b);
-    exit(-1);
+    /* FARPROC lpfn for IsBadCodePtr */ bBadCallback = IsBadCodePtr((FARPROC)gapObjectOperateCallbacks[uChestType]);
+    if (bBadCallback) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x17b);
+      exit(-1);
+    }
+
+    (*gapObjectOperateCallbacks[uChestType])(pGame, pUnit);
+    return;
 }
 
 // Per-frame server update for a proximity-triggered object (e.g. trap/shrine reacting to nearby players), driven by a 3-state machine stored in the object's data byte at szCharName[4] (0=idle,1=armed,2=fired). Scans the object's room for live players within collision range: in idle/armed it either plays the activation event (REFRESHVENDOR sound, -> mark armed) or, when already activated, runs MONSTERAI_CalculateCounterAttackDamage against the player (the trap's hit) and transitions to fired+update-flag; state 2 clears the update flag and returns to idle. Reschedules its own update event (event 3) using the object's txt FrameCnt timing (~0x19 frames when active, ~0xf otherwise).
@@ -546,7 +546,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
 }
 
 // @sourcefile .\OBJECTS\ObjMode.cpp
-void AUTOMAP_RevealAfterTeleport(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, D2RoomStrc * pRoom) {
+static void AUTOMAP_RevealAfterTeleport(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, D2RoomStrc * pRoom) {
     D2DrlgRoomCoordsStrc roomCoords;
     POINT ptCoords;
     D2Common::Units::GetCoords(pUnit, &ptCoords);
@@ -895,7 +895,7 @@ BOOL __fastcall OBJOP_OpenBreakableContainer(D2ObjectOperateFnArg * pOperation) 
     return 1;
 }
 
-BOOL __stdcall OBJMODE_CheckSpawnMonsterFromSkeletonActRestriction(int32_t nParam, D2RoomStrc * pRoom) {
+static BOOL __stdcall OBJMODE_CheckSpawnMonsterFromSkeletonActRestriction(int32_t nParam, D2RoomStrc * pRoom) {
     if (!(nParam == 0xea && pRoom)) {
       return 1;
     }
@@ -909,7 +909,7 @@ BOOL __stdcall OBJMODE_CheckSpawnMonsterFromSkeletonActRestriction(int32_t nPara
     return 0;
 }
 
-void OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode eMonsterAnimMode, int32_t nParam, D2ObjectModeArg * pObjectModeArg) {
+static void OBJMODE_SpawnMonsterFromObject(eD2MonsterAnimMode eMonsterAnimMode, int32_t nParam, D2ObjectModeArg * pObjectModeArg) {
     eD2LevelId eLevel;
     if (!(-1 < nParam && nParam < sgptDataTable->nTxtMonStatsSize)) {
       return;
@@ -981,7 +981,7 @@ void __fastcall OBJMODE_SpawnCompanionChests(::SGAMEDATA * pGame, D2UnitStrc * p
     UNIT::SUnit::SetSparklyChestFlag(pNewChest, true);
 }
 
-void OBJMODE_SpawnMonsterAtObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam) {
+static void OBJMODE_SpawnMonsterAtObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam) {
     POINT ptCoords;
     D2RoomStrc* pFreeRoom;
     D2Common::Units::GetCoords(pUnit, &ptCoords);
@@ -1024,7 +1024,7 @@ void __fastcall OBJMODE_SpawnSiegeMonsterD(::SGAMEDATA * pGame, D2UnitStrc * pUn
     OBJMODE_SpawnMonsterAtObject(pGame, pUnit, 0x171);
 }
 
-void __stdcall OBJMODE_DispatchOperateCallback(D2ObjectOperateFnArg * pOperation, uint8_t nFunctionId) {
+static void __stdcall OBJMODE_DispatchOperateCallback(D2ObjectOperateFnArg * pOperation, uint8_t nFunctionId) {
     bool _bBadCallback;
     bool bBadCallback;
     bool bActAllowed;
@@ -1054,7 +1054,7 @@ void __stdcall OBJMODE_DispatchOperateCallback(D2ObjectOperateFnArg * pOperation
     UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->sArg.pVictim, UNITEVENTCALLBACK_REFRESHVENDOR, nullptr);
 }
 
-BOOL OBJMODE_CheckInventoryHasItemType(eD2ItemTypes eItemType, D2UnitStrc * pUnit) {
+static BOOL OBJMODE_CheckInventoryHasItemType(eD2ItemTypes eItemType, D2UnitStrc * pUnit) {
     D2UnitStrc* pCarriedItem;
     uint32_t bMatchesType;
     if (!pUnit->pInventory) {
@@ -1284,7 +1284,7 @@ void __fastcall Shrines_PortalShrineFunction(D2ObjectOperateFnArg * pArguments, 
 }
 
 // Two GuardStack tails: GuardStack(1) after successful spawn/removal, GuardStack(nReturnValue) where nReturnValue is explicitly set to 0 (no spawn spot) or 1 (spawned) elsewhere.
-BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
+static BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2) {
     BOOL BVar1;
     D2ClientStrc* pClient;
     POINT ptUnitCoords;
@@ -1334,12 +1334,10 @@ BOOL __stdcall Shrines_GemShrine_SpawnGem(int32_t nItemClassId, D2UnitStrc * pUn
         pClient = UNIT::SUnit::SUNIT_GetClient(pUnit2, ".\\OBJECTS\\ObjMode.cpp", 0x80f);
         GAME::SCmd::Send0x9DRemoveItemFromContainer(pClient, pUnit2, pOldGemItem, (eD2ItemFlag)pNewGemItem);
         ITEMS::ItemMode::ITEMMODE_DeleteItemFromInventory(pGame, pUnit2, pUnit, 0);
-        Fog::Debug::GuardStack();
         return 1;
       }
     }
 
-    Fog::Debug::GuardStack();
     return BVar1;
 }
 
@@ -1410,13 +1408,13 @@ void __fastcall Shrines_GemShrineFunction(D2ObjectOperateFnArg * pArguments, D2S
     }
 
     nItemClassId = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(acItemCode);
-    if (nItemClassId != -1) {
-      Shrines_GemShrine_SpawnGem(nItemClassId, nullptr, pArguments->sArg.pGame, pArguments->pAttacker);
-      return;
+    if (nItemClassId == -1) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x84c);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x84c);
-    exit(-1);
+    Shrines_GemShrine_SpawnGem(nItemClassId, nullptr, pArguments->sArg.pGame, pArguments->pAttacker);
+    return;
 }
 
 // Server-side activation effect for a Storm/Tempest shrine (operate handler, D2ObjectOperateFnArg + ShrinesTxt). Two-phase: (1) finds all alive units within ShrinesTxt.dwArg1 tiles of the operating unit via InitializeUnitFindData/FindAllMatchingUnitsInNeighboredRooms and drains a percentage (dwArg0-based, ~ /100) of each monster/player target's hitpoints via STATLIST_AddUnitStat; (2) spawns a 5x5 ring/grid of MISSILE_Fireball missiles around the unit (offsets -5..+25 step 5, alternating sides), owned by pAttacker, with missile level capped 1..8 from the owner's level/5. No return.
@@ -1701,8 +1699,6 @@ void __fastcall Shrines_ExplodingShrineFunction(D2ObjectOperateFnArg * pArgument
       MISSILES::Missiles::CreatingMissile(pArguments->sArg.pGame, (D2SkillArgStrc*)&sItemGenCtx.usually_one);
       iMissileIdx++;
     } while (iMissileIdx < 6);
-
-    Fog::Debug::GuardStack();
 }
 
 // Object operate handler for a Poison shrine. Using the shrine unit's seed, spawns dwArg0..dwArg1 random potion items ("gpm" item code) at the best free spot near the attacker via FindBestSpotToSpawnItem + ITEM_CreateItemInstance (quantity 1, DOUPDATE). Then fires 6 poison missiles in a fixed offset spread (the aMissileOffsets ring) centered on the shrine, with skill level scaled by attacker level/5 (clamped 1..8). Side effect: advances the shrine seed.
@@ -1836,12 +1832,10 @@ void __fastcall Shrines_PoisonShrineFunction(D2ObjectOperateFnArg * pArguments, 
       MISSILES::Missiles::CreatingMissile(pArguments->sArg.pGame, (D2SkillArgStrc*)&sItemGenCtx.usually_one);
       iMissileIdx++;
     } while (iMissileIdx < 6);
-
-    Fog::Debug::GuardStack();
 }
 
 // Computes the effective to-hit (attack rate) for a skill+weapon pair and writes it into *pnParam. Starts from the unit's base attack rate; if no explicit weapon is provided (pUnit2==null), falls back to the equipped weapon. Missile-potion weapons force *pnParam=0. Final value combines skill's LevToHit/ToHit columns, item bonus damage, UNITSTAT_item_tohit_percent, and the character class's ToHitFactor from CharStats.txt. Halts if pSkill is null.
-void __stdcall SKILL_GetAttackRateForWeapon(D2SkillStrc * pSkill, D2UnitStrc * pUnit, int * pnParam, int32_t nParam, D2UnitStrc * pUnit2) {
+static void __stdcall SKILL_GetAttackRateForWeapon(D2SkillStrc * pSkill, D2UnitStrc * pUnit, int * pnParam, int32_t nParam, D2UnitStrc * pUnit2) {
     int32_t nAttackRate;
     nAttackRate = D2Common::Units::GetAttackRate(pUnit);
     *pnParam = nAttackRate;
@@ -1881,7 +1875,7 @@ void __stdcall SKILL_GetAttackRateForWeapon(D2SkillStrc * pSkill, D2UnitStrc * p
 }
 
 // Returns a shrine's effective stat bonus for the given unit stat. For most stats (resistances, stamina, experience, etc.) returns nParam unchanged. For UNITSTAT_tohit, computes the attack rate via SKILL_GetAttackRateForWeapon. For UNITSTAT_mindamage, resolves whether to use primary or secondary min-damage stat based on dual-wield handedness, then fetches the raw stat value and scales it as (statValue * nParam) / 100.
-int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUnitStat, int32_t nParam, D2UnitStrc * pUnit) {
+static int32_t __stdcall OBJMODE_GetModifiedStatValueFromShrine(eD2UnitStat eUnitStat, int32_t nParam, D2UnitStrc * pUnit) {
     D2SkillStrc* pSkill;
     D2UnitStrc* pWeaponBySkill;
     int nHandedness;
@@ -2012,12 +2006,9 @@ BOOL __fastcall OBJOP_ActivateShrine(D2ObjectOperateFnArg * pOperation) {
     ::SGAMEDATA* pGame;
     D2UnitStrc* pUnit;
     eD2UnitFlags* peUnitFlags2;
-    uint32_t uSecurityCookie;
-    uSecurityCookie = DEFAULT_SECURITY_COOKIE ^ (uintptr_t)0;
     D2UnitStrc* pShrineObject;
     pShrineObject = pOperation->sArg.pVictim;
     if (pShrineObject->pUnitData.pUnitDataObject->nActivatingPlayerGUID || pShrineObject->eAnimMode.ePlayerMode != Death) {
-      Fog::Debug::GuardStack();
       return 0;
     }
     if (!pOperation->pAttacker) {
@@ -2088,7 +2079,6 @@ BOOL __fastcall OBJOP_ActivateShrine(D2ObjectOperateFnArg * pOperation) {
       }
     }
 
-    Fog::Debug::GuardStack();
     return 1;
 }
 
@@ -2263,7 +2253,7 @@ BOOL __fastcall OBJOP_SpawnNormalItemDrop(D2ObjectOperateFnArg * pOperation) {
 }
 
 // Iterator callback (EDI = SGAMEDATA**) that applies counter-attack damage from a source object to all nearby units in its room. For each unit in the room: players not in Dead mode within range 3 take MONSTERAI_CalculateCounterAttackDamage; monsters not in Kick mode within range 3 take the same; explosive-barrel objects (pHashLink1==0xb, Death mode) within collision distance 3 are detonated via OBJOP_DetonateExplosiveBarrel. Passes the constructed sOperation for barrel detonation.
-void OBJMODE_ApplyCounterAttackToNearbyUnits(::SGAMEDATA * * ppGame) {
+static int OBJMODE_ApplyCounterAttackToNearbyUnits(::SGAMEDATA * * ppGame) {
     bool _bInRange;
     bool bInRange;
     int32_t nCollisionDist;
@@ -2303,6 +2293,8 @@ void OBJMODE_ApplyCounterAttackToNearbyUnits(::SGAMEDATA * * ppGame) {
         }
       }
     }
+
+    return 0;
 }
 
 BOOL __fastcall OBJOP_DetonateExplosiveBarrel(D2ObjectOperateFnArg * pOperation) {
@@ -2431,7 +2423,7 @@ BOOL __fastcall InteractWithObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint
     return pResultFlags;
 }
 
-void OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid) {
+void __thiscall OBJECT_UpdateCollisionOnModeChange(void * pThis, DWORD nGid) {
     eCollisionFlags wCollisionResult;
     POINT ptPos;
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable((::SGAMEDATA*)pThis, UNIT_OBJECT, nGid);
@@ -2851,29 +2843,29 @@ BOOL __fastcall OBJOP_ActivatePortalObject(D2ObjectOperateFnArg * pOperation) {
       if (eDestAct < (ACT_V | ACT_II)) {
         nUnitSizeX = D2Common::Units::GetUnitSizeX(pOperation->pAttacker);
         pRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(pOperation->sArg.pGame->pAct[eDestAct], eLevel, 0, (int*)&nSpawnX, (int*)&nSpawnY, nUnitSizeX);
-        if (pRoom) {
-          bAllowNeighboorRooms = 0;
-          eCollisionFlag_00 = 0x1c09;
-          ptDest.x = nSpawnX;
-          ptDest.y = nSpawnY;
-          nLine = D2Common::Units::GetUnitSizeX(pOperation->pAttacker);
-          pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptDest, nLine, eCollisionFlag_00, bAllowNeighboorRooms);
-          if (!pRoom) {
-            return 0;
-          }
-
-          bAllowNeighboorRooms = UNIT::SUnit::SUNIT_RelocateUnit(pOperation->sArg.pGame, pOperation->pAttacker, pRoom, ptDest.x, ptDest.y, 0, 0);
-          if (bAllowNeighboorRooms) {
-            return 0;
-          }
-
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd9);
+        if (!pRoom) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcd);
           exit(-1);
+        }
+
+        bAllowNeighboorRooms = 0;
+        eCollisionFlag_00 = 0x1c09;
+        ptDest.x = nSpawnX;
+        ptDest.y = nSpawnY;
+        nLine = D2Common::Units::GetUnitSizeX(pOperation->pAttacker);
+        pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptDest, nLine, eCollisionFlag_00, bAllowNeighboorRooms);
+        if (!pRoom) {
           return 0;
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcd);
-        exit(-1);
+        bAllowNeighboorRooms = UNIT::SUnit::SUNIT_RelocateUnit(pOperation->sArg.pGame, pOperation->pAttacker, pRoom, ptDest.x, ptDest.y, 0, 0);
+        if (!bAllowNeighboorRooms) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfd9);
+          exit(-1);
+        }
+
+        return 0;
+        return 0;
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfcb);
         exit(-1);
@@ -2932,7 +2924,6 @@ BOOL __fastcall OBJOP_ActivateWaypoint(D2ObjectOperateFnArg * pOperation) {
       }
     }
 
-    Fog::Debug::GuardStack();
     return 1;
 }
 
@@ -3054,7 +3045,7 @@ uint32_t __fastcall OBJMODE_ShrineSkillPointBoost(::SGAMEDATA * pGame, D2UnitStr
 }
 
 // Probabilistic dispatcher for an object's per-mode operate handler. Indexes gaObjectsModeFuncTable by bParam (mode index, bounds-checked against gnObjectsModeFunctionDispatchTableCount), advances the object's RNG seed at nParam+0x20 (LCG *0x6ac690c5) and rolls 0..99; only if the roll is below that mode's nSpriteThreshold does it invoke the table's pfnHandler (validated via IsBadCodePtr, halting on a bad pointer) with the mode's nModeFlags, returning the handler's result. Returns 0 if out of range or the probability gate fails. Custom convention (nParam in EDI).
-uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, uint8_t bParam, int32_t nParam) {
+static uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, uint8_t bParam, int32_t nParam) {
     // Static local variables (originally global data)
     static D2ObjModeFuncEntryStrc gaObjectsModeFuncTable[21] = {
     {
@@ -3188,7 +3179,7 @@ uint32_t __stdcall OBJMODE_DispatchOperateFunction(::SGAMEDATA * pGame, uint8_t 
 
 // Server-side handler for the 0x44 object-interaction packet (well/Horadric-orifice/quest container). Resolves the player, object and item units by GUID. For nParam==2 sends the 0x58 OpenUI response (result 1) and clears interaction. For nParam==3 it tries to consume an item: special-cases the Horadric Orifice object (classId 0x98) requiring the "tsh " (Horadric Staff) item code, otherwise moves the item to the player's cursor; on success dispatches the object's operate function (or the orifice's Q14_OnStaffUsedInOrifice for A2Q7), sends OpenUI result 5 and schedules the object anim event; on failure sends result 4. Returns 1.
 // @sourcefile .\OBJECTS\ObjMode.cpp
-void __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD param_1, DWORD dwItemGUID, int16_t nParam) {
+int __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD param_1, DWORD dwItemGUID, int16_t nParam) {
     D2ClientStrc* pClient;
     uint32_t nItemClassId;
     D2ItemsTxt* pTxtItem;
@@ -3216,7 +3207,7 @@ void __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD para
         GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
         D2Common::Units::SetupUpdateFlag(pObject, 0);
         UNIT::SUnit::ClearInteractInfo(pPlayer);
-        return;
+        return 1;
       }
       if (nParam == 3) {
         if (!pItem) {
@@ -3245,15 +3236,15 @@ void __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD para
               if (pObject->nClassId == 0x98) {
                 D2Common::Units::SetupUpdateFlag(pObject, 2);
                 Quests::QUESTS::A2Q7::Q14_OnStaffUsedInOrifice(pGame, pPlayer, pObject);
-                return;
+                return 1;
               }
 
               GAME::Event::SetEvent(pGame, pObject, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-              return;
+              return 1;
             }
 
             D2Common::Units::SetupUpdateFlag(pObject, 0);
-            return;
+            return 1;
           }
         } else {
           bToCursor = ITEMS::ItemMode::ToCursorItem(pGame, pPlayer, pItem);
@@ -3266,6 +3257,8 @@ void __fastcall _x44PacketHandler(::SGAMEDATA * pGame, DWORD dwParam, DWORD para
         GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
       }
     }
+
+    return 1;
 }
 
 void __fastcall OBJMODE_HandleObjectDeactivation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pObject) {
@@ -3313,7 +3306,7 @@ void __fastcall OBJMODE_OnWaypointFinish(::SGAMEDATA * pGameStrc, D2UnitStrc * p
 }
 
 // Completes the two-phase town-portal link: given the GUID of a blue portal stub and the destination level, locates the stub object (classId 0x3b), verifies it is unlinked and has an owner unit, then stores the destination level in the portal's component data, sets the linked flag, frees the owner stub unit, and calls LinkPortal to establish the bidirectional connection. Halts with an internal error if preconditions fail.
-void OBJMODE_FinalizePortalLink(void * pThis, DWORD dwBluePortalGUID, eD2LevelId eLevel) {
+void __thiscall OBJMODE_FinalizePortalLink(void * pThis, DWORD dwBluePortalGUID, eD2LevelId eLevel) {
     if (!pThis) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11dd);
       exit(-1);
@@ -3386,7 +3379,7 @@ void __stdcall OBJECT_HandleUnitRevival(D2UnitStrc * pUnit, bool * pbRevived) {
 }
 
 // Object-mode handler that applies well/shrine healing to a player unit. Reads D2ObjectsTxt Parm flags (bit 1=HP, bit 0=mana) and a percentage scalar, then restores HP, mana, and stamina up to their maximums and sends attribute-update packets for each. Also removes poison and freeze state lists. Revives any dead hireable mercenary via SUNITNPC_HandleHireableAction, then iterates pets via PetsForEach/OBJECT_HandleUnitRevival. Returns UNIT_MONSTER (1) if anything was healed/cured, UNIT_PLAYER (0) if nothing changed.
-BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt * pTxtObjects, D2UnitStrc * pUnit) {
+static BOOL __stdcall OBJMODE_ApplyWellHealing(::SGAMEDATA * pGame, D2ObjectsTxt * pTxtObjects, D2UnitStrc * pUnit) {
     BOOL eHealed = 0;
     uint32_t nMaxStat = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
     uint32_t nCurStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
@@ -3512,12 +3505,9 @@ void __fastcall SpawnDrop(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t sCod
         sItemGenCtx.pDrlgRoom = pRoom;
         sItemGenCtx.nItemLevel = ITEMS::Items::Drop::GetLevel(pUnit, LEVEL_None);
         ITEMS::Items::Drop::ITEM_CreateItemInstance(pGame, &sItemGenCtx, 0);
-        Fog::Debug::GuardStack();
         return;
       }
     }
-
-    Fog::Debug::GuardStack();
 }
 
 void __fastcall OBJMODE_DropItemAtPosition(int32_t nParam, D2UnitStrc * pUnit, int32_t nItemClassId, eD2ItemTypes eItemType) {
@@ -3525,7 +3515,6 @@ void __fastcall OBJMODE_DropItemAtPosition(int32_t nParam, D2UnitStrc * pUnit, i
     POINT ptSpawnPos;
     D2ItemGenContextStrc sItemGenCtx;
     if (nItemClassId < 0) {
-      Fog::Debug::GuardStack();
       return;
     }
 
@@ -3536,7 +3525,6 @@ void __fastcall OBJMODE_DropItemAtPosition(int32_t nParam, D2UnitStrc * pUnit, i
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     sItemGenCtx.pDrlgRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pRoom, &ptUnitPos, pNewPosition, nSearchRadius, bCheckNeighbors);
     if (!sItemGenCtx.pDrlgRoom) {
-      Fog::Debug::GuardStack();
       return;
     }
 
@@ -3553,7 +3541,6 @@ void __fastcall OBJMODE_DropItemAtPosition(int32_t nParam, D2UnitStrc * pUnit, i
     sItemGenCtx.pGame = (::SGAMEDATA*)nParam;
     sItemGenCtx.nItemLevel = ITEMS::Items::Drop::GetLevel(pUnit, LEVEL_None);
     ITEMS::Items::Drop::ITEM_CreateItemInstance((::SGAMEDATA*)nParam, &sItemGenCtx, 0);
-    Fog::Debug::GuardStack();
 }
 
 // Server-side loot roll for an opened chest object. Resolves the chest's room level, determines act and difficulty-scaled monster level tier, selects the appropriate treasure class via RollTreasureClass, and calls SERVER_ITEM_RollItemToDrop to generate up to 6 drop items. Returns the first dropped item unit, or NULL on any lookup failure.
@@ -3599,45 +3586,45 @@ D2UnitStrc * * __fastcall RollChestDrops(D2ObjectOperateFnArg * pUnitKill, eD2It
         exit(-1);
       } else {
         pTxtObjects = D2Common::Units::GetObjectTxtRecordFromObject(pUnitKill->sArg.pVictim);
-        if (pTxtObjects) {
-          pRoom = D2Common::Units::UNITS_GetRoom(pUnitKill->sArg.pVictim);
-          if (!pRoom) {
-            return nullptr;
-          }
-
-          eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-          neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-          __frame0.nMonLvl = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevel, pGame->nDifficulty, pGame->bExpansion);
-          nAct = (uint32_t)neAct;
-          nActMonLvlMin = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevelId_ActLevels[nAct][0], pGame->nDifficulty, pGame->bExpansion);
-          nActMonLvlMax = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevelId_ActLevels[nAct][1], pGame->nDifficulty, pGame->bExpansion);
-          nVictimLevel = nActMonLvlMax - nActMonLvlMin;
-          if (nVictimLevel < 0) {
-            nVictimLevel = -nVictimLevel;
-          }
-
-          nVictimLevel = (nVictimLevel + 1) / 3;
-          if (__frame0.nMonLvl < nVictimLevel + nActMonLvlMin) {
-            nVictimLevel = 0;
-          } else {
-            nVictimLevel = (nActMonLvlMin + nVictimLevel * 2 <= __frame0.nMonLvl) + 1;
-          }
-
-          pTreasure = D2Common::DATATBLS::MonsterTbls::RollTreasureClass((uint32_t)pGame->nDifficulty, nAct, nVictimLevel);
-          if (!pTreasure) {
-            return nullptr;
-          }
-
-          D2Common::DATATBLS::DropDiag::NoteChestRoll(pUnitKill->sArg.pVictim ? pUnitKill->sArg.pVictim->nClassId : -1, pTreasure, nVictimLevel); // [dropdiag v1]
-          __frame0.nResultsItemSize = 0;
-          memset(aResultsItemList, 0, 6 * sizeof(aResultsItemList[0]));
-          ITEMS::Items::Drop::SERVER_ITEM_RollItemToDrop(pGame, pUnitKill->sArg.pVictim, pUnitKill->pAttacker, pTreasure, eItemType, nVictimLevel, 0, aResultsItemList, &__frame0.nResultsItemSize, 6, (uint16_t*)nVictimLevel, (uint32_t)pGame, pSeedExtra);
-          D2Common::DATATBLS::DropDiag::NoteChestRollResult(pTreasure, (void * const *)aResultsItemList, 6); // [dropdiag v1]
-          return (D2UnitStrc**)aResultsItemList[0];
+        if (!pTxtObjects) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1317);
+          exit(-1);
         }
 
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1317);
-        exit(-1);
+        pRoom = D2Common::Units::UNITS_GetRoom(pUnitKill->sArg.pVictim);
+        if (!pRoom) {
+          return nullptr;
+        }
+
+        eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+        neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+        __frame0.nMonLvl = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevel, pGame->nDifficulty, pGame->bExpansion);
+        nAct = (uint32_t)neAct;
+        nActMonLvlMin = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevelId_ActLevels[nAct][0], pGame->nDifficulty, pGame->bExpansion);
+        nActMonLvlMax = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetMonLvlForDifficulty(eLevelId_ActLevels[nAct][1], pGame->nDifficulty, pGame->bExpansion);
+        nVictimLevel = nActMonLvlMax - nActMonLvlMin;
+        if (nVictimLevel < 0) {
+          nVictimLevel = -nVictimLevel;
+        }
+
+        nVictimLevel = (nVictimLevel + 1) / 3;
+        if (__frame0.nMonLvl < nVictimLevel + nActMonLvlMin) {
+          nVictimLevel = 0;
+        } else {
+          nVictimLevel = (nActMonLvlMin + nVictimLevel * 2 <= __frame0.nMonLvl) + 1;
+        }
+
+        pTreasure = D2Common::DATATBLS::MonsterTbls::RollTreasureClass((uint32_t)pGame->nDifficulty, nAct, nVictimLevel);
+        if (!pTreasure) {
+          return nullptr;
+        }
+
+        D2Common::DATATBLS::DropDiag::NoteChestRoll(pUnitKill->sArg.pVictim ? pUnitKill->sArg.pVictim->nClassId : -1, pTreasure, nVictimLevel); // [dropdiag v1]
+        __frame0.nResultsItemSize = 0;
+        memset(aResultsItemList, 0, 6 * sizeof(aResultsItemList[0]));
+        ITEMS::Items::Drop::SERVER_ITEM_RollItemToDrop(pGame, pUnitKill->sArg.pVictim, pUnitKill->pAttacker, pTreasure, eItemType, nVictimLevel, 0, aResultsItemList, &__frame0.nResultsItemSize, 6, (uint16_t*)nVictimLevel, (uint32_t)pGame, pSeedExtra);
+        D2Common::DATATBLS::DropDiag::NoteChestRollResult(pTreasure, (void * const *)aResultsItemList, 6); // [dropdiag v1]
+        return (D2UnitStrc**)aResultsItemList[0];
       }
     }
 }
@@ -3724,30 +3711,30 @@ void __fastcall SERVER_MissleKilled(D2ObjectOperateFnArg * pKill) {
       ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
       ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
       nCharCode = ITEMS::Items::Drop::UNIT_GetMaxAvailableMPCharCode(pKill->sArg.pVictim);
-      if (nCharCode) {
-        pKill->sArg.pVictim->dwDropItemCode = nCharCode;
-        ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
-        ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
-        if (!pTxtObjects->Mode[1]) {
-          D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 2);
-        } else {
-          D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 1);
-          pGame = pKill->sArg.pGame;
-          GAME::Event::SetEvent(pGame, pKill->sArg.pVictim, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-        }
+      if (!nCharCode) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x599);
+        exit(-1);
+      }
 
-        pVictim = pKill->sArg.pVictim;
-        if (!pVictim) {
-          return;
-        }
+      pKill->sArg.pVictim->dwDropItemCode = nCharCode;
+      ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
+      ITEMS::Items::Drop::ITEM_RewardItemToDrop(pKill->sArg.pGame, pKill->sArg.pVictim, ITEMTYPE_Shield, &nDropArg, nullptr, -1, 1);
+      if (!pTxtObjects->Mode[1]) {
+        D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 2);
+      } else {
+        D2Common::Units::SetupUpdateFlag(pKill->sArg.pVictim, 1);
+        pGame = pKill->sArg.pGame;
+        GAME::Event::SetEvent(pGame, pKill->sArg.pVictim, 1, (pTxtObjects->FrameCnt[1] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+      }
 
-        peVar1 = &pVictim->eUnitFlags;
-        *peVar1 &= ~UNITFLAG_TARGETABLE;
+      pVictim = pKill->sArg.pVictim;
+      if (!pVictim) {
         return;
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x599);
-      exit(-1);
+      peVar1 = &pVictim->eUnitFlags;
+      *peVar1 &= ~UNITFLAG_TARGETABLE;
+      return;
     }
 }
 
