@@ -63,7 +63,7 @@ cmake --build build
 ```
 
 Copy `build/d2.exe` next to `Game.exe` in your Diablo II folder and run `d2.exe -w`.
-Getting the game, the toolchain per platform and checking a build:
+Getting the game, the toolchain per platform, and building with the original compilers:
 [docs/building.md](docs/building.md).
 
 ## Known issues
