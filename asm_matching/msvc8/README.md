@@ -248,7 +248,7 @@ conflicting ones, which point at a wrong global or offset in the tree.
 original's CRT (`evidence/crtmap.tsv`), and the per-version split is what
 settled SP1 (`evidence/toolchain.md`).
 
-The audit summary's headline counts **Blizzard code only**: it leaves out of
+The audit summary's headline counts the game **without the C runtime**: it leaves out of
 both the matched and the total every original function that is Microsoft's
 runtime - the libmap pairs, the run of library code they span, the linker's
 import thunks, and `evidence/runtime.tsv` (the functions Ghidra tags `runtime`,

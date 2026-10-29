@@ -1,5 +1,5 @@
-tree 4c6da6a18-dirty; compiler sp1; flags /O2 /Oy- /Ob1 /EHsc /GS /MT /W1 /D WIN32 /D NDEBUG /D _WINDOWS; D2Client/ /GS-; D2DDraw/ /GS-; D2Direct3D/ /GS-; D2Gdi/ /GS-; D2Glide/ /GS-; D2Launch/ /GS-; D2Launch/Engine/ ; D2MCPClient/ /GS-; D2Multi/ /GS-; D2Sound/ /GS-; D2Win/ /GS-; D2gfx/ /GS-; Fog/3rdparty/crashy /Y- /DWINSOCK_API_LINKAGE=DECLSPEC_IMPORT
-Blizzard code only: 4967 of 14812 functions MATCH (33.53%), 335400 of 2555443 bytes (13.12%)
+tree 7fc8de253-dirty; compiler sp1; flags /O2 /Oy- /Ob1 /EHsc /GS /MT /W1 /D WIN32 /D NDEBUG /D _WINDOWS; D2Client/ /GS-; D2DDraw/ /GS-; D2Direct3D/ /GS-; D2Gdi/ /GS-; D2Glide/ /GS-; D2Launch/ /GS-; D2Launch/Engine/ ; D2MCPClient/ /GS-; D2Multi/ /GS-; D2Sound/ /GS-; D2Win/ /GS-; D2gfx/ /GS-; Fog/3rdparty/crashy /Y- /DWINSOCK_API_LINKAGE=DECLSPEC_IMPORT
+Without the C runtime: 4967 of 14812 functions MATCH (33.53%), 335400 of 2555443 bytes (13.12%)
   runtime left out: 709 functions (123094 bytes): libmap pairs, the library run 00681a48..006b00b3, import thunks, runtime.tsv
 whole binary:
 original functions: 15521 (2678537 bytes of code)
