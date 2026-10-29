@@ -30,8 +30,8 @@ workflow artifacts: `d2s-<sha>.exe` + `d2-map-<sha>.map` on `main` (the linker m
 is load-bearing for crash symbolization), `d2-<sha>.exe` + `d2-stripped-<sha>.exe` on
 `jaenster-main`.
 
-Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.4`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4)
-(2026-10-29) ships a 7z bundling the rebuilt client (`d2s-c81aae6.exe`), the
+Prebuilt releases: [`D2LoD-Vanilla-Plus-0.0.5`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5)
+(2026-10-29) ships a 7z bundling the rebuilt client (`d2s-<sha>.exe`), the
 `glide3x.dll` Vulkan wrapper (Glide3xVK 0.4.6) and launcher/debug scripts — extract
 into a 1.14d install (see the release notes or [`VANILLA-PLUS.md`](VANILLA-PLUS.md)).
 The wrapper line tags its own releases separately.
@@ -112,7 +112,7 @@ Actions tab instead of building by hand.
 Two ways:
 
 - **From a release** (recommended for play): extract the
-  [`D2LoD-Vanilla-Plus-0.0.4.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4)
+  [`D2LoD-Vanilla-Plus-0.0.5.7z`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5)
   into your Diablo II folder, run `Launch.cmd` to start the game with the Vulkan
   wrapper, and run `install_shaders.cmd` once for the libretro slang shader pack.
 - **From a build**: copy `d2.exe` into your Diablo II folder, next to the original
