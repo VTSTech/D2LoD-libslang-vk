@@ -38169,12 +38169,14 @@ void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, 
 // =============================================================================
 
 uint8_t bUnitSoundTableInit; D2_GLOBAL_GUARD_BSS(bUnitSoundTableInit, "bUnitSoundTableInit");
-uint8_t gaUnitSoundIdsBarbarian; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
-uint8_t gaUnitSoundIdsNecromancer; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
-uint8_t gaUnitSoundIdsPaladin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
-uint8_t gaUnitSoundIdsSorceress; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
-uint8_t gaUnitSoundIdsAssassin; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
-uint8_t gaUnitSoundIdsDruid; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
+// VP: vanilla-plus - per-class player sound tables (see globals.h): retail-size zero-filled arrays, not the decompiled 1-byte stubs. Nothing in-tree initializes them (the retail init is unrecovered), so they stay all-SOUND_NONE.
+int gaUnitSoundIdsAmazon[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
+int gaUnitSoundIdsBarbarian[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+int gaUnitSoundIdsNecromancer[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+int gaUnitSoundIdsPaladin[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+int gaUnitSoundIdsSorceress[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+int gaUnitSoundIdsAssassin[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+int gaUnitSoundIdsDruid[11]; D2_GLOBAL_GUARD_BSS(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 uint8_t gbQuestA5Q2Unknown; D2_GLOBAL_GUARD_BSS(gbQuestA5Q2Unknown, "gbQuestA5Q2Unknown");
 uint8_t gaMonSeqMonsterTblData_Unknown; D2_GLOBAL_GUARD_BSS(gaMonSeqMonsterTblData_Unknown, "gaMonSeqMonsterTblData_Unknown");
 uint8_t gaMonSeqAnimData; D2_GLOBAL_GUARD_BSS(gaMonSeqAnimData, "gaMonSeqAnimData");

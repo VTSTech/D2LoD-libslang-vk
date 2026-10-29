@@ -447,6 +447,9 @@ int __fastcall SOUND_PlaySound(eD2Sounds nSoundId, D2UnitStrc * pUnit, int32_t n
 
     D2SoundsTxt* pSoundsTxt;
     pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(nSoundId);
+    if (!pSoundsTxt) { // VP: lookup returns null for ids outside sounds.txt - upstream derefed unchecked and died reading Volume@0x3C (0x2C event-sound crash, inventory-full pickup)
+      return 0;
+    }
     int nGlobal3;
     nGlobal3 = SoundHdr::SOUNDHDR_GetGlobal3();
     if (!pSoundsTxt->Volume) {

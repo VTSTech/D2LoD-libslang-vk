@@ -107,6 +107,12 @@ gate "options page: shared ini path"      D2Client/UI/VanillaPlusOptions.cpp 'AL
 gate "automap tolerance VP blocks (4 sites + macro)" D2Client/UI/Automap.cpp 'VP-BEGIN \[automap tolerance\]' 5
 gate "automap tolerant frees"             D2Client/UI/Automap.cpp         'D2_FREE\(nErrorAddress\);'  4
 
+# ---- sound-defect: class sound tables + sounds.txt null guard ---------------
+gate "sounds.txt null guard in SOUND_PlaySound" D2Client/Sound/Sound.cpp 'VP: lookup returns null' 1
+gate "class sound tables right-sized [11]" globals/globals.h            'extern int gaUnitSoundIds\w+\[11\]' 7
+gate "class sound tables zero-filled BSS"  globals/globals.cpp          'int gaUnitSoundIds\w+\[11\]' 7
+gate "pointer table targets Amazon table"  globals/D2Client.cpp         'gaUnitSoundIdsAmazon' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

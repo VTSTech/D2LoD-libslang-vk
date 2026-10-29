@@ -44063,7 +44063,8 @@ eD2Sounds gaUnitSoundTableModeChange[12] = {
     SOUND_NONE
 }; D2_GLOBAL_GUARD(gaUnitSoundTableModeChange, "gaUnitSoundTableModeChange");
 
-int * gaUnitSoundTableByClassId[7] = { (int*)&bUnitSoundTableInit, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
+// VP: vanilla-plus - entry 0 (Amazon) pointed at the orphaned bUnitSoundTableInit flag byte, a decompiler artifact of the unrecovered runtime init; all seven entries now target real zero-filled tables (see globals.h)
+int * gaUnitSoundTableByClassId[7] = { (int*)&gaUnitSoundIdsAmazon, (int*)&gaUnitSoundIdsSorceress, (int*)&gaUnitSoundIdsNecromancer, (int*)&gaUnitSoundIdsPaladin, (int*)&gaUnitSoundIdsBarbarian, (int*)&gaUnitSoundIdsDruid, (int*)&gaUnitSoundIdsAssassin }; D2_GLOBAL_GUARD(gaUnitSoundTableByClassId, "gaUnitSoundTableByClassId");
 
 int gaAmbientMusicLevelSetTable[168] = {
     0x11,
