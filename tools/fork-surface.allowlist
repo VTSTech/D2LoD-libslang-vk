@@ -1,4 +1,4 @@
-42	0	.github/workflows/build.yml
+44	0	.github/workflows/build.yml
 2	0	.gitignore
 53	23	Bnclient/Bnclient.cpp
 32	18	CMakeLists.txt
@@ -58,7 +58,7 @@
 209	0	VANILLA-PLUS.md
 8	0	d2_enums.h
 56	4	d2_platform.h
-121	0	docs/merge-upstream.md
+125	0	docs/merge-upstream.md
 302	6	globals/D2Client.cpp
 16	0	globals/D2Direct3D.cpp
 46	1	globals/D2Win.cpp

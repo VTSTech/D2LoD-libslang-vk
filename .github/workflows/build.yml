@@ -26,6 +26,8 @@ jobs:
         run: |
           git remote add upstream https://github.com/jaenster/redivivus.git
           git fetch upstream main
+          # gate scripts were authored on Windows (no exec bit in the index)
+          chmod +x tools/*.sh
           tools/check-vanilla-plus.sh "$GITHUB_WORKSPACE"
           tools/check-fork-surface.sh "$GITHUB_WORKSPACE" upstream/main
 

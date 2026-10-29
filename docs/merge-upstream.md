@@ -31,6 +31,10 @@ rule in it was learned the hard way (see "War stories" at the bottom).
 
     # 0) clean tree, up to date
     git checkout main && git pull origin main
+    #    Windows note: git on Windows cannot see the exec bit, so a script
+    #    added from Windows lands as 100644 and Linux CI dies with
+    #    "Permission denied". Add new tools scripts as:
+    #    git add --chmod=+x tools/your-new-script.sh
 
     # 1) wire upstream once, then merge (NEVER rebase the fork onto upstream -
     #    published history + a shared base means merge is the only safe move)
