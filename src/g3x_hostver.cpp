@@ -44,6 +44,7 @@ const char* g3x_hostver_crc_name(uint32_t crc) {
         { 0xFE4CDB1Au, "Vanilla+ 0.0.2" }, // d2s-9cf9f69.exe, 23575054 bytes (22 MiB)
         { 0xA3F924DCu, "Vanilla+ 0.0.3" }, // d2s-569fc5c.exe, 23665152 bytes (22 MiB)
         { 0xE48CD2F4u, "Vanilla+ 0.0.4" }, // d2s-11d8b47.exe, 23493134 bytes (22 MiB)
+        { 0x3D6B6A00u, "Vanilla+ 0.0.5" }, // d2s-da8b7c9.exe, 23512590 bytes (22 MiB)
     };
     for (const auto& e : kTable)
         if (e.crc == crc)
