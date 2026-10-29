@@ -12,6 +12,7 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UI/SkillDesc.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: resolution-mode stop attach
 #include "D2Client/UNIT/Object.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -94,6 +95,17 @@ void __fastcall UI_SLIDER_LoadAndApplyNpcSpeech(D2EscMenuItemStrc * pItem, D2UIM
     D2Client::UI::Chat::UI_SLIDER_ApplyNpcSpeech(pItem, pMsg);
 }
 
+// VP: this is the Resolution row's fpInitCallback (globals.cpp). Beyond the
+// retail load-and-apply it attaches the 1280x720 stop (stop 2) at runtime:
+// the static table keeps nSubImageCount = 2 because ESCMENU_LoadLocalizedImages
+// loads one label DC6 per stop from the MPQs and no "1280x720" asset exists
+// (a third static entry would halt the menu load). Stop 2 gets the Route-B
+// blank placeholder (pDC6SubImages[2]; the type-1 draw renders it invisibly)
+// and the visible "1280x720" text is drawn by the row's fpDrawCallback
+// UI_SLIDER_DrawResolutionValue (EscMenu.cpp). Idempotent: ESCMENU_Initialize
+// runs once, but a re-init must not leak a second placeholder. On attach
+// failure the count stays 2 and the position clamps back to 800x600, so the
+// retail draw can never index the empty slot.
 void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     int* pnOut = &pItem->nImageIndex;
     int iVar1 = Storm::Source::SReg::SRegLoadValue("Diablo II", "Resolution", 0, pnOut);
@@ -101,9 +113,22 @@ void __fastcall UI_SLIDER_LoadAndApplyResolution(D2EscMenuItemStrc * pItem, D2UI
       *pnOut = 1;
     }
 
+    if (pItem->nSubImageCount == 2) {
+      DC6* pBlank = nullptr;
+      if (VPRES_BuildBlankPlaceholder(&pBlank)) {
+        pItem->pDC6SubImages[2] = pBlank;
+        pItem->nSubImageCount = 3; // Vanilla Plus: 640x480 / 800x600 / 1280x720
+      }
+    }
+    if (*pnOut < 0 || *pnOut > pItem->nSubImageCount - 1) {
+      *pnOut = pItem->nSubImageCount - 1; // foreign registry value or failed attach: largest working stop
+    }
+
     DWORD RequestedScreenModeMaybe = 2;
     if (!*pnOut) {
       RequestedScreenModeMaybe = 0;
+    } else if (*pnOut >= 2) {
+      RequestedScreenModeMaybe = 4; // Vanilla Plus: 1280x720
     }
 
     D2Client::ClientModeInGame::CLIENT_SetScreenResolution(RequestedScreenModeMaybe);

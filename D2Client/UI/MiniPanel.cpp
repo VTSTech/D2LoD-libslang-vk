@@ -656,10 +656,18 @@ void __stdcall SetupMiniPanel() {
     if (!bReadOk) {
       nResolution = 1;
     }
+    // VP: the registry value is the slider position (0/1/2; stop 2 is
+    // attached by the Resolution row's init callback). Clamp foreign values
+    // to 800x600.
+    if (nResolution < 0 || nResolution > 2) {
+      nResolution = 1;
+    }
 
-    DWORD nScreenMode_lcl = 4; //VP 720p test
+    DWORD nScreenMode_lcl = 2;
     if (!nResolution) {
       nScreenMode_lcl = 0;
+    } else if (nResolution >= 2) {
+      nScreenMode_lcl = 4; // Vanilla Plus: 1280x720
     }
 
     ClientModeInGame::CLIENT_SetScreenResolution(nScreenMode_lcl);

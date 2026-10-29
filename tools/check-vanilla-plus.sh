@@ -128,6 +128,22 @@ gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int 
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
 
+# ---- resolution-mode (1280x720 slider stop) --------------------------------
+# The registry value is the slider POSITION (0/1/2); stop 2 is attached at
+# runtime by the Resolution row's init callback because no MPQ label asset
+# exists for it. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4.
+gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 1
+gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: init attach + mode 4"      Storm/_unnamespaced.cpp     'VPRES_BuildBlankPlaceholder|RequestedScreenModeMaybe = 4' 2
+gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 2|nScreenMode_lcl = 4' 2
+gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
+gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
+gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
+gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

@@ -5,6 +5,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/VanillaPlusOptions.h" // self-check pins the row wiring
+#include "Storm/_unnamespaced.h" // self-check pins the Resolution row init callback
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/ClientModeInGame.h"
@@ -497,6 +498,173 @@ void __stdcall D2VP_ConfigReloaded() {
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }
 
+// ===== [resolution-mode] Route-B label primitives ===========================
+// Shared with the video-options Resolution row's 1280x720 stop (see
+// VanillaPlusCore.h for the wiring and the why). The builder is the same
+// retail-shape 8x8 transparent DC6 the Vanilla+ row label shipped
+// (VPLABEL_BuildBlankPlaceholder in VanillaPlusOptions.cpp); deliberately
+// duplicated here instead of shared so the field-proven options page never
+// churns when this feature evolves. Both copies freeze the SAME image:
+// 24-byte DC6 header (version 6, flags 1, 1 direction, 1 frame), file-
+// absolute frame-offset slot 0x1C, 0x20-byte frame header (nFlip=1, 8x8,
+// nAllocSize 64, nLength 16), 16 RLE bytes encoding an all-zero 8x8 raster
+// (per row one 0x80|8 transparent-run token plus the 0x80 end-of-row token).
+// Keep the copies in sync byte-for-byte.
+
+#ifndef D2_ALLOC
+#define D2_ALLOC(size) Fog::Memory::AllocClientMemory((size), __FILE__, __LINE__, 0)
+#endif
+
+#ifndef D2_FREE
+#define D2_FREE(p) Fog::Memory::FreeClientMemory((p), __FILE__, __LINE__, 0)
+#endif
+
+BOOL __stdcall VPRES_BuildBlankPlaceholder(struct DC6** ppOut) {
+    *ppOut = nullptr;
+    static const uint8_t gaBlankRle[16] = {
+        0x88, 0x80, 0x88, 0x80, 0x88, 0x80, 0x88, 0x80,
+        0x88, 0x80, 0x88, 0x80, 0x88, 0x80, 0x88, 0x80,
+    };
+    const int nTotalSize = 0x3C + (int)sizeof(gaBlankRle);
+    DC6* pRaw = (DC6*)D2_ALLOC(nTotalSize);
+    if (!pRaw) {
+        return FALSE;
+    }
+    memset(pRaw, 0, nTotalSize);
+    pRaw->nVersion = 6;       // required by the fixup (nExpectedFormat == -1)
+    pRaw->nFlags = 1;         // bit0 required, bit1 clear (pre-fixup state)
+    pRaw->nFormat = 0;
+    /* nTerm stays zeroed */
+    pRaw->nDirections = 1;
+    pRaw->nFrames = 1;
+    *(uint32_t*)((char*)pRaw + 0x18) = 0x1C; // file-absolute frame offset
+
+    DC6Block* pFrame = (DC6Block*)((char*)pRaw + 0x1C);
+    pFrame->nFlip = 1;        // retail frame termination value
+    pFrame->nWidth = 8;
+    pFrame->nHeight = 8;
+    pFrame->nOffsetX = 0;
+    pFrame->nOffsetY = 0;
+    pFrame->nAllocSize = 8 * 8;
+    pFrame->nNextBlock = 0;   // fixup patch slot: overwritten with the row ptr
+    pFrame->nLength = (int)sizeof(gaBlankRle);
+    memcpy((char*)pRaw + 0x3C, gaBlankRle, sizeof(gaBlankRle));
+
+    // Retail fixup: converts the file-relative offset to an absolute pointer,
+    // allocates the 1x1 block row, patches the frame's +0x18 slot. Idempotent
+    // (nFlags bit1), exactly what every file-loaded DC6 goes through.
+    D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRaw, ppOut, ".\\UI\\VANILLAPLUSCORE.CPP", 0x0, -1, "resolution stop placeholder");
+    if (!*ppOut) {
+        D2_FREE(pRaw);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// Frame-0 pixel height of pDC6 (0 = not measurable). Same accessors as
+// VPLABEL_MeasureRowImageHeight (VanillaPlusOptions.cpp): fixup-prepared
+// DC6, GfxData for frame 0, retail block lookup, GetDC6Height.
+static int VPRES_MeasureDC6FrameHeight(struct DC6* pDC6) {
+    if (!pDC6) {
+        return 0;
+    }
+    D2GfxDataStrc sGfxData;
+    memset(&sGfxData, 0, sizeof(sGfxData));
+    sGfxData.pDC6 = pDC6;
+    sGfxData.nDirection = 0;
+    sGfxData.nFrameNumber = 0;
+    DC6Block* pBlock = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
+    if (!pBlock) {
+        return 0;
+    }
+    int nHeight = (int)D2CMP::SRC::CelCmp::GetDC6Height(pBlock);
+    return nHeight > 0 ? nHeight : 0;
+}
+
+// Capital-glyph frame height in font nFontId (0 = not measurable). Mirrors
+// VPLABEL_GlyphFrameHeight: forces the standard lazy font load through
+// SetAndReturnLastFont (the exact path every text draw takes when a font is
+// first used), then reads the glyph's frame through the retail accessors -
+// the same glyph-entry -> frame-number lookup every drawn character takes.
+// Leaves the current font switched; callers save/restore around batches.
+static int VPRES_GlyphFrameHeight(int nFontId, uint16_t wCharCode) {
+    if (nFontId < 0 || nFontId >= 14) {
+        return 0;
+    }
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+    // A failed load leaves the cache entry null (SetAndReturnLastFont assigns
+    // the loader result unconditionally); FONT_GetCharWidthCallback would
+    // then index pGlyphs + ch against a null/garbage table - never
+    // dereference that.
+    if (!gaFontCache[nFontId].pFontDC6 || !gaFontCache[nFontId].pGlyphs) {
+        return 0;
+    }
+    D2FontGlyphStrc* pGlyph = (*gpfnFontGetCharWidth)(wCharCode);
+    if (!pGlyph) {
+        return 0;
+    }
+    DC6* pFontDc6 = (DC6*)gaFontCache[nFontId].pFontDC6;
+    D2GfxDataStrc sGfxData;
+    memset(&sGfxData, 0, sizeof(sGfxData));
+    sGfxData.pDC6 = pFontDc6;
+    sGfxData.nDirection = 0;
+    sGfxData.nFrameNumber = (int)*(const uint16_t*)(pGlyph->abUnverified + 6);
+    DC6Block* pBlock = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockFromGfxData(&sGfxData);
+    if (!pBlock) {
+        return 0;
+    }
+    int nHeight = (int)D2CMP::SRC::CelCmp::GetDC6Height(pBlock);
+    return nHeight > 0 ? nHeight : 0;
+}
+
+int __stdcall VPRES_PickFontMatchingDC6(struct DC6* pTargetDC6) {
+    // Same probe list + policy as the Vanilla+ row label (revE): ascending
+    // probe, distance ties resolve to the larger font, Font42 fallback.
+    static const int gaProbe[3] = { 7, 2, 3 };  // Font24, Font30, Font42
+    static const int VPRES_FONT_FALLBACK = 3;   // Font42 - largest menu font
+
+    // One decision per process per target: the retail label DC6 lives from
+    // ESCMENU_Initialize to shutdown, so pointer identity is stable. A null
+    // target (should not happen - slot 1 is retail-loaded) is never cached.
+    static const DC6* pCachedTarget = nullptr;
+    static int nCachedFontId = VPRES_FONT_FALLBACK;
+    if (pTargetDC6 && pTargetDC6 == pCachedTarget) {
+        return nCachedFontId;
+    }
+
+    int nResult = VPRES_FONT_FALLBACK;
+    int nTargetHeight = VPRES_MeasureDC6FrameHeight(pTargetDC6);
+    if (nTargetHeight > 0) {
+        int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gaProbe[0]);
+        int nBestFont = -1;
+        int nBestDist = 0;
+        for (int i = 0; i < 3; i++) {
+            int nCapsHeight = VPRES_GlyphFrameHeight(gaProbe[i], (uint16_t)L'S');
+            if (nCapsHeight <= 0) {
+                continue;
+            }
+            int nDist = nCapsHeight > nTargetHeight ? nCapsHeight - nTargetHeight : nTargetHeight - nCapsHeight;
+            // "<=" on purpose: the probe order is ascending, so a distance
+            // tie resolves to the larger font (the retail value images are
+            // the big menu family - when in doubt, go bigger).
+            if (nBestFont == -1 || nDist <= nBestDist) {
+                nBestFont = gaProbe[i];
+                nBestDist = nDist;
+            }
+        }
+        D2Win::Src::D2WinFont::SetAndReturnLastFont(nSavedFont);
+        if (nBestFont != -1) {
+            nResult = nBestFont;
+        }
+    }
+
+    if (pTargetDC6) {
+        pCachedTarget = pTargetDC6;
+        nCachedFontId = nResult;
+    }
+    return nResult;
+}
+
 // ===== [vanilla-plus] merge tripwires ======================================
 // The fork extends upstream-sized things in several places (UI flag table,
 // esc-menu options row, dismiss-mode alias). A future upstream merge that
@@ -561,6 +729,38 @@ void __stdcall VANILLAPLUS_SelfCheck() {
             D2BOOT_Fail("vanilla-plus self-check: gaEscMenuOptionsTable row-10 "
                         "click callback not wired (or duplicated) - the row-10 "
                         "table edit was lost or doubled in a merge "
+                        "(see docs/merge-upstream.md)");
+            exit(-1);
+        }
+    }
+    // [resolution-mode] the video-options Resolution row (expansion table)
+    // must carry the VP value-label draw callback; its fpInitCallback (the
+    // stop-2 attach point) identifies the row. Scan instead of hardcoding an
+    // index - a merge may reshuffle rows. Runtime state (nSubImageCount bump,
+    // blank placeholder) is applied by that init callback; this pins only the
+    // static globals.cpp wiring a merge could drop.
+    {
+        constexpr int kVidRowCount =
+            sizeof(gaEscMenuDeleteCharTable) / sizeof(gaEscMenuDeleteCharTable[0]);
+        int nWired = 0;
+        for (int i = 0; i < kVidRowCount; ++i) {
+            if (gaEscMenuDeleteCharTable[i].fpInitCallback !=
+                &UI_SLIDER_LoadAndApplyResolution) {
+                continue;
+            }
+            ++nWired;
+            if (gaEscMenuDeleteCharTable[i].fpDrawCallback !=
+                &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue) {
+                D2BOOT_Fail("vanilla-plus self-check: Resolution row draw "
+                            "callback not wired - the resolution-mode "
+                            "globals.cpp edit was lost (see docs/merge-upstream.md)");
+                exit(-1);
+            }
+        }
+        if (nWired != 1) {
+            D2BOOT_Fail("vanilla-plus self-check: Resolution row init callback "
+                        "not found (or duplicated) - the resolution-mode table "
+                        "wiring was lost or doubled in a merge "
                         "(see docs/merge-upstream.md)");
             exit(-1);
         }

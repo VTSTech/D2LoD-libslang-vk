@@ -13,6 +13,33 @@
 
 #pragma once
 
+struct DC6;
+
+// [resolution-mode] Route-B label primitives for the 1280x720 stop of the
+// video-options Resolution row (attached by the row's fpInitCallback
+// UI_SLIDER_LoadAndApplyResolution in Storm/_unnamespaced.cpp and drawn by
+// its fpDrawCallback UI_SLIDER_DrawResolutionValue in
+// D2Client/UI/EscMenu.cpp). The static esc-menu table keeps nSubImageCount
+// = 2 on purpose: ESCMENU_LoadLocalizedImages loads one label DC6 per stop
+// from the MPQs and no "1280x720" asset exists, so a third static entry
+// would halt the menu load. Instead the init callback attaches the blank
+// placeholder below into pDC6SubImages[2] at runtime (retail-shape 8x8
+// transparent DC6; the menu DC6s are process-lifetime, same as every
+// file-loaded label) and the visible label is font-drawn per frame. Same
+// Route B the Vanilla+ row label was field-proven with (see
+// VanillaPlusOptions.cpp for the Route A post-mortem).
+// FALSE = allocation/fixup failure; caller keeps nSubImageCount = 2 and the
+// init callback clamps the slider position back to 800x600.
+BOOL __stdcall VPRES_BuildBlankPlaceholder(struct DC6** ppOut);
+// Pick the in-tree menu font whose capital 'S' glyph frame height best
+// matches the frame-0 pixel height of pTargetDC6 (the retail "800x600"
+// value image of the same row). Probes Font24/Font30/Font42 ascending
+// (same probe list as the Vanilla+ row label), ties resolve to the larger
+// font, fallback Font42. Saves/restores the current font around the probes
+// and caches the result per process for the given target pointer (the
+// retail label DC6 lives from ESCMENU_Initialize to shutdown).
+int __stdcall VPRES_PickFontMatchingDC6(struct DC6* pTargetDC6);
+
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
 //   [features]
