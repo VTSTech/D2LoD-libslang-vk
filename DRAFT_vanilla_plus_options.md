@@ -83,7 +83,7 @@ impl, contract (steps 2–3) unchanged.
   `SetUIFlag(UI_VANILLAPLUS, UI_SET)` (A7 verbatim shape).
 - `DRAW_VanillaPlusOptions()` registered in the Draw.cpp UI stage next to
   ControlConfig's draw (pin site at impl): title line, one row per feature key
-  (`Alt-Show Items: On/Off`, `Auto Gold Pickup: On/Off`, `Portable Saves: On/Off`),
+  (`Show Items Toggle: On/Off`, `Auto Gold Pickup: On/Off`, `Portable Saves: On/Off`),
   hover highlight, click = toggle row; a `Previous Menu` row back to
   `SetUIFlag(UI_VANILLAPLUS, UI_RESET) + SetUIFlag(UI_ESCMENU, UI_SET)` + restore the
   options table pointers (mirror `ESCMENU_SwitchToOptionsMenu` shape, A7).

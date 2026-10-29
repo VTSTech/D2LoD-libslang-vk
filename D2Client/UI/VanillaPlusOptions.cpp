@@ -143,7 +143,7 @@ struct VPPFeatureRow {
     const wchar_t* wszLabel;  // row label
 };
 static const VPPFeatureRow gaVanillaPlusRows[4] = {
-    { "alt_toggle", L"Alt-Show Items" },
+    { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
     { "globe_persistent", L"Persistent Globe Text" },
