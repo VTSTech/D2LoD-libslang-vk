@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [720p]
+    branches: [main,720p]
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
   pull_request:
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
