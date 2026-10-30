@@ -17,7 +17,7 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Roster.h"
@@ -29,7 +29,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/ControlConfig.h"
 #include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Editbox/EditBoxWrapper.h"
 #include "D2Client/UI/EscMenu.h"
@@ -98,7 +97,7 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Launch/MainMenus.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

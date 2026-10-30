@@ -6,7 +6,7 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Rendering.h"
 #include "D2Client/GAME/View.h"

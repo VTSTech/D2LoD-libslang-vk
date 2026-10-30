@@ -7,7 +7,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/D2UiPartyStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Roster.h"
 #include "D2Client/UI/Draw.h"

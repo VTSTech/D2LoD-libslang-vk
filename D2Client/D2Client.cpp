@@ -77,7 +77,7 @@
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"

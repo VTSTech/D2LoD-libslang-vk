@@ -10,7 +10,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/PalShift.h"
@@ -96,7 +96,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

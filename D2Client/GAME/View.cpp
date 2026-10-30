@@ -48,7 +48,7 @@
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Common/Drlg/Drlg.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

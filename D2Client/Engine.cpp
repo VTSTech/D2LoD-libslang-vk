@@ -51,7 +51,7 @@
 #include "globals/globals.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillSor.h"
 
