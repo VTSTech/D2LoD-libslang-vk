@@ -67,4 +67,6 @@ void __stdcall CHAT_ProcessBattleNetMessage();
 void __stdcall INPUT_HandleChatCharInput(struct D2UIMouseMsgStrc * pMsg);
 // 10 internal functions (defined in .cpp)
 
+int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
+int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
 } // namespace D2Client::UI::Chat

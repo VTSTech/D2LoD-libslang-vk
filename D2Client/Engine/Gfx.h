@@ -7334,3 +7334,11 @@ struct D2GfxInfoUnkStrc * __fastcall DRAW_WORLD_Unit_1(struct D2UnitStrc * pUnit
 // 24 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::Gfx
+
+// [fork-compat] The fork's regeneration pass filed these engine-Gfx
+// functions under namespace GfxInfo; upstream renamed the namespace to
+// Gfx. Alias the old name so the fork-side UI translation units
+// (Draw/EscMenu/Help/Inv/Panel/Party/SpellSel/ui) compile unchanged.
+namespace D2Client::Engine {
+    namespace GfxInfo = Gfx;
+}

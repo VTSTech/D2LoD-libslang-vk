@@ -11,6 +11,8 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/Engine/GfxUtil.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GameViewStrc.h"

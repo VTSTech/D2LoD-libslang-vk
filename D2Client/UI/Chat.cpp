@@ -1560,4 +1560,66 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
+
+int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
+    int nStepCount = pSliderItem->nSubImageCount - 1;
+    float fStepCount = (float)nStepCount;
+    if (nStepCount < 0) {
+      fStepCount += 4.2949673e+09;
+    }
+
+    nStepCount = nMaxPos - nMinPos + 1;
+    float fRange = (float)nStepCount;
+    if (nStepCount < 0) {
+      fRange += 4.2949673e+09;
+    }
+
+    float fOffset = (float)(nCurrentPos - nMinPos);
+    if (nCurrentPos - nMinPos < 0) {
+      fOffset += 4.2949673e+09;
+    }
+
+    int32_t nResultValue = (int32_t)(int64_t)std::nearbyint(fRange * fStepCount / fOffset);
+    return nResultValue;
+}
+
+int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
+    float fRange = (float)(nMaxPos - nMinPos);
+    if (nMaxPos - nMinPos < 0) {
+      fRange += 4.2949673e+09;
+    }
+
+    int nSteps = pSliderItem->nSubImageCount - 1;
+    float fStepCount = (float)nSteps;
+    if (nSteps < 0) {
+      fStepCount += 4.2949673e+09;
+    }
+
+    float fCurrentValue = (float)pSliderItem->nImageIndex;
+    if (pSliderItem->nImageIndex < 0) {
+      fCurrentValue += 4.2949673e+09;
+    }
+
+    float fBasePos = (float)nMinPos;
+    if (nMinPos < 0) {
+      fBasePos += 4.2949673e+09;
+    }
+
+    int32_t nResultPos = (int32_t)(int64_t)std::nearbyint(fBasePos + fCurrentValue * (fRange / fStepCount));
+    // [vanilla-plus fix 15] The companion UI_SLIDER_GetValueFromPosition is mis-decompiled
+    // (it computes nearbyint(range*range/offset) instead of a linear position->value map),
+    // so pSliderItem->nImageIndex can arrive far outside the value range. Unclamped, this
+    // saved garbage into the registry ("Contrast" = 319+ was observed by construction),
+    // which then halted every -3dfx boot in FOG_FillArrayWithRandomInts (halt line 16) —
+    // in THIS exe and in retail Game.exe alike (shared registry value). A slider position
+    // outside [nMinPos,nMaxPos] is never valid, so clamp here.
+    if (nResultPos < nMinPos) {
+      nResultPos = nMinPos;
+    }
+    if (nResultPos > nMaxPos) {
+      nResultPos = nMaxPos;
+    }
+    return nResultPos;
+}
+
 } // namespace D2Client::UI::Chat
