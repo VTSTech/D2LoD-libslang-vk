@@ -544,6 +544,15 @@ static inline uint64_t __aullrem(uint64_t a, uint64_t b) { return a % b; }
 static inline uint64_t __aullrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) % (lo2 | ((uint64_t)hi2 << 32)); }
 static inline uint64_t __aullshr(uint64_t a, unsigned int n) { return a >> n; }
 
+// MSVC spells the same CRT helpers with a single underscore, and much of the
+// decompiled code calls that spelling directly (Bnclient/net_sid, Storm/SBig,
+// D2Client SkillDesc/Missile, D2Common Units, D2Game Task/...). Keep the
+// overload set identical to the __-spelled pair above.
+static inline int64_t _alldiv(int64_t a, int64_t b) { return a / b; }
+static inline int64_t _alldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) / (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
+static inline int64_t _allmul(int64_t a, int64_t b) { return a * b; }
+static inline int64_t _allmul(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) * (int64_t)(lo2 | ((uint64_t)hi2 << 32)); }
+
 #ifndef _WIN32
 static inline LONG InterlockedIncrement(volatile LONG* p) { return ++(*p); }
 static inline LONG InterlockedDecrement(volatile LONG* p) { return --(*p); }

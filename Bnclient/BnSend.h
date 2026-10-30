@@ -134,13 +134,13 @@ struct __attribute__((packed)) SID_C2S_LocaleInfo {
 namespace Bnclient::BnSend {
 
 // Function declarations
-void __stdcall NET_SID_CLIENT_Send_0x1E_ClientId2();
+int __stdcall NET_SID_CLIENT_Send_0x1E_ClientId2();
 void __fastcall BNSEND_SetServerToken(uint32_t nServerToken);
 // Returns cached Battle.net server token (g_nBNetServerToken) received from SID_AUTH_INFO. Used during CD key authentication.
 uint32_t __stdcall BNSEND_GetServerToken();
 void __fastcall BNSEND_SetClientToken(uint32_t nClientToken);
 DWORD __stdcall BNCLIENT_GetBNetClientToken();
-void __fastcall NET_SID_CLIENT_Send_0x29_LogonResponse(char * szText1, char * szText2);
+int __fastcall NET_SID_CLIENT_Send_0x29_LogonResponse(char * szText1, char * szText2);
 int __fastcall NET_SID_CLIENT_Send_0x3A_LogonResponse2(char * szText1, char * szText2);
 int __fastcall NET_SID_CLIENT_Send_0x3D_CreateAccount2(char * szText1, char * szText2);
 int __fastcall NET_SID_CLIENT_Send_0x31_ChangePassword(char * szText1, char * szText2, char * szNewPassword);
@@ -261,7 +261,7 @@ void __stdcall BNNEWS_TransformCDKeyCharacter(uint8_t bKeyChar, uint32_t * pValu
 // Decodes 16-character CD key string into three components (Product: 3 hex digits, Public: 7 hex digits, Private: 9 hex digits). Validates checksum and performs character shuffling/XOR transformations. Returns 1 on success, 0 on failure.
 int __fastcall BNSEND_DecodeCDKeyString(uint32_t * pOutProduct, uint32_t * pOutPublic, char * szCDKey, uint32_t * pOutPrivate);
 BOOL __fastcall BNNEWS_DecodeCDKey26Char(char * szCDKey, uint32_t * pOutValue1, uint32_t * pOutValue2, uint16_t * pOutValue3);
-void __stdcall NET_SID_CLIENT_Send_0x42_CDKey3();
+BOOL __stdcall NET_SID_CLIENT_Send_0x42_CDKey3();
 void __stdcall BNNEWS_DecodeCDKeys();
 // High-level CD key hash helper. Gets server token, retrieves CD key by type (0=classic, 1=expansion), and prepares hash structure for SID_AUTH_CHECK.
 void __fastcall BNSEND_HashCDKeyByType(struct D2CDKeyHashStrc * pOutHash, uint32_t nToken, int32_t nCDKeyType);

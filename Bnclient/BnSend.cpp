@@ -425,7 +425,7 @@ void __fastcall NET_SID_CLIENT_Send_0x0E_ChatCommand(uint8_t * pbParam) {
       pbScan = pbParam;
       pbScan = pbScan + strlen((char*)pbScan) + 1;
       if (pbScan != pbParam + 1) {
-        nUnicodeLen = Storm::Source::SSTR::TRANSTBL_Latin1ToUnicode(wUnicodeBuf, pbParam, 0x1ff);
+        nUnicodeLen = Storm::Source::SSTR::TRANSTBL_Latin1ToUnicode(wUnicodeBuf, pbParam, 0x1ff, 0);
         if (nUnicodeLen) {
           wUnicodeBuf[nUnicodeLen] = 0;
           nUtf8Result = Storm::Source::SSTR::UTF16_ToUTF8(szUtf8Buf, 0x1ff, wUnicodeBuf, 0x1ff, (int*)&nUnicodeLen, nullptr);

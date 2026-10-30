@@ -85,7 +85,7 @@ struct D2CubeMainTxt * __stdcall CUBE_GetRecipeByIndex(int32_t nIndex);
 int32_t __stdcall CUBE_GetRecipeCount();
 void __stdcall nullsub(struct D2UnitStrc * dwParam1, uint32_t dwParam2);
 void __stdcall FIELDTBLS_AllocPlayerData_NoOp(struct D2UnitStrc * dwUnused);
-void __stdcall FIELDTBLS_FreePlayerData_STUB();
+void __fastcall FIELDTBLS_FreePlayerData_STUB(struct D2UnitStrc * pUnit);
 void __stdcall FIELDTBLS_InitTxtFiles_NoOp();
 void __stdcall FIELDTBLS_FreeTables_NoOp();
 // Body is only the halt at line 101.

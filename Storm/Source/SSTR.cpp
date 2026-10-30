@@ -2217,7 +2217,7 @@ void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int n
     TRANSTBL_UnicodeToSingleByte(pSrcUTF16, gszUnicodeKorean_1, pbOut, nCount);
 }
 
-int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count) {
+int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count, uint32_t ecx_passthru) {
     int iVar1 = TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeLatin1_1);
     return iVar1;
 }
