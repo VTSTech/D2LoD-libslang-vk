@@ -20,7 +20,7 @@
 18	18	Bnclient/Bnet.h
 177	177	Bnclient/BnMessQueue.cpp
 36	36	Bnclient/BnMessQueue.h
-3	3	Bnclient/BnSend.h
+1	1	Bnclient/BnSend.cpp
 36	35	Bnclient/Debug.cpp
 21	21	Bnclient/Debug.h
 6	8	Bnclient/net_sid.h
@@ -30,7 +30,7 @@
 28	0	compiler/compiler.cpp
 21	0	compiler/compiler.h
 17928	17920	d2_enums.h
-850	816	d2_platform.h
+859	816	d2_platform.h
 19	19	D2Client/BNGatewayAccess.h
 117	117	D2Client/ButtonWrapper.h
 31	36	D2Client/ClientModeInGame.cpp
@@ -189,7 +189,6 @@
 2	1	D2Client/UI/QuestLog.h
 68	38	D2Client/UI/ShowItems.cpp
 16	16	D2Client/UI/ShowItems.h
-2	2	D2Client/UI/SkillDesc.h
 2315	2258	D2Client/UI/SpellSel.cpp
 24	24	D2Client/UI/Spinner.cpp
 25	25	D2Client/UI/Spinner.h
@@ -355,7 +354,6 @@
 15	15	D2Common/Src/LogManager.h
 175	175	D2Common/Stats/StatsEx.h
 17	17	D2Common/Text.cpp
-95	95	D2Common/Txt/Cube.h
 17	17	D2Common/Txt/D2TxtLinkNodeStrc.h
 103	103	D2Common/Units/Missile.h
 36	36	D2Common/Units/MissileStream.h
@@ -402,7 +400,6 @@
 80	80	D2Game/GAME/Task.h
 209	209	D2Game/ITEMS/ItemMode.h
 18	18	D2Game/ITEMS/Items.h
-182	182	D2Game/ITEMS/Items/Drop.h
 28	28	D2Game/MISSILES/Missiles.h
 250	250	D2Game/MISSILES/MissilesMode.h
 714	714	D2Game/Monster/AI/AI.h
@@ -418,7 +415,6 @@
 37	37	D2Game/Monsters/Spawn.h
 47	47	D2Game/Monsters/Umod.h
 182	174	D2Game/Objects/ObjectsMode.h
-73	73	D2Game/Objects/ObjectsRgn.h
 143	141	D2Game/PLAYER/Player.cpp
 104	104	D2Game/PLAYER/Player.h
 33	33	D2Game/PLAYER/PlayerIntro.h
@@ -689,7 +685,7 @@
 63	63	Storm/D2ArchiveStrc.h
 15	15	Storm/D2AsyncDataStrc.h
 39	39	Storm/D2MPQFileStrc.h
-14	14	Storm/D2SHA1.h
+23	14	Storm/D2SHA1.h
 27	27	Storm/D2Srp.h
 73	72	Storm/Engine/Application.cpp
 15	15	Storm/Engine/Application.h
@@ -708,6 +704,7 @@
 20	19	Storm/Source/SEVT.cpp
 360	368	Storm/Source/SReg.cpp
 77	77	Storm/Source/SReg.h
+1	1	Storm/Source/SSTR.cpp
 2	2	Storm/Source/SSTR.h
 85	0	support/d2_boot.cpp
 12	0	support/d2_boot.h
