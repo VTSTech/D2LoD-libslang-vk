@@ -17,8 +17,8 @@ struct D2WinEditBox;
 struct D2WinTextBox;
 struct DC6;
 struct FORMS_AnimFrameStrc;
-typedef int DRAWMODE;
 typedef uint16_t eD2PlayerStatus;
+typedef uint32_t DRAWMODE;
 typedef uint8_t eD2PlayerClassID;
 struct D2ControlMsg;
 #ifndef RECON_FPTD_OnPress
@@ -40,8 +40,6 @@ struct D2BNetRealmEntryStrc {
     /* 0x04 */ char * szDescription; // realm description (0x11a4)
 };
 
-#ifndef D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
-#define D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
 struct D2UIMsgMousePosStrc {
     operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
 
@@ -93,7 +91,6 @@ union D2UIMsgLParamUnion {
     /* 0x00 */ int32_t nLParam; // raw LPARAM; key messages test bit 30 (auto-repeat)
     /* 0x00 */ D2UIMsgMousePosStrc sMousePos; // mouse messages: x in the low word, y in the high word
 };
-#endif // D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
 
 struct __attribute__((packed)) D2ControlMsg {
     /* 0x00 */ struct D2ControlStrc * pControl;

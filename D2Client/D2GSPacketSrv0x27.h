@@ -10,12 +10,18 @@
 
 // Data types
 struct D2GSPacketSrv0x27_Entry {
-    /* 0x00 */ bool bShow;
+    D2GSPacketSrv0x27_Entry() = default;
+    D2GSPacketSrv0x27_Entry(uint32_t v) { *reinterpret_cast<uint32_t*>(this) = v; }
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+    D2GSPacketSrv0x27_Entry(uint8_t a0, uint8_t a1, short a2) : bShow(a0), nColor(a1), nMessage(a2) {}
+
+    /* 0x00 */ uint8_t bShow;
     /* 0x01 */ uint8_t nColor; // Color/type byte for NPC chat message
     /* 0x02 */ short nMessage;
 };
 
-struct __attribute__((packed)) D2GSPacketSrv0x27 {
+#pragma pack(push, 1)
+struct D2GSPacketSrv0x27 {
     /* 0x00 */ uint8_t nId;
     /* 0x01 */ uint8_t eUnitType;
     /* 0x02 */ int nUnitGUID;
@@ -23,3 +29,4 @@ struct __attribute__((packed)) D2GSPacketSrv0x27 {
     /* 0x07 */ uint8_t field_0x7;
     /* 0x08 */ D2GSPacketSrv0x27_Entry aMessages[8];
 };
+#pragma pack(pop)

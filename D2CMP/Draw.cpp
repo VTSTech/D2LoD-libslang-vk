@@ -2,7 +2,6 @@
 
 #include "D2CMP/Draw.h"
 #include "D2CMP/tagPALETTEENTRY.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SSTR.h"
@@ -102,7 +101,7 @@ void __fastcall DRAW_ConvertPaletteRGBtoHSL(D2HSLColorStrc * pHSLOut, uint8_t * 
       pRGBIn += 4;
       pHSLOut->dLightness = dVar5;
       pHSLOut++;
-      if (0xff < nPaletteIndex) {
+      if (nPaletteIndex >= 0x100) {
         return;
       }
     } while (true);
@@ -122,7 +121,7 @@ double __stdcall DRAW_GetHueSector(double m1, double m2, double dHue) {
     if (dHue < 180.0) {
       return m2;
     }
-    if (240.0 > dHue) {
+    if (!(240.0 <= dHue)) {
       return (m2 - m1) * (240.0 - dHue) / 60.0 + m1;
     }
 
@@ -143,10 +142,10 @@ static void DRAW_ConvertPaletteHSLtoRGB(D2HSLColorStrc * pHSLIn, uint8_t * pRGBO
         byRed = byChannel;
         byGreen = byChannel;
       } else {
-        if (0.5 < pHSLIn->dLightness) {
-          dP = pHSLIn->dLightness + pHSLIn->dSaturation - pHSLIn->dLightness * pHSLIn->dSaturation;
-        } else {
+        if (!(0.5 < pHSLIn->dLightness)) {
           dP = (pHSLIn->dSaturation + 1.0) * pHSLIn->dLightness;
+        } else {
+          dP = pHSLIn->dLightness + pHSLIn->dSaturation - pHSLIn->dLightness * pHSLIn->dSaturation;
         }
 
         m1 = pHSLIn->dLightness + pHSLIn->dLightness - dP;
@@ -177,14 +176,14 @@ void __stdcall thunk_D2MEM_VirtualFree(LPVOID pParam) {
     D2MEM_VirtualFree(pParam);
 }
 
-uint32_t __stdcall D2GFX_GetColorWithAlphaFromPallete(LPPALETTEENTRY pPallete, uint32_t nAlpha, int32_t nRed, int32_t Green, int32_t nBlue) {
+uint8_t __stdcall D2GFX_GetColorWithAlphaFromPallete(LPPALETTEENTRY pPallete, uint32_t nAlpha, int32_t nRed, int32_t Green, int32_t nBlue) {
     int nRedDiff;
-    uint32_t nBestPaletteIndex = 0;
+    uint8_t bVar1 = 0;
     uint32_t nMinDistance = -1;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = 0;
-    if (!nAlpha) {
-      return nBestPaletteIndex;
+    if (nAlpha <= 0) {
+      return bVar1;
     }
 
     do {
@@ -199,8 +198,8 @@ uint32_t __stdcall D2GFX_GetColorWithAlphaFromPallete(LPPALETTEENTRY pPallete, u
       nCurrentIndex++;
     } while (nCurrentIndex < nAlpha);
 
-    nBestPaletteIndex = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nCurrentIndex >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nBestIndex);
-    return nBestPaletteIndex;
+    bVar1 = (uint8_t)nBestIndex;
+    return bVar1;
 }
 
 uint8_t __stdcall DRAW_FindFarthestPaletteColor(uint8_t * pPalette, int nPaletteSize, int nRed, int nGreen, int nBlue) {
@@ -208,7 +207,7 @@ uint8_t __stdcall DRAW_FindFarthestPaletteColor(uint8_t * pPalette, int nPalette
     uint32_t nMaxDistance = 0;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = 0;
-    if (!nPaletteSize) {
+    if ((uint32_t)nPaletteSize <= 0) {
       return byBestIndex;
     }
 
@@ -216,7 +215,7 @@ uint8_t __stdcall DRAW_FindFarthestPaletteColor(uint8_t * pPalette, int nPalette
     do {
       uint32_t nDistance;
       nDistance = ((uint32_t)*pbCurEntry - nBlue) * ((uint32_t)*pbCurEntry - nBlue) + ((uint32_t)pbCurEntry[-1] - nGreen) * ((uint32_t)pbCurEntry[-1] - nGreen) + ((uint32_t)pbCurEntry[-2] - nRed) * ((uint32_t)pbCurEntry[-2] - nRed);
-      if (nMaxDistance < nDistance) {
+      if (nDistance > nMaxDistance) {
         nBestIndex = nCurrentIndex;
         nMaxDistance = nDistance;
       }
@@ -301,7 +300,7 @@ BOOL __stdcall DRAW_InitPalette(LPCSTR szPaletteFile, int nStartIndex, int nEndI
     if (!szPaletteFile) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b6);
       exit(-1);
-    } else if (nEndIndex < nStartIndex) {
+    } else if (nStartIndex > nEndIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b7);
       exit(-1);
     } else if (nStartIndex < 0) {
@@ -323,56 +322,56 @@ BOOL __stdcall DRAW_InitPalette(LPCSTR szPaletteFile, int nStartIndex, int nEndI
 
       gnDrawTransparentColorRGB = 0;
       szStringEnd = Storm::Source::SSTR::SStrLen((char*)szPaletteFile);
-      if (!szStringEnd) {
-        nPaletteIndex = 0;
-        do {
-          byPaletteValue = (uint8_t)nPaletteIndex;
-          gaGlobalPaletteRed[nPaletteIndex].r = byPaletteValue;
-          gaGlobalPaletteRed[nPaletteIndex].g = byPaletteValue;
-          gaGlobalPaletteRed[nPaletteIndex].b = byPaletteValue;
-          nPaletteIndex++;
-        } while (nPaletteIndex < 0x100);
+      if (szStringEnd) {
+        /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ hFile = CreateFileA(lpFileName, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
+        if (hFile == (HANDLE)-1) {
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Unable to open ");
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(lpFileName);
+          /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("\n");
+          return 0;
+        }
 
-        gbPaletteLoaded = 1;
-        return 1;
-      }
+        /* LPDWORD lpFileSizeHigh for GetFileSize */ /* HANDLE hFile for GetFileSize */ DVar2 = GetFileSize(hFile, (LPDWORD)&nStartIndex);
+        if (DVar2 == 0x300) {
+          /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ szPaletteFile = (LPCSTR)0x0;
+          ReadFile(hFile, lpBuffer_008e8d28, 0x300, (LPDWORD)&szPaletteFile, (LPOVERLAPPED)0x0);
+          if (szPaletteFile == (LPCSTR)0x300) {
+            pbPaletteEntry = &gaGlobalPaletteRed[0].g;
+            nPaletteIndex = 0;
+            do {
+              pbPaletteEntry[1] = lpBuffer_008e8d28[nPaletteIndex];
+              *pbPaletteEntry = lpBuffer_008e8d28[nPaletteIndex + 1];
+              ((D2PaletteEntryStrc*)(pbPaletteEntry - 1))->r = lpBuffer_008e8d28[nPaletteIndex + 2];
+              nPaletteIndex += 3;
+              pbPaletteEntry += 4;
+            } while (nPaletteIndex < 0x300);
 
-      /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ hFile = CreateFileA(lpFileName, 0x80000000, 1, (LPSECURITY_ATTRIBUTES)0x0, 3, 0, (HANDLE)0x0);
-      if (hFile == (HANDLE)-1) {
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Unable to open ");
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(lpFileName);
-        /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("\n");
-        return 0;
-      }
+            /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 1;
+            CloseHandle(hFile);
+            return gbPaletteLoaded;
+          }
 
-      /* LPDWORD lpFileSizeHigh for GetFileSize */ /* HANDLE hFile for GetFileSize */ DVar2 = GetFileSize(hFile, (LPDWORD)&nStartIndex);
-      if (DVar2 == 0x300) {
-        /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ szPaletteFile = (LPCSTR)0x0;
-        ReadFile(hFile, lpBuffer_008e8d28, 0x300, (LPDWORD)&szPaletteFile, (LPOVERLAPPED)0x0);
-        if (szPaletteFile == (LPCSTR)0x300) {
-          pbPaletteEntry = &gaGlobalPaletteRed[0].g;
-          nPaletteIndex = 0;
-          do {
-            pbPaletteEntry[1] = lpBuffer_008e8d28[nPaletteIndex];
-            *pbPaletteEntry = lpBuffer_008e8d28[nPaletteIndex + 1];
-            ((D2PaletteEntryStrc*)(pbPaletteEntry - 1))->r = lpBuffer_008e8d28[nPaletteIndex + 2];
-            nPaletteIndex += 3;
-            pbPaletteEntry += 4;
-          } while (nPaletteIndex < 0x300);
-
-          /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 1;
+          /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 0;
           CloseHandle(hFile);
           return gbPaletteLoaded;
         }
 
-        /* HANDLE hObject for CloseHandle */ gbPaletteLoaded = 0;
-        CloseHandle(hFile);
+        /* HANDLE hObject for CloseHandle */ CloseHandle(hFile);
+        gbPaletteLoaded = DRAW_LoadPaletteFromPCX(lpFileName);
         return gbPaletteLoaded;
       }
 
-      /* HANDLE hObject for CloseHandle */ CloseHandle(hFile);
-      gbPaletteLoaded = DRAW_LoadPaletteFromPCX(lpFileName);
-      return gbPaletteLoaded;
+      nPaletteIndex = 0;
+      do {
+        byPaletteValue = (uint8_t)nPaletteIndex;
+        gaGlobalPaletteRed[nPaletteIndex].r = byPaletteValue;
+        gaGlobalPaletteRed[nPaletteIndex].g = byPaletteValue;
+        gaGlobalPaletteRed[nPaletteIndex].b = byPaletteValue;
+        nPaletteIndex++;
+      } while (nPaletteIndex < 0x100);
+
+      gbPaletteLoaded = 1;
+      return 1;
     }
 }
 
@@ -385,7 +384,7 @@ uint8_t __stdcall DRAW_FindNearestPaletteColor(uint8_t nRed, uint8_t nGreen, uin
     uint32_t nMinDistance = 0x7fffffff;
     uint32_t nBestIndex = 0;
     uint32_t nCurrentIndex = gnPaletteColorDepth;
-    if (gnPaletteMaxIndex < gnPaletteColorDepth) {
+    if (gnPaletteColorDepth > gnPaletteMaxIndex) {
       return '\0';
     }
 
@@ -403,7 +402,7 @@ uint8_t __stdcall DRAW_FindNearestPaletteColor(uint8_t nRed, uint8_t nGreen, uin
       }
 
       nCurrentIndex++;
-      if (gnPaletteMaxIndex < nCurrentIndex) {
+      if (nCurrentIndex > gnPaletteMaxIndex) {
         return (uint8_t)nBestIndex;
       }
     } while (true);
@@ -421,12 +420,12 @@ void __stdcall DRAW_ConvertRGBAToIndexed(uint8_t * pRGBAIn, uint8_t * pIndexedOu
       pfnColorFinder = pfnCustomColorFinder;
     }
 
-    for (; nPixelCount; nPixelCount--) {
+    for (; (uint32_t)nPixelCount > 0; nPixelCount--) {
       uint8_t byColorIndex;
       *(uint8_t*)(char*)&pfnCustomColorFinder = *pSrcPixel;
       *(uint8_t*)(char*)&pIndexedOut = pSrcPixel[1];
       *(uint8_t*)(char*)&pRGBAIn = pSrcPixel[2];
-      if (gbBlackColorIsTransparent && (uint8_t)(uintptr_t)pfnCustomColorFinder < 0xb && (uint8_t)(uintptr_t)pIndexedOut < 0xb && (uint8_t)(uintptr_t)pRGBAIn < 0xb) {
+      if (gbBlackColorIsTransparent && (uint8_t)(uintptr_t)pfnCustomColorFinder <= 0xa && (uint8_t)(uintptr_t)pIndexedOut <= 0xa && (uint8_t)(uintptr_t)pRGBAIn <= 0xa) {
         *(uint8_t*)(char*)&pfnCustomColorFinder = 4;
         *(uint8_t*)(char*)&pRGBAIn = 0;
         *(uint8_t*)(char*)&pIndexedOut = 0;
@@ -456,7 +455,7 @@ void __stdcall DRAW_SetPaletteMask(uint8_t * pMaskData) {
 }
 
 void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
-    uint32_t nPaletteIndex;
+    uint8_t bVar1;
     int iAlphaFactor;
     int nOuterLoop;
     int nInnerLoop;
@@ -465,12 +464,21 @@ void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
     int nAlphaValue;
     uint32_t nAlphaLevel = 0;
     do {
-      if (!nAlphaLevel) {
-        nAlphaValue = 0xbf;
-      } else if (nAlphaLevel == 1) {
-        nAlphaValue = 0x7f;
-      } else {
-        nAlphaValue = 0x3f;
+      switch (nAlphaLevel) {
+        case 0:
+          {
+            nAlphaValue = 0xbf;
+            break;
+          }
+        case 1:
+          {
+            nAlphaValue = 0x7f;
+            break;
+          }
+        default:
+          {
+            nAlphaValue = 0x3f;
+          }
       }
 
       iAlphaFactor = 0xff - nAlphaValue;
@@ -480,8 +488,8 @@ void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
         pInnerDest = pDest;
         nInnerLoop = 0x100;
         do {
-          nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((uint32_t)pPalette[-nInnerLoop + 256].peRed * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peRed * nAlphaValue) / 0xff & 0xff, ((uint32_t)pPalette[-nInnerLoop + 256].peGreen * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peGreen * nAlphaValue) / 0xff & 0xff, ((uint32_t)pPalette[-nInnerLoop + 256].peBlue * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peBlue * nAlphaValue) / 0xff & 0xff);
-          pInnerDest->peRed = (uint8_t)nPaletteIndex;
+          bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((uint32_t)pPalette[-nInnerLoop + 256].peRed * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peRed * nAlphaValue) / 0xff & 0xff, ((uint32_t)pPalette[-nInnerLoop + 256].peGreen * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peGreen * nAlphaValue) / 0xff & 0xff, ((uint32_t)pPalette[-nInnerLoop + 256].peBlue * iAlphaFactor + (uint32_t)pPalette[-nOuterLoop + 256].peBlue * nAlphaValue) / 0xff & 0xff);
+          pInnerDest->peRed = bVar1;
           pInnerDest += 0x40;
           nInnerLoop--;
         } while (nInnerLoop);
@@ -495,9 +503,9 @@ void __stdcall DRAW_BuildAlphaBlendTables(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildAdditiveBlendTable(LPPALETTEENTRY pPalette) {
-    uint32_t uVar1;
+    uint8_t bVar1;
+    uint32_t uVar2;
     uint32_t nBlueSum;
-    uint32_t nGreenSum;
     uint32_t nRedSum;
     LPPALETTEENTRY ptDest = pPalette + 0xcd40;
     int nOuterLoop = 0x100;
@@ -505,25 +513,25 @@ void __stdcall DRAW_BuildAdditiveBlendTable(LPPALETTEENTRY pPalette) {
     LPPALETTEENTRY pDest = ptDest;
     while (true) {
       do {
-        uVar1 = (uint32_t)pPalette[-nInnerLoop + 256].peRed + (uint32_t)pPalette[-nOuterLoop + 256].peRed;
-        if (uVar1 < 0xff) {
-          uVar1 &= 0xff;
+        uVar2 = (uint32_t)pPalette[-nInnerLoop + 256].peRed + (uint32_t)pPalette[-nOuterLoop + 256].peRed;
+        if (uVar2 < 0xff) {
+          uVar2 &= 0xff;
         } else {
-          uVar1 = 0xff;
+          uVar2 = 0xff;
         }
 
         nRedSum = (uint32_t)pPalette[-nOuterLoop + 256].peGreen + (uint32_t)pPalette[-nInnerLoop + 256].peGreen;
-        if (0xfe < nRedSum) {
+        if (nRedSum >= 0xff) {
           nRedSum = 0xff;
         }
 
         nBlueSum = (uint32_t)pPalette[-nOuterLoop + 256].peBlue + (uint32_t)pPalette[-nInnerLoop + 256].peBlue;
-        if (0xfe < nBlueSum) {
+        if (nBlueSum >= 0xff) {
           nBlueSum = 0xff;
         }
 
-        nGreenSum = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, uVar1, nRedSum & 0xff, nBlueSum & 0xff);
-        ptDest->peRed = (uint8_t)nGreenSum;
+        bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, uVar2, nRedSum & 0xff, nBlueSum & 0xff);
+        ptDest->peRed = bVar1;
         ptDest += 0x40;
         nInnerLoop--;
       } while (nInnerLoop);
@@ -544,15 +552,15 @@ void __stdcall PALETTE_BuildAdditiveBlendTable_Callback(LPPALETTEENTRY pPalette,
 }
 
 void __stdcall DRAW_BuildMultiplicativeBlendTable(LPPALETTEENTRY pPalette) {
-    uint32_t nPaletteIndex;
+    uint8_t bVar1;
     LPPALETTEENTRY ptDest = pPalette + 0x10d40;
     int nOuterLoop = 0x100;
     int nInnerLoop = 0x100;
     LPPALETTEENTRY pDest = ptDest;
     while (true) {
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)pPalette[-nInnerLoop + 256].peRed * (uint32_t)pPalette[-nOuterLoop + 256].peRed / 0xff & 0xff, (uint32_t)pPalette[-nOuterLoop + 256].peGreen * (uint32_t)pPalette[-nInnerLoop + 256].peGreen / 0xff & 0xff, (uint32_t)pPalette[-nInnerLoop + 256].peBlue * (uint32_t)pPalette[-nOuterLoop + 256].peBlue / 0xff & 0xff);
-        ptDest->peRed = (uint8_t)nPaletteIndex;
+        bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)pPalette[-nInnerLoop + 256].peRed * (uint32_t)pPalette[-nOuterLoop + 256].peRed / 0xff & 0xff, (uint32_t)pPalette[-nOuterLoop + 256].peGreen * (uint32_t)pPalette[-nInnerLoop + 256].peGreen / 0xff & 0xff, (uint32_t)pPalette[-nInnerLoop + 256].peBlue * (uint32_t)pPalette[-nOuterLoop + 256].peBlue / 0xff & 0xff);
+        ptDest->peRed = bVar1;
         ptDest += 0x40;
         nInnerLoop--;
       } while (nInnerLoop);
@@ -569,7 +577,6 @@ void __stdcall DRAW_BuildMultiplicativeBlendTable(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
-    uint32_t nPaletteIndex;
     uint8_t bRed;
     int iScreenFactor;
     uint8_t bGreen;
@@ -583,21 +590,21 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
       bRed = ((tagPALETTEENTRY*)(pbColorOuter - 2))->peRed;
       nBlueComponent = *pbColorOuter;
       bGreen = pbColorOuter[-1];
-      if (bRed) {
+      if (bRed > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)bRed * 0x55555555) >> 0x20) - (uint32_t)bRed;
         bRed += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
-      if (nBlueComponent) {
+      if (nBlueComponent > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)nBlueComponent * 0x55555555) >> 0x20) - (uint32_t)nBlueComponent;
         nBlueComponent += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
-      if (bGreen) {
+      if (bGreen > 0) {
         iScreenFactor = (int)((uint64_t)((int64_t)(int)(uint32_t)bGreen * 0x55555555) >> 0x20) - (uint32_t)bGreen;
         bGreen += (char)(iScreenFactor >> 1) - (char)(iScreenFactor >> 0x1f);
       }
 
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)bRed, (uint32_t)bGreen, (uint32_t)nBlueComponent);
-      (&pPalette[0x1ad40].peRed)[nScreenWeight] = (uint8_t)nPaletteIndex;
+      bRed = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)bRed, (uint32_t)bGreen, (uint32_t)nBlueComponent);
+      (&pPalette[0x1ad40].peRed)[nScreenWeight] = bRed;
       nScreenWeight++;
       pbColorOuter += 4;
     } while (nScreenWeight < 0x100);
@@ -614,9 +621,9 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
       }
 
       bMaxComponent = pbColorOuter[1];
-      if (pbColorOuter[1] < bGreen) {
+      if (bGreen > pbColorOuter[1]) {
         bMaxComponent = *pbColorOuter;
-        if (*pbColorOuter < bRed) {
+        if (bRed > *pbColorOuter) {
           bMaxComponent = bRed;
         }
       }
@@ -627,8 +634,8 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
       pDest = pDestTable;
       nInnerLoop = 0x100;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((uint32_t)((tagPALETTEENTRY*)(pbColorInner - 1))->peRed * iScreenFactor + ((tagPALETTEENTRY*)(pbColorOuter - 1))->peRed * nScreenWeight) / 0xff & 0xff, ((uint32_t)*pbColorInner * iScreenFactor + *pbColorOuter * nScreenWeight) / 0xff & 0xff, ((uint32_t)pbColorInner[1] * iScreenFactor + pbColorOuter[1] * nScreenWeight) / 0xff & 0xff);
-        pDest->peRed = (uint8_t)nPaletteIndex;
+        bRed = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((uint32_t)((tagPALETTEENTRY*)(pbColorInner - 1))->peRed * iScreenFactor + ((tagPALETTEENTRY*)(pbColorOuter - 1))->peRed * nScreenWeight) / 0xff & 0xff, ((uint32_t)*pbColorInner * iScreenFactor + *pbColorOuter * nScreenWeight) / 0xff & 0xff, ((uint32_t)pbColorInner[1] * iScreenFactor + pbColorOuter[1] * nScreenWeight) / 0xff & 0xff);
+        pDest->peRed = bRed;
         pDest += 0x40;
         pbColorInner += 4;
         nInnerLoop--;
@@ -641,7 +648,7 @@ void __stdcall DRAW_BuildScreenBlendAndDesatTable(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildColorTintTable(LPPALETTEENTRY pPalette) {
-    uint32_t uVar1;
+    uint8_t bVar1;
     uint32_t nSourceLuminance;
     uint8_t* pDestTable = &pPalette[0x1adc9].peFlags;
     LPPALETTEENTRY ptTintColor = pPalette + 0x1ad81;
@@ -651,8 +658,8 @@ void __stdcall DRAW_BuildColorTintTable(LPPALETTEENTRY pPalette) {
       nColorIndex = 0;
       do {
         nSourceLuminance = (uint32_t)pPalette[nColorIndex].peRed;
-        uVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ptTintColor[-1].peFlags * nSourceLuminance / 0xff & 0xff, ptTintColor->peRed * nSourceLuminance / 0xff & 0xff, ptTintColor->peGreen * nSourceLuminance / 0xff & 0xff);
-        pDestTable[nColorIndex] = (uint8_t)uVar1;
+        bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ptTintColor[-1].peFlags * nSourceLuminance / 0xff & 0xff, ptTintColor->peRed * nSourceLuminance / 0xff & 0xff, ptTintColor->peGreen * nSourceLuminance / 0xff & 0xff);
+        pDestTable[nColorIndex] = bVar1;
         nColorIndex++;
       } while (nColorIndex < 0x100);
 
@@ -663,7 +670,7 @@ void __stdcall DRAW_BuildColorTintTable(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildDarkenTable(LPPALETTEENTRY pPalette) {
-    uint32_t nLuminance;
+    uint8_t bVar1;
     uint32_t nDarkenLevel = 0;
     LPPALETTEENTRY pDestTable = pPalette + 0x100;
     do {
@@ -671,8 +678,8 @@ void __stdcall DRAW_BuildDarkenTable(LPPALETTEENTRY pPalette) {
       nColorIndex = 0;
       nDarkenLevel++;
       do {
-        nLuminance = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, pPalette[nColorIndex].peRed * nDarkenLevel >> 5, pPalette[nColorIndex].peGreen * nDarkenLevel >> 5, pPalette[nColorIndex].peBlue * nDarkenLevel >> 5);
-        (&pDestTable->peRed)[nColorIndex] = (uint8_t)nLuminance;
+        bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, pPalette[nColorIndex].peRed * nDarkenLevel >> 5, pPalette[nColorIndex].peGreen * nDarkenLevel >> 5, pPalette[nColorIndex].peBlue * nDarkenLevel >> 5);
+        (&pDestTable->peRed)[nColorIndex] = bVar1;
         nColorIndex++;
       } while (nColorIndex < 0x100);
 
@@ -681,7 +688,7 @@ void __stdcall DRAW_BuildDarkenTable(LPPALETTEENTRY pPalette) {
 }
 
 void __stdcall DRAW_BuildBrightenTable(LPPALETTEENTRY pPalette) {
-    uint32_t nLuminance;
+    uint8_t bVar1;
     uint32_t nBrightenLevel = 0;
     LPPALETTEENTRY pDestTable = pPalette + 0x900;
     do {
@@ -689,8 +696,8 @@ void __stdcall DRAW_BuildBrightenTable(LPPALETTEENTRY pPalette) {
       nColorIndex = 0;
       nBrightenLevel++;
       do {
-        nLuminance = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((0xff - (uint32_t)pPalette[nColorIndex].peRed) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peRed, ((0xff - (uint32_t)pPalette[nColorIndex].peGreen) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peGreen, ((0xff - (uint32_t)pPalette[nColorIndex].peBlue) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peBlue);
-        (&pDestTable->peRed)[nColorIndex] = (uint8_t)nLuminance;
+        bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, ((0xff - (uint32_t)pPalette[nColorIndex].peRed) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peRed, ((0xff - (uint32_t)pPalette[nColorIndex].peGreen) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peGreen, ((0xff - (uint32_t)pPalette[nColorIndex].peBlue) * nBrightenLevel >> 4) + (uint32_t)pPalette[nColorIndex].peBlue);
+        (&pDestTable->peRed)[nColorIndex] = bVar1;
         nColorIndex++;
       } while (nColorIndex < 0x100);
 
@@ -700,20 +707,19 @@ void __stdcall DRAW_BuildBrightenTable(LPPALETTEENTRY pPalette) {
 
 void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEENTRY pHSLPalette) {
     double dVar1;
-    uint32_t nPaletteIndex;
+    uint8_t bVar2;
     D2HSLColorStrc* pHSLLoopPtr;
-    LPPALETTEENTRY ptVar2;
+    LPPALETTEENTRY ptVar3;
     int nEntryCount;
     int nHSLSrcOffset;
     uint32_t nColorIdx;
-    long double fVar3;
+    long double fVar4;
     D2HSLColorStrc ahslBuffer[256];
     uint8_t rgbBuffer[1028];
     uint32_t nTableIndex;
     double dHueWrapped;
     float fHueFloat;
     float fHueWrapped;
-    uint32_t nHueShift = 0x605f0d;
     uint32_t nTableIdx = 0;
     LPPALETTEENTRY pHSLSource = pHSLPalette + 0xc;
     LPPALETTEENTRY pDestEntry = pPalette + 0x14d40;
@@ -727,50 +733,50 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       dVar1 *= 15.0;
       pHSLLoopPtr = ahslBuffer + 1;
       nHSLSrcOffset = 0x40;
-      ptVar2 = pHSLSource;
+      ptVar3 = pHSLSource;
       do {
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dHue = ptVar2[-0xc];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dHue + 4) = ptVar2[-0xb];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dSaturation = ptVar2[-10];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dSaturation + 4) = ptVar2[-9];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dLightness = ptVar2[-8];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dLightness + 4) = ptVar2[-7];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dHue = ptVar3[-0xc];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dHue + 4) = ptVar3[-0xb];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dSaturation = ptVar3[-10];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dSaturation + 4) = ptVar3[-9];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[-1].dLightness = ptVar3[-8];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[-1].dLightness + 4) = ptVar3[-7];
         dHueWrapped = dVar1 + pHSLLoopPtr[-1].dHue;
         pHSLLoopPtr[-1].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
           pHSLLoopPtr[-1].dHue = dHueWrapped - 360.0;
         }
 
-        *(tagPALETTEENTRY*)&pHSLLoopPtr->dHue = ptVar2[-6];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = ptVar2[-5];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr->dSaturation = ptVar2[-4];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = ptVar2[-3];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr->dLightness = ptVar2[-2];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = ptVar2[-1];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dHue = ptVar3[-6];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dHue + 4) = ptVar3[-5];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dSaturation = ptVar3[-4];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dSaturation + 4) = ptVar3[-3];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr->dLightness = ptVar3[-2];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr->dLightness + 4) = ptVar3[-1];
         dHueWrapped = pHSLLoopPtr->dHue + dVar1;
         pHSLLoopPtr->dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
           pHSLLoopPtr->dHue = dHueWrapped - 360.0;
         }
 
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dHue = *ptVar2;
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dHue + 4) = ptVar2[1];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dSaturation = ptVar2[2];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dSaturation + 4) = ptVar2[3];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dLightness = ptVar2[4];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dLightness + 4) = ptVar2[5];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dHue = *ptVar3;
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dHue + 4) = ptVar3[1];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dSaturation = ptVar3[2];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dSaturation + 4) = ptVar3[3];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[1].dLightness = ptVar3[4];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[1].dLightness + 4) = ptVar3[5];
         dHueWrapped = dVar1 + pHSLLoopPtr[1].dHue;
         pHSLLoopPtr[1].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
           pHSLLoopPtr[1].dHue = dHueWrapped - 360.0;
         }
 
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dHue = ptVar2[6];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dHue + 4) = ptVar2[7];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dSaturation = ptVar2[8];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dSaturation + 4) = ptVar2[9];
-        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dLightness = ptVar2[10];
-        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dLightness + 4) = ptVar2[0xb];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dHue = ptVar3[6];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dHue + 4) = ptVar3[7];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dSaturation = ptVar3[8];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dSaturation + 4) = ptVar3[9];
+        *(tagPALETTEENTRY*)&pHSLLoopPtr[2].dLightness = ptVar3[10];
+        *(tagPALETTEENTRY*)((uintptr_t)&pHSLLoopPtr[2].dLightness + 4) = ptVar3[0xb];
         dHueWrapped = dVar1 + pHSLLoopPtr[2].dHue;
         pHSLLoopPtr[2].dHue = dHueWrapped;
         if (360.0 < dHueWrapped) {
@@ -778,15 +784,15 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
         }
 
         pHSLLoopPtr += 4;
-        ptVar2 += 0x18;
+        ptVar3 += 0x18;
         nHSLSrcOffset--;
       } while (nHSLSrcOffset);
 
       DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nColorIdx = 0;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nColorIdx * 4], (uint32_t)rgbBuffer[nColorIdx * 4 + 1], (uint32_t)rgbBuffer[nColorIdx * 4 + 2]);
-        (&pDestEntry->peRed)[nColorIdx] = (uint8_t)nPaletteIndex;
+        bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nColorIdx * 4], (uint32_t)rgbBuffer[nColorIdx * 4 + 1], (uint32_t)rgbBuffer[nColorIdx * 4 + 2]);
+        (&pDestEntry->peRed)[nColorIdx] = bVar2;
         nColorIdx++;
       } while (nColorIdx < 0x100);
 
@@ -795,7 +801,7 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     } while (nTableIdx < 0x18);
 
     nHSLSrcOffset = (int)pHSLPalette - (int)ahslBuffer;
-    nHueShift = 0;
+    uint32_t nHueShift = 0;
     pDestEntry = pPalette + 0x15340;
     do {
       fHueFloat = (float)(int)nHueShift;
@@ -832,8 +838,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-        (&pDestEntry->peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+        bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+        (&pDestEntry->peRed)[nTableIdx] = bVar2;
         nTableIdx++;
       } while (nTableIdx < 0x100);
 
@@ -878,8 +884,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-        (&pTempDestTable->peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+        bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+        (&pTempDestTable->peRed)[nTableIdx] = bVar2;
         nTableIdx++;
       } while (nTableIdx < 0x100);
 
@@ -903,8 +909,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
     nTableIdx = 0;
     do {
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-      (&pPalette[0x15f40].peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+      bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+      (&pPalette[0x15f40].peRed)[nTableIdx] = bVar2;
       nTableIdx++;
     } while (nTableIdx < 0x100);
 
@@ -924,8 +930,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
     nTableIdx = 0;
     do {
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-      (&pPalette[0x15f80].peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+      bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+      (&pPalette[0x15f80].peRed)[nTableIdx] = bVar2;
       nTableIdx++;
     } while (nTableIdx < 0x100);
 
@@ -1020,8 +1026,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-        (&pHSLPalette->peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+        bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+        (&pHSLPalette->peRed)[nTableIdx] = bVar2;
         nTableIdx++;
       } while (nTableIdx < 0x100);
 
@@ -1052,8 +1058,8 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
       DRAW_ConvertPaletteHSLtoRGB(ahslBuffer, rgbBuffer);
       nTableIdx = 0;
       do {
-        nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
-        (&pDestEntry->peRed)[nTableIdx] = (uint8_t)nPaletteIndex;
+        bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbBuffer[nTableIdx * 4], (uint32_t)rgbBuffer[nTableIdx * 4 + 1], (uint32_t)rgbBuffer[nTableIdx * 4 + 2]);
+        (&pDestEntry->peRed)[nTableIdx] = bVar2;
         nTableIdx++;
       } while (nTableIdx < 0x100);
 
@@ -1065,15 +1071,15 @@ void __stdcall DRAW_BuildHSLTransformTables(LPPALETTEENTRY pPalette, LPPALETTEEN
     uint8_t* pbSrcPalEntry = &pPalette->peGreen;
     pHSLSource = (LPPALETTEENTRY)0x100;
     do {
-      fVar3 = __CIsqrt((long double)((uint32_t)*pbSrcPalEntry * (uint32_t)*pbSrcPalEntry + (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed * (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed + (uint32_t)pbSrcPalEntry[1] * (uint32_t)pbSrcPalEntry[1]));
-      nTableIndex = (uint32_t)std::nearbyint(fVar3);
+      fVar4 = __CIsqrt((long double)((uint32_t)*pbSrcPalEntry * (uint32_t)*pbSrcPalEntry + (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed * (uint32_t)((tagPALETTEENTRY*)(pbSrcPalEntry - 1))->peRed + (uint32_t)pbSrcPalEntry[1] * (uint32_t)pbSrcPalEntry[1]));
+      nTableIndex = (uint32_t)std::nearbyint(fVar4);
       nTableIdx = nTableIndex & 0xff;
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, nTableIdx, 0, 0);
-      pDestEntry[-0x40].peRed = (uint8_t)nPaletteIndex;
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, 0, nTableIdx, 0);
-      pDestEntry->peRed = (uint8_t)nPaletteIndex;
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, 0, 0, nTableIdx);
-      pDestEntry[0x40].peRed = (uint8_t)nPaletteIndex;
+      bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, nTableIdx, 0, 0);
+      pDestEntry[-0x40].peRed = bVar2;
+      bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, 0, nTableIdx, 0);
+      pDestEntry->peRed = bVar2;
+      bVar2 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, 0, 0, nTableIdx);
+      pDestEntry[0x40].peRed = bVar2;
       pbSrcPalEntry += 4;
       pDestEntry = (LPPALETTEENTRY)&pDestEntry->peGreen;
       pHSLSource = (LPPALETTEENTRY)((int)pHSLSource - 1);
@@ -1099,9 +1105,9 @@ static void DRAW_BuildBrightenLightnessTable(D2HSLColorStrc * pHSLPalette, LPPAL
     DRAW_ConvertPaletteHSLtoRGB(pHSLPalette, rgbWorkBuffer);
     uint32_t nOutputIndex = 0;
     do {
-      uint32_t nPaletteIndex;
-      nPaletteIndex = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbWorkBuffer[nOutputIndex * 4], (uint32_t)rgbWorkBuffer[nOutputIndex * 4 + 1], (uint32_t)rgbWorkBuffer[nOutputIndex * 4 + 2]);
-      (&pPalette[0xd00].peRed)[nOutputIndex] = (uint8_t)nPaletteIndex;
+      uint8_t bVar1;
+      bVar1 = D2GFX_GetColorWithAlphaFromPallete(pPalette, 0x100, (uint32_t)rgbWorkBuffer[nOutputIndex * 4], (uint32_t)rgbWorkBuffer[nOutputIndex * 4 + 1], (uint32_t)rgbWorkBuffer[nOutputIndex * 4 + 2]);
+      (&pPalette[0xd00].peRed)[nOutputIndex] = bVar1;
       nOutputIndex++;
     } while (nOutputIndex < 0x100);
 }
@@ -1151,7 +1157,6 @@ LPPALETTEENTRY __stdcall DRAW_BuildAllPaletteTables(tagPALETTEENTRY * pPaletteEn
 
     int iEntry;
     D2HSLColorStrc ahslColors[256];
-    *(uint32_t*)((char*)&ahslColors[0xff].dLightness + 4) = 0x60693d;
     if (!pPaletteEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ab);
       exit(-1);

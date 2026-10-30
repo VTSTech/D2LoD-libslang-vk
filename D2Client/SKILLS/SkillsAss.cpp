@@ -160,7 +160,7 @@ int32_t __fastcall SKILLSASS_GetCltMissileByAuraLevel(D2UnitStrc * pUnit, int32_
     }
 
     short int sAuraState = pSkillTxt->aurastate;
-    if (!(sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
+    if (!(sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
       return (int)pSkillTxt->cltmissile[1];
     }
 
@@ -203,7 +203,7 @@ uint32_t __fastcall SKILLSASS_GetPrgCalcByAuraLevel(D2UnitStrc * pUnit, eD2Skill
         nCalcResult = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->prgcalc[0], eSkill, nSkillLvl);
         return nCalcResult;
       }
-      if (-1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         pStatListEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)sAuraState);
         if (pStatListEx) {
           nAuraStat = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListEx, (int)pSkillTxt->aurastat[0], 0);
@@ -325,7 +325,7 @@ BOOL __fastcall SKILLSASS_CltSetChargeUpState(D2UnitStrc * pUnit, eD2Skills eSki
       return 1;
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, (uint8_t)pSkillTxt->seqinput - 1);
+    D2Common::Units::SetSequenceFrame(pUnit, pSkillTxt->seqinput - 1);
     pUnit->nFrameCount = 0x800;
     D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatListEx, 7);
     return 1;
@@ -399,7 +399,7 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileCharge(D2UnitStrc * p
       return 1;
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, (uint8_t)pSkillTxt[eSkill].seqinput - 1);
+    D2Common::Units::SetSequenceFrame(pUnit, pSkillTxt[eSkill].seqinput - 1);
     pUnit->nFrameCount = 0x800;
     return 1;
 }
@@ -417,7 +417,16 @@ BOOL __fastcall Skills_CltStFunc_AllocStatListByParam3(D2UnitStrc * pUnit, eD2Sk
 
 BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_CastAttackTarget(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!pTargetUnit) {
+      return 0;
+    }
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
 
@@ -456,7 +465,7 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_StreamMissile(D2UnitStrc * pUnit,
     }
 
     short int sCltMissileA = pSkillTxt->cltmissile[1];
-    if (!(sCltMissileA >= 0 && -1 < pSkillTxt->cltmissile[2])) {
+    if (!(sCltMissileA >= 0 && pSkillTxt->cltmissile[2] >= 0)) {
       return 0;
     }
 

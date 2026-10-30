@@ -16,9 +16,9 @@ struct D2GfxLightStrc;
 struct D2GfxTileRectStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
-typedef int DRAWMODE;
-typedef int GLOBALPALLETE;
-typedef int eD2RendererMode;
+typedef uint32_t DRAWMODE;
+typedef uint32_t GLOBALPALLETE;
+typedef uint32_t eD2RendererMode;
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
@@ -117,7 +117,7 @@ void __stdcall D2GFX_DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, i
 void __stdcall D2GFX_ClearScreen(BOOL bPartial);
 void __stdcall D2GFX_SetPalette(LPPALETTEENTRY pPalette);
 void __stdcall D2GFX_SetPaletteTable(BYTE * * ppPaletteTable);
-void __stdcall D2GFX_SetGlobalLight(uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
+void __stdcall D2GFX_SetGlobalLight(int nRed, int nGreen, int nBlue);
 void __stdcall D2GFX_DrawPerspectiveImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nScreenMode, BYTE * pPalette);
 BOOL __stdcall D2GFX_DrawImage(struct D2GfxDataStrc * pGfxData, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eDrawMode, struct D2GamePalShiftGreenBloodStrc * pPalette);
 void __stdcall D2GFX_DrawShiftedImage(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eMode, GLOBALPALLETE nGlobalPaletteShift);

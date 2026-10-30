@@ -17,7 +17,6 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "support/d2_trace.h"
-#include "support/d2_boot.h" // [d2boot]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -146,21 +145,13 @@ BOOL __stdcall MessageBoxA_InsertPlayDisc() {
 
 BOOL __stdcall MPQ_LoadAllDataMpqFiles() {
     MPQ_d2data = Fog::Archive::ARCHIVE_LoadMPQ("d2data.mpq", 0, nullptr, 1000);
-    D2BOOT_MarkFmt("  mpq d2data.mpq -> %p", (void*)MPQ_d2data); // [d2boot]
     MPQ_d2sfx = Fog::Archive::ARCHIVE_LoadMPQ("d2sfx.mpq", 0, nullptr, 1000);
-    D2BOOT_MarkFmt("  mpq d2sfx.mpq -> %p", (void*)MPQ_d2sfx); // [d2boot]
     MPQ_d2speech = Fog::Archive::ARCHIVE_LoadMPQ("d2speech.mpq", 0, nullptr, 1000);
-    D2BOOT_MarkFmt("  mpq d2speech.mpq -> %p", (void*)MPQ_d2speech); // [d2boot]
     MPQ_d2delta = Fog::Archive::ARCHIVE_LoadMPQ("d2delta.mpq", 0, nullptr, 1000);
-    D2BOOT_MarkFmt("  mpq d2delta.mpq -> %p", (void*)MPQ_d2delta); // [d2boot]
     MPQ_d2kfixup = Fog::Archive::ARCHIVE_LoadMPQ("d2kfixup.mpq", 0, nullptr, 1000);
-    D2BOOT_MarkFmt("  mpq d2kfixup.mpq -> %p", (void*)MPQ_d2kfixup); // [d2boot]
     MPQ_patch_d2 = Fog::Archive::ARCHIVE_LoadMPQ("patch_d2.mpq", 0, nullptr, 5000);
-    D2BOOT_MarkFmt("  mpq patch_d2.mpq -> %p", (void*)MPQ_patch_d2); // [d2boot]
     MPQ_d2exp = Fog::Archive::ARCHIVE_LoadMPQ("d2exp.mpq", 0, nullptr, 3000);
-    D2BOOT_MarkFmt("  mpq d2exp.mpq -> %p", (void*)MPQ_d2exp); // [d2boot]
     BOOL bDirectMode = Fog::Source::SFile::GetUseDirectCommand();
-    D2BOOT_MarkFmt("  direct mode -> %d", (int)bDirectMode); // [d2boot]
     if (bDirectMode) {
       return 1;
     }
@@ -169,7 +160,6 @@ BOOL __stdcall MPQ_LoadAllDataMpqFiles() {
     }
 
     bDirectMode = Fog::D2CheckExpansionGame();
-    D2BOOT_MarkFmt("  expansion check -> %d", (int)bDirectMode); // [d2boot]
     if (!bDirectMode) {
       return 1;
     }
@@ -208,14 +198,14 @@ BOOL __fastcall MPQ_LoadVideoMpqFiles(::fpRequiredUserAction nfpRequiredUserActi
     if (bDirectMode) {
       nfpRequiredUserAction = 0;
     }
-    if (!bExpansion) {
-      MPQ_d2video = Fog::Archive::ARCHIVE_LoadMPQ("d2video.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
-      if (!MPQ_d2video) {
+    if (bExpansion) {
+      MPQ_d2Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
+      if (!MPQ_d2Xvideo) {
         return 0;
       }
     } else {
-      MPQ_d2Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
-      if (!MPQ_d2Xvideo) {
+      MPQ_d2video = Fog::Archive::ARCHIVE_LoadMPQ("d2video.mpq", nZero, (::fpRequiredUserAction)(bool (*)())nfpRequiredUserAction, 1000);
+      if (!MPQ_d2video) {
         return 0;
       }
     }
@@ -302,27 +292,19 @@ BOOL __fastcall MPQ_LoadAllMediaMpqFiles(::fpRequiredUserAction fpInsertPlayCd, 
 
     MPQ_d2Xvideo = 0;
     bIsExpansion = Fog::D2CheckExpansionGame();
-    D2BOOT_MarkFmt("  media: expansion check -> %d", (int)bIsExpansion); // [d2boot]
     if (!bIsExpansion || D2IniData && (bIsExpansion = D2IniData->pTrueFunction() , !bIsExpansion)) {
       MPQ_d2char = Fog::Archive::ARCHIVE_LoadMPQ("d2char.mpq", nZero, fpInsertPlayCd, 1000);
-      D2BOOT_MarkFmt("  mpq d2char.mpq -> %p", (void*)MPQ_d2char); // [d2boot]
       pMPQ_d2char_or_Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2music.mpq", nZero, fpInsertPlayCd, 1000);
-      D2BOOT_MarkFmt("  mpq d2music.mpq -> %p", (void*)pMPQ_d2char_or_Xvideo); // [d2boot]
       MPQ_d2Xmusic = 0;
       /* Variable used as MPQ_d2music in self if */ MPQ_d2Xtalk = 0;
       pMPQ_d2char = MPQ_d2char;
       MPQ_d2music = pMPQ_d2char_or_Xvideo;
     } else {
       MPQ_d2char = Fog::Archive::ARCHIVE_LoadMPQ("d2char.mpq", 0, fpInsertPlayCd, 1000);
-      D2BOOT_MarkFmt("  mpq d2char.mpq -> %p", (void*)MPQ_d2char); // [d2boot]
       MPQ_d2music = Fog::Archive::ARCHIVE_LoadMPQ("d2music.mpq", 0, fpInsertPlayCd, 1000);
-      D2BOOT_MarkFmt("  mpq d2music.mpq -> %p", (void*)MPQ_d2music); // [d2boot]
       MPQ_d2Xmusic = Fog::Archive::ARCHIVE_LoadMPQ("d2Xmusic.mpq", nZero, fpInsertExpansionCd, 3000);
-      D2BOOT_MarkFmt("  mpq d2Xmusic.mpq -> %p", (void*)MPQ_d2Xmusic); // [d2boot]
       MPQ_d2Xtalk = Fog::Archive::ARCHIVE_LoadMPQ("d2Xtalk.mpq", nZero, fpInsertExpansionCd, 3000);
-      D2BOOT_MarkFmt("  mpq d2Xtalk.mpq -> %p", (void*)MPQ_d2Xtalk); // [d2boot]
       pMPQ_d2char_or_Xvideo = Fog::Archive::ARCHIVE_LoadMPQ("d2Xvideo.mpq", nZero, fpInsertExpansionCd, 3000);
-      D2BOOT_MarkFmt("  mpq d2Xvideo.mpq -> %p", (void*)pMPQ_d2char_or_Xvideo); // [d2boot]
       MPQ_d2Xvideo = pMPQ_d2char_or_Xvideo;
       /* Variable used as MPQ_d2Xvideo in self if */ if (!MPQ_d2char || !MPQ_d2music || (pMPQ_d2char = MPQ_d2Xtalk , !MPQ_d2Xmusic)) {
         goto unload_and_fail;
@@ -333,7 +315,6 @@ BOOL __fastcall MPQ_LoadAllMediaMpqFiles(::fpRequiredUserAction fpInsertPlayCd, 
     }
 
     unload_and_fail:
-    D2BOOT_Mark("  media MPQ FAIL -> unload"); // [d2boot]
     MPQ_UnloadAllMediaMpqFiles();
     return 0;
 }

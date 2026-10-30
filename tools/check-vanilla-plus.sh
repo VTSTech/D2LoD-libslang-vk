@@ -54,12 +54,15 @@ gate "row-10 init callback wired (row + comment)" globals/D2Client.cpp        'E
 gate "row-10 draw callback wired (row + comment)" globals/D2Client.cpp        'VANILLAPLUS_DrawRowLabel'   2
 
 # ---- Draw.cpp / ui.cpp dispatch + guards ----------------------------------
-gate "SetUiFlagInit/unregister/render VP blocks" D2Client/UI/Draw.cpp     'VP-BEGIN \[row-10 options page\]' 3
+# Upstream 1775 filed SetUiFlagInit/SetUIFlagUnregister into ui.cpp; the row-10
+# register/unregister blocks follow them there (the DRAW_UI render block stays in Draw.cpp).
+gate "SetUiFlagInit/unregister VP blocks"  D2Client/UI/ui.cpp      'VP-BEGIN \[row-10 options page\]' 2
+gate "render VP block"                     D2Client/UI/Draw.cpp    'VP-BEGIN \[row-10 options page\]' 1
 gate "auto-gold tick wired in DRAW_UI"    D2Client/UI/Draw.cpp            'AUTO_GOLD_Tick\(\);'        1
 gate "latch reset in InitializeUI"        D2Client/UI/Draw.cpp            'ALTTOGGLE_Reset\(\);'       1
-gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/Draw.cpp     'case UI_VANILLAPLUS:'       2
-gate "VANILLAPLUS_OnToggleUI calls"       D2Client/UI/Draw.cpp            'VANILLAPLUS_OnToggleUI\('   2
-gate "SetUIFlag bound widened to 38"      D2Client/UI/Draw.cpp            'UI_VANILLAPLUS < eUI'       1
+gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/ui.cpp       'case UI_VANILLAPLUS:'       2
+gate "VANILLAPLUS_OnToggleUI calls"         D2Client/UI/ui.cpp              'VANILLAPLUS_OnToggleUI\('   2
+gate "SetUIFlag bound widened to 38"        D2Client/UI/ui.cpp              'UI_VANILLAPLUS < eUI'       1
 gate "GetUIFlag bound widened to 38"      D2Client/UI/ui.cpp              'UI_VANILLAPLUS >= eUI'      1
 gate "0x27 guards in Draw.cpp"            D2Client/UI/Draw.cpp            'gnUIFlagCount (!=|==) 0x27' 5
 gate "0x27 guards in ui.cpp"              D2Client/UI/ui.cpp              'gnUIFlagCount (!=|==) 0x27' 1
@@ -134,9 +137,11 @@ gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnit
 # exists for it. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4.
 gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
-gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 1
+# Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
+# 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp.
+gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
-gate "resolution: init attach + mode 4"      Storm/_unnamespaced.cpp     'VPRES_BuildBlankPlaceholder|RequestedScreenModeMaybe = 4' 2
+gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 2
 gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 2|nScreenMode_lcl = 4' 2
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
@@ -226,7 +231,6 @@ gate "resfix: glide mode-4 surface 1280x720"    D2Glide/Renderer/Glide.cpp 'REND
 gate "resfix: glide mode-3 surface 1344x700"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1344' 1
 gate "resfix: glide resolution enum 16"         D2Glide/Renderer/Glide.cpp 'screen_resolution = 16' 1
 gate "resfix: glide perspective path modes 2/3/4" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4' 1
-
 
 echo
 if [ "$FAIL" -eq 0 ]; then

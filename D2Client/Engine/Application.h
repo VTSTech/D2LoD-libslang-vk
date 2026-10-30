@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2IniConfigStrc;
-typedef int eD2RendererMode;
+typedef uint32_t eD2RendererMode;
 
 namespace D2Client::Engine::Application {
 

@@ -857,7 +857,7 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint8_t * p
 }
 
 // Computes the character-title/flag index (0–0x1a) used when saving or loading a character's title progress. Checks expansion/classic match between the character status bits and the game's bExpansion flag (returns 8 or 9 on mismatch). On BattleNet servers, validates file-time freshness and game type (returns 0x19/0x1a). Then checks hardcore arena flag and character status bit 2 to return the hardcore-normal title codes (0xb/0xc/10). Finally maps difficulty + title-progress bits to the levelled codes (0xd/0xe), returning 0 when fully progressed.
-int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint32_t dwCharacterStatus, D2ClientStrc * pClient) {
+int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus, D2ClientStrc * pClient) {
     eD2ArenaFlags eArenaFlags;
     FILETIME ftDatabase;
     if (dwCharacterStatus & 0x20) {
@@ -903,14 +903,13 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint32_t dwCharacterStatus
         return 0xb;
       }
     }
-    uint32_t nTitleProgress = dwCharacterStatus >> 8 & 0x1f;
-    short int bIsExpansionChar = (short int)(dwCharacterStatus & 0x20);
+    uint32_t nTitleProgress = (dwCharacterStatus & 0x1f00) >> 8;
     if (pGame->nDifficulty > 1) {
-      if (bIsExpansionChar && nTitleProgress < 10 || nTitleProgress < 8) {
+      if (dwCharacterStatus & 0x20 && nTitleProgress < 10 || nTitleProgress < 8) {
         return 0xe;
       }
     } else {
-      if ((uint8_t)pGame->nDifficulty > 0 && (bIsExpansionChar && nTitleProgress < 5 || nTitleProgress < 4)) {
+      if (pGame->nDifficulty > 0 && (dwCharacterStatus & 0x20 && nTitleProgress < 5 || nTitleProgress < 4)) {
         return 0xd;
       }
     }
@@ -1028,7 +1027,7 @@ int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, D2Cl
       return 7;
     }
 
-    nResult = CalculateGetFlags(pGame, (uint32_t)(uint32_t)(uint16_t)(short int)pSaveFile->dwCharacterStatus, pClient);
+    nResult = CalculateGetFlags(pGame, (uint16_t)pSaveFile->dwCharacterStatus, pClient);
     if (!nResult) {
       uint8_t bVar2 = pSaveFile->nPlayerClassId;
       if (bVar2 > 7) {
@@ -1099,7 +1098,13 @@ int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, D2Cl
 
 int __fastcall PLRSAVE_ReadQuestsFromBuffer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int * * ppQuestBuffer, int * pnBytesRead, uint32_t dwParam) {
     int* pBufStart = *ppQuestBuffer;
-    if (!((int*)((int)pBufStart + 0x12aU) <= pnBytesRead && *pBufStart == 0x216f6f57 && pBufStart[1] == 6)) {
+    if (!((int*)((int)pBufStart + 0x12aU) <= pnBytesRead)) {
+      return 0xf;
+    }
+    if (*pBufStart != 0x216f6f57) {
+      return 0xf;
+    }
+    if (pBufStart[1] != 6) {
       return 0xf;
     }
 
@@ -1212,7 +1217,7 @@ static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, sho
       if (!pStatCostTxt) {
         break;
       }
-      if (pStatCostTxt->csvbits == '\0') {
+      if ((uint8_t)pStatCostTxt->csvbits <= '\0') {
         break;
       }
 
@@ -1492,7 +1497,7 @@ D2UnitStrc * __fastcall LoadMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Merc
     }
 
     sMercSave.wNameIndex += pHirelingTxt->nNameFirst;
-    if (sMercSave.wNameIndex > (uint16_t)pHirelingTxt->nNameLast) {
+    if (sMercSave.wNameIndex > pHirelingTxt->nNameLast) {
       sMercSave.wNameIndex = pHirelingTxt->nNameFirst;
     }
 
@@ -1607,7 +1612,6 @@ BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     bool bPutResult;
     eD2ItemFlag eItemFlags;
     D2UnitStrc* pSocketedItem;
-    DWORD dwGolemGUID;
     D2UnitDataItemDetailsStrc local_34;
     int32_t bSocketMode;
     DWORD dwSocketedItemGUID;
@@ -1653,8 +1657,7 @@ BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
         bSocketMode = 1;
         nSocketBodyLoc = 0;
         pInvDummy = &__frame0.nPutItemResult;
-        dwGolemGUID = D2Client::UNIT::GetGUID(__frame0.pGolemItem);
-        _bPutResult = ITEMS::ItemMode::PutItemInItem(pGame, __frame0.pOwnerUnit, dwSocketedItemGUID, dwGolemGUID, pInvDummy, nSocketBodyLoc, bSocketMode, nSocketSlotX, nSocketSlotY);
+        _bPutResult = ITEMS::ItemMode::PutItemInItem(pGame, __frame0.pOwnerUnit, dwSocketedItemGUID, D2Client::UNIT::GetGUID(__frame0.pGolemItem), pInvDummy, nSocketBodyLoc, bSocketMode, nSocketSlotX, nSocketSlotY);
         if (!_bPutResult) {
           UNIT::SUnit::FreeServerUnit(pGame, __frame0.pGolemItem);
           return 0;

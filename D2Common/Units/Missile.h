@@ -12,7 +12,7 @@
 // Forward declarations
 struct D2MissileDamageDataStrc;
 struct D2UnitStrc;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct D2MissileCalcContextStrc {

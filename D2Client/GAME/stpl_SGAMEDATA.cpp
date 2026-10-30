@@ -74,7 +74,7 @@ template<> uint32_t TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>>::Calc
         nCleared = nPrev - 1 & nPrev;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {
@@ -341,7 +341,7 @@ template<> void TSHashTable<SGAMEDATA, HASHKEY_NONE>::InternalClear(int32_t bUnl
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
     uint32_t pBucketIdx = 0;
-    if ((uint32_t)this->tSlotListArray.m_count <= 0) {
+    if (this->tSlotListArray.m_count <= 0) {
       return;
     }
 

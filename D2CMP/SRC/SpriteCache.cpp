@@ -757,7 +757,7 @@ static D2CelFileCacheEntryStrc * __stdcall SPRITECACHE_LoadDCC(char * szText, ch
           }
 
           nFrameIdx = 0;
-          if ((uint32_t)pCacheEntry->nDirections > 0) {
+          if (pCacheEntry->nDirections > 0) {
             pPaletteCursor = pCacheEntry->adwDirectionOffsets;
             do {
               *pPaletteCursor = gdwSpriteCacheThreshold[pCacheEntry->nFramesPerDirection * nFrameIdx];
@@ -820,7 +820,7 @@ static DC6Block * __stdcall SPRITECACHE_FindFrameBlock(D2GfxDataStrc * pGfxData,
     }
     int nFrameIdx = 0;
     DC6Block* pFrameBlock = (DC6Block*)pFrameData;
-    if (-1 >= pGfxData->nFrameNumber) {
+    if (pGfxData->nFrameNumber < 0) {
       return pFrameBlock;
     }
 

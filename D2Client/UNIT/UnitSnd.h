@@ -12,8 +12,8 @@
 struct D2MonSoundsTxt;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2MonsterAnimMode;
-typedef int eD2UnitType;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2UnitType;
 
 namespace D2Client::UNIT::UnitSnd {
 
@@ -64,7 +64,7 @@ void __fastcall UpdateUnitSfxOnModeChange(struct D2UnitStrc * pUnit);
 // Plays the attack sound(s) for a unit's attack. For players: looks up the hit-class sound in gaUnitSoundTable and plays it (delay only when bPlayDelayed), recording the sfx tick into the unit's client-side data. For monsters: reads MonSounds.txt (Attack1/Attack2 + delay/probability for nAttackMode==4 vs other), rolls Att*Prb to decide whether to play the attack vocal (respecting a sound-channel cooldown), then always plays the corresponding Weapon1/Weapon2 sound scaled by the unit's anim speed and sets its channel priority by Wea*Vol. No-op for other unit types.
 void __fastcall UNITSND_PlayAttackSound(struct D2UnitStrc * pUnit, int32_t nAttackMode, uint32_t bPlayDelayed);
 // Plays the appropriate player/character sound effect for a given animation-mode/event code (nAnimModeParam, low 16 bits). Looks up the per-class sound table (gaUnitSoundTableByClassId indexed by nClassId 0-6); aborts loudly for invalid units. Maps the code into one of three ranges: anim modes 0x19-0x20 (footstep/run sounds gated by channel availability), special scheduled sequences 0x21-0x53 (WALL2_ScheduleSoundSequence for timed multi-part sounds), and small codes 1-0x18 (cursor/UI/item sounds and the class voice/attack sounds from the table, with duplicate-suppression within ~75ms via gnSoundLastPlayerAnimModeTime). Plays via SOUND_PlaySound and routes the result to overhead-text display. Skips if the local player is dead.
-void __fastcall UNITSND_PlayPlayerSound(struct D2UnitStrc * pUnit, uint32_t nAnimModeParam);
+void __fastcall UNITSND_PlayPlayerSound(struct D2UnitStrc * pUnit, uint16_t nAnimModeParam);
 // Client-side dispatcher that plays a contextual voice/ambience sound for a unit (mercenary/NPC/player) identified by GUID+type. Switches on a sound command (low 16 bits): quest-instruction lines, skill cast sound (from the unit's modifier-skill state via STATE_evade statlist), find-item/guardian/jade barks, taunt (from MonSounds.txt), flee sound, NPC greeting (cmd 0x12, SOUND_SelectNpcGreetingSound), durability-break cursor sound, and class-specific (Necromancer/other 0x10f) action grunts whose sound id is then surfaced as overhead text. Falls through to UNITSND_PlayPlayerSound for player units. No-op if the unit can't be resolved.
 void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitType, int32_t nSoundCmd);
 // Toggles the mute state of all audible sounds associated with a unit. nMuteDelta>0 mutes, <0 unmutes; no-ops if already in the requested state. For monsters adjusts reference counts on all MonSounds entries (Attack1/2, Hit, Death, Flee, Footstep); for objects iterates the unit sound table (up to 8 entries). Halts fatally if pUnit is null.

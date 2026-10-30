@@ -264,7 +264,13 @@ static int32_t GetPetUidByIndex(int32_t nIndex, D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
       exit(-1);
     }
-    if (!(pPlayerData->pPets && nIndex >= 0 && nIndex < sgptDataTable->nTxtPetTypeSize)) {
+    if (!pPlayerData->pPets) {
+      return -1;
+    }
+    if (nIndex < 0) {
+      return -1;
+    }
+    if (!(nIndex < sgptDataTable->nTxtPetTypeSize)) {
       return -1;
     }
 
@@ -1153,8 +1159,6 @@ static void __stdcall PLAYERPETS_RemoveConflictingPetsByGroup(int32_t nParam, ::
 }
 
 void __fastcall PETS_SetMaxAndTrimExcess(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nIndex, int32_t nBaseMax) {
-    DWORD nPetGUID;
-    BOOL bKillHandler;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x200);
@@ -1172,9 +1176,7 @@ void __fastcall PETS_SetMaxAndTrimExcess(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     int nCurPetCount = pDVar1->nPets2;
     pDVar1->nMax = nBaseMax;
     while (nCurPetCount > nBaseMax && pDVar1->nPets2 > 0 && nIndex != 7) {
-      bKillHandler = 1;
-      nPetGUID = GetPetUidByIndex(nIndex, pUnit);
-      RemovePetByGuidAndNotify(pGame, pUnit, nPetGUID, bKillHandler);
+      RemovePetByGuidAndNotify(pGame, pUnit, GetPetUidByIndex(nIndex, pUnit), 1);
       nCurPetCount = pDVar1->nPets2;
     }
 }
@@ -1544,8 +1546,8 @@ int32_t __fastcall GetHirelingNamesAndSize(::SGAMEDATA * pGame, int32_t nNcpClas
       *pClassId = 0;
       nCount = -1;
     } else {
-      *pNameFirst = (uint32_t)(uint16_t)pHirelingTxt->nNameFirst;
-      *pNameLast = (uint32_t)(uint16_t)pHirelingTxt->nNameLast;
+      *pNameFirst = (uint32_t)pHirelingTxt->nNameFirst;
+      *pNameLast = (uint32_t)pHirelingTxt->nNameLast;
       if (pClassId) {
         *pClassId = pHirelingTxt->classId;
       }

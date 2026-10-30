@@ -21,9 +21,8 @@ struct EHExceptionRecord;
 struct EHRegistrationNode;
 struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2ArenaFlags;
-typedef int eD2States;
-typedef uint8_t eD2PlayerClassID;
+typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2States;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32
@@ -119,9 +118,9 @@ void __fastcall CLIENT_SetArenaFlags(eD2ArenaFlags eArenaFlags);
 // Sets or clears the ARENAFLAG_DefaultActive bit in CLIENT_ArenaFlags. bSet!=0 clears the bit (marks client as not default-active); bSet==0 sets the bit.
 void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet);
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal();
-void __fastcall ROSTER_SetArenaKillCountGlobal(uint32_t dwValue);
+void __fastcall ROSTER_SetArenaKillCountGlobal(eD2PlayerClassIDDWORD dwValue);
 // Returns the default player class ID stored in global _eD2PlayerClassID_00712f00, used when creating a new character without an explicit class selection.
-eD2PlayerClassID __stdcall CLIENT_GetDefaultCharClass();
+eD2PlayerClassIDDWORD __stdcall CLIENT_GetDefaultCharClass();
 // Returns 1 if arena mode is active (bit 8 of CLIENT_ArenaFlags is set), indicating the game session is running in arena/PvP mode.
 uint32_t __stdcall CLIENT_IsArenaMode();
 void __stdcall INPUT_HandleIMEComposition(struct D2UIMouseMsgStrc * pMsg);
@@ -190,7 +189,7 @@ int32_t __thiscall WARDEN_DecryptBuffer(int * pnParam, int32_t param_1);
 uint32_t __fastcall WARDEN_DecryptModule(uint32_t * * ppInput, uint32_t nInputSize, uint32_t * * ppOutput, uint32_t nOutputSize);
 // RC4 key schedule: fills pRc4State's 256-byte S-box with 0..255, zeroes the i/j bytes at +0x100/+0x101, then swaps S[i] with S[j], j += S[i] + pKey[i % nKeyLength].
 // The only caller, WARDEN_DecryptAndLoadModule, passes a 0x10-byte key; 1.14d asm 004e09c0..004e0a1a.
-void __fastcall WARDEN_RC4Init(struct D2RC4StateStrc * pRc4State, uint8_t * pKey, uint32_t nKeyLength);
+void __thiscall WARDEN_RC4Init(struct D2RC4StateStrc * pRc4State, uint8_t * pKey, uint32_t nKeyLength);
 void __fastcall SKILLSSOR_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
 int __fastcall SKILLSCLT_CheckSkillIsValid(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame);
 void __fastcall SKILLSASS_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);

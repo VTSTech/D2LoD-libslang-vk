@@ -30,7 +30,7 @@ void __stdcall NET_SID_CLIENT_SHA1Update(uint32_t * pnParam1, uint32_t nParam, u
 
     pnParam2[6] += (int)nParam >> 0x1d;
     pnParam2[5] = nNewBitLen;
-    if (0x3f >= (int)nParam) {
+    if ((int)nParam < 0x40) {
       return;
     }
 
@@ -54,7 +54,7 @@ void __stdcall NET_SID_CLIENT_SHA1Update(uint32_t * pnParam1, uint32_t nParam, u
 uint32_t __fastcall NET_SID_CLIENT_IDEAMultInverse(uint32_t value) {
     uint64_t modResult;
     uint64_t tempDividend;
-    if (value < 2) {
+    if (value <= 1) {
       return value;
     }
 
@@ -68,7 +68,7 @@ uint32_t __fastcall NET_SID_CLIENT_IDEAMultInverse(uint32_t value) {
     do {
       uint32_t quotient;
       quotient = value / remainder;
-      modResult = (uint64_t)value % (uint64_t)remainder;
+      modResult = (uint64_t)(value % remainder);
       value = (uint32_t)modResult;
       y += quotient * x;
       if (value == 1) {

@@ -16,7 +16,7 @@ struct D2PoolManagerStrc;
 struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct __attribute__((packed)) D2LevelPlayerCountArgStrc {

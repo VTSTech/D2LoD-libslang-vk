@@ -14,7 +14,7 @@ typedef int eD2ItemFlag;
 // Data types
 struct __attribute__((packed)) D2UnknownItemRelatedStruct {
     /* 0x00 */ char nEquipLoc; // 5-bit equip slot from save file
-    /* 0x01 */ char nStorageType; // 3-bit storage location/page from save file
+    /* 0x01 */ uint8_t nStorageType; // 3-bit storage location/page from save file
     /* 0x02 */ uint32_t nItemLevel;
     /* 0x06 */ uint32_t nItemClassid;
     /* 0x0A */ char Mode;

@@ -15,7 +15,7 @@ struct D2GfxMemoryStrc;
 struct D2PoolManagerStrc;
 struct D2TileLibraryEntryStrc;
 struct DC6Block;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 struct D2SpriteDecodeRequestStrc;
 #ifndef RECON_FPTD_fnSpriteCacheEntryRelease
 #define RECON_FPTD_fnSpriteCacheEntryRelease
@@ -114,7 +114,6 @@ int __stdcall SPRITECACHE_GetMaxSize();
 uint32_t __stdcall SPRITECACHE_GetCurrentSize();
 // @sourcefile .\SRC\SpriteCache.cpp
 void __fastcall GFX_AllocSpriteCache(struct D2GfxMemoryStrc * pGfxMemory, struct D2PoolManagerStrc * pMemory, void * pMaxMemory, fnSpriteCacheEntryRelease pfnReleaseEntry);
-struct D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_AddToLRU(uint32_t dwParam, struct D2GfxMemoryStrc * nParam, int32_t bPriority);
 // Counts the LRU cache blocks whose async load has not completed (ASYNCDATA_IsComplete == 0); halts on a block with no pAsyncData.
 // It frees nothing, it only counts (returns nPendingCount).
 int32_t __stdcall SPRITECACHE_CountPendingLoads();
@@ -139,6 +138,6 @@ void __stdcall SPRITECACHE_Shutdown(int32_t nParam);
 int __stdcall SPRITECACHE_GetOrLoadSprite(struct D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t nParam2);
 // Server sprite precache sync. GuardStack tail confirms BOOL return: GuardStack(1) on two early-out success paths, GuardStack(nLoadResult) on the cache-and-load path, GuardStack(0) on failure.
 BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(struct D2GfxDataStrc * pGfxData);
-// 14 internal functions (defined in .cpp)
+// 15 internal functions (defined in .cpp)
 
 } // namespace D2CMP::SRC::SpriteCache

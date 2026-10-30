@@ -15,10 +15,10 @@ struct D2NpcTradeStateStrc;
 struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2QuestState;
-typedef int eD2ServerIncomingStatus;
-typedef int eD2Skills;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2QuestState;
+typedef uint32_t eD2ServerIncomingStatus;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct D2GambleTableStrc {

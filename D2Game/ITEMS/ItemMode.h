@@ -17,9 +17,9 @@ struct D2MonStatsTxt;
 struct D2SkillStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitStat;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitStat;
 typedef uint8_t eD2BodyLoc;
 
 // Data types

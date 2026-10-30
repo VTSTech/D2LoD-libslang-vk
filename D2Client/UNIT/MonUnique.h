@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eMissilesId;
+typedef uint32_t eMissilesId;
 
 namespace D2Client::UNIT::MonUnique {
 

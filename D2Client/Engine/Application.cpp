@@ -18,11 +18,11 @@
 #include "Fog/Src/D2Net.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SReg.h"
-#include "globals/globals.h"
 #include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus ALTTOGGLE_EnsureIni
+#include "globals/globals.h"
 #include "D2Client/Engine.h"
-#include "support/d2_trace.h"
 #include "support/d2_boot.h" // [d2boot]
+#include "support/d2_trace.h"
 #include "D2Client/UI/Panel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -53,7 +53,6 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     }
 
     /* Here it assign global D2Application mode then param is used as variable to
-                         determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
     D2BOOT_Mark("vanilla-plus 0.0.4"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
     // VP-BEGIN [alt-toggle]: create d2vp.ini next to the exe when missing
@@ -63,6 +62,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     // stays the vanilla path.
     ALTTOGGLE_EnsureIni();
     // VP-END [alt-toggle]
+                         determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
@@ -93,25 +93,23 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
 
     D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     D2BOOT_Mark("language code ok"); // [d2boot]
-    if (!pD2IniData->b3DFX) {
-      if (!pD2IniData->bWINDOW) {
-        eD2ApplicationModeAndRenderer = (pD2IniData->bD3D ? 3 : 0) + RENDERED_DirectDraw;
-      } else {
-        eD2ApplicationModeAndRenderer = RENDERER_Windowed;
-      }
-    } else {
+    if (pD2IniData->b3DFX) {
       eD2ApplicationModeAndRenderer = RENDERER_Glide;
+    } else {
+      if (pD2IniData->bWINDOW) {
+        eD2ApplicationModeAndRenderer = RENDERER_Windowed;
+      } else {
+        eD2ApplicationModeAndRenderer = (pD2IniData->bD3D ? 3 : 0) + RENDERED_DirectDraw;
+      }
     }
 
     int bExpansionMode = *(int*)pD2IniData->bD2ExpMpqExistsOrLanugageCode;
     uint32_t bWindowed = (uint32_t)pD2IniData->bWINDOW;
-    if (geD2ApplicationMode == APPMODE_server) {
-      bWindowCreated = false;
-    } else {
+    if (geD2ApplicationMode != APPMODE_server) {
       HWND hWnd;
       D2BOOT_MarkFmt("calling D2GFX_PreSetup (renderer=%d windowed=%d)", (int)eD2ApplicationModeAndRenderer, (int)bWindowed); // [d2boot]
       bMpqLoaded = D2Win::Src::D2WinMain::D2GFX_PreSetupBeforeCreatingWindow(hInstance, eD2ApplicationModeAndRenderer, bWindowed, (uint32_t)!pD2IniData->bNOCOMPRESS);
-      D2BOOT_MarkFmt("GFX pre-setup -> %d", (int)bMpqLoaded); // [d2boot]
+      D2BOOT_MarkFmt("GFX pre-setup result -> %d", (int)bMpqLoaded); // [d2boot]
       if (!bMpqLoaded) {
         D2BOOT_Fail("D2GFX_PreSetupBeforeCreatingWindow returned 0"); // [d2boot]
         return 0;
@@ -139,6 +137,8 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       }
 
       bWindowCreated = true;
+    } else {
+      bWindowCreated = false;
     }
     if (pD2IniData->bQUALITY) {
       D2gfx::D2GFX::D2GFX_ToggleLowQuality();
@@ -166,8 +166,8 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
       __frame0.bSoundInit = 1;
     }
-
     D2BOOT_Mark("setup ok -> entering mode loop"); // [d2boot]
+
     while (geD2ApplicationMode != APPMODE_mode0) {
       if (geD2ApplicationMode == APPMODE_server) {
         if (__frame0.bSoundInit) {
@@ -192,8 +192,8 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       D2Win::D2GFX::D2GFX_CheckVideoMode();
       D2gfx::D2GFX::D2GFX_Release();
     }
-
     D2BOOT_Mark("mode loop exited - ApplicationMain returning"); // [d2boot]
+
     D2Win::Src::D2WinArchive::MPQ_UnloadAllDataMpqFiles();
     if (ghKeyhookDll) {
       /* LPCSTR lpProcName for GetProcAddress */ /* HMODULE hModule for GetProcAddress */ pfnKeyhook = GetProcAddress(ghKeyhookDll, "UninstallKeyboardHook");

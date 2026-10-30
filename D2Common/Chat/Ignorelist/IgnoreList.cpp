@@ -5,7 +5,6 @@
 #include "D2Common/Chat/Ignorelist/MappingEntryNode.h"
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Fog/Debug.h"
 #include "Fog/Source/SFile.h"
 #include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
@@ -15,6 +14,7 @@
 #include "globals/globals.h"
 #include "D2Common/Chat.h"
 #include "D2Common/Chat/Ignorelist/ChatIgnoreList.h"
+#include "Fog/Debug.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -43,11 +43,9 @@ void __thiscall SavePersistentSetting(::IgnoreList * pThis, int32_t nPersistent)
 int32_t __thiscall AppendLineToFile(::IgnoreList * pThis, char * szLine) {
     int32_t bIsEnabled;
     FILE* _File;
-    uint32_t nStrLen;
     int iVar1;
     uint32_t uVar2;
     char szPath[256];
-    size_t _Count;
     if (szLine && *szLine != '\0') {
       bIsEnabled = pThis->_vfptr->GetPersistentSetting(pThis);
       if (bIsEnabled) {
@@ -57,9 +55,7 @@ int32_t __thiscall AppendLineToFile(::IgnoreList * pThis, char * szLine) {
         _File = fopen(pThis->szIgnoreFilePath, "at+");
         pThis->pAppendFile = _File;
         if (_File) {
-          _Count = 1;
-          nStrLen = Storm::Source::SSTR::SStrLen(szPath);
-          fwrite(szPath, nStrLen, _Count, _File);
+          fwrite(szPath, Storm::Source::SSTR::SStrLen(szPath), 1, _File);
           iVar1 = fclose(pThis->pAppendFile);
           uVar2 = (uint32_t)!iVar1;
         }
@@ -79,12 +75,12 @@ int32_t __thiscall SaveToFile(::IgnoreList * pThis) {
     }
 
     uint32_t uEntryOffset = pThis->tIgnoredPatterns.tFullList.m_terminator.m_next;
-    for (uEntryOffset = (int)uEntryOffset < 1 ? 0 : uEntryOffset; 0 < (int)uEntryOffset; uEntryOffset = *(uint32_t*)(pThis->tIgnoredPatterns.tFullList.m_linkoffset + uEntryOffset + 4)) {
+    for (uEntryOffset = (int)uEntryOffset <= 0 ? 0 : uEntryOffset; 0 < (int)uEntryOffset; uEntryOffset = *(uint32_t*)(pThis->tIgnoredPatterns.tFullList.m_linkoffset + uEntryOffset + 4)) {
       fprintf(pFile, "%s\n", *(uint32_t*)(uEntryOffset + 0x14));
     }
 
     uEntryOffset = pThis->tIgnoredAccounts.tFullList.m_terminator.m_next;
-    for (uEntryOffset = (int)uEntryOffset < 1 ? 0 : uEntryOffset; 0 < (int)uEntryOffset; uEntryOffset = *(uint32_t*)(pThis->tIgnoredAccounts.tFullList.m_linkoffset + uEntryOffset + 4)) {
+    for (uEntryOffset = (int)uEntryOffset <= 0 ? 0 : uEntryOffset; 0 < (int)uEntryOffset; uEntryOffset = *(uint32_t*)(pThis->tIgnoredAccounts.tFullList.m_linkoffset + uEntryOffset + 4)) {
       fprintf(pFile, "!%s\n", *(uint32_t*)(uEntryOffset + 0x14));
     }
 
@@ -98,12 +94,12 @@ void __thiscall ClearAccountMappings(::IgnoreList * pThis) {
 
 int32_t __thiscall GetMappedValue(::IgnoreList * pThis, char * szKey, char * szOut, int32_t nOutSize) {
     ::MappingEntryNode* pEntry = pThis->tAccountMappings.Ptr(szKey);
-    if (!pEntry) {
-      return 0;
+    if (pEntry) {
+      Storm::Source::SSTR::SStrCopy(szOut, pEntry->szMappedValue, nOutSize);
+      return 1;
     }
 
-    Storm::Source::SSTR::SStrCopy(szOut, pEntry->szMappedValue, nOutSize);
-    return 1;
+    return 0;
 }
 
 int32_t __thiscall RemoveByPattern(::IgnoreList * pThis, char * szPattern) {
@@ -139,18 +135,19 @@ int32_t __thiscall RemoveByAccountName(::IgnoreList * pThis, char * szAccountNam
     }
 
     _bIsEnabled = pThis->_vfptr->GetPersistentSetting(pThis);
-    if (!_bIsEnabled) {
+    if (_bIsEnabled) {
+      ::StringEntryNode* pEntry;
+      pEntry = pThis->tIgnoredAccounts.Ptr(szAccountName);
+      if (pEntry) {
+        pThis->tIgnoredAccounts.Unlink(pEntry);
+        IgnoreList::SaveToFile(pThis);
+        return 1;
+      }
+
       return 0;
     }
 
-    ::StringEntryNode* pEntry = pThis->tIgnoredAccounts.Ptr(szAccountName);
-    if (!pEntry) {
-      return 0;
-    }
-
-    pThis->tIgnoredAccounts.Unlink(pEntry);
-    IgnoreList::SaveToFile(pThis);
-    return 1;
+    return 0;
 }
 
 // Returns whether the account name is on the ignore list. It tail-calls Fog::Debug::GuardStack, which returns its argument, so the result is already in EAX; typed void the reconstruction dropped every return value and callers tested an unassigned local.
@@ -170,7 +167,7 @@ int32_t __thiscall CheckAccountNameIgnored(::IgnoreList * pThis, char * szAccoun
           Storm::Source::SSTR::SStrCopy(szAccountLower, szAccountName, 0x7fffffff);
           Storm::Source::SSTR::SStrLower(szAccountLower);
           uVar1 = pThis->tIgnoredAccounts.tFullList.m_terminator.m_next;
-          pCurEntry = (::StringEntryNode*)((int)uVar1 < 1 ? 0 : uVar1);
+          pCurEntry = (::StringEntryNode*)((int)uVar1 <= 0 ? 0 : uVar1);
           while (true) {
             if ((int)pCurEntry < 1) {
               return 0;
@@ -202,12 +199,13 @@ int32_t __thiscall CheckCharNameIgnored(::IgnoreList * pThis, char * szCharName)
     }
 
     _bIsEnabled = pThis->_vfptr->GetPersistentSetting(pThis);
-    if (!_bIsEnabled) {
-      return 0;
+    if (_bIsEnabled) {
+      ::StringEntryNode* pEntry;
+      pEntry = pThis->tIgnoredPatterns.Ptr(szCharName);
+      return (uint32_t)(pEntry != 0);
     }
 
-    ::StringEntryNode* pEntry = pThis->tIgnoredPatterns.Ptr(szCharName);
-    return (uint32_t)(pEntry != 0);
+    return 0;
 }
 
 // Returns whether the player name is on the ignore list. Tail-calls Fog::Debug::GuardStack, which returns its argument, so the result is already in EAX; typed void the reconstruction dropped it.
@@ -345,11 +343,11 @@ void __thiscall LoadFromFile(::IgnoreList * pThis) {
       char* pszLine;
       szLineBuf[0] = '\0';
       memset(szLineBuf + 1, 0, 0xff);
-      pszLine = CRT_Fgets(szLineBuf, 0x100, pFile);
+      pszLine = fgets(szLineBuf, 0x100, pFile);
       while (pszLine) {
         pszIter = 0;
         uVar1 = Storm::Source::SSTR::SStrLen(szLineBuf);
-        if (uVar1) {
+        if (uVar1 > 0) {
           do {
             if (szLineBuf[pszIter] == '\r' || szLineBuf[pszIter] == '\n') {
               szLineBuf[pszIter] = '\0';
@@ -368,7 +366,7 @@ void __thiscall LoadFromFile(::IgnoreList * pThis) {
         }
 
         pHashTable->New(pszLine, 0, 0);
-        pszLine = CRT_Fgets(szLineBuf, 0x100, pFile);
+        pszLine = fgets(szLineBuf, 0x100, pFile);
       }
 
       fclose(pFile);

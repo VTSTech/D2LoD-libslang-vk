@@ -17,7 +17,7 @@ struct D2QuestDataStrc;
 struct D2QuestGUIDStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Quests;
+typedef uint32_t eD2Quests;
 
 namespace D2Game::Quests::QUESTS::A1Q5 {
 

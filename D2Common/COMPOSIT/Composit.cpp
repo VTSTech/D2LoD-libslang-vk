@@ -431,7 +431,7 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
           }
 
           i = 0;
-          if ((uint32_t)gnPlayerCompositeOverrideCount > 0) {
+          if (gnPlayerCompositeOverrideCount > 0) {
             do {
               if (nResolvedClass == gaPlayerCompositeOverrideGfx[i].nMode) {
                 nMonModeItemCode = gaPlayerCompositeOverrideGfx[i].dwToken;
@@ -500,7 +500,7 @@ void __stdcall COMPOSIT_BuildCofPath(D2UnitStrc * pUnit, uint32_t nPlrClass, uin
           }
 
           i = 0;
-          if ((uint32_t)gnMonsterCompositeOverrideCount > 0) {
+          if (gnMonsterCompositeOverrideCount > 0) {
             do {
               if (nResolvedClass == gaMonsterCompositeOverrideGfx[i].nMode) {
                 dwModeToken = gaMonsterCompositeOverrideGfx[i].dwToken;

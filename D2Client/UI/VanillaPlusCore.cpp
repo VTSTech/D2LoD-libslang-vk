@@ -745,7 +745,7 @@ void __stdcall VANILLAPLUS_SelfCheck() {
         int nWired = 0;
         for (int i = 0; i < kVidRowCount; ++i) {
             if (gaEscMenuDeleteCharTable[i].fpInitCallback !=
-                &UI_SLIDER_LoadAndApplyResolution) {
+                &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyResolution) {
                 continue;
             }
             ++nWired;

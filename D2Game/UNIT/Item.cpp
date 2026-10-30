@@ -311,7 +311,7 @@ void __fastcall ITEM_ClearFlagsAndCommands(::SGAMEDATA * pGameStrc, D2UnitStrc *
     }
 
     uint32_t nIdx = 0;
-    if ((uint32_t)gnItemClearCommandCount > 0) {
+    if (gnItemClearCommandCount > 0) {
       do {
         D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit, gaItemClearCommandTable[nIdx], 0);
         nIdx++;
@@ -319,7 +319,7 @@ void __fastcall ITEM_ClearFlagsAndCommands(::SGAMEDATA * pGameStrc, D2UnitStrc *
     }
 
     nIdx = 0;
-    if ((uint32_t)gnItemClearFlagCount <= 0) {
+    if (gnItemClearFlagCount <= 0) {
       return;
     }
 

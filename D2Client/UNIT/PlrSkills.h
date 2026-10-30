@@ -12,9 +12,9 @@
 struct D2SkillStrc;
 struct D2StatListExStrc;
 struct D2UnitStrc;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitStat;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
 union D2UnitDataUnion;
 
 namespace D2Client::UNIT::PlrSkills {

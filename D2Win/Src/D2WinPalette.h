@@ -16,7 +16,7 @@ void __stdcall D2WINPALETTE_LoadPalettes();
 uint8_t * __fastcall D2WINPAL_GetActPalettePointer(int32_t nParam);
 void __stdcall DRAW_SetOrReloadPalleteMain();
 void __fastcall D2WINPALETTE_SetPaletteIndex(int32_t nParam);
-int32_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
+uint8_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
 void __fastcall D2WINPAL_CopyPalette(void * pParam);
 // @sourcefile .\Src\D2WinPalette.cpp
 BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2);

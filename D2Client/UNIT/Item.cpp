@@ -202,7 +202,7 @@ void __fastcall ITEM_RemoveItemStatsFromOwner(D2UnitStrc * pUnit, D2UnitStrc * p
 
 // Creates a client-side item unit from a ground-drop network packet (pbParam). Extracts item details from the packet payload, creates the unit via UNIT_CreateWarp, loads save data via ITEM_LoadFromSaveData. On load failure, removes the item from the server object table and returns null. If the item has ITEMFLAG_BOUGHT and bSendIdentRequest is set, sends a 0x37 ident-request packet for unidentified items.
 // @sourcefile .\UNIT\Item.cpp
-static D2UnitStrc * __stdcall ITEM_CreateItemFromGroundPacket(uint16_t nItemX, uint32_t nItemY, int32_t bSendIdentRequest, uint8_t * pPacketData, D2UnitDataItemDetailsStrc * pUnitDataItemDetails) {
+static D2UnitStrc * __stdcall ITEM_CreateItemFromGroundPacket(uint16_t nItemX, uint16_t nItemY, int32_t bSendIdentRequest, uint8_t * pPacketData, D2UnitDataItemDetailsStrc * pUnitDataItemDetails) {
     int32_t bLoadFailed;
     uint8_t bVar1 = pPacketData[2];
     if (!pUnitDataItemDetails) {
@@ -211,7 +211,7 @@ static D2UnitStrc * __stdcall ITEM_CreateItemFromGroundPacket(uint16_t nItemX, u
       pUnitDataItemDetails = &itemDetails;
     }
 
-    D2UnitStrc* pUnit = CUnit::UNIT_CreateWarp(*(int32_t*)(pPacketData + 4), pUnitDataItemDetails->classId, (uint32_t)nItemX, nItemY & 0xffff, UNIT_ITEM, (uint32_t)pUnitDataItemDetails->nAnimMode);
+    D2UnitStrc* pUnit = CUnit::UNIT_CreateWarp(*(int32_t*)(pPacketData + 4), pUnitDataItemDetails->classId, (uint32_t)nItemX, (uint32_t)nItemY, UNIT_ITEM, (uint32_t)pUnitDataItemDetails->nAnimMode);
     D2Common::ITEMS::Items::ITEM_LoadFromSaveData(pUnit, pPacketData + 8, bVar1 - 8, 0, nullptr, 0x60, &bLoadFailed);
     if (bLoadFailed) {
       CUnit::RemoveObjectFromServerObjectTable(*(uint32_t*)(pPacketData + 4), UNIT_ITEM);
@@ -1385,7 +1385,7 @@ static void __stdcall ITEM_DropItemToGroundWithMode(int32_t nParam1, int32_t nPa
 void __fastcall HandleItemAddToGround(uint8_t * pBytes) {
     D2UnitDataItemDetailsStrc stItemDetails;
     D2Common::ITEMS::Items::ExtractItemDetails(pBytes + 8, pBytes[2] - 8, 0, &stItemDetails);
-    D2UnitStrc* pItem = ITEM_CreateItemFromGroundPacket(stItemDetails.x, (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&stItemDetails + 8) << 16 | (uint32_t)(uint16_t)stItemDetails.y), 0, pBytes, &stItemDetails);
+    D2UnitStrc* pItem = ITEM_CreateItemFromGroundPacket(stItemDetails.x, stItemDetails.y, 0, pBytes, &stItemDetails);
     if (!pItem) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 900);
       exit(-1);
@@ -1437,17 +1437,18 @@ void __fastcall HandleItemPickedFromGround(uint8_t * pbParam) {
 // Client-side handler for a server packet indicating an item was dropped to the ground. Extracts item details from the packet; if the item already exists client-side and is the cursor item, clears the cursor. For ITEMFLAG_RELOAD items, removes the old unit and recreates it via ITEM_CreateItemFromGroundPacket. Places the resulting item unit in the world at the packet-specified tile coordinates via ITEM_SetAnimModeAndPlace.
 void __fastcall HandleItemDroppedToGround(uint8_t * pbParam) {
     uint8_t _bStack_8;
-    uint32_t bIsReload;
+    D2RoomStrc* pRoom;
     D2UnitDataItemDetailsStrc stItemDetails;
     uint8_t bStack_8;
     uint32_t uStack_7;
+    D2InventoryStrc* pInventory;
     D2Common::ITEMS::Items::ExtractItemDetails(pbParam + 8, pbParam[2] - 8, 0, &stItemDetails);
     D2UnitStrc* pPlayerUnit_lcl;
     pPlayerUnit_lcl = Player::GetPlayerUnit_UI();
     D2UnitStrc* pUnit;
     pUnit = Player::UNITS_FindClientSideUnit(*(int32_t*)(pbParam + 4), UNIT_ITEM);
     if (pUnit) {
-      D2InventoryStrc* pInventory;
+      uint32_t bIsReload;
       pInventory = pPlayerUnit_lcl->pInventory;
       pPlayerUnit_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pInventory);
       if (pPlayerUnit_lcl && pPlayerUnit_lcl == pUnit) {
@@ -1462,26 +1463,24 @@ void __fastcall HandleItemDroppedToGround(uint8_t * pbParam) {
       }
 
       CUnit::RemoveObjectFromServerObjectTable(*(uint32_t*)(pbParam + 4), UNIT_ITEM);
-      bIsReload = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&stItemDetails + 8) << 16 | (uint32_t)(uint16_t)stItemDetails.y);
-    } else {
-      bIsReload = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&stItemDetails + 8) << 16 | (uint32_t)(uint16_t)stItemDetails.y);
     }
 
-    pUnit = ITEM_CreateItemFromGroundPacket(stItemDetails.x, bIsReload, 0, pbParam, &stItemDetails);
+    pUnit = ITEM_CreateItemFromGroundPacket(stItemDetails.x, stItemDetails.y, 0, pbParam, &stItemDetails);
     place_on_ground:
-    if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3cf);
-      exit(-1);
-    }
-    ITEM_RemoveUninterruptableState(pUnit);
-    _bStack_8 = (uint32_t)((uint32_t)((uint32_t)uStack_7 & 0xffffffu) << 8 | (uint32_t)(uint8_t)stItemDetails.nInvPage);
-    D2RoomStrc* pRoom = 0;
-    if (stItemDetails.x || stItemDetails.y) {
-      pRoom = CUnit::FindRoom((uint32_t)stItemDetails.x, (uint32_t)stItemDetails.y);
-    }
+    if (pUnit) {
+      ITEM_RemoveUninterruptableState(pUnit);
+      _bStack_8 = (uint32_t)((uint32_t)((uint32_t)uStack_7 & 0xffffffu) << 8 | (uint32_t)(uint8_t)stItemDetails.nInvPage);
+      pRoom = 0;
+      if (stItemDetails.x || stItemDetails.y) {
+        pRoom = CUnit::FindRoom((uint32_t)stItemDetails.x, (uint32_t)stItemDetails.y);
+      }
 
-    ITEM_SetAnimModeAndPlace(pUnit, pRoom, (uint32_t)stItemDetails.x, (uint32_t)stItemDetails.y, 5, 0);
-    D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, (eInventoryPage)_bStack_8);
+      ITEM_SetAnimModeAndPlace(pUnit, pRoom, (uint32_t)stItemDetails.x, (uint32_t)stItemDetails.y, 5, 0);
+      D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, (eInventoryPage)_bStack_8);
+      return;
+    }
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3cf);
+    exit(-1);
 }
 
 // Client-side handler that drops an item to the ground from a packet. Extracts item details from the packet body via ExtractItemDetails, then locates the existing item unit. If the item was equipped on the local player it is unequipped: swaps the primary weapon, clears GFX mode flags for its body location, and runs the full equip-requirement recalc loop over the 11 body slots (disable items failing requirements, re-equip qualifying ones up to 100 passes, re-apply set-item bonuses), reloading the unit mode COF. Removes the old item from the server object table, then creates the ground item from the packet (ITEM_CreateItemFromGroundPacket) and clears its uninterruptable state. Halts via Fog ErrorManager on inconsistent state.
@@ -1547,7 +1546,7 @@ void __fastcall HandleItemOnGround(uint8_t * pBuffer) {
       CUnit::RemoveObjectFromServerObjectTable(*(uint32_t*)(pBuffer + 4), UNIT_ITEM);
     }
 
-    pItem = ITEM_CreateItemFromGroundPacket(StItemDetails.x, (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&StItemDetails + 8) << 16 | (uint32_t)(uint16_t)StItemDetails.y), 0, pBuffer, &StItemDetails);
+    pItem = ITEM_CreateItemFromGroundPacket(StItemDetails.x, StItemDetails.y, 0, pBuffer, &StItemDetails);
     if (pItem) {
       ITEM_RemoveUninterruptableState(pItem);
       return;
@@ -3040,7 +3039,7 @@ void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
     uint32_t nTypeIdx;
     if (pPacket->nSkillId != 0xffff) {
       nTypeIdx = 0;
-      if ((uint32_t)gnCursorAutoOpenInventoryTypeCount > 0) {
+      if (gnCursorAutoOpenInventoryTypeCount > 0) {
         do {
           if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);
@@ -3072,7 +3071,7 @@ void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
       }
 
       nTypeIdx = 0;
-      if ((uint32_t)gnCursorAutoOpenInventoryTypeCount > 0) {
+      if (gnCursorAutoOpenInventoryTypeCount > 0) {
         do {
           if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);

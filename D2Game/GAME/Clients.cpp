@@ -1208,9 +1208,9 @@ BOOL __fastcall NET_D2GS_SERVER_GetPlayerNameByClientId(int32_t nClientId, char 
 
 int32_t __fastcall GetClientId(char * szText) {
     int nFoundClientId = 0;
-    uint32_t dwNameHash = Fog::SMem::HashForName(szText);
+    uint16_t uVar1 = Fog::SMem::HashForName(szText);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
-    D2ClientStrc* pClient = QServerClientBucketByName[dwNameHash & 0xff];
+    D2ClientStrc* pClient = QServerClientBucketByName[uVar1 & 0xff];
     while (pClient && !nFoundClientId) {
       int32_t nCmpResult;
       nCmpResult = Storm::Source::SSTR::SStrCmpI(pClient->szCharName, szText, 0x10);
@@ -1229,9 +1229,9 @@ BOOL __fastcall SERVER_IsPlayerCharacterInGame(char * szText1, char * szText2) {
     bool _bNotFound;
     bool bNotFound;
     _bNotFound = 1;
-    uint32_t dwNameHash = Fog::SMem::HashForName(szText1);
+    uint16_t uVar1 = Fog::SMem::HashForName(szText1);
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
-    D2ClientStrc* pClient = QServerClientBucketByName[dwNameHash & 0xff];
+    D2ClientStrc* pClient = QServerClientBucketByName[uVar1 & 0xff];
     do {
       int32_t nCmpResult;
       if (!pClient) {
@@ -1877,13 +1877,14 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
 // Allocates and initializes D2ClientStrc (1304 bytes). Sets client ID, 180-second timeout, class (arena template override), char/account names, language. Initializes 16 hotkey slots to -1, zeroes packet lists. Inserts into game's client linked list and two hash tables (by ID and name). Max 8 clients per game. Returns new client or null if full.
 // @sourcefile .\GAME\Clients.cpp
 D2ClientStrc * __fastcall CreateClient(::SGAMEDATA * pGame, uint32_t nClientId, uint8_t nClass, char * pCharName, char * szAccountName, uint8_t * pClientContainer, uint8_t nLanguageId, uint32_t dwUnused1, uint32_t dwUnused2) {
+    D2ClientStrc* pClient;
     DWORD dwTick;
     uint32_t bIsArenaMode;
     uint32_t nArenaClass;
     uint8_t* pHotkeySlot;
     int nHotkeyIdx;
     if (gQServerClientTablesInitialized && pGame && pGame->nClientsCount < 8) {
-      D2ClientStrc* pClient;
+      uint16_t uVar1;
       pClient = D2_NEW_POOL_AT(pGame->pMemoryPool, D2ClientStrc, ".\\GAME\\Clients.cpp", 0x347);
       memset(pClient, 0, 0x518);
       pClient->nClientNo = nClientId;
@@ -1925,10 +1926,10 @@ D2ClientStrc * __fastcall CreateClient(::SGAMEDATA * pGame, uint32_t nClientId, 
       pClient->pServerNext = QServerClientBucketById[nClientId & 0xff];
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketById[nClientId & 0xff] = pClient;
       LeaveCriticalSection(&gQServerClientByIdCs);
-      nArenaClass = Fog::SMem::HashForName(pCharName);
+      uVar1 = Fog::SMem::HashForName(pCharName);
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gQServerClientByNameCs);
-      pClient->pNextInListByName = QServerClientBucketByName[nArenaClass & 0xff];
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketByName[nArenaClass & 0xff] = pClient;
+      pClient->pNextInListByName = QServerClientBucketByName[uVar1 & 0xff];
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ QServerClientBucketByName[uVar1 & 0xff] = pClient;
       LeaveCriticalSection(&gQServerClientByNameCs);
       pGame->nClientsCount++;
       return pClient;
@@ -2052,8 +2053,9 @@ void __fastcall CleanUp(D2ClientStrc * pClient, uint8_t * pbParam) {
 // Removes client from game and cleans up all resources. Optionally saves player (bSavePlayer), removes from hash tables (by ID and name), broadcasts 0x5A PlayerLeave event, frees player unit and pets, notifies quests, frees memory pools. Called on disconnect, timeout, or kick.
 // @sourcefile .\GAME\Clients.cpp
 void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t bSavePlayer) {
+    uint32_t uVar1;
+    uint16_t uVar2;
     char* szSrcName;
-    uint32_t nNameHash;
     int nStrCmp;
     D2UnitStrc* pUnit;
     int32_t nExpHi;
@@ -2100,10 +2102,10 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
 
           QServerClientBucketById[nClientId & 0xff] = pFoundClient->pServerNext;
         } else {
-          nNameHash = pFoundClient->pServerNext->nClientNo;
-          while (nNameHash != nClientId) {
+          uVar1 = pFoundClient->pServerNext->nClientNo;
+          while (uVar1 != nClientId) {
             pFoundClient = pFoundClient->pServerNext;
-            nNameHash = pFoundClient->pServerNext->nClientNo;
+            uVar1 = pFoundClient->pServerNext->nClientNo;
           }
 
           if (!pFoundClient->pServerNext) {
@@ -2157,8 +2159,8 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
       }
     }
     if (gQServerClientTablesInitialized) {
-      nNameHash = Fog::SMem::HashForName(szCharName);
-      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ nNameHashBucket = nNameHash & 0xff;
+      uVar2 = Fog::SMem::HashForName(szCharName);
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ nNameHashBucket = uVar2 & 0xff;
       EnterCriticalSection(&gQServerClientByNameCs);
       if (QServerClientBucketByName[nNameHashBucket]) {
         nExpHi = Storm::Source::SSTR::SStrCmpI(QServerClientBucketByName[nNameHashBucket]->szCharName, szCharName, 0x10);

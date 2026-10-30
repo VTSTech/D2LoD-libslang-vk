@@ -52,7 +52,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerArenaStrc) == 0x8, 
 
 namespace D2Game::GAME::Arena {
 
-bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam) {
+static inline bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam) {
     if (!pGame->pArenaCtrl) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
       exit(-1);
@@ -631,13 +631,7 @@ BOOL __fastcall ARENA_IsFlag0x80Set(::SGAMEDATA * pGame) {
 }
 
 uint32_t __fastcall ARENA_IsArenaMode(::SGAMEDATA * pGame) {
-    if (!pGame->pArenaCtrl) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-      exit(-1);
-    }
-
-    return pGame->pArenaCtrl->eArenaFlags >> 8 & 1;
-    return pGame->pArenaCtrl->eArenaFlags >> 8 & 1;
+    return ARENA_TestFlag(pGame, 0x100);
 }
 
 uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame) {
@@ -653,13 +647,7 @@ uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame) {
 // Returns bit 0x200 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x200Set(::SGAMEDATA * pGame) {
-    if (!pGame->pArenaCtrl) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
-      exit(-1);
-    }
-
-    return pGame->pArenaCtrl->eArenaFlags >> 9 & 1;
-    return pGame->pArenaCtrl->eArenaFlags >> 9 & 1;
+    return ARENA_TestFlag(pGame, 0x200);
 }
 
 } // namespace D2Game::GAME::Arena

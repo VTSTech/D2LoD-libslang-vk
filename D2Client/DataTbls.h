@@ -14,7 +14,7 @@ struct D2SetItemsTxt;
 struct D2SetsTxt;
 struct D2SkillDescTxt;
 struct D2UniqueItemsTxt;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 namespace D2Client::DataTbls {
 

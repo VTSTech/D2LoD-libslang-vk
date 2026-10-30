@@ -105,7 +105,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_DoubleSwing_Sound(D2UnitStrc * pUnit, eD2Sk
     int32_t nHitSound;
     int32_t nTargetX;
     int32_t nTargetY;
-    if ((int)(pUnit->nSeqFrame & -256) < 0x600) {
+    if ((int)(pUnit->nSeqFrame & 0xffffff00U) < 0x600) {
       uint32_t nHitClass;
       nTargetY = 0;
       nTargetX = 0;
@@ -148,7 +148,7 @@ BOOL __fastcall Skills_CltDoFunc_Bar_ThrowItem(D2UnitStrc * pUnit, eD2Skills eSk
     }
 
     D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_throwable(pWeapon);
-    if ((int)(pUnit->nSeqFrame & -256) >= 0x900) {
+    if ((int)(pUnit->nSeqFrame & 0xffffff00U) >= 0x900) {
       pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
     }
 
@@ -1239,7 +1239,7 @@ BOOL __fastcall Skills_CltStFunc_CalcLeapDestViaPathfind(D2UnitStrc * pUnit, eD2
       if (_bIsPlayer) {
         pCharStatsTxt = DataTbls::INV_GetCharStatsTxtLine(pUnit->nClassId);
         if (pCharStatsTxt) {
-          nSkillFlags = (uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity;
+          nSkillFlags = (uint32_t)pCharStatsTxt->WalkVelocity;
           nLine = 0x499;
           szSkillsBarCpp = ".\\SKILLS\\SkillsBar.cpp";
           D2Common::PATH::DynamicPath::SetVelocities(pServerPath, nSkillFlags << 8, szSkillsBarCpp, nLine);

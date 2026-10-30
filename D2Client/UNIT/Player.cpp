@@ -609,7 +609,7 @@ static void __stdcall CLIENT_PlayIndexedUnitSound(D2UnitStrc * pUnit, int32_t nS
       return;
     }
 
-    UnitSnd::UNITSND_PlayPlayerSound(pUnit, (uint32_t)*(uint16_t*)(gwPlayerAnimationState + nSoundIndex));
+    UnitSnd::UNITSND_PlayPlayerSound(pUnit, *(uint16_t*)(gwPlayerAnimationState + nSoundIndex));
 }
 
 uint32_t __stdcall PLAYER_CheckSkillUsability(int * pnUsabilityCode, D2UnitStrc * pUnit, D2SkillStrc * * ppSkill) {
@@ -2056,7 +2056,10 @@ int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouse
     D2UnderMouseStrc mouse;
     int nXConverted = nX;
     BOOL bEscOpen = UI::ui::GetUIFlag(UI_ESCMENU);
-    if (!(!bEscOpen && (!bRecursionClick || !nXConverted && !nY))) {
+    if (bEscOpen) {
+      return 0;
+    }
+    if (!(!bRecursionClick || !nXConverted && !nY)) {
       return 0;
     }
 

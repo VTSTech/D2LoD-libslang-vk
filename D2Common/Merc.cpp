@@ -527,7 +527,13 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
     int nTableIdx;
     uint32_t nRandResult2;
     D2SeedStrc rollSeed;
-    if (!(nSeed && pMercStats && nDifficulty <= 2)) {
+    if (!nSeed) {
+      return 0;
+    }
+    if (!pMercStats) {
+      return 0;
+    }
+    if (nDifficulty > 2) {
       return 0;
     }
 

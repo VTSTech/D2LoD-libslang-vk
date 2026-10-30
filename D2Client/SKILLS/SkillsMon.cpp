@@ -125,7 +125,10 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
     POINT* pSpawnPoint = &ptSpawnPos;
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, pSpawnPoint, nCollisionType, nY, bAllowNeighborRooms);
-    if (!(pRoom && pUnit->pPath.pStaticPath)) {
+    if (!pRoom) {
+      return 0;
+    }
+    if (!pUnit->pPath.pStaticPath) {
       return 0;
     }
 
@@ -256,7 +259,6 @@ BOOL __fastcall Skills_CltDoFunc_Mon_CompositeDirMissile(D2UnitStrc * pUnit, eD2
     int nOffsetY;
     int nOffsetX;
     uint32_t nAdjFrame;
-    uint8_t byCompositeFrame;
     if ((int)eSkill < 0) {
       return 0;
     }
@@ -285,11 +287,10 @@ BOOL __fastcall Skills_CltDoFunc_Mon_CompositeDirMissile(D2UnitStrc * pUnit, eD2
 
     int nDir = D2Common::Units::GetDirectionToCoords(pUnit, nTargetX, nTargetY);
     uint8_t byDirIdx = (uint8_t)nDir;
-    uint32_t nGfxDirIdx = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDir);
+    uint8_t byCompositeFrame = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDir);
     nTargetX = Units::GetXPosFromDynamicPathUnit(pUnit);
     nTargetY = Units::GetYPosFromDynamicPathUnit(pUnit);
-    uint32_t nDirIdx8 = (uint32_t)((uint8_t)nGfxDirIdx & 7);
-    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(gaSkillCompositeDirMissileData[nDirIdx8], &nOffsetX, &nOffsetY);
+    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(gaSkillCompositeDirMissileData[byCompositeFrame & 7], &nOffsetX, &nOffsetY);
     nTargetX += nOffsetX;
     nTargetY += nOffsetY;
     D2Common::Units::GetShiftedFrameMetrics(pUnit, (int*)&nAdjFrame, &nTotalFrames);
@@ -298,7 +299,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_CompositeDirMissile(D2UnitStrc * pUnit, eD2
       nAdjFrame = 8;
     }
 
-    byCompositeFrame = *(uint8_t*)((int)gaSkillCompositeDirectionalMissileConst + nAdjFrame + nDirIdx8 * 9);
+    byCompositeFrame = *(uint8_t*)((int)gaSkillCompositeDirectionalMissileConst + nAdjFrame + (uint32_t)(byCompositeFrame & 7) * 9);
     _byDirIdx = (uint32_t)((uint32_t)((uint32_t)uStack_1b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byCompositeFrame);
     if (byCompositeFrame != 99) {
       D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byCompositeFrame, &nOffsetX, &nOffsetY);
@@ -725,7 +726,7 @@ static D2UnitStrc * __stdcall SKILLSMON_CreateMissileWithSeed(int32_t * pVelocit
     sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
     pUnit->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
     pUnit->sSeed.nSeedLow = sNewSeed.nSeedLow;
-    sSkillArg.nVelocityOverride = (uint32_t)(uint8_t)pMissileTxtBase[nParam5].Vel + pVelocityOffsets[sNewSeed.nSeedLow % 5];
+    sSkillArg.nVelocityOverride = (uint32_t)pMissileTxtBase[nParam5].Vel + pVelocityOffsets[sNewSeed.nSeedLow % 5];
     D2UnitStrc* pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
     if (!pMissileUnit) {
       return nullptr;
@@ -2048,6 +2049,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_ArrowModifier_MakeMissile(D2UnitStrc * pUni
 
 // Client-side handler that spawns a Spider Lay (web) missile for a spider monster. Requires a valid dynamic path with non-zero 8-flags (direction). Reads the unit's SpiderLay skill level, determines the unit's facing direction via UpdateDirection+MONSTERS_GetGfxOffsetTable2, looks up a fixed per-direction offset table to offset the spawn point, rejects town rooms, then fires MISSILE_Spidergoolay via MakeMissile with nFlags=0x25, playing SOUND_SORCERESS_ENERGYSHIELD_HIT_3 on success.
 D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
+    int nUnitX;
     int nUnitY;
     D2RoomStrc* pRoom;
     BOOL bHasRoom;
@@ -2066,7 +2068,7 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
 
     uint32_t nDirRaw = D2Common::PATH::Path::Get8FlagsFromDynamicPath(nCompositeDir);
     if (nDirRaw) {
-      int nUnitX;
+      uint8_t bVar1;
       nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_SpiderLay), 1);
       pStartRoom = D2Common::Units::UNITS_GetRoom(pUnit);
       eUnitType = pUnit->eUnitType;
@@ -2095,10 +2097,10 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
       nDirOffset[5] = 0x10;
       nDirOffset[6] = 0xe;
       nDirOffset[7] = 0xc;
-      nDirRaw = D2Common::PATH::DynamicPath::UpdateDirection(nCompositeDir);
-      nDirRaw = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirRaw);
-      nCompositeDir = (D2DynamicPathStrc*)(uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nCompositeDir + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nDirOffset[nDirRaw & 0xff]);
-      D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(nDirOffset[nDirRaw & 0xff], &nOffsetX, &nOffsetY);
+      bVar1 = D2Common::PATH::DynamicPath::UpdateDirection(nCompositeDir);
+      bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(bVar1);
+      nCompositeDir = (D2DynamicPathStrc*)(uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nCompositeDir + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nDirOffset[bVar1]);
+      D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(nDirOffset[bVar1], &nOffsetX, &nOffsetY);
       nUnitX += nOffsetX;
       nUnitY += nOffsetY;
       pRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pStartRoom, nUnitX, nUnitY);

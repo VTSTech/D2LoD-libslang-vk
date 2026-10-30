@@ -23,7 +23,7 @@ namespace D2Game::Quests::QUESTS::A3Q6 {
 // NOTE: file/ns is A3Q6/Q23 but the REAL quest is "The Guardian" (Act3 q6, kill Mephisto, opens Act4).
 // Helper: returns true (1) if the Blackened Temple (Travincal) quest is NOT yet finished, i.e. Jerhyn/Khalim
 // AI not yet active for the prior quest chain (predicate used to gate Mephisto-quest progression).
-uint32_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame);
+uint8_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame);
 // [The Guardian (Q23)] Predicate: returns 0 if the unit is in Durance of Hate Level 2, OR if the prior
 // Blackened-Temple quest AI flag is already active; else returns !bJerhynAiActive. Gates whether to keep
 // running the Mephisto approach/spawn logic on Durance L2.

@@ -28,7 +28,7 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize);
 void __stdcall SMemInitPerfCounters();
 void __stdcall SMemResetHeapStats();
 DWORD __stdcall GetTickCount();
-uint32_t __stdcall HashForName(char * szText);
+uint16_t __stdcall HashForName(char * szText);
 void __stdcall SMEM_TitleCaseString(mcp0x03data * pMcpData);
 void __fastcall SMemStringToUppercase(char * szText, int32_t nMaxLen);
 uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t nBufSize, uint8_t byQuoteChar);

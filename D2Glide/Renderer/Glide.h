@@ -114,9 +114,9 @@ void __stdcall RENDERER_GLIDE_DrawLightMap();
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY);
 BOOL __stdcall RENDERER_GLIDE_AreBlendedShadowsEnabled();
 // Draws a solid rectangle using Glide API with blend mode
-void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, int32_t nDrawMode);
+void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, int32_t nDrawMode);
 void __fastcall DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha);
-void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha);
+void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, BYTE nAlpha);
 void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);
@@ -136,7 +136,7 @@ void __stdcall RENDERER_GLIDE_AllocLightingTable();
 void __stdcall RENDERER_GLIDE_FreeLightingTable();
 void __stdcall RENDERER_GLIDE_BuildLightingTable();
 void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue);
-void __fastcall RENDERER_GLIDE_ApplyShadowLighting(struct D2GlideVertexStrc * pVertex, uint32_t nIntensity);
+void __fastcall RENDERER_GLIDE_ApplyShadowLighting(struct D2GlideVertexStrc * pVertex, uint8_t nIntensity);
 void __fastcall RENDERER_GLIDE_ApplyColorLighting(struct D2GlideVertexStrc * pVertex, uint32_t dwPackedColor);
 // @sourcefile .\Src\glPerspective.cpp
 void __stdcall RENDERER_GLIDE_AllocPerspectiveLUT();

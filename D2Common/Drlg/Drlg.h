@@ -34,9 +34,9 @@ struct D2RoomStrc;
 struct D2UnitStrc;
 struct D2UnkOutdoorStrc;
 struct SGAMEDATA;
-typedef int eD2GridCellFlags;
-typedef int eD2Skills;
-typedef int eDrlgDirection;
+typedef uint32_t eD2GridCellFlags;
+typedef uint32_t eD2Skills;
+typedef uint32_t eDrlgDirection;
 typedef uint8_t eAct;
 struct D2DrlgLevelPlacementStrc;
 #ifndef RECON_FPTD_fAutoMap
@@ -141,8 +141,8 @@ struct __attribute__((packed)) D2DrlgRoomExTileBucketStrc {
     /* 0x00 */ struct D2DrlgTileLinkStrc * pMapLinks; // Mirrors D2DrlgTileGridStrc.pMapLinks (struct struct D2DrlgTileLinkStrc*)
     /* 0x04 */ struct D2DrlgAnimTileGridStrc * pAnimTiles; // Mirrors D2DrlgTileGridStrc.pAnimTiles (struct struct D2DrlgAnimTileGridStrc*)
     /* 0x08 */ struct D2DrlgRoomExTileBucketStrc * nNext;
-    /* 0x0C */ uint32_t nFloors; // Mirrors D2DrlgTileGridStrc.nFloors — current floor tile write index
-    /* 0x10 */ uint32_t nShadows; // Mirrors D2DrlgTileGridStrc.nShadows — current shadow/roof tile write index
+    /* 0x0C */ int nFloors; // Mirrors D2DrlgTileGridStrc.nFloors — current floor tile write index
+    /* 0x10 */ int nShadows; // Mirrors D2DrlgTileGridStrc.nShadows — current shadow/roof tile write index
     /* 0x14 */ D2DrlgRoomTilesStrc Tiles;
 };
 

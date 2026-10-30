@@ -3,12 +3,12 @@
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "Fog/3rdparty/crashy/Report.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Common/Chat.h"
+#include "Fog/Debug.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -41,11 +41,11 @@ void __thiscall IGNORELIST_ExtractPrefix(::IgnoreList * pThis, char * szText, ch
       if (cCurrent == '\0') {
         break;
       }
-      if (0x10 < nCharIdx) {
+      if (nCharIdx > 0x10) {
         pszDstBuf[nCharIdx] = '\0';
         return;
       }
-      if (nBufLen - 1U <= nCharIdx) {
+      if (nCharIdx >= nBufLen - 1U) {
         break;
       }
 
@@ -78,7 +78,7 @@ void __thiscall IGNORELIST_ExtractSuffix(::IgnoreList * pThis, char * szText, in
       uint32_t nIdx;
       nIdx = 0;
       do {
-        if (0x10 < nIdx || nBufLen - 1U <= nLen) {
+        if (nIdx > 0x10 || nLen >= nBufLen - 1U) {
           break;
         }
 

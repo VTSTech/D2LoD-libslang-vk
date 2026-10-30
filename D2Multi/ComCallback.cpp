@@ -1123,7 +1123,7 @@ static void __stdcall COMCALLBACK_AddUserToChannelList(D2ChannelUserStrc * pChan
       }
     }
 
-    D2Win::Src::D2Comp::D2COMP_CreateCompositeUnit((uint32_t*)&pChannelUser->pComposite->nFlags, (uint32_t)bVar1, nPaletteShift, pChannelUser->pbCharData, pChannelUser->szCharItems);
+    D2Win::Src::D2Comp::D2COMP_CreateCompositeUnit(&pChannelUser->pComposite->nFlags, (uint32_t)bVar1, nPaletteShift, pChannelUser->pbCharData, pChannelUser->szCharItems);
     COMCALLBACK_FormatChannelUserData(pChannelUser);
     COMCALLBACK_UpdateChannelUserList();
 }
@@ -2257,7 +2257,7 @@ BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * p
       nDelta = toupper((int)(char)abKeyBuf[nVal]);
       byChar = (uint8_t)nDelta;
       abKeyBuf[nVal] = byChar;
-      if ((char)byChar < '8') {
+      if ((char)byChar <= '7') {
         abKeyBuf[nVal] = (uint8_t)nChecksum & 7 ^ byChar;
         nChecksum >>= 3;
       } else if ((char)byChar < 'A') {

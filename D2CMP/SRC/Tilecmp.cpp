@@ -227,57 +227,63 @@ static BOOL __stdcall TILECMP_ValidateTilePixels(uint32_t * pTilePixels, int32_t
 void __stdcall TILECMP_CacheTileData(int * pTileMeasures, uint32_t * pTilePixels, int32_t nPitch, int32_t nOffsetX, int32_t nOffsetY) {
     D2TileCmpTileNodeStrc* pNewTileNode;
     void* pNodePixelBuf;
-    int32_t nErrLine;
-    if (pTileMeasures && pTilePixels) {
-      BOOL bPixelsValid;
-      bPixelsValid = TILECMP_ValidateTilePixels(pTilePixels, nPitch, (int32_t)pTileMeasures);
-      if (bPixelsValid) {
-        return;
-      }
-
-      pNewTileNode = TILECMP_AllocTileNode();
-      if (!pNewTileNode) {
-        nErrLine = 0x109;
-      } else {
-        pNewTileNode->pNext = (D2TileCmpTileNodeStrc*)pTileMeasures[0x16];
-        pTileMeasures[0x15]++;
-        pTileMeasures[0x16] = (int)pNewTileNode;
-        if (nOffsetX < 0x10000 && nOffsetY < 0x10000) {
-          pNewTileNode->wOffsetY = (short int)nOffsetY;
-          pNewTileNode->wOffsetX = (short int)nOffsetX;
-          pNodePixelBuf = D2_ALLOC_AT(0xc00, ".\\SRC\\Tilecmp.cpp", 0x119);
-          if (pNodePixelBuf) {
-            memset(pNodePixelBuf, 0, 0xc00);
-            pNewTileNode->wPixelSize = 0xc00;
-            pNewTileNode->pPixelBuf = (uint8_t*)pNodePixelBuf;
-            pNewTileNode->wFlags = 0x1001;
-            D2MEM_CopyRows((char*)pNodePixelBuf, pTilePixels, 0x60, nPitch, 0x20, 0x60);
-            if (nOffsetX < *pTileMeasures) {
-              *pTileMeasures = nOffsetX;
-            }
-            if (pTileMeasures[2] < nOffsetX + 0x20) {
-              pTileMeasures[2] = nOffsetX + 0x20;
-            }
-            if (pTileMeasures[1] < nOffsetY) {
-              pTileMeasures[1] = nOffsetY;
-            }
-            if (pTileMeasures[3] <= nOffsetY - 0x20) {
-              return;
-            }
-
-            pTileMeasures[3] = nOffsetY - 0x20;
-            return;
-          }
-
-          nErrLine = 0x11a;
-        } else {
-          nErrLine = 0x112;
-        }
-      }
+    if (!pTileMeasures) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100);
+      exit(-1);
+    }
+    if (!pTilePixels) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x101);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
-    exit(-1);
+    BOOL bPixelsValid;
+    bPixelsValid = TILECMP_ValidateTilePixels(pTilePixels, nPitch, (int32_t)pTileMeasures);
+    if (bPixelsValid) {
+      return;
+    }
+
+    pNewTileNode = TILECMP_AllocTileNode();
+    if (!pNewTileNode) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x109);
+      exit(-1);
+    } else {
+      pNewTileNode->pNext = (D2TileCmpTileNodeStrc*)pTileMeasures[0x16];
+      pTileMeasures[0x15]++;
+      pTileMeasures[0x16] = (int)pNewTileNode;
+      if (nOffsetX < 0x10000 && nOffsetY < 0x10000) {
+        pNewTileNode->wOffsetY = (short int)nOffsetY;
+        pNewTileNode->wOffsetX = (short int)nOffsetX;
+        pNodePixelBuf = D2_ALLOC_AT(0xc00, ".\\SRC\\Tilecmp.cpp", 0x119);
+        if (!pNodePixelBuf) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11a);
+          exit(-1);
+        }
+
+        memset(pNodePixelBuf, 0, 0xc00);
+        pNewTileNode->wPixelSize = 0xc00;
+        pNewTileNode->pPixelBuf = (uint8_t*)pNodePixelBuf;
+        pNewTileNode->wFlags = 0x1001;
+        D2MEM_CopyRows((char*)pNodePixelBuf, pTilePixels, 0x60, nPitch, 0x20, 0x60);
+        if (nOffsetX < *pTileMeasures) {
+          *pTileMeasures = nOffsetX;
+        }
+        if (nOffsetX + 0x20 > pTileMeasures[2]) {
+          pTileMeasures[2] = nOffsetX + 0x20;
+        }
+        if (nOffsetY > pTileMeasures[1]) {
+          pTileMeasures[1] = nOffsetY;
+        }
+        if (nOffsetY - 0x20 >= pTileMeasures[3]) {
+          return;
+        }
+
+        pTileMeasures[3] = nOffsetY - 0x20;
+        return;
+      } else {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
+        exit(-1);
+      }
+    }
 }
 
 static BOOL __stdcall TILECMP_CheckTilePatternRLE(uint32_t dwColorKey, char * pPixelBuf) {
@@ -285,7 +291,7 @@ static BOOL __stdcall TILECMP_CheckTilePatternRLE(uint32_t dwColorKey, char * pP
     while (*pPixelBuf == (char)dwColorKey && pPixelBuf[1] == (char)(dwColorKey >> 8) && pPixelBuf[2] == *(uint8_t*)((char*)&dwColorKey + 2)) {
       nCount++;
       pPixelBuf += 3;
-      if (0x1ff < nCount) {
+      if (nCount >= 0x200) {
         return 0;
       }
     }
@@ -348,106 +354,106 @@ static void __stdcall TILECMP_ExtractIsometricSubTile(int32_t pSubTile, void * p
 static void TILECMP_Generate25SubTiles(D2TileCmpTileSetStrc * pTileSet, void * pDT1Data) {
     // Static local variables (originally global data)
     static D2TileCmpSubTileOffset gaTileCmpSubTileOffsets[25] = {
-    {
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x0
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x8
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x70,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x80,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x8
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x70,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x10
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x60,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x10,
         /* .nPixelRow = */ 0x18
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x50,
         /* .nPixelRow = */ 0x38
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x0,
         /* .nPixelRow = */ 0x20
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x10,
         /* .nPixelRow = */ 0x28
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x20,
         /* .nPixelRow = */ 0x30
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x30,
         /* .nPixelRow = */ 0x38
-    },
-    {
+    ),
+    D2TileCmpSubTileOffset(
         /* .nPixelCol = */ 0x40,
         /* .nPixelRow = */ 0x40
-    }
+    )
 }; D2_STATIC_GUARD(gaTileCmpSubTileOffsets, "D2CMP::SRC::Tilecmp::TILECMP_Generate25SubTiles::gaTileCmpSubTileOffsets");
 
     // Frame slots -24..-4 are ONE object: &dwSubTileField4 is passed out and the callee reaches the rest by byte offset.
@@ -545,18 +551,18 @@ static void __stdcall TILECMP_SerializeTileSet(D2TileCmpTileSetStrc * pSrcTileSe
     nCopiedNodes = pDstEntry->nSubTiles;
     *pDstIsoData = *pSrcIsoData;
     size_t nNodeArrayBytes = nCopiedNodes * 0x14;
-    if (!nNodeArrayBytes) {
-      pDstEntry->pSubTiles = 0;
-    } else {
+    if (nNodeArrayBytes) {
       D2GroundSubTileStrc* pSerialNodeArray;
       pSerialNodeArray = (D2GroundSubTileStrc*)D2_ALLOC_AT(nNodeArrayBytes, ".\\SRC\\Tilecmp.cpp", 0x201);
       pDstEntry->pSubTiles = pSerialNodeArray;
       if (!pSerialNodeArray) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrLine);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x202);
         exit(-1);
       }
 
       memset(pSerialNodeArray, 0, nNodeArrayBytes);
+    } else {
+      pDstEntry->pSubTiles = 0;
     }
 
     D2TileCmpTileNodeStrc* pSrcTileNode = pSrcTileSet->pNodeHead;
@@ -601,7 +607,8 @@ uint32_t __stdcall TILECMP_ExportCacheToBuffer(D2TileCmpTileSetListStrc * pTileS
 
       pExportHeader = D2_ALLOC_AT(0x114, ".\\SRC\\Tilecmp.cpp", 0x22c);
       if (!pExportHeader) {
-        nSerialOffset = 0x22d;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x22d);
+        exit(-1);
       } else {
         memset(pExportHeader, 0, 0x114);
         *(uint32_t*)pExportHeader = 7;
@@ -627,18 +634,22 @@ uint32_t __stdcall TILECMP_ExportCacheToBuffer(D2TileCmpTileSetListStrc * pTileS
               pTileSetList += 6;
             } while (pCurTileSetChain);
           }
-          if (nSerializedTileSets == *(int*)((int)pExportHeader + 0x10c)) {
-            *(void**)ppOutBuffer = (void*)pExportHeader;
-            return 0;
+          if (nSerializedTileSets != *(int*)((int)pExportHeader + 0x10c)) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x247);
+            exit(-1);
           }
 
-          nSerialOffset = 0x247;
+          *(void**)ppOutBuffer = (void*)pExportHeader;
+          return 0;
+        } else {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x239);
+          exit(-1);
         }
       }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x224);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nSerialOffset);
-    exit(-1);
 }
 
 // @sourcefile .\SRC\Tilecmp.cpp
@@ -704,7 +715,7 @@ void __stdcall TILECMP_FreeTileCache(D2TileLibraryHeaderStrc * pTileLibrary, int
     }
 }
 
-int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpHdr) {
+static int32_t __fastcall TILECMP_CalculateCacheSize(int32_t pTileCmpHdr) {
     uint16_t* pNodeEntry;
     int nNodeCount;
     int* pTileSetEntry;
@@ -718,7 +729,7 @@ int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpH
       int nTotalBytes;
       nTotalSize = *(int*)(pTileCmpHdr + 0x10c);
       nTotalBytes = nTotalSize * 0x60 + 0x114;
-      if (0 >= nTotalSize) {
+      if (nTotalSize <= 0) {
         return nTotalBytes;
       }
 
@@ -726,7 +737,7 @@ int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpH
       do {
         nNodeCount = *pTileSetEntry;
         nTotalBytes += nNodeCount * 0x14;
-        if (0 < nNodeCount) {
+        if (nNodeCount > 0) {
           pNodeEntry = (uint16_t*)(pTileSetEntry[1] + 10);
           do {
             nTotalBytes += (uint32_t)*pNodeEntry;
@@ -744,27 +755,29 @@ int32_t __fastcall TILECMP_CalculateCacheSize(int32_t nUnused, int32_t pTileCmpH
 }
 
 static size_t TILECMP_CopyTileNodes(void * pDstBuf, int32_t pTileSetEntry) {
+    int* pFixupPtr;
+    int nNodeByteOffset;
     size_t nCumSize = *(int*)(pTileSetEntry + 0x50) * 0x14;
     memcpy(pDstBuf, *(void**)(pTileSetEntry + 0x54), nCumSize);
     void* pWritePtr = (void*)((int)pDstBuf + nCumSize);
     int iNode = 0;
-    if (0 >= *(int*)(pTileSetEntry + 0x50)) {
+    if (*(int*)(pTileSetEntry + 0x50) > 0) {
+      int nPixelSize;
+      nNodeByteOffset = 0;
+      pFixupPtr = (int*)((int)pDstBuf + 0x10);
+      do {
+        nPixelSize = *(int*)(pTileSetEntry + 0x54) + nNodeByteOffset;
+        memcpy(pWritePtr, *(void**)(nPixelSize + 0x10), (uint32_t)*(uint16_t*)(nPixelSize + 10));
+        nNodeByteOffset += 0x14;
+        *pFixupPtr = (int)pWritePtr - (int)pDstBuf;
+        nCumSize += *(uint16_t*)(nPixelSize + 10);
+        pWritePtr = (void*)((int)pWritePtr + (uint32_t)*(uint16_t*)(nPixelSize + 10));
+        iNode++;
+        pFixupPtr += 5;
+      } while (iNode < *(int*)(pTileSetEntry + 0x50));
+
       return nCumSize;
     }
-
-    int nNodeByteOffset = 0;
-    int* pFixupPtr = (int*)((int)pDstBuf + 0x10);
-    do {
-      int nPixelSize;
-      nPixelSize = *(int*)(pTileSetEntry + 0x54) + nNodeByteOffset;
-      memcpy(pWritePtr, *(void**)(nPixelSize + 0x10), (uint32_t)*(uint16_t*)(nPixelSize + 10));
-      nNodeByteOffset += 0x14;
-      *pFixupPtr = (int)pWritePtr - (int)pDstBuf;
-      nCumSize += *(uint16_t*)(nPixelSize + 10);
-      pWritePtr = (void*)((int)pWritePtr + (uint32_t)*(uint16_t*)(nPixelSize + 10));
-      iNode++;
-      pFixupPtr += 5;
-    } while (iNode < *(int*)(pTileSetEntry + 0x50));
 
     return nCumSize;
 }
@@ -791,7 +804,7 @@ void __thiscall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2dc);
       exit(-1);
     } else {
-      nCalcSize = TILECMP_CalculateCacheSize(pThis, (int32_t)pTileSetData);
+      nCalcSize = TILECMP_CalculateCacheSize((int32_t)pTileSetData);
       if (!nCalcSize) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e0);
         exit(-1);
@@ -812,7 +825,7 @@ void __thiscall TILECMP_DeserializeAndFixup(int32_t pThis, void * pTileSetData, 
         *(int*)((int)nErrAddress + 0x110) = (int)pDstTileSetArray - (int)nErrAddress;
         pWriteCursor = (void*)((int)pDstTileSetArray + nCalcSize);
         nSizeOut = 0x0;
-        if (0 < *(int*)((int)pTileSetData + 0x10c)) {
+        if (*(int*)((int)pTileSetData + 0x10c) > 0) {
           pDstTileSetEntry = (int*)((int)nErrAddress + 0x15c);
           do {
             nSrcTileSetOffset = *(int*)((int)pTileSetData + 0x110);
@@ -874,7 +887,7 @@ void __stdcall TILECMP_FixupPointersInPlace(int * pTileCmpHdr, int * * ppTileCmp
           *(int*)(szText + nStrCopyOffset + 0x54) = *(int*)(szText + nStrCopyOffset + 0x48) + (int)pTileCmpHdr;
           nCurTilePixelTotal = *(int*)(szText + nStrCopyOffset + 0x50) * 0x14;
           nTileSetByteOffset = 0;
-          if (0 < *(int*)(szText + nStrCopyOffset + 0x50)) {
+          if (*(int*)(szText + nStrCopyOffset + 0x50) > 0) {
             iTileSetIter = 0;
             do {
               nNodePixelOffset = *(int*)(szText + nStrCopyOffset + 0x54);
@@ -920,7 +933,7 @@ void __stdcall TILECMP_FixupMinimalPointers(int * pTileCmpHdr, int * * ppTileCmp
     } while (byStrChar != '\0');
 
     iTileSet = 0;
-    if (0 < pTileCmpHdr[0x43]) {
+    if (pTileCmpHdr[0x43] > 0) {
       nTileSetOffset = 0;
       do {
         nTileSetBase = pTileCmpHdr[0x44] + nTileSetOffset;
@@ -961,7 +974,7 @@ D2TileLibraryHashStrc * __fastcall TILECMP_RegisterTilesForLookup(D2TileLibraryH
       }
 
       iTileIdx = 0;
-      if (0 >= pTileCmpHdr->nTiles) {
+      if (pTileCmpHdr->nTiles <= 0) {
         return pHashTable;
       }
 
@@ -990,7 +1003,7 @@ void __stdcall TILECMP_RelocateSubTilePixelData(D2TileLibraryEntryStrc * pTile) 
       int iSubTile;
       iSubTile = 0;
       pSubTileBase = pTile->pSubTiles;
-      if (0 >= pTile->nSubTiles) {
+      if (pTile->nSubTiles <= 0) {
         return;
       }
 
@@ -1005,7 +1018,7 @@ void __stdcall TILECMP_RelocateSubTilePixelData(D2TileLibraryEntryStrc * pTile) 
 }
 
 static void TILECMP_ApplyFunctionToPixels(uint8_t * pPixelData, int32_t nPixelBytes, pfnTilecmpPixelCallback pPixelCallback) {
-    if (0 >= nPixelBytes) {
+    if (nPixelBytes <= 0) {
       return;
     }
 
@@ -1067,7 +1080,7 @@ void __stdcall TILECMP_ProcessAllTilePixels(int32_t pTileCmpHdr, void * pNodeByt
 }
 
 // @sourcefile .\SRC\Tilecmp.cpp
-static void __stdcall TILECMP_CompressSubTile(int nECXContext, uint32_t * pSrcSubTile, uint32_t * pDstSubTile, pfnRGBToPaletteIndex pfnGetPaletteIndex, uint32_t dwColorKey) {
+static void __stdcall TILECMP_CompressSubTile(uint32_t * pSrcSubTile, uint32_t * pDstSubTile, pfnRGBToPaletteIndex pfnGetPaletteIndex, uint32_t dwColorKey) {
     if (!pSrcSubTile[4]) {
       *(uint16_t*)(pDstSubTile + 2) = (uint16_t)pDstSubTile[2] & 0xfffe;
       *(uint16_t*)((int)pDstSubTile + 10) = 0;
@@ -1082,15 +1095,7 @@ static void __stdcall TILECMP_CompressSubTile(int nECXContext, uint32_t * pSrcSu
     if (*(short int*)((int)pDstSubTile + 10)) {
       do {
         if (*pByteScan != '\0') {
-          if (!(pDstSubTile[2] & 0x1000)) {
-            if (!(pDstSubTile[2] & 0x2000)) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x43b);
-              exit(-1);
-            }
-
-            SubTile::SUBTILE_RecompressExisting((int32_t)pDstSubTile);
-            return;
-          } else {
+          if (pDstSubTile[2] & 0x1000) {
             nRLEBufPtr = SubTile::SUBTILE_CompressToRLE(nRLEBufPtr, (char**)&dwColorKey);
             if (!nRLEBufPtr) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x434);
@@ -1106,6 +1111,14 @@ static void __stdcall TILECMP_CompressSubTile(int nECXContext, uint32_t * pSrcSu
               *(uint16_t*)((int)pDstSubTile + 10) = (uint16_t)dwColorKey;
               return;
             }
+          } else {
+            if (!(pDstSubTile[2] & 0x2000)) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x43b);
+              exit(-1);
+            }
+
+            SubTile::SUBTILE_RecompressExisting((int32_t)pDstSubTile);
+            return;
           }
         }
 
@@ -1126,9 +1139,6 @@ void __stdcall TILECMP_DeepCopyWithRecompression(uint32_t * pSrcTileCmpHdr, uint
     uint32_t* pDstHeader;
     uint32_t* pDstTileSet;
     int nCopyWords;
-    int dwECXSave0;
-    int dwECXTmp;
-    int dwECXSave1;
     uint32_t* pCopyWordSrc;
     uint32_t* pCopySrc;
     uint32_t* pSrcTileSet;
@@ -1203,13 +1213,11 @@ void __stdcall TILECMP_DeepCopyWithRecompression(uint32_t * pSrcTileCmpHdr, uint
 
               memset(nErrAddress, 0, nAllocSize);
               iNode = 0;
-              dwECXTmp = dwECXSave0;
               if (0 < (int)pCopyWordSrc[0x14]) {
                 do {
-                  TILECMP_CompressSubTile(dwECXTmp, (uint32_t*)(pCopyWordSrc[0x15] + nCopyWords), (uint32_t*)(pDstTileSet[0x15] + nCopyWords), (pfnRGBToPaletteIndex)pPaletteContext, pCopyWordSrc[9]);
+                  TILECMP_CompressSubTile((uint32_t*)(pCopyWordSrc[0x15] + nCopyWords), (uint32_t*)(pDstTileSet[0x15] + nCopyWords), (pfnRGBToPaletteIndex)pPaletteContext, pCopyWordSrc[9]);
                   iNode++;
                   nCopyWords += 0x14;
-                  dwECXTmp = dwECXSave1;
                 } while (iNode < (int)pCopyWordSrc[0x14]);
               }
             }
@@ -1245,7 +1253,7 @@ void __stdcall TILECMP_ShallowCopyZeroPointers(void * pParam, void * * pParam2, 
       memset(nErrAddress, 0, nAllocSize);
       memcpy(nErrAddress, pParam, nAllocSize);
       *(int*)((int)nErrAddress + 0x110) = (int)nErrAddress + 0x114;
-      if (0 < *(int*)((int)nErrAddress + 0x10c)) {
+      if (*(int*)((int)nErrAddress + 0x10c) > 0) {
         pTileSetEntry = (uint32_t*)((int)nErrAddress + 0x164);
         iCount = 0;
         do {

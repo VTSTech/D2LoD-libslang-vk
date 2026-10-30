@@ -107,7 +107,7 @@ static int * ANIMDATA_GetRecordByNameHash(LPSTR pnParam) {
     char* pszChar = pnParam;
     while (cChar != '\0') {
       cChar = *pszChar;
-      if ('`' < cChar && cChar < '{') {
+      if (cChar >= 'a' && cChar <= 'z') {
         *pszChar = cChar - 0x20;
       }
 

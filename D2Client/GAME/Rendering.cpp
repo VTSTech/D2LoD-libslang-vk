@@ -49,7 +49,7 @@ int __stdcall GetCurrentEngine() {
 }
 
 uint32_t __stdcall IsWindowMode() {
-    return (uint32_t)(3 < D2Game::GAME::Rendering::CurrentRendingEngine);
+    return (uint32_t)(D2Game::GAME::Rendering::CurrentRendingEngine >= 4);
 }
 
 // Debug overlay that queries sprite-cache and floor/subtile/sprite-cache render statistics and prints them as formatted strings to the screen via D2GFX_DrawString. Displays tile cache KB size, miss rate, and percent utilization; floor cache, subtile cache, and three sprite cache tiers if their sizes are nonzero.
@@ -62,7 +62,7 @@ void __stdcall DrawRenderStats() {
     float fValue;
     float fKilobytes;
     D2CMP::SRC::SpriteCache::SPRITECACHE_GetStats(&nCacheSize, &nMisses, &nAccesses, &nPercentUtilized);
-    if (0 < (int)nAccesses) {
+    if ((int)nAccesses > 0) {
       fValue = (float)(int)nMisses * 100.0 / (float)(int)nAccesses;
       fKilobytes = (float)(int)nCacheSize;
       if ((int)nCacheSize < 0) {
@@ -161,7 +161,7 @@ void __stdcall DRAW_UI_FPSStats() {
       gnFPSFrameCounterAccum = 0;
       gdwFPSStatsStartTick = dwTick;
     }
-    if (dwTick - gdwFPSLastSecondTick < 0x3e9) {
+    if (dwTick - gdwFPSLastSecondTick <= 0x3e8) {
       gnFPSFrameCounter++;
       gnFPSFrameCounterAccum++;
     } else {

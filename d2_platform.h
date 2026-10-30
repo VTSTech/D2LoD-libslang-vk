@@ -497,6 +497,38 @@ char* __strrev(char*);
 #if defined(__FAST_MATH__)
 #error "-ffast-math breaks std::isnan and float bit patterns the lowered code relies on"
 #endif
+// A LOCK CMPXCHG / CMPXCHG8B region (pseudo-op-lower): on *p == *pExpected store desired,
+// else load *p into *pExpected; true on a match. Sequentially consistent.
+#if defined(__GNUC__)
+template <class T, class U> static inline bool D2_AtomicCompareExchange(T* p, T* pExpected, U desired) {
+    return __atomic_compare_exchange_n(p, pExpected, (T)desired, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
+}
+#elif defined(_MSC_VER)
+extern "C" long __cdecl _InterlockedCompareExchange(long volatile* pDestination, long nExchange, long nComparand);
+extern "C" __int64 __cdecl _InterlockedCompareExchange64(__int64 volatile* pDestination, __int64 nExchange, __int64 nComparand);
+#pragma intrinsic(_InterlockedCompareExchange, _InterlockedCompareExchange64)
+template <int N> struct D2AtomicCas;
+template <> struct D2AtomicCas<4> {
+    static bool Exchange(void* p, void* pExpected, const void* pDesired) {
+        long nExpected = *(long*)pExpected;
+        long nOld = _InterlockedCompareExchange((long volatile*)p, *(const long*)pDesired, nExpected);
+        *(long*)pExpected = nOld;
+        return nOld == nExpected;
+    }
+};
+template <> struct D2AtomicCas<8> {
+    static bool Exchange(void* p, void* pExpected, const void* pDesired) {
+        __int64 nExpected = *(__int64*)pExpected;
+        __int64 nOld = _InterlockedCompareExchange64((__int64 volatile*)p, *(const __int64*)pDesired, nExpected);
+        *(__int64*)pExpected = nOld;
+        return nOld == nExpected;
+    }
+};
+template <class T, class U> static inline bool D2_AtomicCompareExchange(T* p, T* pExpected, U desired) {
+    T tDesired = (T)desired;
+    return D2AtomicCas<sizeof(T)>::Exchange((void*)p, (void*)pExpected, &tDesired);
+}
+#endif
 // The bit pattern of a float or double, as C++20 std::bit_cast gives it.
 template <class To, class From>
 static inline To d2_bit_cast(const From& v) {
@@ -546,12 +578,23 @@ static inline uint64_t __aullshr(uint64_t a, unsigned int n) { return a >> n; }
 
 // MSVC spells the same CRT helpers with a single underscore, and much of the
 // decompiled code calls that spelling directly (Bnclient/net_sid, Storm/SBig,
-// D2Client SkillDesc/Missile, D2Common Units, D2Game Task/...). Keep the
-// overload set identical to the __-spelled pair above.
+// Storm SSTR/zlib, D2Client SkillDesc/Missile, D2Common Units, D2Game
+// Task/Skills/...). Keep the overload set identical to the __-spelled
+// intrinsics above; no mingw-w64 header declares these.
 static inline int64_t _alldiv(int64_t a, int64_t b) { return a / b; }
 static inline int64_t _alldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) / (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
 static inline int64_t _allmul(int64_t a, int64_t b) { return a * b; }
-static inline int64_t _allmul(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) * (int64_t)(lo2 | ((uint64_t)hi2 << 32)); }
+static inline int64_t _allmul(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) * (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
+static inline int64_t _allrem(int64_t a, int64_t b) { return a % b; }
+static inline int64_t _allrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, int hi2) { return (int64_t)(lo1 | ((uint64_t)hi1 << 32)) % (int64_t)(lo2 | ((uint64_t)(uint32_t)hi2 << 32)); }
+static inline LLDVRM_RESULT _alldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { int64_t a = (int64_t)(lo1 | ((uint64_t)hi1 << 32)), b = (int64_t)(lo2 | ((uint64_t)hi2 << 32)); LLDVRM_RESULT r; r.qwQuotient = (uint64_t)(a / b); r.qwRemainder = (uint64_t)(a % b); return r; }
+static inline int64_t _allshr(int64_t a, int n) { return a >> n; }
+static inline uint64_t _aulldiv(uint64_t a, uint64_t b) { return a / b; }
+static inline uint64_t _aulldiv(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) / (lo2 | ((uint64_t)hi2 << 32)); }
+static inline uint64_t _aullrem(uint64_t a, uint64_t b) { return a % b; }
+static inline uint64_t _aullrem(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { return (lo1 | ((uint64_t)hi1 << 32)) % (lo2 | ((uint64_t)hi2 << 32)); }
+static inline LLDVRM_RESULT _aulldvrm(uint32_t lo1, uint32_t hi1, uint32_t lo2, uint32_t hi2) { uint64_t a = lo1 | ((uint64_t)hi1 << 32), b = lo2 | ((uint64_t)hi2 << 32); LLDVRM_RESULT r; r.qwQuotient = a / b; r.qwRemainder = a % b; return r; }
+static inline uint64_t _aullshr(uint64_t a, unsigned int n) { return a >> n; }
 
 #ifndef _WIN32
 static inline LONG InterlockedIncrement(volatile LONG* p) { return ++(*p); }
@@ -757,6 +800,9 @@ static inline wchar_t* builtin_wcsncpy(wchar_t* dst, const wchar_t* src, size_t 
 template <typename... Args> static inline int FID_conflict__sscanf(const char* src, const char* fmt, Args... args) { return sscanf(src, fmt, args...); }
 extern "C" uint32_t FID_conflict____CxxFrameHandler3(EHExceptionRecord* pExceptionRecord, EHRegistrationNode* pRegistrationNode, CONTEXT* pContext, void* pDispatcherContext, struct _s_FuncInfo* pFuncInfo);
 extern "C" int __except_handler4(struct _EXCEPTION_RECORD* pExceptionRecord, EH4_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
+// the 177x decompiles call the MSVC single-underscore spelling directly
+// (Fog/3rdparty/crashy.cpp, Fog/Engine/Application.cpp, Fog/Src/LogManager.cpp)
+extern "C" int _except_handler4(struct _EXCEPTION_RECORD* pExceptionRecord, EH4_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
 extern "C" void __global_unwind2(void* pRegistration);
 extern "C" void __local_unwind2(int nRegistration, uint32_t nStop, void* pFrame);
 extern "C" void __NLG_Notify(unsigned long nCode, uint32_t pTarget, void* pFrame);
@@ -764,6 +810,9 @@ extern "C" uint32_t __ValidateEH3RN(void* pRegistration);
 extern "C" void ___report_gsfailure(void);
 extern "C" void _CallDestructExceptionObject(int* pExceptionObject);
 extern "C" void __purecall(void);
+// the 177x decompiles call the single-underscore MSVC spelling directly
+// (globals/*.cpp abstract-vtable slots)
+extern "C" void _purecall(void);
 extern "C" void _eh_vector_constructor_iterator_(void* pArray, uint32_t nElementSize, int nCount, void (__fastcall *pfnConstructor)(void*), void (__fastcall *pfnDestructor)(void*));
 extern "C" void _eh_vector_destructor_iterator_(void* pArray, uint32_t nElementSize, int nCount, void (__fastcall *pfnDestructor)(void*));
 extern "C" uint64_t __ftol2(void);
@@ -816,9 +865,20 @@ static inline char* __ui64toa(unsigned long long v, char* buf, int radix) { retu
 static inline char* __fullpath(char* absPath, const char* relPath, size_t maxLength) { return _fullpath(absPath, relPath, maxLength); }
 static inline FILE* __wfopen(const wchar_t* filename, const wchar_t* mode) { return _wfopen(filename, mode); }
 static inline FILE* __wfopen(const uint16_t* filename, const uint16_t* mode) { return _wfopen((const wchar_t*)filename, (const wchar_t*)mode); }
+// D2's own wide strings are ushort in the decompiled bodies; the CRT wide calls
+// take them straight (Fog/File.cpp FILETOOLS_*_UTF8).
+#ifdef _WIN32
+static inline FILE* _wfopen(const uint16_t* filename, const uint16_t* mode) { return _wfopen((const wchar_t*)filename, (const wchar_t*)mode); }
+#endif
 static inline __time64_t __time64(__time64_t* destTime) { return _time64(destTime); }
 static inline __time32_t FID_conflict___time32(__time32_t* destTime) { return _time32(destTime); }
 static inline uintptr_t __beginthreadex(void* security, unsigned stackSize, unsigned (__stdcall* startAddress)(void*), void* arglist, unsigned initflag, unsigned* thrdaddr) { return _beginthreadex(security, stackSize, startAddress, arglist, initflag, thrdaddr); }
+#ifdef _MSC_VER
+static inline void* _set_se_translator(void* pfnTranslator) { return (void*)::_set_se_translator((_se_translator_function)pfnTranslator); }
+#else
+extern "C" void* D2_SetSeTranslator(void* pfnTranslator);
+static inline void* _set_se_translator(void* pfnTranslator) { return D2_SetSeTranslator(pfnTranslator); }
+#endif
 extern "C" int _except_handler3(struct _EXCEPTION_RECORD* pExceptionRecord, EH3_EXCEPTION_REGISTRATION* pRegistration, CONTEXT* pContext, void* pDispatcherContext);
 // ___init_* take MSVCRT's per-thread locale struct: MSVC <internal.h> and
 // mingw-w64 <= 12.0.0 (corecrt.h) spelled it threadlocinfo; post-12.0.0

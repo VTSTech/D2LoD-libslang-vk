@@ -25,9 +25,9 @@ struct D2SkillsTxt;
 struct D2StatListExStrc;
 struct D2TxtLinkNodeStrc;
 struct D2UnitStrc;
-typedef int eD2ElementalDamageTypeDWORD;
-typedef int eD2Skills;
-typedef int eD2States;
+typedef uint32_t eD2ElementalDamageTypeDWORD;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
 #ifndef RECON_FPTD_pfnSkillDescWeaponDmgCalc
 #define RECON_FPTD_pfnSkillDescWeaponDmgCalc
 typedef void (__fastcall *pfnSkillDescWeaponDmgCalc)(struct D2UnitStrc * pUnit, int * pnParam, uint32_t * pnOut1, uint32_t dwParam0, uint32_t dwParam1, int32_t nParam, struct D2SkillStrc * pSkill, uint32_t dwParam2, struct D2UnitStrc * pUnit2);
@@ -64,12 +64,12 @@ struct D2BodyLocsTxt {
 struct D2CharStatsTxt {
     /* 0x00 */ uint16_t wszClass[16];
     /* 0x20 */ char szClass[16];
-    /* 0x30 */ char str;
-    /* 0x31 */ char dex;
-    /* 0x32 */ char _int;
-    /* 0x33 */ char vit;
+    /* 0x30 */ uint8_t str;
+    /* 0x31 */ uint8_t dex;
+    /* 0x32 */ uint8_t _int;
+    /* 0x33 */ uint8_t vit;
     /* 0x34 */ char stamina;
-    /* 0x35 */ char hpadd;
+    /* 0x35 */ uint8_t hpadd;
     /* 0x36 */ char PercentStr;
     /* 0x37 */ char PercentInt;
     /* 0x38 */ char PercentDex;
@@ -77,16 +77,16 @@ struct D2CharStatsTxt {
     /* 0x3A */ char ManaRegen;
     /* 0x3B */ uint8_t pad0x3B; // alignment padding before dwToHitFactor (no column binds)
     /* 0x3C */ int ToHitFactor;
-    /* 0x40 */ char WalkVelocity;
+    /* 0x40 */ uint8_t WalkVelocity;
     /* 0x41 */ char RunVelocity;
-    /* 0x42 */ char RunDrain;
+    /* 0x42 */ uint8_t RunDrain;
     /* 0x43 */ char LifePerLevel;
     /* 0x44 */ char StaminaPerLevel;
     /* 0x45 */ char ManaPerLevel;
     /* 0x46 */ char LifePerVitality;
     /* 0x47 */ char StaminaPerVitality;
     /* 0x48 */ char ManaPerMagic;
-    /* 0x49 */ char BlockFactor;
+    /* 0x49 */ uint8_t BlockFactor;
     /* 0x4A */ uint16_t pad0x4A; // alignment padding before dwBaseWClass (no column binds); merges 0x4A-0x4B
     /* 0x4C */ char basewclass[4];
     /* 0x50 */ char StatPerLevel;
@@ -196,8 +196,8 @@ struct __attribute__((packed)) D2HirelingTxt {
     /* 0x0D3 */ char namefirst[32];
     /* 0x0F3 */ char namelast[32];
     /* 0x113 */ uint8_t field_0x113;
-    /* 0x114 */ short nNameFirst;
-    /* 0x116 */ short nNameLast;
+    /* 0x114 */ uint16_t nNameFirst;
+    /* 0x116 */ uint16_t nNameLast;
 };
 
 struct D2HitClassTxt {
@@ -216,27 +216,27 @@ struct __attribute__((packed)) D2ItemTypesTxt {
     /* 0x04 */ short equiv1;
     /* 0x06 */ short equiv2;
     /* 0x08 */ char repair;
-    /* 0x09 */ char body;
+    /* 0x09 */ uint8_t body;
     /* 0x0A */ uint8_t bodyloc1;
     /* 0x0B */ uint8_t bodyloc2;
     /* 0x0C */ short shoots;
     /* 0x0E */ short quiver;
-    /* 0x10 */ char throwable;
-    /* 0x11 */ char reload;
-    /* 0x12 */ char reequip;
-    /* 0x13 */ char autostack;
+    /* 0x10 */ uint8_t throwable;
+    /* 0x11 */ uint8_t reload;
+    /* 0x12 */ uint8_t reequip;
+    /* 0x13 */ uint8_t autostack;
     /* 0x14 */ char magic;
     /* 0x15 */ char rare;
-    /* 0x16 */ char normal;
+    /* 0x16 */ uint8_t normal;
     /* 0x17 */ char charm;
     /* 0x18 */ char gem;
-    /* 0x19 */ char beltable;
-    /* 0x1A */ char maxsock1;
-    /* 0x1B */ char maxsock25;
+    /* 0x19 */ uint8_t beltable;
+    /* 0x1A */ uint8_t maxsock1;
+    /* 0x1B */ uint8_t maxsock25;
     /* 0x1C */ char maxsock40;
     /* 0x1D */ char treasureclass;
     /* 0x1E */ char rarity;
-    /* 0x1F */ char staffmods;
+    /* 0x1F */ uint8_t staffmods;
     /* 0x20 */ char costformula;
     /* 0x21 */ char _class;
     /* 0x22 */ char storepage;
@@ -277,7 +277,7 @@ struct __attribute__((packed)) D2LevelsTxt {
     /* 0x02F */ char MonSpcWalk;
     /* 0x030 */ char Quest;
     /* 0x031 */ char rangedspawn;
-    /* 0x032 */ char NumMon;
+    /* 0x032 */ uint8_t NumMon;
     /* 0x033 */ char nValidMonCount;
     /* 0x034 */ char nValinNMonCount;
     /* 0x035 */ char nValidUMonCount;
@@ -300,7 +300,7 @@ struct __attribute__((packed)) D2LevelsTxt {
     /* 0x210 */ int Themes;
     /* 0x214 */ int FloorFilter;
     /* 0x218 */ int BlankScreen;
-    /* 0x21C */ char SoundEnv;
+    /* 0x21C */ uint8_t SoundEnv;
     /* 0x21D */ uint8_t field_0x21d;
     /* 0x21E */ uint8_t field_0x21e;
     /* 0x21F */ uint8_t field_0x21f;
@@ -419,16 +419,16 @@ struct D2MonSoundsTxt {
     /* 0x70 */ int Init;
     /* 0x74 */ int Taunt;
     /* 0x78 */ int Flee;
-    /* 0x7C */ char CvtMo1;
-    /* 0x7D */ char CvtTgt1;
+    /* 0x7C */ uint8_t CvtMo1;
+    /* 0x7D */ uint8_t CvtTgt1;
     /* 0x7E */ uint16_t pad0x7E; // alignment pad before CvtSk1
     /* 0x80 */ int CvtSk1;
-    /* 0x84 */ char CvtMo2;
-    /* 0x85 */ char CvtTgt2;
+    /* 0x84 */ uint8_t CvtMo2;
+    /* 0x85 */ uint8_t CvtTgt2;
     /* 0x86 */ uint16_t pad0x86; // alignment pad before CvtSk2
     /* 0x88 */ int CvtSk2;
-    /* 0x8C */ char CvtMo3;
-    /* 0x8D */ char CvtTgt3;
+    /* 0x8C */ uint8_t CvtMo3;
+    /* 0x8D */ uint8_t CvtTgt3;
     /* 0x8E */ uint16_t pad0x8E; // alignment pad before CvtSk3
     /* 0x90 */ int CvtSk3;
 };
@@ -502,12 +502,12 @@ struct __attribute__((packed)) D2OverlayTxt {
     /* 0x02 */ char Filename[64];
     /* 0x42 */ short version;
     /* 0x44 */ int Frames;
-    /* 0x48 */ char PreDraw;
+    /* 0x48 */ uint8_t PreDraw;
     /* 0x49 */ uint8_t field_0x49;
     /* 0x4A */ uint8_t field_0x4a;
     /* 0x4B */ uint8_t field_0x4b;
     /* 0x4C */ int _1ofN;
-    /* 0x50 */ char Dir;
+    /* 0x50 */ uint8_t Dir;
     /* 0x51 */ char Open;
     /* 0x52 */ char Beta;
     /* 0x53 */ uint8_t field_0x53;
@@ -521,11 +521,11 @@ struct __attribute__((packed)) D2OverlayTxt {
     /* 0x70 */ int InitRadius;
     /* 0x74 */ int Radius;
     /* 0x78 */ int LoopWaitTime;
-    /* 0x7C */ char Trans;
+    /* 0x7C */ uint8_t Trans;
     /* 0x7D */ char Red;
     /* 0x7E */ char Green;
     /* 0x7F */ char Blue;
-    /* 0x80 */ char NumDirections;
+    /* 0x80 */ uint8_t NumDirections;
     /* 0x81 */ char LocalBlood;
     /* 0x82 */ uint8_t field_0x82;
     /* 0x83 */ uint8_t field_0x83;
@@ -619,7 +619,7 @@ struct D2SkillCalcTxt {
 
 struct D2SkillDescTxt {
     /* 0x000 */ short skilldesc;
-    /* 0x002 */ uint8_t skillpage;
+    /* 0x002 */ int8_t skillpage;
     /* 0x003 */ uint8_t skillrow;
     /* 0x004 */ uint8_t skillcolumn;
     /* 0x005 */ uint8_t ListRow;
@@ -631,7 +631,7 @@ struct D2SkillDescTxt {
     /* 0x00E */ short strAlt;
     /* 0x010 */ short strMana;
     /* 0x012 */ short descdam;
-    /* 0x014 */ short descatt;
+    /* 0x014 */ uint16_t descatt;
     /* 0x016 */ uint8_t field_0x16;
     /* 0x017 */ uint8_t field_0x17;
     /* 0x018 */ void * ddamCalc1;
@@ -755,7 +755,7 @@ struct __attribute__((packed)) D2StatesTxt {
     /* 0x26 */ short onsound;
     /* 0x28 */ short offsound;
     /* 0x2A */ short itemtype;
-    /* 0x2C */ char itemtrans;
+    /* 0x2C */ uint8_t itemtrans;
     /* 0x2D */ uint8_t gfxtype;
     /* 0x2E */ short gfxclass;
     /* 0x30 */ short cltevent;

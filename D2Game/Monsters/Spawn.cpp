@@ -679,7 +679,7 @@ D2UnitStrc * __fastcall SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, in
           }
         }
       }
-      if ((uint8_t)pGameLocal->nDifficulty > 0) {
+      if (pGameLocal->nDifficulty > 0) {
         if (nMonCode < 0 || (nValidClassId = nMonCode , nMonCode >= sgptDataTable->nTxtMonStatsSize)) {
           nValidClassId = -1;
         }
@@ -797,7 +797,7 @@ D2UnitStrc * __fastcall SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, in
       case 0x18:
 
       case 0x1a:
-        if ((uint8_t)pGameLocal->nDifficulty <= 0) {
+        if (pGameLocal->nDifficulty <= 0) {
           nValidClassId = 0;
           switch (nMonCode) {
             case 0x18:
@@ -904,7 +904,10 @@ static BOOL MONSTER_CanSpawnInRoom(D2RoomStrc * pRoom, ::SGAMEDATA * pGame) {
       nLevelRoomCount = D2Common::DUNGEON::Dungeon::GetNumberOfPopulatedRoomsInLevel(pGame->pAct[pMonsterRegion->nAct], eLevelId);
       pMonsterRegion->nLevelRoomsCount = nLevelRoomCount;
     }
-    if (!(pMonsterRegion->nMonsterDensity && pMonsterRegion->nLevelRoomsCount)) {
+    if (!pMonsterRegion->nMonsterDensity) {
+      return 0;
+    }
+    if (!pMonsterRegion->nLevelRoomsCount) {
       return 0;
     }
 

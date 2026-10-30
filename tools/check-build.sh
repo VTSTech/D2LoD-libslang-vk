@@ -9,10 +9,6 @@
 # mingw-w64). Uses Ninja when it is installed and make otherwise. Exits 0 when
 # build/d2.exe exists, links with no undefined symbol, and every translation unit
 # compiled without -fpermissive.
-#
-# Set D2_ARTIFACT_DIR to a directory to keep the verified d2.exe there after the
-# check passes (CI uploads it as a workflow artifact). The scratch build tree is
-# removed either way; without the variable nothing is kept, exactly as before.
 set -euo pipefail
 
 SRC=${1:-$(git -C "$(dirname "$0")/.." rev-parse --show-toplevel)}
@@ -60,11 +56,3 @@ fi
 i686-w64-mingw32-objdump -f "$WORK/build/d2.exe" | grep -q 'file format pei-i386' \
   || { echo "FAIL: d2.exe is not a 32-bit PE" >&2; exit 1; }
 echo "OK: d2.exe, $(stat -c %s "$WORK/build/d2.exe" 2>/dev/null || stat -f %z "$WORK/build/d2.exe") bytes"
-
-# Artifact hand-off happens after every verification gate, so only a build that
-# passed all of them is ever kept or uploaded.
-if [ -n "${D2_ARTIFACT_DIR:-}" ]; then
-  mkdir -p "$D2_ARTIFACT_DIR"
-  cp -f "$WORK/build/d2.exe" "$D2_ARTIFACT_DIR/d2.exe"
-  echo "artifacts: $D2_ARTIFACT_DIR/d2.exe"
-fi

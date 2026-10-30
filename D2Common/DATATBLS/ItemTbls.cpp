@@ -1211,7 +1211,7 @@ void __fastcall ITEMTBLS_ParseSkillMonTypeOrStateId(char * szValue, char * pReco
       int32_t nId;
       cFirstChar = *szValue;
       if (cFirstChar != '\0') {
-        if (cFirstChar == '-' || '/' < cFirstChar && cFirstChar < ':') {
+        if (cFirstChar == '-' || cFirstChar >= '0' && cFirstChar <= '9') {
           nId = atoi(szValue);
           *(int32_t*)(pRecord + nOffset) = nId;
           return;

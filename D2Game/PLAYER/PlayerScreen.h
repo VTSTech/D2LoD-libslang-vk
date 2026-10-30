@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ServerIncomingStatus;
+typedef uint32_t eD2ServerIncomingStatus;
 
 namespace D2Game::PLAYER::PlayerScreen {
 

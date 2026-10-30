@@ -731,7 +731,10 @@ D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, 
     ui::UI_RegisterAutoMapEventHandlers(0);
     Inv::INV_SetInventoryActive(0);
     GAME::Game::UI_ResetInputState();
-    if (!(nfpDialogFunc && nParam1 < 1)) {
+    if (!nfpDialogFunc) {
+      return nullptr;
+    }
+    if (nParam1 >= 1) {
       return nullptr;
     }
 

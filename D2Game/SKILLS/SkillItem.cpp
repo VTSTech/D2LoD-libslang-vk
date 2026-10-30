@@ -239,7 +239,7 @@ void __stdcall SEED_RollChampionPack(D2SeedStrc * pSeed, D2MonsterRegionFieldStr
                     }
 
                     bIsSlotDuplicate = false;
-                    if ((uint8_t)pMonData->pad <= 0) {
+                    if (pMonData->pad <= 0) {
                       break;
                     }
 
@@ -358,7 +358,7 @@ int32_t __fastcall MONREGION_RollRandomMonsterType(::SGAMEDATA * pGame, D2Monste
       nRarityBucket = (int)(short int)nClassId;
       if (nRarityBucket >= 0 && nRarityBucket < sgptDataTable->nTxtMonStatsSize) {
         pMonStatsTxt = sgptDataTable->pTxtMonStats + nRarityBucket;
-        if (pMonStatsTxt && -1 < pMonStatsTxt->spawn && *((uint8_t*)pMonStatsTxt + 0xe) & (uint8_t)gadwBitMasks[7]) {
+        if (pMonStatsTxt && pMonStatsTxt->spawn >= 0 && *((uint8_t*)pMonStatsTxt + 0xe) & (uint8_t)gadwBitMasks[7]) {
           DVar1 = D2_SEED_NEXT(*pSeed);
           *pSeed = DVar1;
           if ((int)(DVar1.nSeedLow % 100) > (int)(uint32_t)bParam) {
@@ -539,7 +539,7 @@ BOOL __fastcall SKILLITEM_TownPortalScrollSpell(::SGAMEDATA * pGame, D2UnitStrc 
     int nItemGUID;
     int32_t nPortalObjId;
     D2UnitStrc** ppNewPortal;
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 0;
     }
 
@@ -1300,9 +1300,9 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
     nItem = (eD2Skills)-1;
     _bIsBookOrScrollType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Book);
     if (_bIsBookOrScrollType || (_bIsBookOrScrollType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Scroll) , _bIsBookOrScrollType != 0)) {
-      uint32_t nBookMagicSuffix;
-      nBookMagicSuffix = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
-      pBookTxt = (int*)D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(nBookMagicSuffix & 0xffff);
+      uint16_t uVar1;
+      uVar1 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
+      pBookTxt = (int*)D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar1);
       if (pBookTxt) {
         nSpellIdx = pBookTxt[1];
         nItem = (eD2Skills)pBookTxt[3];
@@ -1361,8 +1361,8 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
 // Retired notes from 'SKILL_UseScrollOrBookFromInventory':
 // Scans the player's inventory item list for a book or scroll whose spell (Books.txt spell column) matches the requested spell id at *(nParam+8). For scrolls matches at +8; for books matches at +0xc and requires quantity>0. On a hit, reads the item's inventory grid type: grid 1 routes to SpecialItemsBonuses, grid 2 routes to SERVER_UseItemAtCoords (with the item's GUID and dynamic-path X/Y). Returns 1 if a matching item was used, 0 otherwise. Server-side helper for casting a spell from a scroll/tome in the inventory.
 BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
+    uint16_t uVar2;
     D2UnitStrc* pUnit_00;
-    uint32_t uVar3;
     uint32_t uVar4;
     void* pvVar5;
     int iVar6;
@@ -1375,28 +1375,28 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
       return 0;
     }
 
-    D2UnitStrc* pDVar2;
-    pDVar2 = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
+    D2UnitStrc* pDVar3;
+    pDVar3 = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
     eD2Skills eVar1;
     eVar1 = eSkill;
     do {
-      if (!pDVar2) {
+      if (!pDVar3) {
         return 0;
       }
 
-      pUnit_00 = D2Common::INVENTORY::Inventory::GetCarriedItem(pDVar2);
-      uVar3 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Book);
-      if (uVar3) {
-        uVar4 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
-        pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(uVar4 & 0xffff);
+      pUnit_00 = D2Common::INVENTORY::Inventory::GetCarriedItem(pDVar3);
+      uVar4 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Book);
+      if (uVar4) {
+        uVar2 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
+        pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
         if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 0xc) == eVar1) {
           iVar6 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit_00, UNITSTAT_quantity, 0);
           if (iVar6 > 0) {
             LAB_005bf43c:
-            if (!pDVar2) {
+            if (!pDVar3) {
               return 0;
             }
-            iVar7 = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pDVar2);
+            iVar7 = D2Common::INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pDVar3);
             switch (iVar7) {
               default:
                 {
@@ -1411,10 +1411,10 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
                   }
 
                   bUseMerc = 0;
-                  pDVar2 = (D2UnitStrc*)&eSkill;
+                  pDVar3 = (D2UnitStrc*)&eSkill;
                   iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
                   iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-                  ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, iVar8, iVar7, pDVar2, bUseMerc);
+                  ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, iVar8, iVar7, pDVar3, bUseMerc);
                   return 1;
                 }
               case 1:
@@ -1435,17 +1435,17 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
           }
         }
       } else {
-        uVar3 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Scroll);
-        if (uVar3) {
-          uVar4 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
-          pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(uVar4 & 0xffff);
+        uVar4 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Scroll);
+        if (uVar4) {
+          uVar2 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
+          pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
           if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 8) == eVar1) {
             goto LAB_005bf43c;
           }
         }
       }
 
-      pDVar2 = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pDVar2);
+      pDVar3 = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pDVar3);
     } while (true);
 }
 
@@ -1455,7 +1455,7 @@ void __fastcall SKILL_ProcessPeriodicAuraTick(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && *((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[5] && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillTxt && *((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[5] && pSkillTxt->aurastate >= 0 && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
       return;
     }
 
@@ -2239,7 +2239,13 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
     }
 
     uint32_t bCorpseUsable = D2Common::Skills::D2CheckIfCorpseIsConsumable(pAttacker, 0);
-    if (!(bCorpseUsable && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtMonStatsSize)) {
+    if (!bCorpseUsable) {
+      return 0;
+    }
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
     }
 

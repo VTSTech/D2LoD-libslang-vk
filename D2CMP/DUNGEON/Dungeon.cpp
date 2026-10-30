@@ -18,28 +18,32 @@ namespace D2CMP::DUNGEON::Dungeon {
 // Tail-calls TileProjects::Alloc (already int* returning) and passes its result straight through unmodified to RET.
 int * __stdcall TILEPROJECT_AllocSlot(void * pTileProject, char * szFilename) {
     int i;
-    int32_t nErrorCode;
-    if (pTileProject && szFilename) {
-      D2TileLibraryHeaderStrc* pDVar1;
-      i = 0;
-      do {
-        if (!*(int*)(pTileProject + i * 4)) {
-          pDVar1 = SRC::TileProjects::Alloc((D2TileLibraryHashStrc**)(pTileProject + i * 4), szFilename);
-          if (!(i < 0x20)) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
-            exit(-1);
-          }
-
-          return &pDVar1->nVersion;
-        }
-
-        i++;
-      } while (i < 0x20);
-
-      nErrorCode = 0x2a;
+    if (!pTileProject) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1c);
+      exit(-1);
+    }
+    if (!szFilename) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1d);
+      exit(-1);
     }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorCode);
+    D2TileLibraryHeaderStrc* pDVar1;
+    i = 0;
+    do {
+      if (!*(int*)((uint8_t*)pTileProject + i * 4)) {
+        pDVar1 = SRC::TileProjects::Alloc((D2TileLibraryHashStrc**)((uint8_t*)pTileProject + i * 4), szFilename);
+        if (!(i < 0x20)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
+          exit(-1);
+        }
+
+        return &pDVar1->nVersion;
+      }
+
+      i++;
+    } while (i < 0x20);
+
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a);
     exit(-1);
 }
 
@@ -56,7 +60,7 @@ void __stdcall TILEPROJECT_FreeSlot(int32_t nParam1, int32_t nParam2) {
     int nSlotIndex = 0;
     while (*(int*)(nParam1 + nSlotIndex * 4) != nProjectId) {
       nSlotIndex++;
-      if (0x1f < nSlotIndex) {
+      if (nSlotIndex >= 0x20) {
         return;
       }
     }

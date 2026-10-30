@@ -11,7 +11,7 @@
 
 // Forward declarations
 struct D2WinImageHitArea;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 
 // Data types
 struct __attribute__((packed)) D2WinImage {

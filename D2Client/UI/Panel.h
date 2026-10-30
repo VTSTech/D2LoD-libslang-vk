@@ -14,8 +14,8 @@ struct D2ItemsTxt;
 struct D2SkillStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
-typedef int eD2BodyLocDWORD;
-typedef int eD2UnitStat;
+typedef uint32_t eD2BodyLocDWORD;
+typedef uint32_t eD2UnitStat;
 
 // Data types
 struct D2BeltsEntryStrc {
@@ -73,7 +73,6 @@ void __stdcall PANEL_DrawLife();
 void __stdcall DRAW_UI_BorderLeft();
 void __stdcall DRAW_UI_BorderRight();
 void __stdcall ClickBelt(struct D2InventoryStrc * pInventory, int32_t nMouseY, int32_t nMouseX);
-BOOL __fastcall PANEL_CheckEquipmentClickable(struct D2ItemsTxt * pItemTxt, struct D2UnitStrc * pUnit, int32_t nItemSlot);
 void __stdcall ClickBeltRight(uint32_t nBeltSlot, struct D2UnitStrc * pUnit, struct D2InventoryStrc * pInventory, int32_t bToMercenary);
 // Key-command handler for belt slot 1. If not exiting and the player is alive and
 // gbPanelStatStrengthColor is set, calls ClickBeltRight(0, pUnit, pUnit->pInventory, SHIFT-held).
@@ -95,7 +94,7 @@ void __stdcall CMD_UseBeltSlot3();
 // It reads no colour and returns nothing.
 // The gbPanelStat*Color globals it tests are likewise misnamed belt-slot flags.
 void __stdcall CMD_UseBeltSlot4();
-void __fastcall PANEL_SetBeltSlotHoverFlag(uint32_t nIndex, uint8_t byValue);
+void __fastcall PANEL_SetBeltSlotHoverFlag(uint32_t nIndex, int byValue);
 void __stdcall PANEL_ClearBeltSlotHover();
 // Stores nState in gnBeltPanelState; halts (panel.cpp line 2823) when nState is negative.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
@@ -111,6 +110,6 @@ void __stdcall INPUT_PanelLeftClickDown(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_PanelLeftClickUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall PANEL_UpdatePanelFromMode(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_PanelRightClick(struct D2UIMouseMsgStrc * pMsg);
-// 9 internal functions (defined in .cpp)
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Panel

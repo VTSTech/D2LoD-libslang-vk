@@ -38,7 +38,17 @@ DWORD __stdcall QSERVER_CooperativeThreadMain(void * lpThreadParam) {
         /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Open server thread shut down\n");
         return 1;
       }
-      if (!bEnteringGame) {
+      if (bEnteringGame) {
+        D2Game::GAME::Server::NET_D2GS_SERVER_HandleAnyIncomingPacket();
+        bHasActiveGames = D2Game::GAME::Server::SrvProcessAllGames(1);
+        if (bHasActiveGames) {
+          D2Game::GAME::Server::QSERVER_DispatchAndCleanup(nullptr, 0);
+          goto update_game_advert;
+        }
+
+        idle_sleep:
+        /* DWORD dwMilliseconds for Sleep */ Sleep(10);
+      } else {
         update_game_advert:
         /* This is mostlikely where it creates new games straight from the d2inidata */ if (!bHasActiveGames) {
           goto idle_sleep;
@@ -50,7 +60,7 @@ DWORD __stdcall QSERVER_CooperativeThreadMain(void * lpThreadParam) {
           if (nCurrentGameCount != nLastGameCount) {
             /* entering game becomes here the game (last) token */ if (nLastGameCount < _StaticFour) {
               nLastGameCount = nCurrentGameCount;
-              if (_StaticFour <= nCurrentGameCount) {
+              if (nCurrentGameCount >= _StaticFour) {
                 pGameVersionInfo->pfnSendKeepAlive();
               }
             } else {
@@ -72,16 +82,6 @@ DWORD __stdcall QSERVER_CooperativeThreadMain(void * lpThreadParam) {
             }
           }
         }
-      } else {
-        D2Game::GAME::Server::NET_D2GS_SERVER_HandleAnyIncomingPacket();
-        bHasActiveGames = D2Game::GAME::Server::SrvProcessAllGames(1);
-        if (bHasActiveGames) {
-          D2Game::GAME::Server::QSERVER_DispatchAndCleanup(nullptr, 0);
-          goto update_game_advert;
-        }
-
-        idle_sleep:
-        /* DWORD dwMilliseconds for Sleep */ Sleep(10);
       }
 
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gHostGameStateCs);

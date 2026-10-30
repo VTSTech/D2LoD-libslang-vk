@@ -767,7 +767,7 @@ void __fastcall UNITS_ClearAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // Schedules animation-frame timer events for pUnit in pGame. Iterates over animation frames at the unit's current speed (or sequence speed if pAnimSeq is set), reads per-frame event types from the AnimData hash table (or via ANIM_GetEventFrame for sequences), and calls SetEvent for attack/sound/other (types 1/2/4/3). Sets nGfxCurrentFrame to the current game frame and always schedules a terminal event one frame past the last.
 void __fastcall UNITS_SetupAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nEventType;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     uint32_t nAnimSpeed;
     uint32_t nNextEventFrame = pGame->dwGameFrame;
     ::SGAMEDATA* pGameCopy = pGame;
@@ -788,7 +788,7 @@ void __fastcall UNITS_SetupAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUn
     int nAnimSpeedAccum = nWeaponAnimClass * 0x100 + nAnimSpeed;
     int iVar1 = (int)(nWeaponAnimClass * 0x100) >> 8;
     int pEventData = 0;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndex;
       nFrameIndex = nAnimSpeedAccum >> 8;
       nNextEventFrame++;
@@ -832,7 +832,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromPercent(::SGAMEDATA * pGame, D2Uni
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
     uint32_t nNextEventFrame = pGame->dwGameFrame;
@@ -853,7 +853,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromPercent(::SGAMEDATA * pGame, D2Uni
     int nFrameIdx = nFrameOffset - 1;
     nFrameOffset *= 0x100;
     nAnimSpeedAccum = nFrameOffset + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       D2AnimDataRecordStrc* pAnimData = pUnit->pAnimData;
       nNextEventFrame++;
       nFrameOffset += nAnimSpeed;
@@ -885,7 +885,7 @@ void __fastcall UNITS_SetupAnimTimerEventsWithDelay(::SGAMEDATA * pGame, D2UnitS
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     if (nDelay <= 0) {
       return;
     }
@@ -911,7 +911,7 @@ void __fastcall UNITS_SetupAnimTimerEventsWithDelay(::SGAMEDATA * pGame, D2UnitS
     int nFrameIdx = nFrameOffsetAccum - 1;
     nFrameOffsetAccum *= 0x100;
     nAnimSpeedAccum = nFrameOffsetAccum + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndexShifted;
       nNextEventFrame++;
       nFrameOffsetAccum += nAnimSpeed;
@@ -943,7 +943,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromFrame(::SGAMEDATA * pGame, D2UnitS
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
     uint32_t nNextEventFrame = pGame->dwGameFrame;
@@ -964,7 +964,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromFrame(::SGAMEDATA * pGame, D2UnitS
     int nFrameIdx = nFrame - 1;
     int nFrameOffsetAccum = nFrame * 0x100;
     int nAnimSpeedAccum = nFrameOffsetAccum + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndexShifted;
       nNextEventFrame++;
       nFrameOffsetAccum += nAnimSpeed;
@@ -1219,7 +1219,7 @@ BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, int * p
       return 0;
     }
 
-    Ai::AiGeneral::GetMonsterNameAndAi(pTarget, (uint32_t*)&eSkill, (int*)&pTarget);
+    Ai::AiGeneral::GetMonsterNameAndAi(pTarget, &eSkill, (int*)&pTarget);
     if (!pTarget && eSkill == pnParam[3]) {
       return 1;
     }

@@ -888,8 +888,8 @@ static int32_t __stdcall SKILL_GetLevelBonus(D2SkillStrc * pSkill, D2UnitStrc * 
       nItemBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addclassskills, (uint16_t)pUnit->nClassId);
       nSkillStatVal += nItemBonus;
       pSkillDesc = D2Client::DataTbls::GetSkillDescription(eSkillId);
-      if (pSkillDesc->skillpage) {
-        nStatBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addskill_tab, (char)pSkillDesc->skillpage - 1 + (short int)pUnit->nClassId * 8);
+      if (pSkillDesc->skillpage != '\0') {
+        nStatBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addskill_tab, pSkillDesc->skillpage - 1 + (short int)pUnit->nClassId * 8);
         nSkillStatVal += nStatBonus;
       }
 
@@ -1217,7 +1217,7 @@ BOOL __stdcall SkillCalculateIfWeCanSkillThisSkill(D2UnitStrc * pUnit, eD2Skills
         return 0;
       }
     }
-    if (-1 < pSkillTxt->reqskill[1]) {
+    if (pSkillTxt->reqskill[1] >= 0) {
       pReqSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine((int)pSkillTxt->reqskill[1]);
       if (!pReqSkillTxt) {
         return 0;
@@ -1309,7 +1309,10 @@ uint32_t __stdcall SKILLS_CalcToHit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_
 
     uint32_t nToHitCalcIdx = pSkillTxt->ToHitCalc;
     if (nToHitCalcIdx != -1) {
-      if (!(sgptDataTable->pSkillsCode && nToHitCalcIdx < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
+      if (!sgptDataTable->pSkillsCode) {
+        return 0;
+      }
+      if (!(nToHitCalcIdx < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
         return 0;
       }
 
@@ -1816,7 +1819,13 @@ int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * p
 }
 
 uint32_t __stdcall SKILLS_CheckMonsterCorpseSelectable(int32_t bCheckDead, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pUnit->eAnimMode.ePlayerMode == Kick || bCheckDead && pUnit->eAnimMode.ePlayerMode == Death))) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!(pUnit->eAnimMode.ePlayerMode == Kick || bCheckDead && pUnit->eAnimMode.ePlayerMode == Death)) {
       return 0;
     }
 
@@ -2575,8 +2584,8 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
       int16_t nStrBonus;
       pBootTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pOffHandWeapon->nClassId);
       if (pBootTxt) {
-        nMinDam = (uint32_t)(uint8_t)pBootTxt->nMinDam + nKickDamageStat;
-        nMaxDam = (uint32_t)(uint8_t)pBootTxt->nMaxDam + nKickDamageStat;
+        nMinDam = (uint32_t)pBootTxt->nMinDam + nKickDamageStat;
+        nMaxDam = (uint32_t)pBootTxt->nMaxDam + nKickDamageStat;
         nTotalDamageBonus = 0;
         nStrBonus = ITEMS::Items::ITEM_GetItemsTxt_wStrBonus(pOffHandWeapon);
         if (nStrBonus) {
@@ -3651,7 +3660,7 @@ static uint32_t SKILLS_CheckItemChargesRemaining(D2UnitStrc * pUnit, D2SkillStrc
 }
 
 static uint32_t __stdcall SKILL_IsDelayExpired(D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 1;
     }
 

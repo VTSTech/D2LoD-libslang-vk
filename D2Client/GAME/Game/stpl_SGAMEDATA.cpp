@@ -157,7 +157,7 @@ template<> TSExplicitList<::SGAMEDATA, -572662307>* TSExplicitList<SGAMEDATA, -5
 
 template<> void TSGrowableArray<SGAMEDATA>::Destructor() {
     uint32_t nIndex;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       nIndex = 0;
       do {
         this->m_data[nIndex].Destructor();
@@ -294,7 +294,7 @@ template<> void TSGrowableArray<TSExplicitList<SGAMEDATA, -572662307>>::Destruct
     uint32_t encPrev;
     TSLink<::SGAMEDATA>* pNext;
     uint32_t nIndex = 0;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       TSLink<::SGAMEDATA>* pTVar1;
       do {
         pSlot = &this->m_data[nIndex];
@@ -860,7 +860,7 @@ template<> uint32_t TSGrowableArray<SGAMEDATA>::CalcChunkSize(uint32_t nCount) {
         nCleared2 = nCleared - 1 & nCleared;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {

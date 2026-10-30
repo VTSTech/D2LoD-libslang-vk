@@ -16,7 +16,7 @@ struct D2UnitStrc;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2Quests;
+typedef uint32_t eD2Quests;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32
@@ -51,10 +51,10 @@ struct __attribute__((packed)) D2NPCSpeechStrc {
     /* 0x09 */ int nCount;
     /* 0x0D */ int nGossip;
     /* 0x11 */ bool field5_0x11;
-    /* 0x12 */ bool bUpdated;
+    /* 0x12 */ uint8_t bUpdated;
     /* 0x13 */ bool bActPortal; // npc is a 'act portal'
     /* 0x14 */ bool bNoIntro; // npc doesnt have an introduction
-    /* 0x15 */ bool bGreeting;
+    /* 0x15 */ uint8_t bGreeting;
 };
 
 struct __attribute__((packed)) D2SpeechBankStrc {
@@ -74,10 +74,10 @@ void SetInteractedUnitInfo(struct D2UnitStrc * pUnit);
 int32_t __stdcall GetInteractedUnitClassId();
 void __stdcall NPCMENU_SelectRandomDialogOption(struct D2NPCSpeechStrc * pSpeech);
 void __stdcall NPCMENU_RandomizeAllNpcDialogs();
-uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind);
+uint16_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind);
 int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t nReason, void * pDismissCallback);
 void __fastcall NPCMENU_AddHandledMessageId(short wMsgId);
-void inline_NPC_IsInteractableSideNpc(int32_t nNpcClassId);
+bool inline_NPC_IsInteractableSideNpc(int32_t nNpcClassId);
 int __stdcall NPCMENU_ShowSelectedDialogOption();
 int __stdcall NPCMENU_ShowGossipDialog();
 int __stdcall NPCMENU_ShowIntroduceDialog();

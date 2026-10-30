@@ -687,7 +687,7 @@ static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitS
     D2Common::DATATBLS::MonsterTbls::MONSTERTBLS_GetUpgradeDataByMonStatsId(nPartySize, nullptr, &eUpgradeSkill);
     ::SGAMEDATA* pGameInst = pGame->pGame;
     uint16_t wMinionType = pGame->nFlags;
-    if (!(-1 < pMonStats->minion1 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(pMonStats->minion1 >= 0 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
@@ -700,7 +700,7 @@ static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitS
       }
 
       Ai::AiGeneral::AssignMinionOwner(pGameInst, pUnit, nMinionClassId, UNIT_MONSTER, 1, (uint8_t)*((uint8_t*)pMonStats + 0xc) & gadwBitMasks[5]);
-      nMinionClassId = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)(uint8_t)pMonStats->PartyMin, (uint32_t)(uint8_t)pMonStats->PartyMax);
+      nMinionClassId = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)pMonStats->PartyMin, (uint32_t)pMonStats->PartyMax);
       SpawnMinions_ByPattern(pGameInst, pUnit, (int)pMonStats->minion1, eD2MonsterAnimMode_ns::Neutral, nMinionClassId, ~(uint32_t)(wMinionType >> 2) & 1, 0x40);
       return;
     }
@@ -716,11 +716,11 @@ static void MONSTER_SpawnMinionGroup(D2UnknownCreateMonsterStrc * pGame, D2UnitS
 
     int nMinionTypeSlot = 0;
     int bHasSecondMinionType = 0;
-    if (-1 < pMonStats->minion2 && (int)pMonStats->minion2 < sgptDataTable->nTxtMonStatsSize) {
+    if (pMonStats->minion2 >= 0 && (int)pMonStats->minion2 < sgptDataTable->nTxtMonStatsSize) {
       bHasSecondMinionType = 1;
     }
 
-    nPartySize = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)(uint8_t)pMonStats->PartyMin, (uint32_t)(uint8_t)pMonStats->PartyMax);
+    nPartySize = D2Client::UNIT::Missile::SEED_RollRangeInclusive(&pUnit->sSeed, (uint32_t)pMonStats->PartyMin, (uint32_t)pMonStats->PartyMax);
     if (nPartySize <= 0) {
       return;
     }

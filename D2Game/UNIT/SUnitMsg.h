@@ -12,8 +12,8 @@
 struct D2ClientStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2GSPacketSrv0xA8 {
@@ -91,8 +91,6 @@ struct __attribute__((packed)) D2SUnitMsgA3Strc {
 };
 
 struct D2SUnitMsgA4Strc {
-    D2SUnitMsgA4Strc() = default;
-    D2SUnitMsgA4Strc(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
 
     /* 0x00 */ int16_t nClassId;
@@ -177,7 +175,7 @@ void __fastcall UnitQueuePacket0xA5(struct D2UnitStrc * pUnit, uint16_t wParam);
 // @sourcefile .\UNIT\SUnitMsg.cpp
 void __fastcall SERVER_UnitQueuePacket0xA4(struct D2UnitStrc * pUnit, int16_t nClassId);
 // @sourcefile .\UNIT\SUnitMsg.cpp
-void __fastcall SERVER_SendPacket0x23(struct D2UnitStrc * pMemory, uint8_t byTypeId, uint16_t wCoords, uint32_t dwData);
+void __fastcall SERVER_SendPacket0x23(struct D2UnitStrc * pMemory, int byTypeId, uint16_t wCoords, uint32_t dwData);
 // Drains a unit's outbound message queue and sends each pending packet to the given client. Iterates pUnit->pMsgFirst, dispatching on nPacketId: 0x23=SetSkill, 0x99=UnitCastSkill (targeted), 0x9A=UnitCastSkill (XY), 0x9E=MercAttribute, 0xA1=MercExperience, 0xA3=SkillAuraStat, 0xA4=BaalWaves, 0xA5=StateSkillMove, 0xAB=NpcHeal (only if attacker can legally attack the unit).
 void __fastcall SERVER_UnitQueuePacketSend(struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 // @sourcefile .\UNIT\SUnitMsg.cpp

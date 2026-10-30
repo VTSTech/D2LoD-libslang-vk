@@ -4,7 +4,6 @@
 #include "D2Net/Game/Server.h"
 #include "D2Net/sockaddr.h"
 #include "Fog/D2QServerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
@@ -119,41 +118,41 @@ static BOOL __stdcall BeginAsyncReadForClient(D2QServerStrc * pQServer, D2QServe
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
       return 0;
     }
-    if ((pClient->dwReadFlags & QSRV_READFLAG_PENDING_IO) == QSRV_READFLAG_NONE) {
-      HANDLE pvVar1;
-      pvVar1 = pClient->ovRead.hEvent;
-      pClient->dwReadFlags |= QSRV_READFLAG_PENDING_IO;
-      if (pvVar1) {
-        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x3f8);
-        exit(-1);
-      }
-      if (pClient->socket == -1) {
-        nBytesRead = pClient->nClientToken;
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-        CloseRemoteConnection(pQServer, nBytesRead, ".\\Src\\QServer\\QServerNT.cpp", 0x408);
-        RemoveClientAndClearLog(pQServer, pClient);
-        return 0;
-      }
-
-      IncrementClientRefCount(pQServer, pClient);
-      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ fReadResult = ReadFile((HANDLE)pClient->socket, pClient->aRecvBuffer + nBytesRead, DVar2, (LPDWORD)&pClient->dwReadTransferSize, &pClient->ovRead);
-      if (!fReadResult) {
-        DVar2 = GetLastError();
-        if (DVar2 != 0x3e5) {
-          RemoveClientAndClearLog(pQServer, pClient);
-          CloseRemoteConnection(pQServer, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x430);
-          return 0;
-        }
-
-        fReadResult = 1;
-      }
-
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-      return fReadResult;
-    } else {
+    if ((pClient->dwReadFlags & QSRV_READFLAG_PENDING_IO) != QSRV_READFLAG_NONE) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x3f5);
       exit(-1);
     }
+
+    HANDLE pvVar1;
+    pvVar1 = pClient->ovRead.hEvent;
+    pClient->dwReadFlags |= QSRV_READFLAG_PENDING_IO;
+    if (pvVar1) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x3f8);
+      exit(-1);
+    }
+    if (pClient->socket == -1) {
+      nBytesRead = pClient->nClientToken;
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+      CloseRemoteConnection(pQServer, nBytesRead, ".\\Src\\QServer\\QServerNT.cpp", 0x408);
+      RemoveClientAndClearLog(pQServer, pClient);
+      return 0;
+    }
+
+    IncrementClientRefCount(pQServer, pClient);
+    /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ fReadResult = ReadFile((HANDLE)pClient->socket, pClient->aRecvBuffer + nBytesRead, DVar2, (LPDWORD)&pClient->dwReadTransferSize, &pClient->ovRead);
+    if (!fReadResult) {
+      DVar2 = GetLastError();
+      if (DVar2 != 0x3e5) {
+        RemoveClientAndClearLog(pQServer, pClient);
+        CloseRemoteConnection(pQServer, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x430);
+        return 0;
+      }
+
+      fReadResult = 1;
+    }
+
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+    return fReadResult;
 }
 
 static D2QServerClientPacketStrc * __stdcall NET_QServerClientPacket_CreateStructAndCopyBytesThere(D2QServerClientConnectionStrc * pQServerClient, size_t nSize, char * pBytes) {
@@ -367,7 +366,7 @@ DWORD __stdcall AcceptThreadMain(void * lpThreadParam) {
     while (!nStopFlag) {
       dwNextSweepTick = GetTickCount();
       dwQpcDelta = (int)(dwSleepMs - dwNextSweepTick) >> 0x1f;
-      if (2000 < (int)((dwSleepMs - dwNextSweepTick ^ dwQpcDelta) - dwQpcDelta)) {
+      if ((int)((dwSleepMs - dwNextSweepTick ^ dwQpcDelta) - dwQpcDelta) > 2000) {
         dwSleepMs = dwNextSweepTick;
         dwLastSweepTick = dwNextSweepTick;
       }
@@ -385,9 +384,7 @@ DWORD __stdcall AcceptThreadMain(void * lpThreadParam) {
         if (nStopFlag == -1) {
           goto exit_thread;
         }
-        if (!nStopFlag) {
-          /* DWORD dwMilliseconds for Sleep */ dwNextSweepTick = 0x14;
-        } else {
+        if (nStopFlag) {
           /* LARGE_INTEGER * lpPerformanceCount for QueryPerformanceCounter */ QueryPerformanceCounter(&qpcStart);
           /* HANDLE hThread for GetThreadPriority */ nStopFlag = GetThreadPriority(pQServer->aAcceptThreadHandles[nWorkerIndex]);
           if (nStopFlag != 0x7fffffff) {
@@ -437,6 +434,8 @@ DWORD __stdcall AcceptThreadMain(void * lpThreadParam) {
           dwNextSweepTick = 0;
           dwSleepMs = dwLastSweepTick + 8 + (uint32_t)bRngCarry;
           dwLastSweepTick = dwSleepMs;
+        } else {
+          /* DWORD dwMilliseconds for Sleep */ dwNextSweepTick = 0x14;
         }
       } else {
         dwNextSweepTick = 10;
@@ -460,7 +459,9 @@ BOOL __fastcall SendToClientLocal(D2QServerStrc * pQServer, D2QServerClientConne
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
     uint32_t nHighResTime = LogManager::LOGMGR_GetHighResolutionTime();
     pQServerClient->dwLastSendTick = nHighResTime;
-    if (!pQServerClient->pSendQueueHead) {
+    if (pQServerClient->pSendQueueHead) {
+      NET_QServerClientPacket_CreateStructAndCopyBytesThere(pQServerClient, nSize, pBytes);
+    } else {
       uint32_t nBytesSent;
       if (pQServerClient->socket == -1) {
         nWsaError = pQServerClient->nClientToken;
@@ -486,8 +487,6 @@ BOOL __fastcall SendToClientLocal(D2QServerStrc * pQServer, D2QServerClientConne
         NET_QServerClientPacket_CreateStructAndCopyBytesThere(pQServerClient, nSize - nBytesSent, pBytes + nBytesSent);
         BeginAsyncWriteForClient(pQServer, pQServerClient);
       }
-    } else {
-      NET_QServerClientPacket_CreateStructAndCopyBytesThere(pQServerClient, nSize, pBytes);
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
@@ -522,7 +521,7 @@ int __fastcall PumpIoCompletionQueueForWorker(D2QServerStrc * pQServer, int nWor
     dwTickNow = GetTickCount();
     DWORD dwTickStart;
     dwTickStart = GetTickCount();
-    if (100 < dwTickNow - dwTickStart) {
+    if (dwTickNow - dwTickStart > 100) {
       return 0;
     }
 
@@ -536,7 +535,65 @@ int __fastcall PumpIoCompletionQueueForWorker(D2QServerStrc * pQServer, int nWor
       if (!bGqcsResult && !pOverlapped) {
         handle_completion:
         dwTickStart = GetLastError();
-        if (!bGqcsResult) {
+        if (bGqcsResult) {
+          if (!__frame0.dwBytesTransferred) {
+            if (bIsWriteOverlapped) {
+              dwLogMsg2 = "READ";
+            } else {
+              dwLogMsg2 = "WRITE";
+              if (!bIsReadOverlapped) {
+                dwLogMsg2 = "*UNKNOWN*";
+              }
+            }
+
+            QSERVER_LOG("QSRV", "[NTRdQ]          0 bytes on client %d refcount=%d %s", pClient->nClientToken, pClient->nRefCount, dwLogMsg2);
+            pQServerLocal = pQServerRef;
+            if (pClient->socket != -1) {
+              CloseRemoteConnection(pQServerRef, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x35d);
+              pQServerLocal = pQServerRef;
+            }
+          } else if (bIsReadOverlapped) {
+            pClientLock = &pClient->clientLock;
+            /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(pClientLock);
+            pMemoryToFree = pClient->pSendQueueHead;
+            if (pMemoryToFree) {
+              pClient->pSendQueueHead = pMemoryToFree->pQServerClientPacketNext;
+            }
+
+            pClient->dwWriteFlags &= ~QSRV_WRITEFLAG_PENDING_IO;
+            /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pClientLock);
+            if (pMemoryToFree) {
+              D2_FREE_AT(pMemoryToFree, ".\\Src\\QServer\\QServerNT.cpp", 0x578);
+            }
+
+            /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(pClientLock);
+            if (!pClient->bClosePending) {
+              BeginAsyncWriteForClient(pQServerRef, pClient);
+            }
+
+            /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pClientLock);
+            pQServerLocal = pQServerRef;
+          } else {
+            if (!bIsWriteOverlapped) {
+              QSERVER_LOG("QSRV", "WARNING: IO Completion on unknown overlapped structure.");
+              QSERVER_LOG("QSRV", "  IOCP = 0x%08X/0x%08X, ptClient = 0x%08X/0x%08X.", &pOverlapped[-4].OffsetHigh, pOverlapped, pClient, &pClient->ovRead);
+              continue;
+            }
+
+            /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pClient->clientLock);
+            pClient->dwReadFlags &= ~QSRV_READFLAG_PENDING_IO;
+            pClient->nBytesRead += __frame0.dwBytesTransferred;
+            nHighResTime = LogManager::LOGMGR_GetHighResolutionTime();
+            /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pClient->dwLastRecvTick = nHighResTime;
+            LeaveCriticalSection(&pClient->clientLock);
+            pQServerLocal = pQServerRef;
+            RecvForClient(pQServerRef, pClient);
+            bReceivedData = 1;
+            if (!pClient->bClosePending) {
+              BeginAsyncReadForClient(pQServerLocal, pClient);
+            }
+          }
+        } else {
           if (!pOverlapped || !pClient) {
             if (dwTickStart != 0x102) {
               ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x3c8);
@@ -549,62 +606,6 @@ int __fastcall PumpIoCompletionQueueForWorker(D2QServerStrc * pQServer, int nWor
           QSERVER_LOG("QSRV", "[NTRdQ]          I/O err %d on client %d refcount=%d", dwTickStart, pClient->nClientToken, pClient->nRefCount);
           pQServerLocal = pQServerRef;
           CloseRemoteConnection(pQServerRef, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x3bd);
-        } else if (!__frame0.dwBytesTransferred) {
-          if (bIsWriteOverlapped) {
-            dwLogMsg2 = "READ";
-          } else {
-            dwLogMsg2 = "WRITE";
-            if (!bIsReadOverlapped) {
-              dwLogMsg2 = "*UNKNOWN*";
-            }
-          }
-
-          QSERVER_LOG("QSRV", "[NTRdQ]          0 bytes on client %d refcount=%d %s", pClient->nClientToken, pClient->nRefCount, dwLogMsg2);
-          pQServerLocal = pQServerRef;
-          if (pClient->socket != -1) {
-            CloseRemoteConnection(pQServerRef, pClient->nClientToken, ".\\Src\\QServer\\QServerNT.cpp", 0x35d);
-            pQServerLocal = pQServerRef;
-          }
-        } else if (bIsReadOverlapped) {
-          pClientLock = &pClient->clientLock;
-          /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(pClientLock);
-          pMemoryToFree = pClient->pSendQueueHead;
-          if (pMemoryToFree) {
-            pClient->pSendQueueHead = pMemoryToFree->pQServerClientPacketNext;
-          }
-
-          pClient->dwWriteFlags &= ~QSRV_WRITEFLAG_PENDING_IO;
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pClientLock);
-          if (pMemoryToFree) {
-            D2_FREE_AT(pMemoryToFree, ".\\Src\\QServer\\QServerNT.cpp", 0x578);
-          }
-
-          /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(pClientLock);
-          if (!pClient->bClosePending) {
-            BeginAsyncWriteForClient(pQServerRef, pClient);
-          }
-
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(pClientLock);
-          pQServerLocal = pQServerRef;
-        } else {
-          if (!bIsWriteOverlapped) {
-            QSERVER_LOG("QSRV", "WARNING: IO Completion on unknown overlapped structure.");
-            QSERVER_LOG("QSRV", "  IOCP = 0x%08X/0x%08X, ptClient = 0x%08X/0x%08X.", &pOverlapped[-4].OffsetHigh, pOverlapped, pClient, &pClient->ovRead);
-            continue;
-          }
-
-          /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pClient->clientLock);
-          pClient->dwReadFlags &= ~QSRV_READFLAG_PENDING_IO;
-          pClient->nBytesRead += __frame0.dwBytesTransferred;
-          nHighResTime = LogManager::LOGMGR_GetHighResolutionTime();
-          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pClient->dwLastRecvTick = nHighResTime;
-          LeaveCriticalSection(&pClient->clientLock);
-          pQServerLocal = pQServerRef;
-          RecvForClient(pQServerRef, pClient);
-          bReceivedData = 1;
-          if (!pClient->bClosePending) {
-            BeginAsyncReadForClient(pQServerLocal, pClient);
-          }
         }
 
         RemoveClientAndClearLog(pQServerLocal, pClient);

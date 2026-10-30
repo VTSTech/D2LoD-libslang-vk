@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 
 namespace D2Client::Units {
 

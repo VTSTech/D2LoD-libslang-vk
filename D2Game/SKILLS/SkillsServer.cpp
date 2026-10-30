@@ -252,7 +252,10 @@ uint32_t __fastcall SKILLS_CheckTargetFlags(D2UnitStrc * pUnit, D2UnitStrc * pUn
         return 0;
     }
 
-    if (!((-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1) && (!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1))) {
+    if (!(-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1)) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1)) {
       return 0;
     }
     if (nTargetFlags & 0x100) {
@@ -802,7 +805,7 @@ void __fastcall SKILLS_DeductManaCost(D2UnitStrc * pUnit, int32_t nManaCost) {
 
 // Returns nonzero if the player has enough mana (or charges) to cast their current skill without consuming any. For charged skills checks pSkill->nCharges > 0. For srvdofunc 0x74 (leap/charge type) checks a special item stat flag. Otherwise computes the mana cost from SkillsTxt and compares against current UNITSTAT_mana. Non-player units always return 1.
 uint32_t __fastcall SKILL_CheckManaForCast(D2UnitStrc * pUnit) {
-    if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 1;
     }
 
@@ -1299,7 +1302,16 @@ BOOL __fastcall SKILLS_SrvStFn02_Kick(::SGAMEDATA * pGame, D2UnitStrc * pUnit, e
 
 BOOL __fastcall SKILLS_SrvStFn03_Unsummon(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!(pTarget && pTarget->eUnitType == UNIT_MONSTER && pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if (!pTarget) {
+      return 0;
+    }
+    if (pTarget->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_PLAYER) {
       return 0;
     }
 
@@ -1310,7 +1322,10 @@ BOOL __fastcall SKILLS_SrvStFn03_Unsummon(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     int32_t nPetId = PLAYER::PlayerPets::GetOwnersPetType(pUnit, pTarget->nUnitGUID);
     D2PetTypeTxt* pPetTypeTxt = D2Client::GAME::RosterPets::GetPetTypeTxtById(nPetId);
-    if (!(pPetTypeTxt && *((uint8_t*)pPetTypeTxt + 0x4) & (uint8_t)gadwBitMasks[3])) {
+    if (!pPetTypeTxt) {
+      return 0;
+    }
+    if (!(*((uint8_t*)pPetTypeTxt + 0x4) & (uint8_t)gadwBitMasks[3])) {
       return 0;
     }
 
@@ -1329,9 +1344,7 @@ BOOL __fastcall Skills_SrvDoFunc_004_RemovePetBySkillParam(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    BOOL bNotify = 1;
-    DWORD dwPetGuid = D2Common::Skills::SKILL_GetParam1(pSkill);
-    PLAYER::PlayerPets::RemovePetByGuidAndNotify(pGame, pUnit, dwPetGuid, bNotify);
+    PLAYER::PlayerPets::RemovePetByGuidAndNotify(pGame, pUnit, D2Common::Skills::SKILL_GetParam1(pSkill), 1);
     return 1;
 }
 
@@ -2569,7 +2582,7 @@ uint32_t __fastcall SKILLS_CheckMissileCollision(::SGAMEDATA * pGame, D2UnitStrc
     SKILLS_GetTargetOrCursorPos(pGame, pUnit, &nMissileId, &nTargetY);
     if (nMissileId && nTargetY) {
       eCollisionFlags nCollisionResult;
-      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nMissileId, nTargetY, (uint32_t)(uint8_t)pMissileTxt->Size, (uint32_t)(uint8_t)pMissileTxt->Size, 5);
+      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nMissileId, nTargetY, (uint32_t)pMissileTxt->Size, (uint32_t)pMissileTxt->Size, 5);
       return (uint32_t)(nCollisionResult == COLBIT_NONE);
     }
 
@@ -2625,7 +2638,7 @@ int32_t __fastcall SKILLS_GetUnitWalkVelocity(D2UnitStrc * pnParam) {
       nWalkVelocity = pnParam->nClassId;
       D2CharStatsTxt* pCharStatsTxt = nWalkVelocity >= 0 && nWalkVelocity < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nWalkVelocity : nullptr;
       if (pCharStatsTxt) {
-        return (uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity << 8;
+        return (uint32_t)pCharStatsTxt->WalkVelocity << 8;
       }
     } else if (pnParam->eUnitType == UNIT_MONSTER && (nWalkVelocity = pnParam->nClassId , nWalkVelocity >= 0) && nWalkVelocity < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nWalkVelocity) {
       return (int)sgptDataTable->pTxtMonStats[nWalkVelocity].Velocity << 8;
@@ -2650,14 +2663,12 @@ int32_t __fastcall SKILLS_GetSummonMonsterClassId(D2UnitStrc * pUnit, int32_t nP
 }
 
 uint16_t __fastcall SKILLS_CalcToHitAndApply(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2SkillsTxt * pSkillsTxt, int32_t nParam1, int32_t nParam2, D2DamageStrc * pDamage, int32_t nParam4) {
-    uint16_t nToHitFlags;
     if (!(pSkillsTxt->ResultFlags & 1U)) {
-      uint32_t nToHit;
-      nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, nParam1, nParam2);
-      nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nParam4, (eD2UnitType)pTarget);
-      pDamage->wResultFlags = (uint16_t)nToHit;
-      if (nToHit & 1) {
-        nToHitFlags = pSkillsTxt->ResultFlags | (uint16_t)nToHit;
+      uint16_t nToHitFlags;
+      nToHitFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, nParam1, nParam2), nParam4, (eD2UnitType)pTarget);
+      pDamage->wResultFlags = nToHitFlags;
+      if (nToHitFlags & 1) {
+        nToHitFlags = pSkillsTxt->ResultFlags | nToHitFlags;
         pDamage->wResultFlags = nToHitFlags;
         return nToHitFlags;
       }
@@ -2669,11 +2680,14 @@ uint16_t __fastcall SKILLS_CalcToHitAndApply(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 uint32_t __fastcall SKILLS_CalcMissileToHit(::SGAMEDATA * pGame, D2UnitStrc * pUnit2, D2UnitStrc * pUnit, uint32_t nParam1, int32_t nParam12, uint32_t nParam2, int32_t nParam22) {
+    uint32_t nToHit;
+    uint16_t extraout_var;
     if (!(nParam1 & 1)) {
-      uint32_t nToHit;
-      nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, nParam12, nParam22, (eD2UnitType)pUnit);
-      *(short int*)(nParam2 + 4) = (short int)nToHit;
-      if (!(nToHit & 1)) {
+      uint16_t uVar1;
+      uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, nParam12, nParam22, (eD2UnitType)pUnit);
+      nToHit = (uint32_t)(uint32_t)(uint16_t)uVar1;
+      *(uint16_t*)(nParam2 + 4) = uVar1;
+      if (!(uVar1 & 1)) {
         return (uint32_t)((uint32_t)(uint16_t)(short int)(nToHit >> 0x10) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(nParam2 + 4));
       }
 
@@ -3264,9 +3278,8 @@ BOOL __fastcall Skills_SrvDoFunc_001_ShootArrow(::SGAMEDATA * pGame, D2UnitStrc 
     memset(&DStack_74, 0, 0x70);
     int32_t nParam2 = 0;
     int eUnitType = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_progressive_tohit, 0);
-    uint32_t uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pWeapon, eUnitType, nParam2, eUnitType);
+    DStack_74.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pWeapon, eUnitType, nParam2, eUnitType);
     DStack_74.dwHitFlags |= 2;
-    DStack_74.wResultFlags = (short int)uVar1;
     SkillAss::SKILLASS_ApplyProgressiveDamageToTarget(pUnit, &DStack_74);
     UNIT::SUnitDmg::DAMAGE_CalculateOffensiveDamage(pGame, pUnit, pWeapon, &DStack_74, 0, 0x80);
     SkillAss::SKILLASS_DispatchChargeUpDamage(pUnit, &DStack_74);
@@ -3319,7 +3332,7 @@ BOOL __fastcall Skills_SrvDoFunc_002_GenericMeleeHit(::SGAMEDATA * pGame, D2Unit
         D2Common::Units::SetOverlay(pUnit, (int)pSkillsTxt->srvoverlay, 0);
       }
     }
-    if (-1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+    if (pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
       int dwAuraExpiryFrame;
       pUnit = UNIT::SUnit::GetTargetEx(pGame, pAttacker);
       if (!pUnit) {
@@ -3662,7 +3675,13 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
     } else {
       bIsPlayerOrMon = 0;
     }
-    if (!(-1 < pSkillsTxt->srvdofunc && pSkillsTxt->srvdofunc < 0xbf && (!bIsPlayerOrMon || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[5]) || (bHasMana = SKILL_CheckManaForCast(pUnit) , bHasMana != 0)))) {
+    if (pSkillsTxt->srvdofunc < 0) {
+      return 0;
+    }
+    if (pSkillsTxt->srvdofunc >= 0xbf) {
+      return 0;
+    }
+    if (!(!bIsPlayerOrMon || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[5]) || (bHasMana = SKILL_CheckManaForCast(pUnit) , bHasMana != 0))) {
       return 0;
     }
 
@@ -3725,7 +3744,7 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
       return nResult;
     }
     if (pSkillsTxt->anim == '\x12') {
-      if (!(pUnit->nSeqFrame & -256)) {
+      if (!(pUnit->nSeqFrame & 0xffffff00U)) {
         SetTimeoutEffect(_pGame, nSkillDelay, pUnit);
         return nResult;
       }

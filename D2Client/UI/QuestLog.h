@@ -88,7 +88,6 @@ struct __attribute__((packed)) D2QuestLogStrc {
 namespace D2Client::UI::QuestLog {
 
 // Function declarations
-int32_t __fastcall QUESTLOG_FindQuestIndexById(int32_t nQuestId);
 void __stdcall QUESTLOG_SetActiveActFromPlayerRoom();
 void __stdcall QUESTLOG_ResetState();
 // Lazy-loads all quest log DC6 image assets on first call. Checks INV_GetItemDescDirtyFlag to avoid redundant loads, then conditionally loads 6 DC6 files via IMAGE_LoadDC6Ex: questbackground, questtabs (classic vs expansion variant), questsockets, questdone, invps, and questlast. All file paths are sprintf-formatted into a 260-byte buffer using format strings from gTxtCompilationMemPool.pOverflow with "DATA\\GLOBAL" directory prefix.
@@ -131,6 +130,6 @@ void __stdcall QUESTLOG_OnButtonMouseUp(struct D2UIMouseMsgStrc * pMsg);
 // Checks quest availability by index. Scans gQuestIconsPerActTable to map index to quest ID, validates quest state (not just completed, reward awaits, can complete). Returns 1 if quest is available for interaction.
 BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex);
 void __stdcall QUESTLOG_OnMouseUp(struct D2UIMouseMsgStrc * pMsg);
-// 8 internal functions (defined in .cpp)
+// 9 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::QuestLog

@@ -74,19 +74,19 @@ void __stdcall DRLG_OrthToIsoCoordsDiv32(int32_t nWidth, int32_t nHeight, int32_
     *pY = nHeight * 2 - nWidth;
     int nTmp = *pX;
     if (nTmp < 0) {
-      nTmp = ((int)(nTmp + (nTmp >> 0x1f & 0x1fU)) >> 5) - 1;
+      nTmp = nTmp / 32 - 1;
     } else {
-      nTmp = (int)(nTmp + (nTmp >> 0x1f & 0x1fU)) >> 5;
+      nTmp = nTmp / 32;
     }
 
     *pX = nTmp;
     nTmp = *pY;
     if (nTmp < 0) {
-      *pY = ((int)(nTmp + (nTmp >> 0x1f & 0x1fU)) >> 5) - 1;
+      *pY = nTmp / 32 - 1;
       return;
     }
 
-    *pY = (int)(nTmp + (nTmp >> 0x1f & 0x1fU)) >> 5;
+    *pY = nTmp / 32;
 }
 
 void __stdcall SizeMapToScreen(int32_t nWidth, int32_t nHeight, int32_t * pX, int32_t * pY) {

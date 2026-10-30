@@ -11,8 +11,8 @@
 // Forward declarations
 struct D2SoundEnvironTxt;
 struct D2SoundsTxt;
-typedef int eD2LevelId;
-typedef int eD2Sounds;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2Sounds;
 
 namespace D2Client::Sound::SoundHdr {
 

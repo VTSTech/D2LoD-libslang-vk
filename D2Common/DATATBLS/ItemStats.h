@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2StatesDataTbls;
 struct D2UnitStrc;
-typedef int eD2States;
+typedef uint32_t eD2States;
 
 namespace D2Common::DATATBLS::ItemStats {
 

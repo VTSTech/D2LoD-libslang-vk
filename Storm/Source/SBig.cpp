@@ -169,7 +169,7 @@ uint32_t __thiscall TSGrowableArray_Ui_CalcChunkSize(BigBuffer * pThis, uint32_t
         uClearedNext = uCleared - 1 & uCleared;
       }
 
-      if (!nValue) {
+      if (nValue < 1) {
         return 1;
       }
     } else {
@@ -225,7 +225,7 @@ uint32_t __thiscall TSGrowableArray_Uc_CalcChunkSize(BigBuffer * pThis, uint32_t
         uClearedNext = uCleared - 1 & uCleared;
       }
 
-      if (!nValue) {
+      if (nValue < 1) {
         return 1;
       }
     } else {
@@ -301,7 +301,7 @@ uint32_t __thiscall TSGrowableArray_UcAlt_CalcChunkSize(BigBuffer * pThis, uint3
         uClearedNext = uCleared - 1 & uCleared;
       }
 
-      if (!nValue) {
+      if (nValue < 1) {
         return 1;
       }
     } else {
@@ -927,7 +927,7 @@ static void BigBuffer_EncodeDataBytes(uint32_t nValue, TSGrowableArray_Uc * pByt
               nGranularity = nMask;
             }
 
-            if (!nGranularity) {
+            if (nGranularity < 1) {
               nGranularity = 1;
             }
           } else {
@@ -2535,7 +2535,7 @@ static void __stdcall BigBuffer_ToStr(BigStack * pStack, BigBuffer * pValue, TSG
               nChunkSize = uBitIter;
             }
 
-            if (!nChunkSize) {
+            if (nChunkSize < 1) {
               nChunkSize = 1;
             }
           } else {
@@ -3019,7 +3019,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
                     nAlignChunk = uBitIter2;
                   }
 
-                  if (!nAlignChunk) {
+                  if (nAlignChunk < 1) {
                     nAlignChunk = 1;
                   }
                 } else {
@@ -3058,7 +3058,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
                     uBitIter2 = uVar2;
                   }
 
-                  if (!uBitIter2) {
+                  if (uBitIter2 < 1) {
                     uBitIter2 = 1;
                   }
                 } else {
@@ -3226,7 +3226,7 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
                       uAlignedCap = uBitIter;
                     }
 
-                    if (!uAlignedCap) {
+                    if (uAlignedCap < 1) {
                       uAlignedCap = 1;
                     }
                   } else {
@@ -3262,7 +3262,7 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
                       uAlignedCap = uBitIter;
                     }
 
-                    if (!uAlignedCap) {
+                    if (uAlignedCap < 1) {
                       uAlignedCap = 1;
                     }
                   } else {
@@ -3305,7 +3305,7 @@ void __stdcall BigBuffer_Mul(BigBuffer * pnResult, BigBuffer * pnA, BigBuffer * 
                   uAlignedCap = uBitIter;
                 }
 
-                if (!uAlignedCap) {
+                if (uAlignedCap < 1) {
                   uAlignedCap = 1;
                 }
               } else {
@@ -3487,7 +3487,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
                 uGrowStep = uBitIter;
               }
 
-              if (!uGrowStep) {
+              if (uGrowStep < 1) {
                 uGrowStep = 1;
               }
             } else {
@@ -3523,7 +3523,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
             uNewLen = uBitIter;
           }
 
-          if (!uNewLen) {
+          if (uNewLen < 1) {
             uNewLen = 1;
           }
         } else {
@@ -3557,7 +3557,7 @@ void __stdcall BigBuffer_Rand(BigBuffer * pnResult, BigBuffer * pnModulus, BigBu
                 uNewLen = uBitIter;
               }
 
-              if (!uNewLen) {
+              if (uNewLen < 1) {
                 uNewLen = 1;
               }
             } else {
@@ -3670,7 +3670,7 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
                     uGrowStep2 = uBitIter2;
                   }
 
-                  if (!uGrowStep2) {
+                  if (uGrowStep2 < 1) {
                     uGrowStep2 = 1;
                   }
                 } else {
@@ -3709,7 +3709,7 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
                     uGrowStep2 = uBitIter2;
                   }
 
-                  if (!uGrowStep2) {
+                  if (uGrowStep2 < 1) {
                     uGrowStep2 = 1;
                   }
                 } else {
@@ -3750,7 +3750,7 @@ void __stdcall BigBuffer_Square(BigBuffer * pnResult, BigBuffer * pnInput, BigSt
                   uGrowStep2 = uBitIter2;
                 }
 
-                if (!uGrowStep2) {
+                if (uGrowStep2 < 1) {
                   uGrowStep2 = 1;
                 }
               } else {

@@ -40,7 +40,7 @@ template<> void TSHashTable<MappingEntryNode, HASHKEY_STRI>::InternalClear(int32
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
     int32_t iBucket = 0;
-    if ((uint32_t)this->tSlotListArray.m_count <= 0) {
+    if (this->tSlotListArray.m_count <= 0) {
       return;
     }
 
@@ -352,7 +352,7 @@ template<> void TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>>::D
     TSLink<::MappingEntryNode>* nHead;
     uint32_t uLink;
     uint32_t nBucketIdx = 0;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       TSLink<::MappingEntryNode>* pTVar1;
       do {
         pBucket = &this->m_data[nBucketIdx];

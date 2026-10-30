@@ -1874,6 +1874,35 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
     return 0;
 }
 
+// Vanilla Plus: mirror of D2GFX_GetWindowSizeByResolutionMode (D2gfx).
+// Duplicated locally because D2Direct3D must not import from D2Gfx
+// (D2Gfx is the host that loads the renderer DLLs).
+static void RENDERER_D3D_GetWindowSizeByResolutionMode(int nResolutionMode, int* nWidth, int* nHeight) {
+    switch (nResolutionMode) {
+      case 0:
+        *nWidth = 640;
+        *nHeight = 480;
+        return;
+      case 1:
+      case 2:
+        *nWidth = 800;
+        *nHeight = 600;
+        return;
+      case 3:
+        *nWidth = 1344;
+        *nHeight = 700;
+        return;
+      case 4:
+        *nWidth = 1280;
+        *nHeight = 720;
+        return;
+      default:
+        *nWidth = 800;
+        *nHeight = 600;
+        return;
+    }
+}
+
 static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWnd) {
     // Static local variables (originally global data)
     static uint8_t gszRendererD3DDeviceInitializationCode[272] = {
@@ -2167,8 +2196,11 @@ static BOOL __stdcall RENDERER_D3D_InitializeDevice(int nResolutionMode, int hWn
       RENDERER_nWindowWidth = 0x280;
       RENDERER_nWindowHeight = 0x1e0;
     } else {
-      RENDERER_nWindowWidth = 800;
-      RENDERER_nWindowHeight = 600;
+      int nModeWidth;
+      int nModeHeight;
+      RENDERER_D3D_GetWindowSizeByResolutionMode(nResolutionMode, &nModeWidth, &nModeHeight);
+      RENDERER_nWindowWidth = nModeWidth;
+      RENDERER_nWindowHeight = nModeHeight;
       g_bPerspectiveMode = 0;
       // VP: modes 2/3/4 are the 800x600-class UI and must take the SAME
       // fully-initialized device path as retail 800x600 (the fallthrough

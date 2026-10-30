@@ -437,6 +437,7 @@ void __fastcall SERVER_ITEM_SendStackableUsagePackets(D2UnitStrc * pUnit, char *
 static eD2Skills ITEMMODE_GetItemSkillId(D2UnitStrc * pUnit) {
     bool _bIsScrollOrBookType;
     bool bIsScrollOrBookType;
+    uint32_t nSuffixId;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), (int32_t)(uint8_t*)0x1ec);
       exit(-1);
@@ -450,8 +451,9 @@ static eD2Skills ITEMMODE_GetItemSkillId(D2UnitStrc * pUnit) {
       }
     }
 
-    uint32_t nSuffixId = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
-    void* pBookLine = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(nSuffixId & 0xffff);
+    *(uint16_t*)(char*)&nSuffixId = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
+    nSuffixId = (uint32_t)(uint16_t)nSuffixId;
+    void* pBookLine = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(nSuffixId);
     if (!pBookLine) {
       return ~SKILL_Attack;
     }
@@ -2281,14 +2283,14 @@ static void __stdcall ITEMMODE_ConsumeItem(::SGAMEDATA * pGame, D2UnitStrc * pUn
 }
 
 static eD2Skills ITEMMODE_GetItemCastSkill(D2UnitStrc * pUnit) {
-    uint32_t nSuffix;
-    void* pvVar1;
+    uint16_t uVar1;
+    void* pvVar2;
     eD2Skills eSkillId = ~SKILL_Attack;
     uint32_t bIsType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Book);
     if (bIsType) {
       int* pBookTxt;
-      nSuffix = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
-      pBookTxt = (int*)D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(nSuffix & 0xffff);
+      uVar1 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
+      pBookTxt = (int*)D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar1);
       if (!pBookTxt) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfa4);
         exit(-1);
@@ -2302,14 +2304,14 @@ static eD2Skills ITEMMODE_GetItemCastSkill(D2UnitStrc * pUnit) {
       return eSkillId;
     }
 
-    nSuffix = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
-    pvVar1 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine(nSuffix & 0xffff);
-    if (!pvVar1) {
+    uVar1 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, 0);
+    pvVar2 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar1);
+    if (!pvVar2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfab);
       exit(-1);
     }
 
-    eSkillId = *(eD2Skills*)((int)pvVar1 + 8);
+    eSkillId = *(eD2Skills*)((int)pvVar2 + 8);
     return eSkillId;
 }
 
@@ -3010,12 +3012,14 @@ BOOL __fastcall ToCursorItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc
 // Server-side handler that inserts a single scroll into a matching tome/book, adding one charge. Looks up both units by GUID (nScrollGUID, nBookGUID) in the game unit table, validates the scroll is an ITEMTYPE_Scroll in a usable anim mode and the book is an ITEMTYPE_Book. Requires their magic suffixes (scroll/tome subtype) to match and the book to be below its max stack. Consumes the scroll: pulls it to cursor (ToCursorItem) and, if not held, removes it from its room, clears targetable flag and deletes/frees it. Increments the book's quantity stat by 1, sends a 0x3E item-stat update to the player's client and updates the tome skill quantity. *pdwParam is an out-flag set to 0 on entry and 1 on validation-failure (no-op) paths. Returns 1 on success, 0 on rejection; halts via ErrorManager on null game/unit/inventory.
 // @sourcefile .\ITEMS\ItemMode.cpp
 BOOL __fastcall ITEM_InsertScrollIntoBook(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWORD nScrollGUID, DWORD nBookGUID, uint32_t * pdwParam) {
+    uint16_t sVar3;
+    D2UnitStrc* pScroll;
     uint32_t bIsScroll;
     D2UnitStrc* pBook;
     eD2ItemTypes eItemType;
-    int nCurrentBookQty;
+    int iVar2;
     int nScrollSuffix;
-    BOOL BVar1;
+    BOOL BVar3;
     D2RoomStrc* pRoom;
     D2ClientStrc* pClient;
     char bSendStatUpdate;
@@ -3026,7 +3030,7 @@ BOOL __fastcall ITEM_InsertScrollIntoBook(::SGAMEDATA * pGame, D2UnitStrc * pUni
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x144e);
       exit(-1);
     } else {
-      D2UnitStrc* pScroll;
+      uint16_t uVar1;
       if (!pUnit) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x144f);
         exit(-1);
@@ -3059,17 +3063,17 @@ BOOL __fastcall ITEM_InsertScrollIntoBook(::SGAMEDATA * pGame, D2UnitStrc * pUni
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x1481);
             exit(-1);
           } else {
-            nCurrentBookQty = D2Common::ITEMS::Items::GetMagicSuffix(pBook, 0);
-            nScrollSuffix = D2Common::ITEMS::Items::GetMagicSuffix(pScroll, 0);
-            if ((short int)nScrollSuffix == (short int)nCurrentBookQty) {
-              nCurrentBookQty = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pBook, UNITSTAT_quantity, 0);
+            uVar1 = D2Common::ITEMS::Items::GetMagicSuffix(pBook, 0);
+            sVar3 = D2Common::ITEMS::Items::GetMagicSuffix(pScroll, 0);
+            if (sVar3 == uVar1) {
+              iVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pBook, UNITSTAT_quantity, 0);
               nScrollSuffix = D2Common::ITEMS::Items::ITEM_GetMaxStack(pBook);
-              if (nCurrentBookQty >= nScrollSuffix) {
+              if (iVar2 >= nScrollSuffix) {
                 return 0;
               }
 
-              BVar1 = ToCursorItem(pGame, pUnit, pScroll);
-              if (!BVar1) {
+              BVar3 = ToCursorItem(pGame, pUnit, pScroll);
+              if (!BVar3) {
                 pRoom = D2Common::Units::UNITS_GetRoom(pScroll);
                 if (pRoom) {
                   D2Common::DUNGEON::Dungeon::AllocDrlgDelete(pRoom, pScroll->eUnitType, pScroll->nUnitGUID);
@@ -3388,8 +3392,8 @@ static uint32_t __stdcall ITEMMODE_GetSocketCount(D2UnitStrc * pUnit, D2UnitStrc
     int16_t wPrefixB;
     int16_t wSuffixA;
     int16_t wSuffixB;
-    int nSuffixA;
-    int nAutoMagicA;
+    uint16_t uVar1;
+    uint16_t uVar2;
     int nIndex = 0;
     while (true) {
       int16_t wPrefixA;
@@ -3399,17 +3403,17 @@ static uint32_t __stdcall ITEMMODE_GetSocketCount(D2UnitStrc * pUnit, D2UnitStrc
         return 0;
       }
 
-      nSuffixA = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, nIndex);
-      nAutoMagicA = D2Common::ITEMS::Items::GetMagicSuffix(pUnit2, nIndex);
-      if ((short int)nSuffixA != (short int)nAutoMagicA) {
+      wSuffixA = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, nIndex);
+      wSuffixB = D2Common::ITEMS::Items::GetMagicSuffix(pUnit2, nIndex);
+      if (wSuffixA != wSuffixB) {
         break;
       }
 
       nIndex++;
       if (nIndex >= 3) {
-        nIndex = D2Common::ITEMS::Items::GetAutoMagic(pUnit);
-        nSuffixA = D2Common::ITEMS::Items::GetAutoMagic(pUnit2);
-        return (uint32_t)((short int)nIndex == (short int)nSuffixA);
+        uVar1 = D2Common::ITEMS::Items::GetAutoMagic(pUnit);
+        uVar2 = D2Common::ITEMS::Items::GetAutoMagic(pUnit2);
+        return (uint32_t)(uVar1 == uVar2);
       }
     }
 
@@ -6366,7 +6370,6 @@ BOOL __fastcall ITEMMODE_ProcessCorpsePickup(::SGAMEDATA * pGame, D2UnitStrc * p
     D2UnitStrc* pInvIterNode;
     D2UnitStrc* pNewItem;
     int nCoord;
-    DWORD nItemGUID;
     BOOL BVar1;
     DWORD nSourceGUID;
     int32_t bAllowSocket;
@@ -6419,8 +6422,7 @@ BOOL __fastcall ITEMMODE_ProcessCorpsePickup(::SGAMEDATA * pGame, D2UnitStrc * p
       bCheckMode = 0;
       pResultOut = &__frame0.nPutItemResult;
       _bHasInv = nParam;
-      nItemGUID = D2Client::UNIT::GetGUID(pItem);
-      BVar1 = PutItemInItem(pGame, __frame0.pUnitAsPool, nSourceGUID, nItemGUID, pResultOut, _bHasInv, bCheckMode, bAllowSocket, bHandleCursor);
+      BVar1 = PutItemInItem(pGame, __frame0.pUnitAsPool, nSourceGUID, D2Client::UNIT::GetGUID(pItem), pResultOut, _bHasInv, bCheckMode, bAllowSocket, bHandleCursor);
       if (!BVar1) {
         return 0;
       }
@@ -7033,12 +7035,12 @@ BOOL __fastcall Transmorgify(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x162d);
           exit(-1);
         }
-        if ((uint8_t)pItemTxt->bTMogMin <= 0 || (uint8_t)pItemTxt->bTMogMax <= 0) {
+        if (pItemTxt->bTMogMin <= 0 || (uint8_t)pItemTxt->bTMogMax <= 0) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, UNITSTAT_quantity, 0, 0);
           pTargetUnit = pUnitSaved;
         } else {
-          nRandQty = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnitSaved->sSeed, (uint32_t)(uint8_t)pItemTxt->bTMogMax - (uint32_t)(uint8_t)pItemTxt->bTMogMin);
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, UNITSTAT_quantity, nRandQty + (uint8_t)pItemTxt->bTMogMin, 0);
+          nRandQty = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnitSaved->sSeed, (uint32_t)(uint8_t)pItemTxt->bTMogMax - (uint32_t)pItemTxt->bTMogMin);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, UNITSTAT_quantity, nRandQty + pItemTxt->bTMogMin, 0);
         }
 
         D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pNewItem, INVPAGE_INVENTORY);

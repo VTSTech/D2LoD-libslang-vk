@@ -228,7 +228,7 @@ void __fastcall Q04_Callback08_MonsterKilled(struct D2QuestDataStrc * pQuestData
 void __fastcall Q04_SetScrollActivatedFlag(::SGAMEDATA * pGame);
 // A1Q4 — Q04_GetPortalCreatedFlag: returns the quest sub-struct flag at offset 0x62
 // (portal-created). Halts via ErrorManager if quest data is missing. Getter only.
-uint8_t __fastcall Q04_GetPortalCreatedFlag(::SGAMEDATA * pGame);
+int __fastcall Q04_GetPortalCreatedFlag(::SGAMEDATA * pGame);
 // A1Q4 — Objects_InitFn09: init callback for a quest object (the Cairn-stones /
 // Cain-gibbet area object). When quest active, sets its anim/active sub-flags and
 // pushes the update flag so the object renders in the correct state. No quest transition.

@@ -145,11 +145,11 @@ bool __fastcall Q37_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     bQuestCompleted = PLAYER::PlayerIntro::PLAYER_CheckIfSpokenWithNPC(pUnit, pQuestData->pGame, 0x94);
-    if (bQuestCompleted) {
-      return false;
+    if (!bQuestCompleted) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // InitData for quest slot 37, an act-intro "ActIntroduced" pseudo-quest (nQuestIdReal=QUEST_ActIntroduced). Zeroes the 0x3c state-handler table, installs state-0 handler Q37_Callback_00 (NPC gossip while pending) and state-0xb handler Q37_Callback_11 (dialog complete), points pNpcMessages at aNpcGossipData, marks the slot active, and wires Q37_StatusFilter/Q37_ActiveFilter. Not a journaled player quest.
@@ -158,7 +158,7 @@ void __fastcall Q37_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q37_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q37_Callback11_ScrollMessage;
     pQuestData->pNpcMessages = &Quest37::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->pQuestSpecificData.pA1Q1 = 0;

@@ -82,22 +82,23 @@ bool __fastcall Q09_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return false;
-    }
-    if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
-      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_FinishedInPreviousGame);
-      if (!bQuestState) {
-        return true;
-      }
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (bQuestState != 1) {
-      return false;
+      if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_FinishedInPreviousGame);
+        if (!bQuestState) {
+          return true;
+        }
+      }
+
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        return false;
+      }
+
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // JMP thunk
@@ -213,7 +214,7 @@ void __fastcall Q09_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
           pQuestData->fpSequenceFilter(pQuestData);
         }
-        if (!pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction == '\0') {
           /* SetQuestRecordState JustCompleted: finalize quest on Atma reward turn-in
                          (non-intro path) */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_RadamentsLair, QUESTSTATE_JustCompleted);
         }
@@ -336,7 +337,6 @@ BOOL __fastcall Q09_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2RoomStrc** pAdjacentRooms;
     uint32_t nAdjacentRoomCount;
-    int32_t nErrorLine = 0x598e36;
     D2UnitStrc* pPlayerUnit_lcl = pUnit;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom) {
@@ -345,7 +345,7 @@ BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
 
     D2QuestDataStrc* pRadamentRoom = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RadamentsLair);
     if (!pRadamentRoom) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x186);
       exit(-1);
     }
 
@@ -363,7 +363,7 @@ BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
       nAdjacentRoomIdx = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (pAdjacentRooms[nAdjacentRoomIdx] == pA1Q1Data->pRadamentRoom) {
             bPlayerNearKill = 1;
@@ -393,8 +393,8 @@ BOOL __fastcall Q09_CheckRadamentKillAndReward(::SGAMEDATA * pGame, D2UnitStrc *
                          marker */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RadamentsLair, QUESTSTATE_Step0x05);
     D2UnitStrc* pPartyUnit = pPlayerUnit_lcl;
     QUEST_SendQuestInfoToUnit(pRadamentRoom->pGame, pPlayerUnit_lcl);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pPartyUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pPartyUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -433,7 +433,7 @@ BOOL __fastcall Q09_CheckBookOfSkillAndSound(::SGAMEDATA * pGame, D2UnitStrc * p
 // A2Q1 callback[8]: Radament death handler (the actual quest-objective trigger). For an active (non-intro) quest: debug-logs, advances nStateFlag to 4, pushes QUESTSTATE_JustCompleted to the quest record, records Radament's room (pRadamentRoom in the A1Q3-aliased scratch), unhooks handler[2]. Then iterates all players: Q09_CheckRadamentKillAndReward (grant reward to nearby), Q09_SetCannotComplete (lock out absent), Q09_CheckBookOfSkillAndSound (tally how many Book-of-Skill copies must drop). Schedules Q09_OnEndCallback timer (0xc) once. Finally sets the target's dropItemCode to 0x20737361 ('ass '=Book of Skill) and drops that many shield-type reward items so each eligible player can get a book.
 void __fastcall Q09_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nDropItemCode;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -459,7 +459,7 @@ void __fastcall Q09_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
 
     pQuestArgs->pTarget->dwDropItemCode = 0x20737361;
     int nBookDropCount = 0;
-    if (0 >= pDVar1->nBookOfSkillDropCount) {
+    if (pDVar1->nBookOfSkillDropCount <= 0) {
       return;
     }
 
@@ -504,23 +504,23 @@ void __fastcall Q09_OnPlayerJoinNoop(::SGAMEDATA * pGame, D2QuestDataStrc * pQue
 
 // A2Q1 fpSequenceFilter: chain into the next quest's sequence filter once this quest is at its terminal state (nStateFlag==5) or already past intro. Looks up the sequence-successor quest (nSequenceQuestId = QUEST_TheSummoner) and tail-calls its fpSequenceFilter, with an IsBadCodePtr guard that halts on a corrupt pointer. Drives the act-2 quest-availability chain forward.
 bool __fastcall Q09_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
     D2QuestDataStrc* pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pSeqQuestData) {
-      return false;
+    if (pSeqQuestData) {
+      BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadCodePtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
+        exit(-1);
+      }
+
+      bool nStateFlagTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+      return nStateFlagTmp;
     }
 
-    BOOL bBadCodePtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadCodePtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
-      exit(-1);
-    }
-
-    bool nStateFlagTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-    return nStateFlagTmp;
+    return false;
 }
 
 // A2Q1 callback[0xd]: on-join-game state reconciliation from the persisted quest record. Branches on the stored record bits for this player: (a) Completed -> if Step0x05 set (book earned) but player no longer holds the Book of Skill item, clears Completed/RewardAwaits/FinishedInPreviousGame/Step0x05 (book was lost, re-allow); then pushes JustCompleted, marks intro done, nStateFlag=0. (b) FinishedInPreviousGame -> if RewardAwaits, sets bRewardPending so Atma still hands over the book this game; nStateFlag=0, intro done. (c) Step0x04 -> nStateFlag=3,prev=2. (d) Step0x03 -> nStateFlag=3,prev=1. (e) Step0x02 -> nStateFlag=2,prev=1. Restores live engine state from saved bits when a player enters.
@@ -545,7 +545,7 @@ void __fastcall Q09_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 
       /* SetQuestRecordState JustCompleted: refresh on join for an already-Completed
                          quest */ QUEST_SetQuestRecordState(pQuestData->pGame, QUEST_RadamentsLair, QUESTSTATE_JustCompleted);
-      pQuestData->bIsNotIntroduction = false;
+      pQuestData->bIsNotIntroduction = '\0';
       pQuestData->nStateFlag = 0;
       return;
     }
@@ -559,7 +559,7 @@ void __fastcall Q09_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
       }
 
       pQuestData->nStateFlag = 0;
-      pQuestData->bIsNotIntroduction = false;
+      pQuestData->bIsNotIntroduction = '\0';
       return;
     }
 
@@ -589,7 +589,7 @@ void __fastcall Q09_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 // A2Q1 (Radament's Lair) quest record init. Zeroes the 0x3c state-fn table, marks quest active with nStateFlag=1 (introduction/not-started). Wires the callback dispatch table indexed by gossip/state event: [0]=Q09_Callback_00 (gossip-line picker), [2]=Q09_Callback_02 (Radament-near retrigger), [3]=Q09_Callback_03 (Atma intro reply), [8]=Q09_Callback_08 (Radament death), [0xa]=noop thunk, [0xb]=Q09_Callback_11 (Atma reward dialog), [0xd]=Q09_Callback_13 (join-game state sync). Sets nSequenceQuestId=QUEST_TheSummoner (next quest in seq), fpSequenceFilter=Q09_SequenceFilter, fpActiveFilter=Q09_ActiveFilter, nQuestIdReal=QUEST_RadamentsLair. Allocs the 0x14-byte D2QuestDataA2Q1Strc scratch (bRadamentKilled/bSpokeToAtma/nBookOfSkillDropCount/bRewardPending/pRadamentRoom) and zeroes it.
 void __fastcall Q09_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 1;
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q09_Callback03_ChangedLevel;

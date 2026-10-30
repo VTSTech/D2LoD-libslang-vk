@@ -77,10 +77,10 @@ struct D2MonStatsTxt {
     /* 0x026 */ short minion1;
     /* 0x028 */ short minion2;
     /* 0x02A */ short nMonEquipId;
-    /* 0x02C */ char PartyMin;
-    /* 0x02D */ char PartyMax;
+    /* 0x02C */ uint8_t PartyMin;
+    /* 0x02D */ uint8_t PartyMax;
     /* 0x02E */ char Rarity;
-    /* 0x02F */ char MinGrp;
+    /* 0x02F */ uint8_t MinGrp;
     /* 0x030 */ char MaxGrp;
     /* 0x031 */ char sparsePopulate;
     /* 0x032 */ short Velocity;
@@ -99,13 +99,13 @@ struct D2MonStatsTxt {
     /* 0x04B */ uint8_t nChainId; // 0x4B chain id for monster summon chains (read by GetMonsterChainInfo); not a monstats.txt column
     /* 0x04C */ uint8_t Align;
     /* 0x04D */ char TransLvl;
-    /* 0x04E */ char threat;
+    /* 0x04E */ uint8_t threat;
     /* 0x04F */ uint8_t aidel[3]; // monstats.txt aidel / aidel(N) / aidel(H), indexed by difficulty. 2-D access proved in 1.14d by MOVZX reg,byte ptr [base + idx*0x1 + 0x4f] at 0057b1e8, 005a745c, 005f0793, 005f8b7e, 005f8c3d, 005f8eb7, 005f8f3b. Every load is MOVZX (never MOVSX), so the element is unsigned; it was declared signed char.
     /* 0x052 */ char aidist[3]; // monstats.txt aidist / aidist(N) / aidist(H), indexed by difficulty. 2-D access proved by MOV AL,byte ptr [base + idx*0x1 + 0x52] at 005dd8b0 (MONSTERAI_FindBestTarget). Signedness unproven (plain MOV, no MOVSX/MOVZX), so char was kept.
     /* 0x055 */ uint8_t field_0x55;
     /* 0x056 */ short aip[8][3]; // monstats.txt aip1..aip8 x {,(N),(H)}. aip[k][difficulty] with k=0..7 == column aip(k+1). Base 0x56, row stride 6, element stride 2, running up to TreasureClass at 0x86. Proved in 1.14d by MOVSX reg,word ptr [base + idx*0x2 + 0x56|0x5c|0x62|0x68|0x6e|0x74|0x7a|0x80] across the monster/AI functions (MONSTER_OnDeathTryScheduleRevive, MONSTER_SuicideExplosion, AI_Function1_*, ...); MOVSX means the element is signed int16.
     /* 0x086 */ D2MonStatsTxtTC TreasureClass[3];
-    /* 0x09E */ char TCQuestId;
+    /* 0x09E */ uint8_t TCQuestId;
     /* 0x09F */ char TCQuestCP;
     /* 0x0A0 */ uint8_t aDrain[3]; // Drain / Drain(N) / Drain(H), indexed by difficulty (monstats.txt loader descriptors)
     /* 0x0A3 */ uint8_t aToBlock[3]; // ToBlock / ToBlock(N) / ToBlock(H), indexed by difficulty (monstats.txt loader descriptors)

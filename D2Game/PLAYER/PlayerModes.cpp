@@ -94,7 +94,7 @@ static BOOL PLRMODES_HasEndAnimEventAndSeqInput(::SGAMEDATA * pGame, D2UnitStrc 
     if (pSkill) {
       D2SkillsTxt* pSkillTxt;
       pSkillTxt = D2Common::Skills::GetSkillsTxt(pSkill);
-      if (pSkillTxt && pSkillTxt->seqinput != '\0') {
+      if (pSkillTxt && pSkillTxt->seqinput > '\0') {
         return 1;
       }
     }
@@ -203,7 +203,16 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
     uint32_t nConcRandRoll;
     int32_t iVar1;
     eD2States eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
-    if (eStunState != STATE_none || !pUnit || pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
+    if (eStunState != STATE_none) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eAnimMode.ePlayerMode == Death) {
+      return 0;
+    }
+    if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
       return 0;
     }
     if (!nX || !nY) {
@@ -390,7 +399,7 @@ static BOOL PLRMODES_DrainStamina(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    nStaminaDrain = (uint32_t)(uint8_t)pCharStatsTxt->RunDrain * 2;
+    nStaminaDrain = (uint32_t)pCharStatsTxt->RunDrain * 2;
     if (!pUnit->pInventory) {
       return 0;
     }

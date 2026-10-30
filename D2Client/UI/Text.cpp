@@ -26,6 +26,7 @@
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
@@ -82,7 +83,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Launch/MainMenus.h"
-#include "D2Client/UI/VanillaPlusCore.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -572,7 +572,7 @@ void __fastcall TEXT_InsertScreenMessage(uint16_t * * ppwszText) {
       if (pPrev) {
         pPrev->pNext = 0;
       }
-      if (AllMessagesMaybe.nCount) {
+      if (AllMessagesMaybe.nCount >= 1) {
         AllMessagesMaybe.nCount--;
       }
     }
@@ -795,7 +795,7 @@ void __stdcall TEXT_DrawPartyMessages() {
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
-static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount, RECT * pRect, uint32_t nDefaultResult) {
+static uint8_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount, RECT * pRect, uint32_t nDefaultResult) {
     // Static local variables (originally global data)
     static uint32_t gaTextNonOverlapRects[8] = { 0x1, 0x1, 0xffffffff, 0x1, 0x1, 0xffffffff, 0xffffffff, 0xffffffff }; D2_STATIC_GUARD(gaTextNonOverlapRects, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gaTextNonOverlapRects");
     static int gnTextNonOverlapRectCount = 0x8; D2_STATIC_GUARD(gnTextNonOverlapRectCount, "D2Client::UI::Text::TEXT_FindNonOverlappingRect::gnTextNonOverlapRectCount");
@@ -806,19 +806,18 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
     tagRECT rcIntersect2;
     tagRECT rcCandidate;
     int nDirIdx;
-    uint32_t nDistX;
+    int nDistX;
     RECT* pExistingRect;
     char bOverlaps;
-    LONG nBottom;
     if (nExistingRectCount >= 0x10) {
-      return nDefaultResult & -256;
+      return 0;
     }
     if (!nExistingRectCount) {
       gnTextBoxExclusionLeft[0].left = pRect->left;
       gnTextBoxExclusionLeft[0].top = pRect->top;
       gnTextBoxExclusionLeft[0].right = pRect->right;
       gnTextBoxExclusionLeft[0].bottom = pRect->bottom;
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pRect->bottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+      return 1;
     }
 
     BOOL bIntersects;
@@ -839,7 +838,7 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
                   rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
                   rcCandidate.right = rcCandidate.left + 400;
                   rcCandidate.bottom = rcCandidate.top + 0x118;
-                  if (-1 < rcCandidate.left && rcCandidate.right <= ScreenSizeX && -1 < rcCandidate.top && rcCandidate.bottom <= ScreenSizeY) {
+                  if (rcCandidate.left >= 0 && rcCandidate.right <= ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= ScreenSizeY) {
                     bOverlaps = '\0';
                     pCheckRect = gnTextBoxExclusionLeft;
                     nRemaining = nExistingRectCount;
@@ -862,7 +861,7 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
                       pRect->top = rcCandidate.top;
                       pRect->right = rcCandidate.right;
                       pRect->bottom = rcCandidate.bottom;
-                      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)(gnTextBoxExclusionLeft + nExistingRectCount) >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+                      return 1;
                     }
                   }
 
@@ -874,8 +873,8 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
             } while ((int)pExistingRect < 0x118);
 
             nDistX += 0x32;
-            if ((int)nDistX >= 400) {
-              return nDistX & -256;
+            if (nDistX >= 400) {
+              return 0;
             }
           } while (true);
         }
@@ -888,46 +887,44 @@ static uint32_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount
     gnTextBoxExclusionLeft[nExistingRectCount].left = pRect->left;
     gnTextBoxExclusionLeft[nExistingRectCount].top = pRect->top;
     gnTextBoxExclusionLeft[nExistingRectCount].right = pRect->right;
-    nBottom = pRect->bottom;
-    gnTextBoxExclusionLeft[nExistingRectCount].bottom = nBottom;
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nBottom >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    gnTextBoxExclusionLeft[nExistingRectCount].bottom = pRect->bottom;
+    return 1;
 }
 
-static uint32_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwParam, char * szText, uint32_t nLanguage, uint16_t * pwszDest) {
-    uint16_t* nConvertResult;
+static uint8_t TEXT_ConvertCharToWideWithLanguage(uint32_t dwParam, char * szText, uint32_t nLanguage, uint16_t * pwszDest) {
+    uint32_t nCurLanguage;
     if (nLanguage == 7 || nLanguage == 0xc || nLanguage == 6 || nLanguage == 9) {
-      uint16_t* pwszIter;
+      uint16_t uVar1;
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ MultiByteToWideChar(0, 1, szText, 0x100, (LPWSTR)pwszDest, 0x100);
-      nConvertResult = (uint16_t*)D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-      if (nConvertResult != (uint16_t*)nLanguage) {
-        if (nConvertResult == (uint16_t*)0x7) {
+      nCurLanguage = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
+      if (nCurLanguage != nLanguage) {
+        if (nCurLanguage == 7) {
           if (nLanguage == 0xc) {
             return 1;
           }
-        } else if (nConvertResult == (uint16_t*)0xc && nLanguage == 7) {
-          return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nConvertResult >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+        } else if (nCurLanguage == 0xc && nLanguage == 7) {
+          return 1;
         }
 
-        nConvertResult = (uint16_t*)(uint32_t)*pwszDest;
-        if (*pwszDest) {
+        uVar1 = *pwszDest;
+        if (uVar1) {
           do {
-            if ((uint16_t)(uintptr_t)nConvertResult >= 0x80) {
-              return (uint32_t)nConvertResult & -256;
+            if (uVar1 >= 0x80) {
+              return 0;
             }
 
-            pwszIter = pwszDest + 1;
-            nConvertResult = (uint16_t*)(uint32_t)*pwszIter;
+            uVar1 = pwszDest[1];
             pwszDest++;
-          } while (*pwszIter);
+          } while (uVar1);
 
           return 1;
         }
       }
     } else {
-      nConvertResult = D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize((uint16_t*)pwszDest, szText, 0x100);
+      D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize((uint16_t*)pwszDest, szText, 0x100);
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nConvertResult >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return 1;
 }
 
 void __stdcall TEXT_FreeStaticTextBox() {
@@ -1719,8 +1716,8 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     }
 
     pszName = pMessage->message;
-    nCheckResult = TEXT_ConvertCharToWideWithLanguage(0, pszName, (uint32_t)pMessage->language, (uint16_t*)wszMessage);
-    if ((char)nCheckResult == '\0') {
+    uint8_t byMsgType = TEXT_ConvertCharToWideWithLanguage(0, pszName, (uint32_t)pMessage->language, (uint16_t*)wszMessage);
+    if (!byMsgType) {
       return;
     }
 
@@ -1733,7 +1730,7 @@ void __fastcall TEXT_ProcessChatMessage(MessageStrc * pMessage) {
     Fog::File::CONTAINER_InitializeBuffer(wszFormatBuf, 2, 0x264, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
     Fog::File::CONTAINER_InitializeBuffer(wszMsgBuf, 2, 0x264, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
     Fog::File::CONTAINER_InitializeBuffer(wszShortName, 2, 0x10, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-    uint8_t byMsgType = pMessage->messageType;
+    byMsgType = pMessage->messageType;
     if (byMsgType == 6) {
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszMsgBuf, pszName, 0x100);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszShortName, pMessage->name, 0x10);
@@ -5325,9 +5322,9 @@ static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, in
     rcBox.bottom = (uint32_t)pMemoryToFree->nHeight + pScreenPos[1];
     rcBox.right = (uint32_t)pMemoryToFree->nWidth + rcBox.left;
     if (gbTextOverheadActive < 0x10) {
-      uint32_t bRectPlaced;
-      bRectPlaced = TEXT_FindNonOverlappingRect(gbTextOverheadActive, &rcBox, gbTextOverheadActive);
-      if ((char)bRectPlaced == '\0') {
+      uint8_t bVar1;
+      bVar1 = TEXT_FindNonOverlappingRect(gbTextOverheadActive, &rcBox, gbTextOverheadActive);
+      if (!bVar1) {
         TEXT_FreeTextLineList(pMemoryToFree->pLineList);
         D2_FREE_AT(pMemoryToFree, ".\\UI\\text.cpp", 0x68e);
         return;
@@ -5342,6 +5339,7 @@ static void __stdcall TEXT_DrawUnitOverheadText(D2HoverTextStrc * pHoverText, in
 }
 
 void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
+    uint8_t bVar1;
     uint32_t nBorderType;
     int nXOffset;
     long int nStringId;
@@ -5408,9 +5406,9 @@ void __fastcall TEXT_DrawMonsterHoverText(D2UnitStrc * pUnit) {
       }
 
       Fog::File::CONTAINER_InitializeBuffer(wszConverted, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
-      nBorderType = D2Common::Chat::GetLanguageCode(pHover);
-      nBorderType = TEXT_ConvertCharToWideWithLanguage(nConvertedLen, szMessage, nBorderType & 0xff, (uint16_t*)wszConverted);
-      if ((char)nBorderType != '\0') {
+      bVar1 = D2Common::Chat::GetLanguageCode(pHover);
+      bVar1 = TEXT_ConvertCharToWideWithLanguage(nConvertedLen, szMessage, (uint32_t)bVar1, (uint16_t*)wszConverted);
+      if (bVar1) {
         wszConverted[0xff] = L'\0';
         TEXT_DrawUnitOverheadText(pHover, (int32_t)pUnit, wszConverted, (int*)&ptScreenPos2.x);
       }

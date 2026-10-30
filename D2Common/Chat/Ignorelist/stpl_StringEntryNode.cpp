@@ -240,7 +240,7 @@ template<> void TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>::De
     TSLink<::StringEntryNode>* nHead;
     uint32_t uLink;
     uint32_t nBucketIdx = 0;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       TSLink<::StringEntryNode>* pTVar1;
       do {
         pBucket = &this->m_data[nBucketIdx];

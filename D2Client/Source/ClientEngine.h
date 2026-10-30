@@ -12,7 +12,7 @@
 struct D2QServerClientConnectionStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_fnRoomUnitScanCallback
 #define RECON_FPTD_fnRoomUnitScanCallback
 typedef int32_t (__fastcall *fnRoomUnitScanCallback)(struct D2UnitStrc * pSourceUnit, struct D2UnitStrc * pCandidate, struct D2UnitStrc * * ppBestUnit, int32_t * pnBestValue);

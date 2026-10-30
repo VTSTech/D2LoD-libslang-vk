@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2PoolManagerStrc;
 struct D2WaypointStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 namespace D2Common::Waypoints {
 

@@ -12,7 +12,7 @@
 struct D2DamageStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 #ifndef RECON_FPTD_D2ItemStatCostItemEventFunc
 #define RECON_FPTD_D2ItemStatCostItemEventFunc
 typedef BOOL (__fastcall *D2ItemStatCostItemEventFunc)(::SGAMEDATA * pGame, uint32_t nUnitEvent, struct D2UnitStrc * pAttacker, struct D2UnitStrc * pTarget, struct D2DamageStrc * pDamage, eD2Skills eSkill, int nSkillLvl);

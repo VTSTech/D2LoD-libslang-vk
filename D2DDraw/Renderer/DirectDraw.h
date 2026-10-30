@@ -457,12 +457,12 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int32_t nPosX, int32_t nPosY);
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
 BOOL __stdcall RENDERER_DDRAW_AreBlendedShadowsEnabled();
-void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, int32_t nDrawMode);
+void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, int32_t nDrawMode);
 // Draws a solid rectangle with alpha blending transparency
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
 void __fastcall RENDERER_DDRAW_DrawPixel(int32_t nX, int32_t nY, BYTE nPaletteIndex);
-void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha);
+void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, BYTE nAlpha);
 // DirectDraw renderer internal helpers for sprite visibility testing, clip rect computation, debug font rendering, shadow quality query, pixel/line drawing primitives, and smacker video frame blitting.
 void __fastcall RENDERER_DDRAW_DrawLine(POINT * pStartPoint, POINT * pEndPoint, BYTE nPaletteIndex);
 void __fastcall DrawRect(RECT * pRect, BYTE nColor);

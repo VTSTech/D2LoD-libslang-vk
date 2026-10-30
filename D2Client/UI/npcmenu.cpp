@@ -226,7 +226,7 @@ void __stdcall NPCMENU_RandomizeAllNpcDialogs() {
     gbNpcMenuRandomDialogSeed = 1;
 }
 
-uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind) {
+uint16_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind) {
     // Static local variables (originally global data)
     static int32_t gnNpcDialogOptionData_725c04 = 0x2; D2_STATIC_GUARD(gnNpcDialogOptionData_725c04, "D2Client::UI::npcmenu::NPCMENU_FindNextUnhandledMessage::gnNpcDialogOptionData_725c04");
     static uint16_t gNPCMenuMouseWheelOffsetY[6] = { 0x7b, 0x7e, 0x109, 0x0, 0x7d, 0x7e }; D2_STATIC_GUARD(gNPCMenuMouseWheelOffsetY, "D2Client::UI::npcmenu::NPCMENU_FindNextUnhandledMessage::gNPCMenuMouseWheelOffsetY");
@@ -236,7 +236,7 @@ uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind) {
     if (gnNpcDialogOptionData_725c04 > 0) {
       do {
         if (gNPCMenuMouseWheelOffsetY[nIndex * 4] == nMsgTypeToFind) {
-          return (uint32_t)((uint32_t)(uint16_t)(short int)((uint32_t)nIndex >> 0x10) << 16 | (uint32_t)(uint16_t)gNPCMenuMouseWheelOffsetY[nIndex * 4 + 1]);
+          return gNPCMenuMouseWheelOffsetY[nIndex * 4 + 1];
         }
 
         nIndex++;
@@ -248,19 +248,22 @@ uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind) {
     uint32_t nMsgTypeResult = D2Common::Text::OVERHEAD_GetMessageType0(pOverheadText, 0);
     short int nMsgType = (short int)nMsgTypeResult;
     do {
+      uint16_t uVar1;
       if (nMsgType == -1) {
         return 0xffff;
       }
-      if ((short int)nMsgTypeResult != nMsgTypeToFind) {
+
+      uVar1 = (uint16_t)nMsgTypeResult;
+      if (uVar1 != nMsgTypeToFind) {
         nScrollQueueIdx = 0;
         if (!gnNpcMenuScrollMessageHead) {
-          return nMsgTypeResult & 0xffff;
+          return uVar1;
         }
 
-        while (gaNpcMenuHandledMessageIds[nScrollQueueIdx] != (short int)nMsgTypeResult) {
+        while (gaNpcMenuHandledMessageIds[nScrollQueueIdx] != uVar1) {
           nScrollQueueIdx++;
           if (nScrollQueueIdx >= (int)(uint32_t)gnNpcMenuScrollMessageHead) {
-            return nMsgTypeResult & 0xffff;
+            return uVar1;
           }
         }
       }
@@ -272,23 +275,21 @@ uint32_t __fastcall NPCMENU_FindNextUnhandledMessage(int16_t nMsgTypeToFind) {
 }
 
 int __fastcall NPCMENU_ScrollCompleteShowNextMessage(void * pUserParam, uint32_t nReason, void * pDismissCallback) {
-    D2UnitStrc* pDVar2;
-    uint16_t nParam;
+    D2UnitStrc* pDVar1;
     if (gnNpcMenuActiveMode == '\x01') {
-      uint32_t uVar1;
-      uVar1 = NPCMENU_FindNextUnhandledMessage(gnNpcMenuScrollCompleteMode);
-      nParam = (uint16_t)uVar1;
+      uint16_t nParam;
+      nParam = NPCMENU_FindNextUnhandledMessage(gnNpcMenuScrollCompleteMode);
       if (nParam != 0xffff && _Interaction::bInteractingWithNpc) {
-        pDVar2 = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
-        if (pDVar2) {
+        pDVar1 = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
+        if (pDVar1) {
           gnNpcMenuScrollCompleteMode = nParam;
           if (_Interaction::bInteractingWithNpc) {
-            pDVar2 = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
+            pDVar1 = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
           } else {
-            pDVar2 = 0;
+            pDVar1 = 0;
           }
 
-          Text::TEXT_ShowNpcDialog(pDVar2, nParam, 0);
+          Text::TEXT_ShowNpcDialog(pDVar1, nParam, 0);
           Text::TEXT_SetScrollCompleteCallback(NPCMENU_ScrollCompleteShowNextMessage, nullptr);
           return 1;
         }
@@ -761,7 +762,7 @@ void __fastcall NPCMENU_ValidateNpcForShop(D2UnitStrc * pUnit) {
       return;
     }
 
-    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x48);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, 0x48);
 }
 
 void __stdcall NPCMENU_Initialize() {
@@ -4091,8 +4092,7 @@ void __stdcall NPCMENU_RefreshMenuDialog() {
 int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t nScrollState) {
     int32_t nMenuIndex;
     bool bIsInteractableSideNpc;
-    uint32_t dwNextMsgId = NPCMENU_FindNextUnhandledMessage(gnNpcMenuRepairCostGold);
-    gnNpcMenuTradeActionGold = (int16_t)dwNextMsgId;
+    gnNpcMenuTradeActionGold = NPCMENU_FindNextUnhandledMessage(gnNpcMenuRepairCostGold);
     if (gnNpcMenuRepairCostGold == 0x251) {
       Sound::SOUND_PlaySound(SOUND_WEAPON_PUNCH_4, nullptr, 0, 0, 0);
     }
@@ -4120,8 +4120,7 @@ int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t 
           Text::TEXT_SetScrollCompleteCallback((pfnTextScrollComplete)NPCMENU_OnScrollComplete, nullptr);
           gnNpcMenuRepairCostGold = gnNpcMenuScrollCompleteMode;
           GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, _Interaction::nCurrentInteractedNpcGUID, (uint32_t)gnNpcMenuScrollCompleteMode);
-          dwNextMsgId = NPCMENU_FindNextUnhandledMessage(gnNpcMenuScrollCompleteMode);
-          gnNpcMenuTradeActionGold = (int16_t)dwNextMsgId;
+          gnNpcMenuTradeActionGold = NPCMENU_FindNextUnhandledMessage(gnNpcMenuScrollCompleteMode);
           return 1;
         }
       }

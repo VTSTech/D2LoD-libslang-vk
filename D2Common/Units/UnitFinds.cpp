@@ -443,7 +443,10 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
     }
 
     nSearchFlags = pArgs->nFlags;
-    if (!((-1 < (char)nSearchFlags || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0)) && (!(nSearchFlags & 0x400) || (bValidTarget = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_ISVALIDTARGET) , bValidTarget != 0)))) {
+    if (!(-1 < (char)nSearchFlags || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0))) {
+      return 0;
+    }
+    if (!(!(nSearchFlags & 0x400) || (bValidTarget = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_ISVALIDTARGET) , bValidTarget != 0))) {
       return 0;
     }
     if (nSearchFlags & 0x100) {

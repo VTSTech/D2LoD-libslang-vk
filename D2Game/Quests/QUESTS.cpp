@@ -1734,7 +1734,7 @@ void __fastcall QUESTGUID_SetPlayerCountToZero(D2QuestGUIDStrc * pQuestGUID) {
 // @evidence Takes D2QuestDataStrc + D2QuestArgStrc, resolves the player
 // GUID (-1 if none) and delegates to 00545240. A wrapper, not the list operation itself.
 void __fastcall QUESTGUID_RemovePlayerFromQuest(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if ((uint16_t)pQuestData->sQuestGUID.nPlayerCount <= 0) {
+    if (pQuestData->sQuestGUID.nPlayerCount <= 0) {
       return;
     }
     if (!pQuestArgs->pPlayer) {
@@ -1836,7 +1836,7 @@ void __fastcall SetRewardAndFinishFlags(D2QuestDataStrc * pQuestData, D2QuestArg
     }
 
     bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (!(bRewardAwaits && (uint16_t)pQuestData->sQuestGUID.nPlayerCount > 0)) {
+    if (!(bRewardAwaits && pQuestData->sQuestGUID.nPlayerCount > 0)) {
       return;
     }
     if (!pQuestArgs->pPlayer) {
@@ -1861,7 +1861,7 @@ void __fastcall QUEST_SetSuccessFinishStates(::SGAMEDATA * pGame, D2QuestGUIDStr
     BOOL bQuestState;
     D2BitBufferStrc* pBitBuffer;
     int nPlayerIdx = 0;
-    if ((uint16_t)pQuestGUID->nPlayerCount <= 0) {
+    if (pQuestGUID->nPlayerCount <= 0) {
       return;
     }
 
@@ -2547,7 +2547,7 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       sPacket0x5E.nPacketId = 0x5e;
       if (nQuestDataExtendedSize > 0) {
         do {
-          if (aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal < 0) {
+          if ((int32_t)aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal < 0) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x77);
             exit(-1);
           }
@@ -2562,7 +2562,7 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x67c);
               exit(-1);
             }
-            if (pQuestDataIter->nQuestNoInternal == aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal) {
+            if (pQuestDataIter->nQuestNoInternal == (int32_t)aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal) {
               break;
             }
 

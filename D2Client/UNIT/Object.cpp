@@ -336,7 +336,7 @@ static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         D2Common::Units::InitAnimMode(pUnit);
         if (pTxtLine->Overlay && ((iVar1 = pUnit->nClassId , iVar1 == 0x162 || iVar1 == 0x163) || iVar1 == 0x18d || iVar1 == 0x195 || iVar1 == 0x197 || iVar1 == 0x196 || iVar1 == 0x164)) {
-          Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x47);
+          Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, 0x47);
         }
 
         SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
@@ -693,7 +693,7 @@ void __fastcall OBJECT_UpdateShrineOverlay(D2UnitStrc * pUnit, D2ShrinesTxt * pS
       exit(-1);
     }
     if (aShrineDispatchTable[nShrineCode].nOverlayIdActive != -1) {
-      Engine::Gfx::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdActive);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, aShrineDispatchTable[nShrineCode].nOverlayIdActive);
       if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
         Engine::Gfx::GFX_AddOverlayToUnit(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdActive, 3, 0, 0, 0, 0, 0);
       }
@@ -702,7 +702,7 @@ void __fastcall OBJECT_UpdateShrineOverlay(D2UnitStrc * pUnit, D2ShrinesTxt * pS
       return;
     }
 
-    Engine::Gfx::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdInactive);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, aShrineDispatchTable[nShrineCode].nOverlayIdInactive);
     if (!(!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       return;
     }
@@ -1121,7 +1121,7 @@ bool __fastcall OBJECT_ClientFn_NeutralModeOverlay(D2UnitStrc * pUnit) {
       return true;
     }
 
-    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x48);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, 0x48);
     DVar1 = GetTickCount();
     pUnit->dwTickCount = DVar1 + 500;
     return true;

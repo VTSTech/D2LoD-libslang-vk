@@ -167,9 +167,9 @@ static void RefreshPlayerStatus(D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
 
     uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit1);
     if (nPartyId == 0xffff) {
-      uint32_t uIsPartied;
-      uIsPartied = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit2, pUnit1);
-      if ((short int)uIsPartied == 4) {
+      uint16_t uVar1;
+      uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit2, pUnit1);
+      if (uVar1 == 4) {
         UNIT::PlayerList::SetPlayerRelationship(pUnit1, pUnit2, 2);
         return;
       }
@@ -225,23 +225,23 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint32_t pUnitGid;
     D2UnitStrc* pInviteeCopy = pInvitee;
     uint16_t nIsPartied = UNIT::SUnit::GetPartyId(pInvitee);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit, pInvitee);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pInvitee, pUnit);
-    uint32_t nPartyId = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pInvitee);
-    if ((short int)nPartyId != 2) {
+    uint16_t uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pInvitee);
+    if (uVar1 != 2) {
       UNIT::PlayerList::Send0x8bRelationshipStatus(pInvitee, pUnit);
       UNIT::PlayerList::Send0x8bRelationshipStatus(pUnit, pInvitee);
       return;
     }
     if (nIsPartied == 0xffff) {
-      uint16_t nPartyId_00;
-      nPartyId_00 = UNIT::Party::AllocPartyControlSub0x4(pGame);
-      UNIT::Party::PARTY_AddUnitToParty(pGame, nPartyId_00, pInvitee, (int32_t)pUnit);
-      UNIT::Party::PARTY_AddUnitToParty(pGame, nPartyId_00, pUnit, (int32_t)pUnit);
+      uVar1 = UNIT::Party::AllocPartyControlSub0x4(pGame);
+      UNIT::Party::PARTY_AddUnitToParty(pGame, uVar1, pInvitee, (int32_t)pUnit);
+      UNIT::Party::PARTY_AddUnitToParty(pGame, uVar1, pUnit, (int32_t)pUnit);
       PARTY_RefreshPlayerListRelationships(pGame, pInvitee);
-      *(uint16_t*)(char*)&pInvitee = nPartyId_00;
+      *(uint16_t*)(char*)&pInvitee = uVar1;
     } else {
       UNIT::Party::PARTY_AddUnitToParty(pGame, nIsPartied, pUnit, (int32_t)pUnit);
       *(uint16_t*)(char*)&pInvitee = nIsPartied;
@@ -249,13 +249,13 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
 
     PARTY_RefreshPlayerListRelationships(pGame, pUnit);
     if (!pInviteeCopy) {
-      nPartyId = -1;
+      pUnitGid = -1;
     } else {
-      nPartyId = pInviteeCopy->nUnitGUID;
+      pUnitGid = pInviteeCopy->nUnitGUID;
     }
 
     uint8_t bParam = '\b';
-    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xe9), nPartyId, bParam);
+    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xe9), pUnitGid, bParam);
     __frame0.nInviteeGUID = (uint32_t)(uint16_t)(uintptr_t)pInvitee;
     __frame0.pIterArg0 = pInviteeCopy;
     __frame0.pIterArg1 = pUnit;
@@ -270,11 +270,12 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
 // 'AcceptPartyInvite' is inferred from behaviour, not proven. What would settle it: the party-screen
 // packet handler table that references them, or the SendPlayerEvent event-code enum (6 vs 8).
 void __fastcall PARTYSCREEN_SetMutualPlayerRelationship(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pInvitee, uint32_t dwUnused1, uint32_t dwUnused2) {
+    uint32_t nInviterGUID;
     uint8_t bEventType;
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pUnit, pInvitee);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pInvitee, pUnit);
-    uint32_t nInviterGUID = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pInvitee);
-    if ((short int)nInviterGUID == 4) {
+    uint16_t uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pInvitee);
+    if (uVar1 == 4) {
       uint16_t nPartyId;
       nPartyId = UNIT::SUnit::GetPartyId(pInvitee);
       UNIT::PlayerList::SetPlayerRelationship(pUnit, pInvitee, (uint32_t)(nPartyId != 0xffff));
@@ -296,11 +297,12 @@ void __fastcall PARTYSCREEN_SetMutualPlayerRelationship(int32_t nParam, D2UnitSt
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
 void __fastcall PARTYSCREEN_SendPartyInvite(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t dwUnused1, uint32_t dwUnused2) {
+    uint8_t bEventType;
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pUnit, pTarget);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pTarget, pUnit);
-    uint32_t nInviterGUID = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTarget);
-    if (!(short int)nInviterGUID) {
-      uint8_t bEventType;
+    uint16_t uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTarget);
+    if (!uVar1) {
+      uint32_t nInviterGUID;
       UNIT::PlayerList::SetPlayerRelationship(pUnit, pTarget, 4);
       UNIT::PlayerList::SetPlayerRelationship(pTarget, pUnit, 2);
       if (!pUnit) {

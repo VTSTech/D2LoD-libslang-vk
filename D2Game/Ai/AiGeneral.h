@@ -15,7 +15,7 @@ struct D2MapAIStrc;
 struct D2MonsterAiCmdStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_pfnMinionForEachCallback
 #define RECON_FPTD_pfnMinionForEachCallback
 typedef void (__fastcall *pfnMinionForEachCallback)(struct D2UnitStrc * pMinion, void * pContext, void * pArgument);

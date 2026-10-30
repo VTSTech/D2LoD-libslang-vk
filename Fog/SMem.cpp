@@ -2,7 +2,6 @@
 
 #include "Fog/SMem.h"
 #include "D2Client/mcp0x03data.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SSTR.h"
@@ -277,22 +276,22 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize) {
     if (!nAllocSize) {
       return -1;
     }
-    if ((char)nAllocSize != '\0') {
+    if ((uint8_t)(char)nAllocSize > '\0') {
       return g_SMemSizeClassTable[nAllocSize & 0xff];
     }
 
     uint8_t byClassByte = (uint8_t)(nAllocSize >> 8);
-    if (byClassByte) {
+    if (byClassByte > 0) {
       return g_SMemSizeClassTable[byClassByte] + 8;
     }
-    if (*(uint8_t*)((char*)&nAllocSize + 2)) {
+    if ((uint8_t)*(uint8_t*)((char*)&nAllocSize + 2) > 0) {
       return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 2)] + 0x10;
     }
-    if (!*(uint8_t*)((char*)&nAllocSize + 3)) {
-      return -1;
+    if ((uint8_t)*(uint8_t*)((char*)&nAllocSize + 3) > 0) {
+      return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 3)] + 0x18;
     }
 
-    return g_SMemSizeClassTable[*(uint8_t*)((char*)&nAllocSize + 3)] + 0x18;
+    return -1;
 }
 
 void __stdcall SMemInitPerfCounters() {
@@ -302,9 +301,9 @@ void __stdcall SMemInitPerfCounters() {
 
     LARGE_INTEGER liFrequency;
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&liFrequency);
-    int64_t llDivResult = __alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000, 0);
+    int64_t llDivResult = _alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000, 0);
     gnSMemPerfTicksPerMillisecond = (uint32_t)llDivResult;
-    int64_t lVar1 = __alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000000, 0);
+    int64_t lVar1 = _alldiv(liFrequency.u.LowPart, liFrequency.u.HighPart, 1000000, 0);
     gnSMemPerfTicksPerMicrosecond = (uint32_t)lVar1;
     memset(gaSMemHeapStats, 0, 0x18000);
     g_SMemLastTickCount = GetTickCount();
@@ -315,7 +314,7 @@ void __stdcall SMemResetHeapStats() {
     static uint32_t g_SMemHeapStatsCount; D2_STATIC_GUARD_BSS(g_SMemHeapStatsCount, "Fog::SMem::SMemResetHeapStats::g_SMemHeapStatsCount");
 
     int nStatsRemaining;
-    if (g_SMemHeapStatsCount) {
+    if (g_SMemHeapStatsCount > 0) {
       int* pStatEntry;
       pStatEntry = &gaSMemHeapStats[0].nIntervalStat0;
       nStatsRemaining = g_SMemHeapStatsCount;
@@ -335,7 +334,7 @@ DWORD __stdcall GetTickCount() {
     return ::GetTickCount();
 }
 
-uint32_t __stdcall HashForName(char * szText) {
+uint16_t __stdcall HashForName(char * szText) {
     // Static local variables (originally global data)
     static uint16_t gwSMemAllocDebugFlags[256] = {
     0x0,
@@ -610,7 +609,7 @@ uint32_t __stdcall HashForName(char * szText) {
       cCurChar = (char)uLowered;
     }
 
-    return (uint32_t)((uint32_t)(uint16_t)(short int)(uLowered >> 0x10) << 16 | (uint32_t)(uint16_t)wHash);
+    return wHash;
 }
 
 void __stdcall SMEM_TitleCaseString(mcp0x03data * pMcpData) {
@@ -629,13 +628,13 @@ void __stdcall SMEM_TitleCaseString(mcp0x03data * pMcpData) {
     } while (*pcScan != '\0');
 
     int nLength = (int)pScan - (int)(pMcpData->szGameName + 1);
-    if (0 >= nLength) {
+    if (nLength <= 0) {
       return;
     }
 
     do {
       char cCurChar;
-      if (0x3ff < nIndex) {
+      if (nIndex >= 0x400) {
         Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x78);
         exit(-1);
       }
@@ -936,7 +935,6 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
     uint8_t byHexDigit;
     int nRemaining2;
     int nRemaining;
-    int32_t nErrorCode;
     if (pbDst) {
       uint8_t bySrcByte;
       if (!pbSrc) {
@@ -950,7 +948,16 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
       }
 
       pbWrite = pbDst;
-      if (!byQuoteChar) {
+      if (byQuoteChar) {
+        pbWrite2 = pbDst;
+        nRemaining2 = nRemaining;
+        if (nRemaining > 0) {
+          *pbDst = byQuoteChar;
+          pbWrite = pbDst + 1;
+          nRemaining = nBufSize - 2;
+          goto escape_chars;
+        }
+      } else {
         escape_chars:
         while (true) {
           while (true) {
@@ -959,7 +966,7 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
                 while (true) {
                   pbWrite2 = pbWrite;
                   nRemaining2 = nRemaining;
-                  if (nRemaining < 1 || (bySrcByte = *pbSrc , !bySrcByte)) {
+                  if (nRemaining <= 0 || (bySrcByte = *pbSrc , !bySrcByte)) {
                     goto close_quote_and_terminate;
                   }
 
@@ -1030,37 +1037,30 @@ uint8_t * __fastcall SMemEscapeString(uint8_t * pbDst, uint8_t * pbSrc, size_t n
           pbWrite += 4;
           nRemaining += -4;
         }
-      } else {
-        pbWrite2 = pbDst;
-        nRemaining2 = nRemaining;
-        if (0 < nRemaining) {
-          *pbDst = byQuoteChar;
-          pbWrite = pbDst + 1;
-          nRemaining = nBufSize - 2;
-          goto escape_chars;
-        }
       }
 
       close_quote_and_terminate:
-      if (byQuoteChar && 0 < nRemaining2) {
+      if (byQuoteChar && nRemaining2 > 0) {
         *pbWrite2 = byQuoteChar;
         pbWrite2++;
         nRemaining2--;
       }
       *pbWrite2 = 0;
       if (nRemaining2 < 0) {
-        nErrorCode = 0x100;
+        Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x100);
+        exit(-1);
       } else {
-        if ((int)(pbWrite2 + (1 - (int)pbDst)) <= (int)nBufSize) {
-          return pbDst;
+        if (!((int)(pbWrite2 + (1 - (int)pbDst)) <= (int)nBufSize)) {
+          Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0x101);
+          exit(-1);
         }
 
-        nErrorCode = 0x101;
+        return pbDst;
       }
+    } else {
+      Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), 0xc0);
+      exit(-1);
     }
-
-    Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Src::ErrorManager::GetInstructionPointer(), nErrorCode);
-    exit(-1);
 }
 
 char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, uint32_t nValueLo, uint32_t nValueHi) {
@@ -1069,7 +1069,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     uint32_t nWidthCopy;
     char* pcSrc;
     uint32_t nClampedWidth = nWidth;
-    if (0x20 < nWidth) {
+    if (nWidth > 0x20) {
       nClampedWidth = 0x20;
     }
 
@@ -1078,13 +1078,13 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     char* pcWrite2 = pcWrite;
     while (nValueLo || nValueHi) {
       nWidthCopy = nClampedWidth;
-      if (szTempBuf + (nClampedWidth - 1) <= pcWrite2) {
+      if (pcWrite2 >= szTempBuf + (nClampedWidth - 1)) {
         memset(szText, 0x2a, nClampedWidth - 1);
         szText[nWidthCopy - 1] = '\0';
         return szText;
       }
 
-      LVar1 = __alldvrm(nValueLo, nValueHi, 10, 0);
+      LVar1 = _alldvrm(nValueLo, nValueHi, 10, 0);
       nValueHi = *(uint32_t*)((char*)&LVar1.qwQuotient + 4);
       nValueLo = (uint32_t)LVar1.qwQuotient;
       *pcWrite2 = (char)LVar1.qwRemainder + '0';
@@ -1104,7 +1104,7 @@ char * __fastcall SMemFormat64BitWithSeparators(char * szText, uint32_t nWidth, 
     }
 
     pcWrite2 = szText;
-    while (szTempBuf <= pcWrite) {
+    while (pcWrite >= szTempBuf) {
       pcSrc = pcWrite - 1;
       pcWrite--;
       *szText = *pcSrc;

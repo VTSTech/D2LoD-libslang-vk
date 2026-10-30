@@ -69,13 +69,13 @@ namespace D2Game::Quests::QUESTS::A3Q6 {
 // NOTE: file/ns is A3Q6/Q23 but the REAL quest is "The Guardian" (Act3 q6, kill Mephisto, opens Act4).
 // Helper: returns true (1) if the Blackened Temple (Travincal) quest is NOT yet finished, i.e. Jerhyn/Khalim
 // AI not yet active for the prior quest chain (predicate used to gate Mephisto-quest progression).
-uint32_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame) {
+uint8_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheBlackenedTemple);
-    if (!pQuestData) {
-      return 1;
+    if (pQuestData) {
+      return !pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive;
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA3Q6 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)!pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive);
+    return 1;
 }
 
 // [The Guardian (Q23)] Predicate: returns 0 if the unit is in Durance of Hate Level 2, OR if the prior
@@ -187,8 +187,7 @@ static void __stdcall Q23_SetGuardianQuestComplete(::SGAMEDATA * pGame, D2UnitSt
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Completed);
     D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGuardian, QUESTSTATE_Step0x11);
     uint32_t nDifficulty = (uint32_t)pGame->nDifficulty;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0xcc);
-    GAME::Clients::SetClientStatus(pClient, 3, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0xcc), 3, nDifficulty);
 }
 
 // [The Guardian (Q23)] Per-player iterator run after Mephisto dies. If this player is standing in
@@ -295,7 +294,7 @@ void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
       nGossipLineIdx = 6;
     } else {
-      if (5 < pQuestData->nStateFlag) {
+      if (pQuestData->nStateFlag >= 6) {
         if (_bCompleted != 1) {
           return;
         }
@@ -308,7 +307,7 @@ void __fastcall Q23_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipLineIdx == -1) {
         return;
       }
-      if (7 < nGossipLineIdx) {
+      if (nGossipLineIdx >= 8) {
         return;
       }
     }
@@ -326,13 +325,13 @@ void __fastcall Q23_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA3Q6Strc* pA1Q2Data = pQuestData->pQuestSpecificData.pA3Q6;
-    if (!pA1Q2Data->bAcceptedQuest) {
+    if (pA1Q2Data->bAcceptedQuest != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q23_PlayerNotifyCompleted, true);
-    pA1Q2Data->bAcceptedQuest = false;
+    pA1Q2Data->bAcceptedQuest = '\0';
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
 }
 
@@ -356,7 +355,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (pQuestArgs->sQuestArgs.sNpcActivate.pTextControl == (D2GSPacketSrv0x27_TextStrc*)0x4b) {
       D2BitBufferStrc* pBitBuffer;
       QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
-      if (1 < pQuestData->nStateFlag && pQuestData->nStateFlag < 4) {
+      if (pQuestData->nStateFlag > 1 && pQuestData->nStateFlag <= 3) {
         pGame = pQuestArgs->pGame;
         pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -388,7 +387,7 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q23_PlayerUpdateGuardianSteps);
       }
     }
-    if (0x61 < nLamEsenDone2 && pQuestData->bIsNotIntroduction && !pQuestData->nStateFlag) {
+    if (nLamEsenDone2 >= 0x62 && pQuestData->bIsNotIntroduction != '\0' && !pQuestData->nStateFlag) {
       pQuestData->nStateFlag = 1;
       pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q23_Callback02_NpcDeactivate;
     }
@@ -428,12 +427,12 @@ void __fastcall Q23_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       }
 
       nLamEsenDone2 = QUEST_GetQuestRecordState(pQuestArgs->pGame, QUEST_LamEsensTome, 0xd);
-      if (nLamEsenDone2 != 1) {
-        nJournalStringId = 0x1ae;
-        nEventId = 5;
-      } else {
+      if (nLamEsenDone2 == 1) {
         nJournalStringId = 0x1aa;
         nEventId = 4;
+      } else {
+        nJournalStringId = 0x1ae;
+        nEventId = 5;
       }
     }
 
@@ -479,7 +478,7 @@ void __fastcall Q23_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       }
 
       QUEST_SetStateFlag(pQuestData, nPlayerGUID, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", dwJournalStringId);
-      pQuestData->pQuestSpecificData.pA3Q6->bAcceptedQuest = true;
+      pQuestData->pQuestSpecificData.pA3Q6->bAcceptedQuest = '\x01';
       QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
       return;
     }
@@ -573,8 +572,8 @@ BOOL __fastcall Q23_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -640,7 +639,7 @@ void __fastcall Q23_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     int32_t* piParticipantCount;
     QUEST_DebugPrint(pQuestData->pGame, "killed boss for quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0x26b);
     QUEST_SetStateFlag(pQuestData, 6, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q6.cpp", 0x26c);
-    bool bIsNotIntroduction = pQuestData->bIsNotIntroduction;
+    bool bIsNotIntroduction = (bool)pQuestData->bIsNotIntroduction;
     D2QuestDataA3Q6Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q6;
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q23_Callback10_PlayerLeavesGame;
     D2QuestDataA3Q6Strc* pQuestSpecificDataSaved = pQuestSpecificData;
@@ -690,7 +689,7 @@ void __fastcall Q23_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     pQuestSpecificData->nMephistoApproachMode = 2;
     pQuestArgs->pTarget->dwDropItemCode = 0x2073736d;
     /* local8 become int here */ nSoulstoneDropLoop = 0;
-    if (0 < pQuestSpecificData->nPlayerCount) {
+    if (pQuestSpecificData->nPlayerCount > 0) {
       do {
         pDroppedUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pQuestArgs->pGame, pQuestArgs->pTarget, ITEMTYPE_Shield, &nDroppedItemGUID, nullptr, -1, 0);
         if (pDroppedUnit) {
@@ -807,7 +806,7 @@ void __fastcall Objects_InitFn44(D2ObjectInitFnArg * pInitArg) {
 // [The Guardian (Q23)] fpSequenceFilter: when the player has the intro done (bIsNotIntroduction) but no
 // state flag yet, sets nStateFlag=1 and arms slot[2] (Q23_Callback_02). Bootstraps the acceptance step.
 bool __fastcall Q23_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction)) {
+    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction != '\0')) {
       return true;
     }
 
@@ -910,7 +909,7 @@ void __fastcall Q23_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->pNpcMessages = &A3Q6::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q23_Callback08_MonsterKilled;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q23_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q23_Callback11_ScrollMessage;

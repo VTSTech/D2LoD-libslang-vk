@@ -36,7 +36,7 @@ void __fastcall SendRelationshipStatus(::SGAMEDATA * pGame, struct D2UnitStrc * 
 uint32_t __fastcall PLAYERLIST_GetFlagsMasked(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, uint32_t nMaskFlags);
 uint32_t __fastcall PLAYERLIST_GetFlags(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 void __fastcall SetPlayerRelationship(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nRelationship);
-uint32_t __fastcall PLAYERLIST_IsPartied(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
+uint16_t __fastcall PLAYERLIST_IsPartied(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Sends SCMD 0x8B (PlayerRelationship) packet to pUnit's client reflecting the party/hostility relationship with pUnit2. Walks pUnit's player list to find the entry matching pUnit2's GUID, then—if the units differ and the list entry exists—calls NET_D2GS_SERVER_Send_0x8B_PlayerRelationship with the target GUID and bIsPartied flag.
 // @sourcefile .\UNIT\PlayerList.cpp
 void __fastcall Send0x8bRelationshipStatus(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);

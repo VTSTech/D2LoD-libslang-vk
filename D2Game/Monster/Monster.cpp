@@ -687,7 +687,7 @@ static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
       do {
         if (*(short int*)&pRoom->ppRoomList >= 0 && pMonStatsTxt->aSkLvl[nTmpInt] > '\0') {
           SKILLS::SkillsServer::SetSkill(pUnit, (int)*(short int*)&pRoom->ppRoomList, (int)pMonStatsTxt->aSkLvl[nTmpInt] + monLevelData.nMonsterSkillBonus, 0);
-          if (-1 < pMonStatsTxt->aSkMode[nTmpInt]) {
+          if (pMonStatsTxt->aSkMode[nTmpInt] >= 0) {
             nTmpVal = (uint32_t)pMonStatsTxt->aSkMode[nTmpInt];
             D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)*(short int*)&pRoom->ppRoomList), nTmpVal);
           }
@@ -714,7 +714,7 @@ static void __stdcall MONSTER_InitStats(::SGAMEDATA * pGame, D2RoomStrc * pRoom,
           if ((int)pRoom->ppRoomList < 0) {
             break;
           }
-          if (uMonTxt.pMonPropTxt->chance[nParam][nPlayerCount] == '\0') {
+          if ((uint8_t)uMonTxt.pMonPropTxt->chance[nParam][nPlayerCount] <= '\0') {
             D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStatsExpansion(0, nullptr, pUnit, 0, 0, 0, (D2SetsTxtFStrc*)pRoom, 0, 0x40, 0);
           } else {
             DVar1 = D2_SEED_NEXT(pUnit->sSeed);

@@ -14,10 +14,10 @@ struct D2RoomStrc;
 struct D2SkillCallbackContextStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
-typedef int eD2Skills;
-typedef int eD2UnitStat;
-typedef int eMissilesId;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eMissilesId;
 
 // Data types
 struct __attribute__((packed)) D2SubMissileAreaArgStrc {

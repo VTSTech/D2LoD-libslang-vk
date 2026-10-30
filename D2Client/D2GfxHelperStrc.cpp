@@ -19,7 +19,7 @@ void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nS
     uint32_t nRunLen;
     int nRowsLeft;
     uint8_t bySkip;
-    if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
+    if (!(nScreenY >= gnMinTileDrawY && nScreenY < gnTileClipYMin && nScreenX >= gnTileInnerClipXMin && nScreenX < gnTileInnerClipYMin)) {
       return;
     }
     if (!pRenderSurfaceBuffer) {
@@ -28,7 +28,7 @@ void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nS
     }
 
     int nDstRowPtr = gaYBufferRowOffsets[nScreenY + 0x20] + pRenderSurfaceBuffer + nScreenX;
-    if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
+    if (nScreenY >= gnTileInnerClipYMinRow && nScreenY < gnTileInnerClipYMax && nScreenX >= gnTileInnerClipXMax_b && nScreenX < gnTileClipXMax) {
       nRowsLeft = 0x20;
       nScreenY = nDstRowPtr;
       do {
@@ -67,24 +67,21 @@ void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nS
         nCurScreenY = nCurRow;
         nScreenY = nDstPtr;
       } else {
-        if (gnMinTileScreenY <= nCurScreenY) {
+        if (nCurScreenY >= gnMinTileScreenY) {
           return;
         }
 
         nDstPtr += (uint32_t)bySkip;
-        if (nCurScreenY < gnMinTileScreenY_b) {
-          nDstPtr += nRunLen;
-          pbTileData += nRunLen;
-        } else {
+        if (!(nCurScreenY < gnMinTileScreenY_b)) {
           nDstRowPtr = -(nDstPtr - nDstRowPtr + nScreenX);
           nClipLeft = gnTileClipLeft + nDstRowPtr;
-          nClipLeft = (int)nClipLeft < 1 ? 0 : nClipLeft;
+          nClipLeft = (int)nClipLeft <= 0 ? 0 : nClipLeft;
           nClipRight = nDstRowPtr + gnTileClipRight;
-          nClipRight = (int)nClipRight < 1 ? 0 : nClipRight;
-          if ((int)nRunLen <= (int)nClipRight) {
+          nClipRight = (int)nClipRight <= 0 ? 0 : nClipRight;
+          if ((int)nClipRight >= (int)nRunLen) {
             nClipRight = nRunLen;
           }
-          if (0 < (int)(nClipRight - nClipLeft)) {
+          if ((int)(nClipRight - nClipLeft) > 0) {
             memcpy((void*)(nClipLeft + nDstPtr), pbTileData + nClipLeft, nClipRight - nClipLeft);
           }
 
@@ -92,13 +89,16 @@ void __fastcall fpDrawVisTile(uint8_t * pbTileData, int32_t nScreenX, int32_t nS
           nDstPtr += nRunLen;
           nDstRowPtr = nScreenY;
           nCurScreenY = nCurRow;
+        } else {
+          nDstPtr += nRunLen;
+          pbTileData += nRunLen;
         }
       }
     } while (nRowsLeft < 0x20);
 }
 
 void __fastcall DRAW_DrawWallTileWithLighting(int32_t nTileDataPtr, int32_t nScreenX, int32_t nScreenY, int32_t nLightLevel) {
-    if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
+    if (!(nScreenY >= gnMinTileDrawY && nScreenY < gnTileClipYMin && nScreenX >= gnTileInnerClipXMin && nScreenX < gnTileInnerClipYMin)) {
       return;
     }
 
@@ -107,7 +107,7 @@ void __fastcall DRAW_DrawWallTileWithLighting(int32_t nTileDataPtr, int32_t nScr
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x373);
       exit(-1);
     }
-    if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
+    if (nScreenY >= gnTileInnerClipYMinRow && nScreenY < gnTileInnerClipYMax && nScreenX >= gnTileInnerClipXMax_b && nScreenX < gnTileClipXMax) {
       D2gfx::D2GFX::D2GFX_DrawWallTileBasic((uint8_t*)nTileDataPtr, pDst, gaPaletteColorLUT[(uint32_t)nLightLevel >> 3 & 0x1f], 0x20);
       return;
     }
@@ -151,15 +151,15 @@ void __fastcall fpDrawWallTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
     if (nDeltaY1 < 0) {
       nAbsDeltaY = -nDeltaY1;
     }
-    if (!D2GFXRenderedData.bLowQuality && 9 < nAbsDeltaY + nAbsDeltaXY + nDeltaX0) {
-      if (gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin) {
+    if (!D2GFXRenderedData.bLowQuality && nAbsDeltaY + nAbsDeltaXY + nDeltaX0 >= 10) {
+      if (nScreenY >= gnMinTileDrawY && nScreenY < gnTileClipYMin && nScreenX >= gnTileInnerClipXMin && nScreenX < gnTileInnerClipYMin) {
         if (!pRenderSurfaceBuffer) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3be);
           exit(-1);
         }
 
         pDst = (uint8_t*)(gaYBufferRowOffsets[nScreenY + 0x20] + pRenderSurfaceBuffer + nScreenX);
-        if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
+        if (nScreenY >= gnTileInnerClipYMinRow && nScreenY < gnTileInnerClipYMax && nScreenX >= gnTileInnerClipXMax_b && nScreenX < gnTileClipXMax) {
           D2gfx::D2GFX::D2GFX_DrawWallTileWithPerspective(pTileData, pDst, nLightShifted, nDeltaX1, nLightY << 5, nDeltaY1, 0x20, 8);
           return;
         }
@@ -189,20 +189,20 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
     uint32_t nRunLen;
     uint8_t bySkipCount;
     int32_t nErrorLine = nScreenY;
-    if ((uint8_t)nLightVal < 0xc0) {
-      if ((uint8_t)nLightVal < 0x80) {
+    if ((uint8_t)nLightVal >= 0xc0) {
+      nBlendTableBase = *gpPaletteBlendLookupTable;
+    } else {
+      if ((uint8_t)nLightVal >= 0x80) {
+        nBlendTableBase = gpPaletteBlendLookupTable[1];
+      } else {
         if ((uint8_t)nLightVal < 0x40) {
           return;
         }
 
         nBlendTableBase = gpPaletteBlendLookupTable[2];
-      } else {
-        nBlendTableBase = gpPaletteBlendLookupTable[1];
       }
-    } else {
-      nBlendTableBase = *gpPaletteBlendLookupTable;
     }
-    if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
+    if (!(nScreenY >= gnMinTileDrawY && nScreenY < gnTileClipYMin && nScreenX >= gnTileInnerClipXMin && nScreenX < gnTileInnerClipYMin)) {
       return;
     }
     if (!pRenderSurfaceBuffer) {
@@ -211,7 +211,7 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
     }
 
     uint8_t* pRowDst = (uint8_t*)(gaYBufferRowOffsets[nScreenY + 0x20] + pRenderSurfaceBuffer + nScreenX);
-    if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
+    if (nScreenY >= gnTileInnerClipYMinRow && nScreenY < gnTileInnerClipYMax && nScreenX >= gnTileInnerClipXMax_b && nScreenX < gnTileClipXMax) {
       nScreenY = 0x20;
       pDst = pRowDst;
       do {
@@ -252,26 +252,23 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
         pRowDst = pRowNext;
         pRowBase = pRowNext;
       } else {
-        if (gnMinTileScreenY <= nErrorLine) {
+        if (nErrorLine >= gnMinTileScreenY) {
           return;
         }
-        if (nErrorLine < gnMinTileScreenY_b) {
-          pRowNext = pDst + nRunLen + nSkip;
-          pTileData = pbRunEnd + nRunLen;
-        } else {
+        if (!(nErrorLine < gnMinTileScreenY_b)) {
           pTileData = pbRunEnd + nRunLen;
           pRowNext = pDst + nRunLen + nSkip;
           nClipLeft = gnTileClipLeft - (int)(pDst + nScreenX + (nSkip - (int)pRowDst));
-          nClipLeft = (int)nClipLeft < 1 ? 0 : nClipLeft;
+          nClipLeft = (int)nClipLeft <= 0 ? 0 : nClipLeft;
           nClipRight = -(int)(pDst + nScreenX + (nSkip - (int)pRowDst)) + gnTileClipRight;
-          nClipRight = (int)nClipRight < 1 ? 0 : nClipRight;
-          if ((int)nRunLen <= (int)nClipRight) {
+          nClipRight = (int)nClipRight <= 0 ? 0 : nClipRight;
+          if ((int)nClipRight >= (int)nRunLen) {
             nClipRight = nRunLen;
           }
 
           nErrorLine = nRowIdx;
           pRowDst = pRowBase;
-          if (0 < (int)(nClipRight - nClipLeft)) {
+          if ((int)(nClipRight - nClipLeft) > 0) {
             pbRunEnd += nClipLeft;
             pbClipSrc = pbRunEnd + (nClipRight - nClipLeft);
             pDst = pDst + nClipLeft + nSkip;
@@ -280,6 +277,9 @@ void __fastcall fpDrawBlendedVisTile(uint8_t * pTileData, int32_t nScreenX, int3
               pDst++;
             }
           }
+        } else {
+          pRowNext = pDst + nRunLen + nSkip;
+          pTileData = pbRunEnd + nRunLen;
         }
       }
 
@@ -298,25 +298,25 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
     uint32_t nSkip;
     uint32_t nRunLen;
     uint32_t nClipRight;
-    if ((uint8_t)nLightVal < 0xc0) {
-      if ((uint8_t)nLightVal < 0x80) {
+    if ((uint8_t)nLightVal >= 0xc0) {
+      nBlendTableBase = *gpPaletteBlendLookupTable;
+    } else {
+      if ((uint8_t)nLightVal >= 0x80) {
+        nBlendTableBase = gpPaletteBlendLookupTable[1];
+      } else {
         if ((uint8_t)nLightVal < 0x40) {
           return;
         }
 
         nBlendTableBase = gpPaletteBlendLookupTable[2];
-      } else {
-        nBlendTableBase = gpPaletteBlendLookupTable[1];
       }
-    } else {
-      nBlendTableBase = *gpPaletteBlendLookupTable;
     }
 
     int nDeltaX = pCoords[3] - *pCoords;
     int nDeltaY = pCoords[2] - pCoords[1];
     int* nLightX = (int*)(*pCoords << 5);
     int nLightY = pCoords[1] << 5;
-    if (!(gnMinTileDrawY <= nScreenY && nScreenY < gnTileClipYMin && gnTileInnerClipXMin <= nScreenX && nScreenX < gnTileInnerClipYMin)) {
+    if (!(nScreenY >= gnMinTileDrawY && nScreenY < gnTileClipYMin && nScreenX >= gnTileInnerClipXMin && nScreenX < gnTileInnerClipYMin)) {
       return;
     }
     if (!pRenderSurfaceBuffer) {
@@ -328,7 +328,7 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
     uint8_t (*pbLineEnd)[32] = gpLineBufferTileArray[(int)nLightX >> 8] + (nLightY >> 8);
     pCoords = nLightX;
     uint8_t* pLightVal = pRowDst;
-    if (gnTileInnerClipYMinRow <= nScreenY && nScreenY < gnTileInnerClipYMax && gnTileInnerClipXMax_b <= nScreenX && nScreenX < gnTileClipXMax) {
+    if (nScreenY >= gnTileInnerClipYMinRow && nScreenY < gnTileInnerClipYMax && nScreenX >= gnTileInnerClipXMax_b && nScreenX < gnTileClipXMax) {
       nScreenY = 0x20;
       pDst = pRowDst;
       do {
@@ -378,29 +378,25 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
         pRowDst = pRowNext;
         pLightVal = pRowNext;
       } else {
-        if (gnMinTileScreenY <= nScreenY) {
+        if (nScreenY >= gnMinTileScreenY) {
           return;
         }
 
         pbLineBuf = *pbLineEnd + nSkip;
-        if (nScreenY < gnMinTileScreenY_b) {
-          pRowNext = pDst + nRunLen + nSkip;
-          pbLineEnd = (uint8_t (*)[32])(pbLineBuf + nRunLen);
-          pTileData = pbRunEnd + nRunLen;
-        } else {
+        if (!(nScreenY < gnMinTileScreenY_b)) {
           pTileData = pbRunEnd + nRunLen;
           pRowNext = pDst + nRunLen + nSkip;
           pbLineEnd = (uint8_t (*)[32])(pbLineBuf + nRunLen);
           nClipLeft = gnTileClipLeft - (int)(pDst + nScreenX + (nSkip - (int)pRowDst));
-          nClipLeft = (int)nClipLeft < 1 ? 0 : nClipLeft;
+          nClipLeft = (int)nClipLeft <= 0 ? 0 : nClipLeft;
           nClipRight = -(int)(pDst + nScreenX + (nSkip - (int)pRowDst)) + gnTileClipRight;
-          nClipRight = (int)nClipRight < 1 ? 0 : nClipRight;
-          if ((int)nRunLen <= (int)nClipRight) {
+          nClipRight = (int)nClipRight <= 0 ? 0 : nClipRight;
+          if ((int)nClipRight >= (int)nRunLen) {
             nClipRight = nRunLen;
           }
 
           pRowDst = pLightVal;
-          if (0 < (int)(nClipRight - nClipLeft)) {
+          if ((int)(nClipRight - nClipLeft) > 0) {
             pbRunEnd += nClipLeft;
             pbClipEnd = pbRunEnd + (nClipRight - nClipLeft);
             pDst = pDst + nClipLeft + nSkip;
@@ -410,6 +406,10 @@ void __fastcall fpDrawRoofTile(uint8_t * pTileData, int32_t nScreenX, int32_t nS
               pDst++;
             }
           }
+        } else {
+          pRowNext = pDst + nRunLen + nSkip;
+          pbLineEnd = (uint8_t (*)[32])(pbLineBuf + nRunLen);
+          pTileData = pbRunEnd + nRunLen;
         }
       }
 
@@ -428,9 +428,9 @@ void __fastcall D2GFXHELPER_DrawGroundTileWithLight(D2GroundSubTileStrc * pSubTi
     uint8_t* pbSrcRunEnd;
     if (!(pSubTile->wFormat & 4)) {
       int nClipRows;
-      nStartRow = gnMinTileScreenY_b - nScreenY < 1 ? 0 : gnMinTileScreenY_b - nScreenY;
+      nStartRow = gnMinTileScreenY_b - nScreenY <= 0 ? 0 : gnMinTileScreenY_b - nScreenY;
       nClipRows = gnMinTileScreenY - nScreenY;
-      if (0xe < nClipRows) {
+      if (nClipRows >= 0xf) {
         nClipRows = 0xf;
       }
 
@@ -438,13 +438,13 @@ void __fastcall D2GFXHELPER_DrawGroundTileWithLight(D2GroundSubTileStrc * pSubTi
       for (; (int)nStartRow < nClipRows; nStartRow++) {
         nRowXOffset = -(gaGroundTileRowOffsets[nStartRow] + nScreenX);
         nClipLeft = gnTileClipLeft + nRowXOffset;
-        nClipLeft = (int)nClipLeft < 1 ? 0 : nClipLeft;
+        nClipLeft = (int)nClipLeft <= 0 ? 0 : nClipLeft;
         nClipRight = nRowXOffset + gnTileClipRight;
-        nClipRight = (int)nClipRight < 1 ? 0 : nClipRight;
-        if (gaGroundTileRowWidths[nStartRow] <= (int)nClipRight) {
+        nClipRight = (int)nClipRight <= 0 ? 0 : nClipRight;
+        if ((int)nClipRight >= gaGroundTileRowWidths[nStartRow]) {
           nClipRight = gaGroundTileRowWidths[nStartRow];
         }
-        if (0 < (int)(nClipRight - nClipLeft)) {
+        if ((int)(nClipRight - nClipLeft) > 0) {
           pbSrcEnd = pSubTile->pPixelData + nClipLeft + gaGroundTileSrcPointers[nStartRow];
           pDst = (uint8_t*)(nDstBase + gaGroundTileRowOffsets[nStartRow] + nClipLeft);
           pbSrcRunEnd = pbSrcEnd + (nClipRight - nClipLeft);
@@ -479,9 +479,9 @@ void __fastcall D2GFXHELPER_DrawGroundTileWithPerspectiveLight(D2GroundSubTileSt
       return;
     }
 
-    uint32_t nStartRow = gnMinTileScreenY_b - nScreenY < 1 ? 0 : gnMinTileScreenY_b - nScreenY;
+    uint32_t nStartRow = gnMinTileScreenY_b - nScreenY <= 0 ? 0 : gnMinTileScreenY_b - nScreenY;
     int nDstBase = gnMinTileScreenY - nScreenY;
-    if (0xe < nDstBase) {
+    if (nDstBase >= 0xf) {
       nDstBase = 0xf;
     }
 
@@ -491,13 +491,13 @@ void __fastcall D2GFXHELPER_DrawGroundTileWithPerspectiveLight(D2GroundSubTileSt
       iVar1 = gaGroundTileRowOffsets[nStartRow];
       pbLineBuf = gpLineBufferTileArray[nLightX >> 7][nLightY >> 7] + iVar1;
       nClipLeft = gnTileClipLeft - (nScreenX + iVar1);
-      nClipLeft = (int)nClipLeft < 1 ? 0 : nClipLeft;
+      nClipLeft = (int)nClipLeft <= 0 ? 0 : nClipLeft;
       nClipRight = -(nScreenX + iVar1) + gnTileClipRight;
-      nClipRight = (int)nClipRight < 1 ? 0 : nClipRight;
-      if (gaGroundTileRowWidths[nStartRow] <= (int)nClipRight) {
+      nClipRight = (int)nClipRight <= 0 ? 0 : nClipRight;
+      if ((int)nClipRight >= gaGroundTileRowWidths[nStartRow]) {
         nClipRight = gaGroundTileRowWidths[nStartRow];
       }
-      if (0 < (int)(nClipRight - nClipLeft)) {
+      if ((int)(nClipRight - nClipLeft) > 0) {
         pbSrc = pSubTile->pPixelData + nClipLeft + gaGroundTileSrcPointers[nStartRow];
         pbSrcEnd = pbSrc + (nClipRight - nClipLeft);
         pDst = (uint8_t*)(iVar1 + nDstRow + nClipLeft);

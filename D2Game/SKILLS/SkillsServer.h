@@ -25,13 +25,13 @@ struct D2UnitFindArgStrc;
 struct D2UnitFindDataStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2LevelId;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitStat;
-typedef int eMissilesId;
-typedef int eSkillEType;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eMissilesId;
+typedef uint32_t eSkillEType;
 #ifndef RECON_FPTD_PFN_AreaEffectCallback
 #define RECON_FPTD_PFN_AreaEffectCallback
 typedef uint32_t (__fastcall *PFN_AreaEffectCallback)(struct D2SkillCallbackContextStrc * pContext, struct D2UnitStrc * pTargetUnit);

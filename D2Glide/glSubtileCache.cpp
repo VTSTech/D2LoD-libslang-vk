@@ -46,7 +46,7 @@ int __fastcall GLSUBTILE_Initialize(GlSubtileCacheStrc * pCache, int nVramStart,
         if (nNodeIndex < (int)(pCache->nMaxEntries - 1)) {
           pNode[3] = (uintptr_t)&pCache->pNodes[1].nIndex + nByteOffset;
         }
-        if (0 < nNodeIndex) {
+        if (nNodeIndex > 0) {
           pNode[4] = (uintptr_t)&pCache->pNodes[-1].nIndex + nByteOffset;
         }
 
@@ -71,7 +71,7 @@ int __fastcall GLSUBTILE_Initialize(GlSubtileCacheStrc * pCache, int nVramStart,
     if (1 < (int)(pCache->nMaxEntries - 1)) {
       pDebugScan = &pNodesBase[1].dwAddress;
       do {
-        if (*pDebugScan < 0x200000 && 0x200000 < pCache->dwEntrySize + *pDebugScan) {
+        if (*pDebugScan < 0x200000 && pCache->dwEntrySize + *pDebugScan > 0x200000) {
           pNodesBase[nVramAddr - 1].pNext = pNodesBase + nVramAddr + 1;
           pCache->pNodes[nVramAddr + 1].pPrev = pCache->pNodes + nVramAddr - 1;
           pCache->pNodes[nVramAddr].pPrev = 0;
@@ -86,7 +86,7 @@ int __fastcall GLSUBTILE_Initialize(GlSubtileCacheStrc * pCache, int nVramStart,
     }
 
     nEntryCount = pCache->pNodes[pCache->nMaxEntries - 1].dwAddress;
-    if (!(nEntryCount < 0x200000 && 0x200000 < pCache->dwEntrySize + nEntryCount)) {
+    if (!(nEntryCount < 0x200000 && pCache->dwEntrySize + nEntryCount > 0x200000)) {
       return pCache->nMaxEntries * dwSubtileSize + nVramStart;
     }
 
@@ -176,10 +176,10 @@ static int GLSUBTILE_AllocateNode(GlSubtileCacheStrc * pCache) {
       uint8_t* pNewFreeHead;
       pNewFreeHead = (uint8_t*)pGVar1->pNext;
       pCache->pFreeHead = (GlSubtileCacheNodeStrc*)pNewFreeHead;
-      if (!pNewFreeHead) {
-        pCache->pFreeTail = 0;
-      } else {
+      if (pNewFreeHead) {
         memset(pNewFreeHead + 16, 0, 4 * sizeof(pNewFreeHead[0]));
+      } else {
+        pCache->pFreeTail = 0;
       }
 
       pGVar1->pNext = 0;
@@ -205,17 +205,17 @@ static int GLSUBTILE_AllocateNode(GlSubtileCacheStrc * pCache) {
 // Promotes a subtile cache node to most-recently-used position (active list tail).
 void __fastcall GLSUBTILE_PromoteNodeToMRU(GlSubtileCacheStrc * pCache, int nNodeIndex1Based) {
     GlSubtileCacheNodeStrc* pNode;
-    if ((int)pCache->nUsedCount < 2) {
+    if ((int)pCache->nUsedCount <= 1) {
       return;
     }
     if (!nNodeIndex1Based) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xba);
       exit(-1);
-    } else if ((int)pCache->nMaxEntries < nNodeIndex1Based) {
+    } else if (nNodeIndex1Based > (int)pCache->nMaxEntries) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbb);
       exit(-1);
     } else {
-      if (!(0 < nNodeIndex1Based)) {
+      if (!(nNodeIndex1Based >= 1)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xbc);
         exit(-1);
       }
@@ -269,10 +269,10 @@ void __fastcall GLSUBTILE_Destroy(uint32_t * pCacheData, GlSubtileCacheStrc * pC
         if (nActiveCount) {
           pEvictNode = *(int*)(nActiveCount + 0xc);
           pCacheData[3] = pEvictNode;
-          if (!pEvictNode) {
-            pCacheData[4] = 0;
-          } else {
+          if (pEvictNode) {
             *(uint32_t*)(pEvictNode + 0x10) = 0;
+          } else {
+            pCacheData[4] = 0;
           }
 
           *(uint32_t*)(nActiveCount + 0xc) = 0;
@@ -315,10 +315,10 @@ int __fastcall GLSUBTILE_EnsureCapacity(GlSubtileCacheStrc * pCache) {
         if (pEvictedNode) {
           pNextFree = pEvictedNode->pNext;
           pCache->pActiveHead = pNextFree;
-          if (!pNextFree) {
-            pCache->pActiveTail = 0;
-          } else {
+          if (pNextFree) {
             pNextFree->pPrev = 0;
+          } else {
+            pCache->pActiveTail = 0;
           }
 
           pEvictedNode->pNext = 0;

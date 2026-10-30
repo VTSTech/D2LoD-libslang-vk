@@ -13,7 +13,7 @@
 struct D2DrlgLevelStrc;
 struct D2DrlgReplaceRoomStrc;
 struct D2RoomExStrc;
-typedef int eDrlgDirection;
+typedef uint32_t eDrlgDirection;
 
 // Data types
 struct __attribute__((packed)) D2DrlgRoomExDataMazeStrc {

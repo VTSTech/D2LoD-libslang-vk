@@ -429,13 +429,13 @@ uint32_t __stdcall LAUNCHER_ReadRegistryValue(LPCSTR szSubKey, LPCSTR szValueNam
 
     /* LPDWORD lpcbData for RegQueryValueExA */ /* LPBYTE lpData for RegQueryValueExA */ /* LPDWORD lpType for RegQueryValueExA */ *pdwDataSize = dwDataSize;
     /* LPDWORD lpReserved for RegQueryValueExA */ /* LPCSTR lpValueName for RegQueryValueExA */ /* HKEY hKey for RegQueryValueExA */ lStatus = RegQueryValueExA(hKey, szValueName, (LPDWORD)0x0, &dwValueType, pbData, pdwDataSize);
-    if (!lStatus) {
-      /* HKEY hKey for RegCloseKey */ lStatus = RegCloseKey(hKey);
-      return (uint32_t)!lStatus;
+    if (lStatus) {
+      /* HKEY hKey for RegCloseKey */ RegCloseKey(hKey);
+      return 0;
     }
 
-    /* HKEY hKey for RegCloseKey */ RegCloseKey(hKey);
-    return 0;
+    /* HKEY hKey for RegCloseKey */ lStatus = RegCloseKey(hKey);
+    return (uint32_t)!lStatus;
 }
 
 // Sets the active state of the game-list cache control pGameListCache via D2WINMAIN_SetControlActive. Returns TRUE (MOV EAX,1 at 0043dadd); the caller ignores it.
@@ -472,11 +472,11 @@ int __stdcall isServerDown() {
     }
 
     int32_t bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
-    if (bHasPeerName) {
-      return 0;
+    if (!bHasPeerName) {
+      return -1;
     }
 
-    return -1;
+    return 0;
 }
 
 void LAUNCHER_AllocCharSelectComponent(int32_t pCharInfo) {
@@ -577,7 +577,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
       *ppCtlSlot = pCtl;
       ppCtlSlot++;
       pFormDef++;
-    } while ((int)ppCtlSlot < (uintptr_t)((char*)&gpCtlLobbyChat + 5));
+    } while ((int)ppCtlSlot <= (intptr_t)((char*)&gpCtlLobbyChat + 4));
 
     gpCtlConfirmDialog = (::D2WinTextBox*)D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms_b + 0x13);
     for (nDifficultyDone = 0; nDifficultyDone < 0x64; nDifficultyDone++) {
@@ -618,13 +618,11 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
     D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, sLevelLineText.wszLevelLine, 0, false, 0);
     nDifficultyDone = 0;
     bool bCentered = false;
-    int32_t dwTextColor = 0;
-    /* Last Difficulty Setting Completed: */ pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b74);
-    D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, pwszLocaleStr, dwTextColor, bCentered, nDifficultyDone);
+    /* Last Difficulty Setting Completed: */ D2Win::Src::D2WinTextBox::SetText(gpCtlConfirmDialog, D2Lang::StrTable::strtable::GetLocaleString(0x2b74), 0, bCentered, nDifficultyDone);
     nDifficultyDone = (int)((uint64_t)(D2IniData_multiplayer->eCTEMP_eD2PlayerStatus >> 8 & 0x1f) / (uint64_t)(int64_t)(int)((D2IniData_multiplayer->eCTEMP_eD2PlayerStatus & 0x20 | 0x80) >> 5));
     int nVertAlign = 0;
     bCentered = false;
-    dwTextColor = 0;
+    int32_t dwTextColor = 0;
     switch (nDifficultyDone) {
       case 0:
         {
@@ -656,9 +654,7 @@ void __stdcall UIMENU_CantTestItBeacuseItCrash() {
 
     nDifficultyDone = 0;
     bCentered = false;
-    dwTextColor = 3;
-    /* Battle.net News Updates */ pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b73);
-    D2Win::Src::D2WinTextBox::SetText(BattleNetNews, pwszLocaleStr, dwTextColor, bCentered, nDifficultyDone);
+    /* Battle.net News Updates */ D2Win::Src::D2WinTextBox::SetText(BattleNetNews, D2Lang::StrTable::strtable::GetLocaleString(0x2b73), 3, bCentered, nDifficultyDone);
 }
 
 void __stdcall CHATDLG_DestroyAllForms() {
@@ -670,7 +666,7 @@ void __stdcall CHATDLG_DestroyAllForms() {
       }
 
       pForm++;
-    } while ((int)pForm < (uintptr_t)((char*)&gpCtlLobbyChat + 5));
+    } while ((int)pForm <= (intptr_t)((char*)&gpCtlLobbyChat + 4));
 
     if (!gpCtlConfirmDialog) {
       return;

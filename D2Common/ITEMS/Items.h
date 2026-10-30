@@ -21,8 +21,9 @@ struct D2StatListExStrc;
 struct D2UnitDataItemDetailsStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemCmd;
 typedef int eD2ItemFlag;
+typedef uint32_t eD2ItemCmd;
+typedef uint32_t eD2PlayerClassIDDWORD;
 typedef uint8_t eD2BodyLoc;
 typedef uint8_t eInventoryPage;
 #ifndef RECON_FPTD_pfnItemTransactionCb
@@ -141,17 +142,17 @@ void __stdcall SetItemQuality(struct D2UnitStrc * pUnit, eD2ItemQuality eItemQua
 int16_t __stdcall GetMagicPrefix(struct D2UnitStrc * pUnit, int32_t nIndex);
 void __stdcall SetMagixPrefix(struct D2UnitStrc * pUnit, int16_t wMagicPrefix, int32_t nIndex);
 // Returns nAutoMagic (offset 0x36) from D2UnitDataItemStrc. Returns 0 if unit is null, not an item, or has no item data.
-int __stdcall GetAutoMagic(struct D2UnitStrc * pUnit);
+uint16_t __stdcall GetAutoMagic(struct D2UnitStrc * pUnit);
 void __stdcall SetAutoMagic(struct D2UnitStrc * pUnit, int16_t wAutoMagic);
 // Returns magic suffix ID at nIndex (offset 0x3E + nIndex*2) from D2UnitDataItemStrc. Returns 0 if unit is null, not an item, or has no item data.
-int __stdcall GetMagicSuffix(struct D2UnitStrc * pUnit, int nIndex);
+uint16_t __stdcall GetMagicSuffix(struct D2UnitStrc * pUnit, int nIndex);
 void __stdcall SetMagicSuffix(struct D2UnitStrc * pUnit, int16_t wMagicSuffix, int32_t nIndex);
 int16_t __stdcall GetRarePrefix(struct D2UnitStrc * pUnit);
 void __stdcall SetRarePrefix(struct D2UnitStrc * pUnit, int16_t wRarePrefix);
 int16_t __stdcall GetRareSuffix(struct D2UnitStrc * pUnit);
 void __stdcall SetRareSuffix(struct D2UnitStrc * pUnit, int16_t wRareSuffix);
 BOOL __stdcall CheckItemFlag(struct D2UnitStrc * pUnit, eD2ItemFlag neD2ItemFlag, int32_t nParam, char * szText);
-bool __stdcall ITEM_EditItemData_eItemFlag(struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag, BOOL bSet);
+void __stdcall ITEM_EditItemData_eItemFlag(struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag, BOOL bSet);
 eD2ItemFlag __stdcall ITEM_GetItemData_eD2ItemFlag(struct D2UnitStrc * pUnit);
 uint32_t __stdcall ITEM_CheckItemData_eD2ItemCmd(struct D2UnitStrc * pUnit, eD2ItemCmd eItemCmd);
 void __stdcall ITEM_EditItemData_eD2ItemCmd(struct D2UnitStrc * pUnit, eD2ItemCmd eItemCmd, BOOL bRemove);
@@ -168,7 +169,7 @@ char * __stdcall ITEM_GetItemData_szPlayerName(struct D2UnitStrc * pUnit);
 void __stdcall ITEM_GetPlayerNameAkaNamedString(struct D2UnitStrc * pUnit, char * pCustomName);
 uint8_t __stdcall ITEM_GetItemData_nEarLevel(struct D2UnitStrc * pUnit);
 void __stdcall ITEM_SetItemData_nEarLevel(struct D2UnitStrc * pUnit, uint8_t nEarLevel);
-BOOL __stdcall ITEM_GetItemData_bVariant(struct D2UnitStrc * pUnit);
+uint8_t __stdcall ITEM_GetItemData_bVariant(struct D2UnitStrc * pUnit);
 void __stdcall ITEM_SetItemData_bVariant(struct D2UnitStrc * pUnit, bool bVariant);
 int32_t __stdcall ITEMTYPE_IsShoots(int32_t nItemType);
 int32_t __stdcall ITEMTYPE_IsQuiver(int32_t nItemType);
@@ -218,7 +219,7 @@ bool __stdcall ITEM_GetItemsTxt_bDurWarning(struct D2UnitStrc * pUnit);
 bool __stdcall ITEM_GetItemsTxt_bQntWarning(struct D2UnitStrc * pUnit);
 int16_t __stdcall ITEM_GetItemsTxt_wStrBonus(struct D2UnitStrc * pUnit);
 int16_t __stdcall ITEM_GetItemsTxt_wDexBonus(struct D2UnitStrc * pUnit);
-bool __stdcall TXT_Items_GetHavInv(uint32_t nItemClassId);
+BOOL __stdcall TXT_Items_GetHavInv(uint32_t nItemClassId);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 int32_t __stdcall ITEM_GetItemsTxt_bHasInv(struct D2UnitStrc * pUnit);
 uint32_t __stdcall ITEM_CheckIfItemHasDurability(struct D2UnitStrc * pUnit);
@@ -264,7 +265,7 @@ BOOL __stdcall ITEM_CheckIfItemIsNotBrokenAndNotDisabled(struct D2UnitStrc * pUn
 int32_t __stdcall PLAYER_GetUnidentifiedItemsCount(struct D2UnitStrc * pUnit);
 int32_t __stdcall ITEMS_ModifyPotionValueByDifficulty(struct D2UnitStrc * pNpc, int32_t nValue);
 int32_t __stdcall ITEMS_ModifyPotionSellValueByDifficulty(struct D2UnitStrc * pNpc, int32_t nValue);
-int16_t __stdcall ITEM_GetItemData_wItemVersion(struct D2UnitStrc * pUnit);
+uint16_t __stdcall ITEM_GetItemData_wItemVersion(struct D2UnitStrc * pUnit);
 void __stdcall ITEM_SetItemData_wItemVersion(struct D2UnitStrc * pUnit, int16_t wItemVersion);
 // Calculates frames-per-attack for a weapon held by pUnit. Builds the COF path from unit/inventory state, looks up frame count and animation speed via ANIMDATA, then computes (frames&lt;&lt;8) / (((IAS+baseAttackRate+100)*animSpeed)/100). Halts with internal error if item is not a weapon or COF data is missing.
 int __stdcall ITEM_CalcWeaponAttackSpeed(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem);
@@ -287,7 +288,7 @@ int32_t __stdcall ITEM_GetTxtItemTypes_beltable(struct D2UnitStrc * pUnit);
 // Returns the spell-icon index for a scroll or book item (used for skill-icon display). For scrolls/books reads the icon byte from the Books.txt entry indexed by wMagicSuffix[0]; for other item types returns bSpellIcon from Items.txt. Returns -1 when TXT_Books_GetLine fails (0062bbb3). Halts on null or non-item unit.
 int __stdcall ITEM_GetSpellIcon(struct D2UnitStrc * pUnit);
 int32_t __stdcall ITEM_GetTxtItemTypes_staffmods(struct D2UnitStrc * pUnit);
-char __stdcall ITEM_GetMaxSockCount(struct D2UnitStrc * pUnit);
+uint8_t __stdcall ITEM_GetMaxSockCount(struct D2UnitStrc * pUnit);
 // Determines and assigns the socket count for an item unit during socketing. Computes the maximum allowed sockets from the item's grid area (width*height, capped at 6), then clamps further by item quality (magic=4, rare=2, crafted/tampered=3, set/unique use existing stat or force 1). Calls ITEM_GetMaxSockCount for a hard cap, rolls the final count, sets ITEMFLAG_SOCKETED, and writes UNITSTAT_item_numsockets via STATLIST_SetUnitStat.
 void __stdcall ITEM_RollSocketCount(struct D2UnitStrc * pUnit, uint32_t nMaxSocksRandom);
 // Sets the socket count on an item, clamping to [1, min(6, itemArea, ITEM_GetMaxSockCount)]. Only acts on UNIT_ITEM with nonzero grid area (width*height). Sets ITEMFLAG_SOCKETED on item flags and writes UNITSTAT_item_numsockets via STATLIST_SetUnitStat.

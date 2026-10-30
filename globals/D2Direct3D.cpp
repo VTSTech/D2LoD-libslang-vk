@@ -42,7 +42,6 @@ GUID IID_IDirectDraw7 = {
 }; D2_GLOBAL_GUARD(IID_IDirectDraw7, "IID_IDirectDraw7");
 
 uint32_t gsD3DTextureDescTemplate[8] = { 0x20, 0x41, 0x0, 0x10, 0x7c00, 0x3e0, 0x1f, 0x8000 }; D2_GLOBAL_GUARD(gsD3DTextureDescTemplate, "gsD3DTextureDescTemplate");
-
 // [vanilla-plus fix 17] Restored 16-byte IID_IDirectDrawGammaControl. The Ghidra
 // export truncated it to a 1-byte "uint8_t = 0x3e" static inside
 // RENDERER_D3D_InitializeDevice, so the fullscreen D3D init passed a 1-byte

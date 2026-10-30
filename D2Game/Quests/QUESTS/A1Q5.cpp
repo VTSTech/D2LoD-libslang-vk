@@ -231,7 +231,7 @@ void __fastcall Q05_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       bool bStateChanged;
       bStateChanged = false;
       if (pQuestSpecific->bTalkedToNPC == '\x01') {
-        bStateChanged = !pQuestData->nStateFlagPrev;
+        bStateChanged = pQuestData->nStateFlagPrev < 1;
         if (bStateChanged) {
           pQuestData->nQuestPacketFlags = '\0';
           QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q05_NotifyQuestStateToPlayer, true);
@@ -560,7 +560,7 @@ BOOL __fastcall OBJOP_A1Q5_ActivateCairnStone(D2ObjectOperateFnArg * pOperation)
     }
 
     QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q5.cpp", 0x202);
-    if (pQuestData->nStateFlagPrev) {
+    if (pQuestData->nStateFlagPrev >= 1) {
       return 0;
     }
 
@@ -824,7 +824,7 @@ void __fastcall Q05_SetCompletionForTrackedPlayers(::SGAMEDATA * pGame, D2QuestG
     BOOL bCompleted;
     D2BitBufferStrc* pBitBuffer;
     int i = 0;
-    if ((uint16_t)pQuestGUIDBase->nPlayerCount <= 0) {
+    if (pQuestGUIDBase->nPlayerCount <= 0) {
       return;
     }
 

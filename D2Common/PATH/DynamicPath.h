@@ -15,8 +15,8 @@ struct D2PathTypeArg;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2UnitType;
 typedef uint16_t eCollisionFlags;
+typedef uint32_t eD2UnitType;
 
 namespace D2Common::PATH::DynamicPath {
 
@@ -39,7 +39,7 @@ void __stdcall SetPathPointsSize(struct D2DynamicPathStrc * pDynamicPath, int32_
 int32_t __stdcall PATH_GetPathPointIndex(struct D2DynamicPathStrc * pDynamicPath);
 int32_t __stdcall GetPathPoint(struct D2DynamicPathStrc * pDynamicPath, struct D2PathPointStrc * * pPathPoint);
 uint8_t __stdcall GetDirection(struct D2DynamicPathStrc * pDynamicPath);
-uint32_t __stdcall UpdateDirection(struct D2DynamicPathStrc * pDynamicPath);
+uint8_t __stdcall UpdateDirection(struct D2DynamicPathStrc * pDynamicPath);
 void __stdcall PATH_SetNewDirection(struct D2DynamicPathStrc * pDynamicPath, uint8_t bRawDirection);
 void __stdcall SetDirectionAndNewDirection(struct D2DynamicPathStrc * pDynamicPath, uint8_t nDirection);
 int32_t __stdcall GetXPos(struct D2DynamicPathStrc * pDynamicPath);

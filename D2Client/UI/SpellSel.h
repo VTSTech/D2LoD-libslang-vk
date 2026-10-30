@@ -14,8 +14,8 @@ struct D2SkillsTxt;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
 struct DC6;
-typedef int GLOBALPALLETE;
-typedef int eD2Skills;
+typedef uint32_t GLOBALPALLETE;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct __attribute__((packed)) D2ClassIconWithNameStrc {

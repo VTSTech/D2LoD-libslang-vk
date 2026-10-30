@@ -18,9 +18,9 @@ struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
-typedef int DRAWMODE;
-typedef int GLOBALPALLETE;
 typedef int _EXCEPTION_DISPOSITION;
+typedef uint32_t DRAWMODE;
+typedef uint32_t GLOBALPALLETE;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32

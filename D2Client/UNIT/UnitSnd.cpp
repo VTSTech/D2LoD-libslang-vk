@@ -1411,7 +1411,7 @@ static void UNITSND_PlayFleeSound(D2UnitStrc * pUnit) {
 }
 
 // Plays the appropriate player/character sound effect for a given animation-mode/event code (nAnimModeParam, low 16 bits). Looks up the per-class sound table (gaUnitSoundTableByClassId indexed by nClassId 0-6); aborts loudly for invalid units. Maps the code into one of three ranges: anim modes 0x19-0x20 (footstep/run sounds gated by channel availability), special scheduled sequences 0x21-0x53 (WALL2_ScheduleSoundSequence for timed multi-part sounds), and small codes 1-0x18 (cursor/UI/item sounds and the class voice/attack sounds from the table, with duplicate-suppression within ~75ms via gnSoundLastPlayerAnimModeTime). Plays via SOUND_PlaySound and routes the result to overhead-text display. Skips if the local player is dead.
-void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModeParam) {
+void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint16_t nAnimModeParam) {
     uint32_t nResult;
     int nChannelId;
     int32_t nErrorLine;
@@ -1426,8 +1426,8 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
       return;
     }
 
-    uint32_t nAnimModeBase;
-    nAnimModeBase = nAnimModeParam & 0xffff;
+    uint32_t uVar2;
+    uVar2 = (uint32_t)nAnimModeParam;
     eD2Sounds eSoundId;
     eSoundId = SOUND_NONE;
     D2UnitStrc* pLocalPlayer;
@@ -1438,60 +1438,60 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
         return;
       }
     }
-    if (nAnimModeBase - 0x19 <= 7) {
+    if (uVar2 - 0x19 <= 7) {
       nResult = Sound::SOUND_FindChannelForSound((int32_t)pUnit);
       if (!nResult) {
-        eSoundId = piVar1[8] - 0x32 + nAnimModeBase * 2;
+        eSoundId = piVar1[8] - 0x32 + uVar2 * 2;
       }
     }
-    if (nAnimModeBase - 0x21 <= 0x32) {
-      eSoundId = piVar1[9] - 0x21 + nAnimModeBase;
-      if (nAnimModeBase == 0x23) {
+    if (uVar2 - 0x21 <= 0x32) {
+      eSoundId = piVar1[9] - 0x21 + uVar2;
+      if (uVar2 == 0x23) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1250, 0, 300, 1, eSoundId, 0xfa, 1);
         return;
       }
-      if (nAnimModeBase == 0x22) {
+      if (uVar2 == 0x22) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x124e, 0x1db, 800, 1, eSoundId, 0x20d, 1);
         return;
       }
-      if (nAnimModeBase == 0x25) {
+      if (uVar2 == 0x25) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0, 0, 0x5dc, 0, eSoundId, 0, 0);
         return;
       }
-      if (nAnimModeBase == 0x21) {
+      if (uVar2 == 0x21) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x124d, 0, 0x1db, 0, eSoundId, 0x1a9, 1);
         return;
       }
-      if (nAnimModeBase == 0x32) {
+      if (uVar2 == 0x32) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1255, 0x1db, 0x44c, 1, eSoundId, 0x20d, 1);
         return;
       }
-      if (nAnimModeBase == 0x34) {
+      if (uVar2 == 0x34) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1256, 0, 0x1a9, 1, eSoundId, 0x177, 1);
         return;
       }
-      if (nAnimModeBase == 0x42) {
+      if (uVar2 == 0x42) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1254, 0, 0x1a9, 0, eSoundId, 0x177, 1);
         return;
       }
-      if (nAnimModeBase == 0x4b) {
+      if (uVar2 == 0x4b) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1257, 0, 0x1db, 0, eSoundId, 0x145, 1);
         return;
       }
-      if (nAnimModeBase == 0x50) {
+      if (uVar2 == 0x50) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x125a, 0, 500, 1, eSoundId, 0x1db, 1);
         return;
       }
-      if (nAnimModeBase == 0x52) {
+      if (uVar2 == 0x52) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1259, 0, 0x226, 1, eSoundId, 400, 1);
         return;
       }
-      if (nAnimModeBase == 0x53) {
+      if (uVar2 == 0x53) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1258, 0, 0x20d, 1, eSoundId, 0x1a9, 1);
         return;
       }
 
-      switch (nAnimModeBase) {
+      switch (uVar2) {
         case 0x26:
 
         case 0x28:
@@ -1531,7 +1531,7 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
     nAnimMode = gnSoundLastPlayerAnimModeTime;
     eD2Sounds eLastAnimMode;
     eLastAnimMode = geSoundLastPlayerAnimMode;
-    switch (nAnimModeBase) {
+    switch (uVar2) {
       case 0x13:
         eSoundId = piVar1[2];
       goto skip_if_unit_playing;
@@ -1772,7 +1772,7 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
     UI::Text::TEXT_SetUnitOverheadFromSoundTable(pMercUnit, nPlayedSoundId);
     forward_to_player_sound:
     if (pMercUnit->eUnitType == UNIT_PLAYER) {
-      UNITSND_PlayPlayerSound(pMercUnit, nSoundCmd);
+      UNITSND_PlayPlayerSound(pMercUnit, (uint16_t)nSoundCmd);
     }
 }
 
@@ -1937,7 +1937,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
       return;
     }
 
-    UNITSND_PlayPlayerSound(pUnit, (uint32_t)(uint32_t)(uint16_t)(short int)nMusicTableEntryPtr[0xb]);
+    UNITSND_PlayPlayerSound(pUnit, *(uint16_t*)(nMusicTableEntryPtr + 0xb));
 }
 
 void __fastcall PlayUnitInitSound(D2UnitStrc * pUnit) {
@@ -2132,14 +2132,14 @@ void __fastcall UNITSND_DispatchModeChangeSound(D2UnitStrc * pUnit, int32_t pnPa
         return;
       }
     } else if (eUnitType == UNIT_MONSTER && (pMonSoundsLine = TxtGetSoundIdLineFromUnit(pUnit) , pMonSoundsLine != 0)) {
-      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo1 && pMonSoundsLine->CvtSk1 < 0) {
-        pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt1;
+      if (pnParam == (uint32_t)pMonSoundsLine->CvtMo1 && pMonSoundsLine->CvtSk1 < 0) {
+        pnParam = (int32_t)pMonSoundsLine->CvtTgt1;
       }
-      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo2 && pMonSoundsLine->CvtSk2 < 0) {
-        pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt2;
+      if (pnParam == (uint32_t)pMonSoundsLine->CvtMo2 && pMonSoundsLine->CvtSk2 < 0) {
+        pnParam = (int32_t)pMonSoundsLine->CvtTgt2;
       }
-      if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo3 && pMonSoundsLine->CvtSk3 < 0) {
-        pnParam = (int32_t)(uint8_t)pMonSoundsLine->CvtTgt3;
+      if (pnParam == (uint32_t)pMonSoundsLine->CvtMo3 && pMonSoundsLine->CvtSk3 < 0) {
+        pnParam = (int32_t)pMonSoundsLine->CvtTgt3;
       }
 
       switch (pnParam) {

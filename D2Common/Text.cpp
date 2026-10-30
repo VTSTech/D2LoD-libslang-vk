@@ -86,10 +86,10 @@ void __stdcall TEXT_RemoveMessageById(D2GSPacketSrv0x27_TextStrc * ppPoolManager
       }
     }
 
-    if (!pDVar2) {
-      ppPoolManager->pMessage = pMemoryToFree->pPrev;
-    } else {
+    if (pDVar2) {
       pDVar2->pPrev = pMemoryToFree->pPrev;
+    } else {
+      ppPoolManager->pMessage = pMemoryToFree->pPrev;
     }
 
     D2_FREE_POOL_AT(ppPoolManager->pMemory, pMemoryToFree, ".\\Text\\Text.cpp", 0x7b);
@@ -188,7 +188,7 @@ void __stdcall StoreMessages(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text,
 
       pGSPacketSrv0x27_Text = 0;
       pCurPacket = (short int*)pPacketData;
-      if (!*pPacketData) {
+      if (*pPacketData <= 0) {
         return;
       }
 
@@ -211,11 +211,11 @@ void __stdcall StoreMessages(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x27_Text,
 }
 
 int32_t __fastcall TEXT_CompareMessagesByCode(uint16_t * pnCodeA, uint16_t * pnCodeB) {
-    if (*pnCodeB >= *pnCodeA) {
-      return -(uint32_t)(*pnCodeA < *pnCodeB);
+    if (*pnCodeA > *pnCodeB) {
+      return 1;
     }
 
-    return 1;
+    return -(uint32_t)(*pnCodeB > *pnCodeA);
 }
 
 void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextMessageCompare pfnCompare) {
@@ -240,13 +240,13 @@ void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextM
     uint32_t dwSwapData;
     uint16_t wSwapCode;
     int nSortedCountSaved;
-    if (1 >= nCount) {
+    if (nCount <= 1) {
       return;
     }
 
     __frame0.wNextCode = *pEntries;
     __frame0.dwNextData = *(uint32_t*)(pEntries + 2);
-    if (1 >= nCount) {
+    if (nCount <= 1) {
       return;
     }
 
@@ -261,21 +261,18 @@ void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextM
       dwPivotData = *(uint32_t*)(pCurOuter + 8);
       wPivotCode[0] = *pPivot;
       nCmpOuter = (*pfnCompare)(&__frame0.wNextCode, wPivotCode);
-      if (nCmpOuter < 1) {
-        __frame0.wNextCode = wPivotCode[0];
-        __frame0.dwNextData = dwPivotData;
-      } else {
+      if (nCmpOuter > 0) {
         *pPivot = __frame0.wNextCode;
         *(uint32_t*)(pCurOuter + 8) = __frame0.dwNextData;
         nSortedCountSaved = nSortedCount;
         nSortedCount = nInsertIndex;
         pCurEntry = pSortedTail;
-        for (; nInsertIndex; nInsertIndex--) {
+        for (; (uint32_t)nInsertIndex > 0; nInsertIndex--) {
           dwInnerData = *(uint32_t*)(pCurEntry + 2);
           wInnerCode[0] = *pCurEntry;
           nSortedCount = nSortedCountSaved;
           nCmpOuter = (*pfnCompare)(wInnerCode, wPivotCode);
-          if (nCmpOuter < 1) {
+          if (nCmpOuter <= 0) {
             break;
           }
 
@@ -288,6 +285,9 @@ void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextM
         *(uint32_t*)(pEntries + nInsertIndex * 6 + 2) = dwPivotData;
         pEntries[nInsertIndex * 6] = wPivotCode[0];
         nInsertIndex = nSortedCount;
+      } else {
+        __frame0.wNextCode = wPivotCode[0];
+        __frame0.dwNextData = dwPivotData;
       }
 
       pSortedTail += 6;
@@ -303,7 +303,7 @@ void __stdcall TEXT_SortMessageList(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x2
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x165);
       exit(-1);
     }
-    if (1 >= (uint16_t)pGSPacketSrv0x27_Text->nCount) {
+    if ((uint16_t)pGSPacketSrv0x27_Text->nCount <= 1) {
       return;
     }
 
@@ -320,7 +320,7 @@ void __stdcall TEXT_SortMessageList(D2GSPacketSrv0x27_TextStrc * pGSPacketSrv0x2
     pCurEntry = pGSPacketSrv0x27_Text->pMessage;
     int iEntry = 0;
     pBufSlot = pSortBuf;
-    if (pGSPacketSrv0x27_Text->nCount) {
+    if ((uint16_t)pGSPacketSrv0x27_Text->nCount > 0) {
       do {
         pCurEntry->nMessage = *pBufSlot;
         pCurEntry->nType = *(int*)(pBufSlot + 2);

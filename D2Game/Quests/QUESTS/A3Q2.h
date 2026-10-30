@@ -34,9 +34,6 @@ void __fastcall Q19_Callback02_NpcDeactivate(struct D2QuestDataStrc * pQuestData
 void __fastcall Q19_Callback11_ScrollMessage(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_SequenceFilter (Khalim's Will). Sequence-chain filter: if this quest not yet at StateFlag 5 and is active, bumps StateFlag 0->1 and returns. Otherwise chains to the next quest's (nSequenceQuestId=QUEST_AbleGoToAct3) sequence filter, halting on a bad fn ptr. Pure StateFlag gating; no QuestRecord writes.
 bool __fastcall Q19_SequenceFilter(struct D2QuestDataStrc * pQuestData);
-// Q19_SendQuestStatePacket (Khalim's Will). Builds and sends the 0x5D quest-state packet to the player's client conveying which Khalim's Will sub-stage/relic message to display. No QuestRecord transitions; pure client notification.
-// @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
-void __fastcall Q19_SendQuestStatePacket(uint8_t bStateByte, struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_Callback_04 (Khalim's Will). Item-interaction handler fired when player handles a Khalim relic / assembled Khalim's Will. Gates on QUEST_AbleGoToAct3=Completed and quest not already Completed. Inspects which of the 4 relics (Flail 0x20316671, Eye 0x20796571, Brain 0x20726271, Heart 0x20726871) and the combined Khalim's Will (0x20326671) the player holds, plus sub-steps 0x02-0x07, then sends the appropriate Q19_SendQuestStatePacket message. Reads quest state only; no SetQuestState here.
 void __fastcall Q19_Callback04_ItemPickedUp(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 // Q19_Callback_13 (Khalim's Will). Quest-load/refresh handler. If not Completed: if Step0x07 not set but Step0x02 set, sets in-memory StateFlag=2/prev=7 (mid-quest resume). Also resumes StateFlag=2 when the quest GUID player-bitmask is non-empty. Reads QuestRecord; mutates only in-memory StateFlag.
@@ -44,7 +41,7 @@ void __fastcall Q19_Callback13_PlayerStartedGame(struct D2QuestDataStrc * pQuest
 // OBJOP_UseStairDirect (Khalim's Will object op). Stair/teleport object operate fn: if the operating unit is walking, delegates to A2Q7::TakeStairs. No quest-state logic.
 BOOL __fastcall OBJOP_UseStairDirect(struct D2ObjectOperateFnArg * pOperation);
 // Q19_IsKhalimsWillNotComplete (Khalim's Will). Predicate: returns true when the in-memory A3Q2 quest data exists, is active, and its GUID-tracked completion marker (aPlayerGUID[2]) != 2 (i.e. relic-pedestal sequence not finished). Reads quest data struct only.
-bool __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame);
+BOOL __fastcall Q19_IsKhalimsWillNotComplete(::SGAMEDATA * pGame);
 // OBJOP_A3Q2_KhalimRelicPedestal (Khalim's Will object op, OperateFn45). Operate handler for the relic pedestal/Compelling Orb object. When triggered and the quest event flag is set, finds the associated object, schedules the orb's operate+death events, marks the GUID completion field (=2), and NotifyPlayersAboutEvent(9) (orb destroyed -> Mephisto path opens). Drives the physical quest-completion event; QuestRecord transition itself happens via the dialog/callbacks.
 BOOL __fastcall OBJOP_A3Q2_KhalimRelicPedestal(struct D2ObjectOperateFnArg * pOperation);
 // Q19_UpdateCompellingOrbObject (Khalim's Will). Per-frame/refresh updater for the Compelling Orb object: if the orb-event flag is set, locates the orb unit, syncs its update flag, and (if changed) schedules its operate event. Maintains orb object state; no QuestRecord transitions.
@@ -76,5 +73,6 @@ void __fastcall Q19_Callback00_NpcActivate(struct D2QuestDataStrc * pQuestData, 
 bool __fastcall Q19_StatusFilter(struct D2QuestDataStrc * pQuestData, struct D2UnitStrc * pUnit, struct D2BitBufferStrc * pBitBuffer, struct D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown);
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q2.cpp
 void __fastcall Q19_InitData(struct D2QuestDataStrc * pQuestData);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A3Q2

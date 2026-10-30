@@ -80,13 +80,13 @@ void __fastcall Q01_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA1Q1Strc* pQuestSpecificA1Q1 = pQuestData->pQuestSpecificData.pA1Q1;
-    if (!pQuestSpecificA1Q1->bAcceptedQuest) {
+    if (pQuestSpecificA1Q1->bAcceptedQuest != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)MarkCompleteQuest, true);
-    pQuestSpecificA1Q1->bAcceptedQuest = false;
+    pQuestSpecificA1Q1->bAcceptedQuest = '\0';
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
 }
 
@@ -155,7 +155,7 @@ void __fastcall DeactivateRespecQuest(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       exit(-1);
     }
 
-    pRespecQuestData->bIsActive = false;
+    pRespecQuestData->bIsActive = '\0';
     QUEST_DebugPrint(pGame, "deactivated respec quest", "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0xe5);
 }
 
@@ -175,7 +175,7 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     if (nMessageIndex == 0x40) {
-      pQuestDataA1Q1->bAcceptedQuest = true;
+      pQuestDataA1Q1->bAcceptedQuest = '\x01';
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0xfd);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q01_SyncQuestStepToPlayer);
       QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
@@ -250,7 +250,9 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!bRewardAwaits) {
+    if (bRewardAwaits) {
+      nMessageIndex = 3;
+    } else {
       int32_t nPlayerId = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       bRewardAwaits = QUEST_HasPlayerParticipated(pQuestData, nPlayerId);
       if (bRewardAwaits == 1) {
@@ -260,10 +262,10 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       /* If quest completed, return */ if (bQuestCompleted == 1) {
         return;
       }
-      if (3 < pQuestData->nStateFlag && !bQuestJustCompleted) {
+      if (pQuestData->nStateFlag >= 4 && !bQuestJustCompleted) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -271,11 +273,9 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nMessageIndex == -1) {
         return;
       }
-      if (7 < nMessageIndex) {
+      if (nMessageIndex >= 8) {
         return;
       }
-    } else {
-      nMessageIndex = 3;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
@@ -355,8 +355,8 @@ BOOL __fastcall Q01_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -399,7 +399,7 @@ void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     BOOL BVar1;
     int32_t nPopulatedRooms;
     eD2Quests eDenQuestId;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -472,7 +472,7 @@ void __fastcall Q01_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     D2QuestDataA1Q1Strc* pQuestDataA1Q1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 8) {
       bool bDidSetStateFlag;
-      if (pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction != '\0') {
         bDidSetStateFlag = false;
         if (pQuestData->nStateFlag == 1 || pQuestData->nStateFlag == 2) {
           QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0x259);
@@ -518,44 +518,45 @@ bool __fastcall Q01_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    if (bIsQuestInState == 1) {
-      return false;
-    }
-    /* If quest has been given by NPC (status 1) and reward is not yet available:
-                         active */ if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1) {
-      bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-      if (!bIsQuestInState) {
-        return true;
-      }
-    }
-
-    /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (bIsQuestInState != 1) {
-      /* Otherwise: inactive */ return false;
+      /* If quest has been given by NPC (status 1) and reward is not yet available:
+                         active */ if (pQuestData->bIsNotIntroduction == '\x01' && pQuestData->nStateFlag == 1) {
+        bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+        if (!bIsQuestInState) {
+          return true;
+        }
+      }
+
+      /* If reward is available: active */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+      if (bIsQuestInState != 1) {
+        /* Otherwise: inactive */ return false;
+      }
+
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A1Q1 (Den of Evil) sequence-filter (Q01_SequenceFilter, fpSequenceFilter) -- chains quest activation. Only proceeds once Den of Evil is finished (nStateFlag==5 or fully introduced); then looks up the next quest in the chain (nSequenceQuestId = QUEST_SistersBurialGrounds, set in Q01_InitData) and invokes its sequence filter, so completing the Den unlocks/advances A1Q2. No direct quest-record state ops; it drives quest progression via the chain.
 bool __fastcall Q01_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
     D2QuestDataStrc* pNextQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pNextQuestData) {
-      return false;
+    if (pNextQuestData) {
+      BOOL bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+      if (bBadFnPtr) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
+        exit(-1);
+      }
+
+      bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
+      return uVar1;
     }
 
-    BOOL bBadFnPtr = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-    if (bBadFnPtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2a7);
-      exit(-1);
-    }
-
-    bool uVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-    return uVar1;
+    return false;
 }
 
 // A1Q1 (Den of Evil) state-0x0d callback (Q01_Callback_13) -- reconstructs the server-side progress flags (nStateFlag / nStateFlagPrev) from a player's saved quest record on (re)load, so a returning player resumes at the right step. If the player's QUEST_DenOfEvil record is not Completed and not FinishedInPreviousGame, it reads the journal step sub-states: Step0x04 -> flag 3, prev 2 (den cleared, return to Akara); Step0x03 -> flag 3, prev 1 (entered the Den); Step0x02 -> flag 2, prev 1 (talked to Akara). The inverse of Q01_SyncQuestStepToPlayer.
@@ -609,7 +610,7 @@ void __fastcall Q01_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q01_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q01_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = &A1Q1::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 1;
     D2QuestDataA1Q1Strc** pQuestSpecificData = (D2QuestDataA1Q1Strc**)D2_ALLOC_POOL_AT(pGame->pMemoryPool, 0x8c, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q1.cpp", 0x2ee);
     pQuestData->pQuestSpecificData.pA1Q1 = (D2QuestDataA1Q1Strc*)pQuestSpecificData;

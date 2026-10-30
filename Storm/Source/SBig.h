@@ -58,12 +58,12 @@ uint32_t * __fastcall SBIG_BigBuffer_GetDataPtr(struct BigBuffer * pBitSet);
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Zeroes m_alloc, m_count and m_data. The old infix Small was meaningless - the two functions it distinguished are two instantiations, not two sizes. SMem tag 0x708880.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall TSBaseArray_Uc_Constructor(struct BigBuffer * pBitSet);
+struct BigBuffer * __fastcall TSBaseArray_Uc_Constructor(struct BigBuffer * pBitSet);
 // @was SBIG_BitSet_InitMedium (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method PLAUSIBLE. Body identical to 00421020; second byte instantiation, SMem tag 0x70888c. The old infix Medium was likewise meaningless.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-void __fastcall TSBaseArray_UcAlt_Constructor(struct BigBuffer * pBitSet);
+struct BigBuffer * __fastcall TSBaseArray_UcAlt_Constructor(struct BigBuffer * pBitSet);
 // @was SBIG_BitSet_RoundUpPow2_Max64 (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method CONFIRMED, and verified by hand this pass against the oracle's .CalcChunkSize__34TSGrowableArray<3RGN,10TSCD<3RGN>>FUi @10041a10, which is: when n is at least K, store K into this[0xc] and return K; otherwise repeatedly clear the lowest set bit of n while any bit remains, and return 1 if n reached zero. This function is that, with K = 0x40. The store of the cap into this[0xc] is the decisive tell and is present in both. Note the old name was wrong in DIRECTION as well as module: the loop that clears the lowest set bit rounds DOWN to a power of two, it does not round up. K = 256/sizeof(T) - 0x40 here for 4-byte elements, 8 in the oracle's RGN instantiation whose elements are 32 bytes.
@@ -116,14 +116,6 @@ int32_t __stdcall BigBuffer_Compare(struct BigBuffer * pBitSetA, struct BigBuffe
 // @oracle-method NOUN CORRECTION ONLY. Inlined on the oracle side, so no name is available. Tail unchanged and unverified.
 // @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
 int32_t __stdcall SBIG_BigBuffer_FindHighestBit(struct BigBuffer * pBitSet);
-// @was SBIG_BitSet_IsLowestBitClear (pass 6, 2026.08.28)
-// @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
-// @oracle-method NOUN CORRECTION ONLY, and see the negative below. Tail unchanged and unverified.
-// @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer; it is not a bitset. Chunk cap = 256/sizeof(element).
-// @module-history Pass 5 established the module (contiguous SBig.cpp COMDAT run 00420eb0-00421d80, moved out of D2Client::WindowHandle with a mechanical WND_ -> SBIG_ prefix swap, tail unverified). Pass 6 bound 35 of the 45 tails to oracle template methods; this one is among the 10 it did not.
-// @oracle-negative Pass 6: this is NOT BigBuffer IsOdd, despite the obvious temptation. The oracle's .IsOdd__FRC9BigBuffer @1009e4d0 has the OPPOSITE polarity and normalizes the leading zero limbs first, which this function does not do. The real IsOdd is BigBuffer_IsOdd 00422710, bound in pass 4. Do not rename this to IsOdd.
-// @struct The container header is {+0 m_alloc, +4 m_count, +8 m_data, +0xc m_chunk}. BigBuffer extends it with {+0x10 m_offset}, proven by the oracle's .Count__9BigBuffer being m_count - m_offset. The Ghidra type still called D2WndBitSetStrc IS BigBuffer, not a bitset. Chunk cap = 256/sizeof(element).
-BOOL __fastcall SBIG_BigBuffer_IsLowestBitClear(struct BigBuffer * pBitSet);
 // @was SBIG_BitSet_FindLowestBit (pass 6, 2026.08.28)
 // @module-history Pass 5 established the module: this function sits in the contiguous COMDAT run 00420eb0-00421d80 that SBig.cpp instantiates, and it was moved out of D2Client::WindowHandle into Storm::Source::SBig with a mechanical WND_ -> SBIG_ prefix swap, its descriptive tail left unverified. Pass 6 bound the tail.
 // @oracle-method NOUN CORRECTION ONLY. Inlined on the oracle side. Tail unchanged and unverified.
@@ -445,6 +437,6 @@ void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9f88(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9fc1(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9ff0(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-// 38 internal functions (defined in .cpp)
+// 39 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SBig

@@ -14,7 +14,7 @@ struct D2DrlgTileDataStrc;
 struct D2DrlgTileGridStrc;
 struct D2PoolManagerStrc;
 struct D2RoomExStrc;
-typedef int eD2GridCellFlags;
+typedef uint32_t eD2GridCellFlags;
 
 // Data types
 struct D2DrlgTileLinkStrc {
@@ -46,9 +46,6 @@ void __fastcall DRLGROOMTILE_CreateShadowTileFromGrid(struct D2RoomExStrc * pRoo
 void __fastcall DRLGROOMTILE_CompactTileDataArray(struct D2RoomExStrc * pRoomEx);
 // Returns the warp direction byte based on the tile orientation. Returns 0x72 for orientation 0xb (special case), or 0x6c otherwise. From RoomTile.cpp.
 char __stdcall DRLGROOMTILE_GetWarpDirectionByte(int nTileType);
-// Allocates a new D2DrlgTileLinkStrc (12 bytes), initializes it, and prepends it to the room's tile link list at pRoomEx->pRoomTiles->pMapLinks.
-// @sourcefile .\DRLG\RoomTile.cpp
-struct D2DrlgTileLinkStrc * __stdcall DRLGROOMTILE_AllocTileLink(struct D2PoolManagerStrc * pPoolManager, struct D2RoomExStrc * pRoomEx, int nTileId);
 void __fastcall InitRoomTiles(struct D2RoomExStrc * pRoomEx, struct D2DrlgGridStrc * pGrid, struct D2DrlgGridStrc * pOtherGrid, int32_t nTileParam, int32_t nY, int32_t nSizeMaybe);
 // Counts wall/floor/shadow tiles from grid flags.
 void __fastcall DRLGROOMTILE_CountTilesFromGrid(struct D2RoomExStrc * pRoomEx, struct D2DrlgGridStrc * pGrid, int bCountFloors, int bKillEdgeX, int bKillEdgeY);
@@ -67,6 +64,6 @@ void __fastcall DRLGROOMTILE_AllocTileDataArrays(struct D2RoomExStrc * pRoomEx);
 void __fastcall DRLGROOMTILE_GrowTileDataArray(struct D2PoolManagerStrc * pMemory, struct D2DrlgTileGridStrc * pTileGrid, int nAdditionalTiles);
 // @sourcefile .\DRLG\RoomTile.cpp
 void __fastcall DRLGROOMTILE_FreeRoomTilesAll(struct D2RoomExStrc * pRoomEx);
-// 13 internal functions (defined in .cpp)
+// 14 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::RoomTile

@@ -1179,7 +1179,7 @@ int __fastcall RENDERER_D3D_InitializeFontSystem(int nBaseOffset);
 BOOL __stdcall RENDERER_D3D_IsShadowBlendingEnabled();
 void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, int nDrawMode);
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
-void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
+void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, BYTE nAlpha);
 void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex);
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex);

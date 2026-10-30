@@ -21,26 +21,26 @@ BOOL __stdcall D2CheckExpansionGame() {
 
     BOOL BVar1;
     char szMpqPath[260];
-    if (gbExpansionCheckDone) {
-      BVar1 = MPQ_d2expMpq_Exists;
-      return BVar1;
-    }
-
-    gbExpansionCheckDone = 1;
-    Source::SFile::SFILE_GetInstallPath(szMpqPath, 0x104);
-    Storm::Source::SSTR::SStrPack(szMpqPath, "d2exp.mpq", 0x104);
-    DWORD dwFileAttributes = GetFileAttributesA(szMpqPath);
-    if (dwFileAttributes == -1) {
-      Storm::Source::SSTR::SStrCopy(szMpqPath, "d2exp.mpq", 0x104);
-      /* LPCSTR lpFileName for GetFileAttributesA */ dwFileAttributes = GetFileAttributesA(szMpqPath);
+    if (!gbExpansionCheckDone) {
+      gbExpansionCheckDone = 1;
+      Source::SFile::SFILE_GetInstallPath(szMpqPath, 0x104);
+      Storm::Source::SSTR::SStrPack(szMpqPath, "d2exp.mpq", 0x104);
+      DWORD dwFileAttributes = GetFileAttributesA(szMpqPath);
       if (dwFileAttributes == -1) {
-        BVar1 = MPQ_d2expMpq_Exists;
-        return BVar1;
+        Storm::Source::SSTR::SStrCopy(szMpqPath, "d2exp.mpq", 0x104);
+        /* LPCSTR lpFileName for GetFileAttributesA */ dwFileAttributes = GetFileAttributesA(szMpqPath);
+        if (dwFileAttributes == -1) {
+          BVar1 = MPQ_d2expMpq_Exists;
+          return BVar1;
+        }
       }
+
+      MPQ_d2expMpq_Exists = 1;
+      return 1;
     }
 
-    MPQ_d2expMpq_Exists = 1;
-    return 1;
+    BVar1 = MPQ_d2expMpq_Exists;
+    return BVar1;
 }
 
 int32_t __fastcall BitScanReverse(uint32_t nParam) {

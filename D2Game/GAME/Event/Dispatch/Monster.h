@@ -11,8 +11,8 @@
 // Forward declarations
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
-typedef int eD2TimerTypeDWORD;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2TimerTypeDWORD;
 
 // Data types
 struct __attribute__((packed)) D2MonsterKillStrc {

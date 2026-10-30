@@ -23,6 +23,11 @@
 static_assert(sizeof(void*) != 4 || sizeof(::D2WinImageEx) == 0x54, "D2_NEW_AT(D2WinImageEx): the 32-bit layout must be the 0x54 bytes 1.14d allocates");
 
 
+#ifndef RECON_FPTD_Draw
+#define RECON_FPTD_Draw
+typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
+#endif
+
 namespace D2Win::Forms {
 
 // @sourcefile .\Src\D2WinImage.cpp
@@ -38,9 +43,6 @@ namespace D2Win::Forms {
     pNewImageEx->sImage.sControl.dwSizeX = nSizeX;
     pNewImageEx->sImage.sControl.dwPosY = nPosY;
     pNewImageEx->sImage.sControl.dwSizeY = nSizeY;
-    // Two functions named Draw now share D2Win::Src::D2WinImage (004fd1f0 and 004fd470), so the
-    // name is an overload set; the exact type selects 004fd470. Retire when Ghidra gives them
-    // distinct names or the generator selects the overload by address.
     pNewImageEx->sImage.sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinImageEx*))Src::D2WinImage::Draw;
     pNewImageEx->sImage.sControl.pNext = 0;
     pNewImageEx->sImage.sControl.fpPush = Src::D2WinImage::Push;

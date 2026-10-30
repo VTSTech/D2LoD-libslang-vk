@@ -1416,7 +1416,7 @@ BOOL __fastcall D2COMP_SetAnimationMode(D2CharSelCompStrc * pCompUnit, int32_t n
 // Provenance: 1.14d asm 00504370 (pair scan over gnCompWeaponClassCodeMapCount entries); no callers, the same scan is inlined in D2COMP_AllocTxt_EverythingItems.
 int __stdcall D2COMP_GetWeaponClassCodeIndex(int32_t nWeaponClassCode) {
     uint32_t nIndex = 0;
-    if ((uint32_t)gnCompWeaponClassCodeMapCount <= 0) {
+    if (gnCompWeaponClassCodeMapCount <= 0) {
       return 0;
     }
 
@@ -2047,7 +2047,7 @@ void __stdcall D2COMP_FreeAllCompositeUnits() {
 }
 
 uint32_t * __stdcall D2COMP_GetCompositeUnitListHead() {
-    return (uint32_t*)&gpCompositeUnitListHead->nFlags;
+    return &gpCompositeUnitListHead->nFlags;
 }
 
 uint32_t * __stdcall D2COMP_GetNextCompositeUnit(uint32_t * pCompUnit) {
@@ -2317,12 +2317,12 @@ void __stdcall D2COMP_InitEmblemColorTables() {
     0x0
 }; D2_STATIC_GUARD(gbCompItemEmblemColorTableTemp3, "D2Win::Src::D2Comp::D2COMP_InitEmblemColorTables::gbCompItemEmblemColorTableTemp3");
 
-    int32_t nPaletteColor;
+    uint8_t bVar1;
     int i = 0;
     uint8_t* pColorEntry = gbD2CompColorInitR + 1;
     do {
-      nPaletteColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
-      gaGlideEmblemPrimaryColorTableEntries[i] = (uint8_t)nPaletteColor;
+      bVar1 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
+      gaGlideEmblemPrimaryColorTableEntries[i] = bVar1;
       pColorEntry += 3;
       i++;
     } while ((int)pColorEntry < (intptr_t)&gbD2CompColorInitR + 31);
@@ -2330,8 +2330,8 @@ void __stdcall D2COMP_InitEmblemColorTables() {
     pColorEntry = gbCompItemEmblemColorTableTemp3 + 1;
     i = 0;
     do {
-      nPaletteColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
-      gaGlideEmblemSecondaryColorTableEntries[i] = (uint8_t)nPaletteColor;
+      bVar1 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
+      gaGlideEmblemSecondaryColorTableEntries[i] = bVar1;
       pColorEntry += 3;
       i++;
     } while ((int)pColorEntry < (intptr_t)&gbCompItemEmblemColorTableTemp3 + 31);

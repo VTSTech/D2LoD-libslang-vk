@@ -7,9 +7,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
-#include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UI/ui.h"
@@ -18,9 +16,9 @@
 #include "D2Client/Units.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -56,6 +54,7 @@ void __stdcall UpdateGlobalAlwaysRun() {
 }
 
 void MINIPANEL_DrawBackground(int32_t nPanelSection) {
+    int nXOffset;
     D2GfxDataStrc sGfxData;
     if (!nPanelSection) {
       return;
@@ -63,30 +62,34 @@ void MINIPANEL_DrawBackground(int32_t nPanelSection) {
 
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = gpMiniPanelBackgroundDC6;
-    if (nPanelSection == 1) {
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xcd, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
-    } else {
-      int nXOffset;
-      if (nPanelSection == 2) {
-        if (!gbMiniPanelSinglePlayer) {
-          nXOffset = -0x54;
-        } else {
-          nXOffset = -0x4a;
+    switch (nPanelSection) {
+      case 1:
+        {
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 - 0xcd, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          break;
         }
+      case 2:
+        {
+          if (gbMiniPanelSinglePlayer) {
+            nXOffset = -0x4a;
+          } else {
+            nXOffset = -0x54;
+          }
 
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + nXOffset - 3, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
-        return;
-      }
-      if (nPanelSection == 3) {
-        if (!gbMiniPanelSinglePlayer) {
-          nXOffset = ScreenSizeX / 2 + 0x23;
-        } else {
-          nXOffset = ScreenSizeX / 2 + 0x38;
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + nXOffset - 3, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          return;
         }
+      case 3:
+        {
+          if (gbMiniPanelSinglePlayer) {
+            nXOffset = ScreenSizeX / 2 + 0x38;
+          } else {
+            nXOffset = ScreenSizeX / 2 + 0x23;
+          }
 
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nXOffset - 2, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
-        return;
-      }
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nXOffset - 2, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
+          return;
+        }
     }
 }
 
@@ -112,7 +115,7 @@ static void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
     }
 
     int nButtonIndex = ScreenSizeX / 2;
-    uint32_t nButtonX = nButtonIndex - 0x54;
+    int nButtonX = nButtonIndex - 0x54;
     if (gbMiniPanelSinglePlayer) {
       nButtonX = nButtonIndex - 0x4a;
     }
@@ -138,10 +141,7 @@ static void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
       nButtonX += 0x15;
       gnMiniPanelButtonX[uVar1] = nButtonX;
       gnMiniPanelButtonY[uVar1] = nButtonY;
-      if (!bSinglePlayer) {
-        gnMiniPanelButtonFrame[uVar1] = uVar1;
-        nFrameBase = uVar1 * 2;
-      } else {
+      if (bSinglePlayer) {
         if (uVar1 == 3) {
           nFrameAdjust += 2;
           nStateAdjust++;
@@ -149,6 +149,9 @@ static void MINIPANEL_CalculateButtonPositions(int32_t bIsExpansion) {
 
         gnMiniPanelButtonFrame[uVar1] = nStateAdjust + uVar1;
         nFrameBase = nFrameAdjust + uVar1 * 2;
+      } else {
+        gnMiniPanelButtonFrame[uVar1] = uVar1;
+        nFrameBase = uVar1 * 2;
       }
 
       gnMiniPanelButtonState6[uVar1] = nFrameBase;
@@ -247,12 +250,12 @@ BOOL __stdcall IsLeftScreenOpen() {
     store_and_check_merc:
     gnMiniPanelLeftScreen = _bIsOpen;
     bFlagSet = ui::GetUIFlag(UI_MERCINV);
-    if (!bFlagSet) {
-      return _bIsOpen;
+    if (bFlagSet) {
+      gnMiniPanelLeftScreen = 1;
+      return 1;
     }
 
-    gnMiniPanelLeftScreen = 1;
-    return 1;
+    return _bIsOpen;
 }
 
 BOOL __stdcall IsRightScreenOpen() {
@@ -313,7 +316,7 @@ BOOL __stdcall IsRightScreenOpen() {
 
     int nBeltUseBlocked;
     nBeltUseBlocked = Panel::PANEL_CheckBeltUseBlocked();
-    if (1 < nBeltUseBlocked) {
+    if (nBeltUseBlocked > 1) {
       _bIsOpen = 1;
       gnMiniPanelRightScreen = 1;
     }
@@ -341,25 +344,40 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
       case 0:
         bFlagSet = ui::GetUIFlag(UI_STATSCREEN);
       if (bFlagSet) {
-        Draw::SetUIFlag(UI_STATSCREEN, UI_RESET, 0);
+        ui::SetUIFlag(UI_STATSCREEN, UI_RESET, 0);
         return;
       }
 
-      Draw::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 0);
+      ui::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 0);
       break;
       case 1:
         bFlagSet = ui::GetUIFlag(UI_INVENTORY);
       if (!bFlagSet) {
-        Draw::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 0);
+        ui::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 0);
         return;
       }
 
-      Draw::SetUIFlag(UI_INVENTORY, UI_RESET, 0);
+      ui::SetUIFlag(UI_INVENTORY, UI_RESET, 0);
       return;
       case 2:
         _bFlagActive = ui::GetUIFlag(UI_SKILLTREE);
       eUI = UI_SKILLTREE;
       goto toggle_panel;
+      case 5:
+        bFlagSet = ui::GetUIFlag(UI_BELTROWS);
+      if (bFlagSet) {
+        ui::SetUIFlag(UI_BELTROWS, UI_RESET, 0);
+      }
+
+      _bFlagActive = ui::GetUIFlag(UI_MSGLOG);
+      eUI = UI_MSGLOG;
+      toggle_panel:
+      if (!_bFlagActive) {
+        ui::SetUIFlag(eUI, UI_TOGGLE, 0);
+        return;
+      }
+      ui::SetUIFlag(eUI, UI_RESET, 0);
+      return;
       case 3:
         eGameType = GAME::Game::CLIENT_GetD2GSGameType();
       if (eGameType != GAMETYPE_SINGLEPLAYER) {
@@ -373,27 +391,12 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
         _bFlagActive = ui::GetUIFlag(UI_AUTOMAP);
       eUI = UI_AUTOMAP;
       goto toggle_panel;
-      case 5:
-        bFlagSet = ui::GetUIFlag(UI_BELTROWS);
-      if (bFlagSet) {
-        Draw::SetUIFlag(UI_BELTROWS, UI_RESET, 0);
-      }
-
-      _bFlagActive = ui::GetUIFlag(UI_MSGLOG);
-      eUI = UI_MSGLOG;
-      toggle_panel:
-      if (!_bFlagActive) {
-        Draw::SetUIFlag(eUI, UI_TOGGLE, 0);
-        return;
-      }
-      Draw::SetUIFlag(eUI, UI_RESET, 0);
-      return;
       case 6:
         /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA("Panel quest log toggle\n");
       QuestLog::QUESTLOG_ToggleQuestScreen(0);
       return;
       case 7:
-        Draw::UI_CloseActivePanels(0, 0);
+        ui::UI_CloseActivePanels(0, 0);
       ui::UI_ClearCursorAnimationState();
       EscMenu::ESCMENU_ShowMenu(1, 0);
       ui::UI_SetCursorAnimationFlag();
@@ -454,7 +457,7 @@ void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
       bBeltHover = Panel::PANEL_GetBeltSlotHoverFlag();
       if (bBeltHover) {
         nButtonFrame = Panel::PANEL_CheckBeltUseBlocked();
-        if (1 < nButtonFrame) {
+        if (nButtonFrame > 1) {
           nCenterX = -0x76;
         }
       }
@@ -466,11 +469,11 @@ void __stdcall INPUT_MiniPanelMouseUp(D2UIMouseMsgStrc * pMsg) {
       }
 
       nCenterX = ScreenSizeX / 2 + nCenterX;
-      if (nCenterX - 0x54 < nMouseX && nMouseX < nCenterX + 0x59 && ScreenSizeY - 0x45 < nMouseY && nMouseY < ScreenSizeY - 0x2f) {
+      if (nMouseX > nCenterX - 0x54 && nMouseX < nCenterX + 0x59 && nMouseY > ScreenSizeY - 0x45 && nMouseY < ScreenSizeY - 0x2f) {
         nCenterX = 0;
         if (nButtonCount) {
           do {
-            if ((int)gnMiniPanelButtonX[nCenterX] < nMouseX && nMouseX < (int)(gnMiniPanelButtonX[nCenterX] + 0x14)) {
+            if (nMouseX > gnMiniPanelButtonX[nCenterX] && nMouseX < gnMiniPanelButtonX[nCenterX] + 0x14) {
               nButtonId = gnMiniPanelButtonFrame[nCenterX];
               if (nButtonId == 7 || (eUnitType = Units::GetType(pPlayer) , eUnitType == UNIT_PLAYER && (eAnimMode = UNIT::GetAnimMode(pPlayer) , eAnimMode != eD2PlayerAnimMode_ns::Dead))) {
                 MINIPANEL_HandleButtonClick(nButtonId);
@@ -538,7 +541,7 @@ void __stdcall INPUT_MiniPanelMouseDown(D2UIMouseMsgStrc * pMsg) {
     if (bBeltHover) {
       int nBeltUseBlocked;
       nBeltUseBlocked = Panel::PANEL_CheckBeltUseBlocked();
-      if (1 < nBeltUseBlocked) {
+      if (nBeltUseBlocked > 1) {
         nButtonIndex = -0x76;
       }
     }
@@ -553,13 +556,13 @@ void __stdcall INPUT_MiniPanelMouseDown(D2UIMouseMsgStrc * pMsg) {
     if (nMouseX <= nButtonIndex - 0x54) {
       return;
     }
-    if (nButtonIndex + 0x59 <= nMouseX) {
+    if (nMouseX >= nButtonIndex + 0x59) {
       return;
     }
     if (nMouseY <= ScreenSizeY - 0x45) {
       return;
     }
-    if (ScreenSizeY - 0x2f <= nMouseY) {
+    if (nMouseY >= ScreenSizeY - 0x2f) {
       return;
     }
 
@@ -568,9 +571,9 @@ void __stdcall INPUT_MiniPanelMouseDown(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    while (nMouseX <= (int)gnMiniPanelButtonX[nButtonIndex] || (int)(gnMiniPanelButtonX[nButtonIndex] + 0x14) <= nMouseX) {
+    while (nMouseX <= gnMiniPanelButtonX[nButtonIndex] || nMouseX >= gnMiniPanelButtonX[nButtonIndex] + 0x14) {
       nButtonIndex++;
-      if (nButtonCount <= nButtonIndex) {
+      if (nButtonIndex >= nButtonCount) {
         return;
       }
     }
@@ -605,10 +608,10 @@ void __stdcall INPUT_MiniPanelMouseDown(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall MINIPANEL_Init() {
     eD2GSGameType eGameType = GAME::Game::CLIENT_GetD2GSGameType();
-    if (eGameType == GAMETYPE_SINGLEPLAYER) {
-      gpMiniPanelBackgroundDC6 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\minipanel_s");
-    } else {
+    if (eGameType != GAMETYPE_SINGLEPLAYER) {
       gpMiniPanelBackgroundDC6 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\minipanel");
+    } else {
+      gpMiniPanelBackgroundDC6 = ui::ARCHIVE_LoadOverlayImageUsedInGame("Panel\\minipanel_s");
     }
 
     gbMiniPanelSinglePlayer = (uint32_t)(eGameType == GAMETYPE_SINGLEPLAYER);
@@ -643,11 +646,11 @@ void __stdcall MINIPANEL_Shutdown() {
 }
 
 BOOL __fastcall MINIPANEL_IsMouseInArea(int32_t nParam1, int32_t nParam2) {
-    if (!(ScreenSizeX / 2 - 0x4a < nParam1 && nParam1 < ScreenSizeX / 2 + 0x47 && nParam2 < ScreenSizeY - 0x32 && ScreenSizeY - 0x45 < nParam2)) {
-      return 0;
+    if (nParam1 > ScreenSizeX / 2 - 0x4a && nParam1 < ScreenSizeX / 2 + 0x47 && nParam2 < ScreenSizeY - 0x32 && nParam2 > ScreenSizeY - 0x45) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 void __stdcall SetupMiniPanel() {
@@ -686,21 +689,21 @@ BOOL __stdcall WAYPOINT_IsMouseInMiniPanel() {
     if (!bFlagSet) {
       return 0;
     }
-    if (!gbMiniPanelSinglePlayer) {
-      nPanelX = ScreenSizeX / 2 + 0x23;
-    } else {
+    if (gbMiniPanelSinglePlayer) {
       nPanelX = ScreenSizeX / 2 + 0x38;
+    } else {
+      nPanelX = ScreenSizeX / 2 + 0x23;
     }
 
     int nButtonCount = 8;
     if (gbMiniPanelSinglePlayer) {
       nButtonCount = 7;
     }
-    if (!(nPanelX < nMouseX && nMouseX < nPanelX + nButtonCount * 0x14 && ScreenSizeY - 0x4c < nMouseY && nMouseY < ScreenSizeY - 0x32)) {
-      return 0;
+    if (nMouseX > nPanelX && nMouseX < nPanelX + nButtonCount * 0x14 && nMouseY > ScreenSizeY - 0x4c && nMouseY < ScreenSizeY - 0x32) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nButtonFrame) {
@@ -753,14 +756,11 @@ static void __stdcall MINIPANEL_ShowTooltip(int32_t nX, int32_t nY, int32_t nBut
         return;
     }
 
-    uint16_t* pLocaleStr = wszTooltip;
-    for (i = 100; i; i--) {
-      pLocaleStr[0] = L'\0';
-      pLocaleStr[1] = L'\0';
-      pLocaleStr += 2;
+    for (i = 0; i < 200; i++) {
+      wszTooltip[i] = L'\0';
     }
 
-    pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(nStringIndex);
+    uint16_t* pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(nStringIndex);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTooltip, pLocaleStr);
     if (bHasCommand && nCommandId != 0x39) {
       uint16_t* pFormatStr;
@@ -805,7 +805,7 @@ static void MINIPANEL_HandleMouseHover(int32_t nLayout) {
     }
 
     nButtonIndex = ScreenSizeX / 2 + nButtonIndex;
-    if (!(nButtonIndex - 0x54 < nMouseX && nMouseX < nButtonIndex + 0x59 && ScreenSizeY - 0x45 < nMouseY && nMouseY < ScreenSizeY - 0x2f)) {
+    if (!(nMouseX > nButtonIndex - 0x54 && nMouseX < nButtonIndex + 0x59 && nMouseY > ScreenSizeY - 0x45 && nMouseY < ScreenSizeY - 0x2f)) {
       return;
     }
 
@@ -815,10 +815,9 @@ static void MINIPANEL_HandleMouseHover(int32_t nLayout) {
     }
 
     do {
-      uint32_t nX;
-      nX = gnMiniPanelButtonX[nButtonIndex];
-      if ((int)nX < nMouseX && nMouseX < (int)(nX + 0x14)) {
-        MINIPANEL_ShowTooltip(nX, gnMiniPanelButtonY[nButtonIndex], gnMiniPanelButtonFrame[nButtonIndex]);
+      nMouseY = gnMiniPanelButtonX[nButtonIndex];
+      if (nMouseX > nMouseY && nMouseX < nMouseY + 0x14) {
+        MINIPANEL_ShowTooltip(nMouseY, gnMiniPanelButtonY[nButtonIndex], gnMiniPanelButtonFrame[nButtonIndex]);
       }
 
       nButtonIndex++;
@@ -834,10 +833,10 @@ void __stdcall DRAW_UI_MiniPanel() {
       if (!bRightOpen) {
         memset(&sGfxData, 0, 0x48);
         sGfxData.pDC6 = gpMiniPanelBackgroundDC6;
-        if (!gbMiniPanelSinglePlayer) {
-          iVar1 = -0x54;
-        } else {
+        if (gbMiniPanelSinglePlayer) {
           iVar1 = -0x4a;
+        } else {
+          iVar1 = -0x54;
         }
 
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, ScreenSizeX / 2 + iVar1 - 3, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);
@@ -860,10 +859,10 @@ void __stdcall DRAW_UI_MiniPanel() {
     if (!bRightOpen) {
       memset(&sGfxData, 0, 0x48);
       sGfxData.pDC6 = gpMiniPanelBackgroundDC6;
-      if (!gbMiniPanelSinglePlayer) {
-        iVar1 = ScreenSizeX / 2 + 0x23;
-      } else {
+      if (gbMiniPanelSinglePlayer) {
         iVar1 = ScreenSizeX / 2 + 0x38;
+      } else {
+        iVar1 = ScreenSizeX / 2 + 0x23;
       }
 
       D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar1 - 2, ScreenSizeY - 0x2f, -1, DRAW_SOLID, nullptr);

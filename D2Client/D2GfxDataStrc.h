@@ -11,7 +11,7 @@
 // Forward declarations
 struct DC6;
 struct DC6Block;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2GfxDataStrc {

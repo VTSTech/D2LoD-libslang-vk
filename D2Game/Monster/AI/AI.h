@@ -19,7 +19,7 @@ struct D2UnitDataPlayerInteractedNPCStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 struct D2MonsterAiParameterStruct;
 #ifndef RECON_FPTD_AI_Init
 #define RECON_FPTD_AI_Init
@@ -270,7 +270,7 @@ int32_t __fastcall MONSTERAI_CommandRunAwayFromUnit(::SGAMEDATA * pGame, struct 
 // Commands a monster to walk one step directly away from pFleeTarget. Reads both units' X/Y positions via path accessors, computes the flee direction sign in each axis, adds nFleeDistance in each axis to get a flee destination tile, sets the path step count to 1, then calls MONSTERAI_ExecuteLifecycleTransition with the Walk skill and the computed target coords to trigger the move animation and pathfinding.
 void __fastcall MONSTERAI_CommandWalkAwayFromUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int * pFleeTarget, uint8_t nFleeDistance);
 // Tail-calls MONSTERAI_ExecuteLifecycleTransition (already fixed to return int32_t) as its final statement, dropping the result.
-int32_t __fastcall MONSTERAI_CommandWalkRandomOffset(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCenterUnit, uint32_t nRadius);
+int32_t __fastcall MONSTERAI_CommandWalkRandomOffset(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pCenterUnit, uint8_t nRadius);
 // Both branches tail-call an already-fixed int32_t-returning function (MONSTERAI_ExecuteLifecycleTransition, or WalkRandomOffset when pOther is null), dropping the result.
 int32_t __fastcall WalkRandomOffsetAroundUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pOther, uint32_t nRadius);
 int __fastcall SetCombatStateAndApproachTarget(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pTarget, uint8_t nState, int32_t directionFlags);

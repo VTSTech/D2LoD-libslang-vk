@@ -119,16 +119,16 @@ void __fastcall PLAYER_InitBaseStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
       return;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_strength, (uint32_t)(uint8_t)pCharStats->str, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_energy, (uint32_t)(uint8_t)pCharStats->_int, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_dexterity, (uint32_t)(uint8_t)pCharStats->dex, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_vitality, (uint32_t)(uint8_t)pCharStats->vit, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_strength, (uint32_t)pCharStats->str, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_energy, (uint32_t)pCharStats->_int, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_dexterity, (uint32_t)pCharStats->dex, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_vitality, (uint32_t)pCharStats->vit, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_tohit, 0, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_toblock, 0, 0);
-    nStatValue = ((uint32_t)(uint8_t)pCharStats->hpadd + (uint32_t)(uint8_t)pCharStats->vit) * 0x100;
+    nStatValue = ((uint32_t)pCharStats->hpadd + (uint32_t)pCharStats->vit) * 0x100;
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, nStatValue, 0);
-    nStatValue = (uint32_t)(uint8_t)pCharStats->_int << 8;
+    nStatValue = (uint32_t)pCharStats->_int << 8;
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxmana, nStatValue, 0);
     nStatValue = (uint32_t)(uint8_t)pCharStats->stamina << 8;
@@ -307,7 +307,7 @@ void __fastcall ClearStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     int32_t nCurrentStat = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_strength, 0);
-    nStatDelta = (uint32_t)(uint8_t)pCharStats->str - nCurrentStat;
+    nStatDelta = (uint32_t)pCharStats->str - nCurrentStat;
     if (nStatDelta) {
       D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nStatDelta, 0);
       D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_strength, nStatDelta, 0);
@@ -315,9 +315,9 @@ void __fastcall ClearStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     nCurrentStat = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_energy, 0);
-    PLAYER_AddEnergyStatPoints(pUnit, (uint32_t)(uint8_t)pCharStats->_int - nCurrentStat);
+    PLAYER_AddEnergyStatPoints(pUnit, (uint32_t)pCharStats->_int - nCurrentStat);
     nCurrentStat = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_dexterity, 0);
-    nStatDelta = (uint32_t)(uint8_t)pCharStats->dex - nCurrentStat;
+    nStatDelta = (uint32_t)pCharStats->dex - nCurrentStat;
     if (nStatDelta) {
       D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nStatDelta, 0);
       D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_dexterity, nStatDelta, 0);
@@ -325,7 +325,7 @@ void __fastcall ClearStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     nCurrentStat = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_vitality, 0);
-    PLAYER_AddVitalityStatPoints((uint32_t)(uint8_t)pCharStats->vit - nCurrentStat, pUnit);
+    PLAYER_AddVitalityStatPoints((uint32_t)pCharStats->vit - nCurrentStat, pUnit);
 }
 
 BOOL __fastcall PLAYER_AssignStatPoint(D2UnitStrc * pUnit, uint32_t eStatType) {
@@ -715,8 +715,7 @@ void __fastcall PLAYER_SendHoverTextToClient(D2UnitStrc * pUnit, D2ClientStrc * 
           sPacket.nMsgSubType = (uint8_t)pUnit->eUnitType;
           sPacket.szName[0] = '\0';
           sPacket.nMessageType = '\x05';
-          uVar1 = D2Common::Chat::GetLanguageCode(pHoverText);
-          sPacket.nLanguage = (uint8_t)uVar1;
+          sPacket.nLanguage = D2Common::Chat::GetLanguageCode(pHoverText);
           memset(sPacket.szMessage, 0, 0x100);
           D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, (int32_t)sPacket.szMessage);
           GAME::SCmd::NET_D2GS_SERVER_Send_0x26_CHATSTART(pClient, &sPacket);

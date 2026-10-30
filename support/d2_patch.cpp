@@ -37,6 +37,11 @@
 
 #include "D2CMP/SRC/LRUCache.h"
 
+#include <cstdio>
+
+// The Game.exe Ghidra database version this tree was generated from (ghidra_version.cpp).
+extern const char g_szGhidraVersion[];
+
 namespace {
 
 bool WriteBytes(void* pDst, const void* pSrc, size_t n) {
@@ -251,21 +256,30 @@ void D2PATCH_InstallAll(void) {
     D2PATCH_RedirectAllCalls((void*)&D2CMP::SRC::LRUCache::LRUCACHE_Unlink,
                              (void*)&D2PATCH_LRUCACHE_Unlink, 2);
 
-    // Brand the build. This is a deliberate DIVERGENCE from 1.14d, not a
-    // fidelity fix, which is why it lives here and not in Ghidra: the database
-    // has to keep describing the binary Blizzard shipped or the assert oracle
+    // Brand the build: the version line reads "R<Ghidra version>" (ghidra_version.cpp,
+    // written by each regen) instead of "v 1.14d". This is a deliberate DIVERGENCE from
+    // 1.14d, not a fidelity fix, which is why it lives here and not in Ghidra: the
+    // database has to keep describing the binary Blizzard shipped or the assert oracle
     // and the byte-matching targets stop meaning anything.
-    // Two sites: UIMENU_MainMenu (splash) and AUTOMAP_DrawVersion.
-    // The needle is derived from the replacement at RUNTIME rather than written
-    // as its own literal. Spelling it out inline put a THIRD copy of
-    // "v %d.%d%c" in .rdata, referenced from this very function - so the scan
-    // found three operands instead of two, and the third was the patch's own
-    // argument. Taking the first nine characters of the replacement leaves
-    // exactly the two engine sites. The NUL terminator is what stops the needle
-    // matching the replacement itself, which merely continues with " Redivivus".
-    static const char kVersionFmt[] = "v %d.%d%c Redivivus";
+    // Two sites: UIMENU_MainMenu (splash) and AUTOMAP_DrawVersion. Both still pass
+    // (1, 0xe, 'd'); a format without conversions ignores them.
+    // The needle "v %d.%d%c" is assembled at RUNTIME: a literal of it here would put a
+    // third copy in .rdata, referenced from this very function, and the scan would
+    // patch this function's own operand along with the two engine sites.
+    static char szVersion[24];
+    snprintf(szVersion, sizeof(szVersion), "R%s", g_szGhidraVersion);
+    // Stored XOR 0x5a so no copy of the needle's bytes exists in the image either.
+    static const unsigned char kNeedleXor[9] = {0x2c, 0x7a, 0x7f, 0x3e, 0x74, 0x7f, 0x3e, 0x7f, 0x39};
     char szNeedle[10];
-    memcpy(szNeedle, kVersionFmt, 9);
+    for (int i = 0; i < 9; i++) szNeedle[i] = (char)(kNeedleXor[i] ^ 0x5a);
     szNeedle[9] = '\0';
-    D2PATCH_RedirectFormatString(szNeedle, kVersionFmt, 2);
+    D2PATCH_RedirectFormatString(szNeedle, szVersion, 2);
 }
+
+#ifdef _MSC_VER
+// The development build installs these from D2CONTROL_Start. The Visual C++
+// build has no control channel, so it installs them from the CRT's initialiser
+// table, before WinMain runs any game code.
+#pragma section(".CRT$XCU", read)
+extern "C" __declspec(allocate(".CRT$XCU")) void (__cdecl* const gpfnD2PatchInstallAll)(void) = D2PATCH_InstallAll;
+#endif

@@ -70,7 +70,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x013 */ char seqnum;
     /* 0x014 */ char range;
     /* 0x015 */ char SelectProc;
-    /* 0x016 */ char seqinput;
+    /* 0x016 */ uint8_t seqinput;
     /* 0x017 */ uint8_t field_0x17;
     /* 0x018 */ short itypea1;
     /* 0x01A */ short itypea2;
@@ -170,7 +170,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x188 */ short manashift;
     /* 0x18A */ short mana;
     /* 0x18C */ short lvlmana;
-    /* 0x18E */ char attackrank;
+    /* 0x18E */ uint8_t attackrank;
     /* 0x18F */ uint8_t lineofsight;
     /* 0x190 */ int delay;
     /* 0x194 */ short skilldesc;

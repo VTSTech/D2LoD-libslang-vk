@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2PlayerListSubStrc;
 struct D2RosterLinkListStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2PlayerListStrc {
@@ -24,7 +24,7 @@ struct __attribute__((packed)) D2RosterStrc {
     /* 0x14 */ int nHpPercent;
     /* 0x18 */ int nArenaScore; // Arena PvP score, set via packet 0x65, displayed by UI_DrawArenaKillCount at (600,25)
     /* 0x1C */ int nCharType;
-    /* 0x20 */ short nUnitLevel;
+    /* 0x20 */ uint16_t nUnitLevel;
     /* 0x22 */ uint16_t nPartyId;
     /* 0x24 */ eD2LevelId eLevelId;
     /* 0x28 */ int nX;

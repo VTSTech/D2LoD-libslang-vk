@@ -20,6 +20,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
@@ -113,12 +114,10 @@
 #include "Fog/Src/LogManager.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/trees.h"
-#include "Storm/H/HeapManager.h"
 #include "Storm/Source/SCMD.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
-#include "Storm/SMem.h" // vanilla-plus: non-WIN _SYSTEM_INFO owner (globals.h: gSystemInfo extern)
 #include "Storm/_unnamespaced.h"
 #include "Storm/H/stpl.h"
 
@@ -467,7 +466,6 @@ struct GlFloorCacheNodeStrc;
 struct GlFloorCacheStrc;
 struct GlSubtileCacheNodeStrc;
 struct GlSubtileCacheStrc;
-struct HeapManager;
 struct IDirect3DDevice;
 struct IDirect3DInterface7;
 struct IDirect3DTexture2;
@@ -620,7 +618,6 @@ typedef uint32_t (__fastcall *fpProperties)(uint32_t param_1, D2UnitStrc * param
 typedef uint64_t (__stdcall *pfnSymGetModuleBase64)(HANDLE hProcess, DWORD qwAddrLow, DWORD qwAddrHigh);
 typedef uint64_t (__stdcall *pfnSymLoadModule64)(HANDLE hProcess, HANDLE hFile, char * ImageName, char * ModuleName, DWORD BaseOfDllLow, DWORD BaseOfDllHigh, DWORD SizeOfDll);
 typedef void (*RecordCleanupFn)();
-typedef void (*fnHeapFree)(void * pMem);
 typedef void (*fnLogWriteLine)(char * szFmt, ...);
 typedef void (*pfnUIConfigTabAction)();
 typedef void (__fastcall *AI_Init)(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam);
@@ -731,7 +728,6 @@ typedef void (__stdcall *pfnSFileOpenCallback)(char * szFileName, void * pUserPa
 typedef void (__stdcall *pfnSSystemShutdown)(uint32_t dwShutdownCode);
 typedef void (__stdcall *pfnUIMenuInstance)();
 typedef void (__stdcall *pfnVoidNoArgCallback)();
-typedef void * (*fnHeapAlloc)(uint32_t nSize);
 typedef void * (__fastcall *fnSendGetAdvListEx)(char * szName, char * szPass, uint32_t dw1, uint32_t dw2);
 typedef void * (__fastcall *fnSendLogonRealmEx)(char * szRealm, char * szPass);
 typedef void * (__stdcall *fnBnetLoadAndReturn)();
@@ -1579,8 +1575,8 @@ extern uint16_t gszUnicodeKorean_1[256];
 extern GUID gIID_IDirect3DSurface;
 extern GUID IID_IDirect3DHALDevice;
 extern GUID D3DGuid;
-extern GUID IID_IDirectDraw7;
 extern GUID IID_IDirectDrawGammaControl; // [vanilla-plus fix 17] restored 16-byte IID (was a 1-byte export remnant)
+extern GUID IID_IDirectDraw7;
 // lpMultiByteStr parameter of MultiByteToWideChar
 extern char lpMultiByteStr_006ff97c[2];
 // lpSubBlock parameter of VerQueryValueA
@@ -1765,6 +1761,7 @@ extern uint32_t gnBlizzardSoundPlayed;
 extern uint32_t gbLightmapColorEnabled;
 extern D2SeedStrc * gpArcaneStarsSeed;
 extern eD2ArenaFlags CLIENT_ArenaFlags;
+extern eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00;
 extern int gnChatHistoryReadIndex;
 extern uint32_t gnChatHistoryWriteIndex;
 extern D2UIFlagInitStrc gUIFlagChatInit;
@@ -1815,6 +1812,7 @@ extern uint32_t CurrentNpcButtonSelection;
 extern int gaNpcShopButtonTable[2];
 extern int NPCButtonArray[16];
 extern int gnBeltPanelState;
+extern BOOL gbPanelClickProcessed;
 extern int32_t gnBeltSlotUnderCursor;
 extern int gnBeltTooltipX;
 extern int gnBeltTooltipY;
@@ -2045,9 +2043,9 @@ extern eD2Sounds eD2Sounds_ARRAY_00729508[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729538[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729568[12];
 extern eD2Sounds eD2Sounds_ARRAY_00729598[12];
-extern eD2Sounds eD2Sounds_ARRAY_007295c8[12];
 // VP: vanilla-plus - per-class player sound tables, indexed [0..10]. Real contents recovered from the retail 1.14d Game.exe static .data (they are initialized data, not runtime-filled): the decompile shrank each table to a 1-byte stub because no recovered code wrote or sized them - every indexed read ran past the object into neighboring globals, and a garbage sound id crashed SOUND_PlaySound on the null sounds.txt line (AV read at D2SoundsTxt.Volume@0x3C, the 0x2C inventory-full pickup path). Slot semantics (verified against LoD sounds.txt wavs): [0]/[1] hit/death bases, [2..7] event codes 0x13/0x15/0x16/0x17/0x14/0x18 (impossible, cantuseyet, needkey, cantcarry = the pickup-fail voice, needmana, not_in_town), [8] chat_a_1 base for anim events 0x19-0x20, [9] act1_complete_andariel base for quest events 0x21-0x53 (linear, 0x53 = act5_defeat_baal), [10] footstep block base. Values live in globals.cpp, one grep gate per class pins the full initializer.
 extern int gaUnitSoundIdsAmazon[11];
+extern eD2Sounds eD2Sounds_ARRAY_007295c8[12];
 extern int gaUnitSoundIdsBarbarian[11];
 extern int gaUnitSoundIdsNecromancer[11];
 extern int gaUnitSoundIdsPaladin[11];
@@ -2625,6 +2623,7 @@ extern D2WinTextBox * gpCtlBnetProgressBar;
 extern D2WinTextBox * gbBnetConnectionTimerActive;
 extern int gbBnetProgressActive;
 extern HANDLE ghBnetConnectHandle;
+extern unsigned int gbBNetConnectionProgressFlag;
 extern D2WinEditBox * gpCharSelAccountNameInputControl;
 extern D2WinEditBox * gpCtlDisconnectMessage1;
 extern D2WinEditBox * gpCtlDisconnectMessage2;
@@ -2667,7 +2666,7 @@ extern uint32_t gbCharSelectInProgress;
 extern int nCharacterSelectionIndex;
 extern uint32_t gnCharSelBNetLoadState;
 extern char * gszPendingRealmName;
-extern char gbCharSelScreenWaitTimeout;
+extern uint32_t gbCharSelScreenWaitTimeout;
 extern uint32_t gbCharSelArrowsHidden;
 extern D2CharSelStrc * gpCharSelPendingEntry;
 extern int32_t g_nCharSelNavigationIndex;
@@ -2959,7 +2958,7 @@ extern int D2GS_Connected;
 extern int ServerLoadingComplete;
 extern BOOL D2CLIENT_ExitVar3;
 // Level load in-progress flag: set on unload complete, cleared on load complete.
-extern bool gLevelLoadInProgress;
+extern BOOL gLevelLoadInProgress;
 // Exit cutscene state: pending id + played flag.
 extern D2ExitCutsceneState gExitCutsceneState;
 extern D2ExitCutsceneState gExitCutscenePlayed;
@@ -2975,7 +2974,7 @@ extern uint32_t gQueuedPrimaryClick;
 extern int gQueuedSecondaryClick;
 extern uint32_t gbMouseButtonEventPending;
 // Run modifier key state; adds run flag to ClickMap (cleared on key-up).
-extern bool gRunKeyDown;
+extern BOOL gRunKeyDown;
 // Click modifier key state used to add flag 0x4 in GetMouseClickFlags.
 extern int gClickModifierDown;
 extern uint32_t gnQueuedPrimaryClickX;
@@ -3011,6 +3010,7 @@ extern uint32_t gbLoadScreenLevelLoadInProgress;
 extern D2UIFlagStrc GFX_bShowUIFlag;
 extern int gnPanelOffsetX;
 extern int gnPanelOffsetY;
+extern BOOL gbAutomapPanelOpened;
 extern uint32_t gnLastOpenPanelId;
 extern DC6 * gpUiCursorFocus16DC6;
 extern DC6 * pUi_Panel_buysellbtn;
@@ -3134,7 +3134,7 @@ extern int gnWeatherTransitionState;
 extern int gnWeatherRainParticleTimingMs[2];
 extern char gWeatherPaletteDayColors[12];
 extern char gWeatherPaletteLightingNightColors[12];
-extern int gnWeatherTransitionInitialized;
+extern float gnWeatherTransitionInitialized;
 extern char gWeatherPaletteMudDuskColors[12];
 extern DC6 * DC6_UncompOverlays_Rain[4];
 extern int DC6_UncompOverlays_Rain_FrameCount[4];
@@ -3159,7 +3159,7 @@ extern int gnLightmapWorldRefreshFlag;
 extern int gnLightmapBufferState;
 extern int gnLightmapWorldMaxX;
 extern int gnLightmapWorldMaxY;
-extern uint32_t gnLightmapInterpolationState[257]; // [glide fix 9] 257 dwords: index 0x100 is the falloff for saturated intensity 0xff (was [256] -> OOB read = 0 -> black light cores)
+extern uint32_t gnLightmapInterpolationState[257];
 extern D2LightMapCellStrc gaLightMapCells[2304];
 extern D2LightMapCellStrc gLightmapCellData[2304];
 extern D2LightMapCellStrc gLightmapCellDataRed[2304];
@@ -3192,7 +3192,7 @@ extern uint32_t gnCurrentEngineFlags;
 extern uint32_t gbHideExtendedFPSStats;
 extern uint32_t gnLoadingProgressRatio;
 extern uint32_t gnChatHistoryScrollIndex;
-extern char gaIMECompositionBuffer;
+extern int gaIMECompositionBuffer;
 extern char gaChatInputBuffer;
 extern uint8_t gbChatInputEnabled;
 extern uint16_t gnChatHistoryFillCount;
@@ -3261,6 +3261,7 @@ extern uint8_t geCutsceneCurrentSoundId;
 extern D2NpcShopButtonStrc gaNpcShopButtons[4];
 extern unsigned int gdwInvLastActionTickCount;
 extern int gnInvMouseX;
+extern BOOL gbInvOverlayFlag;
 extern DC6 * gpInvShopTabImage;
 extern uint32_t gpInvCursorItem;
 extern int gbInvNpcScreenCoordsInitialized;
@@ -3346,6 +3347,7 @@ extern uint32_t gpHelpScrollButtonDown;
 extern uint32_t gpHelpScrollButtonUp;
 extern int gaPanelImageLoadFlags[12];
 extern uint8_t gaPanelBeltColors[4];
+extern BOOL gbPanelLeftBeltArrowClicked;
 extern uint8_t gbPanelRightBeltArrowClicked[12];
 extern uint32_t gpPanelBeltSlot;
 extern uint32_t gnPanelBeltRowsExpanded;
@@ -3427,21 +3429,25 @@ extern uint32_t gnUICtrlConfigButton3State;
 // Indices: [0] list area  [1] up arrow  [2] down arrow  [3] scroll bar  [4] scroll thumb  [5] below thumb  [6] tab/button row.
 extern int gaControlConfigRegionMouseState[7];
 extern uint32_t gnUICtrlConfigScrollOffset;
-extern uint8_t g_ControlConfigUIState;
+extern int g_ControlConfigUIState;
 extern int gnUICtrlConfigActiveButton;
-extern bool gbUICtrlConfigKeyBindMode;
+extern BOOL gbUICtrlConfigKeyBindMode;
 extern DC6 * gpUICtrlConfigScrollbarDC6;
 extern int gnUICtrlConfigPendingKeyStrId;
 extern unsigned int gdwUICtrlConfigKeyBindTimestamp;
 extern int gnUICtrlConfigScrollPosition;
 extern DC6 * gpUIStatLevelUpPanelImages;
 extern DC6 * gpUIStatLevelUpButtonImages;
+extern BOOL gbUIStatButtonHovered;
+extern BOOL gbUISkillButtonHovered;
 extern uint64_t gbUIGoldStashMode;
+extern BOOL gbUIStatScreenMouseDown;
 extern uint64_t gbUIStatWindowDrawFlag;
 // One 965-byte region: four int[60] grids plus a 5-byte index. SPELLSEL_Initialize and SPELLSEL_RenderAllSkillGrids memset all 0x3c5 bytes of it. Modelled as four separate objects the memset targeted only the first 240-byte array, so 725 bytes of whatever the linker placed after it were zeroed on entering a game and again on every skill-grid render, while the three sibling arrays were never cleared.
 extern D2SpellSelGridRegionStrc gSpellSelGridRegion;
 // Spell selection UI state array — skill IDs for each slot. Part of large 1396-byte spell selection state (0x007c06c8-0x007c0c3c). Initialized to 0xFFFFFFFF by SpellSel initialization. Indexed by slot number, values sent to server via packet 0x3C.
 extern int gSpellSelectionSkillIDs[16];
+extern int gbSpellSelActiveRightSkillSlot;
 extern int32_t gSpellSelLeftSkillBindings[16];
 extern int gSpellSelRightSkillBindings[16];
 extern DC6 * gpSpellSelSkillIconDC6;
@@ -3449,6 +3455,7 @@ extern unsigned int gbSpellSelMouseHandFlag;
 extern int gbSpellSelSkillTreeNodeHovered[128];
 // 128 per-skill-node state ints, indexed 19 times as (&base)[n*4]. Typed bool (one byte), every node past 0 read and wrote outside the object.
 extern int gaSpellSelSkillTreeState[128];
+extern BOOL gbSpellSelSkillTreeBackground;
 extern uint32_t BooleanWaitingForSkillingMaybe;
 extern uint32_t gnSpellSelSkillTreeOffsetY;
 extern uint32_t gnSpellSelSkillTreeClickY;
@@ -3507,14 +3514,15 @@ extern D2UnitStrc * gpNpcShopOwnerUnit;
 extern short gbNpcMenuShopOpened;
 extern uint8_t gnNpcMenuMercListCount;
 extern uint8_t gbNpcMenuTransactionPending;
+extern BOOL gbNpcMenuTransactionConfirmed;
 extern uint32_t gnNpcMenuTransactionItemGUID;
+extern unsigned int gbNpcMenuShopTransactionActive;
 extern uint32_t gnNpcMenuShopTransactionCost;
 extern unsigned int gdwNpcMenuLastClickTimestamp;
 extern uint16_t gNpcMenuConfirmDialogStrings[40];
 extern int32_t gnDialogStructAllocCount;
 extern uint32_t gnTradeGoldUpdateBuffer;
-extern uint16_t gnTradePlayerGoldAmount;
-extern uint16_t gnTradePartnerGoldAmount;
+extern uint32_t gnTradePlayerGoldAmount;
 extern uint32_t gdwTradeThrottleTimestamp;
 extern bool gbTradeResetFlag;
 extern uint32_t gnTradeAcceptedFlags;
@@ -3545,7 +3553,7 @@ extern int gnSoundLastInitTick;
 extern uint32_t gdwSoundChannelIndex;
 extern uint32_t gnSoundInitCooldown;
 extern unsigned int gnSoundLastPlayerAnimModeTime;
-extern unsigned short geSoundLastPlayerAnimMode;
+extern int geSoundLastPlayerAnimMode;
 extern int gPlrModeTokens[20];
 extern int gTxtCompositTokens[16];
 extern int gObjModeTokens[8];
@@ -3554,6 +3562,7 @@ extern int gArmTypeTokens[3];
 extern uint32_t gdwWarpFadeExpireTime;
 extern unsigned int gdwAmbientMusicLevelChangeTick;
 extern unsigned int gdwAmbientMusicRestartTick;
+extern int geCutsceneAmbientMusicSoundId;
 extern uint32_t geAmbientMusicLevelId;
 extern uint32_t gdwAmbientMusicChangeTime;
 extern uint32_t gbSoundSequenceActive;
@@ -3863,6 +3872,7 @@ extern uint32_t gnDDrawSurfaceWidth;
 extern uint32_t gnDDrawDisplayModeIndex;
 extern uint32_t gnDDrawSurfaceHeight;
 extern uint32_t gbDDrawWindowInitialized;
+extern BOOL gbDDrawPaletteSet;
 extern uint32_t gnCutSceneActiveFlag;
 extern IDirectDraw1 * pWindowHandleBuffer;
 extern IDirectDrawSurface1 * gpDDrawPrimarySurface;
@@ -3949,7 +3959,7 @@ extern D2BNetGatewayAccessStr ActualRealmInfo;
 // lpCriticalSection parameter of DeleteCriticalSection
 extern _RTL_CRITICAL_SECTION lpCriticalSection_00881860;
 extern int gnBnetLogFileHandle;
-extern bool gbBnetLogInitialized;
+extern unsigned int gbBnetLogInitialized;
 extern D2BnCacheFileHeaderStrc * gpCacheFileHeader;
 extern void * gpCacheBlockTable;
 extern void * g_pCacheCryptTable;
@@ -4236,7 +4246,6 @@ extern unsigned int gnFieldTableHalfWidth;
 extern unsigned int gnFieldTableHalfHeight;
 extern unsigned int gdwDrlgLevelPlacementFlags;
 extern unsigned int UINT_0096d6a8;
-extern HeapManager gpHeapManager;
 extern GUID gsD3DAdapterGuid; // [vanilla-plus fix 19b; upstream typed it GUID (16B) - supersedes our uint8_t[16]]
 extern unsigned int g_nVideoMemoryTotal;
 extern unsigned int g_nVideoMemoryFree;
@@ -5322,27 +5331,6 @@ extern unsigned int gnD3DTextureCapFlags;
 extern unsigned int g_bCutscenePlaying;
 
 } // namespace D2Direct3D::Renderer
-
-// =============================================================================
-// Globals recovered from multi-function body references
-// (classified static-local by xref count, but named in other bodies too)
-// =============================================================================
-
-extern eD2PlayerClassID eD2PlayerClassID_00712f00;
-extern bool gbPanelClickProcessed;
-extern bool gbBNetConnectionProgressFlag;
-extern bool gbAutomapPanelOpened;
-extern bool gbInvOverlayFlag;
-extern bool gbPanelLeftBeltArrowClicked;
-extern bool gbUIStatButtonHovered;
-extern bool gbUISkillButtonHovered;
-extern bool gbUIStatScreenMouseDown;
-extern bool gbSpellSelActiveRightSkillSlot;
-extern bool gbSpellSelSkillTreeBackground;
-extern bool gbNpcMenuTransactionConfirmed;
-extern bool gbNpcMenuShopTransactionActive;
-extern unsigned short geCutsceneAmbientMusicSoundId;
-extern bool gbDDrawPaletteSet;
 
 // =============================================================================
 // Declaration closure

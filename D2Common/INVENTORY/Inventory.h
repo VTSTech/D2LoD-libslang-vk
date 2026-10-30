@@ -15,9 +15,9 @@ struct D2ItemInventoryNodeStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2BodyLocDWORD;
-typedef int eD2ItemTypes;
-typedef int eD2UnitType;
+typedef uint32_t eD2BodyLocDWORD;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2CorpseStrc {
@@ -137,7 +137,7 @@ BOOL __stdcall INVENTORY_CheckGridOccupancy(struct D2InventoryStrc * pInventory,
 BOOL __stdcall INVENTORY_PlaceItemAtCoords(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUnit, int32_t nGridX, int32_t nGridY, int32_t eInvPage, int32_t nUnused, uint8_t bGridIndex);
 void __stdcall UnusedDebug(char * szFilename, uint32_t nLine, struct D2InventoryStrc * pInventory, int32_t nX, int32_t nY, eInventoryPage neInventoryPage, uint32_t dwParam, int32_t nInvPage);
 void __stdcall NullSub(struct D2InventoryStrc * dwParam);
-struct D2UnitStrc * __stdcall GetUnitAndXAndY(struct D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint32_t nGridSize);
+struct D2UnitStrc * __stdcall GetUnitAndXAndY(struct D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint8_t nGridSize);
 BOOL __stdcall INVENTORY_GetItemAtBodyLoc(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUnit, int32_t eBodyLoc);
 struct D2UnitStrc * __stdcall INVENTORY_GetItemByGridOffset(struct D2InventoryStrc * pInventory, int32_t nGridOffset);
 // @wasnamed NullSub - one name on two different functions.
@@ -237,7 +237,7 @@ BOOL CopyInventory(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUni
 // Determines whether two units can complete a merc-item trade by making temporary inventory copies. Allocates two scratch inventories from pMemory, copies each unit's inventory into them, then calls INVENTORY_CanTransferMercItems in both directions to find which unit is the buyer. Sets *pbMercIsBuyer accordingly (false = pUnit2 buys, true = pUnit buys). Frees both scratch inventories before returning. Returns 1 if a valid transfer direction was found, 0 otherwise.
 // @sourcefile .\INVENTORY\Inventory.cpp
 BOOL __stdcall CreateCopyOfInventoryForTrading(struct D2PoolManagerStrc * pMemory, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, bool * pbMercIsBuyer);
-struct D2UnitStrc * __stdcall GetCurrentItemOnBodyLocation(struct D2UnitStrc * pUnit, struct D2InventoryStrc * pInventory, struct D2UnitStrc * * ppUnit, uint32_t bodyLoc);
+void __stdcall GetCurrentItemOnBodyLocation(struct D2UnitStrc * pUnit, struct D2InventoryStrc * pInventory, struct D2UnitStrc * * ppUnit, uint32_t bodyLoc);
 // Walks pUnit's inventory and builds the visual appearance arrays (pArray1=component gfx indices, pArray2=colors) from equipped items. Handles head/arms (circlet check) and torso (body-component transform loop). Used to snapshot a character's look for encoding into a packet or save record.
 void __stdcall SaveCharAppearance(struct D2UnitStrc * pUnit, char * pArray1, char * pArray2);
 // 26 internal functions (defined in .cpp)

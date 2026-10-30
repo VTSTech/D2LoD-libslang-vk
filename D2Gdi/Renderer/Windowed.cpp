@@ -80,16 +80,18 @@ static void __stdcall RENDERER_WINDOWED_AllocateDIBSection(int nResolutionMode) 
     }
     if (nResolutionMode) {
       if (nResolutionMode != 3) {
-        iVar2 = 800;
-        iVar1 = 600;
+        if (nResolutionMode == 4) {
+          // Vanilla Plus: 1280x720 (field-tested 2026-10-30: without this the
+          // DIB stays 800x600 inside the 1280x720 -w window -> player right of
+          // center, garbled interface bar, inventory corner at the right edge).
+          iVar2 = 1280;
+          iVar1 = 720;
+        } else {
+          iVar2 = 800;
+          iVar1 = 600;
+        }
       } else {
         iVar2 = 0x540;
-    } else if (nResolutionMode == 4) {
-      // Vanilla Plus: 1280x720 (field-tested 2026-10-30: without this the
-      // DIB stays 800x600 inside the 1280x720 -w window -> player right of
-      // center, garbled interface bar, inventory corner at the right edge).
-      iVar2 = 1280;
-      iVar1 = 720;
         iVar1 = 700;
       }
     } else {
@@ -442,14 +444,14 @@ void __fastcall RENDERER_WINDOWED_UpdateScaleFactor(int nParam) {
     RENDERER_WINDOWED_nScaleOffsetY = 0;
     if (!nParam) {
       RENDERER_WINDOWED_nScaleWidth = 0x280;
+      return;
+    }
     if (nParam == 4) {
       // Vanilla Plus: render the full 1280-wide playfield.
       RENDERER_WINDOWED_nScaleWidth = 1280;
       return;
     }
 
-      return;
-    }
     if (nParam != 3) {
       RENDERER_WINDOWED_nScaleWidth = 800;
       return;
@@ -746,7 +748,7 @@ BOOL __stdcall RENDERER_WINDOWED_CheckBlendedShadowsEnabled() {
     return pD2GFXRenderedDataStrc->bBlendedShadows;
 }
 
-void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, int nDrawMode) {
+void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, int nDrawMode) { // [vanilla-plus resfix] DWORD matches the fpDrawSolidRectEx renderer typedef
     uint8_t* pbPixel;
     int nRowsLeft;
     int nBlendMode;
@@ -811,7 +813,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
                 nRowsLeft = uMaxX - uClampedYStart;
                 do {
                   nRowsLeft--;
-                  *pbPixel = pPaletteTable[(uint32_t)*pbPixel * 0x100 + (dwColor & 0xff)];
+                  *pbPixel = pPaletteTable[(uint32_t)*pbPixel * 0x100 + (dwColor & 0xff)]; // VP: mask after the DWORD widening
                   pbPixel++;
                 } while (nRowsLeft);
               }
@@ -829,7 +831,7 @@ void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, 
           if (nWidth) {
             do {
               nWidth--;
-              memset(pbScanline, dwColor & 0xff, uMaxX - uClampedYStart);
+              memset(pbScanline, dwColor & 0xff, uMaxX - uClampedYStart); // VP: mask after the DWORD widening
               pbScanline += RENDERER_nWindowWidth;
             } while (nWidth);
 
@@ -850,7 +852,7 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
         if (nAlpha >= 0x40) {
           nDrawMode = 1;
         } else {
-          if (nAlpha == '\0') {
+          if (nAlpha <= '\0') {
             return;
           }
 
@@ -859,7 +861,7 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
       }
     }
 
-    Windowed::DrawSolidRectEx(nXStart, nYStart, nXEnd, nYEnd, dwColor, nDrawMode);
+    Windowed::DrawSolidRectEx(nXStart, nYStart, nXEnd, nYEnd, (uint8_t)dwColor, nDrawMode);
 }
 
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
@@ -871,7 +873,7 @@ void __fastcall RENDERER_WINDOWED_DrawPixel(int nPosX, int nPosY, BYTE byColor) 
     gpRenderBackBufferBits[nPosX + RENDERER_nWindowWidth * nPosY] = byColor;
 }
 
-void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha) {
+void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, BYTE nAlpha) {
     int nSteps;
     int nDy = nXEnd - nXStart;
     int nError = nYEnd - nYStart;
@@ -888,7 +890,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD d
       nYEnd = 1;
     }
     if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-      gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
+      gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
     }
 
     int nDx = 0;
@@ -903,7 +905,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD d
             nDx -= nError;
           }
           if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
+            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
           }
 
           nSteps--;
@@ -922,7 +924,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD d
             nDx -= nDy;
           }
           if (nXStart >= 0 && nXStart < RENDERER_nWindowWidth && nYStart >= 0 && nYStart < RENDERER_nWindowHeight) {
-            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = (uint8_t)dwColor;
+            gpRenderBackBufferBits[nXStart + RENDERER_nWindowWidth * nYStart] = dwColor;
           }
 
           nSteps--;
@@ -1394,9 +1396,10 @@ static void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc *
 }
 
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int nVersion) {
+    void* nResult;
     void* _Dst;
-    int iVar1;
-    uint32_t nPaletteColor;
+    uint32_t uVar2;
+    int iVar3;
     uint8_t aPaletteBuf[1024];
     uint32_t nImgWidth;
     uint32_t nImgBitDepth;
@@ -1404,7 +1407,6 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     DWORD nFileSize;
     pBuffer->eMode = (char)nVersion;
     if ((char)nVersion != 'p') {
-      void* nResult;
       if ((char)nVersion != 's') {
         return;
       }
@@ -1423,21 +1425,22 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
         return;
       }
     } else {
+      uint8_t bVar1;
       gnSmackerGlideYOffset.pFrameBuffer = D2_ALLOC_AT(0x6db0, ".\\Src\\gdiSmack.cpp", 0x51);
       memset(gnSmackerGlideYOffset.pFrameBuffer, 0, 0x6db0);
       nVersion = 0;
       nFileSize = 0;
-      nPaletteColor = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
-      if (nPaletteColor && nVersion) {
-        iVar1 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteBuf, (uint8_t*)gnSmackerGlideYOffset.pFrameBuffer, 0x6db0, &nImgWidth, &nImgHeight, &nImgBitDepth);
+      uVar2 = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
+      if (uVar2 && nVersion) {
+        iVar3 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteBuf, (uint8_t*)gnSmackerGlideYOffset.pFrameBuffer, 0x6db0, &nImgWidth, &nImgHeight, &nImgBitDepth);
         Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\gdiSmack.cpp", 0x78, 0);
-        if (iVar1 && nImgWidth == 0x1d4 && nImgHeight == 0x3c && nImgBitDepth == 8) {
-          iVar1 = 0;
+        if (iVar3 && nImgWidth == 0x1d4 && nImgHeight == 0x3c && nImgBitDepth == 8) {
+          iVar3 = 0;
           do {
-            nPaletteColor = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)aPaletteBuf[iVar1 * 4], (uint32_t)aPaletteBuf[iVar1 * 4 + 1], (uint32_t)aPaletteBuf[iVar1 * 4 + 2]);
-            gnSmackerGlideYOffset.aPaletteLUT[iVar1] = (uint8_t)nPaletteColor;
-            iVar1++;
-          } while (iVar1 < 0x100);
+            bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)aPaletteBuf[iVar3 * 4], (uint32_t)aPaletteBuf[iVar3 * 4 + 1], (uint32_t)aPaletteBuf[iVar3 * 4 + 2]);
+            gnSmackerGlideYOffset.aPaletteLUT[iVar3] = bVar1;
+            iVar3++;
+          } while (iVar3 < 0x100);
 
           return;
         }
@@ -1456,8 +1459,8 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
 }
 
 void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
+    uint8_t bVar1;
     int bSmackWait;
-    uint32_t nPaletteColor;
     uint8_t* pbPalEntry;
     void* hSmack;
     if (pContext->eMode != 'p') {
@@ -1471,8 +1474,8 @@ void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
             bSmackWait = 0;
             pbPalEntry = (uint8_t*)((int)hSmack + 0x6d);
             do {
-              nPaletteColor = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)pbPalEntry[-1], (uint32_t)*pbPalEntry, (uint32_t)pbPalEntry[1]);
-              gnSmackerGlideYOffset.aPaletteLUT[bSmackWait] = (uint8_t)nPaletteColor;
+              bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)pbPalEntry[-1], (uint32_t)*pbPalEntry, (uint32_t)pbPalEntry[1]);
+              gnSmackerGlideYOffset.aPaletteLUT[bSmackWait] = bVar1;
               bSmackWait++;
               pbPalEntry += 3;
             } while (bSmackWait < 0x100);

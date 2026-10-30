@@ -16,7 +16,7 @@ struct D2LightMapStrc;
 struct D2MonStatsTxt;
 struct D2ParticleStrc;
 struct D2UnitStrc;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 #ifndef RECON_FPTD_fpDrawBlendedVisTile
 #define RECON_FPTD_fpDrawBlendedVisTile
 typedef void (__fastcall *fpDrawBlendedVisTile)(int a1, int a2, int a3, int a4);
@@ -7272,7 +7272,8 @@ void __fastcall GFX_FreeAllModesGfxInfo(struct D2UnitStrc * pUnit);
 void __fastcall GFX_SetAllGfxInfoFlags(struct D2UnitStrc * pUnit, uint8_t byFlag);
 struct D2ParticleStrc * __fastcall GetParticleFromUnit(struct D2UnitStrc * pUnit);
 void __fastcall SetParticle(struct D2UnitStrc * pUnit, struct D2ParticleStrc * pParticle);
-void __thiscall GFX_RemoveOverlayById(struct D2UnitStrc * pUnit, int32_t nOverlayId);
+// nPreDraw is never read here; every caller still loads EDX (12 pass 0, GFX_AddOverlayToUnit passes pOverlayTxt->PreDraw).
+void __fastcall GFX_RemoveOverlayById(struct D2UnitStrc * pUnit, int32_t nPreDraw, int32_t nOverlayId);
 void __fastcall GFX_RemoveAllOverlays(struct D2UnitStrc * pUnit);
 void __fastcall GFX_SetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo, DWORD dwCofDataFlags);
 int32_t __fastcall GFX_GetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo);
@@ -7334,11 +7335,3 @@ struct D2GfxInfoUnkStrc * __fastcall DRAW_WORLD_Unit_1(struct D2UnitStrc * pUnit
 // 24 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::Gfx
-
-// [fork-compat] The fork's regeneration pass filed these engine-Gfx
-// functions under namespace GfxInfo; upstream renamed the namespace to
-// Gfx. Alias the old name so the fork-side UI translation units
-// (Draw/EscMenu/Help/Inv/Panel/Party/SpellSel/ui) compile unchanged.
-namespace D2Client::Engine {
-    namespace GfxInfo = Gfx;
-}

@@ -17,7 +17,7 @@ struct D2SaveFileHeaderStrc;
 struct D2SaveHotKeyStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct __attribute__((packed)) D2SaveFileNpcStrc {
@@ -78,7 +78,7 @@ BOOL __fastcall SaveGolemItems(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, c
 // Explicit GuardStack(0) tail on success, GuardStack(nItemsSpaceAvail) on failure - an int error code propagated from whichever Save* sub-step failed.
 int __fastcall MakeSaveFile(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint8_t * pSaveBuffer, int * nStartOffset, int32_t nBufferSize, int32_t bUnk1, int32_t bUnk2);
 // Computes the character-title/flag index (0–0x1a) used when saving or loading a character's title progress. Checks expansion/classic match between the character status bits and the game's bExpansion flag (returns 8 or 9 on mismatch). On BattleNet servers, validates file-time freshness and game type (returns 0x19/0x1a). Then checks hardcore arena flag and character status bit 2 to return the hardcore-normal title codes (0xb/0xc/10). Finally maps difficulty + title-progress bits to the levelled codes (0xd/0xe), returning 0 when fully progressed.
-int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint32_t dwCharacterStatus, struct D2ClientStrc * pClient);
+int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus, struct D2ClientStrc * pClient);
 void __fastcall SetHotkey(struct D2SaveHotKeyStrc * pSaveHotKey, uint32_t * pnParam, uint32_t * pnHand, uint32_t * nItemIndex);
 void __fastcall PLAYERSAVE_LinkPlayerToUnit(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
 // Parses the .d2s save-file header during game join/load, validates it, and creates the player's server unit. Verifies the stored checksum (zeroing the checksum field before recomputing), the recorded file size, and the file-version range (0x5c-0x60); confirms the saved character name matches the client's. Applies CalculateGetFlags policy (may reject or return code 2 for a 'hardcore dead' / status-bit-1 file). Sets the client's class, weapon-swap flag, file flags, create time, and current act from the per-difficulty progress byte; recovers the map seed for single-player. Creates the UNIT_PLAYER unit (pOutUnit), links it to the client, sends the init-unit packet, and restores all 16 hotkeys plus the L/R and weapon-swap skill assignments and guild info. ppSaveFileHeader is advanced past the consumed header on success. Returns 0 on success, 2 to signal a status-bit case, or error codes 3-7.
@@ -88,8 +88,6 @@ int __fastcall PLRSAVE_ReadQuestsFromBuffer(::SGAMEDATA * pGame, struct D2UnitSt
 int __fastcall ReadWaypoints(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam);
 // NOTE: Register param types inferred (medium confidence): pGameStrc (ECX): SGAMEDATA *, pUnit (EDX): D2UnitStrc *
 int __fastcall LoadPlayerIntro(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam);
-// Deserializes the long-form stat bitstream from a character save buffer into a unit's stat list. Expects a 0x6667 magic header at *ppReadPos. Reads 9-bit stat IDs followed by optional sub-index (csvparam bits) and value (csvbits wide, signed or unsigned per ITEMSTATCOSTFLAG_CSVSIGNED) until stat ID >= 0x1FE (terminator). Applies each stat via STATLIST_SetUnitStat. Advances *ppReadPos past the stream on success; returns 0 on success, 0x12 on bad header or invalid stat.
-int __fastcall ReadStatsLong(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam);
 // Deserialises a bitmask-encoded stat block from the save buffer into the unit's stat list. Reads a presence bitmask (bParam2 stats wide) followed by packed 32-bit values for set stats only; delegates to ReadStatsLong for stat counts above 0x5e. Returns 0 on success, 0x12 on format/bounds error.
 int __fastcall ReadStats(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t bParam1, uint32_t bParam2);
 void __fastcall PLRSAVE_SetSkillIfNonZero(uint32_t dwParam, struct D2UnitStrc * pUnit, eD2Skills eSkill, uint8_t nSkillLevel);
@@ -117,6 +115,6 @@ int32_t __fastcall HOTKEY_GetAssignedItemGUID(::SGAMEDATA * pGame, struct D2Unit
 void __fastcall SetStatsAndHotkeys(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, int32_t nHitpoints, int32_t nMana);
 // Loads a player from a modern .d2s save buffer into a live server unit (fastcall pGame,pClient,pSaveHeader,nSaveDataOffset,ppUnit). Parses the header and creates the unit (PLAYERSAVE_ParseHeaderAndCreateUnit), then sequentially reads quests, waypoints, intro/NPC-greeting flags, stats, hard skills, items, corpse, mercenary, and golem from the buffer, threading a moving read pointer between pSaveHeader and the buffer end. Records pre-load HP/mana and restores them via SetStatsAndHotkeys on success. On parse error 2 at end-of-buffer it creates a fresh character. On any failure it frees the partially-built unit (and its DRLG room) and unlinks it from the client; returns gdwPlayerSaveVersion[errorCode] (0 = success). Writes the loaded unit to *ppUnit.
 int32_t __fastcall PLAYERSAVE_LoadModernFormat(::SGAMEDATA * pGame, struct D2ClientStrc * pClient, struct D2SaveFileHeaderStrc * pSaveHeader, int32_t nSaveDataOffset, struct D2UnitStrc * * ppUnit, uint32_t dwParam6, uint32_t dwParam7, uint32_t dwParam8);
-// 1 internal function (defined in .cpp)
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerSave2

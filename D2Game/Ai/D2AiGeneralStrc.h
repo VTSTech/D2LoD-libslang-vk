@@ -15,7 +15,7 @@ struct D2MonsterAiCmdStrc;
 struct D2MonsterDataMinionList;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_AI_Main
 #define RECON_FPTD_AI_Main
 typedef void (__fastcall *AI_Main)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2AiParamStrc * pAiParam);

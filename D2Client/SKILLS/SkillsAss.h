@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 namespace D2Client::SKILLS::SkillsAss {
 

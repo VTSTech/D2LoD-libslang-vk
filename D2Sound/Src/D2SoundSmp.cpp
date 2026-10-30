@@ -81,7 +81,7 @@ BOOL __fastcall SOUNDSMP_LoadWavDataIntoBuffer(D2SoundSmpStrc * ppSoundSmp, int 
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
       nWavDataSize = uVar1;
       pPcmData = (uint8_t*)SOUNDSMP_ParseWavHeader(pWavData, &nWavDataSize, &waveFormat);
-      if (!((uint32_t)ppSoundSmp->nMinBufSize < nWavDataSize)) {
+      if (!(ppSoundSmp->nMinBufSize < nWavDataSize)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x25f);
         exit(-1);
       }
@@ -90,7 +90,7 @@ BOOL __fastcall SOUNDSMP_LoadWavDataIntoBuffer(D2SoundSmpStrc * ppSoundSmp, int 
       ppSoundSmp->pPcmData = pPcmData;
       SOUNDSMP_WriteToBuffer(ppSoundSmp, 0, 0, ppSoundSmp->nBufSize);
       ppSoundSmp->bLoaded = 1;
-      if (!ppSoundSmp->bLooping && (uint32_t)ppSoundSmp->nPcmSize < (uint32_t)ppSoundSmp->nBufSize) {
+      if (!ppSoundSmp->bLooping && ppSoundSmp->nPcmSize < ppSoundSmp->nBufSize) {
         ppSoundSmp->nLoopEnd = ppSoundSmp->nPcmSize;
       } else {
         ppSoundSmp->nLoopEnd = -1;
@@ -249,7 +249,7 @@ void __fastcall SOUNDSMP_SetFrequency(int32_t nParam, uint32_t dwParam) {
     *(uint32_t*)(nParam + 0x40) = dwParam;
 }
 
-void __fastcall SOUNDSMP_SetMinDistance(D2SoundSmpStrc * nParam, int32_t dwParam) {
+void __fastcall SOUNDSMP_SetMinDistance(D2SoundSmpStrc * nParam, uint32_t dwParam) {
     if (!nParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x33a);
       exit(-1);
@@ -473,7 +473,7 @@ void __fastcall SOUNDSMP_CheckBufferLost(D2SoundSmpStrc * ppnParam) {
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
     HRESULT nHResult = ppnParam->pDSBuffer->lpVtbl->GetStatus(ppnParam->pDSBuffer, (DWORD*)&dwBufferStatus);
-    if (-1 < nHResult) {
+    if (nHResult >= 0) {
       if ((uint32_t)dwBufferStatus & 2) {
         do {
           while (true) {
@@ -687,7 +687,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
         } else {
           if (ppnParam->bIsPlaying) {
             HVar1 = ppnParam->pDSBuffer->lpVtbl->GetCurrentPosition(ppnParam->pDSBuffer, (DWORD*)&__frame0.pPlayCursor, &__frame0.nWriteCursorBytes);
-            if (-1 < HVar1) {
+            if (HVar1 >= 0) {
               nBufMask = ppnParam->nBufSize - 1;
               pListNode = ppnParam->field_08 & nBufMask;
               piVar5 = ppnParam->field_08 - pListNode;
@@ -699,7 +699,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
               ppnParam->field_08 = pListNode;
               if (!ppnParam->bAtEnd) {
                 nWritePos = ppnParam->nWritePos;
-                if (nWritePos - pListNode < (uint32_t)ppnParam->nHalfBufSize || pListNode > nWritePos) {
+                if (nWritePos - pListNode < ppnParam->nHalfBufSize || pListNode > nWritePos) {
                   nBufMask = nWritePos & nBufMask;
                   SOUNDSMP_WriteToBuffer(ppnParam, nWritePos, nBufMask, ppnParam->nHalfBufSize);
                   ppnParam->nLoopEnd = -1;
@@ -711,11 +711,11 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
                   SOUNDSMP_ClearBuffer(ppnParam->pDSBuffer, nBufMask, nBufMask);
                   ppnParam->bLoaded = 1;
                 }
-                if (__frame0.pPlayCursor >= (uint32_t)ppnParam->nHalfBufSize && ppnParam->bLoaded == 1) {
+                if (__frame0.pPlayCursor >= ppnParam->nHalfBufSize && ppnParam->bLoaded == 1) {
                   SOUNDSMP_ClearBuffer(ppnParam->pDSBuffer, 0, ppnParam->nHalfBufSize);
                   ppnParam->bLoaded = 0;
                 }
-                if ((uint32_t)ppnParam->field_08 > (uint32_t)ppnParam->nPcmSize) {
+                if ((uint32_t)ppnParam->field_08 > ppnParam->nPcmSize) {
                   ppnParam->pDSBuffer->lpVtbl->Stop(ppnParam->pDSBuffer);
                   ppnParam->bIsPlaying = 0;
                 }

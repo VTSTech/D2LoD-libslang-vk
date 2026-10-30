@@ -882,12 +882,12 @@ uint8_t __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel) {
     return '\0';
 }
 
-uint32_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam) {
+uint8_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam) {
     if ((int)nParam > 0 && (int)nParam < sgptDataTable->nTxtLevelsSize) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nParam * 0x220 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)sgptDataTable->pTxtLevels[nParam].NoPer);
+      return sgptDataTable->pTxtLevels[nParam].NoPer;
     }
 
-    return nParam & -256;
+    return 0;
 }
 
 uint8_t __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel) {
@@ -909,7 +909,13 @@ void __stdcall LVLTBLS_FreeLevelsTxt() {
 }
 
 int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Difficulty nDifficulty, BOOL bIsExpansion) {
-    if (!(nDifficulty < (DIFFICULTY_HELL | DIFFICULTY_NIGHTMARE) && (int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
+    if (!(nDifficulty < (DIFFICULTY_HELL | DIFFICULTY_NIGHTMARE))) {
+      return 1;
+    }
+    if ((int)eLevel <= 0) {
+      return 1;
+    }
+    if (!((int)eLevel < sgptDataTable->nTxtLevelsSize)) {
       return 1;
     }
 

@@ -16,9 +16,9 @@ struct D2SkillsTxt;
 struct D2StatListExStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2States;
-typedef int eD2UnitStat;
-typedef int eMissilesId;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eMissilesId;
 
 // Data types
 struct D2MindBlastArgStrc {
@@ -35,7 +35,9 @@ struct D2SkillAreaDamageArgStrc {
     /* 0x0A */ uint16_t _pad0A;
     /* 0x0C */ uint32_t dwHitFlags;
     /* 0x10 */ uint8_t nSrcDam;
-    /* 0x11 */ uint8_t _pad11[3];
+    /* 0x11 */ uint8_t _pad11;
+    /* 0x12 */ uint8_t _pad12;
+    /* 0x13 */ uint8_t _pad13;
 };
 
 struct __attribute__((packed)) D2SkillCurseArgStrc {

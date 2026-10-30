@@ -16,7 +16,7 @@ struct D2WinImageEx;
 struct D2WinImageHitArea;
 struct D2WinTextBox;
 struct DC6;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 #ifndef RECON_FPTD_Key
 #define RECON_FPTD_Key
 typedef BOOL (__stdcall *Key)(struct D2ControlMsg * pControlMsg);

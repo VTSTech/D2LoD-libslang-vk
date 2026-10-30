@@ -95,7 +95,7 @@ template<> uint32_t TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::CalcCh
         nStripped = nPrevSize - 1 & nPrevSize;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {
@@ -486,7 +486,7 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalClear(int32_t bUnlin
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
     uint32_t nBucketIdx = 0;
-    if ((uint32_t)this->tSlotListArray.m_count <= 0) {
+    if (this->tSlotListArray.m_count <= 0) {
       return;
     }
 
@@ -829,7 +829,7 @@ template<> uint32_t TSGrowableArray<CELLIST>::CalcChunkSize(uint32_t nCount) {
         nPrev = nMasked - 1 & nMasked;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {

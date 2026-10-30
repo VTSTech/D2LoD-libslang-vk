@@ -12,7 +12,7 @@
 struct D2MonStats2Txt;
 struct D2MonStatsTxt;
 struct D2StatesTxt;
-typedef int eD2States;
+typedef uint32_t eD2States;
 
 namespace D2Client::DataTbls::MonsterTbls {
 

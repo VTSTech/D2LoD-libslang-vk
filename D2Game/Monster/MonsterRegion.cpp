@@ -70,7 +70,7 @@ static void __stdcall MONREGION_PopulateMonsterTypes(BOOL bIsNotNormalDifficulty
     int64_t lSeedProduct;
     D2SeedStrc sRolledSeed;
     uint32_t nMaxMons;
-    nMaxMons = (uint32_t)(uint8_t)pTxtLevels->NumMon;
+    nMaxMons = (uint32_t)pTxtLevels->NumMon;
     if (0xd < nMaxMons) {
       nMaxMons = 0xd;
     }
@@ -316,7 +316,7 @@ void __fastcall AllocMonsterRegion(D2PoolManagerStrc * pMemory, D2Row_D2MonsterR
         MONREGION_PopulateMonsterTypes((uint32_t)(nDifficulty != DIFFICULTY_NORMAL), pMonsterRegion, pLevelTxt, pSeed);
         i = 0;
         pMonField = pMonsterRegion->pMonData;
-        if ((uint8_t)pMonsterRegion->nCounter > 0) {
+        if (pMonsterRegion->nCounter > 0) {
           do {
             SKILLS::SkillItem::SEED_RollChampionPack(pSeed, pMonField, 3);
             i++;
@@ -382,7 +382,7 @@ short * __fastcall InitializeSpawnCount(D2MonsterRegionStrc * * ppMonsterRegion,
     }
 
     D2MonsterRegionFieldStrc* pMonData = pMonsterRegion->pMonData;
-    if ((uint8_t)pMonsterRegion->nSpawnCount > 0) {
+    if (pMonsterRegion->nSpawnCount > 0) {
       do {
         if (pMonData->nClassId == nClassId) {
           return (short int*)pMonData;

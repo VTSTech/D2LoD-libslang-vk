@@ -27,7 +27,7 @@ struct D2RoomExStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_ACTCALLBACKFN
 #define RECON_FPTD_ACTCALLBACKFN
 typedef void (__fastcall *ACTCALLBACKFN)(struct D2RoomStrc * pRoom);

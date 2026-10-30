@@ -70,7 +70,7 @@ void __fastcall TXT_LoadArenaTxt(D2PoolManagerStrc * pMemory) {
 }
 
 D2ArenaTxt * __fastcall GetArenaTxtRecord(int32_t nArenaType) {
-    if (!(0 >= nArenaType)) {
+    if (!(nArenaType < 1)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x41);
       exit(-1);
     }
@@ -89,7 +89,7 @@ static void __stdcall TXT_BuildCharTemplateLevelIndex(D2CharTemplateTxt * pCharT
     memset(sgCharTemplateLevelIndex, 0, 0x100);
     uint32_t nPrevLevel = 0;
     int i = 0;
-    if (0 >= nCount) {
+    if (nCount <= 0) {
       return;
     }
 
@@ -519,7 +519,7 @@ void __stdcall FreeCharTemplateTxt() {
 // Returns sgpTxtCharTemplate[sgCharTemplateLevelIndex[nLevelIndex] + nTemplate - 1]; halts (Arena.cpp line 245, nTemplate > 0) when nTemplate < 1 and (line 248) past nTxtCharTemplateSize.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 D2CharTemplateTxt * __fastcall TXT_CharTemplate_GetLine(int nTemplate, int nLevelIndex) {
-    if (nTemplate < 1) {
+    if (nTemplate <= 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf5);
       exit(-1);
     } else {
@@ -535,7 +535,7 @@ D2CharTemplateTxt * __fastcall TXT_CharTemplate_GetLine(int nTemplate, int nLeve
 }
 
 uint32_t __fastcall GetClassFromCharTemplateTxt(int32_t nTemplate, int32_t nLevel) {
-    if (nTemplate < 1) {
+    if (nTemplate <= 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf5);
       exit(-1);
     } else {

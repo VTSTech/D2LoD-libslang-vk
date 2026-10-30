@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2UIMouseMsgStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct __attribute__((packed)) D2WaypointListEntryStrc {

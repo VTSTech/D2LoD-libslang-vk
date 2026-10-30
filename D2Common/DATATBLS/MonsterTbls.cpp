@@ -3252,9 +3252,9 @@ D2HirelingTxt * __stdcall GetHirelingEntryByNameId(BOOL bIsExpansion, uint16_t n
       nIndex = (nParam - (int)sgtDataTable.pTxtHireling) / 0x118 + 1;
     }
     if (nIndex < sgtDataTable.nTxtHirelingSize) {
-      short int* pNameRange;
+      uint16_t* pNameRange;
       pNameRange = &sgtDataTable.pTxtHireling[nIndex].nNameLast;
-      while ((uint16_t)pNameRange[-1] > nMercNameId || (uint16_t)*pNameRange < nMercNameId || ((D2HirelingTxt*)(pNameRange - 0x8b))->version != (bIsExpansion ? 100 : 0)) {
+      while (pNameRange[-1] > nMercNameId || *pNameRange < nMercNameId || ((D2HirelingTxt*)(pNameRange - 0x8b))->version != (bIsExpansion ? 100 : 0)) {
         nIndex++;
         pNameRange += 0x8c;
         if (nIndex >= sgtDataTable.nTxtHirelingSize) {
@@ -5594,7 +5594,7 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
             puVar4 = (uint32_t*)(pMonStatEntry + 4);
             nSlotLoop = 3;
             do {
-              if ((char)*pLocSlot < '\x01' || '\n' < (char)*pLocSlot || *puVar4 != 0x20202020 && (nErrCode = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nErrCode < 0)) {
+              if ((char)*pLocSlot < '\x01' || (char)*pLocSlot >= 11 || *puVar4 != 0x20202020 && (nErrCode = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nErrCode < 0)) {
                 *(char*)pLocSlot = '\0';
               }
 

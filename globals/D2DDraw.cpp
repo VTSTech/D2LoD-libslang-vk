@@ -31,6 +31,7 @@ uint32_t gnDDrawSurfaceWidth = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceWidth, "gnDDrawS
 uint32_t gnDDrawDisplayModeIndex = 0; D2_GLOBAL_GUARD(gnDDrawDisplayModeIndex, "gnDDrawDisplayModeIndex");
 uint32_t gnDDrawSurfaceHeight = 0; D2_GLOBAL_GUARD(gnDDrawSurfaceHeight, "gnDDrawSurfaceHeight");
 uint32_t gbDDrawWindowInitialized = 0; D2_GLOBAL_GUARD(gbDDrawWindowInitialized, "gbDDrawWindowInitialized");
+BOOL gbDDrawPaletteSet = 0; D2_GLOBAL_GUARD(gbDDrawPaletteSet, "gbDDrawPaletteSet");
 uint32_t gnCutSceneActiveFlag = 0; D2_GLOBAL_GUARD(gnCutSceneActiveFlag, "gnCutSceneActiveFlag");
 IDirectDraw1 * pWindowHandleBuffer = 0; D2_GLOBAL_GUARD(pWindowHandleBuffer, "pWindowHandleBuffer");
 IDirectDrawSurface1 * gpDDrawBackBuffer = 0; D2_GLOBAL_GUARD(gpDDrawBackBuffer, "gpDDrawBackBuffer");

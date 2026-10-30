@@ -24,10 +24,10 @@ struct D2SeedStrc;
 struct D2UnitDataPlayerInteractedNPCStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2LevelId;
-typedef int eD2QuestState;
-typedef int eD2Quests;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2QuestState;
+typedef uint32_t eD2Quests;
 typedef uint8_t eAct;
 #ifndef RECON_FPTD_QUESTINIT
 #define RECON_FPTD_QUESTINIT
@@ -46,10 +46,7 @@ typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, struct D
 typedef void (__fastcall *QUESTCALLBACKFN)(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
 
 struct D2GSPacketClt0x89 {
-    D2GSPacketClt0x89() = default;
-    D2GSPacketClt0x89(uint16_t v) { *reinterpret_cast<uint16_t*>(this) = v; }
     operator uint16_t() const { return *reinterpret_cast<const uint16_t*>(this); }
-    D2GSPacketClt0x89(uint8_t a0, uint8_t a1) : nPacketId(a0), nEventType(a1) {}
 
     /* 0x00 */ uint8_t nPacketId;
     /* 0x01 */ uint8_t nEventType;
@@ -58,6 +55,14 @@ struct D2GSPacketClt0x89 {
 struct D2GSPacketSrv0x29 {
     /* 0x00 */ uint8_t nPacketId;
     /* 0x01 */ uint8_t szQuestBits[96]; // game quest record, raw copy of pQuestControl->pQuestFlags
+};
+
+struct D2GSPacketSrv0x5D {
+    /* 0x00 */ uint8_t nPacketId; // 0x5D
+    /* 0x01 */ uint8_t nQuestId;
+    /* 0x02 */ uint8_t nAlertFlags;
+    /* 0x03 */ uint8_t nFilterStatus;
+    /* 0x04 */ uint16_t nExtra;
 };
 
 struct D2NPCMessageStrc {
@@ -73,10 +78,7 @@ struct D2QuestArgStrcUnion1 {
 };
 
 struct D2QuestArgStrcUnion2 {
-    D2QuestArgStrcUnion2() = default;
-    D2QuestArgStrcUnion2(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2QuestArgStrcUnion2(short a0, short a1) : nNPCNo(a0), nMessageIndex(a1) {}
 
     /* 0x00 */ short nNPCNo;
     /* 0x02 */ uint8_t field_0x2;
@@ -87,10 +89,7 @@ struct D2QuestArgStrcUnion2 {
 };
 
 struct D2QuestArgStrcUnion3 {
-    D2QuestArgStrcUnion3() = default;
-    D2QuestArgStrcUnion3(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
     operator uint64_t() const { return *reinterpret_cast<const uint64_t*>(this); }
-    D2QuestArgStrcUnion3(int a0, int a1) : nOldLevel(a0), nNewLevel(a1) {}
 
     /* 0x00 */ int nOldLevel;
     /* 0x04 */ int nNewLevel;
@@ -192,7 +191,7 @@ void __fastcall QUEST_RemoveQuestItemFromPlayer(::SGAMEDATA * pGame, struct D2Un
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nInternalQuestNo);
 void __stdcall QUEST_SendQuestUpdateToPlayer_HaltTail(int nLine);
-void __fastcall QUEST_SetStateAndBroadcast(struct D2QuestDataStrc * pQuestData, uint8_t nPrevStateFlag, struct D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute);
+void __fastcall QUEST_SetStateAndBroadcast(struct D2QuestDataStrc * pQuestData, int nPrevStateFlag, struct D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute);
 void __fastcall QUEST_SetStateFlag(struct D2QuestDataStrc * pQuestData, int32_t nState, char * szSourceFile, uint32_t nSourceLine);
 void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint32_t nGossipIndex);
 int32_t __stdcall QUEST_GetQuestSpecificDataPtr(::SGAMEDATA * pGame);
@@ -255,7 +254,7 @@ BOOL __fastcall PORTAL_ActivateOrDeactivatePortalObject(::SGAMEDATA * * ppGame);
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall SendQuestState(struct D2UnitStrc * pUnit, int32_t nQuestId);
 // @sourcefile .\QUESTS\QUESTS.CPP
-void __fastcall QUEST_SendQuestStatePacket(struct D2UnitStrc * pUnit, uint8_t bQuestId, uint8_t bReasoned);
+void __fastcall QUEST_SendQuestStatePacket(struct D2UnitStrc * pUnit, int bQuestId, uint8_t bReasoned);
 void __stdcall QUEST_StubEmpty(uint32_t nUnused);
 // Quest helper that spawns a monster (nMonstatClassId) at or near a desired tile (nSpawnX,nSpawnY) in pRoom. First nudges the point inward if it lies outside the room's DRLG bounds (up to 0x15 diagonal steps), then FindSpawnableLocation searches for a collision-free spot (COLLIDE_MONSTER) and SpawnMonsters as Neutral. On failure it retries with a wider search radius, optionally relocating to a better nearby room (DRLGROOM_FindBetterNearbyRoom), up to ~0x14 attempts, finally falling back to the original coords. If bSetResurrectFlag is set, ORs UNITFLAG_ISRESURRECT|UNITFLAG_ISINIT onto the spawned monster. No return; side effect is the created monster unit.
 struct D2UnitStrc * __fastcall QUEST_SpawnMonsterNearCoords(::SGAMEDATA * pGame, int32_t nSpawnX, int32_t nSpawnY, struct D2RoomStrc * pRoom, int32_t bSetResurrectFlag, uint32_t nMonstatClassId);

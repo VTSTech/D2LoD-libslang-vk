@@ -433,7 +433,6 @@ void __fastcall NET_SendPong(uint32_t nClientID, int32_t nPingTime, int32_t nSeq
 void __fastcall BroadcastPlayerJoin(::SGAMEDATA * pGame, D2ClientStrc * pClient) {
     D2CorpseStrc* pRoomCorpse;
     uint32_t dwCorpseGUIDArg;
-    uint32_t dwUnitGUID_param;
     uint8_t bAssign;
     D2ClientStrc* pClientOther;
     D2UnitStrc* pUnitJoining = Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -455,8 +454,7 @@ void __fastcall BroadcastPlayerJoin(::SGAMEDATA * pGame, D2ClientStrc * pClient)
                 dwCorpseGUIDArg = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID(pRoomCorpse);
                 if (dwCorpseGUIDArg != -1) {
                   bAssign = 1;
-                  dwUnitGUID_param = D2Client::UNIT::GetGUID(pUnit);
-                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, dwUnitGUID_param, dwCorpseGUIDArg, bAssign);
+                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, D2Client::UNIT::GetGUID(pUnit), dwCorpseGUIDArg, bAssign);
                 }
               }
             }
@@ -853,7 +851,6 @@ void __fastcall SaveAllPlayers(::SGAMEDATA * pGame) {
 
 // Gracefully disconnects a single client from a game. Broadcasts a 0x5A leave-game event message with char name and account name, calls CleanUpClient to remove the client from game state, sends 0xB0 ConnectionTerminated packet, then calls QSERVER_KillConnection to close the network connection. nDisconnectReason byte is embedded in the event packet.
 void __fastcall SERVER_DisconnectClient(::SGAMEDATA * pGame, D2ClientStrc * pClient, uint32_t nDisconnectReason) {
-    uint32_t nKillResult;
     D2Packet0x5aEventStructure packet0x5a;
     int32_t nCleanupFlag;
     if (pClient) {
@@ -871,9 +868,7 @@ void __fastcall SERVER_DisconnectClient(::SGAMEDATA * pGame, D2ClientStrc * pCli
       *(uint32_t*)((char*)&packet0x5a.szName2 + 12) &= 0xffffff;
       Storm::Source::SSTR::SStrCopy(packet0x5a.szName1, Clients::GetCharName(pClient), nCleanupFlag);
       PLAYER::PlayerMsg::BroadcastEventMessage(pGame, &packet0x5a);
-      nCleanupFlag = 1;
-      nKillResult = Clients::GetClientNo(pClient);
-      Clients::CleanUpClient(pGame, nKillResult, nCleanupFlag);
+      Clients::CleanUpClient(pGame, Clients::GetClientNo(pClient), 1);
       ServerCmd::NET_D2GS_SERVER_Send_0xB0_ConnectionTerminated(nClientId);
       D2Net::Game::Server::QSERVER_KillConnection(nClientId);
     }
@@ -3249,9 +3244,7 @@ void __stdcall QSERVER_DisconnectClientFromGame(uint32_t nClientId) {
           memset(byPacketType.szName2, 0, 4 * sizeof(byPacketType.szName2[0]));
           Storm::Source::SSTR::SStrCopy(byPacketType.szName1, Clients::GetCharName(pClient), nCopyLen);
           PLAYER::PlayerMsg::BroadcastEventMessage(pGame, &byPacketType);
-          nCopyLen = 1;
-          nToken = Clients::GetClientNo(pClient);
-          Clients::CleanUpClient(pGame, nToken, nCopyLen);
+          Clients::CleanUpClient(pGame, Clients::GetClientNo(pClient), 1);
         }
 
         Server::Unlock(pGame);
@@ -3380,13 +3373,13 @@ int __stdcall QSERVER_InitializeServerState() {
 
 // Callback invoked when the character-server (CS) delivers save data for a joining client (JOIN step 3). Accumulates chunked save data; on completion with nCsResult==0 stores file-time fields into pClient and sends state-command 2 to advance the join sequence. On CS error or stale pClientContainer, triggers disconnect.
 // @sourcefile .\GAME\Game.cpp
-uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint32_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer) {
+uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint16_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer) {
     ::SGAMEDATA* pGame;
     D2ClientStrc* pClient;
     SRVLog(6, "[JOIN 3] %d clientid, %d csresult - Recv\'ed char from CS", nClientId, nCsResult);
-    if ((short int)nTotalSize) {
+    if (nTotalSize) {
       int bAccumulated;
-      bAccumulated = Clients::CLIENT_AccumulateSaveData(nClientId, pParam, (uint32_t)nChunkSize, nTotalSize & 0xffff, (uint32_t)!nCsResult, 1, dwCharFlags);
+      bAccumulated = Clients::CLIENT_AccumulateSaveData(nClientId, pParam, (uint32_t)nChunkSize, (uint32_t)nTotalSize, (uint32_t)!nCsResult, 1, dwCharFlags);
       if (!bAccumulated) {
         SRVLog(6, "[JOIN]  SrvRecvDatabaseCharacter: Didn\'t recv full char from db - CSResult(%d), ClientID(%d)", nCsResult, nClientId);
         return 1;
@@ -3396,7 +3389,7 @@ uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void *
       SRVLog(6, "[PLAYER LOAD]  ClientAddPlayerToGame()  Error Loading:%s  Error:%d=%s", nCsResult, nClientId);
       QSERVER_ClientDisconnectCallback(nClientId, ".\\GAME\\Game.cpp", 0x407);
     } else {
-      if (!(short int)nTotalSize) {
+      if (!nTotalSize) {
         QSERVER_ClientDisconnectCallback(nClientId, ".\\GAME\\Game.cpp", 0x414);
         return 0;
       }
@@ -3418,7 +3411,7 @@ uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void *
         pClient->ftFileTime.dwHighDateTime = pFileTimeData[1];
         Server::Unlock(pGame);
         SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 2);
-        return nTotalSize & 0xffff;
+        return (uint32_t)nTotalSize;
       }
     }
 

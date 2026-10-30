@@ -11,7 +11,7 @@ namespace D2Client::_SkillHelpers {
 
 uint16_t * __fastcall INV_SkipColorCodeSuffix(uint16_t * wszText) {
     int nCharIndex;
-    for (nCharIndex = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText); 0 < nCharIndex; nCharIndex--) {
+    for (nCharIndex = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText); nCharIndex > 0; nCharIndex--) {
       if (wszText[nCharIndex] == L']') {
         goto skip_color_code;
       }
@@ -22,7 +22,7 @@ uint16_t * __fastcall INV_SkipColorCodeSuffix(uint16_t * wszText) {
     }
 
     skip_color_code:
-    if (2 < nCharIndex && wszText[nCharIndex - 3] == L'[') {
+    if (nCharIndex >= 3 && wszText[nCharIndex - 3] == L'[') {
       return wszText + nCharIndex + 1;
     }
     return wszText;
@@ -41,7 +41,7 @@ void __fastcall INV_SubstituteFormatToken(uint16_t * wszText, int32_t nTokenInde
     uint16_t* pDest = wszText;
     int32_t nTextLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
     nCopied = 0;
-    if (0 >= nTextLen - 1) {
+    if (!(nTextLen - 1 > 0)) {
       return;
     }
 
@@ -50,7 +50,7 @@ void __fastcall INV_SubstituteFormatToken(uint16_t * wszText, int32_t nTokenInde
       *(uint16_t*)(nWorkLen + (int)wszText) = *wszText;
       nCopied++;
       wszText++;
-      if (nTextLen - 1 <= nCopied) {
+      if (nCopied >= nTextLen - 1) {
         return;
       }
     }

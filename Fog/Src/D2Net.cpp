@@ -36,7 +36,7 @@ void __fastcall NET_D2GS_SERVER_LogSentPacket(char * pBytes, size_t nSize) {
     int* pOverflowCount;
     uint32_t nByteIndex = 0;
     int nBitCount = 0;
-    if (nSize) {
+    if (nSize > 0) {
       uint64_t nOldByteCount;
       do {
         nByteValue = (uint32_t)(uint8_t)pBytes[nByteIndex];
@@ -53,7 +53,7 @@ void __fastcall NET_D2GS_SERVER_LogSentPacket(char * pBytes, size_t nSize) {
     nByteIndex = nBitCount + 7U >> 3;
     uint32_t nHeaderSize = 1;
     nByteValue = nByteIndex + 1;
-    if (0xef < nByteValue) {
+    if (nByteValue >= 0xf0) {
       nByteValue = nByteIndex + 2;
       nHeaderSize = 2;
     }
@@ -89,7 +89,7 @@ size_t __fastcall NET_D2GS_SERVER_CompressPacket(char * pBuffer, size_t nBufferS
       nNumBits = (uint32_t)gabHuffmanCodeLengths[bVar1];
       bVar1 = gabHuffmanNextTable[bVar1];
       pOutCur = pOut;
-      if (nBitsFree <= (int)nNumBits) {
+      if ((int)nNumBits >= nBitsFree) {
         do {
           nNumBits -= nBitsFree;
           nRemaining = nBufferLeft - 1;
@@ -151,7 +151,7 @@ uint8_t * __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBu
     size_t nBufferLeft = nBufferSize;
     while (true) {
       uint8_t byCodeLen;
-      for (; 7 < nBitsAvail && nBytesSize; nBytesSize--) {
+      for (; nBitsAvail >= 8 && nBytesSize > 0; nBytesSize--) {
         byEntryLen = *pBytes;
         nBitsAvail += -8;
         pBytes++;
@@ -162,7 +162,7 @@ uint8_t * __fastcall NET_D2GS_CLIENT_DecompressPacket(char * pBuffer, size_t nBu
       byEntryLen = ((uint8_t*)gaHuffmanFastDecodeTable[uBitBuffer >> 0x18])[(uBitBuffer >> (0x18 - byEntryLen & 0x1f) & gadwHuffmanBitMasks[byEntryLen]) + 1];
       byCodeLen = gabHuffmanCodeLengths[byEntryLen];
       nBitsAvail += (uint32_t)byCodeLen;
-      if (0x20 < nBitsAvail) {
+      if (nBitsAvail > 0x20) {
         break;
       }
       if (!nBufferLeft) {

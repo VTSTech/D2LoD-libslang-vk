@@ -628,7 +628,7 @@ BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * 
 
 void __fastcall SendInitUpdateAttributes(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
     // Static local variables (originally global data)
-    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, -1 }; D2_STATIC_GUARD(geInitAttrStatFirst, "D2Game::PLAYER::PlayerMsg::SendInitUpdateAttributes::geInitAttrStatFirst");
+    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, (eD2UnitStat)-1 }; D2_STATIC_GUARD(geInitAttrStatFirst, "D2Game::PLAYER::PlayerMsg::SendInitUpdateAttributes::geInitAttrStatFirst");
 
     uint32_t nStatValue;
     D2UnitStrc* pClientUnit = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -829,7 +829,7 @@ eD2ServerIncomingStatus __fastcall SERVER_InteractOrPick(D2UnitStrc * pUnit, eD2
     return SERVERSTATUS_BAD_TARGET;
 }
 
-uint8_t __stdcall PLAYERMSG_GetMessageType(int32_t nParam1, int32_t nParam2) {
+static inline uint8_t __stdcall PLAYERMSG_GetMessageType(int32_t nParam1, int32_t nParam2) {
     return nParam2 != nParam1 ? 3 : 0;
 }
 
@@ -1689,7 +1689,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0A_LeftSkillOnEntityEx3(::SGAMEDATA * 
 // [op:1]
 // Validates size==1, does nothing.
 eD2ServerIncomingStatus __fastcall SCMD_0x0B_Keepalive(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x0B_Keepalive * pPacket, uint32_t nSize) {
-    return nSize != 1 ? SERVERSTATUS_BAD_PARAMS : 0;
+    return PLAYERMSG_GetMessageType(1, nSize);
 }
 
 // C->S Packet 0x0C - Right Skill on Location (5 bytes)
@@ -4059,7 +4059,10 @@ eD2ServerIncomingStatus __fastcall SCMD_0x5F_SyncPosition(::SGAMEDATA * pGame, D
 }
 
 eD2ServerIncomingStatus __fastcall SCMD_0x60_WeaponSwap(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x60_WeaponSwap * pPacket, uint32_t nSize) {
-    if (nSize != 1 || !pGame->bExpansion) {
+    if (nSize != 1) {
+      return SERVERSTATUS_BAD_PARAMS;
+    }
+    if (!pGame->bExpansion) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -4185,7 +4188,13 @@ static BOOL __stdcall MERC_SwapEquippedItem(D2UnitStrc * pUnit, D2UnitStrc * pUn
 
 static eD2ServerIncomingStatus __stdcall EquipOrUnequipMercItem(D2UnitStrc * pUnit, int32_t eBodyLoc, D2UnitStrc * pUnit2, ::SGAMEDATA * pGame) {
     D2InventoryStrc* pPlayerInv = pUnit->pInventory;
-    if (!(pGame->bExpansion && pUnit2->pInventory && eBodyLoc - 1U <= 9)) {
+    if (!pGame->bExpansion) {
+      return SERVERSTATUS_BAD_PARAMS;
+    }
+    if (!pUnit2->pInventory) {
+      return SERVERSTATUS_BAD_PARAMS;
+    }
+    if (eBodyLoc - 1U > 9) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -4331,7 +4340,10 @@ eD2ServerIncomingStatus __fastcall SCMD_0x61_MercEquipItem(::SGAMEDATA * pGame, 
     bool bIsQuestItemFlag;
     BOOL bInTrade;
     uint16_t nBodyLocRaw;
-    if (nSize != 3 || !pGame->bExpansion) {
+    if (nSize != 3) {
+      return SERVERSTATUS_BAD_PARAMS;
+    }
+    if (!pGame->bExpansion) {
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -4577,7 +4589,7 @@ void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, D2UnitStrc *
     D2Packet0x5aEventStructure packet0x5a;
     char szKillerNameTmp[16];
     int32_t nLine;
-    if (!(pVictim && pVictim->eUnitType == UNIT_PLAYER)) {
+    if ((pVictim ? pVictim->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19b4);
       exit(-1);
     }

@@ -19,8 +19,8 @@ struct D2SkillCallbackContextStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2States;
-typedef int eD2UnitType;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_fpAreaHitUnitFilter
 #define RECON_FPTD_fpAreaHitUnitFilter
 typedef BOOL (__fastcall *fpAreaHitUnitFilter)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);

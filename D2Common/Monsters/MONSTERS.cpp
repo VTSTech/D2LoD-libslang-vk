@@ -144,7 +144,7 @@ eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(D2UnitStrc * pUnit, int32_t
     return (int)*pMissileTable;
 }
 
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam) {
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam) {
     // Static local variables (originally global data)
     static uint8_t gaMonsterGfxOffsetTable3[64] = {
     '\x00',
@@ -213,10 +213,10 @@ uint32_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam) {
     '\x00'
 }; D2_STATIC_GUARD(gaMonsterGfxOffsetTable3, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable1::gaMonsterGfxOffsetTable3");
 
-    return (uint32_t)gaMonsterGfxOffsetTable3[bParam];
+    return gaMonsterGfxOffsetTable3[bParam];
 }
 
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam) {
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam) {
     // Static local variables (originally global data)
     static uint8_t gaMonsterGfxOffsetTable2[64] = {
     '\x00',
@@ -285,15 +285,15 @@ uint32_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam) {
     '\x00'
 }; D2_STATIC_GUARD(gaMonsterGfxOffsetTable2, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2::gaMonsterGfxOffsetTable2");
 
-    return (uint32_t)gaMonsterGfxOffsetTable2[bParam];
+    return gaMonsterGfxOffsetTable2[bParam];
 }
 
 // Returns the byte value at index bParam in gaMonsterGfxOffsetTable1 (the third monster graphics direction-offset table). Used to map an animation direction index to a table-specific graphics offset byte.
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable3(uint8_t bParam) {
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable3(uint8_t bParam) {
     // Static local variables (originally global data)
     static uint8_t gaMonsterGfxOffsetTable1[8] = { 0x4, 0xc, 0x14, 0x1c, 0x24, 0x2c, 0x34, 0x3c }; D2_STATIC_GUARD(gaMonsterGfxOffsetTable1, "D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable3::gaMonsterGfxOffsetTable1");
 
-    return (uint32_t)gaMonsterGfxOffsetTable1[bParam];
+    return gaMonsterGfxOffsetTable1[bParam];
 }
 
 void __stdcall MONSTERS_GetCompositeDimensions(uint8_t bParam, int * pnParam1, int * pnParam2) {
@@ -463,7 +463,10 @@ uint32_t __stdcall UnitIsMarkedBoss(D2MonStatsTxt * pMonStatsTxt, D2UnitStrc * p
 
 // 2022.01.09 - dzik
 BOOL __stdcall CheckIfMonsterIsDead(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == Kick))) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!(pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == Kick)) {
       return 0;
     }
 
@@ -479,7 +482,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
     if (!nParam1 || !pUnit || pUnit->eUnitType != UNIT_MONSTER) {
       if (nParam2 >= 0 && nParam2 < sgptDataTable->nTxtSkillsCount) {
         pSkillsTxt = sgptDataTable->pTxtSkills + nParam2;
-        if (pSkillsTxt && -1 < pSkillsTxt->summon && (int)pSkillsTxt->summon < sgptDataTable->nTxtMonStatsSize) {
+        if (pSkillsTxt && pSkillsTxt->summon >= 0 && (int)pSkillsTxt->summon < sgptDataTable->nTxtMonStatsSize) {
           if (pnParam1) {
             nPosXY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
             *pnParam1 = nPosXY;

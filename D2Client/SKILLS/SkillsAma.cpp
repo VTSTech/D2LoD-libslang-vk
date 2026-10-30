@@ -287,7 +287,7 @@ BOOL __fastcall Skills_CltDoFunc_Ama_MultiShotArrows(D2UnitStrc * pUnit, eD2Skil
 
     eMissilesId eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->cltmissile[2]) {
+    if (nWeaponClass != 1 && pSkillTxt->cltmissile[2] >= 0) {
       eCltMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
     }
     if (!((int)eCltMissileId >= 0 && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
@@ -598,7 +598,10 @@ BOOL __fastcall Skills_CltDoFunc_Ama_PiercingShot(D2UnitStrc * pUnit, eD2Skills 
     }
 
     eMissilesId eCltMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eCltMissileId >= 0 && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eCltMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

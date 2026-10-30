@@ -28,9 +28,7 @@ namespace D2Common::DATATBLS::ObjectTbls {
 
 // Builds the field-descriptor table for Objects.txt (158 columns: name, animation frame counts/deltas, per-mode flags, components, parms, draw/AI function indices, etc.) and compiles it into the global sgpTxtObjects bin table via CompileTxt (row stride 0x1c0). Post-compile per row: zeroes the wide-name buffer, resolves the localized display name from the string table into it, and left-shifts the eight FrameCnt fields by 8 (fixed-point scale). Side-effects: writes sgpTxtObjects / nTxtObjectsSize. __fastcall, pMemory = the data-table memory pool. Called once at data-table load.
 void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
-    size_t nSizeMaybe;
     D2BinFieldInputStrc objects[158];
-    char* pObjRow;
     objects[0].eType = FIELDTYPE_ASCII;
     objects[1].eType = FIELDTYPE_ASCII;
     objects[0].szName = "Name";
@@ -829,12 +827,10 @@ void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
 
     int nRowOffset = 0;
     do {
-      uint16_t* wszLetter;
+      char* pObjRow;
       pObjRow = sgpTxtObjects->Name + nRowOffset;
       memset(pObjRow + 0x40, 0, 0x80);
-      nSizeMaybe = 0x40;
-      wszLetter = D2Lang::StrTable::strtable::STRTABLE_GetStringByKey((uint8_t*)pObjRow);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)(pObjRow + 0x40), wszLetter, nSizeMaybe);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer((uint16_t*)(pObjRow + 0x40), D2Lang::StrTable::strtable::STRTABLE_GetStringByKey((uint8_t*)pObjRow), 0x40);
       *(uint32_t*)(pObjRow + 0xd8) <<= 8;
       *(uint32_t*)(pObjRow + 0xdc) <<= 8;
       *(uint32_t*)(pObjRow + 0xe0) <<= 8;
@@ -849,17 +845,16 @@ void __fastcall TXT_AllocTxt_objects(D2PoolManagerStrc * pMemory) {
 }
 
 D2ObjectsTxt * __stdcall TXT_Objects_GetLine(int32_t nClassId) {
-    if (nClassId < nTxtObjectsSize) {
-      if (!(-1 < nClassId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
-        exit(-1);
-      }
-
-      return sgpTxtObjects + nClassId;
-    } else {
+    if (!(nClassId < nTxtObjectsSize)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdd);
       exit(-1);
     }
+    if (!(nClassId >= 0)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xde);
+      exit(-1);
+    }
+
+    return sgpTxtObjects + nClassId;
 }
 
 void __stdcall TXT_FreeTxt_Objects() {
@@ -1017,11 +1012,11 @@ void __fastcall TXT_AllocTxt_objgroup(D2PoolManagerStrc * pMemory) {
 
 // Returns the D2ObjGroupTxt record at the given index, or NULL if the index is out of range (>= nTxtObjGroupSize).
 D2ObjGroupTxt * __stdcall DATATBLS_GetObjGroupTxtRecord(int32_t nIndex) {
-    if (nIndex >= nTxtObjGroupSize) {
-      return nullptr;
+    if (nTxtObjGroupSize > nIndex) {
+      return pTxtObjGroup + nIndex;
     }
 
-    return pTxtObjGroup + nIndex;
+    return nullptr;
 }
 
 // Initialises and compiles the shrines.txt binary table into sgtDataTable. Declares an 11-entry D2BinFieldInputStrc descriptor array mapping shrines columns (Code, Arg0, Arg1, Duration in frames, reset time in minutes, rarity, view name, niftyphrase, effectclass, LevelMin) to their offsets within D2ShrinesTxt (row size 0xB8), then calls CompileTxt to parse and store the result in pTxtShrines/nTxtShrinesSize.
@@ -1086,17 +1081,16 @@ void __fastcall TXT_AllocTxt_shrines(D2PoolManagerStrc * pMemory) {
 }
 
 D2ShrinesTxt * __stdcall TXT_Shrines_GetLine(int32_t nShrineId) {
-    if (nShrineId < nTxtShrinesSize) {
-      if (!(-1 < nShrineId)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-        exit(-1);
-      }
-
-      return pTxtShrines + nShrineId;
-    } else {
+    if (!(nShrineId < nTxtShrinesSize)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15f);
       exit(-1);
     }
+    if (!(nShrineId >= 0)) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+      exit(-1);
+    }
+
+    return pTxtShrines + nShrineId;
 }
 
 int32_t __stdcall GetShrinesSize() {

@@ -122,11 +122,11 @@ bool __fastcall Q08_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToJerhyn, QUESTSTATE_Completed);
-    /* If not state completed: active */ if (BVar1) {
-      /* Otherwise: inactive */ return false;
+    /* If not state completed: active */ if (!BVar1) {
+      return true;
     }
 
-    return true;
+    /* Otherwise: inactive */ return false;
 }
 
 // A2Q0 QUEST_SpokeToJerhyn — state-handler 0x0a (player leave/cleanup). Removes the player's GUID (or -1) from the A2Q0 quest-GUID player list (counterpart to Callback_11's add-to-list).
@@ -162,7 +162,7 @@ void __fastcall Q08_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q08_Callback10_PlayerLeavesGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q08_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = &A2Q0::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->pQuestSpecificData.pA2Q0 = 0;

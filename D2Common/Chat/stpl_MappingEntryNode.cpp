@@ -61,7 +61,7 @@ template<> uint32_t TSGrowableArray<TSExplicitList<MappingEntryNode, -572662307>
         nCapacityStripped = nCapacityMask - 1 & nCapacityMask;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {

@@ -6,8 +6,8 @@
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Glide/Renderer/Glide.h"
 #include "globals/globals.h"
-#include "D2CMP/tagPALETTEENTRY.h"
 #include "support/d2_boot.h"
+#include "D2CMP/tagPALETTEENTRY.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -65,13 +65,13 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       byBlue5 = *pSrcEntry >> 3;
       uVar1 = (uint16_t)byBlue5;
       wGreen5 = (uint16_t)(pSrcEntry[-1] >> 3);
-      if (byRed5 < 0x1f && 3 < (((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed & 7)) {
+      if (byRed5 < 0x1f && (((tagPALETTEENTRY*)(pSrcEntry - 2))->peRed & 7) >= 4) {
         wRed5++;
       }
-      if (byBlue5 < 0x1f && 3 < (*pSrcEntry & 7)) {
+      if (byBlue5 < 0x1f && (*pSrcEntry & 7) >= 4) {
         uVar1 = byBlue5 + 1;
       }
-      if (pSrcEntry[-1] >> 3 < 0x1f && 3 < (pSrcEntry[-1] & 7)) {
+      if (pSrcEntry[-1] >> 3 < 0x1f && (pSrcEntry[-1] & 7) >= 4) {
         wGreen5++;
       }
 
@@ -84,7 +84,7 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       pDst32++;
       pPal16Bit++;
       pSrcEntry += 4;
-    } while ((int)pDst32 < (uintptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
+    } while ((int)pDst32 < (intptr_t)((char*)&g_Palette32Bit + sizeof(g_Palette32Bit)));
 
     // [vanilla-plus fix 26 diag C probe retired in 0.0.3: the capped 12-load
     // LUT sentinel snapshot served its purpose (fix 27 field-verified) and is
@@ -109,7 +109,7 @@ static BYTE * gaGlidePaletteTable[72] = {}; D2_STATIC_GUARD(gaGlidePaletteTable,
 }
 
 void __fastcall RENDERER_D3D_CopyPixelsWithStride(void * pSrc, void * pDest, size_t nWidthBytes, int nHeight, int nDestPitch, uint32_t dwParam6) {
-    if (0 >= nHeight) {
+    if (nHeight <= 0) {
       return;
     }
 
@@ -124,7 +124,7 @@ void __fastcall RENDERER_D3D_CopyPixelsWithStride(void * pSrc, void * pDest, siz
 void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t * pDest32Bit, int nWidth, int nHeight, int nDestPitchInPixels, uint32_t dwParam6) {
     uint8_t* pSrcPixel;
     int nPixelsRemaining;
-    if (0 >= nHeight) {
+    if (nHeight <= 0) {
       return;
     }
 
@@ -133,7 +133,7 @@ void __fastcall RENDERER_D3D_ConvertPalettedTo32Bit(uint8_t * pSrc8Bit, uint32_t
       pDestPixel = pDest32Bit;
       pSrcPixel = pSrc8Bit;
       nPixelsRemaining = nWidth;
-      if (0 < nWidth) {
+      if (nWidth > 0) {
         do {
           *pDestPixel = g_Palette32Bit[*pSrcPixel];
           nPixelsRemaining--;

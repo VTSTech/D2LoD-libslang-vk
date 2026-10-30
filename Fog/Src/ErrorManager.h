@@ -67,7 +67,7 @@ BOOL __stdcall FOG_ReturnZeroCallback(char * szFileName, void * pContext);
 void __stdcall CrashGame();
 void __fastcall FILETOOLS_WriteOneStringToFile(::Report * pReport, char * szString);
 DWORD __fastcall GetParentProcessId(int32_t nProcessId);
-uint32_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize);
+uint8_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize);
 // Writes process metadata to crash report: application name, inspector tags, admin status via AllocateAndInitializeSid (SECURITY_BUILTIN_DOMAIN_RID + DOMAIN_ALIAS_RID_ADMINS), process/parent/grandparent paths, game/system locale from gaLocaleCodeStrings, and attaches log files (21 slots from InitLogFilePathPointers). Locale lookup uses MISC_GetLanguageCode and STRTABLE_GetRegistryLanguage.
 void __fastcall WriteCrashReportProcessInfo(::Report * pReport);
 void __stdcall InitializeSystemInfo();
@@ -84,7 +84,7 @@ void * __stdcall GetInstructionPointer();
 void OutputDebugStringSimple(char * szText, ...);
 void OutputDebugStringIfCapsLock(char * szText, ...);
 void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg);
-void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg);
+void FormatDebugOutputLogOnly(char * szText, ...);
 // The registered Fog exception filter. Its ABI is measured at the only dispatch,
 // 00403f21 'call dword ptr [gpCurrentExceptionFilter]' with NO pushes: ECX = &crashInfo
 // (00403efd 'lea ecx,[ebp-0x320]') and EDX = the stored context (00403ef5

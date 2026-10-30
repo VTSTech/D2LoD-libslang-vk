@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2InventoryStrc;
 struct D2UnitStrc;
-typedef int eD2BodyLocDWORD;
+typedef uint32_t eD2BodyLocDWORD;
 
 // Data types
 struct D2CompositListStrc {

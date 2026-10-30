@@ -5428,15 +5428,15 @@ D2DrlgActEnvironmentData aENVIRONMENTDATA2[6] = {
     }
 }; D2_GLOBAL_GUARD(aENVIRONMENTDATA2, "aENVIRONMENTDATA2");
 
-D2InventorySizesStrc gsInventoryBodyLocGridSize = {
+D2InventorySizesStrc gsInventoryBodyLocGridSize = D2InventorySizesStrc(
     /* .Width = */ 0xd,
     /* .Height = */ 0x1
-}; D2_GLOBAL_GUARD(gsInventoryBodyLocGridSize, "gsInventoryBodyLocGridSize");
+); D2_GLOBAL_GUARD(gsInventoryBodyLocGridSize, "gsInventoryBodyLocGridSize");
 
-D2InventorySizesStrc g_InventorySizesDefaultConfig = {
+D2InventorySizesStrc g_InventorySizesDefaultConfig = D2InventorySizesStrc(
     /* .Width = */ 0x10,
     /* .Height = */ 0x1
-}; D2_GLOBAL_GUARD(g_InventorySizesDefaultConfig, "g_InventorySizesDefaultConfig");
+); D2_GLOBAL_GUARD(g_InventorySizesDefaultConfig, "g_InventorySizesDefaultConfig");
 
 D2ItemsEventMethodStrc gaSkillCalcMethods[7] = {
     {
@@ -6246,7 +6246,7 @@ int gaFieldStepDeltaY[9] = {
     0x0
 }; D2_GLOBAL_GUARD(gaFieldStepDeltaY, "gaFieldStepDeltaY");
 
-D2SeedStrc gsAutoMapSeed = {}; D2_GLOBAL_GUARD(gsAutoMapSeed, "gsAutoMapSeed");
+D2SeedStrc gsAutoMapSeed = D2SeedStrc(); D2_GLOBAL_GUARD(gsAutoMapSeed, "gsAutoMapSeed");
 
 D2AutomapRelatedTxt gpaAutoMapRelated[36] = {}; D2_GLOBAL_GUARD(gpaAutoMapRelated, "gpaAutoMapRelated");
 
@@ -6451,17 +6451,17 @@ namespace D2Common::Chat::Ignorelist::ChatIgnoreList {
 // =============================================================================
 
 void * vftable[12] = {
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
     (void*)&D2Common::Chat::Ignorelist::ChatIgnoreList::ScalarDeletingDestructor
 }; D2_GLOBAL_GUARD(vftable, "D2Common::Chat::Ignorelist::ChatIgnoreList::vftable");
 

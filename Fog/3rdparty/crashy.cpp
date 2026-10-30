@@ -8,6 +8,7 @@
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
+#include "Fog/3rdparty/crashy/Report.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -15,7 +16,7 @@
 namespace Fog::_3rdparty::crashy {
 
 void __fastcall CRT_LocalTime_Thunk(uint8_t * bParam, uint32_t * pnParam) {
-    /* MCP write-path test — safe to delete */ CRT_LocalTime_S((tm*)bParam, pnParam);
+    /* MCP write-path test — safe to delete */ _localtime64_s((tm*)bParam, (__time64_t*)pnParam);
 }
 
 bool __stdcall FILETOOLS_GetTempPath_UTF8(char * pSrc) {
@@ -85,47 +86,41 @@ void __stdcall SYSTEM_GetCurrentProcessThreadCount() {
     }
 }
 
-static uint32_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID pAddress, LPCVOID * ppStackTop) {
+static uint8_t __stdcall SYSTEM_GetStackRegion(LPCVOID * ppStackBase, LPCVOID pAddress, LPCVOID * ppStackTop) {
     _MEMORY_BASIC_INFORMATION mbi;
-    LPCVOID pVqResult = (LPCVOID)VirtualQuery(pAddress, &mbi, 0x1c);
+    SIZE_T pVqResult = VirtualQuery(pAddress, &mbi, 0x1c);
     if (!(pVqResult && mbi.State == 0x1000 && mbi.Type == 0x20000 && mbi.Protect == 4)) {
-      return (uint32_t)pVqResult & -256;
+      return 0;
     }
 
-    pVqResult = (LPCVOID)(mbi.RegionSize + (int)mbi.BaseAddress);
-    *ppStackTop = pVqResult;
-    if (pAddress >= pVqResult) {
-      return (uint32_t)pVqResult & -256;
+    *ppStackTop = (LPCVOID)(mbi.RegionSize + (int)mbi.BaseAddress);
+    if ((LPCVOID)(mbi.RegionSize + (int)mbi.BaseAddress) <= pAddress) {
+      return 0;
     }
 
     /* SIZE_T dwLength for VirtualQuery */ /* PMEMORY_BASIC_INFORMATION lpBuffer for VirtualQuery */ /* LPCVOID lpAddress for VirtualQuery */ *ppStackBase = mbi.AllocationBase;
-    pVqResult = (LPCVOID)VirtualQuery(mbi.AllocationBase, &mbi, 0x1c);
-    if (!(pVqResult && mbi.Type == 0x20000)) {
-      return (uint32_t)pVqResult & -256;
+    pVqResult = VirtualQuery(mbi.AllocationBase, &mbi, 0x1c);
+    if (!(pVqResult && mbi.Type == 0x20000 && mbi.BaseAddress == *ppStackBase)) {
+      return 0;
     }
 
-    pVqResult = *ppStackBase;
-    if (mbi.BaseAddress != pVqResult) {
-      return (uint32_t)pVqResult & -256;
-    }
-
-    pVqResult = (LPCVOID)((int)pVqResult + mbi.RegionSize);
+    LPCVOID pvVar1 = (LPCVOID)((int)*ppStackBase + mbi.RegionSize);
     if (mbi.State == 0x1000) {
-      if (pVqResult == *ppStackTop) {
+      if (pvVar1 == *ppStackTop) {
         *ppStackBase = mbi.AllocationBase;
-        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)mbi.AllocationBase >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+        return 1;
       }
-    } else if (mbi.State == 0x2000 && pVqResult < *ppStackTop) {
+    } else if (mbi.State == 0x2000 && pvVar1 < *ppStackTop) {
       *ppStackBase = mbi.AllocationBase;
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pVqResult >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+      return 1;
     }
 
-    return (uint32_t)pVqResult & -256;
+    return 0;
 }
 
 // NOTE: Return type changed void→char (1 callers, MEDIUM confidence)
 char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, int * pStackSize, LPCVOID * ppEsp) {
-    uint32_t dwStackRegionResult;
+    uint8_t bVar1;
     BOOL bHaveContext;
     LPCVOID pStackTop;
     LPCVOID pStackBase;
@@ -141,8 +136,8 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
       RtlCaptureContext(&ctx);
       read_stack_region:
       *ppEsp = (LPCVOID)ctx.Esp;
-      dwStackRegionResult = SYSTEM_GetStackRegion(&pStackBase, (LPCVOID)ctx.Esp, &pStackTop);
-      if ((char)dwStackRegionResult != '\0') {
+      bVar1 = SYSTEM_GetStackRegion(&pStackBase, (LPCVOID)ctx.Esp, &pStackTop);
+      if (bVar1) {
         *pnStackTop = (int)pStackTop;
         *pnStackSize = (int)pStackTop - (int)pStackBase;
       }
@@ -151,7 +146,7 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
         /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
       }
 
-      return (char)dwStackRegionResult;
+      return bVar1;
     }
 
     /* DWORD dwThreadId for OpenThread */ /* BOOL bInheritHandle for OpenThread */ /* DWORD dwDesiredAccess for OpenThread */ hThread = OpenThread(0x4a, 0, dwThreadId);
@@ -173,7 +168,7 @@ char __stdcall SYSTEM_CaptureThreadContext(int * pnStackTop, DWORD dwThreadId, i
 
 bool __stdcall SYSTEM_GetThreadName(int32_t wThreadId, char * pBuffer) {
     if (dwCurrentThreadId == wThreadId) {
-      _strncpy_s(pBuffer, 0x80, "Main Thread", -1);
+      strncpy_s(pBuffer, 0x80, "Main Thread", -1);
       return true;
     }
 
@@ -313,7 +308,7 @@ bool __fastcall ErrorReportingLaunch(char * szText, D2BlizzardErrorArgument * pA
         }
 
         nAttach = 0;
-        if (pArg->nAttachmentCount) {
+        if ((uint32_t)pArg->nAttachmentCount > 0) {
           ppAttachment = pArg->szAttachment;
           do {
             if (*ppAttachment && **ppAttachment != '\0') {
@@ -346,7 +341,7 @@ void __stdcall SYSTEM_EnterCriticalSection(LPCRITICAL_SECTION lpCriticalSection)
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0098a6f0);
 }
 
-void __stdcall LeaveCriticalSection_System(LPCRITICAL_SECTION lpCriticalSection) {
+void __stdcall LeaveCriticalSection_System() {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0098a6f0);
 }
 
@@ -354,7 +349,7 @@ void __stdcall DebugThread() {
     void* pSavedEsp;
     EH4_EXCEPTION_REGISTRATION tSehFrame;
     tSehFrame.TryLevel = -2;
-    tSehFrame.ExceptionHandler = __except_handler4;
+    tSehFrame.ExceptionHandler = _except_handler4;
     tSehFrame.Next = (EH4_EXCEPTION_REGISTRATION*)ExceptionList;
     tSehFrame.EncodedScopeTable = DEFAULT_SECURITY_COOKIE ^ 0x702290;
     ExceptionList = &tSehFrame;

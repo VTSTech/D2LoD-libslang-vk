@@ -201,7 +201,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_FallingMissileWithZ(D2UnitStrc * pUnit, eD
 
       sSeedNext = D2_SEED_NEXT(*pSeed);
       *pSeed = sSeedNext;
-      sSkillArg.nVelocityOverride = (uint32_t)(uint8_t)pMissileTxt->Vel + gnSkillEMonFallingMissileZ[sSeedNext.nSeedLow % 5];
+      sSkillArg.nVelocityOverride = (uint32_t)pMissileTxt->Vel + gnSkillEMonFallingMissileZ[sSeedNext.nSeedLow % 5];
       pNewMissile = UNIT::Missile::MakeMissile(&sSkillArg);
       if (!pNewMissile) {
         return 1;
@@ -895,7 +895,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills e
     eMissilesId nMissileId;
     fpMissileSrvDoFuncData fpSkillValidCheck;
     void* pNullGameArg;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -978,7 +978,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_BloodAndMissileB(D2UnitStrc * pUnit, eD2Sk
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && -1 < pSkillTxt->cltmissile[2] && (int)pSkillTxt->cltmissile[2] < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillTxt && pSkillTxt->cltmissile[2] >= 0 && (int)pSkillTxt->cltmissile[2] < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

@@ -4,9 +4,12 @@
 #   oracle setup              fetch Game.exe 1.14d, build the VC8 toolchain (once)
 #   oracle build [-j N] [TU]  translate + compile, incremental (TU = path substring)
 #   oracle map                derive evidence/funcmap.tsv (our function -> address)
+#   oracle libmap             derive evidence/libmap.tsv (the linked runtime's functions -> address)
 #   oracle audit              byte-compare every mapped function: evidence/audit.tsv
 #   oracle diff <name|addr>   one function, ours beside the original
-#   oracle all                build, map, audit
+#   oracle all                build, map, libmap, audit
+#   oracle quick [--verify]   all, doing only what changed; prints gained/lost MATCH
+#                             (--verify: then the full run too, and diff the two)
 #   oracle fix [PATTERN]      run every fixer over the tree (scripts/fix_all.py), then build, audit
 #   oracle crt                re-derive evidence/crtmap.tsv (the linked CRT)
 #   oracle ref                re-carve the original into functions (cached; automatic)
@@ -14,7 +17,8 @@
 #   oracle compid <obj|lib>   the tool stamps inside objects / libraries
 #
 # Settings are environment variables (scripts/env.sh): ORACLE_VC (sp1|rtm),
-# ORACLE_CFLAGS, ORACLE_DRIVE, VC8_TOOLCHAIN. A non-default ORACLE_VC or
+# ORACLE_CFLAGS, ORACLE_DRIVE, VC8_TOOLCHAIN, ORACLE_CACHE (the shared
+# compile cache, scripts/objcache.py), ORACLE_NOCACHE=1 (a full run). A non-default ORACLE_VC or
 # ORACLE_CFLAGS is an experiment: it builds in build/experiment-*/, and its
 # audit uses the baseline's evidence/funcmap.tsv (the same pairs, other code)
 # and writes beside its objects. Evidence/ only ever holds the baseline.
@@ -39,6 +43,11 @@ case "$cmd" in
                 echo "oracle map: not in an experiment - an A/B audit must use the baseline's map" >&2; exit 2
             fi
             oracle_python "$SCRIPTS/funcmap.py" "$@" ;;
+    libmap) ensure_ref
+            if is_experiment; then
+                echo "oracle libmap: not in an experiment - an A/B audit must use the baseline's map" >&2; exit 2
+            fi
+            oracle_python "$SCRIPTS/libmap.py" "$@" ;;
     audit)  ensure_ref
             if is_experiment; then
                 # Same pairs as the baseline, this experiment's objects: a fair A/B.
@@ -50,7 +59,10 @@ case "$cmd" in
     diff)   ensure_ref; oracle_python "$SCRIPTS/asmdiff.py" "$@" ;;
     fix)    if is_experiment; then echo "oracle fix: not in an experiment - it edits the tree" >&2; exit 2; fi
             ensure_ref; oracle_python "$SCRIPTS/fix_all.py" "$@" ;;
-    all)    "$0" build "$@"; "$0" map; "$0" audit ;;
+    all)    "$0" build "$@"; "$0" map; "$0" libmap; "$0" audit ;;
+    quick)  ensure_ref
+            if is_experiment; then echo "oracle quick: not in an experiment" >&2; exit 2; fi
+            oracle_python "$SCRIPTS/quick.py" "$@" ;;
     rich)   oracle_python "$SCRIPTS/decode_rich_header.py" "${1:-$REFERENCE_EXE}" ;;
     compid) oracle_python "$SCRIPTS/compid.py" "$@" ;;
     *)      sed -n '2,/^set -euo/p' "$0" | sed '$d; s/^# \{0,1\}//' ;;

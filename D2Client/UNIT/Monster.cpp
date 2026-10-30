@@ -836,7 +836,7 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     int nDimY;
     int nDimX;
     uint32_t uStack_b;
-    if (!(pUnit2 && pUnit2->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -849,7 +849,13 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     if (pMonStatsTxt) {
       nBaseClassId = (int)pMonStatsTxt->BaseId;
     }
-    if (!(nBaseClassId >= 0 && nBaseClassId < sgptDataTable->nTxtMonStatsSize && nBaseClassId == 0x12a)) {
+    if (nBaseClassId < 0) {
+      return 0;
+    }
+    if (!(nBaseClassId < sgptDataTable->nTxtMonStatsSize)) {
+      return 0;
+    }
+    if (nBaseClassId != 0x12a) {
       return 0;
     }
 
@@ -869,9 +875,9 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     byDirTable[6] = 4;
     byDirTable[7] = 5;
     uint8_t byDirIndex = byDirection;
-    uint32_t nDirTableOffset = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(byDirection);
-    _byDirIndex = (uint32_t)((uint32_t)((uint32_t)uStack_b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byDirTable[nDirTableOffset & 0xff]);
-    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byDirTable[nDirTableOffset & 0xff], &nDimX, &nDimY);
+    uint8_t bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(byDirection);
+    _byDirIndex = (uint32_t)((uint32_t)((uint32_t)uStack_b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byDirTable[bVar1]);
+    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byDirTable[bVar1], &nDimX, &nDimY);
     nCollisionDist = Units::GetXPosFromDynamicPathUnit(pUnit2);
     int32_t nCatapultPosY = Units::GetYPosFromDynamicPathUnit(pUnit2);
     int32_t nAttackerPosX = Units::GetXPosFromDynamicPathUnit(pAttacker);
@@ -1844,7 +1850,7 @@ D2MonStats2Txt * __fastcall MONSTER_SpawnBloodParticles(D2UnitStrc * pUnit, D2Mo
 
     D2MonStats2Txt* pMonStats2 = sgptDataTable->pTxtMonStatsEx + nMonStats2Idx;
     nMonStats2Idx = (int)pMonStats2;
-    if (!(pMonStats2 && (uint8_t)pMonStats2->byBleed > 0)) {
+    if (!(pMonStats2 && pMonStats2->byBleed > 0)) {
       return (D2MonStats2Txt*)nMonStats2Idx;
     }
 
@@ -1950,7 +1956,7 @@ static void MONSTER_PreloadSequenceAnimations(D2UnitStrc * pUnit) {
 
     do {
       uD2UnitMode nAnimMode;
-      D2Common::Merc::ANIM_GetSequenceFrameInfo((uint8_t*)pSeqTxt, i << 8, i << 8, (uint32_t*)&nAnimMode.ePlayerMode, &nFrameSpeed, &nFrameEnd, &nFrameStart);
+      D2Common::Merc::ANIM_GetSequenceFrameInfo((uint8_t*)pSeqTxt, i << 8, i << 8, &nAnimMode.ePlayerMode, &nFrameSpeed, &nFrameEnd, &nFrameStart);
       pUnit->eAnimMode = nAnimMode;
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       i++;
@@ -2508,7 +2514,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       if (!pMonStats) {
         return;
       }
-      if (pMonStats->SplEndDeath == '\x01' && -1 < pMonStats->minion1 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize) {
+      if (pMonStats->SplEndDeath == '\x01' && pMonStats->minion1 >= 0 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize) {
         nZero = 0;
         eUnitType = UNIT_MONSTER;
         nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
@@ -2629,8 +2635,8 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
               goto hide_as_dead;
             case 0x1c5:
               nDirection = D2Common::Units::GetDirection(pUnit);
-            bPathCalcResult = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(nDirection);
-            uVar1 = bPathCalcResult & 3;
+            nDirection = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(nDirection);
+            uVar1 = nDirection & 0x80000003;
             switch (uVar1) {
               case 0:
                 Sound::SOUND_PlaySound(SOUND_SKELETON_DEATH_4, pUnit, 0, 0, 0);

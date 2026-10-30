@@ -12,6 +12,10 @@ unsigned g_anClientPktCount[256];
 unsigned g_anServerPktCount[256];
 #endif
 
+// Under the Visual C++ build support/d2_trace.h is the msvc8 oracle's stand-in,
+// in which every tracing call compiles to nothing; only the counters above stay.
+#if !(defined(_MSC_VER) && defined(D2Trace))
+
 #ifdef REDIVIVUS_DEV
 // Prefer the host share. Reading the log back out of the VM's %TEMP% costs a PowerShell
 // round trip that times out entirely once the file passes a few hundred thousand lines,
@@ -230,3 +234,4 @@ extern "C" void D2ProbeCheckBuffer(const char* pszWho, const void* pBuf, unsigne
         D2TraceFmt("BUFHIT *** %s covers gnTileClipYMin *** buf=%08X len=%u ret=%08X",
                    pszWho, (unsigned)nLo, nLen, (unsigned)(uintptr_t)pRet);
 }
+#endif

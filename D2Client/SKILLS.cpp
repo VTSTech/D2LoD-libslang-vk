@@ -436,7 +436,7 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileWithZ(D2UnitStrc * pUnit, eD2Skills 
     sSkillArg.nSkillLevel = nSkillLvl;
     int nCalcC = nCalcB;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissile[1]) {
+    if (pSkillTxt->cltmissile[1] >= 0) {
       sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
       pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
       nCalcC = nCalcB;
@@ -446,7 +446,7 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileWithZ(D2UnitStrc * pUnit, eD2Skills 
         Engine::Particle::SetOffsetVector(pMissile, -nAuraRange, 0, -nCalcB, 1);
       }
     }
-    if (-1 >= pSkillTxt->cltmissile[2]) {
+    if (pSkillTxt->cltmissile[2] < 0) {
       return 1;
     }
 
@@ -487,13 +487,13 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileAtCoords(D2UnitStrc * pUnit, eD2Skil
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.pOwner = pUnit;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissile[1]) {
+    if (pSkillTxt->cltmissile[1] >= 0) {
       sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[1];
       if ((int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
         UNIT::Missile::MakeMissile(&sSkillArg);
       }
     }
-    if (-1 >= pSkillTxt->cltmissile[2]) {
+    if (pSkillTxt->cltmissile[2] < 0) {
       return 1;
     }
 
@@ -871,11 +871,12 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
     nSerpentineAmp = sSeedNext.nSeedLow % 3 + gnSkillDescLayoutPos_0072d990;
     nPathFrameIdx = 0;
     if (nTotalFrames > 0) {
+      uint8_t bVar1;
       do {
         nCurDir += nSerpentineAmp * nSerpentineSign;
-        nSP1Y = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nCurDir & 0x3f);
-        nCurX += gnSkillSynergiesTableIndex[nSP1Y & 0xff];
-        nCurY += gnSkillSynergiesTableOffset[nSP1Y & 0xff];
+        bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nCurDir & 0x3f);
+        nCurX += gnSkillSynergiesTableIndex[bVar1];
+        nCurY += gnSkillSynergiesTableOffset[bVar1];
         pPathPoints[nPathFrameIdx].nX = (uint16_t)nCurX;
         pPathPoints[nPathFrameIdx].nY = (uint16_t)nCurY;
         if (!(nPathFrameIdx % gnSkillDescLayoutPos_0072d98c)) {
@@ -1166,7 +1167,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraState_OverlayOnTarget(D2UnitStrc * pUnit, e
     if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatListEx;
       sAuraState = pSkillTxt->aurastate;
-      if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         pStatListEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)sAuraState);
         if (pStatListEx) {
           nAuraStat = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListEx, (int)pSkillTxt->aurastat[0], 0);
@@ -1214,7 +1215,7 @@ BOOL __fastcall Skills_CltDoFunc_AuraState_OverlayOnCaster(D2UnitStrc * pUnit, e
     if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[2]) {
       D2StatListExStrc* pStatListEx;
       sAuraState = pSkillTxt->aurastate;
-      if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (sAuraState >= 0 && (int)sAuraState < sgptDataTable->nTxtStatesSize && pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         pStatListEx = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)sAuraState);
         if (pStatListEx) {
           nAuraStat = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatListEx, (int)pSkillTxt->aurastat[0], 0);

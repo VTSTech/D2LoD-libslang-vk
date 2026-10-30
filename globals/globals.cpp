@@ -31,7 +31,6 @@
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Engine/Application.h"
-#include "Storm/H/HeapManager.h"
 #include "Storm/H/stpl.h"
 #include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
@@ -9720,7 +9719,7 @@ D2EscMenuItemStrc gaEscMenuSwitchClassTable[7] = {
         },
         /* .fpVisibilityCheck = */ &D2gfx::D2GFX::D2GFX_GetPerspectiveCapable_ForPerspectiveItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPerspective,
-        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyPerspective,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyPerspective,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
@@ -16343,7 +16342,7 @@ D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         },
         /* .fpVisibilityCheck = */ nullptr,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyResolution,
-        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyResolution,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyResolution,
         /* .fpDrawCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue, // VP: 720p stop label (no MPQ asset)
         /* .nSubImageCount = */ 0x2, // VP: keep 2 - the loader needs an MPQ DC6 per stop; stop 2 is attached at runtime
         /* .nImageIndex = */ 0x0,
@@ -20315,7 +20314,7 @@ D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2gfx::D2GFX::D2GFX_GetPerspectiveCapable_ForPerspectiveItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPerspective,
-        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyPerspective,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyPerspective,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
@@ -30298,6 +30297,17 @@ eD2Sounds eD2Sounds_ARRAY_007295c8[12] = {
     SOUND_NONE
 }; D2_GLOBAL_GUARD(eD2Sounds_ARRAY_007295c8, "eD2Sounds_ARRAY_007295c8");
 
+// VP: vanilla-plus - class sound tables restored to retail 1.14d Game.exe .data values
+// (recovered verbatim; see globals.h). Amazon's table was missing entirely from the
+// decompile - its slot pointed at the orphaned bUnitSoundTableInit flag byte.
+int gaUnitSoundIdsAmazon[11] = { 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
+int gaUnitSoundIdsBarbarian[11] = { 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 }; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
+int gaUnitSoundIdsNecromancer[11] = { 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
+int gaUnitSoundIdsPaladin[11] = { 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
+int gaUnitSoundIdsSorceress[11] = { 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
+int gaUnitSoundIdsAssassin[11] = { 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
+int gaUnitSoundIdsDruid[11] = { 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
+
 char * gaLanguageNames_0072a300[15] = {
     s_English_006cc81c,
     s_Spanish_006cc814,
@@ -37050,7 +37060,7 @@ int gaFormList32InitialItems[4] = {}; D2_GLOBAL_GUARD(gaFormList32InitialItems, 
 
 int32_t gaChatTextBoxFontParams[2] = {}; D2_GLOBAL_GUARD(gaChatTextBoxFontParams, "gaChatTextBoxFontParams");
 
-TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState = {}; D2_GLOBAL_GUARD(gQServerGameState, "gQServerGameState");
+TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0> gQServerGameState; D2_GLOBAL_GUARD(gQServerGameState, "gQServerGameState");
 
 uint16_t gU16ImmunityStringBuffer2[256] = {}; D2_GLOBAL_GUARD(gU16ImmunityStringBuffer2, "gU16ImmunityStringBuffer2");
 
@@ -37062,7 +37072,7 @@ uint16_t gnMonsterHealthBarValue[256] = {}; D2_GLOBAL_GUARD(gnMonsterHealthBarVa
 
 uint16_t gwKeyNameBuffer[4] = {}; D2_GLOBAL_GUARD(gwKeyNameBuffer, "gwKeyNameBuffer");
 
-D2SeedStrc gAncientsCloudSeed = {}; D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
+D2SeedStrc gAncientsCloudSeed = D2SeedStrc(); D2_GLOBAL_GUARD(gAncientsCloudSeed, "gAncientsCloudSeed");
 
 uint16_t gwcImeCompositionBuffer[32] = {}; D2_GLOBAL_GUARD(gwcImeCompositionBuffer, "gwcImeCompositionBuffer");
 
@@ -37114,7 +37124,7 @@ CRITICAL_SECTION aTaskQueueCriticalSections[32] = {}; D2_GLOBAL_GUARD(aTaskQueue
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0088caa8 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0088caa8, "lpCriticalSection_0088caa8");
 
-TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler = {}; D2_GLOBAL_GUARD(gCelCmpCacheHandler, "gCelCmpCacheHandler");
+TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0> gCelCmpCacheHandler; D2_GLOBAL_GUARD(gCelCmpCacheHandler, "gCelCmpCacheHandler");
 
 D2DataTableTxtStrc sgtDataTable = {}; D2_GLOBAL_GUARD(sgtDataTable, "sgtDataTable");
 
@@ -37122,15 +37132,11 @@ unsigned long long gpItemTypeTableContext = 0; D2_GLOBAL_GUARD(gpItemTypeTableCo
 
 _RTL_CRITICAL_SECTION lpCriticalSection_0096d610 = {}; D2_GLOBAL_GUARD(lpCriticalSection_0096d610, "lpCriticalSection_0096d610");
 
-HeapManager gpHeapManager = {}; D2_GLOBAL_GUARD(gpHeapManager, "gpHeapManager");
-
 uint16_t g_Palette16Bit[256] = {}; D2_GLOBAL_GUARD(g_Palette16Bit, "g_Palette16Bit");
 
 uint32_t g_Palette32Bit[256] = {}; D2_GLOBAL_GUARD(g_Palette32Bit, "g_Palette32Bit");
 
 D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {}; D2_GLOBAL_GUARD(gD3DDeviceBlock0, "gD3DDeviceBlock0");
-
-D2SmackerGlideBufferStrc gnSmackerGlideYOffset = {}; D2_GLOBAL_GUARD(gnSmackerGlideYOffset, "gnSmackerGlideYOffset");
 
 char Rsrc_Manifest_1_409[1745] = { "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">\r\n</assembly>PAPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGX" }; D2_GLOBAL_GUARD(Rsrc_Manifest_1_409, "Rsrc_Manifest_1_409");
 
@@ -37977,7 +37983,7 @@ uint32_t DWORD_007467b0 = 0x5070000; D2_GLOBAL_GUARD(DWORD_007467b0, "DWORD_0074
 uint32_t DEFAULT_SECURITY_COOKIE = 0xbb40e64e; D2_GLOBAL_GUARD(DEFAULT_SECURITY_COOKIE, "DEFAULT_SECURITY_COOKIE");
 unsigned int gaCRT_FPremData_3 = 0x6a9a24; D2_GLOBAL_GUARD(gaCRT_FPremData_3, "gaCRT_FPremData_3");
 BOOL BOOL_0074c020 = 0x64; D2_GLOBAL_GUARD(BOOL_0074c020, "BOOL_0074c020");
-uint32_t TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
+int TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
 uint32_t gnServiceRunning = 0x0; D2_GLOBAL_GUARD(gnServiceRunning, "gnServiceRunning");
 CRITICAL_SECTION gUICtrlSkillColumnState[256] = {}; D2_GLOBAL_GUARD(gUICtrlSkillColumnState, "gUICtrlSkillColumnState");
 CRITICAL_SECTION gUICtrlPanelArrowState[256] = {}; D2_GLOBAL_GUARD(gUICtrlPanelArrowState, "gUICtrlPanelArrowState");
@@ -37987,7 +37993,6 @@ pfnMCPGameListEntry g_pfnMCPGameListCallback = (pfnMCPGameListEntry)0; D2_GLOBAL
 pfnVoidNoArgCallback g_pfnMCPGameListCompleteCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(g_pfnMCPGameListCompleteCallback, "g_pfnMCPGameListCompleteCallback");
 pfnMCPMessage g_pfnMCPMessageCallback = (pfnMCPMessage)0; D2_GLOBAL_GUARD(g_pfnMCPMessageCallback, "g_pfnMCPMessageCallback");
 LPCSTR gpszCmdLineCaptionStr = 0; D2_GLOBAL_GUARD(gpszCmdLineCaptionStr, "gpszCmdLineCaptionStr");
-D2GameViewStrc * D2GameView = 0; D2_GLOBAL_GUARD(D2GameView, "D2GameView");
 int WindowSizeY = 0; D2_GLOBAL_GUARD(WindowSizeY, "WindowSizeY");
 int WindowSizeX = 0; D2_GLOBAL_GUARD(WindowSizeX, "WindowSizeX");
 uint32_t gaSpriteArcaneStarYOffset = 0; D2_GLOBAL_GUARD(gaSpriteArcaneStarYOffset, "gaSpriteArcaneStarYOffset");
@@ -38081,7 +38086,6 @@ uint32_t gnSeedCounter = 0; D2_GLOBAL_GUARD(gnSeedCounter, "gnSeedCounter");
 unsigned int gpfnProfCoreInitCallback = {}; D2_GLOBAL_GUARD(gpfnProfCoreInitCallback, "gpfnProfCoreInitCallback");
 unsigned int UINT_0096d6a8 = {}; D2_GLOBAL_GUARD(UINT_0096d6a8, "UINT_0096d6a8");
 IDirectDrawSurface7 * g_pD3DSurfaceBackbuffer = 0; D2_GLOBAL_GUARD(g_pD3DSurfaceBackbuffer, "g_pD3DSurfaceBackbuffer");
-uint32_t gnSmackerDecodeState = 0; D2_GLOBAL_GUARD(gnSmackerDecodeState, "gnSmackerDecodeState");
 uint32_t dwCurrentThreadId = 0; D2_GLOBAL_GUARD(dwCurrentThreadId, "dwCurrentThreadId");
 uint8_t IMAGE_RESOURCE_DIRECTORY_00995000[16] = {}; D2_GLOBAL_GUARD(IMAGE_RESOURCE_DIRECTORY_00995000, "IMAGE_RESOURCE_DIRECTORY_00995000");
 uint8_t Rsrc_Icon_1_409[744] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_1_409, "Rsrc_Icon_1_409");
@@ -38163,15 +38167,7 @@ void * TxnScopeExitCallback = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeExitCa
 void * TxnScopeContext = (void *)0x00000000; D2_GLOBAL_GUARD(TxnScopeContext, "TxnScopeContext");
 uint32_t LockCount = 0x0; D2_GLOBAL_GUARD(LockCount, "LockCount");
 void * ResourceRetValue = (void *)0x00000000; D2_GLOBAL_GUARD(ResourceRetValue, "ResourceRetValue");
-
 // VP: vanilla-plus - per-class player sound tables (see globals.h). Real contents recovered from the retail 1.14d Game.exe static .data - they are NOT runtime-filled (the decompile's "bUnitSoundTableInit" 1-byte stub sat at .data 0x727eac, which is gaUnitSoundIdsAmazon[0]'s low byte, and the six sibling 1-byte stubs were the first bytes of the contiguous 0x729f00..0x72a008 block). Anchors: gaUnitSoundTableByClassId = .data 0x72a008, entry order [Ama,Sorc,Nec,Pal,Barb,Dru,Ass] matching the decompiled initializer. Rows decoded against the LoD sounds.txt row order: [0]/[1] hit/death bases, [2]..[7] event 0x13/0x15/0x16/0x17/0x14/0x18 barks (0x17 = cantcarry, the inventory-full pickup-fail voice), [8] chat_a_1 (anim events 0x19-0x20 select [8], [8]+2 .. [8]+14), [9] act1_complete_andariel (quest events 0x21-0x53 are linear: id = [9] + event - 0x21, so 0x53 = [9]+0x32 = act5_defeat_baal), [10] footstep block base (barb heavy / ama+pal medium / sor+nec+dru+ass light; materials add +0/+4/+8/+0xc/+0x10/+0x14, running +0x18).
-int gaUnitSoundIdsAmazon[11] = { 2878, 2883, 2953, 2957, 2955, 2934, 2936, 2959, 2937, 2961, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAmazon, "gaUnitSoundIdsAmazon");
-int gaUnitSoundIdsBarbarian[11] = { 2902, 2907, 3031, 3035, 3033, 3012, 3014, 3037, 3015, 3039, 2816 }; D2_GLOBAL_GUARD(gaUnitSoundIdsBarbarian, "gaUnitSoundIdsBarbarian");
-int gaUnitSoundIdsNecromancer[11] = { 2894, 2899, 3109, 3113, 3111, 3090, 3092, 3115, 3093, 3117, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsNecromancer, "gaUnitSoundIdsNecromancer");
-int gaUnitSoundIdsPaladin[11] = { 2886, 2891, 3187, 3191, 3189, 3168, 3170, 3193, 3171, 3195, 2768 }; D2_GLOBAL_GUARD(gaUnitSoundIdsPaladin, "gaUnitSoundIdsPaladin");
-int gaUnitSoundIdsSorceress[11] = { 2910, 2915, 3265, 3269, 3267, 3246, 3248, 3271, 3249, 3273, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsSorceress, "gaUnitSoundIdsSorceress");
-int gaUnitSoundIdsAssassin[11] = { 2918, 2923, 3343, 3347, 3345, 3324, 3326, 3349, 3327, 3351, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsAssassin, "gaUnitSoundIdsAssassin");
-int gaUnitSoundIdsDruid[11] = { 2926, 2931, 3421, 3425, 3423, 3402, 3404, 3427, 3405, 3429, 2720 }; D2_GLOBAL_GUARD(gaUnitSoundIdsDruid, "gaUnitSoundIdsDruid");
 
 // =============================================================================
 // Uninitialized data (BSS)

@@ -13,9 +13,6 @@ struct D2GameViewStrc;
 struct D2PoolManagerStrc;
 struct D2TileLibraryEntryStrc;
 struct D2UIMouseMsgStrc;
-struct D2UnitStrc;
-typedef int eD2UIvars;
-typedef int eD2UIvarsSetType;
 
 // Data types
 struct D2DrawWallStrc {
@@ -37,27 +34,6 @@ struct D2DrawWallStrc {
 namespace D2Client::UI::Draw {
 
 // Function declarations
-void __stdcall PALETTE_LoadLoadingScreenPalette();
-void __fastcall SetActNo(int32_t nParam);
-void __stdcall CleanupAfterLoadingAct();
-int32_t __stdcall DRAW_GetLastPanelId();
-BOOL __stdcall DRAW_CheckTickRateLimiter();
-// Fills a four-int array with the visible viewport bounds as left, top, right, bottom. Callers must model the destination as one 16-byte object (int[4]): splitting it into separate stack locals leaves the right and bottom elements looking unwritten.
-uint32_t __fastcall DRAW_GetVisibleViewportBounds(int * pnBounds);
-int32_t __stdcall DRAW_GetBottomPanelY();
-void __stdcall DRAW_RegisterDrawHandlers();
-void __stdcall DRAW_RefreshNpcDialog();
-uint32_t __stdcall DRAW_IsDialogActive();
-void __stdcall DRAW_MonsterUnderCursorImmunites();
-void __fastcall DRAW_MonsterHealthBar(struct D2UnitStrc * pUnit);
-// Draw UI label showing unit name/life under mouse cursor during gameplay
-void __fastcall DRAW_UnitUnderMouse(struct D2UnitStrc * pUnit);
-void __stdcall DRAW_UnitUModsUnderCursor();
-void __stdcall DRAW_Overlay_EnteringAreaX();
-void __fastcall SetUiFlagInit(eD2UIvars eUIVar);
-void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel);
-DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DWORD bAdjustMouse);
-BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse);
 void __stdcall LoadingsScreen();
 void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame);
 void __stdcall UI_ToggleMiniPanel();

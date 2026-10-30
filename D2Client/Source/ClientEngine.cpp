@@ -1181,8 +1181,8 @@ void __fastcall DRLGROOM_SpawnRandomMonsters(D2RoomStrc * pRoom) {
           pMonStats = sgptDataTable->pTxtMonStats + nSpawnCount;
         }
 
-        nGroupSize = Archive::RANDOM_RandomNumberSelector(pSeed, (uint32_t)(uint8_t)pMonStats->MaxGrp - (uint32_t)(uint8_t)pMonStats->MinGrp);
-        nSpawnCount = nGroupSize + (uint8_t)pMonStats->MinGrp;
+        nGroupSize = Archive::RANDOM_RandomNumberSelector(pSeed, (uint32_t)(uint8_t)pMonStats->MaxGrp - (uint32_t)pMonStats->MinGrp);
+        nSpawnCount = nGroupSize + pMonStats->MinGrp;
         if (pMonsterPtr[8]) {
           nSpawnCount *= pMonsterPtr[8];
         }

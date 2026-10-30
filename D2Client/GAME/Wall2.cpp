@@ -636,7 +636,13 @@ void __fastcall FreeWall2(D2GameViewStrc * pGameView) {
 BOOL WALL2_IsInDrawGrid(int nX, int nY, D2Wall2DrawListStrc * pDrawList) {
     int iVar1 = nX - pDrawList->nWall2GridOriginX;
     int nRelY = nY - pDrawList->nWall2GridOriginY;
-    if (!(iVar1 >= 0 && nRelY >= 0 && iVar1 < (int)pDrawList->nWall2GridDim)) {
+    if (iVar1 < 0) {
+      return 0;
+    }
+    if (nRelY < 0) {
+      return 0;
+    }
+    if (!(iVar1 < (int)pDrawList->nWall2GridDim)) {
       return 0;
     }
 
@@ -1148,7 +1154,7 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
         nRoofHeightIdx = nIsoY - 1;
         nIsoY = nRoofHeightIdx;
         if (pTileData->nScreenX <= pnParam->rcCull.right && pTileData->nScreenX + 0xa0 >= pnParam->rcCull.left) {
-          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)pTileLibEntry->nRoofHeight;
+          nScreenYAdj = pTileData->nScreenY - (uint32_t)pTileLibEntry->nRoofHeight;
           if (nRoofHeightIdx2 + nScreenYAdj <= pnParam->rcCull.bottom && nScreenYAdj - nRoofHeightIdx2 >= pnParam->rcCull.top) {
             bInDrawGrid = WALL2_IsInDrawGrid(nIsoX, nRoofHeightIdx, pAllocBase);
             if (bInDrawGrid) {
@@ -1301,10 +1307,10 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
       pGameView->sWall2.nWall2GridOriginX = nIsoY;
       pGridCellIter = pGameView->sWall2.pWall2;
       pGameView->sWall2.nWall2GridOriginY = nIsoX;
-      if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
+      if (pGameView->sWall2.nWall2GridDim > 0) {
         do {
           nGridColIdx = 0;
-          if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
+          if (pGameView->sWall2.nWall2GridDim > 0) {
             do {
               pGridCellIter->nGridIsoX = nIsoY + nGridColIdx;
               pGridCellIter->nGridIsoY = nIsoX + nGridRowIdx;

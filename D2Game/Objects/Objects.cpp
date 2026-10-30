@@ -485,14 +485,14 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     GAME::Event::EVENT_ClearTimerList(pGameCopy, pUnit);
     if ((uint16_t)nObjClassId < 0x23d) {
       D2SeedStrc* pSeed;
-      if (!((uint8_t)pObjectsTxt->InitFn < 0x50)) {
+      if (!(pObjectsTxt->InitFn < 0x50)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x262);
         exit(-1);
       }
 
       pSeed = ObjectsRgn::GetObjectControlSeed(pGameCopy, pRoom);
-      if ((uint8_t)pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]) {
-        /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn]);
+      if (pObjectsTxt->InitFn < 0x50 && OBJECTSINITFN[pObjectsTxt->InitFn]) {
+        /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSINITFN[pObjectsTxt->InitFn]);
         if (bBadCodePtr) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26a);
           exit(-1);
@@ -505,7 +505,7 @@ void __fastcall OBJECT_InitializeObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
         s0x00.pObject = pUnit;
         s0x00.pRoom = pRoom;
         s0x00.pObjectTxt = pObjectsTxt;
-        (*OBJECTSINITFN[(uint8_t)pObjectsTxt->InitFn])(&s0x00);
+        (*OBJECTSINITFN[pObjectsTxt->InitFn])(&s0x00);
       }
       if (!pObjectsTxt->Selectable[nAnimModeOrGUID]) {
         pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
@@ -2679,12 +2679,12 @@ void __fastcall OBJECT_PopulateRoomObjects(::SGAMEDATA * pGame, D2RoomStrc * pRo
           nSeedRoll += (uint32_t)pObjGroupTxt->nProbability[iVar2];
           pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nObjGrpId);
           if ((int)(DVar1.nSeedLow % 100) < nSeedRoll && pObjectsTxt->Gore <= gbObjectPopulateInitialized) {
-            if ((uint8_t)pObjectsTxt->PopulateFn >= 10) {
+            if (pObjectsTxt->PopulateFn >= 10) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc43);
               exit(-1);
             }
-            if (OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]) {
-              /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]);
+            if (OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]) {
+              /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]);
               if (bBadCodePtr) {
                 Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc46);
                 exit(-1);
@@ -2694,7 +2694,7 @@ void __fastcall OBJECT_PopulateRoomObjects(::SGAMEDATA * pGame, D2RoomStrc * pRo
                 exit(-1);
               }
 
-              (*OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[iVar2], nObjGrpId, 100);
+              (*OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[iVar2], nObjGrpId, 100);
             }
 
             break;
@@ -2723,21 +2723,21 @@ void __fastcall OBJECT_CallPopulateFn(::SGAMEDATA * pGame, D2RoomStrc * pRoom, i
     }
 
     D2ObjectsTxt* pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nObjectClassId);
-    if ((uint8_t)pObjectsTxt->PopulateFn >= 10) {
+    if (pObjectsTxt->PopulateFn >= 10) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc7d);
       exit(-1);
     }
-    if (!OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]) {
+    if (!OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]) {
       return;
     }
 
-    /* FARPROC lpfn for IsBadCodePtr */ _bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]);
+    /* FARPROC lpfn for IsBadCodePtr */ _bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]);
     if (_bBadCodePtr) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc80);
       exit(-1);
     }
 
-    (*OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn])(pGame, pRoom, gbObjectInitTableSetup, nObjectClassId, 100);
+    (*OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn])(pGame, pRoom, gbObjectInitTableSetup, nObjectClassId, 100);
 }
 
 // Spawns one object from an ObjGroup.txt group entry into pRoom during level population. Rolls the game control seed against a cumulative probability table (up to 8 entries); on a hit, looks up the Objects.txt PopulateFn index and dispatches to OBJECTSPOPULATEFN[fn](pGame, pRoom, density, classId, 100). Validates the fn index and code pointer; halts with a fatal error on invalid entries. Skips if the room has no valid level ID.
@@ -2772,15 +2772,15 @@ void __fastcall OBJECT_PopulateFromObjGroup(::SGAMEDATA * pGame, D2RoomStrc * pR
       nProbAccum += (uint32_t)pObjGroupTxt->nProbability[nGroupEntryIdx];
       if ((int)(nSeedRoll + (int)(sNewSeed.nSeedLow / 100) * -100) < nProbAccum) {
         pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nObjClassId);
-        if ((uint8_t)pObjectsTxt->PopulateFn >= 10) {
+        if (pObjectsTxt->PopulateFn >= 10) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xca8);
           exit(-1);
         } else {
-          if (!OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]) {
+          if (!OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]) {
             return;
           }
 
-          /* FARPROC lpfn for IsBadCodePtr */ _bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn]);
+          /* FARPROC lpfn for IsBadCodePtr */ _bBadCodePtr = IsBadCodePtr((FARPROC)OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn]);
           if (_bBadCodePtr) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcab);
             exit(-1);
@@ -2790,7 +2790,7 @@ void __fastcall OBJECT_PopulateFromObjGroup(::SGAMEDATA * pGame, D2RoomStrc * pR
               exit(-1);
             }
 
-            (*OBJECTSPOPULATEFN[(uint8_t)pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[nGroupEntryIdx], nObjClassId, 100);
+            (*OBJECTSPOPULATEFN[pObjectsTxt->PopulateFn])(pGame, pRoom, pObjGroupTxt->nDensity[nGroupEntryIdx], nObjClassId, 100);
             return;
           }
         }
@@ -2875,7 +2875,6 @@ void __fastcall Objects_InitFn16(D2ObjectInitFnArg * pInitArg) {
 
 // Server-side object spawner for one object class in a room. Reads ObjectsTxt for nObjectClassId (size/orientation/selectable), advances the room RNG seed, and decides whether to spawn: a density-region check (OBJECTRGN_CheckDensityThreshold) either forces placement (up to 30 retries) or gates it on nChancePercent vs the seed roll. On success calls OBJECT_PlaceAtBiasedPosition near a spawn point, sets/clears UNITFLAG_TARGETABLE from the Selectable column, and for density spawns remaps to a shrine (OBJECT_SelectRandomShrineType, ShrinesTxt line 2) and bumps the level spawn count. Finally records the placed object's X/Y into the level RNG point set via AddPointsToLevelRngPoints1.
 void __fastcall Objects_PopulateFn2(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uint8_t nDensity, int32_t nObjectClassId, uint16_t nChancePercent) {
-    bool bDensityThresholdResult;
     bool bCapacityFull;
     D2UnitStrc* pUnit;
     D2ShrinesTxt* pShrinesTxt;
@@ -2909,9 +2908,9 @@ void __fastcall Objects_PopulateFn2(::SGAMEDATA * pGame, D2RoomStrc * pRoom, uin
     *pRoomSeed = sNewSeed;
     int nMaxRetries;
     nMaxRetries = 3;
-    uint32_t bDensityOk;
-    bDensityOk = ObjectsRgn::OBJECTRGN_CheckDensityThreshold(pGameSave, eLevelId);
-    if ((char)bDensityOk != '\0') {
+    bool bDensityThresholdResult;
+    bDensityThresholdResult = (bool)ObjectsRgn::OBJECTRGN_CheckDensityThreshold(pGameSave, eLevelId);
+    if (bDensityThresholdResult) {
       bDensityThreshold = '\x01';
       nMaxRetries = 0x1e;
     } else {

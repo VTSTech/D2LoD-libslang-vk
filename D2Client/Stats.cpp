@@ -12,18 +12,20 @@ int32_t __fastcall D2ApplyPercent(int32_t nValue, int32_t nPercent, uint32_t n10
     if (!n100Percent) {
       return 0;
     }
-    if (nValue < 0x100001) {
-      if (nPercent < 0x10001) {
+    if (nValue > 0x100000) {
+      if ((int)n100Percent <= nValue >> 4) {
+        return nValue / (int)n100Percent * nPercent;
+      }
+    } else {
+      if (nPercent <= 0x10000) {
         return nValue * nPercent / (int)n100Percent;
       }
       if ((int)n100Percent <= nPercent >> 4) {
         return nPercent / (int)n100Percent * nValue;
       }
-    } else if ((int)n100Percent <= nValue >> 4) {
-      return nValue / (int)n100Percent * nPercent;
     }
 
-    int64_t qwResult = __alldiv((uint32_t)((int64_t)nValue * (int64_t)nPercent), (uint32_t)((uint64_t)((int64_t)nValue * (int64_t)nPercent) >> 0x20), n100Percent, (int)n100Percent >> 0x1f);
+    int64_t qwResult = _alldiv((uint32_t)((int64_t)nValue * (int64_t)nPercent), (uint32_t)((uint64_t)((int64_t)nValue * (int64_t)nPercent) >> 0x20), n100Percent, (int)n100Percent >> 0x1f);
     return (int32_t)qwResult;
 }
 

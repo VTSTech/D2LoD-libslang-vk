@@ -3,7 +3,6 @@
 #include "D2Net/Game/Server.h"
 #include "D2Net/SRC/Client.h"
 #include "D2Net/in_addr.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/D2Net.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/QServer/QServer.h"
@@ -30,23 +29,24 @@ int __stdcall CreateThreadClientSocketOrSingleplayer() {
     }
 
     DWORD dwWaitResult = WaitForSingleObject(SERVER_THREAD, 100);
-    if (dwWaitResult) {
-      return 1;
-    }
-    if (CLIENT_SocketToServer == -1) {
+    if (!dwWaitResult) {
+      if (CLIENT_SocketToServer != -1) {
+        BVar1 = NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
+        if (!BVar1) {
+          /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882ce8);
+          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnNetConnectionTimeoutMs = 1;
+          LeaveCriticalSection(&lpCriticalSection_00882ce8);
+        }
+
+        /* LPDWORD lpThreadId for CreateThread */ /* DWORD dwCreationFlags for CreateThread */ /* LPVOID lpParameter for CreateThread */ /* LPTHREAD_START_ROUTINE lpStartAddress for CreateThread */ /* SIZE_T dwStackSize for CreateThread */ /* LPSECURITY_ATTRIBUTES lpThreadAttributes for CreateThread */ hClientConnectionThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)SRC::Client::ThreadClientToServer, (LPVOID)0x0, 0, (LPDWORD)&lpThreadId_00882b30);
+        /* int nPriority for SetThreadPriority */ /* HANDLE hThread for SetThreadPriority */ SetThreadPriority(hClientConnectionThread, 1);
+        return 2;
+      }
+
       return 0;
     }
 
-    BVar1 = NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer();
-    if (!BVar1) {
-      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00882ce8);
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnNetConnectionTimeoutMs = 1;
-      LeaveCriticalSection(&lpCriticalSection_00882ce8);
-    }
-
-    /* LPDWORD lpThreadId for CreateThread */ /* DWORD dwCreationFlags for CreateThread */ /* LPVOID lpParameter for CreateThread */ /* LPTHREAD_START_ROUTINE lpStartAddress for CreateThread */ /* SIZE_T dwStackSize for CreateThread */ /* LPSECURITY_ATTRIBUTES lpThreadAttributes for CreateThread */ hClientConnectionThread = CreateThread((LPSECURITY_ATTRIBUTES)0x0, 0, (LPTHREAD_START_ROUTINE)SRC::Client::ThreadClientToServer, (LPVOID)0x0, 0, (LPDWORD)&lpThreadId_00882b30);
-    /* int nPriority for SetThreadPriority */ /* HANDLE hThread for SetThreadPriority */ SetThreadPriority(hClientConnectionThread, 1);
-    return 2;
+    return 1;
 }
 
 int32_t __fastcall HandleIncomingPacketBuffer(D2QServerStrc * pQServer, char * pBytes, size_t nSize) {
@@ -56,8 +56,7 @@ int32_t __fastcall HandleIncomingPacketBuffer(D2QServerStrc * pQServer, char * p
 
 // Validates an incoming client packet before dispatch. Returns 3 if buffer empty or size indeterminate, 4 if opcode is out-of-range or packet too large (> 0x204). On success, fills pnPacketSize, pnPacketClass (0=game-phase, 1=pre-game, 2=QServer-token-gated opcodes >= 0x71), and pnTimeoutMs (100 ms). QServer-gated packets additionally checked against the game token via QServer::MatchesGameTokenFilter.
 int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t nParam) {
-    int nTokenMatch;
-    if (!nSize) {
+    if (nSize < 1) {
       return 3;
     }
 
@@ -67,38 +66,39 @@ int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket
     if (!nPacketSizeResult) {
       return 3;
     }
-    if (0x70 < byOpcode && byOpcode != 0xff || 0x204 < (uint16_t)(uintptr_t)pPacketEnd) {
+    if (byOpcode >= 0x71 && byOpcode != 0xff || (uint16_t)(uintptr_t)pPacketEnd > 0x204) {
       return 4;
     }
-    if ((int)((uint32_t)pPacketEnd & 0xffff) > (int)nSize) {
-      return 3;
-    }
+    if ((int)((uint32_t)pPacketEnd & 0xffff) <= (int)nSize) {
+      int nTokenMatch;
+      *pnUnknown = 0;
+      *pnPacketSize = (uint32_t)pPacketEnd & 0xffff;
+      if (byOpcode < 0x67) {
+        *pnPacketClass = 1;
+      } else if (byOpcode < 0x71) {
+        *pnPacketClass = 0;
+      } else {
+        nTokenMatch = Fog::Src::MatchesGameTokenFilter_Thunk(pQServer, nParam);
+        if (!nTokenMatch) {
+          return 4;
+        }
 
-    *pnUnknown = 0;
-    *pnPacketSize = (uint32_t)pPacketEnd & 0xffff;
-    if (byOpcode < 0x67) {
-      *pnPacketClass = 1;
-    } else if (byOpcode < 0x71) {
-      *pnPacketClass = 0;
-    } else {
-      nTokenMatch = Fog::Src::MatchesGameTokenFilter_Thunk(pQServer, nParam);
-      if (!nTokenMatch) {
-        return 4;
+        *pnPacketClass = 2;
       }
 
-      *pnPacketClass = 2;
+      *pnTimeoutMs = 100;
+      nTokenMatch = *pnPacketClass;
+      if (!nTokenMatch) {
+        return 2;
+      }
+      if (nTokenMatch == 1) {
+        return 1;
+      }
+
+      return (nTokenMatch != 2) + 1;
     }
 
-    *pnTimeoutMs = 100;
-    nTokenMatch = *pnPacketClass;
-    if (!nTokenMatch) {
-      return 2;
-    }
-    if (nTokenMatch == 1) {
-      return 1;
-    }
-
-    return (nTokenMatch != 2) + 1;
+    return 3;
 }
 
 void __stdcall WaitForEmptyEvent(DWORD dwParam) {
@@ -150,7 +150,7 @@ int32_t __stdcall NET_D2GS_SERVER_SendPacketToClient(int32_t nMode, int32_t nCli
     size_t pbCompressedSize;
     uint32_t nSize_00;
     char pBuffer[1034];
-    if (0x204 < nSize) {
+    if (nSize > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x158);
       exit(-1);
     }
@@ -218,10 +218,8 @@ void __stdcall NET_DisconnectIP(in_addr addr, char * szText, int32_t nFlags) {
 }
 
 // @sourcefile .\SRC\Server.cpp
-int __stdcall QSERVER_KillConnection(int32_t nClientId) {
-    int nResult;
+void __stdcall QSERVER_KillConnection(int32_t nClientId) {
     Fog::Src::thunk_CloseRemoteConnection(pQServer, nClientId, ".\\SRC\\Server.cpp", 0x1d4);
-    return nResult;
 }
 
 void __stdcall NET_Thunk_QServerSetHacklistAddLineHook(fpD2QServerLineHook pfnHook) {
@@ -246,16 +244,17 @@ void __stdcall AssignClientToToken(int32_t nClientId, uint32_t nToken) {
 }
 
 uint32_t __stdcall QSERVER_GetClientGameToken(uint32_t nClientId) {
-    if (!nClientId) {
-      return gnDefaultClientGameToken;
+    if (nClientId) {
+      uint32_t nToken;
+      nToken = Fog::Src::GetClientServerTokenByClientId(pQServer, nClientId);
+      return nToken;
     }
 
-    uint32_t nToken = Fog::Src::GetClientServerTokenByClientId(pQServer, nClientId);
-    return nToken;
+    return gnDefaultClientGameToken;
 }
 
 void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nParam, int32_t nFlags) {
-    if (0x204 < nParam) {
+    if (nParam > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x209);
       exit(-1);
     }
@@ -264,7 +263,7 @@ void __fastcall NET_SendPacketWithFlags(char * szText, uint16_t nParam, int32_t 
 }
 
 uint32_t __fastcall NET_SendPacketToClient(char * szText, uint16_t nParam) {
-    if (0x204 < nParam) {
+    if (nParam > 0x204) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x217);
       exit(-1);
     }
@@ -319,11 +318,11 @@ void __stdcall QSERVER_CreateAndInit(eD2GSConnectionType neD2GSConnectionType, e
 }
 
 BOOL __stdcall NET_D2GS_CLIENT_CheckIfConnectionTypeIsSinglePlayer() {
-    if (nD2GSConnectionType != CONNECTIONTYPE_SINGLEPLAYER) {
-      return (uint32_t)(nD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYERUNCAPPED);
+    if (nD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYER) {
+      return 1;
     }
 
-    return 1;
+    return (uint32_t)(nD2GSConnectionType == CONNECTIONTYPE_SINGLEPLAYERUNCAPPED);
 }
 
 void __fastcall NET_D2GS_CLIENT_SetD2GSConnectionType(eD2GSConnectionType neD2GSConnectionType) {
@@ -340,12 +339,12 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
     uint16_t wRawLen;
     uint32_t nStrLen1;
     char* pcStrBase;
-    if (!pBytesSize) {
+    if (pBytesSize < 1) {
       return 0;
     }
 
     uint8_t byOpcode = *pBytes;
-    if (0xb4 < byOpcode) {
+    if (byOpcode >= 0xb5) {
       return 0;
     }
 
@@ -354,123 +353,123 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
     if (!nStrLen2) {
       return 0;
     }
-    if (-1 < (int)nStrLen2) {
+    if ((int)nStrLen2 < 0) {
+      switch ((uint32_t)byOpcode) {
+        case 0x16:
+          if (pBytesSize >= 0xd) {
+            *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 1);
+            return 1;
+          }
+        break;
+        default:
+          {
+            *pExpectedSize = 0;
+            return 1;
+          }
+        case 0x26:
+          if ((int)pBytesSize >= 10) {
+            pcStrBase = pBytes + 10;
+            nStrLen1 = Storm::Source::SSTR::SStrLen(pcStrBase);
+            if ((int)pBytesSize >= (int)(nStrLen1 + 0xb)) {
+              nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase);
+              nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase + nStrLen2 + 1);
+              nStrLen2 = nStrLen1 + 0xc + nStrLen2;
+              if ((int)pBytesSize >= (int)nStrLen2) {
+                *pExpectedSize = nStrLen2;
+                return 1;
+              }
+            }
+          }
+        break;
+        case 0x3e:
+          if (pBytesSize >= 2) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[1];
+            return 1;
+          }
+        break;
+        case 0x5b:
+          if (pBytesSize >= 0x22) {
+            *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 1);
+            return 1;
+          }
+        break;
+        case 0x94:
+          if (pBytesSize >= 9) {
+            nStrLen2 = ((uint8_t)pBytes[1] + 2) * 3;
+            *pExpectedSize = nStrLen2;
+            return 1;
+          }
+        break;
+        case 0x9c:
+          if (pBytesSize >= 3) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[2];
+            return 1;
+          }
+        break;
+        case 0x9d:
+          if (pBytesSize >= 3) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[2];
+            return 1;
+          }
+        break;
+        case 0xa6:
+          if (pBytesSize >= 4) {
+            *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 2);
+            return 1;
+          }
+        break;
+        case 0xa8:
+          if (pBytesSize >= 7) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[6];
+            return 1;
+          }
+        break;
+        case 0xaa:
+          if (pBytesSize >= 7) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[6];
+            return 1;
+          }
+        break;
+        case 0xac:
+          if (pBytesSize >= 0xd) {
+            *pExpectedSize = (uint32_t)(uint8_t)pBytes[0xc];
+            return 1;
+          }
+        break;
+        case 0xae:
+          if (pBytesSize >= 3) {
+            wRawLen = *(uint16_t*)(pBytes + 1);
+            if (wRawLen > 0x1fd) {
+              wRawLen = 0;
+            }
+
+            *pExpectedSize = wRawLen + 3;
+            return 1;
+          }
+        break;
+        case 0xaf:
+          if (pBytesSize >= 2) {
+            if (!pBytes[1]) {
+              *pExpectedSize = 2;
+              return 1;
+            }
+
+            *pExpectedSize = (uint8_t)pBytes[1] + 1;
+            return 1;
+          }
+        break;
+        case 0xb3:
+          if (pBytesSize >= 8) {
+            *pExpectedSize = (uint8_t)pBytes[1] + 7;
+            return 1;
+          }
+      }
+
+      return 0;
+      *pExpectedSize = 0;
       return 1;
     }
 
-    switch ((uint32_t)byOpcode) {
-      case 0x16:
-        if (0xc < pBytesSize) {
-          *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 1);
-          return 1;
-        }
-      break;
-      default:
-        {
-          *pExpectedSize = 0;
-          return 1;
-        }
-      case 0x26:
-        if (9 < (int)pBytesSize) {
-          pcStrBase = pBytes + 10;
-          nStrLen1 = Storm::Source::SSTR::SStrLen(pcStrBase);
-          if ((int)(nStrLen1 + 0xb) <= (int)pBytesSize) {
-            nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase);
-            nStrLen2 = Storm::Source::SSTR::SStrLen(pcStrBase + nStrLen2 + 1);
-            nStrLen2 = nStrLen1 + 0xc + nStrLen2;
-            if ((int)nStrLen2 <= (int)pBytesSize) {
-              *pExpectedSize = nStrLen2;
-              return 1;
-            }
-          }
-        }
-      break;
-      case 0x3e:
-        if (1 < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[1];
-          return 1;
-        }
-      break;
-      case 0x5b:
-        if (0x21 < pBytesSize) {
-          *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 1);
-          return 1;
-        }
-      break;
-      case 0x94:
-        if (8 < pBytesSize) {
-          nStrLen2 = ((uint8_t)pBytes[1] + 2) * 3;
-          *pExpectedSize = nStrLen2;
-          return 1;
-        }
-      break;
-      case 0x9c:
-        if (2 < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[2];
-          return 1;
-        }
-      break;
-      case 0x9d:
-        if (2 < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[2];
-          return 1;
-        }
-      break;
-      case 0xa6:
-        if (3 < pBytesSize) {
-          *pExpectedSize = (uint32_t)*(uint16_t*)(pBytes + 2);
-          return 1;
-        }
-      break;
-      case 0xa8:
-        if (6 < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[6];
-          return 1;
-        }
-      break;
-      case 0xaa:
-        if (6 < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[6];
-          return 1;
-        }
-      break;
-      case 0xac:
-        if (0xc < pBytesSize) {
-          *pExpectedSize = (uint32_t)(uint8_t)pBytes[0xc];
-          return 1;
-        }
-      break;
-      case 0xae:
-        if (2 < pBytesSize) {
-          wRawLen = *(uint16_t*)(pBytes + 1);
-          if (0x1fd < wRawLen) {
-            wRawLen = 0;
-          }
-
-          *pExpectedSize = wRawLen + 3;
-          return 1;
-        }
-      break;
-      case 0xaf:
-        if (1 < pBytesSize) {
-          if (!pBytes[1]) {
-            *pExpectedSize = 2;
-            return 1;
-          }
-
-          *pExpectedSize = (uint8_t)pBytes[1] + 1;
-          return 1;
-        }
-      break;
-      case 0xb3:
-        if (7 < pBytesSize) {
-          *pExpectedSize = (uint8_t)pBytes[1] + 7;
-          return 1;
-        }
-    }
-
-    return 0;
-    *pExpectedSize = 0;
     return 1;
 }
 
@@ -597,7 +596,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
     uint16_t wRawLen;
     uint32_t nStrLen1;
     uint32_t nStrLen2;
-    if (!nSize) {
+    if (nSize < 1) {
       return 0;
     }
 
@@ -607,7 +606,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
       *pSize = 0x10;
       return 1;
     }
-    if (0x70 < byStrLenByte) {
+    if (byStrLenByte >= 0x71) {
       return 0;
     }
 
@@ -617,7 +616,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
     if (!nTableSize) {
       return 0;
     }
-    if (-1 < nTableSize) {
+    if (nTableSize >= 0) {
       return *pSize;
     }
 
@@ -625,18 +624,18 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
       case 0x14:
 
       case 0x15:
-        if (2 < (int)nSize) {
+        if ((int)nSize >= 3) {
           pcVar1 = pBytes + 3;
           nStrLen1 = Storm::Source::SSTR::SStrLen(pcVar1);
-          if ((int)(nStrLen1 + 4) <= (int)nSize) {
+          if ((int)nSize >= (int)(nStrLen1 + 4)) {
             nStrLen2 = Storm::Source::SSTR::SStrLen(pcVar1);
             pcVar1 = pcVar1 + nStrLen2 + 1;
             nStrLen2 = Storm::Source::SSTR::SStrLen(pcVar1);
             nTableSize = nStrLen1 + 5 + nStrLen2;
-            if (nTableSize <= (int)nSize) {
+            if ((int)nSize >= nTableSize) {
               nStrLen1 = Storm::Source::SSTR::SStrLen(pcVar1);
               nTableSize = nTableSize + 1 + (int)pcVar1[nStrLen1 + 1];
-              if (nTableSize <= (int)nSize) {
+              if ((int)nSize >= nTableSize) {
                 *pSize = nTableSize;
                 return *pSize;
               }
@@ -647,9 +646,9 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
       default:
         goto default_case;
       case 0x66:
-        if (2 < nSize) {
+        if (nSize >= 3) {
           wRawLen = *(uint16_t*)(pBytes + 1);
-          if (0x1fd < wRawLen) {
+          if (wRawLen > 0x1fd) {
             wRawLen = 0;
           }
 
@@ -658,7 +657,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
         }
       break;
       case 0x6c:
-        if (5 < nSize) {
+        if (nSize >= 6) {
           byStrLenByte = pBytes[1];
           *pSize = byStrLenByte + 7;
           return byStrLenByte + 7;

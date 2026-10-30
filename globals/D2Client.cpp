@@ -52,8 +52,8 @@
 #include "D2Client/UI/Spinner/SpinnerImplementation.h"
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Text.h"
-#include "D2Client/UI/UseItem.h"
 #include "D2Client/UI/VanillaPlusOptions.h" // VP: vanilla-plus (row 10): table row callbacks live in this namespace
+#include "D2Client/UI/UseItem.h"
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/npcmenu/Merc.h"
@@ -2719,6 +2719,8 @@ uint32_t gaMonsterModePrecacheEntries[15] = {
 }; D2_GLOBAL_GUARD(gaMonsterModePrecacheEntries, "gaMonsterModePrecacheEntries");
 
 eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
+
+eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00 = CLASS_SORCERESS; D2_GLOBAL_GUARD(eD2PlayerClassIDDWORD_00712f00, "eD2PlayerClassIDDWORD_00712f00");
 
 D2UIFlagInitStrc gUIFlagChatInit = {
     /* .eEventType = */ 0x0,
@@ -42811,10 +42813,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xd,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x9a,
@@ -42823,10 +42825,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x92,
@@ -42835,10 +42837,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x93,
@@ -42847,10 +42849,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x96,
@@ -42859,10 +42861,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x9b,
@@ -42871,10 +42873,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x14b,
@@ -42883,10 +42885,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x10a,
@@ -42895,10 +42897,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x198,
@@ -42907,10 +42909,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x0,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xaf,
@@ -42919,10 +42921,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb0,
@@ -42931,10 +42933,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xa,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb1,
@@ -42943,10 +42945,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc7,
@@ -42955,10 +42957,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc8,
@@ -42967,10 +42969,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc6,
@@ -42979,10 +42981,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xe,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xc9,
@@ -42991,10 +42993,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xa,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xca,
@@ -43003,10 +43005,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xb2,
@@ -43015,10 +43017,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xd2,
@@ -43027,10 +43029,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x109,
@@ -43039,10 +43041,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf4,
@@ -43051,10 +43053,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x7,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ true,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf5,
@@ -43063,10 +43065,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x8,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xf6,
@@ -43075,10 +43077,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfb,
@@ -43087,10 +43089,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfc,
@@ -43099,10 +43101,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x9,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfd,
@@ -43111,10 +43113,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xfe,
@@ -43123,10 +43125,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0xff,
@@ -43135,10 +43137,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x196,
@@ -43147,10 +43149,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x101,
@@ -43159,10 +43161,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x108,
@@ -43171,10 +43173,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x129,
@@ -43183,10 +43185,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x6,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x16f,
@@ -43195,10 +43197,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x195,
@@ -43207,10 +43209,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x101,
@@ -43219,10 +43221,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x1ff,
@@ -43231,10 +43233,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x200,
@@ -43243,10 +43245,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x201,
@@ -43255,10 +43257,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x10,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x202,
@@ -43267,10 +43269,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x203,
@@ -43279,10 +43281,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xb,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x209,
@@ -43291,10 +43293,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0x3,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ true,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x208,
@@ -43303,10 +43305,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x20f,
@@ -43315,10 +43317,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x219,
@@ -43327,10 +43329,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x21a,
@@ -43339,10 +43341,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     },
     {
         /* .nNpcID = */ 0x21b,
@@ -43351,10 +43353,10 @@ D2NPCSpeechStrc D2NPCSpeech[46] = {
         /* .nCount = */ 0xc,
         /* .nGossip = */ 0x0,
         /* .field5_0x11 = */ false,
-        /* .bUpdated = */ false,
+        /* .bUpdated = */ '\x00',
         /* .bActPortal = */ false,
         /* .bNoIntro = */ false,
-        /* .bGreeting = */ true
+        /* .bGreeting = */ '\x01'
     }
 }; D2_GLOBAL_GUARD(D2NPCSpeech, "D2NPCSpeech");
 
@@ -44514,7 +44516,7 @@ eD2GSGameType eD2GSGameType_007a0610 = 0; D2_GLOBAL_GUARD(eD2GSGameType_007a0610
 
 D2ExitCutsceneState gExitCutsceneState = {}; D2_GLOBAL_GUARD(gExitCutsceneState, "gExitCutsceneState");
 
-D2ClientTimerStrc gLoadTimerDurationMs = {}; D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
+D2ClientTimerStrc gLoadTimerDurationMs = D2ClientTimerStrc(); D2_GLOBAL_GUARD(gLoadTimerDurationMs, "gLoadTimerDurationMs");
 
 HACCEL gbLanguageDllLoaded = nullptr; D2_GLOBAL_GUARD(gbLanguageDllLoaded, "gbLanguageDllLoaded");
 
@@ -44574,264 +44576,7 @@ uint32_t gLightMapBuffer[4096] = {}; D2_GLOBAL_GUARD(gLightMapBuffer, "gLightMap
 
 uint32_t gaLightmapInterpBuffer[4096] = {}; D2_GLOBAL_GUARD(gaLightmapInterpBuffer, "gaLightmapInterpBuffer");
 
-uint32_t gnLightmapInterpolationState[257] = { // [glide fix 9] [256] -> [257]: VIEW_Init writes indices 2..0x100 and AddLightToCell reads index newIntensity+1 (up to 0x100 for saturated cells)
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0
-}; D2_GLOBAL_GUARD(gnLightmapInterpolationState, "gnLightmapInterpolationState");
+uint32_t gnLightmapInterpolationState[257] = {}; D2_GLOBAL_GUARD(gnLightmapInterpolationState, "gnLightmapInterpolationState");
 
 D2LightMapCellStrc gaLightMapCells[2304] = {}; D2_GLOBAL_GUARD(gaLightMapCells, "gaLightMapCells");
 
@@ -44867,7 +44612,7 @@ D2InventoryEntryStrc gaPlayerBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaPl
 
 D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(gaHirelingBodySlotScreenCoords, "gaHirelingBodySlotScreenCoords");
 
-RGBQUAD nColor = {}; D2_GLOBAL_GUARD(nColor, "nColor");
+RGBQUAD nColor = RGBQUAD(); D2_GLOBAL_GUARD(nColor, "nColor");
 
 int gaPanelImageLoadFlags[12] = {}; D2_GLOBAL_GUARD(gaPanelImageLoadFlags, "gaPanelImageLoadFlags");
 
@@ -44987,6 +44732,7 @@ uint32_t gnInvLArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnInvLArmSlotImageOff
 int AmountOfNPCTabs = 0x4; D2_GLOBAL_GUARD(AmountOfNPCTabs, "AmountOfNPCTabs");
 uint32_t CurrentNpcButtonSelection = 0x3; D2_GLOBAL_GUARD(CurrentNpcButtonSelection, "CurrentNpcButtonSelection");
 int gnBeltPanelState = 0x2; D2_GLOBAL_GUARD(gnBeltPanelState, "gnBeltPanelState");
+BOOL gbPanelClickProcessed = 0x1; D2_GLOBAL_GUARD(gbPanelClickProcessed, "gbPanelClickProcessed");
 int32_t gnBeltSlotUnderCursor = -0x1; D2_GLOBAL_GUARD(gnBeltSlotUnderCursor, "gnBeltSlotUnderCursor");
 int gnBeltTooltipX = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipX, "gnBeltTooltipX");
 int gnBeltTooltipY = -0x1; D2_GLOBAL_GUARD(gnBeltTooltipY, "gnBeltTooltipY");
@@ -45026,7 +44772,7 @@ uint8_t gbActInitExpansionFlag = 0; D2_GLOBAL_GUARD(gbActInitExpansionFlag, "gbA
 int D2GS_Connected = 0; D2_GLOBAL_GUARD(D2GS_Connected, "D2GS_Connected");
 int ServerLoadingComplete = 0; D2_GLOBAL_GUARD(ServerLoadingComplete, "ServerLoadingComplete");
 BOOL D2CLIENT_ExitVar3 = 0; D2_GLOBAL_GUARD(D2CLIENT_ExitVar3, "D2CLIENT_ExitVar3");
-bool gLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gLevelLoadInProgress, "gLevelLoadInProgress");
+BOOL gLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gLevelLoadInProgress, "gLevelLoadInProgress");
 D2ExitCutsceneState gExitCutscenePlayed = {}; D2_GLOBAL_GUARD(gExitCutscenePlayed, "gExitCutscenePlayed");
 D2DrlgActStrc * sgpDrlgAct = 0; D2_GLOBAL_GUARD(sgpDrlgAct, "sgpDrlgAct");
 D2Game_Line0x546 * D2GameGame0x546 = 0; D2_GLOBAL_GUARD(D2GameGame0x546, "D2GameGame0x546");
@@ -45037,7 +44783,7 @@ uint32_t EnteringGame = 0; D2_GLOBAL_GUARD(EnteringGame, "EnteringGame");
 uint32_t gQueuedPrimaryClick = 0; D2_GLOBAL_GUARD(gQueuedPrimaryClick, "gQueuedPrimaryClick");
 int gQueuedSecondaryClick = 0; D2_GLOBAL_GUARD(gQueuedSecondaryClick, "gQueuedSecondaryClick");
 uint32_t gbMouseButtonEventPending = 0; D2_GLOBAL_GUARD(gbMouseButtonEventPending, "gbMouseButtonEventPending");
-bool gRunKeyDown = 0; D2_GLOBAL_GUARD(gRunKeyDown, "gRunKeyDown");
+BOOL gRunKeyDown = 0; D2_GLOBAL_GUARD(gRunKeyDown, "gRunKeyDown");
 int gClickModifierDown = 0; D2_GLOBAL_GUARD(gClickModifierDown, "gClickModifierDown");
 uint32_t gnQueuedPrimaryClickX = 0; D2_GLOBAL_GUARD(gnQueuedPrimaryClickX, "gnQueuedPrimaryClickX");
 uint32_t gnQueuedSecondaryClickX = 0; D2_GLOBAL_GUARD(gnQueuedSecondaryClickX, "gnQueuedSecondaryClickX");
@@ -45060,6 +44806,7 @@ uint32_t gbLoadScreenLevelLoadInProgress = 0; D2_GLOBAL_GUARD(gbLoadScreenLevelL
 int gnPanelOffsetX = 0; D2_GLOBAL_GUARD(gnPanelOffsetX, "gnPanelOffsetX");
 // also labelled: g_nMouseY
 int gnPanelOffsetY = 0; D2_GLOBAL_GUARD(gnPanelOffsetY, "gnPanelOffsetY");
+BOOL gbAutomapPanelOpened = 0; D2_GLOBAL_GUARD(gbAutomapPanelOpened, "gbAutomapPanelOpened");
 uint32_t gnLastOpenPanelId = 0; D2_GLOBAL_GUARD(gnLastOpenPanelId, "gnLastOpenPanelId");
 DC6 * gpUiCursorFocus16DC6 = 0; D2_GLOBAL_GUARD(gpUiCursorFocus16DC6, "gpUiCursorFocus16DC6");
 DC6 * pUi_Panel_buysellbtn = 0; D2_GLOBAL_GUARD(pUi_Panel_buysellbtn, "pUi_Panel_buysellbtn");
@@ -45147,7 +44894,7 @@ int gnGfxThrottleUpdateFrameCountDynamic = 0; D2_GLOBAL_GUARD(gnGfxThrottleUpdat
 int gnGfxDirectionCountCache = 0; D2_GLOBAL_GUARD(gnGfxDirectionCountCache, "gnGfxDirectionCountCache");
 int gnWeatherTransitionCountdown = 0; D2_GLOBAL_GUARD(gnWeatherTransitionCountdown, "gnWeatherTransitionCountdown");
 int gnWeatherTransitionState = 0; D2_GLOBAL_GUARD(gnWeatherTransitionState, "gnWeatherTransitionState");
-int gnWeatherTransitionInitialized = 0; D2_GLOBAL_GUARD(gnWeatherTransitionInitialized, "gnWeatherTransitionInitialized");
+float gnWeatherTransitionInitialized = 0; D2_GLOBAL_GUARD(gnWeatherTransitionInitialized, "gnWeatherTransitionInitialized");
 int gnWeatherParticleState = 0; D2_GLOBAL_GUARD(gnWeatherParticleState, "gnWeatherParticleState");
 int gnWeatherRngCountdown = 0; D2_GLOBAL_GUARD(gnWeatherRngCountdown, "gnWeatherRngCountdown");
 uint32_t gbWeatherTransitionTriggered = 0; D2_GLOBAL_GUARD(gbWeatherTransitionTriggered, "gbWeatherTransitionTriggered");
@@ -45183,7 +44930,7 @@ uint32_t gbFPSStatsEnabled = 0; D2_GLOBAL_GUARD(gbFPSStatsEnabled, "gbFPSStatsEn
 uint32_t gbHideExtendedFPSStats = 0; D2_GLOBAL_GUARD(gbHideExtendedFPSStats, "gbHideExtendedFPSStats");
 uint32_t gnLoadingProgressRatio = 0; D2_GLOBAL_GUARD(gnLoadingProgressRatio, "gnLoadingProgressRatio");
 uint32_t gnChatHistoryScrollIndex = 0; D2_GLOBAL_GUARD(gnChatHistoryScrollIndex, "gnChatHistoryScrollIndex");
-char gaIMECompositionBuffer = 0; D2_GLOBAL_GUARD(gaIMECompositionBuffer, "gaIMECompositionBuffer");
+int gaIMECompositionBuffer = 0; D2_GLOBAL_GUARD(gaIMECompositionBuffer, "gaIMECompositionBuffer");
 char gaChatInputBuffer = 0; D2_GLOBAL_GUARD(gaChatInputBuffer, "gaChatInputBuffer");
 uint8_t gbChatInputEnabled = 0; D2_GLOBAL_GUARD(gbChatInputEnabled, "gbChatInputEnabled");
 uint16_t gnChatHistoryFillCount = 0; D2_GLOBAL_GUARD(gnChatHistoryFillCount, "gnChatHistoryFillCount");
@@ -45230,6 +44977,7 @@ uint8_t gbItemDescDirtyFlag = 0; D2_GLOBAL_GUARD(gbItemDescDirtyFlag, "gbItemDes
 uint8_t geCutsceneCurrentSoundId = 0; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
 unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTickCount, "gdwInvLastActionTickCount");
 int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
+BOOL gbInvOverlayFlag = 0; D2_GLOBAL_GUARD(gbInvOverlayFlag, "gbInvOverlayFlag");
 DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
 uint32_t gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
 int gbInvNpcScreenCoordsInitialized = 0; D2_GLOBAL_GUARD(gbInvNpcScreenCoordsInitialized, "gbInvNpcScreenCoordsInitialized");
@@ -45302,6 +45050,7 @@ uint32_t gnHireIconHoverIndex = 0; D2_GLOBAL_GUARD(gnHireIconHoverIndex, "gnHire
 uint32_t gpHelpCloseButton = 0; D2_GLOBAL_GUARD(gpHelpCloseButton, "gpHelpCloseButton");
 uint32_t gpHelpScrollButtonDown = 0; D2_GLOBAL_GUARD(gpHelpScrollButtonDown, "gpHelpScrollButtonDown");
 uint32_t gpHelpScrollButtonUp = 0; D2_GLOBAL_GUARD(gpHelpScrollButtonUp, "gpHelpScrollButtonUp");
+BOOL gbPanelLeftBeltArrowClicked = 0; D2_GLOBAL_GUARD(gbPanelLeftBeltArrowClicked, "gbPanelLeftBeltArrowClicked");
 uint32_t gpPanelBeltSlot = 0; D2_GLOBAL_GUARD(gpPanelBeltSlot, "gpPanelBeltSlot");
 uint32_t gnPanelBeltRowsExpanded = 0; D2_GLOBAL_GUARD(gnPanelBeltRowsExpanded, "gnPanelBeltRowsExpanded");
 uint32_t gbPanelBeltAnimating = 0; D2_GLOBAL_GUARD(gbPanelBeltAnimating, "gbPanelBeltAnimating");
@@ -45364,16 +45113,21 @@ uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidt
 uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
 uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
 uint32_t gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
-uint8_t g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
+int g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
 int gnUICtrlConfigActiveButton = 0; D2_GLOBAL_GUARD(gnUICtrlConfigActiveButton, "gnUICtrlConfigActiveButton");
-bool gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
+BOOL gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");
 DC6 * gpUICtrlConfigScrollbarDC6 = 0; D2_GLOBAL_GUARD(gpUICtrlConfigScrollbarDC6, "gpUICtrlConfigScrollbarDC6");
 int gnUICtrlConfigPendingKeyStrId = 0; D2_GLOBAL_GUARD(gnUICtrlConfigPendingKeyStrId, "gnUICtrlConfigPendingKeyStrId");
 unsigned int gdwUICtrlConfigKeyBindTimestamp = {}; D2_GLOBAL_GUARD(gdwUICtrlConfigKeyBindTimestamp, "gdwUICtrlConfigKeyBindTimestamp");
 DC6 * gpUIStatLevelUpPanelImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpPanelImages, "gpUIStatLevelUpPanelImages");
 DC6 * gpUIStatLevelUpButtonImages = 0; D2_GLOBAL_GUARD(gpUIStatLevelUpButtonImages, "gpUIStatLevelUpButtonImages");
+BOOL gbUIStatButtonHovered = 0; D2_GLOBAL_GUARD(gbUIStatButtonHovered, "gbUIStatButtonHovered");
+BOOL gbUISkillButtonHovered = 0; D2_GLOBAL_GUARD(gbUISkillButtonHovered, "gbUISkillButtonHovered");
+BOOL gbUIStatScreenMouseDown = 0; D2_GLOBAL_GUARD(gbUIStatScreenMouseDown, "gbUIStatScreenMouseDown");
+int gbSpellSelActiveRightSkillSlot = 0; D2_GLOBAL_GUARD(gbSpellSelActiveRightSkillSlot, "gbSpellSelActiveRightSkillSlot");
 DC6 * gpSpellSelSkillIconDC6 = 0; D2_GLOBAL_GUARD(gpSpellSelSkillIconDC6, "gpSpellSelSkillIconDC6");
 unsigned int gbSpellSelMouseHandFlag = {}; D2_GLOBAL_GUARD(gbSpellSelMouseHandFlag, "gbSpellSelMouseHandFlag");
+BOOL gbSpellSelSkillTreeBackground = 0; D2_GLOBAL_GUARD(gbSpellSelSkillTreeBackground, "gbSpellSelSkillTreeBackground");
 uint32_t BooleanWaitingForSkillingMaybe = 0; D2_GLOBAL_GUARD(BooleanWaitingForSkillingMaybe, "BooleanWaitingForSkillingMaybe");
 uint32_t gnSpellSelSkillTreeOffsetY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeOffsetY, "gnSpellSelSkillTreeOffsetY");
 uint32_t gnSpellSelSkillTreeClickY = 0; D2_GLOBAL_GUARD(gnSpellSelSkillTreeClickY, "gnSpellSelSkillTreeClickY");
@@ -45412,13 +45166,14 @@ D2UnitStrc * gpNpcShopOwnerUnit = 0; D2_GLOBAL_GUARD(gpNpcShopOwnerUnit, "gpNpcS
 short gbNpcMenuShopOpened = 0; D2_GLOBAL_GUARD(gbNpcMenuShopOpened, "gbNpcMenuShopOpened");
 uint8_t gnNpcMenuMercListCount = 0; D2_GLOBAL_GUARD(gnNpcMenuMercListCount, "gnNpcMenuMercListCount");
 uint8_t gbNpcMenuTransactionPending = 0; D2_GLOBAL_GUARD(gbNpcMenuTransactionPending, "gbNpcMenuTransactionPending");
+BOOL gbNpcMenuTransactionConfirmed = 0; D2_GLOBAL_GUARD(gbNpcMenuTransactionConfirmed, "gbNpcMenuTransactionConfirmed");
 uint32_t gnNpcMenuTransactionItemGUID = 0; D2_GLOBAL_GUARD(gnNpcMenuTransactionItemGUID, "gnNpcMenuTransactionItemGUID");
+unsigned int gbNpcMenuShopTransactionActive = {}; D2_GLOBAL_GUARD(gbNpcMenuShopTransactionActive, "gbNpcMenuShopTransactionActive");
 uint32_t gnNpcMenuShopTransactionCost = 0; D2_GLOBAL_GUARD(gnNpcMenuShopTransactionCost, "gnNpcMenuShopTransactionCost");
 unsigned int gdwNpcMenuLastClickTimestamp = {}; D2_GLOBAL_GUARD(gdwNpcMenuLastClickTimestamp, "gdwNpcMenuLastClickTimestamp");
 int32_t gnDialogStructAllocCount = 0; D2_GLOBAL_GUARD(gnDialogStructAllocCount, "gnDialogStructAllocCount");
 uint32_t gnTradeGoldUpdateBuffer = 0; D2_GLOBAL_GUARD(gnTradeGoldUpdateBuffer, "gnTradeGoldUpdateBuffer");
-uint16_t gnTradePlayerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePlayerGoldAmount, "gnTradePlayerGoldAmount");
-uint16_t gnTradePartnerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePartnerGoldAmount, "gnTradePartnerGoldAmount");
+uint32_t gnTradePlayerGoldAmount = 0; D2_GLOBAL_GUARD(gnTradePlayerGoldAmount, "gnTradePlayerGoldAmount");
 uint32_t gdwTradeThrottleTimestamp = 0; D2_GLOBAL_GUARD(gdwTradeThrottleTimestamp, "gdwTradeThrottleTimestamp");
 bool gbTradeResetFlag = 0; D2_GLOBAL_GUARD(gbTradeResetFlag, "gbTradeResetFlag");
 uint32_t gnTradeAcceptedFlags = 0; D2_GLOBAL_GUARD(gnTradeAcceptedFlags, "gnTradeAcceptedFlags");
@@ -45445,10 +45200,11 @@ int gnSoundLastInitTick = 0; D2_GLOBAL_GUARD(gnSoundLastInitTick, "gnSoundLastIn
 uint32_t gdwSoundChannelIndex = 0; D2_GLOBAL_GUARD(gdwSoundChannelIndex, "gdwSoundChannelIndex");
 uint32_t gnSoundInitCooldown = 0; D2_GLOBAL_GUARD(gnSoundInitCooldown, "gnSoundInitCooldown");
 unsigned int gnSoundLastPlayerAnimModeTime = {}; D2_GLOBAL_GUARD(gnSoundLastPlayerAnimModeTime, "gnSoundLastPlayerAnimModeTime");
-unsigned short geSoundLastPlayerAnimMode = {}; D2_GLOBAL_GUARD(geSoundLastPlayerAnimMode, "geSoundLastPlayerAnimMode");
+int geSoundLastPlayerAnimMode = 0; D2_GLOBAL_GUARD(geSoundLastPlayerAnimMode, "geSoundLastPlayerAnimMode");
 uint32_t gdwWarpFadeExpireTime = 0; D2_GLOBAL_GUARD(gdwWarpFadeExpireTime, "gdwWarpFadeExpireTime");
 unsigned int gdwAmbientMusicLevelChangeTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicLevelChangeTick, "gdwAmbientMusicLevelChangeTick");
 unsigned int gdwAmbientMusicRestartTick = {}; D2_GLOBAL_GUARD(gdwAmbientMusicRestartTick, "gdwAmbientMusicRestartTick");
+int geCutsceneAmbientMusicSoundId = 0; D2_GLOBAL_GUARD(geCutsceneAmbientMusicSoundId, "geCutsceneAmbientMusicSoundId");
 uint32_t geAmbientMusicLevelId = 0; D2_GLOBAL_GUARD(geAmbientMusicLevelId, "geAmbientMusicLevelId");
 uint32_t gdwAmbientMusicChangeTime = 0; D2_GLOBAL_GUARD(gdwAmbientMusicChangeTime, "gdwAmbientMusicChangeTime");
 uint32_t gbSoundSequenceActive = 0; D2_GLOBAL_GUARD(gbSoundSequenceActive, "gbSoundSequenceActive");
@@ -45506,7 +45262,7 @@ namespace D2Client::Warden::NWardenClient {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-void * vftable[7] = { (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall, (void*)&__purecall }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::NWardenClient::vftable");
+void * vftable[7] = { (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall, (void*)&_purecall }; D2_GLOBAL_GUARD(vftable, "D2Client::Warden::NWardenClient::vftable");
 
 } // namespace D2Client::Warden::NWardenClient
 
@@ -45527,18 +45283,18 @@ namespace D2Client::UI {
 // =============================================================================
 
 void * vftable[12] = {
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall,
-    (void*)&__purecall
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall,
+    (void*)&_purecall
 }; D2_GLOBAL_GUARD(vftable, "D2Client::UI::vftable");
 
 } // namespace D2Client::UI

@@ -19,9 +19,9 @@ struct D2SeedStrc;
 struct D2TimerStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitType;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
@@ -133,7 +133,7 @@ void __fastcall SetUninterruptableState(struct D2UnitStrc * pUnit, int32_t nPara
 void __fastcall PLAYER_CancelMapReveal(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t dwUnused2, int32_t dwUnused3);
 struct D2RoomStrc * __fastcall UNITS_GetTargetRoom(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
-int16_t __fastcall GetPartyId(struct D2UnitStrc * pUnit);
+uint16_t __fastcall GetPartyId(struct D2UnitStrc * pUnit);
 // 2022.01.09 - dzik
 BOOL __fastcall SetDamageHitClass(struct D2DamageStrc * pEvent, uint32_t nParam);
 // Server-side per-unit visibility reconciliation between two client sets (the unit's current room vs its target/destination room). Merge-walks both sorted client lists: clients only in the target room get SERVER_SendInitUnitPacket (unit becomes visible to them); clients only in the current room get SendRemoveObject (unit removed); the unit's own owning client is skipped. No-ops unless Units::NeedsRoomUpdate(pUnit). On completion clears the dynamic-path 0x02 (needs-update) flag. Halts on null client-list pointers.

@@ -10,8 +10,8 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eD2Skills;
-typedef int eMissilesId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eMissilesId;
 
 namespace D2Client::SKILLS::SkillsNec {
 

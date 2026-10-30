@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct DC6;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2UiPartyBoxStrc {

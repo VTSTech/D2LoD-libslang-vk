@@ -170,7 +170,7 @@ void __stdcall CleanUpGame() {
       }
 
       pChannel += 8;
-    } while ((int)pChannel < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)pChannel < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 
     D2Sound::Src::D2SoundSmp::SOUNDSMP_SetGlobalVolume(0xff);
 }
@@ -208,7 +208,7 @@ void __stdcall SOUND_UpdateNonLoopingStreams() {
       }
 
       pChannelEntry += 8;
-    } while ((int)pChannelEntry < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)pChannelEntry < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 }
 
 uint32_t __fastcall SOUND_GetStreamProgress(D2ClientSoundChannelStrc * pnParam) {
@@ -253,13 +253,13 @@ int * __fastcall SOUND_FindPlayingByIdSafe(int32_t nId) {
       iVar2 = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying(((D2ClientSoundChannelStrc*)(ppDVar3 - 2))->pSoundSmp);
       if (iVar2) {
         pDVar1 = *ppDVar3;
-        if (pDVar1 && pDVar1->nSoundId == nId && (!pDVar4 || (uint32_t)pDVar1->nScheduledTime < (uint32_t)pDVar4->pActiveSound->nScheduledTime)) {
+        if (pDVar1 && pDVar1->nSoundId == nId && (!pDVar4 || pDVar1->nScheduledTime < pDVar4->pActiveSound->nScheduledTime)) {
           pDVar4 = (D2ClientSoundChannelStrc*)(ppDVar3 - 2);
         }
       }
 
       ppDVar3 += 8;
-    } while ((int)ppDVar3 < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
+    } while ((int)ppDVar3 < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8));
 
     return (int*)pDVar4;
 }
@@ -285,7 +285,7 @@ void __stdcall SOUND_ShutdownAudio() {
       D2Sound::Src::D2SoundSmp::SOUNDSMP_Destroy(ppSampleInst->pSoundSmp);
       ppSampleInst->pSoundSmp = 0;
       ppSampleInst++;
-    } while ((int)ppSampleInst < (uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels)));
+    } while ((int)ppSampleInst < (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels)));
 
     pAudioMixerInterface = 0;
 }
@@ -320,7 +320,7 @@ static BOOL SOUND_InitStreamChannels(int32_t nParam) {
       }
 
       nChannelIdx++;
-      if ((uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 3) < (int)&gaSoundChannels[nChannelIdx].nChannelType) {
+      if ((int)&gaSoundChannels[nChannelIdx].nChannelType >= (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 4)) {
         SOUND_SetEaxEnvironment(0);
         pAudioMixerInterface = 1;
         return 1;
@@ -347,7 +347,7 @@ static D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t 
       }
 
       pBestChannel++;
-    } while ((int)pBestChannel < (uintptr_t)&gaSoundChannels[16]);
+    } while ((int)pBestChannel < (intptr_t)&gaSoundChannels[16]);
 
     pBestChannel = 0;
     D2SoundChannelStrc** pChannelEntry;
@@ -366,7 +366,7 @@ static D2ClientSoundChannelStrc * __stdcall SOUND_FindAvailableChannel(uint32_t 
 
       next_channel:
       pChannelEntry += 8;
-      if ((uintptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 7) < (int)pChannelEntry) {
+      if ((int)pChannelEntry >= (intptr_t)((char*)&gaSoundChannels + sizeof(gaSoundChannels) + 8)) {
         if (!pBestChannel) {
           return nullptr;
         }
@@ -430,7 +430,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     fEaxObstruction = (float)(nMixerMode * nTmpCalc / 100);
     if (nSoundVolumeLeftChannel != 100) {
       nTmpCalc = *(int*)(nSoundDescOffset + 4);
-      if ((nTmpCalc < 0x1231 || 0x125a < nTmpCalc) && (nTmpCalc < 0x34 || 0x47 < nTmpCalc) && (nTmpCalc < 1 || 0xf < nTmpCalc)) {
+      if ((nTmpCalc < 0x1231 || nTmpCalc > 0x125a) && (nTmpCalc < 0x34 || nTmpCalc > 0x47) && (nTmpCalc < 1 || nTmpCalc > 0xf)) {
         fEaxObstruction = (float)(nSoundVolumeLeftChannel * (int)fEaxObstruction / 100);
       }
     }
@@ -447,7 +447,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
         if (nTmpCalc != 0x32) {
           nTmpCalc = D2Sound::Src::D2SoundFast::SOUND_GetPositionalBias();
           nTmpCalc = (nTmpCalc * 2 - 100) / 3;
-          if (*pSoundChannel && 0 < nTmpCalc) {
+          if (*pSoundChannel && nTmpCalc > 0) {
             fVolume = (float)((0xff - nTmpCalc * 0xff / 0x32) * (int)fVolume / 0xff);
             nSoundDescOffset = nSoundDescSaved;
             fEaxObstruction = fVolume;
@@ -471,7 +471,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
         nBytesRemaining -= 4;
         pByteA += 4;
         pByteB += 4;
-      } while (3 < nBytesRemaining);
+      } while (nBytesRemaining >= 4);
 
       if (!nBytesRemaining) {
         position_unchanged:
@@ -499,7 +499,7 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
         }
 
         nTmpCalc = 1;
-        if (nSoundDescOffset < 1) {
+        if (nSoundDescOffset <= 0) {
           nTmpCalc = -1;
         }
       }
@@ -645,7 +645,7 @@ D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelS
     int* pPlayingChannel = SOUND_FindPlayingByIdSafe(pMemory->nSoundId);
     if (pPlayingChannel) {
       nResult = pPlayingChannel[2];
-      if (!*(int*)(nResult + 0x3d) && (uint32_t)(pMemory->nScheduledTime - *(int*)(nResult + 0x34)) < 2 && pMemory->nPriorityByte <= *(uint8_t*)(nResult + 0x3c)) {
+      if (!*(int*)(nResult + 0x3d) && pMemory->nScheduledTime - *(int*)(nResult + 0x34) < 2 && *(uint8_t*)(nResult + 0x3c) >= pMemory->nPriorityByte) {
         return nullptr;
       }
     }
@@ -691,10 +691,10 @@ D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelS
 
     ppChannel->pActiveSound = pSoundDesc;
     if (pnParam & 4) {
-      if (!pSoundTxt->Reverb) {
-        fReverbLevel = 0.0;
-      } else {
+      if (pSoundTxt->Reverb) {
         fReverbLevel = 1.0;
+      } else {
+        fReverbLevel = 0.0;
       }
 
       D2Sound::Src::D2SoundSmp::SOUNDSMP_SetEaxRoomLevel(ppChannel->pSoundSmp, fReverbLevel);
@@ -713,12 +713,12 @@ D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelS
       D2Client::Sound::SoundHdr::SOUNDHDR_BuildSoundPath(pSoundDesc->nSoundId, (uint32_t*)szSoundPath);
       nResult = D2Sound::Src::D2SoundSmp::SOUNDSMP_OpenAndStreamFile((int**)ppChannel->pSoundSmp, szSoundPath, pSoundDescBackup->nParam, (uint32_t)pSoundTxt->Loop);
     }
-    if (nResult) {
-      return ppChannel;
+    if (!nResult) {
+      ppChannel->pActiveSound = 0;
+      return nullptr;
     }
 
-    ppChannel->pActiveSound = 0;
-    return nullptr;
+    return ppChannel;
 }
 
 // Returns the unit's greeting sound set &gaNpcGreetingSounds[n] by class id (pUnit+4, nClassId), or NULL if pUnit is NULL or the class has none. The callers pass the interacted NPC or the mercenary; every Cain class (0x92, 0xf4-0xf6, 0x109, 0x208) maps to entry 4.
@@ -966,7 +966,7 @@ static D2NpcGreetingSoundsStrc gaNpcGreetingSounds[29] = {
     }
 
     uint32_t nClassId = pUnit->nClassId;
-    if (nClassId < 0x196) {
+    if (nClassId <= 0x195) {
       if (nClassId == 0x195) {
         return gaNpcGreetingSounds + 0xe;
       }
@@ -1076,7 +1076,7 @@ int32_t __fastcall SOUND_SelectNpcGreetingSound(D2UnitStrc * pUnit, int32_t nMod
         nCycleIdx = D2Common::Environment::DRLGENV_GetCycleIndexFromAct(sgpDrlgAct);
         nSoundId = pGreetingSounds->nTimeOfDaySoundId;
         if (nCycleIdx != 1) {
-          if (nCycleIdx - 2U < 2) {
+          if (nCycleIdx - 2U <= 1) {
             nSoundId++;
           } else {
             nSoundId += 2;

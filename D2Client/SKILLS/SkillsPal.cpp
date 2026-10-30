@@ -184,7 +184,10 @@ BOOL __fastcall Skills_CltDoFunc_Pal_FistOfHeavens(D2UnitStrc * pUnit, eD2Skills
     }
 
     eMissilesId eCltMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eCltMissileId >= 0 && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eCltMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -533,7 +536,7 @@ BOOL __fastcall Skills_CltStFunc_SetupHolyChargeMovement(D2UnitStrc * pUnit, eD2
     return 1;
 }
 
-D2UnitStrc * __stdcall SKILLS_Unused_Placeholder_2(D2UnitStrc * pUnit, int nExcludeGUID) {
+static inline D2UnitStrc * __stdcall SKILLS_Unused_Placeholder_2(D2UnitStrc * pUnit, int nExcludeGUID) {
     D2UnitStrc* pDVar1 = Skills::SKILL_FindClosestTargetWithStats(pUnit, 0, 0, 3, 3, nExcludeGUID, nullptr);
     return pDVar1;
 }
@@ -599,7 +602,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
           }
         }
         if (nSkillFlags & 2) {
-          pFindResult = Skills::SKILL_FindClosestTargetWithStats(pUnit, 0, 0, 3, 3, pSavedTarget, nullptr);
+          pFindResult = SKILLS_Unused_Placeholder_2(pUnit, pSavedTarget);
           if (pFindResult) {
             bInMeleeRange = D2Common::Units::IsInMeleeRange(pUnit, pFindResult, 0);
             if (bInMeleeRange) {
@@ -629,7 +632,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
           pUnit->nFrameCount = 0x100;
           return 1;
         }
-        if ((int)pUnit->nSeqFrame >> 8 >= nEventFrame) {
+        if (pUnit->nSeqFrame >> 8 >= nEventFrame) {
           D2Common::Units::SetSequenceFrame(pUnit, 0);
           pUnit->nFrameCount = nFrameRate << 8;
           D2Common::Skills::SKILL_SetFlags(pSkill, 1);
@@ -648,7 +651,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
       D2Common::Skills::SKILL_SetFlags(pSkill, 0);
       D2Common::Skills::SKILL_SetParam1(pSkill, 0);
       D2Common::Skills::SKILL_SetParam2(pSkill, 0);
-      pUnit->nFrameCount = (nFrameRate - ((int)pUnit->nSeqFrame >> 8)) * 0x100;
+      pUnit->nFrameCount = (nFrameRate - (pUnit->nSeqFrame >> 8)) * 0x100;
       if (pCurrentTarget || (pCurrentTarget = Skills::SKILL_FindClosestTargetWithStats(pUnit, 0, 0, 3, 3, -1, nullptr) , pCurrentTarget != 0)) {
         D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, Units::GetXPosFromDynamicPathUnit(pCurrentTarget), Units::GetYPosFromDynamicPathUnit(pCurrentTarget), 0);
         return 1;
@@ -737,7 +740,7 @@ void __fastcall SKILL_ExecuteItemCast(D2UnitStrc * pUnit, eD2Skills eSkill, shor
         D2Common::DATATBLS::ItemStats::SetState(pTargetUnit, STATE_corpse_noselect, 1);
       }
     }
-    if (-1 < pSkillTxt->ItemCastSound) {
+    if (pSkillTxt->ItemCastSound >= 0) {
       Sound::SOUND_PlaySound((int)pSkillTxt->ItemCastSound, pUnit, 0, 0, 0);
     }
 

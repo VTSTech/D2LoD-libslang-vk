@@ -146,7 +146,7 @@ void __fastcall SetCombatAndMonStats(D2MonsterPathParamStrc * pPathParam, int32_
     if (nSteps == '\0') {
       return;
     }
-    if (0x4d < nSteps) {
+    if (nSteps >= 0x4e) {
       nSteps = 'M';
     }
 
@@ -171,29 +171,29 @@ static eD2PathTypes __stdcall GetPathCount(eD2PathTypes ePathType, uint8_t nDist
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, ePathType);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
     int32_t nPathSize = D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
-    if (!nPathSize) {
-      switch (ePathType) {
-        case PATHTYPE_TOWARD:
-
-        case PATHTYPE_STRAIGHT:
-
-        case PATHTYPE_STRAIGHT_STRICT:
-
-        case PATHTYPE_TOWARD_FINISH:
-          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-        pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
-        D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xf);
-        D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
-        ePathType = PATHTYPE_FOLLOW_WALL;
-      }
-
+    if (nPathSize) {
+      D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+      pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
+      pPathParam->bPathFlag0 = '\0';
+      pPathParam->bPathFlag1 = '\0';
       return ePathType;
     }
 
-    D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
-    pPathParam->bPathFlag0 = '\0';
-    pPathParam->bPathFlag1 = '\0';
+    switch (ePathType) {
+      case PATHTYPE_TOWARD:
+
+      case PATHTYPE_STRAIGHT:
+
+      case PATHTYPE_STRAIGHT_STRICT:
+
+      case PATHTYPE_TOWARD_FINISH:
+        D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+      pUnit->eUnitFlags |= UNITFLAG_DOUPDATE;
+      D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 0xf);
+      D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
+      ePathType = PATHTYPE_FOLLOW_WALL;
+    }
+
     return ePathType;
 }
 
@@ -404,7 +404,7 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                 }
               }
             }
-            if (pMonStats->TCQuestId != '\0' && (uint16_t)pMonStats->TreasureClass[nDifficulty].TreasureClass4 > 0 && pUnitKill) {
+            if (pMonStats->TCQuestId > '\0' && (uint16_t)pMonStats->TreasureClass[nDifficulty].TreasureClass4 > 0 && pUnitKill) {
               pAttacker = pUnitKill->pAttacker;
               if (pAttacker) {
                 if (pAttacker->eUnitType != UNIT_PLAYER) {
@@ -425,11 +425,11 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                 if (pAttacker && pAttacker->eUnitType == UNIT_PLAYER) {
                   pBitBuffer = Quests::QUESTS::GetQuestBitBuffer(pGame, pAttacker);
                   if (pBitBuffer) {
-                    bQuestFinished = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, QUESTSTATE_FinishedInPreviousGame);
+                    bQuestFinished = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, QUESTSTATE_FinishedInPreviousGame);
                     if (bQuestFinished != 1) {
-                      _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, QUESTSTATE_RewardAwaits);
+                      _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, QUESTSTATE_RewardAwaits);
                       if (_bHasCurseState != 1) {
-                        _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, (eD2QuestState)(uint8_t)pMonStats->TCQuestCP);
+                        _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, (eD2QuestState)(uint8_t)pMonStats->TCQuestCP);
                         if (_bHasCurseState != 1) {
                           nSelectedTC_00 = pMonStats->TreasureClass[nDifficulty].TreasureClass4;
                         }
@@ -1634,7 +1634,7 @@ int32_t __stdcall MONSTERAI_ExecuteLifecycleTransition(::SGAMEDATA * pGame, D2Mo
     uint32_t bHasAnimSequence;
     eD2MonsterAnimMode eActualAnimMode;
     D2UnitStrc* pUnit = pMonsterKill->pVictim;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

@@ -7,9 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-
-// Forward declarations
-struct D2SHA1;
+#include "Storm/D2SHA1.h"
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
@@ -24,6 +22,11 @@ struct D2CDKeyHashStrc {
     /* 0x08 */ uint32_t nProduct; // Product value from CD key
     /* 0x0C */ uint32_t nUnused; // Always 0
     /* 0x10 */ uint8_t abHash[20]; // SHA-1 hash of token data
+};
+
+struct D2SHA1ContextStrc {
+    /* 0x00 */ D2SHA1 state;
+    /* 0x14 */ uint32_t aBlock[16];
 };
 
 struct SID_C2S_AuthInfo {
@@ -75,7 +78,7 @@ void * __stdcall NET_SID_CLIENT_GetChannelNamePtr();
 // BATTLE.NET SID_CHATEVENT (0x0F) HANDLER
 // Receives chat event notifications from the Battle.net server with event type, flags, ping, username, and message text. Event types include: 0x01=show_user, 0x02=join, 0x03=leave, 0x04=whisper_recv, 0x05=talk, 0x06=broadcast, 0x07=channel, etc. Enqueues the raw packet bytes to the message queue (type 0) for asynchronous processing by the chat UI system.
 BOOL __fastcall NET_SID_CLIENT_Incoming_ChatEvent(char * pBytes, size_t nSize);
-void __fastcall SHA1_Hashing(uint32_t * pnParam);
+void __fastcall SHA1_Hashing(struct D2SHA1ContextStrc * pnParam);
 void __fastcall SHA1(struct D2SHA1 * pOutput, char * szInput, size_t nInputSize);
 void __stdcall SID_SetReadyFlag();
 BOOL __stdcall SID_GetReadyFlag();
@@ -302,7 +305,6 @@ void __fastcall NET_SID_CLIENT_SetCDKeyNibble(int32_t pCdKeyData, uint32_t nNibb
 void __fastcall NET_SID_CLIENT_SetCDKeyBit(int32_t pCdKeyData, uint32_t nBitIndex, uint8_t nBitValue);
 void __fastcall NET_SID_CLIENT_BigNumMultiplyAccumulate(int32_t nWords, uint32_t multiplier, uint32_t * pSrc, uint32_t * pDst, uint32_t carryIn);
 void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t pOutBase5);
-void __fastcall NET_SID_CLIENT_PermuteBitsLFSR(uint32_t nBitCount, int32_t pToken);
 void __stdcall NET_SID_CLIENT_SubstitutionBoxShuffle(int32_t pToken);
 void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash);
 // Returns _time32(pTime) with pTime passed in EAX (CRT inline time() copy).
@@ -327,6 +329,6 @@ void __fastcall NET_SID_CLIENT_IDEAExpandKey(uint16_t * pUserKey, uint16_t * pEx
 void __fastcall NET_SID_CLIENT_IDEAInvertKey(uint16_t * pEncryptKey, uint16_t * pDecryptKey);
 void __fastcall NET_SID_CLIENT_IDEACrypt(uint16_t * pPlaintext, short * pCiphertext, uint16_t * pSubkeys);
 void __stdcall NET_SID_CLIENT_ClearIDEAContexts();
-// 2 internal functions (defined in .cpp)
+// 3 internal functions (defined in .cpp)
 
 } // namespace Bnclient::_net_sid

@@ -16,7 +16,7 @@ struct D2LvlPrestTxt;
 struct D2LvlSubTxt;
 struct D2LvlWarpTxt;
 struct D2PoolManagerStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 typedef uint8_t eD2Difficulty;
 
 // Data types
@@ -4053,7 +4053,7 @@ namespace D2Common::DATATBLS::LvlTbls {
 void __fastcall TXT_AllocTxt_levels(struct D2PoolManagerStrc * pMemory);
 struct D2LevelsTxt * __stdcall TXT_Levels_GetLine(eD2LevelId eLevel);
 uint8_t __stdcall LEVEL_CanHaveRain(eD2LevelId eLevel);
-uint32_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam);
+uint8_t __stdcall LVLTBLS_GetNoPer(uint32_t nParam);
 uint8_t __stdcall LEVEL_CanHaveMud(eD2LevelId eLevel);
 void __stdcall LVLTBLS_FreeLevelsTxt();
 int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Difficulty nDifficulty, BOOL bIsExpansion);

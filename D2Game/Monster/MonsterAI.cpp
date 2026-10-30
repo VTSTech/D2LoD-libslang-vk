@@ -238,7 +238,7 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
           if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
             return;
           }
-          if ('\x0f' < (char)pHirelingTxt->nSkillMode[nLevelDiff]) {
+          if ((char)pHirelingTxt->nSkillMode[nLevelDiff] >= 16) {
             return;
           }
 
@@ -615,7 +615,13 @@ void __fastcall AI_ClearSwitchAiTargetParams(D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!pUnit->pUnitData.pUnitDataMonster) {
       return 0;
     }
 

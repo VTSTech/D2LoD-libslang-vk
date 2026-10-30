@@ -216,7 +216,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
       }
     } else {
       nTmpY = (uint32_t)(uint8_t)pMissileTxt->VelLev * pArgs->nSkillLevel;
-      nVelocity = nTmpY / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+      nVelocity = nTmpY / 8 + (uint32_t)pMissileTxt->Vel;
       nVelocity <<= 8;
     }
     if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[3]) {
@@ -301,7 +301,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     D2Common::Units::Missile::SetTotalFrames(pUnit, nPosX);
     D2Common::Units::Missile::SetCurrentFrame(pUnit, nPosX);
     if (!(pArgs->nFlags & 0x800U)) {
-      dwFlags = (uint32_t)(uint8_t)pMissileTxt->Activate;
+      dwFlags = (uint32_t)pMissileTxt->Activate;
     } else {
       dwFlags = pArgs->nActivateFrame;
     }

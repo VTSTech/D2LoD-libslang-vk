@@ -25,7 +25,18 @@
 #include "Storm/Source/SSystem.h"
 #include "_unnamespaced.h"
 
+#ifdef _MSC_VER
+// Visual C++ has no constructor attribute. The same function goes into the CRT's
+// own initialiser table instead: _initterm walks .CRT$XCA..XCZ before WinMain,
+// and .CRT$XCU is the group the compiler gives a TU's dynamic initialisers.
+extern "C" void D2RunCppStaticInitializers();
+#pragma section(".CRT$XCU", read)
+extern "C" __declspec(allocate(".CRT$XCU")) void (__cdecl* const gpfnD2RunCppStaticInitializers)(void) =
+    D2RunCppStaticInitializers;
+extern "C" void D2RunCppStaticInitializers() {
+#else
 extern "C" __attribute__((constructor(200))) void D2RunCppStaticInitializers() {
+#endif
     D2Trace("staticinit[00] 006ca700");
     StaticInit_6ca700();
     D2Trace("staticinit[01] 006ca720");

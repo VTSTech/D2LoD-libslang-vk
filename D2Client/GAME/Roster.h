@@ -14,7 +14,7 @@ struct D2PlayerListStrc;
 struct D2RosterPartyListStrc;
 struct D2RosterStrc;
 struct D2UnitStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2RosterLinkListStrc {
@@ -91,7 +91,7 @@ void __stdcall LeaveParty();
 void __fastcall ROSTER_ToggleHostileAndSend(struct D2RosterStrc * pRoster);
 uint32_t __fastcall CheckRostersArePartied(int32_t nRoster1GUID, int32_t nRoster2GUID);
 int32_t __fastcall GetRosterGUID(struct D2RosterStrc * pRoster);
-void __fastcall SetRosterHpAndArea(int32_t nRosterGUID, int32_t nHpPercent, eD2LevelId eLevel);
+void __fastcall SetRosterHpAndArea(int32_t nRosterGUID, int32_t nHpPercent, uint16_t eLevel);
 void __fastcall SetRosterPosition(int32_t nRosterGUID, int32_t nX, int32_t nY);
 uint32_t __fastcall ROSTER_CheckPlayerInSameParty(int32_t pRoster);
 int32_t __fastcall GetRosterHP(int32_t nRosterGUID);

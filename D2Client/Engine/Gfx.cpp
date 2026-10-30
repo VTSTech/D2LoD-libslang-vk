@@ -568,7 +568,7 @@ void __fastcall GFX_DrawOverlayOnUnit(D2UnitStrc * pUnit, int32_t nOverlayId, in
 
           nPass = __frame0.nPassIdx;
           if (nFrameField >> 8 < pCur[7] >> 8) {
-            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nScreenX, pCur[9] + nScreenY, -0x80, (DRAWMODE)(uint8_t)pOverlayTxt[nThisOverlayId].Trans, nullptr);
+            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nScreenX, pCur[9] + nScreenY, -0x80, (DRAWMODE)pOverlayTxt[nThisOverlayId].Trans, nullptr);
             nPass = __frame0.nPassIdx;
           }
         }
@@ -690,7 +690,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
             }
           }
 
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nDrawX + iVar2, pCur[9] + nDrawY, nBlendMode, (DRAWMODE)(uint8_t)pOverlayTxt->Trans, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pCur[8] + nDrawX + iVar2, pCur[9] + nDrawY, nBlendMode, (DRAWMODE)pOverlayTxt->Trans, nullptr);
         }
       }
 
@@ -931,8 +931,8 @@ static void GFX_LoadMonsterModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
       exit(-1);
     }
 
-    bHasComponent = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
-    if ((char)bHasComponent != '\0') {
+    uint8_t bVar1 = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
+    if (bVar1) {
       return;
     }
 
@@ -950,7 +950,6 @@ static void GFX_LoadObjectModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
     int bLoaded;
     int nCofDataResult;
     int nClassId;
-    uint32_t bComponentAlreadyLoaded;
     eD2UnitType eUnitType = UNIT_COUNT;
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
@@ -966,8 +965,8 @@ static void GFX_LoadObjectModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4c2);
       exit(-1);
     } else if (pObjectsTxt->Mode[nComponent] == 1) {
-      bComponentAlreadyLoaded = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
-      if ((char)bComponentAlreadyLoaded != '\0') {
+      bHasComponent = (bool)GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
+      if (bHasComponent) {
         return;
       }
 
@@ -1145,18 +1144,13 @@ static uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     static uint8_t gbHealthBarColorBlue; D2_STATIC_GUARD_BSS(gbHealthBarColorBlue, "D2Client::Engine::Gfx::GFX_GetUnitHealthBarColor::gbHealthBarColorBlue");
     static BOOL BOOL_007a8924; D2_STATIC_GUARD_BSS(BOOL_007a8924, "D2Client::Engine::Gfx::GFX_GetUnitHealthBarColor::BOOL_007a8924");
 
-    int32_t nColorIndex;
     D2MonStatsTxt* pMonStats;
     int nClassId;
     if (!BOOL_007a8924) {
-      nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xc0, 0);
-      gbHealthBarColorGreen = (uint8_t)nColorIndex;
-      nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xe0, 0xe0, 0);
-      gbHealthBarColorYellow = (uint8_t)nColorIndex;
-      nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xe0, 0, 0);
-      gbHealthBarColorRed = (uint8_t)nColorIndex;
-      nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xc0);
-      gbHealthBarColorBlue = (uint8_t)nColorIndex;
+      gbHealthBarColorGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xc0, 0);
+      gbHealthBarColorYellow = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xe0, 0xe0, 0);
+      gbHealthBarColorRed = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xe0, 0, 0);
+      gbHealthBarColorBlue = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xc0);
       BOOL_007a8924 = 1;
     }
 
@@ -1182,13 +1176,13 @@ static uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
       return gbHealthBarColorBlue;
     }
 
-    nColorIndex = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    if (!nColorIndex) {
+    int32_t uVar3 = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
+    if (!uVar3) {
       return gbHealthBarColorGreen;
     }
 
     int nHpPercent = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
-    nHpPercent = nHpPercent * 100 / nColorIndex;
+    nHpPercent = nHpPercent * 100 / uVar3;
     if (nHpPercent < 0x21) {
       return gbHealthBarColorRed;
     }
@@ -1205,7 +1199,7 @@ uint32_t __fastcall DrawItemGfx(D2UnitStrc * pUnit, int32_t nHeight, int32_t nWi
     D2GfxDataStrc sGfxData;
     int nPalShiftIndex;
     char byColorOut;
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
 
@@ -1304,7 +1298,8 @@ void __fastcall SetParticle(D2UnitStrc * pUnit, D2ParticleStrc * pParticle) {
     pGfxInfo->pParticle = pParticle;
 }
 
-void __thiscall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nOverlayId) {
+// nPreDraw is never read here; every caller still loads EDX (12 pass 0, GFX_AddOverlayToUnit passes pOverlayTxt->PreDraw).
+void __fastcall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nPreDraw, int32_t nOverlayId) {
     int* ppNextOverlay;
     if (!pUnit) {
       return;
@@ -1556,7 +1551,7 @@ static void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPa
     }
 
     uint32_t nPathIndex = 0;
-    if ((uint32_t)gnMonsterCofPathCount > 0) {
+    if (gnMonsterCofPathCount > 0) {
       do {
         if (nModeId == gnMonsterCofPathBuildTotalItems[nPathIndex].nMode) {
           dwTokenChars = gnMonsterCofPathBuildTotalItems[nPathIndex].dwToken;
@@ -1632,7 +1627,7 @@ static void __stdcall GFX_PrecacheMonsterCofSprites(D2MonStatsTxt * pMonStatsTxt
               }
               if (*(char*)((int)pComponentTable + 3) != '\0') {
                 nComponentRow = 0;
-                if (*(char*)((int)pComponentTable + 3) != '\0') {
+                if ((uint8_t)*(char*)((int)pComponentTable + 3) > '\0') {
                   do {
                     memset(&sGfxData, 0, 0x48);
                     bParamsValid1 = GfxUtil::GFXUTIL_InitAndBuildMonsterCofParams(&sGfxData, 0, 0, byComponent, nModeId, nComponentCode, pCofFile, pComponentTable, pMonStatsTxt, nComponentRow);
@@ -2001,7 +1996,7 @@ static void __stdcall GFX_PrecacheMonsterModeSprites(int32_t nAsyncBlockId, D2Un
     }
 
     uint32_t nModeIdx = 0;
-    if ((uint32_t)gnMonsterModePrecacheCount <= 0) {
+    if (gnMonsterModePrecacheCount <= 0) {
       return;
     }
 
@@ -2122,7 +2117,7 @@ static void Gfx_UpdateNearbyUnitGfx(int32_t bShowLoadingUi) {
           }
 
           nIdx = 0;
-          if ((uint32_t)gnNearbyPlayerCofCount > 0) {
+          if (gnNearbyPlayerCofCount > 0) {
             do {
               GFX_AsyncLoadPlayerSprites(bShowLoadingUi, gaNearbyPlayerCofUpdateQueue[nIdx], pUnit);
               nIdx++;
@@ -2245,7 +2240,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       }
     }
     if ((int)eOverlay < 0x8c || (int)eOverlay > 0x8e && eOverlay != OVERLAY_handofgod) {
-      GFX_RemoveOverlayById(pUnit, eOverlay);
+      GFX_RemoveOverlayById(pUnit, (uint32_t)pOverlayTxt->PreDraw, eOverlay);
     }
 
     D2GfxUnknown_0xa8* pOverlay = D2_NEW_AT(D2GfxUnknown_0xa8, ".\\ENGINE\\Gfx.cpp", 0xc48);
@@ -2316,7 +2311,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
         exit(-1);
       }
 
-      pOverlay->nPreDraw = (uint32_t)(uint8_t)pOverlayTxt->PreDraw;
+      pOverlay->nPreDraw = (uint32_t)pOverlayTxt->PreDraw;
       pOverlay->pNext = (D2GfxUnknown_0xa8*)pGfxInfo->pOverlayList;
       pGfxInfo->pOverlayList = pOverlay;
       if (pOverlay->nOverlayType == 8) {
@@ -2981,7 +2976,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint
                     nErrLine = GfxUtil::DC6_AssignParams(&sGfxData, pUnit, nullptr, nDirection, nFrameMetricX, (int*)&nFrameResult, byLayerComponent, (D2UnitStrc*)-1);
                     if (nErrLine) {
                       eDrawModeCalc = DRAW_SOLID;
-                      bEthereal = GfxUtil::GFXUTIL_GetEtherealTransparency(pUnit, nLayerComponentU, (uint32_t*)&eDrawModeCalc, nFrameResult);
+                      bEthereal = GfxUtil::GFXUTIL_GetEtherealTransparency(pUnit, nLayerComponentU, &eDrawModeCalc, nFrameResult);
                       if (bApplyItemColor && (eUnitType != UNIT_PLAYER || pUnit->uSideData.pClientSide.nPaletteIndex != 0x6c)) {
                         pPalette = (D2GamePalShiftGreenBloodStrc*)GfxUtil::GFXUTIL_GetItemColorForBodyLoc(pUnit, nLayerComponentU, pPalette->abyRemap);
                       }

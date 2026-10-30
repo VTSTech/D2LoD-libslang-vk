@@ -116,8 +116,8 @@ void __fastcall PLAYERLIST_AddPlayerEntry(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     pNewEntry->nUnitGUID = nTargetGUID;
     pNewEntry->nHostileDelay = 0;
-    int16_t sPartyId = SUnit::GetPartyId(pUnit2);
-    pNewEntry->bIsPartied = (uint32_t)(sPartyId != -1);
+    uint16_t sPartyId = SUnit::GetPartyId(pUnit2);
+    pNewEntry->bIsPartied = (uint32_t)(sPartyId != 0xffff);
     pNewEntry->pNext = pPlayerData->pPlayerList;
     pPlayerData->pPlayerList = pNewEntry;
 }
@@ -151,10 +151,10 @@ void __fastcall PLAYERLIST_RemoveFromList(::SGAMEDATA * pGame, D2UnitStrc * pUni
       }
     }
 
-    if (!pPrevEntry) {
-      pPlayerData->pPlayerList = pMemoryToFree->pNext;
-    } else {
+    if (pPrevEntry) {
       pPrevEntry->pNext = pMemoryToFree->pNext;
+    } else {
+      pPlayerData->pPlayerList = pMemoryToFree->pNext;
     }
 
     D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\PlayerList.cpp", 0x97);
@@ -183,10 +183,10 @@ void __fastcall SendRelationshipStatus(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     pListEntry = 0;
     lookup_done:
     if (pUnit != pTargetUnit && pListEntry) {
-      if (!nParam) {
-        pListEntry->nRelationshipFlags &= ~dwFlagMask;
-      } else {
+      if (nParam) {
         pListEntry->nRelationshipFlags |= dwFlagMask;
+      } else {
+        pListEntry->nRelationshipFlags &= ~dwFlagMask;
       }
       if (!pTargetUnit) {
         nOtherUnitGUID = -1;
@@ -282,7 +282,7 @@ void __fastcall SetPlayerRelationship(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, i
     }
 }
 
-uint32_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+uint16_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2UnitPlayerListStrc* pListEntry;
     uint16_t wPtrHigh;
     int nUnit2GUID;
@@ -303,12 +303,11 @@ uint32_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
 
     pListEntry = 0;
     lookup_done:
-    wPtrHigh = (uint16_t)((uint32_t)pListEntry >> 0x10);
     if (pUnit == pUnit2) {
-      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)1);
+      return 1;
     }
     if (pListEntry) {
-      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)(short int)pListEntry->bIsPartied);
+      return (uint16_t)pListEntry->bIsPartied;
     }
 
     return 0;
@@ -358,8 +357,7 @@ void __fastcall Send0x8bRelationshipStatus(D2UnitStrc * pUnit, D2UnitStrc * pUni
     }
 
     bool bIsPartied = (uint8_t)(uint32_t)pListEntry->bIsPartied;
-    D2ClientStrc* pClient = SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(pClient, dwTargetArg, bIsPartied);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x8B_PlayerRelationship(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\PlayerList.cpp", 0x10b), dwTargetArg, bIsPartied);
 }
 
 // Looks up the relationship list entry for pOtherUnit in pUnit's player list and sends packet 0x8C (RelationshipUpdate) with the current nRelationshipFlags to pOtherUnit's client. Read-only: does not modify flags. No-op if units are the same or no entry exists.
@@ -430,8 +428,8 @@ void __fastcall PLAYERLIST_AddBothWays(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     if (pUnit != pOtherPlayer && pListEntry) {
       pListEntry->bIsPartied = 0;
     }
-    int16_t sPartyId = SUnit::GetPartyId(pUnit);
-    SetPlayerRelationship(pOtherPlayer, pUnit, (uint32_t)(sPartyId != -1));
+    uint16_t sPartyId = SUnit::GetPartyId(pUnit);
+    SetPlayerRelationship(pOtherPlayer, pUnit, (uint32_t)(sPartyId != 0xffff));
     Send0x8bRelationshipStatus(pOtherPlayer, pUnit);
     Send0x8bRelationshipStatus(pUnit, pOtherPlayer);
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);

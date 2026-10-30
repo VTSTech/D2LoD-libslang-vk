@@ -12,12 +12,3 @@
 struct D2SHA1 {
     /* 0x00 */ DWORD h[5];
 };
-
-// SHA-1 working context used by Bnclient/_net_sid::SHA1 + SHA1_Hashing: one
-// 64-byte message block plus the five rolling state words. Missing from the
-// ghidra dump; reconstructed from the call sites (layout is internal to the
-// SHA-1 routines, no absolute offsets are applied to it).
-struct D2SHA1ContextStrc {
-    /* 0x00 */ uint32_t aBlock[16];
-    /* 0x40 */ D2SHA1 state;
-};

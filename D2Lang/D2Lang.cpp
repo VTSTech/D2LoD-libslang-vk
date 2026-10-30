@@ -2,7 +2,6 @@
 
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/Unicode/UNISYS.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 
@@ -25,7 +24,7 @@ void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, in
     char cCurChar;
     int nDigitIdx;
     __frame0.nCommaCounter = 0;
-    if (nParam2 < 3) {
+    if (nParam2 <= 2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b9);
       exit(-1);
     }
@@ -36,13 +35,13 @@ void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, in
       nParam1 = -nParam1;
     }
 
-    __itoa(nParam1, __frame0.aDigitBuffer, 10);
+    _itoa(nParam1, __frame0.aDigitBuffer, 10);
     char* pcDigitPtr = __frame0.aDigitBuffer;
     pcDigitPtr = pcDigitPtr + strlen(pcDigitPtr) + 1;
     int nDigitCount = (int)pcDigitPtr - (int)(__frame0.aDigitBuffer + 1);
     if (nDigitCount) {
       nFormattedLen = (nDigitCount - 1) / 3 + nDigitCount;
-      if (0 < nFormattedLen && nFormattedLen < nParam2 - 1) {
+      if (nFormattedLen >= 1 && nFormattedLen < nParam2 - 1) {
         wszText[nFormattedLen] = L'\0';
         while (nFormattedLen) {
           nDigitIdx = nDigitCount - 1;
@@ -50,12 +49,12 @@ void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, in
           __frame0.nCommaCounter++;
           nWritePos = nFormattedLen - 1;
           wszText[nWritePos] = (short int)__frame0.aDigitBuffer[nDigitIdx];
-          if (2 < __frame0.nCommaCounter) {
+          if (__frame0.nCommaCounter >= 3) {
             pcDigitPtr = __frame0.aDigitBuffer;
             pcDigitPtr = pcDigitPtr + strlen(pcDigitPtr) + 1;
-            if (3 < (uint32_t)((int)pcDigitPtr - (int)(__frame0.aDigitBuffer + 1))) {
+            if ((uint32_t)((int)pcDigitPtr - (int)(__frame0.aDigitBuffer + 1)) > 3) {
               __frame0.nCommaCounter = 0;
-              if (0 < nWritePos) {
+              if (nWritePos > 0) {
                 nWritePos = nFormattedLen - 2;
                 wszText[nWritePos] = L',';
               }
@@ -81,7 +80,7 @@ void __stdcall UI_FormatNumberWithCommas(uint16_t * wszText, int32_t nParam1, in
 // Decodes next UTF-8 character from byte stream. Multi-byte decoding using table at gaUtf8DecodeTable. Returns character width in bytes or -1 on error. Validates continuation bytes (0x80 mask).
 int32_t __stdcall UTF8_DecodeNextChar(uint8_t * pUtf8, uint16_t * pwCharOut, int32_t nMaxBytes) {
     int nByteWidth = 0;
-    if (nMaxBytes < 1) {
+    if (nMaxBytes <= 0) {
       return -1;
     }
 
@@ -141,7 +140,7 @@ static int32_t __stdcall EncodeUTF8CodePoint(uint16_t nParam, uint8_t * pbParam)
 
     int nShiftBits = (int)(short int)gaUtf8DecodeTable[nByteWidth - 1].wShift;
     *pbParam = (uint8_t)((int)uCodePt >> ((uint8_t)gaUtf8DecodeTable[nByteWidth - 1].wShift & 0x1f)) | (uint8_t)gaUtf8DecodeTable[nByteWidth - 1].wExpect;
-    if (nShiftBits < 1) {
+    if (nShiftBits <= 0) {
       return nByteWidth;
     }
 
@@ -149,7 +148,7 @@ static int32_t __stdcall EncodeUTF8CodePoint(uint16_t nParam, uint8_t * pbParam)
       nShiftBits += -6;
       pbParam++;
       *pbParam = (uint8_t)((int)uCodePt >> ((uint8_t)nShiftBits & 0x1f)) & 0x3f | 0x80;
-    } while (0 < nShiftBits);
+    } while (nShiftBits > 0);
 
     return nByteWidth;
 }
@@ -157,7 +156,7 @@ static int32_t __stdcall EncodeUTF8CodePoint(uint16_t nParam, uint8_t * pbParam)
 // Returns byte width of next UTF-8 character without decoding. Uses same validation table as DecodeNextChar. Returns -1 on error.
 static int32_t __stdcall UTF8_GetNextCharWidth(uint8_t * pUtf8, int32_t nMaxBytes) {
     int nByteWidth = 0;
-    if (nMaxBytes < 1) {
+    if (nMaxBytes <= 0) {
       return -1;
     }
 
@@ -200,19 +199,16 @@ int32_t __fastcall UTF8_GetStringLength(char * szUtf8, int32_t nMaxBytes) {
     int nBytesRead;
     uint8_t byCurByte;
     int32_t nCharCount = 0;
-    if (0 >= nMaxBytes) {
+    if (nMaxBytes <= 0) {
       return nCharCount;
     }
 
     while (*szUtf8) {
       int32_t nWidth;
       nWidth = UTF8_GetNextCharWidth((uint8_t*)szUtf8, nMaxBytes);
-      if (nWidth == -1) {
-        szUtf8++;
-        nBytesRead = -1;
-      } else {
+      if (nWidth != -1) {
         nBytesRead = 0;
-        if (0 < nWidth) {
+        if (nWidth > 0) {
           do {
             byCurByte = *szUtf8;
             szUtf8++;
@@ -226,10 +222,13 @@ int32_t __fastcall UTF8_GetStringLength(char * szUtf8, int32_t nMaxBytes) {
 
         nCharCount++;
         nBytesRead = -nWidth;
+      } else {
+        szUtf8++;
+        nBytesRead = -1;
       }
 
       nMaxBytes += nBytesRead;
-      if (nMaxBytes < 1) {
+      if (nMaxBytes <= 0) {
         return nCharCount;
       }
     }
@@ -248,34 +247,34 @@ uint16_t * __fastcall UTF8_ConvertToWideChar(uint16_t * wszText, char * szText, 
     char* pszScanEnd = szText;
     pszScanEnd = pszScanEnd + strlen(pszScanEnd) + 1;
     int nBytesConsumed = 0;
-    if (*szText == '\0') {
-      *wszText = L'\0';
+    if (*szText != '\0') {
+      uint16_t* pWOut = wszText;
+      while (true) {
+        int32_t nCharWidth;
+        if (nWideCharIdx >= nMaxWideChars - 1) {
+          wszText[nWideCharIdx] = L'\0';
+          return wszText;
+        }
+
+        nCharWidth = D2Lang::UTF8_DecodeNextChar((uint8_t*)(szText + nBytesConsumed), (uint16_t*)pWOut, (int32_t)(pszScanEnd + (-nBytesConsumed - (int)(szText + 1))));
+        nWideCharIdx++;
+        pWOut++;
+        if (nCharWidth == -1) {
+          break;
+        }
+
+        nBytesConsumed += nCharWidth;
+        if (szText[nBytesConsumed] == '\0') {
+          wszText[nWideCharIdx] = L'\0';
+          return wszText;
+        }
+      }
+
+      wszText[nWideCharIdx] = L'\0';
       return wszText;
     }
 
-    uint16_t* pWOut = wszText;
-    while (true) {
-      int32_t nCharWidth;
-      if (nMaxWideChars - 1 <= nWideCharIdx) {
-        wszText[nWideCharIdx] = L'\0';
-        return wszText;
-      }
-
-      nCharWidth = D2Lang::UTF8_DecodeNextChar((uint8_t*)(szText + nBytesConsumed), (uint16_t*)pWOut, (int32_t)(pszScanEnd + (-nBytesConsumed - (int)(szText + 1))));
-      nWideCharIdx++;
-      pWOut++;
-      if (nCharWidth == -1) {
-        break;
-      }
-
-      nBytesConsumed += nCharWidth;
-      if (szText[nBytesConsumed] == '\0') {
-        wszText[nWideCharIdx] = L'\0';
-        return wszText;
-      }
-    }
-
-    wszText[nWideCharIdx] = L'\0';
+    *wszText = L'\0';
     return wszText;
 }
 
@@ -284,7 +283,7 @@ char * __fastcall WideCharToUTF8(char * pDest, uint16_t * pSrc, int nMaxBytes) {
     int nBytesWritten = 0;
     while (*pSrc != L'\0') {
       int32_t nEncBytes;
-      if (nMaxBytes - 1 <= nBytesWritten) {
+      if (nBytesWritten >= nMaxBytes - 1) {
         break;
       }
 
@@ -330,7 +329,7 @@ BOOL __stdcall UI_CompareCharsUsingLookupTable(uint16_t wChar1, uint16_t wChar2)
     if (wChar1 < 0x100) {
       wChar1 = D2Client::UI::ui::CharacterLookupTable[wChar1];
     }
-    if (0xff >= wChar2) {
+    if (wChar2 < 0x100) {
       return (uint32_t)(wChar1 == D2Client::UI::ui::CharacterLookupTable[wChar2]);
     }
 

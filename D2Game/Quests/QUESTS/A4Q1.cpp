@@ -54,7 +54,7 @@ namespace D2Game::Quests::QUESTS::A4Q1 {
 
 // Q26_ActiveFilter (Fallen Angel / kill-Izual quest) — decides if a target NPC should show the quest as "active" / offer quest gossip. Only while quest not yet Completed. Jerhyn (classId 0x16f): active when RewardAwaits OR introduction stateflag==1. Izual (classId 0x196): active until Step0x05 (talked-to-Izual-spirit) is set. Returns false otherwise / before introduction.
 bool __fastcall Q26_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return false;
     }
 
@@ -111,23 +111,23 @@ BOOL __fastcall Q26_PlayerUpdateFallenAngelState(::SGAMEDATA * pGame, D2UnitStrc
 
 // Q26_SequenceFilter — chains to the prerequisite quest's filter (nSequenceQuestId = QUEST_SpokeToTyrael). Runs only when this quest's stateflag==5 (finalized) or post-introduction; validates the linked quest's fpSequenceFilter ptr (halts on bad ptr) then invokes it. Propagates Fallen Angel completion into the Act 4 quest sequence/Tyrael dialog gating.
 bool __fastcall Q26_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
     D2QuestDataStrc* pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-    if (!pQuestData_00) {
-      return false;
+    if (pQuestData_00) {
+      BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
+      if (BVar2) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
+        exit(-1);
+      }
+
+      bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
+      return bVar1;
     }
 
-    BOOL BVar2 = IsBadCodePtr((FARPROC)pQuestData_00->fpSequenceFilter);
-    if (BVar2) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa1);
-      exit(-1);
-    }
-
-    bool bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-    return bVar1;
+    return false;
 }
 
 // Q26_PlayerNotifyCompleted — completion-notify predicate+send (callback for QUEST_SetStateAndBroadcast). Sends quest-update packet 0x16 to a player only if the Fallen Angel quest is Completed-or-FinishedInPreviousGame AND not (JustCompleted) AND not (CannotCompleteQuestInGame); otherwise no-op. Pushes the finished UI update to relevant players.
@@ -256,7 +256,9 @@ void __fastcall Q26_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     bJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!bJustCompleted) {
+    if (bJustCompleted) {
+      nGossipMsgIdx = 3;
+    } else {
       int32_t nPlayerGUID = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       bJustCompleted = QUEST_HasPlayerParticipated(pQuestData, nPlayerGUID);
       if (bJustCompleted == 1) {
@@ -266,10 +268,10 @@ void __fastcall Q26_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (bCompleted == 1) {
         return;
       }
-      if (3 < pQuestData->nStateFlag && !bStep0x05Set) {
+      if (pQuestData->nStateFlag >= 4 && !bStep0x05Set) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
 
@@ -277,11 +279,9 @@ void __fastcall Q26_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (nGossipMsgIdx == -1) {
         return;
       }
-      if (5 < nGossipMsgIdx) {
+      if (nGossipMsgIdx >= 6) {
         return;
       }
-    } else {
-      nGossipMsgIdx = 3;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipMsgIdx);
@@ -359,7 +359,7 @@ BOOL __fastcall Q26_PlayerCheckNearIzual(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
       nRoomIdx = 0;
-      if (nAdjacentRoomCount) {
+      if (nAdjacentRoomCount > 0) {
         do {
           if (pAdjacentRooms[nRoomIdx] == pQuestData) {
             bIsNearIzual = 1;
@@ -403,7 +403,7 @@ void __fastcall Q26_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q1.cpp", 0x201);
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = (QUESTCALLBACKFN)0x0;
     pA4Q1Data->pIzualUnit = pQuestArgs->pTarget;
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       D2BitBufferStrc* pBitBuffer;
       if (pQuestArgs->pPlayer) {
         pPlayerData = pQuestArgs->pGame;
@@ -529,7 +529,7 @@ void __fastcall Q26_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q1.cpp
 void __fastcall Q26_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 1;
     ::SGAMEDATA* pSVar1 = pQuestData->pGame;
     pQuestData->pNpcMessages = &A4Q1::aNpcGossipData;

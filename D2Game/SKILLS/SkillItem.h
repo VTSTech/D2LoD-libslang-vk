@@ -18,7 +18,7 @@ struct D2RoomStrc;
 struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 namespace D2Game::SKILLS::SkillItem {
 

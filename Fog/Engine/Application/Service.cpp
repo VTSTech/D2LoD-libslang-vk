@@ -41,16 +41,17 @@ BOOL StartDiablo2ServerAsService() {
     }
 
     /* SC_HANDLE hSCObject for CloseServiceHandle */ CloseServiceHandle(hSCManager);
-    if (!hSCObject) {
-      return 0;
+    if (hSCObject) {
+      BOOL bDispatched;
+      aServiceTable[1].lpServiceName = (LPSTR)0x0;
+      aServiceTable[1].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)0x0;
+      /* SERVICE_TABLE_ENTRYA * lpServiceStartTable for StartServiceCtrlDispatcherA */ aServiceTable[0].lpServiceName = s_DIABLO2SRV_007065dc;
+      aServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)main;
+      bDispatched = StartServiceCtrlDispatcherA(aServiceTable);
+      return (uint32_t)(bDispatched != 0);
     }
 
-    aServiceTable[1].lpServiceName = (LPSTR)0x0;
-    aServiceTable[1].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)0x0;
-    /* SERVICE_TABLE_ENTRYA * lpServiceStartTable for StartServiceCtrlDispatcherA */ aServiceTable[0].lpServiceName = s_DIABLO2SRV_007065dc;
-    aServiceTable[0].lpServiceProc = (LPSERVICE_MAIN_FUNCTIONA)main;
-    BOOL bDispatched = StartServiceCtrlDispatcherA(aServiceTable);
-    return (uint32_t)(bDispatched != 0);
+    return 0;
 }
 
 } // namespace Fog::Engine::Application::Service

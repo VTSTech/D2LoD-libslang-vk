@@ -1466,7 +1466,7 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
 
       pGame->nStateFlag = 5;
     }
-    if ((short int)pOperation->nObjectClassId != pSubData->aStones[(uint16_t)pSubData->nStoneIndex]) {
+    if ((short int)pOperation->nObjectClassId != pSubData->aStones[pSubData->nStoneIndex]) {
       return 0;
     }
 
@@ -1477,19 +1477,19 @@ BOOL __fastcall OBJOP_A1Q4_ActivateHoradricMalusSmith(D2ObjectOperateFnArg * pOp
       nStoneIdx = pRoomListEnd->nUnitGUID;
     }
 
-    *(int32_t*)(pSubData->aStones + (uint32_t)(uint16_t)pSubData->nStoneIndex * 2 + 8) = nStoneIdx;
+    *(int32_t*)(pSubData->aStones + (uint32_t)pSubData->nStoneIndex * 2 + 8) = nStoneIdx;
     pSubData->nStoneIndex++;
     pRoomListEnd = pOperation->sArg.pVictim;
     if (pRoomListEnd && pRoomListEnd->eAnimMode.ePlayerMode != Death) {
       return 0;
     }
-    if ((uint16_t)pSubData->nStoneIndex < 5) {
+    if (pSubData->nStoneIndex < 5) {
       D2Common::Units::SetupUpdateFlag(pRoomListEnd, 1);
       if (!__frame0.pExistingPortal) {
         return 0;
       }
 
-      D2Common::Units::SetupUpdateFlag(__frame0.pExistingPortal, (uint16_t)pSubData->nStoneIndex + 1);
+      D2Common::Units::SetupUpdateFlag(__frame0.pExistingPortal, pSubData->nStoneIndex + 1);
       return 0;
     }
     if (pSubData->nStoneIndex != 5) {
@@ -1831,10 +1831,10 @@ void __fastcall Q04_SetScrollActivatedFlag(::SGAMEDATA * pGame) {
 
 // A1Q4 — Q04_GetPortalCreatedFlag: returns the quest sub-struct flag at offset 0x62
 // (portal-created). Halts via ErrorManager if quest data is missing. Getter only.
-uint8_t __fastcall Q04_GetPortalCreatedFlag(::SGAMEDATA * pGame) {
+int __fastcall Q04_GetPortalCreatedFlag(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSearchForCain);
     if (pQuestData) {
-      return pQuestData->pQuestSpecificData.pA1Q4->sSub.bStonesRolled;
+      return (uint32_t)pQuestData->pQuestSpecificData.pA1Q4->sSub.bStonesRolled;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x99d);

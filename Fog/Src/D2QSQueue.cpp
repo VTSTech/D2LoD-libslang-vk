@@ -47,7 +47,7 @@ uint32_t __fastcall GetAddress(uint32_t * pdwParam) {
 }
 
 void __fastcall FOG_EnqueueMessage(D2QSQueueStrc * pClientSideData, void * pParam, uint16_t wMsgSize) {
-    if (!wMsgSize) {
+    if (wMsgSize <= 0) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4a);
       exit(-1);
     }
@@ -71,10 +71,8 @@ uint32_t __fastcall D2QSQUEUE_Dequeue(D2QSQueueStrc * pdwParam, void * pParam, i
     uint32_t uBytesRead;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pdwParam->csLock);
     D2QSQueueEntryStrc* iNextEntry = pdwParam->pHead;
-    if (!iNextEntry) {
-      uBytesRead = 0;
-    } else {
-      if ((uint16_t)nMaxSize < iNextEntry->wMsgSize) {
+    if (iNextEntry) {
+      if (iNextEntry->wMsgSize > (uint16_t)nMaxSize) {
         pdwParam->bOverflow = 1;
         uBytesRead = 0;
       } else {
@@ -88,6 +86,8 @@ uint32_t __fastcall D2QSQUEUE_Dequeue(D2QSQueueStrc * pdwParam, void * pParam, i
       if (!iNextEntry) {
         pdwParam->pTail = 0;
       }
+    } else {
+      uBytesRead = 0;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pdwParam->csLock);

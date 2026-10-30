@@ -13,7 +13,7 @@ struct D2TimerListStrc;
 struct D2TimerQueueStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_fpTimerFunction
 #define RECON_FPTD_fpTimerFunction
 typedef void (__fastcall *fpTimerFunction)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);

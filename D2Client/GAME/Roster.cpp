@@ -638,7 +638,7 @@ int32_t __fastcall ROSTER_GetArenaScore(D2RosterStrc * pRoster) {
 
 uint32_t __fastcall GetRosterLevel(D2RosterStrc * pRoster) {
     if (pRoster) {
-      return (uint32_t)(uint16_t)pRoster->nUnitLevel;
+      return (uint32_t)pRoster->nUnitLevel;
     }
 
     return 0;
@@ -941,7 +941,7 @@ void __fastcall ROSTER_ToggleHostileAndSend(D2RosterStrc * pRoster) {
     }
 
     uint32_t bIsHostile = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
-    if (!(bIsHostile || (uint16_t)pRoster->nUnitLevel >= 9)) {
+    if (!(bIsHostile || pRoster->nUnitLevel >= 9)) {
       return;
     }
 
@@ -983,14 +983,14 @@ int32_t __fastcall GetRosterGUID(D2RosterStrc * pRoster) {
     return -1;
 }
 
-void __fastcall SetRosterHpAndArea(int32_t nRosterGUID, int32_t nHpPercent, eD2LevelId eLevel) {
+void __fastcall SetRosterHpAndArea(int32_t nRosterGUID, int32_t nHpPercent, uint16_t eLevel) {
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nRosterGUID);
     if (!pRoster) {
       return;
     }
 
     pRoster->nHpPercent = nHpPercent;
-    pRoster->eLevelId = eLevel & 0xffff;
+    pRoster->eLevelId = (uint32_t)eLevel;
     ROSTER_RebuildPlayerParty();
     UI::Party::ResetPartyUi();
 }

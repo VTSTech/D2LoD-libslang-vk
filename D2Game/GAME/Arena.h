@@ -12,7 +12,7 @@
 struct D2ClientStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2ArenaTxt {
@@ -28,7 +28,6 @@ struct D2ArenaTxt {
 namespace D2Game::GAME::Arena {
 
 // Function declarations
-bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam);
 // @sourcefile .\GAME\Arena.cpp
 void __thiscall AllocArenaControl(void * pThis, eD2ArenaFlags eArenaFlags, uint8_t nTemplate);
 // @sourcefile .\GAME\Arena.cpp
@@ -70,6 +69,6 @@ uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame);
 // Returns bit 0x200 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 BOOL __fastcall ARENA_IsFlag0x200Set(::SGAMEDATA * pGame);
-// 3 internal functions (defined in .cpp)
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Game::GAME::Arena

@@ -44,7 +44,7 @@ namespace D2Client::UI::Chat {
 // Function declarations
 // @sourcefile .\UI\chat.cpp
 void __stdcall INPUT_HandleIMENotify(struct D2UIMouseMsgStrc * pMsg);
-uint32_t __stdcall CHAT_CheckIMELanguage();
+uint8_t __stdcall CHAT_CheckIMELanguage();
 void __stdcall CHAT_ResetIMEState(int32_t nParam);
 void __stdcall CHAT_InitIME();
 // @sourcefile .\UI\chat.cpp
@@ -67,6 +67,4 @@ void __stdcall CHAT_ProcessBattleNetMessage();
 void __stdcall INPUT_HandleChatCharInput(struct D2UIMouseMsgStrc * pMsg);
 // 10 internal functions (defined in .cpp)
 
-int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
-int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
 } // namespace D2Client::UI::Chat

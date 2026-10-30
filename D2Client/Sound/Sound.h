@@ -15,7 +15,7 @@ struct D2UIMouseMsgStrc;
 struct D2UnitDataItemStrc;
 struct D2UnitStrc;
 struct IDirectSoundBuffer;
-typedef int eD2Sounds;
+typedef uint32_t eD2Sounds;
 #ifndef RECON_FPTD_DS3DB_SetMaxDistance
 #define RECON_FPTD_DS3DB_SetMaxDistance
 typedef HRESULT (__stdcall *DS3DB_SetMaxDistance)(void * This, float flMaxDistance, DWORD dwApply);
@@ -82,12 +82,12 @@ struct __attribute__((packed)) D2SoundChannelStrc {
     /* 0x14 */ float fPosZ; // 3D position Z
     /* 0x18 */ float fPanResult; // calculated pan/hypotenuse
     /* 0x1C */ int nPriority; // channel priority (set by SOUND_SetChannelPriority)
-    /* 0x20 */ int nUnitDistance; // unit distance (pChannel[8])
+    /* 0x20 */ float fUnitDistance; // unit distance (pChannel[8])
     /* 0x24 */ int nParam; // extra param (pChannel[9])
     /* 0x28 */ int * pGlobal3Ref; // ptr to global3 timing struct (checked non-null + [4]!=0)
     /* 0x2C */ struct D2ClientSoundChannelStrc * undefined_0x2c; // unknown
     /* 0x30 */ int nPlayMode; // 1=streaming
-    /* 0x34 */ int nScheduledTime; // global3+delay scheduled start time (pChannel[0xd])
+    /* 0x34 */ uint32_t nScheduledTime; // global3+delay scheduled start time (pChannel[0xd])
     /* 0x38 */ int nVolume; // volume (pChannel[0xe])
     /* 0x3C */ uint8_t nPriorityByte; // priority byte from sounds.txt (pChannel[0xf] byte)
     /* 0x3D */ int bStopFlag; // set to 1 to request stop/fade-out
@@ -126,23 +126,23 @@ struct D2SoundEnvironTxt {
 
 struct D2SoundSmpStrc {
     /* 0x00 */ struct IDirectSoundBuffer * pDSBuffer; // IDirectSoundBuffer
-    /* 0x04 */ int32_t nBufSize; // total DirectSound buffer size in bytes
-    /* 0x08 */ int32_t nHalfBufSize; // half buffer size
+    /* 0x04 */ uint32_t nBufSize; // total DirectSound buffer size in bytes
+    /* 0x08 */ uint32_t nHalfBufSize; // half buffer size
     /* 0x0C */ struct IDirectSound3DBuffer * pDS3DBuffer; // IDirectSound3DBuffer (stereo only)
     /* 0x10 */ struct IKsPropertySet * pEaxInterface; // IKsPropertySet (EAX), QI'd from pDS3DBuffer
     /* 0x14 */ uint8_t * pPcmData; // pointer to PCM source data
-    /* 0x18 */ int32_t nPcmSize; // PCM data size in bytes
+    /* 0x18 */ uint32_t nPcmSize; // PCM data size in bytes
     /* 0x1C */ int32_t bIsPlaying; // non-zero if buffer is currently playing
     /* 0x20 */ uint32_t field_08; // unknown
-    /* 0x24 */ int32_t nWritePos; // current write position
+    /* 0x24 */ uint32_t nWritePos; // current write position
     /* 0x28 */ int32_t bLoaded; // non-zero if wav data loaded into buffer
     /* 0x2C */ int32_t bAtEnd; // non-zero if playback reached end
-    /* 0x30 */ int32_t nLoopEnd; // loop end offset (0xFFFFFFFF = no loop)
+    /* 0x30 */ uint32_t nLoopEnd; // loop end offset (0xFFFFFFFF = no loop)
     /* 0x34 */ int32_t dwFlags; // creation flags (bit0=stereo, bit1=3D, bit2=EAX)
     /* 0x38 */ int32_t nVolume; // current volume level
     /* 0x3C */ uint32_t fEaxObstruction; // EAX obstruction level (float). SOUNDSMP_SetEaxObstruction stores fParam here and, at EAX quality 2, sets gEAXPropertyGuid_Obstruction with (1.0-fParam) clamped 0..1; SOUNDSMP_SetVolume attenuates by (1 - this)
     /* 0x40 */ int bLooping; // was pDS3DBufferAlt; never called through - zeroed by SOUNDSMP_Reset, gates write-pos wraparound in SOUNDSMP_WriteToBuffer
-    /* 0x44 */ int32_t nMinBufSize; // minimum buffer size threshold
+    /* 0x44 */ uint32_t nMinBufSize; // minimum buffer size threshold
     /* 0x48 */ struct D2MPQFileStrc * pStreamFile; // SFile async-stream handle; SFILE_CancelAsyncRequestsForHandle/CloseFileWrapper/GetStreamInfo
     /* 0x4C */ uint32_t field_0x4c; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
     /* 0x50 */ int32_t field_0x50; // size 0x60 established by memset(this,0,0x60) in SOUNDSMP_ReleaseInterfaces
@@ -235,7 +235,7 @@ void __fastcall SOUND_ToggleSoundMixerBinary(struct D2EscMenuItemStrc * pItem, s
 BOOL __stdcall SOUND_IsEaxAvailable_ForEaxItem();
 void __fastcall SOUND_CycleSoundMixerMode(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 uint32_t __fastcall SOUND_FileExists(char * szFileName);
-void SOUND_LocalizeSoundPath(char * szFormat, uint32_t * pszOutPath);
+void SOUND_LocalizeSoundPath(char * szFormat, uint32_t * pszOutPath, char * pTmp);
 float __stdcall SOUND_CalculateAngle1(float fParam1, float fParam2);
 float __stdcall SOUND_CalculateAngle2(float fParam1, float fParam2);
 float __stdcall SOUND_CalculatePanning(float fParam1, float fParam2, float fParam3);

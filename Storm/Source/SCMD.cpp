@@ -777,7 +777,7 @@ BOOL __fastcall SCMD_ProcessFlags(pfnSCmdErrorCallback pfnErrorCallback, char * 
     while (cCurChar != '\0') {
       nMatchLen = SSTR::SStrLen(szText);
       uVar1 = SSTR::SStrLen(szMatchBuf);
-      if (!uVar1) {
+      if (uVar1 < 1) {
         uVar1 = 1;
       } else {
         uVar1 = SSTR::SStrLen(szMatchBuf);

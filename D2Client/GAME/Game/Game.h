@@ -19,9 +19,9 @@ struct EHExceptionRecord;
 struct EHRegistrationNode;
 struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2ClientAppMode;
-typedef int eD2GSGameType;
-typedef int eD2LevelId;
+typedef uint32_t eD2ClientAppMode;
+typedef uint32_t eD2GSGameType;
+typedef uint32_t eD2LevelId;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32
@@ -94,15 +94,15 @@ namespace D2Client::GAME::Game {
 void __thiscall GAMEDATA_TimerInitWithTickCount(uint32_t * pTimerStruct, uint32_t dwDurationMs);
 void __fastcall GAMEDATA_SetByteInUshort(uint16_t * pWord, uint8_t byteValue);
 // Setter for gRunKeyDown (run modifier).
-void __fastcall SetRunKeyDown(uint32_t dwParam);
+void __fastcall SetRunKeyDown(BOOL dwParam);
 void __fastcall SetGlobalAlwaysRun(int32_t nValue);
 BOOL __stdcall GetGlobalAlwaysRun();
 void __fastcall GAMEDATA_SetClickModifier(int32_t bModifierDown);
 // Compute mouse click modifier flags (run/always-run, modifier key).
 uint32_t __stdcall GetMouseClickFlags();
 void __stdcall GAME_SetMouseButtonEventPending();
-uint8_t __stdcall GAME_GetPrimaryClickState();
-uint8_t __stdcall GAME_GetMouseButtonEventState();
+uint32_t __stdcall GAME_GetPrimaryClickState();
+int __stdcall GAME_GetMouseButtonEventState();
 int __stdcall GAMEDATA_GetQueuedPrimaryClick();
 // Handle under-mouse primary click: set queued click, build flags, call ClickMap(0,...).
 void __stdcall UnderMouse_PrimaryClick(struct D2UIMouseMsgStrc * pMsg);
@@ -284,7 +284,7 @@ uint32_t __fastcall GAMEDATA_CheckTimerExpired(struct D2ClientTimerStrc * pTimer
 uint32_t __fastcall Timer_IsActiveAndUpdate(struct D2ClientTimerStrc * pTimer);
 // Send exit-game request (0x69) if not already exiting; updates exit flags.
 void __stdcall SendExitGameRequest(struct D2UIMouseMsgStrc * pMsg);
-void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel);
+void __fastcall CLIENT_AllocAct(uint8_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel);
 // GAME_InitClientSide: reset globals, init client pool, view/UI, loading screen, send join packet for network games, init palette/weather/lighting/chat; set CurrentDrawFunction and flags.
 // @sourcefile .\GAME\Game.cpp
 void __stdcall GAME_InitClientSide();

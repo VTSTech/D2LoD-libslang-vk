@@ -11,8 +11,8 @@
 
 // Forward declarations
 struct D2QServerStrc;
-typedef int eD2GSConnectionType;
-typedef int eD2GSGameType;
+typedef uint32_t eD2GSConnectionType;
+typedef uint32_t eD2GSGameType;
 #ifndef RECON_FPTD_fpD2QServerLineHook
 #define RECON_FPTD_fpD2QServerLineHook
 typedef void (*fpD2QServerLineHook)(int nLine);
@@ -44,7 +44,7 @@ void __stdcall NET_HACK_CloseAndBanHackerIP(in_addr addr, char * szFile, int32_t
 void __stdcall NET_HACK_UnlistIP(in_addr addr, char * dwDuration, uint32_t dwFlags);
 void __stdcall NET_DisconnectIP(in_addr addr, char * szText, int32_t nFlags);
 // @sourcefile .\SRC\Server.cpp
-int __stdcall QSERVER_KillConnection(int32_t nClientId);
+void __stdcall QSERVER_KillConnection(int32_t nClientId);
 void __stdcall NET_Thunk_QServerSetHacklistAddLineHook(fpD2QServerLineHook pfnHook);
 void __stdcall NET_SetQServerCallbackFunction(void * pfnCallback);
 void __stdcall AssignClientToToken(int32_t nClientId, uint32_t nToken);

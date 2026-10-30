@@ -26,8 +26,7 @@ BOOL __stdcall UI_Init() {
     Src::D2Comp::D2COMP_LoadAllItemPalettes();
     int32_t nMsgCount = 0x21;
     D2Client::GAME::Record::pWndProcB = 0;
-    HWND hWnd = D2gfx::D2GFX::GetHwnd();
-    Forms::D2WIN_RegisterWindowHandlerArray((int32_t)hWnd, gaUIWindowHandlers, nMsgCount);
+    Forms::D2WIN_RegisterWindowHandlerArray((int32_t)D2gfx::D2GFX::GetHwnd(), gaUIWindowHandlers, nMsgCount);
     Src::D2WinPalette::D2WINPAL_LoadActPalette(0);
     gpfnExitCallback = 0;
     return 1;

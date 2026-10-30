@@ -106,7 +106,7 @@ uint32_t __stdcall GetSoundEnv() {
     }
 
     D2LevelsTxt* pLevelsTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevel);
-    return (uint32_t)(uint8_t)pLevelsTxt->SoundEnv;
+    return (uint32_t)pLevelsTxt->SoundEnv;
 }
 
 uint32_t __stdcall SOUNDHDR_GetGlobal0() {

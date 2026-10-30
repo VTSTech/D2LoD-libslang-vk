@@ -19,25 +19,17 @@ struct D2SkillStrc;
 struct D2StatListExStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2ItemTypes;
-typedef int eD2LevelId;
-typedef int eD2MonsterAnimMode;
-typedef int eD2States;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitStat;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2States;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitStat;
 #ifndef RECON_FPTD_PFN_StatExpireCallback
 #define RECON_FPTD_PFN_StatExpireCallback
 typedef void (__fastcall *PFN_StatExpireCallback)(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
 #endif
-
-// Data types
-struct __attribute__((packed)) D2GSPacketSrv0x58 {
-    /* 0x00 */ uint8_t nPacketId; // 0x58
-    /* 0x01 */ uint32_t nUnitGUID;
-    /* 0x05 */ uint8_t nUIType;
-    /* 0x06 */ uint8_t nUIState;
-};
 
 namespace D2Game::Objects::ObjectsMode {
 

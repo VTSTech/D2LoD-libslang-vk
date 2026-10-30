@@ -15,7 +15,7 @@ struct D2MonStatsTxt;
 struct D2UnitStrc;
 struct DC6;
 struct DC6Block;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2ArmTypeTxt {
@@ -66,7 +66,7 @@ uint32_t __fastcall GFXUTIL_GetCofDirection(uint8_t * pbParam, uint32_t nParam);
 uint8_t * __fastcall GFXUTIL_GetCofLayerData(uint8_t * pbParam, int32_t nParam, int32_t nLayerOffset);
 uint32_t __fastcall GFXUTIL_GetCofDrawOrder(uint8_t * pbParam, uint32_t nParam);
 int __fastcall GFXUTIL_IsValidUnitType(struct D2UnitStrc * pnParam);
-uint32_t __fastcall GFXUTIL_GetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam);
+uint8_t __fastcall GFXUTIL_GetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall GFXUTIL_SetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam, uint8_t byComponentVal);
 void __fastcall GFXUTIL_CalcDirectionAndFrame(struct D2UnitStrc * pUnit, int32_t nAnimDir, int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode);
 // @sourcefile .\ENGINE\GfxUtil.cpp
@@ -80,8 +80,6 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(struct D2UnitStrc * pUnit, uint8_
 int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(struct D2UnitStrc * pUnit, int32_t pOverlayEntry);
 void __fastcall GFXUTIL_GetOverlayDimensions(struct D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam);
 uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY);
-void GFXUTIL_PadTokenString(char * szText1, char * szText2);
-BOOL __stdcall GFXUTIL_BuildCofParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct D2UnitStrc * pEquipContext, int * pOutItemClassId);
-// 8 internal functions (defined in .cpp)
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::GfxUtil

@@ -36,10 +36,6 @@ _FID_conflict____CxxFrameHandler3:
 	xorl	%eax, %eax
 	ret
 
-	.globl	__CallDestructExceptionObject
-__CallDestructExceptionObject:
-	xorl	%eax, %eax
-	ret
 
 	.globl	__ZN9_Wrappers20CRT_ExceptionFilter1EP17EHExceptionRecordP18EHRegistrationNodeP8_CONTEXTPv
 __ZN9_Wrappers20CRT_ExceptionFilter1EP17EHExceptionRecordP18EHRegistrationNodeP8_CONTEXTPv:
@@ -66,15 +62,7 @@ ___CIsqrt:
 	xorl	%eax, %eax
 	ret
 
-	.globl	___global_unwind2
-___global_unwind2:
-	xorl	%eax, %eax
-	ret
 
-	.globl	___local_unwind2
-___local_unwind2:
-	xorl	%eax, %eax
-	ret
 
 	.globl	___sqrt_common
 ___sqrt_common:

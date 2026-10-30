@@ -31,7 +31,7 @@ namespace D2Game::GAME::Targets {
 // @sourcefile .\GAME\Targets.cpp
 void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2NodeUnkownStrc * pNodeUnknown);
 // @sourcefile .\GAME\Targets.cpp
-struct D2UnitNodeStrc * __fastcall CreateUnitNode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2NodeUnkownStrc * pUnknown, int32_t nTableIndex);
+void __fastcall CreateUnitNode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2NodeUnkownStrc * pUnknown, int32_t nTableIndex);
 // @sourcefile .\GAME\Targets.cpp
 void __fastcall AddNodeToTable(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2NodeUnkownStrc * pNodeUnknown, int32_t nNodeTableIndex);
 // @sourcefile .\GAME\Targets.cpp

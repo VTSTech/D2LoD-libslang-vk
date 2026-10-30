@@ -20,7 +20,7 @@ struct D2MPQFileStrc;
 struct D2PoolManagerStrc;
 struct D2StatesDataTbls;
 struct D2UnitStrc;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 
 namespace D2Common::DATATBLS::DataTbls {
 

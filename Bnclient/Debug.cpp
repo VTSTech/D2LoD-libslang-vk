@@ -3,7 +3,6 @@
 #include "Bnclient/Debug.h"
 #include "Bnclient/net_sid.h"
 #include "Storm/Source/SSComp.h"
-#include "compiler/compiler.h"
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 

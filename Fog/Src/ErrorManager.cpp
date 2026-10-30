@@ -20,7 +20,6 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_trace.h"
-#include "support/d2_boot.h" // [d2boot]
 #include "globals/globals.h"
 #include "D2Game/Objects/ObjectsRgn.h"
 
@@ -72,20 +71,19 @@ DWORD __fastcall GetParentProcessId(int32_t nProcessId) {
     return DVar1;
 }
 
-uint32_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize) {
-    BOOL bClosed;
+uint8_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize) {
     HANDLE hProcess = OpenProcess(0x410, 0, nProcessId);
     if (hProcess) {
       DWORD dwLength;
       /* DWORD nSize for GetModuleFileNameExA */ /* LPSTR lpFilename for GetModuleFileNameExA */ /* HMODULE hModule for GetModuleFileNameExA */ /* HANDLE hProcess for GetModuleFileNameExA */ dwLength = GetModuleFileNameExA(hProcess, (HMODULE)0x0, szText, nBufferSize);
       if (dwLength) {
-        /* HANDLE hObject for CloseHandle */ bClosed = CloseHandle(hProcess);
-        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)bClosed >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+        /* HANDLE hObject for CloseHandle */ CloseHandle(hProcess);
+        return 1;
       }
     }
 
-    uint32_t dwCloseResult = CloseHandle(hProcess);
-    return dwCloseResult & -256;
+    /* HANDLE hObject for CloseHandle */ CloseHandle(hProcess);
+    return 0;
 }
 
 // Writes process metadata to crash report: application name, inspector tags, admin status via AllocateAndInitializeSid (SECURITY_BUILTIN_DOMAIN_RID + DOMAIN_ALIAS_RID_ADMINS), process/parent/grandparent paths, game/system locale from gaLocaleCodeStrings, and attaches log files (21 slots from InitLogFilePathPointers). Locale lookup uses MISC_GetLanguageCode and STRTABLE_GetRegistryLanguage.
@@ -114,8 +112,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     uint8_t* aLogFilePaths[21];
     PSID pAdminSid;
     _SID_IDENTIFIER_AUTHORITY sNtAuthority;
-    int8_t iVar1 = _3rdparty::crashy::IsOpen(pReport);
-    if (iVar1 == '\0') {
+    bool bVar1 = _3rdparty::crashy::IsOpen(pReport);
+    if (!bVar1) {
       return;
     }
 
@@ -132,8 +130,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     BOOL bIsAdmin = 0;
     memset(sNtAuthority.Value, 0, 5 * sizeof(sNtAuthority.Value[0]));
     sNtAuthority.Value[5] = '\x05';
-    BOOL BVar2 = AllocateAndInitializeSid(&sNtAuthority, '\x02', 0x20, 0x220, 0, 0, 0, 0, 0, 0, &pAdminSid);
-    if (BVar2) {
+    BOOL BVar3 = AllocateAndInitializeSid(&sNtAuthority, '\x02', 0x20, 0x220, 0, 0, 0, 0, 0, 0, &pAdminSid);
+    if (BVar3) {
       /* PBOOL IsMember for CheckTokenMembership */ /* PSID SidToCheck for CheckTokenMembership */ /* HANDLE TokenHandle for CheckTokenMembership */ bIsAdmin = CheckTokenMembership((HANDLE)0x0, pAdminSid, &bIsAdmin);
       szProcessName = "TRUE";
       if (!bIsAdmin) {
@@ -146,51 +144,51 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
 
     _3rdparty::crashy::Printf(pReport, "<Process.Elevated> %s\n", "UNKNOWN");
     DWORD dwProcessId = GetCurrentProcessId();
-    uint32_t bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    uint8_t bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.Path> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.Name> %s\n", szProcessName);
     dwProcessId = GetParentProcessId(dwProcessId);
-    bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.ParentProcessPath> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.ParentProcessName> %s\n", szProcessName);
     dwProcessId = GetParentProcessId(dwProcessId);
-    bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.GrandParentProcessPath> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.GrandParentProcessName> %s\n", szProcessName);
-    bGotModuleName = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    _3rdparty::crashy::Printf(pReport, "<Locale.Game> %s\n", gaLanguageNames[bGotModuleName]);
-    bGotModuleName = D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage();
-    _3rdparty::crashy::Printf(pReport, "<Locale.System> %s\n", gaLanguageNames[bGotModuleName]);
+    uint32_t nSysLocaleIdx = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
+    _3rdparty::crashy::Printf(pReport, "<Locale.Game> %s\n", gaLanguageNames[nSysLocaleIdx]);
+    nSysLocaleIdx = D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage();
+    _3rdparty::crashy::Printf(pReport, "<Locale.System> %s\n", gaLanguageNames[nSysLocaleIdx]);
     _3rdparty::crashy::Printf(pReport, "<Game.Type> %s\n", "Client");
     _3rdparty::crashy::Printf(pReport, "DATA\\LOCAL", "79b7ae8fe1e97d05d57ebdc4b65bf012d38c797e");
     memset(aLogFilePaths, 0, 0x54);
@@ -229,17 +227,17 @@ void __stdcall InitializeSystemInfo() {
       }
 
       fGameVersion = (int)(fMajorVersionF + fMinorVersionFrac / 100.0);
-      if (osVersionInfo.dwPlatformId == 2) {
+      if (osVersionInfo.dwPlatformId != 2) {
+        g_eOSType = 0;
+      } else {
         g_eOSType = 1;
-        if (4 < osVersionInfo.dwMajorVersion) {
-          if (osVersionInfo.dwMinorVersion < 2) {
-            g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
-          } else {
+        if (osVersionInfo.dwMajorVersion >= 5) {
+          if (osVersionInfo.dwMinorVersion >= 2) {
             g_eOSType = 4;
+          } else {
+            g_eOSType = 3 - (uint32_t)!osVersionInfo.dwMinorVersion;
           }
         }
-      } else {
-        g_eOSType = 0;
       }
     }
 
@@ -334,12 +332,12 @@ static void __stdcall FormatDebugOutput(uint8_t bFlags, va_list vaArgs, char * s
     if (bFlags & 4) {
       SYSTEMTIME sLocalTime;
       /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ GetLocalTime(&sLocalTime);
-      __snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
+      snprintf(szOutputBuffer, 0x1000, "%02d:%02d:%02d.%03d    ", (uint32_t)sLocalTime.wHour, (uint32_t)sLocalTime.wMinute, (uint32_t)sLocalTime.wSecond, (uint32_t)sLocalTime.wMilliseconds);
     }
 
     char* pScan = szOutputBuffer;
     pScan = pScan + strlen(pScan) + 1;
-    __vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
+    vsnprintf(szOutputBuffer + ((int)pScan - (int)(szOutputBuffer + 1)), 0x1000 - ((int)pScan - (int)(szOutputBuffer + 1)), szText, vaArgs);
     szOutputBuffer[0xfff] = '\0';
     if (!(bFlags & 2)) {
       /* LPCSTR lpOutputString for OutputDebugStringA */ OutputDebugStringA(szOutputBuffer);
@@ -360,7 +358,7 @@ void OutputDebugStringSimple(char * szText, ...) {
     char* pScan = szBuffer;
     szBuffer[0] = '\0';
     pScan = pScan + strlen(pScan) + 1;
-    __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
+    vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
     uint8_t cNull = 0;
     OutputDebugStringA(szBuffer);
 }
@@ -377,7 +375,7 @@ void OutputDebugStringIfCapsLock(char * szText, ...) {
       pScan = szBuffer;
       szBuffer[0] = '\0';
       pScan = pScan + strlen(pScan) + 1;
-      __vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
+      vsnprintf(szBuffer + ((int)pScan - (int)(szBuffer + 1)), 0x1000 - ((int)pScan - (int)(szBuffer + 1)), szText, __va);
       /* LPCSTR lpOutputString for OutputDebugStringA */ cNull = 0;
       OutputDebugStringA(szBuffer);
     }
@@ -387,8 +385,10 @@ void FormatDebugOutputVariadic(uint8_t bFlags, char * szText, uint32_t firstArg)
     FormatDebugOutput(bFlags, (va_list)&firstArg, szText);
 }
 
-void __stdcall FormatDebugOutputLogOnly(char * szText, char firstArg) {
-    FormatDebugOutput(1, &firstArg, szText);
+void FormatDebugOutputLogOnly(char * szText, ...) {
+    va_list __va;
+    va_start(__va, szText);
+    FormatDebugOutput(1, __va, szText);
 }
 
 // The registered Fog exception filter. Its ABI is measured at the only dispatch,
@@ -438,10 +438,10 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
             dwDumpFlags += 2;
           }
         }
-        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
-          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
-        } else {
+        if ((D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
           File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01');
+        } else {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\x01', dwDumpFlags);
         }
 
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.Assertion>\n");
@@ -454,10 +454,10 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
         _3rdparty::crashy::Printf(&crashFile, "<:Inspector.DebugModules>\n");
         _3rdparty::crashy::Printf(&crashFile, "<Inspector.HashBlock:>\n");
         _3rdparty::crashy::Printf(&crashFile, "[JOIN]  SrvRecvDatabaseCharacter: Didn\'t recv full char from db - CSResult(%d), ClientID(%d)");
-        if (!(D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
-          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
-        } else {
+        if ((D2CrashFrameStrc*)pCrashInfo->apFrameAddrs) {
           File::CRASH_FormatStackTrace(pCrashInfo->dwThreadId, (D2CrashFrameStrc*)pCrashInfo->apFrameAddrs, pCrashInfo->nNumFrames, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0');
+        } else {
+          File::CRASH_DumpThreadContext(pCrashInfo->dwThreadId, pExceptionContext, FILETOOLS_WriteOneStringToFile, &crashFile, '\0', '\0', dwDumpFlags);
         }
 
         _3rdparty::crashy::Printf(&crashFile, "DBG-OPTIONS<>\n");
@@ -473,7 +473,7 @@ int __fastcall DumpLog(D2CrashReportStrc * pCrashInfo, void * pUserContext) {
         memset(&errorArg, 0, 0x54);
         errorArg.szProduct = szProduct;
         nAttachIndex = 0;
-        if (0 < crashFile.nAttachmentCount) {
+        if (crashFile.nAttachmentCount > 0) {
           pAttachment = crashFile.aszAttachmentPaths;
           do {
             if (nAttachIndex < 0x10) {
@@ -577,7 +577,7 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
         }
 
         nAttachIndex = 0;
-        if (0 < crashFile.nAttachmentCount) {
+        if (crashFile.nAttachmentCount > 0) {
           pAttachment = crashFile.aszAttachmentPaths;
           do {
             if (nAttachIndex < 0x10) {
@@ -608,13 +608,14 @@ void __fastcall CRASH_FillupCrashTxt(char * szSummary, char * szReason, char * *
 }
 
 BOOL __fastcall CheckErrorDuringError(char * szText, int32_t nLine, char * szReason) {
-    if (!g_dwErrorState) {
-      return 0;
+    if (g_dwErrorState) {
+      char* pszRelativeFile;
+      pszRelativeFile = StripPathPrefixToRelative(szText);
+      LogManager::LOGMANAGER_TraceToModuleLog("", "\n***** ENCOUNTERED ERROR DURING ERROR HANDLING!!!\n%s,%d\n%s\n*****", pszRelativeFile, nLine, szReason);
+      return 1;
     }
 
-    char* pszRelativeFile = StripPathPrefixToRelative(szText);
-    LogManager::LOGMANAGER_TraceToModuleLog("", "\n***** ENCOUNTERED ERROR DURING ERROR HANDLING!!!\n%s,%d\n%s\n*****", pszRelativeFile, nLine, szReason);
-    return 1;
+    return 0;
 }
 
 // Main error handling dispatcher for Fog subsystem. Validates error is not recursive via CheckErrorDuringError, logs the error category, and formats error message with file/line info. For assertion/halt/OOM errors, writes crash report via CRASH_FillupCrashTxt. Uses two 4096-byte buffers: one for vsnprintf formatting the reason (varargs), one for the final "[ErrorType] (reason) failed at file(line)" message. Sets global error state to prevent cascading errors.
@@ -633,8 +634,6 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
     if (eErrorType == ERROR_Deadlock) {
       szFile = ".\\Src\\ErrorManager.cpp";
     }
-
-    D2BOOT_MarkFmt("FOG_ErrorHandler type=%d file=%s line=%d", (int)eErrorType, szFile ? szFile : "(null)", (int)nLine); // [d2boot]
 
     int nResult = CheckErrorDuringError(szFile, nLine, szReasonFormat);
     if (!nResult) {
@@ -660,13 +659,10 @@ void FOG_ErrorHandler(eFOG_ErrorType eErrorType, char * szFile, int32_t nLine, c
       if (!bIsFatalErrorType) {
         g_dwErrorState = 0;
       }
-    } else {
-      D2BOOT_Mark("FOG_ErrorHandler: error-during-error (recursive) -> suppressed"); // [d2boot]
     }
 }
 
 void ERROR_UnrecoverableInternalError_AssertionFailure(char * szUnused, int32_t nAddress, int32_t nLine) {
-    D2BOOT_MarkFmt("ASSERT-FAIL line=%d addr=%08X", nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_AssertionFailure, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
@@ -682,7 +678,6 @@ void ERROR_UnrecoverableInternalError_Halt(char * szMessage, void * nAddress, in
     // actually fired. Naming the line here is what makes an assert readable at all.
     D2TraceFmt("HALT line=%d (0x%x) addr=%08X ra=%08X", nLine, nLine,
                (unsigned)(uintptr_t)nAddress, (unsigned)(uintptr_t)__builtin_return_address(0));
-    D2BOOT_MarkFmt("HALT line=%d (0x%x) addr=%08X", nLine, nLine, (unsigned)nAddress); // [d2boot]
     // ra as a module RVA: the absolute value is useless across runs because the image is
     // relocated, and every attempt to place a halt has started by guessing the load base.
     // The crash report (support/d2_crash.cpp) records the halt and the halting stack.
@@ -693,21 +688,18 @@ void ERROR_UnrecoverableInternalError_Halt(char * szMessage, void * nAddress, in
 }
 
 void ERROR_UnrecoverableInternalError_Warning(char * szUnused, int32_t nAddress, int32_t nLine) {
-    D2BOOT_MarkFmt("ERROR-WARN line=%d addr=%08X", nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Warning, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
 }
 
 void ERROR_DeadlockedThread(DWORD pThread, int32_t nTicks) {
-    D2BOOT_MarkFmt("DEADLOCK thread=%X ticks=%d", (unsigned)pThread, (int)nTicks); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(ERROR_Deadlock, (char*)pThread, 0x87f, "Deadlocked in thread %X for %d ticks", pThread, nTicks);
     LogManager::ExitOrCrashCleanUpJmp();
 }
 
 void ERROR_UnrecoverableInternalError_Any(eFOG_ErrorType eErrorType, uint32_t dwParam, int32_t nAddress, int32_t nLine) {
-    D2BOOT_MarkFmt("ERROR-ANY type=%d line=%d addr=%08X", (int)eErrorType, nLine, (unsigned)nAddress); // [d2boot]
     Safesock::WSACleanup();
     FOG_ErrorHandler(eErrorType, "", nLine, "Unrecoverable internal error %08x", nAddress);
     LogManager::ExitOrCrashCleanUpJmp();
@@ -737,19 +729,19 @@ void __stdcall ShowUnrecoverableErrorDialog(int32_t nParam, char * szText, int n
       exit(-1);
     }
 
-    __vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
+    vsnprintf(szFormattedMessageBuffer, 0x1000, szSourceFile, vaArgs);
     szFormattedMessageBuffer[0xfff] = '\0';
-    if (!szText) {
+    if (szText) {
+      pScan = szFormattedMessageBuffer;
+      szRelativePath2 = StripPathPrefixToRelative(szText);
+      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[nParam], szRelativePath2, nLine, pScan);
+    } else {
       nCopyIdx = 0;
       do {
         pScan = szFormattedMessageBuffer + nCopyIdx;
         szFinalErrorMessage[nCopyIdx] = *pScan;
         nCopyIdx++;
       } while (*pScan != '\0');
-    } else {
-      pScan = szFormattedMessageBuffer;
-      szRelativePath2 = StripPathPrefixToRelative(szText);
-      Storm::Source::SSTR::SStrPrintf(szFinalErrorMessage, 0x1000, "%s\nLocation : %s, line #%d\nExpression : %s", gaErrorTypeNames[nParam], szRelativePath2, nLine, pScan);
     }
 
     Storm::Source::SSTR::SStrPrintf(szTitleBuffer, 0x100, "%s Error", "Diablo II");
@@ -4868,7 +4860,7 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     0
 }; D2_STATIC_GUARD(gszFogCrashReportCustomMessage, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogCrashReportCustomMessage");
     static char gszFogVersionString[16] = {}; D2_STATIC_GUARD(gszFogVersionString, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gszFogVersionString");
-    static bool gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
+    static int gbFogErrorManagerPadding; D2_STATIC_GUARD_BSS(gbFogErrorManagerPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gbFogErrorManagerPadding");
     static uint64_t gFogMemoryPoolPadding = 0; D2_STATIC_GUARD(gFogMemoryPoolPadding, "Fog::Src::ErrorManager::ERRORMANAGER_InitErrorManager::gFogMemoryPoolPadding");
 
     // Frame slots -4108..-8 are ONE object: &local_100c is passed out and the callee reaches the rest by byte offset.
@@ -4881,7 +4873,12 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
     __frame0_t __frame0;
     uint32_t uCookie;
     void* nBadAddr;
-    if (!gbFogErrorManagerInitialized) {
+    if (gbFogErrorManagerInitialized) {
+      if (bLogGameStrartupInfo) {
+        Source::SFile::LOGFILE_StoreGameStartupInfo();
+        return;
+      }
+    } else {
       int iBitIdx;
       _3rdparty::crashy::thunk_InitializeDebugSubsystem();
       File::CRASH_SetExceptionHandler(DumpLog, nullptr, 0);
@@ -4944,9 +4941,6 @@ void __fastcall ERRORMANAGER_InitErrorManager(char * dwUnused1, char * szText, B
       atexit(EXIT_AtExit);
       Debug::DEBUG_LoadStackCrawlDbgHelp();
       Storm::Source::SErr::SErrSetBlizzardErrorFunction(CRASH_FillupCrashTxt);
-    } else if (bLogGameStrartupInfo) {
-      Source::SFile::LOGFILE_StoreGameStartupInfo();
-      return;
     }
 }
 

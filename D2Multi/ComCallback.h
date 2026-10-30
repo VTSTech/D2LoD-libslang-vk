@@ -51,7 +51,6 @@ void __stdcall COMCALLBACK_ClearChannelUserList();
 void __fastcall COMCALLBACK_FormatWhisperFrom(uint16_t * wszText, char * szSenderName);
 void __fastcall COMCALLBACK_FormatWhisperTo(uint16_t * wszText, char * szTargetName);
 BOOL __stdcall COMCALLBACK_ValidateGameJoinability();
-int __fastcall PrintChannelText(uint32_t dwParam, char * szText, int32_t nColor);
 void __stdcall COMCALLBACK_UpdateChannelUserList();
 void __stdcall COMCALLBACK_ClearChannelListView();
 // Handles BNet channel join event. Finds matching user in gpChannelUserListHead by username, then calls AddUserToChannelList to build the visual composite. Returns 1 on match, 0 if not found.
@@ -88,6 +87,6 @@ BOOL __fastcall COMCALLBACK_Unused4(uint32_t dwParam1, uint32_t dwParam2, uint32
 BOOL __fastcall COMCALLBACK_HandleJoinedChannel(uint32_t dwParam1, uint32_t dwParam2, uint32_t dwUnused, char * szChannelName);
 void __fastcall COMCALLBACK_RemoveUserFromList(int32_t nStrBase, uint32_t * pnCarryMask);
 BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * pnKeyHi, uint32_t * pnKeyLo);
-// 11 internal functions (defined in .cpp)
+// 12 internal functions (defined in .cpp)
 
 } // namespace D2Multi::ComCallback

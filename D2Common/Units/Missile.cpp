@@ -1098,7 +1098,10 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
         }
       }
     }
-    if (!(sgptDataTable->pMissCode && nCalcExpression < (uint32_t)sgptDataTable->nMissCodeSize)) {
+    if (!sgptDataTable->pMissCode) {
+      return 0;
+    }
+    if (!(nCalcExpression < (uint32_t)sgptDataTable->nMissCodeSize)) {
       return 0;
     }
 
@@ -1149,8 +1152,8 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
 
     short int sVar1 = pMissileTxt->Skill;
     if (sVar1 <= 0 && !(*((uint8_t*)pMissileTxt + 0x5) & (uint8_t)gadwBitMasks[7])) {
-      nSourceDamage = (uint32_t)(uint8_t)pMissileTxt->SrcDamage;
-      nSrcMissDmgPct = (uint32_t)(uint8_t)pMissileTxt->SrcMissDmg;
+      nSourceDamage = (uint32_t)pMissileTxt->SrcDamage;
+      nSrcMissDmgPct = (uint32_t)pMissileTxt->SrcMissDmg;
       nCalcMinDmg = GetMinDamage(pMissile, pUnit, nMissileId, nParam);
       nCalcMaxDmg = GetMaxDamage(pMissile, pUnit, nMissileId, nParam);
       nElemType = (eD2ElementalDamageTypeDWORD)(uint8_t)pMissileTxt->EType;
@@ -1180,7 +1183,7 @@ void __stdcall EvaluateMissileFormula(D2MissileDamageDataStrc * pMissileDamageDa
 
       nSourceDamage = (uint32_t)(uint8_t)pSkillTxt->SrcDam;
       nSrcMissDmgPct = 0;
-      if (pMissileTxt->SrcDamage == -1) {
+      if (pMissileTxt->SrcDamage == 0xff) {
         nSourceDamage = 0;
       }
 

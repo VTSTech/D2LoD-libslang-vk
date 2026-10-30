@@ -13,7 +13,7 @@
 
 // Forward declarations
 struct SGAMEDATA;
-typedef int eD2GSGameType;
+typedef uint32_t eD2GSGameType;
 struct D2QServerStrc;
 #ifndef RECON_FPTD_fpD2QServerLineHook
 #define RECON_FPTD_fpD2QServerLineHook

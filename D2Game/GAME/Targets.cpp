@@ -41,7 +41,7 @@ void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     D2UnitNodeStrc** pFreeSlot = pGame->pUnitNodes;
-    uint32_t nSlotIndex = 0;
+    int nSlotIndex = 0;
     do {
       if (!*pFreeSlot) {
         break;
@@ -49,9 +49,9 @@ void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, D2UnitStrc 
 
       nSlotIndex++;
       pFreeSlot++;
-    } while ((int)nSlotIndex < 8);
+    } while (nSlotIndex < 8);
 
-    if (!(pGame->nClientsCount <= 8 && (int)nSlotIndex < 8)) {
+    if (!(pGame->nClientsCount <= 8 && nSlotIndex < 8)) {
       return;
     }
 
@@ -129,7 +129,7 @@ void __fastcall UNIT_FreeUnitNodes(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    uint32_t nNodeTableIndex = pUnit->nNodeTableIndex;
+    int nNodeTableIndex = pUnit->nNodeTableIndex;
     if (nNodeTableIndex == 0xb) {
       return;
     }
@@ -162,7 +162,7 @@ void __fastcall MONSTER_FreeUnitNodes(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       return;
     }
 
-    uint32_t nNodeTableIndex = pUnit->nNodeTableIndex;
+    int nNodeTableIndex = pUnit->nNodeTableIndex;
     if (nNodeTableIndex == 0xb) {
       return;
     }
@@ -173,7 +173,7 @@ void __fastcall MONSTER_FreeUnitNodes(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 
     D2UnitNodeStrc* pMemoryToFree = pHeadNode;
-    if ((int)nNodeTableIndex < 8) {
+    if (nNodeTableIndex < 8) {
       pMemoryToFree = pHeadNode->pPrev;
       if (!pMemoryToFree) {
         pUnit->nNodeTableIndex = 0xb;

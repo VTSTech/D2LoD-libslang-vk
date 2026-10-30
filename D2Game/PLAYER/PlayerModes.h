@@ -13,10 +13,10 @@ struct D2ClientStrc;
 struct D2SkillStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2PlayerAnimMode;
-typedef int eD2Skills;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitType;
+typedef uint32_t eD2PlayerAnimMode;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitType;
 
 namespace D2Game::PLAYER::PlayerModes {
 

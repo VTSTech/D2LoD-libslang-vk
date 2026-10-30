@@ -1055,7 +1055,7 @@ int32_t __stdcall MISSILETBLS_CalculateVelocity(int32_t nMissileId, int32_t nLev
       pMissileTxt = sgtDataTable.pTxtMissiles + nMissileId;
       if (pMissileTxt) {
         nVelLevProduct = (uint32_t)(uint8_t)pMissileTxt->VelLev * nLevel;
-        return nVelLevProduct / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+        return nVelLevProduct / 8 + (uint32_t)pMissileTxt->Vel;
       }
     }
 

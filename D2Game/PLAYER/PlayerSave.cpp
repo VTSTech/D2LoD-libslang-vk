@@ -199,14 +199,14 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     item_restored:
-    if (pSavedItemData->nStorageType != '\0') {
+    if (pSavedItemData->nStorageType > '\0') {
       *ppItemOut = pUnit_00;
     }
     if (!pnParam) {
       return 0;
     }
 
-    *pnParam = (uint32_t)(uint8_t)pSavedItemData->nStorageType;
+    *pnParam = (uint32_t)pSavedItemData->nStorageType;
     return 0;
 }
 
@@ -217,7 +217,6 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     int32_t nPosY;
     int32_t _unknownMightBeX;
     int nPlaceResult;
-    uint32_t nBeltSlot;
     BOOL BVar1;
     DWORD dwContainerGUID;
     int32_t bNoOverlap;
@@ -272,8 +271,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       pBodyLocParam = &eBodyLocation;
       nPosY = 0;
-      nBeltSlot = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, nBeltSlot, nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
       break;
       case Ground:
 
@@ -406,10 +404,10 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
     }
 
     item_restored:
-    if (pItemUnknownStructure->nStorageType != '\0') {
+    if (pItemUnknownStructure->nStorageType > '\0') {
       *pGame2 = pItem;
     }
-    *pnParam = (uint32_t)(uint8_t)pItemUnknownStructure->nStorageType;
+    *pnParam = (uint32_t)pItemUnknownStructure->nStorageType;
     return 0;
 }
 
@@ -774,7 +772,7 @@ D2SaveFileHeaderStrc * __stdcall PLRSAVE_MakeSaveFileReturnBuffer(int32_t nPlaye
     return pSaveFileResult;
 }
 
-int32_t __fastcall PLAYERSAVE_ByteToHexChar(uint8_t * pszHexOut, uint32_t nByteValue) {
+int32_t __fastcall PLAYERSAVE_ByteToHexChar(uint8_t * pszHexOut, uint8_t nByteValue) {
     int nGuardResult;
     uint8_t aHexDigits[16];
     uint32_t dwStackCookie;
@@ -795,13 +793,12 @@ int32_t __fastcall PLAYERSAVE_ByteToHexChar(uint8_t * pszHexOut, uint32_t nByteV
     aHexDigits[0xe] = 0x65;
     aHexDigits[0xf] = 0x66;
     uint8_t byLowNibbleChar = aHexDigits[nByteValue & 0xf];
-    *pszHexOut = aHexDigits[(nByteValue & 0xff) >> 4];
+    *pszHexOut = aHexDigits[nByteValue >> 4];
     pszHexOut[1] = byLowNibbleChar;
     return (uint32_t)byLowNibbleChar;
 }
 
 uint8_t * __fastcall PLAYERSAVE_ByteArrayToHexString(uint8_t * pParam, uint8_t * pbParam, int32_t nLength) {
-    uint8_t* pBytesCursor = pbParam;
     if (nLength <= 0) {
       return nullptr;
     }
@@ -809,13 +806,11 @@ uint8_t * __fastcall PLAYERSAVE_ByteArrayToHexString(uint8_t * pParam, uint8_t *
     *pParam = 0x30;
     pParam[1] = 0x78;
     uint8_t* pOutCursor = pParam + 2;
-    uint8_t* pbSrcCursor = pbParam;
     do {
-      PLAYERSAVE_ByteToHexChar(pOutCursor, (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pbParam >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)*pbSrcCursor));
+      PLAYERSAVE_ByteToHexChar(pOutCursor, *pbParam);
       pOutCursor += 2;
-      pbSrcCursor++;
+      pbParam++;
       nLength--;
-      pbParam = pBytesCursor;
     } while (nLength);
 
     *pOutCursor = 0;
@@ -1278,10 +1273,10 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       if (wDifficultyBits < 8 && pGameCopy->nDifficulty > 1) {
         return 0x12;
       }
-      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && (uint8_t)pGameCopy->nDifficulty > 0) {
+      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
-      if (wDifficultyBits < 4 && (uint8_t)pGameCopy->nDifficulty > 0) {
+      if (wDifficultyBits < 4 && pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
 
@@ -1614,7 +1609,7 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
         pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-        pItemUnknownStructure->nStorageType = (char)dwReadValue;
+        pItemUnknownStructure->nStorageType = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
         pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
@@ -1686,7 +1681,7 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
     pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-    pItemUnknownStructure->nStorageType = (char)dwReadValue;
+    pItemUnknownStructure->nStorageType = (uint8_t)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
     pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
     nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
@@ -2207,7 +2202,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
       }
     } else {
       uint32_t* puVar1;
-      if (nParam2) {
+      if (nParam2 >= 1) {
         if ((char)*pnParam == '\0') {
           *pnParam2 = (uint32_t*)0x1;
           return 0;
@@ -2229,8 +2224,8 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
           }
 
           *(short int*)((int)puVar2 + 10) += pHirelingTxt->nNameFirst;
-          if (*(uint16_t*)((int)puVar2 + 10) > (uint16_t)pHirelingTxt->nNameLast) {
-            *(short int*)((int)puVar2 + 10) = pHirelingTxt->nNameFirst;
+          if (*(uint16_t*)((int)puVar2 + 10) > pHirelingTxt->nNameLast) {
+            *(uint16_t*)((int)puVar2 + 10) = pHirelingTxt->nNameFirst;
           }
 
           pMercUnit = UNIT::SUNITNPC::CreateMerc(pGame, pUnit, *(uint16_t*)((int)puVar2 + 10), *(uint32_t*)((int)puVar2 + 6), (uint16_t)puVar2[3], pHirelingTxt->classId, nReplaceFlag);
@@ -2391,7 +2386,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
 
     __frame0.pClientOrig = pClient;
     __frame1.pGameLocal = pGame;
-    int nLoadResult = _oldSaveGameLoadingPart(pGame, pClient, (int*)pSavefile, &__frame1.pSavedMana, (uint32_t*)&__frame0.nSavedHp, &nSavefileSize, &nSkillMin, &nSkillMax, (uint32_t*)&rightSkill, (uint32_t*)&leftSkill, (uint32_t*)&ppUnit);
+    int nLoadResult = _oldSaveGameLoadingPart(pGame, pClient, (int*)pSavefile, &__frame1.pSavedMana, (uint32_t*)&__frame0.nSavedHp, &nSavefileSize, &nSkillMin, &nSkillMax, &rightSkill, &leftSkill, (uint32_t*)&ppUnit);
     D2UnitStrc* pUnit = __frame1.pSavedMana;
     if (nLoadResult) {
       return nLoadResult;

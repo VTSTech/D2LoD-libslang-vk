@@ -951,6 +951,7 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 12, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint32_t extraout_var;
     uint32_t nXEnd;
     int32_t nStrLen;
     nStrLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszText);
@@ -991,9 +992,9 @@ void __fastcall D2WINFONT_DrawTextWithProgressBar(uint16_t * wszText, uint32_t n
     if (nProgressPercent) {
       DWORD dwColor;
       dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)__frame0.nTextHeight >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
-      if (gcTooltipBarColor == '\0') {
-        dwColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x50, 0, 0);
-        gcTooltipBarColor = (char)dwColor;
+      if (!gcTooltipBarColor) {
+        gcTooltipBarColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x50, 0, 0);
+        dwColor = (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
       }
 
       nFilledWidth = nWidth * nProgressPercent >> 7;
@@ -1396,6 +1397,7 @@ void __stdcall Draw_UnitNameUnderCursor() {
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 20, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t nDrawX;
+    uint32_t extraout_var;
     int nFilledWidth;
     int nWidth;
     int32_t pSavedFont = gnLastUsedFontId;
@@ -1456,9 +1458,9 @@ void __stdcall Draw_UnitNameUnderCursor() {
     if (DisplayedTooltip.nLoadProgress) {
       DWORD dwColor;
       dwColor = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nBarTextHeight >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
-      if (gcTooltipBarColor == '\0') {
-        dwColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x50, 0, 0);
-        gcTooltipBarColor = (char)dwColor;
+      if (!gcTooltipBarColor) {
+        gcTooltipBarColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x50, 0, 0);
+        dwColor = (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)gcTooltipBarColor);
       }
 
       nFilledWidth = DisplayedTooltip.nLoadProgress * nWidth >> 7;

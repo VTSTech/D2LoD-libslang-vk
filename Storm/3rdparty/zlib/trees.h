@@ -27,7 +27,6 @@ namespace Storm::_3rdparty::zlib::trees {
 
 // Function declarations
 void tr_static_init();
-void __fastcall init_block(deflate_state * pDeflateState);
 uint32_t __fastcall _tr_tally(deflate_state * pDeflateState, int32_t nDist, int32_t nLc);
 uint32_t __fastcall bi_reverse(uint32_t nCode, int nLen);
 void bi_windup(deflate_state * pDeflateState);
@@ -36,6 +35,6 @@ void __fastcall _tr_stored_block(deflate_state * pDeflateState, char * pbBuf, ui
 void __fastcall _tr_flush_bits(deflate_state * pDeflateState);
 void __fastcall _tr_align(deflate_state * pDeflateState);
 void __fastcall _tr_flush_block(deflate_state * pDeflateState, char * pbBuf, uint32_t nStoredLen, int32_t nLast);
-// 12 internal functions (defined in .cpp)
+// 13 internal functions (defined in .cpp)
 
 } // namespace Storm::_3rdparty::zlib::trees

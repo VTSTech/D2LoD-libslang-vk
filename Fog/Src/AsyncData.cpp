@@ -87,7 +87,7 @@ void __stdcall STRUCT_FreeAsyncData() {
       D2AsyncDataStrc* pMemoryToFree;
       nIndex = 0;
       pMemoryToFree = pD2AsyncDataStrc;
-      if (gnAsyncDataHandleBufferSize) {
+      if (gnAsyncDataHandleBufferSize > 0) {
         do {
           pSlot = (void*)((uintptr_t)&pMemoryToFree->aSlots[0].hEvent + nSlotOffset);
           if (pSlot && *(HANDLE*)pSlot) {
@@ -143,6 +143,8 @@ void __fastcall ASYNCDATA_CancelAndCleanup(D2AsyncData_Line0x128 * pAsyncData) {
 }
 
 D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
+    DWORD dwWaitResult;
+    HANDLE hEvent;
     D2AsyncDataSlotStrc* pCandidateSlot;
     int nByteOffset = 0;
     if (!gbAsyncDataInitialized) {
@@ -151,7 +153,7 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
 
     uint32_t nSlotIndex = 0;
     D2AsyncDataSlotStrc* pSlot = pD2AsyncDataStrc->aSlots;
-    if (gnAsyncDataHandleBufferSize) {
+    if (gnAsyncDataHandleBufferSize > 0) {
       do {
         if (pSlot->bFree) {
           pSlot->bFree = 0;
@@ -165,7 +167,6 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
 
     nSlotIndex = 0;
     if (gnAsyncDataHandleBufferSize) {
-      DWORD dwWaitResult;
       do {
         pCandidateSlot = (D2AsyncDataSlotStrc*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset);
         /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ dwWaitResult = WaitForSingleObject(*(HANDLE*)((uintptr_t)&pD2AsyncDataStrc->aSlots[0].hEvent + nByteOffset), 0);
@@ -179,16 +180,17 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
         nByteOffset += 0xc;
       } while (nSlotIndex < gnAsyncDataHandleBufferSize);
     }
-    if (gnAsyncDataHandleBufferSize >= 0x400) {
-      return nullptr;
+    if (gnAsyncDataHandleBufferSize < 0x400) {
+      D2AsyncDataSlotStrc* pDVar1;
+      /* LPCSTR lpName for CreateEventA */ /* BOOL bInitialState for CreateEventA */ /* BOOL bManualReset for CreateEventA */ /* LPSECURITY_ATTRIBUTES lpEventAttributes for CreateEventA */ pDVar1 = pD2AsyncDataStrc->aSlots + gnAsyncDataHandleBufferSize;
+      gnAsyncDataHandleBufferSize++;
+      hEvent = CreateEventA((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCSTR)0x0);
+      pDVar1->hEvent = hEvent;
+      pDVar1->bFree = 0;
+      return pDVar1;
     }
 
-    D2AsyncDataSlotStrc* pDVar1 = pD2AsyncDataStrc->aSlots + gnAsyncDataHandleBufferSize;
-    gnAsyncDataHandleBufferSize++;
-    HANDLE hEvent = CreateEventA((LPSECURITY_ATTRIBUTES)0x0, 1, 0, (LPCSTR)0x0);
-    pDVar1->hEvent = hEvent;
-    pDVar1->bFree = 0;
-    return pDVar1;
+    return nullptr;
 }
 
 D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManagerStrc * pMemory, char * szText1, int32_t bAsync, uint32_t nFileOffset, size_t nReadSize, void * pReadBuffer, D2AsyncDataCallbackStrc * pCallback, int nPriority, char * szText2, int32_t nParam) {
@@ -214,16 +216,16 @@ D2AsyncData_Line0x128 * __fastcall STRUCT_AllocAsyncData_Line0x128(D2PoolManager
           exit(-1);
         }
       }
-      if ((int)nReadSize < 1) {
+      if ((int)nReadSize <= 0) {
         nReadSize = Source::SFile::ERRORMANAGER_FGetFileSize(pAsyncData->pFile, (LPDWORD)0x0);
       }
 
       pAsyncData->nReadSize = nReadSize;
-      if (!pReadBuffer) {
+      if (pReadBuffer) {
+        pAsyncData->nFlags &= -3;
+      } else {
         pReadBuffer = Memory::Alloc(pMemory, pAsyncData->nReadSize, szText2, nParam);
         pAsyncData->nFlags |= 2;
-      } else {
-        pAsyncData->nFlags &= -3;
       }
 
       pAsyncData->pReadBuffer = pReadBuffer;
@@ -307,15 +309,10 @@ void __fastcall ASYNCDATA_SetPriority(D2AsyncData_Line0x128 * pAsyncData, int nP
     if ((nFlags & -16) != 0x41737960) {
       ASYNCDATA_HaltSetPriorityAtLine(0x1db);
     }
-    if (0 < nPriority) {
+    if (nPriority > 0) {
       ASYNCDATA_HaltSetPriorityAtLine(0x1dc);
     }
-    if (gnAsyncDataPriorityDeferDepth < 1) {
-      if (nPriority != pAsyncData->nPriority) {
-        pAsyncData->nPriority = nPriority;
-        Storm::Source::SFile::SFILE_SetRequestPriorityByBuffer(pAsyncData->pReadBuffer, nPriority);
-      }
-    } else {
+    if (gnAsyncDataPriorityDeferDepth > 0) {
       if (!(nFlags & 8)) {
         pAsyncData->nPriorityBeforeDefer = pAsyncData->nPriority;
         pAsyncData->nPriority = nPriority;
@@ -324,9 +321,14 @@ void __fastcall ASYNCDATA_SetPriority(D2AsyncData_Line0x128 * pAsyncData, int nP
         gpAsyncDataDeferredList = pAsyncData;
         return;
       }
-      if (pAsyncData->nPriority < nPriority) {
+      if (nPriority > pAsyncData->nPriority) {
         pAsyncData->nPriority = nPriority;
         return;
+      }
+    } else {
+      if (nPriority != pAsyncData->nPriority) {
+        pAsyncData->nPriority = nPriority;
+        Storm::Source::SFile::SFILE_SetRequestPriorityByBuffer(pAsyncData->pReadBuffer, nPriority);
       }
     }
 }
@@ -384,7 +386,10 @@ void __fastcall ASYNCDATA_WaitForCompletion(D2AsyncData_Line0x128 * pAsyncData) 
     if (!pAsyncData) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x232);
       exit(-1);
-    } else if ((pAsyncData->nFlags & 0xfffffff0U) == 0x41737960) {
+    } else if ((pAsyncData->nFlags & 0xfffffff0U) != 0x41737960) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x233);
+      exit(-1);
+    } else {
       bIsComplete = ASYNCDATA_IsComplete(pAsyncData);
       if (bIsComplete) {
         return;
@@ -399,9 +404,6 @@ void __fastcall ASYNCDATA_WaitForCompletion(D2AsyncData_Line0x128 * pAsyncData) 
 
       ASYNCDATA_CancelAndCleanup(pAsyncData);
       return;
-    } else {
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x233);
-      exit(-1);
     }
 }
 
@@ -409,7 +411,10 @@ void * __fastcall ASYNCDATA_GetResult(D2AsyncData_Line0x128 * pAsyncData) {
     if (!pAsyncData) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x25f);
       exit(-1);
-    } else if ((pAsyncData->nFlags & 0xfffffff0U) == 0x41737960) {
+    } else if ((pAsyncData->nFlags & 0xfffffff0U) != 0x41737960) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x260);
+      exit(-1);
+    } else {
       if (!(pAsyncData->nFlags & 1U)) {
         ASYNCDATA_WaitForCompletion(pAsyncData);
       }
@@ -419,9 +424,6 @@ void * __fastcall ASYNCDATA_GetResult(D2AsyncData_Line0x128 * pAsyncData) {
       }
 
       return pAsyncData->pReadBuffer;
-    } else {
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x260);
-      exit(-1);
     }
 }
 
@@ -446,7 +448,10 @@ void __thiscall ASYNCDATA_SetResult(D2AsyncData_Line0x128 * pAsyncData, void * p
     if (!pAsyncData) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x27e);
       exit(-1);
-    } else if ((pAsyncData->nFlags & 0xfffffff0U) == 0x41737960) {
+    } else if ((pAsyncData->nFlags & 0xfffffff0U) != 0x41737960) {
+      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x27f);
+      exit(-1);
+    } else {
       if (!(pAsyncData->nFlags & 1U)) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x281);
         exit(-1);
@@ -456,9 +461,6 @@ void __thiscall ASYNCDATA_SetResult(D2AsyncData_Line0x128 * pAsyncData, void * p
       pAsyncData->pReadBuffer = pNewBuffer;
       pAsyncData->nReadSize = nNewSize;
       return;
-    } else {
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x27f);
-      exit(-1);
     }
 }
 
