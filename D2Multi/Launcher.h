@@ -10,7 +10,6 @@
 
 // Forward declarations
 struct D2IniConfigStrc;
-struct D2WinTextBox;
 #ifndef RECON_FPTD_fnAppModeRun
 #define RECON_FPTD_fnAppModeRun
 typedef int32_t (__fastcall *fnAppModeRun)(struct D2IniConfigStrc * pD2IniConfig);
@@ -45,7 +44,6 @@ int __stdcall isServerDown();
 void LAUNCHER_AllocCharSelectComponent(int32_t pCharInfo);
 void __stdcall UIMENU_CantTestItBeacuseItCrash();
 void __stdcall CHATDLG_DestroyAllForms();
-void __stdcall CHATDLG_AddMultiLineText(::D2WinTextBox * pTextBox, int32_t bAddBlankLine, char * szText, int32_t nColor);
 // 1 internal function (defined in .cpp)
 
 } // namespace D2Multi::Launcher

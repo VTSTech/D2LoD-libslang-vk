@@ -3,11 +3,10 @@
 #include "D2Client/UI/Help.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/ui.h"
 #include "D2Lang/StrTable/strtable.h"
@@ -128,7 +127,7 @@ void __stdcall DrawBorderXpac() {
 // the copy DRAW_UI calls. The _B suffix is a disambiguator, not a claim about behaviour.
 void __stdcall HELP_DrawDarkOverlay_B() {
     Party::SetRedToBlack();
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(0, 0, ScreenSizeX, ScreenSizeY - 0x31, (uint32_t)nColor.rgbBlue, DRAW_TRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(0, 0, ScreenSizeX, ScreenSizeY - 0x31, (uint32_t)nColor.rgbBlue, DRAW_TRANSPARENT);
 }
 
 void __stdcall DrawYellowBullet() {
@@ -239,7 +238,7 @@ void __stdcall DrawSellBtn() {
 
 void __stdcall HELP_DrawDarkOverlay() {
     Party::SetRedToBlack();
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(0, 0, ScreenSizeX, ScreenSizeY - 0x31, (uint32_t)nColor.rgbBlue, DRAW_TRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(0, 0, ScreenSizeX, ScreenSizeY - 0x31, (uint32_t)nColor.rgbBlue, DRAW_TRANSPARENT);
 }
 
 void __stdcall FreeHelpBorder() {
@@ -287,7 +286,7 @@ void __stdcall HELP_HideMiniPanel() {
       return;
     }
 
-    Draw::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
+    ui::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
     gbMiniPanel = 0;
 }
 
@@ -367,7 +366,7 @@ void __stdcall HELP_DrawHelpButton() {
                   return;
                 }
 
-                Draw::SetUIFlag(UI_HELPSCREENBTN, UI_RESET, 0);
+                ui::SetUIFlag(UI_HELPSCREENBTN, UI_RESET, 0);
                 return;
               }
             }
@@ -415,8 +414,8 @@ void __stdcall INPUT_HelpScrollButtonUp(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    Draw::SetUIFlag(UI_HELPSCREENBTN, UI_RESET, 0);
-    Draw::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
+    ui::SetUIFlag(UI_HELPSCREENBTN, UI_RESET, 0);
+    ui::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
     bSeenHelpMenu = 1;
     Storm::Source::SReg::SRegSaveValue("Diablo II", "Help Menu", 1, 1);
     gpHelpScrollButtonDown = 0;
@@ -887,7 +886,7 @@ void __stdcall DRAW_UI_HelpClassic() {
 void __stdcall DrawBackgroundHelpMenu() {
     BOOL bMiniPanelShown = ui::GetUIFlag(UI_MINIPANEL);
     if (!bMiniPanelShown) {
-      Draw::SetUIFlag(UI_MINIPANEL, UI_SET, 0);
+      ui::SetUIFlag(UI_MINIPANEL, UI_SET, 0);
       gbMiniPanel = 1;
     }
 
@@ -922,7 +921,7 @@ void __stdcall INPUT_HelpCloseButtonUp(D2UIMouseMsgStrc * pMsg) {
         nRelX -= 0x20d;
       }
       if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18) <= 0x20) {
-        Draw::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
+        ui::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
         HELP_HideMiniPanel();
         goto consume_click;
       }
@@ -938,12 +937,12 @@ void __stdcall INPUT_HelpCloseButtonUp(D2UIMouseMsgStrc * pMsg) {
 
 void __fastcall HELP_SetUIVarW(eD2UIvars eUIVar, eD2UIvarsSetType eUIVarSetType, uint32_t dwArg1) {
     DWORD dwUnused;
-    Draw::SetUIFlag(eUIVar, eUIVarSetType, dwUnused);
+    ui::SetUIFlag(eUIVar, eUIVarSetType, dwUnused);
     if (!gbMiniPanel) {
       return;
     }
 
-    Draw::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
+    ui::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
     gbMiniPanel = 0;
 }
 

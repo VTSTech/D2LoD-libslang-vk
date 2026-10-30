@@ -7,11 +7,10 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/D2UiPartyStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Roster.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Player.h"
@@ -20,10 +19,10 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -42,7 +41,6 @@
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "D2Common/Drlg/Drlg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -471,7 +469,7 @@ void __stdcall UI_DrawPartyButtons(D2UiPartyStrc * pUiParty) {
         if ((int)nResult < 9 || bShowRedBox) {
           nColor_lcl = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
           cRed = (uint8_t)nColor_lcl;
-          Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(pButton[-1] + gnPanelOffsetX, *pButton - gnPanelOffsetY - 0x13, 0x14, 0x14, nColor_lcl, DRAW_TRANSPARENT);
+          Engine::Gfx::D2GFX_DrawSolidRectExBySize(pButton[-1] + gnPanelOffsetX, *pButton - gnPanelOffsetY - 0x13, 0x14, 0x14, nColor_lcl, DRAW_TRANSPARENT);
         }
       }
       pButton += 8;
@@ -622,7 +620,7 @@ static void __stdcall ShowToolTipOnPartyButtons(int16_t nLocaleIdLine1, int16_t 
       nWidth2 = nWidth1;
     }
 
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(gnPanelOffsetX - nWidth2 / 2 - 5 + nOffsetX, nBoxY - gnPanelOffsetY, nWidth2 + 10, nSizeY, (uint32_t)cRed, DRAW_LESSTRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(gnPanelOffsetX - nWidth2 / 2 - 5 + nOffsetX, nBoxY - gnPanelOffsetY, nWidth2 + 10, nSizeY, (uint32_t)cRed, DRAW_LESSTRANSPARENT);
 }
 
 void __stdcall DRAW_UI_PartyWindow_II() {
@@ -890,7 +888,7 @@ static void ROSTER_DrawPlayerTooltip(D2RosterStrc * pRoster) {
       bOutHostile = nPixelWidth1 + 10;
     }
 
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(gnPanelOffsetX + 0x24, 0x23 - gnPanelOffsetY, bOutHostile, nBoxHeight, (uint32_t)cRed, DRAW_LESSTRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(gnPanelOffsetX + 0x24, 0x23 - gnPanelOffsetY, bOutHostile, nBoxHeight, (uint32_t)cRed, DRAW_LESSTRANSPARENT);
     D2Win::Src::D2WinFont::DRAW_text(wszLine1, gnPanelOffsetX + 0x29, 0x32 - gnPanelOffsetY, nColorLine1, 0);
     D2Win::Src::D2WinFont::DRAW_text(wszLine2, gnPanelOffsetX + 0x29, 0x41 - gnPanelOffsetY, nColorLine2, 0);
 }
@@ -1453,7 +1451,7 @@ void __stdcall INPUT_PartyScreenMouseUp(D2UIMouseMsgStrc * pMsg) {
         GAME::Roster::LeaveParty();
       }
     } else {
-      Draw::SetUIFlag(UI_PARTYSCREEN, UI_RESET, 0);
+      ui::SetUIFlag(UI_PARTYSCREEN, UI_RESET, 0);
     }
 
     clear_queued_clicks_and_consume:

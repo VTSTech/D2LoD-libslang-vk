@@ -9,12 +9,12 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/GAME/Clients.h"
@@ -31,7 +31,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -75,18 +74,27 @@ void __fastcall ChangeGoldForPlayer(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, i
     }
     if (pUnit->eUnitType == UNIT_PLAYER) {
       uint32_t nGoldLimit;
-      if (eUnitStat == UNITSTAT_gold) {
-        nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
-        if ((int)nGoldLimit < nCurrentGold) {
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_gold, 0, 0);
-          return;
-        }
-      } else if (eUnitStat == UNITSTAT_goldbank) {
-        nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit);
-        if ((int)nGoldLimit < nCurrentGold) {
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_goldbank, 0, 0);
-          return;
-        }
+      switch (eUnitStat) {
+        case UNITSTAT_gold:
+          {
+            nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
+            if (nCurrentGold > (int)nGoldLimit) {
+              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_gold, 0, 0);
+              return;
+            }
+
+            break;
+          }
+        case UNITSTAT_goldbank:
+          {
+            nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit);
+            if (nCurrentGold > (int)nGoldLimit) {
+              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_goldbank, 0, 0);
+              return;
+            }
+
+            break;
+          }
       }
     }
 
@@ -99,7 +107,10 @@ void __fastcall AllocPartyControl(::SGAMEDATA * pGame) {
     if (!pGame) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x18);
       exit(-1);
-    } else if (!pGame->pPartyControl) {
+    } else if (pGame->pPartyControl) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
+      exit(-1);
+    } else {
       pPartyControl = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControl, ".\\UNIT\\Party.cpp", 0x1a);
       if (!pPartyControl) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b);
@@ -111,9 +122,6 @@ void __fastcall AllocPartyControl(::SGAMEDATA * pGame) {
       pPartyControl->nPartyId = 3;
       pGame->pPartyControl = pPartyControl;
       return;
-    } else {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19);
-      exit(-1);
     }
 }
 
@@ -212,7 +220,6 @@ int16_t __fastcall AllocPartyControlSub0x4(::SGAMEDATA * pGame) {
 
 // @sourcefile .\UNIT\Party.cpp
 static void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyControlSub, ::SGAMEDATA * pGame) {
-    int32_t nLine;
     D2UnitPartyControlSubSub* pNextSubSub;
     D2UnitPartyControlSubSub* pSub;
     if (pPartyControlSub) {
@@ -236,11 +243,12 @@ static void __stdcall PARTY_FreePartyMembers(D2UnitPartyControlSub * pPartyContr
         pSub = pNextSubSub;
       }
 
-      nLine = 0x9a;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9a);
+      exit(-1);
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x95);
+      exit(-1);
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 // Removes a party sub-record matching nPartyId from the game's party control linked list and frees its members. Walks the pSub chain, unlinks the matching entry by patching the predecessor's pPrev pointer (or updating pPartyControl->pSub for the head), then calls PARTY_FreePartyMembers. Halts with an internal error if pPartyControl is null.
@@ -332,7 +340,8 @@ int __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2Unit
     D2UnitPartyControlSub* pFoundSub;
     int32_t nUnitGUID;
     if (!pGame->pPartyControl) {
-      nLine = 0xd2;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd2);
+      exit(-1);
     } else {
       BOOL bAlreadyInParty;
       for (pFoundSub = pGame->pPartyControl->pSub; pFoundSub; pFoundSub = pFoundSub->pPrev) {
@@ -348,38 +357,42 @@ int __stdcall PARTY_AddUnitToParty(::SGAMEDATA * pGame, int16_t nPartyId, D2Unit
       } else {
         nUnitGUID = pUnit->nUnitGUID;
       }
-      if (!pFoundSub) {
-        nLine = 0xfe;
-      } else if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
-        nLine = 0xff;
-      } else {
-        bAlreadyInParty = CheckUnitGUIDInAllPartyControlSubs(nUnitGUID, pFoundSub);
-        if (bAlreadyInParty) {
-          return 1;
-        }
-
-        pNewSubSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControlSubSub, ".\\UNIT\\Party.cpp", 0x108);
-        if (pNewSubSub) {
-          pNewSubSub->pNext = 0;
-          pNewSubSub->nUnitGUID = nUnitGUID;
-          pNewSubSub->pNext = pFoundSub->pSub;
-          pFoundSub->pSub = pNewSubSub;
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(pGame, pUnit);
-          for (pNewSubSub = pNewSubSub->pNext; pNewSubSub; pNewSubSub = pNewSubSub->pNext) {
-            pExistingMember = SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, pNewSubSub->nUnitGUID);
-            if (pExistingMember) {
-              PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pUnit, pExistingMember);
-              PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pExistingMember, pUnit);
-            }
+      if (pFoundSub) {
+        if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xff);
+          exit(-1);
+        } else {
+          bAlreadyInParty = CheckUnitGUIDInAllPartyControlSubs(nUnitGUID, pFoundSub);
+          if (bAlreadyInParty) {
+            return 1;
           }
 
-          return 1;
+          pNewSubSub = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitPartyControlSubSub, ".\\UNIT\\Party.cpp", 0x108);
+          if (pNewSubSub) {
+            pNewSubSub->pNext = 0;
+            pNewSubSub->nUnitGUID = nUnitGUID;
+            pNewSubSub->pNext = pFoundSub->pSub;
+            pFoundSub->pSub = pNewSubSub;
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(pGame, pUnit);
+            for (pNewSubSub = pNewSubSub->pNext; pNewSubSub; pNewSubSub = pNewSubSub->pNext) {
+              pExistingMember = SUnit::FindUnitFromTable(pGame, UNIT_PLAYER, pNewSubSub->nUnitGUID);
+              if (pExistingMember) {
+                PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pUnit, pExistingMember);
+                PLAYER::PlayerScreen::PARTYSCREEN_ClearHostileRelation(pGame, pExistingMember, pUnit);
+              }
+            }
+
+            return 1;
+          } else {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x109);
+            exit(-1);
+          }
         }
+      } else {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfe);
+        exit(-1);
       }
     }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
-    exit(-1);
 }
 
 int32_t __fastcall CountPartyControlSubSize(::SGAMEDATA * pGame, int16_t nPartyId) {
@@ -479,8 +492,8 @@ void __fastcall FindUnitWithFilter(::SGAMEDATA * pGame, D2UnitStrc * pUnit, pfnP
     }
 
     eD2LevelId dwLevelNo = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom1);
-    int16_t nPartyId = SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       (*fpFilter)(pGame, pUnit, pDataForFunction);
       return;
     }
@@ -510,7 +523,7 @@ static void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnParam1, int *
     int nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
     *pnParam2 = 0;
     *pnParam1 = nParam;
-    if ((int)nGoldLimit >= nCurrentGold + nParam) {
+    if (!(nCurrentGold + nParam > (int)nGoldLimit)) {
       return;
     }
 
@@ -522,8 +535,8 @@ static void __stdcall GoldCalculations(D2UnitStrc * pUnit, int * pnParam1, int *
 void __fastcall BroadcastAutomapAllyPartyInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2UnitPartyControlSubSub* pSubSub;
     D2ClientStrc* pClient = SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\Party.cpp", 0x24f);
-    int16_t nPartyId = SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return;
     }
 
@@ -553,29 +566,29 @@ int16_t __fastcall GetPartyIdFromUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     if (pUnit->pInventory) {
       nSearchGUID = D2Common::INVENTORY::Inventory::INVENTORY_GetCursorItemGUID(pUnit->pInventory);
     }
-    if (pUnit->eUnitType == UNIT_PLAYER) {
-      D2UnitPartyControlSub* pSub;
-      if (!pGame) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
-        exit(-1);
-      }
-      if (!pGame->pPartyControl) {
-        return -1;
-      }
-
-      for (pSub = pGame->pPartyControl->pSub; pSub; pSub = pSub->pPrev) {
-        for (pSubSub = pSub->pSub; pSubSub; pSubSub = pSubSub->pNext) {
-          if (pSubSub->nUnitGUID == nSearchGUID) {
-            return pSub->nPartyId;
-          }
-        }
-      }
-
-      return -1;
-    } else {
+    if (pUnit->eUnitType != UNIT_PLAYER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27b);
       exit(-1);
     }
+
+    D2UnitPartyControlSub* pSub;
+    if (!pGame) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x27c);
+      exit(-1);
+    }
+    if (!pGame->pPartyControl) {
+      return -1;
+    }
+
+    for (pSub = pGame->pPartyControl->pSub; pSub; pSub = pSub->pPrev) {
+      for (pSubSub = pSub->pSub; pSubSub; pSubSub = pSubSub->pNext) {
+        if (pSubSub->nUnitGUID == nSearchGUID) {
+          return pSub->nPartyId;
+        }
+      }
+    }
+
+    return -1;
 }
 
 // Removes a player unit from its current party. Looks up the unit's party ID, finds the D2UnitPartyControlSub, then walks the linked list of D2UnitPartyControlSubSub entries to find and unlink the matching GUID node. Broadcasts updated party info to all players via SendAllPlayersPartyInfo and sends packet 0x8D (AssignPlayerToParty) to notify the client. Frees the node from the server memory pool. If the party drops below 2 members, calls PARTY_DisbandParty. Halts on null-unit or missing party sub (error lines 0x130/0x138).
@@ -626,7 +639,7 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
         }
 
         iVar1 = CountPartyControlSubSize(pGame, nPartyId);
-        if (iVar1 >= 2) {
+        if (iVar1 > 1) {
           return;
         }
 
@@ -641,8 +654,8 @@ void __fastcall PARTY_RemoveUnitFromParty(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
 uint32_t __fastcall GetPartiedUnitsLevelSum(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nLevelSum = 0;
-    int16_t nPartyId = SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       uint32_t nLevel;
       nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
       return nLevel;
@@ -674,12 +687,12 @@ DWORD __fastcall PARTY_SplitGoldToPartyMembers(::SGAMEDATA * pGame, D2UnitStrc *
     D2UnitPartyControlSubSub* pSubSub;
     DWORD nAlivePartyMembers = 0;
     FindUnitWithFilter(pGame, pUnit, (pfnPartyMemberFilter)CountModeZero, &nAlivePartyMembers);
-    if ((int)nAlivePartyMembers < 2) {
+    if ((int)nAlivePartyMembers <= 1) {
       nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
       nGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
       nAlivePartyMembers = 0;
       nShare = nAmount;
-      if ((int)nGoldLimit < nGold + nAmount) {
+      if (nGold + nAmount > (int)nGoldLimit) {
         nShare = nGoldLimit - nGold;
         nAlivePartyMembers = nAmount - nShare;
       }
@@ -694,14 +707,14 @@ DWORD __fastcall PARTY_SplitGoldToPartyMembers(::SGAMEDATA * pGame, D2UnitStrc *
         return nAlivePartyMembers;
       }
     } else {
-      int16_t nPartyId;
+      uint16_t nPartyId;
       nPartyId = SUnit::GetPartyId(pUnit);
       pPartyControl = FindPartyControlSub(pGame, nPartyId);
       if (!pPartyControl) {
         nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit);
         nGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
         nAlivePartyMembers = 0;
-        if ((int)nGoldLimit < nGold + nAmount) {
+        if (nGold + nAmount > (int)nGoldLimit) {
           ChangeGoldForPlayer(pUnit, UNITSTAT_gold, nGoldLimit - nGold);
           return nAmount - (nGoldLimit - nGold);
         }
@@ -740,7 +753,7 @@ DWORD __fastcall PARTY_SplitGoldToPartyMembers(::SGAMEDATA * pGame, D2UnitStrc *
       nCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
       nAlivePartyMembers = 0;
       nGold = nAmount;
-      if ((int)nGoldLimit < nCurrentGold + nAmount) {
+      if (nCurrentGold + nAmount > (int)nGoldLimit) {
         nGold = nGoldLimit - nCurrentGold;
         nAlivePartyMembers = nAmount - nGold;
       }

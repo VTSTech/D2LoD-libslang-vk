@@ -13,8 +13,7 @@
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
@@ -25,13 +24,13 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -50,7 +49,7 @@
 #include "globals/globals.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillSor.h"
 
@@ -354,7 +353,7 @@ void __stdcall LOADER_FreePopupImages() {
       IMG_okcancelbtn = 0;
     }
 
-    UI::Draw::PALETTE_LoadLoadingScreenPalette();
+    UI::ui::PALETTE_LoadLoadingScreenPalette();
 }
 
 void __fastcall LOADER_SetConnectionLostFlag(BOOL bConnectionLost) {

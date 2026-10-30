@@ -48,7 +48,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Draw.h"
@@ -455,9 +455,9 @@ void __fastcall ESCMENU_ShowVanillaPlusOptions(D2EscMenuItemStrc * pItem, D2UIMo
     (void)pMsg;
     // ESCMENU_ShowControlConfig's body, with our flag in UI_CONFIG's place.
     if (ui::GetUIFlag(UI_ESCMENU)) {
-        Draw::SetUIFlag(UI_ESCMENU, UI_RESET, 0);
+        ui::SetUIFlag(UI_ESCMENU, UI_RESET, 0);
     }
-    Draw::SetUIFlag(UI_VANILLAPLUS, UI_SET, 0);
+    ui::SetUIFlag(UI_VANILLAPLUS, UI_SET, 0);
 }
 
 // ===== page: back + toggles ==================================================
@@ -465,7 +465,7 @@ void __fastcall ESCMENU_ShowVanillaPlusOptions(D2EscMenuItemStrc * pItem, D2UIMo
 static void VANILLAPLUS_BackToOptionsMenu() {
     // INPUT_ConfigCancel's shape (minus the key-binding revert): close the
     // page, re-open the Esc menu on the Options table.
-    Draw::SetUIFlag(UI_VANILLAPLUS, UI_RESET, 0);
+    ui::SetUIFlag(UI_VANILLAPLUS, UI_RESET, 0);
     EscMenu::ESCMENU_ShowMenu(0, 1);
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
 }
@@ -559,7 +559,7 @@ void __stdcall DRAW_VanillaPlusOptions() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(VPPAGE_FONT_ID);
 
     // Panel: the ControlConfig box geometry, so the page reads as a sibling.
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX, nBoxY, VPPAGE_BOX_WIDTH, VPPAGE_BOX_HEIGHT, 0, DRAW_TRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(nBoxX, nBoxY, VPPAGE_BOX_WIDTH, VPPAGE_BOX_HEIGHT, 0, DRAW_TRANSPARENT);
     RECT sFrame;
     sFrame.left = nBoxX;
     sFrame.right = nBoxX + VPPAGE_BOX_WIDTH - 3;
@@ -579,7 +579,7 @@ void __stdcall DRAW_VanillaPlusOptions() {
     for (int i = 0; i < VPP_ROW_COUNT; i++) {
         int nRowY = VPPAGE_RowTopY(i);
         if (nHover == i) {
-            Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nRowY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
+            Engine::Gfx::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nRowY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
         }
         int nBaselineY = nRowY + VPPAGE_ROW_HEIGHT - VPPAGE_TEXT_BASELINE_INSET;
         D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gaVanillaPlusRows[i].wszLabel, nBoxX + 0x1e, nBaselineY, 0, 0);
@@ -589,7 +589,7 @@ void __stdcall DRAW_VanillaPlusOptions() {
     // Previous Menu row (same highlight/click contract as the toggles).
     int nBackY = VPPAGE_RowTopY(VPP_ROW_BACK);
     if (nHover == VPP_ROW_BACK) {
-        Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nBackY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
+        Engine::Gfx::D2GFX_DrawSolidRectExBySize(nBoxX + 0x12, nBackY, VPPAGE_BOX_WIDTH - 0x24, VPPAGE_ROW_HEIGHT, 0, DRAW_TRANSPARENT);
     }
     VPPAGE_DrawCenteredText(L"Previous Menu", nBackY + VPPAGE_ROW_HEIGHT - VPPAGE_TEXT_BASELINE_INSET, 0);
 

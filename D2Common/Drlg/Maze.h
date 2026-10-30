@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "D2Common/Drlg/D2DrlgGridStrc.h"
 
 // Forward declarations
 struct D2DrlgLevelStrc;
@@ -14,16 +15,31 @@ struct D2DrlgReplaceRoomStrc;
 struct D2RoomExStrc;
 typedef int eDrlgDirection;
 
+// Data types
+struct __attribute__((packed)) D2DrlgRoomExDataMazeStrc {
+    /* 0x00 */ D2DrlgGridStrc pOrientationGrid; // Orientation/shadow grid for outdoor tiles
+    /* 0x14 */ D2DrlgGridStrc pWallGrid; // Wall grid for outdoor tiles
+    /* 0x28 */ D2DrlgGridStrc pFloorGrid; // Floor grid for outdoor tiles
+    /* 0x3C */ D2DrlgGridStrc pCellGrid; // Cell/shadow grid for outdoor tiles
+    /* 0x50 */ uint8_t * pVertex; // struct D2DrlgVertexStrc* - vertex linked list for path/border
+    /* 0x54 */ int dwFlags; // Outdoor room flags (bit 0x80 = border)
+    /* 0x58 */ int dwFlagsEx; // Extended outdoor room flags
+    /* 0x5C */ int field_5C; // Unknown
+    /* 0x60 */ int field_60; // Unknown
+    /* 0x64 */ int nSubType; // SubType from LevelDefs.txt
+    /* 0x68 */ int nSubTheme; // SubTheme from LevelDefs.txt
+    /* 0x6C */ int nSubThemePicked; // Random subtheme variant picked (0-31)
+};
+
 namespace D2Common::Drlg::Maze {
 
 // Function declarations
-// Selects the maze/preset .ds1 room file for a DRLG room based on its connectivity and level type. Walks the room's orth (connection) list to build a 4-bit direction bitmask (SE=1,SW=2,NW=4,NE=8), then maps that mask to a global preset index using the room's level-type: most level types add a fixed base offset to the mask, while special types (0xE,0xF,0x17,0x20,0x23) index gaMazePresetLookup/gaMazePresetLookupExt tables, with extra per-eD2LevelId overrides (e.g. specific Worldstone/Throne rooms). Writes the chosen preset index and variant into pRoomEx->pRoomExData[0]/[1] and sets a placement flag in [3]. Returns pRoomEx.
-struct D2RoomExStrc * __stdcall DRLGMAZE_PickRoomPreset(struct D2RoomExStrc * pRoomEx, int dwParam2);
+// Directly sets a room's preset ID and variant in pRoomExData. Writes nPresetId and nVariant (stack arg) to the room data, and sets or clears the 'has preset' flag based on bHasPreset (stack arg). Returns the room pointer. No callers found (dead code).
+void __stdcall DRLGMAZE_SetRoomPresetDirect(struct D2RoomExStrc * pRoomEx, int nPresetId, int32_t nVariant, int32_t bHasPreset);
 // Searches the room's preset list for a matching preset ID, then replaces it with the new values from the stack args. Returns the matching node or 0.
 int __stdcall DRLGMAZE_FindAndReplacePreset(int pCtx, int nPresetId, int nNewPresetId, int nNewArg1, int nEnableFlag);
 // Iterates every room in pRoomEx's level and, for eligible non-preset neighbor pairs that are adjacent but not already linked, rolls the neighbor's seed against LvlMazeTxt.Merge to decide whether to merge them. On a hit, allocates orthogonal link nodes between the two rooms and calls DRLGMAZE_PickRoomPreset on the neighbor.
 void __stdcall DRLGMAZE_PickRoomPresets(struct D2RoomExStrc * pRoomEx);
-struct D2RoomExStrc * __stdcall DRLGMAZE_AllocRoomExAndPickPreset(eDrlgDirection eDir, struct D2RoomExStrc * pSourceRoom, uint32_t argPresetIndex, uint32_t argVariant, int32_t argPickSource);
 // DRLGMAZE_AllocRoomAndPickPreset - Maze.cpp
 // Allocates a new RoomEx adjacent to the given room in the specified
 // direction by calling AllocateRoomEx. If allocation succeeds:
@@ -38,13 +54,12 @@ struct D2RoomExStrc * __stdcall DRLGMAZE_AllocRoomAndPickPreset(eDrlgDirection e
 struct D2RoomExStrc * __fastcall GetRandomRoomExFromLevel(struct D2DrlgLevelStrc * pLevel);
 // Core maze expansion loop: repeatedly picks a random non-preset room, advances its seed to choose a random direction, allocates and attempts to place a new adjacent room, links and registers it on success. Scales the target room count by difficulty and doubles or triples it for the Act 2 tombs. Runs until pLevel->nRoomExCount reaches the scaled target. The loop keeps pLevel in ECX across the GetRandomRoomExFromLevel call and its tail re-reads [ECX+8] without reloading, which is why that callee is typed __fastcall_ecxsafe.
 void __stdcall ActualLevelGeneration(struct D2DrlgLevelStrc * pLevel);
-// Iterates all rooms in pLevel and attempts to expand each non-skipped room in all 8 directions. For each successful expansion, allocates a new room with pDrlgLevelData dimensions, links it via DRLGROOMEX_AllocNodesForBothRoomEx, and marks its preset data with the 'has preset' flag. Frees the temp room pointer array after processing. Source: .\DRLG\Maze.cpp line 0x288.
-// @sourcefile .\DRLG\Maze.cpp
-void __stdcall DRLGMAZE_ExpandRoomsWithPresets(struct D2DrlgLevelStrc * pLevel, uint32_t argDefaultPresetId, struct D2RoomExStrc * argSkipRoom);
+// DRLG maze generator for an Act 1 Catacombs level: subdivides the level's initial room into preset sub-rooms. With the stack flag bIsCatacombsLevel4 set it always carves 4 sub-rooms (final layout tag 0x122); otherwise it advances the level seed and uses its parity to pick a 2-room layout variant (tag 0x121 or 0x120). For each new room it allocates a D2RoomExStrc, copies SizeX/SizeY from pDrlgLevelData, calls ReplaceRoomWithNewRoom, and on success allocates shared nodes, picks room presets, and adds the room to the level (freeing it on failure). Marks the start room's RoomExData with the chosen layout tag and flags. Takes pLevel in ECX.
+void __thiscall DRLGMAZE_ExpandCatacombsLevel(struct D2DrlgLevelStrc * pLevel, int32_t dwParam2);
 // Generates the Worldstone Keep or Tal Rasha's Tombs special rooms within a maze-type DRLG level. Iterates 3 times, allocating a new RoomEx per iteration and attempting to splice it into the level via ReplaceRoomWithNewRoom at a seed-derived roll position (0-3). Successful placements get nodes allocated and presets picked; failed allocations are freed. For level types 0x11 and 0x22, additionally patches the first room's data fields to mark a specific room variant and clear its predecessor link.
 void __stdcall GenerateWolrdstoneAndTombs(struct D2DrlgLevelStrc * pLevel);
-// Finds the top-most room in the level by iterating RoomEx list and comparing Y coordinates.
-struct D2RoomExStrc * DRLGMAZE_FindTopMostRoom(struct D2DrlgLevelStrc * pLevel);
+// DRLG maze generator for the Act 2 Arcane Sanctuary: builds the four-armed cross/spoke layout. Advances the level's LCG seed to pick an initial direction, then for each of 4 arms allocates a chain of 15 RoomEx rooms (DRLGROOMEX_AllocRoomEx), sizing each from its DrlgLevelData and attaching it to the previous room via ReplaceRoomWithNewRoom + AllocNodesForBothRoomEx, picking presets per room; failed placements are freed. Finally writes each placed room's facing direction (pRoomExData+4) wrapped mod 4 from the rolled base direction, and tags the start room with direction 4. Operates in-place on pLevel.
+void __fastcall RollArcaneTypePath(struct D2DrlgLevelStrc * pLevel);
 // Finds room with smallest X position that can expand NE.
 struct D2RoomExStrc * __fastcall DRLGMAZE_FindLeftMostRoom(struct D2DrlgLevelStrc * pLevel);
 // Finds room with largest X position that can expand SW.
@@ -53,12 +68,13 @@ struct D2RoomExStrc * __fastcall DRLGMAZE_FindRightMostRoom(struct D2DrlgLevelSt
 struct D2RoomExStrc * __fastcall DRLGMAZE_FindBottomMostRoom(struct D2DrlgLevelStrc * pLevel);
 // Finds the room in pLevel whose pRoomExData preset ID matches pDrlgReplaceRoom->nSourceLevelPrestId and replaces it in-place with the destination preset/file IDs from pDrlgReplaceRoom. If no matching room exists, falls back to ReplaceRoomWith to allocate a new adjacent room. Increments *pRoll (wrapping at 4) after any successful replacement.
 uint32_t * __stdcall ReplaceRoom(struct D2DrlgReplaceRoomStrc * pDrlgReplaceRoom, struct D2DrlgLevelStrc * pLevel, uint32_t * pRoll);
+void __fastcall PickSummonerLocation(struct D2DrlgLevelStrc * pLevel);
 // DRLG maze generation: for special-room levels (selected by nLevelType, mapping to a base preset-file offset), randomly marks a fraction (~roomCount/5, min 2) of the level's RoomEx entries with a chosen preset variant. Uses the level's LCG seed to Fisher-Yates shuffle a 15-entry index table, then walks RoomEx rooms matching a target file index and rewrites their room-data fields (sets bit 2, replaces the file id, sets field[1]=-1). Skips eD2LevelId 8 (Den of Evil), hence the name. Mutates pLevel->sSeed as it consumes randoms.
 void __fastcall ForAllButDenOfEvil(struct D2DrlgLevelStrc * pLevel);
 void __fastcall DRLGMAZE_InitializeLevel(struct D2DrlgLevelStrc * pLevel);
 // Top-level DRLG maze-level generator: builds the room layout for a maze-type D2 level. Allocates the level's root RoomEx (size/position from the level's preset DRLG data, centered in the level world rect) and adds it, then dispatches on nLevelType (and sometimes eD2LevelId) to the act/area-specific generator chain - e.g. Act1 Caves/Crypt/Jail/Catacombs, Act2 Sewer/Lair/Arcane/Tombs, Act3 Kurast/Durance/Sewers, Act5 Temple/IceCaves/Worldstone, Baal chamber - typically calling DRLGMAZE_BuildRoomGrid + ActualLevelGeneration then a per-area Replace/Roll pass. Patches fixed special rooms (e.g. Act3 sewer entry rooms 0x2c5..0x2ca to 0x2df.., ice-cave Frozen River/Drifter Cavern/Icy Cellar variants) by id. Applies barracks/river-of-flames/coordinate adjustment, then InitAllRoomsEx over every room. Halts via Fog ErrorManager on missing expected rooms or unknown level type. Returns a BOOL.
 void __fastcall DRLGMAZE_GenerateLevel(struct D2DrlgLevelStrc * pLevel);
 void __fastcall DRLGMAZE_ResetMazeRecord(struct D2DrlgLevelStrc * pLevel, BOOL bKeepRecord);
-// 7 internal functions (defined in .cpp)
+// 24 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::Maze

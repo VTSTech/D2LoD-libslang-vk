@@ -26,6 +26,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -43,8 +44,7 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
@@ -61,6 +61,7 @@
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monster/MonsterAI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monsters/Spawn.h"
 #include "D2Game/Monsters/Umod.h"
@@ -78,7 +79,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Common/D2BitBufferStrc.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
@@ -1351,8 +1351,8 @@ void __fastcall MONSTER_KillWithMinions(D2UnitStrc * pUnit, ::SGAMEDATA * pGame,
       return;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &sKillStrc);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKillStrc);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
 }
 
 void __fastcall MONSTER_OnDeathKillOwnerAndMinions(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwUnused1, uint32_t dwUnused2) {
@@ -1372,8 +1372,8 @@ void __fastcall MONSTER_OnDeathKillOwnerAndMinions(::SGAMEDATA * pGame, D2UnitSt
       return;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit_00, Death, &sOwnerKillStrc);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sOwnerKillStrc, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit_00, Death, &sOwnerKillStrc);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sOwnerKillStrc, 1);
 }
 
 void __fastcall UMOD_AddBaseDamageBonus(uint32_t dwUnused1, D2UnitStrc * pUnit, uint32_t dwUnused2, uint32_t dwUnused3) {
@@ -1975,8 +1975,8 @@ void __fastcall MONSTER_HandleMinionDeath(::SGAMEDATA * pGame, D2UnitStrc * pUni
       return;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &sKillStrc);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKillStrc);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
 }
 
 // Initialises level and attack-rating stats for a monster unit spawned via a UMOD (unit-modifier) entry. Derives monster level from the room's level record and the game difficulty/expansion flags stored in the pUModEntry struct, clamped to minimum 1. Sets UNITSTAT_level and UNITSTAT_tohit (capped at 90). For specific monster class IDs 0x146-0x171 (elemental enchanted types), also adds elemental damage stats (fire, lightning, poison) scaled from the computed level. Halts with an internal error if pUnit is not a monster.
@@ -2115,8 +2115,8 @@ void __fastcall MONSTER_HandleModeTransition(::SGAMEDATA * pGame, D2UnitStrc * p
       D2MonsterKillStrc sKillStrc;
       eAnimMode = pUnit->eAnimMode.eMonsterMode;
       if (eAnimMode == eD2MonsterAnimMode_ns::GetHit) {
-        GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &sKillStrc);
-        GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
+        Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKillStrc);
+        Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
         GAME::Event::SetEvent(pGame, pUnit, 7, pGame->dwGameFrame + 4, 0, 0);
         return;
       }

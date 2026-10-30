@@ -106,6 +106,55 @@ BOOL __stdcall CHATDLG_OnPressUserListNextLine(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
+static void __stdcall CHATDLG_AddMultiLineText(::D2WinTextBox * pTextBox, int32_t bAddBlankLine, char * szText, int32_t nColor) {
+    char* pcNextLine;
+    char* pcNewlinePos;
+    char cCur;
+    char* pcCur = szText;
+    pcCur = pcCur + strlen(pcCur) + 1;
+    if (pcCur == szText + 1 || (int)pcCur - (int)(szText + 1) < 0) {
+      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(pTextBox, "", nColor);
+    } else if (*szText != '\0') {
+      do {
+        pcCur = szText;
+        if (*szText == '\n') {
+          *pcCur = '\0';
+          pcNextLine = pcCur + 1;
+          pcNewlinePos = pcCur;
+        } else {
+          do {
+            if (*pcCur == '\0') {
+              break;
+            }
+
+            pcCur++;
+          } while (*pcCur != '\n');
+
+          pcNextLine = pcCur;
+          pcNewlinePos = 0;
+          if (*pcCur == '\n') {
+            *pcCur = '\0';
+            pcNextLine = pcCur + 1;
+            pcNewlinePos = pcCur;
+          }
+        }
+
+        D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(pTextBox, szText, nColor);
+        if (bAddBlankLine) {
+          D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(pTextBox, "", nColor);
+        }
+        if (pcNewlinePos) {
+          *pcNewlinePos = '\n';
+        }
+
+        szText = pcNextLine;
+        if (*pcNextLine == '\0') {
+          return;
+        }
+      } while (true);
+    }
+}
+
 // @sourcefile .\Src\ChatDlg.cpp
 static D2ChatDlgUnknown_0x10 * __stdcall StoreChatMsg(LPRECT pRect, int32_t nParam, char * pString) {
     D2ChatDlgUnknown_0x10* pNode = D2_NEW_AT(D2ChatDlgUnknown_0x10, ".\\Src\\ChatDlg.cpp", 0xc1d);
@@ -185,7 +234,7 @@ void __stdcall CHATDLG_ProcessPendingMessages() {
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpChatMessagesTextBox);
       }
       if ((char*)*pMemoryToFree) {
-        Launcher::CHATDLG_AddMultiLineText(gpChatMessagesTextBox, 0, (char*)*pMemoryToFree, pMemoryToFree[1]);
+        CHATDLG_AddMultiLineText(gpChatMessagesTextBox, 0, (char*)*pMemoryToFree, pMemoryToFree[1]);
         if ((void*)*pMemoryToFree) {
           D2_FREE_AT((void*)*pMemoryToFree, ".\\Src\\ChatDlg.cpp", 0xc38);
         }

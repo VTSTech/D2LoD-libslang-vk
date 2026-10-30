@@ -2,21 +2,375 @@
 
 #include "D2Common/Drlg/OutWild.h"
 #include "D2Common/D2RoomExStrc.h"
+#include "D2Common/D2SeedStrc.h"
 #include "D2Common/Drlg/D2DrlgLevelStrc.h"
 #include "D2Common/Drlg/D2DrlgMapStrc.h"
 #include "D2Common/Drlg/D2DrlgOrthStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/D2DrlgVertexStrc.h"
 #include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/DrlgGrid.h"
 #include "D2Common/Drlg/OutPlace.h"
 #include "D2Common/Drlg/Outdoors.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Common/DUNGEON/Dungeon.h"
+#include "D2Common/Drlg/Preset.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
 namespace D2Common::Drlg::OutWild {
+
+// Checks whether the entire grid column at nX is empty (no flags set), returns TRUE if empty.
+static BOOL DRLGOUTROOM_IsGridColumnEmpty(D2DrlgLevelStrc * pLevel, int nX) {
+    D2DrlgLevelDataWildernessLevel* pLevelData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    int nY = 0;
+    if (pLevelData->nGridCoordsHeight <= 0) {
+      return 1;
+    }
+
+    do {
+      uint32_t nGridFlags;
+      nGridFlags = DrlgGrid::GetGridFlags(&pLevelData->sGridOutdoor, nX, nY);
+      if (nGridFlags & 2) {
+        return 0;
+      }
+
+      nGridFlags = DrlgGrid::GetGridFlags(&pLevelData->sGridOutdoor, nX + 1, nY);
+      if (nGridFlags & 2) {
+        return 0;
+      }
+
+      nY++;
+    } while (nY < pLevelData->nGridCoordsHeight);
+
+    return 1;
+}
+
+// Returns a preset variant index from a grid cell's flags and preset type. For type 0, checks bit 0x100 to choose variant 0 or 3. For type 7 with flags matching 0x30000, returns variant 3. Otherwise indexes into the variant lookup table at data_006f2680, choosing between two columns based on the bAlternate stack arg.
+int __stdcall DRLGOUTROOM_GetPresetVariantFromGridCell(uint32_t nGridFlags, int nPresetType, int dwParam3) {
+    if (nPresetType) {
+      if (nPresetType == 7 && (nGridFlags & 0xf0000) == 0x30000) {
+        return 3;
+      }
+      if (dwParam3) {
+        return (&gaTombCanyonPresetOffsets.aTombEntries[7].nPresetId)[nPresetType * 2];
+      }
+
+      return (&gaTombCanyonPresetOffsets.aTombEntries[7].nVariant)[nPresetType * 2];
+    }
+
+    return (nGridFlags & 0x100 ? -3 : 0) + 3;
+}
+
+// Finds and places a river crossing preset pair in an outdoor wilderness level. Uses the level seed to pick a random starting row among usable grid rows (excluding top/bottom edge), then iterates rows looking for two horizontally adjacent cells whose grid flags both have bits 0x30000 set (river tile markers). On match, spawns preset 0x1c at both X positions; the second spawn variant depends on whether the road flag (dwFlags&4) is set.
+static void __stdcall DRLGOUTROOM_PlaceRiverCrossingPreset(D2DrlgLevelStrc * pDrlgLevelStrc, int dwParam2) {
+    BOOL bCellEmpty;
+    uint32_t nGridFlags;
+    int nCandidateX;
+    uint32_t nStartYOffset;
+    D2DrlgLevelDataWildernessLevel* pWildData;
+    pWildData = pDrlgLevelStrc->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    int nY;
+    nY = pWildData->nGridCoordsHeight;
+    uint32_t dwRoadFlags;
+    dwRoadFlags = pWildData->dwFlags & 4;
+    uint32_t nUsableRows;
+    nUsableRows = nY - 2;
+    if ((int)nUsableRows <= 0) {
+      nStartYOffset = 0;
+    } else {
+      D2SeedStrc DVar1;
+      nGridFlags = pDrlgLevelStrc->sSeed.nSeedLow;
+      if (nUsableRows & nY - 3U) {
+        DVar1 = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
+        pDrlgLevelStrc->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pDrlgLevelStrc->sSeed.nSeedLow = DVar1.nSeedLow;
+        nStartYOffset = DVar1.nSeedLow % nUsableRows;
+      } else {
+        DVar1 = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
+        nStartYOffset = nY - 3U & DVar1.nSeedLow;
+        pDrlgLevelStrc->sSeed.nSeedHigh = DVar1.nSeedHigh;
+        pDrlgLevelStrc->sSeed.nSeedLow = DVar1.nSeedLow;
+      }
+    }
+
+    int nYIter;
+    nYIter = 0;
+    if ((int)nUsableRows <= 0) {
+      return;
+    }
+
+    do {
+      nY = (int)(nYIter + nStartYOffset) % (int)nUsableRows + 1;
+      nCandidateX = dwParam2 - 1;
+      if (!dwRoadFlags) {
+        bCellEmpty = Outdoors::DRLGOUTDOOR_IsGridCellEmpty(pDrlgLevelStrc, nCandidateX, nY);
+        if (bCellEmpty) {
+          nCandidateX = dwParam2 + 2;
+          goto try_place_crossing;
+        }
+      } else {
+        try_place_crossing:
+        bCellEmpty = Outdoors::DRLGOUTDOOR_IsGridCellEmpty(pDrlgLevelStrc, nCandidateX, nY);
+        if (bCellEmpty) {
+          nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, dwParam2, nY);
+          if ((nGridFlags & 0xf0000) == 0x30000) {
+            nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, dwParam2 + 1, nY);
+            if ((nGridFlags & 0xf0000) == 0x30000) {
+              Outdoors::SpawnOutdoorLevelPresetEx(pDrlgLevelStrc, dwParam2, nY, 0x1c, 1, 0);
+              Outdoors::SpawnOutdoorLevelPresetEx(pDrlgLevelStrc, dwParam2 + 1, nY, 0x1c, (dwRoadFlags != 0) + 2, 0);
+              return;
+            }
+          }
+        }
+      }
+
+      nYIter++;
+      if (nYIter >= (int)nUsableRows) {
+        return;
+      }
+    } while (true);
+}
+
+// Spawns border column presets (0x1A and 0x1B) for two adjacent columns. Iterates all Y rows, determining the preset orientation from grid flags using lookup tables. If the level has road flags (0x14), also places a road transition preset. Called by FillBorderCornersAndPresets and SpawnTownTransitionsAndCaves.
+void __stdcall DRLGOUTROOM_SpawnVerticalBorderPresets(D2DrlgLevelStrc * pLevel, int32_t nColumn) {
+    int nVariant;
+    int nX;
+    D2DrlgLevelDataWildernessLevel* pWildData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    int nY = 0;
+    if (pWildData->nGridCoordsHeight > 0) {
+      uint32_t nGridFlags;
+      nX = nColumn + 1;
+      do {
+        nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, nColumn, nY);
+        nVariant = DrlgGrid::GetGridFlags(&pWildData->sGridPreset, nColumn, nY);
+        if (nVariant) {
+          if (nVariant == 7 && (nGridFlags & 0xf0000) == 0x30000) {
+            nVariant = 3;
+          } else {
+            nVariant = (&gaTombCanyonPresetOffsets.aTombEntries[7].nPresetId)[nVariant * 2];
+          }
+        } else {
+          nVariant = (nGridFlags & 0x100 ? -3 : 0) + 3;
+        }
+
+        Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nColumn, nY, 0x1a, nVariant, 0);
+        nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridOutdoor, nX, nY);
+        nVariant = DrlgGrid::GetGridFlags(&pWildData->sGridPreset, nX, nY);
+        if (nVariant) {
+          if (nVariant == 7 && (nGridFlags & 0xf0000) == 0x30000) {
+            nVariant = 3;
+          } else {
+            nVariant = (&gaTombCanyonPresetOffsets.aTombEntries[7].nVariant)[nVariant * 2];
+          }
+        } else {
+          nVariant = (nGridFlags & 0x100 ? -3 : 0) + 3;
+        }
+
+        Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX, nY, 0x1b, nVariant, 0);
+        nY++;
+      } while (nY < pWildData->nGridCoordsHeight);
+    }
+    if (!(pWildData->dwFlags & 0x14)) {
+      return;
+    }
+
+    DRLGOUTROOM_PlaceRiverCrossingPreset(pLevel, nColumn);
+}
+
+// Marks contiguous border spans where rooms meet at corners.
+static void DRLGOUTROOM_MarkBorderJunctions(D2DrlgLevelStrc * pLevel) {
+    D2DrlgVertexStrc* pDVar1;
+    D2DrlgVertexStrc* pNext;
+    D2DrlgVertexStrc* pStart;
+    D2DrlgVertexStrc* pLast;
+    D2DrlgLevelDataWildernessLevel* pWildData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    D2DrlgVertexStrc* pCurrent = pWildData->pVertices;
+    bool bComplete = false;
+    D2DrlgVertexStrc* pPrevious = pCurrent;
+    for (pDVar1 = pCurrent->pNext; pStart = pCurrent , pDVar1 != pCurrent; pDVar1 = pDVar1->pNext) {
+      pPrevious = pDVar1;
+    }
+
+    do {
+      if (pCurrent->nPosX < pCurrent->pNext->nPosX && pPrevious->nPosY > pCurrent->nPosY && !(pCurrent->dwFlags & 1) && !(pPrevious->dwFlags & 1) || (pNext = pCurrent , pCurrent->nPosY > pCurrent->pNext->nPosY && pPrevious->nPosX > pCurrent->nPosX) && !(pCurrent->dwFlags & 1) && !(pPrevious->dwFlags & 1)) {
+        pLast = 0;
+        pNext = pCurrent;
+        do {
+          if (pNext == pStart) {
+            bComplete = true;
+          }
+
+          pDVar1 = pNext->pNext;
+          if (pNext->nPosY < pDVar1->nPosY || pNext->nPosX > pDVar1->nPosX || pNext->dwFlags & 1 || pDVar1->dwFlags & 1) {
+            break;
+          }
+          if (pNext->nPosX < pDVar1->nPosX && pDVar1->nPosY < pDVar1->pNext->nPosY && !(pDVar1->dwFlags & 1) || pNext->nPosY > pDVar1->nPosY && pDVar1->nPosX < pDVar1->pNext->nPosX && !(pDVar1->dwFlags & 1)) {
+            pLast = pNext;
+          }
+
+          pNext = pDVar1;
+        } while (pDVar1 != pCurrent);
+
+        if (pLast) {
+          for (; pCurrent != pLast; pCurrent = pCurrent->pNext) {
+            pCurrent->nDirection = 1;
+          }
+
+          pCurrent->nDirection = 1;
+          pWildData->dwFlags |= 0x20;
+        }
+      }
+
+      pCurrent = pNext->pNext;
+      if (bComplete) {
+        return;
+      }
+
+      pStart = pWildData->pVertices;
+      pPrevious = pNext;
+      if (pCurrent == pStart) {
+        return;
+      }
+    } while (true);
+}
+
+// Spawns a corner fill preset at grid coordinates (nX, nY) to fill gaps in outdoor room layouts.
+static BOOL __stdcall DRLGOUTROOM_SpawnCornerFillPreset(int nY, int nX, D2DrlgLevelStrc * dwParam3) {
+    D2DrlgLevelDataWildernessLevel* pWildData = dwParam3->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    int nGridFlags = DrlgGrid::GetGridFlags(&pWildData->sGridPreset, nX, nY);
+    switch (nGridFlags) {
+      case 0x10:
+        {
+          nGridFlags = 0x19;
+          break;
+        }
+      case 0x11:
+        {
+          nGridFlags = 0x18;
+          break;
+        }
+      default:
+        {
+          return 0;
+        }
+    }
+
+    Outdoors::SpawnOutdoorLevelPresetEx(dwParam3, nX, nY, nGridFlags, -1, 0);
+    pWildData->dwFlags |= 0x40;
+    return 1;
+}
+
+// Outdoor DRLG finalization for a wilderness level (skips eD2LevelId 0x27). Driven by the level data's dwFlags: optionally spawns vertical border presets along the second-to-last grid column (if that column is empty); seed-randomly iterates the grid in row- or column-major order placing corner-fill presets (SpawnCornerFillPreset), halting via Fog ErrorManager if the grid loop completes without success; and finally (flags &0x1c, not &0x40) picks a seed-random edge position and spawns one outdoor level preset (SpawnOutdoorLevelPresetEx), then sets the 0x40 done-flag. Consumes pLevel->sSeed for randomness.
+void __stdcall DRLGOUTROOM_FillBorderCornersAndPresets(D2DrlgLevelStrc * pLevel) {
+    BOOL bColumnEmpty;
+    int nSpawnResult;
+    int nX;
+    uint32_t dwFlags;
+    D2SeedStrc sNewSeed;
+    if (pLevel->eD2LevelId == 0x27) {
+      return;
+    }
+
+    D2DrlgLevelDataWildernessLevel* pWildData;
+    pWildData = pLevel->pDrlgLevelData.pDrlgLevelOutdoorsData;
+    if (pWildData->dwFlags & 0xc) {
+      nSpawnResult = pWildData->nGridCoordsWidth - 2;
+      bColumnEmpty = DRLGOUTROOM_IsGridColumnEmpty(pLevel, nSpawnResult);
+      if (bColumnEmpty) {
+        DRLGOUTROOM_SpawnVerticalBorderPresets(pLevel, nSpawnResult);
+      }
+    }
+    if (pWildData->dwFlags & 0x20 && !(pWildData->dwFlags & 0x40)) {
+      nSpawnResult = 0;
+      bColumnEmpty = 0;
+      sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
+      pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+      pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
+      if (sNewSeed.nSeedLow & 1) {
+        if (pWildData->nGridCoordsHeight <= 0) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x194);
+          exit(-1);
+        }
+
+        do {
+          if (bColumnEmpty) {
+            goto spawn_cave_entrance;
+          }
+
+          nX = 0;
+          if (0 < pWildData->nGridCoordsWidth) {
+            do {
+              if (bColumnEmpty) {
+                break;
+              }
+
+              bColumnEmpty = DRLGOUTROOM_SpawnCornerFillPreset(nX, nSpawnResult, pLevel);
+              nX++;
+            } while (nX < pWildData->nGridCoordsWidth);
+          }
+
+          nSpawnResult++;
+        } while (nSpawnResult < pWildData->nGridCoordsHeight);
+      } else {
+        nX = 0;
+        if (pWildData->nGridCoordsHeight < 1) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x194);
+          exit(-1);
+        }
+
+        do {
+          if (bColumnEmpty) {
+            goto spawn_cave_entrance;
+          }
+
+          nSpawnResult = 0;
+          if (pWildData->nGridCoordsWidth > 0) {
+            do {
+              if (bColumnEmpty) {
+                break;
+              }
+
+              bColumnEmpty = DRLGOUTROOM_SpawnCornerFillPreset(nX, nSpawnResult, pLevel);
+              nSpawnResult++;
+            } while (nSpawnResult < pWildData->nGridCoordsWidth);
+          }
+
+          nX++;
+        } while (nX < pWildData->nGridCoordsHeight);
+      }
+      if (!bColumnEmpty) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x194);
+        exit(-1);
+      }
+    }
+
+    spawn_cave_entrance:
+    dwFlags = pWildData->dwFlags;
+    if (!(dwFlags & 0x1c && !(dwFlags & 0x40))) {
+      return;
+    }
+
+    nSpawnResult = pWildData->nGridCoordsWidth;
+    int nGridWidth = pWildData->nGridCoordsHeight;
+    sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
+    pLevel->sSeed = sNewSeed;
+    bool bVar1 = !(sNewSeed.nSeedLow & 1);
+    int nX_00 = 3;
+    if (bVar1) {
+      nX_00 = nSpawnResult - (~(dwFlags >> 4) & 1 | 4);
+    }
+
+    nSpawnResult = 3;
+    if (!((sNewSeed.nSeedLow & 3) / 2)) {
+      nSpawnResult = nGridWidth - 4;
+    }
+
+    Outdoors::SpawnOutdoorLevelPresetEx(pLevel, nX_00, nSpawnResult, (pLevel->eD2LevelId == 2) + 0x33, -1, 0);
+    pWildData->dwFlags |= 0x40;
+}
 
 // Spawns outdoor level border presets (town transitions, caves, vertical dividers) for pLevel based on wilderness flags. Handles the central column divider (dwFlags bit 4), the four cardinal border exits (bits 7-10), and the mandatory town wayback preset (0x33/preset 15). Aborts with an unrecoverable error if the wayback preset fails to place. Skips level 0x27 (Harrogath interior).
 static void SpawnTownTransitionsAndCaves(D2DrlgLevelStrc * pLevel) {
@@ -64,6 +418,91 @@ static void SpawnTownTransitionsAndCaves(D2DrlgLevelStrc * pLevel) {
     pWildData2->dwFlags |= 0x40;
 }
 
+// NOTE: Callee-saved register params inferred (medium confidence): pDrlgLevelStrc (ESI): D2DrlgLevelStrc*
+static BOOL __stdcall DRLGOUTROOM_SpawnRandomOutdoorDecorations(int32_t nPresetType, D2DrlgLevelStrc * pDrlgLevelStrc, int bAllowDouble) {
+    uint32_t uVar1;
+    D2SeedStrc newSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
+    pDrlgLevelStrc->sSeed.nSeedHigh = newSeed.nSeedHigh;
+    pDrlgLevelStrc->sSeed.nSeedLow = newSeed.nSeedLow;
+    if (newSeed.nSeedLow & 3) {
+      BOOL BVar2;
+      uVar1 = Outdoors::SpawnRandomOutdoorDS1(pDrlgLevelStrc, nPresetType, -1);
+      if (bAllowDouble) {
+        newSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
+        uVar1 = newSeed.nSeedLow;
+        pDrlgLevelStrc->sSeed.nSeedHigh = newSeed.nSeedHigh;
+        pDrlgLevelStrc->sSeed.nSeedLow = newSeed.nSeedLow;
+        if (newSeed.nSeedLow & 1) {
+          BVar2 = Outdoors::SpawnRandomOutdoorDS1(pDrlgLevelStrc, 0x31, -1);
+          return BVar2;
+        }
+      }
+    } else {
+      Outdoors::SpawnRandomOutdoorDS1(pDrlgLevelStrc, nPresetType, -1);
+      uVar1 = Outdoors::SpawnRandomOutdoorDS1(pDrlgLevelStrc, nPresetType, -1);
+    }
+
+    return uVar1;
+}
+
+// Switch on level ID spawning Act1 level-specific presets (BloodMoor through MooMooFarm).
+static void DRLGOUTROOM_SpawnAct1LevelPresets(D2DrlgLevelStrc * pLevel) {
+    int32_t nLevelPresetId;
+    switch (pLevel->eD2LevelId) {
+      case 2:
+        Outdoors::SpawnRandomOutdoorDS1(pLevel, 0x2e, -1);
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2f, pLevel, 0);
+      break;
+      case 3:
+        DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x30, pLevel, 1);
+      nLevelPresetId = 0x2c;
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, nLevelPresetId, -1, 0, '\x0f');
+      break;
+      case 4:
+        Outdoors::SpawnRandomOutdoorDS1(pLevel, 0xa0, -1);
+      Outdoors::SpawnRandomOutdoorDS1(pLevel, 0x2d, -1);
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0xa2, -1, 0, '\x0f');
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2f, pLevel, 1);
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2a, pLevel, 0);
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x1f, -1, 0, '\x0f');
+      return;
+      case 5:
+        Outdoors::SpawnOutdoorLevelPreset(pLevel, 0xa1, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x29, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x28, -1, 0, '\x0f');
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x30, pLevel, 1);
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2b, pLevel, 0);
+      break;
+      case 6:
+        Outdoors::SpawnOutdoorLevelPreset(pLevel, 0xa3, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x26, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x27, -1, 0, '\x0f');
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2f, pLevel, 1);
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2a, pLevel, 0);
+      break;
+      case 7:
+        DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x30, pLevel, 1);
+      DRLGOUTROOM_SpawnRandomOutdoorDecorations(0x2b, pLevel, 0);
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x1f, -1, 0, '\x0f');
+      return;
+      default:
+        return;
+      case 0x11:
+        Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 1, 1, 0x6c, -1, 0);
+      return;
+      case 0x27:
+        Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x32, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x2e, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x1f, -1, 0, '\x0f');
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x26, -1, 0, '\x0f');
+      nLevelPresetId = 0x27;
+      Outdoors::SpawnOutdoorLevelPreset(pLevel, nLevelPresetId, -1, 0, '\x0f');
+    }
+
+    Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x1d, -1, 0, '\x0f');
+    Outdoors::SpawnOutdoorLevelPreset(pLevel, 0x1e, -1, 0, '\x0f');
+}
+
 void __fastcall InitAct1OutdoorLevel(D2DrlgLevelStrc * pLevel) {
     int eLevelId = pLevel->eD2LevelId;
     if (eLevelId != 2 && eLevelId != 3 && eLevelId != 0x11) {
@@ -72,7 +511,7 @@ void __fastcall InitAct1OutdoorLevel(D2DrlgLevelStrc * pLevel) {
 
     OutPlace::SetOutGridLinkFlags(pLevel);
     OutPlace::PlaceAct1245OutdoorBorders(pLevel);
-    if (1 < pLevel->eD2LevelId && pLevel->eD2LevelId < 8) {
+    if (pLevel->eD2LevelId >= 2 && pLevel->eD2LevelId <= 7) {
       Outdoors::AddAct124SecondaryBorder(pLevel, 0, 4);
       DRLGOUTROOM_FillBorderCornersAndPresets(pLevel);
       Outdoors::AddAct124SecondaryBorder(pLevel, 1, 4);
@@ -87,10 +526,10 @@ void __fastcall InitAct1OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       Outdoors::AddAct124SecondaryBorder(pLevel, 2, 4);
       Outdoors::AddAct124SecondaryBorder(pLevel, 3, 4);
     }
-    if (2 < pLevel->eD2LevelId && pLevel->eD2LevelId < 7) {
+    if (pLevel->eD2LevelId >= 3 && pLevel->eD2LevelId <= 6) {
       Outdoors::SpawnAct12Waypoint(pLevel);
     }
-    if (1 < pLevel->eD2LevelId && pLevel->eD2LevelId < 8) {
+    if (pLevel->eD2LevelId >= 2 && pLevel->eD2LevelId <= 7) {
       Outdoors::SpawnAct12Shrines(pLevel, 5);
     }
 

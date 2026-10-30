@@ -7,10 +7,10 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/PATH/DynamicPath.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/GAME/Targets.h"
@@ -89,10 +89,10 @@ int32_t __fastcall AI_BloodRaven_MoveRandomNearTarget(::SGAMEDATA * pGame, D2Uni
     }
 
     D2Common::PATH::DynamicPath::SetStepNum(pSelf->pPath.pDynamicPath, 1);
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pSelf, eMoveMode, &sMonsterKillArgs);
+    MonsterMode::SetCurrentSkill(pSelf, eMoveMode, &sMonsterKillArgs);
     sMonsterKillArgs.nTargetX = nTargetUnitType;
     sMonsterKillArgs.nTargetY = nTarget + nRadius;
-    int32_t nLifecycleResult = GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameSaved, &sMonsterKillArgs, 1);
+    int32_t nLifecycleResult = MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameSaved, &sMonsterKillArgs, 1);
     return nLifecycleResult;
 }
 

@@ -7,7 +7,6 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/Drlg/D2DrlgGridStrc.h"
 
 // Forward declarations
 struct D2DrlgCoordsStrc;
@@ -27,21 +26,6 @@ typedef int eDrlgDirection;
 struct D2LvlWarpTxt;
 
 // Data types
-struct __attribute__((packed)) D2DrlgRoomExDataMazeStrc {
-    /* 0x00 */ D2DrlgGridStrc pOrientationGrid; // Orientation/shadow grid for outdoor tiles
-    /* 0x14 */ D2DrlgGridStrc pWallGrid; // Wall grid for outdoor tiles
-    /* 0x28 */ D2DrlgGridStrc pFloorGrid; // Floor grid for outdoor tiles
-    /* 0x3C */ D2DrlgGridStrc pCellGrid; // Cell/shadow grid for outdoor tiles
-    /* 0x50 */ uint8_t * pVertex; // struct D2DrlgVertexStrc* - vertex linked list for path/border
-    /* 0x54 */ int dwFlags; // Outdoor room flags (bit 0x80 = border)
-    /* 0x58 */ int dwFlagsEx; // Extended outdoor room flags
-    /* 0x5C */ int field_5C; // Unknown
-    /* 0x60 */ int field_60; // Unknown
-    /* 0x64 */ int nSubType; // SubType from LevelDefs.txt
-    /* 0x68 */ int nSubTheme; // SubTheme from LevelDefs.txt
-    /* 0x6C */ int nSubThemePicked; // Random subtheme variant picked (0-31)
-};
-
 struct D2DrlgRoomExRoomTileNodeStrc {
     /* 0x00 */ struct D2RoomExStrc * pRoomEx; // room on the other side of the warp; DRLGROOMEX_AllocRoomTile stores the linked room, DRLGWARP_GetWarpDestinationRoom follows it
     /* 0x04 */ struct D2DrlgRoomExRoomTileNodeStrc * pRoomTileNext;
@@ -151,15 +135,8 @@ eD2LevelId __fastcall DRLGWARP_GetWarpDestinationLevel(struct D2RoomExStrc * pRo
 eD2LevelId __fastcall GetLevelIdFromPopulatedRoomEx(struct D2RoomExStrc * pRoomEx);
 BOOL __fastcall HasWaypoint(struct D2RoomExStrc * pRoomEx);
 char * __fastcall GetPickedLevelPrestFilePathFromRoomEx(struct D2RoomExStrc * pRoomEx);
-// Builds the ppDrlgRoomsExNear neighbour list for a single RoomEx. Iterates all rooms in the level and collects those whose world bounding box lies within 6 tiles (X and Y) of pRoomEx. Passes the raw list through ReorderNearRoomList, then allocates server memory for the final pointer array and copies it into pRoomEx->ppDrlgRoomsExNear / nDrlgRoomsExNearCount.
-// @sourcefile .\DRLG\DrlgRoom.cpp
-void __stdcall DefineRoomsNear(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx);
 int32_t __fastcall GetRoomsNearCount(struct D2RoomExStrc * pRoomEx);
 int32_t __fastcall GetRealRoomsNearCount(struct D2RoomExStrc * pRoomEx, struct D2RoomStrc * * ppRoomList);
-// If this room’s level is not a town, check adjacent RoomEx list; if any neighbor is in a town level, set eRoomExFlags bit 0x800000.
-void DRLGROOM_FlagRoomExBorderingTown(struct D2RoomExStrc * pRoomEx);
-// Searches dst level rooms for a matching warp flag bit (dstVisSlot+4). If warpDestLevel is valid, immediately link rooms and allocate a room tile. Otherwise, link only if room bounding boxes are within 6 tiles in X/Y. Returns 1 if link added, else 0.
-BOOL __stdcall DRLGROOMEX_LinkNearRoomByDirection(uint8_t dstVisSlot, struct D2RoomExStrc * pRoomEx, struct D2PoolManagerStrc * pMemory, uint8_t srcVisSlot, int32_t warpDestLevel, struct D2RoomExStrc * pDstRoomExIter);
 // Allocates a D2PresetUnitStrc, initializes fields, and optionally links it into pRoomEx->pPresetUnit list.
 // @sourcefile .\DRLG\DrlgRoom.cpp
 struct D2PresetUnitStrc * __fastcall AllocPresetUnit(struct D2RoomExStrc * pRoomEx, struct D2PoolManagerStrc * pMemory, eD2UnitType eUnitType, int32_t nMonStatsId, BOOL bUseMonStatsMaybe, int32_t nPosX, int32_t nPosY);
@@ -172,6 +149,10 @@ struct D2DrlgStrc * __fastcall GetDrlgFromRoomEx(struct D2RoomExStrc * pRoomEx);
 // Fully tears down a D2RoomExStrc: frees tile data, nearby-room pointer array, outdoor or preset area data (by nPresetType), all preset units, all orth links (bidirectionally removing cross-references for type-1 orths), detaches the room from the level's linked list (decrementing nRoomExCount), frees room tiles and coord list, then frees the RoomEx struct itself from the pool.
 // @sourcefile .\DRLG\DrlgRoom.cpp
 void __fastcall DRLGROOMEX_FreeDrlgRoomEx(struct D2RoomExStrc * pRoomEx);
-// 7 internal functions (defined in .cpp)
+// Links a RoomEx across levels using the vis arrays. For srcVisSlot (0..7), computes dst level id and ensures dst level is initialized. If a warp destination exists, align by matching the Nth occurrence of dst in src vis array with the Nth occurrence of src in dst vis array, then link via DRLGROOMEX_LinkNearRoomByDirection. Fallback: scan dst vis array for src and link first match.
+void __stdcall DRLGROOMEX_LinkNearRoomsByVis(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx, uint8_t srcVisSlot);
+// Defines near rooms, then for each vis flag bit (0x10..0x800) links rooms across levels via DRLGROOMEX_LinkNearRoomsByVis unless in level 0x85. Finally sets town-related flag based on near rooms.
+void __fastcall DRLGROOMEX_InitNearRoomsAndVisTiles(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx);
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::DrlgRoom

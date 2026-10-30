@@ -22,6 +22,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -33,8 +34,7 @@
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Common/Units/UnitFinds.h"
@@ -51,6 +51,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Monsters/Spawn.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
@@ -682,8 +683,8 @@ static void __stdcall SKILLEMONST_TransformMonsterClass(D2UnitStrc * pUnit, DWOR
     }
 
     Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit2, pMonsterAiGeneral, 0xf);
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit2, dwParam, &sMonsterKill);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit2, dwParam, &sMonsterKill);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
     D2Common::DATATBLS::ItemStats::SetState(pUnit2, STATE_changeclass, 1);
     if (!pUnit) {
       nNewClassId = -1;

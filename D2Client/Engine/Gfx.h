@@ -10,9 +10,11 @@
 
 // Forward declarations
 struct D2GamePalShiftGreenBloodStrc;
+struct D2GfxInfoStrc;
 struct D2InventoryStrc;
 struct D2LightMapStrc;
 struct D2MonStatsTxt;
+struct D2ParticleStrc;
 struct D2UnitStrc;
 typedef int DRAWMODE;
 #ifndef RECON_FPTD_fpDrawBlendedVisTile
@@ -45,6 +47,13 @@ typedef void (__fastcall *fpUnknown)(int a1, int a2, int a3, int a4);
 #endif
 
 // Data types
+struct D2CofCacheStrc {
+    /* 0x00 */ int32_t nFrameCount;
+    /* 0x04 */ void * pCacheMemory;
+    /* 0x08 */ int32_t nCacheEntryCount;
+    /* 0x0C */ void * apBuckets[512]; // hash buckets walked 0x200 deep by GFX_FreeUnusedCofEntries
+};
+
 struct D2GfxHelperStrc {
     /* 0x00 */ void (__fastcall *nfpFillYBufferTable)(void *, int, int, int);
     /* 0x04 */ void (__fastcall *nfpDrawVisTile)(uint8_t *, int32_t, int32_t);
@@ -7239,10 +7248,39 @@ namespace D2Client::Engine::Gfx {
 struct D2InventoryStrc * __fastcall CLIENT_GetEffectiveInventory(struct D2UnitStrc * pUnit, int * pUnit2);
 void * __stdcall GFX_FindTextureInCache(void * pTextureCache, char * szPath);
 // @sourcefile .\ENGINE\Gfx.cpp
-void * __stdcall GFX_LoadCofFile(void * pTextureCache, char * szPath);
+void __stdcall GFX_RemoveOverlayFromUnit(struct D2UnitStrc * pUnit, int * pOverlay);
+BOOL __fastcall GFX_HasOverlayOfType(struct D2UnitStrc * pUnit, int32_t nOverlayType);
+void __fastcall GFX_SetOverlayFrame(struct D2UnitStrc * pUnit, int32_t nOverlayId, int32_t nFrame);
+void __fastcall GFX_DrawOverlayOnUnit(struct D2UnitStrc * pUnit, int32_t nOverlayId, int32_t nScreenX, int32_t nScreenY);
+void __stdcall DRAW_UNIT_States(struct D2UnitStrc * pUnit, int32_t nBlendMode, int32_t bSecondPass, int32_t nScreenX, int32_t nScreenY, int32_t bRaiseY);
+void __stdcall DRAW_UNIT_States_HaltTail(int nLine);
+uint8_t * __fastcall GFX_GetGfxInfoCofData(struct D2UnitStrc * pUnit, int32_t pAnimMode);
+struct D2GfxInfoUnkStrc * __fastcall GFX_FindGfxInfoByModeAndWeapon(struct D2UnitStrc * pUnit, int32_t nWeaponParam, int nAnimMode);
+uint32_t GFX_LoadGenericModeCof(struct D2UnitStrc * pUnit, uint32_t nComponent);
 // @sourcefile .\ENGINE\Gfx.cpp
-void __stdcall GFX_LoadAndHashCofArchive(char * szPath, int * pCache);
-void __stdcall GFX_RemoveStateOverlayAndReprioritize(struct D2UnitStrc * pUnit, int32_t pGfxInfo, int32_t pOverlay);
+struct D2GfxInfoStrc * __stdcall AllocGfxInfo();
+// @sourcefile .\ENGINE\Gfx.cpp
+void __fastcall FreeGfxInfo(struct D2UnitStrc * pUnit);
+// @sourcefile .\ENGINE\Gfx.cpp
+void __fastcall GFX_FreeUnitGfxInfoList(struct D2UnitStrc * pUnit);
+// @sourcefile .\ENGINE\Gfx.cpp
+void __fastcall GFX_FreeNonBaseGfxInfoEntries(struct D2UnitStrc * pUnit);
+// @sourcefile .\ENGINE\Gfx.cpp
+uint32_t __fastcall DrawItemGfx(struct D2UnitStrc * pUnit, int32_t nHeight, int32_t nWidth);
+void __fastcall D2GFX_DrawSolidRectExBySize(int32_t nStartX, int32_t nStartY, int32_t nSizeX, int32_t nSizeY, int32_t nColor, DRAWMODE nDrawMode);
+void __fastcall GFX_FreeAllModesGfxInfo(struct D2UnitStrc * pUnit);
+void __fastcall GFX_SetAllGfxInfoFlags(struct D2UnitStrc * pUnit, uint8_t byFlag);
+struct D2ParticleStrc * __fastcall GetParticleFromUnit(struct D2UnitStrc * pUnit);
+void __fastcall SetParticle(struct D2UnitStrc * pUnit, struct D2ParticleStrc * pParticle);
+void __thiscall GFX_RemoveOverlayById(struct D2UnitStrc * pUnit, int32_t nOverlayId);
+void __fastcall GFX_RemoveAllOverlays(struct D2UnitStrc * pUnit);
+void __fastcall GFX_SetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo, DWORD dwCofDataFlags);
+int32_t __fastcall GFX_GetCofDataFlags(struct D2GfxInfoStrc * pGfxInfo);
+void __fastcall GFX_SetPalShiftIndex(struct D2GfxInfoStrc * pGfxInfo, int32_t nPalShiftIndex);
+int32_t __fastcall GFX_GetPalShiftIndex(struct D2GfxInfoStrc * pGfxInfo);
+void __fastcall GFX_ClearAllModeFlags(struct D2UnitStrc * pUnit, int32_t nMaxMode);
+// Builds the COF archive path for a monster COF name index and loads it. The index is a single byte: the prologue does MOVZX EAX, CL before indexing the name table at 0x6d6c30, so the upper 24 bits of ECX are dead.
+void __fastcall GFX_LoadMonsterCofArchive(uint8_t nCofNameIndex);
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall GFX_FreePlayerCofCache(int32_t nParam);
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -7271,7 +7309,7 @@ void __fastcall GFXProcessGameGfxLists(int32_t bShowLoadingUi);
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall GFX_AddOverlayToUnit(struct D2UnitStrc * pUnit, eOverlayId eOverlay, int32_t nOverlayType, int32_t nColorScale, uint32_t nValue0, int32_t nValue1, int32_t nValue2, int32_t nRandomMod);
 // @sourcefile .\ENGINE\Gfx.cpp
-void __fastcall GFX_LoadUnitModeCof(struct D2UnitStrc * pUnit);
+void __fastcall GFX_LoadUnitModeCof(struct D2UnitStrc * pUnit, int32_t nUnused);
 // @sourcefile .\ENGINE\Gfx.cpp
 void __fastcall GFX_GetUnitSpriteOffset(struct D2UnitStrc * pUnit, uint8_t byComponent, int32_t * pOffsetX, int32_t * pOffsetY);
 // @sourcefile .\ENGINE\Gfx.cpp
@@ -7293,6 +7331,6 @@ BOOL __fastcall GFX_DrawUnitColoredShape(struct D2UnitStrc * pUnit);
 BOOL __fastcall GFX_DrawUnitSelectionShape(struct D2UnitStrc * pUnit);
 // @sourcefile .\ENGINE\Gfx.cpp
 struct D2GfxInfoUnkStrc * __fastcall DRAW_WORLD_Unit_1(struct D2UnitStrc * pUnit, uint32_t nGamma, uint32_t bIsSelected, DRAWMODE nScreenY, struct D2GamePalShiftGreenBloodStrc * pPalShift, int32_t bDrawStates);
-// 13 internal functions (defined in .cpp)
+// 24 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::Gfx

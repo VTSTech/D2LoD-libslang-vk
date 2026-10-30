@@ -11,6 +11,7 @@
 // Forward declarations
 struct D2DrlgCoordListStrc;
 struct D2DrlgGridStrc;
+struct D2DrlgVertexStrc;
 struct D2PoolManagerStrc;
 struct D2RoomCoordListStrc;
 struct D2RoomExStrc;
@@ -30,6 +31,8 @@ struct D2DrlgCoordIndexCtxStrc {
 namespace D2Common::Drlg::DrlgLogic {
 
 // Function declarations
+// Gets the grid cell flags for a room at world coordinates. If the room has a valid coordinate list structure (offset 0x64), reads the grid flags at the relative position (worldX - roomX, worldY - roomY) and stores the result. From DrlgLogic.cpp area.
+void __fastcall DRLGLOGIC_GetGridFlagsAtWorldPos(struct D2RoomExStrc * pRoomEx, struct D2DrlgVertexStrc * pVertex, int nWorldX, int nWorldY);
 // @sourcefile .\DRLG\DrlgLogic.cpp
 struct D2DrlgCoordListStrc * __thiscall AllocEmptyDrlgCoordList_Unused(struct D2PoolManagerStrc * pMemory, struct D2RoomExStrc * pRoomEx);
 // @sourcefile .\DRLG\DrlgLogic.cpp
@@ -60,6 +63,6 @@ struct D2RoomCoordListStrc * __fastcall GetCoordList(struct D2RoomExStrc * pRoom
 // Allocates D2DrlgCoordListStrc, builds grid, populates coord list.
 // @sourcefile .\DRLG\DrlgLogic.cpp
 void __fastcall DRLGLOGIC_BuildRoomCoordList(struct D2RoomExStrc * pRoomEx, int nOrientGridFlags, int nFloorGridFlags, struct D2DrlgGridStrc * pGrid);
-// 3 internal functions (defined in .cpp)
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::DrlgLogic

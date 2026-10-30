@@ -20,6 +20,7 @@
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgActWarpsInfoStrc.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
@@ -40,8 +41,7 @@
 #include "D2Common/Environment.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
@@ -1657,7 +1657,7 @@ int32_t __stdcall GetGridIndex(D2RoomStrc * pRoom, int32_t nX, int32_t nY) {
 static void DRLGROOMEX_InitRoomExData(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx) {
     D2DrlgStrc* pDrlg = pRoomEx->pLevel->pDrlg;
     if (!pRoomEx->nDrlgRoomsExNearCount) {
-      Drlg::DRLGROOMEX_InitNearRoomsAndVisTiles(pMemory, pRoomEx);
+      Drlg::DrlgRoom::DRLGROOMEX_InitNearRoomsAndVisTiles(pMemory, pRoomEx);
     }
 
     Drlg::RoomTile::InitGridCells(pRoomEx);
@@ -1754,7 +1754,7 @@ static void __stdcall InitNearRooms(D2PoolManagerStrc * pMemory, D2RoomExStrc * 
     uint32_t nRecursionHigh3B;
     if (!pRoomEx->nDrlgRoomsExNearCount) {
       D2DrlgStrc* pDrlgReloaded = pDrlg;
-      Drlg::DRLGROOMEX_InitNearRoomsAndVisTiles(pMemory, pRoomEx);
+      Drlg::DrlgRoom::DRLGROOMEX_InitNearRoomsAndVisTiles(pMemory, pRoomEx);
       pDrlg = pDrlgReloaded;
     }
 
@@ -1991,7 +1991,7 @@ D2RoomStrc * __fastcall InitRoomEx(D2RoomExStrc * pRoomEx) {
 
     D2DrlgStrc* pDrlg = pRoomEx->pLevel->pDrlg;
     if (!pRoomEx->nDrlgRoomsExNearCount) {
-      Drlg::DRLGROOMEX_InitNearRoomsAndVisTiles(pDrlg->pMemoryPool, pRoomEx);
+      Drlg::DrlgRoom::DRLGROOMEX_InitNearRoomsAndVisTiles(pDrlg->pMemoryPool, pRoomEx);
     }
 
     Drlg::RoomTile::InitGridCells(pRoomEx);

@@ -8,8 +8,8 @@
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "D2Common/Chat/Ignorelist/MappingEntryNode.h"
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "Fog/3rdparty/crashy/Report.h"
@@ -32,6 +32,7 @@ template<> TSLink<::TCELENTRY>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Link(::
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * ptr, uint32_t nLinkType, ::TCELENTRY * pExisting) {
+    int nLinkBase;
     uint32_t pTmp;
     ::TCELENTRY* pEntry = ptr;
     if (!ptr) {
@@ -56,30 +57,37 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::LinkNode(::TCELENTRY * 
     if (!pExisting) {
       pExisting = (::TCELENTRY*)&this->m_terminator;
     }
-    if (nLinkType != 1) {
-      pHead = pExisting->m_link.m_prevlink;
-      pEntry->m_link.m_prevlink = pHead;
-      pEntry->m_link.m_next = pHead->m_next;
-      pHead->m_next = (int)ptr;
-      pExisting->m_link.m_prevlink = &pEntry->m_link;
-      return;
-    }
 
-    pEntry->m_link.m_prevlink = &pExisting->m_link;
-    pEntry->m_link.m_next = pExisting->m_link.m_next;
-    int nLinkBase = this->m_linkoffset;
-    pTmp = pExisting->m_link.m_next;
-    if ((int)pTmp < 0) {
-      *(::TCELENTRY**)~pTmp = (::TCELENTRY*)pEntry;
-      pExisting->m_link.m_next = (int)ptr;
-      return;
-    }
-    if (nLinkBase < 0) {
-      nLinkBase = (int)pExisting - pExisting->m_link.m_prevlink->m_next;
-    }
+    switch (nLinkType) {
+      case 1:
+        {
+          pEntry->m_link.m_prevlink = &pExisting->m_link;
+          pEntry->m_link.m_next = pExisting->m_link.m_next;
+          nLinkBase = this->m_linkoffset;
+          pTmp = pExisting->m_link.m_next;
+          if ((int)pTmp < 0) {
+            *(::TCELENTRY**)~pTmp = (::TCELENTRY*)pEntry;
+            pExisting->m_link.m_next = (int)ptr;
+            return;
+          }
+          if (nLinkBase < 0) {
+            nLinkBase = (int)pExisting - pExisting->m_link.m_prevlink->m_next;
+          }
 
-    *(::TCELENTRY**)(pTmp + nLinkBase) = (::TCELENTRY*)pEntry;
-    pExisting->m_link.m_next = (int)ptr;
+          *(::TCELENTRY**)(pTmp + nLinkBase) = (::TCELENTRY*)pEntry;
+          pExisting->m_link.m_next = (int)ptr;
+          return;
+        }
+      default:
+        {
+          pHead = pExisting->m_link.m_prevlink;
+          pEntry->m_link.m_prevlink = pHead;
+          pEntry->m_link.m_next = pHead->m_next;
+          pHead->m_next = (int)ptr;
+          pExisting->m_link.m_prevlink = &pEntry->m_link;
+          return;
+        }
+    }
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENTRY * ptr) {
@@ -88,7 +96,7 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENT
     }
 
     uint32_t uVar1 = ptr->m_link.m_next;
-    return (::TCELENTRY*)((int)uVar1 < 1 ? 0 : uVar1);
+    return (::TCELENTRY*)((int)uVar1 <= 0 ? 0 : uVar1);
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY * ptr) {
@@ -116,11 +124,11 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY 
 }
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::RawNext(::TCELENTRY * ptr) {
-    if (!ptr) {
-      return (::TCELENTRY*)this->m_terminator.m_next;
+    if (ptr) {
+      return (::TCELENTRY*)ptr->m_link.m_next;
     }
 
-    return (::TCELENTRY*)ptr->m_link.m_next;
+    return (::TCELENTRY*)this->m_terminator.m_next;
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
@@ -130,7 +138,7 @@ template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkAll() {
     while (true) {
       int nNext;
       pNode = (int*)this->m_terminator.m_next;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -186,11 +194,11 @@ template<> TSList<::TCELENTRY, TSGetLink<TCELENTRY>>* TSList<TCELENTRY, TSGetLin
 
 template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::NewNode(uint32_t nLinkType, uint32_t nExtraBytes, uint32_t dwFlags) {
     ::TCELENTRY* pNewEntry = (::TCELENTRY*)Storm::SMem::SMemAlloc(nExtraBytes + 0x24, s___AUTCELENTRY___00741f14, -2, dwFlags | 8);
-    if (!pNewEntry) {
-      pNewEntry = 0;
-    } else {
+    if (pNewEntry) {
       pNewEntry->m_link.m_prevlink = 0;
       pNewEntry->m_link.m_next = 0;
+    } else {
+      pNewEntry = 0;
     }
     if (!nLinkType) {
       return pNewEntry;

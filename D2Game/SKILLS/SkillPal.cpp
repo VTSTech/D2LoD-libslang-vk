@@ -25,6 +25,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -37,7 +38,6 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2DamageStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -46,6 +46,7 @@
 #include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/MISSILES/Missiles.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -779,9 +780,9 @@ BOOL __fastcall SKILPAL_SrvStFn31_Charge(::SGAMEDATA * pGame, D2UnitStrc * pUnit
           eAttackMode = eD2MonsterAnimMode_ns::Attack2;
         }
 
-        GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eAttackMode, &sMonsterKill);
+        Monster::MonsterMode::SetCurrentSkill(pUnit, eAttackMode, &sMonsterKill);
         sMonsterKill.pAttacker = pTarget;
-        nChargeCalc = GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition((::SGAMEDATA*)nChargeCalc, &sMonsterKill, 1);
+        nChargeCalc = Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition((::SGAMEDATA*)nChargeCalc, &sMonsterKill, 1);
         return nChargeCalc;
       }
 

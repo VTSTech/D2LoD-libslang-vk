@@ -27,6 +27,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
@@ -41,7 +42,6 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
@@ -59,6 +59,7 @@
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/D2MonsterRegionStrc.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
@@ -2278,14 +2279,14 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
     D2Common::PATH::DynamicPath::PATH_UpdateCollisionWidth(pRevived);
     if (pMonStats2->byResurrectMode == '\x0e') {
       D2SkillStrc* pSkill;
-      GAME::Event::Dispatch::Monster::SetCurrentSkill(pRevived, eD2MonsterAnimMode_ns::Sequence, &sKillStrc);
+      Monster::MonsterMode::SetCurrentSkill(pRevived, eD2MonsterAnimMode_ns::Sequence, &sKillStrc);
       pSkill = D2Common::Skills::GetSkillByIdAndOwner(pRevived, SKILL_SkeletonRaise, -1);
       D2Common::Units::SetCurrentSkill(pRevived, pSkill);
       D2Common::PATH::DynamicPath::SetStepNum(pRevived->pPath.pDynamicPath, 1);
       sKillStrc.pAttacker = 0;
       sKillStrc.nTargetX = nCorpseSpawnX;
       sKillStrc.nTargetY = nCorpseY;
-      GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 0);
+      Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 0);
     }
 
     D2Common::DATATBLS::ItemStats::SetState(pRevived, STATE_corpse_noselect, 1);

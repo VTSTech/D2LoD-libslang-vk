@@ -17,10 +17,10 @@
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -43,7 +43,7 @@ void __fastcall AddMercForHireToGlobalList(D2GSPacketSrv0x4E * pPacket) {
     int nMercSlot = 0;
     while (D2Client::Merc::D2MercForHire[nMercSlot].bActive) {
       nMercSlot++;
-      if ((uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 7) < (int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive) {
+      if ((int)&D2Client::Merc::D2MercForHire[nMercSlot].bActive >= (intptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire) + 8)) {
         return;
       }
     }
@@ -78,7 +78,7 @@ void __fastcall NPCMENU_SetSelectedMercIndex(int16_t nParam) {
       }
 
       pMercEntry++;
-    } while ((int)pMercEntry < (uintptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire)));
+    } while ((int)pMercEntry < (intptr_t)((char*)&D2Client::Merc::D2MercForHire + sizeof(D2Client::Merc::D2MercForHire)));
 
     Hireables::UI_InitializeHirelingIconsUI();
 }
@@ -108,10 +108,10 @@ void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
       Sound::SOUND_PlaySound(0x11ff, pUnit, 0, 0, 0);
       return;
     }
-    if (!_Interaction::bInteractingWithNpc) {
-      pInteractedNpc = 0;
-    } else {
+    if (_Interaction::bInteractingWithNpc) {
       pInteractedNpc = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
+    } else {
+      pInteractedNpc = 0;
     }
     if (pUnit == pInteractedNpc) {
       return;
@@ -148,7 +148,7 @@ void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
 
 void __stdcall NPCMENU_ResurrectMerc() {
     if (Dialog::gpNpcMercListDialog) {
-      Dialog::FreeDialogStrc();
+      Dialog::FreeDialogStrc(Dialog::gpNpcMercListDialog);
       if (gpNpcMenuMercListBox) {
         gpNpcMenuMercListBox->pVtable->ScalarDeletingDestructor(gpNpcMenuMercListBox, 1);
       }
@@ -225,7 +225,7 @@ void __fastcall MERC_ClearHireInventory(D2UnitStrc * pUnit) {
       pCarried = D2Common::INVENTORY::Inventory::GetCarriedItem(pCurrentItem);
       pCurrentItem = pNextItem;
       if (pCarried) {
-        UNIT::CUnit::RemoveObjectFromServerObjectTable(pCarried->eUnitType, pCarried->nUnitGUID);
+        UNIT::CUnit::RemoveObjectFromServerObjectTable(pCarried->nUnitGUID, pCarried->eUnitType);
       }
     }
 

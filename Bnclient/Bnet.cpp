@@ -2,11 +2,7 @@
 
 #include "Bnclient/Bnet.h"
 #include "Bnclient/Bnclient.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
-#include "Fog/Debug.h"
 #include "Storm/Source/SSComp.h"
-#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
@@ -20,25 +16,25 @@ int BNET_LogIndent(int32_t nIndentAction, int32_t nParam2) {
     if (nIndentAction == 1) {
       if (!(gbBnetLogInitialized & 1)) {
         gbBnetLogInitialized |= 1;
-        Storm::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
+        Storm::Source::SSComp::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
         atexit(StaticFini_gnBnetLogFileHandle);
       }
 
       Storm::Source::SSComp::SLogClose(gnBnetLogFileHandle);
       if (!(gbBnetLogInitialized & 1)) {
         gbBnetLogInitialized |= 1;
-        Storm::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
+        Storm::Source::SSComp::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
         atexit(StaticFini_gnBnetLogFileHandle);
       }
 
-      Storm::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
+      Storm::Source::SSComp::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881860);
       return 1;
     }
     if (nIndentAction == 2) {
       uint32_t* pFilestream;
       pFilestream = (uint32_t*)BNCLIENT_GetBnetLogFilestream();
-      Storm::SLogSetIndent(*pFilestream, nParam2);
+      Storm::Source::SSComp::SLogSetIndent(*pFilestream, nParam2);
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881860);
@@ -50,11 +46,11 @@ void BnetLog_WriteLine(char * Format, ...) {
     va_start(__va, Format);
     char szBuf[512];
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881860);
-    __vsnprintf(szBuf, 0x200, Format, __va);
+    vsnprintf(szBuf, 0x200, Format, __va);
     szBuf[0x1ff] = '\0';
     if (!(gbBnetLogInitialized & 1)) {
       gbBnetLogInitialized |= 1;
-      Storm::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
+      Storm::Source::SSComp::SLogCreate("BnetLog.txt", 0, &gnBnetLogFileHandle);
       atexit(StaticFini_gnBnetLogFileHandle);
     }
 

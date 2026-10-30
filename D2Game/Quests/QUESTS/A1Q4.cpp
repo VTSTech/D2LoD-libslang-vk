@@ -12,6 +12,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -23,8 +24,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Text.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
@@ -37,6 +37,7 @@
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/MonsterAI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -583,8 +584,8 @@ BOOL __fastcall Q04_DespawnRogueGuards(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       return 1;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &sKill);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKill, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sKill);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKill, 1);
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSearchForCain);
     if (!pQuestData) {
       return 1;

@@ -145,8 +145,6 @@ uint32_t __stdcall DAMAGE_RollMinMaxDamageRange(int32_t nParam, uint32_t * pnPar
 // Checked BEFORE block/dodge/avoid/evade (all independent rolls).
 BOOL __fastcall DAMAGE_RollAttackHit(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nToHitBonusExtra, int32_t bIsRangedAttack);
 void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pVictim, struct D2DamageStrc * pDamage, uint8_t bParam);
-// Returns the highest weapon-type-conditional skill damage bonus (stat 0x15C) applicable to the unit's currently equipped weapons (left and right arm slots). Iterates all bonus entries; an entry with ITEMTYPE_None1 matches unconditionally. Returns 0 if unit is null or no matching bonus is found.
-int32_t DAMAGE_GetSkillDamageBonus(struct D2UnitStrc * pUnit);
 uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pDefUnit, int32_t nAttackRating, int32_t nParam2);
 // Applies missile hit damage to all units within nRadius of (nCenterX,nCenterY) that pass targeting checks. Builds a UnitFind result set (flags nUnitFlags, default 0x583), skips the owner and owner-owner unless bHitOwner/bHitOwnerOwner are set, requires line-of-sight (COLLISION_LOS), optionally filters through pfnProc callback, then calls MISSMODE_ApplyMissileHitDamage for each hit. Returns 1 if any unit was hit, 0 otherwise.
 void __fastcall DAMAGE_ApplyAreaOfEffectDamage(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nCenterX, int32_t nCenterY, int32_t nRadius, struct D2DamageStrc * pDamage, BOOL bHitOwner, BOOL bHitOwnerOwner, pfnAoEDamageFilter pfnProc, int32_t nUnitFlags);
@@ -161,6 +159,6 @@ void __fastcall DAMAGE_AwardKillExperience(::SGAMEDATA * pGame, struct D2UnitStr
 void __fastcall DAMAGE_SetUnitToLevel(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nTargetLevel);
 // Server-side melee hit resolution between attacker pUnit and defender pUnit2. Validates both are player/monster, can attack each other, and are within melee range (range widened by nParam2 + the attacker's melee range; monster attackers get +2). Sets a "moving" flag if a player defender is running, then rolls the attack (DAMAGE_RollAttackHit using nParam1) and checks block/evasion (DAMAGE_CheckBlockAndEvasion), folding the resulting STATE_* flags into a packed uint16 result (hit / block / dodge / evade / parry bits, plus an uninterruptable-stun bit). Returns the packed hit-result word (0 = out of range / cannot attack). Custom-register convention.
 uint32_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nParam1, int32_t nParam2, eD2UnitType eUnitType);
-// 33 internal functions (defined in .cpp)
+// 35 internal functions (defined in .cpp)
 
 } // namespace D2Game::UNIT::SUnitDmg

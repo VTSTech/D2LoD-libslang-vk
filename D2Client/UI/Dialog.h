@@ -119,7 +119,7 @@ void __fastcall AllocDialogSub(struct D2DialogStrc * pDialog, void * pVtable, in
 void __stdcall DIALOG_RegisterHandler();
 struct D2DialogStrc * __fastcall AllocDialogStrcWithBackground(int32_t nX, int32_t nY, fpDialogFunc nfpDialogFunc, int32_t fpDialogFunc2, int32_t nParam1, int32_t nParam2);
 struct D2DialogStrc * __fastcall AllocDialogStrc(int32_t nX, int32_t nY, fpDialogFunc fpDialogFunc1, fpDialogFunc fpDialogFunc2, int32_t nExtraParam1, int32_t nLayoutMode, int32_t nAutoLayout, int32_t nWidth, int32_t nHeight, int32_t nExtraParam2, int32_t nExtraParam3);
-void __stdcall FreeDialogStrc();
+void __fastcall FreeDialogStrc(struct D2DialogStrc * pDialog);
 void __fastcall DIALOG_DrawBackground(struct D2DialogStrc * pDialog);
 void __fastcall DIALOG_SetSelectedLine(struct D2DialogStrc * pDialog, int32_t nSubIndex);
 // Sets D2DialogStrc::nHighlightStyle (0x5C): 1=text highlight color, 2=animated cursor icons flanking selected line
@@ -128,6 +128,6 @@ void __fastcall DIALOG_RecalculateLayout(struct D2DialogStrc * pDialog);
 int32_t __fastcall DIALOG_GetSelectedIndex(struct D2DialogStrc * pDialog);
 int __stdcall GetDialogCounter();
 void __fastcall AddStringData(struct D2DialogStrc * pDialog, uint16_t * szString, uint32_t param_1, uint32_t param_2, int32_t nParam1, uint32_t nParam, fpDialogFunc nParam2, int32_t nParam3);
-// 3 internal functions (defined in .cpp)
+// 6 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Dialog

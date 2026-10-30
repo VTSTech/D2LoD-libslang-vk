@@ -2200,67 +2200,6 @@ int32_t __stdcall DRLGPRESET_FindPresetTypeIndex(int32_t nLevelType, uint32_t nO
     } while (true);
 }
 
-// Spawns a single preset unit (monster, object, or item) from a tile data record into the room. Looks up the preset type index via DRLGPRESET_FindPresetTypeIndex, transforms room-local tile coordinates to world space, bounds-checks against the room size, then calls AllocPresetUnit. Marks the preset-unit entry as consumed (flag 0x20) on success. Special-cases shrine objects (IDs 0x5b-0x5c) with a seed-modulo 3 branch.
-// Seven arguments, four in registers: pTileData in EDI, pRoomEx in ESI, nWorldY in EAX, nPresetId in EDX. nWorldY is a world Y coordinate: MOV EBX,EAX at 0066d9e7 then SUB EBX,[ESI+0x38] (WorldPosition.y) at 0066da33 mirrors SUB EAX,[ESI+0x34] on nWorldX (1.14d asm).
-void __stdcall CreatesPresets(D2RoomExStrc * pRoomEx, int nWorldY, uint32_t nPresetId, int * pPresetUnit, int nWorldX, int nTileType) {
-    uint32_t nSeedMod;
-    int32_t nMonStatsId;
-    BOOL bUseMonStats;
-    eD2UnitType eUnitType;
-    int iVar1;
-    iVar1 = nTileType;
-    if (pPresetUnit) {
-      if (*(uint8_t*)(pPresetUnit + 5) & 0x20) {
-        return;
-      }
-
-      iVar1 = pPresetUnit[7];
-    }
-
-    int32_t nPresetTypeIndex;
-    nPresetTypeIndex = DRLGPRESET_FindPresetTypeIndex(pRoomEx->pLevel->eD2LevelId, nPresetId, (uint32_t)(iVar1 == 9));
-    if (nPresetTypeIndex == -1) {
-      return;
-    }
-
-    nWorldX -= pRoomEx->sCoords.WorldPosition.x;
-    nTileType = nWorldY - pRoomEx->sCoords.WorldPosition.y;
-    Transform::CoordsRoomToWorld(&nWorldX, &nTileType);
-    iVar1 = nWorldX + gPresetTypeTables.aTypes[nPresetTypeIndex].nOffsetX;
-    nTileType += gPresetTypeTables.aTypes[nPresetTypeIndex].nOffsetY;
-    if (iVar1 < 0) {
-      return;
-    }
-    if (nTileType < 0) {
-      return;
-    }
-    if (iVar1 >= pRoomEx->sCoords.WorldSize.x * 5) {
-      return;
-    }
-    if (nTileType >= pRoomEx->sCoords.WorldSize.y * 5) {
-      return;
-    }
-
-    nMonStatsId = gPresetTypeTables.aTypes[nPresetTypeIndex].nUnitId;
-    eUnitType = gPresetTypeTables.aTypes[nPresetTypeIndex].eUnitType;
-    bUseMonStats = 0;
-    nWorldX = iVar1;
-    if (eUnitType != UNIT_MONSTER) {
-      if (eUnitType == UNIT_OBJECT && (bUseMonStats = 0 , nMonStatsId >= 0x5b) && nMonStatsId <= 0x5c && (nSeedMod = D2Client::Archive::UNIT_GetModuloFromSeed(&pRoomEx->sSeed, 3) , !nSeedMod)) {
-        goto mark_processed;
-      }
-    } else {
-      nMonStatsId = D2Client::DataTbls::CheckMonStatId(nMonStatsId);
-      bUseMonStats = 1;
-    }
-
-    DrlgRoom::AllocPresetUnit(pRoomEx, pRoomEx->pLevel->pDrlg->pMemoryPool, eUnitType, nMonStatsId, bUseMonStats, iVar1, nTileType);
-    mark_processed:
-    if (pPresetUnit) {
-      pPresetUnit[5] |= 0x20;
-    }
-}
-
 void StaticFini_CriticalSection_0096d610() {
     DeleteCriticalSection(&lpCriticalSection_0096d610);
 }

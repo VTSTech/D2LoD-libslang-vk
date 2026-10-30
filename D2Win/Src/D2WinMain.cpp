@@ -7,7 +7,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Multi/OOGUtilities.h"
 #include "D2Sound/Src/D2SoundFast.h"

@@ -6,6 +6,7 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgLevelStrc.h"
 #include "D2Common/Drlg/D2DrlgOrthStrc.h"
@@ -13,7 +14,6 @@
 #include "D2Common/Drlg/DrlgRoom.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/ITEMS/Items.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -159,7 +159,7 @@ int32_t __stdcall DRLGPRESET_GetObjectTableActCount(int32_t nActNo) {
       nStride += 6;
       pObjectEntry += 6;
       nCount += 6;
-      if (0x95 < nStride) {
+      if (nStride >= 0x96) {
         return nCount;
       }
     }

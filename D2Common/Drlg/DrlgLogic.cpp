@@ -12,6 +12,7 @@
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/D2DrlgTileDataStrc.h"
 #include "D2Common/Drlg/D2DrlgTileGridStrc.h"
+#include "D2Common/Drlg/D2DrlgVertexStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/DrlgAnim.h"
 #include "D2Common/Drlg/DrlgGrid.h"
@@ -45,6 +46,52 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2RoomCoordListStrc) == 0x30, "D2_N
 
 
 namespace D2Common::Drlg::DrlgLogic {
+
+// Iterates grid cells, builds coord entries for each non-flagged cell.
+static void DRLGLOGIC_PopulateGridCoordIndices(int * pnParam) {
+    uint32_t nCellFlags;
+    int nWidth = *(int*)(*pnParam + 0x3c);
+    int nHeight = *(int*)(*pnParam + 0x40);
+    int nGridY = 0;
+    if (nHeight < 0) {
+      return;
+    }
+
+    do {
+      int nGridX;
+      nGridX = 0;
+      if (nWidth >= 0) {
+        do {
+          nCellFlags = DrlgGrid::GetGridFlags((D2DrlgGridStrc*)pnParam[1], nGridX, nGridY);
+          if (!(nCellFlags & 0x10000000)) {
+            pnParam[6]++;
+            pnParam[7] = pnParam[6] & 0xfffffffU | 0x10000000;
+            nCellFlags = DrlgGrid::GetGridFlags((D2DrlgGridStrc*)pnParam[4], nGridX, nGridY);
+            if ((nCellFlags & 0x1e0ff00) == 0x1e00000 || (int)nCellFlags < 0) {
+              pnParam[7] |= 0x20000000;
+            }
+
+            DrlgGrid::DRLGGRID_FloodFillGridCoords(pnParam, nGridX, nGridY, -1);
+          }
+
+          nGridX++;
+        } while (nGridX <= nWidth);
+      }
+
+      nGridY++;
+    } while (nGridY <= nHeight);
+}
+
+// Gets the grid cell flags for a room at world coordinates. If the room has a valid coordinate list structure (offset 0x64), reads the grid flags at the relative position (worldX - roomX, worldY - roomY) and stores the result. From DrlgLogic.cpp area.
+void __fastcall DRLGLOGIC_GetGridFlagsAtWorldPos(D2RoomExStrc * pRoomEx, D2DrlgVertexStrc * pVertex, int nWorldX, int nWorldY) {
+    D2DrlgCoordListStrc* pCoordList = pRoomEx->pDrlgCoordList;
+    D2DrlgVertexStrc* pGridFlags = 0;
+    if (pCoordList && !(pCoordList->eFlags & 1)) {
+      pGridFlags = (D2DrlgVertexStrc*)DrlgGrid::GetGridFlags(&pCoordList->sCoordIndexGrid, nWorldX - pRoomEx->sCoords.WorldPosition.x, nWorldY - pRoomEx->sCoords.WorldPosition.y);
+    }
+
+    pVertex->pNext = pGridFlags;
+}
 
 // @sourcefile .\DRLG\DrlgLogic.cpp
 D2DrlgCoordListStrc * __thiscall AllocEmptyDrlgCoordList_Unused(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx) {
@@ -597,7 +644,7 @@ void __fastcall DRLGLOGIC_BuildRoomCoordList(D2RoomExStrc * pRoomEx, int nOrient
     sCoordCtx.nCallerArg10 = nFloorGridFlags;
     sCoordCtx.pRoomEx = pRoomEx;
     sCoordCtx.nCoordIndex = nCoordCount;
-    DrlgGrid::DRLGLOGIC_PopulateGridCoordIndices((int*)&sCoordCtx);
+    DRLGLOGIC_PopulateGridCoordIndices((int*)&sCoordCtx);
     DrlgGrid::ResetGrid(&sLocalGrid);
     nCoordCount = sCoordCtx.nCoordIndex - nCoordIndexStart + 1;
     pCoordListStrc->nListSize = nCoordCount;

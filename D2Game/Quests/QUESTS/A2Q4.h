@@ -74,10 +74,6 @@ BOOL __fastcall OBJOP_A2Q4_StaffOfKingsAltar(struct D2ObjectOperateFnArg * pOper
 void __fastcall Objects_InitFn29(struct D2ObjectInitFnArg * pInitArg);
 // A2Q4 - SetObjectOperateState. Toggles the two paired Sanctuary-portal substate fields when an object is operated. nParam 0x4a: if Cellar field unset, set it to 1 and mark portal substate 2. nParam 0x36: if portal substate unset, set portal 1 and Cellar field 2. Keeps the Cellar<->Sanctuary portal pair consistent. No quest-record writes.
 void __fastcall Q12_SetObjectOperateState(::SGAMEDATA * pGame, int32_t nParam);
-// A2Q4 - Callback_03 (quest state 3 handler). Index 0x4a: advance stateFlag to 4 (if <4) and broadcast state 4 via QUEST_SetStateAndBroadcast, then persist via UpdateQuestRecord. Index 0x32: directly set record Step0x08+Step0x07. For the Jerhyn (0x28) path: tear down/respawn Jerhyn's monster AI, optionally ReplaceJerhyn at his location, remove player from the participation list, and if not Completed(0)/RewardAwaits(1) and stateFlag==3 advance to 4 + persist.
-void __fastcall Q12_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
-// A2Q4 - InitData. Quest registration/init. Allocates the A2Q4 quest-specific data block (0x48), zeroes state functions, wires the gossip table and the state-handler callbacks (0->Callback_00, 2->Callback_02, 3->Callback_03, 0xa->Callback_10, 0xb->Callback_11, 0xd->Callback_13), sets nQuestIdReal=TheArcaneSanctuary, fpActiveFilter=Q12_ActiveFilter, fpSequenceFilter=Q12_SequenceFilter, nSequenceQuestId=TheSummoner, and clears the Summoner/sun sub-flags.
-void __fastcall Q12_InitData(struct D2QuestDataStrc * pQuestData);
 // 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS::A2Q4

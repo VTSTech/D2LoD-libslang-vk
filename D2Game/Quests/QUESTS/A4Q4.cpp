@@ -6,11 +6,11 @@
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -125,7 +125,7 @@ void __fastcall Q30_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q30_Callback00_NpcActivate;
     pQuestData->pNpcMessages = &A4Q4::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     pQuestData->pQuestSpecificData.pA4Q4 = 0;

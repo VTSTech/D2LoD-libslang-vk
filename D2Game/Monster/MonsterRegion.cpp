@@ -14,6 +14,7 @@
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -22,7 +23,6 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
@@ -38,7 +38,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Common/Drlg/Drlg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

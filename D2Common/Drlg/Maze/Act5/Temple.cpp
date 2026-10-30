@@ -12,6 +12,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -63,9 +64,9 @@ int32_t ReplaceRooms(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(gaDrlgRoomReplacementsB, "D2Common::Drlg::Maze::Act5::Temple::ReplaceRooms::gaDrlgRoomReplacementsB");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    int32_t nRetValAfterA = (int32_t)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) * 0xaaaaaaab);
+    int32_t nRetValAfterA = (int32_t)((uint64_t)DVar1.nSeedLow * 0xaaaaaaab);
     pLevel->sSeed = DVar1;
-    uint32_t nRollMod3 = DVar1.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) / 3) * -3;
+    uint32_t nRollMod3 = DVar1.nSeedLow % 3;
     uint32_t nRoll = nRollMod3;
     if (pLevel->eD2LevelId != 0x7c) {
       nRetValAfterA = (int32_t)ReplaceRoom(gaDrlgRoomReplacementsA + nRollMod3, pLevel, &nRoll);

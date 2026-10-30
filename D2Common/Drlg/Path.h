@@ -9,16 +9,39 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2DrlgAStarContextStrc;
-struct D2DrlgPathNodeStrc;
-struct D2DrlgRoomAStarNodeStrc;
 struct D2DrlgRoomCoordsStrc;
 struct D2DynamicPathStrc;
 struct D2PathTypeArg;
-struct D2RoomStrc;
+struct D2SeedStrc;
 struct D2UnitStrc;
 
 // Data types
+struct D2DrlgPathNodeStrc {
+    /* 0x00 */ short nX; // packed coord X (low half of node key)
+    /* 0x02 */ short nY; // packed coord Y (high half of node key)
+    /* 0x04 */ short nFCost; // A* f = g + h (sort key)
+    /* 0x06 */ short nHCost; // A* heuristic cost to goal
+    /* 0x08 */ short nGCost; // A* cost from start
+    /* 0x0A */ short nUnused0x0a;
+    /* 0x0C */ struct D2DrlgPathNodeStrc * pParent; // parent node on best path
+    /* 0x10 */ struct D2DrlgPathNodeStrc * pChildren[8]; // 8 directional neighbor nodes
+    /* 0x30 */ struct D2DrlgPathNodeStrc * pHashNext; // next in open-list hash bucket
+    /* 0x34 */ struct D2DrlgPathNodeStrc * pSortedNext; // next in f-cost sorted priority list
+};
+
+struct D2DrlgRoomAStarNodeStrc {
+    /* 0x00 */ short nFCost; // A* f = g + h
+    /* 0x02 */ short nHCost; // heuristic to goal
+    /* 0x04 */ short nGCost; // cost from start
+    /* 0x06 */ short nFlags; // reset/visited flag
+    /* 0x08 */ short nX; // node coord X (packed with nY)
+    /* 0x0A */ short nY; // node coord Y
+    /* 0x0C */ void * pSeedPtr; // ptr into gnDrlgLevelSeed (direction RNG)
+    /* 0x10 */ int nDirection; // incoming direction index (0-7)
+    /* 0x14 */ void * pParent; // parent node on best path
+    /* 0x18 */ void * pNext; // expansion child / open-chain link
+};
+
 struct D2DynamicPathCoordsStrc {
     D2DynamicPathCoordsStrc() = default;
     D2DynamicPathCoordsStrc(uint64_t v) { *reinterpret_cast<uint64_t*>(this) = v; }
@@ -49,6 +72,34 @@ struct D2PathPointStrc {
     /* 0x02 */ uint16_t nY;
 };
 
+struct __attribute__((packed)) D2DrlgPathSearchCtxStrc {
+    /* 0x0000 */ uint8_t abyOpenBuckets[512]; // open-list hash buckets
+    /* 0x0200 */ uint8_t abyClosedBuckets[512]; // closed-list hash buckets; DRLGPATH_InsertNodeSorted uses base+0x200
+    /* 0x0400 */ void * pSortedHead; // f-cost sorted list head, base+0x400
+    /* 0x0404 */ D2DrlgPathNodeStrc aNodePool[200]; // base + 0x404 + n*0x38, per DRLGPATH_AllocPathNode
+    /* 0x2FC4 */ int32_t nPoolCount; // base+0x2FC4, the node-pool count
+    /* 0x2FC8 */ void * apPropagateQueue[200]; // base+0x2FC8, used by DRLGPATH_PropagateNodeCosts
+    /* 0x32E8 */ int32_t nPropagateCount; // base+0x32E8
+};
+
+struct __attribute__((packed)) D2DrlgAStarContextStrc {
+    /* 0x00000 */ struct D2DrlgRoomAStarNodeStrc * pOpenListHead; // lowest-cost node, starts at aNodes[0]
+    /* 0x00004 */ D2DrlgRoomAStarNodeStrc aNodes[900]; // node pool; nNodeCount stops at 900 (0x384)
+    /* 0x06274 */ int32_t nNodeCount;
+    /* 0x06278 */ uint16_t nMinX;
+    /* 0x0627A */ uint16_t nMinY;
+    /* 0x0627C */ uint16_t nMaxX;
+    /* 0x0627E */ uint16_t nMaxY;
+    /* 0x06280 */ uint16_t nWidth;
+    /* 0x06282 */ uint16_t nHeight;
+    /* 0x06284 */ int32_t nGridStride; // nWidth + 6
+    /* 0x06288 */ int32_t nGridOffsetX; // 3 - nMinX
+    /* 0x0628C */ int32_t nGridOffsetY; // 3 - nMinY
+    /* 0x06290 */ int32_t aGridCells[50000]; // best cost per cell, (nWidth+6)*(nHeight+6) used, nWidth*nHeight <= 50000 asserted
+    /* 0x36FD0 */ BOOL bRandomizeDirection;
+    /* 0x36FD4 */ struct D2SeedStrc * pSeed;
+};
+
 #pragma pack(push, 1)
 struct D2DrlgPathScannerStrc {
     /* 0x00 */ int32_t nDir; // index into the direction tables
@@ -67,18 +118,6 @@ struct D2DrlgPathScannerStrc {
 namespace D2Common::Drlg::Path {
 
 // Function declarations
-// DRLGPATH_SetPathPosition - Sets the world position of a dynamic path, converts to screen coordinates via DRLG_MapWorldToScreenCoords, and triggers room transfer if the unit has moved to a different room.
-void __stdcall DRLGPATH_SetPathPosition(uint32_t nOffsetX, uint32_t nOffsetY, struct D2RoomStrc * pRoom, struct D2DynamicPathStrc * pDynamicPath);
-// DRLGPATH_ClearPathPosition - Zeroes out a dynamic path's world and screen coordinates, resets path points, removes the unit from its room, and sets the pending-room-change flag (0x2).
-void __stdcall DRLGPATH_ClearPathPosition(struct D2DynamicPathStrc * pDynamicPath);
-// Given two 16.16 fixed-point coordinate pairs (from/to), computes a unit direction POINT (pPoint->x/y) and a 0..63 direction index (returned and written to *pnParam). Determines the dominant axis (X vs Y), normalizes the minor/major ratio to a 0..0x7f index, and looks up the vector components and base direction in the gnDrlgPathDirectionX / gaPathCalcDirectionVectorX tables, then applies octant/sign corrections (axis swap, Y-negate, X-negate, +8 rotation) to produce the final 64-direction value. __fastcall. Core direction primitive used by the DRLG path-building routines.
-int __fastcall DRLGPATH_CalcDirectionVector(POINT * pPoint, uint32_t * pnParam, uint32_t nFromXfp, uint32_t nFromYfp, uint32_t nToXfp, uint32_t nToYfp);
-// DRLGPATH_CalcPathDirection - Wrapper for DRLGPATH_CalcDirectionVector. Converts path point coordinates to fixed-point format. Called by DRLGPATH_UpdatePathVelocityAndDirection and DRLGPATH_ScaleVelocityVector.
-void __fastcall DRLGPATH_CalcPathDirection(POINT * pPoint, uint32_t * pnParam, uint32_t nFromX, uint32_t nFromY);
-// DRLGPATH_GetDirectionFromCoords - Converts tile coordinates to fixed-point and calls DRLGPATH_CalcDirectionVector. Used by GetDirectionToCoords, Skills_SrvDoFunc_062, and Update to determine facing direction.
-uint32_t __stdcall DRLGPATH_GetDirectionFromCoords(uint32_t nX, int32_t nY, int32_t nNewX, int32_t nNewY);
-// Advances a dynamic path along its path points: skips points already reached, computes the direction vector and velocity toward the current point (flips the direction index when flag 0x200 is set), and returns 1 when the last point is reached or the next step lands on the target subtile.
-int32_t __fastcall DRLGPATH_AdvanceAlongPathPoints(struct D2DynamicPathStrc * pDynamicPath, int32_t nParam, int32_t bForceDirection);
 // Computes an approximate isometric distance between two points (x1,y1) and (x2,y2).
 // Uses a fast heuristic: min(|dx|,|dy|) + max(|dx|,|dy|) * 2.
 // Takes 4 separate coordinate parameters via fastcall (ECX=x1, EDX=y1, stack=x2, stack=y2).
@@ -148,14 +187,18 @@ void __fastcall DRLGPATH_ApplyMissileOffset(struct D2UnitStrc * pMissileStrc);
 void __fastcall DRLGPATH_GetMissileTargetPosition(short * pOutPos, struct D2UnitStrc * pMissileStrc);
 // Computes a weighted distance between two packed coordinates. Uses a lookup table for distances within 8 tiles, falls back to a simple heuristic (minor + major*2) for larger distances.
 int32_t __stdcall DRLGPATH_GetWeightedDistancePacked(uint32_t nParam1, uint32_t nParam2);
-// Given a triplet of candidate directions (from GetPathDirectionTriplet), checks each against collision and returns the first non-blocked direction. Used by path smoothing and movement.
-BOOL __stdcall DRLGPATH_FindNonBlockedDirectionFromTriplet(uint32_t nPackedPos, int * pnDirTriplet, int * pnChosenDir, struct D2PathTypeArg * pPathTypeArg);
-// Performs a Bresenham line raycast between two packed positions, checking collision at each step. Handles all octant cases (X-major, Y-major, diagonal). Returns 0 if blocked, 1 if path is clear.
-BOOL __stdcall DRLGPATH_RaycastBresenhamLine(uint32_t nPackedSrc, uint32_t * pnParam, struct D2DynamicPathStrc * pPathArg);
-// Checks if a target position is reachable from a unit's current dynamic path position. Validates unit type (player/monster), handles zero-velocity case, and performs a Bresenham line collision check.
-BOOL DRLGPATH_CheckTargetReachable(uint32_t * pnParam, struct D2DynamicPathStrc * pDynamicPath);
 // Smooths a path by iterating through waypoints, choosing the best non-blocked direction at each step using direction triplets and collision checks. Builds a refined path with fewer unnecessary turns. Returns the waypoint count, which it also stores into pDynamicPath->dwPathPoints - the tail is MOV [ECX+0x28],EAX at 00679c71, so the count is live in EAX at the RET. PATH_FindPathToward tail-returns it for the nDirOffset case; typing this void made that caller return an uninitialised local, which reached PATH_CalculatePath as a waypoint count of ~2e9 and indexed PathPoints[] off the end.
 int32_t __fastcall DRLGPATH_SmoothPathPoints(struct D2PathTypeArg * pPathTypeArg);
+// Builds a coarse dynamic path from the unit's current position toward the target stored in pPathTypeArg, writing waypoints into pDynamicPath->PathPoints and returning the count. If a direction offset is already set, delegates to DRLGPATH_SmoothPathPoints. Otherwise: if the target is directly reachable (CheckTargetReachable) or within the IDA* distance threshold, emits a single waypoint; else walks step-by-step toward the target via DRLGPATH_GetPathDirectionTripletPacked + FindNonBlockedDirectionFromTriplet (using gPathDirectionOffsetsX/Y), recording a waypoint each time the chosen direction changes, bounded by nDistMax iterations and anti-backtracking.
+int32_t __fastcall PATH_FindPathToward(struct D2PathTypeArg * pPathTypeArg);
+int32_t __fastcall PATH_FindPathTowardFromStart(struct D2PathTypeArg * pPathTypeArg);
+int32_t __fastcall PATH_FindPathSmoothed(struct D2PathTypeArg * pPathTypeArg);
+// Finds a path from source to destination by first trying PATH_FindPathToward (greedy/directional). If the result doesn't reach the destination and the straight-line distance is short enough (squared distance &lt; 0x145), falls back to PATH_FindPathAStarAlt; if A* also fails, retries the directional search. Returns the waypoint count.
+int32_t __fastcall PATH_FindPathTowardWithAStarFallback(struct D2PathTypeArg * pPathTypeArg);
+int32_t __fastcall PATH_FindPathSingleStep(struct D2PathTypeArg * pPathTypeArg);
+int32_t __fastcall PATH_FindPathForceMove(struct D2PathTypeArg * pPathTypeArg);
+// Pathfinding callback that computes a knockback destination for a unit. Derives displacement from source to target using the dominant-axis normalisation scaled by half the path's nDist, then raycasts (Bresenham) the resulting endpoint back through collision geometry. Writes the final reachable point into pDynamicPath->PathPoints[0] and sets dwPathPoints=1. Returns 1 if the unit actually moved, 0 if blocked at source.
+int32_t __fastcall PATH_FindPathKnockback(struct D2PathTypeArg * pPathTypeArg);
 // Builds a circular set of path points around the origin using sin/cos lookup tables. Generates up to 77 waypoints in a spiral pattern, stored in the static path structure. Used for circular movement patterns.
 void * __fastcall DRLGPATH_BuildCircularPathPoints(struct D2DynamicPathStrc * pStaticPath);
 // Builds a set of randomized path waypoints using a seed-based random direction offset. Computes direction triplets and applies random perturbations to create organic-looking movement paths.
@@ -170,28 +213,20 @@ int32_t __stdcall DRLGPATH_GetSimpleDistancePacked(uint32_t nParam1, uint32_t nP
 uint8_t * __stdcall DRLGPATH_GetDirectionDeltaTable(int32_t nParam1, int32_t nParam2);
 // Checks if a packed coordinate (X|Y) is within the bounding rectangle of the path search area. Returns 1 if inside bounds, 0 otherwise.
 uint32_t __thiscall DRLGPATH_IsPositionInBounds(int32_t pThis, uint32_t nPackedPos);
-// Advances through a chain of path nodes, incrementing their visit count and updating their direction. When a node reaches visit count 5, moves to its parent. Returns the current node or 0 when the root is reached.
-struct D2DrlgRoomAStarNodeStrc * __stdcall DRLGPATH_AdvancePathNodeChain(struct D2DrlgAStarContextStrc * pAStarCtx, struct D2DrlgRoomAStarNodeStrc * pNode);
 // Top-level A* pathfinding function for PathTypeFunc_00. Initializes the search grid, computes initial heuristic, then iteratively expands the search with increasing cost limits. Extracts and returns the found path length (0 if no path found).
 int32_t __thiscall DRLGPATH_FindPathAStar(struct D2DrlgRoomCoordsStrc * pRoomCoords, struct D2PathTypeArg * pPathTypeArg);
+// Wrapper that computes the bounding box for A* search by merging the current room and (optionally) the next room extents, padding 10 tiles on any axis that didn't change, then delegates to DRLGPATH_FindPathAStar. nIdaStarVariable is doubled on entry (IDA* depth scaling). Returns the path length from the inner call.
+int32_t __fastcall PATH_FindPathAStar(struct D2PathTypeArg * pPathTypeArg);
 // Alternate simple distance heuristic between two packed coordinates. Same formula as DRLGPATH_GetSimpleDistancePacked but used by the secondary A* pathfinder (PathTypeFunc_01).
 int32_t __stdcall DRLGPATH_GetSimpleDistancePacked2(uint32_t nParam1, uint32_t nParam2);
 // Searches the open list hash table for a node matching the given packed position. Returns the node if found, NULL otherwise.
 short * __stdcall DRLGPATH_FindNodeInOpenList(int32_t nOpenListBase, uint32_t nPackedPos);
 // Searches the closed list hash table (offset 0x200 from the open list) for a node matching the given packed position. Returns the node if found, NULL otherwise.
 short * __stdcall DRLGPATH_FindNodeInClosedList(int32_t nOpenListBase, uint32_t nPackedPos);
-// Inserts a node into the open list hash table and the sorted priority linked list. Nodes are sorted by their f-cost (ascending) for efficient best-first retrieval.
-void DRLGPATH_InsertNodeSorted(int32_t nParam, struct D2DrlgPathNodeStrc * pNode);
-// Removes the best (lowest f-cost) node from the open priority list and moves it to the closed list hash table. This is the standard A* open list pop operation.
-int32_t * DRLGPATH_PopBestNodeFromOpenList(int32_t nOpenListBase);
 // Allocates a new path node from the pre-allocated node pool (max 200 nodes). Returns NULL if the pool is exhausted. Each node is 0x38 bytes and is zero-initialized.
 void * __fastcall DRLGPATH_AllocPathNode(int32_t nPathCtx);
-// Already documented: "Expands all 8 directional neighbors of a node in the A* grid search. For each neighbor (diagonal and cardinal), checks collision and calls TryExpandNeighborNode. Called by PathTypeFunc_01."
-BOOL __stdcall DRLGPATH_ExpandAllNeighbors(uint16_t * pCurNodeCoords, int32_t nOpenList, uint32_t nParam, struct D2PathTypeArg * pPathTypeArg);
-// Extracts a path from the A* grid search result by walking parent pointers. Similar to ExtractPathFromResult but used by the grid-based A* (PathTypeFunc_01). Returns the number of waypoints (max 77).
-int32_t DRLGPATH_ExtractPathFromResult2(int32_t nParam, void * * pCurNode);
-// Already has a meaningful description.
-int32_t DRLGPATH_CheckSurroundingCollisions(struct D2PathTypeArg * pPathTypeArg);
+// Fallback A* used when the greedy directional search does not reach the destination and the squared distance is under 0x145. The whole search state is ONE 0x32EC-byte frame object whose base is handed to every helper, which then reach the rest by byte offset: DRLGPATH_AllocPathNode takes the pool count at base+0x2FC4 and node n at base+0x404+n*0x38; DRLGPATH_InsertNodeSorted and PopBestNodeFromOpenList use the closed buckets at base+0x200 and the sorted head at base+0x400; DRLGPATH_PropagateNodeCosts uses the queue at base+0x2FC8 and its count at base+0x32E8. Split into separate locals the helpers wrote nodes over unrelated stack and read the list head out of garbage, which faulted on every player move long enough to need the A* fallback and on NPC paths.
+int32_t __fastcall PATH_FindPathAStarLocalPool(struct D2PathTypeArg * pPathTypeArg);
 // Computes the squared Euclidean distance between two packed (X|Y) coordinates. Returns dx*dx + dy*dy. No callers found - likely referenced via function pointer table or dead code.
 int32_t __stdcall DRLGPATH_GetSquaredDistancePacked(uint32_t nPackedA, uint32_t nPackedB);
 // Builds a list of coordinate points along a Bresenham line from source to destination. Stores packed (X,Y) coordinates in the output buffer and returns the point count. Sets the initial direction in *pnInitDir. Used by PathTypeFunc_15.
@@ -202,6 +237,6 @@ uint32_t __stdcall DRLGPATH_GetDirectionLookupFromPacked(uint32_t nSrcPacked, ui
 int32_t __fastcall DRLGPATH_FindPathDualScan(uint32_t * pPathGrid, int32_t nGridSize, uint32_t nStartPos, int * pStartX, int * pStartY, int32_t nEndX, uint32_t nEndY);
 // Simplifies a path by removing redundant collinear waypoints. Iterates through the input path, comparing consecutive direction deltas. Points that continue in the same direction are skipped. Diagonal shortcuts (where both dx and dy change simultaneously) are also compressed. Returns the simplified point count.
 int32_t __fastcall DRLGPATH_SimplifyCollinearWaypoints(struct D2PathPointStrc * pDstPoints, struct D2PathPointStrc * pSrcPoints, uint32_t nStartPacked, int32_t nPointCount);
-// 10 internal functions (defined in .cpp)
+// 19 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::Path

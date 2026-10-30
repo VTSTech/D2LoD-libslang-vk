@@ -2,26 +2,20 @@
 
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
-#include "D2CMP/SRC/CelCmp.h"
-#include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
-#include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/Draw/LightDiag.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxUtil.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/Msg.h"
-#include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Select.h"
-#include "D2Client/GAME/Sound.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Message.h"
 #include "D2Client/Renderer/Renderer.h"
@@ -30,9 +24,7 @@
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/Dialog.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Panel.h"
@@ -48,13 +40,11 @@
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/CUnitEvent.h"
-#include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/MonUnique.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/UnitMode.h"
 #include "D2Client/Warden/WardenClient.h"
-#include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -63,21 +53,17 @@
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
-#include "D2Common/D2WaypointStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
-#include "D2Common/DATATBLS/OverlayTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
-#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
 #include "D2Common/Units.h"
 #include "D2DDraw/Renderer/DirectDraw.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -85,14 +71,10 @@
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Objects/Objects.h"
-#include "D2Game/PLAYER/Player.h"
-#include "D2Game/PLAYER/PlayerTrade.h"
-#include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
-#include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Sound/Src/D2SoundSmp.h"
@@ -109,7 +91,6 @@
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
-#include "Fog/Src/AsyncData.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/D2ArchiveStrc.h"
@@ -122,8 +103,8 @@
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Common/DATATBLS/ItemStats.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
+#include "D2Common/Unit.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Launch/CharSel.h"
@@ -280,11 +261,11 @@ BOOL __fastcall ITEM_IsQuestItem(D2UnitStrc * pItem, D2UnitFindArgStrc * pUnitFi
 
 // Key-command handler: toggles the character screen. Reached only through gaCmdBindings[].pfnHandler, whose funcdef is __stdcall, and every one of its 56 sibling handlers is __stdcall. Left as "unknown" it emitted as cdecl and was the single strict compile error in globals.cpp.
 void __stdcall CMD_ToggleCharScreen() {
-    UI::Draw::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 1);
+    UI::ui::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 1);
 }
 
 void __stdcall CMD_ToggleInventory() {
-    UI::Draw::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 1);
+    UI::ui::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 1);
 }
 
 void __stdcall CMD_TogglePartyScreen() {
@@ -293,11 +274,11 @@ void __stdcall CMD_TogglePartyScreen() {
       return;
     }
 
-    UI::Draw::SetUIFlag(UI_PARTYSCREEN, UI_TOGGLE, 1);
+    UI::ui::SetUIFlag(UI_PARTYSCREEN, UI_TOGGLE, 1);
 }
 
 void __stdcall CMD_ToggleMsgLog() {
-    UI::Draw::SetUIFlag(UI_MSGLOG, UI_TOGGLE, 0);
+    UI::ui::SetUIFlag(UI_MSGLOG, UI_TOGGLE, 0);
 }
 
 void __stdcall CMD_ToggleQuestLog() {
@@ -320,11 +301,11 @@ void __stdcall CMD_ToggleChatBox() {
       return;
     }
 
-    UI::Draw::SetUIFlag(UI_CHATBOX, UI_TOGGLE, 0);
+    UI::ui::SetUIFlag(UI_CHATBOX, UI_TOGGLE, 0);
 }
 
 void __stdcall CMD_ToggleAutomap() {
-    UI::Draw::SetUIFlag(UI_AUTOMAP, UI_TOGGLE, 0);
+    UI::ui::SetUIFlag(UI_AUTOMAP, UI_TOGGLE, 0);
     BOOL BVar1 = UI::ui::GetUIFlag(UI_AUTOMAP);
     if (BVar1) {
       return;
@@ -363,11 +344,11 @@ void __stdcall CMD_AutomapToggleLeft() {
 }
 
 void __stdcall CMD_ToggleSkillTree() {
-    UI::Draw::SetUIFlag(UI_SKILLTREE, UI_TOGGLE, 1);
+    UI::ui::SetUIFlag(UI_SKILLTREE, UI_TOGGLE, 1);
 }
 
 void __stdcall CMD_ToggleSkillSelect() {
-    UI::Draw::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
+    UI::ui::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
     UI::SpellSel::SPELLSEL_SetMouseHandFlag(0);
 }
 
@@ -792,11 +773,11 @@ void __stdcall CMD_SetHoldAlt() {
     // keyup across alt-tab). Hold mode: vanilla byte path.
     if (ALTTOGGLE_Active()) {
         ALTTOGGLE_Flip();
-        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        UI::ui::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
         return;
     }
     // VP-END [alt-toggle]
-    UI::Draw::SetUIFlag(UI_HOLDALT, UI_SET, 0);
+    UI::ui::SetUIFlag(UI_HOLDALT, UI_SET, 0);
 }
 
 void __stdcall CMD_StopRun() {
@@ -826,108 +807,14 @@ void __stdcall CMD_ReleaseHoldAltAndClearSelection() {
     // (labels persist across the key-up; a lost keyup can never strand the
     // flag). Hold mode: vanilla byte path.
     if (ALTTOGGLE_Active()) {
-        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        UI::ui::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
         GAME::Select::ClearSelectedUnit();
         return;
     }
     // VP-END [alt-toggle]
-    UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+    UI::ui::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
     GAME::Select::ClearSelectedUnit();
 }
-
-// Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
-BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton) {
-    if ((nMouseButton & 0xffff) - 0x103 <= 1 && gaCmdBindings[nCmdIndex].pfnAltHandler) {
-      if (!pErrorCode) {
-        return 0;
-      }
-
-      *pErrorCode = 0xf8a;
-      return 0;
-    }
-
-    return 1;
-}
-
-int32_t SORT_CompareInts(int * pA, int * pB) {
-    if (*pA < *pB) {
-      return -1;
-    }
-    if (*pB < *pA) {
-      return 1;
-    }
-    if (!*(int*)((int)pA + 6)) {
-      return (uint32_t)(*(int*)((int)pB + 6) != 0);
-    }
-
-    return (*(int*)((int)pB + 6) != 0) - 1;
-}
-
-// Rebuilds derived mouse button bindings (0x100-0x104) from command table. Scans all key bindings and populates gKeyBindingTable slots for left/right/middle/scroll/forward mouse buttons. Invalidates bindings (sets 0xFFFF) if command has no handler or conflicts with mouse-specific restrictions.
-void __stdcall CMD_RebuildDerivedBindings() {
-    int iVar1;
-    uint32_t nKeyCode;
-    gpfnScrollUpButtonHandler = 0;
-    gpfnScrollDownButtonHandler = 0;
-    gpfnMouseLeftButtonHandler = 0;
-    gpfnMouseLeftButtonAltHandler = 0;
-    gpfnMouseMiddleButtonAltHandler = 0;
-    gpfnMouseRightButtonHandler = 0;
-    gpfnMouseRightButtonAltHandler = 0;
-    gpfnMouseMiddleButtonHandler = 0;
-    D2KeyBindStrc* pBinding;
-    pBinding = g_KeyBindingsTable;
-    do {
-      if (0xdf < pBinding->wKeyCode) {
-        iVar1 = pBinding->nCmdIndex;
-        if (iVar1 < 0x39) {
-          nKeyCode = (uint32_t)pBinding->wKeyCode;
-          switch (nKeyCode) {
-            case 0x100:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
-                unbind_key:
-                pBinding->wKeyCode = 0xffff;
-              } else {
-                gpfnMouseLeftButtonHandler = gaCmdBindings[iVar1].pfnHandler;
-                gpfnMouseLeftButtonAltHandler = gaCmdBindings[iVar1].pfnAltHandler;
-              }
-            break;
-            case 0x101:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
-                goto unbind_key;
-              }
-            gpfnMouseMiddleButtonAltHandler = gaCmdBindings[iVar1].pfnHandler;
-            gpfnMouseRightButtonHandler = gaCmdBindings[iVar1].pfnAltHandler;
-            break;
-            case 0x102:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
-                goto unbind_key;
-              }
-            gpfnMouseRightButtonAltHandler = gaCmdBindings[iVar1].pfnHandler;
-            gpfnMouseMiddleButtonHandler = gaCmdBindings[iVar1].pfnAltHandler;
-            break;
-            case 0x103:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
-                goto unbind_key;
-              }
-            gpfnScrollUpButtonHandler = gaCmdBindings[iVar1].pfnHandler;
-            break;
-            case 0x104:
-              if (nKeyCode - 0x103 < 2 && gaCmdBindings[iVar1].pfnAltHandler) {
-                goto unbind_key;
-              }
-            gpfnScrollDownButtonHandler = gaCmdBindings[iVar1].pfnHandler;
-          }
-        }
-      }
-
-      pBinding++;
-      if ((uintptr_t)((char*)&g_KeyBindingsTable + 1139) < (int)pBinding) {
-        return;
-      }
-    } while (true);
-}
-
 D2MissilesTxt * __fastcall GetMissleById(int32_t nMissileId) {
     if (nMissileId >= 0 && nMissileId < sgptDataTable->nTxtMissilesSize) {
       return sgptDataTable->pTxtMissiles + nMissileId;
@@ -1166,102 +1053,6 @@ void __fastcall AUTOMAP_UpdatePartyNamesCallback(D2EscMenuItemStrc * pItem, D2UI
     UI::Automap::AUTOMAP_SetPartyNames(pItem->nImageIndex);
 }
 
-static BOOL __stdcall UNITMODE_TryInteractWithObject(D2UnitStrc * pUnit, D2PathPointStrc pathPoint, int32_t nActionType, D2UnitStrc * pTargetUnit, int32_t nTargetGUID) {
-    if (pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1) {
-      BOOL BVar1;
-      BVar1 = UNIT::UnitMode::UNITMODE_IsTargetInActionRange(pTargetUnit, pUnit, nActionType);
-      if (!BVar1) {
-        return 1;
-      }
-
-      UNIT::UnitMode::UNITMODE_HandleMoveAction(nActionType, (int32_t)d2_bits_of(pathPoint), nTargetGUID, pUnit);
-      return 0;
-    }
-
-    GAME::Select::SELECT_UpdateUnitSelection(nullptr);
-    return 0;
-}
-
-void __fastcall UNITMODE_ExecuteDeferredAction(D2UnitStrc * pUnit) {
-    uint32_t bTargetable;
-    int fInteractResult;
-    int32_t nUnitGUID;
-    nUnitGUID = 0;
-    if (!pUnit) {
-      return;
-    }
-    if (pUnit->eUnitType != UNIT_PLAYER) {
-      return;
-    }
-
-    D2UnitDataPlayerStrc* pPlayerData;
-    pPlayerData = pUnit->pUnitData.pUnitDataPlayer;
-    if (!pPlayerData) {
-      return;
-    }
-    if (!pPlayerData->bHasPendingInteract) {
-      return;
-    }
-
-    eD2UnitModeAction nActionType;
-    nActionType = pPlayerData->eQueuedSkillId;
-    eD2UnitType eTargetType;
-    eTargetType = pPlayerData->eTargetUnitType;
-    nUnitGUID = pPlayerData->nTargetUnitGUID;
-    D2UnitStrc* pTargetUnit;
-    pTargetUnit = UNIT::Player::UNITS_FindClientSideUnit(nUnitGUID, eTargetType);
-    GAME::SCmd::SCMD_ClearPlayerTradeFields(pUnit);
-    if (nActionType == UNITMODEACTION_ITEM_INTERACT && eTargetType == UNIT_WARP) {
-      bTargetable = GAME::Game::GAMEDATA_GetGlobalTickCount();
-      GAME::Game::GAME_SetSyncTickCount(bTargetable + 500);
-    }
-    if (!pTargetUnit) {
-      return;
-    }
-    if (!nActionType) {
-      return;
-    }
-    if (eTargetType == UNIT_PLAYER) {
-      fInteractResult = UNIT::UnitMode::UNITMODE_HandleItemOrObjectInteraction(nActionType, 0, nUnitGUID, pTargetUnit, pUnit);
-    } else if (eTargetType == UNIT_MONSTER) {
-      fInteractResult = UNIT::UnitMode::UNITMODE_HandleSkillTargetInteraction(nActionType, 1, pUnit, pTargetUnit, nUnitGUID);
-    } else {
-      if (eTargetType != UNIT_OBJECT) {
-        bTargetable = UNIT::CheckFlags(pTargetUnit, UNITFLAG_TARGETABLE);
-        if (!bTargetable) {
-          GAME::Select::SELECT_UpdateUnitSelection(nullptr);
-          return;
-        }
-
-        goto execute_action;
-      }
-
-      fInteractResult = UNITMODE_TryInteractWithObject(pUnit, (D2PathPointStrc)0x2, nActionType, pTargetUnit, nUnitGUID);
-    }
-    if (!fInteractResult) {
-      return;
-    }
-
-    execute_action:
-    UNIT::UnitMode::UNITMODE_ExecuteSkillAction(nActionType, pUnit, eTargetType, nUnitGUID, 0);
-}
-
-void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
-    void* nAddress;
-    if (*(int*)(pSoundHdr + 0x86) != 1) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
-      exit(-1);
-    }
-
-    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(void**)(pSoundHdr + 0x6c) = (void*)nAddress;
-    size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(size_t*)(pSoundHdr + 0x70) = nReadSize;
-    *(uint32_t*)(pSoundHdr + 0x86) = 2;
-    GAME::Sound::SOUND_ParseStreamWavHeader(pSoundHdr);
-    gnSoundAsyncLoadCount--;
-}
-
 // The ECX slot that carries a function pointer was one variable holding three callees with two
 // different conventions - fpRequiredUserAction (bool __cdecl(void)), UI_ShowPopupDialog and
 // NET_D2GS_CLIENT_Send_0x6D_PING (void __stdcall(void)). Typing it void * split it into two register
@@ -1388,7 +1179,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
 
         bExitCutsceneActive = '\x01';
         DRAW_WORLD_ClearWarpFadeTimer();
-        UI::Draw::SetUIFlag(UI_NODRAW, UI_SET, 0);
+        UI::ui::SetUIFlag(UI_NODRAW, UI_SET, 0);
         dwResult = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
         if (dwResult) {
           if (gbCutsceneActive == '\0') {
@@ -1403,7 +1194,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         if (nCurrentCutsceneId != 5 || geCutsceneCurrentSoundId == '\0') {
           dwResult = D2gfx::D2GFX::D2GFX_GetResolutionMode();
           D2Win::D2GFX::SetResolutionModeWithEndCutScene(dwResult);
-          UI::Draw::SetUIFlag(UI_NODRAW, UI_RESET, 0);
+          UI::ui::SetUIFlag(UI_NODRAW, UI_RESET, 0);
           bExitCutsceneActive = '\0';
           bMpqLoaded = bVideoLoaded;
           goto check_chained_cutscene;
@@ -1443,7 +1234,7 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
 
         dwResult = D2gfx::D2GFX::D2GFX_GetResolutionMode();
         D2Win::D2GFX::SetResolutionModeWithEndCutScene(dwResult);
-        UI::Draw::SetUIFlag(UI_NODRAW, UI_RESET, 0);
+        UI::ui::SetUIFlag(UI_NODRAW, UI_RESET, 0);
         bExitCutsceneActive = '\0';
         geCutsceneCurrentSoundId = '\0';
         D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(4);
@@ -1496,18 +1287,6 @@ void __stdcall INV_SetItemDescHighlight() {
 
 uint8_t __stdcall INV_GetItemDescDirtyFlag() {
     return gbItemDescDirtyFlag;
-}
-
-void CONTROLCONFIG_SaveAndCancel() {
-    UI::CmdTbl::CMD_SaveKeyBindings();
-    UI::Draw::SetUIFlag(UI_CONFIG, UI_RESET, 0);
-    UI::EscMenu::ESCMENU_RestoreUIState(1);
-}
-
-void CONTROLCONFIG_RevertAndClose() {
-    UI::CmdTbl::CMD_RevertKeyBindings();
-    UI::Draw::SetUIFlag(UI_CONFIG, UI_RESET, 0);
-    UI::EscMenu::ESCMENU_ShowMenu(0, 1);
 }
 
 void __fastcall MONUNIQUE_Clt_ClearMonsterOverride(D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply) {
@@ -1642,24 +1421,16 @@ int __stdcall NPCMENU_GetCurrentMenuId() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
     UI::Dialog::FreeDialogStrc();
     UI::Dialog::gpNpcTradeErrorDialog = 0;
-    if (_Interaction::geNpcUiState != NPCUI_TRADE_REJECTED) {
-      if (gnNpcMenuTransactionType == 6) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd55);
-        exit(-1);
-      } else {
-        if (_Interaction::geNpcUiState == 8) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd56);
-          exit(-1);
-        }
-
-        _Interaction::geNpcUiState = NPCUI_SHOP;
-        UI::Inv::INV_ExitIdentifyMode();
+    if (_Interaction::geNpcUiState == NPCUI_TRADE_REJECTED) {
+      if (gnNpcMenuTransactionType == 5) {
+        UI::npcmenu::NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
+        UI::ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
         return 1;
       }
     }
     if (gnNpcMenuTransactionType == 5) {
       UI::npcmenu::NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      UI::Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      UI::ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       return 1;
     }
 
@@ -1934,101 +1705,6 @@ void __stdcall TEXT_SetUnknownFlag(D2UIMouseMsgStrc * pMsg) {
     UI::Inv::INV_HandleInventoryMouseMove(pMsg);
 }
 
-void ITEM_ToggleHandState(D2UnitStrc * pUnit) {
-    int32_t nSoundArg1;
-    int32_t nSoundArg2;
-    int32_t nSoundArg3;
-    if (gnPlayerCashDisplay == 1) {
-      eD2Sounds nSoundId;
-      gnPlayerCashDisplay = 2;
-      UI::ui::ITEM_SetItemOnHand(nullptr);
-      if (pUnit) {
-        gnCursorItemUnitId = pUnit->nUnitGUID;
-        nSoundArg3 = 0;
-        nSoundArg2 = 0;
-        nSoundArg1 = 0;
-        nSoundId = UNIT::SOUND_GetIdFromUnit(pUnit);
-        Sound::SOUND_PlaySound(nSoundId, nullptr, nSoundArg1, nSoundArg2, nSoundArg3);
-        return;
-      }
-    } else if (gnPlayerCashDisplay == 2) {
-      gnPlayerCashDisplay = 1;
-      gnCursorItemUnitId = 0;
-      if (pUnit) {
-        UI::ui::ITEM_SetItemOnHand(pUnit);
-      }
-
-      Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-    }
-}
-
-void __stdcall TEXT_HandleMouseMove() {
-    int nPlayerGUID;
-    if (gnPlayerCashDisplay != 2) {
-      return;
-    }
-
-    Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
-    UI::Dialog::gpHoradricCubeDialog = UI::Dialog::AllocDialogStrc(0x96, 0x82, TEXT_EmptyCallback, nullptr, 1, 0, 1, 0, 0, 0, 1);
-    UI::Dialog::DIALOG_SetHighlightStyle(UI::Dialog::gpHoradricCubeDialog, 0);
-    int32_t nDialogY = 0;
-    fpDialogFunc uTransFlag = 0;
-    uint32_t uAlignment = 1;
-    int32_t nDialogX = 0;
-    uint32_t uShadow = 0;
-    uint32_t uTextColor = 0xf;
-    uint16_t* pszDialogTitle = D2Lang::StrTable::strtable::GetLocaleString(0xd19);
-    UI::Dialog::AddStringData(UI::Dialog::gpHoradricCubeDialog, pszDialogTitle, uTextColor, uShadow, nDialogX, uAlignment, uTransFlag, nDialogY);
-    gnPlayerCashDisplay = 3;
-    if (!nHoradricCubeUIState) {
-      D2UnitStrc* pPlayerUnit_lcl;
-      pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-      if (!pPlayerUnit_lcl) {
-        nPlayerGUID = -1;
-      } else {
-        nPlayerGUID = pPlayerUnit_lcl->nUnitGUID;
-      }
-
-      GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT_INT(0x44, nPlayerGUID, gnNpcShopActiveTab, gnCursorItemUnitId, 3);
-      return;
-    }
-
-    UI::npcmenu::SubmitItem(gnCursorItemUnitId);
-}
-
-void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2) {
-    int nClearCount;
-    int nItemCount = nCashDisplayItemCount;
-    if (0 < nCashDisplayItemCount) {
-      uint8_t* pHitTestEntry;
-      pHitTestEntry = &gaNpcCashTabs[0].nHitTestState;
-      nClearCount = nCashDisplayItemCount;
-      do {
-        pHitTestEntry[1] = 0;
-        *pHitTestEntry = 0;
-        pHitTestEntry += 0x28;
-        nClearCount--;
-      } while (nClearCount);
-    }
-    if (0 >= nItemCount) {
-      return;
-    }
-
-    uint32_t* pBoundsEntry = (uint32_t*)&gaNpcCashTabs[0].nHitBoxX2;
-    nClearCount = 0;
-    do {
-      if ((int)pBoundsEntry[-1] <= nParam1 && nParam1 <= (int)*pBoundsEntry && (int)pBoundsEntry[1] <= nParam2 && nParam2 <= (int)pBoundsEntry[2]) {
-        Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-        nItemCount = nCashDisplayItemCount;
-        *(uint8_t*)((int)pBoundsEntry + 0x11) = 1;
-        *(uint8_t*)(pBoundsEntry + 4) = 1;
-      }
-
-      nClearCount++;
-      pBoundsEntry += 10;
-    } while (nClearCount < nItemCount);
-}
-
 void __stdcall SOUND_ClearGlobalState() {
     gnSoundLastInitTick = 0;
     gdwSoundChannelIndex = 0;
@@ -2040,258 +1716,6 @@ void __stdcall SOUND_ClearGlobalState() {
 
 void __fastcall MISSILES_StatExpireCallback_ClearState(D2UnitStrc * pUnit, eD2States eState, int32_t nParam) {
     D2Common::DATATBLS::ItemStats::SetState(pUnit, eState, 0);
-}
-
-int32_t __fastcall DC6_AssignParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, DC6 * pDC6, int32_t nDirection, int32_t nFrameNumber, int * pnOutItemClassId, uint8_t nComponentType, D2UnitStrc * pEquipContext) {
-    pGfxData->pDC6 = pDC6;
-    pGfxData->nDirection = nDirection;
-    pGfxData->nFrameNumber = nFrameNumber;
-    pGfxData->nComponentType = nComponentType;
-    int32_t nResult = Engine::GfxUtil::GFXUTIL_BuildCofParams(pGfxData, pUnit, pEquipContext, pnOutItemClassId);
-    return nResult;
-}
-
-static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, D2GfxDataStrc * pGfxData) {
-    bool _bCompositeDeath;
-    bool bCompositeDeath;
-    int nOverlay;
-    uint32_t nComponentIdx;
-    uint32_t nVariantIdx;
-    uint8_t* pCofEntry;
-    uint8_t byColorIdx;
-    uint8_t byColorVariant;
-    int32_t nErrorLine;
-    uint8_t* pCofDataBase;
-    uint32_t nComponentTable;
-    int nMonStatsTxt;
-    if (nWeaponClass && pCofFile) {
-      int32_t nMonStatsId;
-      pGfxData->nClassId = (int)*pComponentTable;
-      pGfxData->nMode = nAnimMode;
-      byColorIdx = pGfxData->nComponentType;
-      pGfxData->eUnitType = UNIT_MONSTER;
-      nOverlay = gTxtCompositTokens[byColorIdx];
-      pGfxData->nWeaponClass = nWeaponClass;
-      pGfxData->nCompositToken = nOverlay;
-      pGfxData->nArmorToken = 0x2074696c;
-      pGfxData->nUnitToken = *(int*)((int)pMonStatsTxt + 0x10);
-      pCofDataBase = *(uint8_t**)((int)pCofFile + 0x14);
-      if (pCofDataBase) {
-        nComponentIdx = 0;
-        pCofEntry = pCofDataBase + 0x1c;
-        if (!*pCofDataBase) {
-          return 0;
-        }
-
-        do {
-          if (0xf < *pCofEntry) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
-            exit(-1);
-          }
-          if (*pCofEntry == byColorIdx) {
-            nMonStatsId = pGfxData->nClassId;
-            pGfxData->nModeToken = gMonModeTokens[nAnimMode];
-            /* The pMonStatsTxt argument slot [EBP+0x10] is reused from here as the matched
-                         COF layer entry (layer+5 is its weapon-class token), which is why the
-                         parameter is void * rather than D2MonStatsTxt *.
-                         U2 2026-10-21: asm MOV [EBP+0x10],EDI after the +0x10 Code read at 004dbbe6.
-                          */ byColorVariant = *(uint8_t*)(nComponentRow * 0x10 + (uint32_t)byColorIdx + 4 + (int)pComponentTable);
-            nComponentTable = (uint32_t)((uint32_t)(uint8_t)byColorVariant << 24 | (uint32_t)((uint32_t)d2_load24((char*)&pComponentTable) & 0xffffffu));
-            nMonStatsTxt = (int)pCofEntry;
-            if (!nAnimMode || nAnimMode == 0xc) {
-              _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
-              if (_bCompositeDeath) {
-                nVariantIdx = nComponentTable >> 0x18;
-                nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
-                pGfxData->nArmorToken = nOverlay;
-              }
-            } else {
-              nVariantIdx = (uint32_t)byColorVariant;
-              nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
-              pGfxData->nArmorToken = nOverlay;
-            }
-
-            nAnimMode = 0;
-            Engine::GfxUtil::GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
-            pGfxData->nWeaponClass = nAnimMode;
-            if (!pGfxData->nCompositToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
-              exit(-1);
-            } else if (!pGfxData->nUnitToken) {
-              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
-              exit(-1);
-            } else {
-              if (!nAnimMode) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
-                exit(-1);
-              }
-              if (!pGfxData->nArmorToken) {
-                pGfxData->nArmorToken = 0x20787878;
-              }
-              if (pGfxData->nModeToken) {
-                return 1;
-              }
-
-              pGfxData->nModeToken = 0x20787878;
-              return 1;
-            }
-          }
-
-          nComponentIdx++;
-          pCofEntry += 9;
-        } while (nComponentIdx < *pCofDataBase);
-
-        return 0;
-      }
-
-      nErrorLine = 0x3f0;
-    }
-
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
-}
-
-int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow) {
-    pGfxData->nDirection = nDirection;
-    pGfxData->nFrameNumber = nFrameNumber;
-    pGfxData->nComponentType = nComponentType;
-    BOOL BVar1 = GFXUTIL_BuildMonsterCofParams(pCofFile, nAnimMode, pComponentTable, pMonStatsTxt, nComponentRow, nWeaponClass, pGfxData);
-    return BVar1;
-}
-
-int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam) {
-    int nSpriteLoaded;
-    int32_t nOffsetY;
-    int32_t nDrawWorldOffsetY;
-    int32_t nWorldOffsetY;
-    int iVar1;
-    D2GfxDataStrc sGfxData;
-    int nOutItemClassId;
-    uint8_t byLayerIdCheck;
-    int nLoadedCount = 0;
-    int nLayerIdx = 0;
-    uint8_t* pLayerArrayBase = pbParam;
-    if (!*pbParam) {
-      return nLoadedCount;
-    }
-
-    do {
-      int nBuilt;
-      iVar1 = nLayerIdx;
-      byLayerIdCheck = *(uint8_t*)(nLayerIdx + pLayerArray);
-      if (0xf < byLayerIdCheck) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59d);
-        exit(-1);
-      }
-
-      memset(&sGfxData, 0, 0x48);
-      sGfxData.nDirection = nPaletteShift;
-      sGfxData.nFrameNumber = nParam;
-      sGfxData.pDC6 = 0;
-      sGfxData.nComponentType = byLayerIdCheck;
-      nBuilt = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nOutItemClassId);
-      if (nBuilt) {
-        nSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
-        if (nSpriteLoaded && sGfxData.pDC6Block) {
-          nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
-          nDrawWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
-          nWorldOffsetY = D2Common::Units::GetTargetY(pUnit);
-          iVar1 = nWorldOffsetY + (nOffsetY - nDrawWorldOffsetY);
-          if (*pOutMaxY < iVar1) {
-            *pOutMaxY = iVar1;
-          }
-
-          nLoadedCount++;
-          iVar1 = nLayerIdx;
-        }
-      }
-
-      nLayerIdx = iVar1 + 1;
-    } while (nLayerIdx < (int)(uint32_t)*pLayerArrayBase);
-
-    return nLoadedCount;
-}
-
-int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOverlayEntry) {
-    D2GfxDataStrc sGfxData;
-    int nOutItemClassId;
-    memset(&sGfxData, 0, 0x48);
-    sGfxData.nOverlayId = *(int*)(pOverlayEntry + 4);
-    int nBuilt = *(int*)(pOverlayEntry + 0x18);
-    uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
-    sGfxData.nDirection = (int)byDirection;
-    sGfxData.pDC6 = 0;
-    sGfxData.nFrameNumber = nBuilt;
-    sGfxData.nComponentType = '\x01';
-    BOOL nWeaponClass = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, nullptr, (D2UnitStrc*)-1, &nOutItemClassId);
-    if (!nWeaponClass) {
-      return 1;
-    }
-
-    nBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
-    if (!nBuilt) {
-      return 1;
-    }
-
-    return sGfxData.nFrameCount << 8;
-}
-
-void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam) {
-    D2GfxDataStrc sGfxData;
-    memset(&sGfxData, 0, 0x48);
-    sGfxData.nFrameNumber = nAnimMode;
-    sGfxData.pDC6 = 0;
-    sGfxData.nDirection = nPaletteShift;
-    sGfxData.nComponentType = '\x01';
-    BOOL nDimension = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, (int*)&nAnimMode);
-    if (!nDimension) {
-      return;
-    }
-
-    int nCofBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
-    if (!(nCofBuilt && sGfxData.pDC6Block)) {
-      return;
-    }
-
-    uint32_t uVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
-    *pOutWidth = uVar1;
-    int32_t iVar2 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
-    *pdwParam = iVar2;
-}
-
-uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY) {
-    D2GfxDataStrc sGfxData;
-    int nFrameMetrics2;
-    int nFrameMetrics;
-    int32_t nWorldOffsetX = UI::Path::DRAW_GetWorldOffsetX();
-    int nScreenX = nParam - nWorldOffsetX;
-    int32_t nWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
-    int nOriginY = nWorldY - nWorldOffsetY;
-    D2GfxInfoUnkStrc* pGfxInfo = Engine::Gfx::GFX_IsUnitOnScreen(pUnit, nParam - nWorldOffsetX, nOriginY, 0, 0);
-    if (!pGfxInfo) {
-      return 0;
-    }
-
-    D2Common::Units::GetShiftedFrameMetrics(pUnit, &nFrameMetrics, &nFrameMetrics2);
-    memset(&sGfxData, 0, 0x48);
-    uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
-    sGfxData.nDirection = (int)byDirection;
-    sGfxData.pDC6 = 0;
-    sGfxData.nFrameNumber = nFrameMetrics;
-    sGfxData.nComponentType = '\x01';
-    BOOL BVar1 = Engine::GfxUtil::GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nWorldY);
-    if (!BVar1) {
-      return 0;
-    }
-
-    int nCofBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
-    if (nCofBuilt && sGfxData.pDC6Block) {
-      uint32_t bOnScreen;
-      bOnScreen = Engine::GfxUtil::GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nScreenX, nOriginY, 0);
-      return bOnScreen;
-    }
-
-    return 0;
 }
 
 void __stdcall DRAW_WORLD_SetWarpFadeTimer() {

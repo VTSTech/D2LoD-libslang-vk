@@ -3,7 +3,7 @@
 #include "D2Client/UI/Button/ButtonWrapper.h"
 #include "D2Client/ButtonWrapper.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Win/Src/D2WinTextBox.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Storm/SMem.h"
@@ -128,10 +128,10 @@ void __thiscall SetAccelerator(::ButtonWrapper * pThis, BOOL bEnable) {
     pThis->pVtable = (ButtonWrapperVtable*)(void*)ButtonWrapper::vftable;
     ::ButtonImplementation* pNewButtonImpl = (::ButtonImplementation*)Storm::SMem::SMemAlloc(0x36, "new", -1, 0);
     dwExcState = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwExcState + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-    if (!pNewButtonImpl) {
-      pNewButtonImpl = 0;
-    } else {
+    if (pNewButtonImpl) {
       pNewButtonImpl = ButtonImplementation::Constructor(pNewButtonImpl, nPosX, nPosY, nButtonKind, pfnOnActivate);
+    } else {
+      pNewButtonImpl = 0;
     }
 
     pThis->pImplementation = pNewButtonImpl;

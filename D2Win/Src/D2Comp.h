@@ -69,6 +69,6 @@ int __fastcall D2COMP_DrawUnitNameAndTitle(uint32_t * pnParam);
 void __fastcall DRAW_OOG_ChannelPlayers(struct D2QuestDataA3Q6Strc * pA3Q6Data);
 void __stdcall D2COMP_AllocTxt_EverythingItems();
 struct D2CharSelCompStrc * __stdcall AllocCharSelectComponent(uint32_t nPlayerClassId, int32_t nClassicExpansion, uint8_t * pbyEquipSlots, char * szText);
-// 15 internal functions (defined in .cpp)
+// 16 internal functions (defined in .cpp)
 
 } // namespace D2Win::Src::D2Comp

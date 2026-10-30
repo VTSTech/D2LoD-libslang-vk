@@ -4,7 +4,7 @@
 #include "support/d2_control.h"
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Record.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Src/ErrorManager.h"
@@ -72,7 +72,18 @@ int32_t __fastcall MessageGameLoop(::fpGameLoopFunction nfpGameLoopFunction) {
       D2CONTROL_Pump(); D2LOUD_GuardPump();   // loud build: also walks the guard zones between globals
       BOOL bHasMessage;
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bHasMessage = PeekMessageA(&msg, (HWND)0x0, 0, 0, 0);
-      if (!bHasMessage) {
+      if (bHasMessage) {
+        /* UINT wMsgFilterMax for GetMessageA */ /* UINT wMsgFilterMin for GetMessageA */ /* HWND hWnd for GetMessageA */ /* LPMSG lpMsg for GetMessageA */ getMessageResult = GetMessageA(&msg, (HWND)0x0, 0, 0);
+        if (getMessageResult && gbLanguageDllLoaded) {
+          lpMsg = &msg;
+          hAccTable = gbLanguageDllLoaded;
+          /* LPMSG lpMsg for TranslateAcceleratorA */ /* HACCEL hAccTable for TranslateAcceleratorA */ hWnd = D2gfx::D2GFX::GetHwnd();
+          /* HWND hWnd for TranslateAcceleratorA */ TranslateAcceleratorA(hWnd, hAccTable, lpMsg);
+        }
+
+        /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&msg);
+        /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&msg);
+      } else {
         if (nfpGameLoopFunction) {
           nCallbackResult = (*nfpGameLoopFunction)(tickIndex);
           tickIndex++;
@@ -88,17 +99,6 @@ int32_t __fastcall MessageGameLoop(::fpGameLoopFunction nfpGameLoopFunction) {
         if (!gnLastMouseButtonEventType && eD2GSGameType_007a0610 != GAMETYPE_OBNET_HOST && eD2GSGameType_007a0610 != GAMETYPE_LAN_HOST) {
           /* DWORD dwMilliseconds for Sleep */ Sleep(10);
         }
-      } else {
-        /* UINT wMsgFilterMax for GetMessageA */ /* UINT wMsgFilterMin for GetMessageA */ /* HWND hWnd for GetMessageA */ /* LPMSG lpMsg for GetMessageA */ getMessageResult = GetMessageA(&msg, (HWND)0x0, 0, 0);
-        if (getMessageResult && gbLanguageDllLoaded) {
-          lpMsg = &msg;
-          hAccTable = gbLanguageDllLoaded;
-          /* LPMSG lpMsg for TranslateAcceleratorA */ /* HACCEL hAccTable for TranslateAcceleratorA */ hWnd = D2gfx::D2GFX::GetHwnd();
-          /* HWND hWnd for TranslateAcceleratorA */ TranslateAcceleratorA(hWnd, hAccTable, lpMsg);
-        }
-
-        /* MSG * lpMsg for TranslateMessage */ TranslateMessage(&msg);
-        /* MSG * lpMsg for DispatchMessageA */ DispatchMessageA(&msg);
       }
     } while (getMessageResult);
 
@@ -176,7 +176,7 @@ void __fastcall MESSAGE_RegisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc * 
 
     {
       int32_t* pnMessageCode;
-      if (!nCount) {
+      if ((uint32_t)nCount <= 0) {
         return;
       }
 
@@ -200,7 +200,7 @@ void __fastcall MESSAGE_UnregisterEventHandlerBatch(HWND hWnd, D2UIFlagInitStrc 
 
     {
       int32_t* pnMessageCode;
-      if (!nCount) {
+      if ((uint32_t)nCount <= 0) {
         return;
       }
 

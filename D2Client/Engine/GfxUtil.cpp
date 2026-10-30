@@ -2,13 +2,13 @@
 
 #include "D2Client/Engine/GfxUtil.h"
 #include "D2CMP/SRC/CelCmp.h"
+#include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Path.h"
@@ -23,8 +23,10 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
+#include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DATATBLS/OverlayTbls.h"
 #include "D2Common/DATATBLS/TokTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -34,10 +36,10 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/Objects/Objects.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -48,7 +50,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/Monster/AI/AI.h"
 
@@ -65,7 +67,7 @@
 
 namespace D2Client::Engine::GfxUtil {
 
-void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
+static void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
     if (*szText1 == '\0') {
       memcpy(szText2, "    ", 4);
       return;
@@ -513,6 +515,70 @@ static int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, D2UnitStrc * pUni
     }
 
     return 0x2074696c;
+}
+
+// Returns 1 if the unit supports animation mode nMode (0–15), 0 otherwise. Accounts for shape-shift/transform GFX overrides via SKILLS_GetStateTransformGfx. For players, always accepts modes 0–4, 8, 9. For monsters, checks the MonStats2 bitmask (HD/TR/LG/RA/LA/RH/LH/SH flags). For objects, checks ObjectsTxt->Mode[nMode+0x12]. Items accept mode 1 only.
+// @sourcefile .\ENGINE\GfxUtil.cpp
+BOOL __fastcall GFXUTIL_UnitHasAnimMode(D2UnitStrc * pUnit, uint32_t nMode) {
+    D2MonStats2Txt* pMonStats2;
+    D2ObjectsTxt* pObjectsTxt;
+    int nClassId;
+    if ((int)nMode >= 0x10) {
+      return 0;
+    }
+
+    eD2UnitType eType = UNIT_COUNT;
+    if (pUnit) {
+      eType = pUnit->eUnitType;
+      nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
+    }
+
+    int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
+    D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eType, &nClassId, &nAnimMode, ".\\ENGINE\\GfxUtil.cpp", 0x25b);
+    switch (eType) {
+      case UNIT_PLAYER:
+        {
+          switch (nMode) {
+            case 0:
+
+            case 1:
+
+            case 2:
+
+            case 3:
+
+            case 4:
+
+            case 8:
+
+            case 9:
+              return 1;
+          }
+        }
+      break;
+      case UNIT_MONSTER:
+        pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
+      if (pMonStats2 && (uint8_t)gadwBitMasks[nMode & 7] & pMonStats2->HD[(int)nMode >> 3]) {
+        return 1;
+      }
+
+      break;
+      case UNIT_OBJECT:
+        pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nClassId);
+      if (pObjectsTxt && pObjectsTxt->Mode[nMode + 0x12] == 1) {
+        return 1;
+      }
+
+      break;
+      case UNIT_ITEM:
+        if (nMode == 1) {
+          return 1;
+        }
+    }
+
+    return 0;
 }
 
 static int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nMode, int32_t nClassId) {
@@ -975,7 +1041,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
     }
 
     uVar1 = D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pInventory, nWeaponClass, -1, 1);
-    D2GfxInfoUnkStrc* pCofGfxInfo = GfxInfo::GFX_FindGfxInfoByModeAndWeapon(pUnit, uVar1, -1);
+    D2GfxInfoUnkStrc* pCofGfxInfo = Gfx::GFX_FindGfxInfoByModeAndWeapon(pUnit, uVar1, -1);
     if (!pCofGfxInfo) {
       pCofGfxInfo = Gfx::GFX_EnsureUnitCofLoaded(pUnit, uVar1, -1);
       if (!pCofGfxInfo) {
@@ -984,7 +1050,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
     }
 
     int nAnimMode = Source::ClientEngine::CLIENT_GetEffectiveAnimMode(pUnit);
-    uint8_t* pCofData = GfxInfo::GFX_GetGfxInfoCofData(pUnit, nAnimMode);
+    uint8_t* pCofData = Gfx::GFX_GetGfxInfoCofData(pUnit, nAnimMode);
     if (!pCofData) {
       return 0;
     }
@@ -995,7 +1061,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
 
 // Build COF parameters from unit animation/equipment - determines graphics file, weapon, armor appearance
 // @sourcefile .\ENGINE\GfxUtil.cpp
-BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, D2UnitStrc * pEquipContext, int * pOutItemClassId) {
+static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, D2UnitStrc * pEquipContext, int * pOutItemClassId) {
     int32_t nComponentIdx;
     D2GfxInfoUnkStrc* pGfxInfo;
     D2GfxInfoUnkStrc* pGfxInfoFallback;
@@ -1058,9 +1124,9 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
       pGfxData->nCompositToken = gTxtCompositTokens[pGfxData->nComponentType];
       nComponentIdx = D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, (D2InventoryStrc*)pEffectiveMode, &nWeaponClass, pGfxData->nMode, 0);
       pGfxData->nWeaponClass = nComponentIdx;
-      pGfxInfo = GfxInfo::GFX_FindGfxInfoByModeAndWeapon(pUnit, nComponentIdx, pGfxData->nMode);
+      pGfxInfo = Gfx::GFX_FindGfxInfoByModeAndWeapon(pUnit, nComponentIdx, pGfxData->nMode);
       if (pGfxInfo || (pGfxInfoFallback = Gfx::GFX_EnsureUnitCofLoaded(pUnit, pGfxData->nWeaponClass, pGfxData->nMode) , pGfxInfoFallback != 0)) {
-        pCofData = GfxInfo::GFX_GetGfxInfoCofData(pUnit, pGfxData->nMode);
+        pCofData = Gfx::GFX_GetGfxInfoCofData(pUnit, pGfxData->nMode);
         if (pCofData) {
           pGfxInfoStrc = UNIT::CUnit::GetGfxInfo(pUnit);
           if (pGfxInfoStrc) {
@@ -1199,6 +1265,262 @@ BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUn
       pGfxData->szFilename = pOverlayTxt->Filename;
       return 1;
     }
+}
+
+int32_t __fastcall DC6_AssignParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, DC6 * pDC6, int32_t nDirection, int32_t nFrameNumber, int * pnOutItemClassId, uint8_t nComponentType, D2UnitStrc * pEquipContext) {
+    pGfxData->pDC6 = pDC6;
+    pGfxData->nDirection = nDirection;
+    pGfxData->nFrameNumber = nFrameNumber;
+    pGfxData->nComponentType = nComponentType;
+    int32_t nResult = GFXUTIL_BuildCofParams(pGfxData, pUnit, pEquipContext, pnOutItemClassId);
+    return nResult;
+}
+
+static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, D2GfxDataStrc * pGfxData) {
+    bool _bCompositeDeath;
+    bool bCompositeDeath;
+    int nOverlay;
+    uint32_t nComponentIdx;
+    uint32_t nVariantIdx;
+    uint8_t* pCofEntry;
+    uint8_t byColorIdx;
+    uint8_t byColorVariant;
+    uint8_t* pCofDataBase;
+    uint32_t nComponentTable;
+    int nMonStatsTxt;
+    if (!nWeaponClass) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3e2);
+      exit(-1);
+    }
+    if (!pCofFile) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3e3);
+      exit(-1);
+    }
+
+    int32_t nMonStatsId;
+    pGfxData->nClassId = (int)*pComponentTable;
+    pGfxData->nMode = nAnimMode;
+    byColorIdx = pGfxData->nComponentType;
+    pGfxData->eUnitType = UNIT_MONSTER;
+    nOverlay = gTxtCompositTokens[byColorIdx];
+    pGfxData->nWeaponClass = nWeaponClass;
+    pGfxData->nCompositToken = nOverlay;
+    pGfxData->nArmorToken = 0x2074696c;
+    pGfxData->nUnitToken = *(int*)((int)pMonStatsTxt + 0x10);
+    pCofDataBase = *(uint8_t**)((int)pCofFile + 0x14);
+    if (!pCofDataBase) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3f0);
+      exit(-1);
+    }
+
+    nComponentIdx = 0;
+    pCofEntry = pCofDataBase + 0x1c;
+    if (*pCofDataBase <= 0) {
+      return 0;
+    }
+
+    do {
+      if (*pCofEntry >= 0x10) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x3fb);
+        exit(-1);
+      }
+      if (*pCofEntry == byColorIdx) {
+        nMonStatsId = pGfxData->nClassId;
+        pGfxData->nModeToken = gMonModeTokens[nAnimMode];
+        /* The pMonStatsTxt argument slot [EBP+0x10] is reused from here as the matched
+                         COF layer entry (layer+5 is its weapon-class token), which is why the
+                         parameter is void * rather than D2MonStatsTxt *.
+                         U2 2026-10-21: asm MOV [EBP+0x10],EDI after the +0x10 Code read at 004dbbe6.
+                          */ byColorVariant = *(uint8_t*)(nComponentRow * 0x10 + (uint32_t)byColorIdx + 4 + (int)pComponentTable);
+        nComponentTable = (uint32_t)((uint32_t)(uint8_t)byColorVariant << 24 | (uint32_t)((uint32_t)d2_load24((char*)&pComponentTable) & 0xffffffu));
+        nMonStatsTxt = (int)pCofEntry;
+        if (!nAnimMode || nAnimMode == 0xc) {
+          _bCompositeDeath = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(nMonStatsId, compositeDeath);
+          if (_bCompositeDeath) {
+            nVariantIdx = nComponentTable >> 0x18;
+            nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
+            pGfxData->nArmorToken = nOverlay;
+          }
+        } else {
+          nVariantIdx = (uint32_t)byColorVariant;
+          nOverlay = D2Common::DATATBLS::OverlayTbls::OVERLAYTBLS_GetMonsterComponentOverlay(nMonStatsId, (uint32_t)byColorIdx, nVariantIdx);
+          pGfxData->nArmorToken = nOverlay;
+        }
+
+        nAnimMode = 0;
+        GFXUTIL_PadTokenString((char*)(nMonStatsTxt + 5), (char*)&nAnimMode);
+        pGfxData->nWeaponClass = nAnimMode;
+        if (!pGfxData->nCompositToken) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x425);
+          exit(-1);
+        } else if (!pGfxData->nUnitToken) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x426);
+          exit(-1);
+        } else {
+          if (!nAnimMode) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x427);
+            exit(-1);
+          }
+          if (!pGfxData->nArmorToken) {
+            pGfxData->nArmorToken = 0x20787878;
+          }
+          if (pGfxData->nModeToken) {
+            return 1;
+          }
+
+          pGfxData->nModeToken = 0x20787878;
+          return 1;
+        }
+      }
+
+      nComponentIdx++;
+      pCofEntry += 9;
+    } while (nComponentIdx < *pCofDataBase);
+
+    return 0;
+}
+
+int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow) {
+    pGfxData->nDirection = nDirection;
+    pGfxData->nFrameNumber = nFrameNumber;
+    pGfxData->nComponentType = nComponentType;
+    BOOL BVar1 = GFXUTIL_BuildMonsterCofParams(pCofFile, nAnimMode, pComponentTable, pMonStatsTxt, nComponentRow, nWeaponClass, pGfxData);
+    return BVar1;
+}
+
+int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam) {
+    int nSpriteLoaded;
+    int32_t nOffsetY;
+    int32_t nDrawWorldOffsetY;
+    int32_t nWorldOffsetY;
+    int iVar1;
+    D2GfxDataStrc sGfxData;
+    int nOutItemClassId;
+    uint8_t byLayerIdCheck;
+    int nLoadedCount = 0;
+    int nLayerIdx = 0;
+    uint8_t* pLayerArrayBase = pbParam;
+    if (*pbParam <= 0) {
+      return nLoadedCount;
+    }
+
+    do {
+      int nBuilt;
+      iVar1 = nLayerIdx;
+      byLayerIdCheck = *(uint8_t*)(nLayerIdx + pLayerArray);
+      if (0xf < byLayerIdCheck) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59d);
+        exit(-1);
+      }
+
+      memset(&sGfxData, 0, 0x48);
+      sGfxData.nDirection = nPaletteShift;
+      sGfxData.nFrameNumber = nParam;
+      sGfxData.pDC6 = 0;
+      sGfxData.nComponentType = byLayerIdCheck;
+      nBuilt = GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nOutItemClassId);
+      if (nBuilt) {
+        nSpriteLoaded = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
+        if (nSpriteLoaded && sGfxData.pDC6Block) {
+          nOffsetY = D2CMP::SRC::CelCmp::GetDC6OffsetY(sGfxData.pDC6Block);
+          nDrawWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
+          nWorldOffsetY = D2Common::Units::GetTargetY(pUnit);
+          iVar1 = nWorldOffsetY + (nOffsetY - nDrawWorldOffsetY);
+          if (iVar1 > *pOutMaxY) {
+            *pOutMaxY = iVar1;
+          }
+
+          nLoadedCount++;
+          iVar1 = nLayerIdx;
+        }
+      }
+
+      nLayerIdx = iVar1 + 1;
+    } while (nLayerIdx < (int)(uint32_t)*pLayerArrayBase);
+
+    return nLoadedCount;
+}
+
+int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOverlayEntry) {
+    D2GfxDataStrc sGfxData;
+    int nOutItemClassId;
+    memset(&sGfxData, 0, 0x48);
+    sGfxData.nOverlayId = *(int*)(pOverlayEntry + 4);
+    int nBuilt = *(int*)(pOverlayEntry + 0x18);
+    uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
+    sGfxData.nDirection = (int)byDirection;
+    sGfxData.pDC6 = 0;
+    sGfxData.nFrameNumber = nBuilt;
+    sGfxData.nComponentType = '\x01';
+    BOOL nWeaponClass = GFXUTIL_BuildCofParams(&sGfxData, nullptr, (D2UnitStrc*)-1, &nOutItemClassId);
+    if (!nWeaponClass) {
+      return 1;
+    }
+
+    nBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
+    if (!nBuilt) {
+      return 1;
+    }
+
+    return sGfxData.nFrameCount << 8;
+}
+
+void __fastcall GFXUTIL_GetOverlayDimensions(D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam) {
+    D2GfxDataStrc sGfxData;
+    memset(&sGfxData, 0, 0x48);
+    sGfxData.nFrameNumber = nAnimMode;
+    sGfxData.pDC6 = 0;
+    sGfxData.nDirection = nPaletteShift;
+    sGfxData.nComponentType = '\x01';
+    BOOL nDimension = GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, (int*)&nAnimMode);
+    if (!nDimension) {
+      return;
+    }
+
+    int nCofBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
+    if (!(nCofBuilt && sGfxData.pDC6Block)) {
+      return;
+    }
+
+    uint32_t uVar1 = D2CMP::SRC::CelCmp::GetDC6Width(sGfxData.pDC6Block);
+    *pOutWidth = uVar1;
+    int32_t iVar2 = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
+    *pdwParam = iVar2;
+}
+
+uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY) {
+    D2GfxDataStrc sGfxData;
+    int nFrameMetrics2;
+    int nFrameMetrics;
+    int32_t nWorldOffsetX = UI::Path::DRAW_GetWorldOffsetX();
+    int nScreenX = nParam - nWorldOffsetX;
+    int32_t nWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
+    int nOriginY = nWorldY - nWorldOffsetY;
+    D2GfxInfoUnkStrc* pGfxInfo = Gfx::GFX_IsUnitOnScreen(pUnit, nParam - nWorldOffsetX, nOriginY, 0, 0);
+    if (!pGfxInfo) {
+      return 0;
+    }
+
+    D2Common::Units::GetShiftedFrameMetrics(pUnit, &nFrameMetrics, &nFrameMetrics2);
+    memset(&sGfxData, 0, 0x48);
+    uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
+    sGfxData.nDirection = (int)byDirection;
+    sGfxData.pDC6 = 0;
+    sGfxData.nFrameNumber = nFrameMetrics;
+    sGfxData.nComponentType = '\x01';
+    BOOL BVar1 = GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nWorldY);
+    if (!BVar1) {
+      return 0;
+    }
+
+    int nCofBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
+    if (nCofBuilt && sGfxData.pDC6Block) {
+      uint32_t bOnScreen;
+      bOnScreen = GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nScreenX, nOriginY, 0);
+      return bOnScreen;
+    }
+
+    return 0;
 }
 
 } // namespace D2Client::Engine::GfxUtil

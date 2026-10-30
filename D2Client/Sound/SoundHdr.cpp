@@ -14,11 +14,11 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -42,7 +42,6 @@
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
 #include "D2Client/UNIT/UnitSnd.h"
-#include "D2Common/Drlg/Drlg.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -58,6 +57,37 @@
 namespace D2Client::Sound::SoundHdr {
 
 static float FLOAT_006d9108 = 400; D2_STATIC_GUARD(FLOAT_006d9108, "D2Client::Sound::SoundHdr::FLOAT_006d9108");
+
+static void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
+    void* nAddress;
+    if (*(int*)(pSoundHdr + 0x86) != 1) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
+      exit(-1);
+    }
+
+    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
+    *(void**)(pSoundHdr + 0x6c) = (void*)nAddress;
+    size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
+    *(size_t*)(pSoundHdr + 0x70) = nReadSize;
+    *(uint32_t*)(pSoundHdr + 0x86) = 2;
+    GAME::Sound::SOUND_ParseStreamWavHeader(pSoundHdr);
+    gnSoundAsyncLoadCount--;
+}
+
+eD2LevelId __stdcall SOUND_GetCurrentLevelId() {
+    D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
+    if (!pUnit) {
+      return LEVEL_None;
+    }
+
+    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+    if (!pRoom) {
+      return LEVEL_None;
+    }
+
+    eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+    return eLevelId;
+}
 
 uint32_t __stdcall GetSoundEnv() {
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
@@ -106,6 +136,14 @@ void __fastcall SOUNDHDR_SetGlobal4(uint32_t nMaxBytes) {
 
 void __stdcall SOUNDHDR_Nop() {
 
+}
+
+D2SoundsTxt * __fastcall TXT_sounds_GetLineBySoundId(int32_t nSoundId) {
+    if (pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
+      return pTxtSounds + nSoundId;
+    }
+
+    return nullptr;
 }
 
 int __fastcall SOUNDHDR_GetSoundField0x60(int32_t nSoundId) {

@@ -179,7 +179,6 @@ void __fastcall Objects_InitFn34(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall Objects_InitFn05(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall Objects_InitFn11(struct D2ObjectInitFnArg * pInitArg);
 void __fastcall Objects_InitFn51(struct D2ObjectInitFnArg * pInitArg);
-BOOL __stdcall ROOM_CheckSpawnCollision(struct D2RoomStrc * pRoom, uint32_t nParam1, int * pnParam1, uint32_t nParam2, int * pnParam2);
 // Spawns a game object of nObjClassId at a random collision-free tile within pRoom, respecting nXMargin/nYMargin insets. Uses the object control RNG seed (advanced via the 0x6AC690C5 LCG) to pick candidate coordinates up to 5 times, checking SPAWN_UNIT_COLLISION each attempt. Returns the spawned D2UnitStrc* on success, or null if the room is too small or all retries fail. Halts with an internal error if pRoom is null at spawn time.
 struct D2UnitStrc * __stdcall OBJECT_PlaceAtRandomPosition(::SGAMEDATA * pGame, int32_t nObjClassId, int32_t nXMargin, int32_t nYMargin, struct D2RoomStrc * pRoom);
 // Places a new object unit (UNIT_OBJECT) at a randomly chosen collision-free position within pRoom, subject to a caller-supplied acceptance callback. Reads room coordinates, retries up to 5 times picking random (X,Y) offsets inside the room boundary (excluding the 1-tile border), checks collision via CheckCollision_Vector, and calls pfnProc(X,Y) — only spawning if pfnProc returns non-zero and no collision. Returns the spawned D2UnitStrc* or null if all retries fail or the room is too small for nSizeX×nSizeY.
@@ -208,6 +207,8 @@ int32_t __fastcall OBJECT_AlwaysReturnOne(::SGAMEDATA * pGame, struct D2RoomStrc
 int32_t __fastcall OBJECT_PopulateGridObjects(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pGridBounds);
 // Fills a rectangular grid region with random item drops on a 2-tile stride (interior only: starts at xMin+1, yMin+1, capped to 12 cells per axis). For each cell, checks spawn collision and calls DROP_SpawnRandomItemInRoom if clear. Stops after 32 spawned items. Always returns 1.
 int32_t __fastcall OBJECT_PopulateGridItems(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pGridBounds);
+int32_t __fastcall RollArmorStand(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pDrlgCoords);
+int32_t __fastcall RollWeaponRack(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, struct D2DrlgRoomCoordsStrc * pDrlgCoords);
 // Populates a room with objects drawn from the level's ObjGrp/ObjPrb table entries. For each of up to 8 group slots, rolls the room seed, checks spawn density constraints, then picks one object from the group's weighted probability list and invokes its PopulateFn dispatch (via OBJECTSPOPULATEFN table). Falls through special-object population first via OBJECT_PopulateRoomSpecialObjects.
 void __fastcall OBJECT_PopulateRoomObjects(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom);
 void __fastcall OBJECT_CallPopulateFn(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, int32_t nObjectClassId);
@@ -225,6 +226,6 @@ void __fastcall Objects_PopulateFn2(::SGAMEDATA * pGame, struct D2RoomStrc * pRo
 // Stores pCoordList (the spawn room's D2RoomCoordListStrc) at monster data +0x50 when pUnit is a monster with unit data.
 // Provenance: asm 00552d64..00552d70 (unit type 1, [unit+0x14]+0x50 = EDX); only caller CreateMonster (005b2e8f) passes the coord list from DRLGROOM_GetCoordListFromSubtilePos.
 void __fastcall MONSTER_SetSpawnCoordList(struct D2UnitStrc * pUnit, struct D2RoomCoordListStrc * pCoordList);
-// 5 internal functions (defined in .cpp)
+// 7 internal functions (defined in .cpp)
 
 } // namespace D2Game::Objects

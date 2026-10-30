@@ -11,7 +11,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2RosterStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Roster.h"
@@ -22,7 +22,7 @@
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/Dialog.h"
-#include "D2Client/UI/Draw.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
 #include "D2Client/UI/Path.h"
@@ -41,6 +41,7 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -50,7 +51,6 @@
 #include "D2Common/Environment.h"
 #include "D2Common/Game.h"
 #include "D2Common/Text.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Server.h"
@@ -315,7 +315,7 @@ static BOOL TEXT_DrawScrollingTextBox(uint16_t * * ppwszText) {
       ppwszText[2] = (uint16_t*)(((int)pLastVisibleLine + (dwNow - *(int*)((int)ppwszText + 0x1e) >> 2)) * (int)ppwszText[3]);
     }
     if (!gnTextScrollBoxHeight && (gnTextDisplayMode || gbTextScrollBoxVisible)) {
-      Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(gnTextBoxExclusionX, gnScrollingTextBoxTopY - 5, 0x145, 0x7a, 0, DRAW_TRANSPARENT);
+      Engine::Gfx::D2GFX_DrawSolidRectExBySize(gnTextBoxExclusionX, gnScrollingTextBoxTopY - 5, 0x145, 0x7a, 0, DRAW_TRANSPARENT);
       rcFrame.left = gnTextBoxExclusionX - 1;
       rcFrame.top = gnScrollingTextBoxTopY - 6;
       rcFrame.bottom = gnScrollingTextBoxTopY + 0x75;
@@ -447,7 +447,7 @@ void __fastcall TEXT_DrawTextBoxAtPosition(D2TextBoxStrc * pTextBox, int32_t nSc
       return;
     }
 
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX, nScreenY + 4, (uint32_t)pTextBox->nWidth, pTextBox->nHeight - 5, 0, DRAW_TRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX, nScreenY + 4, (uint32_t)pTextBox->nWidth, pTextBox->nHeight - 5, 0, DRAW_TRANSPARENT);
     int32_t nSavedFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     if (nLineCount > 0) {
       int nLineIdx = 0;
@@ -644,7 +644,7 @@ void __stdcall TEXT_DrawChatMessages() {
                 nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pWrapNode->wszLine);
                 nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pWrapNode->wszLine, nPixelWidth);
                 if (nPixelWidth) {
-                  Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nScreenY - 0xe, nPixelWidth + 10, 0x10, 0, DRAW_TRANSPARENT);
+                  Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nScreenY - 0xe, nPixelWidth + 10, 0x10, 0, DRAW_TRANSPARENT);
                   D2Win::Src::D2WinFont::DRAW_text(pWrapNode->wszLine, nScreenX, nScreenY, pMessageHead->color, 0);
                   nLineIdx++;
                   nScreenY += 0xf;
@@ -661,7 +661,7 @@ void __stdcall TEXT_DrawChatMessages() {
             nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pMessage->apwszLines[(int)pListHead], nPixelWidth);
             if (nPixelWidth) {
               nScreenY = nLineIdx * 0xf + nBaseY;
-              Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX - 4, nScreenY - 0xe, nPixelWidth + 8, 0x10, 0, DRAW_TRANSPARENT);
+              Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX - 4, nScreenY - 0xe, nPixelWidth + 8, 0x10, 0, DRAW_TRANSPARENT);
               D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[(int)pPrevMessage], nScreenX, nScreenY, pMessage->color, 0);
               nLineIdx++;
             }
@@ -746,7 +746,7 @@ void __stdcall TEXT_DrawPartyMessages() {
             nRectH = 0x10;
             nPixelWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pMessage->apwszLines[0]);
             nPixelWidth = D2Win::Src::D2WinFont::D2WINFONT_GetStringPixelWidthN((uint16_t*)pMessage->apwszLines[0], nPixelWidth);
-            Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nRowY - nLineY / 2 - 0x81 + ScreenSizeY, nPixelWidth + 10, nRectH, nRectColor, eDrawMode);
+            Engine::Gfx::D2GFX_DrawSolidRectExBySize(nScreenX - 5, nRowY - nLineY / 2 - 0x81 + ScreenSizeY, nPixelWidth + 10, nRectH, nRectColor, eDrawMode);
             D2Win::Src::D2WinFont::DRAW_text(pMessage->apwszLines[0], nScreenX, (int)pPrevMessage - nLineY / 2 - 0x73 + ScreenSizeY, pMessageHead->color, 0);
           }
 
@@ -4185,7 +4185,7 @@ void __stdcall TEXT_OnEscCloseQuestScroll(D2UIMouseMsgStrc * pMsg) {
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
-    Draw::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
+    ui::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
     TEXT_FreeScrollDC6Images();
 }
 
@@ -4194,7 +4194,7 @@ void __stdcall TEXT_OnClickCloseQuestScroll(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    Draw::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
+    ui::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
     TEXT_FreeScrollDC6Images();
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
@@ -4245,7 +4245,7 @@ void __fastcall TEXT_OpenQuestScroll(int32_t pUnit, int32_t pTextBlock) {
     static int gaQuestScrollRect; D2_STATIC_GUARD_BSS(gaQuestScrollRect, "D2Client::UI::Text::TEXT_OpenQuestScroll::gaQuestScrollRect");
 
     gpQuestScrollTextBlock = (void*)pTextBlock;
-    Draw::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
+    ui::SetUIFlag(UI_QUESTSCROLL, UI_TOGGLE, 0);
     GAME::Game::UI_ResetInputState();
     if (*(int*)((int)gpQuestScrollTextBlock + 0x80) == 0x20646b62) {
       int32_t nUnitId;
@@ -4275,7 +4275,7 @@ void __stdcall TEXT_FreeChatAndLogMessages() {
 }
 
 int __stdcall TEXT_CloseMessageLogDialog() {
-    Draw::SetUIFlag(UI_MSGLOG, UI_RESET, 0);
+    ui::SetUIFlag(UI_MSGLOG, UI_RESET, 0);
     return 1;
 }
 
@@ -4934,8 +4934,8 @@ void __stdcall TEXT_CloseMessageUI() {
       return;
     }
 
-    Draw::SetUIFlag(UI_MSGLOG, UI_RESET, 0);
-    Draw::SetUIFlag(UI_MSGLOG, UI_SET, 0);
+    ui::SetUIFlag(UI_MSGLOG, UI_RESET, 0);
+    ui::SetUIFlag(UI_MSGLOG, UI_SET, 0);
 }
 
 D2TextLineStrc * __stdcall TEXT_ParseMultilineString(uint16_t * pwszInput, int * pnLineCount, uint16_t * pnScrollRate) {

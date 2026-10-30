@@ -4,7 +4,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
 #include "D2Client/UI/ui.h"
 #include "D2Lang/Unicode/UNISYS.h"

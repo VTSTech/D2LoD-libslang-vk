@@ -10,6 +10,7 @@
 #include "Storm/Source/SSystem.h"
 
 // Forward declarations
+struct D2StormListHead;
 #ifndef RECON_FPTD_pfnSEvtHandler
 #define RECON_FPTD_pfnSEvtHandler
 typedef void (__stdcall *pfnSEvtHandler)(void * pData);
@@ -65,12 +66,43 @@ BOOL __stdcall SEvtUnregisterHandler(uint32_t nEventId, uint32_t nSubId, uint32_
 // @rename-basis Behaviour plus argument count, both confirmed against the PPC. Two arguments here, and .SEvtUnregisterType reads only r3 and r4 and then computes "xor r28, r26, r27" - the same eventId ^ subId bucket hash this function uses. With two arguments it cannot name a handler. It walks the event's whole stack of handler tables freeing each with SEVT_FreeEventHandlerTable, then unlinks and frees the event record from its hash bucket and decrements gnSevtRegisteredEventCount. Removing the (eventId, subId) entry itself is what "type" means here.
 // @former-name SEVT_UnregisterEvent (invented)
 BOOL __stdcall SEvtUnregisterType(char * nEventId, uint32_t nSubId);
+uint32_t __fastcall LINKEDLIST_GetNextOffset(int * pList);
+// Calculates the offset position of a node within a linked list structure. Handles both forward and backward traversal using signed offset values. Returns the absolute position when given a node pointer and its offset metadata.
+uint32_t __thiscall LINKEDLIST_GetNodeOffset(int * pListInfo, int * pNode);
+void __fastcall LINKEDLIST_UnlinkSelf(int * pNode);
 // Pops the handler table most recently pushed for an event type. Finds the (eventId, subId) event, frees its current handler table and reinstates the predecessor stored at table[3]; when there is no predecessor it calls SEvtUnregisterType to remove the event entirely.
 // @oracle SEvtPopState
 // @oracle-source PEF traceback-table function name .SEvtPopState @10017bd0 in Mac PPC 1.10b Storm. Internal (not in the 337-name export table), but a first-party compiler-emitted symbol.
 // @rename-basis Behaviour. The exact inverse of SEvtPushState 00426370: it consumes the [3] predecessor link that only PushState writes. Two arguments (eventId, subId), so it names no handler. Not SEvtUnregisterType - it delegates to it in the no-predecessor case, so it cannot be it.
 // @former-name SEVT_UndoLastRegistration
 void __stdcall SEvtPopState(char * szText1, char * szText2);
+uint32_t __fastcall LINKEDLIST_GetCount(int * pList);
+// Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
+int32_t __thiscall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode);
+// @wasnamed LINKEDLIST_IsEmpty - WRONG in kind. It is not a predicate: it returns void and mutates
+// links.
+// @evidence The body unlinks the node from its current list (00426b12..00426b3a) and then relinks it
+// into a target list, at the head or the tail depending on nInsertMode != 1. Four arguments, confirmed
+// from register use: ECX is read at 00426b0f (LEA EAX,[ECX+0x4]) before any write, so it is a genuine
+// incoming register argument, and purge=12 accounts for the three stack arguments. A four-argument
+// void relinker cannot be an emptiness test.
+// @oracle The 1.10b PPC Storm .debug namespace gives TSList<T,TSGetLink<T>>::LinkNode(T*, unsigned long,
+// T*) - three arguments plus this = four - while the real IsEmpty(void) const takes zero.
+// @note The same relink body is instantiated at least seven more times in 1.14d and is named correctly
+// everywhere else (ARCHIVE_LinkNode @0045bbe0, SFILE_InsertFileRecordIntoList1..5). This was the only
+// false one.
+void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList);
+// Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
+uint32_t __thiscall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode);
+void __thiscall LINKEDLIST_GetHead(int32_t pThis, int * pListHead);
+// Gets the value stored at a specific index within a linked list. Returns the value field at offset+4 from the node pointer. Handles NULL input by defaulting to the list head at this+8.
+uint32_t __thiscall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode);
+void __fastcall LINKEDLIST_GetTail(struct D2StormListHead * pList);
+void __fastcall LINKEDLIST_InsertHead(struct D2StormListHead * pList);
+// Allocates a new linked list node via SMemAlloc with 12 bytes overhead plus data size. Initializes next/prev pointers to NULL. Optionally links the node into an existing list via LINKEDLIST_IsEmpty call.
+int * * __thiscall LINKEDLIST_AllocNode(int * * pListHead, int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags);
+// Unlinks a node from its doubly-linked list by updating prev/next pointers of adjacent nodes. If bit 0 of bFreeMemory is set, also frees the node memory via SMemFree. Returns the unlinked node pointer.
+int * __thiscall LINKEDLIST_UnlinkAndFree(int * pNode, uint8_t bFreeMemory);
 // Requests that the handler chain currently being dispatched for a given pData be abandoned. Under SEvt's critical section it allocates a 0xc-byte node tagged __AUBREAKCMD__, links it into the break-command list and stores the caller's pData at node[2].
 // @oracle SEvtBreakHandlerChain
 // @oracle-source PEF traceback-table function name .SEvtBreakHandlerChain @10018360 in Mac PPC 1.10b Storm. Internal (not in the 337-name export table), but a first-party compiler-emitted symbol.
@@ -79,6 +111,8 @@ void __stdcall SEvtPopState(char * szText1, char * szText2);
 // @namespace-fix moved Global -> Storm::Source::SEVT
 // @todo the list head it writes is still labelled gnUnnamedMessageBoxType; it is the SEvt break-command list head at 007088e8.
 int __stdcall SEvtBreakHandlerChain(void * pUnderMouse);
+// Unlinks a node from the list, frees its memory, and returns the masked count value. Combines unlinking logic with memory cleanup and count extraction. Always deallocates via SMemFree after unlinking.
+uint32_t __thiscall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode);
 // Dispatches an event: looks the (eventId, subId) pair up in the hash table and invokes every handler whose key matches arg3, walking the chain in descending registration-counter (priority) order. Locks SEvt's critical section and drains the break-command queue that SEvtBreakHandlerChain 00426e80 feeds.
 // @oracle SEvtDispatch
 // @oracle-source Storm export name list, and the PEF traceback-named body .SEvtDispatch @10017d50 in Mac PPC 1.10b Storm

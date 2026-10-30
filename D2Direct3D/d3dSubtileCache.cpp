@@ -4,9 +4,9 @@
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -37,7 +37,7 @@ int __fastcall D3DSUBTILE_Initialize(D3DSubtileCacheStrc * pCache, int nBaseMemo
     int* pCurrentNode;
     uint32_t uNodeCountCandidate = (uint32_t)(nAvailableMemory - nBaseMemoryUsed) / dwTextureSize;
     pCache->nMaxNodes = uNodeCountCandidate;
-    if (0x7ff < (int)uNodeCountCandidate) {
+    if ((int)uNodeCountCandidate >= 0x800) {
       uNodeCountCandidate = 0x800;
     }
 
@@ -60,7 +60,7 @@ int __fastcall D3DSUBTILE_Initialize(D3DSubtileCacheStrc * pCache, int nBaseMemo
         if (nNodeIndex < pCache->nMaxNodes - 1) {
           pCurrentNode[4] = (uintptr_t)&pCache->pNodeBuffer[1].nIndex + nAvailableMemory;
         }
-        if (0 < nNodeIndex) {
+        if (nNodeIndex > 0) {
           pCurrentNode[5] = (uintptr_t)&pCache->pNodeBuffer[-1].nIndex + nAvailableMemory;
         }
 
@@ -106,7 +106,7 @@ void __fastcall D3DSUBTILE_SetPalette(D3DSubtileCacheStrc * pCache, void * pPale
 
     while (!(int)pCache->pNodeBuffer[nNodeIndex].pSurface || (pSurface = pCache->pNodeBuffer[nNodeIndex].pSurface , nResult = pSurface->lpVtbl->SetPalette(pSurface, (IDirectDrawPalette*)pPalette) , !nResult)) {
       nNodeIndex++;
-      if (pCache->nMaxNodes - 1 <= nNodeIndex) {
+      if (nNodeIndex >= pCache->nMaxNodes - 1) {
         return;
       }
     }
@@ -177,10 +177,10 @@ static int __stdcall D3DSUBTILE_AllocateNodeFromFreeList(D3DSubtileCacheStrc * p
       D3DSubtileCacheNodeStrc* pNewFreeHead;
       pNewFreeHead = pNode->pNext;
       pCache->pFreeHead = pNewFreeHead;
-      if (!pNewFreeHead) {
-        pCache->pFreeTail = 0;
-      } else {
+      if (pNewFreeHead) {
         pNewFreeHead->pPrev = 0;
+      } else {
+        pCache->pFreeTail = 0;
       }
 
       pNode->pNext = 0;
@@ -206,17 +206,17 @@ static int __stdcall D3DSUBTILE_AllocateNodeFromFreeList(D3DSubtileCacheStrc * p
 // Provenance: 1.14d asm 006bacb0; Direct3D twin of GLSUBTILE_PromoteNodeToMRU (0050f0f0).
 void __fastcall D3DSUBTILE_PromoteNodeToMRU(D3DSubtileCacheStrc * pCache, int nIndex) {
     D3DSubtileCacheNodeStrc* pNode;
-    if (pCache->nUsedCount < 2) {
+    if (pCache->nUsedCount <= 1) {
       return;
     }
     if (!nIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 199);
       exit(-1);
-    } else if (pCache->nMaxNodes < nIndex) {
+    } else if (nIndex > pCache->nMaxNodes) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 200);
       exit(-1);
     } else {
-      if (!(0 < nIndex)) {
+      if (!(nIndex >= 1)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc9);
         exit(-1);
       }
@@ -303,10 +303,10 @@ void __fastcall D3DSUBTILE_Free(D3DSubtileCacheStrc * pCache, BOOL bInvalidateAl
           if (pNode) {
             pNextUsed = pNode->pNext;
             pCache->pUsedHead = pNextUsed;
-            if (!pNextUsed) {
-              pCache->pUsedTail = 0;
-            } else {
+            if (pNextUsed) {
               pNextUsed->pPrev = 0;
+            } else {
+              pCache->pUsedTail = 0;
             }
 
             pNode->pNext = 0;
@@ -355,10 +355,10 @@ int32_t __fastcall D3DSUBTILE_EnsureAvailableNode(D3DSubtileCacheStrc * pCache) 
           if (pFreeNode) {
             pNextUsedNode = pFreeNode->pNext;
             pCache->pUsedHead = pNextUsedNode;
-            if (!pNextUsedNode) {
-              pCache->pUsedTail = 0;
-            } else {
+            if (pNextUsedNode) {
               pNextUsedNode->pPrev = 0;
+            } else {
+              pCache->pUsedTail = 0;
             }
 
             pFreeNode->pNext = 0;
@@ -387,10 +387,10 @@ int32_t __fastcall D3DSUBTILE_EnsureAvailableNode(D3DSubtileCacheStrc * pCache) 
       } else {
         pNextUsedNode = pFreeNode->pNext;
         pCache->pFreeHead = pNextUsedNode;
-        if (!pNextUsedNode) {
-          pCache->pFreeTail = 0;
-        } else {
+        if (pNextUsedNode) {
           pNextUsedNode->pPrev = 0;
+        } else {
+          pCache->pFreeTail = 0;
         }
 
         pFreeNode->pNext = 0;

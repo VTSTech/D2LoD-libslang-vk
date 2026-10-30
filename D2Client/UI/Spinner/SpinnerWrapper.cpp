@@ -2,7 +2,7 @@
 
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinTextBox.h"
@@ -123,10 +123,10 @@ int __thiscall GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused) {
     pThis->pVtable = (SpinnerWrapperVtable*)(void*)SpinnerWrapper::vftable;
     ::SpinnerImplementation* ppSpinner = (::SpinnerImplementation*)Storm::SMem::SMemAlloc(0x54, "new", -1, 0);
     nExcState = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nExcState + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-    if (!ppSpinner) {
-      ppSpinner = 0;
-    } else {
+    if (ppSpinner) {
       ppSpinner = SpinnerImplementation::Constructor(ppSpinner, nPosX, nPosY, bHorizontal, pfnRepeatAction);
+    } else {
+      ppSpinner = 0;
     }
 
     pThis->pImplementation = ppSpinner;

@@ -30,6 +30,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/AnimTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -39,23 +40,22 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/PATH/Path.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Txt/Cube.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
@@ -72,7 +72,7 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Common/Waypoints.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
@@ -1071,7 +1071,7 @@ static int32_t UNITS_GetAnimFrameTime(eD2UnitType eUnitType, int32_t nClassId, i
     }
 }
 
-uint8_t * __stdcall UNITS_GetAnimTableEntry(int32_t nClassId, int32_t nAnimMode) {
+static inline uint8_t * __stdcall UNITS_GetAnimTableEntry(int32_t nClassId, int32_t nAnimMode) {
     if (nClassId < 0x19a) {
       return (uint8_t*)(gaAnimTableClassic + nAnimMode * 5);
     }
@@ -1108,11 +1108,8 @@ static BOOL __stdcall CanPlayAnimMode(D2UnitStrc * pUnit, int32_t nClassId, eD2U
 
         return 0;
       }
-      if (nClassId < 0x19a) {
-        pAnimModeEntry = gaAnimTableClassic + nAnimMode * 5;
-      } else {
-        pAnimModeEntry = gaAnimTableExpansion + nAnimMode * 5;
-      }
+
+      pAnimModeEntry = (int*)UNITS_GetAnimTableEntry(nClassId, nAnimMode);
     } else {
       pAnimModeEntry = gaPlayerAnimModeCheckTable + nAnimMode * 5;
     }
@@ -1152,11 +1149,8 @@ uint32_t __fastcall UNITS_CheckAnimateAtFrameEnd(int32_t nAnimMode, eD2UnitType 
 
         return 0;
       }
-      if (nClassId < 0x19a) {
-        pAnimModeEntry = gaAnimTableClassic + nAnimMode * 5;
-      } else {
-        pAnimModeEntry = gaAnimTableExpansion + nAnimMode * 5;
-      }
+
+      pAnimModeEntry = (int*)UNITS_GetAnimTableEntry(nClassId, nAnimMode);
     } else {
       pAnimModeEntry = gaPlayerAnimModeCheckTable + nAnimMode * 5;
     }
@@ -1605,7 +1599,7 @@ int __stdcall GetDirectionToCoords(D2UnitStrc * pUnit, int32_t nNewX, int32_t nN
       nY = 0;
     }
 
-    nX = Drlg::Path::DRLGPATH_GetDirectionFromCoords(nX, nY, nNewX, nNewY);
+    nX = PATH::Path::DRLGPATH_GetDirectionFromCoords(nX, nY, nNewX, nNewY);
     return nX;
 }
 

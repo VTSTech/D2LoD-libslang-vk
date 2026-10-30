@@ -8,8 +8,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
@@ -19,13 +18,13 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Common/Waypoints.h"
 #include "D2Game/GAME/Event.h"
@@ -52,22 +51,22 @@ namespace D2Client::UI::Waypoint {
 static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     if (!bIsExpansion || (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , !bIsExpansion)) {
-      if (0x1e < nMouseY || 0x140 < nMouseX) {
+      if (nMouseY > 0x1e || nMouseX > 0x140) {
         return -1;
       }
       if (nMouseX < 0x50) {
         return 0;
       }
       if (nMouseX >= 0xa0) {
-        return (0xef < nMouseX) + 2;
+        return (nMouseX >= 0xf0) + 2;
       }
 
       return 1;
     }
-    if (0x1e < nMouseY) {
+    if (nMouseY > 0x1e) {
       return -1;
     }
-    if (0x140 < nMouseX) {
+    if (nMouseX > 0x140) {
       return -1;
     }
     if (nMouseX < 0x40) {
@@ -76,21 +75,21 @@ static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     if (nMouseX < 0x80) {
       return 1;
     }
-    if (0xbf >= nMouseX) {
+    if (nMouseX < 0xc0) {
       return 2;
     }
 
-    return (0xff < nMouseX) + 3;
+    return (nMouseX >= 0x100) + 3;
 }
 
 static int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
     uint32_t* pHitTestData;
     int nIndex = 0;
     int* piVar1 = gaWaypointRowLayout;
-    while ((pHitTestData = (uint32_t*)(piVar1 + 6) , gaWaypointListEntries[nIndex].bActivated == '\0' || nMouseX <= (int)pHitTestData[-1]) || (int)(pHitTestData[-1] + 0x118) <= nMouseX || nMouseY <= (int)*pHitTestData || (int)(*pHitTestData + 0x1e) <= nMouseY) {
+    while ((pHitTestData = (uint32_t*)(piVar1 + 6) , gaWaypointListEntries[nIndex].bActivated == '\0' || nMouseX <= (int)pHitTestData[-1]) || nMouseX >= (int)(pHitTestData[-1] + 0x118) || nMouseY <= (int)*pHitTestData || nMouseY >= (int)(*pHitTestData + 0x1e)) {
       nIndex++;
       piVar1 = (int*)pHitTestData;
-      if ((uintptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 3) < (int)&gaWaypointListEntries[nIndex].bActivated) {
+      if ((int)&gaWaypointListEntries[nIndex].bActivated >= (intptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4)) {
         return -1;
       }
     }
@@ -194,7 +193,7 @@ static void Waypoint_SetWaypointArea(int32_t nAct) {
     BOOL bQuestComplete;
     eD2Quests eQuestId;
     eD2QuestState eQuestState;
-    if (gaWaypointRowLayout[0] <= nAct) {
+    if (nAct >= gaWaypointRowLayout[0]) {
       nAct = 0;
     }
 
@@ -326,9 +325,9 @@ void __stdcall WAYPOINT_PopulateList() {
       *pPageEntry = '\0';
       nActIdx = WaypointCurrentSelectedAct;
       pPageEntry += 5;
-    } while ((int)pPageEntry < (uintptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4));
+    } while ((int)pPageEntry < (intptr_t)((char*)&gaWaypointListEntries + sizeof(gaWaypointListEntries) + 4));
 
-    if (5 < WaypointCurrentSelectedAct) {
+    if (WaypointCurrentSelectedAct > 5) {
       D2Client::Waypoint::bNeedAllocation = false;
       return;
     }
@@ -348,7 +347,7 @@ void __stdcall WAYPOINT_PopulateList() {
             }
 
             byMaxId = gaWaypointVisited[nActOffset + 10];
-            if (gaWaypointVisited[nActOffset + 10] < (uint8_t)(uint8_t)nWaypointIdOut) {
+            if ((uint8_t)(uint8_t)nWaypointIdOut > gaWaypointVisited[nActOffset + 10]) {
               byMaxId = (uint8_t)nWaypointIdOut;
             }
 
@@ -369,14 +368,7 @@ void __stdcall WAYPOINT_PopulateList() {
       uint32_t bIsActivated;
       nWaypointId = (uint16_t)nWaypointIdIter;
       bIsActivated = D2Common::Waypoints::CheckWaypoint(D2Client::Waypoint::pWaypoint, nWaypointId);
-      if (!bIsActivated) {
-        bFound = D2Common::Waypoints::FindLevelIdByWaypointId(nWaypointId, &eDestLevel);
-        if (bFound) {
-          gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].eLevelId = eDestLevel;
-          gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\0';
-          MaximumAmountOfWaypointInSelectedAct++;
-        }
-      } else {
+      if (bIsActivated) {
         bFound = D2Common::Waypoints::FindLevelIdByWaypointId(nWaypointId, &nWaypointIdOut);
         if (bFound) {
           gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].eLevelId = nWaypointIdOut;
@@ -388,6 +380,13 @@ void __stdcall WAYPOINT_PopulateList() {
             gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\x01';
             MaximumAmountOfWaypointInSelectedAct++;
           }
+        }
+      } else {
+        bFound = D2Common::Waypoints::FindLevelIdByWaypointId(nWaypointId, &eDestLevel);
+        if (bFound) {
+          gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].eLevelId = eDestLevel;
+          gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\0';
+          MaximumAmountOfWaypointInSelectedAct++;
         }
       }
 
@@ -401,11 +400,9 @@ void __stdcall DRAW_UI_Waypoint() {
     D2UnitStrc* pPlayerUnit_lcl;
     D2RoomStrc* pDrlgRoom;
     D2BitBufferStrc* pQuestInfo;
-    D2BitBufferStrc* pBitBuffer;
     int nWaypointIndex;
     D2RoomStrc* pRoom;
     eD2LevelId eCurrentLevel;
-    uint16_t* wMessage;
     uint16_t* pwszText;
     int32_t nTextWidth;
     int nY;
@@ -426,7 +423,7 @@ void __stdcall DRAW_UI_Waypoint() {
     bIsDead = UNIT::Player::IsPlayerDead();
     if (bIsDead) {
       D2UnitStrc* pUnit;
-      Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+      ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
       if (!D2Client::Waypoint::bNeedAllocation) {
         pUnit = UNIT::Player::GetPlayerUnit_UI();
         if (pUnit) {
@@ -498,8 +495,7 @@ void __stdcall DRAW_UI_Waypoint() {
             case 4:
               eVar2 = QUESTSTATE_Completed;
             eVar1 = QUEST_TerrorsEnd;
-            pBitBuffer = npcmenu::GetQuestInfo();
-            nWaypointIndex = D2Common::QuestRecord::GetQuestState(pBitBuffer, eVar1, eVar2);
+            nWaypointIndex = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eVar1, eVar2);
             _bIsExpansionCheck = Fog::D2CheckExpansionGame();
             if (_bIsExpansionCheck) {
               _bIsExpansionCheck = GAME::Game::CLIENT_CheckExpansion();
@@ -537,13 +533,11 @@ void __stdcall DRAW_UI_Waypoint() {
     eCurrentLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     nWaypointIndex = 0;
     sDrawImageArgs.pDC6 = WaypointWaygateIcons;
-    if (0 < MaximumAmountOfWaypointInSelectedAct) {
+    if (MaximumAmountOfWaypointInSelectedAct > 0) {
       ActsInGame = gaWaypointListEntries;
       pDrawOffsets = (uint32_t*)(gaWaypointRowLayout + 1);
       do {
-        if (gaWaypointListEntries[nWaypointIndex].bActivated == '\0') {
-          /* Gray = we dont have the waypoint */ dwColor = 5;
-        } else {
+        if (gaWaypointListEntries[nWaypointIndex].bActivated != '\0') {
           if (gaWaypointListEntries[nWaypointIndex].eLevelId == eCurrentLevel) {
             sDrawImageArgs.nFrameNumber = (int)(ClickingDownOnWaypointEntry == nWaypointIndex);
           } else {
@@ -552,6 +546,8 @@ void __stdcall DRAW_UI_Waypoint() {
 
           D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
           dwColor = 0;
+        } else {
+          /* Gray = we dont have the waypoint */ dwColor = 5;
         }
         /* Since color 3 is blue, and current selected area is printed blue in the game,
                          this is something about current area */ if (gbWaypointButtonPressed == '\0' && ClickingDownOnWaypointEntry != -1 && nWaypointIndex == ClickingDownOnWaypointEntry) {
@@ -566,14 +562,13 @@ void __stdcall DRAW_UI_Waypoint() {
         nY = pDrawOffsets[3] - gnPanelOffsetY;
         _bIsExpansionCheck = 0;
         nTextX = pDrawOffsets[2] + gnPanelOffsetX;
-        wMessage = ui::CLIENT_GetLevelNameByLevelId(gaWaypointListEntries[nWaypointIndex].eLevelId);
-        D2Win::Src::D2WinFont::DRAW_text(wMessage, nTextX, nY, dwColor, _bIsExpansionCheck);
+        D2Win::Src::D2WinFont::DRAW_text(ui::CLIENT_GetLevelNameByLevelId(gaWaypointListEntries[nWaypointIndex].eLevelId), nTextX, nY, dwColor, _bIsExpansionCheck);
         ActsInGame++;
         nWaypointIndex++;
         pDrawOffsets += 6;
       } while (nWaypointIndex < MaximumAmountOfWaypointInSelectedAct);
     }
-    if (nMouseX - 0x111U < 0x24 && nMouseY - 0x183U < 0x22) {
+    if (nMouseX - 0x111U <= 0x23 && nMouseY - 0x183U <= 0x21) {
       /* Draw cancel hoover */ pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x1022);
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
       nMouseX = nTextWidth / 2;
@@ -609,7 +604,7 @@ void __stdcall INPUT_WaypointTravel(D2UIMouseMsgStrc * pMsg) {
       }
     }
 
-    Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
+    ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
@@ -639,7 +634,7 @@ void __fastcall WAYPOINT_Init(int32_t pPacket) {
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     DWORD dwUiResult;
-    dwUiResult = Draw::SetUIFlag(UI_WAYPOINT, UI_SET, 1);
+    dwUiResult = ui::SetUIFlag(UI_WAYPOINT, UI_SET, 1);
     if (dwUiResult != 1) {
       return;
     }
@@ -682,7 +677,12 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
       int32_t nWaypointIndex;
       nMouseX = uVar1 - gnPanelOffsetX;
       nRelMouseY = nMouseY + gnPanelOffsetY;
-      if (gbWaypointButtonPressed == '\0') {
+      if (gbWaypointButtonPressed != '\0') {
+        if (nMouseX - 0x111U <= 0x23 && nRelMouseY - 0x183U <= 0x21) {
+          ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+          WAYPOINT_SendClosePacket();
+        }
+      } else {
         if (ClickingDownOnWaypointEntry != -1) {
           nWaypointIndex = WAYPOINT_GetWaypointIndexFromMouse(nMouseX, nRelMouseY);
           if (ClickingDownOnWaypointEntry == nWaypointIndex) {
@@ -694,7 +694,7 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
             WAYPOINT_SendClosePacket();
             gbWaypointButtonPressed = 0;
             ClickingDownOnWaypointEntry = -1;
-            Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+            ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
             Sound::SOUND_PlaySound(SOUND_HEAVY_RUN_DIRT_3, nullptr, 0, 0, 0);
             pMsg->bHandled = 1;
             pMsg->dwResult = 0;
@@ -702,9 +702,6 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
             return;
           }
         }
-      } else if (nMouseX - 0x111U < 0x24 && nRelMouseY - 0x183U < 0x22) {
-        Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
-        WAYPOINT_SendClosePacket();
       }
 
       gbWaypointButtonPressed = 0;
@@ -730,7 +727,7 @@ void __stdcall INPUT_WaypointMouseDown(D2UIMouseMsgStrc * pMsg) {
     if (nRelMouseX) {
       return;
     }
-    if (ScreenSizeX / 2 < nMouseX || ScreenSizeY - 0x31 < nMouseY) {
+    if (nMouseX > ScreenSizeX / 2 || nMouseY > ScreenSizeY - 0x31) {
       if (!D2Client::Waypoint::bNeedAllocation) {
         pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
         if (pPlayerUnit_lcl) {
@@ -743,7 +740,7 @@ void __stdcall INPUT_WaypointMouseDown(D2UIMouseMsgStrc * pMsg) {
         }
       }
 
-      Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
+      ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
     } else {
       int32_t nAct;
       nWaypointMouseX = nMouseX - gnPanelOffsetX;
@@ -762,7 +759,7 @@ void __stdcall INPUT_WaypointMouseDown(D2UIMouseMsgStrc * pMsg) {
       }
 
       ClickingDownOnWaypointEntry = -1;
-      if (nWaypointMouseX - 0x111U < 0x24 && nRelMouseY - 0x183U < 0x22) {
+      if (nWaypointMouseX - 0x111U <= 0x23 && nRelMouseY - 0x183U <= 0x21) {
         gbWaypointButtonPressed = 1;
         Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
       } else {

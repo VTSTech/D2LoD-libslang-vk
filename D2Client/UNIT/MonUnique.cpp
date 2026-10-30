@@ -7,7 +7,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/SKILLS/Skills.h"
@@ -32,6 +31,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/MissileTbls.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
@@ -42,8 +42,7 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -703,7 +702,7 @@ void __fastcall MONUNIQUE_DurielDeathAndSpawn(D2UnitStrc * pUnit, int32_t nUMod,
       int nTotalFrames;
       D2Common::Units::GetShiftedFrameMetrics(pUnit, &nCurrentFrame, &nTotalFrames);
       if (nCurrentFrame == 0xd) {
-        Engine::GfxInfo::GFX_RemoveAllOverlays(pUnit);
+        Engine::Gfx::GFX_RemoveAllOverlays(pUnit);
         Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_durieldead_fwd, 5, 0, 0, 0, 0, 0);
         Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_durieldead_rear, 5, 0, 0, 0, 0, 0);
         pUnit->nActionFrame = 0;

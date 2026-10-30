@@ -11,13 +11,13 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -125,7 +125,33 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
     if (!byBonusFunc) {
       return;
     }
-    if (byBonusFunc == 1) {
+    if (byBonusFunc != 1) {
+      if (byBonusFunc == 2) {
+        if (nEquippedMask >= 0x40) {
+          nQuality = 0;
+        } else {
+          nQuality = gnItemQualityByBaseId[nEquippedMask];
+        }
+
+        nQuality--;
+        nBonusIdx = 0;
+        if (nQuality > 0) {
+          do {
+            Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, gaSetItemBonusStates[nBonusIdx], 0);
+            nBonusIdx++;
+          } while (nBonusIdx < nQuality);
+        }
+        if (nQuality < 5) {
+          pStateEntry = (eD2States*)(gaSetItemBonusStates + nQuality);
+          do {
+            Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, *pStateEntry, 1);
+            pStateEntry++;
+          } while ((int)pStateEntry < (intptr_t)((char*)&gaSetItemBonusStates + 20));
+
+          return;
+        }
+      }
+    } else {
       bool bDisabled;
       _nSetIndex = ITEMS::Items::ITEM_GetTxtSetItems_setIndex(pUnit);
       nQuality = 0;
@@ -137,7 +163,7 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
           }
 
           bDisabled = !(nEquippedMask & 1 << ((uint8_t)nQuality & 0x1f));
-          if (bDisabled) {
+          if (!bDisabled) {
             eState = *(eD2States*)((int)gaSetItemBonusStates + nBonusIdx);
           } else {
             eState = *(eD2States*)((int)gaSetItemBonusStates + nBonusIdx);
@@ -148,30 +174,6 @@ void __fastcall ITEM_UpdateSetItemStates(D2UnitStrc * pUnit, uint32_t nEquippedM
 
         nQuality++;
       } while (nQuality < 6);
-    } else if (byBonusFunc == 2) {
-      if (nEquippedMask < 0x40) {
-        nQuality = gnItemQualityByBaseId[nEquippedMask];
-      } else {
-        nQuality = 0;
-      }
-
-      nQuality--;
-      nBonusIdx = 0;
-      if (0 < nQuality) {
-        do {
-          Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, gaSetItemBonusStates[nBonusIdx], 0);
-          nBonusIdx++;
-        } while (nBonusIdx < nQuality);
-      }
-      if (nQuality < 5) {
-        pStateEntry = (eD2States*)(gaSetItemBonusStates + nQuality);
-        do {
-          Stats::StatsEx::STATLIST_ToggleStateDisabled(pUnit, *pStateEntry, 1);
-          pStateEntry++;
-        } while ((int)pStateEntry < (uintptr_t)((char*)&gaSetItemBonusStates + 20));
-
-        return;
-      }
     }
 }
 
@@ -180,7 +182,7 @@ void __fastcall ITEM_ManageSetBonusStatList(D2UnitStrc * pUnit, D2UnitStrc * pUn
     D2StatListExStrc* pStatList;
     int nExistingSetId;
     eD2States eState;
-    if (!(nMode < 2 && pUnit && pUnit2 && pUnit2->eUnitType == UNIT_ITEM)) {
+    if (!(nMode <= 1 && pUnit && pUnit2 && pUnit2->eUnitType == UNIT_ITEM)) {
       return;
     }
 
@@ -205,7 +207,7 @@ void __fastcall ITEM_ManageSetBonusStatList(D2UnitStrc * pUnit, D2UnitStrc * pUn
     }
 
     nSetId = (int)pSetItemTxt->set;
-    if (!(-1 < nSetId && nSetId < sgptDataTable->nTxtSetsSize)) {
+    if (!(nSetId >= 0 && nSetId < sgptDataTable->nTxtSetsSize)) {
       return;
     }
 
@@ -216,11 +218,7 @@ void __fastcall ITEM_ManageSetBonusStatList(D2UnitStrc * pUnit, D2UnitStrc * pUn
     do {
       eState = gaSetItemBonusStates[nBonusSlotIdx];
       pStatList = Stats::StatsEx::GetStatsByState(pUnit, eState);
-      if (!pStatList) {
-        if (nFreeSlot < 0) {
-          nFreeSlot = nBonusSlotIdx;
-        }
-      } else {
+      if (pStatList) {
         nExistingSetId = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_value, 0);
         if (nSetId == nExistingSetId) {
           if (!nMode) {
@@ -228,6 +226,10 @@ void __fastcall ITEM_ManageSetBonusStatList(D2UnitStrc * pUnit, D2UnitStrc * pUn
           }
 
           goto apply_or_remove_set_bonus;
+        }
+      } else {
+        if (nFreeSlot < 0) {
+          nFreeSlot = nBonusSlotIdx;
         }
       }
 
@@ -266,10 +268,10 @@ void __stdcall ITEM_ProcessSetItemEquip(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
     if (pOwnerUnit) {
       int32_t iVar1;
       iVar1 = INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pOwnerUnit);
-      if (iVar1 == 3) {
-        nSetMask = ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pUnit2, 1);
-      } else {
+      if (iVar1 != 3) {
         nSetMask = 0;
+      } else {
+        nSetMask = ITEMS::Items::ITEMS_GetEquippedSetItemsMask(pUnit, pUnit2, 1);
       }
     }
     if (bUpdateStates || !nEquipMode) {

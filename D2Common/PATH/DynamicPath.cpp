@@ -17,6 +17,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
@@ -25,8 +26,7 @@
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/Path.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/D2PathTypeArg.h"
@@ -939,7 +939,7 @@ static uint32_t PATH_BuildDirectPathToTarget(D2DynamicPathStrc * pDynamicPath) {
     pDynamicPath->PathPoints[0].nY = sTargetY;
     pDynamicPath->dwPathPoints = 1;
     pDynamicPath->nSavedPathPoints = 0;
-    Drlg::Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath, 1, 1);
+    Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath, 1, 1);
     D2RoomStrc* pRoom = pDynamicPath->pRoom;
     if (pRoom) {
       nTargetYPos = pRoom->sCoords.dwXStart;
@@ -1300,23 +1300,23 @@ static uint8_t PATH_ResolveTargetPosition(D2PathTypeArg * pPathTypeArg, int32_t 
 uint32_t __stdcall PATH_CalculatePath(D2DynamicPathStrc * pDynamicPath, D2UnitStrc * pUnit, int32_t nParam) {
     // Static local variables (originally global data)
     static D2PathTypeFunc PATHTYPEFUNC[17] = {
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathAStar,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathAStarLocalPool,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathToward,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathTowardFromStart,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathAStar,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathAStarLocalPool,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathToward,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathTowardFromStart,
     nullptr,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathToward,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathToward,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathTowardWithAStarFallback,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathKnockback,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathSingleStep,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathToward,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathToward,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathTowardWithAStarFallback,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathKnockback,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathSingleStep,
     nullptr,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathForceMove,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathSmoothed,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathToward,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathForceMove,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathSmoothed,
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathToward,
     nullptr,
     (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathTowardFallback,
-    (D2PathTypeFunc)&D2Common::Drlg::PATH_FindPathAStar
+    (D2PathTypeFunc)&D2Common::Drlg::Path::PATH_FindPathAStar
 }; D2_STATIC_GUARD(PATHTYPEFUNC, "D2Common::PATH::DynamicPath::PATH_CalculatePath::PATHTYPEFUNC");
 
     bool bBadCodePtr;
@@ -1431,7 +1431,7 @@ uint32_t __stdcall PATH_CalculatePath(D2DynamicPathStrc * pDynamicPath, D2UnitSt
                   return 0;
                 }
 
-                Drlg::Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath_00, 1, 1);
+                Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath_00, 1, 1);
                 if (pDynamicPath_00->nPathPointIndex < pDynamicPath_00->dwPathPoints) {
                   Path::PATH_CheckPathPointsInRoom(pDynamicPath_00);
                   pDynamicPath_00->nPrevTargetY = pDynamicPath_00->nTargetY;

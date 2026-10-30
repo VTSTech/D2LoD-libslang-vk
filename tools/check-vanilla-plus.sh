@@ -54,12 +54,16 @@ gate "row-10 init callback wired (row + comment)" globals/D2Client.cpp        'E
 gate "row-10 draw callback wired (row + comment)" globals/D2Client.cpp        'VANILLAPLUS_DrawRowLabel'   2
 
 # ---- Draw.cpp / ui.cpp dispatch + guards ----------------------------------
-gate "SetUiFlagInit/unregister/render VP blocks" D2Client/UI/Draw.cpp     'VP-BEGIN \[row-10 options page\]' 3
+# upstream b1b32b8 (Ghidra 1775) re-filed the SetUIFlag/toggle machinery from
+# Draw.cpp into ui.cpp: register/unregister anchors follow the code, the
+# render anchor stays in Draw.cpp (DRAW_UI dispatch was not moved).
+gate "row-10 render VP block (Draw.cpp)"  D2Client/UI/Draw.cpp            'VP-BEGIN \[row-10 options page\]' 1
+gate "row-10 register/unregister VP blocks" D2Client/UI/ui.cpp            'VP-BEGIN \[row-10 options page\]' 2
 gate "auto-gold tick wired in DRAW_UI"    D2Client/UI/Draw.cpp            'AUTO_GOLD_Tick\(\);'        1
 gate "latch reset in InitializeUI"        D2Client/UI/Draw.cpp            'ALTTOGGLE_Reset\(\);'       1
-gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/Draw.cpp     'case UI_VANILLAPLUS:'       2
-gate "VANILLAPLUS_OnToggleUI calls"       D2Client/UI/Draw.cpp            'VANILLAPLUS_OnToggleUI\('   2
-gate "SetUIFlag bound widened to 38"      D2Client/UI/Draw.cpp            'UI_VANILLAPLUS < eUI'       1
+gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/ui.cpp       'case UI_VANILLAPLUS:'       2
+gate "VANILLAPLUS_OnToggleUI calls"       D2Client/UI/ui.cpp              'VANILLAPLUS_OnToggleUI\('   2
+gate "SetUIFlag bound widened to 38"      D2Client/UI/ui.cpp              'UI_VANILLAPLUS < eUI'       1
 gate "GetUIFlag bound widened to 38"      D2Client/UI/ui.cpp              'UI_VANILLAPLUS >= eUI'      1
 gate "0x27 guards in Draw.cpp"            D2Client/UI/Draw.cpp            'gnUIFlagCount (!=|==) 0x27' 5
 gate "0x27 guards in ui.cpp"              D2Client/UI/ui.cpp              'gnUIFlagCount (!=|==) 0x27' 1

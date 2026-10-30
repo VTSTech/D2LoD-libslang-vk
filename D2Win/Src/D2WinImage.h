@@ -27,6 +27,13 @@ typedef BOOL (__stdcall *OnPress)(struct D2ControlMsg * pControlMsg);
 #endif
 
 // Data types
+struct D2GfxNinePatchCoordsStrc {
+    /* 0x00 */ int nScreenX[4]; // 4 screen X boundaries: left, left+scrollX, right-scrollX, right
+    /* 0x10 */ int nScreenY[4]; // 4 screen Y boundaries: top, top+scrollY, bottom-scrollY, bottom
+    /* 0x20 */ int nVScale[4]; // 4 V-axis UV scale values: 0, scrollY, 0x100-scrollY, 0x100
+    /* 0x30 */ int nUScale[4]; // 4 U-axis UV scale values: 0, scrollX, 0x100-scrollX, 0x100
+};
+
 struct D2GfxTileRectStrc {
     /* 0x00 */ int nX0; // Left screen X
     /* 0x04 */ int nX1; // Right screen X
@@ -54,9 +61,10 @@ BOOL __stdcall D2WINIMAGE_SetFrame(::D2WinImage * pImage, int32_t nFrame);
 BOOL __stdcall D2WINIMAGE_SetDrawModeSolid(::D2WinImage * pImage, DRAWMODE eDrawModeIgnored);
 int __stdcall D2WINIMAGE_StopAnimation(int * pImage);
 BOOL __fastcall Draw(::D2WinImage * pImage);
-void __stdcall D2WinImage_Draw(struct D2GfxTileRectStrc * pScreenRect, struct D2GfxTileRectStrc * pDstRect, struct D2GfxDataStrc * pGfxData);
+BOOL __fastcall Draw(::D2WinImageEx * pImageEx);
 BOOL __stdcall Push(struct D2ControlMsg * pControlMsg);
 // @sourcefile .\Src\D2WinImage.cpp
 ::D2WinImage * __fastcall D2WinImage(int32_t nParam1, int32_t nParam2, int32_t nSizeX, int32_t nSizeY, struct DC6 * pDC6, OnPress pfnOnPress, struct D2WinImageHitArea * pHitAreas, ::Key pKey);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Win::Src::D2WinImage

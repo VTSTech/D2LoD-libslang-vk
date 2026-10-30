@@ -320,6 +320,6 @@ _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca655(struct EHExceptionRecord * pEx
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca675(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca695(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca6c5(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-// 6 internal functions (defined in .cpp)
+// 7 internal functions (defined in .cpp)
 
 } // namespace Fog::Debug

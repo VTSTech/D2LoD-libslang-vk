@@ -72,6 +72,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -86,7 +87,6 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2CreateMonsterUnitStrc.h"
@@ -1893,7 +1893,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x7E(char * pBytes) {
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-    SRC::CelCmp::GFX_LoadMonsterCofArchive(neAct);
+    Engine::Gfx::GFX_LoadMonsterCofArchive(neAct);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7F(D2GSPacketSrv0x7F * pBytes) {

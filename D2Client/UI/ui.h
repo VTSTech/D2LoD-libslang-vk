@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2DialogStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
 struct DC6;
@@ -17,7 +16,6 @@ struct EHExceptionRecord;
 struct EHRegistrationNode;
 typedef int _EXCEPTION_DISPOSITION;
 typedef int eD2LevelId;
-typedef int eD2UIvars;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32
@@ -31,6 +29,12 @@ struct __attribute__((packed)) D2ConfigControlDescStrc {
     /* 0x00 */ int nCmdIndex; // Command index (0x39 = separator/header row)
     /* 0x04 */ uint16_t wStrId; // Locale string ID for this control's label
     /* 0x06 */ uint8_t _pad[4]; // Padding to 10 bytes
+};
+
+struct __attribute__((packed)) D2QuestAreaIntroStrc {
+    /* 0x00 */ int nLevelId;
+    /* 0x04 */ int nQuestId;
+    /* 0x08 */ char szDC6Name[5];
 };
 
 struct __attribute__((packed)) D2UberBossImmunityStrc {
@@ -65,7 +69,7 @@ struct DC6 * __fastcall ARCHIVE_LoadOverlayImageUsedInGame(char * pFilename);
 void __stdcall InitializeGlobalsWithColors();
 void * __fastcall MoveArgumentToEAX(void * pParam);
 void __fastcall UI_TranslateWideCharacterLookup(uint16_t * wszText);
-uint16_t * __fastcall AppendAsWideChar(uint16_t * wszText, char cParam);
+uint16_t * __fastcall AppendAsWideChar(uint16_t * wszText, int cParam);
 uint16_t * __fastcall UI_AppendColorCodeToString(uint16_t * wszText, char cParam);
 uint16_t * __fastcall UI_RemoveColorCodesFromString(uint16_t * wszText);
 uint16_t * __fastcall UI_WrapStringWithColorCodes(uint16_t * wszText, char cStartColor, char cEndColor);
@@ -75,12 +79,7 @@ void __fastcall UI_StoreGlobalUIText(uint16_t * wszText, DWORD dwTextColor);
 BOOL __fastcall UI_GetUniqueMonsterName(struct D2UnitStrc * pUnit, uint16_t nNameMode);
 int32_t __fastcall UI_GetMonsterHpBarValue(struct D2UnitStrc * pUnit);
 // @sourcefile .\UI\ui.cpp
-void UI_BuildUberBossImmunityString(struct D2UnitStrc * pUnit);
-// @sourcefile .\UI\ui.cpp
 void __fastcall UI_FormatItemNameWithQuality(struct D2UnitStrc * pUnit, uint16_t * wszText, int32_t nMaxLength);
-void __stdcall UI_FormatPlayerNameAndStatus(struct D2UnitStrc * pUnit, uint16_t * wszText, int32_t nFormatMode, bool * pbIsPartied, int * pnHpBarValue);
-void __stdcall UI_ShowMonsterNameBar(int32_t bStoreMode, struct D2UnitStrc * pUnit);
-uint32_t __stdcall UI_GetRosterPlayerInfoForDisplay(uint16_t * wszText, int * pnHpBarValue, int32_t * pbIsPartied, int32_t pPetEntry);
 void __stdcall UI_DrawMercenaryHealthBar();
 void __fastcall DRAW_Direct_RectFrame(RECT * pRect);
 void __stdcall UI_DrawStoredTooltip();
@@ -88,10 +87,7 @@ void __stdcall DRAW_UI_DeathMessage();
 void __fastcall UI_DrawPlayerNameOverhead(struct D2UnitStrc * pUnit);
 void __stdcall UI_DrawPlayerStateOverlays();
 void __stdcall UI_SetButtonKeyBinding(int32_t pButtonContainer, uint16_t nDefaultKey, int32_t nCommandId, int32_t nButtonIndex, int32_t nCmdCategory);
-void UI_SetMultipleButtonKeyBindings(struct D2UIKeyBindingSetStrc * pnButtonIndices);
 BOOL __fastcall GetUIFlag(eD2UIvars eUI);
-// Handles key input and dismisses UI panels based on gUIFlagDismissModeTable. Scans all active UI flags and applies dismiss action (0=ignore, 1=close, 2=block, 4=close NPC). Special handling for quest log (index 5) and quest resurrect (index 9) with tick throttle. Returns 0 if action was blocked or consumed, 1 if input should propagate.
-uint32_t UI_HandleKeyInputAndDismiss(int32_t nKeyAction, int32_t nUIFlagToCheck);
 BOOL __fastcall UI_GetFlag(eD2UIvars eUI);
 struct DC6 * __stdcall UI_GetCursorIconIndex();
 struct DC6 * __stdcall UI_GetCursorIconDC6();
@@ -119,6 +115,27 @@ void __fastcall UI_RegisterAutoMapEventHandlers(int32_t bRegister);
 struct DC6 * __stdcall GetBuySellBtnDC6();
 // @sourcefile .\UI\ui.cpp
 void * __fastcall UI_LoadFileToMemory(LPCSTR szFilename, size_t * pSize);
+void __stdcall PALETTE_LoadLoadingScreenPalette();
+void __fastcall SetActNo(int32_t nParam);
+void __stdcall CleanupAfterLoadingAct();
+int32_t __stdcall DRAW_GetLastPanelId();
+BOOL __stdcall DRAW_CheckTickRateLimiter();
+// Fills a four-int array with the visible viewport bounds as left, top, right, bottom. Callers must model the destination as one 16-byte object (int[4]): splitting it into separate stack locals leaves the right and bottom elements looking unwritten.
+uint32_t __fastcall DRAW_GetVisibleViewportBounds(int * pnBounds);
+int32_t __stdcall DRAW_GetBottomPanelY();
+void __stdcall DRAW_RegisterDrawHandlers();
+void __stdcall DRAW_RefreshNpcDialog();
+uint32_t __stdcall DRAW_IsDialogActive();
+void __stdcall DRAW_MonsterUnderCursorImmunites();
+void __fastcall DRAW_MonsterHealthBar(struct D2UnitStrc * pUnit);
+// Draw UI label showing unit name/life under mouse cursor during gameplay
+void __fastcall DRAW_UnitUnderMouse(struct D2UnitStrc * pUnit);
+void __stdcall DRAW_UnitUModsUnderCursor();
+void __stdcall DRAW_Overlay_EnteringAreaX();
+void __fastcall SetUiFlagInit(eD2UIvars eUIVar);
+void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel);
+DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DWORD bAdjustMouse);
+BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse);
 bool __stdcall UI_ShowPopupDialog();
 void __stdcall UI_HandleCursorMouseDown(int32_t pMsg);
 void __stdcall UI_HandleCursorMouseMove(uint8_t * pMsgEvent);
@@ -152,26 +169,24 @@ void __stdcall UI_InitializeStatDescriptionPointers();
 int64_t __stdcall UI_GetControlConfigRowCount();
 void __fastcall UI_ScrollConfigListVertical(int32_t nParam);
 void __fastcall UI_ScrollConfigListHorizontal(int32_t nParam);
-int32_t UI_GetControlConfigRowAtY(int32_t nParam);
 uint32_t __stdcall UI_IsMouseInRightColumn(int32_t nParam);
-// Returns the index (0-2) of the control-config tab whose bounds contain
-// (nMouseX, nMouseY), or 3 when none does. ECX is the table offset, zeroed
-// at 004a47c2, not a parameter; ESI is compared with the x bounds and EDX
-// with the y bounds (1.14d asm 004a47c4-004a47dc).
-int32_t UI_GetControlConfigTabIndex(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseInControlConfigArea(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseOnUpArrow(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseOnDownArrow(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseOnScrollBar(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseOnScrollThumb(int32_t nMouseX, int32_t nMouseY);
-int UI_IsMouseBelowScrollThumb(int32_t nMouseX, int32_t nMouseY);
 // Returns TRUE when (nMouseX, nMouseY) is over one of the control-config tabs: UI_GetControlConfigTabIndex(nMouseX@ESI, nMouseY@EDX) != 3 (SETNZ at 004a4a0a).
 // Was code outside any function; no direct reference reaches it in 1.14d.
 BOOL UI_IsMouseOverControlConfigTab(int32_t nMouseX, int32_t nMouseY);
 // Returns TRUE when gnUICtrlConfigActiveButton is not 3 (none) and the tab under (nMouseX@ESI, nMouseY@EDX) is that button (004a4a87, 004a4a91); the same test UI_ConfigHandleMouseClick makes inline at 004a5ead.
 // Was code outside any function; no direct reference reaches it in 1.14d.
 BOOL UI_IsMouseOverActiveControlConfigButton(int32_t nMouseX, int32_t nMouseY);
+// Control config mouse handler. Tracks g_nControlConfigMouseButtonState array for each UI region (scroll up/down, list drag, buttons). Dispatches scroll/selection based on mouse state. Main mouse logic for config UI.
+void __stdcall UI_UpdateConfigControlsState(int32_t nMouseXStack, int32_t nMouseYStack);
 void UIAction_ResetKeyBindingsToDefaults();
+void CONTROLCONFIG_SaveAndCancel();
+void CONTROLCONFIG_RevertAndClose();
+void __stdcall CONTROLCONFIG_CalculateColumnBounds();
+void __stdcall CONTROLCONFIG_Initialize();
+void __stdcall CONTROLCONFIG_Cleanup();
+void __fastcall CONTROLCONFIG_OnToggleUI(int32_t nParam);
+void __stdcall DRAW_ConfigControlsMenu();
+void __stdcall InitConfigUiFlags(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_SkillTreeScroll(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_SkillTreeNavigateUp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_SkillTreeNavigateDown(struct D2UIMouseMsgStrc * pMsg);
@@ -221,15 +236,11 @@ void __stdcall UI_PrecomputeStatDescriptionWidths();
 void __stdcall CHAR_FreePanelAssets_NoOp();
 void __stdcall DRAW_UI_StatWindow_I();
 void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnitGUID, char * pQuestBuffer, int32_t nActionType);
-void UI_ScrollNpcMenuList(int32_t nParam1, struct D2DialogStrc * pDialog);
-int32_t DIALOG_HandleMouseUpEvent(struct D2DialogStrc * pDialog, struct D2UIMouseMsgStrc * pMsg);
-int __stdcall DIALOG_HandleMouseDownEvent(struct D2DialogStrc * pDialog, struct D2UIMouseMsgStrc * pMsg);
 void __stdcall UI_ResetTradeGlobals();
 void __stdcall DRAW_UI_TradePrompt();
 void __stdcall UI_InitTradeState();
 void __fastcall UI_CloseTradeWindow(int32_t nParam);
 int __stdcall TRADE_GetTradeStatus();
-void __stdcall UI_CloseHoradricCubeWindow();
 void __stdcall UI_FreeHoradricCubeAssets();
 void __stdcall PACKET_SendUnitInteraction0x44(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall DRAW_UI_CASH();
@@ -241,6 +252,6 @@ void __fastcall UI_HandleHoradricCubePacket(int32_t pPacket);
 void __fastcall UI_OpenHoradricCubeWithNpcInteraction(int nNpcShopTab);
 BOOL __fastcall UI_DrawGroundItemTooltip(int * pnX, int * pnY, int * pnRight, int * pnBottom, int32_t nPlacementMode, int32_t nMaxX, int32_t nMinX);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca05c(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-// 11 internal functions (defined in .cpp)
+// 27 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::ui

@@ -3,8 +3,8 @@
 #include "D2Client/UNIT.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -18,35 +18,35 @@
 namespace D2Client::UNIT {
 
 uint32_t __fastcall CheckFlags(D2UnitStrc * pUnit, eD2UnitFlags nFlagsC4) {
-    if (pUnit) {
-      return (uint32_t)((pUnit->eUnitFlags & nFlagsC4) != 0);
+    if (!pUnit) {
+      return 0;
     }
 
-    return 0;
+    return (uint32_t)((pUnit->eUnitFlags & nFlagsC4) != 0);
 }
 
 int32_t __fastcall GetGUID(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->nUnitGUID;
+    if (!pUnit) {
+      return -1;
     }
 
-    return -1;
+    return pUnit->nUnitGUID;
 }
 
 int32_t __fastcall GetClassId(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->nClassId;
+    if (!pUnit) {
+      return -1;
     }
 
-    return -1;
+    return pUnit->nClassId;
 }
 
 eD2PlayerAnimMode __fastcall GetAnimMode(D2UnitStrc * pUnit) {
-    if (pUnit) {
-      return pUnit->eAnimMode.ePlayerMode;
+    if (!pUnit) {
+      return Death;
     }
 
-    return Death;
+    return pUnit->eAnimMode.ePlayerMode;
 }
 
 void __fastcall SetMonsterFlags(D2UnitStrc * pUnit, eD2UnitFlags neD2UnitFlags, BOOL bSet) {

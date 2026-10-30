@@ -8,7 +8,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
@@ -44,6 +43,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -61,15 +61,14 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -82,7 +81,6 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Path.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
@@ -1068,7 +1066,7 @@ void __fastcall FreeMonster(D2UnitStrc * pUnit) {
       return;
     }
 
-    Engine::GfxInfo::FreeGfxInfo(pUnit);
+    Engine::Gfx::FreeGfxInfo(pUnit);
     CUnit::CleanupInventory(pUnit, 1);
     D2Common::INVENTORY::Inventory::STRUCT_FreeInventory(pUnit->pInventory);
     pUnit->pInventory = 0;
@@ -1134,7 +1132,7 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
       return;
     }
 
-    Engine::GfxInfo::FreeGfxInfo(pUnit);
+    Engine::Gfx::FreeGfxInfo(pUnit);
     CUnit::CleanupInventory(pUnit, 0);
     D2Common::INVENTORY::Inventory::STRUCT_FreeInventory(pUnit->pInventory);
     pUnit->pInventory = 0;
@@ -2585,7 +2583,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
             case 0x160:
 
             case 0x161:
-              Engine::GfxInfo::GFX_RemoveAllOverlays(pUnit);
+              Engine::Gfx::GFX_RemoveAllOverlays(pUnit);
             eDeathOverlay = pUnit->nClassId - OVERLAY_hydra_start2;
             break;
             case 0x11c:
@@ -2732,7 +2730,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
         CUnit::SetDeadFlag(pUnit);
       }
       if (pUnit->nClassId != 0xd3 && nClassId != 0x1f1 && nClassId != 0x1a1 && nClassId != 0x1a2) {
-        Engine::GfxInfo::GFX_RemoveAllOverlays(pUnit);
+        Engine::Gfx::GFX_RemoveAllOverlays(pUnit);
       }
       if (nClassId == 0x1b3) {
         nMissileLevel = 1;

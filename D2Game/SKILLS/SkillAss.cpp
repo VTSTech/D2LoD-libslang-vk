@@ -26,6 +26,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
@@ -42,7 +43,6 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/Ai/AiGeneral.h"
@@ -57,6 +57,7 @@
 #include "D2Game/MISSILES/Missiles.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
 #include "D2Game/SKILLS/SkillDruid.h"
@@ -71,10 +72,9 @@
 #include "Fog/SMem.h"
 #include "globals/globals.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/SKILLS/SkillSor.h"
 
@@ -2061,8 +2061,8 @@ D2UnitStrc * __fastcall SKILLASS_CreateSummon(::SGAMEDATA * pGame, D2UnitStrc * 
             SkillNec::SKILLNEC_ReviveCorpseAsMinion(pGame, pUnit, pUnit_00, 0, nParam2);
             SkillNec::SKILLNEC_ApplySummonBuffs(pGame, pUnit, pUnit_00, eSkill, nParam2, 0);
             UNIT::SUnit::SetAlignment(pUnit_00, '\x02', 1);
-            GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit_00, eAnimMode, &sMonsterKill);
-            GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
+            Monster::MonsterMode::SetCurrentSkill(pUnit_00, eAnimMode, &sMonsterKill);
+            Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
             return pUnit_00;
           }
         }

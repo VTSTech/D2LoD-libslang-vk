@@ -5,8 +5,8 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/D2DamageStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
@@ -16,7 +16,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -110,19 +110,19 @@ void __fastcall SUNITEVENT_RemoveEventsByQueueAndOwner(::SGAMEDATA * pGame, D2Un
 
       pNextEvent = pMemoryToFree->pNext;
       if (pMemoryToFree->nQueueNo == nQueueNo && pMemoryToFree->nOwnerKey == nOwnerKey) {
-        if (!(pMemoryToFree->nFlags & 1)) {
-          if (!pMemoryToFree->pPrev) {
-            pUnit->uSideData.pServerSide.pSrvUnitEventList = pNextEvent;
-          } else {
+        if (pMemoryToFree->nFlags & 1) {
+          pMemoryToFree->nFlags |= 2;
+        } else {
+          if (pMemoryToFree->pPrev) {
             pMemoryToFree->pPrev->pNext = pNextEvent;
+          } else {
+            pUnit->uSideData.pServerSide.pSrvUnitEventList = pNextEvent;
           }
           if (pMemoryToFree->pNext) {
             pMemoryToFree->pNext->pPrev = pMemoryToFree->pPrev;
           }
 
           D2_FREE_POOL_AT(pGame->pMemoryPool, pMemoryToFree, ".\\UNIT\\SUnitEvent.cpp", 0x95);
-        } else {
-          pMemoryToFree->nFlags |= 2;
         }
       }
     }
@@ -170,10 +170,10 @@ int32_t __fastcall UNITEVENT_DispatchEventsByType(::SGAMEDATA * pGame, uint32_t 
         pMemoryToFree->nFlags &= 0xfffe;
         pNextEvent = pMemoryToFree->pNext;
         if (pMemoryToFree->nFlags & 2 || !pMemoryToFree->nQueueNo) {
-          if (!pMemoryToFree->pPrev) {
-            pUnit->uSideData.pServerSide.pSrvUnitEventList = pNextEvent;
-          } else {
+          if (pMemoryToFree->pPrev) {
             pMemoryToFree->pPrev->pNext = pNextEvent;
+          } else {
+            pUnit->uSideData.pServerSide.pSrvUnitEventList = pNextEvent;
           }
           if (pMemoryToFree->pNext) {
             pMemoryToFree->pNext->pPrev = pMemoryToFree->pPrev;

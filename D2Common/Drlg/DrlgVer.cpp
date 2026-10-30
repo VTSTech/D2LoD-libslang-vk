@@ -2,7 +2,7 @@
 
 #include "D2Common/Drlg/DrlgVer.h"
 #include "D2Common/Drlg/D2DrlgVertexStrc.h"
-#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/Preset.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"

@@ -10,7 +10,6 @@
 #include "Storm/Source/SSystem.h"
 
 // Forward declarations
-struct D2EscMenuItemStrc;
 struct D2MPQFileStrc;
 struct D2PoolManagerStrc;
 struct D2QSSocketStrc;
@@ -108,10 +107,6 @@ struct _RTL_CRITICAL_SECTION {
 
 // Function declarations
 void thunk__strstr(char * szText1, char * szText2);
-void __fastcall UI_SLIDER_LoadAndApplyNpcSpeech(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_LoadAndApplyResolution(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-// Reads the perspective setting from the registry, applies it via D2GFX_SetPerspective if the hardware supports it, and updates the view rectangle. (StorePerspective at 0047d187 was a stray entry inside this body.)
-void __fastcall UI_SLIDER_LoadAndApplyPerspective(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INV_PanelKeyNoOp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall HELP_MiniPanelKeyNoOp(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall HELP_OnEscapeOrSpace(struct D2UIMouseMsgStrc * pMsg);

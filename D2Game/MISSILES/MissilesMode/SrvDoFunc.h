@@ -28,5 +28,6 @@ int32_t __fastcall fpMissileSrvDoFuncData_MonsterOnly(struct D2UnitStrc * pUnit,
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(struct D2UnitStrc * pUnit, struct D2MissileSrvCollideCtxStrc * pCtx);
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrMonster(struct D2UnitStrc * pUnit, struct D2MissileSrvCollideCtxStrc * pCtx);
 int32_t __fastcall fpMissileSrvDoFuncData_MissileFlagCheck(struct D2UnitStrc * pUnit, struct D2MissileSrvCollideCtxStrc * pCtx);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::MISSILES::MissilesMode::SrvDoFunc

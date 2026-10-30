@@ -5,8 +5,8 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
@@ -51,7 +51,7 @@ void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, D2UnitStrc 
       pFreeSlot++;
     } while ((int)nSlotIndex < 8);
 
-    if (!(pGame->nClientsCount < 9 && (int)nSlotIndex < 8)) {
+    if (!(pGame->nClientsCount <= 8 && (int)nSlotIndex < 8)) {
       return;
     }
 
@@ -69,25 +69,19 @@ void __fastcall TARGETS_AddTargetToTrackingList(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // @sourcefile .\GAME\Targets.cpp
-D2UnitNodeStrc * __fastcall CreateUnitNode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2NodeUnkownStrc * pUnknown, int32_t nTableIndex) {
-    D2UnitNodeStrc* pNode;
-    if (!(pGame && pUnit && pUnit->nNodeTableIndex == 0xb && nTableIndex < 8)) {
-      return pNode;
-    }
-
-    pNode = (D2UnitNodeStrc*)pUnit->eUnitType;
-    if (!(!pNode || pNode == (D2UnitNodeStrc*)0x1)) {
-      return pNode;
+void __fastcall CreateUnitNode(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2NodeUnkownStrc * pUnknown, int32_t nTableIndex) {
+    if (!(pGame && pUnit && pUnit->nNodeTableIndex == 0xb && nTableIndex < 8 && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER))) {
+      return;
     }
 
     D2UnitNodeStrc* pHeadNode = pGame->pUnitNodes[nTableIndex];
     if (!(pHeadNode && pHeadNode->pUnit)) {
-      return pNode;
+      return;
     }
 
-    pNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitNodeStrc, ".\\GAME\\Targets.cpp", 0x6c);
+    D2UnitNodeStrc* pNode = D2_NEW_POOL_AT(pGame->pMemoryPool, D2UnitNodeStrc, ".\\GAME\\Targets.cpp", 0x6c);
     if (!pNode) {
-      return pNode;
+      return;
     }
 
     pNode->pPrev = 0;
@@ -102,12 +96,11 @@ D2UnitNodeStrc * __fastcall CreateUnitNode(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
     pHeadNode->pPrev = pNode;
     pUnit->nNodeTableIndex = nTableIndex;
-    return pNode;
 }
 
 // @sourcefile .\GAME\Targets.cpp
 void __fastcall AddNodeToTable(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2NodeUnkownStrc * pNodeUnknown, int32_t nNodeTableIndex) {
-    if (!(pGame && pUnit && pUnit->nNodeTableIndex == 0xb && nNodeTableIndex - 8U < 2 && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER))) {
+    if (!(pGame && pUnit && pUnit->nNodeTableIndex == 0xb && nNodeTableIndex - 8U <= 1 && (pUnit->eUnitType == UNIT_PLAYER || pUnit->eUnitType == UNIT_MONSTER))) {
       return;
     }
 

@@ -82,8 +82,6 @@ struct D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, 
 void __stdcall D2WINFONT_InitFontSystem();
 int32_t __fastcall SetAndReturnLastFont(int32_t nFontId);
 void __stdcall Draw_UnitNameUnderCursor();
-// Pads input string to exactly 4 characters with spaces. Used for COF component code normalization.
-void D2COMP_PadStringTo4Chars(void * pUnused, char * szInput, char * szOutput);
 // 9 internal functions (defined in .cpp)
 
 } // namespace D2Win::Src::D2WinFont

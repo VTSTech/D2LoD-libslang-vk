@@ -8,8 +8,8 @@
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "D2Common/Chat/Ignorelist/MappingEntryNode.h"
 #include "D2Common/Chat/Ignorelist/StringEntryNode.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "Fog/3rdparty/crashy/Report.h"
@@ -192,10 +192,10 @@ void __thiscall Destructor_Unreferenced2(TSExplicitList<::CELLIST, -572662307>* 
 template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::DeleteNode(::CELLIST * pNode) {
     TSLink<::CELLIST>* pLinkField;
     uint32_t uLinkOffset;
-    if (!pNode) {
-      pLinkField = &this->m_terminator;
-    } else {
+    if (pNode) {
       pLinkField = (TSLink<::CELLIST>*)((uintptr_t)&pNode->m_hashval + this->m_linkoffset);
+    } else {
+      pLinkField = &this->m_terminator;
     }
 
     uint32_t uReturnLink = pLinkField->m_next;
@@ -219,7 +219,7 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::DeleteNode(::CELLIST
 
     pNode->Destructor();
     Storm::SMem::SMemFree(pNode, s___AUCELLIST___00741f2c, -2, 0);
-    return (::CELLIST*)((int)uReturnLink < 1 ? 0 : uReturnLink);
+    return (::CELLIST*)((int)uReturnLink <= 0 ? 0 : uReturnLink);
 }
 
 // stpl-orphan: a COMDAT copy in D2CMP::SRC::CelCmp::CELLIST that no member owns
@@ -298,7 +298,7 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocDat
     if (nSavedNewCount < this->m_count) {
       nAlloc = nSavedNewCount;
     }
-    if (nAlloc) {
+    if (nAlloc > 0) {
       uint32_t* puVar1;
       pBucketSlot = pBlock;
       do {
@@ -344,7 +344,7 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor
     TSLink<::CELLIST>* nNext;
     uint32_t uLinkOffset;
     uint32_t nBucketIdx = 0;
-    if (this->m_count) {
+    if ((uint32_t)this->m_count > 0) {
       TSLink<::CELLIST>* pTVar1;
       do {
         pBucketSlot = &this->m_data[nBucketIdx];
@@ -377,9 +377,9 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor
 
 template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::Ptr(uint32_t dwHashVal, HASHKEY_NONE * pKey) {
     uint32_t uBucketHead = this->tSlotListArray.m_data[dwHashVal & this->nSlotMask].m_terminator.m_next;
-    ::CELLIST* pEntry = (::CELLIST*)((int)uBucketHead < 1 ? 0 : uBucketHead);
+    ::CELLIST* pEntry = (::CELLIST*)((int)uBucketHead <= 0 ? 0 : uBucketHead);
     while (true) {
-      if ((int)pEntry < 1) {
+      if ((int)pEntry <= 0) {
         return nullptr;
       }
       if (pEntry->m_hashval == dwHashVal) {
@@ -398,7 +398,7 @@ template<> void TSGrowableArray<CELLIST>::Destructor() {
     TSLink<::TCELENTRY>* nNext;
     uint32_t uLinkOffset;
     uint32_t nIdx = 0;
-    if (this->m_count) {
+    if ((uint32_t)this->m_count > 0) {
       TSLink<::TCELENTRY>* pTVar1;
       do {
         nEntryAddr = &this->m_data[nIdx];
@@ -432,7 +432,7 @@ template<> void TSGrowableArray<CELLIST>::Destructor() {
 
 template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Reserve(uint32_t nCount, int32_t bRound) {
     uint32_t uRequiredSize = nCount + this->m_count;
-    if (this->m_alloc >= uRequiredSize) {
+    if (uRequiredSize <= this->m_alloc) {
       return;
     }
     if (bRound) {
@@ -499,9 +499,9 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::SetCount(u
     int* pBackLink2;
     uint32_t nShrinkIdx;
     uint32_t* pEmptyBucketNext;
-    if (this->m_count < nCount) {
+    if (nCount > this->m_count) {
       uint32_t uNormalizeStep;
-      if (this->m_alloc < nCount) {
+      if (nCount > this->m_alloc) {
         uNormalizeStep = this->m_chunk;
         if (!uNormalizeStep) {
           uNormalizeStep = this->CalcChunkSize(nCount);
@@ -614,9 +614,7 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::Destructor() {
 
 template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::NewNode(uint32_t nLocation, uint32_t nExtraBytes, uint32_t dwFlags) {
     ::CELLIST* pNewEntry = (::CELLIST*)Storm::SMem::SMemAlloc(nExtraBytes + 0x38, s___AUCELLIST___00741f2c, -2, dwFlags | 8);
-    if (!pNewEntry) {
-      pNewEntry = 0;
-    } else {
+    if (pNewEntry) {
       TSLink<::TCELENTRY>* pTVar1;
       pNewEntry->m_linktoslot.m_prevlink = 0;
       pNewEntry->m_linktoslot.m_next = 0;
@@ -627,6 +625,8 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::NewNode(uint32_t nLo
       pTVar1->m_prevlink = pTVar1;
       pNewEntry->m_frames.m_linkoffset = 0;
       pNewEntry->m_frames.m_terminator.m_next = ~(uint32_t)pTVar1;
+    } else {
+      pNewEntry = 0;
     }
     if (!nLocation) {
       return pNewEntry;
@@ -642,10 +642,7 @@ template<> ::CELLIST * __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalNe
     int* pPrevLink;
     uint32_t pTailLink;
     ::CELLIST* pNewEntry = (::CELLIST*)Storm::SMem::SMemAlloc(nExtraBytes + 0x38, s___AUCELLIST___00741f2c, -2, dwFlags | 8);
-    if (!pNewEntry) {
-      pNewEntry = 0;
-      pInsertPoint = &pList->m_terminator;
-    } else {
+    if (pNewEntry) {
       TSLink<::TCELENTRY>* pTVar1;
       pNewEntry->m_linktoslot.m_prevlink = 0;
       pNewEntry->m_linktoslot.m_next = 0;
@@ -657,6 +654,9 @@ template<> ::CELLIST * __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalNe
       pNewEntry->m_frames.m_terminator.m_next = ~(uint32_t)pTVar1;
       pNewEntry->m_frames.m_linkoffset = 0;
       pInsertPoint = (TSLink<::CELLIST>*)((uintptr_t)&pNewEntry->m_hashval + pList->m_linkoffset);
+    } else {
+      pNewEntry = 0;
+      pInsertPoint = &pList->m_terminator;
     }
 
     TSLink<::CELLIST>* pActiveHead = pInsertPoint->m_prevlink;
@@ -919,7 +919,7 @@ template<> void TSGrowableArray<CELLIST>::ReallocData(uint32_t nAlloc) {
 
 template<> void TSGrowableArray<CELLIST>::Reserve(uint32_t nCount, int32_t bRound) {
     uint32_t nRequiredCap = nCount + this->m_count;
-    if (this->m_alloc >= nRequiredCap) {
+    if (nRequiredCap <= this->m_alloc) {
       return;
     }
     if (bRound) {
@@ -939,7 +939,7 @@ template<> void TSGrowableArray<CELLIST>::Reserve(uint32_t nCount, int32_t bRoun
 template<> ::CELLIST * TSGrowableArray<CELLIST>::New() {
     uint32_t nAlignStep;
     uint32_t nNextCount = this->m_count + 1;
-    if (this->m_alloc < nNextCount) {
+    if (nNextCount > this->m_alloc) {
       nAlignStep = this->m_chunk;
       if (!nAlignStep) {
         nAlignStep = this->CalcChunkSize(nNextCount);
@@ -972,7 +972,7 @@ template<> ::CELLIST * TSGrowableArray<CELLIST>::New() {
 
 template<> void TSGrowableArray<CELLIST>::ReserveNoRound(uint32_t nCount) {
     uint32_t nRequiredCapacity = this->m_count + nCount;
-    if (this->m_alloc >= nRequiredCapacity) {
+    if (nRequiredCapacity <= this->m_alloc) {
       return;
     }
 
@@ -981,15 +981,15 @@ template<> void TSGrowableArray<CELLIST>::ReserveNoRound(uint32_t nCount) {
 
 template<> TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* TSExplicitList<TSHashObjectChunk<CELLIST, HASHKEY_NONE>, 16>::NewNode(uint32_t nLocation, uint32_t nExtraBytes, uint32_t dwFlags) {
     TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* pNewChunk = (TSHashObjectChunk<::CELLIST, HASHKEY_NONE>*)Storm::SMem::SMemAlloc(nExtraBytes + 0x18, s___AV__TSHashObjectChunk_UCELLIST_00741fb4, -2, dwFlags | 8);
-    if (!pNewChunk) {
-      pNewChunk = 0;
-    } else {
+    if (pNewChunk) {
       pNewChunk->nArrayAlloc = 0;
       pNewChunk->nArrayCount = 0;
       pNewChunk->pArray = 0;
       pNewChunk->nArrayChunk = 0;
       pNewChunk->m_link.m_prevlink = 0;
       pNewChunk->m_link.m_next = 0;
+    } else {
+      pNewChunk = 0;
     }
     if (!nLocation) {
       return pNewChunk;
@@ -1005,10 +1005,7 @@ template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::In
     int* pBackLink;
     uint32_t pOldTail;
     ::CELLIST* pNewNode = (::CELLIST*)Storm::SMem::SMemAlloc(nExtraBytes + 0x38, s___AUCELLIST___00741f2c, -2, dwFlags | 8);
-    if (!pNewNode) {
-      pNewNode = 0;
-      ppInsertSlot = &pList->m_terminator;
-    } else {
+    if (pNewNode) {
       TSLink<::TCELENTRY>* pTVar1;
       pNewNode->m_linktoslot.m_prevlink = 0;
       pNewNode->m_linktoslot.m_next = 0;
@@ -1020,6 +1017,9 @@ template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::In
       pNewNode->m_frames.m_terminator.m_next = ~(uint32_t)pTVar1;
       pNewNode->m_frames.m_linkoffset = 0;
       ppInsertSlot = (TSLink<::CELLIST>*)((uintptr_t)&pNewNode->m_hashval + pList->m_linkoffset);
+    } else {
+      pNewNode = 0;
+      ppInsertSlot = &pList->m_terminator;
     }
 
     TSLink<::CELLIST>* pFreeListHead = ppInsertSlot->m_prevlink;
@@ -1059,33 +1059,33 @@ template<> ::CELLIST * __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::In
 // Check load factor; if chain too long trigger a rehash of the CelList hash table
 template<> int32_t TSHashTable<CELLIST, HASHKEY_NONE>::MonitorFullness(uint32_t nSlot) {
     TSLink<::CELLIST>* pTVar1;
-    if (0x3fe < this->nSlotMask) {
+    if (this->nSlotMask >= 0x3ff) {
       return 0;
     }
-    if (this->nFullnessIndicator < 4) {
-      this->nFullnessIndicator = 0;
-    } else {
+    if (this->nFullnessIndicator > 3) {
       this->nFullnessIndicator -= 3;
+    } else {
+      this->nFullnessIndicator = 0;
     }
 
     uint32_t nChainLen = this->tSlotListArray.m_data[nSlot].m_terminator.m_next;
-    nChainLen = (int)nChainLen < 1 ? 0 : nChainLen;
+    nChainLen = (int)nChainLen <= 0 ? 0 : nChainLen;
     while (true) {
       TSExplicitList<::CELLIST, -572662307>* pBucketEntry;
-      if ((int)nChainLen < 1) {
+      if ((int)nChainLen <= 0) {
         return 0;
       }
 
       this->nFullnessIndicator++;
-      if (0xd < this->nFullnessIndicator) {
+      if (this->nFullnessIndicator > 0xd) {
         break;
       }
 
       pBucketEntry = this->tSlotListArray.m_data + nSlot;
-      if (!nChainLen) {
-        pTVar1 = &pBucketEntry->m_terminator;
-      } else {
+      if (nChainLen) {
         pTVar1 = (TSLink<::CELLIST>*)(pBucketEntry->m_linkoffset + nChainLen);
+      } else {
+        pTVar1 = &pBucketEntry->m_terminator;
       }
 
       nChainLen = pTVar1->m_next;
@@ -1177,10 +1177,10 @@ template<> ::CELLIST * TSHashTable<CELLIST, HASHKEY_NONE>::New(uint32_t dwHashVa
     }
 
     ::CELLIST* pNewEntry = this->pVtable->InternalNew(this, this->tSlotListArray.m_data + nBucketIndex, nExtraBytes, dwFlags);
-    if (!pNewEntry) {
-      ppBucketSlot = &this->tFullList.m_terminator;
-    } else {
+    if (pNewEntry) {
       ppBucketSlot = (TSLink<::CELLIST>*)((uintptr_t)&pNewEntry->m_hashval + this->tFullList.m_linkoffset);
+    } else {
+      ppBucketSlot = &this->tFullList.m_terminator;
     }
 
     TSLink<::CELLIST>* pTVar1 = ppBucketSlot->m_prevlink;

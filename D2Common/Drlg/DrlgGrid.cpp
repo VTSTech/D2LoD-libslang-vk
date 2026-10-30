@@ -6,7 +6,6 @@
 #include "D2Common/Drlg/D2DrlgGridStrc.h"
 #include "D2Common/Drlg/D2DrlgMapStrc.h"
 #include "D2Common/Drlg/D2DrlgVertexStrc.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/DrlgRoom.h"
 #include "D2Common/Drlg/Preset.h"
 #include "Fog/D2PoolManagerStrc.h"
@@ -149,41 +148,6 @@ void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, in
     }
 }
 
-// Iterates grid cells, builds coord entries for each non-flagged cell.
-void DRLGLOGIC_PopulateGridCoordIndices(int * pnParam) {
-    uint32_t nCellFlags;
-    int nWidth = *(int*)(*pnParam + 0x3c);
-    int nHeight = *(int*)(*pnParam + 0x40);
-    int nGridY = 0;
-    if (nHeight < 0) {
-      return;
-    }
-
-    do {
-      int nGridX;
-      nGridX = 0;
-      if (nWidth >= 0) {
-        do {
-          nCellFlags = GetGridFlags((D2DrlgGridStrc*)pnParam[1], nGridX, nGridY);
-          if (!(nCellFlags & 0x10000000)) {
-            pnParam[6]++;
-            pnParam[7] = pnParam[6] & 0xfffffffU | 0x10000000;
-            nCellFlags = GetGridFlags((D2DrlgGridStrc*)pnParam[4], nGridX, nGridY);
-            if ((nCellFlags & 0x1e0ff00) == 0x1e00000 || (int)nCellFlags < 0) {
-              pnParam[7] |= 0x20000000;
-            }
-
-            DRLGGRID_FloodFillGridCoords(pnParam, nGridX, nGridY, -1);
-          }
-
-          nGridX++;
-        } while (nGridX <= nWidth);
-      }
-
-      nGridY++;
-    } while (nGridY <= nHeight);
-}
-
 void __fastcall OverwriteFlag(int * pFlag, int32_t nFlag) {
     *pFlag = nFlag;
 }
@@ -231,18 +195,18 @@ BOOL __fastcall IsPointInsideGridArea(D2DrlgGridStrc * pDrlgGrid, int32_t nX, in
 }
 
 // Returns the address of a grid cell given X and Y coordinates. Computes the offset using the grid's row pointer array. Trivial accessor function in the DrlgGrid subsystem.
-eD2GridCellFlags * __stdcall DRLGGRID_GetCellAddress(D2DrlgGridStrc * pDrlgGrid, int nY, int nX) {
+static inline eD2GridCellFlags * __stdcall DRLGGRID_GetCellAddress(D2DrlgGridStrc * pDrlgGrid, int nY, int nX) {
     return pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nY] + nX;
 }
 
 // Applies a flag operation (set/clear/xor) to a single grid cell (nX,nY).
 void __fastcall AlterGridFlag(D2DrlgGridStrc * pDrlgGrid, int32_t nX, int32_t nY, int32_t nFlag, int32_t eOperation) {
-    (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nY] + nX), nFlag);
+    (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, nY, nX), nFlag);
 }
 
 // Applies a flag operation (set, clear, or, and, etc.) to a specific grid cell. Uses the apFlagOperations function pointer table indexed by the operation type. The grid cell is located via the row pointer array.
 void __fastcall DRLGGRID_ApplyFlagOperation(D2DrlgGridStrc * pDrlgGrid, D2DrlgCoordStrc * pCoord, int nFlag, int eOperation) {
-    (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[pCoord->nPosY] + pCoord->nPosX), nFlag);
+    (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, pCoord->nPosY, pCoord->nPosX), nFlag);
 }
 
 int32_t __fastcall GetOffset(D2DrlgGridStrc * pGrid1, uint32_t nOffsetx, int32_t nOffset) {
@@ -302,7 +266,7 @@ void __fastcall FlagOperations(D2DrlgGridStrc * pGrid, int32_t nOpIndex, int32_t
 
     do {
       (*apFlagOperations[nOpIndexOrig])((int*)(pGrid->pCellsFlags + pGrid->pCellsRowOffsets[nCount]), nOpIndex);
-      (*apFlagOperations[nOpIndexOrig])((int*)(pGrid->pCellsFlags + pGrid->pCellsRowOffsets[nCount] + pGrid->nWidth - 1), nOpIndex);
+      (*apFlagOperations[nOpIndexOrig])((int*)(DRLGGRID_GetCellAddress(pGrid, nCount, pGrid->nWidth) - 1), nOpIndex);
       nCount++;
     } while (nCount < pGrid->nHeight);
 }
@@ -325,7 +289,7 @@ void __fastcall DRLGGRID_ApplyFlagToBorderCells(D2DrlgGridStrc * pDrlgGrid, int 
     }
 
     do {
-      (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nIndex] + pDrlgGrid->nWidth - 1), nFlag);
+      (*apFlagOperations[eOperation])((int*)(DRLGGRID_GetCellAddress(pDrlgGrid, nIndex, pDrlgGrid->nWidth) - 1), nFlag);
       nIndex++;
     } while (nIndex < pDrlgGrid->nHeight);
 }
@@ -344,7 +308,7 @@ void __fastcall DRLGGRID_SetEdgeGridFlags(D2DrlgGridStrc * pDrlgGrid, D2DrlgVert
     nNextX = pNextVertex->nPosX;
     if (nEndX == nNextX) {
       if (pEdge->nPosY == pNextVertex->nPosY) {
-        (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[pEdge->nPosY] + nEndX), nFlag);
+        (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, pEdge->nPosY, nEndX), nFlag);
         return;
       }
       if (nEndX == nNextX) {
@@ -374,7 +338,7 @@ void __fastcall DRLGGRID_SetEdgeGridFlags(D2DrlgGridStrc * pDrlgGrid, D2DrlgVert
     }
 
     while (nX != nEndX || nY != nEndY) {
-      (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nY] + nX), nFlag);
+      (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, nY, nX), nFlag);
       if (bHorizontal) {
         nX++;
       } else {
@@ -383,12 +347,12 @@ void __fastcall DRLGGRID_SetEdgeGridFlags(D2DrlgGridStrc * pDrlgGrid, D2DrlgVert
       }
     }
 
-    (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[pEdge->nPosY] + pEdge->nPosX), nFlag);
+    (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, pEdge->nPosY, pEdge->nPosX), nFlag);
     if (!bIncludeEndpoints) {
       return;
     }
 
-    (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[pEdge->pNext->nPosY] + pEdge->pNext->nPosX), nFlag);
+    (*apFlagOperations[eOperation])((int*)DRLGGRID_GetCellAddress(pDrlgGrid, pEdge->pNext->nPosY, pEdge->pNext->nPosX), nFlag);
 }
 
 // Bresenham line with perpendicular width, bounds-checked.
@@ -425,7 +389,7 @@ void __fastcall DRLGGRID_SetLineFlagsWithWidth(D2DrlgGridStrc * pDrlgGrid, D2Drl
         do {
           _bInside = DrlgRoom::AreXYInsideCoordinates(pDrlgCoords, nRowOffsetY + nX, nY);
           if (_bInside) {
-            (*apFlagOperations[eOperation])((int*)(pDrlgGrid->pCellsFlags + pDrlgGrid->pCellsRowOffsets[nGridOffsetX] + nRowOffsetY + nGridX), nFlag);
+            (*apFlagOperations[eOperation])((int*)(DRLGGRID_GetCellAddress(pDrlgGrid, nGridOffsetX, nRowOffsetY) + nGridX), nFlag);
           }
 
           nRowOffsetY++;

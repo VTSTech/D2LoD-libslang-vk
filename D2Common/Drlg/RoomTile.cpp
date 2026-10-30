@@ -3,7 +3,9 @@
 #include "D2Common/Drlg/RoomTile.h"
 #include "D2CMP/DUNGEON/Dungeon.h"
 #include "D2CMP/SRC/LRUCache.h"
+#include "D2Client/Archive.h"
 #include "D2Client/D2GfxHelperStrc.h"
+#include "D2Client/DataTbls.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2RoomCoordListStrc.h"
 #include "D2Common/D2RoomExStrc.h"
@@ -30,6 +32,7 @@
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
+#include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -55,6 +58,361 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2DrlgTileGridStrc) == 0x2c, "D2_NE
 
 
 namespace D2Common::Drlg::RoomTile {
+
+// Spawns a single preset unit (monster, object, or item) from a tile data record into the room. Looks up the preset type index via DRLGPRESET_FindPresetTypeIndex, transforms room-local tile coordinates to world space, bounds-checks against the room size, then calls AllocPresetUnit. Marks the preset-unit entry as consumed (flag 0x20) on success. Special-cases shrine objects (IDs 0x5b-0x5c) with a seed-modulo 3 branch.
+// Seven arguments, four in registers: pTileData in EDI, pRoomEx in ESI, nWorldY in EAX, nPresetId in EDX. nWorldY is a world Y coordinate: MOV EBX,EAX at 0066d9e7 then SUB EBX,[ESI+0x38] (WorldPosition.y) at 0066da33 mirrors SUB EAX,[ESI+0x34] on nWorldX (1.14d asm).
+static void __stdcall CreatesPresets(D2RoomExStrc * pRoomEx, int nWorldY, uint32_t nPresetId, int * pPresetUnit, int nWorldX, int nTileType) {
+    uint32_t nSeedMod;
+    int32_t nMonStatsId;
+    BOOL bUseMonStats;
+    eD2UnitType eUnitType;
+    int iVar1;
+    iVar1 = nTileType;
+    if (pPresetUnit) {
+      if (*(uint8_t*)(pPresetUnit + 5) & 0x20) {
+        return;
+      }
+
+      iVar1 = pPresetUnit[7];
+    }
+
+    int32_t nPresetTypeIndex;
+    nPresetTypeIndex = Preset::DRLGPRESET_FindPresetTypeIndex(pRoomEx->pLevel->eD2LevelId, nPresetId, (uint32_t)(iVar1 == 9));
+    if (nPresetTypeIndex == -1) {
+      return;
+    }
+
+    nWorldX -= pRoomEx->sCoords.WorldPosition.x;
+    nTileType = nWorldY - pRoomEx->sCoords.WorldPosition.y;
+    Transform::CoordsRoomToWorld(&nWorldX, &nTileType);
+    iVar1 = nWorldX + gPresetTypeTables.aTypes[nPresetTypeIndex].nOffsetX;
+    nTileType += gPresetTypeTables.aTypes[nPresetTypeIndex].nOffsetY;
+    if (iVar1 < 0) {
+      return;
+    }
+    if (nTileType < 0) {
+      return;
+    }
+    if (iVar1 >= pRoomEx->sCoords.WorldSize.x * 5) {
+      return;
+    }
+    if (nTileType >= pRoomEx->sCoords.WorldSize.y * 5) {
+      return;
+    }
+
+    nMonStatsId = gPresetTypeTables.aTypes[nPresetTypeIndex].nUnitId;
+    eUnitType = gPresetTypeTables.aTypes[nPresetTypeIndex].eUnitType;
+    bUseMonStats = 0;
+    nWorldX = iVar1;
+    if (eUnitType != UNIT_MONSTER) {
+      if (eUnitType == UNIT_OBJECT && (bUseMonStats = 0 , nMonStatsId >= 0x5b) && nMonStatsId <= 0x5c && (nSeedMod = D2Client::Archive::UNIT_GetModuloFromSeed(&pRoomEx->sSeed, 3) , !nSeedMod)) {
+        goto mark_processed;
+      }
+    } else {
+      nMonStatsId = D2Client::DataTbls::CheckMonStatId(nMonStatsId);
+      bUseMonStats = 1;
+    }
+
+    DrlgRoom::AllocPresetUnit(pRoomEx, pRoomEx->pLevel->pDrlg->pMemoryPool, eUnitType, nMonStatsId, bUseMonStats, iVar1, nTileType);
+    mark_processed:
+    if (pPresetUnit) {
+      pPresetUnit[5] |= 0x20;
+    }
+}
+
+// Sets wall tile flags on the tile data based on the tile type (orientation, transparency, etc). Decodes raw DS1 tile flags bitfield into semantic nFlags bits. Register arguments: pTileData in EDI, nTileType in EBX, pRoomEx in ECX, nWorldX in EAX; nRawTileFlags and nWorldY on the stack.
+// All three call sites (0066dce9 in DRLGROOMTILE_CreateWallTileData, 0066e776 and 0066e92e in DRLGROOMTILE_UpdateTileType) do MOV ECX,ESI with ESI holding the room. nWorldX and nWorldY are forwarded to CreatesPresets.
+static void __stdcall DRLGROOMTILE_SetWallTileFlags(D2DrlgTileDataStrc * pTileData, int nTileType, D2RoomExStrc * pRoomEx, int nWorldX, uint32_t nRawTileFlags, int nWorldY) {
+    if (pRoomEx && (nTileType == 9 || nTileType == 8)) {
+      CreatesPresets(pRoomEx, nWorldY, nRawTileFlags, &pTileData->nScreenX, nWorldX, 0);
+    }
+    if (nTileType != 0xd) {
+      pTileData->nFlags |= (nRawTileFlags >> 0x12 & 3) * 0x4000 + 0x4000;
+    }
+    if (nTileType == 0xe) {
+      pTileData->nFlags |= 4;
+    } else if (nTileType == 0xb || nTileType == 10 || nTileType == 9 || nTileType == 8) {
+      pTileData->nFlags |= 2;
+    }
+    if ((char)nRawTileFlags < '\0') {
+      pTileData->nFlags |= 1;
+    }
+    if (nRawTileFlags & 0x10000000) {
+      pTileData->nFlags |= 0x102;
+    }
+    if (nRawTileFlags & 0x20000) {
+      pTileData->nFlags |= 0x40;
+    }
+    if (nRawTileFlags & 0x10000) {
+      pTileData->nFlags |= 0x80;
+    }
+    if (nRawTileFlags & 8) {
+      pTileData->nFlags |= 4;
+    }
+    if ((int)nRawTileFlags < 0) {
+      pTileData->nFlags |= 8;
+    } else {
+      pTileData->nFlags &= -9;
+    }
+    if (nRawTileFlags & 0x4000000) {
+      pTileData->nFlags |= 0x20c;
+    }
+    if (nRawTileFlags & 0x20000000) {
+      pTileData->nFlags |= 0x800;
+    }
+    if (nRawTileFlags & 4) {
+      pTileData->nFlags |= 0x2000;
+    }
+
+    uint32_t uVar1 = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount((int32_t)pTileData->pTileLibraryEntry);
+    if (uVar1 & 1) {
+      pTileData->nFlags |= 4;
+    }
+    if (!(uVar1 & 4)) {
+      return;
+    }
+
+    pTileData->nFlags |= 0x800;
+}
+
+// Converts world tile coordinates to screen position and room-relative offsets. Output: [0]=screenX, [1]=screenY+40, [2]=relativeX (world-roomOrigin), [3]=relativeY. Calls CoordsMiniMapToScreen for isometric transform.
+void __stdcall DRLGROOMTILE_WorldToTileScreenPos(int * pOutCoords, D2RoomExStrc * pRoomEx, int nWorldX, int nWorldY) {
+    pOutCoords[2] = nWorldX - pRoomEx->sCoords.WorldPosition.x;
+    int nScreenX = nWorldY - pRoomEx->sCoords.WorldPosition.y;
+    nWorldY++;
+    pOutCoords[3] = nScreenX;
+    Transform::CoordsMiniMapToScreen(&nWorldX, &nWorldY);
+    *pOutCoords = nWorldX;
+    pOutCoords[1] = nWorldY + 0x28;
+}
+
+// Allocates the next wall tile slot in pRoomEx's tile grid, links it into the *ppTileHead list, converts minimap coords to screen coords, sets colour/type/flags, then recursively creates a shadow tile (type 4) when nTileType==3 and propagates nGridFlags bits into that shadow tile's flags.
+D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateWallTileData(D2RoomExStrc * pRoomEx, D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry, int nTileType) {
+    uint32_t nLibFlags;
+    D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
+    D2DrlgTileDataStrc* pTileData = pTileGrid->sRoomTiles.pWallTiles + pTileGrid->nWalls;
+    if (ppTileHead) {
+      pTileData->pNext = *ppTileHead;
+      *ppTileHead = pTileData;
+    } else {
+      pTileData->pNext = 0;
+    }
+
+    pTileGrid->nWalls++;
+    int nScreenX = nPosX;
+    pTileData->nPosX = nPosX - pRoomEx->sCoords.WorldPosition.x;
+    int nScreenY = nPosY + 1;
+    pTileData->nPosY = nPosY - pRoomEx->sCoords.WorldPosition.y;
+    Transform::CoordsMiniMapToScreen(&nScreenX, &nScreenY);
+    pTileData->nScreenY = nScreenY + 0x28;
+    pTileData->pTileLibraryEntry = (D2TileLibraryEntryStrc*)pTileLibEntry;
+    pTileData->nFlags = 0;
+    pTileData->nTransitionFlags = 0;
+    pTileData->nScreenX = nScreenX;
+    pTileData->nAlphaStart = 0xff;
+    pTileData->nAlphaEnd = 0xff;
+    pTileData->nCurrentAlpha = 0xff;
+    pTileData->nTileType = nTileType;
+    DRLGROOMTILE_SetWallTileFlags(pTileData, nTileType, pRoomEx, nPosX, nGridFlags, nPosY);
+    if (nTileType != 3) {
+      return pTileData;
+    }
+
+    int nShadowTileLibEntry = DRLG_FindHTile(pRoomEx, 4, nGridFlags);
+    D2DrlgTileDataStrc* pShadowTile = DRLGROOMTILE_CreateWallTileData(pRoomEx, ppTileHead, nPosX, nPosY, nGridFlags, nShadowTileLibEntry, 4);
+    pShadowTile->nFlags |= (nGridFlags >> 0x12 & 3) * 0x4000 + 0x4000;
+    if ((char)nGridFlags < '\0') {
+      pShadowTile->nFlags |= 1;
+    }
+    if (nGridFlags & 0x10000000) {
+      pShadowTile->nFlags |= 0x102;
+    }
+    if (nGridFlags & 0x20000) {
+      pShadowTile->nFlags |= 0x40;
+    }
+    if (nGridFlags & 0x10000) {
+      pShadowTile->nFlags |= 0x80;
+    }
+    if (nGridFlags & 8) {
+      pShadowTile->nFlags |= 4;
+    }
+    if ((int)nGridFlags < 0) {
+      pShadowTile->nFlags |= 8;
+    } else {
+      pShadowTile->nFlags &= -9;
+    }
+    if (nGridFlags & 0x4000000) {
+      pShadowTile->nFlags |= 0x20c;
+    }
+    if (nGridFlags & 0x20000000) {
+      pShadowTile->nFlags |= 0x800;
+    }
+    if (nGridFlags & 4) {
+      pShadowTile->nFlags |= 0x2000;
+    }
+
+    nLibFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount((int32_t)pShadowTile->pTileLibraryEntry);
+    if (nLibFlags & 1) {
+      pShadowTile->nFlags |= 4;
+    }
+    if (nLibFlags & 4) {
+      pShadowTile->nFlags |= 0x800;
+      return pTileData;
+    }
+
+    return pTileData;
+}
+
+// Initializes D2DrlgTileDataStrc: sets library entry, RGB to 0xFF, maps grid flags to tile flags.
+void __fastcall DRLGROOMTILE_FillTileData(D2RoomExStrc * pRoomEx, D2DrlgTileDataStrc * pTileData, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry) {
+    uint32_t nLibFlags;
+    pTileData->pTileLibraryEntry = (D2TileLibraryEntryStrc*)pTileLibEntry;
+    pTileData->nTileType = 0;
+    pTileData->nFlags = 0;
+    pTileData->nTransitionFlags = 0;
+    pTileData->nAlphaStart = 0xff;
+    pTileData->nAlphaEnd = 0xff;
+    pTileData->nCurrentAlpha = 0xff;
+    if (pRoomEx) {
+      pTileData->nPosX = nPosX - pRoomEx->sCoords.WorldPosition.x;
+      pTileLibEntry = nPosY + 1;
+      pTileData->nPosY = nPosY - pRoomEx->sCoords.WorldPosition.y;
+      Transform::CoordsMiniMapToScreen(&nPosX, &pTileLibEntry);
+      pTileData->nScreenX = nPosX;
+      pTileData->nScreenY = pTileLibEntry + 0x28;
+    }
+
+    pTileData->nFlags |= (nGridFlags >> 0x12 & 3) * 0x4000 + 0x4000;
+    if ((char)nGridFlags < '\0') {
+      pTileData->nFlags |= 1;
+    }
+    if (nGridFlags & 0x10000000) {
+      pTileData->nFlags |= 0x102;
+    }
+    if (nGridFlags & 0x20000) {
+      pTileData->nFlags |= 0x40;
+    }
+    if (nGridFlags & 0x10000) {
+      pTileData->nFlags |= 0x80;
+    }
+    if (nGridFlags & 8) {
+      pTileData->nFlags |= 4;
+    }
+    if ((int)nGridFlags < 0) {
+      pTileData->nFlags |= 8;
+    } else {
+      pTileData->nFlags &= -9;
+    }
+    if (nGridFlags & 0x4000000) {
+      pTileData->nFlags |= 0x20c;
+    }
+    if (nGridFlags & 0x20000000) {
+      pTileData->nFlags |= 0x800;
+    }
+    if (nGridFlags & 4) {
+      pTileData->nFlags |= 0x2000;
+    }
+
+    nLibFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount((int32_t)pTileData->pTileLibraryEntry);
+    if (nLibFlags & 1) {
+      pTileData->nFlags |= 4;
+    }
+    if (!(nLibFlags & 4)) {
+      return;
+    }
+
+    pTileData->nFlags |= 0x800;
+}
+
+// Allocates from floor tile array, links into floor list, calls FillTileData.
+D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateFloorTileData(D2RoomExStrc * pRoomEx, D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry) {
+    D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
+    D2DrlgTileDataStrc* pTileData = pTileGrid->sRoomTiles.pFloorTiles + pTileGrid->nFloors;
+    if (ppTileHead) {
+      pTileData->pNext = *ppTileHead;
+      *ppTileHead = pTileData;
+    } else {
+      pTileData->pNext = 0;
+    }
+
+    pTileGrid->nFloors++;
+    DRLGROOMTILE_FillTileData(pRoomEx, pTileData, nPosX, nPosY, nGridFlags, pTileLibEntry);
+    return pTileData;
+}
+
+// Allocates the next shadow tile entry from the room's pRoofTiles array, links it into the ppTileHead list, increments the shadow count, converts world coords to room-relative and screen coords (with +0x28 Y bias), copies RGB=white, hardcodes nTileType=0xD, and maps nGridFlags bits to nFlags (flip/lighting/transition bits).
+D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateShadowTileData(D2RoomExStrc * pRoomEx, D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry) {
+    D2DrlgTileGridStrc* pTileGrid = pRoomEx->pRoomTiles;
+    D2DrlgTileDataStrc* pTileData = pTileGrid->sRoomTiles.pRoofTiles + pTileGrid->nShadows;
+    if (ppTileHead) {
+      pTileData->pNext = *ppTileHead;
+      *ppTileHead = pTileData;
+    } else {
+      pTileData->pNext = 0;
+    }
+
+    pTileGrid->nShadows++;
+    int nScreenX = nPosX;
+    pTileData->nPosX = nPosX - pRoomEx->sCoords.WorldPosition.x;
+    nPosX = nPosY + 1;
+    pTileData->nPosY = nPosY - pRoomEx->sCoords.WorldPosition.y;
+    Transform::CoordsMiniMapToScreen(&nScreenX, &nPosX);
+    pTileData->nScreenY = nPosX + 0x28;
+    pTileData->nAlphaStart = 0xff;
+    pTileData->nAlphaEnd = 0xff;
+    pTileData->nCurrentAlpha = 0xff;
+    pTileData->nScreenX = nScreenX;
+    pTileData->pTileLibraryEntry = (D2TileLibraryEntryStrc*)pTileLibEntry;
+    pTileData->nTileType = 0xd;
+    pTileData->nFlags = 0;
+    pTileData->nTransitionFlags = 0;
+    if ((char)nGridFlags < '\0') {
+      pTileData->nFlags = 1;
+    }
+    if (nGridFlags & 0x10000000) {
+      pTileData->nFlags |= 0x102;
+    }
+    if (nGridFlags & 0x20000) {
+      pTileData->nFlags |= 0x40;
+    }
+    if (nGridFlags & 0x10000) {
+      pTileData->nFlags |= 0x80;
+    }
+    if (nGridFlags & 8) {
+      pTileData->nFlags |= 4;
+    }
+    if ((int)nGridFlags < 0) {
+      pTileData->nFlags |= 8;
+    } else {
+      pTileData->nFlags &= -9;
+    }
+    if (nGridFlags & 0x4000000) {
+      pTileData->nFlags |= 0x20c;
+    }
+    if (nGridFlags & 0x20000000) {
+      pTileData->nFlags |= 0x800;
+    }
+    if (nGridFlags & 4) {
+      pTileData->nFlags |= 0x2000;
+    }
+
+    uint32_t nLibFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount(pTileLibEntry);
+    if (nLibFlags & 1) {
+      pTileData->nFlags |= 4;
+    }
+    if (!(nLibFlags & 4)) {
+      return pTileData;
+    }
+
+    pTileData->nFlags |= 0x800;
+    return pTileData;
+}
+
+// Creates a shadow tile data entry from grid cell flags. Gets the tile library entry for shadow type (0xd) and creates the shadow tile data for the room.
+void __fastcall DRLGROOMTILE_CreateShadowTileFromGrid(D2RoomExStrc * pRoomEx, D2RoomExStrc * nPosX, int nPosY, uint32_t nGridFlags) {
+    int nTileLibEntry = DRLG_FindHTile(pRoomEx, 0xd, nGridFlags);
+    DRLGROOMTILE_CreateShadowTileData(pRoomEx, nullptr, (int)nPosX, nPosY, nGridFlags, nTileLibEntry);
+}
 
 // Shrinks/reallocs tile data array.
 // @sourcefile .\DRLG\RoomTile.cpp
@@ -596,7 +954,7 @@ static void __stdcall DRLGROOMTILE_ProcessTile(eD2GridCellFlags nFlags, D2RoomEx
         case CELLFLAGS_0x08 | CELLFLAGS_0x01:
           nTileLibEntry = pRoom->pLevel->eD2LevelId;
         if (nTileLibEntry < 0x6f || nTileLibEntry > 0x70 && nTileLibEntry != 0x75) {
-          Preset::CreatesPresets(pRoom, nSizeMaybe, nFlags, nullptr, nX, nOtherFlags);
+          CreatesPresets(pRoom, nSizeMaybe, nFlags, nullptr, nX, nOtherFlags);
           return;
         }
 

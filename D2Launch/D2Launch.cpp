@@ -4,6 +4,7 @@
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Lang/StrTable/strtable.h"
+#include "D2Launch/CharSel.h"
 #include "D2Launch/Launcher.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Sound/Src/D2SoundFast.h"
@@ -118,7 +119,7 @@ BOOL __stdcall MAINMENU_ConnectViaTCPIPAndSelectChar(D2ControlMsg * pControlMsg)
 
     D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
     MainMenus::FORMS_DestroyLists();
-    Launcher::UIMENU_CharacterSelectAllGameTypes();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
     return 1;
 }
 

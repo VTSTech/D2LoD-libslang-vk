@@ -22,9 +22,9 @@ namespace D2Common::Drlg::Outdoors {
 // Function declarations
 // Gets primary wall grid flags at the given Y coordinate. Checks sGridMisc.nHeight before reading from the embedded wall grid at 0xA4.
 int __stdcall DRLGOUTDOOR_GetPrimaryWallGridFlags(int * pLevelCtx, int32_t nGridY, int32_t nGridX);
-// Already documented — existing description is accurate and meaningful.
-int __stdcall DRLGOUTDOOR_ValidateSubTilePlacement(struct D2UnkOutdoorStrc * pOutdoorCtx, int pBaseGridX, int pBaseGridY, struct D2DrlgCoordStrc * pSubRect, struct D2LvlSubTxt * pSubLvl);
 int __stdcall DRLGOUTDOOR_ApplySubTileToGrid(int nBaseX, int nBaseY, struct D2UnkOutdoorStrc * pOutdoorCtx, struct D2DrlgCoordStrc * pCoords, struct D2LvlSubTxt * pLvlSub, int nOffset);
+// Shuffles candidate border subtile positions using current level seed, then tries each until `ValidateSubTilePlacement` approves and calls `ApplySubTileToGrid`. Defaults to random variant (pRect[5]) and returns as soon as a placement succeeds when the level flag indicates only one patch per run.
+BOOL __stdcall DRLGOUTDOOR_PlaceRandomBorderSubTiles(struct D2UnkOutdoorStrc * pOutdoorCtx, int32_t pLevelPtr, int * pRect);
 // Paste preset units from a LvlSub definition into the active outdoor room. Converts bounds to world coordinates, then for each preset check if it falls inside the sub-rect and spawn a new preset unit offset into the room’s local space.
 void __stdcall DRLGOUTDOOR_CopyPresetUnitsFromSubTxt(int32_t roomX, int32_t roomY, struct D2DrlgWallLayerGridsStrc * pRoomCtx, struct D2PoolManagerStrc * pMemory, struct D2LvlSubTxt * pLvlSub, int * pRect);
 // Checks that applying the LvlSub patch doesn’t conflict with existing floor/wall/shadow cells; returns false if any flagged tiles overlap and existing grids already set the same flags.
@@ -69,7 +69,6 @@ void __fastcall DRLGOUTDOOR_GenerateLevel(struct D2DrlgLevelStrc * pLevel);
 // @sourcefile .\DRLG\Outdoors.cpp
 void __fastcall DRLGOUTDOOR_FreeOutdoorLevelData(struct D2DrlgLevelStrc * pLevel, BOOL bKeepRoomData);
 void __fastcall InitAct4OutdoorLevel(struct D2DrlgLevelStrc * pLevel);
-void AddAct124SecondaryBorderSubId213(struct D2DrlgLevelStrc * pLevel);
-// 5 internal functions (defined in .cpp)
+// 7 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::Outdoors

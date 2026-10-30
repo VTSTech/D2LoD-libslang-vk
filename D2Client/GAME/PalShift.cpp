@@ -11,12 +11,14 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
+#include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
-#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/Seed.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -76,7 +78,7 @@ void __stdcall InitPal() {
     gpMonsterPalShiftList = pPalShiftList;
     memset(pPalShiftList, 0, nAllocSize);
     int nMonStatsCount = sgptDataTable->nTxtMonStatsSize;
-    if (0 < nMonStatsCount) {
+    if (nMonStatsCount > 0) {
       int i = 0;
       do {
         *(int*)((int)pPalShiftList + i * 8) = i;
@@ -147,12 +149,12 @@ int * __fastcall PALSHIFT_FindPalShiftByToken(int32_t nToken) {
 // Remaps the blood-color entries in a monster's palette table to green if the monster uses local blood (MonStats2.byLocalBlood == 2). Copies the base 512-byte palette block to an offset within pPaletteData, then applies the PalShift_GreenBlood lookup table across 8 rows of 256 entries, replacing non-zero mapped indices. No-ops for monsters outside the valid MonStats/MonStatsEx range or without local blood.
 static void PALSHIFT_ApplyGreenBloodPalette(uint8_t * pPaletteData, int32_t nMonsterId) {
     D2GamePalShiftGreenBloodStrc* pGreenBlood;
-    if (!(-1 < nMonsterId && nMonsterId < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
     int nMonStatsExId = (int)sgptDataTable->pTxtMonStats[nMonsterId].MonStatsEx;
-    if (!(-1 < nMonStatsExId && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatsExId && sgptDataTable->pTxtMonStatsEx[nMonStatsExId].byLocalBlood == 2)) {
+    if (!(nMonStatsExId >= 0 && nMonStatsExId < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nMonStatsExId && sgptDataTable->pTxtMonStatsEx[nMonStatsExId].byLocalBlood == 2)) {
       return;
     }
 
@@ -207,15 +209,15 @@ void __fastcall PALSHIFT_LoadMonsterPalShift(int32_t nMonsterId) {
     if (pExisting) {
       return;
     }
-    if (pDVar1->Code[0] == ' ') {
-      cCode0 = '\0';
-    } else {
+    if (pDVar1->Code[0] != ' ') {
       cCode0 = pDVar1->Code[0];
-    }
-    if (pDVar1->Code[1] == ' ') {
-      cCode1 = '\0';
     } else {
+      cCode0 = '\0';
+    }
+    if (pDVar1->Code[1] != ' ') {
       cCode1 = pDVar1->Code[1];
+    } else {
+      cCode1 = '\0';
     }
 
     szMonsterCode[3] = 0;
@@ -275,7 +277,7 @@ void __stdcall PALSHIFT_InitPalShiftTable() {
 
     pPalShiftList = gpMonsterPalShiftList;
     memset(gpMonsterPalShiftList, 0, nTxtMonStatsCount * 8);
-    if (0 < nTxtMonStatsCount) {
+    if (nTxtMonStatsCount > 0) {
       int i = 0;
       do {
         *(int*)((int)pPalShiftList + i * 8) = i;
@@ -307,13 +309,13 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
       case 0:
 
       case 1:
-        if (1 < pUnit->nClassId - 0x16bU) {
+        if (pUnit->nClassId - 0x16bU > 1) {
           return nullptr;
         }
       break;
       default:
         if (gbPalShiftRandTransformLoaded) {
-          if (!(0x1d >= nPalShiftIndex - 8U)) {
+          if (nPalShiftIndex - 8U > 0x1d) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
             exit(-1);
           }
@@ -349,12 +351,11 @@ int32_t __fastcall PALSHIFT_GenerateShiftDuration(int32_t pUnitSeedBase, uint32_
       return 9;
     }
 
-    uint64_t* pRandState = (uint64_t*)(pUnitSeedBase + 0x20);
-    *(uint32_t*)pRandState = (nSeedInput & 0xffff) + *(int*)(pUnitSeedBase + 4);
-    *(uint32_t*)(pUnitSeedBase + 0x24) = 0x29a;
-    uint64_t qwRandState = (uint64_t)*(uint32_t*)pRandState * 0x6ac690c5 + (uint64_t)*(uint32_t*)(pUnitSeedBase + 0x24);
-    *pRandState = qwRandState;
-    return (int)qwRandState + (int)((qwRandState & 0xffffffff) / 0x1e) * -0x1e + 9;
+    D2SeedStrc* pSeed = (D2SeedStrc*)(pUnitSeedBase + 0x20);
+    D2Common::Seed::InitSeed_Param_666(pSeed, (nSeedInput & 0xffff) + *(int*)(pUnitSeedBase + 4));
+    D2SeedStrc qwRandState = D2_SEED_NEXT(*pSeed);
+    *pSeed = qwRandState;
+    return qwRandState.nSeedLow % 0x1e + 9;
 }
 
 D2GamePalShiftGreenBloodStrc * __stdcall PALSHIFT_GetGreenBloodTable() {

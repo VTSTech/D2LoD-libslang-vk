@@ -22,6 +22,7 @@
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatInfoStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -30,8 +31,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -41,9 +41,9 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/MISSILES/Missiles.h"
+#include "D2Game/Monster/MonsterMsg.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
-#include "D2Game/UNIT/Item.h"
 #include "D2Game/UNIT/PlayerList.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -1335,7 +1335,7 @@ void __fastcall SERVER_SendInitUnitPacket(::SGAMEDATA * pGame, D2UnitStrc * pUni
       PLAYER_SendHoverTextToClient(pUnit, pClientSaved);
       return;
       case UNIT_MONSTER:
-        MONSTER_SendUpdateToClient(pGameSaved, pUnit, pClientSaved);
+        D2Game::Monster::MonsterMsg::MONSTER_SendUpdateToClient(pGameSaved, pUnit, pClientSaved);
       eDeathState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_valkyrie);
       if (eDeathState != STATE_none || (nSkillLevel = pUnit->nClassId , nSkillLevel == 0x123) || nSkillLevel == 0x1a1 || nSkillLevel == 0x1a2) {
         PLAYER::Player::PLAYER_SendAllItemsToClient(pUnit, pClientSaved);

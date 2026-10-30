@@ -2,6 +2,7 @@
 
 #include "Storm/Source/SEVT.h"
 #include "Fog/Engine/Application.h"
+#include "Storm/H/stpl.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
@@ -449,6 +450,44 @@ BOOL __stdcall SEvtUnregisterType(char * nEventId, uint32_t nSubId) {
     return _bRemoved;
 }
 
+uint32_t __fastcall LINKEDLIST_GetNextOffset(int * pList) {
+    return pList[1];
+}
+
+// Calculates the offset position of a node within a linked list structure. Handles both forward and backward traversal using signed offset values. Returns the absolute position when given a node pointer and its offset metadata.
+uint32_t __thiscall LINKEDLIST_GetNodeOffset(int * pListInfo, int * pNode) {
+    uint32_t nOffset = pListInfo[1];
+    if ((int)nOffset < 0) {
+      return ~nOffset;
+    }
+    if ((int)pNode >= 0) {
+      return nOffset + (int)pNode;
+    }
+
+    pNode = (int*)((int)pListInfo - *(int*)(*pListInfo + 4));
+    return nOffset + (int)pNode;
+}
+
+void __fastcall LINKEDLIST_UnlinkSelf(int * pNode) {
+    int* pPrevLink;
+    int pNext = *pNode;
+    if (!pNext) {
+      return;
+    }
+
+    uint32_t nPrevEncoded = pNode[1];
+    if ((int)nPrevEncoded < 0) {
+      pPrevLink = (int*)~nPrevEncoded;
+    } else {
+      pPrevLink = (int*)((int)pNode + (nPrevEncoded - *(int*)(pNext + 4)));
+    }
+
+    *pPrevLink = pNext;
+    *(int*)(*pNode + 4) = pNode[1];
+    *pNode = 0;
+    pNode[1] = 0;
+}
+
 // Pops the handler table most recently pushed for an event type. Finds the (eventId, subId) event, frees its current handler table and reinstates the predecessor stored at table[3]; when there is no predecessor it calls SEvtUnregisterType to remove the event entirely.
 // @oracle SEvtPopState
 // @oracle-source PEF traceback-table function name .SEvtPopState @10017bd0 in Mac PPC 1.10b Storm. Internal (not in the 337-name export table), but a first-party compiler-emitted symbol.
@@ -478,6 +517,225 @@ void __stdcall SEvtPopState(char * szText1, char * szText2) {
 
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gnSevtSnapshotActive = 1;
     LeaveCriticalSection(&lpCriticalSection_0077930c);
+}
+
+uint32_t __fastcall LINKEDLIST_GetCount(int * pList) {
+    return pList[2] <= 0 ? 0 : pList[2];
+}
+
+// Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
+int32_t __thiscall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode) {
+    if (nNode) {
+      return nNode;
+    }
+
+    nNode = pThis + 4;
+    return nNode;
+}
+
+// @wasnamed LINKEDLIST_IsEmpty - WRONG in kind. It is not a predicate: it returns void and mutates
+// links.
+// @evidence The body unlinks the node from its current list (00426b12..00426b3a) and then relinks it
+// into a target list, at the head or the tail depending on nInsertMode != 1. Four arguments, confirmed
+// from register use: ECX is read at 00426b0f (LEA EAX,[ECX+0x4]) before any write, so it is a genuine
+// incoming register argument, and purge=12 accounts for the three stack arguments. A four-argument
+// void relinker cannot be an emptiness test.
+// @oracle The 1.10b PPC Storm .debug namespace gives TSList<T,TSGetLink<T>>::LinkNode(T*, unsigned long,
+// T*) - three arguments plus this = four - while the real IsEmpty(void) const takes zero.
+// @note The same relink body is instantiated at least seven more times in 1.14d and is named correctly
+// everywhere else (ARCHIVE_LinkNode @0045bbe0, SFILE_InsertFileRecordIntoList1..5). This was the only
+// false one.
+void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t nInsertMode, int * * ppTargetList) {
+    int* pLinkSlot;
+    int** pTargetNode = ppNodeSlot;
+    if (!ppNodeSlot) {
+      pTargetNode = pList + 1;
+    }
+
+    int* pPrevNode = *pTargetNode;
+    if (pPrevNode) {
+      pLinkSlot = pTargetNode[1];
+      if ((int)pLinkSlot < 0) {
+        pLinkSlot = (int*)~(uint32_t)pLinkSlot;
+      } else {
+        pLinkSlot = (int*)((int)pLinkSlot + ((int)pTargetNode - pPrevNode[1]));
+      }
+
+      *pLinkSlot = (int)pPrevNode;
+      (*pTargetNode)[1] = (int)pTargetNode[1];
+      *pTargetNode = 0;
+      pTargetNode[1] = 0;
+    }
+    if (!ppTargetList) {
+      ppTargetList = pList + 1;
+    }
+
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pTargetNode = (int*)ppTargetList;
+          pTargetNode[1] = ppTargetList[1];
+          pPrevNode = *pList;
+          pLinkSlot = ppTargetList[1];
+          if ((int)pLinkSlot < 0) {
+            *(int***)~(uint32_t)pLinkSlot = (int**)pTargetNode;
+            ppTargetList[1] = (int*)ppNodeSlot;
+            return;
+          }
+          if ((int)pPrevNode < 0) {
+            pPrevNode = (int*)((int)ppTargetList - (*ppTargetList)[1]);
+          }
+
+          *(int***)((int)pLinkSlot + (int)pPrevNode) = (int**)pTargetNode;
+          ppTargetList[1] = (int*)ppNodeSlot;
+          return;
+        }
+      default:
+        {
+          pPrevNode = *ppTargetList;
+          *pTargetNode = pPrevNode;
+          pTargetNode[1] = (int*)pPrevNode[1];
+          pPrevNode[1] = (int)ppNodeSlot;
+          *ppTargetList = (int*)pTargetNode;
+          return;
+        }
+    }
+}
+
+// Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
+uint32_t __thiscall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode) {
+    if (nNode) {
+      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
+    }
+
+    nNode = pThis + 4;
+    return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
+}
+
+void __thiscall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
+    int* pLinkSlot;
+    if (!pListHead) {
+      pListHead = (int*)(pThis + 4);
+    }
+
+    int nNextNode = *pListHead;
+    if (!nNextNode) {
+      return;
+    }
+
+    uint32_t uPrevLink = pListHead[1];
+    if ((int)uPrevLink < 0) {
+      pLinkSlot = (int*)~uPrevLink;
+    } else {
+      pLinkSlot = (int*)((int)pListHead + (uPrevLink - *(int*)(nNextNode + 4)));
+    }
+
+    *pLinkSlot = nNextNode;
+    *(int*)(*pListHead + 4) = pListHead[1];
+    *pListHead = 0;
+    pListHead[1] = 0;
+}
+
+// Gets the value stored at a specific index within a linked list. Returns the value field at offset+4 from the node pointer. Handles NULL input by defaulting to the list head at this+8.
+uint32_t __thiscall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode) {
+    if (nNode) {
+      return *(uint32_t*)(nNode + 4);
+    }
+
+    return *(uint32_t*)((int)pListHead + 8);
+}
+
+void __fastcall LINKEDLIST_GetTail(D2StormListHead * pList) {
+    int* pLinkSlot;
+    int* pNode;
+    uint32_t uPrevLink;
+    while (true) {
+      int nNextNode;
+      pNode = (int*)pList->pNext;
+      if ((int)pNode <= 0) {
+        break;
+      }
+
+      nNextNode = *pNode;
+      if (nNextNode) {
+        uPrevLink = pNode[1];
+        if ((int)uPrevLink < 0) {
+          pLinkSlot = (int*)~uPrevLink;
+        } else {
+          pLinkSlot = (int*)((int)pNode + (uPrevLink - *(int*)(nNextNode + 4)));
+        }
+
+        *pLinkSlot = nNextNode;
+        *(int*)(*pNode + 4) = pNode[1];
+        *pNode = 0;
+        pNode[1] = 0;
+      }
+    }
+}
+
+void __fastcall LINKEDLIST_InsertHead(D2StormListHead * pList) {
+    int* pLinkSlot;
+    LINKEDLIST_GetTail(pList);
+    StormLinkStrc** pHeadSlot = &pList->pPrevLink;
+    StormLinkStrc* nNextNode = *pHeadSlot;
+    if (!nNextNode) {
+      return;
+    }
+
+    uint32_t uPrevLink = pList->pNext;
+    if ((int)uPrevLink < 0) {
+      pLinkSlot = (int*)~uPrevLink;
+    } else {
+      pLinkSlot = (int*)((int)pHeadSlot + (uPrevLink - nNextNode->pNext));
+    }
+
+    *pLinkSlot = (int)nNextNode;
+    (*pHeadSlot)->pNext = pList->pNext;
+    *pHeadSlot = 0;
+    pList->pNext = 0;
+}
+
+// Allocates a new linked list node via SMemAlloc with 12 bytes overhead plus data size. Initializes next/prev pointers to NULL. Optionally links the node into an existing list via LINKEDLIST_IsEmpty call.
+int * * __thiscall LINKEDLIST_AllocNode(int * * pListHead, int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags) {
+    int** pNewNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, s___AUBREAKCMD___007088d8, -2, dwAllocFlags | 8);
+    if (pNewNode) {
+      *pNewNode = 0;
+      pNewNode[1] = 0;
+    } else {
+      pNewNode = 0;
+    }
+    if (!pList) {
+      return pNewNode;
+    }
+
+    LINKEDLIST_LinkNode(pListHead, pNewNode, pList, nullptr);
+    return pNewNode;
+}
+
+// Unlinks a node from its doubly-linked list by updating prev/next pointers of adjacent nodes. If bit 0 of bFreeMemory is set, also frees the node memory via SMemFree. Returns the unlinked node pointer.
+int * __thiscall LINKEDLIST_UnlinkAndFree(int * pNode, uint8_t bFreeMemory) {
+    uint32_t uPrevLink;
+    int nNextNode = *pNode;
+    if (nNextNode) {
+      int* pLinkSlot;
+      uPrevLink = pNode[1];
+      if ((int)uPrevLink < 0) {
+        pLinkSlot = (int*)~uPrevLink;
+      } else {
+        pLinkSlot = (int*)((int)pNode + (uPrevLink - *(int*)(nNextNode + 4)));
+      }
+
+      *pLinkSlot = nNextNode;
+      *(int*)(*pNode + 4) = pNode[1];
+      *pNode = 0;
+      pNode[1] = 0;
+    }
+    if (!(bFreeMemory & 1)) {
+      return pNode;
+    }
+
+    SMem::SMemFree(pNode, "delete", -1, 0);
+    return pNode;
 }
 
 // Requests that the handler chain currently being dispatched for a given pData be abandoned. Under SEvt's critical section it allocates a 0xc-byte node tagged __AUBREAKCMD__, links it into the break-command list and stores the caller's pData at node[2].
@@ -524,6 +782,34 @@ int __stdcall SEvtBreakHandlerChain(void * pUnderMouse) {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pNewNode->pData = pUnderMouse;
     LeaveCriticalSection(&lpCriticalSection_0077930c);
     return 1;
+}
+
+// Unlinks a node from the list, frees its memory, and returns the masked count value. Combines unlinking logic with memory cleanup and count extraction. Always deallocates via SMemFree after unlinking.
+uint32_t __thiscall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode) {
+    int* pLinkSlot = pNode;
+    if (!pNode) {
+      pLinkSlot = (int*)((int)pListHead + 4);
+    }
+
+    uint32_t uCount = pLinkSlot[1];
+    int nNextNode = *pNode;
+    if (nNextNode) {
+      uint32_t uPrevLink;
+      uPrevLink = pNode[1];
+      if ((int)uPrevLink < 0) {
+        pLinkSlot = (int*)~uPrevLink;
+      } else {
+        pLinkSlot = (int*)((int)pNode + (uPrevLink - *(int*)(nNextNode + 4)));
+      }
+
+      *pLinkSlot = nNextNode;
+      *(int*)(*pNode + 4) = pNode[1];
+      *pNode = 0;
+      pNode[1] = 0;
+    }
+
+    SMem::SMemFree(pNode, s___AUBREAKCMD___007088d8, -2, 0);
+    return (int)uCount <= 0 ? 0 : uCount;
 }
 
 // Dispatches an event: looks the (eventId, subId) pair up in the hash table and invokes every handler whose key matches arg3, walking the chain in descending registration-counter (priority) order. Locks SEvt's critical section and drains the break-command queue that SEvtBreakHandlerChain 00426e80 feeds.
@@ -625,9 +911,9 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
     pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext < 1 ? 0 : gpSevtBreakCmdListHead.pNext);
     while (0 < (int)pBreakCmd) {
       if ((void*)pBreakCmd[2] == pData) {
-        pBreakCmd = (int*)SSystem::LINKEDLIST_UnlinkFreeAndGetCount(&gpSevtBreakCmdListHead, pBreakCmd);
+        pBreakCmd = (int*)LINKEDLIST_UnlinkFreeAndGetCount(&gpSevtBreakCmdListHead, pBreakCmd);
       } else {
-        pBreakCmd = (int*)SSystem::LINKEDLIST_GetValueAtIndex(&gpSevtBreakCmdListHead, (int32_t)pBreakCmd);
+        pBreakCmd = (int*)LINKEDLIST_GetValueAtIndex(&gpSevtBreakCmdListHead, (int32_t)pBreakCmd);
       }
     }
 
@@ -642,7 +928,7 @@ void StaticFini_CriticalSection_0077930c() {
 // Runs at exit: removes every element from the SEvt break command list, then unlinks the list head itself.
 void StaticFini_gSevtBreakCmdList() {
     uint32_t* puVar1;
-    SSystem::LINKEDLIST_GetTail(&gpSevtBreakCmdListHead);
+    LINKEDLIST_GetTail(&gpSevtBreakCmdListHead);
     if (!gpSevtBreakCmdListHead.pPrevLink) {
       return;
     }

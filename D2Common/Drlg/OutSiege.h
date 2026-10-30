@@ -9,13 +9,48 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2DrlgLevelDataWildernessLevel;
 struct D2DrlgLevelStrc;
+
+// Data types
+struct D2Act5SpecialPresetStrc {
+    /* 0x00 */ int eLevelId;
+    /* 0x04 */ int nPresetArg; // last-but-one argument of SpawnOutdoorLevelPresetEx
+    /* 0x08 */ int bFarSide;
+    /* 0x0C */ int nLvlPrestVert; // used when the level is not wider than tall
+    /* 0x10 */ int nLvlPrestHorz; // used when the level is wider than tall
+};
 
 namespace D2Common::Drlg::OutSiege {
 
 // Function declarations
+// Checks if the grid cell at (nX, nY) is flagged, and if so spawns a preset at that location.
+BOOL __stdcall DRLGOUTROOM_SpawnPresetIfGridFlagged(int nY, int nX, struct D2DrlgLevelStrc * pLevel, struct D2DrlgLevelDataWildernessLevel * pWildData, int nPresetId);
+// Scans grid edges for 0x400 flag and spawns border connector presets (0x38B-0x38E).
+void __stdcall DRLGOUTROOM_PlaceAct5BorderPresets(struct D2DrlgLevelStrc * pLevel);
 // Returns the base preset ID for Act 5 outer wall tiles. Returns 5 for the Bloody Foothills (level 0x75) or 4 for other Act 5 levels. Called by PlaceAct1245OutdoorBorders. Trivial getter.
 int32_t __fastcall DRLGOUTROOM_GetGridDivisionSize(struct D2DrlgLevelStrc * pLevel);
+// Lays down road presets along the DrlgVertex path chain for Act5 outdoor levels.
+void __stdcall DRLGOUTROOM_PlaceAct5RoadPath(struct D2DrlgLevelStrc * pLevel);
+// Walks grid perimeter spawning cliff/wall border presets. Adds corner caps.
+void __stdcall DRLGOUTROOM_PlaceAct5OuterWalls(struct D2DrlgLevelStrc * pLevel);
+// Looks up a secondary border preset ID from the LvlSub table.
+// Searches a data table at 006f2038 for matching Type (0x30 or 0x31) and
+// range-checks the preset ID, then returns the mapped preset based on
+// whether the level is Harrogath (0x75) or not.
+// Halts with an unrecoverable error if no match found.
+int32_t __fastcall DRLGOUTDOOR_GetSecondaryBorderPresetFromLvlSub(struct D2DrlgLevelStrc * pLevel, int32_t nBorderType, int32_t nPresetIndex);
+// Validates whether a secondary border preset can be placed at a grid cell.
+// Used as a callback (field9_0x24) in D2UnkOutdoorStrc for AddSecondaryBorder.
+// First resolves the LvlSub preset ID via GetSecondaryBorderPresetFromLvlSub,
+// then checks if the cell is preset-free via IsGridCellPresetFree.
+// Returns 1 if level type is -5 (special), or if preset matches and cell is free.
+BOOL __fastcall DRLGOUTDOOR_ValidateSecondaryBorderCell(struct D2DrlgLevelStrc * pLevel, int32_t nX, int32_t nY, int32_t nExpectedPreset, int32_t nUnused, uint32_t nGridFlags);
+// Places random scenery presets for Act5 outdoor levels from static table.
+void __stdcall DRLGOUTROOM_PlaceAct5SceneryPresets(struct D2DrlgLevelStrc * pLevel);
+// Places the bridge/ramp presets spanning the Bloody Foothills. Iterates from the right edge leftward, spawning consecutive LvlPrest IDs (0x361+) at Y=0 to form the bridge structure, up to 15 segments.
+void __stdcall DRLGOUTPLACE_PlaceAct5WallPresets(struct D2DrlgLevelStrc * pLevel);
 void __fastcall InitAct5OutdoorLevel(struct D2DrlgLevelStrc * pLevel);
+// 4 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::OutSiege

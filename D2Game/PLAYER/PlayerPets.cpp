@@ -19,6 +19,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -33,8 +34,7 @@
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/D2UnitDataPlayerPetsStrc.h"
@@ -44,6 +44,7 @@
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -114,9 +115,9 @@ static void KillHandlerPet(DWORD nUid, ::SGAMEDATA * pGame) {
     int32_t nClassId = pUnit->nClassId;
     pUnit->eUnitFlags |= UNITFLAG_NOXP;
     if (nClassId < 0 || nClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nClassId) || !((uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nClassId] + 0xd) & gadwBitMasks[7])) {
-      GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &killData);
+      Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &killData);
       killData.pAttacker = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-      GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
+      Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
     } else {
       UNIT::SUnitDmg::SERVER_KillMonster(pGame, pUnit, nullptr, 0);
     }
@@ -192,9 +193,9 @@ static void __stdcall PETS_FreeOrKillPetList(D2UnitStrc * pUnit, D2PetListStrc *
             pPetList->pPets = pPetStrc;
             pPetRoom = D2Common::Units::UNITS_GetRoom(pPetUnit);
             if (pPetRoom) {
-              GAME::Event::Dispatch::Monster::SetCurrentSkill(pPetUnit, Death, &killData);
+              Monster::MonsterMode::SetCurrentSkill(pPetUnit, Death, &killData);
               killData.pAttacker = UNIT::SUnit::GetOwnerUnit(pGame, pPetUnit);
-              GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
+              Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
             }
 
             nReviveCost = D2Common::Merc::GetReviveCost(pPetUnit);

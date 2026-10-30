@@ -27,7 +27,6 @@ struct D2RoomExStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
 typedef int eD2UnitType;
 #ifndef RECON_FPTD_ACTCALLBACKFN
 #define RECON_FPTD_ACTCALLBACKFN
@@ -132,8 +131,6 @@ uint32_t __stdcall Is0x44Above2(struct D2RoomStrc * pRoom);
 BOOL __stdcall DRLGROOM_AreAllNearRoomsActive(struct D2RoomStrc * pRoom);
 int32_t __stdcall DRLGROOM_IsUnitInactiveProcessed(struct D2RoomStrc * pRoom);
 void __stdcall DRLGROOM_SetUnitInactiveProcessed(struct D2RoomStrc * pRoom, BOOL bSet);
-// Validates the client list of a room by checking that all entries in the client array (offset 0x48) are non-null. Halts if any entry is null.
-BOOL __fastcall DRLGROOM_ValidateClientList(struct D2RoomStrc * pRoom);
 // Adds nClientId to the room's pClients array. Grows the array by 4 slots via ReAllocServerMemory when at capacity (nClientsMax). Appends the client ID, increments nClientsCount, then re-sorts the client list. Validates the room and client ID are non-null/non-zero before proceeding; halts on assertion failure. Called when a client enters a room's visibility range.
 // @sourcefile .\DUNGEON\Dungeon.cpp
 void __stdcall DRLGROOM_AddClientToRoom(struct D2RoomStrc * pRoom, int32_t nClientId);
@@ -242,6 +239,6 @@ void __fastcall DRLGROOMEX_DemoteIfReady(struct D2RoomExStrc * pRoomEx);
 void __fastcall thunk_DRLGROOMEX_ActivateRoomEx(struct D2RoomExStrc * pRoomEx);
 // Sets special RGB color values (0xF5, 0xF0, 0xFF) for the Arreat Summit level environment. Only applies when the level ID matches LEVEL_ArreatSummit.
 void __stdcall DRLGROOM_SetArreatSummitColors(struct D2DrlgEnvironmentStrc * pAmbientColorBytes, eD2LevelId nLevelId);
-// 7 internal functions (defined in .cpp)
+// 8 internal functions (defined in .cpp)
 
 } // namespace D2Common::DUNGEON::Dungeon

@@ -4,14 +4,14 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -32,6 +32,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/BeltsTbls.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -45,7 +46,6 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -65,9 +65,8 @@
 #include "Storm/Storm.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -692,7 +691,7 @@ void __stdcall PANEL_DrawStaminaBar() {
       }
     }
 
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x7f, ScreenSizeY - 0x1b, nMaxStamina, 0x12, (uint32_t)byBarColor, DRAW_LESSTRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x7f, ScreenSizeY - 0x1b, nMaxStamina, 0x12, (uint32_t)byBarColor, DRAW_LESSTRANSPARENT);
     int nMouseX;
     nMouseX = ui::GetMouseX();
     int nMouseY;
@@ -783,7 +782,7 @@ static void __stdcall PANEL_HighlightBeltSlot(int32_t nBeltSlot, int32_t nHighli
     }
 
     D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, nRect, nBeltSlot);
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nRect[0], nRect[2], 0x1d, 0x1d, (uint32_t)gaPanelBeltColors[nHighlightColor], DRAW_VERYTRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(nRect[0], nRect[2], 0x1d, 0x1d, (uint32_t)gaPanelBeltColors[nHighlightColor], DRAW_VERYTRANSPARENT);
 }
 
 static void CLIENT_HandleBeltSlotClick(D2InventoryStrc * pInventory) {
@@ -1988,7 +1987,7 @@ void __stdcall PANEL_DrawBottomPanel() {
               nDrawY = aRectGreen[0];
               nRectYorW = aRectGreen[2];
               byRectColor = gaPanelBeltColors[1];
-              Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
+              Engine::Gfx::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
             } else {
               PANEL_InitBeltColors();
             }
@@ -2005,11 +2004,11 @@ void __stdcall PANEL_DrawBottomPanel() {
             nDrawY = aRectRed[0];
             nRectYorW = aRectRed[2];
             byRectColor = gaPanelBeltColors[0];
-            Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
+            Engine::Gfx::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
           }
 
           D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, aRectItem, nBeltState);
-          Engine::GfxInfo::DrawItemGfx(pItem, aRectItem[0], aRectItem[2]);
+          Engine::Gfx::DrawItemGfx(pItem, aRectItem[0], aRectItem[2]);
           if (nSlotIndex < 4) {
             nRectXorLen = D2Common::ITEMS::Items::IsUseable(pItem);
             if (nRectXorLen) {
@@ -2182,7 +2181,7 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
       if (nMouseX - 0x75U < 0x31 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY || ScreenSizeX - 0xa5 <= nMouseX && nMouseX <= ScreenSizeX - 0x75 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY) {
         bFlag = ui::GetUIFlag(UI_SKILLSELECT);
         if (bFlag) {
-          Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+          ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
         }
       }
 
@@ -2194,8 +2193,86 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
     }
     if (!gnPanelBeltRowsExpanded) {
       eD2UIvarsSetType eSetType;
-      if (nMouseY <= ScreenSizeY - 0x30) {
-        pMsg->bHandled = 0;
+      if (!(nMouseY <= ScreenSizeY - 0x30)) {
+        iVar1 = ScreenSizeX / 2;
+        if (nMouseX < iVar1 + 0x17 || nMouseX > iVar1 + 0x91 || nMouseY < ScreenSizeY - 0x27 || nMouseY > ScreenSizeY - 10) {
+          if (nMouseX - 0x75U <= 0x30 && nMouseY <= ScreenSizeY) {
+            iVar1 = ui::GetItemType();
+            if (iVar1 == 6) {
+              ui::UI_DropCursorItemOnGround();
+            } else {
+              iVar1 = ui::GetItemType();
+              if (iVar1 == 8) {
+                GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
+              }
+            }
+
+            bFlag = ui::GetUIFlag(UI_SKILLSELECT);
+            if (bFlag) {
+              ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+              SpellSel::SPELLSEL_SetMouseHandFlag(1);
+            } else {
+              ui::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
+              SpellSel::SPELLSEL_SetMouseHandFlag(1);
+            }
+          } else if (nMouseX < ScreenSizeX - 0xa5 || nMouseX > ScreenSizeX - 0x75 || nMouseY > ScreenSizeY) {
+            if (nMouseX < iVar1 - 0x91 || nMouseX > iVar1 - 0x80 || nMouseY < ScreenSizeY - 0x1c || nMouseY > ScreenSizeY - 8) {
+              if (nMouseX >= iVar1 - 8 && nMouseX <= iVar1 + 5 && nMouseY >= ScreenSizeY - 0x27 && nMouseY <= ScreenSizeY - 0xd) {
+                bFlag = ui::GetUIFlag(UI_MINIPANEL);
+                eSetType = UI_RESET;
+                if (!bFlag) {
+                  eSetType = UI_TOGGLE;
+                }
+
+                ui::SetUIFlag(UI_MINIPANEL, eSetType, 0);
+                if (gpPanelMenuButton) {
+                  gpPanelMenuButtonState = (uint32_t)!gpPanelMenuButtonState;
+                }
+              }
+            } else {
+              bFlag = GAME::Game::GetGlobalAlwaysRun();
+              GAME::Game::SetGlobalAlwaysRun((uint32_t)!bFlag);
+            }
+          } else {
+            iVar1 = ui::GetItemType();
+            if (iVar1 == 6) {
+              ui::UI_DropCursorItemOnGround();
+            } else {
+              iVar1 = ui::GetItemType();
+              if (iVar1 == 8) {
+                GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
+              }
+            }
+
+            bFlag = ui::GetUIFlag(UI_SKILLSELECT);
+            if (bFlag) {
+              ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+              SpellSel::SPELLSEL_SetMouseHandFlag(0);
+            } else {
+              ui::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
+              SpellSel::SPELLSEL_SetMouseHandFlag(0);
+            }
+          }
+        } else {
+          iVar1 = ui::GetItemType();
+          if (iVar1 == 6) {
+            ui::UI_DropCursorItemOnGround();
+            ClickBelt(pPlayer->pInventory, nMouseX, nMouseY);
+          } else {
+            iVar1 = ui::GetItemType();
+            if (iVar1 == 8) {
+              GAME::Msg::NET_D2GS_CLIENT_Send_INT(0x4c, -1);
+            }
+
+            ClickBelt(pPlayer->pInventory, nMouseX, nMouseY);
+          }
+        }
+
+        gpPanelClickedButton = 0;
+        gbPanelClickProcessed = 0;
+        pMsg->bHandled = 1;
+        pMsg->dwResult = 0;
+        Storm::SMsgBreakHandlerChain(pMsg);
         gpPanelMenuButton = 0;
         gpPanelRunButton = 0;
         return;
@@ -2216,10 +2293,10 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
 
           bFlag = ui::GetUIFlag(UI_SKILLSELECT);
           if (!bFlag) {
-            Draw::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
+            ui::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
             SpellSel::SPELLSEL_SetMouseHandFlag(1);
           } else {
-            Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+            ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
             SpellSel::SPELLSEL_SetMouseHandFlag(1);
           }
         } else if (nMouseX < ScreenSizeX - 0xa5 || ScreenSizeX - 0x75 < nMouseX || ScreenSizeY < nMouseY) {
@@ -2231,7 +2308,7 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
                 eSetType = UI_TOGGLE;
               }
 
-              Draw::SetUIFlag(UI_MINIPANEL, eSetType, 0);
+              ui::SetUIFlag(UI_MINIPANEL, eSetType, 0);
               if (gpPanelMenuButton) {
                 gpPanelMenuButtonState = (uint32_t)!gpPanelMenuButtonState;
               }
@@ -2253,10 +2330,10 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
 
           bFlag = ui::GetUIFlag(UI_SKILLSELECT);
           if (!bFlag) {
-            Draw::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
+            ui::SetUIFlag(UI_SKILLSELECT, UI_SET, 0);
             SpellSel::SPELLSEL_SetMouseHandFlag(0);
           } else {
-            Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+            ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
             SpellSel::SPELLSEL_SetMouseHandFlag(0);
           }
         }
@@ -2310,30 +2387,30 @@ void __stdcall INPUT_PanelLeftClickUp(D2UIMouseMsgStrc * pMsg) {
     iVar1 = ScreenSizeX / 2;
     if (iVar1 - 8 <= nMouseX && nMouseX <= iVar1 + 5 && ScreenSizeY - 0x27 <= nMouseY && nMouseY <= ScreenSizeY - 0xd) {
       bFlag = ui::GetUIFlag(UI_MINIPANEL);
-      if (!bFlag) {
-        Draw::SetUIFlag(UI_MINIPANEL, UI_TOGGLE, 0);
+      if (bFlag) {
+        ui::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
         gpPanelClickedButton = 0;
         gpPanelMenuButton = 0;
         gpPanelRunButton = 0;
         return;
       }
 
-      Draw::SetUIFlag(UI_MINIPANEL, UI_RESET, 0);
+      ui::SetUIFlag(UI_MINIPANEL, UI_TOGGLE, 0);
       gpPanelClickedButton = 0;
       gpPanelMenuButton = 0;
       gpPanelRunButton = 0;
       return;
     }
-    if (nMouseX - 0x75U < 0x31 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY) {
-      Draw::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
+    if (nMouseX - 0x75U <= 0x30 && nMouseY >= ScreenSizeY - 0x30 && nMouseY <= ScreenSizeY) {
+      ui::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
       SpellSel::SPELLSEL_SetMouseHandFlag(1);
       gpPanelClickedButton = 0;
       gpPanelMenuButton = 0;
       gpPanelRunButton = 0;
       return;
     }
-    if (ScreenSizeX - 0xa5 <= nMouseX && nMouseX <= ScreenSizeX - 0x75 && ScreenSizeY - 0x30 <= nMouseY && nMouseY <= ScreenSizeY) {
-      Draw::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
+    if (nMouseX >= ScreenSizeX - 0xa5 && nMouseX <= ScreenSizeX - 0x75 && nMouseY >= ScreenSizeY - 0x30 && nMouseY <= ScreenSizeY) {
+      ui::SetUIFlag(UI_SKILLSELECT, UI_TOGGLE, 0);
       SpellSel::SPELLSEL_SetMouseHandFlag(0);
       gpPanelClickedButton = 0;
       gpPanelMenuButton = 0;

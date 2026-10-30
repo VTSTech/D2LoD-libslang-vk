@@ -21,8 +21,6 @@ namespace D2Common::Drlg::DrlgGrid {
 // Function declarations
 // Recursive 4-directional flood-fill on grid cells.
 void __fastcall DRLGGRID_FloodFillGridCoords(int * pFloodFillContext, int nX, int nY, int nDirection);
-// Iterates grid cells, builds coord entries for each non-flagged cell.
-void DRLGLOGIC_PopulateGridCoordIndices(int * pnParam);
 void __fastcall OverwriteFlag(int * pFlag, int32_t nFlag);
 void __fastcall OrFlag(int * pFlag, int32_t nFlag);
 void __fastcall AndFlag(int * pFlag, int32_t nFlag);
@@ -32,8 +30,6 @@ void __fastcall AndNegatedFlag(int * pFlag, int32_t nFlag);
 // Returns 1 if grid pointer is non-null and has data.
 BOOL __fastcall DRLGGRID_IsGridValid(struct D2DrlgGridStrc * pDrlgGrid);
 BOOL __fastcall IsPointInsideGridArea(struct D2DrlgGridStrc * pDrlgGrid, int32_t nX, int32_t nY);
-// Returns the address of a grid cell given X and Y coordinates. Computes the offset using the grid's row pointer array. Trivial accessor function in the DrlgGrid subsystem.
-eD2GridCellFlags * __stdcall DRLGGRID_GetCellAddress(struct D2DrlgGridStrc * pDrlgGrid, int nY, int nX);
 // Applies a flag operation (set/clear/xor) to a single grid cell (nX,nY).
 void __fastcall AlterGridFlag(struct D2DrlgGridStrc * pDrlgGrid, int32_t nX, int32_t nY, int32_t nFlag, int32_t eOperation);
 // Applies a flag operation (set, clear, or, and, etc.) to a specific grid cell. Uses the apFlagOperations function pointer table indexed by the operation type. The grid cell is located via the row pointer array.
@@ -65,5 +61,6 @@ void __fastcall FillExternalCellFlags(struct D2DrlgGridStrc * pDrlgGrid, struct 
 void __fastcall DRLGGRID_FreeGrid(struct D2PoolManagerStrc * pMemory, struct D2DrlgGridStrc * pGrid);
 // Clears grid metadata (flags/row offsets) and marks grid as unused.
 void __fastcall ResetGrid(struct D2DrlgGridStrc * pDrlgGrid);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Common::Drlg::DrlgGrid

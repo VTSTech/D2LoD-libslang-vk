@@ -8,7 +8,7 @@
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GSPacketSrv0x91.h"
 #include "D2Client/D2GameViewStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Select.h"
@@ -17,7 +17,6 @@
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Dialog.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Hireables.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
@@ -38,6 +37,7 @@
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
@@ -47,7 +47,6 @@
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Text.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -762,7 +761,7 @@ void __fastcall NPCMENU_ValidateNpcForShop(D2UnitStrc * pUnit) {
       return;
     }
 
-    Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, 0x48);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x48);
 }
 
 void __stdcall NPCMENU_Initialize() {
@@ -1644,7 +1643,7 @@ int __stdcall NPCMENU_ItemServiceOptionCallback() {
       Dialog::gpNpcInteractionDialog = 0;
     }
 
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     ui::UI_UpdateCursorAnimationTimer();
     Inv::INV_ResetHoverAndContextState();
     _Interaction::geNpcUiState = NPCUI_ITEM_SERVICE;
@@ -1951,7 +1950,7 @@ void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam) {
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x30, 1, nParam);
     Text::TEXT_CloseNpcDialog();
     _Interaction::bInteractingWithNpc = 0;
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     if (!pPlayer) {
       return;
     }
@@ -1984,7 +1983,7 @@ int __stdcall NPCMENU_OpenNpcShop() {
     if (pNpc && pNpc->pInventory) {
       _Interaction::geNpcUiState = NPCUI_SHOP;
       gnNpcMenuShopMode = 1;
-      Draw::SetUIFlag(UI_NPCSHOP, UI_SET, 0);
+      ui::SetUIFlag(UI_NPCSHOP, UI_SET, 0);
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 2, _Interaction::nCurrentInteractedNpcGUID, 0);
       gpNpcShopOwnerUnit = UNIT::Player::GetPlayerUnit_UI();
       gbNpcMenuShopOpened = 0;
@@ -1999,7 +1998,7 @@ void __stdcall NPCMENU_CloseAndResetAll() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 void __fastcall NPCMENU_HandlePlayerInteractionEnd(D2UnitStrc * pUnit) {
@@ -2041,16 +2040,16 @@ void __fastcall NPCMENU_HandlePlayerInteractionEnd(D2UnitStrc * pUnit) {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     _Interaction::bInteractingWithNpc = 0;
 }
 
 void __stdcall NPCMENU_CloseShopUI() {
-    Draw::SetUIFlag(UI_NPCSHOP, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCSHOP, UI_RESET, 0);
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 void CloseNPCInteract() {
@@ -2059,7 +2058,7 @@ void CloseNPCInteract() {
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       NPCMENU_CloseAllDialogs();
       _Interaction::geNpcUiState = NPCUI_NONE;
       return;
@@ -2090,14 +2089,14 @@ void __stdcall NPCMENU_CloseCubeUI() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 void __stdcall NPCMENU_CloseStashUI() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 int __stdcall NPCMENU_EmptyDrawCallback1() {
@@ -2113,7 +2112,7 @@ int __stdcall NPCMENU_EmptyDrawCallback1() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2131,7 +2130,7 @@ int __stdcall NPCMENU_CloseConfirmDialogAndInteraction() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2165,7 +2164,7 @@ static void __stdcall NPCMENU_SendCainIdentifyItems(char cParam, int32_t nParam)
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 // A two-liner:
@@ -2251,7 +2250,7 @@ int __stdcall NPCMENU_TradeOptionCallback() {
     if (pNpcUnit && pNpcUnit->pInventory) {
       _Interaction::geNpcUiState = NPCUI_SHOP;
       gnNpcMenuShopMode = 0;
-      Draw::SetUIFlag(UI_NPCSHOP, UI_SET, 0);
+      ui::SetUIFlag(UI_NPCSHOP, UI_SET, 0);
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 1, _Interaction::nCurrentInteractedNpcGUID, 0);
       gpNpcShopOwnerUnit = UNIT::Player::GetPlayerUnit_UI();
       gbNpcMenuShopOpened = 0;
@@ -2261,7 +2260,7 @@ int __stdcall NPCMENU_TradeOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2277,7 +2276,7 @@ void DRAW_UI_NPC_INTERACTION(short * nParam) {
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     }
     if (Dialog::gpNpcGossipDialog) {
       Dialog::DIALOG_DrawBackground(Dialog::gpNpcGossipDialog);
@@ -2377,7 +2376,7 @@ int __stdcall NPCMENU_GambleDrawCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2390,7 +2389,7 @@ int __stdcall NPCMENU_GambleMouseCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2404,7 +2403,7 @@ int __stdcall NPCMENU_RepairDrawCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2418,7 +2417,7 @@ int __stdcall NPCMENU_RepairMouseCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2457,7 +2456,7 @@ int __stdcall NPCMENU_TradeDrawCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 1;
 }
 
@@ -2495,7 +2494,7 @@ void __stdcall NPCMENU_OpenInteractionDialog() {
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       return;
     }
     if (_Interaction::nCurrentInteractedNpcClassId == 0xfc || _Interaction::nCurrentInteractedNpcClassId == 0xc6 || _Interaction::nCurrentInteractedNpcClassId == 0x203 || _Interaction::nCurrentInteractedNpcClassId == 0x96) {
@@ -2746,7 +2745,7 @@ void __stdcall NPCMENU_ShowMainMenuDialog() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
 }
 
 void __stdcall NPCMENU_OpenInteraction(D2UnitStrc * pUnit) {
@@ -2760,7 +2759,7 @@ void __stdcall NPCMENU_OpenInteraction(D2UnitStrc * pUnit) {
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       return;
     }
     if (_Interaction::bInteractingWithNpc) {
@@ -2776,7 +2775,7 @@ void __stdcall NPCMENU_OpenInteraction(D2UnitStrc * pUnit) {
     gnNpcMenuTransactionType = 0;
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     PLAYER_CurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayerUnit_lcl, eUnitStat, wStatLayer);
-    Draw::UI_CloseActivePanels(0, 0);
+    ui::UI_CloseActivePanels(0, 0);
     GAME::Game::UI_ResetInputState();
     if (_Interaction::bInteractingWithNpc) {
       pPlayerUnit_lcl = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
@@ -2794,7 +2793,7 @@ void __stdcall NPCMENU_OpenInteraction(D2UnitStrc * pUnit) {
       }
     }
 
-    DWORD bUiMenuOpened = Draw::SetUIFlag(UI_NPCMENU, UI_TOGGLE, 0);
+    DWORD bUiMenuOpened = ui::SetUIFlag(UI_NPCMENU, UI_TOGGLE, 0);
     if (!bUiMenuOpened) {
       NPCMENU_CloseAndResetAll();
       return;
@@ -2831,7 +2830,7 @@ int __stdcall NPCMENU_WarrivGoEastOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 0, _Interaction::nCurrentInteractedNpcGUID, 0x28);
     return 1;
 }
@@ -2847,7 +2846,7 @@ int __stdcall NPCMENU_MeshifSailEastOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 0, _Interaction::nCurrentInteractedNpcGUID, 0x4b);
     return 1;
 }
@@ -2863,7 +2862,7 @@ int __stdcall NPCMENU_TyraelTravelToHarrogathOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 0, _Interaction::nCurrentInteractedNpcGUID, 0x6d);
     return 1;
 }
@@ -2880,7 +2879,7 @@ int __stdcall NPCMENU_MeshifSailWestOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 0, _Interaction::nCurrentInteractedNpcGUID, 0x28);
     return 1;
 }
@@ -2896,7 +2895,7 @@ int __stdcall NPCMENU_WarrivGoWestOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT(0x38, 0, _Interaction::nCurrentInteractedNpcGUID, 1);
     return 1;
 }
@@ -2916,7 +2915,7 @@ void __fastcall NPCMENU_HandleQuestItemPacket(uint8_t bParam, int32_t nParam) {
       case 4:
 
       case 6:
-        Draw::UI_CloseActivePanels(1, 0);
+        ui::UI_CloseActivePanels(1, 0);
       return;
       default:
         return;
@@ -3909,7 +3908,7 @@ void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, D2UnitStrc * pUnit) {
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       return;
     }
 
@@ -3922,7 +3921,7 @@ void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, D2UnitStrc * pUnit) {
     D2UnitStrc* pNpcUnit;
     pNpcUnit = UNIT::Player::GetPlayerUnit_UI();
     PLAYER_CurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pNpcUnit, eStat, wStatLayer);
-    Draw::UI_CloseActivePanels(0, 0);
+    ui::UI_CloseActivePanels(0, 0);
     if (!nParam) {
       if (_Interaction::bInteractingWithNpc) {
         pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(_Interaction::nCurrentInteractedNpcGUID, UNIT_MONSTER);
@@ -4000,7 +3999,7 @@ void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, D2UnitStrc * pUnit) {
 
     NPCMENU_ConfigureMenuOption(nClassId, nMenuEntryIdx);
     open_npc_menu:
-    bMenuUiOpened = Draw::SetUIFlag(UI_NPCMENU, UI_SET, 0);
+    bMenuUiOpened = ui::SetUIFlag(UI_NPCMENU, UI_SET, 0);
     if (!bMenuUiOpened) {
       _Interaction::geNpcUiState = NPCUI_NONE;
       pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
@@ -4163,7 +4162,7 @@ int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t 
       _Interaction::geNpcUiState = NPCUI_NONE;
       Inv::INV_ResetHoverAndContextState();
       NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-      Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+      ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
       return 0;
     }
 
@@ -4199,7 +4198,7 @@ int __stdcall NPCMENU_TalkOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 0;
 }
 
@@ -4225,7 +4224,7 @@ int __stdcall NPCMENU_AkaraRespecOptionCallback() {
     _Interaction::geNpcUiState = NPCUI_NONE;
     Inv::INV_ResetHoverAndContextState();
     NPCMENU_CloseNpcInteraction(_Interaction::nCurrentInteractedNpcGUID);
-    Draw::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
+    ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
     return 0;
 }
 

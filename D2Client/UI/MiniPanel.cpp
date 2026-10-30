@@ -7,9 +7,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
-#include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/QuestLog.h"
 #include "D2Client/UI/ui.h"
@@ -18,9 +16,9 @@
 #include "D2Client/Units.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -346,20 +344,20 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
       case 0:
         bFlagSet = ui::GetUIFlag(UI_STATSCREEN);
       if (bFlagSet) {
-        Draw::SetUIFlag(UI_STATSCREEN, UI_RESET, 0);
+        ui::SetUIFlag(UI_STATSCREEN, UI_RESET, 0);
         return;
       }
 
-      Draw::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 0);
+      ui::SetUIFlag(UI_STATSCREEN, UI_TOGGLE, 0);
       break;
       case 1:
         bFlagSet = ui::GetUIFlag(UI_INVENTORY);
       if (!bFlagSet) {
-        Draw::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 0);
+        ui::SetUIFlag(UI_INVENTORY, UI_TOGGLE, 0);
         return;
       }
 
-      Draw::SetUIFlag(UI_INVENTORY, UI_RESET, 0);
+      ui::SetUIFlag(UI_INVENTORY, UI_RESET, 0);
       return;
       case 2:
         _bFlagActive = ui::GetUIFlag(UI_SKILLTREE);
@@ -368,17 +366,17 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
       case 5:
         bFlagSet = ui::GetUIFlag(UI_BELTROWS);
       if (bFlagSet) {
-        Draw::SetUIFlag(UI_BELTROWS, UI_RESET, 0);
+        ui::SetUIFlag(UI_BELTROWS, UI_RESET, 0);
       }
 
       _bFlagActive = ui::GetUIFlag(UI_MSGLOG);
       eUI = UI_MSGLOG;
       toggle_panel:
       if (!_bFlagActive) {
-        Draw::SetUIFlag(eUI, UI_TOGGLE, 0);
+        ui::SetUIFlag(eUI, UI_TOGGLE, 0);
         return;
       }
-      Draw::SetUIFlag(eUI, UI_RESET, 0);
+      ui::SetUIFlag(eUI, UI_RESET, 0);
       return;
       case 3:
         eGameType = GAME::Game::CLIENT_GetD2GSGameType();
@@ -398,7 +396,7 @@ static void MINIPANEL_HandleButtonClick(int32_t nButtonId) {
       QuestLog::QUESTLOG_ToggleQuestScreen(0);
       return;
       case 7:
-        Draw::UI_CloseActivePanels(0, 0);
+        ui::UI_CloseActivePanels(0, 0);
       ui::UI_ClearCursorAnimationState();
       EscMenu::ESCMENU_ShowMenu(1, 0);
       ui::UI_SetCursorAnimationFlag();

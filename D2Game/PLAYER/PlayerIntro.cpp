@@ -6,10 +6,10 @@
 #include "D2Common/D2BitBufferStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
@@ -50,7 +50,7 @@ static int gaNPCSpokenBitIndexMap_1__0_[35][2] = { 0 }; D2_STATIC_GUARD(gaNPCSpo
 
 void __fastcall PLAYER_SetSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nMonStatsId) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (0 < gnNPCSpokenBitIndexMapCount) {
+    if (gnNPCSpokenBitIndexMapCount > 0) {
       int i = 0;
       do {
         if (gaNPCSpokenBitIndexMap[i][0] == nMonStatsId) {
@@ -68,7 +68,7 @@ void __fastcall PLAYER_SetSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pGame,
 BOOL __fastcall PLAYER_CheckIfSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, int32_t nMonStatsId) {
     BOOL bSpoken;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (0 < gnNPCSpokenBitIndexMapCount) {
+    if (gnNPCSpokenBitIndexMapCount > 0) {
       int i = 0;
       do {
         if (gaNPCSpokenBitIndexMap[i][0] == nMonStatsId) {
@@ -85,7 +85,7 @@ BOOL __fastcall PLAYER_CheckIfSpokenWithNPC(D2UnitStrc * pUnit, ::SGAMEDATA * pG
 }
 
 void __fastcall INTRONPC_SetSpokenWithNPC_Intro2(D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs, int32_t nMonStatsId) {
-    if (0 < gnNPCSpokenBitIndexMapCount) {
+    if (gnNPCSpokenBitIndexMapCount > 0) {
       int i = 0;
       do {
         if (gaNPCSpokenBitIndexMap[i][0] == nMonStatsId) {
@@ -102,7 +102,7 @@ void __fastcall INTRONPC_SetSpokenWithNPC_Intro2(D2UnitDataPlayerInteractedNPCSt
 
 BOOL __fastcall INTRONPC_CheckIfSpokenWithNPC_Intro2(D2UnitDataPlayerInteractedNPCStrc * pInteractedNPCs, int32_t nMonStatsId) {
     BOOL bSpoken;
-    if (0 < gnNPCSpokenBitIndexMapCount) {
+    if (gnNPCSpokenBitIndexMapCount > 0) {
       int i = 0;
       do {
         if (gaNPCSpokenBitIndexMap[i][0] == nMonStatsId) {
@@ -120,7 +120,7 @@ BOOL __fastcall INTRONPC_CheckIfSpokenWithNPC_Intro2(D2UnitDataPlayerInteractedN
 
 void __fastcall PLAYER_UnsetSpokenWithNPC_Intro2(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nMonStatsId) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (0 < gnNPCSpokenBitIndexMapCount) {
+    if (gnNPCSpokenBitIndexMapCount > 0) {
       int i = 0;
       do {
         if (gaNPCSpokenBitIndexMap[i][0] == nMonStatsId) {

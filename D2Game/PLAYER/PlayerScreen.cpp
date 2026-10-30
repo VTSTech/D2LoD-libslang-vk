@@ -7,12 +7,12 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/GAME/Clients.h"
@@ -28,7 +28,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/SMem.h"
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
@@ -116,7 +115,7 @@ void __fastcall PARTYSCREEN_TogglePlayerSquelch(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     SendPlayerInfo(1, bNewState, pUnit, pGame, pTarget);
-    if (!pUnit || 1 < (uint32_t)pUnit->nClassId && pUnit->nClassId != 6) {
+    if (!pUnit || (uint32_t)pUnit->nClassId > 1 && pUnit->nClassId != 6) {
       bParam = bNewState ? 0x101 : 0xa;
     } else {
       bParam = bNewState ? 0x102 : 0xb;
@@ -127,8 +126,7 @@ void __fastcall PARTYSCREEN_TogglePlayerSquelch(::SGAMEDATA * pGame, D2UnitStrc 
       bIsConnected = pUnit->nUnitGUID;
     }
 
-    pClient = UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x65);
-    SendPlayerEvent(pClient, bIsConnected, bParam);
+    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x65), bIsConnected, bParam);
 }
 
 void __fastcall PARTYSCREEN_UpdateMuteRelation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t bNewState, uint32_t dwParam) {
@@ -167,8 +165,8 @@ static void RefreshPlayerStatus(D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
       return;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit1);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit1);
+    if (nPartyId == 0xffff) {
       uint32_t uIsPartied;
       uIsPartied = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit2, pUnit1);
       if ((short int)uIsPartied == 4) {
@@ -187,17 +185,16 @@ static void RefreshPlayerStatus(D2UnitStrc * pUnit1, D2UnitStrc * pUnit2) {
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
 void __fastcall AssignPlayerToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t * pdwParam) {
-    D2ClientStrc* self;
     uint8_t bEventType;
     D2UnitStrc* pOtherUnit;
-    int16_t nOldPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    uint16_t nOldPartyId = UNIT::SUnit::GetPartyId(pUnit);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit, (D2UnitStrc*)*pdwParam);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, (D2UnitStrc*)*pdwParam, pUnit);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pUnit, (D2UnitStrc*)pdwParam[1]);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, (D2UnitStrc*)pdwParam[1], pUnit);
     RefreshPlayerStatus(pUnit, (D2UnitStrc*)*pdwParam);
     RefreshPlayerStatus(pUnit, (D2UnitStrc*)pdwParam[1]);
-    if (nOldPartyId == *(short int*)(pdwParam + 2) && nOldPartyId != -1) {
+    if (nOldPartyId == *(uint16_t*)(pdwParam + 2) && nOldPartyId != 0xffff) {
       uint32_t pUnitGid;
       pOtherUnit = (D2UnitStrc*)pdwParam[1];
       if (pUnit != pOtherUnit) {
@@ -208,8 +205,7 @@ void __fastcall AssignPlayerToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uin
         }
 
         bEventType = '\a';
-        self = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xb7);
-        SendPlayerEvent(self, pUnitGid, bEventType);
+        SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xb7), pUnitGid, bEventType);
       }
     }
 
@@ -240,11 +236,12 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
     if (nIsPartied == 0xffff) {
-      nIsPartied = UNIT::Party::AllocPartyControlSub0x4(pGame);
-      UNIT::Party::PARTY_AddUnitToParty(pGame, nIsPartied, pInvitee, (int32_t)pUnit);
-      UNIT::Party::PARTY_AddUnitToParty(pGame, nIsPartied, pUnit, (int32_t)pUnit);
+      uint16_t nPartyId_00;
+      nPartyId_00 = UNIT::Party::AllocPartyControlSub0x4(pGame);
+      UNIT::Party::PARTY_AddUnitToParty(pGame, nPartyId_00, pInvitee, (int32_t)pUnit);
+      UNIT::Party::PARTY_AddUnitToParty(pGame, nPartyId_00, pUnit, (int32_t)pUnit);
       PARTY_RefreshPlayerListRelationships(pGame, pInvitee);
-      *(uint16_t*)(char*)&pInvitee = nIsPartied;
+      *(uint16_t*)(char*)&pInvitee = nPartyId_00;
     } else {
       UNIT::Party::PARTY_AddUnitToParty(pGame, nIsPartied, pUnit, (int32_t)pUnit);
       *(uint16_t*)(char*)&pInvitee = nIsPartied;
@@ -258,8 +255,7 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     uint8_t bParam = '\b';
-    D2ClientStrc* self = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xe9);
-    SendPlayerEvent(self, nPartyId, bParam);
+    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0xe9), nPartyId, bParam);
     __frame0.nInviteeGUID = (uint32_t)(uint16_t)(uintptr_t)pInvitee;
     __frame0.pIterArg0 = pInviteeCopy;
     __frame0.pIterArg1 = pUnit;
@@ -274,17 +270,16 @@ void __fastcall PARTYSCREEN_AcceptPartyInvite(::SGAMEDATA * pGame, D2UnitStrc * 
 // 'AcceptPartyInvite' is inferred from behaviour, not proven. What would settle it: the party-screen
 // packet handler table that references them, or the SendPlayerEvent event-code enum (6 vs 8).
 void __fastcall PARTYSCREEN_SetMutualPlayerRelationship(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pInvitee, uint32_t dwUnused1, uint32_t dwUnused2) {
-    D2ClientStrc* pClient;
     uint8_t bEventType;
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pUnit, pInvitee);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pInvitee, pUnit);
     uint32_t nInviterGUID = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pInvitee);
     if ((short int)nInviterGUID == 4) {
-      int16_t nPartyId;
+      uint16_t nPartyId;
       nPartyId = UNIT::SUnit::GetPartyId(pInvitee);
-      UNIT::PlayerList::SetPlayerRelationship(pUnit, pInvitee, (uint32_t)(nPartyId != -1));
+      UNIT::PlayerList::SetPlayerRelationship(pUnit, pInvitee, (uint32_t)(nPartyId != 0xffff));
       nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-      UNIT::PlayerList::SetPlayerRelationship(pInvitee, pUnit, (uint32_t)(nPartyId != -1));
+      UNIT::PlayerList::SetPlayerRelationship(pInvitee, pUnit, (uint32_t)(nPartyId != 0xffff));
       if (!pUnit) {
         nInviterGUID = -1;
       } else {
@@ -292,8 +287,7 @@ void __fastcall PARTYSCREEN_SetMutualPlayerRelationship(int32_t nParam, D2UnitSt
       }
 
       bEventType = '\x06';
-      pClient = UNIT::SUnit::SUNIT_GetClient(pInvitee, ".\\PLAYER\\PartyScreen.cpp", 0x112);
-      SendPlayerEvent(pClient, nInviterGUID, bEventType);
+      SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pInvitee, ".\\PLAYER\\PartyScreen.cpp", 0x112), nInviterGUID, bEventType);
     }
 
     UNIT::PlayerList::Send0x8bRelationshipStatus(pUnit, pInvitee);
@@ -302,12 +296,11 @@ void __fastcall PARTYSCREEN_SetMutualPlayerRelationship(int32_t nParam, D2UnitSt
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
 void __fastcall PARTYSCREEN_SendPartyInvite(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t dwUnused1, uint32_t dwUnused2) {
-    uint8_t bEventType;
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pUnit, pTarget);
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry((::SGAMEDATA*)nParam, pTarget, pUnit);
     uint32_t nInviterGUID = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTarget);
     if (!(short int)nInviterGUID) {
-      D2ClientStrc* pClient;
+      uint8_t bEventType;
       UNIT::PlayerList::SetPlayerRelationship(pUnit, pTarget, 4);
       UNIT::PlayerList::SetPlayerRelationship(pTarget, pUnit, 2);
       if (!pUnit) {
@@ -317,8 +310,7 @@ void __fastcall PARTYSCREEN_SendPartyInvite(int32_t nParam, D2UnitStrc * pUnit, 
       }
 
       bEventType = '\x05';
-      pClient = UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x132);
-      SendPlayerEvent(pClient, nInviterGUID, bEventType);
+      SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x132), nInviterGUID, bEventType);
     }
 
     UNIT::PlayerList::Send0x8bRelationshipStatus(pUnit, pTarget);
@@ -338,8 +330,7 @@ void __fastcall PARTY_SendPlayerLeftEvent(uint32_t dwUnused, D2UnitStrc * pUnit,
     }
 
     uint8_t bEventType = '\t';
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x143);
-    SendPlayerEvent(pClient, nOtherGUID, bEventType);
+    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x143), nOtherGUID, bEventType);
 }
 
 void __fastcall SendPlayerPartyInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
@@ -350,14 +341,14 @@ void __fastcall SendPlayerPartyInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2U
     }
 
     UNIT::PlayerList::SetPlayerRelationship(pUnit, pTarget, 0);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    UNIT::PlayerList::SetPlayerRelationship(pTarget, pUnit, (uint32_t)(nPartyId != -1));
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    UNIT::PlayerList::SetPlayerRelationship(pTarget, pUnit, (uint32_t)(nPartyId != 0xffff));
     GAME::SCmd::NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(pUnit, pTarget);
     GAME::SCmd::NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(pTarget, pUnit);
 }
 
 void __fastcall CallPlayerEventForEachPlayer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam1, uint32_t dwParam2, uint32_t dwParam3) {
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
     UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)PARTY_SendPlayerLeftEvent, (BOOL)(uintptr_t)pUnit);
     UNIT::Party::PARTY_RemoveUnitFromParty(pGame, pUnit);
 }
@@ -370,7 +361,7 @@ void __fastcall PARTYSCREEN_SetHostileForPlayer(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     int32_t nUnitLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-    if (8 >= nUnitLevel) {
+    if (nUnitLevel < 9) {
       return;
     }
 
@@ -383,17 +374,15 @@ void __fastcall PARTYSCREEN_SetHostileForPlayer(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     uint8_t bEventType = '\x03';
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x187);
-    SendPlayerEvent(pClient, nTargetGUID, bEventType);
+    SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x187), nTargetGUID, bEventType);
 }
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
 static void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    uint32_t nUnitGUID;
     uint8_t bEventType;
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
-      D2ClientStrc* pClient;
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
+      uint32_t nUnitGUID;
       PARTYSCREEN_SetHostileRelation(pGame, pUnit2, pUnit);
       PARTYSCREEN_SetHostileRelation(pGame, pUnit, pUnit2);
       if (!pUnit2) {
@@ -403,13 +392,12 @@ static void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2Uni
       }
 
       bEventType = '\x03';
-      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x19c);
-      SendPlayerEvent(pClient, nUnitGUID, bEventType);
+      SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PartyScreen.cpp", 0x19c), nUnitGUID, bEventType);
       return;
     }
 
     int32_t nTargetLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit2, UNITSTAT_level, 0);
-    if (8 >= nTargetLevel) {
+    if (nTargetLevel < 9) {
       return;
     }
 
@@ -418,13 +406,11 @@ static void __stdcall PARTYSCREEN_SetHostileWithParty(::SGAMEDATA * pGame, D2Uni
 
 // @sourcefile .\PLAYER\PartyScreen.cpp
 void __fastcall PARTYSCREEN_ToggleHostile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, uint32_t bWantHostile, uint32_t * pdwParam) {
-    int16_t nTargetPartyIdShort;
     BOOL bIsInTown;
     int32_t nLevel;
     int nTargetLevel;
     DWORD dwHostileDelay;
     DWORD dwNow;
-    D2ClientStrc* pClient;
     uint8_t bEventType;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom || (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , !bIsInTown) || (nLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0) , nLevel < 9) || (nLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pTarget, UNITSTAT_level, 0) , nLevel < 9)) {
@@ -436,7 +422,7 @@ void __fastcall PARTYSCREEN_ToggleHostile(::SGAMEDATA * pGame, D2UnitStrc * pUni
     UNIT::PlayerList::PLAYERLIST_AddPlayerEntry(pGame, pTarget, pUnit);
     uint32_t bIsHostile = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnit, pTarget, 8);
     if (bIsHostile != bWantHostile) {
-      uint16_t nUnitPartyId;
+      uint16_t nTargetPartyIdShort;
       bIsHostile = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnit, pTarget, 8);
       if (!bIsHostile) {
         nTargetLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pTarget, UNITSTAT_level, 0);
@@ -453,8 +439,7 @@ void __fastcall PARTYSCREEN_ToggleHostile(::SGAMEDATA * pGame, D2UnitStrc * pUni
         }
 
         bEventType = '\x04';
-        pClient = UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x216);
-        SendPlayerEvent(pClient, bIsHostile, bEventType);
+        SendPlayerEvent(UNIT::SUnit::SUNIT_GetClient(pTarget, ".\\PLAYER\\PartyScreen.cpp", 0x216), bIsHostile, bEventType);
         return;
       }
 
@@ -465,14 +450,14 @@ void __fastcall PARTYSCREEN_ToggleHostile(::SGAMEDATA * pGame, D2UnitStrc * pUni
         UNIT::PlayerList::PLAYERLIST_SetHostileDelay(pUnit, pTarget, dwHostileDelay + 60000);
         PARTYSCREEN_SetHostileWithParty(pGame, pTarget, pUnit);
         Player::PLAYER_DestroyPortalPair(pGame, pUnit);
-        nUnitPartyId = UNIT::SUnit::GetPartyId(pUnit);
-        bWantHostile = (uint32_t)nUnitPartyId;
-        if (nUnitPartyId == 0xffff) {
+        nTargetPartyIdShort = UNIT::SUnit::GetPartyId(pUnit);
+        bWantHostile = (uint32_t)nTargetPartyIdShort;
+        if (nTargetPartyIdShort == 0xffff) {
           return;
         }
 
         nTargetPartyIdShort = UNIT::SUnit::GetPartyId(pTarget);
-        if ((short int)bWantHostile != nTargetPartyIdShort) {
+        if ((uint16_t)bWantHostile != nTargetPartyIdShort) {
           return;
         }
 
@@ -552,6 +537,7 @@ void __fastcall PARTYSCREEN_SetHostileRelation(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 uint32_t __fastcall PLAYERSCREEN_CheckUnitsCanSeeEachOther(uint32_t dwUnused, D2UnitStrc * pUnit, D2UnitStrc * pOtherUnit) {
+    uint32_t bCanSeeEachOther;
     uint32_t nFlags;
     eD2UnitType eUnitTypeA = UNIT_COUNT;
     if (pUnit) {
@@ -560,31 +546,39 @@ uint32_t __fastcall PLAYERSCREEN_CheckUnitsCanSeeEachOther(uint32_t dwUnused, D2
 
     D2UnitStrc* pUnitA = pUnit;
     D2UnitStrc* pUnitB = pOtherUnit;
-    if (eUnitTypeA == UNIT_PLAYER) {
-      nFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnitA, pUnitB, 8);
-      return (uint32_t)!nFlags;
-    }
-    if (eUnitTypeA != UNIT_MONSTER) {
-      return 0;
+    switch (eUnitTypeA) {
+      case UNIT_PLAYER:
+        {
+          nFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnitA, pUnitB, 8);
+          return (uint32_t)!nFlags;
+        }
+      case UNIT_MONSTER:
+        {
+          eUnitTypeA = UNIT_COUNT;
+          if (pOtherUnit) {
+            eUnitTypeA = pOtherUnit->eUnitType;
+          }
+
+          pUnitA = pOtherUnit;
+          pUnitB = pUnit;
+          switch (eUnitTypeA) {
+            case UNIT_PLAYER:
+              {
+                nFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnitA, pUnitB, 8);
+                return (uint32_t)!nFlags;
+              }
+            case UNIT_MONSTER:
+              {
+                bCanSeeEachOther = D2Common::PATH::Path::IsAllyOf(pUnit, pOtherUnit);
+                return bCanSeeEachOther;
+              }
+          }
+
+          break;
+        }
     }
 
-    eUnitTypeA = UNIT_COUNT;
-    if (pOtherUnit) {
-      eUnitTypeA = pOtherUnit->eUnitType;
-    }
-
-    pUnitA = pOtherUnit;
-    pUnitB = pUnit;
-    if (eUnitTypeA == UNIT_PLAYER) {
-      nFlags = UNIT::PlayerList::PLAYERLIST_GetFlagsMasked(pUnitA, pUnitB, 8);
-      return (uint32_t)!nFlags;
-    }
-    if (eUnitTypeA != UNIT_MONSTER) {
-      return 0;
-    }
-
-    uint32_t bCanSeeEachOther = D2Common::PATH::Path::IsAllyOf(pUnit, pOtherUnit);
-    return bCanSeeEachOther;
+    return 0;
 }
 
 } // namespace D2Game::PLAYER::PlayerScreen

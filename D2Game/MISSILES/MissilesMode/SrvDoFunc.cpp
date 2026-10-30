@@ -11,13 +11,14 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
+#include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/Units/Missile.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
@@ -32,10 +33,40 @@
 
 namespace D2Game::MISSILES::MissilesMode::SrvDoFunc {
 
+static BOOL __stdcall fpMissileDoSrvFuncHandler(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit1, D2MissilesTxt * pMissileTxt, D2UnitStrc * pUnit2) {
+    bool _bIsOwner;
+    bool bIsOwner;
+    if (!(pUnit2 && pUnit2->eUnitFlags >> 3 & 1 && pUnit2->eUnitFlags >> 2 & 1)) {
+      return 0;
+    }
+    if (pMissileTxt->NextHit != '\0') {
+      eD2States eState;
+      eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_justhit);
+      if (eState != STATE_none) {
+        return 0;
+      }
+    }
+
+    _bIsOwner = D2Common::Units::Missile::CheckUnitIfOwner(pUnit, pUnit2);
+    if (_bIsOwner) {
+      return 0;
+    }
+    if (!pUnit1) {
+      return 1;
+    }
+
+    uint32_t bCannotAttack = UNIT::SUnit::UNITS_CheckIfCanAttackTarget(pGame, pUnit1, pUnit2);
+    if (!(!bCannotAttack && pMissileTxt->CollideFriend == '\0')) {
+      return 1;
+    }
+
+    return 0;
+}
+
 int32_t __fastcall fpMissileSrvDoFuncData_MonsterOnly(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
     if (pCtx && pCtx->pMissileTxt && pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       BOOL nResult;
-      nResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+      nResult = fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
       return (uint32_t)(nResult != 0);
     }
 
@@ -57,14 +88,14 @@ int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit
     switch (eUnitType) {
       case UNIT_PLAYER:
         {
-          bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+          bHitResult = fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
           return (uint32_t)(bHitResult != 0);
         }
       case UNIT_MONSTER:
         {
           nUnitAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
           if (nUnitAlignment == 2) {
-            bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+            bHitResult = fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
             return (uint32_t)(bHitResult != 0);
           }
 
@@ -78,7 +109,7 @@ int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
     if (pCtx && pCtx->pMissileTxt && pUnit && (int)pUnit->eUnitType >= 0 && (int)pUnit->eUnitType <= 1) {
       BOOL nHitResult;
-      nHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+      nHitResult = fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
       return (uint32_t)(nHitResult != 0);
     }
 

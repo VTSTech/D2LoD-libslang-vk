@@ -1359,7 +1359,7 @@ void __fastcall CloseSmacker(D2SmackerContextStrc * pContext) {
 }
 
 // Blits Smacker video frame to framebuffer with palette translation. Reads Smacker structure (offset +8=x, +0xC=y), copies nWidth×nHeight pixels from gnSmackerGlideYOffset.pFrameBuffer (Smacker frame buffer) to ppvBits_007c9154, applying palette lookup via gnSmackerGlideYOffset[pixel] translation table. Row-major blit with RENDERER_nWindowWidth stride.
-void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc * pSmacker, int nHeight, int nWidth) {
+static void __thiscall RENDERER_WINDOWED_BlitSmackerFrame(D2SmackerContextStrc * pSmacker, int nHeight, int nWidth) {
     uint8_t* pbSrcPixel;
     int nColsLeft;
     uint8_t* iDestRowAddr = gpRenderBackBufferBits + (pSmacker->nY - nHeight) * RENDERER_nWindowWidth + pSmacker->nX;
@@ -1441,6 +1441,50 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     }
 
     pBuffer->eMode = '\0';
+}
+
+void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
+    int bSmackWait;
+    uint32_t nPaletteColor;
+    uint8_t* pbPalEntry;
+    void* hSmack;
+    if (pContext->eMode != 'p') {
+      if (pContext->eMode == 's' && (hSmack = pContext->hSmack , hSmack != 0)) {
+        bSmackWait = SmackWait(hSmack);
+        if (!bSmackWait) {
+          if (!gnGlideWindowHandle) {
+            return;
+          }
+          if (*(int*)((int)hSmack + 0x68)) {
+            bSmackWait = 0;
+            pbPalEntry = (uint8_t*)((int)hSmack + 0x6d);
+            do {
+              nPaletteColor = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete((LPPALETTEENTRY)gaDirectDrawDitherPaletteRemap, 0x100, (uint32_t)pbPalEntry[-1], (uint32_t)*pbPalEntry, (uint32_t)pbPalEntry[1]);
+              gnSmackerGlideYOffset.aPaletteLUT[bSmackWait] = (uint8_t)nPaletteColor;
+              bSmackWait++;
+              pbPalEntry += 3;
+            } while (bSmackWait < 0x100);
+
+            gnSmackerDecodeState = 1;
+          }
+
+          SmackDoFrame(hSmack);
+          if (*(int*)((int)hSmack + 0x374) == *(int*)((int)hSmack + 0xc)) {
+            Windowed::CloseSmacker(pContext);
+          } else {
+            SmackNextFrame(hSmack);
+          }
+        }
+        if (!gnRenderState && gnSmackerDecodeState) {
+          RENDERER_WINDOWED_BlitSmackerFrame(pContext, *(int*)((int)hSmack + 8), *(int*)((int)hSmack + 4));
+        }
+      }
+    } else {
+      if (!gnRenderState) {
+        RENDERER_WINDOWED_BlitSmackerFrame(pContext, 0x3c, 0x1d4);
+        return;
+      }
+    }
 }
 
 } // namespace D2Gdi::Renderer::Windowed

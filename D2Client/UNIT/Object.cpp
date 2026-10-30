@@ -5,7 +5,6 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/Sound/Sound.h"
@@ -25,6 +24,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SkillArgStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -35,8 +35,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Objects/Objects.h"
@@ -215,7 +214,7 @@ void __fastcall OBJECT_AddVisualOverlay(D2UnitStrc * pUnit) {
 }
 
 void __fastcall FreeObjectData(D2UnitStrc * pUnit) {
-    Engine::GfxInfo::FreeGfxInfo(pUnit);
+    Engine::Gfx::FreeGfxInfo(pUnit);
     if (sgpDrlgAct) {
       D2Common::Units::RemoveCollision_Vector(pUnit);
       D2Common::Unit::RemoveUnitFromRoom(pUnit);
@@ -337,7 +336,7 @@ static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         D2Common::Units::InitAnimMode(pUnit);
         if (pTxtLine->Overlay && ((iVar1 = pUnit->nClassId , iVar1 == 0x162 || iVar1 == 0x163) || iVar1 == 0x18d || iVar1 == 0x195 || iVar1 == 0x197 || iVar1 == 0x196 || iVar1 == 0x164)) {
-          Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, 0x47);
+          Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x47);
         }
 
         SetMonsterFlags(pUnit, UNITFLAG_TARGETABLE, (uint32_t)pTxtLine->Selectable[pUnit->eAnimMode.ePlayerMode]);
@@ -694,7 +693,7 @@ void __fastcall OBJECT_UpdateShrineOverlay(D2UnitStrc * pUnit, D2ShrinesTxt * pS
       exit(-1);
     }
     if (aShrineDispatchTable[nShrineCode].nOverlayIdActive != -1) {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdActive);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdActive);
       if (!pUnit || pUnit->eAnimMode.ePlayerMode == Death) {
         Engine::Gfx::GFX_AddOverlayToUnit(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdActive, 3, 0, 0, 0, 0, 0);
       }
@@ -703,7 +702,7 @@ void __fastcall OBJECT_UpdateShrineOverlay(D2UnitStrc * pUnit, D2ShrinesTxt * pS
       return;
     }
 
-    Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdInactive);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, aShrineDispatchTable[nShrineCode].nOverlayIdInactive);
     if (!(!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       return;
     }
@@ -1122,7 +1121,7 @@ bool __fastcall OBJECT_ClientFn_NeutralModeOverlay(D2UnitStrc * pUnit) {
       return true;
     }
 
-    Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, 0x48);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x48);
     DVar1 = GetTickCount();
     pUnit->dwTickCount = DVar1 + 500;
     return true;

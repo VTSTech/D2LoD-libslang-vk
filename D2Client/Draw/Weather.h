@@ -88,8 +88,6 @@ void __stdcall WEATHER_ToggleTransitionLock();
 void __stdcall WEATHER_UpdateTransition(struct D2SeedStrc * pSeed);
 void __stdcall WeatherEffects();
 uint32_t __fastcall WEATHER_ApproximateDistance(uint32_t nDeltaX, uint32_t nDeltaY);
-// Approximate 2D distance used by the weather and lightmap code. Non-standard convention: the X delta arrives in EAX and the Y delta on the stack, and the callee cleans up (RET 4). Declaring only the stack argument left the EAX delta looking like an unassigned local inside the abs() at the top.
-uint32_t __stdcall WEATHER_ApproximateDistanceCustomCC(uint32_t nDeltaX, uint32_t nDeltaY);
 // 4 internal functions (defined in .cpp)
 
 } // namespace D2Client::Draw::Weather

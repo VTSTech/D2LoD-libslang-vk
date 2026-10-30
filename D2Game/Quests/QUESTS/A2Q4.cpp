@@ -9,24 +9,22 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/AI/AI.h"
-#include "D2Game/Monster/MonsterAI.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -38,27 +36,13 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Common/Drlg/Drlg.h"
-#include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
-#include "D2Game/Monster/Monsters.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
-
-#ifndef D2_ALLOC_POOL_AT
-#define D2_ALLOC_POOL_AT(pPool, size, szFile, nLine) Fog::Memory::AllocServerMemory((pPool), (size), (szFile), (nLine), 0)
-#endif
-
-#ifndef D2_NEW_POOL_AT
-#define D2_NEW_POOL_AT(pPool, T, szFile, nLine) ((T*)D2_ALLOC_POOL_AT((pPool), sizeof(T), (szFile), (nLine)))
-#endif
-
-static_assert(sizeof(void*) != 4 || sizeof(::D2QuestDataA2Q4Strc) == 0x48, "D2_NEW_AT(D2QuestDataA2Q4Strc): the 32-bit layout must be the 0x48 bytes 1.14d allocates");
 
 
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
@@ -867,126 +851,6 @@ void __fastcall Q12_SetObjectOperateState(::SGAMEDATA * pGame, int32_t nParam) {
       pDVar1->nObjectOperateState1 = 1;
       pDVar1->nObjectOperateState2 = 2;
     }
-}
-
-// A2Q4 - Callback_03 (quest state 3 handler). Index 0x4a: advance stateFlag to 4 (if <4) and broadcast state 4 via QUEST_SetStateAndBroadcast, then persist via UpdateQuestRecord. Index 0x32: directly set record Step0x08+Step0x07. For the Jerhyn (0x28) path: tear down/respawn Jerhyn's monster AI, optionally ReplaceJerhyn at his location, remove player from the participation list, and if not Completed(0)/RewardAwaits(1) and stateFlag==3 advance to 4 + persist.
-void __fastcall Q12_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    D2UnitDataPlayerStrc* pJerhynUnit;
-    D2UnitStrc* pPlayerData;
-    D2MonsterAiStrc* pMonsterAi;
-    D2RoomStrc* pRoom;
-    BOOL bQuestDone;
-    POINT ptPos;
-    ::SGAMEDATA* pGame;
-    ptPos.y = (LONG)pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    int iVar1 = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (iVar1 != 0x4a) {
-      D2BitBufferStrc* pBitBuffer;
-      if (iVar1 == 0x32) {
-        pGame = pQuestData->pGame;
-        pJerhynUnit = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-        /* SetQuestState Step0x08 - journal sub-state (index 0x32 path) */ D2Common::QuestRecord::SetQuestState(pJerhynUnit->pQuestRecord[pGame->nDifficulty], QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x08);
-        pGame = pQuestData->pGame;
-        pJerhynUnit = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-        /* SetQuestState Step0x07 - journal sub-state (index 0x32 path) */ D2Common::QuestRecord::SetQuestState(pJerhynUnit->pQuestRecord[pGame->nDifficulty], QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x07);
-      }
-      if ((D2GSPacketSrv0x27_TextStrc*)ptPos.y != (D2GSPacketSrv0x27_TextStrc*)0x28) {
-        return;
-      }
-
-      ptPos.y = (LONG)pQuestData->pQuestSpecificData.pA2Q4;
-      if (((D2QuestDataA2Q4Strc*)ptPos.y)->bJerhynAiActive == '\x01') {
-        pPlayerData = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_MONSTER, ((D2QuestDataA2Q4Strc*)ptPos.y)->nJerhynMonsterGUID);
-        if (!pPlayerData) {
-          *(uint8_t*)(ptPos.y + 0xc) = '\0';
-        } else {
-          if (pPlayerData->eUnitType == UNIT_MONSTER && pPlayerData->pUnitData.pUnitDataMonster) {
-            pMonsterAi = pPlayerData->pUnitData.pUnitDataMonster->pMonsterAi;
-          } else {
-            pMonsterAi = 0;
-          }
-
-          bQuestDone = Monster::MonsterAI::HasAiSub(pMonsterAi);
-          if (bQuestDone) {
-            Monster::MonsterAI::ClearAISub(pQuestData->pGame, pPlayerData, nullptr, true);
-          } else {
-            GAME::Server::RemoveObjects(pPlayerData, pQuestData->pGame);
-            *(uint8_t*)(ptPos.y + 0xc) = '\0';
-          }
-        }
-      }
-      if (*(uint8_t*)(ptPos.y + 0xd) == '\0' && *(uint8_t*)(ptPos.y + 0x11) != '\0') {
-        pPlayerData = UNIT::SUnit::FindUnitFromTable(pQuestData->pGame, UNIT_OBJECT, *(int32_t*)(ptPos.y + 0x38));
-        if (pPlayerData) {
-          D2Common::Units::GetCoords(pPlayerData, &ptPos);
-          pRoom = D2Common::Units::UNITS_GetRoom(pPlayerData);
-          ReplaceJerhyn(pRoom, pQuestData, &ptPos);
-        }
-      }
-
-      QUESTGUID_RemovePlayerFromQuest(pQuestData, pQuestArgs);
-      pGame = pQuestArgs->pGame;
-      pJerhynUnit = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      pBitBuffer = pJerhynUnit->pQuestRecord[pGame->nDifficulty];
-      /* GetQuestState Completed(0) - skip Jerhyn-path advance if already done */ bQuestDone = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_Completed);
-      /* GetQuestState RewardAwaits(1) - skip advance if reward pending; else
-                         stateFlag 3->4 */ if (bQuestDone == 1) {
-        return;
-      }
-
-      bQuestDone = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheArcaneSanctuary, QUESTSTATE_RewardAwaits);
-      if (!(bQuestDone != 1 && pQuestData->nStateFlag == 3)) {
-        return;
-      }
-
-      QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x2de);
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q12_UpdateQuestRecord);
-      return;
-    }
-
-    bool bFlagOver3 = 3 < pQuestData->nStateFlag;
-    if (!bFlagOver3) {
-      QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x297);
-    }
-    if (pQuestData->nStateFlagPrev < 4) {
-      pQuestData->nQuestPacketFlags = '\0';
-      QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)Q12_NotifyArcaneComplete, true);
-    } else if (bFlagOver3) {
-      return;
-    }
-
-    UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q12_UpdateQuestRecord);
-}
-
-// A2Q4 - InitData. Quest registration/init. Allocates the A2Q4 quest-specific data block (0x48), zeroes state functions, wires the gossip table and the state-handler callbacks (0->Callback_00, 2->Callback_02, 3->Callback_03, 0xa->Callback_10, 0xb->Callback_11, 0xd->Callback_13), sets nQuestIdReal=TheArcaneSanctuary, fpActiveFilter=Q12_ActiveFilter, fpSequenceFilter=Q12_SequenceFilter, nSequenceQuestId=TheSummoner, and clears the Summoner/sun sub-flags.
-void __fastcall Q12_InitData(D2QuestDataStrc * pQuestData) {
-    memset(&pQuestData->sStateFunctions, 0, 0x3c);
-    ::SGAMEDATA* pGame = pQuestData->pGame;
-    pQuestData->pNpcMessages = A2Q4::aNpcGossipData;
-    pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q12_Callback00_NpcActivate;
-    pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q12_Callback11_ScrollMessage;
-    pQuestData->sStateFunctions.fpQuestStateHandler[3] = Q12_Callback03_ChangedLevel;
-    pQuestData->sStateFunctions.fpQuestStateHandler[10] = Q12_Callback10_PlayerLeavesGame;
-    pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q12_Callback02_NpcDeactivate;
-    pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q12_Callback13_PlayerStartedGame;
-    pQuestData->bIsActive = '\x01';
-    pQuestData->nStateFlag = 0;
-    D2QuestDataA2Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q4.cpp", 0x3dd);
-    pQuestData->pQuestSpecificData.pA2Q4 = pQuestSpecificData;
-    pQuestData->nQuestIdReal = QUEST_TheArcaneSanctuary;
-    pQuestData->fpStatusFilter = 0;
-    pQuestData->nInitNo = 5;
-    pQuestData->fpActiveFilter = Q12_ActiveFilter;
-    pQuestData->fpSequenceFilter = Q12_SequenceFilter;
-    pQuestData->nSequenceQuestId = QUEST_TheSummoner;
-    QUESTGUID_SetPlayerCountToZero(&pQuestData->sQuestGUID);
-    D2QuestDataA2Q4Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q4;
-    memset(pA2Q3Data, 0, 0x48);
-    pA2Q3Data->field_0x00 = 0;
-    pA2Q3Data->field_0x01 = 0;
-    pA2Q3Data->field_0x02 = 0;
-    pA2Q3Data->field_0x03 = 0;
-    pA2Q3Data->bAtmaSpokeToJerhyn = '\0';
 }
 
 } // namespace D2Game::Quests::QUESTS::A2Q4

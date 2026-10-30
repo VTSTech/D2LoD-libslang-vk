@@ -27,7 +27,6 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/View.h"
 #include "D2Client/Message.h"
-#include "D2Client/SRC/CelCmp.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/Source/ClientEngine.h"
@@ -35,7 +34,7 @@
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -43,11 +42,13 @@
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Player.h"
+#include "D2Client/UNIT/UnitMode.h"
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -58,7 +59,6 @@
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Environment.h"
 #include "D2Common/Src/LogManager.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/GAME/Event.h"
@@ -99,7 +99,6 @@
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Server.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Multi/OOGUtilities.h"
 
@@ -490,9 +489,9 @@ void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
       // and an activation after a stuck Alt (lost keyup across alt-tab)
       // heals to a sane state in both directions.
       if (ALTTOGGLE_Active()) {
-        UI::Draw::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
+        UI::ui::SetUIFlag(UI_HOLDALT, ALTTOGGLE_Latched() ? UI_SET : UI_RESET, 0);
       } else {
-        UI::Draw::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
+        UI::ui::SetUIFlag(UI_HOLDALT, UI_RESET, 0);
       }
       gClickModifierDown = 0;
       Select::ClearSelectedUnit();
@@ -529,13 +528,13 @@ void __stdcall GAMEDATA_CheckAutomapCenterOnLoad() {
       return;
     }
 
-    BOOL BVar1 = UI::Draw::UI_CloseActivePanels(0, 1);
+    BOOL BVar1 = UI::ui::UI_CloseActivePanels(0, 1);
     if (BVar1) {
       return;
     }
 
     UI::Automap::AUTOMAP_CenterOnPlayer(0);
-    UI::Draw::UI_CloseActivePanels(1, 0);
+    UI::ui::UI_CloseActivePanels(1, 0);
 }
 
 void __stdcall NET_D2GS_CLIENT_HandleAllNonVariableSizePackets() {
@@ -698,7 +697,7 @@ void __fastcall InGameDraw(int32_t nParam) {
     uint8_t nRed;
     uint8_t nGreen;
     uint8_t nBlue;
-    UI::Draw::CleanupAfterLoadingAct();
+    UI::ui::CleanupAfterLoadingAct();
     int32_t nTmp = D2gfx::D2GFX::D2GFX_EndCutSceneReturnSceneState();
     if (nTmp) {
       return;
@@ -1929,7 +1928,7 @@ void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutom
     }
 
     gbActInitExpansionFlag = 0;
-    UI::Draw::SetActNo(nActNo & 0xff);
+    UI::ui::SetActNo(nActNo & 0xff);
     UI::Draw::Draw_UI_LoadGame(1);
     D2GameGame0x546->nInitSeed = 0;
     D2GameGame0x546->nAutomap = 0;
@@ -1940,7 +1939,7 @@ void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutom
     UI::ui::InitializeGlobalsWithColors();
     gnWeatherOverlayActId = eLevel;
     Engine::Gfx::GFX_FreeMonsterCofCache();
-    SRC::CelCmp::GFX_LoadMonsterCofArchive(nCofNameIndex);
+    Engine::Gfx::GFX_LoadMonsterCofArchive(nCofNameIndex);
     gnActTransitionFadeFrames = 1;
     DWORD dwNow = GetTickCount();
     if ((uint32_t)gClientGameData.gdwCatchupTimeoutTick >= dwNow + 10000) {
@@ -2018,7 +2017,7 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
       gnConnectionRefusedReason = 9;
     }
 
-    UI::Draw::UI_CloseActivePanels(1, 0);
+    UI::ui::UI_CloseActivePanels(1, 0);
     gLoadTimerDurationMs.dwStartTick = GetTickCount();
     gLoadTimerDurationMs.dwDurationMs = 0x9c4;
     D2CLIENT_ExitVar3 = 1;
@@ -2046,7 +2045,7 @@ uint32_t __stdcall LoadingScreen_TickOrCleanup(uint32_t dwArg1) {
       }
     }
 
-    UI::Draw::CleanupAfterLoadingAct();
+    UI::ui::CleanupAfterLoadingAct();
     return 1;
 }
 
@@ -2462,7 +2461,7 @@ uint32_t __stdcall CLIENT_GameLoopFrame(uint32_t dwUnused) {
         frameElapsed = uGlobalTickCountB;
       }
       if (ServerLoadingComplete) {
-        UNITMODE_ExecuteDeferredAction(pPlayer);
+        UNIT::UnitMode::UNITMODE_ExecuteDeferredAction(pPlayer);
       }
     }
     /* In single player (not tcp/ip) the gameserver runs as part of the drawing
@@ -2553,7 +2552,7 @@ uint32_t __stdcall CLIENT_GameLoopFrame(uint32_t dwUnused) {
     }
     Warden::WARDEN_Cleanup();
     D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(0);
-    UI::Draw::UI_CloseActivePanels(1, 0);
+    UI::ui::UI_CloseActivePanels(1, 0);
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
       D2Game::GAME::Server::QSERVER_ShutdownAllGames();
     }

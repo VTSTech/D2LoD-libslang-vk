@@ -10,9 +10,7 @@
 #include "Storm/Source/SSystem.h"
 
 // Forward declarations
-struct D2CompressEncoderStrc;
 struct D2MPQFileStrc;
-struct D2SLogStrc;
 struct D2StormAudioStreamRec;
 struct IDirectSoundBuffer;
 struct D2StormAsyncCompletionStrc;
@@ -60,32 +58,6 @@ struct __attribute__((packed)) StormLinkedListStrc {
 namespace Storm {
 
 // Function declarations
-uint32_t __thiscall BITBUFFER_PeekBits(uint16_t * * pBitBuffer, uint16_t * nBitCount, uint32_t nMask);
-int32_t __fastcall BITBUFFER_GetRemainingBits(int * pBitStream);
-uint32_t __thiscall HUFFMAN_GetDecodedOffset(int * pNode, int * pBase);
-uint32_t __thiscall BITBUFFER_ReadBits(uint16_t * * pBitBuf, uint16_t * nBits, uint32_t nMask);
-void __stdcall SCOMP_DecompressSimple(uint32_t * pDst, uint32_t * pnDstSize, uint32_t * pSrc, uint32_t nSrcSize);
-int32_t __thiscall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrDefault);
-int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf);
-int * * __thiscall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode);
-// Initialise a Huffman encoder/decoder context: zero all linked-list sentinels, set epoch to 1, clear node-count and quick-table epoch
-int32_t __fastcall HUFFMAN_InitContext(struct D2CompressEncoderStrc * pEncoder);
-int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf);
-int32_t __fastcall HUFFMAN_Constructor(int32_t nParam);
-int32_t __fastcall HUFFMAN_ConstructorWithTable(int32_t pHuffCtx);
-// @blizzard LockLog (SLOG.CPP)
-struct D2SLogStrc * __stdcall SLOG_LockLog(uint32_t * pnSlotOut, int32_t bAllocate, uint32_t nHandle);
-// @blizzard SLogCreate (SLOG.CPP)
-void __stdcall SLogCreate(LPCSTR szFileName, uint32_t dwUnused, int * pnHandleOut);
-// Sets the log's indent (D2SLogStrc.nIndent) to nIndent and returns the previous indent; 0 if nHandle has no log.
-// Provenance: 1.14d asm 004200e0 (SLOG_LockLog, [ctx+0x14] = value).
-int32_t __stdcall SLogSetAbsIndent(uint32_t nHandle, int32_t nIndent);
-// Adds nDelta to the log's indent (D2SLogStrc.nIndent) and returns the previous indent; 0 if nHandle has no log.
-// Provenance: 1.14d asm 00420120 (SLOG_LockLog, [ctx+0x14] += delta); caller BNET_LogIndent.
-int32_t __stdcall SLogSetIndent(uint32_t nHandle, int32_t nDelta);
-// Sets D2SLogStrc.bTimestamps, which makes SLOG_OutputTime prefix each entry with the local time.
-// Provenance: 1.14d asm 00420160 (SLOG_LockLog, [ctx+0x18] = flag); name from the Mac PPC Storm import list (SLogSetTimestamp).
-void __stdcall SLogSetTimestamp(uint32_t nHandle, uint32_t bTimestamps);
 // @blizzard SMsgBreakHandlerChain (SMSG.CPP)
 int __stdcall SMsgBreakHandlerChain(void * pUnderMouse);
 void StaticFini_Empty_6cb400();

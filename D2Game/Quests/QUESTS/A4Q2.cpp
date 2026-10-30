@@ -12,6 +12,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -20,8 +21,7 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Common/Waypoints.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
@@ -34,6 +34,7 @@
 #include "D2Game/GAME/Server.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/Monster/Create.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -935,8 +936,8 @@ static void __stdcall Q27_ActivateAllSealsKillChaos(int * pQuestSpecificData, ::
             if (!bMonDead) {
               nMonAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
               if (!nMonAlignment) {
-                GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &sMonsterKill);
-                GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
+                Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &sMonsterKill);
+                Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
               }
             }
           }
