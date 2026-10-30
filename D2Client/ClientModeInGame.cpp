@@ -34,6 +34,7 @@
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
 #include "Fog/D2QServerStrc.h"
+#include "support/d2_boot.h" // [vanilla-plus] enter-world stage marks
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -495,6 +496,7 @@ eD2ClientAppMode __stdcall NET_QServer_StartServer() {
 
     eD2GSConnectionType neD2GSConnectionType;
     D2GS_Connected = 0;
+    D2BOOT_MarkFmt("enter-world: qserver start (gametype=%d)", (int)eD2GSGameType_007a0610); // [d2boot]
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER) {
       D2Net::Game::Server::QSERVER_CreateAndInit(CONNECTIONTYPE_SINGLEPLAYER, GAMETYPE_SINGLEPLAYER_UNCAPPED);
       neD2GSConnectionType = CONNECTIONTYPE_SINGLEPLAYER;
@@ -533,10 +535,12 @@ eD2ClientAppMode __stdcall NET_QServer_StartServer() {
     D2Game::GAME::Server::QSERVER_SetGlobalInstance(&gQServerGameState, &gInterfaceConfig1);
     gbQServerRunning = 1;
     D2Game::GAME::Server::QSERVER_InitializeServerState();
+    D2BOOT_Mark("enter-world: qserver state initialized"); // [d2boot]
     wait_for_connection:
     gdwQServerStartTime = GetTickCount();
     gnClientModeInitValue = 0;
     _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_Unused3);
+    D2BOOT_MarkFmt("enter-world: connect wait done (connected=%d)", (int)D2GS_Connected); // [d2boot] connected=0 = the 10 s refused path, not a hang
     eD2ClientAppMode eAppMode = CLIENTMODE_GetCurrentAppMode();
     return eAppMode;
 }

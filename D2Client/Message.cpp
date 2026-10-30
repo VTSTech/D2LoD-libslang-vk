@@ -2,6 +2,7 @@
 
 #include "D2Client/Message.h"
 #include "support/d2_control.h"
+#include "support/d2_hangwatch.h" // [vanilla-plus hangwatch]
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Record.h"
 #include "D2Client/UI/EscMenu.h"
@@ -70,6 +71,7 @@ int32_t __fastcall MessageGameLoop(::fpGameLoopFunction nfpGameLoopFunction) {
       // silent exactly when there was something worth looking at - and a run that had
       // reached town was indistinguishable from one that had died.
       D2CONTROL_Pump(); D2LOUD_GuardPump();   // loud build: also walks the guard zones between globals
+      D2HANGWATCH_Heartbeat(); // [vanilla-plus hangwatch] every out-of-game loop, the SP connect wait, the loading wait and the in-game loop run under this pump - one beat covers them all
       BOOL bHasMessage;
       /* UINT wRemoveMsg for PeekMessageA */ /* UINT wMsgFilterMax for PeekMessageA */ /* UINT wMsgFilterMin for PeekMessageA */ /* HWND hWnd for PeekMessageA */ /* LPMSG lpMsg for PeekMessageA */ bHasMessage = PeekMessageA(&msg, (HWND)0x0, 0, 0, 0);
       if (bHasMessage) {

@@ -5,6 +5,7 @@
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2MCPClient/McpConnect.h"
+#include "D2Sound/D2Sound.h"
 #include "D2Sound/Sound.h"
 #include "D2Win/D2GFX.h"
 #include "D2Win/Src/D2WinArchive.h"
@@ -22,6 +23,7 @@
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
 #include "support/d2_boot.h" // [d2boot]
+#include "support/d2_hangwatch.h" // [vanilla-plus hangwatch]
 #include "support/d2_trace.h"
 #include "D2Client/UI/Panel.h"
 
@@ -53,8 +55,16 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     }
 
     /* Here it assign global D2Application mode then param is used as variable to
+                         determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
+    // [vanilla-plus splice-fix] the marks and ALTTOGGLE_EnsureIni below used to sit
+    // INSIDE the retail block comment above (inserted between its first line and its
+    // closing */): every one of them was dead code, and the bootlog began at
+    // "SFile filesystem init ok". The comment is closed ahead of them now, so the
+    // marks, the hangwatch arm and the ini bootstrap actually run, in the order the
+    // d2boot patch intended.
     D2BOOT_MarkFmt("ApplicationMain enter (mode=%d)", (int)geD2ApplicationMode); // [d2boot]
     D2BOOT_Mark("vanilla-plus 0.0.4"); // [d2boot] build self-identification (local builds do not always rotate the commit hash)
+    D2HANGWATCH_Start(); // [vanilla-plus hangwatch] arm the freeze watchdog (evaluates from the first main-loop beat)
     // VP-BEGIN [alt-toggle]: create d2vp.ini next to the exe when missing
     // (documented all-defaults template, one attempt per process) so the
     // opt-in feature keys are discoverable at the title screen. Silent
@@ -62,7 +72,6 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     // stays the vanilla path.
     ALTTOGGLE_EnsureIni();
     // VP-END [alt-toggle]
-                         determine renderer */ geD2ApplicationMode = eD2ApplicationModeAndRenderer;
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
@@ -163,7 +172,9 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
       // passing it made SOUND_Initialize see hwnd=0/1 and the DDA music stream bind to a
       // dead window (the round-3 directx log's hwnd=00000000). The game window exists by
       // now (CreateWindowWithChecks above), so hand over the real one.
+      D2BOOT_MarkFmt("SOUND_Initialize enter (hwnd=%08lx)", (unsigned long)D2gfx::D2GFX::GetHwnd()); // [d2boot] pins a pre-sound freeze (enter written, done never) and reports the init verdict
       D2Sound::Sound::SOUND_Initialize(*(uint32_t*)pD2IniData->bD2ExpMpqExistsOrLanugageCode, D2gfx::D2GFX::GetHwnd());
+      D2BOOT_MarkFmt("SOUND_Initialize done (dsoundInit=%d eax=%d)", (int)D2Sound::SOUND_GetDirectSoundInitializedFlag(), (int)D2Sound::SOUND_GetEAXEnabledFlag()); // [d2boot] dsoundInit=0 means the whole engine failed to start: no menu music, no effects
       __frame0.bSoundInit = 1;
     }
     D2BOOT_Mark("setup ok -> entering mode loop"); // [d2boot]
