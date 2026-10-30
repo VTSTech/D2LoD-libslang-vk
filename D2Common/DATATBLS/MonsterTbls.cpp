@@ -3252,9 +3252,9 @@ D2HirelingTxt * __stdcall GetHirelingEntryByNameId(BOOL bIsExpansion, uint16_t n
       nIndex = (nParam - (int)sgtDataTable.pTxtHireling) / 0x118 + 1;
     }
     if (nIndex < sgtDataTable.nTxtHirelingSize) {
-      short int* pNameRange;
+      uint16_t* pNameRange;
       pNameRange = &sgtDataTable.pTxtHireling[nIndex].nNameLast;
-      while ((uint16_t)pNameRange[-1] > nMercNameId || (uint16_t)*pNameRange < nMercNameId || ((D2HirelingTxt*)(pNameRange - 0x8b))->version != (bIsExpansion ? 100 : 0)) {
+      while (pNameRange[-1] > nMercNameId || *pNameRange < nMercNameId || ((D2HirelingTxt*)(pNameRange - 0x8b))->version != (bIsExpansion ? 100 : 0)) {
         nIndex++;
         pNameRange += 0x8c;
         if (nIndex >= sgtDataTable.nTxtHirelingSize) {

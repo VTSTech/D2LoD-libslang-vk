@@ -523,9 +523,9 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
     static unsigned int gdwArcaneStarsLastUpdateTick; D2_STATIC_GUARD_BSS(gdwArcaneStarsLastUpdateTick, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gdwArcaneStarsLastUpdateTick");
     static uint32_t gbArcaneStarsInitialized; D2_STATIC_GUARD_BSS(gbArcaneStarsInitialized, "D2Client::GAME::View::DRAW_Overlay_ArcaneStars::gbArcaneStarsInitialized");
 
+    uint8_t bVar2;
     uint32_t nInitSeedLow;
     int i;
-    int32_t nPaletteIdx;
     int nColorIdx;
     int nRed;
     int nGreen;
@@ -565,8 +565,8 @@ void __stdcall DRAW_Overlay_ArcaneStars() {
           i = 0xff;
         }
 
-        nPaletteIdx = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete((uint8_t)nRed, (uint8_t)nGreen, (uint8_t)i);
-        gaArcaneStarColorTable[nColorIdx] = (uint8_t)nPaletteIdx;
+        bVar2 = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete((uint8_t)nRed, (uint8_t)nGreen, (uint8_t)i);
+        gaArcaneStarColorTable[nColorIdx] = bVar2;
         nBrightness += 0x80;
         nColorIdx++;
       } while (nBrightness < 0x400);

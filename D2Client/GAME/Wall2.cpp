@@ -186,14 +186,14 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
         case UNIT_PLAYER:
           pUnit = UNIT::Player::GetPlayerUnit_Net();
         if (pUnit == pOtherUnit || pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
-          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+          pOtherUnit->eUnitFlagsEx |= 0x80;
           return 1;
         }
 
         break;
         case UNIT_MONSTER:
           if (pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == Kick) {
-            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            pOtherUnit->eUnitFlagsEx |= 0x80;
             return 1;
           }
         case UNIT_MISSILE:
@@ -203,7 +203,7 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
         break;
         default:
           {
-            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            pOtherUnit->eUnitFlagsEx |= 0x80;
             return 1;
           }
       }
@@ -215,19 +215,19 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
           eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
           nLOSDraw = D2Common::Drlg::TXT_LevelDefs_GetLOSDraw(eLevel);
           if (!nLOSDraw) {
-            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+            pOtherUnit->eUnitFlagsEx |= 0x80;
             return 1;
           }
         }
 
         bIsBlocked = D2Common::Units::TestCollisionWithUnit(pUnit, pOtherUnit, 2);
         if (bIsBlocked) {
-          pOtherUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISINLOS;
+          pOtherUnit->eUnitFlagsEx &= -129;
           return 0;
         }
       }
 
-      pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
+      pOtherUnit->eUnitFlagsEx |= 0x80;
       return 1;
     }
 
@@ -1154,7 +1154,7 @@ BOOL __stdcall WALL2_CollectRoomTilesAndUnits(D2RoomStrc * pRoom, D2Wall2DrawCon
         nRoofHeightIdx = nIsoY - 1;
         nIsoY = nRoofHeightIdx;
         if (pTileData->nScreenX <= pnParam->rcCull.right && pTileData->nScreenX + 0xa0 >= pnParam->rcCull.left) {
-          nScreenYAdj = pTileData->nScreenY - (uint32_t)(uint16_t)pTileLibEntry->nRoofHeight;
+          nScreenYAdj = pTileData->nScreenY - (uint32_t)pTileLibEntry->nRoofHeight;
           if (nRoofHeightIdx2 + nScreenYAdj <= pnParam->rcCull.bottom && nScreenYAdj - nRoofHeightIdx2 >= pnParam->rcCull.top) {
             bInDrawGrid = WALL2_IsInDrawGrid(nIsoX, nRoofHeightIdx, pAllocBase);
             if (bInDrawGrid) {

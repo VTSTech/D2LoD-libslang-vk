@@ -61,7 +61,7 @@ void __fastcall AllocObjectControlSub0x1110(::SGAMEDATA * pGame, struct D2UnitSt
 // @sourcefile .\OBJECTS\objrgn.cpp
 void __fastcall Objects_InitFn17(struct D2ObjectInitFnArg * pInitArg);
 int32_t __fastcall QUEST_GetLevelQuestStatus(::SGAMEDATA * pGame, eD2LevelId eLevel);
-uint32_t __fastcall OBJECTRGN_CheckDensityThreshold(::SGAMEDATA * pGame, eD2LevelId eLevel);
+uint8_t __fastcall OBJECTRGN_CheckDensityThreshold(::SGAMEDATA * pGame, eD2LevelId eLevel);
 int32_t __fastcall OBJECTRGN_CheckPointsCapacity(::SGAMEDATA * pGame, eD2LevelId eLevel);
 void __fastcall OBJECT_IncrementLevelSpawnCount(::SGAMEDATA * pGame, eD2LevelId eLevel);
 uint32_t __fastcall OBJECT_IsPositionNearSpawnPoint2(::SGAMEDATA * pGame, eD2LevelId eLevel, int32_t nX, int32_t nY);

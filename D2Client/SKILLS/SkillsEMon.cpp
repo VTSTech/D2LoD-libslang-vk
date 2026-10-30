@@ -201,7 +201,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_FallingMissileWithZ(D2UnitStrc * pUnit, eD
 
       sSeedNext = D2_SEED_NEXT(*pSeed);
       *pSeed = sSeedNext;
-      sSkillArg.nVelocityOverride = (uint32_t)(uint8_t)pMissileTxt->Vel + gnSkillEMonFallingMissileZ[sSeedNext.nSeedLow % 5];
+      sSkillArg.nVelocityOverride = (uint32_t)pMissileTxt->Vel + gnSkillEMonFallingMissileZ[sSeedNext.nSeedLow % 5];
       pNewMissile = UNIT::Missile::MakeMissile(&sSkillArg);
       if (!pNewMissile) {
         return 1;
@@ -625,7 +625,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_DelayedLineMissileChain(D2UnitStrc * pUnit
           D2Common::Units::Missile::SetTotalFrames(pMissile, nChainFrameDelay + nChainBaseTotalFrames);
           D2Common::Units::Missile::SetCurrentFrame(pMissile, nChainFrameDelay + nChainBaseTotalFrames);
           D2Common::Units::Missile::SetActivateFrame(pMissile, nChainBaseTotalFrames - nChainFrameDelay);
-          pMissile->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+          pMissile->eUnitFlagsEx |= 0x40000;
         }
 
         nCurDist += nChainSpacing;
@@ -657,7 +657,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_DelayedLineMissileChain(D2UnitStrc * pUnit
     D2Common::Units::Missile::SetTotalFrames(pMissile, nScaledDeltaY);
     D2Common::Units::Missile::SetCurrentFrame(pMissile, nScaledDeltaY);
     D2Common::Units::Missile::SetActivateFrame(pMissile, nCalcA - nUnitY);
-    pMissile->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+    pMissile->eUnitFlagsEx |= 0x40000;
     return 1;
 }
 

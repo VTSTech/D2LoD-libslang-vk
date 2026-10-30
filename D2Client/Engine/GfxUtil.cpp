@@ -361,6 +361,7 @@ uint32_t __fastcall GFXUTIL_IsDC6BlockOnScreen(DC6Block * pDC6Block, int32_t nPa
 // @sourcefile .\ENGINE\GfxUtil.cpp
 static void GFXUTIL_SetItemGfxFile(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit) {
     bool bIsIdentified;
+    uint32_t nVariant;
     int iVar6;
     D2SetItemsTxt* pSetItemsTxt;
     D2UniqueItemsTxt* pUniqueItemsTxt;
@@ -415,7 +416,7 @@ static void GFXUTIL_SetItemGfxFile(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit)
       return;
     }
 
-    uint32_t nVariant = D2Common::ITEMS::Items::ITEM_GetItemData_bVariant(pUnit);
+    *(uint8_t*)(char*)&nVariant = D2Common::ITEMS::Items::ITEM_GetItemData_bVariant(pUnit);
     BOOL bItemIdentified = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0x196, ".\\ENGINE\\GfxUtil.cpp");
     if (bItemIdentified) {
       int eQuality;
@@ -447,7 +448,7 @@ static void GFXUTIL_SetItemGfxFile(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit)
       return;
     }
 
-    char* pacInvGfx = *D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_invgfx(pUnit, nVariant & 0xff);
+    char* pacInvGfx = *D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_invgfx(pUnit, (uint32_t)(uint8_t)nVariant);
     pGfxData->szFilename = pacInvGfx;
 }
 
@@ -457,7 +458,7 @@ static int32_t GFXUTIL_GetOverlayNumDirections(int32_t nParam) {
       return 1;
     }
 
-    return (uint32_t)(uint8_t)pOverlayTxt->NumDirections;
+    return (uint32_t)pOverlayTxt->NumDirections;
 }
 
 static int32_t GFXUTIL_GetBodyLocWeaponToken(int32_t nBodyLoc, D2UnitStrc * pUnit) {
@@ -620,7 +621,7 @@ static int32_t __stdcall GFXUTIL_GetNumDirectionsForUnit(D2UnitStrc * pUnit, eD2
       case UNIT_MISSILE:
         pMissilesTxt = GetMissleById(nClassId);
       if (pMissilesTxt) {
-        return (uint32_t)(uint8_t)pMissilesTxt->NumDirections;
+        return (uint32_t)pMissilesTxt->NumDirections;
       }
 
       break;
@@ -749,13 +750,13 @@ int __fastcall GFXUTIL_IsValidUnitType(D2UnitStrc * pnParam) {
     return 0;
 }
 
-uint32_t __fastcall GFXUTIL_GetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nParam) {
+uint8_t __fastcall GFXUTIL_GetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nParam) {
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
     if (!pGfxInfo) {
       return 0;
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pGfxInfo >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pGfxInfo->nComponentFlags[nParam * 2]);
+    return pGfxInfo->nComponentFlags[nParam * 2];
 }
 
 void __fastcall GFXUTIL_SetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nParam, uint8_t byComponentVal) {
@@ -887,7 +888,7 @@ BOOL __fastcall GFXUTIL_GetEtherealTransparency(D2UnitStrc * pUnit, int32_t nPar
     if (nItemClassId != -1) {
       pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
       if (pItemsTxt && pItemsTxt->bTransparent != '\0') {
-        *pOutTransTable = (uint32_t)(uint8_t)pItemsTxt->bTransTbl;
+        *pOutTransTable = (uint32_t)pItemsTxt->bTransTbl;
         return 1;
       }
     }

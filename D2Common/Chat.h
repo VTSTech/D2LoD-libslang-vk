@@ -30,7 +30,7 @@ int32_t __stdcall GetExpireFrame(struct D2HoverTextStrc * pHover);
 void __stdcall TEXT_CopyHoverMessageString(struct D2HoverTextStrc * pHover, int32_t nParam);
 int32_t __stdcall HOVERTEXT_GetTextLineList(struct D2HoverTextStrc * pHover);
 void __stdcall HOVERTEXT_SetTextLineList(struct D2HoverTextStrc * pHoverText, int32_t pTextLineList);
-uint32_t __stdcall GetLanguageCode(struct D2HoverTextStrc * pHoverText);
+uint8_t __stdcall GetLanguageCode(struct D2HoverTextStrc * pHoverText);
 void __stdcall SetLanguageCode(struct D2HoverTextStrc * pHover, uint8_t nLanguageCode);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca2b8(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca2e8(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);

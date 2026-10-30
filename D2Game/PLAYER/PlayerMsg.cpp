@@ -3686,7 +3686,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x4B_ForceUnitUpdate(::SGAMEDATA * pGame
     }
 
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pSrcUnit);
-    pSrcUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+    pSrcUnit->eUnitFlagsEx |= 0x10000;
     return SERVERSTATUS_OK;
 }
 

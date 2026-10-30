@@ -667,7 +667,7 @@ static void __stdcall SUNITINACTIVE_DeactivateMonster(::SGAMEDATA * pGame, D2Uni
         }
     }
 
-    if ((int)pUnit->nNodeTableIndex < 8) {
+    if (pUnit->nNodeTableIndex < 8) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x56a);
       exit(-1);
     }
@@ -1441,7 +1441,7 @@ static void __stdcall UNITS_ProcessDeadOrInactiveMonster(::SGAMEDATA * pGame, D2
         bShouldSave = false;
       }
     }
-    if ((int)pUnit->nNodeTableIndex < 8) {
+    if (pUnit->nNodeTableIndex < 8) {
       if (!bIsDeadBool) {
         bShouldSave = true;
         SUnit::SetAlignment(pUnit, '\0', 1);
@@ -1480,7 +1480,7 @@ static void __stdcall UNITS_ProcessDeadOrInactiveMonster(::SGAMEDATA * pGame, D2
       bShouldSave = true;
     }
     if (pPetRecord) {
-      pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
+      pUnit->eUnitFlagsEx |= 0x100;
       if (bShouldSave) {
         SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
       }
@@ -1545,7 +1545,7 @@ void __fastcall SERVER_GAME_UNIT_method(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
         if (eState != STATE_none) {
           save_and_unlink:
           GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
-          pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
+          pUnit->eUnitFlagsEx |= 0x100;
           SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
           D2Common::Unit::DRLGROOM_ClearUnitRoomLink(pUnit);
           return;

@@ -529,13 +529,13 @@ static D2UnitStrc * __stdcall SELECT_FindTargetInFacingDirection(D2UnitStrc * pP
     eD2UnitType eUnitType;
     int nOffsetX;
     int nOffsetY;
-    uint32_t nFacingDirection = D2Common::Units::PATH_GetCurrentDirection(pPlayerUnit_lcl);
+    uint8_t bVar1 = D2Common::Units::PATH_GetCurrentDirection(pPlayerUnit_lcl);
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pPlayerUnit_lcl);
     uint32_t* pDirTableEntry = (uint32_t*)gaTargetSelectionAngleTable;
     while (true) {
       eCollisionFlags eCollision;
       eUnitType = pPlayerUnit_lcl->eUnitType;
-      nAdjustedDirIdx = *pDirTableEntry + ((nFacingDirection & 0xff) >> 3) & 7;
+      nAdjustedDirIdx = *pDirTableEntry + (uint32_t)(bVar1 >> 3) & 7;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nUnitX = pPlayerUnit_lcl->pPath.pStaticPath->nPosX;
       } else if (pPlayerUnit_lcl->pPath.pDynamicPath) {

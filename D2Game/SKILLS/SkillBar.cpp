@@ -103,9 +103,8 @@ BOOL __fastcall SKILLBAR_SrvStFn32_StrikeWithAuraState(::SGAMEDATA * pGame, D2Un
     memset(&sDamage, 0, 0x70);
     nCalcVal = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nCalcVal, nHitResult);
-    sDamage.wResultFlags = (short int)nHitResult;
-    if (nHitResult & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nCalcVal, nHitResult);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
       if (pSkillsTxt->HitClass) {
@@ -355,7 +354,7 @@ BOOL __fastcall Skills_SrvDoFunc_070_DoubleSwing(::SGAMEDATA * pGame, D2UnitStrc
       return 0;
     }
 
-    uint32_t nSeqFlags = (int)pUnit->nSeqFrame >> 8 & 0x80000001;
+    uint32_t nSeqFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
     bool bIsFirstHit = !nSeqFlags;
     if ((int)nSeqFlags < 0) {
       bIsFirstHit = (nSeqFlags - 1 | -2) == -1;
@@ -693,9 +692,8 @@ BOOL __fastcall SKILLBAR_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc * pUni
     memset(&sDamage, 0, 0x70);
     uint32_t nHitCheckFlags = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nParam);
-    nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, param_1, nHitResult, nHitCheckFlags, nHitResult);
-    sDamage.wResultFlags = (short int)nHitResult;
-    if (nHitResult & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, param_1, nHitResult, nHitCheckFlags, nHitResult);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
       if (pSkillsTxt->HitClass) {
@@ -806,7 +804,7 @@ BOOL __fastcall Skills_SrvDoFunc_009_FrenzyMeleeHit(::SGAMEDATA * pGame, D2UnitS
       return 0;
     }
 
-    uint32_t nSeqFlags = (int)pUnit->nSeqFrame >> 8 & 0x80000001;
+    uint32_t nSeqFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
     bool bIsFirstHit = !nSeqFlags;
     if ((int)nSeqFlags < 0) {
       bIsFirstHit = (nSeqFlags - 1 | -2) == -1;
@@ -1182,9 +1180,8 @@ BOOL __fastcall Skills_SrvDoFunc_076_Whirlwind(::SGAMEDATA * pGame, D2UnitStrc *
               memset(&sDamage, 0, 0x70);
               iVar1 = 0;
               nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-              nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pHitTarget, nHitResult, iVar1, nHitResult);
-              sDamage.wResultFlags = (short int)nHitResult;
-              if (nHitResult & 1) {
+              sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pHitTarget, nHitResult, iVar1, nHitResult);
+              if (sDamage.wResultFlags & 1U) {
                 sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
                 sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
                 if (pSkillsTxt->HitClass) {
@@ -1247,9 +1244,8 @@ BOOL __fastcall SKILLBAR_SrvStFn39_Berserk(::SGAMEDATA * pGame, D2UnitStrc * pUn
     memset(&sDamage, 0, 0x70);
     int32_t nDurationFrames = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pUnit2, nHitResult, nDurationFrames, nHitResult);
-    sDamage.wResultFlags = (short int)nHitResult;
-    if (nHitResult & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pUnit2, nHitResult, nDurationFrames, nHitResult);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
       if (pSkillsTxt->HitClass) {
@@ -1931,12 +1927,12 @@ static BOOL __stdcall SKILLBAR_WhirlwindHitCycle(::SGAMEDATA * pGame, eD2Skills 
     memset(&sDamage, 0, 0x70);
     int32_t nHitFlags = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
-    if (!(nHitResult & 1)) {
+    uint16_t uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
+    if (!(uVar1 & 1)) {
       return 1;
     }
 
-    sDamage.wResultFlags = (uint16_t)nHitResult | 8;
+    sDamage.wResultFlags = uVar1 | 8;
     sDamage.dwHitClass = D2Common::Units::GetHitClassForPlayerOrMonster(pUnit);
     sDamage.dwHitFlags |= 0x20;
     sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);

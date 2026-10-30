@@ -1388,12 +1388,12 @@ void __stdcall DRAW_UI_SkillsWindow_II() {
 }
 
 void __stdcall thunk_D2GFX_GetColorFromPalette_C() {
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0);
-    gnSpellSelTabHighlightColor = (char)nPaletteColor;
+    gnSpellSelTabHighlightColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0);
 }
 
 void __stdcall SPELLSEL_DrawTabHighlight(int32_t nParam) {
     uint16_t* pwszLabel;
+    int32_t iVar1;
     int nCurMouseX;
     nCurMouseX = ui::GetMouseX();
     int nCurMouseY;
@@ -1408,9 +1408,7 @@ void __stdcall SPELLSEL_DrawTabHighlight(int32_t nParam) {
     bMiddleTabHovered = false;
     bool bAnyTabHovered;
     bAnyTabHovered = false;
-    int32_t nTextColor;
-    nTextColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0);
-    gnSpellSelTabHighlightColor = (uint8_t)nTextColor;
+    gnSpellSelTabHighlightColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0);
     if (!(nCurMouseX < ScreenSizeX - gnPanelOffsetX - 0x59 || nCurMouseX > ScreenSizeX - gnPanelOffsetX + 1)) {
       int nTabBoundY;
       if (nParam == 1) {
@@ -1472,22 +1470,22 @@ void __stdcall SPELLSEL_DrawTabHighlight(int32_t nParam) {
 
     Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 5, 0x5a, 0x14, (uint32_t)gnSpellSelTabHighlightColor, DRAW_DARKERSOLID);
     if (bBottomTabHovered) {
-      nTextColor = 0;
+      iVar1 = 0;
       pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1082);
-      ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, nTextColor);
+      ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, iVar1);
     }
     if (bMiddleTabHovered) {
-      nTextColor = 0;
+      iVar1 = 0;
       pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1081);
-      ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, nTextColor);
+      ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, iVar1);
     }
     if (!bAnyTabHovered) {
       return;
     }
 
-    nTextColor = 0;
+    iVar1 = 0;
     pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1080);
-    ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, nTextColor);
+    ui::UI_DrawTextCentered(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 0x14, 0x5a, pwszLabel, iVar1);
 }
 
 void __stdcall SKILLTREE_DrawBackground() {
@@ -1667,7 +1665,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
             if (pSkillTxt) {
               pSkillDesc = DataTbls::GetSkillDescription(eSkill);
               if (pSkillDesc) {
-                if (nSkillTreeActiveTab == (char)pSkillDesc->skillpage && (nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow) , (int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) && (nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn) , (int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab] && !(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[4]))) {
+                if (nSkillTreeActiveTab == pSkillDesc->skillpage && (nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow) , (int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) && (nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn) , (int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab] && !(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[4]))) {
                   GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x3c, (int)pSkillTxt->skill, -1);
                   ui::SetUIFlag(UI_SKILLTREE, UI_RESET, 0);
                 } else {
@@ -1752,7 +1750,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
         pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
         if (pSkillTxt) {
           pSkillDesc = DataTbls::GetSkillDescription(eSkill);
-          if (pSkillDesc && nSkillTreeActiveTab == (char)pSkillDesc->skillpage) {
+          if (pSkillDesc && nSkillTreeActiveTab == pSkillDesc->skillpage) {
             nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow);
             if ((int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) {
               nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn);
@@ -1832,7 +1830,7 @@ void __stdcall ClickOnScreenSkillWindow(D2UIMouseMsgStrc * pMsg) {
             if (pSkillTxt) {
               pSkillDesc = DataTbls::GetSkillDescription(eSkill);
               if (pSkillDesc) {
-                if (nSkillTreeActiveTab == (char)pSkillDesc->skillpage) {
+                if (nSkillTreeActiveTab == pSkillDesc->skillpage) {
                   iVar1 = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow);
                   if ((int)nClickY > iVar1 - 0x30 && (int)nClickY < iVar1) {
                     iVar1 = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn);
@@ -2105,7 +2103,7 @@ void __stdcall DRAW_UI_SkillSkillsWithAvailableSkills() {
         pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
         if (pSkillTxt) {
           nSkillDescIdx = (int)pSkillTxt->skilldesc;
-          if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == (char)sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
+          if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
             BVar1 = D2Common::Skills::SkillCalculateIfWeCanSkillThisSkill(pUnit, eSkill);
             if (BVar1) {
               bCanSkill = 1;
@@ -2207,7 +2205,7 @@ void __stdcall SKILLTREE_DrawAllSkillNodes() {
         pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
         if (pSkillTxt) {
           nSkillDescIdx = (int)pSkillTxt->skilldesc;
-          if (-1 < nSkillDescIdx && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == (char)sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
+          if (-1 < nSkillDescIdx && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize && sgptDataTable->pTxtSkillDesc + nSkillDescIdx && nSkillTreeActiveTab == sgptDataTable->pTxtSkillDesc[nSkillDescIdx].skillpage) {
             gaSpellSelSkillTreeState[nSkillIdx] = -1;
             gbSpellSelSkillTreeNodeHovered[nSkillIdx] = 5;
             pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnitCopy, eSkill, -1);

@@ -23,10 +23,10 @@ namespace D2Common::Monsters::MONSTERS {
 // Function declarations
 // Returns the missile id that a monster should fire at its current animation event frame. If pCurrentFrame is nonzero, scans forward through GetEventFrameInfo to find a throw/shoot event (type 1 or 2) within the delta since the last frame; returns ~MISSILE_Arrow (-1) if none found. Then indexes aMonstatsIndexUnknown by anim mode and monster class to get the missile id.
 eMissilesId __stdcall MONSTER_GetMissileForAnimEvent(struct D2UnitStrc * pUnit, int32_t pCurrentFrame);
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam);
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam);
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable1(uint8_t bParam);
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable2(uint8_t bParam);
 // Returns the byte value at index bParam in gaMonsterGfxOffsetTable1 (the third monster graphics direction-offset table). Used to map an animation direction index to a table-specific graphics offset byte.
-uint32_t __stdcall MONSTERS_GetGfxOffsetTable3(uint8_t bParam);
+uint8_t __stdcall MONSTERS_GetGfxOffsetTable3(uint8_t bParam);
 void __stdcall MONSTERS_GetCompositeDimensions(uint8_t bParam, int * pnParam1, int * pnParam2);
 void __fastcall SetSuperUniqueName(struct D2UnitStrc * pUnit, uint16_t * wszText);
 uint32_t __fastcall MONSTER_IsBossOrChampion(struct D2UnitStrc * pUnit);

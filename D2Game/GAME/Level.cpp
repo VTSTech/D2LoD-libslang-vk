@@ -140,7 +140,7 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
           Clients::CLIENT_SetRoom(pClient, pSpawnRoom);
           D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
           pGamePost = pGameSave;
-          pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+          pUnit->eUnitFlagsEx |= 0x10000;
           UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, nullptr);
           D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
           if (pUnit->eUnitType != UNIT_PLAYER) {

@@ -5156,8 +5156,8 @@ void __fastcall SKILLDESC_DrawSkillDmgThrow(D2UnitStrc * pUnit, D2SkillStrc * pS
     }
 
     D2ItemsTxt* pShieldTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(uShieldClassId);
-    uint32_t uMaxDmgShield = (uint32_t)(uint8_t)pShieldTxt->nMaxDam;
-    uint32_t uMinDmgShield = (uint32_t)(uint8_t)pShieldTxt->nMinDam;
+    uint32_t uMaxDmgShield = (uint32_t)pShieldTxt->nMaxDam;
+    uint32_t uMinDmgShield = (uint32_t)pShieldTxt->nMinDam;
     D2SkillStrc* pHolyShield = D2Common::Skills::GetSkillByIdAndOwner(pUnit, SKILL_HolyShield, -1);
     if (pHolyShield) {
       eD2States eHolyShieldActiveState;
@@ -6459,7 +6459,7 @@ void __fastcall SKILLDESC_DrawSkillInfo(D2UnitStrc * pPlayerUnit, D2SkillStrc * 
     if ((uint16_t)__frame0.pSkillDescTxt->descdam >= 0x90 || !gapSkillDamageDescFuncTable[(uint16_t)__frame0.pSkillDescTxt->descdam]) {
       __frame0.bShowDamage = 0;
     }
-    if ((uint16_t)__frame0.pSkillDescTxt->descatt >= 0x48 || !gpSkillDescAttackFuncTable[(uint16_t)__frame0.pSkillDescTxt->descatt]) {
+    if (__frame0.pSkillDescTxt->descatt >= 0x48 || !gpSkillDescAttackFuncTable[__frame0.pSkillDescTxt->descatt]) {
       __frame0.bShowAttack = 0;
     }
 
@@ -6484,7 +6484,7 @@ void __fastcall SKILLDESC_DrawSkillInfo(D2UnitStrc * pPlayerUnit, D2SkillStrc * 
     __frame0.nMaxDamageValue = 0;
     __frame0.nMinDamageColor = 0;
     __frame0.nMaxDamageColor = 0;
-    (*gpSkillDescAttackFuncTable[(uint16_t)__frame0.pSkillDescTxt->descatt])(pPlayerUnit, pActiveSkill, __frame0.pSkillsTxt, __frame0.nSkillLevel, &__frame0.nMinDamageValue, &__frame0.nMinDamageColor, &__frame0.nMaxDamageValue, &__frame0.nMaxDamageColor);
+    (*gpSkillDescAttackFuncTable[__frame0.pSkillDescTxt->descatt])(pPlayerUnit, pActiveSkill, __frame0.pSkillsTxt, __frame0.nSkillLevel, &__frame0.nMinDamageValue, &__frame0.nMinDamageColor, &__frame0.nMaxDamageValue, &__frame0.nMaxDamageColor);
     nLayoutOff = nSavedIndex + 3;
     if (__frame0.nMinDamageValue || __frame0.nMaxDamageValue) {
       uint16_t* pwszFormatString;
@@ -6595,12 +6595,12 @@ BOOL __fastcall SKILLDESC_GetSkillBonusText(D2UnitStrc * pUnit, int32_t nParam) 
 
     __frame0.nMinDmgOut = 0;
     __frame0.nMaxDmgOut = 0;
-    if (!((uint16_t)pSkillDescTxt->descatt < 0x48 && gpSkillDescAttackFuncTable[(uint16_t)pSkillDescTxt->descatt])) {
+    if (!(pSkillDescTxt->descatt < 0x48 && gpSkillDescAttackFuncTable[pSkillDescTxt->descatt])) {
       return __frame0.nMinDmgOut;
     }
 
     int nSkillLevel = D2Common::Skills::GetSkillLevel(pUnit, pSkill, 1);
-    (*gpSkillDescAttackFuncTable[(uint16_t)pSkillDescTxt->descatt])(pUnit, pSkill, __frame0.pSkillsTxt, nSkillLevel, &__frame0.nMinDmgOut, &__frame0.nMaxColorOut, &__frame0.nMaxDmgOut, &__frame0.nMinColorOut);
+    (*gpSkillDescAttackFuncTable[pSkillDescTxt->descatt])(pUnit, pSkill, __frame0.pSkillsTxt, nSkillLevel, &__frame0.nMinDmgOut, &__frame0.nMaxColorOut, &__frame0.nMaxDmgOut, &__frame0.nMinColorOut);
     return __frame0.nMinDmgOut;
 }
 

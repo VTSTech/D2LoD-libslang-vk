@@ -249,7 +249,7 @@ void __fastcall SendUpdatedItemsToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       pItem = SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwItemGUID);
       if (pItem) {
         Pre0x9DAnd0x9CPacket(pClient, pUnit, pItem);
-        if (pItem->eUnitFlagsEx & UNITFLAGEX_HASINV) {
+        if (pItem->eUnitFlagsEx & 1) {
           if (!pItem->pInventory) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x108);
             exit(-1);
@@ -307,7 +307,7 @@ void __fastcall ITEM_ClearFlagsAndCommands(::SGAMEDATA * pGameStrc, D2UnitStrc *
     static uint32_t gnItemClearCommandCount = 0x15; D2_STATIC_GUARD(gnItemClearCommandCount, "D2Game::UNIT::ITEM_ClearFlagsAndCommands::gnItemClearCommandCount");
 
     if (pUnit) {
-      pUnit->eUnitFlagsEx &= ~(UNITFLAGEX_ITEMINIT | UNITFLAGEX_ISVENDORITEM);
+      pUnit->eUnitFlagsEx &= -21;
     }
 
     uint32_t nIdx = 0;
@@ -386,7 +386,7 @@ void __fastcall ITEM_ProcessInventoryUpdates(::SGAMEDATA * pGame, D2UnitStrc * p
           }
 
           ITEM_ClearFlagsAndCommands(pGame, pItem);
-          if (pItem->eUnitFlagsEx & UNITFLAGEX_HASINV) {
+          if (pItem->eUnitFlagsEx & 1) {
             D2Common::Units::RefreshInventory(pItem, 0);
             pSubInventory = pItem->pInventory;
             if (!pSubInventory) {
@@ -474,7 +474,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
     eD2UnitType eType;
     if (pUnit) {
       uint16_t wPosY;
-      if (pUnit->eUnitFlagsEx & UNITFLAGEX_TELEPORTED) {
+      if (pUnit->eUnitFlagsEx & 0x10000) {
         eType = pUnit->eUnitType;
         if (eType == UNIT_OBJECT || (int)eType > 3 && (int)eType <= 5) {
           wPosY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
@@ -510,7 +510,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       if (pUnit->eUnitFlags >> 8 & 1) {
         SUnitMsg::PLAYER_SendHoverTextToClient(pUnit, pClient);
       }
-      if (pUnit->eUnitFlagsEx & UNITFLAGEX_HASINV) {
+      if (pUnit->eUnitFlagsEx & 1) {
         pPlayer = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
         if (pPlayer) {
           bIsInNpcState2 = D2Game::Monster::MonsterAI::NpcStateIs2(pUnit, pPlayer);

@@ -1398,7 +1398,7 @@ uint32_t __fastcall SKILL_ExecuteClientDoFunc(D2UnitStrc * pUnit, eD2Skills eSki
     if (nTargetX > 0xc) {
       nTargetX = 0xc;
     }
-    if (!(pSkillTxt->anim != '\x12' || !(pMissileUnit->nSeqFrame & -256))) {
+    if (!(pSkillTxt->anim != '\x12' || !(pMissileUnit->nSeqFrame & 0xffffff00U))) {
       return 1;
     }
 
@@ -1680,7 +1680,6 @@ int32_t __fastcall SKILLS_CltStartSkillCast(D2UnitStrc * pDynamicPath, int * pnP
 }
 
 int32_t __fastcall SKILL_ProcessCastFromPacket(D2UnitStrc * pUnit, int * pnParam) {
-    uint8_t bNewDir;
     int nMonClassId;
     int32_t nTargetY = pnParam[3];
     int32_t nX = pnParam[2];
@@ -1692,11 +1691,11 @@ int32_t __fastcall SKILL_ProcessCastFromPacket(D2UnitStrc * pUnit, int * pnParam
     D2Common::PATH::DynamicPath::SetSP1(pUnit->pPath.pDynamicPath, (int16_t)nX, (int16_t)nTargetY);
     D2Common::Units::UpdateDirectionAndSpeed(pUnit, nX, nTargetY);
     if (pUnit->eUnitType == UNIT_MONSTER) {
-      uint32_t nNewDirection;
+      uint8_t bNewDir;
       nMonClassId = pUnit->nClassId;
       if (nMonClassId >= 0 && nMonClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonClassId && *(int*)sgptDataTable->pTxtMonStats[nMonClassId].Code == 0x20204250) {
-        nNewDirection = D2Common::PATH::DynamicPath::UpdateDirection(pUnit->pPath.pDynamicPath);
-        bNewDir = (char)nNewDirection + 0x38U & 0x3f;
+        bNewDir = D2Common::PATH::DynamicPath::UpdateDirection(pUnit->pPath.pDynamicPath);
+        bNewDir = bNewDir + 0x38 & 0x3f;
         D2Common::PATH::DynamicPath::PATH_SetNewDirection(pUnit->pPath.pDynamicPath, bNewDir);
       }
     }
@@ -2257,7 +2256,7 @@ void __fastcall SKILLS_CltAdjustSkillTabBonuses(D2UnitStrc * pUnit, int32_t nBon
                 pSkillNext = pSkillAfter;
                 if (nTotalLevel > 0) {
                   _bSkillHasTab = D2Common::Skills::SKILLS_CheckSkillFlagBit1(eSkill);
-                  if (_bSkillHasTab && (!neSkillEType || pSkillsTxt->EType == neSkillEType) && (nSkillPage == 4 || (int)(char)pSkillDescTxt[nSkillDescIdx].skillpage == nSkillPage + 1)) {
+                  if (_bSkillHasTab && (!neSkillEType || pSkillsTxt->EType == neSkillEType) && (nSkillPage == 4 || (int)pSkillDescTxt[nSkillDescIdx].skillpage == nSkillPage + 1)) {
                     nErrorLine = D2Common::Skills::GetOwnerGUID(pSkillCur);
                     if (nErrorLine == -1) {
                       D2Common::Skills::SKILL_AdjustSkillLevelBonus(pUnit, eSkill, nBonusDelta);
@@ -2304,7 +2303,7 @@ uint32_t __fastcall SKILL_CheckMissileCollisionAtTarget(D2UnitStrc * pUnit, int3
     GetCooordinates(pUnit, &nPosX, &nPosY);
     if (nPosX && nPosY) {
       eCollisionFlags nCollisionResult;
-      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nPosX, nPosY, (uint32_t)(uint8_t)pMissileTxt->Size, (uint32_t)(uint8_t)pMissileTxt->Size, 5);
+      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nPosX, nPosY, (uint32_t)pMissileTxt->Size, (uint32_t)pMissileTxt->Size, 5);
       return (uint32_t)(nCollisionResult == COLBIT_NONE);
     }
 

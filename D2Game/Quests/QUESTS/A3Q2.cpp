@@ -696,7 +696,6 @@ void __fastcall Q19_UpdateOrbCount(::SGAMEDATA * pGame, int nParam) {
 
 // A3Q2 (Khalim's Will) active-dialog filter for Meshif (NPC 0xf5). Returns true if Meshif should offer quest dialog: checks if any Khalim body-part item (eye/brain/heart/flail/assembled flail) is held and the corresponding step-flag has not yet been set, or if all 4 parts are held without Step0x05. Also returns true if quest is in progress (nStateFlag!=0) and Step0x02 is unset. Returns false for all other NPCs.
 bool __fastcall Q19_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    bool bTempleNotDone;
     BOOL bQuestState;
     if (nTargetClassId != 0xf5) {
       return false;
@@ -747,11 +746,11 @@ bool __fastcall Q19_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 
     pQuestItem = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20326671);
     if (pQuestItem) {
-      uint32_t bBlackenedTempleNotDone;
+      bool bTempleNotDone;
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_KhalimsWill, QUESTSTATE_Step0x07);
       if (!bQuestState) {
-        bBlackenedTempleNotDone = A3Q6::Q23_IsBlackenedTempleNotDone(pQuestData->pGame);
-        if ((char)bBlackenedTempleNotDone != '\0') {
+        bTempleNotDone = (bool)A3Q6::Q23_IsBlackenedTempleNotDone(pQuestData->pGame);
+        if (bTempleNotDone) {
           return true;
         }
       }

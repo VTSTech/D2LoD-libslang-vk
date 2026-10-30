@@ -137,7 +137,7 @@ BOOL __stdcall INVENTORY_CheckGridOccupancy(struct D2InventoryStrc * pInventory,
 BOOL __stdcall INVENTORY_PlaceItemAtCoords(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUnit, int32_t nGridX, int32_t nGridY, int32_t eInvPage, int32_t nUnused, uint8_t bGridIndex);
 void __stdcall UnusedDebug(char * szFilename, uint32_t nLine, struct D2InventoryStrc * pInventory, int32_t nX, int32_t nY, eInventoryPage neInventoryPage, uint32_t dwParam, int32_t nInvPage);
 void __stdcall NullSub(struct D2InventoryStrc * dwParam);
-struct D2UnitStrc * __stdcall GetUnitAndXAndY(struct D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint32_t nGridSize);
+struct D2UnitStrc * __stdcall GetUnitAndXAndY(struct D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint8_t nGridSize);
 BOOL __stdcall INVENTORY_GetItemAtBodyLoc(struct D2InventoryStrc * pInventory, struct D2UnitStrc * pUnit, int32_t eBodyLoc);
 struct D2UnitStrc * __stdcall INVENTORY_GetItemByGridOffset(struct D2InventoryStrc * pInventory, int32_t nGridOffset);
 // @wasnamed NullSub - one name on two different functions.

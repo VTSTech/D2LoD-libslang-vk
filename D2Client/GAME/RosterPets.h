@@ -13,7 +13,6 @@ struct D2PetTypeTxt;
 struct D2RosterMercArg;
 struct D2RosterPetSeedStrc;
 struct D2UnitStrc;
-typedef int eD2LevelId;
 
 namespace D2Client::GAME::RosterPets {
 
@@ -37,7 +36,7 @@ int32_t __fastcall CountRostersForUnitFilterBySkill(struct D2UnitStrc * pUnit, i
 int32_t __fastcall GetRosterPetGUID(struct D2UnitStrc * pUnit, int32_t nSkillId, int32_t bAllowActive);
 BOOL __fastcall CheckIfUnitHasRosterPet(struct D2UnitStrc * pUnit);
 void __stdcall ROSTER_UpdateHostileColors();
-void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, eD2LevelId eLevel);
+void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, uint16_t eLevel);
 int32_t __fastcall GetRosterPerHPPercent(int32_t nRosterGUID);
 void __fastcall ROSTERPETS_GetPetData(int32_t nRosterGUID, int * pnSkillId, int * pnField6_0x18);
 int32_t __fastcall GetRosterClass(int32_t nRosterGUID);

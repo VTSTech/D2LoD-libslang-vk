@@ -16,7 +16,7 @@ struct D2QuestDataA1Q4SubStrc {
     /* 0x00 */ int16_t aStones[5];
     /* 0x0A */ uint8_t field_0x0A;
     /* 0x0B */ uint8_t field_0x0B;
-    /* 0x0C */ short nStoneIndex;
+    /* 0x0C */ uint16_t nStoneIndex;
     /* 0x0E */ uint8_t field_0x0E;
     /* 0x0F */ uint8_t field_0x0F;
     /* 0x10 */ int32_t nUnitGUID;

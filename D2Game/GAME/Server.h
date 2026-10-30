@@ -426,7 +426,7 @@ void __fastcall LeaveServer(::SGAMEDATA * pQServer, uint32_t nClientToken);
 int __stdcall QSERVER_InitializeServerState();
 // Callback invoked when the character-server (CS) delivers save data for a joining client (JOIN step 3). Accumulates chunked save data; on completion with nCsResult==0 stores file-time fields into pClient and sends state-command 2 to advance the join sequence. On CS error or stale pClientContainer, triggers disconnect.
 // @sourcefile .\GAME\Game.cpp
-uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint32_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer);
+uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint16_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer);
 // GAME_CreateBattleNetGame - Creates BNet multiplayer game. Same subsystem init as SP but with 0x8000 pool size. Registers token on QSERVER, sets game metadata (name/pass/desc/difficulty/expansion/itemformat/seed).
 // @sourcefile .\GAME\Game.cpp
 uint32_t __stdcall GAME_CreateBattleNetGame(char * szGameName, char * szGamePassword, char * szGameDescription, eD2ArenaFlags flags, uint8_t bTemplate, uint8_t bReserved, uint8_t bLadder, uint16_t * pServerTokenOut);

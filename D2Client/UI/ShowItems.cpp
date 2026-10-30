@@ -59,7 +59,8 @@ void __stdcall DRAW_AltItems() {
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 64, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     bool bVar1;
-    char nMaxSockets;
+    uint8_t nMaxSockets;
+    int32_t nWorldOffsetX;
     uint32_t uBorderType;
     int32_t nCoordTemp;
     BOOL bSocketedFlag;
@@ -88,9 +89,7 @@ void __stdcall DRAW_AltItems() {
     int nMouseY;
     nMouseY = ui::GetMouseY();
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pPlayerRoom, &__frame0.pRoomList, (int*)&__frame0.nRoomCount);
-    int32_t nColorOrCoord;
-    nColorOrCoord = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x40, 0x80);
-    __frame0.bColorKey = (uint8_t)nColorOrCoord;
+    __frame0.bColorKey = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x40, 0x80);
     gItemDrawFlags = 0;
     __frame0.bFoundMatch = 0;
     __frame0.nRoomIndex = 0;
@@ -107,15 +106,15 @@ void __stdcall DRAW_AltItems() {
               gaGroundItemLabels[nItemSlotIdx].pItem = pItem;
               __frame0.pCurrentItem = pItem;
               if (__frame0.bPerspectiveActive) {
-                nColorOrCoord = D2Common::Units::GetPrecisionX(pItem);
+                nWorldOffsetX = D2Common::Units::GetPrecisionX(pItem);
                 __frame0.nPrecisionX = D2Common::Units::GetPrecisionY(pItem);
-                uBorderType = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(nColorOrCoord, __frame0.nPrecisionX);
+                uBorderType = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(nWorldOffsetX, __frame0.nPrecisionX);
                 nDrawCount = gItemDrawFlags;
                 if (!uBorderType) {
                   continue;
                 }
 
-                D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nColorOrCoord, __frame0.nPrecisionX, 0, &__frame0.nItemPosX, &__frame0.nPerspY);
+                D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nWorldOffsetX, __frame0.nPrecisionX, 0, &__frame0.nItemPosX, &__frame0.nPerspY);
                 uBorderType = Path::DRAW_GetTypeOfBorder();
                 nColorIdx = __frame0.nPerspY;
                 switch (uBorderType) {
@@ -134,12 +133,12 @@ void __stdcall DRAW_AltItems() {
 
                 __frame0.nItemX = __frame0.nItemPosX;
               } else {
-                nColorOrCoord = D2Common::Units::GetTargetX(pItem);
+                nWorldOffsetX = D2Common::Units::GetTargetX(pItem);
                 nCoordTemp = Path::DRAW_GetWorldOffsetX();
-                __frame0.nItemX = nColorOrCoord - nCoordTemp;
-                nColorOrCoord = Path::DRAW_GetWorldOffsetY();
+                __frame0.nItemX = nWorldOffsetX - nCoordTemp;
+                nWorldOffsetX = Path::DRAW_GetWorldOffsetY();
                 nCoordTemp = D2Common::Units::GetTargetY(__frame0.pCurrentItem);
-                nColorIdx = nCoordTemp + (-0x10 - nColorOrCoord);
+                nColorIdx = nCoordTemp + (-0x10 - nWorldOffsetX);
                 pItem = __frame0.pCurrentItem;
               }
 
@@ -238,7 +237,7 @@ void __stdcall DRAW_AltItems() {
                       break;
                       default:
                         bSocketedFlag = D2Common::ITEMS::Items::CheckItemFlag(pItem, ITEMFLAG_SOCKETED, 0x106, ".\\UI\\showitems.cpp");
-                      if (bSocketedFlag && (nColorOrCoord = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bHasInv(pItem) , nColorOrCoord != 0) && (nMaxSockets = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItem) , nMaxSockets != '\0') || (bSocketedFlag = D2Common::ITEMS::Items::CheckItemFlag(pItem, ITEMFLAG_ETHEREAL, 0x10c, ".\\UI\\showitems.cpp") , bSocketedFlag != 0)) {
+                      if (bSocketedFlag && (nWorldOffsetX = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bHasInv(pItem) , nWorldOffsetX != 0) && (nMaxSockets = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItem) , nMaxSockets > 0) || (bSocketedFlag = D2Common::ITEMS::Items::CheckItemFlag(pItem, ITEMFLAG_ETHEREAL, 0x10c, ".\\UI\\showitems.cpp") , bSocketedFlag != 0)) {
                         nColorIdx = 5;
                       }
                     }

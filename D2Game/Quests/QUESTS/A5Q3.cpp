@@ -1649,13 +1649,13 @@ void __fastcall Q33_SetAnyaCanRun(::SGAMEDATA * pGame) {
 }
 
 // Q33_IsAnyaInTown (PrisonOfIce): returns pA5Q3->field_0xAF — whether the rescued Anya has reached Harrogath/town.
-bool __fastcall Q33_IsAnyaInTown(::SGAMEDATA * pGame) {
+BOOL __fastcall Q33_IsAnyaInTown(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_PrisonOfIce);
     if (!pQuestData) {
-      return false;
+      return 0;
     }
 
-    return pQuestData->pQuestSpecificData.pA5Q3->bAnyaInTown != 0;
+    return (uint32_t)(pQuestData->pQuestSpecificData.pA5Q3->bAnyaInTown != 0);
 }
 
 // Q33_IsFrozenAnyaAlive (PrisonOfIce): returns true while the frozen-Anya placeholder has not been killed flag set

@@ -99,7 +99,7 @@ static void SKILLSOR_OnInfernoExpire(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
         nMonStatIdx = (int)sgptDataTable->pTxtMonStats[nMonStatIdx].MonStatsEx;
         D2MonStats2Txt* pMonStatsExTxt = nMonStatIdx >= 0 && nMonStatIdx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatIdx : nullptr;
         if (pMonStatsExTxt) {
-          nFrames = (uint32_t)(uint8_t)pMonStatsExTxt->byInfernoLen;
+          nFrames = (uint32_t)pMonStatsExTxt->byInfernoLen;
         }
       }
     }
@@ -1325,10 +1325,11 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
     )
 }; D2_STATIC_GUARD(gnAuraManaAbsorbIndex, "D2Game::SKILLS::SkillSor::ITEMEVENT_SorAuraManaAbsorb::gnAuraManaAbsorbIndex");
 
+    D2StatListExStrc* pStatsEx;
     int32_t nAbsorbPct;
     uint32_t nCurMana;
     uint32_t bIsMerc;
-    int32_t* piVar1;
+    int32_t* piVar2;
     int32_t nAbsorbAmt;
     int32_t nManaCap;
     int nDirection;
@@ -1344,7 +1345,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
       return 0;
     }
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
-      D2StatListExStrc* pStatsEx;
+      uint8_t bVar1;
       pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
       if (pSkillTxt) {
         eSkillAuraState = pSkillTxt->aurastate;
@@ -1368,8 +1369,8 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
               pAbsorbEntry = (uint32_t*)gnAuraManaAbsorbIndex;
               do {
                 if (!pAbsorbEntry[1] || bNotMonsterOnly) {
-                  piVar1 = (int32_t*)((uintptr_t)&pDamage->dwHitFlags + *pAbsorbEntry);
-                  nValue = *piVar1;
+                  piVar2 = (int32_t*)((uintptr_t)&pDamage->dwHitFlags + *pAbsorbEntry);
+                  nValue = *piVar2;
                   if (nValue > 0) {
                     nAbsorbAmt = D2Client::Stats::D2ApplyPercent(nValue, nAbsorbPct, 100);
                     nManaCap = D2Client::Stats::D2ApplyPercent(nCurMana, 0x10, nSkillLvl);
@@ -1378,7 +1379,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
                     }
 
                     eSkill += nAbsorbAmt;
-                    *piVar1 = nValue - nAbsorbAmt;
+                    *piVar2 = nValue - nAbsorbAmt;
                     nValue = D2Client::Stats::D2ApplyPercent(nAbsorbAmt, nSkillLvl, 0x10);
                     nCurMana = (int)(nCurMana - nValue) <= 0 ? 0 : nCurMana - nValue;
                   }
@@ -1392,8 +1393,8 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
               if (pTarget && (int)eSkill > 0 && -1 < pSkillTxt->prgoverlay && (int)pSkillTxt->prgoverlay <= sgptDataTable->nTxtOverlaySize) {
                 nAbsorbPct = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
                 nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), nAbsorbPct);
-                bIsMerc = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection);
-                D2Common::Units::SetOverlay(pUnit, (int)pSkillTxt->prgoverlay + (bIsMerc & 0xff), 0);
+                bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection);
+                D2Common::Units::SetOverlay(pUnit, (int)pSkillTxt->prgoverlay + (uint32_t)bVar1, 0);
               }
               if ((int)nCurMana > 0) {
                 return 1;

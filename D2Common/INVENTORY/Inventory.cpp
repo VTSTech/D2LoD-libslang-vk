@@ -1334,7 +1334,7 @@ void __stdcall NullSub(D2InventoryStrc * dwParam) {
 
 }
 
-D2UnitStrc * __stdcall GetUnitAndXAndY(D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint32_t nGridSize) {
+D2UnitStrc * __stdcall GetUnitAndXAndY(D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint8_t nGridSize) {
     D2GridScreenCoordinates local_1c;
     D2UnitStrc* pUnit;
     if (!pInventory) {
@@ -1345,7 +1345,7 @@ D2UnitStrc * __stdcall GetUnitAndXAndY(D2InventoryStrc * pInventory, int32_t nGr
     }
 
     DATATBLS::TokTbls::GetGridDimensions(eInvPage, 0, &local_1c);
-    D2InventoryGridInfoStrc* pGridInfo = ReinitializeInventoryGrid(pInventory, (D2InventorySizesStrc*)&local_1c, (nGridSize & 0xff) + 2);
+    D2InventoryGridInfoStrc* pGridInfo = ReinitializeInventoryGrid(pInventory, (D2InventorySizesStrc*)&local_1c, nGridSize + 2);
     if (!pGridInfo) {
       return nullptr;
     }
@@ -1759,9 +1759,9 @@ D2UnitStrc * __stdcall INVENTORY_FindSocketableItemInMain(D2InventoryStrc * pInv
 
 // Searches the player inventory grid for a tome (ITEMTYPE_Book) that matches pScrollItem's magic suffix and is not yet full (quantity < max stack). Iterates the stash grid's item linked list starting from pStartAfterItem (or from the beginning if NULL). Returns the first matching non-full tome, or NULL if none found. Used when auto-stacking a scroll pickup into an existing tome.
 D2UnitStrc * __stdcall INVENTORY_FindMatchingScrollBook(int * pnParam, D2UnitStrc * pScrollItem, D2UnitStrc * pStartAfterItem) {
+    int32_t neInventoryPage;
     eD2ItemTypes eItemType;
-    int nMagicSuffix1;
-    int nMagicSuffix2;
+    uint16_t uVar2;
     int32_t nBookQuantity;
     int32_t nBookMaxStack;
     D2GridScreenCoordinates local_1c;
@@ -1775,7 +1775,6 @@ D2UnitStrc * __stdcall INVENTORY_FindMatchingScrollBook(int * pnParam, D2UnitStr
     D2GridScreenCoordinates* pGridDims;
     pGridDims = 0;
     if (pCurItem && pCurItem->eUnitType == UNIT_PLAYER) {
-      int32_t neInventoryPage;
       neInventoryPage = Units::GetInventoryPage(pCurItem, 0, 1);
       DATATBLS::TokTbls::GetGridDimensions(neInventoryPage, 0, &local_1c);
       pGridDims = &local_1c;
@@ -1808,14 +1807,15 @@ D2UnitStrc * __stdcall INVENTORY_FindMatchingScrollBook(int * pnParam, D2UnitStr
         pCurItem = pItemData->sInvNode.pNextItemInPage;
       }
     } else {
+      uint16_t uVar1;
       search_from_item:
       if (pCurItem) {
         while (true) {
           eItemType = ITEMS::Items::ITEM_GetItemData_wType(pCurItem);
           if (eItemType == ITEMTYPE_Book) {
-            nMagicSuffix1 = ITEMS::Items::GetMagicSuffix(pCurItem, 0);
-            nMagicSuffix2 = ITEMS::Items::GetMagicSuffix(pScrollItem, 0);
-            if ((short int)nMagicSuffix1 == (short int)nMagicSuffix2) {
+            uVar1 = ITEMS::Items::GetMagicSuffix(pCurItem, 0);
+            uVar2 = ITEMS::Items::GetMagicSuffix(pScrollItem, 0);
+            if (uVar1 == uVar2) {
               nBookQuantity = Stats::StatsEx::STATSEX_GetCurrentStat(pCurItem, UNITSTAT_quantity, 0);
               nBookMaxStack = ITEMS::Items::ITEM_GetMaxStack(pCurItem);
               if (nBookQuantity < nBookMaxStack) {

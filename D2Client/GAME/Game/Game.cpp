@@ -696,7 +696,7 @@ void __fastcall InGameDraw(int32_t nParam) {
     View::GAMEVIEW_PrepareScene(D2GameView, 0);
     D2Client::Draw::Weather::WeatherEffects();
     D2Common::Environment::DRLGENV_GetLightColorFromAct(sgpDrlgAct, &nRed, &nGreen, &nBlue);
-    D2gfx::D2GFX::D2GFX_SetGlobalLight(nRed, nGreen, nBlue);
+    D2gfx::D2GFX::D2GFX_SetGlobalLight((uint32_t)nRed, (uint32_t)nGreen, (uint32_t)nBlue);
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
     int bClear = 0;
     if (pRoom) {
@@ -1857,20 +1857,20 @@ void __stdcall SendExitGameRequest(D2UIMouseMsgStrc * pMsg) {
     pMsg->dwResult = 0;
 }
 
-void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel) {
-    GAMEDATA_LoadActTiles(nActNo);
+void __fastcall CLIENT_AllocAct(uint8_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel) {
+    uint32_t in_register_00000005;
+    GAMEDATA_LoadActTiles((uint32_t)((uint32_t)((uint32_t)in_register_00000005 & 0xffffffu) << 8 | (uint32_t)(uint8_t)nActNo));
     if (sgpDrlgAct) {
       D2Common::DUNGEON::Dungeon::FreeAct(sgpDrlgAct);
     }
 
-    uint8_t nCofNameIndex = (uint8_t)nActNo;
-    sgpDrlgAct = D2Common::DUNGEON::Dungeon::AllocAct(nCofNameIndex, nMapSeed, 1, nullptr, CLIENT_nDifficulty, nullptr, eLevel, UI::Automap::AUTOMAP_RevealRoomCallback, (fTownAutoMap)UI::Automap::AUTOMAP_RevealTownCallback);
-    if (gbActInitExpansionFlag != '\0' && nCofNameIndex == 1 && sgpDrlgAct) {
+    sgpDrlgAct = D2Common::DUNGEON::Dungeon::AllocAct(nActNo, nMapSeed, 1, nullptr, CLIENT_nDifficulty, nullptr, eLevel, UI::Automap::AUTOMAP_RevealRoomCallback, (fTownAutoMap)UI::Automap::AUTOMAP_RevealTownCallback);
+    if (gbActInitExpansionFlag != '\0' && nActNo == 1 && sgpDrlgAct) {
       D2Common::Environment::DRLGENV_InitializeEnvironment(sgpDrlgAct, UNIT::CUnit::GetCurrentRoom(), 5, 0, 1);
     }
 
     gbActInitExpansionFlag = 0;
-    UI::ui::SetActNo(nActNo & 0xff);
+    UI::ui::SetActNo((uint32_t)nActNo);
     UI::Draw::Draw_UI_LoadGame(1);
     D2GameGame0x546->nInitSeed = 0;
     D2GameGame0x546->nAutomap = 0;
@@ -1881,7 +1881,7 @@ void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutom
     UI::ui::InitializeGlobalsWithColors();
     gnWeatherOverlayActId = eLevel;
     Engine::Gfx::GFX_FreeMonsterCofCache();
-    Engine::Gfx::GFX_LoadMonsterCofArchive(nCofNameIndex);
+    Engine::Gfx::GFX_LoadMonsterCofArchive(nActNo);
     gnActTransitionFadeFrames = 1;
     DWORD dwNow = GetTickCount();
     if (!(dwNow + 10000 > (uint32_t)gClientGameData.gdwCatchupTimeoutTick)) {

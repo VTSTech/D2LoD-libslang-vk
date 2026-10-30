@@ -2317,12 +2317,12 @@ void __stdcall D2COMP_InitEmblemColorTables() {
     0x0
 }; D2_STATIC_GUARD(gbCompItemEmblemColorTableTemp3, "D2Win::Src::D2Comp::D2COMP_InitEmblemColorTables::gbCompItemEmblemColorTableTemp3");
 
-    int32_t nPaletteColor;
+    uint8_t bVar1;
     int i = 0;
     uint8_t* pColorEntry = gbD2CompColorInitR + 1;
     do {
-      nPaletteColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
-      gaGlideEmblemPrimaryColorTableEntries[i] = (uint8_t)nPaletteColor;
+      bVar1 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
+      gaGlideEmblemPrimaryColorTableEntries[i] = bVar1;
       pColorEntry += 3;
       i++;
     } while ((int)pColorEntry < (intptr_t)&gbD2CompColorInitR + 31);
@@ -2330,8 +2330,8 @@ void __stdcall D2COMP_InitEmblemColorTables() {
     pColorEntry = gbCompItemEmblemColorTableTemp3 + 1;
     i = 0;
     do {
-      nPaletteColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
-      gaGlideEmblemSecondaryColorTableEntries[i] = (uint8_t)nPaletteColor;
+      bVar1 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(pColorEntry[-1], *pColorEntry, pColorEntry[1]);
+      gaGlideEmblemSecondaryColorTableEntries[i] = bVar1;
       pColorEntry += 3;
       i++;
     } while ((int)pColorEntry < (intptr_t)&gbCompItemEmblemColorTableTemp3 + 31);

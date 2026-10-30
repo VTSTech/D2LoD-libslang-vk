@@ -2543,28 +2543,17 @@ void __stdcall AUTOMAP_InitPaletteColors() {
     static uint8_t nAutoMapColorPortal; D2_STATIC_GUARD_BSS(nAutoMapColorPortal, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorPortal");
     static uint8_t nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
 
-    int32_t nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
-    nAutoMapColorSelf = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-    nAutoMapColorHostile = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0xff);
-    nAutoMapColorCorpse = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
-    nAutoMapColorParty = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x44, 0x70, 0x74);
-    nAutoMapColorMerc = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x48, 0xa0, 0x34);
-    nAutoMapColorPartyPet = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xf4, 0xf4);
-    nAutoMapColorNPC = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0x80);
-    nAutoMapColorGray = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xf4, 0);
-    nAutoMapColorShrine = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
-    nAutoMapColorPortal = (uint8_t)nColorIndex;
-    nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
-    nAutoMapColorGreen = (uint8_t)nColorIndex;
+    nAutoMapColorSelf = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
+    nAutoMapColorHostile = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
+    nAutoMapColorCorpse = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0xff);
+    nAutoMapColorParty = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
+    nAutoMapColorMerc = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x44, 0x70, 0x74);
+    nAutoMapColorPartyPet = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x48, 0xa0, 0x34);
+    nAutoMapColorNPC = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xf4, 0xf4);
+    nAutoMapColorGray = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0x80);
+    nAutoMapColorShrine = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xf4, 0);
+    nAutoMapColorPortal = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
+    nAutoMapColorGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
 }
 
 int __stdcall AUTOMAP_GetMiniMapType() {

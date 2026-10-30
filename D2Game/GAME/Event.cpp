@@ -332,7 +332,7 @@ static void __stdcall EVENT_DispatchMonsterTimers(D2TimerQueueStrc * pTimerQueue
             if (pTimer->nfpTimerFunction) {
               pTimer->nfpTimerFunction(pGame, pTimer->pUnit, (eD2TimerTypeDWORD)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
             } else {
-              Dispatch::Monster::MONSTEREVENT_DefaultCallback(pGame, pTimer->pUnit, (eD2TimerTypeDWORD)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
+              Dispatch::Monster::MONSTEREVENT_DefaultCallback(pGame, pTimer->pUnit, (uint32_t)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
             }
 
             pTimer->nFlags &= 0xfffe;
@@ -351,7 +351,7 @@ static void __stdcall EVENT_DispatchMonsterTimers(D2TimerQueueStrc * pTimerQueue
         if (pTimer->nfpTimerFunction) {
           pTimer->nfpTimerFunction(pGame, pTimer->pUnit, (eD2TimerTypeDWORD)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
         } else {
-          Dispatch::Monster::MONSTEREVENT_DefaultCallback(pGame, pTimer->pUnit, (eD2TimerTypeDWORD)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
+          Dispatch::Monster::MONSTEREVENT_DefaultCallback(pGame, pTimer->pUnit, (uint32_t)pTimer->nTimerType, pTimer->nArg1, pTimer->nArg2);
         }
 
         pTimer->nFlags &= 0xfffe;

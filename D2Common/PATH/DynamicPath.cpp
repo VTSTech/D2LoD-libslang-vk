@@ -269,8 +269,8 @@ uint8_t __stdcall GetDirection(D2DynamicPathStrc * pDynamicPath) {
     return pDynamicPath->nDirection;
 }
 
-uint32_t __stdcall UpdateDirection(D2DynamicPathStrc * pDynamicPath) {
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pDynamicPath >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pDynamicPath->nNewDirection);
+uint8_t __stdcall UpdateDirection(D2DynamicPathStrc * pDynamicPath) {
+    return pDynamicPath->nNewDirection;
 }
 
 void __stdcall PATH_SetNewDirection(D2DynamicPathStrc * pDynamicPath, uint8_t bRawDirection) {

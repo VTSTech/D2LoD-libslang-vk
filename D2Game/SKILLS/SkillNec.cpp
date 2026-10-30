@@ -153,9 +153,8 @@ BOOL __fastcall Skills_SrvStFunc_16_ApplyHitAndDamage(::SGAMEDATA * pGame, D2Uni
     memset(&sDamage, 0, 0x70);
     int32_t nHitFlags = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
-    sDamage.wResultFlags = (short int)nHitResult;
-    if (nHitResult & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
       if (pSkillsTxt->EType != ELEMENTAL_NONE) {
         sDamage.dwConvPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[3], eSkill, nSkillLvl);
@@ -536,8 +535,8 @@ void __fastcall SKILLNEC_ApplyCurseToUnit(D2UnitStrc * pUnit, D2NecroSkillArgStr
     } while (iStatLoop);
 }
 
-static int32_t SKILLNEC_ApplyCurseDifficultyDivisor(uint32_t nParam, int32_t nParam2) {
-    D2DifficultyLevelsTxt* pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels(nParam & 0xff);
+static int32_t SKILLNEC_ApplyCurseDifficultyDivisor(uint8_t nParam, int32_t nParam2) {
+    D2DifficultyLevelsTxt* pDiffLevels = D2Common::DATATBLS::DataTbls::GetDifficultyLevels((uint32_t)nParam);
     if (pDiffLevels && pDiffLevels->AiCurseDivisor) {
       return nParam2 / pDiffLevels->AiCurseDivisor;
     }
@@ -569,7 +568,7 @@ BOOL __fastcall Skills_SrvDoFunc_030_CastCurseAoE(::SGAMEDATA * pGame, D2UnitStr
         nAuraRange = D2Common::Skills::D2GetSkillCalc(pUnitForCalc, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
         pAuraStatCalc = (int*)D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
         if (bIsReviveOrSkel) {
-          pAuraStatCalc = (int*)SKILLNEC_ApplyCurseDifficultyDivisor((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pAuraStatCalc >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pGame->nDifficulty), (int32_t)pAuraStatCalc);
+          pAuraStatCalc = (int*)SKILLNEC_ApplyCurseDifficultyDivisor(pGame->nDifficulty, (int32_t)pAuraStatCalc);
         }
 
         memset(&sNecroArg, 0, 0x68);
@@ -740,7 +739,7 @@ BOOL __fastcall Skills_SrvDoFunc_059_CastCorpseSkill(::SGAMEDATA * pGame, D2Unit
       SkillsServer::SKILLS_FreeMonsterMinions(pCorpse);
       iStack_10 = D2Common::Skills::D2GetSkillCalc(pUnit, pDVar2->aurarangecalc, eSkill, nSkillLvl);
       nParam2 = D2Common::Skills::D2GetSkillCalc(pUnit, pDVar2->auralencalc, eSkill, nSkillLvl);
-      iStack_18 = SKILLNEC_ApplyCurseDifficultyDivisor((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)local_8 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)local_8->nDifficulty), nParam2);
+      iStack_18 = SKILLNEC_ApplyCurseDifficultyDivisor(local_8->nDifficulty, nParam2);
       DStack_54.pUnit = local_c;
       eStack_28 = eSkill;
       pSStack_30 = local_8;
@@ -877,7 +876,7 @@ BOOL __fastcall Skills_SrvDoFunc_061_CastConvertAoE(::SGAMEDATA * pGame, D2UnitS
 
         nRadius = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->aurarangecalc, eSkill, nSkillLvl);
         nDurationCalc = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
-        nDurationCalc = SKILLNEC_ApplyCurseDifficultyDivisor((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nDurationCalc >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pGame->nDifficulty), nDurationCalc);
+        nDurationCalc = SKILLNEC_ApplyCurseDifficultyDivisor(pGame->nDifficulty, nDurationCalc);
         memset(&pGameArg, 0, 0x68);
         pAuraStatCalc = pSkillsTxt->aurastatcalc;
         pGameArg.eSkill = eSkill;

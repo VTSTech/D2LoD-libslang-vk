@@ -59,7 +59,7 @@ struct D2CubeMainTxt {
     /* 0x05 */ uint8_t pad0x05[3];
     /* 0x08 */ int nParam;
     /* 0x0C */ int nValue;
-    /* 0x10 */ char nNumInputs;
+    /* 0x10 */ uint8_t nNumInputs;
     /* 0x11 */ uint8_t pad0x11;
     /* 0x12 */ uint16_t wVersion;
     /* 0x14 */ D2CubeInputStrc pInputItem[7];

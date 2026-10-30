@@ -278,7 +278,7 @@ static int32_t CUBE_CountCubeItems(D2InventoryStrc * pInventory) {
 // Matches a single input descriptor (D2CubeInputStrc) against cube items. Checks flags (item code, item type, quality, unique ID, sockets, ethereal, normal/exceptional/elite tier, runeword), applies per-item stat requirements (op 15-26), and fills pMatchedItems entries with matched items. The usage array pItemUsedFlags tracks which items have been consumed. Returns 1 if the required quantity of matching items was found, 0 otherwise. Handles special output type 0xff (use-item) and 0xfe (use-type) by storing item pointers and upgrade class IDs in pMatchedItems for GenerateCubingResult.
 uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2InventoryStrc * pInventory, D2CubeMainTxt * pRecipe, int32_t nInputSlotIndex, D2CubeSetupStrc * pMatchedItems, int32_t pItemUsedFlags) {
     eInventoryPage ePage;
-    char bHasMaxSockets;
+    uint8_t bHasMaxSockets;
     D2UnitStrc* pCubeItem;
     D2ItemsTxt* pCubeItemTxt;
     uint32_t nItemCode;
@@ -295,7 +295,6 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
     D2UnitStrc** ppOutputEntry;
     bool bCodeMatches;
     int nOutputSlots;
-    uint8_t byQualityOrType;
     eD2UnitStat eStatId;
     uint32_t nInputCode;
     uint32_t nStatActual;
@@ -374,10 +373,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
               } else {
                 base_item_matched:
                 if (pRecipe->pInputItem[nInputSlotIndex].nQuality) {
-                  byQualityOrType = pRecipe->pInputItem[nInputSlotIndex].nQuality;
+                  bHasMaxSockets = pRecipe->pInputItem[nInputSlotIndex].nQuality;
                   eItemQuality = D2Common::ITEMS::Items::GetItemQuality(pCubeItem);
-                  if (eItemQuality != byQualityOrType) {
-                    if (byQualityOrType == 9) {
+                  if (eItemQuality != bHasMaxSockets) {
+                    if (bHasMaxSockets == 9) {
                       D2Common::Stats::StatsEx::STATLIST_GetUnitTotalStats(pCubeItem);
                     }
 
@@ -416,7 +415,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                               }
                             }
                           }
-                          if ((!(wInputFlags & 0x800) || (eItemFlag = D2Common::ITEMS::Items::ITEM_GetItemData_eD2ItemFlag(pCubeItem) , (eItemFlag & ITEMFLAG_RUNEWORD) == ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) && (pRecipe->nOp != 0x1c || pCubeItemTxt->bQuest == '\0' || pCubeItemTxt->bQuestDiffCheck == '\0' || (nFileIndex = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, UNITSTAT_questitemdifficulty, 0) , nFileIndex >= (int)(uint32_t)pGame->nDifficulty)) && (nInputSlotIndex || (byQualityOrType = pRecipe->pOutputItem[0].nType , byQualityOrType != 0xff && byQualityOrType != 0xfe) || !(pRecipe->pOutputItem[0].wFlagsAndUpgrade & 2) || (bHasMaxSockets = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pCubeItem) , bHasMaxSockets != '\0')) && (iCubeItem >= 0x30 || !*(int*)(pItemUsedFlags - 4 + iCubeItem * 4))) {
+                          if ((!(wInputFlags & 0x800) || (eItemFlag = D2Common::ITEMS::Items::ITEM_GetItemData_eD2ItemFlag(pCubeItem) , (eItemFlag & ITEMFLAG_RUNEWORD) == ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) && (pRecipe->nOp != 0x1c || pCubeItemTxt->bQuest == '\0' || pCubeItemTxt->bQuestDiffCheck == '\0' || (nFileIndex = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, UNITSTAT_questitemdifficulty, 0) , nFileIndex >= (int)(uint32_t)pGame->nDifficulty)) && (nInputSlotIndex || (bHasMaxSockets = pRecipe->pOutputItem[0].nType , bHasMaxSockets != 0xff && bHasMaxSockets != 0xfe) || !(pRecipe->pOutputItem[0].wFlagsAndUpgrade & 2) || (bHasMaxSockets = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pCubeItem) , bHasMaxSockets != 0)) && (iCubeItem >= 0x30 || !*(int*)(pItemUsedFlags - 4 + iCubeItem * 4))) {
                             if (!nInputSlotIndex) {
                               if (pRecipe->nOp) {
                                 switch (pRecipe->nOp) {
@@ -428,10 +427,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (iVar1 < nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (iVar1 < nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -446,9 +445,9 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     }
 
                                     nFileIndex = pRecipe->nValue;
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (iVar1 > nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (iVar1 > nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -462,10 +461,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    bCodeMatches = iVar1 == nFileIndex >> (byQualityOrType & 0x1f);
+                                    bCodeMatches = iVar1 == nFileIndex >> (bHasMaxSockets & 0x1f);
                                     goto reject_if_equal;
                                   }
 
@@ -478,10 +477,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCubeItem, eStatId, 0);
-                                    if (iVar1 != nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (iVar1 != nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -496,9 +495,9 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     }
 
                                     nFileIndex = pRecipe->nValue;
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount < nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount < nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -512,10 +511,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount > nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount > nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -529,10 +528,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    bCodeMatches = nSocketCount == nFileIndex >> (byQualityOrType & 0x1f);
+                                    bCodeMatches = nSocketCount == nFileIndex >> (bHasMaxSockets & 0x1f);
                                     goto reject_if_equal;
                                   }
 
@@ -546,9 +545,9 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     }
 
                                     nFileIndex = pRecipe->nValue;
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pCubeItem, eStatId, 0);
-                                    if (nSocketCount != nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount != nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -562,10 +561,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount < nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount < nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -579,10 +578,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount > nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount > nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -597,9 +596,9 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                     }
 
                                     nFileIndex = pRecipe->nValue;
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    bCodeMatches = nSocketCount == nFileIndex >> (byQualityOrType & 0x1f);
+                                    bCodeMatches = nSocketCount == nFileIndex >> (bHasMaxSockets & 0x1f);
                                     goto reject_if_equal;
                                   }
 
@@ -612,10 +611,10 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       continue;
                                     }
 
-                                    byQualityOrType = pItemStatCostTxt->valshift;
+                                    bHasMaxSockets = pItemStatCostTxt->valshift;
                                     nFileIndex = pRecipe->nValue;
                                     nSocketCount = D2Common::Stats::StatsEx::STATLIST_GetStatBonusFromLists(pCubeItem, eStatId, 0);
-                                    if (nSocketCount != nFileIndex >> (byQualityOrType & 0x1f)) {
+                                    if (nSocketCount != nFileIndex >> (bHasMaxSockets & 0x1f)) {
                                       continue;
                                     }
                                   }
@@ -640,8 +639,8 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                   ((D2CubeSetupEntryStrc*)(ppOutputEntry - 1))->pUnit1 = pCubeItem;
                                 }
 
-                                byQualityOrType = pRecipe->pOutputItem[0].nType;
-                                if (byQualityOrType == 0xff) {
+                                bHasMaxSockets = pRecipe->pOutputItem[0].nType;
+                                if (bHasMaxSockets == 0xff) {
                                   ((D2CubeSetupEntryStrc*)(ppOutputEntry - 1))->pUnit1 = pCubeItem;
                                   pUpgradeClassId = (D2UnitStrc*)D2Client::UNIT::GetClassId(pCubeItem);
                                   *ppOutputEntry = pUpgradeClassId;
@@ -670,7 +669,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                                       }
                                     }
                                   }
-                                } else if (byQualityOrType == 0xfe) {
+                                } else if (bHasMaxSockets == 0xfe) {
                                   ((D2CubeSetupEntryStrc*)(ppOutputEntry - 1))->pUnit1 = pCubeItem;
                                   *ppOutputEntry = (D2UnitStrc*)-1;
                                   wInputFlags = pRecipe->pOutputItem[0].wFlagsAndUpgrade;
@@ -1370,7 +1369,7 @@ static void __stdcall CUBE_MatchAndExecuteRecipe(::SGAMEDATA * pGame, D2UnitStrc
       if (!pRecipe) {
         break;
       }
-      if ((pRecipe->nEnabled || gbCubeAllowDisabledRecipes) && (pGame->bExpansion || pRecipe->wVersion < 100) && (pGame->nGameType != SGAMETYPE_BNET_HOST || pGame->eGameType != GAMETYPE_SINGLEPLAYER || !pRecipe->nLadder) && pRecipe->nMinDiff <= pGame->nDifficulty && (pRecipe->nClass == 0xff || (nClassId = D2Client::UNIT::GetClassId(pPlayer) , pRecipe->nClass == nClassId)) && (uint8_t)pRecipe->nNumInputs == nCubeItemCount) {
+      if ((pRecipe->nEnabled || gbCubeAllowDisabledRecipes) && (pGame->bExpansion || pRecipe->wVersion < 100) && (pGame->nGameType != SGAMETYPE_BNET_HOST || pGame->eGameType != GAMETYPE_SINGLEPLAYER || !pRecipe->nLadder) && pRecipe->nMinDiff <= pGame->nDifficulty && (pRecipe->nClass == 0xff || (nClassId = D2Client::UNIT::GetClassId(pPlayer) , pRecipe->nClass == nClassId)) && pRecipe->nNumInputs == nCubeItemCount) {
         switch (pRecipe->nOp) {
           case 1:
             if (pRecipe->nParam > (int)(uint32_t)sLocalTime.wDay || pRecipe->nValue < (int)(uint32_t)sLocalTime.wDay) {
@@ -2143,7 +2142,7 @@ uint32_t __fastcall PLRTRADE_ValidateAndInitiateTrade(::SGAMEDATA * pGame, D2Uni
     D2UnitDataPlayerStrc* pSelfData = D2Common::Units::GetPlayerData(pUnit);
     _bInteractValid = UNIT::SUnit::GetInteractInfo(pUnit, &eInteractType, &dwInteractGUID);
     if (!_bInteractValid) {
-      return (uint32_t)((int)pSelfData->dwTradeState <= 4);
+      return (uint32_t)(pSelfData->dwTradeState <= 4);
     }
     if (eInteractType != UNIT_PLAYER) {
       return 1;
@@ -2216,7 +2215,7 @@ uint32_t __fastcall PLRTRADE_ValidateAndInitiateTrade(::SGAMEDATA * pGame, D2Uni
       return bTradeAllowed;
     }
 
-    return (uint32_t)((int)pSelfData->dwTradeState <= 4);
+    return (uint32_t)(pSelfData->dwTradeState <= 4);
 }
 
 BOOL __fastcall PLAYERTRADE_CheckNoEquippedTradeItems(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit) {

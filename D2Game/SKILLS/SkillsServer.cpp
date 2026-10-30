@@ -2584,7 +2584,7 @@ uint32_t __fastcall SKILLS_CheckMissileCollision(::SGAMEDATA * pGame, D2UnitStrc
     SKILLS_GetTargetOrCursorPos(pGame, pUnit, &nMissileId, &nTargetY);
     if (nMissileId && nTargetY) {
       eCollisionFlags nCollisionResult;
-      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nMissileId, nTargetY, (uint32_t)(uint8_t)pMissileTxt->Size, (uint32_t)(uint8_t)pMissileTxt->Size, 5);
+      nCollisionResult = D2Common::Collision::CheckCollision_Vector(pRoom, nMissileId, nTargetY, (uint32_t)pMissileTxt->Size, (uint32_t)pMissileTxt->Size, 5);
       return (uint32_t)(nCollisionResult == COLBIT_NONE);
     }
 
@@ -2640,7 +2640,7 @@ int32_t __fastcall SKILLS_GetUnitWalkVelocity(D2UnitStrc * pnParam) {
       nWalkVelocity = pnParam->nClassId;
       D2CharStatsTxt* pCharStatsTxt = nWalkVelocity >= 0 && nWalkVelocity < sgptDataTable->nTxtCharStatsSize ? sgptDataTable->pTxtCharStats + nWalkVelocity : nullptr;
       if (pCharStatsTxt) {
-        return (uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity << 8;
+        return (uint32_t)pCharStatsTxt->WalkVelocity << 8;
       }
     } else if (pnParam->eUnitType == UNIT_MONSTER && (nWalkVelocity = pnParam->nClassId , nWalkVelocity >= 0) && nWalkVelocity < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nWalkVelocity) {
       return (int)sgptDataTable->pTxtMonStats[nWalkVelocity].Velocity << 8;
@@ -2665,14 +2665,12 @@ int32_t __fastcall SKILLS_GetSummonMonsterClassId(D2UnitStrc * pUnit, int32_t nP
 }
 
 uint16_t __fastcall SKILLS_CalcToHitAndApply(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget, D2SkillsTxt * pSkillsTxt, int32_t nParam1, int32_t nParam2, D2DamageStrc * pDamage, int32_t nParam4) {
-    uint16_t nToHitFlags;
     if (!(pSkillsTxt->ResultFlags & 1U)) {
-      uint32_t nToHit;
-      nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, nParam1, nParam2);
-      nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nParam4, (eD2UnitType)pTarget);
-      pDamage->wResultFlags = (uint16_t)nToHit;
-      if (nToHit & 1) {
-        nToHitFlags = pSkillsTxt->ResultFlags | (uint16_t)nToHit;
+      uint16_t nToHitFlags;
+      nToHitFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, nParam1, nParam2), nParam4, (eD2UnitType)pTarget);
+      pDamage->wResultFlags = nToHitFlags;
+      if (nToHitFlags & 1) {
+        nToHitFlags = pSkillsTxt->ResultFlags | nToHitFlags;
         pDamage->wResultFlags = nToHitFlags;
         return nToHitFlags;
       }
@@ -2684,11 +2682,14 @@ uint16_t __fastcall SKILLS_CalcToHitAndApply(::SGAMEDATA * pGame, D2UnitStrc * p
 }
 
 uint32_t __fastcall SKILLS_CalcMissileToHit(::SGAMEDATA * pGame, D2UnitStrc * pUnit2, D2UnitStrc * pUnit, uint32_t nParam1, int32_t nParam12, uint32_t nParam2, int32_t nParam22) {
+    uint32_t nToHit;
+    uint16_t extraout_var;
     if (!(nParam1 & 1)) {
-      uint32_t nToHit;
-      nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, nParam12, nParam22, (eD2UnitType)pUnit);
-      *(short int*)(nParam2 + 4) = (short int)nToHit;
-      if (!(nToHit & 1)) {
+      uint16_t uVar1;
+      uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, nParam12, nParam22, (eD2UnitType)pUnit);
+      nToHit = (uint32_t)(uint32_t)(uint16_t)uVar1;
+      *(uint16_t*)(nParam2 + 4) = uVar1;
+      if (!(uVar1 & 1)) {
         return (uint32_t)((uint32_t)(uint16_t)(short int)(nToHit >> 0x10) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(nParam2 + 4));
       }
 
@@ -3279,9 +3280,8 @@ BOOL __fastcall Skills_SrvDoFunc_001_ShootArrow(::SGAMEDATA * pGame, D2UnitStrc 
     memset(&DStack_74, 0, 0x70);
     int32_t nParam2 = 0;
     int eUnitType = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_progressive_tohit, 0);
-    uint32_t uVar1 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pWeapon, eUnitType, nParam2, eUnitType);
+    DStack_74.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pWeapon, eUnitType, nParam2, eUnitType);
     DStack_74.dwHitFlags |= 2;
-    DStack_74.wResultFlags = (short int)uVar1;
     SkillAss::SKILLASS_ApplyProgressiveDamageToTarget(pUnit, &DStack_74);
     UNIT::SUnitDmg::DAMAGE_CalculateOffensiveDamage(pGame, pUnit, pWeapon, &DStack_74, 0, 0x80);
     SkillAss::SKILLASS_DispatchChargeUpDamage(pUnit, &DStack_74);
@@ -3746,7 +3746,7 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
       return nResult;
     }
     if (pSkillsTxt->anim == '\x12') {
-      if (!(pUnit->nSeqFrame & -256)) {
+      if (!(pUnit->nSeqFrame & 0xffffff00U)) {
         SetTimeoutEffect(_pGame, nSkillDelay, pUnit);
         return nResult;
       }

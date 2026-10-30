@@ -92,7 +92,7 @@ int8_t __thiscall Close(::Report * pThis) {
     return '\x01';
 }
 
-int8_t __thiscall IsOpen(::Report * pThis) {
+bool __thiscall IsOpen(::Report * pThis) {
     return pThis->pFile != 0;
 }
 

@@ -97,9 +97,9 @@ void __fastcall D2WINPALETTE_SetPaletteIndex(int32_t nParam) {
     D2gfx::D2GFX::D2GFX_SetPalette(MostLikelyCurrentPalletePtr);
 }
 
-int32_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
-    uint32_t nColorIndex = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)nRed, (uint32_t)nGreen, (uint32_t)nBlue);
-    return nColorIndex;
+uint8_t __stdcall D2GFX_GetColorFromCurrentPallete(uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
+    uint8_t bVar1 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)nRed, (uint32_t)nGreen, (uint32_t)nBlue);
+    return bVar1;
 }
 
 void __fastcall D2WINPAL_CopyPalette(void * pParam) {
@@ -108,7 +108,7 @@ void __fastcall D2WINPAL_CopyPalette(void * pParam) {
 
 // @sourcefile .\Src\D2WinPalette.cpp
 BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
-    uint32_t nColorIndex;
+    uint32_t uAlphaR;
     int nCount;
     uint32_t uAlphaG;
     uint8_t aAlphaTable[1021];
@@ -189,7 +189,7 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
     nPaletteIdx = 0;
     pSrcBytes = &MostLikelyCurrentPalletePtr[0].peBlue;
     do {
-      uint32_t uAlphaR;
+      uint8_t bVar2;
       szSrcFile = (char*)((uint32_t)((PALETTEENTRY*)(pSrcBytes - 2))->peRed * 0xaa / 100);
       nText1 = 0xff;
       if (szSrcFile < (char*)0x100) {
@@ -207,10 +207,10 @@ BOOL __stdcall D2WINPAL_LoadPaletteFiles(char * szText1, char * szText2) {
         uAlphaR = 0xff;
       }
 
-      nColorIndex = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, nText1 & 0xff, uAlphaG & 0xff, uAlphaR & 0xff);
-      gPaletteMenuInGame[nPaletteIdx] = (uint8_t)nColorIndex;
-      nColorIndex = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)((PALETTEENTRY*)(pSrcBytes - 2))->peRed, 0, 0);
-      gPaletteDataMenuInGame[nPaletteIdx] = (uint8_t)nColorIndex;
+      bVar2 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, nText1 & 0xff, uAlphaG & 0xff, uAlphaR & 0xff);
+      gPaletteMenuInGame[nPaletteIdx] = bVar2;
+      bVar2 = D2CMP::Draw::D2GFX_GetColorWithAlphaFromPallete(MostLikelyCurrentPalletePtr, 0x100, (uint32_t)((PALETTEENTRY*)(pSrcBytes - 2))->peRed, 0, 0);
+      gPaletteDataMenuInGame[nPaletteIdx] = bVar2;
       nPaletteIdx++;
       pSrcBytes += 4;
     } while (nPaletteIdx < 0x100);

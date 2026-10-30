@@ -64,7 +64,7 @@ struct __attribute__((packed)) D2MagicAffixTxt {
     /* 0x24 */ D2MagixAffixModStrc mod[3];
     /* 0x54 */ bool spawnable;
     /* 0x55 */ uint8_t pad0x55; // alignment padding after spawnable
-    /* 0x56 */ char transformcolor;
+    /* 0x56 */ uint8_t transformcolor;
     /* 0x57 */ uint8_t pad0x57; // alignment padding after transformcolor
     /* 0x58 */ int level;
     /* 0x5C */ int group;

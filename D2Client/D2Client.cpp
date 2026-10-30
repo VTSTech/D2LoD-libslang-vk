@@ -859,7 +859,7 @@ int32_t __fastcall RNG_GetRandomInRangeWithMin(uint32_t * pSeed, int32_t nMin, i
 
 // Returns 1 if the current arena level flag (bit 1 of CLIENT_ArenaFlags) is set, indicating the active level is designated as an arena level.
 int32_t __stdcall CLIENT_IsArenaLevel() {
-    return (uint8_t)(uint8_t)CLIENT_ArenaFlags >> 1 & 1;
+    return (uint8_t)CLIENT_ArenaFlags >> 1 & 1;
 }
 
 // Returns the global CLIENT_ArenaFlags bitmask controlling arena mode, arena level, and default-active state for the current game client context.
@@ -875,11 +875,11 @@ void __fastcall CLIENT_SetArenaFlags(eD2ArenaFlags eArenaFlags) {
 // Sets or clears the ARENAFLAG_DefaultActive bit in CLIENT_ArenaFlags. bSet!=0 clears the bit (marks client as not default-active); bSet==0 sets the bit.
 void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet) {
     if (bSet) {
-      CLIENT_ArenaFlags &= ~ARENAFLAG_DefaultActive;
+      CLIENT_ArenaFlags &= -2;
       return;
     }
 
-    CLIENT_ArenaFlags |= ARENAFLAG_DefaultActive;
+    CLIENT_ArenaFlags |= 1;
 }
 
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {
@@ -1448,7 +1448,7 @@ void __fastcall TRADE_SendGoldToPartner(uint32_t nParam) {
       eUnitStat = UNITSTAT_gold;
       pUnit = UNIT::Player::GetPlayerUnit_UI();
       gnTradePlayerGoldAmount = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, eUnitStat, nLayer);
-      if (gnTradePlayerGoldAmount <= nParam) {
+      if (nParam >= gnTradePlayerGoldAmount) {
         GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 8, (int16_t)(gnTradePlayerGoldAmount >> 0x10), (int16_t)gnTradePlayerGoldAmount);
         return;
       }

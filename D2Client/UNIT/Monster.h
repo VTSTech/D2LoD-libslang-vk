@@ -116,7 +116,7 @@ struct __attribute__((packed)) D2MonStats2Txt {
     /* 0x00A */ char spawnCol;
     /* 0x00B */ char Height;
     /* 0x00C */ char overlayHeight;
-    /* 0x00D */ char pixHeight;
+    /* 0x00D */ uint8_t pixHeight;
     /* 0x00E */ char MeleeRng;
     /* 0x00F */ uint8_t field_0xf;
     /* 0x010 */ int BaseW;
@@ -140,7 +140,7 @@ struct __attribute__((packed)) D2MonStats2Txt {
     /* 0x104 */ uint8_t A1mv[2]; // flag bit: byte 0x104 mask 0x10
     /* 0x106 */ uint8_t field_0x106;
     /* 0x107 */ uint8_t field_0x107;
-    /* 0x108 */ char byInfernoLen; // InfernoLen - number of inferno (channeled) sub-anims (struct+0x108)
+    /* 0x108 */ uint8_t byInfernoLen; // InfernoLen - number of inferno (channeled) sub-anims (struct+0x108)
     /* 0x109 */ char byInfernoAnim; // InfernoAnim - inferno animation rate (struct+0x109)
     /* 0x10A */ char byInfernoRollback; // InfernoRollback - inferno rollback frame (struct+0x10a)
     /* 0x10B */ char byResurrectMode; // ResurrectMode - mode code resurrected monster plays in (FIELDTYPE_CODE_CHAR via pTxtMonModeLink, struct+0x10b)

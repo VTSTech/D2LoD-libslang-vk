@@ -63,17 +63,17 @@ Copy `build/d2.exe` next to `Game.exe` in your Diablo II folder and run `d2.exe 
 [`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
 compares the machine code of each function with 1.14d. It is a check on the decompilation:
 where the code comes out identical, the decompiled function was read correctly.
-At this commit, generated from version 1775 of the Ghidra database:
+At this commit, generated from version 1776 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|5,496 of 14,812 (37.1%)|
-|Code|379,748 of 2,555,443 bytes (14.86%)|
+|Functions|5,529 of 14,812 (37.3%)|
+|Code|381,499 of 2,555,443 bytes (14.93%)|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Over the whole binary, runtime
-included: 5,851 of 15,521 functions (37.7%), 430,743 of
-2,678,537 bytes (16.08%).
+included: 5,884 of 15,521 functions (37.9%), 432,494 of
+2,678,537 bytes (16.15%).
 
 ## Contributing
 

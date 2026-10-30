@@ -145,7 +145,7 @@ static int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTa
         pSkillTxt = sgptDataTable->pTxtSkills + eSkillId;
       }
 
-      nLeftAttackRank = (uint32_t)(uint8_t)pSkillTxt->attackrank;
+      nLeftAttackRank = (uint32_t)pSkillTxt->attackrank;
     }
 
     pSkill = D2Common::Units::GetRightSkill(pTarget);
@@ -155,7 +155,7 @@ static int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTa
       if ((int)eSkillId < 0 || (int)eSkillId >= sgptDataTable->nTxtSkillsCount) {
         nRightAttackRank = (uint32_t)*(volatile uint8_t*)0x18e;
       } else {
-        nRightAttackRank = (uint32_t)(uint8_t)sgptDataTable->pTxtSkills[eSkillId].attackrank;
+        nRightAttackRank = (uint32_t)sgptDataTable->pTxtSkills[eSkillId].attackrank;
       }
     } else {
       nRightAttackRank = 0;
@@ -173,7 +173,7 @@ static int32_t __stdcall RiskAssignmentBaal(D2UnitStrc * pUnit, D2UnitStrc * pTa
     }
     if (pTarget && pTarget->eUnitType == UNIT_MONSTER) {
       nMonClassId = pTarget->nClassId;
-      if (nMonClassId < 0 || nMonClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nMonClassId) || (uint8_t)sgptDataTable->pTxtMonStats[nMonClassId].threat <= 1) {
+      if (nMonClassId < 0 || nMonClassId >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nMonClassId) || sgptDataTable->pTxtMonStats[nMonClassId].threat <= 1) {
         return 0;
       }
     }

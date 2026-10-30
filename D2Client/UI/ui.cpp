@@ -2205,7 +2205,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
 
       pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(i);
       if (pMonStats2) {
-        gnMercenaryHealthBarScreenY -= (uint32_t)(uint8_t)pMonStats2->pixHeight;
+        gnMercenaryHealthBarScreenY -= (uint32_t)pMonStats2->pixHeight;
       }
 
       pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
@@ -2334,7 +2334,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
 
           pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
           if (pMonStats2) {
-            gnMercenaryHealthBarScreenY -= (uint32_t)(uint8_t)pMonStats2->pixHeight;
+            gnMercenaryHealthBarScreenY -= (uint32_t)pMonStats2->pixHeight;
           }
 
           nTextWidth = 1;
@@ -7524,7 +7524,6 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     D2GSPacketSrv0x27_TextStrc* pOverheadTextPtr;
     BOOL bMonInteractFlag;
     D2UnitStrc* pPlayerUnit_lcl;
-    uint32_t dwNextMsgType1;
     uint16_t wMsgType0;
     uint32_t dwMsgType;
     bool bInteractableSideNpc;
@@ -7595,8 +7594,7 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       gnNpcMenuRepairCostGold = wMsgType0;
       Text::TEXT_ShowNpcDialog(pNpcUnit, wMsgType0, 1);
       npcmenu::NPCMENU_AddHandledMessageId(wMsgType0);
-      dwNextMsgType1 = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType0);
-      gnNpcMenuTradeActionGold = (int16_t)dwNextMsgType1;
+      gnNpcMenuTradeActionGold = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType0);
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, pNpcUnit->nUnitGUID, dwMsgType & 0xffff);
       gnNpcMenuActiveMode = 1;
       Text::TEXT_SetScrollCompleteCallback((pfnTextScrollComplete)npcmenu::NPCMENU_OnScrollComplete, nullptr);
@@ -7618,8 +7616,7 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       Inv::INV_ResetHoverAndContextState();
       UI_CloseActivePanels(0, 0);
       gnNpcMenuRepairCostGold = wMsgType1;
-      dwMsgType = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType1);
-      gnNpcMenuTradeActionGold = (int16_t)dwMsgType;
+      gnNpcMenuTradeActionGold = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType1);
       npcmenu::NPCMENU_OpenInteraction(pNpcUnit);
       gnNpcMenuShopMode = 0;
       return;

@@ -117,7 +117,7 @@ void __stdcall D2GFX_DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, i
 void __stdcall D2GFX_ClearScreen(BOOL bPartial);
 void __stdcall D2GFX_SetPalette(LPPALETTEENTRY pPalette);
 void __stdcall D2GFX_SetPaletteTable(BYTE * * ppPaletteTable);
-void __stdcall D2GFX_SetGlobalLight(uint8_t nRed, uint8_t nGreen, uint8_t nBlue);
+void __stdcall D2GFX_SetGlobalLight(int nRed, int nGreen, int nBlue);
 void __stdcall D2GFX_DrawPerspectiveImage(struct D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nScreenMode, BYTE * pPalette);
 BOOL __stdcall D2GFX_DrawImage(struct D2GfxDataStrc * pGfxData, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eDrawMode, struct D2GamePalShiftGreenBloodStrc * pPalette);
 void __stdcall D2GFX_DrawShiftedImage(struct D2GfxDataStrc * pDC6Context, int32_t nPositionX, int32_t nPositionY, int32_t dwGamma, DRAWMODE eMode, GLOBALPALLETE nGlobalPaletteShift);

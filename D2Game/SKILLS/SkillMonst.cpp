@@ -108,9 +108,8 @@ BOOL __fastcall SKILLMONST_SrvStFn42_FireHit(::SGAMEDATA * pGame, D2UnitStrc * p
     memset(&sDamage, 0, 0x70);
     int32_t nToHitCheck = 0;
     uint32_t nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-    nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nToHitCheck, nToHit);
-    sDamage.wResultFlags = (short int)nToHit;
-    if (nToHit & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nToHitCheck, nToHit);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillTxt->HitFlags;
       if (pSkillTxt->HitClass) {
@@ -368,8 +367,8 @@ BOOL __fastcall Skills_SrvDoFunc_087_SpawnBehindTarget(::SGAMEDATA * pGame, D2Un
 
     int32_t nTargetY = D2Client::Units::GetYPosFromDynamicPathUnit(pTargetUnit);
     int nSpawnX = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTargetUnit), nTargetY);
-    uint32_t nGfxOffset = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nSpawnX);
-    uint32_t nGfxDirMasked = nGfxOffset & 7;
+    uint8_t bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nSpawnX);
+    uint32_t nGfxDirMasked = bVar1 & 0x80000007;
     D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(BYTE_ARRAY_006e3138[nGfxDirMasked & 0xff], &nSkillLvl, &nOffsetY);
     nTargetY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     nSpawnX = nTargetY + nSkillLvl;
@@ -438,7 +437,6 @@ BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame
     int nOffsetY;
     int nOffsetX;
     uint32_t nFrameIdx;
-    uint8_t byBodyPartIdx;
     if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
@@ -462,11 +460,10 @@ BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame
 
     int iVar1 = D2Common::Units::GetDirectionToCoords(pUnit, eSkill, nOriginX);
     uint8_t local_1c = (uint8_t)iVar1;
-    uint32_t nGfxOffset = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)iVar1);
+    uint8_t byBodyPartIdx = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)iVar1);
     eSkill = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     nOriginX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    uint32_t nGfxDirIdx = (uint32_t)((uint8_t)nGfxOffset & 7);
-    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(BYTE_ARRAY_006e3188[nGfxDirIdx], &nOffsetX, &nOffsetY);
+    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(BYTE_ARRAY_006e3188[byBodyPartIdx & 7], &nOffsetX, &nOffsetY);
     eSkill += nOffsetX;
     nOriginX += nOffsetY;
     D2Common::Units::GetShiftedFrameMetrics(pUnit, (int*)&nFrameIdx, &nAnimFrameCount);
@@ -475,7 +472,7 @@ BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame
       nFrameIdx = 8;
     }
 
-    byBodyPartIdx = *(uint8_t*)(nGfxDirIdx * 9 + (int)((char*)&BYTE_ARRAY_006e3138 + 8) + nFrameIdx);
+    byBodyPartIdx = *(uint8_t*)((uint32_t)(byBodyPartIdx & 7) * 9 + (int)((char*)&BYTE_ARRAY_006e3138 + 8) + nFrameIdx);
     _local_1c = (uint32_t)((uint32_t)((uint32_t)uStack_1b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byBodyPartIdx);
     if (byBodyPartIdx != 99) {
       D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byBodyPartIdx, &nOffsetX, &nOffsetY);
@@ -550,9 +547,8 @@ BOOL __fastcall SKILLMONST_SrvStFn47_Jump(::SGAMEDATA * pGame, D2UnitStrc * pUni
       memset(&sDamage, 0, 0x70);
       nCalcTmp = 0;
       nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
-      nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nCalcTmp, nToHit);
-      sDamage.wResultFlags = (short int)nToHit;
-      if (nToHit & 1) {
+      sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nCalcTmp, nToHit);
+      if (sDamage.wResultFlags & 1U) {
         sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
         sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
         if (pSkillsTxt->HitClass) {
@@ -1061,7 +1057,7 @@ static int SKILLMONST_TriggerModeChange(D2UnitStrc * pUnit, ::SGAMEDATA * pGame)
         nMonStatsExIdx = (int)sgptDataTable->pTxtMonStats[nMonStatsExIdx].MonStatsEx;
         D2MonStats2Txt* pMonStatsExTxt = nMonStatsExIdx >= 0 && nMonStatsExIdx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStatsExIdx : nullptr;
         if (pMonStatsExTxt) {
-          nEventDelay = (uint32_t)(uint8_t)pMonStatsExTxt->byInfernoLen;
+          nEventDelay = (uint32_t)pMonStatsExTxt->byInfernoLen;
         }
       }
     }
@@ -1136,7 +1132,7 @@ BOOL __fastcall Skills_SrvDoFunc_095_SpawnTrapMissile(::SGAMEDATA * pGame, D2Uni
     sSkillArg.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
     sSkillArg.nSkillLevel = nSkillLvl;
     int nVelCalc = (uint32_t)(uint8_t)pMissileTxt->VelLev * nSkillLvl;
-    sSkillArg.nVelocityOverride = nVelCalc / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+    sSkillArg.nVelocityOverride = nVelCalc / 8 + (uint32_t)pMissileTxt->Vel;
     sSkillArg.nMissileTxtNo = nMissileId;
     BOOL BVar1 = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, (uint32_t*)&sSkillArg.nUnitX, (uint32_t*)&sSkillArg.nUnitY);
     if (BVar1) {
@@ -1203,7 +1199,7 @@ BOOL __fastcall Skills_SrvDoFunc_152_SpawnTrapMissileVariant(::SGAMEDATA * pGame
     sSkillArg.nY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
     sSkillArg.nSkillLevel = nSkillLvl;
     int nVelCalc = (uint32_t)(uint8_t)pMissileTxt->VelLev * nSkillLvl;
-    sSkillArg.nVelocityOverride = nVelCalc / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+    sSkillArg.nVelocityOverride = nVelCalc / 8 + (uint32_t)pMissileTxt->Vel;
     sSkillArg.nMissileTxtNo = nMissileId;
     BOOL BVar1 = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, (uint32_t*)&sSkillArg.nUnitX, (uint32_t*)&sSkillArg.nUnitY);
     if (BVar1) {
@@ -1451,7 +1447,7 @@ BOOL __fastcall Skills_SrvDoFunc_098_TeleportToStoredPosition(::SGAMEDATA * pGam
     }
 
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+    pUnit->eUnitFlagsEx |= 0x10000;
     return 1;
 }
 
@@ -2279,7 +2275,7 @@ uint32_t __fastcall SKILLPAL_GetHolyBoltTargetCount(D2UnitStrc * pUnit) {
     if (pSeqTxt) {
       int32_t nTotalSeqFrames;
       nTotalSeqFrames = D2Common::Merc::GetCounter1(pUnit);
-      nCurFrameShifted = (int)pUnit->nSeqFrame >> 8;
+      nCurFrameShifted = pUnit->nSeqFrame >> 8;
       nFrameIdx = nCurFrameShifted + 1;
       if (nFrameIdx < nTotalSeqFrames >> 8) {
         nCurFrameShifted <<= 8;
@@ -2334,9 +2330,8 @@ BOOL __fastcall SKILLMONST_SingleTargetSkillAttack(::SGAMEDATA * pGame, D2UnitSt
     memset(&sDamage, 0, 0x70);
     uint32_t nHitFlags = 0;
     uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nParam);
-    uint32_t nHitCheckFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
-    sDamage.wResultFlags = (short int)nHitCheckFlags;
-    if (nHitCheckFlags & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nHitResult, nHitFlags, nHitResult);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.wResultFlags |= pSkillsTxt->ResultFlags;
       sDamage.dwHitFlags |= pSkillsTxt->HitFlags;
       if (pSkillsTxt->HitClass) {
@@ -2637,6 +2632,7 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc
 
 // Server tick function called each frame for spider-type monsters: if the unit is moving (path flags non-zero), computes a directional offset from the spider's current facing, then spawns a MISSILE_Spidergoolay missile (SKILL_SpiderLay) at the offset position behind the spider, forming a persistent web trail.
 void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
+    uint32_t nPathFlags;
     int nPosX;
     int nPosY;
     D2RoomStrc* pRoom;
@@ -2647,14 +2643,14 @@ void __fastcall SKILLMONST_SpiderLayTrail(::SGAMEDATA * pGame, D2UnitStrc * pUni
     eD2UnitType eUnitType;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (pDynamicPath) {
-      uint32_t nPathFlags;
+      uint8_t bVar1;
       nPathFlags = D2Common::PATH::Path::Get8FlagsFromDynamicPath(pDynamicPath);
       if (nPathFlags) {
         memcpy(abyDirLookup, "\n\b\x16\x14\x12\x10\x0e\f", 8);
-        nPathFlags = D2Common::PATH::DynamicPath::UpdateDirection(pDynamicPath);
-        nPathFlags = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nPathFlags);
-        abyDirLookup[4] = abyDirLookup[nPathFlags & 0xff];
-        D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[nPathFlags & 0xff], &nOffsetX, &nOffsetY);
+        bVar1 = D2Common::PATH::DynamicPath::UpdateDirection(pDynamicPath);
+        bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(bVar1);
+        abyDirLookup[4] = abyDirLookup[bVar1];
+        D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(abyDirLookup[bVar1], &nOffsetX, &nOffsetY);
         *(uint32_t*)((char*)&abyDirLookup + 4) = D2Common::Skills::GetSkillLevel(pUnit, D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_SpiderLay), 1);
         eUnitType = pUnit->eUnitType;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {

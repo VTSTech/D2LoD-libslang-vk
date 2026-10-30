@@ -609,7 +609,7 @@ static void __stdcall CLIENT_PlayIndexedUnitSound(D2UnitStrc * pUnit, int32_t nS
       return;
     }
 
-    UnitSnd::UNITSND_PlayPlayerSound(pUnit, (uint32_t)*(uint16_t*)(gwPlayerAnimationState + nSoundIndex));
+    UnitSnd::UNITSND_PlayPlayerSound(pUnit, *(uint16_t*)(gwPlayerAnimationState + nSoundIndex));
 }
 
 uint32_t __stdcall PLAYER_CheckSkillUsability(int * pnUsabilityCode, D2UnitStrc * pUnit, D2SkillStrc * * ppSkill) {

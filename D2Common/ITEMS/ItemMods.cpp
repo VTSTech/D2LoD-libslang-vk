@@ -373,10 +373,10 @@ static void __stdcall ITEMMOD_MaximizeStatForEnhanced(eD2UnitStat eEnhancedProp,
         bIsType = Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
       if (bIsType) {
         if (pItemsTxt->nMaxDam) {
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, (uint32_t)(uint8_t)pItemsTxt->nMaxDam, 0);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, (uint32_t)pItemsTxt->nMaxDam, 0);
         }
         if (pItemsTxt->n2HandMaxDam) {
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, (uint32_t)(uint8_t)pItemsTxt->n2HandMaxDam, 0);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, (uint32_t)pItemsTxt->n2HandMaxDam, 0);
         }
 
         nCurrentAC = Items::ITEM_GetTxtItemTypes_throwable(pUnit);
@@ -393,10 +393,10 @@ static void __stdcall ITEMMOD_MaximizeStatForEnhanced(eD2UnitStat eEnhancedProp,
         bIsType = Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
       if (bIsType) {
         if (pItemsTxt->nMinDam) {
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, (uint32_t)(uint8_t)pItemsTxt->nMinDam, 0);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, (uint32_t)pItemsTxt->nMinDam, 0);
         }
         if (pItemsTxt->n2HandMinDam) {
-          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, (uint32_t)(uint8_t)pItemsTxt->n2HandMinDam, 0);
+          Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, (uint32_t)pItemsTxt->n2HandMinDam, 0);
         }
 
         nCurrentAC = Items::ITEM_GetTxtItemTypes_throwable(pUnit);
@@ -431,7 +431,7 @@ static void __stdcall ITEMMOD_ScaleValueForStatType(int * pnParam, eD2UnitStat e
 
 // Rolls random value from [fmin, fmax] and applies to stat. Classic: exclusive upper bound. Expansion: inclusive upper bound (can hit max!). Uses item seed for deterministic RNG. Scales damage/poison values (shift left 8 bits).
 static int32_t __stdcall ITEMMOD_ApplyRandomStatValue(D2UnitStrc * pUnit, int32_t nParam1, D2UnitStrc * pUnit2, eD2UnitStat eUnitStat, int32_t nParam2, int32_t nParam3, int32_t nParam4, uint32_t nParam, D2SetsTxtFStrc * pProperty) {
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     D2SeedStrc* pItemSeed;
     uint32_t uRandRange;
     int nRangeMax;
@@ -700,7 +700,7 @@ int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit
     D2SetsTxtFStrc* nRangeLow;
     int32_t nRangeHigh;
     uint32_t nRandom;
-    int16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
+    uint16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (sVar1) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x349);
@@ -748,7 +748,7 @@ int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pU
     D2SetsTxtFStrc* nRangeLow;
     int32_t nRangeHigh;
     uint32_t nRandom;
-    int16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
+    uint16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (sVar1) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x364);
@@ -805,7 +805,7 @@ int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2U
       exit(-1);
     }
 
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     nRangeA = (D2SetsTxtFStrc*)pProperty->fmin;
     nRangeB = pProperty->fmax;
     nProperty = (int32_t)nRangeA;
@@ -889,7 +889,7 @@ int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2U
       exit(-1);
     }
 
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     nRangeA = (D2SetsTxtFStrc*)pProperty->fmin;
     nRangeB = pProperty->fmax;
     nProperty = (int32_t)nRangeA;
@@ -971,7 +971,7 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
     D2SetsTxtFStrc* nRangeLow;
     uint32_t nBaseMaxDam;
     int32_t nRangeHigh;
-    int16_t wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
+    uint16_t wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
     if (wItemVersion) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b5);
@@ -1014,7 +1014,7 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
         }
 
         byMaxDam = pItemsTxt->n2HandMaxDam;
-        if ((uint8_t)pItemsTxt->n2HandMaxDam <= (uint8_t)pItemsTxt->nMaxDam) {
+        if (pItemsTxt->n2HandMaxDam <= pItemsTxt->nMaxDam) {
           byMaxDam = pItemsTxt->nMaxDam;
         }
 
@@ -1372,7 +1372,7 @@ int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUn
     int nValue = pProperty->fmin;
     int nRangeHigh = pProperty->fmax;
     if (nRangeHigh != nValue) {
-      int16_t wItemVersion;
+      uint16_t wItemVersion;
       nRangeLow = nValue;
       if (nRangeHigh < nValue) {
         nRangeLow = nRangeHigh;
@@ -1416,7 +1416,7 @@ int32_t __fastcall PropertyFunc_ElemSkillBonus(int32_t nType, D2UnitStrc * pUnit
     int nValue = pProperty->fmin;
     int nRangeHigh = pProperty->fmax;
     if (nValue != nRangeHigh) {
-      int16_t wItemVersion;
+      uint16_t wItemVersion;
       nRangeLow = nValue;
       if (nRangeHigh < nValue) {
         nRangeLow = nRangeHigh;
@@ -1459,7 +1459,7 @@ int32_t __fastcall PropertyFunc_ClassSkillsBonus(int32_t nType, D2UnitStrc * pUn
     int nValue = pProperty->fmin;
     int nRangeHigh = pProperty->fmax;
     if (nValue != nRangeHigh) {
-      int16_t wItemVersion;
+      uint16_t wItemVersion;
       nRangeLow = nValue;
       if (nRangeHigh < nValue) {
         nRangeLow = nRangeHigh;
@@ -1531,7 +1531,7 @@ int32_t __fastcall PropertyFunc_SimpleStatWithRoll(int32_t nType, D2UnitStrc * p
     int nValue = pProperty->fmin;
     int nRangeHigh = pProperty->fmax;
     if (nValue != nRangeHigh) {
-      int16_t wItemVersion;
+      uint16_t wItemVersion;
       nRangeLow = nValue;
       if (nRangeHigh < nValue) {
         nRangeLow = nRangeHigh;
@@ -1583,7 +1583,7 @@ void __stdcall ITEMMOD_ApplyEtherealBonus(D2UnitStrc * pUnit) {
 
 // Returns 1 if the given automod entry (nParam points to an AutomagicTxt record) can be applied to pUnit. Rejects stackable items, throwables, items without inventory slots, and items whose type matches the automod's exclusion list; passes only if the item type matches at least one inclusion entry.
 BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t nParam) {
-    char nMaxSock;
+    uint8_t nMaxSock;
     int32_t iVar1;
     uint32_t bTypeMatch;
     int nLoopIdx;
@@ -1602,7 +1602,7 @@ BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t nParam) {
     }
 
     iVar1 = Items::ITEM_GetItemsTxt_bHasInv(pUnit);
-    if (!iVar1 || (nMaxSock = Items::ITEM_GetMaxSockCount(pUnit) , nMaxSock == '\0')) {
+    if (!iVar1 || (nMaxSock = Items::ITEM_GetMaxSockCount(pUnit) , nMaxSock <= 0)) {
       nLoopIdx = *(int*)(nParam + 0x24);
       if (nLoopIdx >= 0 && (nLoopIdx >= sgptDataTable->nTxtPropertiesSize || !(sgptDataTable->pTxtProperties + nLoopIdx) || sgptDataTable->pTxtProperties[nLoopIdx].stat[0] == 0xc2)) {
         return 0;
@@ -2096,10 +2096,10 @@ uint32_t __fastcall ITEMPROP_AddEnhancedDamage(uint32_t dwParam1, D2UnitStrc * p
         nIsWeapon = Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Weapon);
         if (nIsWeapon) {
           if (pBaseTxtLine->nMinDam) {
-            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_mindamage, (uint32_t)(uint8_t)pBaseTxtLine->nMinDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_mindamage, (uint32_t)pBaseTxtLine->nMinDam, 0);
           }
           if (pBaseTxtLine->n2HandMinDam) {
-            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_secondary_mindamage, (uint32_t)(uint8_t)pBaseTxtLine->n2HandMinDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_secondary_mindamage, (uint32_t)pBaseTxtLine->n2HandMinDam, 0);
           }
 
           nStatIdSaved = Items::ITEM_GetTxtItemTypes_throwable(pUnit_00);
@@ -2116,10 +2116,10 @@ uint32_t __fastcall ITEMPROP_AddEnhancedDamage(uint32_t dwParam1, D2UnitStrc * p
         nIsWeapon = Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Weapon);
         if (nIsWeapon) {
           if (pBaseTxtLine->nMaxDam) {
-            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_maxdamage, (uint32_t)(uint8_t)pBaseTxtLine->nMaxDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_maxdamage, (uint32_t)pBaseTxtLine->nMaxDam, 0);
           }
           if (pBaseTxtLine->n2HandMaxDam) {
-            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_secondary_maxdamage, (uint32_t)(uint8_t)pBaseTxtLine->n2HandMaxDam, 0);
+            Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_secondary_maxdamage, (uint32_t)pBaseTxtLine->n2HandMaxDam, 0);
           }
 
           nStatIdSaved = Items::ITEM_GetTxtItemTypes_throwable(pUnit_00);
@@ -2138,7 +2138,7 @@ uint32_t __fastcall ITEMPROP_AddEnhancedDamage(uint32_t dwParam1, D2UnitStrc * p
       ppBaseUnit = &pUnit2;
       DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(Items::ITEM_GetItemsTxt_szCode(pUnit_00), (int*)ppBaseUnit);
       byMaxDam = pItemsTxt->n2HandMaxDam;
-      if ((uint8_t)pItemsTxt->n2HandMaxDam <= (uint8_t)pItemsTxt->nMaxDam) {
+      if (pItemsTxt->n2HandMaxDam <= pItemsTxt->nMaxDam) {
         byMaxDam = pItemsTxt->nMaxDam;
       }
 
@@ -3609,7 +3609,7 @@ static void __stdcall ITEMMOD_ApplyPropertyToUnitStats(uint32_t dwParam1, D2Unit
     }
 }; D2_STATIC_GUARD(gaPropertyFuncTable, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStats::gaPropertyFuncTable");
 
-    int16_t wPropCode = Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wPropCode = Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wPropCode) {
       ITEMMOD_ApplyPropertyToUnitStatsExpansion(dwParam1, pUnit2, pUnit, dwParam2, dwParam3, dwParam4, pSetsTxtF, nParam, nParam2, dwParam6);
       return;
@@ -3635,7 +3635,7 @@ void __stdcall ApplyRuneAndGemStats(uint32_t dwParam1, D2UnitStrc * pUnit2, D2Un
     static int gnPropertyFunctionIndexByCode[7] = { 0x0, 0x0, 0xa5, 0xa6, 0xa7, 0xa8, 0xa9 }; D2_STATIC_GUARD(gnPropertyFunctionIndexByCode, "D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats::gnPropertyFunctionIndexByCode");
     static uint32_t gdwPropertyFunctionCountByVersion[7] = { 0x40, 0x40, 0x2040, 0x2040, 0x2040, 0x2040, 0x2040 }; D2_STATIC_GUARD(gdwPropertyFunctionCountByVersion, "D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats::gdwPropertyFunctionCountByVersion");
 
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     D2UniqueItemsTxt* pUniqueLine;
     int nPropIter;
     D2SetItemsTxt* pSetItemLine;

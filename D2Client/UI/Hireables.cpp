@@ -196,12 +196,9 @@ void __fastcall InitializeHealthBarColors(int32_t nForce) {
       HealthBarColorsInitialized = true;
     }
 
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
-    HealthBarGreen = (uint8_t)nPaletteColor;
-    nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xc0, 0xc0, 0);
-    HealthBarYellowish = (uint8_t)nPaletteColor;
-    nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-    HealthBarRed = (uint8_t)nPaletteColor;
+    HealthBarGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
+    HealthBarYellowish = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xc0, 0xc0, 0);
+    HealthBarRed = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
 }
 
 void __stdcall UnsetHealthBarInitialize() {
@@ -724,14 +721,10 @@ static void __stdcall DrawHealthBar(uint32_t nRosterGUID, uint32_t nPetType, int
 
     int nBarEndX = (int)(nHpPercent * 46) / 100 + nX;
     if (!HealthBarColorsInitialized) {
-      int32_t nPaletteColor;
       HealthBarColorsInitialized = true;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
-      HealthBarGreen = (uint8_t)nPaletteColor;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xc0, 0xc0, 0);
-      HealthBarYellowish = (uint8_t)nPaletteColor;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-      HealthBarRed = (uint8_t)nPaletteColor;
+      HealthBarGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
+      HealthBarYellowish = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xc0, 0xc0, 0);
+      HealthBarRed = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
     }
 
     uint8_t nColorMask = HealthBarGreen;

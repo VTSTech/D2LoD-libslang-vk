@@ -3380,13 +3380,13 @@ int __stdcall QSERVER_InitializeServerState() {
 
 // Callback invoked when the character-server (CS) delivers save data for a joining client (JOIN step 3). Accumulates chunked save data; on completion with nCsResult==0 stores file-time fields into pClient and sends state-command 2 to advance the join sequence. On CS error or stale pClientContainer, triggers disconnect.
 // @sourcefile .\GAME\Game.cpp
-uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint32_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer) {
+uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void * pParam, uint16_t nChunkSize, uint16_t nTotalSize, int32_t nCsResult, uint32_t dwCharFlags, int * pFileTimeData, void * pClientContainer) {
     ::SGAMEDATA* pGame;
     D2ClientStrc* pClient;
     SRVLog(6, "[JOIN 3] %d clientid, %d csresult - Recv\'ed char from CS", nClientId, nCsResult);
-    if ((short int)nTotalSize) {
+    if (nTotalSize) {
       int bAccumulated;
-      bAccumulated = Clients::CLIENT_AccumulateSaveData(nClientId, pParam, (uint32_t)nChunkSize, nTotalSize & 0xffff, (uint32_t)!nCsResult, 1, dwCharFlags);
+      bAccumulated = Clients::CLIENT_AccumulateSaveData(nClientId, pParam, (uint32_t)nChunkSize, (uint32_t)nTotalSize, (uint32_t)!nCsResult, 1, dwCharFlags);
       if (!bAccumulated) {
         SRVLog(6, "[JOIN]  SrvRecvDatabaseCharacter: Didn\'t recv full char from db - CSResult(%d), ClientID(%d)", nCsResult, nClientId);
         return 1;
@@ -3396,7 +3396,7 @@ uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void *
       SRVLog(6, "[PLAYER LOAD]  ClientAddPlayerToGame()  Error Loading:%s  Error:%d=%s", nCsResult, nClientId);
       QSERVER_ClientDisconnectCallback(nClientId, ".\\GAME\\Game.cpp", 0x407);
     } else {
-      if (!(short int)nTotalSize) {
+      if (!nTotalSize) {
         QSERVER_ClientDisconnectCallback(nClientId, ".\\GAME\\Game.cpp", 0x414);
         return 0;
       }
@@ -3418,7 +3418,7 @@ uint32_t __stdcall CLIENT_OnDatabaseCharacterReceived(uint32_t nClientId, void *
         pClient->ftFileTime.dwHighDateTime = pFileTimeData[1];
         Server::Unlock(pGame);
         SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 2);
-        return nTotalSize & 0xffff;
+        return (uint32_t)nTotalSize;
       }
     }
 

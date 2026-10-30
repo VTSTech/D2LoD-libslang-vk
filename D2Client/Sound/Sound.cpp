@@ -265,7 +265,7 @@ int32_t __stdcall SOUND_SetChannelProperties(int32_t nSoundGroup, int32_t pListK
       D2SoundsTxt* pSoundsTxt;
       nChannelData = pDVar1->pChannel;
       pSoundsTxt = SoundHdr::TXT_sounds_GetLineBySoundId(nChannelData->nSoundId);
-      if (pSoundsTxt->nGroupStartIndex == nSoundGroup && nChannelData != (D2SoundChannelStrc*)nExcludeChannel && nChannelData->nPlayMode == 1 && (!pListKey || (bInList = D2Sound::D2SoundUntil::SOUNDUTIL_FindInLinkedList(nChannelData->pGlobal3Ref, pListKey) , bInList != 0)) && (!nBestChannel || (uint32_t)nChannelData->nScheduledTime < (uint32_t)nBestChannel->nScheduledTime)) {
+      if (pSoundsTxt->nGroupStartIndex == nSoundGroup && nChannelData != (D2SoundChannelStrc*)nExcludeChannel && nChannelData->nPlayMode == 1 && (!pListKey || (bInList = D2Sound::D2SoundUntil::SOUNDUTIL_FindInLinkedList(nChannelData->pGlobal3Ref, pListKey) , bInList != 0)) && (!nBestChannel || nChannelData->nScheduledTime < nBestChannel->nScheduledTime)) {
         nBestChannel = nChannelData;
       }
     }
@@ -307,7 +307,7 @@ int32_t __thiscall SOUND_CalculateDistance(int32_t pThis, int32_t nExcludeChanne
 
       nChannelData = pDVar1->pChannel;
       nGroupId = SoundHdr::SOUNDHDR_GetSoundField0x60(nChannelData->nSoundId);
-      if (nGroupId == pSoundsTxt->nGroupStartIndex && nChannelData != (D2SoundChannelStrc*)nExcludeChannel && !nChannelData->bStopFlag && (pSoundsTxt->Compound < 0 || (nGroupId = SoundHdr::SOUNDHDR_GetGlobal3() , (uint32_t)(nGroupId - nChannelData->nScheduledTime) <= (uint32_t)(int)pSoundsTxt->Compound))) {
+      if (nGroupId == pSoundsTxt->nGroupStartIndex && nChannelData != (D2SoundChannelStrc*)nExcludeChannel && !nChannelData->bStopFlag && (pSoundsTxt->Compound < 0 || (nGroupId = SoundHdr::SOUNDHDR_GetGlobal3() , nGroupId - nChannelData->nScheduledTime <= (uint32_t)(int)pSoundsTxt->Compound))) {
         break;
       }
 
@@ -844,7 +844,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
         if (pDVar1) {
           pTrackedUnit = puSortHead->pChannel;
           nSortDataB = pDVar1->pChannel;
-          if (nSortDataB->nPriorityByte > pTrackedUnit->nPriorityByte || pTrackedUnit->nPriorityByte <= nSortDataB->nPriorityByte && (nSortDataB->fPanResult < pTrackedUnit->fPanResult || nSortDataB->fPanResult <= pTrackedUnit->fPanResult && ((uint32_t)nSortDataB->nScheduledTime > (uint32_t)pTrackedUnit->nScheduledTime || (uint32_t)pTrackedUnit->nScheduledTime <= (uint32_t)nSortDataB->nScheduledTime && pTrackedUnit < nSortDataB))) {
+          if (nSortDataB->nPriorityByte > pTrackedUnit->nPriorityByte || pTrackedUnit->nPriorityByte <= nSortDataB->nPriorityByte && (nSortDataB->fPanResult < pTrackedUnit->fPanResult || nSortDataB->fPanResult <= pTrackedUnit->fPanResult && (nSortDataB->nScheduledTime > pTrackedUnit->nScheduledTime || pTrackedUnit->nScheduledTime <= nSortDataB->nScheduledTime && pTrackedUnit < nSortDataB))) {
             puSortHead->pChannel = nSortDataB;
             pDVar1->pChannel = pTrackedUnit;
             __frame0.pSortedFlag = 0;
@@ -1007,7 +1007,7 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
         __frame0.fClosestDist.fValue = SoundHdr::SOUNDHDR_GetFalloffMax(pChanEntry->nSoundId);
         pSoundsTxt = __frame0.pSoundsTxtLocal;
         __frame0.pClosestUnit = (D2UnitStrc*)d2_bits_of(__frame0.fClosestDist.fValue * __frame0.fClosestDist.fValue);
-        if (!pChanEntry->nPlayMode && uVar2 >= (uint32_t)pChanEntry->nScheduledTime && pChanEntry->nPriority) {
+        if (!pChanEntry->nPlayMode && uVar2 >= pChanEntry->nScheduledTime && pChanEntry->nPriority) {
           if (__frame0.bVolumeEnabled && pChanEntry->fPanResult <= (float)d2_bits_to_float(__frame0.pClosestUnit)) {
             if (pChanEntry->undefined_0x2c) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3a1);

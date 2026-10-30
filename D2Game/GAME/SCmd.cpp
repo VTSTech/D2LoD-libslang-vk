@@ -1403,9 +1403,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     *(uint8_t*)((char*)&aPacket.p7F.nAreaID + 1) = 0;
     aPacket.p7F.nPacketId = 0x7f;
     aPacket.p7F.nUnitGUID = pUnit->nUnitGUID;
-    aPacket.p7F.nUnitLife = (short int)nErrLineOrAddr;
+    aPacket.p7F.nUnitLife = (uint16_t)nErrLineOrAddr;
     if (nErrLineOrAddr >= 0xffff) {
-      aPacket.p7F.nUnitLife = -1;
+      aPacket.p7F.nUnitLife = 0xffff;
     }
 
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -1436,7 +1436,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     aPacket.p7F.nUnitGUID = uVar1 >> 0x18;
     aPacket.p7F.nPacketId = 0x90;
     aPacket.p7F.nUnitType = (uint8_t)uVar1;
-    aPacket.p7F.nUnitLife = (short int)(uVar1 >> 8);
+    aPacket.p7F.nUnitLife = (uint16_t)(uVar1 >> 8);
     nErrLineOrAddr = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     d2_store24((char*)&aPacket.p7F.nUnitGUID + 1, (uint32_t)nErrLineOrAddr & 0xffffffu);
     *(uint8_t*)(char*)&aPacket.p7F.nAreaID = (uint8_t)((uint32_t)nErrLineOrAddr >> 0x18);
@@ -1989,9 +1989,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(D2UnitStrc * pUnit, D2Uni
     *(uint16_t*)((char*)&aPacket + 5) = UNIT::SUnit::GetPartyId(pTargetUnit);
     uint32_t dwFlags = UNIT::PlayerList::PLAYERLIST_GetFlags(pUnit, pTargetUnit);
     *(uint16_t*)((char*)&aPacket + 9) = (uint16_t)dwFlags;
-    dwFlags = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTargetUnit);
-    aPacket[0xb] = (uint8_t)dwFlags;
-    aPacket[0xc] = (uint8_t)(dwFlags >> 8);
+    uint16_t uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTargetUnit);
+    aPacket[0xb] = (uint8_t)uVar1;
+    aPacket[0xc] = (uint8_t)(uVar1 >> 8);
     SCMD_QueuePacketForClient(aPacket, 0xd, pClient);
 }
 
@@ -2759,7 +2759,7 @@ void __thiscall Send0x9CItemToCursor(void * pThis, D2UnitStrc * pUnit) {
 }
 
 // @sourcefile .\GAME\SCmd.cpp
-void __thiscall Send0x9CItemHandleInShop(void * pThis, D2UnitStrc * pUnit, char cParam) {
+void __thiscall Send0x9CItemHandleInShop(void * pThis, D2UnitStrc * pUnit, uint8_t cParam) {
     eInventoryPage eCurrentPage;
     eInventoryPage ePreviousPage;
     int32_t iVar1;

@@ -31,7 +31,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -415,7 +414,7 @@ void __stdcall ROSTER_UpdateHostileColors() {
     }
 }
 
-void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, eD2LevelId eLevel) {
+void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, uint16_t eLevel) {
     D2RosterPetStrc* pRosterPet;
     pRosterPet = RosterPets::pRosterPet;
     if (!RosterPets::pRosterPet) {
@@ -430,7 +429,7 @@ void __fastcall UpdateLifeAndArea(DWORD nRosterGUID, int32_t nHpPercent, eD2Leve
     }
 
     pRosterPet->nHpPercent = nHpPercent;
-    pRosterPet->eLevelId = eLevel & 0xffff;
+    pRosterPet->eLevelId = (uint32_t)eLevel;
     if (pRosterPet->nSkillID != 7) {
       return;
     }

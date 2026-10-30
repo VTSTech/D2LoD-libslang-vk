@@ -45,7 +45,7 @@ namespace Fog::_3rdparty::crashy {
 void __thiscall Destructor(::Report * pThis);
 int8_t __thiscall Open(::Report * pThis, char * szFileName);
 int8_t __thiscall Close(::Report * pThis);
-int8_t __thiscall IsOpen(::Report * pThis);
+bool __thiscall IsOpen(::Report * pThis);
 int8_t __thiscall AddAttachment(::Report * pThis, char * szPath, int8_t bCopyToReportDir);
 int32_t Printf(::Report * pThis, char * szFormat, ...);
 

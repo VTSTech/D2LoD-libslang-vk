@@ -788,58 +788,58 @@ void __fastcall Q10_OnStaffAssembledViaCube(::SGAMEDATA * pGame, D2UnitStrc * pU
 //    Step0x03/04/05/06/10 bits to pick status 1,2,3,4,6,9. Status 9 = "ready to
 //    build staff" (has cube+amulet pieces, counts satisfied / TaintedSun flag).
 bool __fastcall Q10_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+    D2UnitStrc* pItemRt1;
     D2UnitStrc* pItemMsf;
     D2UnitStrc* pItemVip;
     D2UnitStrc* pItemBox;
     D2UnitStrc* pItemTsh;
-    BOOL BVar2;
-    uint32_t nTaintedSunFlag;
+    BOOL BVar3;
     D2QuestDataA2Q2Strc* pA2Q2Data;
-    BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_AbleGoToAct2, QUESTSTATE_Completed);
-    if (!BVar1) {
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_AbleGoToAct2, QUESTSTATE_Completed);
+    if (!BVar2) {
       *nUnknown = '\0';
       return true;
     }
 
-    /* GetQuestState TheHoradricStaff Completed (-> done branch if set) */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
-    /* GetQuestState RewardAwaits (-> done branch if set) */ if (!BVar1 && (BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_RewardAwaits) , !BVar1)) {
-      D2UnitStrc* pItemRt1;
+    /* GetQuestState TheHoradricStaff Completed (-> done branch if set) */ BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Completed);
+    /* GetQuestState RewardAwaits (-> done branch if set) */ if (!BVar2 && (BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_RewardAwaits) , !BVar2)) {
+      uint8_t bVar1;
       *nUnknown = '\0';
       pItemRt1 = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20317274);
       pItemMsf = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x2066736d);
       pItemVip = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20786f62);
       pItemBox = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20706976);
       pItemTsh = ITEMS::Items::Drop::HasQuestItem(pQuestData->pGame, pUnit, 0x20747368);
-      /* GetQuestState Step0x03 (told-about-staff bit; biases in-progress status) */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
+      /* GetQuestState Step0x03 (told-about-staff bit; biases in-progress status) */ BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
       if (pItemMsf && pItemVip && pItemBox) {
         /* GetQuestState Step0x06 (have all 3 pieces: 0 -> status 2/4, set -> status 3)
-                          */ BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
-        if (BVar2) {
+                          */ BVar3 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x06);
+        if (BVar3) {
           *nUnknown = '\x03';
           return true;
         }
 
-        *nUnknown = !BVar1 * '\x02' + '\x02';
+        *nUnknown = !BVar2 * '\x02' + '\x02';
         return true;
       }
       if (pItemTsh) {
-        /* GetQuestState Step0x10 (have Staff of Kings 'tsh ': status = 6 - bit) */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
-        *nUnknown = '\x06' - (BVar1 != 0);
+        /* GetQuestState Step0x10 (have Staff of Kings 'tsh ': status = 6 - bit) */ BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
+        *nUnknown = '\x06' - (BVar2 != 0);
         return true;
       }
       if (pItemRt1) {
-        BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
-        if (!BVar2) {
+        BVar3 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x03);
+        if (!BVar3) {
           *nUnknown = '\x01';
           return true;
         }
       }
 
       pA2Q2Data = pQuestData->pQuestSpecificData.pA2Q2;
-      if (pA2Q2Data->bHasCube && !pA2Q2Data->nBoxCount || !pA2Q2Data->nVipCount && (nTaintedSunFlag = A2Q3::Q11_GetTaintedSunFlag((int32_t)pQuestData) , (char)nTaintedSunFlag != '\0') || pA2Q2Data->bHasViperAmulet && !pA2Q2Data->nMsfCount) {
+      if (pA2Q2Data->bHasCube && !pA2Q2Data->nBoxCount || !pA2Q2Data->nVipCount && (bVar1 = A2Q3::Q11_GetTaintedSunFlag((int32_t)pQuestData) , bVar1 != 0) || pA2Q2Data->bHasViperAmulet && !pA2Q2Data->nMsfCount) {
         *nUnknown = '\t';
       }
-      if (BVar1) {
+      if (BVar2) {
         *nUnknown = '\x02';
         return true;
       }
@@ -848,15 +848,15 @@ bool __fastcall Q10_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         return true;
       }
     } else {
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheSevenTombs, QUESTSTATE_Completed);
-      if (!BVar1) {
-        BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
-        *nUnknown = '\x06' - (BVar1 != 0);
+      BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheSevenTombs, QUESTSTATE_Completed);
+      if (!BVar2) {
+        BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_Step0x10);
+        *nUnknown = '\x06' - (BVar2 != 0);
         return true;
       }
 
-      BVar1 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_JustCompleted);
-      *nUnknown = (BVar1 != 0) * '\x02' + '\v';
+      BVar2 = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_TheHoradricStaff, QUESTSTATE_JustCompleted);
+      *nUnknown = (BVar2 != 0) * '\x02' + '\v';
     }
 
     return true;

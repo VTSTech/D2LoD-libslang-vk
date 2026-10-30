@@ -3737,45 +3737,26 @@ void __fastcall DAMAGE_SetUnitToLevel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
 }
 
 // Server-side melee hit resolution between attacker pUnit and defender pUnit2. Validates both are player/monster, can attack each other, and are within melee range (range widened by nParam2 + the attacker's melee range; monster attackers get +2). Sets a "moving" flag if a player defender is running, then rolls the attack (DAMAGE_RollAttackHit using nParam1) and checks block/evasion (DAMAGE_CheckBlockAndEvasion), folding the resulting STATE_* flags into a packed uint16 result (hit / block / dodge / evade / parry bits, plus an uninterruptable-stun bit). Returns the packed hit-result word (0 = out of range / cannot attack). Custom-register convention.
-uint32_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nParam1, int32_t nParam2, eD2UnitType eUnitType) {
+uint16_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nParam1, int32_t nParam2, eD2UnitType eUnitType) {
     bool _bCanAttack;
     bool _bInMeleeRange;
     bool bCanAttack;
     bool bIsMonster;
     bool bInMeleeRange;
     int32_t nMeleeRange;
-    eD2States eHitFlags;
     uint16_t wHitFlags;
     wHitFlags = 0;
-    if (!pUnit) {
-      return eUnitType & -65536;
-    }
-    if (!pUnit2) {
-      return eUnitType & -65536;
-    }
-
-    eUnitType = pUnit->eUnitType;
-    if (eUnitType != UNIT_PLAYER && eUnitType != UNIT_MONSTER) {
-      return eUnitType & -65536;
-    }
-
-    eUnitType = pUnit2->eUnitType;
-    if (eUnitType != UNIT_PLAYER && eUnitType != UNIT_MONSTER) {
-      return eUnitType & -65536;
+    if (!pUnit || !pUnit2 || pUnit->eUnitType != UNIT_PLAYER && pUnit->eUnitType != UNIT_MONSTER || pUnit2->eUnitType != UNIT_PLAYER && pUnit2->eUnitType != UNIT_MONSTER) {
+      return 0;
     }
 
     _bCanAttack = SUnit::UNITS_CheckIfCanAttackTarget(pGame, pUnit, pUnit2);
-    eUnitType = UNIT_PLAYER;
     if (!_bCanAttack) {
-      return eUnitType & -65536;
+      return 0;
     }
     if (pUnit2->eUnitType != UNIT_PLAYER) {
-      if (pUnit2->eUnitType == UNIT_MONSTER) {
-        nMeleeRange = Monsters::MONSTER_IsMonsterUnit((int*)pUnit2);
-        eUnitType = UNIT_PLAYER;
-        if (!nMeleeRange) {
-          return eUnitType & -65536;
-        }
+      if (pUnit2->eUnitType == UNIT_MONSTER && (nMeleeRange = Monsters::MONSTER_IsMonsterUnit((int*)pUnit2) , !nMeleeRange)) {
+        return 0;
       }
     } else {
       if (pUnit2->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run) {
@@ -3795,8 +3776,8 @@ uint32_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
       return 0;
     }
     if (!wHitFlags) {
-      eHitFlags = DAMAGE_RollAttackHit(pUnit, pUnit2, nParam1, 0);
-      if (eHitFlags != STATE_none) {
+      _bInMeleeRange = DAMAGE_RollAttackHit(pUnit, pUnit2, nParam1, 0);
+      if (_bInMeleeRange) {
         wHitFlags = 1;
       }
       if (!wHitFlags) {
@@ -3804,20 +3785,20 @@ uint32_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
       }
     }
 
-    eHitFlags = DAMAGE_CheckBlockAndEvasion(pGame, pUnit, pUnit2, 0, 1);
-    if ((eHitFlags & STATE_poison) != STATE_none) {
+    _bCanAttack = DAMAGE_CheckBlockAndEvasion(pGame, pUnit, pUnit2, 0, 1);
+    if (_bCanAttack & 2) {
       wHitFlags |= 0x100;
     }
-    if ((eHitFlags & STATE_resistcold) != STATE_none) {
+    if (_bCanAttack & 4) {
       wHitFlags |= 0x80;
     }
-    if ((eHitFlags & STATE_enchant) != STATE_none) {
+    if (_bCanAttack & 0x10) {
       wHitFlags |= 0x8000;
     }
-    if ((eHitFlags & STATE_freeze) != STATE_none) {
+    if (_bCanAttack & 1) {
       wHitFlags |= 0x10;
     }
-    if (eHitFlags != STATE_none) {
+    if (_bCanAttack) {
       wHitFlags &= 0xfffe;
     }
 
@@ -3826,16 +3807,16 @@ uint32_t __stdcall DAMAGE_CalculateHitCheck(::SGAMEDATA * pGame, D2UnitStrc * pU
       wHitFlags &= 0xfffe;
     }
     if (!(wHitFlags & 1)) {
-      return (uint32_t)((uint32_t)(uint16_t)(short int)(eHitFlags >> 0x10) << 16 | (uint32_t)(uint16_t)wHitFlags);
+      return wHitFlags;
     }
 
-    eHitFlags = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
-    if (eHitFlags != STATE_none) {
-      return (uint32_t)((uint32_t)(uint16_t)(short int)(eHitFlags >> 0x10) << 16 | (uint32_t)(uint16_t)wHitFlags);
+    eD2States eVar1 = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_uninterruptable);
+    if (eVar1 != STATE_none) {
+      return wHitFlags;
     }
 
     wHitFlags |= 4;
-    return (uint32_t)((uint32_t)(uint16_t)(short int)(eHitFlags >> 0x10) << 16 | (uint32_t)(uint16_t)wHitFlags);
+    return wHitFlags;
 }
 
 } // namespace D2Game::UNIT::SUnitDmg

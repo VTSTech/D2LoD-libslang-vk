@@ -557,7 +557,7 @@ static void __stdcall PETS_TeleportToRoom(D2UnitStrc * pUnit, ::SGAMEDATA * pGam
     pUnit->nAct = eNewAct;
     pUnit->pDrlgAct = pGame->pAct[eNewAct];
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+    pUnit->eUnitFlagsEx |= 0x10000;
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
     Monster::MONSTERAI_TriggerMageThink(pGame, pUnit);
     BVar2 = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
@@ -1550,8 +1550,8 @@ int32_t __fastcall GetHirelingNamesAndSize(::SGAMEDATA * pGame, int32_t nNcpClas
       *pClassId = 0;
       nCount = -1;
     } else {
-      *pNameFirst = (uint32_t)(uint16_t)pHirelingTxt->nNameFirst;
-      *pNameLast = (uint32_t)(uint16_t)pHirelingTxt->nNameLast;
+      *pNameFirst = (uint32_t)pHirelingTxt->nNameFirst;
+      *pNameLast = (uint32_t)pHirelingTxt->nNameLast;
       if (pClassId) {
         *pClassId = pHirelingTxt->classId;
       }

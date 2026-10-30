@@ -117,9 +117,9 @@ int __stdcall ITEMMOD_RollRandomInRange(int nRangeStart, int nRangeEnd, D2UnitSt
       nRangeEnd = nRangeStart;
     }
 
-    int16_t iVar1 = ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t uVar1 = ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     uint32_t uVar3 = iVar2 - nRangeEnd;
-    if (iVar1) {
+    if (uVar1) {
       uVar3++;
     }
 

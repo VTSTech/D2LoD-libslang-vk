@@ -271,17 +271,19 @@ BOOL __fastcall Skills_SrvDoFunc_034_ChargeUpStackMelee(::SGAMEDATA * pGame, D2U
     D2SkillsTxt* pSkillRecord;
     D2DamageStrc sDamage;
     uint8_t bySrcDam;
+    int32_t nHitFlags;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     if (!pTarget) {
       return 0;
     }
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
-      uint32_t nHitResult;
+      uint32_t nToHit;
       pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
       if (pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize && -1 < pSkillRecord->aurastat[0] && (int)pSkillRecord->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         memset(&sDamage, 0, 0x70);
-        nHitResult = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl), 0, (eD2UnitType)pTarget);
-        sDamage.wResultFlags = (short int)nHitResult;
+        nHitFlags = 0;
+        nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
+        sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit, nHitFlags, (eD2UnitType)pTarget);
         bySrcDam = pSkillRecord->SrcDam;
         if (!bySrcDam) {
           bySrcDam = 0x80;
@@ -311,7 +313,7 @@ BOOL __fastcall Skills_SrvDoFunc_035_ElementalChargeRelease(::SGAMEDATA * pGame,
     D2InventoryStrc* pInventory = pUnit->pInventory;
     if (!pInventory || (pRightHandItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4) , (pLeftHandItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5) , pRightHandItem != pLeftHandItem && pRightHandItem && pLeftHandItem && (BVar1 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pRightHandItem) , BVar1 && (BVar1 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pLeftHandItem) , BVar1 && (bIsValidWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pRightHandItem, ITEMTYPE_Weapon) , bIsValidWeapon && (bIsValidWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pLeftHandItem, ITEMTYPE_Weapon) , bIsValidWeapon != 0))))))) {
       uint32_t nSeqFrameShifted;
-      nSeqFrameShifted = (int)pUnit->nSeqFrame >> 8 & 0x80000001;
+      nSeqFrameShifted = pUnit->nSeqFrame >> 8 & 0x80000001;
       bIsOddFrame = !nSeqFrameShifted;
       if ((int)nSeqFrameShifted < 0) {
         bIsOddFrame = (nSeqFrameShifted - 1 | -2) == -1;
@@ -1057,12 +1059,12 @@ void __fastcall SKILLASS_BuildSpiralMissilePath(D2UnitStrc * pUnit, int32_t nPar
     nSpiralAngleStep = sSeedNext.nSeedLow % 3 + gnSpiralMissileBaseOffset_b;
     nFrameIdx = 0;
     if (nTotalFrames > 0) {
-      uint32_t nRandSeed;
+      uint8_t bVar1;
       do {
         nDirection += nSpiralAngleStep * nSpiralTurnDir;
-        nRandSeed = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection & 0x3f);
-        nPosX += gnSkillAssTableIndexBySkill[nRandSeed & 0xff];
-        nPosY += gnSkillAssTableOffsetBySkill[nRandSeed & 0xff];
+        bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection & 0x3f);
+        nPosX += gnSkillAssTableIndexBySkill[bVar1];
+        nPosY += gnSkillAssTableOffsetBySkill[bVar1];
         pPathPoints[nFrameIdx].nX = (uint16_t)nPosX;
         pPathPoints[nFrameIdx].nY = (uint16_t)nPosY;
         if (!(nFrameIdx % gnSpiralMissileBaseOffset)) {
@@ -1725,9 +1727,8 @@ static void __stdcall D2CalcKickDamage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     uint32_t nToHit = D2Common::Skills::SKILLS_CalcToHit(pAttacker, eSkill, nSkillLvl);
     int nProgToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pAttacker, UNITSTAT_progressive_tohit, 0);
     void* pDamageInit = memset(&sDamage, 0, 0x70);
-    nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pAttacker, pUnit, nToHit + nProgToHit, 0, (eD2UnitType)pDamageInit);
-    sDamage.wResultFlags = (short int)nToHit;
-    if (nToHit & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pAttacker, pUnit, nToHit + nProgToHit, 0, (eD2UnitType)pDamageInit);
+    if (sDamage.wResultFlags & 1U) {
       D2SkillsTxt* pSkillTxtKick;
       if (bKickCheck) {
         sDamage.wResultFlags |= 0xc;
@@ -2171,11 +2172,10 @@ static void __stdcall SKILLASS_SkillMeleeAttack(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     memset(&sDamage, 0, 0x70);
-    uint32_t nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit2, eSkill, nParam);
+    uint32_t uVar1 = D2Common::Skills::SKILLS_CalcToHit(pUnit2, eSkill, nParam);
     uint32_t nProgressiveToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_progressive_tohit, 0);
-    nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, nToHit + nProgressiveToHit, 0, nProgressiveToHit);
-    sDamage.wResultFlags = (short int)nToHit;
-    if (nToHit & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit2, pUnit, uVar1 + nProgressiveToHit, 0, nProgressiveToHit);
+    if (sDamage.wResultFlags & 1U) {
       int32_t nEnDmgCalc;
       sDamage.dwHitFlags |= 2;
       SKILLASS_ApplyProgressiveDamageToTarget(pUnit2, &sDamage);
@@ -2208,7 +2208,7 @@ BOOL __fastcall Skills_SrvDoFunc_046_DragonClaw(::SGAMEDATA * pGame, D2UnitStrc 
       return 0;
     }
 
-    uint32_t nSeqFrameFlags = (int)pUnit->nSeqFrame >> 8 & 0x80000001;
+    uint32_t nSeqFrameFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
     bool bIsLastFrame = !nSeqFrameFlags;
     if ((int)nSeqFrameFlags < 0) {
       bIsLastFrame = (nSeqFrameFlags - 1 | -2) == -1;
@@ -2841,9 +2841,8 @@ BOOL __fastcall SKILLASS_SrvStFn27_DragonTail(::SGAMEDATA * pGame, D2UnitStrc * 
     uint32_t nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
     int nProgToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_progressive_tohit, 0);
     void* pMemsetResult = memset(&sDamage, 0, 0x70);
-    nToHit = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit + nProgToHit, 0, (eD2UnitType)pMemsetResult);
-    sDamage.wResultFlags = (short int)nToHit;
-    if (!(nToHit & 1)) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, nToHit + nProgToHit, 0, (eD2UnitType)pMemsetResult);
+    if (!(sDamage.wResultFlags & 1U)) {
       return 0;
     }
 
@@ -3186,7 +3185,7 @@ BOOL __fastcall Skills_SrvDoFunc_052_DragonFlight(::SGAMEDATA * pGame, D2UnitStr
       return 0;
     }
 
-    uint32_t nSeqFrameFlags = (int)pUnit->nSeqFrame >> 8 & 0x80000001;
+    uint32_t nSeqFrameFlags = pUnit->nSeqFrame >> 8 & 0x80000001;
     bool bSeqIsZero = !nSeqFrameFlags;
     if ((int)nSeqFrameFlags < 0) {
       bSeqIsZero = (nSeqFrameFlags - 1 | -2) == -1;
@@ -3223,9 +3222,8 @@ BOOL __fastcall Skills_SrvDoFunc_052_DragonFlight(::SGAMEDATA * pGame, D2UnitStr
     memset(&sDamage, 0, 0x70);
     uVar2 = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkillCopy, nSkillLvl);
     nToHit = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_progressive_tohit, 0);
-    uVar2 = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, uVar2 + nToHit, 0, nToHit);
-    sDamage.wResultFlags = (short int)uVar2;
-    if (uVar2 & 1) {
+    sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pTarget, uVar2 + nToHit, 0, nToHit);
+    if (sDamage.wResultFlags & 1U) {
       sDamage.dwEnDmgPct = D2Client::DataTbls::TXT_Skills_GetSkillRange(eSkill, nSkillLvl);
       SKILLBAR_ApplyWhirlwindDamage(pGame, &sDamage, pTarget, eSkill, (D2UnitStrc*)nSkillLvl, pUnit);
     }

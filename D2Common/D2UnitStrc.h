@@ -108,8 +108,8 @@ struct D2UnitStrc {
     /* 0x28 */ int nInitSeed;
     /* 0x2C */ D2PathUnion pPath;
     /* 0x30 */ struct D2AnimSeqStrc * pAnimSeq;
-    /* 0x34 */ uint32_t nSeqFrameCount;
-    /* 0x38 */ uint32_t nSeqFrame;
+    /* 0x34 */ int nSeqFrameCount;
+    /* 0x38 */ int nSeqFrame;
     /* 0x3C */ uint32_t nSeqAnimSpeed;
     /* 0x40 */ uint32_t nSeqMode;
     /* 0x44 */ int nGfxCurrentFrame; // nSeqCurrentFramePrecise - 8-bit fixed point
@@ -136,9 +136,9 @@ struct D2UnitStrc {
     /* 0xBC */ uint32_t unk0xBC; // unknown[0]
     /* 0xC0 */ uint32_t unk0xC0; // unknown[1]
     /* 0xC4 */ eD2UnitFlags eUnitFlags; // dwFlags
-    /* 0xC8 */ eD2UnitFlagsEx eUnitFlagsEx; // dwFlagEx
+    /* 0xC8 */ uint32_t eUnitFlagsEx; // dwFlagEx
     /* 0xCC */ uint8_t * pUnused0xCC; // may be quest related
-    /* 0xD0 */ uint32_t nNodeTableIndex; // dwNodeIndex
+    /* 0xD0 */ int nNodeTableIndex; // dwNodeIndex
     /* 0xD4 */ uint32_t dwTickCount;
     /* 0xD8 */ struct D2ServerCmdStrc * pServerCmd; // dwSrvTickCount(server) / pPacketList(client)
     /* 0xDC */ struct D2TimerStrc * pTimerList; // head of this unit's timer list (D2TimerStrc.pNextTimerOnUnit chain)

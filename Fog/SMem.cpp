@@ -334,7 +334,7 @@ DWORD __stdcall GetTickCount() {
     return ::GetTickCount();
 }
 
-uint32_t __stdcall HashForName(char * szText) {
+uint16_t __stdcall HashForName(char * szText) {
     // Static local variables (originally global data)
     static uint16_t gwSMemAllocDebugFlags[256] = {
     0x0,
@@ -609,7 +609,7 @@ uint32_t __stdcall HashForName(char * szText) {
       cCurChar = (char)uLowered;
     }
 
-    return (uint32_t)((uint32_t)(uint16_t)(short int)(uLowered >> 0x10) << 16 | (uint32_t)(uint16_t)wHash);
+    return wHash;
 }
 
 void __stdcall SMEM_TitleCaseString(mcp0x03data * pMcpData) {

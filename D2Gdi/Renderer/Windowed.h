@@ -102,11 +102,11 @@ void __fastcall DrawString(int nPosX, int nPosY, char * szFormat, va_list va);
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int nPosY);
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 BOOL __stdcall RENDERER_WINDOWED_CheckBlendedShadowsEnabled();
-void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, int nDrawMode);
+void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, int nDrawMode);
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 void __fastcall RENDERER_WINDOWED_DrawPixel(int nPosX, int nPosY, BYTE byColor);
-void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
+void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, BYTE nAlpha);
 // Bresenham line drawing with 16-bit fixed-point sub-pixel tracking. Calculates delta vector and integer distance via crude integer square root. Steps along line with nDeltaX/nDeltaY accumulators (±0xFFFF threshold triggers pixel advance). Aggressively clips during iteration - exits early if coordinates leave window bounds. Plots pixel via direct ppvBits_007c9154 write at (nX + nY*RENDERER_nWindowWidth).
 void __fastcall RENDERER_WINDOWED_DrawLineBresenham(POINT * pnEndPoint, POINT * pnStartPoint, BYTE byColorParam);
 void __fastcall DrawRect(uint8_t * pRect, int nPaletteIndex);

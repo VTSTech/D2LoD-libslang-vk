@@ -371,7 +371,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x01_NEWGAME(char * pBytes) {
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x03_NEWACT(D2GSPacketSrv0x03 * pBytes) {
-    Game::CLIENT_AllocAct((uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pBytes >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pBytes->nAct), pBytes->nMapSeed, pBytes->nAutomap, (eD2LevelId)(uint16_t)pBytes->nArea);
+    Game::CLIENT_AllocAct(pBytes->nAct, pBytes->nMapSeed, pBytes->nAutomap, (eD2LevelId)(uint16_t)pBytes->nArea);
 }
 
 void __fastcall SCMD_Rcv_IgnoreShared(char * pBytes) {
@@ -1898,11 +1898,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x7E(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7F(D2GSPacketSrv0x7F * pBytes) {
     if (pBytes->nUnitType) {
-      Roster::SetRosterHpAndArea(pBytes->nUnitGUID, (uint32_t)(uint16_t)pBytes->nUnitLife, (eD2LevelId)(uint16_t)pBytes->nAreaID);
+      Roster::SetRosterHpAndArea(pBytes->nUnitGUID, (uint32_t)pBytes->nUnitLife, pBytes->nAreaID);
       return;
     }
 
-    RosterPets::UpdateLifeAndArea(pBytes->nUnitGUID, (uint32_t)(uint16_t)pBytes->nUnitLife, (eD2LevelId)(uint16_t)pBytes->nAreaID);
+    RosterPets::UpdateLifeAndArea(pBytes->nUnitGUID, (uint32_t)pBytes->nUnitLife, pBytes->nAreaID);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x90_PARTYLOCUPDATE(D2GSPacketSrv0x90 * pBytes) {
@@ -2469,7 +2469,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
     finish_unit_setup:
     nReadBits = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit);
     if (nReadBits && (char)eUnitTypeBits == '\x01') {
-      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
+      pUnit->eUnitFlagsEx &= -262145;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, (uint32_t)wPacketY + (uint32_t)wPacketX & 0xffff, 0);

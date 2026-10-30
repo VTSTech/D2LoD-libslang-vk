@@ -282,7 +282,7 @@ void __fastcall SetPlayerRelationship(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, i
     }
 }
 
-uint32_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+uint16_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2UnitPlayerListStrc* pListEntry;
     uint16_t wPtrHigh;
     int nUnit2GUID;
@@ -303,12 +303,11 @@ uint32_t __fastcall PLAYERLIST_IsPartied(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
 
     pListEntry = 0;
     lookup_done:
-    wPtrHigh = (uint16_t)((uint32_t)pListEntry >> 0x10);
     if (pUnit == pUnit2) {
-      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)1);
+      return 1;
     }
     if (pListEntry) {
-      return (uint32_t)((uint32_t)(uint16_t)wPtrHigh << 16 | (uint32_t)(uint16_t)(short int)pListEntry->bIsPartied);
+      return (uint16_t)pListEntry->bIsPartied;
     }
 
     return 0;

@@ -4328,7 +4328,7 @@ static void MISSMODE_ApplyNextHitState(D2UnitStrc * pUnit, D2UnitStrc * pTarget)
     }
 
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    int32_t nNextHitFrame = (uint32_t)(uint8_t)pMissilesTxt->NextDelay + pGame->dwGameFrame;
+    int32_t nNextHitFrame = (uint32_t)pMissilesTxt->NextDelay + pGame->dwGameFrame;
     D2StatListExStrc* pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pGame->pMemoryPool, 2, nNextHitFrame, pTarget->eUnitType, pTarget->nUnitGUID);
     if (!pStatsEx) {
       return;

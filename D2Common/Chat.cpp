@@ -90,8 +90,8 @@ void __stdcall HOVERTEXT_SetTextLineList(D2HoverTextStrc * pHoverText, int32_t p
     pHoverText->pTextLineList = (void*)pTextLineList;
 }
 
-uint32_t __stdcall GetLanguageCode(D2HoverTextStrc * pHoverText) {
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pHoverText >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)pHoverText->nLanguageCode);
+uint8_t __stdcall GetLanguageCode(D2HoverTextStrc * pHoverText) {
+    return pHoverText->nLanguageCode;
 }
 
 void __stdcall SetLanguageCode(D2HoverTextStrc * pHover, uint8_t nLanguageCode) {

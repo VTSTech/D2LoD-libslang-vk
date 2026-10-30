@@ -69,10 +69,10 @@ namespace D2Game::Quests::QUESTS::A3Q6 {
 // NOTE: file/ns is A3Q6/Q23 but the REAL quest is "The Guardian" (Act3 q6, kill Mephisto, opens Act4).
 // Helper: returns true (1) if the Blackened Temple (Travincal) quest is NOT yet finished, i.e. Jerhyn/Khalim
 // AI not yet active for the prior quest chain (predicate used to gate Mephisto-quest progression).
-uint32_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame) {
+uint8_t __fastcall Q23_IsBlackenedTempleNotDone(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheBlackenedTemple);
     if (pQuestData) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData->pQuestSpecificData.pA3Q6 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)!pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive);
+      return !pQuestData->pQuestSpecificData.pA3Q5->bJerhynAiActive;
     }
 
     return 1;

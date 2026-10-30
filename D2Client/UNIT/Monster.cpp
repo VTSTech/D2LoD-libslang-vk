@@ -584,8 +584,8 @@ static void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
       return;
     }
 
-    eD2MonsterAnimMode eMonAnimMode = pUnit->eAnimMode.eMonsterMode;
-    if (!(eMonAnimMode < 0x10 && eMonAnimMode != Death && eMonAnimMode != eD2MonsterAnimMode_ns::Dead)) {
+    uint32_t eMonAnimMode = pUnit->eAnimMode.ePlayerMode;
+    if (!(eMonAnimMode < 0x10 && eMonAnimMode && eMonAnimMode != 0xc)) {
       return;
     }
 
@@ -747,7 +747,7 @@ static void MONSTER_SpawnRandomAttachedMissile(D2UnitStrc * pUnit) {
     D2Common::Units::StoreOwner(pUnit, pMissileUnit);
     Engine::Particle::AllocParticle(pMissileUnit);
     Engine::Particle::PARTICLE_SetAttachedToOwner(pMissileUnit, 1);
-    pMissileUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+    pMissileUnit->eUnitFlagsEx |= 0x40000;
 }
 
 // Performs class-ID-specific post-spawn setup for special/unique monsters. Handles: gnMonsterSpecialType pointer (0x96), collision-pattern reset for large monsters (0x9d/0x9e/0x13f), player targeting/facing (0x14b), BladeCreeper missile cast with owner assignment (0x19d), random attached missile (0x1f1/0x1f2/499/500), Baal teleport missile (0x23a), and random direction seeded from player RNG (0x158).
@@ -875,9 +875,9 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     byDirTable[6] = 4;
     byDirTable[7] = 5;
     uint8_t byDirIndex = byDirection;
-    uint32_t nDirTableOffset = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(byDirection);
-    _byDirIndex = (uint32_t)((uint32_t)((uint32_t)uStack_b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byDirTable[nDirTableOffset & 0xff]);
-    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byDirTable[nDirTableOffset & 0xff], &nDimX, &nDimY);
+    uint8_t bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(byDirection);
+    _byDirIndex = (uint32_t)((uint32_t)((uint32_t)uStack_b & 0xffffffu) << 8 | (uint32_t)(uint8_t)byDirTable[bVar1]);
+    D2Common::Monsters::MONSTERS::MONSTERS_GetCompositeDimensions(byDirTable[bVar1], &nDimX, &nDimY);
     nCollisionDist = Units::GetXPosFromDynamicPathUnit(pUnit2);
     int32_t nCatapultPosY = Units::GetYPosFromDynamicPathUnit(pUnit2);
     int32_t nAttackerPosX = Units::GetXPosFromDynamicPathUnit(pAttacker);
@@ -1195,7 +1195,7 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
       pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
     }
 
-    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
+    pUnit->eUnitFlagsEx &= -262145;
     if (!(*((uint8_t*)pMonStats2 + 0x5) & (uint8_t)gadwBitMasks[6])) {
       pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW;
     } else {
@@ -2185,7 +2185,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
     } else if (nParam != 8 && nParam != 9) {
       D2Common::PATH::DynamicPath::PATH_RestoreMonsterCollision(pUnit, 0);
       MONSTER_InitLightMap(pUnit);
-      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
+      pUnit->eUnitFlagsEx &= -262145;
     }
 
     int nPosX;
@@ -2496,7 +2496,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0, 0);
       nClassId = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit);
       if (nClassId) {
-        pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+        pUnit->eUnitFlagsEx |= 0x40000;
         pUnit->eUnitFlags = pUnit->eUnitFlags & ~UNITFLAG_TARGETABLE | UNITFLAG_DRAWSHADOW;
       }
 
@@ -2635,8 +2635,8 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
               goto hide_as_dead;
             case 0x1c5:
               nDirection = D2Common::Units::GetDirection(pUnit);
-            bPathCalcResult = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(nDirection);
-            uVar1 = bPathCalcResult & 3;
+            nDirection = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2(nDirection);
+            uVar1 = nDirection & 0x80000003;
             switch (uVar1) {
               case 0:
                 Sound::SOUND_PlaySound(SOUND_SKELETON_DEATH_4, pUnit, 0, 0, 0);
@@ -2747,13 +2747,13 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
         CUnit::SetDeadFlag(pPlayerUnit_lcl);
       }
       if (nClassId == 0x158 || nClassId == 0x22f || nClassId == 0x23a) {
-        pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+        pUnit->eUnitFlagsEx |= 0x40000;
       }
 
       pUnit->eUnitFlags = pUnit->eUnitFlags & ~UNITFLAG_TARGETABLE | UNITFLAG_DRAWSHADOW;
       nClassId = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit);
       if (nClassId) {
-        pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+        pUnit->eUnitFlagsEx |= 0x40000;
         pUnit->eUnitFlags = pUnit->eUnitFlags & ~UNITFLAG_CANBEATTACKED | UNITFLAG_DRAWSHADOW;
       }
 
@@ -2870,7 +2870,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
 
     return;
     hide_as_dead:
-    pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+    pUnit->eUnitFlagsEx |= 0x40000;
     pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW;
     eVar2 = Kick;
     goto apply_death_mode;

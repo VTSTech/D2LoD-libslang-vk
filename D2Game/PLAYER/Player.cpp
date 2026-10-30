@@ -1173,7 +1173,7 @@ D2UnitStrc * __fastcall PLAYER_GetActiveWeaponForSkill(D2UnitStrc * pUnit) {
 
         break;
         case '\x03':
-          dwSkillFlags = (int)pWeaponSwitch->nSeqFrame >> 8 & 0x80000001;
+          dwSkillFlags = pWeaponSwitch->nSeqFrame >> 8 & 0x80000001;
         bIsWeaponSwitch = !dwSkillFlags;
         if ((int)dwSkillFlags < 0) {
           bIsWeaponSwitch = (dwSkillFlags - 1 | -2) == -1;

@@ -404,7 +404,7 @@ void __stdcall CLIENT_QuestEvent_NihlathakTransformation() {
     int32_t nY = Units::GetYPosFromDynamicPathUnit(pNihlathak);
     UNIT::Missile::CastAttack(pPlayer, MISSILE_Nehlithakcontrol, nX, nY, SKILL_Attack, 1);
     UNIT::Missile::CastAttack(pPlayer, MISSILE_Nihlithak1, nX, nY, SKILL_Attack, 1);
-    pNihlathak->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+    pNihlathak->eUnitFlagsEx |= 0x40000;
 }
 
 void __stdcall CLIENT_QuestEvent_WorldstoneShake() {
@@ -1181,8 +1181,8 @@ void __fastcall DRLGROOM_SpawnRandomMonsters(D2RoomStrc * pRoom) {
           pMonStats = sgptDataTable->pTxtMonStats + nSpawnCount;
         }
 
-        nGroupSize = Archive::RANDOM_RandomNumberSelector(pSeed, (uint32_t)(uint8_t)pMonStats->MaxGrp - (uint32_t)(uint8_t)pMonStats->MinGrp);
-        nSpawnCount = nGroupSize + (uint8_t)pMonStats->MinGrp;
+        nGroupSize = Archive::RANDOM_RandomNumberSelector(pSeed, (uint32_t)(uint8_t)pMonStats->MaxGrp - (uint32_t)pMonStats->MinGrp);
+        nSpawnCount = nGroupSize + pMonStats->MinGrp;
         if (pMonsterPtr[8]) {
           nSpawnCount *= pMonsterPtr[8];
         }

@@ -940,8 +940,8 @@ void __stdcall D2GFX_SetPaletteTable(BYTE * * ppPaletteTable) {
     PALETTE_InitColorLookupTables(ppPaletteTable);
 }
 
-void __stdcall D2GFX_SetGlobalLight(uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
-    RENDERER_CurrentRenderedFunctions->nfpSetGlobalLight(nRed, nGreen, nBlue);
+void __stdcall D2GFX_SetGlobalLight(int nRed, int nGreen, int nBlue) {
+    RENDERER_CurrentRenderedFunctions->nfpSetGlobalLight((uint8_t)nRed, (uint8_t)nGreen, (uint8_t)nBlue);
 }
 
 void __stdcall D2GFX_DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, DWORD dwGamma, int32_t nDrawMode, int32_t nScreenMode, BYTE * pPalette) {

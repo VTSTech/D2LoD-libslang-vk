@@ -78,7 +78,6 @@
 #include "D2Direct3D/d3dSubtileCache.h"
 #include "D2Direct3D/d3dTextureCache.h"
 #include "D2Game/D2QuestDataStrc.h"
-#include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Task.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/AI/Baal.h"
@@ -1758,7 +1757,7 @@ extern uint32_t gnMonsterModePrecacheCount;
 extern uint32_t gnBlizzardSoundPlayed;
 extern uint32_t gbLightmapColorEnabled;
 extern D2SeedStrc * gpArcaneStarsSeed;
-extern eD2ArenaFlags CLIENT_ArenaFlags;
+extern uint32_t CLIENT_ArenaFlags;
 extern eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00;
 extern int gnChatHistoryReadIndex;
 extern uint32_t gnChatHistoryWriteIndex;
@@ -3131,7 +3130,7 @@ extern int gnWeatherTransitionState;
 extern int gnWeatherRainParticleTimingMs[2];
 extern char gWeatherPaletteDayColors[12];
 extern char gWeatherPaletteLightingNightColors[12];
-extern int gnWeatherTransitionInitialized;
+extern float gnWeatherTransitionInitialized;
 extern char gWeatherPaletteMudDuskColors[12];
 extern DC6 * DC6_UncompOverlays_Rain[4];
 extern int DC6_UncompOverlays_Rain_FrameCount[4];
@@ -3519,8 +3518,7 @@ extern unsigned int gdwNpcMenuLastClickTimestamp;
 extern uint16_t gNpcMenuConfirmDialogStrings[40];
 extern int32_t gnDialogStructAllocCount;
 extern uint32_t gnTradeGoldUpdateBuffer;
-extern uint16_t gnTradePlayerGoldAmount;
-extern uint16_t gnTradePartnerGoldAmount;
+extern uint32_t gnTradePlayerGoldAmount;
 extern uint32_t gdwTradeThrottleTimestamp;
 extern bool gbTradeResetFlag;
 extern uint32_t gnTradeAcceptedFlags;

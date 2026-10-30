@@ -315,7 +315,7 @@ int32_t __stdcall GetUnitSizeX(D2UnitStrc * pUnit) {
       case UNIT_MISSILE:
         pMissilesTxt = D2Client::GetMissleById(pUnit->nClassId);
       if (pMissilesTxt) {
-        return (uint32_t)(uint8_t)pMissilesTxt->Size;
+        return (uint32_t)pMissilesTxt->Size;
       }
 
       break;
@@ -349,7 +349,7 @@ int32_t __stdcall GetUnitSizeY(D2UnitStrc * pUnit) {
       case UNIT_MISSILE:
         pMissilesTxt = D2Client::GetMissleById(pUnit->nClassId);
       if (pMissilesTxt) {
-        return (uint32_t)(uint8_t)pMissilesTxt->Size;
+        return (uint32_t)pMissilesTxt->Size;
       }
 
       break;
@@ -754,7 +754,7 @@ void __stdcall SetAnimSpeedForMonster(D2UnitStrc * pUnit) {
 
 void __stdcall GetRunAndWalkVelocityForPlayer(int32_t nUnused, int32_t ePlayerClassId, int * pWalkVelocity, int * pRunVelocity) {
     D2CharStatsTxt* pCharStatsTxt = ePlayerClassId < 0 || ePlayerClassId >= sgptDataTable->nTxtCharStatsSize ? 0 : sgptDataTable->pTxtCharStats + ePlayerClassId;
-    *pWalkVelocity = (uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity;
+    *pWalkVelocity = (uint32_t)pCharStatsTxt->WalkVelocity;
     *pRunVelocity = (uint32_t)(uint8_t)pCharStatsTxt->RunVelocity;
 }
 
@@ -779,11 +779,11 @@ static void AddWalkVelocityStatIfExistToPlayer(D2UnitStrc * pUnit, int32_t ePlay
     } else {
       pCharStatsTxt = sgptDataTable->pTxtCharStats + ePlayerClassId;
     }
-    if (!(uint8_t)pCharStatsTxt->WalkVelocity) {
+    if (!pCharStatsTxt->WalkVelocity) {
       return;
     }
 
-    Stats::StatsEx::STATLIST_SetStatValue(pStatEx, UNITSTAT_velocitypercent, (int)((uint64_t)((uint32_t)(uint8_t)pCharStatsTxt->RunVelocity * 100) / (uint64_t)(int64_t)(int)(uint32_t)(uint8_t)pCharStatsTxt->WalkVelocity) - 100, 0);
+    Stats::StatsEx::STATLIST_SetStatValue(pStatEx, UNITSTAT_velocitypercent, (int)((uint64_t)((uint32_t)(uint8_t)pCharStatsTxt->RunVelocity * 100) / (uint64_t)(int64_t)(int)(uint32_t)pCharStatsTxt->WalkVelocity) - 100, 0);
     Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatEx, 1);
 }
 
@@ -832,17 +832,17 @@ void __stdcall RefreshInventory(D2UnitStrc * pUnit, BOOL bHasInventory) {
     }
     if (pUnit) {
       if (!bHasInventory) {
-        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_HASINV;
+        pUnit->eUnitFlagsEx &= -2;
         return;
       }
 
-      pUnit->eUnitFlagsEx |= UNITFLAGEX_HASINV;
+      pUnit->eUnitFlagsEx |= 1;
     }
     if (!(bHasInventory && pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
     }
 
-    pUnit->eUnitFlagsEx |= UNITFLAGEX_UPDATEINV;
+    pUnit->eUnitFlagsEx |= 2;
 }
 
 // Returns the eInventoryPage for a given unit and page index. For players, maps nInvPage (1-4) to trade/transmog/bank pages, or performs a class-specific lookup. For monsters, always returns INVPAGE_Monster. For objects, recognises Guild Vault (0x152) and Trophy Case (0x153). Returns INVPAGE_None on mismatch or null input (halts on null). RETURN WIDTH: every exit writes the whole of EAX (MOV EAX,imm32 / LEA EAX,[EAX*4+8] / MOV EAX,[ECX*8+0x744548]) and InitializeiInventoryPages takes it with MOV ESI,EAX - no MOVZX anywhere.
@@ -998,7 +998,7 @@ void __stdcall SetSequenceFrame(D2UnitStrc * pUnit, int32_t nSequenceFrame) {
       exit(-1);
     }
 
-    pUnit->nSeqFrame = (pUnit->nSeqFrame & 0xff) + nSequenceFrame * 0x100;
+    pUnit->nSeqFrame = (pUnit->nSeqFrame & 0xffU) + nSequenceFrame * 0x100;
 }
 
 void __stdcall UpdateFrame(D2UnitStrc * pUnit) {
@@ -1024,7 +1024,7 @@ static int32_t UNITS_GetBaseWalkVelocity(eD2UnitType eUnitType, int32_t nClassId
       case UNIT_PLAYER:
         {
           if (nClassId >= 0 && nClassId < sgptDataTable->nTxtCharStatsSize) {
-            return (uint32_t)(uint8_t)sgptDataTable->pTxtCharStats[nClassId].WalkVelocity << 8;
+            return (uint32_t)sgptDataTable->pTxtCharStats[nClassId].WalkVelocity << 8;
           }
 
           return (uint32_t)*(volatile uint8_t*)0x40 << 8;
@@ -1527,7 +1527,7 @@ static void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUni
       Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_id, nOwnerGUID, 0);
     }
 
-    pUnit->eUnitFlagsEx |= UNITFLAGEX_STOREOWNERINFO;
+    pUnit->eUnitFlagsEx |= 0x400;
 }
 
 void __stdcall StoreOwnerInfo(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nOwnerId) {
@@ -1552,7 +1552,7 @@ void __stdcall StoreOwner(D2UnitStrc * pUnit, D2UnitStrc * pOwner) {
         }
       }
 
-      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_STOREOWNERINFO;
+      pUnit->eUnitFlagsEx &= -1025;
       return;
     }
 
@@ -1568,12 +1568,12 @@ void __stdcall StoreLastAttacker(D2UnitStrc * pUnit, D2UnitStrc * pKiller) {
     if (pKiller) {
       pUnit->eKillerType = pKiller->eUnitType;
       nKillerGUID = pKiller->nUnitGUID;
-      pUnit->eUnitFlagsEx |= UNITFLAGEX_STORELASTATTACKER;
+      pUnit->eUnitFlagsEx |= 0x20000;
       pUnit->nKillerGUID = nKillerGUID;
       return;
     }
 
-    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_STORELASTATTACKER;
+    pUnit->eUnitFlagsEx &= -131073;
     pUnit->eKillerType = UNIT_PLAYER;
     pUnit->nKillerGUID = 0;
 }
@@ -2062,7 +2062,7 @@ int32_t __stdcall GetBlockRate(D2UnitStrc * pUnit, BOOL bExpansion) {
             pCharStats = sgptDataTable->pTxtCharStats + iVar1;
           }
 
-          nToBlock += (uint32_t)(uint8_t)pCharStats->BlockFactor;
+          nToBlock += (uint32_t)pCharStats->BlockFactor;
           if (bExpansion) {
             iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_dexterity, 0);
             nLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
@@ -2987,7 +2987,7 @@ void __stdcall RemoveCollision_Vector(D2UnitStrc * pUnit) {
 }
 
 // Returns the current facing direction (0–15) for a unit based on its path. For objects/portals uses the static path position; for units with a dynamic path, compares current XY to the next-step waypoint (SP1). If both X and Y match (unit is at its next waypoint), falls back to DynamicPath::UpdateDirection. Otherwise calls GetDirectionToCoords toward the next SP1 position.
-int32_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
+uint8_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
     uint32_t nCurPos;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe83);
@@ -3005,6 +3005,7 @@ int32_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
 
     uint32_t nTargetPos = PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath);
     if (nTargetPos == nCurPos) {
+      uint8_t bVar1;
       eUnitType = pUnit->eUnitType;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nCurPos = pUnit->pPath.pStaticPath->nPosY;
@@ -3016,14 +3017,14 @@ int32_t __stdcall PATH_GetCurrentDirection(D2UnitStrc * pUnit) {
 
       nTargetPos = PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
       if (nTargetPos == nCurPos) {
-        nCurPos = PATH::DynamicPath::UpdateDirection(pUnit->pPath.pDynamicPath);
-        return nCurPos;
+        bVar1 = PATH::DynamicPath::UpdateDirection(pUnit->pPath.pDynamicPath);
+        return bVar1;
       }
     }
 
     nCurPos = PATH::DynamicPath::GetYSP1(pUnit->pPath.pDynamicPath);
     int nDirection = GetDirectionToCoords(pUnit, PATH::DynamicPath::GetXSP1(pUnit->pPath.pDynamicPath), nCurPos);
-    return nDirection;
+    return (uint8_t)nDirection;
 }
 
 // Returns the active weapon unit for a dual-wield-capable player, taking the current skill's weapsel field into account. weapsel 1=right hand, 2=skill-flag-driven left/right selection, 3=animation-frame-driven slot, 4=no weapon. Falls back to the default equipped weapon when the unit cannot dual-wield or the skill txt is missing. Returns NULL if no valid non-broken weapon is found.
@@ -3065,7 +3066,7 @@ D2UnitStrc * __stdcall GetWeaponBySkill(D2UnitStrc * pUnit, int32_t nParam) {
 
         break;
         case '\x03':
-          dwSkillFlags = (int)pUnit->nSeqFrame >> 8;
+          dwSkillFlags = pUnit->nSeqFrame >> 8;
         bIsWeaponType = D2Client::UNIT::Player::CheckFlagWithMask(pUnit, 0x4000000);
         if (bIsWeaponType) {
           nWeaponSlot = dwSkillFlags & 0x80000001;
@@ -3404,7 +3405,6 @@ uint8_t __stdcall GetItemComponent(D2UnitStrc * pUnit, D2UnitStrc * pItem) {
 
 // Advances pUnit's animation by one tick. Clears nActionFrame, then if not in sequence mode: increments nGfxCurrentFrame by nAnimSpeed, wraps on reaching nFrameCount (looping through GetWeaponAnimClass offsets), and scans the AnimData hash table for action-frame markers (values 1-4) crossed during the advance. In sequence mode: advances nSeqFrame by nSeqAnimSpeed with wrap, decrements nFrameCount, calls UpdateSequenceMode and sets UNITFLAG_SQGFXCHANGE if the sequence mode changed.
 void __stdcall AdvanceAnimFrame(D2UnitStrc * pUnit) {
-    uint32_t uVar2;
     int nAnimClassOffset;
     int nPrevFrame;
     uint32_t nSeqMode;
@@ -3414,10 +3414,10 @@ void __stdcall AdvanceAnimFrame(D2UnitStrc * pUnit) {
       int32_t iVar1;
       nSeqMode = pUnit->nSeqFrame;
       pUnit->eUnitFlags &= ~UNITFLAG_SQGFXCHANGE;
-      uVar2 = pUnit->nSeqAnimSpeed + nSeqMode;
-      pUnit->nSeqFrame = uVar2;
-      if ((int)uVar2 >= (int)pUnit->nSeqFrameCount) {
-        pUnit->nSeqFrame = uVar2 - pUnit->nSeqFrameCount;
+      nPrevFrame = pUnit->nSeqAnimSpeed + nSeqMode;
+      pUnit->nSeqFrame = nPrevFrame;
+      if (nPrevFrame >= pUnit->nSeqFrameCount) {
+        pUnit->nSeqFrame = nPrevFrame - pUnit->nSeqFrameCount;
       }
 
       pUnit->nFrameCount -= pUnit->nSeqAnimSpeed;
@@ -3461,8 +3461,8 @@ void __stdcall AdvanceAnimFrame(D2UnitStrc * pUnit) {
 
           pUnit->nGfxCurrentFrame -= pUnit->nFrameCount;
           nPrevFrame = 0;
-          uVar2 = GetWeaponAnimClass(pUnit);
-          pUnit->nGfxCurrentFrame += uVar2 * 0x100;
+          nSeqMode = GetWeaponAnimClass(pUnit);
+          pUnit->nGfxCurrentFrame += nSeqMode * 0x100;
         } while (pUnit->nGfxCurrentFrame >= pUnit->nFrameCount);
       }
 

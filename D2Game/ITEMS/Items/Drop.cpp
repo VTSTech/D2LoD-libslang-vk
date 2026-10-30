@@ -472,16 +472,16 @@ static void ITEM_SetBaseDamageStats(D2UnitStrc * pUnit) {
       exit(-1);
     }
     if (pItemsTxt->nMaxDam) {
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, (uint32_t)(uint8_t)pItemsTxt->nMaxDam, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxdamage, (uint32_t)pItemsTxt->nMaxDam, 0);
     }
     if (pItemsTxt->nMinDam) {
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, (uint32_t)(uint8_t)pItemsTxt->nMinDam, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mindamage, (uint32_t)pItemsTxt->nMinDam, 0);
     }
     if (pItemsTxt->n2HandMinDam) {
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, (uint32_t)(uint8_t)pItemsTxt->n2HandMinDam, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_mindamage, (uint32_t)pItemsTxt->n2HandMinDam, 0);
     }
     if (pItemsTxt->n2HandMaxDam) {
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, (uint32_t)(uint8_t)pItemsTxt->n2HandMaxDam, 0);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_secondary_maxdamage, (uint32_t)pItemsTxt->n2HandMaxDam, 0);
     }
     if (pItemsTxt->nMaxMisDam == '\0') {
       return;
@@ -1040,7 +1040,7 @@ static void ITEM_ApplySpecialTypePropertiesExp(D2UnitStrc * pUnit, D2ItemGenCont
 }
 
 static void __stdcall ITEM_ApplyNormalTypeProperties(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (!wItemVersion) {
       ITEM_ApplySpecialTypeProperties(pUnit, pGame, pItemGenContext);
       return;
@@ -1054,7 +1054,7 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
     // Static local variables (originally global data)
     static int gaItemQualityTierTable[6] = { 0x7, 0x6, 0x5, 0x4, 0x3, 0x2 }; D2_STATIC_GUARD(gaItemQualityTierTable, "D2Game::ITEMS::Items::Drop::ITEM_RollItemQuality::gaItemQualityTierTable");
 
-    int16_t wVersionCheck;
+    uint16_t wVersionCheck;
     uint32_t nQualityThreshold;
     D2ItemRatioTxt* pQualityRatioRow;
     D2ItemsTxt* pItemTxt;
@@ -1087,7 +1087,7 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
         nQualityThreshold = pUnit->nClassId;
       }
 
-      pQualityRatioRow = D2Common::DATATBLS::ItemTbls::TXT_QualityRatio_GetLine(nQualityThreshold, (uint32_t)pGame->nDifficulty, !(int16_t)nQualityRatioBase ? 0x10000 : 0x64);
+      pQualityRatioRow = D2Common::DATATBLS::ItemTbls::TXT_QualityRatio_GetLine(nQualityThreshold, (uint32_t)pGame->nDifficulty, !(uint16_t)nQualityRatioBase ? 0x10000 : 0x64);
       if (!pQualityRatioRow) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x486);
         exit(-1);
@@ -1306,7 +1306,7 @@ static BOOL ITEM_FallbackToRareQuality(int * pnParam, D2ItemGenContextStrc * pIt
 
 // Apply quality tier to item and generate affixes based on quality type (magic/rare/set/unique/superior)
 int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, D2UnitStrc * * ppItem, D2ItemGenContextStrc * pItemGenContext) {
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     int32_t iVar1;
     BOOL nCrudeResult;
     D2SeedStrc* pSeed;
@@ -1557,8 +1557,8 @@ int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, D2UnitStrc * * p
       return 0;
     }
 
-    uint16_t wItemVersionCheck = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
-    if (wItemVersionCheck >= 100) {
+    wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
+    if (wItemVersion >= 100) {
       ITEM_ApplyEthereal(*ppItem, pItemGenContext);
     }
 
@@ -1567,8 +1567,8 @@ int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, D2UnitStrc * * p
       Drop::ITEM_RollSocketCount(pGame, *ppItem, pItemGenContext);
     }
 
-    wItemVersionCheck = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
-    if (wItemVersionCheck < 100) {
+    wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
+    if (wItemVersion < 100) {
       return 1;
     }
 
@@ -1682,8 +1682,8 @@ int __fastcall ITEM_InitItemBaseStats(::SGAMEDATA * pGame, D2UnitStrc * * ppItem
         if (nTmp) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(*ppItem, UNITSTAT_toblock, (uint32_t)(uint8_t)pItemsTxt->bBlock, 0);
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(*ppItem, UNITSTAT_velocitypercent, -pItemsTxt->dwSpeed, 0);
-          nMaxDurability = (uint32_t)(uint8_t)pItemsTxt->bDurability;
-          nCurDurability = (uint32_t)((uint8_t)pItemsTxt->bDurability >> 1);
+          nMaxDurability = (uint32_t)pItemsTxt->bDurability;
+          nCurDurability = (uint32_t)(pItemsTxt->bDurability >> 1);
           nTmp = D2Client::Archive::RANDOM_RandomNumberSelector(&(*ppItem)->sSeed, nCurDurability);
           nCurDurability = nTmp + nCurDurability;
           if (nCurDurability >= 0xff) {
@@ -1721,8 +1721,8 @@ int __fastcall ITEM_InitItemBaseStats(::SGAMEDATA * pGame, D2UnitStrc * * ppItem
               D2Common::Stats::StatsEx::STATLIST_SetUnitStat(*ppItem, UNITSTAT_quantity, nAmount, 0);
             }
 
-            nMaxDurability = (uint32_t)(uint8_t)pItemsTxt->bDurability;
-            nCurDurability = (uint32_t)((uint8_t)pItemsTxt->bDurability >> 1);
+            nMaxDurability = (uint32_t)pItemsTxt->bDurability;
+            nCurDurability = (uint32_t)(pItemsTxt->bDurability >> 1);
             nTmp = D2Client::Archive::RANDOM_RandomNumberSelector(&(*ppItem)->sSeed, nCurDurability);
             nCurDurability = nTmp + nCurDurability;
             if (nCurDurability >= 0xff) {
@@ -2019,7 +2019,7 @@ void __fastcall ITEMS_FillItemGenerationData(::SGAMEDATA * pGame, D2ItemGenConte
     char cNameChar;
     memset(pItemGenCtx, 0, 0x84);
     pItemGenCtx->pGame = pGame;
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     pItemGenCtx->wItemFormat = wItemVersion;
     int32_t nTmp;
@@ -2616,11 +2616,10 @@ D2UnitStrc * __fastcall ITEM_CreateFromSaveData(::SGAMEDATA * pGame, D2RoomStrc 
 // Low-level item instance creator. Allocates D2UnitStrc (type 4), initializes unit fields, sets item data fields (classId, flags, quality, graphic, colors), links to owner inventory. Does NOT apply affixes - just base structure.
 // @sourcefile .\ITEMS\Items.cpp
 D2UnitStrc * __fastcall ITEM_CreateItemInstance(::SGAMEDATA * pGame, D2ItemGenContextStrc * pItemGenCtx, int32_t bFromCustomData) {
-    char nMaxSocks;
+    uint8_t byMaxSocksCheck;
     D2ItemsTxt* pItemsTxtLine;
     D2SeedStrc* pModSeed;
     uint32_t bFlagSet;
-    uint8_t byMaxSocksCheck;
     uint32_t uVar1;
     eD2ItemFlag eItemFlags;
     uint32_t nModSeed;
@@ -2706,8 +2705,8 @@ D2UnitStrc * __fastcall ITEM_CreateItemInstance(::SGAMEDATA * pGame, D2ItemGenCo
             eItemFlags = D2Common::ITEMS::Items::ITEM_GetItemData_eD2ItemFlag(pItem);
             uVar1 = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(eItemFlags, eFlagToCheck);
             if (!uVar1) {
-              nMaxSocks = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItem);
-              if (nMaxSocks == '\0') {
+              byMaxSocksCheck = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItem);
+              if (!byMaxSocksCheck) {
                 D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pItem, ITEMFLAG_SOCKETED, 0);
               } else {
                 byMaxSocksCheck = D2Common::ITEMS::Items::ITEM_GetMaxSockCount(pItem);
@@ -3339,7 +3338,7 @@ void __fastcall ITEMS_ReduceDurability(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItemUnit, UNITSTAT_durability, bIsArmor, 0);
       _bIsThrowable = 0xc5a;
     } else {
-      int16_t wItemVersion;
+      uint16_t wItemVersion;
       if (!bIsWeapon) {
         _bDurabilityBelowOne = D2Common::ITEMS::Items::CheckItemFlag(pItemUnit, ITEMFLAG_BROKEN, 0xc5f, ".\\ITEMS\\Items.cpp");
         if (!_bDurabilityBelowOne) {

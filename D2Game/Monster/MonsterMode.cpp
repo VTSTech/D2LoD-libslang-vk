@@ -425,11 +425,11 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                 if (pAttacker && pAttacker->eUnitType == UNIT_PLAYER) {
                   pBitBuffer = Quests::QUESTS::GetQuestBitBuffer(pGame, pAttacker);
                   if (pBitBuffer) {
-                    bQuestFinished = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, QUESTSTATE_FinishedInPreviousGame);
+                    bQuestFinished = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, QUESTSTATE_FinishedInPreviousGame);
                     if (bQuestFinished != 1) {
-                      _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, QUESTSTATE_RewardAwaits);
+                      _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, QUESTSTATE_RewardAwaits);
                       if (_bHasCurseState != 1) {
-                        _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)(uint8_t)pMonStats->TCQuestId, (eD2QuestState)(uint8_t)pMonStats->TCQuestCP);
+                        _bHasCurseState = D2Common::QuestRecord::GetQuestState(pBitBuffer, (eD2Quests)pMonStats->TCQuestId, (eD2QuestState)(uint8_t)pMonStats->TCQuestCP);
                         if (_bHasCurseState != 1) {
                           nSelectedTC_00 = pMonStats->TreasureClass[nDifficulty].TreasureClass4;
                         }

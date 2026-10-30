@@ -340,7 +340,7 @@ void __fastcall StaffMod(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemData) {
 
     eD2Skills eFirstClassSkill = D2Common::Skills::SKILLS_GetClassSkillByIndex(nClassId, 0);
     eD2Skills eSkill = pItemData->nItemLevel;
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (!wItemVersion) {
       ITEMMOD_RollStaffModSkills(pUnit, eSkill, eFirstClassSkill);
       return;
@@ -489,11 +489,10 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
 
 // Returns 1 if pUnit (an item) has any magic prefix or suffix whose affix group ID matches nGroupId, else 0. Iterates up to 3 prefix slots then up to 3 suffix slots, looking up each affix ID via TXT_magicaffixes_GetLine and comparing the group field. Used to gate skill behavior on item modifier groups.
 static BOOL HasSufixOrPrefix(int32_t nGroupId, D2UnitStrc * pUnit) {
+    uint16_t wAffixId;
     D2MagicAffixTxt* pAffixTxt;
-    uint32_t uSuffixId;
     int iSlot = 0;
     do {
-      uint16_t wAffixId;
       wAffixId = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iSlot);
       pAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
       if (!pAffixTxt) {
@@ -508,8 +507,8 @@ static BOOL HasSufixOrPrefix(int32_t nGroupId, D2UnitStrc * pUnit) {
 
     iSlot = 0;
     while (true) {
-      uSuffixId = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iSlot);
-      pAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(uSuffixId & 0xffff);
+      wAffixId = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iSlot);
+      pAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
       if (!pAffixTxt) {
         return 0;
       }
@@ -608,7 +607,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     }
 
     uint32_t nItemMagicLvl;
-    nItemMagicLvl = (uint32_t)(uint8_t)pQualityCheck->bMagicLvl;
+    nItemMagicLvl = (uint32_t)pQualityCheck->bMagicLvl;
     if (nItemMagicLvl) {
       bIsPrefix += nItemMagicLvl;
     } else {
@@ -737,7 +736,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 
 // Expansion magic affix selection using uniform random. Counts valid candidates, rolls RNG % count, walks list to nth valid affix. Max 252 retries for group exclusion.
 int16_t __fastcall ITEMMOD_RollMagicAffixVersioned(D2UnitStrc * pUnit, int32_t nParam, int bExclude, int32_t param_1, int nParam4, int nForcedAffix) {
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion) {
       int32_t nClassicAffixResult;
       nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix, 0);
@@ -750,7 +749,7 @@ int16_t __fastcall ITEMMOD_RollMagicAffixVersioned(D2UnitStrc * pUnit, int32_t n
 
 // Version dispatcher: tail-calls ITEMMOD_RollMagicAffixClassic (char*, "affix index+1") or ITEMMOD_RollMagicAffix (uint32_t, "affix index") as a bare statement, dropping the result both branches compute.
 int __fastcall ITEMMOD_RollMagicAffixVersionedEx(D2UnitStrc * pUnit, int32_t nParam, int bExclude, int32_t param_1, int nParam4, int nForcedAffix, int nParam6) {
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion) {
       int32_t nClassicAffixResult;
       nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix, nParam6);
@@ -890,7 +889,7 @@ uint32_t __thiscall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
 // Version dispatcher: tail-calls GetMaxToRoll or ITEMMOD_GetMaxAffixGroupClassic, both uint32_t-returning ("chosen affix table index + 1, or 0"), as a bare statement.
 uint32_t __fastcall ITEMMOD_SelectMagicAffixVersioned(D2UnitStrc * pUnit, int32_t nParam) {
     uint32_t uVar1;
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion) {
       uVar1 = GetMaxToRoll(nParam, pUnit);
       return uVar1;
@@ -908,8 +907,6 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     short int wRareSuffix;
     uint32_t nRarePrefixGroup;
     int32_t pRolledAffixIdx;
-    D2MagicAffixTxt* pDVar11;
-    uint32_t nAffixLineIdx;
     int nAffixRollCount;
     uint32_t nRolledGroup;
     D2SeedStrc seedState;
@@ -917,7 +914,7 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     bSuffixExhausted = false;
     bool bPrefixExhausted;
     bPrefixExhausted = false;
-    int16_t wItemVersion;
+    uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion) {
       nRarePrefixGroup = GetMaxToRoll(1, pUnit);
@@ -1031,15 +1028,15 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0);
     nPrefixSlot2 = 0;
     do {
-      uint16_t wPrefix;
-      wPrefix = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, nPrefixSlot2);
-      pDVar11 = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wPrefix);
+      D2MagicAffixTxt* pDVar11;
+      wItemVersion = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, nPrefixSlot2);
+      pDVar11 = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wItemVersion);
       if (pDVar11) {
         D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pDVar11, 0, 0);
       }
 
-      nAffixLineIdx = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, nPrefixSlot2);
-      pDVar11 = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nAffixLineIdx & 0xffff);
+      wItemVersion = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, nPrefixSlot2);
+      pDVar11 = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wItemVersion);
       if (pDVar11) {
         D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pDVar11, 0, 0);
       }
@@ -1056,18 +1053,17 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
     uint32_t uVar1;
     short int wRarePrefix;
     short int wRareSuffix;
-    uint16_t wAffixId;
     uint32_t nMax;
+    uint32_t pRolledAffixIdx;
     D2MagicAffixTxt* pExistingAffixTxt;
     D2MagicAffixTxt* pRolledAffixTxt;
-    uint32_t nRolledAffixRaw;
     int32_t nMin;
     int nDupRetries;
     int iDupCheckSlot;
     uint32_t nRolledAffixMasked;
     bool bRetrying;
     D2SeedStrc seedState;
-    int16_t sVar4;
+    uint16_t sVar4;
     sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (sVar4) {
       nMax = GetMaxToRoll(1, pUnit);
@@ -1121,25 +1117,25 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
         do {
           sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
           if (sVar4) {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, 0, 0);
+            pRolledAffixIdx = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, 0, 0);
           } else {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, 0);
+            pRolledAffixIdx = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, 0);
           }
 
-          nRolledAffixMasked = nRolledAffixRaw & 0xffff;
+          nRolledAffixMasked = pRolledAffixIdx & 0xffff;
           uVar1 = nRolledAffixMasked;
-          *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)nRolledAffixRaw;
+          *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)pRolledAffixIdx;
           if ((uint16_t)nRolledAffixMasked <= 0) {
             goto next_affix_roll;
           }
 
           iDupCheckSlot = 0;
           while (true) {
-            nRolledAffixRaw = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iDupCheckSlot);
-            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nRolledAffixRaw & 0xffff);
+            sVar4 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iDupCheckSlot);
+            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar4);
             if (pExistingAffixTxt) {
               pRolledAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(uVar1);
-              if ((uint16_t)nRolledAffixMasked == (short int)nRolledAffixRaw || pRolledAffixTxt->group == pExistingAffixTxt->group) {
+              if ((uint16_t)nRolledAffixMasked == sVar4 || pRolledAffixTxt->group == pExistingAffixTxt->group) {
                 break;
               }
             }
@@ -1162,25 +1158,25 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
         do {
           sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
           if (sVar4) {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 1, 0, 0);
+            pRolledAffixIdx = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 1, 0, 0);
           } else {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, 0);
+            pRolledAffixIdx = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, 0);
           }
 
-          nRolledAffixMasked = nRolledAffixRaw & 0xffff;
+          nRolledAffixMasked = pRolledAffixIdx & 0xffff;
           uVar1 = nRolledAffixMasked;
-          *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)nRolledAffixRaw;
+          *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)pRolledAffixIdx;
           if ((uint16_t)nRolledAffixMasked <= 0) {
             goto next_affix_roll;
           }
 
           iDupCheckSlot = 0;
           while (true) {
-            wAffixId = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iDupCheckSlot);
-            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
+            sVar4 = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iDupCheckSlot);
+            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar4);
             if (pExistingAffixTxt) {
               pRolledAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(uVar1);
-              if ((uint16_t)nRolledAffixMasked == wAffixId || pRolledAffixTxt->group == pExistingAffixTxt->group) {
+              if ((uint16_t)nRolledAffixMasked == sVar4 || pRolledAffixTxt->group == pExistingAffixTxt->group) {
                 break;
               }
             }
@@ -1211,14 +1207,14 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
     D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0);
     int iStatApplySlot = 0;
     do {
-      wAffixId = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iStatApplySlot);
-      pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
+      sVar4 = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iStatApplySlot);
+      pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar4);
       if (pExistingAffixTxt) {
         D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pExistingAffixTxt, 0, 0);
       }
 
-      nRolledAffixRaw = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iStatApplySlot);
-      pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nRolledAffixRaw & 0xffff);
+      sVar4 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iStatApplySlot);
+      pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar4);
       if (pExistingAffixTxt) {
         D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pExistingAffixTxt, 0, 0);
       }
@@ -1238,7 +1234,7 @@ BOOL __fastcall RollingItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenC
       return 0;
     }
 
-    int16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion) {
       BVar1 = ITEMMOD_GenerateRareAffixes(pItemGenContext, pUnit);
       return BVar1;
@@ -1252,18 +1248,16 @@ BOOL __fastcall RollingItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenC
 BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     short int wRarePrefix;
     short int wRareSuffix;
-    uint16_t wAffixId;
     uint32_t nRarePrefixGroup;
     uint32_t wRolledAffix;
     D2MagicAffixTxt* pExistingAffixTxt;
     D2MagicAffixTxt* pCandidateAffixTxt;
-    uint32_t nAffixLineIdx;
     int nDupRetries;
     int iDupCheckSlot;
     bool bRetrying;
     uint32_t nCandidateAffixRaw;
     int32_t pExcludeAffixEntry;
-    int16_t sVar5;
+    uint16_t sVar5;
     sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (sVar5) {
       nRarePrefixGroup = GetMaxToRoll(1, pUnit);
@@ -1321,14 +1315,14 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
         D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0);
         iApplySlot = 0;
         do {
-          wAffixId = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iApplySlot);
-          pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
+          sVar5 = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iApplySlot);
+          pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar5);
           if (pExistingAffixTxt) {
             D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pExistingAffixTxt, 0, 0);
           }
 
-          nSuffixLineIdx = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iApplySlot);
-          pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nSuffixLineIdx & 0xffff);
+          sVar5 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iApplySlot);
+          pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar5);
           if (pExistingAffixTxt) {
             D2Common::ITEMS::ItemMods::ApplyRuneAndGemStats(0, nullptr, pUnit, pExistingAffixTxt, 0, 0);
           }
@@ -1357,12 +1351,12 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
           nCandidateAffixRaw = nMinRolls;
           iDupCheckSlot = 0;
           while (true) {
-            nAffixLineIdx = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iDupCheckSlot);
-            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nAffixLineIdx & 0xffff);
+            sVar5 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit, iDupCheckSlot);
+            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar5);
             *(uint16_t*)(char*)&nMinRolls = (uint16_t)wRolledAffix;
             if (pExistingAffixTxt) {
               pCandidateAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nCandidateAffixRaw);
-              if ((uint16_t)nMinRolls == (short int)nAffixLineIdx || pCandidateAffixTxt->group == pExistingAffixTxt->group) {
+              if ((uint16_t)nMinRolls == sVar5 || pCandidateAffixTxt->group == pExistingAffixTxt->group) {
                 break;
               }
             }
@@ -1395,12 +1389,12 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
           nCandidateAffixRaw = nMinRolls;
           iDupCheckSlot = 0;
           while (true) {
-            wAffixId = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iDupCheckSlot);
-            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)wAffixId);
+            sVar5 = D2Common::ITEMS::Items::GetMagicPrefix(pUnit, iDupCheckSlot);
+            pExistingAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)sVar5);
             *(uint16_t*)(char*)&nMinRolls = (uint16_t)wRolledAffix;
             if (pExistingAffixTxt) {
               pCandidateAffixTxt = D2Common::DATATBLS::ItemTbls::TXT_magicaffixes_GetLine(nCandidateAffixRaw);
-              if ((uint16_t)nMinRolls == wAffixId || pCandidateAffixTxt->group == pExistingAffixTxt->group) {
+              if ((uint16_t)nMinRolls == sVar5 || pCandidateAffixTxt->group == pExistingAffixTxt->group) {
                 break;
               }
             }
@@ -1688,7 +1682,7 @@ BOOL __stdcall ITEMMOD_GenerateUniqueItem(D2UnitStrc * pItem) {
 // ITEMMOD_GenerateUniqueItem. It makes no magic item.
 BOOL __fastcall ITEMMOD_GenerateSetOrUniqueVersioned(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     BOOL BVar1;
-    int16_t sVar1 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t sVar1 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (sVar1) {
       BVar1 = ITEMMOD_GenerateSetItem(pItemGenContext, pUnit);
       return BVar1;
@@ -1822,7 +1816,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
 
       pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (pItemsTxt) {
-        nDurabilityThird = (uint8_t)pItemsTxt->bDurability / 3;
+        nDurabilityThird = pItemsTxt->bDurability / 3;
         if (!nDurabilityThird) {
           nDurabilityThird = 1;
         }
@@ -1936,7 +1930,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
 
       pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
       if (pItemsTxt) {
-        nDurabilityThird = (uint32_t)(uint8_t)pItemsTxt->bDurability * 0x21 / 100;
+        nDurabilityThird = (uint32_t)pItemsTxt->bDurability * 0x21 / 100;
         if (!nDurabilityThird) {
           nDurabilityThird = 1;
         }
@@ -2018,7 +2012,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
 
 BOOL __fastcall ITEMMOD_ApplyCrudeQualityVersioned(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     BOOL BVar1;
-    int16_t nVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
+    uint16_t nVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (nVersion) {
       BVar1 = ITEMMOD_ApplyCrudeQualityClassic(pUnit, pItemGenContext);
       return BVar1;

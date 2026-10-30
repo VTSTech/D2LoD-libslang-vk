@@ -251,7 +251,7 @@ D2UnitStrc * __fastcall GetKillerUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 800);
       exit(-1);
     }
-    if (pUnit->eUnitFlagsEx & UNITFLAGEX_STORELASTATTACKER) {
+    if (pUnit->eUnitFlagsEx & 0x20000) {
       pKillerUnit = FindUnitFromTable(pGame, pUnit->eKillerType, pUnit->nKillerGUID);
       return pKillerUnit;
     }
@@ -437,7 +437,7 @@ void __fastcall UNITS_ResetUnitForReuse(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
           D2Game::Monster::SetUnsetSummonerFlags(pUnit, 1, 0);
         }
 
-        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_TELEPORTED;
+        pUnit->eUnitFlagsEx &= -65537;
         return;
         case UNIT_ITEM:
           pUnit->eUnitFlags &= ~UNITFLAG_SENDREFRESHMSG;
@@ -767,7 +767,7 @@ void __fastcall UNITS_ClearAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUn
 // Schedules animation-frame timer events for pUnit in pGame. Iterates over animation frames at the unit's current speed (or sequence speed if pAnimSeq is set), reads per-frame event types from the AnimData hash table (or via ANIM_GetEventFrame for sequences), and calls SetEvent for attack/sound/other (types 1/2/4/3). Sets nGfxCurrentFrame to the current game frame and always schedules a terminal event one frame past the last.
 void __fastcall UNITS_SetupAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nEventType;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     uint32_t nAnimSpeed;
     uint32_t nNextEventFrame = pGame->dwGameFrame;
     ::SGAMEDATA* pGameCopy = pGame;
@@ -788,7 +788,7 @@ void __fastcall UNITS_SetupAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUn
     int nAnimSpeedAccum = nWeaponAnimClass * 0x100 + nAnimSpeed;
     int iVar1 = (int)(nWeaponAnimClass * 0x100) >> 8;
     int pEventData = 0;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndex;
       nFrameIndex = nAnimSpeedAccum >> 8;
       nNextEventFrame++;
@@ -832,7 +832,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromPercent(::SGAMEDATA * pGame, D2Uni
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
     uint32_t nNextEventFrame = pGame->dwGameFrame;
@@ -853,7 +853,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromPercent(::SGAMEDATA * pGame, D2Uni
     int nFrameIdx = nFrameOffset - 1;
     nFrameOffset *= 0x100;
     nAnimSpeedAccum = nFrameOffset + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       D2AnimDataRecordStrc* pAnimData = pUnit->pAnimData;
       nNextEventFrame++;
       nFrameOffset += nAnimSpeed;
@@ -885,7 +885,7 @@ void __fastcall UNITS_SetupAnimTimerEventsWithDelay(::SGAMEDATA * pGame, D2UnitS
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     if (nDelay <= 0) {
       return;
     }
@@ -911,7 +911,7 @@ void __fastcall UNITS_SetupAnimTimerEventsWithDelay(::SGAMEDATA * pGame, D2UnitS
     int nFrameIdx = nFrameOffsetAccum - 1;
     nFrameOffsetAccum *= 0x100;
     nAnimSpeedAccum = nFrameOffsetAccum + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndexShifted;
       nNextEventFrame++;
       nFrameOffsetAccum += nAnimSpeed;
@@ -943,7 +943,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromFrame(::SGAMEDATA * pGame, D2UnitS
     uint32_t nAnimSpeed;
     uint32_t nEventType;
     uint32_t pCurEventFrame;
-    uint32_t nTotalFrameCount;
+    int nTotalFrameCount;
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_MODECHANGE, 0);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
     uint32_t nNextEventFrame = pGame->dwGameFrame;
@@ -964,7 +964,7 @@ void __fastcall UNITS_SetupAnimTimerEventsFromFrame(::SGAMEDATA * pGame, D2UnitS
     int nFrameIdx = nFrame - 1;
     int nFrameOffsetAccum = nFrame * 0x100;
     int nAnimSpeedAccum = nFrameOffsetAccum + nAnimSpeed;
-    while (nAnimSpeedAccum < (int)nTotalFrameCount) {
+    while (nAnimSpeedAccum < nTotalFrameCount) {
       int nFrameIndexShifted;
       nNextEventFrame++;
       nFrameOffsetAccum += nAnimSpeed;
@@ -1626,7 +1626,7 @@ void __fastcall UNITS_RelocateUnitToRoom(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     pUnit->nAct = neAct;
     D2DrlgActStrc* pDrlgAct = pGame->pAct[neAct];
-    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_HASBEENDELETED;
+    pUnit->eUnitFlagsEx &= -257;
     pUnit->pDrlgAct = pDrlgAct;
     switch (pUnit->eUnitType) {
       case UNIT_PLAYER:
@@ -1877,7 +1877,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
           if (nRelocMode) {
             pUnit->eUnitFlagsEx |= 0x800;
           } else {
-            pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+            pUnit->eUnitFlagsEx |= 0x10000;
           }
 
           UNITS_UpdateRoomClientVisibility(pGameLocal, pUnit, nullptr);
@@ -1904,7 +1904,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
         if (nRelocMode) {
           pUnit->eUnitFlagsEx |= 0x800;
         } else {
-          pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+          pUnit->eUnitFlagsEx |= 0x10000;
         }
 
         UNITS_UpdateRoomClientVisibility(pGameLocal, pUnit, nullptr);
@@ -2036,12 +2036,12 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
     pAllocUnit->pMemory = pGame->pMemoryPool;
     pAllocUnit->uSideData.pServerSide.pGame = pGame;
     if (pGame->bExpansion) {
-      pAllocUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
+      pAllocUnit->eUnitFlagsEx |= 0x2000000;
     } else {
-      pAllocUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
+      pAllocUnit->eUnitFlagsEx &= -33554433;
     }
 
-    pAllocUnit->eUnitFlagsEx |= UNITFLAGEX_SERVERUNIT;
+    pAllocUnit->eUnitFlagsEx |= 0x4000000;
     nLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eUnitAct = D2Common::Drlg::GetActNoFromLevelNumber(nLevelId);
     pAllocUnit->nAct = eUnitAct;

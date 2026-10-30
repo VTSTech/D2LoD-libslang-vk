@@ -194,7 +194,7 @@ uint32_t __stdcall OVERLAYTBLS_GetPreDraw(int32_t nParam) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)pOverlayTxt->PreDraw;
+    return (uint32_t)pOverlayTxt->PreDraw;
 }
 
 int32_t __stdcall OVERLAYTBLS_GetXOffset(int32_t nParam) {
@@ -221,7 +221,7 @@ uint32_t __stdcall OVERLAYTBLS_GetTrans(int32_t nParam) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)pOverlayTxt->Trans;
+    return (uint32_t)pOverlayTxt->Trans;
 }
 
 uint32_t __stdcall OVERLAYTBLS_GetLightRadiusAndRGB(int32_t nOverlayId, int * pnInitRadius, int * pnRadius, char * pbyRed, char * pbyGreen, char * pbyBlue) {
@@ -265,7 +265,7 @@ uint32_t __stdcall OVERLAYTBLS_GetDir(int32_t nParam) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)pOverlayTxt->Dir;
+    return (uint32_t)pOverlayTxt->Dir;
 }
 
 // 2022.01.09 - dzik

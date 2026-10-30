@@ -393,7 +393,7 @@ struct __attribute__((packed)) D2GSPacketSrv0x7E {
 struct __attribute__((packed)) D2GSPacketSrv0x7F {
     /* 0x00 */ uint8_t nPacketId;
     /* 0x01 */ uint8_t nUnitType;
-    /* 0x02 */ short nUnitLife;
+    /* 0x02 */ uint16_t nUnitLife;
     /* 0x04 */ int nUnitGUID;
     /* 0x08 */ short nAreaID;
 };
@@ -802,7 +802,7 @@ void __thiscall Send0x9CItemRemoveFromBelt(void * pThis, struct D2UnitStrc * pUn
 void __thiscall Send0x9CItemSwapInBelt(void * pThis, struct D2UnitStrc * pUnit, eD2ItemFlag eItemFlag);
 void __thiscall Send0x9CItemToCursor(void * pThis, struct D2UnitStrc * pUnit);
 // @sourcefile .\GAME\SCmd.cpp
-void __thiscall Send0x9CItemHandleInShop(void * pThis, struct D2UnitStrc * pUnit, char cParam);
+void __thiscall Send0x9CItemHandleInShop(void * pThis, struct D2UnitStrc * pUnit, uint8_t cParam);
 BOOL __fastcall STRING_CheckIfStringLengthDoNotExceedSize(char * szText, int32_t nMaxLength);
 void __fastcall thunk_NET_D2GS_SERVER_Send_0x5A_EventMessages(struct D2ClientStrc * pClient, struct D2Packet0x5aEventStructure * pEventPacket);
 // 4 internal functions (defined in .cpp)

@@ -116,8 +116,8 @@ struct __attribute__((packed)) D2ObjectsTxt {
     /* 0x1A8 */ int Width;
     /* 0x1AC */ int Height;
     /* 0x1B0 */ char Beta;
-    /* 0x1B1 */ char InitFn;
-    /* 0x1B2 */ char PopulateFn;
+    /* 0x1B1 */ uint8_t InitFn;
+    /* 0x1B2 */ uint8_t PopulateFn;
     /* 0x1B3 */ char OperateFn;
     /* 0x1B4 */ eD2ObjectClientFn ClientFn;
     /* 0x1B5 */ bool Overlay;

@@ -15,7 +15,7 @@ struct D2LRUCacheNodeStrc;
 // Data types
 struct __attribute__((packed)) D2TileLibraryEntryStrc {
     /* 0x00 */ int nDirection;
-    /* 0x04 */ short nRoofHeight;
+    /* 0x04 */ uint16_t nRoofHeight;
     /* 0x06 */ short nFlags;
     /* 0x08 */ int nHeight;
     /* 0x0C */ int nWidth;

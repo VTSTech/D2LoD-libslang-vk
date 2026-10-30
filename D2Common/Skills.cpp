@@ -888,8 +888,8 @@ static int32_t __stdcall SKILL_GetLevelBonus(D2SkillStrc * pSkill, D2UnitStrc * 
       nItemBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addclassskills, (uint16_t)pUnit->nClassId);
       nSkillStatVal += nItemBonus;
       pSkillDesc = D2Client::DataTbls::GetSkillDescription(eSkillId);
-      if (pSkillDesc->skillpage) {
-        nStatBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addskill_tab, (char)pSkillDesc->skillpage - 1 + (short int)pUnit->nClassId * 8);
+      if (pSkillDesc->skillpage != '\0') {
+        nStatBonus = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_addskill_tab, pSkillDesc->skillpage - 1 + (short int)pUnit->nClassId * 8);
         nSkillStatVal += nStatBonus;
       }
 
@@ -2584,8 +2584,8 @@ void __stdcall SKILL_CalcKickDamage(D2UnitStrc * pUnit, int * pnParam1, int * pn
       int16_t nStrBonus;
       pBootTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pOffHandWeapon->nClassId);
       if (pBootTxt) {
-        nMinDam = (uint32_t)(uint8_t)pBootTxt->nMinDam + nKickDamageStat;
-        nMaxDam = (uint32_t)(uint8_t)pBootTxt->nMaxDam + nKickDamageStat;
+        nMinDam = (uint32_t)pBootTxt->nMinDam + nKickDamageStat;
+        nMaxDam = (uint32_t)pBootTxt->nMaxDam + nKickDamageStat;
         nTotalDamageBonus = 0;
         nStrBonus = ITEMS::Items::ITEM_GetItemsTxt_wStrBonus(pOffHandWeapon);
         if (nStrBonus) {

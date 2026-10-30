@@ -553,29 +553,22 @@ void __stdcall PANEL_DrawManaOrb() {
 }
 
 void __stdcall thunk_D2GFX_GetColorFromPalette_A() {
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-    gbPanelStaminaColorBlue = (char)nPaletteColor;
+    gbPanelStaminaColorBlue = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
 }
 
 void __stdcall PANEL_InitGoldColor() {
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xc0, 0x4c);
-    gbPanelGoldColorGreen = (char)nPaletteColor;
+    gbPanelGoldColorGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xc0, 0x4c);
 }
 
 void __stdcall thunk_D2GFX_GetColorFromPalette_B() {
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
-    gbPanelStaminaColorRed = (char)nPaletteColor;
+    gbPanelStaminaColorRed = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
 }
 
 void __stdcall PANEL_InitBeltColors() {
-    int32_t nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0, 0);
-    gaPanelBeltColors[0] = (uint8_t)nPaletteColor;
-    nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
-    gaPanelBeltColors[1] = (uint8_t)nPaletteColor;
-    nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0x80);
-    gaPanelBeltColors[2] = (uint8_t)nPaletteColor;
-    nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0);
-    gaPanelBeltColors[3] = (uint8_t)nPaletteColor;
+    gaPanelBeltColors[0] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0, 0);
+    gaPanelBeltColors[1] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
+    gaPanelBeltColors[2] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0x80);
+    gaPanelBeltColors[3] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0);
 }
 
 void __stdcall PANEL_ShowRunButtonTooltip() {
@@ -652,7 +645,6 @@ void __stdcall PANEL_DrawRunButton() {
 
 void __stdcall PANEL_DrawStaminaBar() {
     BOOL nTmp;
-    eD2States eState;
     int iVar1;
     uint16_t* pwszCursor;
     uint16_t wszTooltip[100];
@@ -663,13 +655,9 @@ void __stdcall PANEL_DrawStaminaBar() {
     int32_t nMaxStamina;
     nMaxStamina = D2Common::Stats::StatsEx::GetTxtMaxStamina(pUnit);
     if (!gbPanelStaminaColorBlue) {
-      int32_t nPaletteColor;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
-      gbPanelStaminaColorBlue = (uint8_t)nPaletteColor;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xc0, 0x4c);
-      gbPanelGoldColorGreen = (uint8_t)nPaletteColor;
-      nPaletteColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
-      gbPanelStaminaColorRed = (uint8_t)nPaletteColor;
+      gbPanelStaminaColorBlue = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0, 0);
+      gbPanelGoldColorGreen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xf4, 0xc0, 0x4c);
+      gbPanelStaminaColorRed = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     }
 
     uint8_t byBarColor;
@@ -701,6 +689,7 @@ void __stdcall PANEL_DrawStaminaBar() {
     nMaxStaminaUnits = nMaxStamina / 256;
     nCurStamina = 0;
     if (nCurStaminaUnits <= nMaxStaminaUnits) {
+      eD2States eState;
       eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_shrine_stamina);
       if (eState == STATE_none) {
         goto show_stamina_tooltip;
@@ -1969,14 +1958,10 @@ void __stdcall PANEL_DrawBottomPanel() {
               PANEL_InitBeltColors();
             }
           } else {
-            nRectXorLen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0, 0);
-            gaPanelBeltColors[0] = (uint8_t)nRectXorLen;
-            nRectXorLen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
-            gaPanelBeltColors[1] = (uint8_t)nRectXorLen;
-            nRectXorLen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0x80);
-            gaPanelBeltColors[2] = (uint8_t)nRectXorLen;
-            nRectXorLen = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0);
-            gaPanelBeltColors[3] = (uint8_t)nRectXorLen;
+            gaPanelBeltColors[0] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0, 0);
+            gaPanelBeltColors[1] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0x80, 0);
+            gaPanelBeltColors[2] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0x80);
+            gaPanelBeltColors[3] = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x80, 0x80, 0);
             D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, aRectRed, nBeltState);
             nDrawY = aRectRed[0];
             nRectYorW = aRectRed[2];

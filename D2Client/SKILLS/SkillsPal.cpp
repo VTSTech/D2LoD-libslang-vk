@@ -632,7 +632,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
           pUnit->nFrameCount = 0x100;
           return 1;
         }
-        if ((int)pUnit->nSeqFrame >> 8 >= nEventFrame) {
+        if (pUnit->nSeqFrame >> 8 >= nEventFrame) {
           D2Common::Units::SetSequenceFrame(pUnit, 0);
           pUnit->nFrameCount = nFrameRate << 8;
           D2Common::Skills::SKILL_SetFlags(pSkill, 1);
@@ -651,7 +651,7 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(D2UnitStrc * pUnit, eD2Skill
       D2Common::Skills::SKILL_SetFlags(pSkill, 0);
       D2Common::Skills::SKILL_SetParam1(pSkill, 0);
       D2Common::Skills::SKILL_SetParam2(pSkill, 0);
-      pUnit->nFrameCount = (nFrameRate - ((int)pUnit->nSeqFrame >> 8)) * 0x100;
+      pUnit->nFrameCount = (nFrameRate - (pUnit->nSeqFrame >> 8)) * 0x100;
       if (pCurrentTarget || (pCurrentTarget = Skills::SKILL_FindClosestTargetWithStats(pUnit, 0, 0, 3, 3, -1, nullptr) , pCurrentTarget != 0)) {
         D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, Units::GetXPosFromDynamicPathUnit(pCurrentTarget), Units::GetYPosFromDynamicPathUnit(pCurrentTarget), 0);
         return 1;

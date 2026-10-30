@@ -158,7 +158,7 @@ void __fastcall Q33_StartAnyaRescuePhase(::SGAMEDATA * pGame, struct D2UnitStrc 
 // Q33_SetAnyaCanRun (PrisonOfIce): sets pA5Q3->bAnyaCanRun=1 so the escort animation switches Anya to Run.
 void __fastcall Q33_SetAnyaCanRun(::SGAMEDATA * pGame);
 // Q33_IsAnyaInTown (PrisonOfIce): returns pA5Q3->field_0xAF — whether the rescued Anya has reached Harrogath/town.
-bool __fastcall Q33_IsAnyaInTown(::SGAMEDATA * pGame);
+BOOL __fastcall Q33_IsAnyaInTown(::SGAMEDATA * pGame);
 // Q33_IsFrozenAnyaAlive (PrisonOfIce): returns true while the frozen-Anya placeholder has not been killed flag set
 // (aPlayerGUID[0x1c]==0). Used to gate rescue interaction.
 uint32_t __fastcall Q33_IsFrozenAnyaAlive(::SGAMEDATA * pGame);

@@ -71,20 +71,19 @@ DWORD __fastcall GetParentProcessId(int32_t nProcessId) {
     return DVar1;
 }
 
-uint32_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize) {
-    BOOL bClosed;
+uint8_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize) {
     HANDLE hProcess = OpenProcess(0x410, 0, nProcessId);
     if (hProcess) {
       DWORD dwLength;
       /* DWORD nSize for GetModuleFileNameExA */ /* LPSTR lpFilename for GetModuleFileNameExA */ /* HMODULE hModule for GetModuleFileNameExA */ /* HANDLE hProcess for GetModuleFileNameExA */ dwLength = GetModuleFileNameExA(hProcess, (HMODULE)0x0, szText, nBufferSize);
       if (dwLength) {
-        /* HANDLE hObject for CloseHandle */ bClosed = CloseHandle(hProcess);
-        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)bClosed >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+        /* HANDLE hObject for CloseHandle */ CloseHandle(hProcess);
+        return 1;
       }
     }
 
-    uint32_t dwCloseResult = CloseHandle(hProcess);
-    return dwCloseResult & -256;
+    /* HANDLE hObject for CloseHandle */ CloseHandle(hProcess);
+    return 0;
 }
 
 // Writes process metadata to crash report: application name, inspector tags, admin status via AllocateAndInitializeSid (SECURITY_BUILTIN_DOMAIN_RID + DOMAIN_ALIAS_RID_ADMINS), process/parent/grandparent paths, game/system locale from gaLocaleCodeStrings, and attaches log files (21 slots from InitLogFilePathPointers). Locale lookup uses MISC_GetLanguageCode and STRTABLE_GetRegistryLanguage.
@@ -113,8 +112,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     uint8_t* aLogFilePaths[21];
     PSID pAdminSid;
     _SID_IDENTIFIER_AUTHORITY sNtAuthority;
-    int8_t iVar1 = _3rdparty::crashy::IsOpen(pReport);
-    if (iVar1 == '\0') {
+    bool bVar1 = _3rdparty::crashy::IsOpen(pReport);
+    if (!bVar1) {
       return;
     }
 
@@ -131,8 +130,8 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
     BOOL bIsAdmin = 0;
     memset(sNtAuthority.Value, 0, 5 * sizeof(sNtAuthority.Value[0]));
     sNtAuthority.Value[5] = '\x05';
-    BOOL BVar2 = AllocateAndInitializeSid(&sNtAuthority, '\x02', 0x20, 0x220, 0, 0, 0, 0, 0, 0, &pAdminSid);
-    if (BVar2) {
+    BOOL BVar3 = AllocateAndInitializeSid(&sNtAuthority, '\x02', 0x20, 0x220, 0, 0, 0, 0, 0, 0, &pAdminSid);
+    if (BVar3) {
       /* PBOOL IsMember for CheckTokenMembership */ /* PSID SidToCheck for CheckTokenMembership */ /* HANDLE TokenHandle for CheckTokenMembership */ bIsAdmin = CheckTokenMembership((HANDLE)0x0, pAdminSid, &bIsAdmin);
       szProcessName = "TRUE";
       if (!bIsAdmin) {
@@ -145,51 +144,51 @@ void __fastcall WriteCrashReportProcessInfo(::Report * pReport) {
 
     _3rdparty::crashy::Printf(pReport, "<Process.Elevated> %s\n", "UNKNOWN");
     DWORD dwProcessId = GetCurrentProcessId();
-    uint32_t bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    uint8_t bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.Path> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.Name> %s\n", szProcessName);
     dwProcessId = GetParentProcessId(dwProcessId);
-    bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.ParentProcessPath> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.ParentProcessName> %s\n", szProcessName);
     dwProcessId = GetParentProcessId(dwProcessId);
-    bGotModuleName = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
+    bVar2 = GetModuleFileNameForProcess(dwProcessId, gszCrashReportProcessPath, 0x800);
     szProcessName = gszCrashReportProcessPath;
-    if ((char)bGotModuleName == '\0') {
+    if (!bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.GrandParentProcessPath> %s\n", szProcessName);
     szProcessName = strrchr(gszCrashReportProcessPath, 0x5c);
-    if (!szProcessName || (szProcessName++ , !szProcessName) || (char)bGotModuleName == '\0') {
+    if (!szProcessName || (szProcessName++ , !szProcessName) || !bVar2) {
       szProcessName = "Unknown";
     }
 
     _3rdparty::crashy::Printf(pReport, "<Process.GrandParentProcessName> %s\n", szProcessName);
-    bGotModuleName = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    _3rdparty::crashy::Printf(pReport, "<Locale.Game> %s\n", gaLanguageNames[bGotModuleName]);
-    bGotModuleName = D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage();
-    _3rdparty::crashy::Printf(pReport, "<Locale.System> %s\n", gaLanguageNames[bGotModuleName]);
+    uint32_t nSysLocaleIdx = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
+    _3rdparty::crashy::Printf(pReport, "<Locale.Game> %s\n", gaLanguageNames[nSysLocaleIdx]);
+    nSysLocaleIdx = D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage();
+    _3rdparty::crashy::Printf(pReport, "<Locale.System> %s\n", gaLanguageNames[nSysLocaleIdx]);
     _3rdparty::crashy::Printf(pReport, "<Game.Type> %s\n", "Client");
     _3rdparty::crashy::Printf(pReport, "DATA\\LOCAL", "79b7ae8fe1e97d05d57ebdc4b65bf012d38c797e");
     memset(aLogFilePaths, 0, 0x54);

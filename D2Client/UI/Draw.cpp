@@ -122,10 +122,8 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
         }
         if (eGameType == GAMETYPE_OBNET_HOST || eGameType == GAMETYPE_LAN_HOST || eGameType == GAMETYPE_OBNET_JOIN || eGameType == GAMETYPE_LAN_JOIN) {
           if (!gbLoadBarColorInitialized) {
-            nResult = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x60, 0, 0);
-            gbLoadBarColorInitialized = (uint8_t)nResult;
-            nResult = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0xff, 0);
-            gbLoadBarOutlineColor = (uint8_t)nResult;
+            gbLoadBarColorInitialized = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x60, 0, 0);
+            gbLoadBarOutlineColor = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0xff, 0xff, 0);
           }
           if (!gbLoadScreenLevelLoadInProgress) {
             D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ScreenSizeX / 2 - 0x82, ScreenSizeY / 2 + 0x9e, ScreenSizeX / 2 + 0x82, ScreenSizeY / 2 + 0xb2, (uint32_t)gbLoadBarOutlineColor, DRAW_TRANSPARENT);

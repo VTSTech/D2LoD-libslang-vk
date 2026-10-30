@@ -325,7 +325,7 @@ BOOL __fastcall SKILLSASS_CltSetChargeUpState(D2UnitStrc * pUnit, eD2Skills eSki
       return 1;
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, (uint8_t)pSkillTxt->seqinput - 1);
+    D2Common::Units::SetSequenceFrame(pUnit, pSkillTxt->seqinput - 1);
     pUnit->nFrameCount = 0x800;
     D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatListEx, 7);
     return 1;
@@ -399,7 +399,7 @@ BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_SpawnMissileCharge(D2UnitStrc * p
       return 1;
     }
 
-    D2Common::Units::SetSequenceFrame(pUnit, (uint8_t)pSkillTxt[eSkill].seqinput - 1);
+    D2Common::Units::SetSequenceFrame(pUnit, pSkillTxt[eSkill].seqinput - 1);
     pUnit->nFrameCount = 0x800;
     return 1;
 }

@@ -1593,6 +1593,7 @@ int __fastcall D2WINEDITBOX_SetTextWide(::D2WinEditBox * pnParam, uint16_t * wsz
 
 BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     bool bVar2;
+    int32_t iVar4;
     int nFontHeight;
     int nSelMin;
     size_t _Count;
@@ -1652,9 +1653,9 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     int nYEnd;
     nYEnd = nGlobalState + (pEditBox->sControl.dwPosY - pEditBox->sControl.dwSizeY) + pEditBox->nInsetY;
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszFullTextCopy, pEditBox->wszText);
-    int32_t iVar3;
-    iVar3 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
-    nSelBgColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSelBgColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)iVar3);
+    uint8_t bVar3;
+    bVar3 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
+    nSelBgColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nSelBgColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar3);
     szCursorChar[0] = '_';
     szCursorChar[1] = '\0';
     Fog::File::CONTAINER_InitializeBuffer(wszCursorChar, 2, 2, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -1682,8 +1683,8 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     nGlobalState = D2WinFont::D2WINFONT_GetCurrentFontHeight();
     int nMaxDrawWidth;
     nMaxDrawWidth = pEditBox->sControl.dwSizeX + pEditBox->nInsetX * -2;
-    int iVar4;
-    iVar4 = pEditBox->sControl.dwSizeY + pEditBox->nInsetY * -2;
+    int iVar5;
+    iVar5 = pEditBox->sControl.dwSizeY + pEditBox->nInsetY * -2;
     int nYEnd_00;
     nYEnd_00 = nYEnd;
     if (szFullText[0] == '\0') {
@@ -1699,7 +1700,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
     }
 
     do {
-      if (nYEnd_00 - nYEnd >= iVar4) {
+      if (nYEnd_00 - nYEnd >= iVar5) {
         return 1;
       }
 
@@ -1715,8 +1716,8 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
 
         szLineSegment[nLineCharCount] = cCurChar;
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszLineSegment, szLineSegment, 0x100);
-        iVar3 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, nLineCharCount);
-        if (iVar3 + nCursorCharWidth > nMaxDrawWidth) {
+        iVar4 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, nLineCharCount);
+        if (iVar4 + nCursorCharWidth > nMaxDrawWidth) {
           break;
         }
 
@@ -1801,8 +1802,8 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
         if ((int)pcLineStart >= 0 && (int)pcLineStart <= (int)nLineCharCount) {
           nSelMin = nX;
           if (pcLineStart) {
-            iVar3 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, (int32_t)pcLineStart);
-            nSelMin = iVar3 + nX;
+            iVar4 = D2WinFont::D2WINFONT_GetStringPixelWidth(wszLineSegment, (int32_t)pcLineStart);
+            nSelMin = iVar4 + nX;
           }
 
           D2WinFont::DRAW_text(wszCursorChar, nSelMin, nYEnd_00, pEditBox->nMaxValue, 0);
@@ -1825,7 +1826,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
             pcLineEnd += 2;
             nSelMin += 2;
             nYEnd_00 += nGlobalState;
-            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar4) {
+            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar5) {
               D2WinFont::DRAW_text(wszCursorChar, nX, nYEnd_00, pEditBox->nMaxValue, 0);
             }
           } while (*pcLineEnd == '\r');
@@ -1835,7 +1836,7 @@ BOOL __fastcall Draw(::D2WinEditBox * pEditBox) {
             pcLineEnd++;
             nSelMin++;
             nYEnd_00 += nGlobalState;
-            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar4) {
+            if (bVar2 && !bCursorDrawn && pEditBox->nCursorIndex == nSelMin && bLineWrapped < iVar5) {
               D2WinFont::DRAW_text(wszCursorChar, nX, nYEnd_00, pEditBox->nMaxValue, 0);
             }
           } while (*pcLineEnd == '\r');
@@ -2016,13 +2017,14 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint16_t wMaskChar;
     uint32_t nGlobalState;
     uint32_t nVisibleLen;
     BOOL nPreSelWidth;
     ::D2WinEditBox* pFocusedEditBox;
-    DWORD DVar1;
+    DWORD DVar2;
     uint32_t nMaskHalf;
-    int iVar2;
+    int iVar3;
     int nTextDrawX;
     size_t nSizeMaybe;
     uint16_t* pwszMaskDst;
@@ -2045,7 +2047,7 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x49c);
       exit(-1);
     } else {
-      uint16_t wMaskChar;
+      uint8_t bVar1;
       if (pEditBox->sControl.neD2FormType != FORM_EditBox) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x49e);
         exit(-1);
@@ -2104,35 +2106,35 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
 
       nPreSelWidth = D2WINEDITBOX_HasSelection(pEditBox);
       if (nPreSelWidth) {
-        dwTick = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
-        szOneCharBuf[1] = (char)dwTick;
+        bVar1 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
+        szOneCharBuf[1] = bVar1;
         Fog::File::CONTAINER_InitializeBuffer(awszPreSelText, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
         Fog::File::CONTAINER_InitializeBuffer(awszSelText, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
         Fog::File::CONTAINER_InitializeBuffer(awszPostSelText, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
         nTextDrawX = pEditBox->nSelAnchor;
         nCursorPixelOffset = pEditBox->nSelCursor;
-        iVar2 = nTextDrawX;
+        iVar3 = nTextDrawX;
         if (nTextDrawX >= nCursorPixelOffset) {
-          iVar2 = nCursorPixelOffset;
+          iVar3 = nCursorPixelOffset;
         }
 
         nSelStartOffset = pEditBox->nScrollStart;
-        if (iVar2 - nSelStartOffset < 0) {
+        if (iVar3 - nSelStartOffset < 0) {
           nSizeMaybe_00 = 0;
         } else {
-          iVar2 = nTextDrawX;
+          iVar3 = nTextDrawX;
           if (nTextDrawX >= nCursorPixelOffset) {
-            iVar2 = nCursorPixelOffset;
+            iVar3 = nCursorPixelOffset;
           }
 
-          nSizeMaybe_00 = iVar2 - nSelStartOffset;
+          nSizeMaybe_00 = iVar3 - nSelStartOffset;
         }
 
-        iVar2 = nTextDrawX;
+        iVar3 = nTextDrawX;
         if (nTextDrawX <= nCursorPixelOffset) {
-          iVar2 = nCursorPixelOffset;
+          iVar3 = nCursorPixelOffset;
         }
-        if ((int)(iVar2 - nSelStartOffset - nSizeMaybe_00) < 0) {
+        if ((int)(iVar3 - nSelStartOffset - nSizeMaybe_00) < 0) {
           nSizeMaybe = 0;
         } else {
           if (nTextDrawX <= nCursorPixelOffset) {
@@ -2163,8 +2165,8 @@ BOOL __fastcall DrawFlag0x8(::D2WinEditBox * pEditBox) {
         return 1;
       }
 
-      DVar1 = GetTickCount();
-      if (!(DVar1 / 0xfa & 1)) {
+      DVar2 = GetTickCount();
+      if (!(DVar2 / 0xfa & 1)) {
         return 1;
       }
 

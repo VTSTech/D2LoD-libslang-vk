@@ -354,7 +354,7 @@ int32_t __fastcall MISSILE_CltHitFn34_MephistoDoNotDraw(D2UnitStrc * pUnit, D2Un
       return 1;
     }
 
-    pOwner->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+    pOwner->eUnitFlagsEx |= 0x40000;
     return 1;
 }
 
@@ -633,7 +633,7 @@ static void MISSILE_UpdateLightFlicker(D2UnitStrc * pUnitRaw) {
       return;
     }
 
-    uint32_t nFlickerOffset = Archive::RANDOM_RandomNumberSelector(&pUnitRaw->sSeed, (uint32_t)(uint8_t)pMissileTxt->Flicker);
+    uint32_t nFlickerOffset = Archive::RANDOM_RandomNumberSelector(&pUnitRaw->sSeed, (uint32_t)pMissileTxt->Flicker);
     Draw::LightMap::SetRadiusY(pLightMap, nFlickerOffset + (uint8_t)pMissileTxt->Light);
 }
 
@@ -871,7 +871,7 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
       }
     } else {
       nPosY = (uint32_t)(uint8_t)pMissileTxt->VelLev * pSkillArg->nSkillLevel;
-      nVelocityRaw = nPosY / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+      nVelocityRaw = nPosY / 8 + (uint32_t)pMissileTxt->Vel;
       nVelocityRaw <<= 8;
     }
 
@@ -971,7 +971,7 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
     D2Common::Units::InitAnimMode(pDVar6);
     D2Common::Stats::StatsEx::AllocStatListEx(pDVar6, 0, nullptr, nullptr);
     pDVar6->nFrameCount = (uint32_t)(uint8_t)pMissileTxt->AnimLen << 8;
-    D2Common::Units::Missile::SetAnimSpeed(pDVar6, (uint32_t)(uint8_t)pMissileTxt->AnimSpeed << 4);
+    D2Common::Units::Missile::SetAnimSpeed(pDVar6, (uint32_t)pMissileTxt->AnimSpeed << 4);
     if (pSkillArg->nFlags & 0x8000U) {
       nMissileX = pSkillArg->nTotalFrames;
     } else {
@@ -992,7 +992,7 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
     D2Common::Units::Missile::SetTotalFrames(pDVar6, nMissileX);
     D2Common::Units::Missile::SetCurrentFrame(pDVar6, nMissileX);
     if (!(pSkillArg->nFlags & 0x800U)) {
-      nFlags = (uint32_t)(uint8_t)pMissileTxt->Activate;
+      nFlags = (uint32_t)pMissileTxt->Activate;
     } else {
       nFlags = pSkillArg->nActivateFrame;
     }
@@ -1015,7 +1015,7 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pDVar6, 0);
     }
     if (pMissileTxt->InitSteps != '\0') {
-      pDVar6->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+      pDVar6->eUnitFlagsEx |= 0x40000;
     }
 
     D2Common::Units::Missile::SetOwner(pDVar6, pSkillArg->pOwner);
@@ -5739,7 +5739,7 @@ D2UnitStrc * __fastcall MISSILE_ClientHitExplode(D2UnitStrc * pUnit, D2UnitStrc 
     if (nPierceResult & 2) {
       uint8_t byDirection;
       if (pMissileTxt->NextHit != '\0' && pTarget) {
-        pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(nullptr, 2, (uint32_t)(uint8_t)pMissileTxt->NextDelay, pTarget->eUnitType, pTarget->nUnitGUID);
+        pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(nullptr, 2, (uint32_t)pMissileTxt->NextDelay, pTarget->eUnitType, pTarget->nUnitGUID);
         if (pStatsEx) {
           D2Common::Stats::StatsEx::SetState(pStatsEx, STATE_justhit);
           D2Common::Stats::StatsEx::STATLIST_SetExpireFunction(pStatsEx, MISSILES_StatExpireCallback_ClearState);
@@ -5890,7 +5890,7 @@ void __fastcall MISSILE_CltDoFn01_BasicMissile(D2UnitStrc * pUnit) {
       if (pDynPath) {
         nCurFrame = D2Common::Units::Missile::GetRemainingFrames(pUnit);
         if (nCurFrame > (int)(uint32_t)(uint8_t)pDVar2->InitSteps) {
-          pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
+          pUnit->eUnitFlagsEx &= -262145;
         }
       }
 
@@ -8167,7 +8167,7 @@ void __fastcall MISSILE_CltDoFn51_RecyclerDelay(D2UnitStrc * pUnit) {
           if (-1 < pMissileTxt->CltSubMissile2 && nRemainingFrames == pMissileTxt->CltParam2) {
             pOwner = Player::MISSILE_GetOwnerUnit(pUnit);
             if (pOwner) {
-              pOwner->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
+              pOwner->eUnitFlagsEx |= 0x40000;
               memset(&sSkillArg, 0, 0x5c);
               sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->CltSubMissile2;
               sSkillArg.nFlags = 0x2000;

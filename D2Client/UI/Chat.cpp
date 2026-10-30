@@ -190,32 +190,29 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
     /* HWND param_1 for ImmReleaseContext */ ImmReleaseContext(hWnd, hImc);
 }
 
-uint32_t __stdcall CHAT_CheckIMELanguage() {
+uint8_t __stdcall CHAT_CheckIMELanguage() {
     LANGID nLangId;
-    uint32_t uVar1;
     BOOL bIsIme;
     if (gaIMECompositionBuffer == 9) {
       nLangId = GetSystemDefaultLangID();
-      uVar1 = (uint32_t)nLangId;
       if (nLangId != 0x404 && nLangId != 0xc04) {
-        return nLangId & 0xff00;
+        return 0;
       }
     } else {
       HKL hKbLayout;
       if (gaIMECompositionBuffer != 8) {
         /* DWORD idThread for GetKeyboardLayout */ hKbLayout = GetKeyboardLayout(0);
         /* HKL param_1 for ImmIsIME */ bIsIme = ImmIsIME(hKbLayout);
-        return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)bIsIme >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(bIsIme != 0));
+        return bIsIme != 0;
       }
 
       nLangId = GetSystemDefaultLangID();
-      uVar1 = (uint32_t)nLangId;
       if (nLangId != 0x804 && nLangId != 0x1004) {
-        return nLangId & 0xff00;
+        return 0;
       }
     }
 
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(uVar1 >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    return 1;
 }
 
 void __stdcall CHAT_ResetIMEState(int32_t nParam) {
@@ -245,9 +242,9 @@ void __stdcall CHAT_InitIME() {
     }
 
     gbChatInputEnabled = 0;
-    uint32_t bIMELanguageOk;
-    bIMELanguageOk = CHAT_CheckIMELanguage();
-    if ((char)bIMELanguageOk == '\0') {
+    uint8_t bVar1;
+    bVar1 = CHAT_CheckIMELanguage();
+    if (!bVar1) {
       return;
     }
 

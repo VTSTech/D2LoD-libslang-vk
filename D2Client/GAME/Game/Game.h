@@ -284,7 +284,7 @@ uint32_t __fastcall GAMEDATA_CheckTimerExpired(struct D2ClientTimerStrc * pTimer
 uint32_t __fastcall Timer_IsActiveAndUpdate(struct D2ClientTimerStrc * pTimer);
 // Send exit-game request (0x69) if not already exiting; updates exit flags.
 void __stdcall SendExitGameRequest(struct D2UIMouseMsgStrc * pMsg);
-void __fastcall CLIENT_AllocAct(int32_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel);
+void __fastcall CLIENT_AllocAct(uint8_t nActNo, int32_t nMapSeed, int32_t nAutomap, eD2LevelId eLevel);
 // GAME_InitClientSide: reset globals, init client pool, view/UI, loading screen, send join packet for network games, init palette/weather/lighting/chat; set CurrentDrawFunction and flags.
 // @sourcefile .\GAME\Game.cpp
 void __stdcall GAME_InitClientSide();

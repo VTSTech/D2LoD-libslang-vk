@@ -1998,7 +1998,7 @@ BOOL __stdcall RENDERER_GLIDE_AreBlendedShadowsEnabled() {
 }
 
 // Draws a solid rectangle using Glide API with blend mode
-void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, int32_t nDrawMode) {
+void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, int32_t nDrawMode) {
     GrColor_t nGlideColor;
     D2GlideVertexStrc fV0X[4];
     uint32_t uVar1 = nXStart <= 0 ? 0 : nXStart;
@@ -2058,7 +2058,7 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
     fV0X[2].fY = fV0X[1].fY;
     fV0X[3].fX = fV0X[2].fX;
     fV0X[3].fY = fV0X[0].fY;
-    nClampedXStart = RENDERER_GLIDE_ScalePaletteValue(dwColor & 0xff);
+    nClampedXStart = RENDERER_GLIDE_ScalePaletteValue((uint32_t)dwColor);
     nClampedXStart &= -256;
     switch (nDrawMode) {
       case 0:
@@ -2152,13 +2152,13 @@ void __fastcall DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXE
     (*GLIDEDLL_grChromakeyMode_4)(1);
 }
 
-void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha) {
+void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, BYTE dwColor, BYTE nAlpha) {
     D2GlideVertexStrc fV0X[2];
     if (!((nXEnd >= 0 || nXStart >= 0) && (nXEnd <= RENDERER_nWindowWidth || nXStart <= RENDERER_nWindowWidth) && (nYEnd >= 0 || nYStart >= 0) && (nYEnd <= RENDERER_nWindowHeight || nYStart <= RENDERER_nWindowHeight))) {
       return;
     }
 
-    uint32_t nScaledColor = RENDERER_GLIDE_ScalePaletteValue(dwColor & 0xff);
+    uint32_t nScaledColor = RENDERER_GLIDE_ScalePaletteValue((uint32_t)dwColor);
     RENDERER_GLIDE_SetColorCombine(2);
     if (nAlpha == 0xff) {
       RENDERER_GLIDE_SetAlphaBlendMode(1);
@@ -2200,6 +2200,7 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
     uint32_t nRectHeight;
     int nXStart;
     int nYEnd_00;
+    uint8_t dwColor_00;
     int nRectTop;
     int nRectLeft = pRect->left;
     if (nRectLeft > pRect->right) {
@@ -2227,16 +2228,18 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
         return;
       }
 
-      Glide::DrawLine(nXStart, nRectTop, nXEnd, nYEnd_00, nPaletteIndex, 0xff);
-      Glide::DrawLine(nXEnd, nYEnd_00, nXStart, nYEnd, nPaletteIndex, 0xff);
-      Glide::DrawLine(nXStart, nYEnd, nRectLeft, nYEnd_00, nPaletteIndex, 0xff);
-      Glide::DrawLine(nRectLeft, nYEnd_00, nXStart, nRectTop, nPaletteIndex, 0xff);
+      dwColor_00 = (uint8_t)nPaletteIndex;
+      Glide::DrawLine(nXStart, nRectTop, nXEnd, nYEnd_00, dwColor_00, 0xff);
+      Glide::DrawLine(nXEnd, nYEnd_00, nXStart, nYEnd, dwColor_00, 0xff);
+      Glide::DrawLine(nXStart, nYEnd, nRectLeft, nYEnd_00, dwColor_00, 0xff);
+      Glide::DrawLine(nRectLeft, nYEnd_00, nXStart, nRectTop, dwColor_00, 0xff);
       return;
     }
 }
 
 void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
     uint32_t nXEnd;
+    uint8_t dwColor_00;
     uint32_t nClampedYEnd;
     uint32_t nClampedYStart;
     uint32_t nClampedXStart = pRect->left;
@@ -2281,10 +2284,11 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
         exit(-1);
       }
 
-      Glide::DrawLine(nXStart, nClampedXStart, nXEnd, nClampedXStart, nPaletteIndex, 0xff);
-      Glide::DrawLine(nXEnd, nClampedXStart, nXEnd, nClampedYEndTmp, nPaletteIndex, 0xff);
-      Glide::DrawLine(nXEnd, nClampedYEndTmp, nXStart, nClampedYEndTmp, nPaletteIndex, 0xff);
-      Glide::DrawLine(nXStart, nClampedYEndTmp, nXStart, nClampedXStart, nPaletteIndex, 0xff);
+      dwColor_00 = (uint8_t)nPaletteIndex;
+      Glide::DrawLine(nXStart, nClampedXStart, nXEnd, nClampedXStart, dwColor_00, 0xff);
+      Glide::DrawLine(nXEnd, nClampedXStart, nXEnd, nClampedYEndTmp, dwColor_00, 0xff);
+      Glide::DrawLine(nXEnd, nClampedYEndTmp, nXStart, nClampedYEndTmp, dwColor_00, 0xff);
+      Glide::DrawLine(nXStart, nClampedYEndTmp, nXStart, nClampedXStart, dwColor_00, 0xff);
       return;
     }
 }
@@ -2294,13 +2298,12 @@ void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100);
       exit(-1);
     } else {
-      uint32_t byHighPaletteIdx;
       if (!(pRect->top <= pRect->bottom)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x101);
         exit(-1);
       }
 
-      Glide::DrawSolidRectEx(pRect->left, pRect->top, pRect->right, pRect->bottom, (uint32_t)((uint32_t)((uint32_t)byHighPaletteIdx & 0xffffffu) << 8 | (uint32_t)(uint8_t)nPaletteIndex), 5);
+      Glide::DrawSolidRectEx(pRect->left, pRect->top, pRect->right, pRect->bottom, nPaletteIndex, 5);
       return;
     }
 }
@@ -2313,7 +2316,7 @@ void __fastcall DrawSolidSquare(POINT * pPoint, BYTE nSize, int32_t nPaletteInde
 
     uint32_t nHalfSize = (uint32_t)(uint8_t)(nSize - 1);
     /* int yBottom for SetRect */ /* int xRight for SetRect */ /* int yTop for SetRect */ /* int xLeft for SetRect */ /* LPRECT lprc for SetRect */ SetRect(&rcSquare, pPoint->x - nHalfSize, pPoint->y - nHalfSize, pPoint->x + 1 + nHalfSize, pPoint->y + 1 + nHalfSize);
-    Glide::DrawSolidRectEx(rcSquare.left, rcSquare.top, rcSquare.right, rcSquare.bottom, nPaletteIndex, 5);
+    Glide::DrawSolidRectEx(rcSquare.left, rcSquare.top, rcSquare.right, rcSquare.bottom, (uint8_t)nPaletteIndex, 5);
 }
 
 void __fastcall ClearScreen(BOOL bPartial) {
@@ -2469,7 +2472,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
         gGlidePerspectiveVertexBuffer[2].fY = gGlidePerspectiveVertexBuffer[1].fY;
         gGlidePerspectiveVertexBuffer[3].fX = gGlidePerspectiveVertexBuffer[2].fX;
         gGlidePerspectiveVertexBuffer[3].fY = gGlidePerspectiveVertexBuffer[0].fY;
-        RENDERER_GLIDE_ApplyShadowLighting(gGlidePerspectiveVertexBuffer, (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(dwAlphaWord >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nAlpha));
+        RENDERER_GLIDE_ApplyShadowLighting(gGlidePerspectiveVertexBuffer, nAlpha);
         gGlidePerspectiveVertexBuffer[1].dwColor = gGlidePerspectiveVertexBuffer[0].dwColor;
         gGlidePerspectiveVertexBuffer[2].dwColor = gGlidePerspectiveVertexBuffer[0].dwColor;
         gGlidePerspectiveVertexBuffer[3].dwColor = gGlidePerspectiveVertexBuffer[0].dwColor;
@@ -2487,7 +2490,6 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
     float fVar2;
     int nSubtileRow;
     int nSubtileCol;
-    uint32_t dwAlphaPadded;
     D2GlideVertexStrc* pfVertexSlot;
     int nCornerFixedX;
     RECT nScreenXMax;
@@ -2540,7 +2542,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
             Glide::AdjustPerspectivePosition(nSubtileRow, bDrawn, 0, &nAdjX, &nScreenPanels);
             pfVertexSlot->fY = (float)nScreenPanels;
             pfVertexSlot->fX = (float)nAdjX + fVar2;
-            RENDERER_GLIDE_ApplyShadowLighting(pfVertexSlot, (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)dwAlphaPadded >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)nAlpha));
+            RENDERER_GLIDE_ApplyShadowLighting(pfVertexSlot, nAlpha);
             nSubtileRow += 0x8000;
             pfVertexSlot++;
             bDrawn += -0x8000;
@@ -3017,9 +3019,8 @@ void __fastcall SetGlobalLight(BYTE nRed, BYTE nGreen, BYTE nBlue) {
     gbGlideGlobalLightBlue = nBlue;
 }
 
-void __fastcall RENDERER_GLIDE_ApplyShadowLighting(D2GlideVertexStrc * pVertex, uint32_t nIntensity) {
-    uint32_t uIntensityRow = nIntensity & 0xff;
-    pVertex->dwColor = ((gpGlideLightingTable[(uint32_t)gbGlideGlobalLightRed + uIntensityRow * 0x100] | -256) << 8 | (uint32_t)gpGlideLightingTable[(uint32_t)gbGlideGlobalLightGreen + uIntensityRow * 0x100]) << 8 | (uint32_t)gpGlideLightingTable[(uint32_t)gbGlideGlobalLightBlue + uIntensityRow * 0x100];
+void __fastcall RENDERER_GLIDE_ApplyShadowLighting(D2GlideVertexStrc * pVertex, uint8_t nIntensity) {
+    pVertex->dwColor = ((gpGlideLightingTable[(uint32_t)gbGlideGlobalLightRed + (uint32_t)nIntensity * 0x100] | -256) << 8 | (uint32_t)gpGlideLightingTable[(uint32_t)gbGlideGlobalLightGreen + (uint32_t)nIntensity * 0x100]) << 8 | (uint32_t)gpGlideLightingTable[(uint32_t)gbGlideGlobalLightBlue + (uint32_t)nIntensity * 0x100];
 }
 
 void __fastcall RENDERER_GLIDE_ApplyColorLighting(D2GlideVertexStrc * pVertex, uint32_t dwPackedColor) {

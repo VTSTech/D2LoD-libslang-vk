@@ -67,7 +67,7 @@ BOOL __stdcall FOG_ReturnZeroCallback(char * szFileName, void * pContext);
 void __stdcall CrashGame();
 void __fastcall FILETOOLS_WriteOneStringToFile(::Report * pReport, char * szString);
 DWORD __fastcall GetParentProcessId(int32_t nProcessId);
-uint32_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize);
+uint8_t __fastcall GetModuleFileNameForProcess(DWORD nProcessId, LPSTR szText, DWORD nBufferSize);
 // Writes process metadata to crash report: application name, inspector tags, admin status via AllocateAndInitializeSid (SECURITY_BUILTIN_DOMAIN_RID + DOMAIN_ALIAS_RID_ADMINS), process/parent/grandparent paths, game/system locale from gaLocaleCodeStrings, and attaches log files (21 slots from InitLogFilePathPointers). Locale lookup uses MISC_GetLanguageCode and STRTABLE_GetRegistryLanguage.
 void __fastcall WriteCrashReportProcessInfo(::Report * pReport);
 void __stdcall InitializeSystemInfo();

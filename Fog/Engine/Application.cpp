@@ -58,7 +58,7 @@ typedef HRESULT (__stdcall *pfnSHGetKnownFolderPath)(GUID * rfid, DWORD dwFlags,
 namespace Fog::Engine::Application {
 
 static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo);
-static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo);
+static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo);
 
 bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     pContext->ContextFlags = 0x1003f;
@@ -144,6 +144,7 @@ bool __stdcall DEBUG_IsValidDebugDirectorySize(uint32_t nDirSize) {
 
 uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t * pDebugData, int pModuleInfoOut) {
     uint32_t nParseResult;
+    uint32_t extraout_var;
     if (nDataSize < 4) {
       return nDataSize & -256;
     }
@@ -159,14 +160,16 @@ uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t 
       return nParseResult;
     }
     if (nDataSize == 0x53445352) {
-      nParseResult = DEBUG_ParseRSDSDebugInfo(pDebugData, pModuleInfoOut);
-      return nParseResult;
+      uint8_t bVar1;
+      bVar1 = DEBUG_ParseRSDSDebugInfo(pDebugData, pModuleInfoOut);
+      return (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
     }
 
     return nDataSize & -256;
 }
 
 static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, int32_t pOutput) {
+    uint8_t bVar1;
     BOOL bIsBadPtr;
     uint32_t nParseResult;
     int* pDebugData;
@@ -181,6 +184,7 @@ static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t
     int* pEntry;
     pEntry = (int*)(pDirEntries + 0xc);
     do {
+      uint32_t extraout_var;
       pDebugData = (int*)(pEntry[2] + nBaseAddress);
       if (*pEntry == 2 && (uint32_t)pEntry[1] >= 4) {
         /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pDebugData, pEntry[1]);
@@ -192,7 +196,8 @@ static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t
               goto next_entry;
             }
 
-            nParseResult = DEBUG_ParseRSDSDebugInfo(pDebugData, pOutput);
+            bVar1 = DEBUG_ParseRSDSDebugInfo(pDebugData, pOutput);
+            nParseResult = (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
           }
           if ((char)nParseResult != '\0') {
             return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(nParseResult >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
@@ -209,33 +214,32 @@ static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t
     return nDirIter & -256;
 }
 
-static uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short * pModuleBase) {
+static uint8_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short * pModuleBase) {
     /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ *ppModuleBase = pModuleBase;
-    uint32_t bIsBadPtr = IsBadReadPtr(pModuleBase, 0x40);
+    BOOL bIsBadPtr = IsBadReadPtr(pModuleBase, 0x40);
     if (!(!bIsBadPtr && *pModuleBase == 0x5a4d)) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     int* pNtHeader = (int*)(*(int*)(pModuleBase + 0x1e) + (int)pModuleBase);
     /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pNtHeader, 4);
     if (!(!bIsBadPtr && *pNtHeader == 0x4550)) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pNtHeader + 1, 0x14);
     if (bIsBadPtr) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pNtHeader + 6, (uint32_t)*(uint16_t*)(pNtHeader + 5));
     if (bIsBadPtr) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     uint32_t bIsValidImage = DEBUG_GetPEImageType((short int*)(pNtHeader + 6));
-    bIsBadPtr = 0;
     if (!bIsValidImage) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     ppModuleBase[1] = (short int*)pNtHeader[0x14];
@@ -249,27 +253,22 @@ static uint32_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short
       }
     }
 
-    uint32_t nDirRVA = 0;
+    int nDirRVA = 0;
     uint32_t nDirSize = 0;
-    bIsValidImage = DEBUG_ParsePEDebugDirectory(&nDirSize, (int*)&nDirRVA, (short int*)(pNtHeader + 6));
-    bIsBadPtr = nDirSize;
-    if ((char)bIsValidImage == '\0') {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
-    }
-
-    bIsValidImage = nDirRVA;
-    if (!(nDirRVA && nDirSize)) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    bIsValidImage = DEBUG_ParsePEDebugDirectory(&nDirSize, &nDirRVA, (short int*)(pNtHeader + 6));
+    uint32_t nCount = nDirSize;
+    if (!((char)bIsValidImage != '\0' && nDirRVA && nDirSize)) {
+      return 1;
     }
 
     void* pDebugDir = (void*)(nDirRVA + (int)pModuleBase);
-    /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsValidImage = IsBadReadPtr(pDebugDir, nDirSize);
-    if (!(!bIsValidImage && bIsBadPtr >= 0x1c)) {
-      return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pDebugDir, nDirSize);
+    if (!(!bIsBadPtr && nCount >= 0x1c)) {
+      return 1;
     }
 
-    bIsValidImage = DEBUG_ParseDebugDataDirectory(bIsBadPtr, (int32_t)pModuleBase, (int32_t)pDebugDir, (int32_t)ppModuleBase);
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)(bIsValidImage >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    DEBUG_ParseDebugDataDirectory(nCount, (int32_t)pModuleBase, (int32_t)pDebugDir, (int32_t)ppModuleBase);
+    return 1;
 }
 
 // Adds a loaded module to the crash dump module list by parsing PE headers
@@ -326,8 +325,8 @@ static bool __stdcall DEBUG_AddModuleToList(int * pModuleList, LPCWSTR szModuleP
       pDst += 4;
     }
 
-    uint32_t nParseResult = DEBUG_ParseModuleHeaders((short int**)&aModuleInfo, pModuleBase);
-    if ((char)nParseResult == '\0') {
+    uint8_t bVar1 = DEBUG_ParseModuleHeaders((short int**)&aModuleInfo, pModuleBase);
+    if (!bVar1) {
       return true;
     }
     if (!pModuleList) {
@@ -537,15 +536,15 @@ static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInf
     return 1;
 }
 
-static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
-    uint32_t bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x1c);
+static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
+    BOOL bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x1c);
     if (bIsBadPtr) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     /* UINT_PTR ucchMax for IsBadStringPtrA */ /* LPCSTR lpsz for IsBadStringPtrA */ bIsBadPtr = IsBadStringPtrA((LPCSTR)((int)pDebugRecord + 0x18), 0x104);
     if (bIsBadPtr) {
-      return bIsBadPtr & -256;
+      return 0;
     }
 
     strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x18), -1);
@@ -553,9 +552,8 @@ static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInf
     *(uint32_t*)(pModuleInfo + 0x20c) = *(uint32_t*)((int)pDebugRecord + 4);
     *(uint32_t*)(pModuleInfo + 0x210) = *(uint32_t*)((int)pDebugRecord + 8);
     *(uint32_t*)(pModuleInfo + 0x214) = *(uint32_t*)((int)pDebugRecord + 0xc);
-    uint32_t nGuidPart = *(uint32_t*)((int)pDebugRecord + 0x10);
-    *(uint32_t*)(pModuleInfo + 0x218) = nGuidPart;
-    return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)nGuidPart >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+    *(uint32_t*)(pModuleInfo + 0x218) = *(uint32_t*)((int)pDebugRecord + 0x10);
+    return 1;
 }
 
 // Unwinds stack frames for crash dumps. Walks EBP chain up to 128 frames, validates stack pointers, skips first N frames. Captures EIP, ESP, EBP for each frame. Handles current thread or remote thread via OpenThread/SuspendThread.

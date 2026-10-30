@@ -149,7 +149,6 @@ BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
 }
 
 BOOL __fastcall Draw(::D2WinPopup * pPopup) {
-    int32_t nBgColorVal;
     int nMsgIdx;
     D2WinPopupEntry* wMessage;
     int nMsgCount;
@@ -162,8 +161,9 @@ BOOL __fastcall Draw(::D2WinPopup * pPopup) {
 
     uint32_t uVar1 = pPopup->sControl.dwState;
     if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
-      nBgColorVal = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
-      dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBgColorVal);
+      uint8_t bVar2;
+      bVar2 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
+      dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar2);
       sPopupRect.right = pPopup->sControl.dwPosX;
       sPopupRect.left = sPopupRect.right - 5;
       nMsgIdx = pPopup->sControl.dwPosY;

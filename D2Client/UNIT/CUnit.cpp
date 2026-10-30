@@ -508,7 +508,7 @@ static uint32_t __stdcall SKILL_IsSequenceInputReady(D2UnitStrc * pUnit, D2Skill
       return 0;
     }
 
-    return (uint32_t)((int)pUnit->nSeqFrame >> 8 >= (int)(uint32_t)bySeqInput);
+    return (uint32_t)(pUnit->nSeqFrame >> 8 >= (int)(uint32_t)bySeqInput);
 }
 
 // Returns TRUE if the player unit's current animation mode allows an incoming skill-interrupt. Returns FALSE immediately if the player is holding a cursor item. Blocks interrupts during Death, GetHit, Attack, Block, Cast, Throw, Kick, Dead, KnockBack, and class-specific Skill modes (Paladin Skill1, Assassin Skill2, Barb/Assassin/Druid Skill3-4). For Sequence mode, delegates to SKILL_IsSequenceInputReady.
@@ -1376,10 +1376,10 @@ D2RoomStrc * __fastcall FindRoom(int32_t nX, int32_t nY) {
 
 // Client-side teleport/warp of a unit to (nX,nY). Clears selection if moving the local player, finds the destination room, and validates the unit is alive and not in a death/kick anim. For the local player it also handles cross-room perspective (LVLTBLS_GetNoPer -> D2GFX_SetPerspectiveCapable), act-palette reload when crossing into a level with a different Pal, dungeon pop updates, and optional warp-fade timer (bWarpFade, skipped if current skill has flag 0x40). Snaps to a free collision-valid coordinate via GetFreeCoordinates_WithNeighboorRooms, refreshes the automap, clears weather particles for the player, and sends an idle-player message. Halts via Fog::ErrorManager on invalid path/room/collision states.
 void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, int32_t nY, int32_t bWarpFade) {
+    D2RoomStrc* pCurrentRoom;
     D2SkillStrc* pSkill;
     D2SkillsTxt* pSkillsTxt;
     eD2LevelId eLevelId;
-    uint32_t bNoPerspective;
     D2LevelsTxt* pLevelsTxt;
     BOOL nCollisionType;
     POINT ptFreePos;
@@ -1398,7 +1398,7 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
       exit(-1);
     } else {
-      D2RoomStrc* pCurrentRoom;
+      uint8_t bVar1;
       if (!(!nXSaved || !nY || pRoom)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x168);
         exit(-1);
@@ -1445,8 +1445,8 @@ void __fastcall CLIENT_TeleportUnitToPosition(D2UnitStrc * pUnit, int32_t nX, in
         if (pRoom) {
           D2Common::DUNGEON::Dungeon::UpdatePops(pRoom, nXSaved, nY, (uint32_t)(pCurrentRoom != pRoom));
           eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-          bNoPerspective = D2Common::DATATBLS::LvlTbls::LVLTBLS_GetNoPer(eLevelId);
-          D2gfx::D2GFX::D2GFX_SetPerspectiveCapable((uint32_t)((char)bNoPerspective == '\0'));
+          bVar1 = D2Common::DATATBLS::LvlTbls::LVLTBLS_GetNoPer(eLevelId);
+          D2gfx::D2GFX::D2GFX_SetPerspectiveCapable((uint32_t)!bVar1);
           if (pCurrentRoom) {
             eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pCurrentRoom);
             ptFreePos.y = (LONG)D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevelId);
@@ -1955,9 +1955,9 @@ static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGU
     pRoom = 0;
     if (pUnit) {
       if (bIsExpansion) {
-        pUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
+        pUnit->eUnitFlagsEx |= 0x2000000;
       } else {
-        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
+        pUnit->eUnitFlagsEx &= -33554433;
       }
     }
 
@@ -2056,9 +2056,9 @@ D2UnitStrc * __fastcall UNIT_CreatePlayer(int32_t nUnitGuid, int32_t nClassId, i
 
     BOOL bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
     if (bIsExpansion) {
-      pUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
+      pUnit->eUnitFlagsEx |= 0x2000000;
     } else {
-      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
+      pUnit->eUnitFlagsEx &= -33554433;
     }
 
     pUnit->nClassId = nClassId;

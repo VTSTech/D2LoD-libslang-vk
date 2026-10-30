@@ -720,6 +720,7 @@ static int32_t __stdcall D2WINTEXTBOX_TruncateStringToFitWidth(int32_t nParam, u
 }
 
 BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
+    uint8_t bVar2;
     ::ListCheck nUsableWidth2;
     uint32_t uFontHeight;
     int32_t nTextWidth;
@@ -747,18 +748,18 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3bc);
       exit(-1);
     } else {
-      uint32_t uBgColor;
+      uint32_t uVar1;
       if (pTextBox->sControl.neD2FormType != FORM_TextBox) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3bd);
         exit(-1);
       }
 
-      uBgColor = pTextBox->sControl.dwState;
-      if (!(gadwBitMasks[2] & uBgColor) || !(gadwBitMasks[0] & uBgColor)) {
+      uVar1 = pTextBox->sControl.dwState;
+      if (!(gadwBitMasks[2] & uVar1) || !(gadwBitMasks[0] & uVar1)) {
         return 0;
       }
 
-      uBgColor = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
+      bVar2 = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x40, 0x40, 0x40);
       pBgDC6 = pTextBox->sControl.pDC6;
       if (pBgDC6) {
         memset(&sGfxData, 0, 0x48);
@@ -879,7 +880,7 @@ BOOL __fastcall Draw(::D2WinTextBox * pTextBox) {
               if (pTextBox->sStyleControl.fpDrawEx == (::DrawEx)(pTextBox->sStyleControl.dwSizeY + nLineIndex) && (uint32_t)pTextBox->sStyleControl.fpDraw & 1) {
                 dwColor = pCurLine[5] != PALETTE_GOLD ? pCurLine[5] : 0;
                 if (!nColIndex) {
-                  D2WinFont::D2WINFONT_DrawTextWithOffsetBackground(local_87c, (int32_t)nColDrawX, nCurY, uFontHeight, uBgColor & 0xff, DRAW_SOLID, dwColor);
+                  D2WinFont::D2WINFONT_DrawTextWithOffsetBackground(local_87c, (int32_t)nColDrawX, nCurY, uFontHeight, (uint32_t)bVar2, DRAW_SOLID, dwColor);
                 } else {
                   D2WinFont::DRAW_text(local_87c, (int32_t)nColDrawX, nLineStride, dwColor, 0);
                 }

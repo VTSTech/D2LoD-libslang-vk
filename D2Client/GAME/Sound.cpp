@@ -253,7 +253,7 @@ int * __fastcall SOUND_FindPlayingByIdSafe(int32_t nId) {
       iVar2 = D2Sound::Src::D2SoundSmp::SOUNDSMP_IsPlaying(((D2ClientSoundChannelStrc*)(ppDVar3 - 2))->pSoundSmp);
       if (iVar2) {
         pDVar1 = *ppDVar3;
-        if (pDVar1 && pDVar1->nSoundId == nId && (!pDVar4 || (uint32_t)pDVar1->nScheduledTime < (uint32_t)pDVar4->pActiveSound->nScheduledTime)) {
+        if (pDVar1 && pDVar1->nSoundId == nId && (!pDVar4 || pDVar1->nScheduledTime < pDVar4->pActiveSound->nScheduledTime)) {
           pDVar4 = (D2ClientSoundChannelStrc*)(ppDVar3 - 2);
         }
       }
@@ -633,7 +633,7 @@ D2ClientSoundChannelStrc * __fastcall SOUND_PlaySoundWithPanning(D2SoundChannelS
     int* pPlayingChannel = SOUND_FindPlayingByIdSafe(pMemory->nSoundId);
     if (pPlayingChannel) {
       nResult = pPlayingChannel[2];
-      if (!*(int*)(nResult + 0x3d) && (uint32_t)(pMemory->nScheduledTime - *(int*)(nResult + 0x34)) < 2 && *(uint8_t*)(nResult + 0x3c) >= pMemory->nPriorityByte) {
+      if (!*(int*)(nResult + 0x3d) && pMemory->nScheduledTime - *(int*)(nResult + 0x34) < 2 && *(uint8_t*)(nResult + 0x3c) >= pMemory->nPriorityByte) {
         return nullptr;
       }
     }
