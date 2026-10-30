@@ -212,6 +212,20 @@ gate "resfix: gdi scale width 1280"         D2Gdi/Renderer/Windowed.cpp   'nPara
 gate "resfix: ddraw size tables extended"   D2DDraw/Renderer/DirectDraw.cpp '0x540, 0x500' 1
 gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnDDrawRenderWidth = 1280' 1
 
+# ---- glide 720p (post-"Video: Software" round, 2026-10-30) ------------------
+# Owner field-tested D3D at 720p as WORKING (renderer 6); Glide (renderer 4,
+# -3dfx + the paired Glide3xVK glide3x.dll) still failed: InitWindow clamped
+# every non-640 stop to an 800x600 surface AND left gbGlidePerspectiveMode 0
+# at a non-800x600 size, where InitTextureMemory's non-perspective branch is
+# gated on width==800 && height==600 and never runs -> uninitialized caches,
+# black world. Game side passes grSstWinOpen enum 16 = 1280x720 (17 = dormant
+# 1344x700); the paired wrapper learns both in g3x_resolution_size (Glide3xVK
+# branch patch, delivered alongside this one).
+gate "resfix: glide mode-4 surface 1280x720"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1280' 1
+gate "resfix: glide mode-3 surface 1344x700"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1344' 1
+gate "resfix: glide resolution enum 16"         D2Glide/Renderer/Glide.cpp 'screen_resolution = 16' 1
+gate "resfix: glide perspective path modes 2/3/4" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"
