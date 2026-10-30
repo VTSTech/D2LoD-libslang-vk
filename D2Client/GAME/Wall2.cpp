@@ -1307,10 +1307,10 @@ void __fastcall WALL2_BuildSceneDrawList(D2GameViewStrc * pGameView, uint32_t nT
       pGameView->sWall2.nWall2GridOriginX = nIsoY;
       pGridCellIter = pGameView->sWall2.pWall2;
       pGameView->sWall2.nWall2GridOriginY = nIsoX;
-      if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
+      if (pGameView->sWall2.nWall2GridDim > 0) {
         do {
           nGridColIdx = 0;
-          if ((uint32_t)pGameView->sWall2.nWall2GridDim > 0) {
+          if (pGameView->sWall2.nWall2GridDim > 0) {
             do {
               pGridCellIter->nGridIsoX = nIsoY + nGridColIdx;
               pGridCellIter->nGridIsoY = nIsoX + nGridRowIdx;

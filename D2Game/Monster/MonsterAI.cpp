@@ -238,7 +238,7 @@ void __fastcall MERC_ApplyLevelStats(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, 
           if ((int)eSkill >= sgptDataTable->nTxtSkillsCount) {
             return;
           }
-          if ('\x0f' < (char)pHirelingTxt->nSkillMode[nLevelDiff]) {
+          if ((char)pHirelingTxt->nSkillMode[nLevelDiff] >= 16) {
             return;
           }
 

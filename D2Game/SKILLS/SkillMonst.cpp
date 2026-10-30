@@ -2555,7 +2555,7 @@ BOOL __fastcall Skills_SrvDoFunc_112_RandomCurse(::SGAMEDATA * pGame, D2UnitStrc
     if ((int)eSkill_00 >= 0 && (int)eSkill_00 < sgptDataTable->nTxtSkillsCount) {
       int32_t nRadius;
       pSkillsTxt = sgptDataTable->pTxtSkills + eSkill_00;
-      if (pSkillsTxt && -1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+      if (pSkillsTxt && pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
         if (pUnit) {
           pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
         }

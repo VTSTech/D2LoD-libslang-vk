@@ -283,7 +283,7 @@ D2UnitStrc * __fastcall SUNITNPC_GenerateNpcItems(D2UnitStrc * pUnit, uint32_t n
 
       pItemsTxt = D2Common::DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(nParam1, (int*)&pGame);
       dwTargetItemCode = nParam1;
-      if ((uint8_t)pGame_00->nDifficulty > 0 && nParam > 0x19) {
+      if (pGame_00->nDifficulty > 0 && nParam > 0x19) {
         if (pGame_00->nDifficulty == 1) {
           pNpcControl = sunitproxy::SUNITPROXY_GetNpcControl(pGame_00);
           nRandVal = D2Client::Archive::RANDOM_RandomNumberSelector(pNpcControl, 100000);
@@ -811,7 +811,7 @@ bool __fastcall SUNITNPC_CheckNpcCanSellItem(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     uint32_t nItemCode = D2Common::ITEMS::Items::ITEM_GetItemsTxt_szCode(pUnit);
-    if ((uint8_t)pGame->nDifficulty > 0 && (nItemCode == 0x20347068 || nItemCode == 0x20357068 || nItemCode == 0x2034706d || nItemCode == 0x2035706d)) {
+    if (pGame->nDifficulty > 0 && (nItemCode == 0x20347068 || nItemCode == 0x20357068 || nItemCode == 0x2034706d || nItemCode == 0x2035706d)) {
       return true;
     }
 

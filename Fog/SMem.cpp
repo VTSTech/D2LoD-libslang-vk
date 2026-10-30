@@ -276,7 +276,7 @@ int32_t __stdcall SMemSizeClassBucketLookup(uint32_t nAllocSize) {
     if (!nAllocSize) {
       return -1;
     }
-    if ((char)nAllocSize != '\0') {
+    if ((uint8_t)(char)nAllocSize > '\0') {
       return g_SMemSizeClassTable[nAllocSize & 0xff];
     }
 
@@ -314,7 +314,7 @@ void __stdcall SMemResetHeapStats() {
     static uint32_t g_SMemHeapStatsCount; D2_STATIC_GUARD_BSS(g_SMemHeapStatsCount, "Fog::SMem::SMemResetHeapStats::g_SMemHeapStatsCount");
 
     int nStatsRemaining;
-    if ((uint32_t)g_SMemHeapStatsCount > 0) {
+    if (g_SMemHeapStatsCount > 0) {
       int* pStatEntry;
       pStatEntry = &gaSMemHeapStats[0].nIntervalStat0;
       nStatsRemaining = g_SMemHeapStatsCount;

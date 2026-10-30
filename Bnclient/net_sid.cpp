@@ -2258,7 +2258,7 @@ int32_t __fastcall NET_SID_CLIENT_DecodeCDKeyHash(int * pnParam, uint32_t nParam
         }
       }
 
-      if ((char)pnParam[1] == '\0') {
+      if ((uint8_t)(char)pnParam[1] <= '\0') {
         NET_SID_CLIENT_GetSHAState(0, shaState);
         if (*pnParam == shaState[0]) {
           byDataByte = *(uint8_t*)((int)pnParam + 5);

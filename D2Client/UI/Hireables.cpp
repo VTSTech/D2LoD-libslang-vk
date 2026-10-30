@@ -232,7 +232,7 @@ static void __stdcall GetAndDrawHirelingName(int32_t nX, int32_t nY, int32_t nPe
     }
 
     D2PetTypeTxt* pPetTypeTxt = sgptDataTable->pTxtPetType + nPetType;
-    if (!(pPetTypeTxt && (uint16_t)pPetTypeTxt->name > 0 && pPetTypeTxt->name != 0x1506)) {
+    if (!(pPetTypeTxt && pPetTypeTxt->name > 0 && pPetTypeTxt->name != 0x1506)) {
       return;
     }
 

@@ -740,7 +740,7 @@ void __fastcall SKILL_ExecuteItemCast(D2UnitStrc * pUnit, eD2Skills eSkill, shor
         D2Common::DATATBLS::ItemStats::SetState(pTargetUnit, STATE_corpse_noselect, 1);
       }
     }
-    if (-1 < pSkillTxt->ItemCastSound) {
+    if (pSkillTxt->ItemCastSound >= 0) {
       Sound::SOUND_PlaySound((int)pSkillTxt->ItemCastSound, pUnit, 0, 0, 0);
     }
 

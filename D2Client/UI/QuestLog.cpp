@@ -1132,7 +1132,7 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
           }
 
           gQuestLog.MonstersleftInDenOfEvil = (int)*(short int*)((uintptr_t)&pPacket->nPlayerGUID + 1);
-          if (gQuestLog.MonstersleftInDenOfEvil <= 5 && -1 < gQuestLog.MonstersleftInDenOfEvil) {
+          if (gQuestLog.MonstersleftInDenOfEvil <= 5 && gQuestLog.MonstersleftInDenOfEvil >= 0) {
             if (gQuestLog.MonstersleftInDenOfEvil == 5) {
               nPrevMonsterCount = 5;
               if (pPacket->nActionType == 0x17) {

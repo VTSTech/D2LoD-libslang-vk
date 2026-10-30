@@ -1512,7 +1512,7 @@ void __fastcall SKILL_ExecuteClientProgressWithAura(D2UnitStrc * pUnit, D2UnitSt
     }
 
     short int nAuraState = pSkillTxt->aurastate;
-    if (!(nAuraState >= 0 && (int)nAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
+    if (!(nAuraState >= 0 && (int)nAuraState < sgptDataTable->nTxtStatesSize && pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
       return;
     }
 
@@ -1563,7 +1563,7 @@ void __fastcall SKILL_ExecuteClientProgressWithAura(D2UnitStrc * pUnit, D2UnitSt
 
       D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pAuraStatList, (int)pSkillTxt->aurastat[0], nProgressIndex, 0);
     }
-    if (-1 < pSkillTxt->cltprgfunc[nProgressIndex - 1] && pSkillTxt->cltprgfunc[nProgressIndex - 1] < SKILLCLTDOFUNCS_SIZE) {
+    if (pSkillTxt->cltprgfunc[nProgressIndex - 1] >= 0 && pSkillTxt->cltprgfunc[nProgressIndex - 1] < SKILLCLTDOFUNCS_SIZE) {
       if (pSkillTxt->cltmissile[0] > 0) {
         if (*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
           GetCooordinates(pUnit, (int32_t*)&pUnitArg2Saved, (int32_t*)&pAuraStatList);

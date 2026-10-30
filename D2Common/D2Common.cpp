@@ -119,7 +119,7 @@ int __stdcall ITEMMOD_RollRandomInRange(int nRangeStart, int nRangeEnd, D2UnitSt
 
     uint16_t uVar1 = ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     uint32_t uVar3 = iVar2 - nRangeEnd;
-    if (uVar1) {
+    if (uVar1 >= 1) {
       uVar3++;
     }
 

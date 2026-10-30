@@ -1621,7 +1621,7 @@ void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEn
         if (nAlpha >= 0x40) {
           nDrawMode = 1;
         } else {
-          if (nAlpha == '\0') {
+          if (nAlpha <= '\0') {
             return;
           }
 

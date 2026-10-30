@@ -762,7 +762,7 @@ void __fastcall NPCMENU_ValidateNpcForShop(D2UnitStrc * pUnit) {
       return;
     }
 
-    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0x48);
+    Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, 0x48);
 }
 
 void __stdcall NPCMENU_Initialize() {

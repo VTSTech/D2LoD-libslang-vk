@@ -804,7 +804,7 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
 }
 
 int __stdcall D2WINEDITBOX_Unused_Placeholder_7(uint32_t dwUnused1, uint32_t dwUnused2, char * szText) {
-    if ('/' < *szText && *szText < ':') {
+    if (*szText >= '0' && *szText <= '9') {
       return 1;
     }
 

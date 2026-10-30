@@ -1850,7 +1850,7 @@ D2MonStats2Txt * __fastcall MONSTER_SpawnBloodParticles(D2UnitStrc * pUnit, D2Mo
 
     D2MonStats2Txt* pMonStats2 = sgptDataTable->pTxtMonStatsEx + nMonStats2Idx;
     nMonStats2Idx = (int)pMonStats2;
-    if (!(pMonStats2 && (uint8_t)pMonStats2->byBleed > 0)) {
+    if (!(pMonStats2 && pMonStats2->byBleed > 0)) {
       return (D2MonStats2Txt*)nMonStats2Idx;
     }
 
@@ -2514,7 +2514,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
       if (!pMonStats) {
         return;
       }
-      if (pMonStats->SplEndDeath == '\x01' && -1 < pMonStats->minion1 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize) {
+      if (pMonStats->SplEndDeath == '\x01' && pMonStats->minion1 >= 0 && (int)pMonStats->minion1 < sgptDataTable->nTxtMonStatsSize) {
         nZero = 0;
         eUnitType = UNIT_MONSTER;
         nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);

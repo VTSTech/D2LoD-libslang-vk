@@ -412,7 +412,7 @@ void __stdcall WEATHER_UpdateSplashes() {
     short int* pSplashData = (short int*)pEnvironmentSplashes->pData;
     int nIndex = 0;
     D2DataArrayStrc* pSplashArray = pEnvironmentSplashes;
-    if (-1 >= pEnvironmentSplashes->nHighestUsedIndex) {
+    if (pEnvironmentSplashes->nHighestUsedIndex < 0) {
       return;
     }
 
@@ -445,7 +445,7 @@ void __stdcall WEATHER_UpdateBubbles() {
     short int* pBubbleData = (short int*)pEnvironmentBubbles->pData;
     int nIndex = 0;
     D2DataArrayStrc* pArray = pEnvironmentBubbles;
-    if (-1 >= pEnvironmentBubbles->nHighestUsedIndex) {
+    if (pEnvironmentBubbles->nHighestUsedIndex < 0) {
       return;
     }
 
@@ -715,7 +715,7 @@ void __stdcall WEATHER_UpdateParticles(D2SeedStrc * pSeed) {
 
     int nIndex = 0;
     D2WeatherParticleStrc* pParticleData = (D2WeatherParticleStrc*)pEnvironmentParticles->pData;
-    if (-1 < pEnvironmentParticles->nHighestUsedIndex) {
+    if (pEnvironmentParticles->nHighestUsedIndex >= 0) {
       int nXDrift;
       do {
         if (pParticleData->nFlags) {
@@ -860,7 +860,7 @@ void __stdcall WEATHER_DrawParticles() {
       int nMaxY = ScreenSizeY - 0x2f;
       if (pParticleData->nFlags) {
         if (nWeatherParticleCountAct5) {
-          if (pParticleData->nPosX >= nClipLeft && pParticleData->nPosX < nClipRight && -1 < pParticleData->nPosY && pParticleData->nPosY < nMaxY && (nEndX = pParticleData->nLineIndex , nEndX < 8) && nEndX >= 0) {
+          if (pParticleData->nPosX >= nClipLeft && pParticleData->nPosX < nClipRight && pParticleData->nPosY >= 0 && pParticleData->nPosY < nMaxY && (nEndX = pParticleData->nLineIndex , nEndX < 8) && nEndX >= 0) {
             D2gfx::D2GFX::D2GFX_DrawLine(gaWeatherLineOffsets[nEndX].nStartX + pParticleData->nPosX, gaWeatherLineOffsets[nEndX].nStartY + pParticleData->nPosY, gaWeatherLineOffsets[nEndX].nEndX + pParticleData->nPosX, gaWeatherLineOffsets[nEndX].nEndY + pParticleData->nPosY, (uint32_t)pParticleData->nColor, (uint32_t)pParticleData->nAlpha);
             byAlpha = pParticleData->nAlpha;
             nCurX = pParticleData->nLineIndex;
@@ -1074,14 +1074,11 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
     D2GfxDataStrc sGfxData;
     __frame0.pBubbleArraySaved = pBubbleArray;
     __frame0.bPerspective = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
-    int nScreenWidth;
-    nScreenWidth = ScreenSizeX;
-    int nXOffset;
-    nXOffset = 0;
+    int nScreenWidth = ScreenSizeX;
+    int nXOffset = 0;
     __frame0.nMinX = 0;
     __frame0.nMaxX = ScreenSizeX;
-    uint32_t eBorderType;
-    eBorderType = UI::Path::DRAW_GetTypeOfBorder();
+    uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
     switch (eBorderType) {
       case 1:
         {
@@ -1099,14 +1096,13 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
     }
 
     memset(&sGfxData, 0, 0x48);
-    D2WeatherBubbleStrc* pEntry;
-    pEntry = (D2WeatherBubbleStrc*)__frame0.pBubbleArraySaved->pData;
+    D2WeatherBubbleStrc* pEntry = (D2WeatherBubbleStrc*)__frame0.pBubbleArraySaved->pData;
     __frame0.nIndex = 0;
-    if (-1 >= __frame0.pBubbleArraySaved->nHighestUsedIndex) {
+    if (__frame0.pBubbleArraySaved->nHighestUsedIndex < 0) {
       return;
     }
 
-    do {
+    for (; __frame0.nIndex <= __frame0.pBubbleArraySaved->nHighestUsedIndex; __frame0.nIndex++ , pEntry++) {
       __frame0.nMaxY = ScreenSizeY - 0x2f;
       if (pEntry->nFlags) {
         if (__frame0.bPerspective) {
@@ -1119,7 +1115,7 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
               sGfxData.nFrameNumber = pEntry->nFrameNumber;
               nDrawResult = D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, __frame0.nScreenX, __frame0.nScreenY, -1, DRAW_LIGHTTRANSPARENT, nullptr);
               if (nDrawResult) {
-                goto next_bubble;
+                continue;
               }
             }
           }
@@ -1135,11 +1131,7 @@ void __fastcall WEATHER_DrawBubbles(D2DataArrayStrc * pBubbleArray, DC6 * * pDC6
           }
         }
       }
-
-      next_bubble:
-      __frame0.nIndex++;
-      pEntry++;
-    } while (__frame0.nIndex <= __frame0.pBubbleArraySaved->nHighestUsedIndex);
+    }
 }
 
 void __stdcall DRAW_WORLD_RainEffectOnFloor() {

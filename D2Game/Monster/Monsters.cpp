@@ -117,7 +117,7 @@ uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMon
     if (nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize) {
       D2MonStatsTxt* pMonStatsTxt;
       pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonStatId;
-      if (pMonStatsTxt && -1 < pMonStatsTxt->MonType && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize) {
+      if (pMonStatsTxt && pMonStatsTxt->MonType >= 0 && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize) {
         return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
       }
     }
@@ -943,7 +943,7 @@ void __fastcall MONSTER_ApplyAmplifyDamageCurse(::SGAMEDATA * pGame, D2UnitStrc 
     }
 
     D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills;
-    if (!(pSkillsTxt != (D2SkillsTxt*)-37752 && pSkillsTxt[0x42].aurastat[0] >= -1 && (int)pSkillsTxt[0x42].aurastat[0] < sgptDataTable->nTxtItemStatCostSize && -1 < pSkillsTxt[0x42].auratargetstate && (int)pSkillsTxt[0x42].auratargetstate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillsTxt != (D2SkillsTxt*)-37752 && pSkillsTxt[0x42].aurastat[0] >= -1 && (int)pSkillsTxt[0x42].aurastat[0] < sgptDataTable->nTxtItemStatCostSize && pSkillsTxt[0x42].auratargetstate >= 0 && (int)pSkillsTxt[0x42].auratargetstate < sgptDataTable->nTxtStatesSize)) {
       return;
     }
 
@@ -2710,7 +2710,7 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
     } while (nGroupMin < 3);
 
     nDiffUModCount = 0;
-    if ((uint8_t)pGame->nDifficulty > 0) {
+    if (pGame->nDifficulty > 0) {
       uint8_t byDifficulty;
       do {
         nUModCount = MONUMOD_RollRandomModifier(pUnit, abUsedUMods, pGame);
@@ -2851,7 +2851,7 @@ int32_t __fastcall MONSTER_CalculateCorpseBombDamage(int32_t nParam1, int32_t nP
     0x38
 }; D2_STATIC_GUARD(gnCorpseBombDamageScaleByDifficulty, "D2Game::Monsters::MONSTER_CalculateCorpseBombDamage::gnCorpseBombDamageScaleByDifficulty");
 
-    if (*(char*)(nParam1 + 0x6d) == '\0') {
+    if (!((uint8_t)*(char*)(nParam1 + 0x6d) > '\0')) {
       return 0;
     }
     if (nParam2 < 2) {

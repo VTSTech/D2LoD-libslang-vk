@@ -87,7 +87,7 @@ void __stdcall STRUCT_FreeAsyncData() {
       D2AsyncDataStrc* pMemoryToFree;
       nIndex = 0;
       pMemoryToFree = pD2AsyncDataStrc;
-      if ((uint32_t)gnAsyncDataHandleBufferSize > 0) {
+      if (gnAsyncDataHandleBufferSize > 0) {
         do {
           pSlot = (void*)((uintptr_t)&pMemoryToFree->aSlots[0].hEvent + nSlotOffset);
           if (pSlot && *(HANDLE*)pSlot) {
@@ -153,7 +153,7 @@ D2AsyncDataSlotStrc * __stdcall ASYNCDATA_AllocSlot() {
 
     uint32_t nSlotIndex = 0;
     D2AsyncDataSlotStrc* pSlot = pD2AsyncDataStrc->aSlots;
-    if ((uint32_t)gnAsyncDataHandleBufferSize > 0) {
+    if (gnAsyncDataHandleBufferSize > 0) {
       do {
         if (pSlot->bFree) {
           pSlot->bFree = 0;

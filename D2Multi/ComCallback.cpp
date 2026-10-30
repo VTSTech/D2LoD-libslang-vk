@@ -2257,7 +2257,7 @@ BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * p
       nDelta = toupper((int)(char)abKeyBuf[nVal]);
       byChar = (uint8_t)nDelta;
       abKeyBuf[nVal] = byChar;
-      if ((char)byChar < '8') {
+      if ((char)byChar <= '7') {
         abKeyBuf[nVal] = (uint8_t)nChecksum & 7 ^ byChar;
         nChecksum >>= 3;
       } else if ((char)byChar < 'A') {

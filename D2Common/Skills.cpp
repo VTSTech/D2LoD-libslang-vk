@@ -1217,7 +1217,7 @@ BOOL __stdcall SkillCalculateIfWeCanSkillThisSkill(D2UnitStrc * pUnit, eD2Skills
         return 0;
       }
     }
-    if (-1 < pSkillTxt->reqskill[1]) {
+    if (pSkillTxt->reqskill[1] >= 0) {
       pReqSkillTxt = D2Client::GAME::SCmd::TXT_Skills_GetLine((int)pSkillTxt->reqskill[1]);
       if (!pReqSkillTxt) {
         return 0;

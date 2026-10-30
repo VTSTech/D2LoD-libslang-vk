@@ -279,7 +279,7 @@ BOOL __fastcall Skills_SrvDoFunc_034_ChargeUpStackMelee(::SGAMEDATA * pGame, D2U
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
       uint32_t nToHit;
       pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
-      if (pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize && -1 < pSkillRecord->aurastat[0] && (int)pSkillRecord->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (pSkillRecord && pSkillRecord->aurastate >= 0 && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize && pSkillRecord->aurastat[0] >= 0 && (int)pSkillRecord->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         memset(&sDamage, 0, 0x70);
         nHitFlags = 0;
         nToHit = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
@@ -642,7 +642,7 @@ int32_t __fastcall SKILLASS_GetChargeUpMissile(D2UnitStrc * pUnit, int32_t nSkil
     }
 
     short int eAuraState = pSkillTxt->aurastate;
-    if (!(eAuraState >= 0 && (int)eAuraState < sgptDataTable->nTxtStatesSize && -1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
+    if (!(eAuraState >= 0 && (int)eAuraState < sgptDataTable->nTxtStatesSize && pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize)) {
       return (int)pSkillTxt->srvmissile[1];
     }
 
@@ -685,7 +685,7 @@ uint32_t __fastcall SKILLASS_GetChargeUpCalcValue(D2UnitStrc * pUnit, eD2Skills 
         nCalcResult = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->prgcalc[0], eSkill, nSkillLvl);
         return nCalcResult;
       }
-      if (-1 < pSkillTxt->aurastat[0] && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (pSkillTxt->aurastat[0] >= 0 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, (int)eAuraState);
         if (pStatList) {
           nCalcIdx = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, (int)pSkillTxt->aurastat[0], 0);
@@ -2412,7 +2412,7 @@ BOOL __fastcall Skills_SrvDoFunc_047_CloakOfShadows(::SGAMEDATA * pGame, D2UnitS
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_skill, eSkillOrig, 0);
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_level, nSkillLvl, 0);
     D2Common::DATATBLS::ItemStats::D2StatesTogglegfx(pUnitSaved, (int)pSkillTxt->aurastate, 1);
-    if (-1 < pSkillTxt->auratargetstate && (int)pSkillTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+    if (pSkillTxt->auratargetstate >= 0 && (int)pSkillTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
       int nAuraStatIdx;
       sCurseArgs.nSkillLvl = nSkillLvl;
       sCurseArgs.nDurationFrames = sStateExpiryArgs.nDurationInFrames;
@@ -2609,7 +2609,7 @@ void __fastcall SKILLASS_EquipSummonItems(::SGAMEDATA * pGame, D2UnitStrc * nPar
       uint32_t nRandEquipSlot;
       nRandEquipSlot = 0;
       do {
-        if ((char)pEquipTableRow->loc[nRandEquipSlot] < '\x01' || '\n' < (char)pEquipTableRow->loc[nRandEquipSlot]) {
+        if ((char)pEquipTableRow->loc[nRandEquipSlot] <= 0 || (char)pEquipTableRow->loc[nRandEquipSlot] >= 11) {
           break;
         }
 

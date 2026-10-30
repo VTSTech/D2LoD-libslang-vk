@@ -3039,7 +3039,7 @@ void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
     uint32_t nTypeIdx;
     if (pPacket->nSkillId != 0xffff) {
       nTypeIdx = 0;
-      if ((uint32_t)gnCursorAutoOpenInventoryTypeCount > 0) {
+      if (gnCursorAutoOpenInventoryTypeCount > 0) {
         do {
           if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);
@@ -3071,7 +3071,7 @@ void __fastcall ITEM_HandleItemCursorAssign(D2GSPacketSrv0x3F * pPacket) {
       }
 
       nTypeIdx = 0;
-      if ((uint32_t)gnCursorAutoOpenInventoryTypeCount > 0) {
+      if (gnCursorAutoOpenInventoryTypeCount > 0) {
         do {
           if ((uint32_t)pPacket->nItemSlot == gaaCursorAutoOpenInventoryTypes[nTypeIdx]) {
             bInventoryOpen = UI::ui::UI_GetFlag(UI_INVENTORY);

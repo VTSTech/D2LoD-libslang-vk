@@ -612,7 +612,7 @@ void __fastcall SKILLSSOR_CltCreateBlazeMissile(D2UnitStrc * pUnit) {
     }
 
     D2SkillsTxt* pSkillTxt = GAME::SCmd::TXT_Skills_GetLine(eSkill);
-    if (!(pSkillTxt && -1 < pSkillTxt->cltmissile[1] && (int)pSkillTxt->cltmissile[1] < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillTxt && pSkillTxt->cltmissile[1] >= 0 && (int)pSkillTxt->cltmissile[1] < sgptDataTable->nTxtMissilesSize)) {
       return;
     }
 
@@ -632,7 +632,7 @@ void __fastcall SKILLSSOR_CltCreateBlazeMissile(D2UnitStrc * pUnit) {
     sSkillArg.nX = nUnitX;
     sSkillArg.nY = nUnitY;
     sSkillArg.eSkillNo = eSkill;
-    if (-1 < pSkillTxt->cltmissile[2]) {
+    if (pSkillTxt->cltmissile[2] >= 0) {
       if (pSkillTxt->cltmissile[3] >= 0) {
         nPathFlags = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
         switch (nPathFlags) {

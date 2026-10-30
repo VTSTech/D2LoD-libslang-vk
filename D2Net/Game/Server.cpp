@@ -56,7 +56,7 @@ int32_t __fastcall HandleIncomingPacketBuffer(D2QServerStrc * pQServer, char * p
 
 // Validates an incoming client packet before dispatch. Returns 3 if buffer empty or size indeterminate, 4 if opcode is out-of-range or packet too large (> 0x204). On success, fills pnPacketSize, pnPacketClass (0=game-phase, 1=pre-game, 2=QServer-token-gated opcodes >= 0x71), and pnTimeoutMs (100 ms). QServer-gated packets additionally checked against the game token via QServer::MatchesGameTokenFilter.
 int32_t __fastcall NET_D2GS_CLIENT_CheckIfPacketSizeIsCorrect(uint8_t * pbPacket, size_t nSize, uint32_t * pnPacketSize, int * pnUnknown, int * pnPacketClass, int * pnTimeoutMs, uint32_t dwArg1, uint32_t dwArg2, uint32_t nParam) {
-    if (!nSize) {
+    if (nSize < 1) {
       return 3;
     }
 
@@ -339,7 +339,7 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
     uint16_t wRawLen;
     uint32_t nStrLen1;
     char* pcStrBase;
-    if (!pBytesSize) {
+    if (pBytesSize < 1) {
       return 0;
     }
 
@@ -596,7 +596,7 @@ int32_t __fastcall NET_D2GS_CLIENT_GetOutgoingPacketSizeFromTableAndVariableSize
     uint16_t wRawLen;
     uint32_t nStrLen1;
     uint32_t nStrLen2;
-    if (!nSize) {
+    if (nSize < 1) {
       return 0;
     }
 

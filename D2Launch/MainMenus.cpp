@@ -873,7 +873,7 @@ int __stdcall MAINMENU_ValidateCharNameChar(::D2WinEditBox * pEditBox, int nText
         return 0;
     }
 
-    if (cVar1 >= '!') {
+    if (cVar1 > ' ') {
       return (uint32_t)(cVar1 < '\x7f');
     }
 
@@ -910,7 +910,7 @@ int __stdcall MAINMENU_ValidateGameNameChar(::D2WinEditBox * pEditBox, int nText
         return 0;
     }
 
-    if (cVar1 >= '!') {
+    if (cVar1 > ' ') {
       return (uint32_t)(cVar1 < '\x7f');
     }
 
@@ -1099,7 +1099,7 @@ BOOL __stdcall MAINMENU_ScrollListExUp(D2ControlMsg * pControlMsg) {
     int32_t nLine;
     ::D2WinTextBox* ppForm;
     int i = 0;
-    if (-1 < FORMS_nListExExCount) {
+    if (FORMS_nListExExCount >= 0) {
       uint8_t* pFirstElement;
       do {
         ppForm = (::D2WinTextBox*)FORMS_pListExEx[i];
@@ -1130,7 +1130,7 @@ BOOL __stdcall MAINMENU_ScrollListExDown(D2ControlMsg * pControlMsg) {
     int32_t nLine;
     ::D2WinTextBox* ppForm;
     int i = 0;
-    if (-1 < FORMS_nListExExCount) {
+    if (FORMS_nListExExCount >= 0) {
       uint8_t* pFirstElement;
       do {
         ppForm = (::D2WinTextBox*)FORMS_pListExEx[i];
@@ -5034,7 +5034,7 @@ void __stdcall MAINMENU_BnetConnectionProgress() {
     }
 
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCtlBnetProgressBar);
-    if (-1 < gbBnetProgressActive) {
+    if (gbBnetProgressActive >= 0) {
       bool nTextArg2;
       nTextArg3 = 0;
       nTextArg2 = false;

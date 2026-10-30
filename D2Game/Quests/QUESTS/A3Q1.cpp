@@ -414,7 +414,7 @@ void __fastcall Q18_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a3q1.cpp
 void __fastcall Q18_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     D2GSPacketSrv0x27_TextStrc* pTextControl = pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x4f && pQuestData->bIsNotIntroduction != '\0' && !pQuestData->nStateFlag) {
+    if (pQuestArgs->sQuestArgs.sNpcActivate.nIndex == 0x4f && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 1) {
       pQuestData->nStateFlag = 1;
     }
     if (pTextControl != (D2GSPacketSrv0x27_TextStrc*)0x4b) {

@@ -959,7 +959,7 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
     if ((eAttackerType == UNIT_PLAYER || nElemDmgResult) && !(pDmgStrc->wResultFlags & 0x20)) {
       SUnitEvent::UNITEVENT_DispatchEventsByType(pGame, 3, pTarget, pUnit, pDmgStrc);
     }
-    if ((uint8_t)pDmgStrc->nConvType > 0) {
+    if (pDmgStrc->nConvType > 0) {
       eD2ElementalDamageType byConvType;
       nConvDmg = D2Client::Stats::D2ApplyPercent(pDmgStrc->dwPhysDamage, pDmgStrc->dwConvPct, 100);
       pDmgStrc->dwPhysDamage -= nConvDmg;

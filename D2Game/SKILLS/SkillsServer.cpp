@@ -3332,7 +3332,7 @@ BOOL __fastcall Skills_SrvDoFunc_002_GenericMeleeHit(::SGAMEDATA * pGame, D2Unit
         D2Common::Units::SetOverlay(pUnit, (int)pSkillsTxt->srvoverlay, 0);
       }
     }
-    if (-1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+    if (pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
       int dwAuraExpiryFrame;
       pUnit = UNIT::SUnit::GetTargetEx(pGame, pAttacker);
       if (!pUnit) {
@@ -3675,7 +3675,7 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
     } else {
       bIsPlayerOrMon = 0;
     }
-    if (-1 >= pSkillsTxt->srvdofunc) {
+    if (pSkillsTxt->srvdofunc < 0) {
       return 0;
     }
     if (pSkillsTxt->srvdofunc >= 0xbf) {

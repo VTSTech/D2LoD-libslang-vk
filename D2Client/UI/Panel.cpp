@@ -780,7 +780,7 @@ static void CLIENT_HandleBeltSlotClick(D2InventoryStrc * pInventory) {
     }
 
     D2Common::DATATBLS::BeltsTbls::GetBeltsLine(gnBeltPanelState, nScreenMode, &sBeltsTxt);
-    if (!(-1 < gnBeltSlotUnderCursor && gnBeltSlotUnderCursor < (int)(uint32_t)(uint8_t)sBeltsTxt.nBoxes)) {
+    if (!(gnBeltSlotUnderCursor >= 0 && gnBeltSlotUnderCursor < (int)(uint32_t)(uint8_t)sBeltsTxt.nBoxes)) {
       return;
     }
 
@@ -1064,7 +1064,7 @@ void __stdcall DRAW_EquipmentNeedArrows() {
     PANEL_DrawBeltSlots(2);
     check_quantity_warnings:
     nSlotIndex = 0;
-    if ((uint32_t)gnInventoryWarningSlotCount <= 0) {
+    if (gnInventoryWarningSlotCount <= 0) {
       return;
     }
 
@@ -1074,9 +1074,8 @@ void __stdcall DRAW_EquipmentNeedArrows() {
         bVar1 = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bQntWarning(pItem);
         if (bVar1) {
           nWarningItemIndex = 0;
-          if ((uint32_t)gnInventoryWarningItemCount > 0) {
-            pWarningEntry = gaInventoryWarningItems_nWarningKind_col[0] + 4;
-            do {
+          if (gnInventoryWarningItemCount > 0) {
+            for (pWarningEntry = gaInventoryWarningItems_nWarningKind_col[0] + 4; nWarningItemIndex < gnInventoryWarningItemCount; nWarningItemIndex++ , pWarningEntry += 5) {
               if ((*(int (*)[5])(pWarningEntry - 4))[0] == 1) {
                 nItemClassId = UNIT::GetClassId(pItem);
                 pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
@@ -1110,7 +1109,7 @@ void __stdcall DRAW_EquipmentNeedArrows() {
                     nTotalQuantity = pWarningEntry[-3] + 1;
                   } else {
                     if (nTotalQuantity > (uint32_t)pWarningEntry[-2]) {
-                      goto next_warning_entry;
+                      continue;
                     }
 
                     nTotalQuantity = pWarningEntry[-3];
@@ -1119,11 +1118,7 @@ void __stdcall DRAW_EquipmentNeedArrows() {
 
                 PANEL_DrawBeltSlots(nTotalQuantity);
               }
-
-              next_warning_entry:
-              nWarningItemIndex++;
-              pWarningEntry += 5;
-            } while (nWarningItemIndex < gnInventoryWarningItemCount);
+            }
           }
         }
       }

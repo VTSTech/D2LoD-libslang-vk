@@ -345,7 +345,7 @@ static void __stdcall INV_DrawGridPlacementHighlight(D2InventoryStrc * pInventor
     }
 
     D2Common::ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)&nItemWidth, (char*)&nItemHeight, "d:\\diablo2\\Diablo2\\Source\\D2Common/CmnItems.h", 0x6dc);
-    if (!(-1 < gpInventoryContextUi && -1 < gaInventorySelectState)) {
+    if (!(gpInventoryContextUi >= 0 && gaInventorySelectState >= 0)) {
       return;
     }
     if (g_nCurrentInventoryPage == 1) {
@@ -932,7 +932,7 @@ void __stdcall INV_DrawSocketedItems(D2UnitStrc * pUnit, D2GridScreenCoordinates
     int iVar1 = nItemHeight - 0xd + ((uint32_t)nItemWidth + (nSocketCount & 0xff) * 2) * 4;
     uint32_t nSocketIndex = 0;
     int32_t nSocketCountSigned = D2Common::ITEMS::Items::ITEM_GetSocketsCount(pUnit);
-    if ((char)nSocketCountSigned == '\0') {
+    if ((uint8_t)(char)nSocketCountSigned <= '\0') {
       return;
     }
 
@@ -1349,7 +1349,7 @@ void InitInventory() {
         D2Common::ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pSlotItem, (char*)&nItemWidth, (char*)&nItemHeight, "d:\\diablo2\\Diablo2\\Source\\D2Common/CmnItems.h", 0x6dc);
         nHandedness = D2Common::INVENTORY::Inventory::INVENTORY_GetWeaponHandedness(pUnit, pInventory);
         if (nBodySlot != 4) {
-          if (nBodySlot == 5 && (pPairedArmItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4) , nHandedness == 2) && (nSlotDrawY = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pPairedArmItem) , !nSlotDrawY && (nSlotDrawY = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pSlotItem) , !nSlotDrawY && (Engine::Gfx::DrawItemGfx(pSlotItem, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[5].nWidth - (uint32_t)pInventoryGridScreenCoordinated.nCellWidth * (uint32_t)nItemWidth) >> 1) + gaPlayerBodySlotScreenCoords[4].nLeft + nXpacOffsetX, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[5].nHeight - (uint32_t)pInventoryGridScreenCoordinated.nCellHeight * (uint32_t)nItemHeight) >> 1) + gaPlayerBodySlotScreenCoords[4].nTop + nXpacOffsetY) , -1 < gaPlayerBodySlotScreenCoords[4].nLeft)) && gaPlayerBodySlotScreenCoords[4].nLeft < WindowSizeX) && -1 < gaPlayerBodySlotScreenCoords[4].nTop && (nHandedness = gaPlayerBodySlotScreenCoords[4].nLeft , nSlotScreenY = gaPlayerBodySlotScreenCoords[4].nTop , nMaxSockets = gaPlayerBodySlotScreenCoords[4].nWidth , bySlotRectHeight = gaPlayerBodySlotScreenCoords[4].nHeight , gaPlayerBodySlotScreenCoords[4].nTop < WindowSizeY)) {
+          if (nBodySlot == 5 && (pPairedArmItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4) , nHandedness == 2) && (nSlotDrawY = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pPairedArmItem) , !nSlotDrawY && (nSlotDrawY = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pSlotItem) , !nSlotDrawY && (Engine::Gfx::DrawItemGfx(pSlotItem, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[5].nWidth - (uint32_t)pInventoryGridScreenCoordinated.nCellWidth * (uint32_t)nItemWidth) >> 1) + gaPlayerBodySlotScreenCoords[4].nLeft + nXpacOffsetX, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[5].nHeight - (uint32_t)pInventoryGridScreenCoordinated.nCellHeight * (uint32_t)nItemHeight) >> 1) + gaPlayerBodySlotScreenCoords[4].nTop + nXpacOffsetY) , gaPlayerBodySlotScreenCoords[4].nLeft >= 0)) && gaPlayerBodySlotScreenCoords[4].nLeft < WindowSizeX) && gaPlayerBodySlotScreenCoords[4].nTop >= 0 && (nHandedness = gaPlayerBodySlotScreenCoords[4].nLeft , nSlotScreenY = gaPlayerBodySlotScreenCoords[4].nTop , nMaxSockets = gaPlayerBodySlotScreenCoords[4].nWidth , bySlotRectHeight = gaPlayerBodySlotScreenCoords[4].nHeight , gaPlayerBodySlotScreenCoords[4].nTop < WindowSizeY)) {
             Engine::Gfx::D2GFX_DrawSolidRectExBySize(nHandedness, nSlotScreenY, (uint32_t)nMaxSockets, (uint32_t)bySlotRectHeight, (uint32_t)gaInvHighlightColors[0], DRAW_VERYTRANSPARENT);
           }
         } else {
@@ -1360,7 +1360,7 @@ void InitInventory() {
               nSlotDrawY = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pSlotItem);
               if (!nSlotDrawY) {
                 Engine::Gfx::DrawItemGfx(pSlotItem, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[4].nWidth - (uint32_t)pInventoryGridScreenCoordinated.nCellWidth * (uint32_t)nItemWidth) >> 1) + gaPlayerBodySlotScreenCoords[5].nLeft + nXpacOffsetX, ((int)((uint32_t)gaPlayerBodySlotScreenCoords[4].nHeight - (uint32_t)pInventoryGridScreenCoordinated.nCellHeight * (uint32_t)nItemHeight) >> 1) + gaPlayerBodySlotScreenCoords[5].nTop + nXpacOffsetY);
-                if (-1 < gaPlayerBodySlotScreenCoords[5].nLeft && gaPlayerBodySlotScreenCoords[5].nLeft < WindowSizeX && -1 < gaPlayerBodySlotScreenCoords[5].nTop) {
+                if (gaPlayerBodySlotScreenCoords[5].nLeft >= 0 && gaPlayerBodySlotScreenCoords[5].nLeft < WindowSizeX && gaPlayerBodySlotScreenCoords[5].nTop >= 0) {
                   nHandedness = gaPlayerBodySlotScreenCoords[5].nLeft;
                   nSlotScreenY = gaPlayerBodySlotScreenCoords[5].nTop;
                   nMaxSockets = gaPlayerBodySlotScreenCoords[5].nWidth;
@@ -4388,7 +4388,7 @@ void __stdcall INV_HandleShopReturnAction() {
     pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pCursorItem_lcl->pInventory);
     ui::ITEM_SetItemOnHand(pCursorItem_lcl);
     nItemType = gnInvShopButton;
-    if (-1 < gnInvShopButton && gnInvShopButton < gaNpcShopButtonTable[0] && gaNpcShopButtons[gnInvShopButton].wStringId != 0x276f) {
+    if (gnInvShopButton >= 0 && gnInvShopButton < gaNpcShopButtonTable[0] && gaNpcShopButtons[gnInvShopButton].wStringId != 0x276f) {
       INV_UpdateNpcButtonHighlightState(gnInvShopButton2);
       g_nCurrentInventoryPage = gaNpcShopButtons[nItemType].nActionType;
       ui::UI_SetCursorToSpecialIcon(gaNpcShopButtons[nItemType].nIconId, 0);

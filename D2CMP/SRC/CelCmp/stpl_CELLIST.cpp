@@ -344,7 +344,7 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::Destructor
     TSLink<::CELLIST>* nNext;
     uint32_t uLinkOffset;
     uint32_t nBucketIdx = 0;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       TSLink<::CELLIST>* pTVar1;
       do {
         pBucketSlot = &this->m_data[nBucketIdx];
@@ -398,7 +398,7 @@ template<> void TSGrowableArray<CELLIST>::Destructor() {
     TSLink<::TCELENTRY>* nNext;
     uint32_t uLinkOffset;
     uint32_t nIdx = 0;
-    if ((uint32_t)this->m_count > 0) {
+    if (this->m_count > 0) {
       TSLink<::TCELENTRY>* pTVar1;
       do {
         nEntryAddr = &this->m_data[nIdx];

@@ -571,7 +571,7 @@ void __fastcall TEXT_InsertScreenMessage(uint16_t * * ppwszText) {
       if (pPrev) {
         pPrev->pNext = 0;
       }
-      if (AllMessagesMaybe.nCount) {
+      if (AllMessagesMaybe.nCount >= 1) {
         AllMessagesMaybe.nCount--;
       }
     }
@@ -837,7 +837,7 @@ static uint8_t __stdcall TEXT_FindNonOverlappingRect(int32_t nExistingRectCount,
                   rcCandidate.top = pRect->top + gaTextNonOverlapRects[nDirIdx] * (int)pExistingRect;
                   rcCandidate.right = rcCandidate.left + 400;
                   rcCandidate.bottom = rcCandidate.top + 0x118;
-                  if (-1 < rcCandidate.left && rcCandidate.right <= ScreenSizeX && -1 < rcCandidate.top && rcCandidate.bottom <= ScreenSizeY) {
+                  if (rcCandidate.left >= 0 && rcCandidate.right <= ScreenSizeX && rcCandidate.top >= 0 && rcCandidate.bottom <= ScreenSizeY) {
                     bOverlaps = '\0';
                     pCheckRect = gnTextBoxExclusionLeft;
                     nRemaining = nExistingRectCount;

@@ -542,7 +542,7 @@ static BOOL __stdcall INVENTORY_PlaceItemInGrid(int32_t nnX, int32_t nnY, int32_
     }
 
     ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)&byItemW, (char*)&nItemH, ".\\INVENTORY\\Inventory.cpp", 0x365);
-    if (!(byItemW > 0 && (char)nItemH != '\0')) {
+    if (!(byItemW > 0 && (uint8_t)(char)nItemH > '\0')) {
       return 0;
     }
     if (nParam1 >= 2) {
@@ -948,7 +948,7 @@ static uint32_t __stdcall INVENTORY_FindBestGridPosition(int * * ppnOutX, int * 
     int nY = 0;
     uint32_t nBestScore = 0;
     *(uint8_t*)((char*)&nBestScore + 3) = '\0';
-    if (*(char*)(pGridInfo + 9) == '\0') {
+    if ((uint8_t)*(char*)(pGridInfo + 9) <= '\0') {
       return (uint32_t)(*(uint8_t*)((char*)&nBestScore + 3) != '\0');
     }
 
@@ -1091,10 +1091,10 @@ int __stdcall INVENTORY_FindItemGridPosition(D2InventoryStrc * pInventory, D2Uni
     }
 
     ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)((uintptr_t)&pInventory + 3), (char*)((uintptr_t)&pUnit + 3), ".\\INVENTORY\\Inventory.cpp", 0x5ac);
-    if (*(uint8_t*)((char*)&pInventory + 3) == '\0') {
+    if (!((uint8_t)*(uint8_t*)((char*)&pInventory + 3) > '\0')) {
       return 0;
     }
-    if (*(uint8_t*)((char*)&pUnit + 3) == '\0') {
+    if (!((uint8_t)*(uint8_t*)((char*)&pUnit + 3) > '\0')) {
       return 0;
     }
 
@@ -1179,7 +1179,7 @@ BOOL __stdcall INVENTORY_CheckGridCollisions(D2InventoryStrc * pInventory, D2Uni
     }
 
     ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)((uintptr_t)&pInventory + 3), (char*)((uintptr_t)&nParam + 3), ".\\INVENTORY\\Inventory.cpp", 0x656);
-    if (!(*(uint8_t*)((char*)&pInventory + 3) != '\0' && *(uint8_t*)((char*)&nParam + 3) != '\0')) {
+    if (!((uint8_t)*(uint8_t*)((char*)&pInventory + 3) > '\0' && (uint8_t)*(uint8_t*)((char*)&nParam + 3) > '\0')) {
       return 0;
     }
 
@@ -1255,7 +1255,7 @@ BOOL __stdcall INVENTORY_CheckGridOccupancy(D2InventoryStrc * pInventory, D2Unit
     }
 
     ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)((uintptr_t)&nPageByte + 3), (char*)((uintptr_t)&pInventory + 3), ".\\INVENTORY\\Inventory.cpp", 0x6bb);
-    if (!(*(uint8_t*)((char*)&nPageByte + 3) != '\0' && *(uint8_t*)((char*)&pInventory + 3) != '\0')) {
+    if (!((uint8_t)*(uint8_t*)((char*)&nPageByte + 3) > '\0' && (uint8_t)*(uint8_t*)((char*)&pInventory + 3) > '\0')) {
       return 0;
     }
 

@@ -948,7 +948,7 @@ static void FormatModuleDebugString(char * szText, D2FogDebugModuleEntryStrc * p
     char szTimeStampSuffix[16];
     *szText = '\0';
     szTimeStampSuffix[0] = '\0';
-    if ((uint32_t)pModule->dwTimestamp > 0) {
+    if (pModule->dwTimestamp > 0) {
       __snprintf_s(szTimeStampSuffix, 0x10, -1, " %8x", pModule->dwTimestamp);
     }
 
@@ -1895,7 +1895,7 @@ BOOL __fastcall QuickStackWalkWithSymbols(char * szSearchPath, HANDLE hProcess, 
     __frame1.pContextCopy = pContext;
     HANDLE hThread = hProcess;
     __frame1.szLogCategory = szSearchPath;
-    if ((uint32_t)gnStackWalkInProgress > 0) {
+    if (gnStackWalkInProgress > 0) {
       return 0;
     }
 

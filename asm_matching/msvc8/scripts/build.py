@@ -572,7 +572,7 @@ def main():
     # when the state comes out the same only changed sources are translated.
     mstamp = os.path.join(BUILD, 'mirror.key')
     mstate = os.path.join(BUILD, 'mirror.state.pkl')
-    names = ('THISCALL_FUNCS', 'THISCALL_PTRS', 'STRIP_CTORS', 'CONSTRUCT')
+    names = ('THISCALL_FUNCS', 'THISCALL_PTRS', 'STRIP_CTORS', 'CONSTRUCT', 'THISCALL_DIRECT')
     prev = None
     if objcache.READ and os.path.exists(mstate):
         try:

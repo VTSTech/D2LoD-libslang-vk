@@ -679,7 +679,7 @@ D2UnitStrc * __fastcall SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, in
           }
         }
       }
-      if ((uint8_t)pGameLocal->nDifficulty > 0) {
+      if (pGameLocal->nDifficulty > 0) {
         if (nMonCode < 0 || (nValidClassId = nMonCode , nMonCode >= sgptDataTable->nTxtMonStatsSize)) {
           nValidClassId = -1;
         }
@@ -797,7 +797,7 @@ D2UnitStrc * __fastcall SpawnMonster(::SGAMEDATA * pGame, D2RoomStrc * pRoom, in
       case 0x18:
 
       case 0x1a:
-        if ((uint8_t)pGameLocal->nDifficulty <= 0) {
+        if (pGameLocal->nDifficulty <= 0) {
           nValidClassId = 0;
           switch (nMonCode) {
             case 0x18:

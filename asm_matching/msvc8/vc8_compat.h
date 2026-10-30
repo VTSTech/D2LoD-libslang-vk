@@ -77,6 +77,27 @@ inline double nearbyint(double x) { double r; __asm { fld x } __asm { frndint } 
 inline bool isnan(double x) { return x != x; }
 }
 
+// The tree's __thiscall free functions and pointer types reach VC8 as
+// `__fastcall (A1, int, ...)` (vc8_translate.py; the keyword is accepted on a
+// pointer type but not on a free function). A call goes through this cast to
+// the __thiscall pointer type instead of passing the unused int: same callee
+// (receiver in ECX, the rest on the stack, popped by the callee), and the
+// caller loads no EDX. The cast folds into a direct `call f` / `call reg`.
+#ifdef __cplusplus
+template<class R, class A1> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int)))(A1) { return (R (__thiscall*)(A1))f; }
+template<class R, class A1, class A2> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2)))(A1, A2) { return (R (__thiscall*)(A1, A2))f; }
+template<class R, class A1, class A2, class A3> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3)))(A1, A2, A3) { return (R (__thiscall*)(A1, A2, A3))f; }
+template<class R, class A1, class A2, class A3, class A4> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4)))(A1, A2, A3, A4) { return (R (__thiscall*)(A1, A2, A3, A4))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5)))(A1, A2, A3, A4, A5) { return (R (__thiscall*)(A1, A2, A3, A4, A5))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6)))(A1, A2, A3, A4, A5, A6) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7)))(A1, A2, A3, A4, A5, A6, A7) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7, A8)))(A1, A2, A3, A4, A5, A6, A7, A8) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7, A8))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7, A8, A9)))(A1, A2, A3, A4, A5, A6, A7, A8, A9) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7, A8, A9))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7, A8, A9, A10)))(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10, class A11> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11)))(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11))f; }
+template<class R, class A1, class A2, class A3, class A4, class A5, class A6, class A7, class A8, class A9, class A10, class A11, class A12> __forceinline R (__thiscall* vc8_thiscall(R (__fastcall* f)(A1, int, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12)))(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) { return (R (__thiscall*)(A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12))f; }
+#endif
+
 // GCC's spelling of MSVC's _alloca intrinsic. malloc.h is included last, so
 // that every rename above is in force before any CRT header is read.
 #include <malloc.h>

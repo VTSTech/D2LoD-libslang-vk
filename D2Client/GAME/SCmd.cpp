@@ -837,7 +837,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x16_UPDATE(char * pBytes) {
       uint16_t nX;
       pUnitEntry = (uint8_t*)(pBytes + 4);
       i = 0;
-      if (pBytes[3] == '\0') {
+      if ((uint8_t)pBytes[3] <= '\0') {
         return;
       }
 
@@ -2183,12 +2183,12 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xA8_UNITSTATE_ONVAL_EX(char * pBytes) {
       if (!pItemStatCost) {
         return;
       }
-      if (pItemStatCost->sendBits == '\0') {
+      if (pItemStatCost->sendBits <= '\0') {
         return;
       }
 
       nStatParam = 0;
-      if ((uint8_t)pItemStatCost->sendParamBits > 0) {
+      if (pItemStatCost->sendParamBits > 0) {
         nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
         nStatParam = nParamRaw & 0xffff;
       }
@@ -2258,12 +2258,12 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAA_UNITSTATE_ALL_EX(char * pBytes) {
           if (!pItemStatCost) {
             return;
           }
-          if (pItemStatCost->sendBits == '\0') {
+          if (pItemStatCost->sendBits <= '\0') {
             return;
           }
 
           nStatParam = 0;
-          if ((uint8_t)pItemStatCost->sendParamBits > 0) {
+          if (pItemStatCost->sendParamBits > 0) {
             nParamRaw = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
             nStatParam = nParamRaw & 0xffff;
           }
@@ -2498,12 +2498,12 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       }
 
       pItemStatCost = sgptDataTable->pTxtItemStatCost + nStatValue;
-      if (!(pItemStatCost && pItemStatCost->sendBits != '\0')) {
+      if (!(pItemStatCost && pItemStatCost->sendBits > '\0')) {
         break;
       }
 
       nPosX = 0;
-      if ((uint8_t)pItemStatCost->sendParamBits > 0) {
+      if (pItemStatCost->sendParamBits > 0) {
         nPosX = Fog::BitBuffer::ReadSigned(&bitBuffer, (uint32_t)pItemStatCost->sendParamBits);
         nPosX &= 0xffff;
       }

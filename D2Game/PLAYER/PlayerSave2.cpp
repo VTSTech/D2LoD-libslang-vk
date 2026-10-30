@@ -909,7 +909,7 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus
         return 0xe;
       }
     } else {
-      if ((uint8_t)pGame->nDifficulty > 0 && (dwCharacterStatus & 0x20 && nTitleProgress < 5 || nTitleProgress < 4)) {
+      if (pGame->nDifficulty > 0 && (dwCharacterStatus & 0x20 && nTitleProgress < 5 || nTitleProgress < 4)) {
         return 0xd;
       }
     }
@@ -1217,7 +1217,7 @@ static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, sho
       if (!pStatCostTxt) {
         break;
       }
-      if (pStatCostTxt->csvbits == '\0') {
+      if ((uint8_t)pStatCostTxt->csvbits <= '\0') {
         break;
       }
 

@@ -978,7 +978,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_BloodAndMissileB(D2UnitStrc * pUnit, eD2Sk
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && -1 < pSkillTxt->cltmissile[2] && (int)pSkillTxt->cltmissile[2] < sgptDataTable->nTxtMissilesSize)) {
+    if (!(pSkillTxt && pSkillTxt->cltmissile[2] >= 0 && (int)pSkillTxt->cltmissile[2] < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

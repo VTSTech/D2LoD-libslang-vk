@@ -404,7 +404,7 @@ void __stdcall SERVER_ITEM_DecideDrops(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
                 }
               }
             }
-            if (pMonStats->TCQuestId != '\0' && (uint16_t)pMonStats->TreasureClass[nDifficulty].TreasureClass4 > 0 && pUnitKill) {
+            if (pMonStats->TCQuestId > '\0' && (uint16_t)pMonStats->TreasureClass[nDifficulty].TreasureClass4 > 0 && pUnitKill) {
               pAttacker = pUnitKill->pAttacker;
               if (pAttacker) {
                 if (pAttacker->eUnitType != UNIT_PLAYER) {

@@ -1184,7 +1184,7 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
       }
 
       pDeflateState->match_length = 0;
-      if (nCopyLen >= 3 && (uint32_t)pDeflateState->strstart > 0) {
+      if (nCopyLen >= 3 && pDeflateState->strstart > 0) {
         pBlockStart = pDeflateState->window + pDeflateState->strstart;
         byLit = pBlockStart[-1];
         if (byLit == *pBlockStart && byLit == pBlockStart[1] && byLit == pBlockStart[2]) {

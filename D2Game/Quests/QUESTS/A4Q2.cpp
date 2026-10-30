@@ -694,7 +694,7 @@ void __fastcall Q27_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
       if (pQuestData->nStateFlag < 3) {
         QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x2af);
       }
-      if (!pQuestData->nStateFlagPrev) {
+      if (pQuestData->nStateFlagPrev < 1) {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q27_PlayerNotifyCompleted, false);
       }
@@ -707,7 +707,7 @@ void __fastcall Q27_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     if (pQuestData->nStateFlag < 3) {
       QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x2bf);
     }
-    if (!pQuestData->nStateFlagPrev) {
+    if (pQuestData->nStateFlagPrev < 1) {
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q27_PlayerNotifyCompleted, true);
     }

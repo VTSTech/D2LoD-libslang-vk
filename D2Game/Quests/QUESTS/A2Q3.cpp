@@ -391,7 +391,7 @@ BOOL __fastcall Q11_UpdateQuestRecord(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     if (!pDVar3) {
       return 0;
     }
-    if (pDVar3->nStateFlag) {
+    if (pDVar3->nStateFlag >= 1) {
       /* SetQuestState(buf, A2Q3, 2=Step0x02) - any progress: mark sub-state 2 */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheTaintedSun, QUESTSTATE_Step0x02);
     }
     if (pDVar3->nStateFlag == 2) {

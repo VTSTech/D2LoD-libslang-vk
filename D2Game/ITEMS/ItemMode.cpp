@@ -7035,7 +7035,7 @@ BOOL __fastcall Transmorgify(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x162d);
           exit(-1);
         }
-        if ((uint8_t)pItemTxt->bTMogMin <= 0 || (uint8_t)pItemTxt->bTMogMax <= 0) {
+        if (pItemTxt->bTMogMin <= 0 || (uint8_t)pItemTxt->bTMogMax <= 0) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pNewItem, UNITSTAT_quantity, 0, 0);
           pTargetUnit = pUnitSaved;
         } else {

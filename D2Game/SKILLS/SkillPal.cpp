@@ -542,7 +542,7 @@ BOOL __fastcall Skills_SrvDoFunc_065_Prayer(::SGAMEDATA * pGame, D2UnitStrc * pU
         }
       }
     }
-    if (-1 >= pSkillData->auratargetstate) {
+    if (pSkillData->auratargetstate < 0) {
       return 1;
     }
 
@@ -632,7 +632,7 @@ BOOL __fastcall Skills_SrvDoFunc_066_Conviction(::SGAMEDATA * pGame, D2UnitStrc 
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
       int32_t nManaCost;
       pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
-      if (pSkillsTxt && -1 < pSkillsTxt->aurastate && (int)pSkillsTxt->aurastate < sgptDataTable->nTxtStatesSize) {
+      if (pSkillsTxt && pSkillsTxt->aurastate >= 0 && (int)pSkillsTxt->aurastate < sgptDataTable->nTxtStatesSize) {
         nManaCost = D2Common::Skills::SKILLS_CalculateManaCost(eSkill, nSkillLvl);
         iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCaster, UNITSTAT_mana, 0);
         nCalcVal = SkillsServer::SKILLS_CalcPerDelayInterval(pGame, pCaster, pSkillsTxt, eSkill, nSkillLvl);
@@ -672,7 +672,7 @@ BOOL __fastcall Skills_SrvDoFunc_066_Conviction(::SGAMEDATA * pGame, D2UnitStrc 
         nAuraTargetStateId.nAppliedCount = 0;
         nAuraTargetStateId.nFlag = 0;
         nAuraTargetStateId.nDelayFrame = nStatIdx;
-        if (-1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
+        if (pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize) {
           pAuraStatArr = pSkillsTxt->aurastatcalc;
           pAuraStatCalcArr = (int*)pSkillsTxt->aurastat;
           nStatIdx = 0;
@@ -1359,7 +1359,7 @@ BOOL __fastcall Skills_SrvDoFunc_079_Conversion(::SGAMEDATA * pGame, D2UnitStrc 
     } else {
       nConvertCheckOrFrame = 0;
     }
-    if (-1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && nConvertCheckOrFrame) {
+    if (pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && nConvertCheckOrFrame) {
       int32_t nDuration;
       nConvertCheckOrFrame = pGame->dwGameFrame;
       nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
@@ -1534,7 +1534,7 @@ uint32_t __fastcall SKILL_HitTargetApplyDamageAndShatter(D2SkillCallbackContextS
     int32_t* pAuraArgs = (int32_t*)pContext->pCallbackArg;
     if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       nIdx = pUnit->nClassId;
-      if (nIdx < 0 || nIdx >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nIdx) || -1 < sgptDataTable->pTxtMonStats[nIdx].aColdEffect[pGame->nDifficulty]) {
+      if (nIdx < 0 || nIdx >= sgptDataTable->nTxtMonStatsSize || !(sgptDataTable->pTxtMonStats + nIdx) || sgptDataTable->pTxtMonStats[nIdx].aColdEffect[pGame->nDifficulty] >= 0) {
         return 0;
       }
     }
@@ -1602,7 +1602,7 @@ BOOL __fastcall Skills_SrvDoFunc_081_HolyFreeze(::SGAMEDATA * pGame, D2UnitStrc 
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
       int32_t nManaCost;
       pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
-      if (pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize) {
+      if (pSkillRecord && pSkillRecord->aurastate >= 0 && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize) {
         nManaCost = D2Common::Skills::SKILLS_CalculateManaCost(eSkill, nSkillLvl);
         iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
         nTmp = SkillsServer::SKILLS_CalcPerDelayInterval(pGame, pUnit, pSkillRecord, eSkill, nSkillLvl);
@@ -1641,7 +1641,7 @@ BOOL __fastcall Skills_SrvDoFunc_081_HolyFreeze(::SGAMEDATA * pGame, D2UnitStrc 
         nAuraTargetState.nSkillLvl = nSkillLvl;
         nAuraTargetState.nAuraState = (int32_t)pSkillRecord->auratargetstate;
         nAuraTargetState.nDelayFrame = iVar2;
-        if (-1 < pSkillRecord->auratargetstate && (int)pSkillRecord->auratargetstate < sgptDataTable->nTxtStatesSize) {
+        if (pSkillRecord->auratargetstate >= 0 && (int)pSkillRecord->auratargetstate < sgptDataTable->nTxtStatesSize) {
           pPassiveCalcIter = pSkillRecord->aurastatcalc;
           pPassiveStatIter = (int*)pSkillRecord->aurastat;
           eSkill = SKILL_Attack;
@@ -1809,7 +1809,7 @@ BOOL __fastcall Skills_SrvDoFunc_082_Redemption(::SGAMEDATA * pGame, D2UnitStrc 
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
       int32_t nManaCost;
       pSkillRecord = sgptDataTable->pTxtSkills + eSkill;
-      if (pSkillRecord && -1 < pSkillRecord->aurastate && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize) {
+      if (pSkillRecord && pSkillRecord->aurastate >= 0 && (int)pSkillRecord->aurastate < sgptDataTable->nTxtStatesSize) {
         nManaCost = D2Common::Skills::SKILLS_CalculateManaCost(eSkill, nSkillLvl);
         iVar1 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
         nTmp = SkillsServer::SKILLS_CalcPerDelayInterval(pGame, pUnit, pSkillRecord, eSkill, nSkillLvl);

@@ -473,7 +473,7 @@ void __fastcall SOUNDSMP_CheckBufferLost(D2SoundSmpStrc * ppnParam) {
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gSoundSmpCs);
     HRESULT nHResult = ppnParam->pDSBuffer->lpVtbl->GetStatus(ppnParam->pDSBuffer, (DWORD*)&dwBufferStatus);
-    if (-1 < nHResult) {
+    if (nHResult >= 0) {
       if ((uint32_t)dwBufferStatus & 2) {
         do {
           while (true) {
@@ -687,7 +687,7 @@ DWORD __stdcall D2SOUNDSMP_SoundUpdateThreadProc(void * lpThreadParam) {
         } else {
           if (ppnParam->bIsPlaying) {
             HVar1 = ppnParam->pDSBuffer->lpVtbl->GetCurrentPosition(ppnParam->pDSBuffer, (DWORD*)&__frame0.pPlayCursor, &__frame0.nWriteCursorBytes);
-            if (-1 < HVar1) {
+            if (HVar1 >= 0) {
               nBufMask = ppnParam->nBufSize - 1;
               pListNode = ppnParam->field_08 & nBufMask;
               piVar5 = ppnParam->field_08 - pListNode;

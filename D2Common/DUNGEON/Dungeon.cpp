@@ -428,7 +428,7 @@ int32_t __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, i
     }
 
     uint32_t nRoomIdx = 0;
-    if ((uint32_t)pRoom->nRoomListCount <= 0) {
+    if (pRoom->nRoomListCount <= 0) {
       return 0;
     }
 
@@ -465,7 +465,7 @@ void __stdcall CallRoomCallback(D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallba
       }
 
       nRoomIdx = 0;
-      if ((uint32_t)pRoom->nRoomListCount <= 0) {
+      if (pRoom->nRoomListCount <= 0) {
         return;
       }
 
@@ -2101,7 +2101,7 @@ void __stdcall DRLGROOMEX_UpdateClientRoomExActivation(D2DrlgStrc * pDrlg) {
         }
 
         pRoomEx = pRoomEx->pStatusNext;
-      } while (pRoomEx != pIteratorStart && !pDrlg->nRoomInitBatchCount);
+      } while (pRoomEx != pIteratorStart && pDrlg->nRoomInitBatchCount < 1);
 
       pDrlg->pActivationIterator = pRoomEx;
       pDrlg->nRoomInitBatchCount = 0;

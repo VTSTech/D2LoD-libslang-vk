@@ -61,7 +61,7 @@ template<> uint32_t TSGrowableArray<TSExplicitList<StringEntryNode, -572662307>>
         nCapacityStripped = nCapacityMask - 1 & nCapacityMask;
       }
 
-      if (!nCount) {
+      if (nCount < 1) {
         return 1;
       }
     } else {
@@ -379,7 +379,7 @@ template<> void TSHashTable<StringEntryNode, HASHKEY_STRI>::InternalClear(int32_
     this->nFullnessIndicator = 0;
     this->tFullList.UnlinkAll();
     int32_t iBucket = 0;
-    if ((uint32_t)this->tSlotListArray.m_count <= 0) {
+    if (this->tSlotListArray.m_count <= 0) {
       return;
     }
 

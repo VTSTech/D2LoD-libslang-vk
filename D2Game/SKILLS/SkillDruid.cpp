@@ -79,7 +79,7 @@ BOOL __fastcall Skills_SrvDoFunc_114_SummonRaven(::SGAMEDATA * pGame, D2UnitStrc
 
     ::SGAMEDATA* pGameSaved = pGame;
     sSummonParams.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, &sSummonParams.nPetType, nullptr, nullptr);
-    if (-1 >= sSummonParams.classId) {
+    if (sSummonParams.classId < 0) {
       return 0;
     }
 
@@ -136,7 +136,7 @@ BOOL __fastcall Skills_SrvDoFunc_115_SummonPoisonCreeper(::SGAMEDATA * pGame, D2
 
     ::SGAMEDATA* pGameSaved = pGame;
     sCastPetParams.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, &sCastPetParams.nPetType, nullptr, nullptr);
-    if (-1 >= sCastPetParams.classId) {
+    if (sCastPetParams.classId < 0) {
       return 0;
     }
 
@@ -302,7 +302,7 @@ BOOL __fastcall Skills_SrvDoFunc_116_Werewolf(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillTxt && pSkillTxt->aurastate >= 0 && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -594,7 +594,7 @@ uint32_t __fastcall SKILLDRUID_CreateSummon(::SGAMEDATA * pGame, D2UnitStrc * pU
 
     ::SGAMEDATA* pGameSaved = pGame;
     sPetCast.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl2, &sPetCast.nPetType, nullptr, nullptr);
-    if (-1 >= sPetCast.classId) {
+    if (sPetCast.classId < 0) {
       return 0;
     }
 

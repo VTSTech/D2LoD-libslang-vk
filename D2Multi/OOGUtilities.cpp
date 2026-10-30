@@ -413,7 +413,7 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorDC6(pCursorDC6);
     fnGetTickCount pfnGetTickCount;
     pfnGetTickCount = GetTickCount;
-    if (gpChatFormList == (void*)0x2 && (uint32_t)gdwGameJoinRequestTick > 0) {
+    if (gpChatFormList == (void*)0x2 && gdwGameJoinRequestTick > 0) {
       dwTickNow = GetTickCount();
       if (dwTickNow - gdwGameJoinRequestTick > 30000) {
         gpChatFormList = 0;
@@ -1725,13 +1725,13 @@ BOOL __stdcall OOGUTIL_SendPasswordPacket(DWORD dwParam1, DWORD dwParam2, char *
         return 1;
     }
 
-    if ('/' < cVar1 && cVar1 < ':') {
+    if (cVar1 >= '0' && cVar1 <= '9') {
       return 1;
     }
-    if ('@' < cVar1 && cVar1 < '[') {
+    if (cVar1 >= 'A' && cVar1 <= 'Z') {
       return 1;
     }
-    if (!('`' < cVar1 && cVar1 < '{')) {
+    if (!(cVar1 >= 'a' && cVar1 <= 'z')) {
       return 0;
     }
 
@@ -1739,7 +1739,7 @@ BOOL __stdcall OOGUTIL_SendPasswordPacket(DWORD dwParam1, DWORD dwParam2, char *
 }
 
 BOOL __stdcall OOGUTIL_Unused9(DWORD dwParam1, DWORD dwParam2, char * szText) {
-    if ('\x1f' < *szText && *szText <= '\x7f') {
+    if (*szText >= ' ' && *szText <= '\x7f') {
       return 1;
     }
 
@@ -1747,7 +1747,7 @@ BOOL __stdcall OOGUTIL_Unused9(DWORD dwParam1, DWORD dwParam2, char * szText) {
 }
 
 BOOL __stdcall OOGUTIL_Unused10(DWORD dwParam1, DWORD dwParam2, char * szText) {
-    if ('\x1f' < *szText && *szText <= '\x7f') {
+    if (*szText >= ' ' && *szText <= '\x7f') {
       return 1;
     }
 

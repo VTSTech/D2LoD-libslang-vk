@@ -519,14 +519,14 @@ void __fastcall SKILLNEC_ApplyCurseToUnit(D2UnitStrc * pUnit, D2NecroSkillArgStr
     }
 
     int32_t* pItemEventIds = pNecroSkillArg->nAuraEvent;
-    if (!(-1 < pNecroSkillArg->nAuraEvent[0] && pNecroSkillArg->nAuraEventFunc[0] > 0)) {
+    if (!(pNecroSkillArg->nAuraEvent[0] >= 0 && pNecroSkillArg->nAuraEventFunc[0] > 0)) {
       return;
     }
 
     UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(pNecroSkillArg->pGame, pUnit, 1, pNecroSkillArg->eAuraState);
     iStatLoop = 3;
     do {
-      if (-1 < pNecroSkillArg->nAuraEvent[0] && pNecroSkillArg->nAuraEventFunc[0] > 0) {
+      if (pNecroSkillArg->nAuraEvent[0] >= 0 && pNecroSkillArg->nAuraEventFunc[0] > 0) {
         SkillsServer::D2SetAuraEvent(pNecroSkillArg->pGame, pUnit, (uint8_t)*pItemEventIds, pNecroSkillArg->eSkill, pNecroSkillArg->nSkillLvl, pItemEventIds[3], 1, pNecroSkillArg->eAuraState);
       }
 
@@ -728,7 +728,7 @@ BOOL __fastcall Skills_SrvDoFunc_059_CastCorpseSkill(::SGAMEDATA * pGame, D2Unit
     ::SGAMEDATA* local_8 = pGame;
     D2UnitStrc* pCorpse = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     uint32_t uVar1 = SKILLNEC_ValidateCorpseTarget(local_8, pUnit, pCorpse);
-    if (uVar1 && pDVar2->aurastat[0] >= -1 && (int)pDVar2->aurastat[0] < sgptDataTable->nTxtItemStatCostSize && -1 < pDVar2->auratargetstate && (int)pDVar2->auratargetstate < sgptDataTable->nTxtStatesSize) {
+    if (uVar1 && pDVar2->aurastat[0] >= -1 && (int)pDVar2->aurastat[0] < sgptDataTable->nTxtItemStatCostSize && pDVar2->auratargetstate >= 0 && (int)pDVar2->auratargetstate < sgptDataTable->nTxtStatesSize) {
       int32_t nParam2;
       if (pUnit) {
         pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
@@ -1408,7 +1408,7 @@ BOOL __fastcall Skills_SrvDoFunc_031_RaiseSkeletonFromCorpse(::SGAMEDATA * pGame
     }
 
     sPet.nPetType = (int32_t)pSkillsTxt->pettype;
-    if (!(-1 < sPet.nPetType && sPet.nPetType < sgptDataTable->nTxtPetTypeSize)) {
+    if (!(sPet.nPetType >= 0 && sPet.nPetType < sgptDataTable->nTxtPetTypeSize)) {
       return 0;
     }
 
@@ -1690,7 +1690,7 @@ BOOL __fastcall Skills_SrvDoFunc_057_IronGolem(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     sPetCastParams.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, (int*)&sPetCastParams.pSkillTxt, nullptr, nullptr);
-    if (-1 >= sPetCastParams.classId) {
+    if (sPetCastParams.classId < 0) {
       return 0;
     }
 
@@ -1933,7 +1933,7 @@ BOOL __fastcall Skills_SrvDoFunc_060_SummonBoneWall(::SGAMEDATA * pGame, D2UnitS
     }
 
     sCastPetArgs.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, &nSummonMode, nullptr, nullptr);
-    if (-1 >= sCastPetArgs.classId) {
+    if (sCastPetArgs.classId < 0) {
       return 0;
     }
 
@@ -2613,7 +2613,7 @@ BOOL __fastcall ITEMEVENT_NecroReviveLeech(::SGAMEDATA * pGame, uint32_t nUnitEv
     }
 
     D2MonStatsTxt* pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
-    if (pMonStatsTxt && -1 < pMonStatsTxt->aSkill[0]) {
+    if (pMonStatsTxt && pMonStatsTxt->aSkill[0] >= 0) {
       int32_t nLeechAmt;
       nDivisor = 100;
       nLeechAmt = D2Client::UI::SkillDesc::GetSkillParam4((int)pMonStatsTxt->aSkill[0]);
@@ -2699,7 +2699,7 @@ int32_t __fastcall BloodGolemLifeLeech(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     if (nParam) {
       D2MonStatsTxt* pMonStatsTxt;
       pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(0x122);
-      if (pMonStatsTxt && -1 < pMonStatsTxt->aSkill[0]) {
+      if (pMonStatsTxt && pMonStatsTxt->aSkill[0] >= 0) {
         nLeechAmt = D2Client::SKILLS::SkillsAma::GetTxtSkillParam5((int)pMonStatsTxt->aSkill[0]);
         nLeechAmt = SKILLNEC_AddHitpoints(pGolem, nLeechAmt * nParam / 100);
         return nParam - nLeechAmt;

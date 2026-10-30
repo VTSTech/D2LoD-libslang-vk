@@ -449,7 +449,7 @@ static int32_t __stdcall ITEMMOD_ApplyRandomStatValue(D2UnitStrc * pUnit, int32_
 
         wItemVersion = Items::ITEM_GetItemData_wItemVersion(pUnit);
         uRandRange = nRangeMax - nRangeMin;
-        if (wItemVersion) {
+        if (wItemVersion >= 1) {
           uRandRange++;
         }
 
@@ -467,7 +467,7 @@ static int32_t __stdcall ITEMMOD_ApplyRandomStatValue(D2UnitStrc * pUnit, int32_
 
         wItemVersion = Items::ITEM_GetItemData_wItemVersion(pUnit);
         uRandRange = nRangeMax - nRangeMin;
-        if (wItemVersion) {
+        if (wItemVersion >= 1) {
           uRandRange++;
         }
 
@@ -701,7 +701,7 @@ int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit
     int32_t nRangeHigh;
     uint32_t nRandom;
     uint16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-    if (sVar1) {
+    if (sVar1 >= 1) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x349);
         exit(-1);
@@ -719,7 +719,7 @@ int32_t __fastcall PropertyFunc_AllResistances(int32_t nType, D2UnitStrc * pUnit
 
         sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
         nRandom = nRangeHigh - (int)nRangeLow;
-        if (sVar1) {
+        if (sVar1 >= 1) {
           nRandom++;
         }
 
@@ -749,7 +749,7 @@ int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pU
     int32_t nRangeHigh;
     uint32_t nRandom;
     uint16_t sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-    if (sVar1) {
+    if (sVar1 >= 1) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x364);
         exit(-1);
@@ -767,7 +767,7 @@ int32_t __fastcall PropertyFunc_AllMaxResistances(int32_t nType, D2UnitStrc * pU
 
         sVar1 = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
         nRandom = nRangeHigh - (int)nRangeLow;
-        if (sVar1) {
+        if (sVar1 >= 1) {
           nRandom++;
         }
 
@@ -818,7 +818,7 @@ int32_t __fastcall PropertyFunc_MinDamage(int32_t nType, D2UnitStrc * pUnit, D2U
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nRolled = nRangeB - (int)nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nRolled++;
       }
 
@@ -902,7 +902,7 @@ int32_t __fastcall PropertyFunc_MaxDamage(int32_t nType, D2UnitStrc * pUnit, D2U
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nRolled = nRangeB - (int)nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nRolled++;
       }
 
@@ -972,7 +972,7 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
     uint32_t nBaseMaxDam;
     int32_t nRangeHigh;
     uint16_t wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-    if (wItemVersion) {
+    if (wItemVersion >= 1) {
       if (!pProperty) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x3b5);
         exit(-1);
@@ -989,7 +989,7 @@ int32_t __fastcall PropertyFunc_EnhancedDamage(int32_t nType, D2UnitStrc * pUnit
 
           wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
           nRolled = nRangeHigh - (int)nRangeLow;
-          if (wItemVersion) {
+          if (wItemVersion >= 1) {
             nRolled++;
           }
 
@@ -1381,7 +1381,7 @@ int32_t __fastcall PropertyFunc_SingleSkillBonus(int32_t nType, D2UnitStrc * pUn
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nSkillId = nRangeHigh - nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nSkillId++;
       }
 
@@ -1425,7 +1425,7 @@ int32_t __fastcall PropertyFunc_ElemSkillBonus(int32_t nType, D2UnitStrc * pUnit
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nRolled = nRangeHigh - nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nRolled++;
       }
 
@@ -1468,7 +1468,7 @@ int32_t __fastcall PropertyFunc_ClassSkillsBonus(int32_t nType, D2UnitStrc * pUn
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nClassSkillLayer = nRangeHigh - nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nClassSkillLayer++;
       }
 
@@ -1540,7 +1540,7 @@ int32_t __fastcall PropertyFunc_SimpleStatWithRoll(int32_t nType, D2UnitStrc * p
 
       wItemVersion = Items::ITEM_GetItemData_wItemVersion(pItemUnit);
       nRandom = nRangeHigh - nRangeLow;
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         nRandom++;
       }
 
@@ -3610,7 +3610,7 @@ static void __stdcall ITEMMOD_ApplyPropertyToUnitStats(uint32_t dwParam1, D2Unit
 }; D2_STATIC_GUARD(gaPropertyFuncTable, "D2Common::ITEMS::ItemMods::ITEMMOD_ApplyPropertyToUnitStats::gaPropertyFuncTable");
 
     uint16_t wPropCode = Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (wPropCode) {
+    if (wPropCode >= 1) {
       ITEMMOD_ApplyPropertyToUnitStatsExpansion(dwParam1, pUnit2, pUnit, dwParam2, dwParam3, dwParam4, pSetsTxtF, nParam, nParam2, dwParam6);
       return;
     }
@@ -3873,7 +3873,7 @@ void __fastcall ITEMMOD_ApplySetBonuses(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
       D2SetsTxt* pSetsTxtIter = pSetsLine;
       do {
         pSetsTxtIter = (D2SetsTxt*)pSetsTxtIter->aPartialBonus;
-        if (-1 < ((D2SetsTxtPStrc*)pSetsTxtIter)->pcodea) {
+        if (((D2SetsTxtPStrc*)pSetsTxtIter)->pcodea >= 0) {
           ITEMMOD_ApplyPropertyToUnitStats(4, pUnit, (D2SetsTxtFStrc*)pSetsTxtIter, pUnit2, 0, nEquipMask, 0, 0, nApplyFlags, 0, 0);
         }
 

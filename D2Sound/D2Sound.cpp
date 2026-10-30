@@ -102,7 +102,7 @@ BOOL __fastcall SOUND_ToggleEAXEnvironmentPreset(int nPresetType) {
     }
 
     hResult = gpDirectSoundEAXInterface->lpVtbl->Set(gpDirectSoundEAXInterface, pEAXProperty, uPropertyId, nullptr, 0, &nPropertyValue, 4);
-    if (-1 >= hResult) {
+    if (hResult < 0) {
       return 0;
     }
 
@@ -304,7 +304,7 @@ BOOL __stdcall SOUNDSMP_CreateSoundBuffer(uint32_t nFlags, D2SoundSmpStrc * pSou
         if (dw3DFlag) {
           ppEaxInterface2 = &pSoundSmp->pEaxInterface;
           nHResult = pSoundSmp->pDS3DBuffer->lpVtbl->QueryInterface(pSoundSmp->pDS3DBuffer, (GUID*)&gIID_IKsPropertySet, (void**)ppEaxInterface2);
-          if (-1 < nHResult) {
+          if (nHResult >= 0) {
             dwEaxCapabilities = 0;
             dw3DFlag = SOUND_GetSoundQualityFlag();
             if (dw3DFlag == 1) {
@@ -314,7 +314,7 @@ BOOL __stdcall SOUNDSMP_CreateSoundBuffer(uint32_t nFlags, D2SoundSmpStrc * pSou
             }
 
             nHResult = (*ppEaxInterface2)->lpVtbl->QuerySupport(*ppEaxInterface2, pObstructionGuid, 1, (ULONG*)&dwEaxCapabilities);
-            if (!(-1 < nHResult && ((uint8_t)dwEaxCapabilities & 3) == 3)) {
+            if (!(nHResult >= 0 && ((uint8_t)dwEaxCapabilities & 3) == 3)) {
               (*ppEaxInterface2)->lpVtbl->Release(*ppEaxInterface2);
               pSoundSmp->pDSBuffer->lpVtbl->Release(pSoundSmp->pDSBuffer);
               return 0;

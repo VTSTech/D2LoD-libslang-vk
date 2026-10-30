@@ -387,7 +387,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                   wInputFlags = pRecipe->pInputItem[nInputSlotIndex].wFlagsAndUpgrade;
                   if (wInputFlags & 4) {
                     nSocketCount = D2Common::ITEMS::Items::ITEM_GetSocketsCount(pCubeItem);
-                    if ((char)nSocketCount == '\0') {
+                    if ((uint8_t)(char)nSocketCount <= '\0') {
                       sockets_ok:
                       wInputFlags = pRecipe->pInputItem[nInputSlotIndex].wFlagsAndUpgrade;
                       if (wInputFlags & 0x20) {
@@ -706,7 +706,7 @@ uint32_t __fastcall CUBE_MatchInputDescriptorToCubeItems(::SGAMEDATA * pGame, D2
                       }
                     }
                   } else {
-                    if (!(wInputFlags & 8) || (nSocketCount = D2Common::ITEMS::Items::ITEM_GetSocketsCount(pCubeItem) , (char)nSocketCount != '\0')) {
+                    if (!(wInputFlags & 8) || (nSocketCount = D2Common::ITEMS::Items::ITEM_GetSocketsCount(pCubeItem) , (uint8_t)(char)nSocketCount > '\0')) {
                       goto sockets_ok;
                     }
                   }
@@ -1173,7 +1173,7 @@ void __fastcall CUBE_GenerateOutput(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2C
         }
         if (pOutputEntry->wFlagsAndUpgrade & 0x200) {
           bIsStackable = D2Common::ITEMS::Items::IsStackable(pDVar2);
-          if (bIsStackable && (uint8_t)pOutputEntry->nQuantity > 0) {
+          if (bIsStackable && pOutputEntry->nQuantity > 0) {
             nMaxStack = D2Common::ITEMS::Items::ITEM_GetMaxStack(pDVar2);
             if ((int)nMaxStack >= (int)(uint32_t)pOutputEntry->nQuantity) {
               nMaxStack = (uint32_t)pOutputEntry->nQuantity;

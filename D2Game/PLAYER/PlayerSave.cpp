@@ -199,7 +199,7 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     item_restored:
-    if (pSavedItemData->nStorageType != '\0') {
+    if (pSavedItemData->nStorageType > '\0') {
       *ppItemOut = pUnit_00;
     }
     if (!pnParam) {
@@ -404,7 +404,7 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
     }
 
     item_restored:
-    if (pItemUnknownStructure->nStorageType != '\0') {
+    if (pItemUnknownStructure->nStorageType > '\0') {
       *pGame2 = pItem;
     }
     *pnParam = (uint32_t)pItemUnknownStructure->nStorageType;
@@ -1273,10 +1273,10 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       if (wDifficultyBits < 8 && pGameCopy->nDifficulty > 1) {
         return 0x12;
       }
-      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && (uint8_t)pGameCopy->nDifficulty > 0) {
+      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
-      if (wDifficultyBits < 4 && (uint8_t)pGameCopy->nDifficulty > 0) {
+      if (wDifficultyBits < 4 && pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
 
@@ -2202,7 +2202,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
       }
     } else {
       uint32_t* puVar1;
-      if (nParam2) {
+      if (nParam2 >= 1) {
         if ((char)*pnParam == '\0') {
           *pnParam2 = (uint32_t*)0x1;
           return 0;

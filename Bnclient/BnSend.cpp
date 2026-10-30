@@ -1940,7 +1940,7 @@ uint32_t __thiscall BNNEWS_RoundToPowerOfTwo(D2BnNewsTableStrc * pNewsTable, uin
         uStripped = uHighBit - 1 & uHighBit;
       }
 
-      if (!dwSize) {
+      if (dwSize < 1) {
         return 1;
       }
     } else {
@@ -2299,7 +2299,7 @@ BOOL __fastcall NET_SID_CLIENT_Incoming0x46(char * pBytes, size_t nSize) {
     }
 
     g_nFirstUnreadNewsIndex = 0;
-    if ((uint32_t)g_nNewsMaxCacheSize.nCount > 0) {
+    if (g_nNewsMaxCacheSize.nCount > 0) {
       pEntryData = (uint32_t*)((int)g_nNewsMaxCacheSize.pEntries + 4);
       do {
         if (*pEntryData >= dwMotdTimestamp) {
@@ -2468,7 +2468,7 @@ void __stdcall BNNEWS_TransformCDKeyCharacter(uint8_t bKeyChar, uint32_t * pValu
     int nUpperChar = toupper((int)(char)*pOutChar);
     uint8_t bUpperChar = (uint8_t)nUpperChar;
     *pOutChar = bUpperChar;
-    if ((char)bUpperChar < '8') {
+    if ((char)bUpperChar <= '7') {
       *pOutChar = (uint8_t)*pValue & 7 ^ bUpperChar;
       *pValue >>= 3;
       return;
@@ -2847,7 +2847,7 @@ int __fastcall BNSEND_DecodeCDKeyString(uint32_t * pOutProduct, uint32_t * pOutP
       nCharBase = toupper((int)(char)__frame1.abWorkBuf[nLoopIdx]);
       bSwapChar = (uint8_t)nCharBase;
       __frame1.abWorkBuf[nLoopIdx] = bSwapChar;
-      if ((char)bSwapChar < '8') {
+      if ((char)bSwapChar <= '7') {
         bXorMask = (uint8_t)__frame0.szProductBuf;
         __frame0.szProductBuf >>= 3;
         __frame1.abWorkBuf[nLoopIdx] = bXorMask & 7 ^ bSwapChar;

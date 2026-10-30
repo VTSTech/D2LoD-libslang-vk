@@ -700,7 +700,7 @@ bool __fastcall Q19_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     if (nTargetClassId != 0xf5) {
       return false;
     }
-    if (pQuestData->nStateFlag) {
+    if (pQuestData->nStateFlag >= 1) {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_KhalimsWill, QUESTSTATE_Step0x02);
       if (!bQuestState) {
         return true;
@@ -790,7 +790,7 @@ void __fastcall Q19_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     if (pQuestArgs->pTarget->nClassId != 0xf5) {
       return;
     }
-    if (!pQuestData->nStateFlag || (bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_KhalimsWill, QUESTSTATE_Step0x02) , bQuestState != 0)) {
+    if (pQuestData->nStateFlag < 1 || (bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_KhalimsWill, QUESTSTATE_Step0x02) , bQuestState != 0)) {
       D2GSPacketSrv0x27_TextStrc* sTextMessage;
       nKhalimPartsHeld = 0;
       bHasWill = false;

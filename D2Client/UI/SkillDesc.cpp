@@ -1793,7 +1793,7 @@ static void __stdcall SKILLDESC_BuildChargeSkillDesc(D2UnitStrc * pUnit, uint16_
     uint16_t* wszPlus = D2Lang::StrTable::strtable::GetLocaleString(0xfa2);
     nInitCount = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pUnit);
     uint32_t nChargeSkillIndex = 0;
-    if ((uint32_t)gnSkillChargeDescCount <= 0) {
+    if (gnSkillChargeDescCount <= 0) {
       return;
     }
 

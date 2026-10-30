@@ -1800,7 +1800,7 @@ void __fastcall FASTCMP_DecompressRLEWithAlpha(BYTE * pFrameBlock, BYTE * pDst, 
             do {
               bRLEToken = *pbRLEData;
               pbRLEData++;
-              if (!((char)bRLEToken < '\x01')) {
+              if ((char)bRLEToken > 0) {
                 pbRLEData += (char)bRLEToken;
               } else {
                 bRLEToken &= 0x7f;

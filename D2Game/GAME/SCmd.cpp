@@ -2488,7 +2488,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
             nStatValue = aStatBuf[nIndex].nStatValue;
             if ((int)nStatIndex < pDataTable->nTxtItemStatCostSize) {
               pStatCostTxt = pDataTable->pTxtItemStatCost + nStatIndex;
-              if (pStatCostTxt && (char)pStatCostTxt->dwItemStatFlags & (uint8_t)gadwBitMasks[0] && pStatCostTxt->sendBits != '\0') {
+              if (pStatCostTxt && (char)pStatCostTxt->dwItemStatFlags & (uint8_t)gadwBitMasks[0] && pStatCostTxt->sendBits > '\0') {
                 if (!bHasStats) {
                   bHasStats = 1;
                   Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, 1, 1);

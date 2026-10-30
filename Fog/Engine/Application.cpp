@@ -946,7 +946,7 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, in
     pbScan = pbArgName;
     while (byChar) {
       byChar = *pbScan;
-      if ('@' < (char)byChar && (char)byChar < '[') {
+      if ((char)byChar >= 'A' && (char)byChar <= 'Z') {
         *pbScan = byChar + 0x20;
       }
 

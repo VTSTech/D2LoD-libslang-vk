@@ -1422,7 +1422,7 @@ BOOL __fastcall CACHE_WriteData(char * szCacheKey, LPCVOID pDataToWrite, uint32_
     }
     if (nBlockIdx < pFileHeader->nBlockTableSize) {
       nHashCount = 0;
-      if ((uint32_t)pFileHeader->nHashTableSize > 0) {
+      if (pFileHeader->nHashTableSize > 0) {
         pBlockEntry = (uint32_t*)(gpCacheBufferPoolFirst + 0xc);
         do {
           if (*pBlockEntry == nBlockIdx) {

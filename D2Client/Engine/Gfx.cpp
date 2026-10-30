@@ -1298,7 +1298,8 @@ void __fastcall SetParticle(D2UnitStrc * pUnit, D2ParticleStrc * pParticle) {
     pGfxInfo->pParticle = pParticle;
 }
 
-void __thiscall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nOverlayId) {
+// nPreDraw is never read here; every caller still loads EDX (12 pass 0, GFX_AddOverlayToUnit passes pOverlayTxt->PreDraw).
+void __fastcall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nPreDraw, int32_t nOverlayId) {
     int* ppNextOverlay;
     if (!pUnit) {
       return;
@@ -1550,7 +1551,7 @@ static void __stdcall GFX_BuildMonsterCofPath(uint32_t nModeId, LPSTR szOutputPa
     }
 
     uint32_t nPathIndex = 0;
-    if ((uint32_t)gnMonsterCofPathCount > 0) {
+    if (gnMonsterCofPathCount > 0) {
       do {
         if (nModeId == gnMonsterCofPathBuildTotalItems[nPathIndex].nMode) {
           dwTokenChars = gnMonsterCofPathBuildTotalItems[nPathIndex].dwToken;
@@ -1626,7 +1627,7 @@ static void __stdcall GFX_PrecacheMonsterCofSprites(D2MonStatsTxt * pMonStatsTxt
               }
               if (*(char*)((int)pComponentTable + 3) != '\0') {
                 nComponentRow = 0;
-                if (*(char*)((int)pComponentTable + 3) != '\0') {
+                if ((uint8_t)*(char*)((int)pComponentTable + 3) > '\0') {
                   do {
                     memset(&sGfxData, 0, 0x48);
                     bParamsValid1 = GfxUtil::GFXUTIL_InitAndBuildMonsterCofParams(&sGfxData, 0, 0, byComponent, nModeId, nComponentCode, pCofFile, pComponentTable, pMonStatsTxt, nComponentRow);
@@ -1995,7 +1996,7 @@ static void __stdcall GFX_PrecacheMonsterModeSprites(int32_t nAsyncBlockId, D2Un
     }
 
     uint32_t nModeIdx = 0;
-    if ((uint32_t)gnMonsterModePrecacheCount <= 0) {
+    if (gnMonsterModePrecacheCount <= 0) {
       return;
     }
 
@@ -2116,7 +2117,7 @@ static void Gfx_UpdateNearbyUnitGfx(int32_t bShowLoadingUi) {
           }
 
           nIdx = 0;
-          if ((uint32_t)gnNearbyPlayerCofCount > 0) {
+          if (gnNearbyPlayerCofCount > 0) {
             do {
               GFX_AsyncLoadPlayerSprites(bShowLoadingUi, gaNearbyPlayerCofUpdateQueue[nIdx], pUnit);
               nIdx++;
@@ -2239,7 +2240,7 @@ void __fastcall GFX_AddOverlayToUnit(D2UnitStrc * pUnit, eOverlayId eOverlay, in
       }
     }
     if ((int)eOverlay < 0x8c || (int)eOverlay > 0x8e && eOverlay != OVERLAY_handofgod) {
-      GFX_RemoveOverlayById(pUnit, eOverlay);
+      GFX_RemoveOverlayById(pUnit, (uint32_t)pOverlayTxt->PreDraw, eOverlay);
     }
 
     D2GfxUnknown_0xa8* pOverlay = D2_NEW_AT(D2GfxUnknown_0xa8, ".\\ENGINE\\Gfx.cpp", 0xc48);

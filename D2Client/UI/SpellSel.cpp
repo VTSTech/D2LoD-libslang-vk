@@ -1038,10 +1038,10 @@ void __fastcall SPELLSEL_DrawSkillGrid(D2UnitStrc * pUnit, int32_t nGridStartX, 
                         nCurY += -0x30;
                         nLastRow = nRow;
                       }
-                      if ((uint8_t)pSkillDescTxt->ListPool > 0) {
+                      if (pSkillDescTxt->ListPool > 0) {
                         dwSkillFlags = (uint32_t)pSkillDescTxt->ListPool;
                         if (dwSkillFlags < 0x100) {
-                          if (aListPoolSeen[dwSkillFlags] != '\0') {
+                          if ((uint8_t)aListPoolSeen[dwSkillFlags] > '\0') {
                             continue;
                           }
 

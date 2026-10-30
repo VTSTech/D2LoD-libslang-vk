@@ -853,7 +853,7 @@ BOOL __stdcall ITEM_CheckIfBothItemsAreSameTypeOfPotions(D2UnitStrc * pUnit, D2U
     bool bMatchUnit = false;
     bool bMatchItemEx = false;
     uint32_t nIdx = 0;
-    if ((uint32_t)gnHealingPotionCodeCount > 0) {
+    if (gnHealingPotionCodeCount > 0) {
       do {
         if (!bMatchUnit && pItemsTxtUnit->dwCode == gadwHealingPotionCodes[nIdx]) {
           bMatchUnit = true;
@@ -872,7 +872,7 @@ BOOL __stdcall ITEM_CheckIfBothItemsAreSameTypeOfPotions(D2UnitStrc * pUnit, D2U
     bMatchUnit = false;
     bMatchItemEx = false;
     nIdx = 0;
-    if ((uint32_t)gnManaPotionCodeCount > 0) {
+    if (gnManaPotionCodeCount > 0) {
       do {
         if (!bMatchUnit && pItemsTxtUnit->dwCode == gadwManaPotionCodes[nIdx]) {
           bMatchUnit = true;
@@ -891,7 +891,7 @@ BOOL __stdcall ITEM_CheckIfBothItemsAreSameTypeOfPotions(D2UnitStrc * pUnit, D2U
     bMatchUnit = false;
     bMatchItemEx = false;
     nIdx = 0;
-    if ((uint32_t)gnRejuvPotionCodeCount <= 0) {
+    if (gnRejuvPotionCodeCount <= 0) {
       return 0;
     }
 
@@ -1503,7 +1503,7 @@ uint32_t __stdcall ITEM_CheckIfItemHasDurability(D2UnitStrc * pUnit) {
     }
 
     D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (!(pItemsTxt && pItemsTxt->bNoDurability == '\0' && pItemsTxt->bDurability != '\0')) {
+    if (!(pItemsTxt && pItemsTxt->bNoDurability == '\0' && pItemsTxt->bDurability > '\0')) {
       return 0;
     }
 
@@ -1674,7 +1674,7 @@ uint32_t __stdcall TXT_Items_IsNotQuestOrHammerType(uint32_t nItemClassId) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x105e);
       exit(-1);
     }
-    if (pItemsTxt->bQuest == '\0' && pItemsTxt->wType != 0x27) {
+    if (pItemsTxt->bQuest < 1 && pItemsTxt->wType != 0x27) {
       return 1;
     }
 
@@ -1840,6 +1840,7 @@ int16_t __stdcall ITEM_GetWeaponAnimClass(D2UnitStrc * pUnit) {
     static uint32_t gnItemWeaponClassCodeCount = 0x8; D2_STATIC_GUARD(gnItemWeaponClassCodeCount, "D2Common::ITEMS::Items::ITEM_GetWeaponAnimClass::gnItemWeaponClassCodeCount");
 
     uint32_t nClassId;
+    uint32_t i;
     if (!pUnit) {
       nClassId = -1;
     } else {
@@ -1851,18 +1852,12 @@ int16_t __stdcall ITEM_GetWeaponAnimClass(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1145);
       exit(-1);
     }
-    if ((uint32_t)gnItemWeaponClassCodeCount <= 0) {
-      return 0;
-    }
 
-    uint32_t i = 0;
-    do {
+    for (i = 0; i < gnItemWeaponClassCodeCount; i++) {
       if (pItemsTxt->dwWClass == gaItemWeaponClassCodes[i].dwCode) {
         return (int16_t)gaItemWeaponClassCodes[i].nWeaponClass;
       }
-
-      i++;
-    } while (i < gnItemWeaponClassCodeCount);
+    }
 
     return 0;
 }
@@ -3217,7 +3212,7 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
         nClassId = D2Client::UNIT::Player::CheckFlagWithMask(pUnit2, 0x2000000);
         if (!nClassId) {
           wItemVersion = ITEM_GetItemData_wItemVersion(pUnit);
-          if (!wItemVersion) {
+          if (wItemVersion < 1) {
             goto apply_common_requirements;
           }
         }
@@ -3296,7 +3291,7 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
         if ((int)(uint32_t)(uint16_t)anSkillOnItemBuf[nAffixByteOffset].wSubIndex < sgptDataTable->nTxtSkillsCount) {
           pSkillTxt = sgptDataTable->pTxtSkills + (uint16_t)anSkillOnItemBuf[nAffixByteOffset].wSubIndex;
           if (pSkillTxt) {
-            if (!pUnit2 || (eUnitType = D2Client::Units::GetType(pUnit2) , eUnitType != UNIT_PLAYER) || (cCharClass = pSkillTxt->charclass , cCharClass < '\0' || '\x06' < cCharClass || (uAffixIdx = D2Client::UNIT::GetClassId(pUnit2) , (uAffixIdx & 0xff) != (int)cCharClass))) {
+            if (!pUnit2 || (eUnitType = D2Client::Units::GetType(pUnit2) , eUnitType != UNIT_PLAYER) || (cCharClass = pSkillTxt->charclass , cCharClass < '\0' || cCharClass >= 7 || (uAffixIdx = D2Client::UNIT::GetClassId(pUnit2) , (uAffixIdx & 0xff) != (int)cCharClass))) {
               nClassId = (int)pSkillTxt->reqlevel + 6;
             } else {
               nClassId = (uint32_t)pSkillTxt->reqlevel;
@@ -4227,12 +4222,12 @@ BOOL __stdcall IsItemSocketable(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     }
 
     int32_t nSockets = ITEM_GetSocketsCount(pUnit);
-    if ((char)nSockets != '\0') {
+    if ((uint8_t)(char)nSockets > '\0') {
       return 0;
     }
 
     nSockets = ITEM_GetSocketsCount(pUnit2);
-    if ((char)nSockets == '\0') {
+    if ((uint8_t)(char)nSockets <= '\0') {
       return 1;
     }
 
@@ -6137,7 +6132,7 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     }
     if (nTransactionType == 2) {
       nItemVersion = ITEM_GetItemData_wItemVersion(pItem);
-      if (nItemVersion) {
+      if (nItemVersion >= 1) {
         iVar3 = ITEMS_CalculateGamblePrice(iVar1, pItem);
         if (nReducedPrices) {
           nErrorAddress = D2Client::Stats::D2ApplyPercent(iVar3, nReducedPrices, 100);

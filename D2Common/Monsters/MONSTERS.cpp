@@ -482,7 +482,7 @@ int32_t __stdcall SummonOrSpawnMode(D2UnitStrc * pUnit, int32_t nParam1, int32_t
     if (!nParam1 || !pUnit || pUnit->eUnitType != UNIT_MONSTER) {
       if (nParam2 >= 0 && nParam2 < sgptDataTable->nTxtSkillsCount) {
         pSkillsTxt = sgptDataTable->pTxtSkills + nParam2;
-        if (pSkillsTxt && -1 < pSkillsTxt->summon && (int)pSkillsTxt->summon < sgptDataTable->nTxtMonStatsSize) {
+        if (pSkillsTxt && pSkillsTxt->summon >= 0 && (int)pSkillsTxt->summon < sgptDataTable->nTxtMonStatsSize) {
           if (pnParam1) {
             nPosXY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
             *pnParam1 = nPosXY;

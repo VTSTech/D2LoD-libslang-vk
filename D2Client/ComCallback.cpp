@@ -12,7 +12,7 @@ void __fastcall COMCALLBACK_UpdateUserFlags(uint8_t * pbHexChar, uint8_t byKeyBy
     int nUpper = toupper((int)(char)*pbHexChar);
     uint8_t byUpper = (uint8_t)nUpper;
     *pbHexChar = byUpper;
-    if ((char)byUpper < '8') {
+    if ((char)byUpper <= '7') {
       *pbHexChar = (uint8_t)*pdwShiftReg & 7 ^ byUpper;
       *pdwShiftReg >>= 3;
       return;

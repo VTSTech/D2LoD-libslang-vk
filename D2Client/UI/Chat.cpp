@@ -1544,7 +1544,7 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
 
       ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
     } else {
-      if ((uint32_t)gnChatInputTextCursorPosition > 0) {
+      if (gnChatInputTextCursorPosition > 0) {
         gnChatInputTextCursorPosition--;
         gwszChatInputText[gnChatInputTextCursorPosition] = L'\0';
       }

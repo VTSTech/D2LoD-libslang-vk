@@ -151,7 +151,7 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
           /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection((LPCRITICAL_SECTION)(nClientIdx + 0x2c));
           if (*(int*)(nClientIdx + 0x10) == -1) {
             nFdIdx = 0;
-            if ((uint32_t)fsset0.fd_count > 0) {
+            if (fsset0.fd_count > 0) {
               check_read_fd:
               if (fsset0.fd_array[nFdIdx] != -1) {
                 goto next_read_fd;
@@ -166,7 +166,7 @@ DWORD __stdcall SocketThreadMain(void * lpThreadParam) {
 
             scan_except_set:
             nFdIdx = 0;
-            if ((uint32_t)fsset1.fd_count > 0) {
+            if (fsset1.fd_count > 0) {
               check_except_fd:
               if (fsset1.fd_array[nFdIdx] != *(SOCKET*)(nClientIdx + 0x10)) {
                 nFdIdx++;

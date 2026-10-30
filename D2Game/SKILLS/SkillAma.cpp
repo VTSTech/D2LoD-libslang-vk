@@ -446,7 +446,7 @@ BOOL __fastcall Skills_SrvDoFunc_006_PhoenixStrikeAreaBolt(::SGAMEDATA * pGame, 
     if ((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount) {
       int32_t nAuraRange;
       pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
-      if (pSkillsTxt && -1 < pSkillsTxt->auratargetstate && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && -1 < pSkillsTxt->aurastat[0] && (int)pSkillsTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
+      if (pSkillsTxt && pSkillsTxt->auratargetstate >= 0 && (int)pSkillsTxt->auratargetstate < sgptDataTable->nTxtStatesSize && pSkillsTxt->aurastat[0] >= 0 && (int)pSkillsTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize) {
         sAuraArgs.eSkill = eSkill;
         sAuraArgs.nSkillLvl = nSkillLvl;
         sAuraArgs.nDuration = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->auralencalc, eSkill, nSkillLvl);
@@ -571,7 +571,7 @@ BOOL __fastcall Skills_SrvDoFunc_008_MultipleShot(::SGAMEDATA * pGame, D2UnitStr
     nTargetY -= (int)(nDirY * nArrowSpread) / 2;
     eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+    if (nWeaponClass != 1 && pSkillTxt->srvmissile[2] >= 0) {
       eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if ((int)eMissileId < 0) {
@@ -676,7 +676,7 @@ BOOL __fastcall Skills_SrvDoFunc_010_GuidedArrowLaunch(::SGAMEDATA * pGame, D2Un
     int32_t nUnitX = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[0], eSkill, nSkillLvl);
     eMissilesId eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     uint32_t nWeaponClass = D2Common::Units::GetWeaponClass(pUnit);
-    if (nWeaponClass != 1 && -1 < pSkillTxt->srvmissile[2]) {
+    if (nWeaponClass != 1 && pSkillTxt->srvmissile[2] >= 0) {
       eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if ((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
@@ -854,7 +854,7 @@ BOOL __fastcall Skills_SrvDoFunc_012_StrafeContinue(::SGAMEDATA * pGame, D2UnitS
     SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSave, pUnit, &nCursorX, &nCursorY);
     eMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
     nTargetGUID = D2Common::Units::GetWeaponClass(pUnit);
-    if (nTargetGUID != 1 && -1 < pSkillTxt->srvmissile[2]) {
+    if (nTargetGUID != 1 && pSkillTxt->srvmissile[2] >= 0) {
       eMissileId = (eMissilesId)pSkillTxt->srvmissile[2];
     }
     if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
@@ -1056,7 +1056,7 @@ BOOL __fastcall Skills_SrvDoFunc_015_SummonDecoy(::SGAMEDATA * pGame, D2UnitStrc
 
     sSummonParams.pSkillTxt = pSkillTxt;
     sSummonParams.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, &sSummonParams.nPetType, nullptr, nullptr);
-    if (-1 >= sSummonParams.classId) {
+    if (sSummonParams.classId < 0) {
       return 0;
     }
 
@@ -1116,7 +1116,7 @@ BOOL __fastcall Skills_SrvDoFunc_016_SummonValkyrie(::SGAMEDATA * pGame, D2UnitS
 
     sSummonParams.nPetType = (int32_t)pSkillTxt;
     sSummonParams.classId = SkillsServer::SKILLS_GetSummonMonsterClassId(pUnit, 0, eSkill, nSkillLvl, (int*)&sSummonParams.pSkillTxt, nullptr, nullptr);
-    if (-1 >= sSummonParams.classId) {
+    if (sSummonParams.classId < 0) {
       return 0;
     }
 

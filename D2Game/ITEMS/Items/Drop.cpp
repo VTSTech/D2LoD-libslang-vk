@@ -152,7 +152,7 @@ static BOOL __stdcall ITEMDROP_IsItemClassEligible(D2SeedStrc * pSeed, int32_t b
     if ((int)eLevel <= 0) {
       eLevel = LEVEL_RogueEncampment;
     }
-    if (!(pItemsTxt->bSpawnable != '\0' && pItemsTxt->bQuest == '\0' && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel <= (int)eLevel)) {
+    if (!((uint8_t)pItemsTxt->bSpawnable > '\0' && pItemsTxt->bQuest == '\0' && (int)(uint32_t)(uint8_t)pItemsTxt->nLevel <= (int)eLevel)) {
       return 0;
     }
     if (!bSkipRarityRoll) {
@@ -662,7 +662,7 @@ BOOL __stdcall ITEM_RollUniqueItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2It
               nRollResult = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pUnit);
               pDataTable = sgptDataTable;
               if (*(short int*)(pUniqueEntryPtr + 8) <= nRollResult) {
-                if ((uint32_t)pItemGenContext->dwFileIndex > 0 && pItemGenContext->dwFileIndex - 1 == nUniqueIdx) {
+                if (pItemGenContext->dwFileIndex > 0 && pItemGenContext->dwFileIndex - 1 == nUniqueIdx) {
                   nChosenUniqueIdx = nUniqueIdx;
                 }
 
@@ -1110,7 +1110,7 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
         nItemLevelAdj = pItemGenContext->nItemLevel;
         nItemClassId = 0;
         wVersionCheck = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-        if (wVersionCheck) {
+        if (wVersionCheck >= 1) {
           bIsMisc = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Miscellaneous);
           if (bIsMisc || (nItemLevelAdj -= (uint32_t)(uint8_t)pItemTxt->nLevel , nItemLevelAdj < 1)) {
             nItemLevelAdj = 1;
@@ -1119,7 +1119,7 @@ uint32_t __stdcall ITEM_RollItemQuality(D2UnitStrc * pUnit, D2ItemGenContextStrc
 
         eResultQuality = 1;
         wVersionCheck = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-        if (wVersionCheck) {
+        if (wVersionCheck >= 1) {
           nTierTableOffset = 0;
           do {
             switch ((uint32_t)gaItemQualityTierTable[nTierTableOffset]) {
@@ -1431,7 +1431,7 @@ int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, D2UnitStrc * * p
         bTypeCheck = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(*ppItem);
         if (bTypeCheck) {
           wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
-          if (wItemVersion) {
+          if (wItemVersion >= 1) {
             nAffixLoopIdx = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(*ppItem, UNITSTAT_durability, 0);
             iVar1 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(*ppItem, UNITSTAT_maxdurability, 0);
             nAffixLoopIdx *= 2;
@@ -1485,7 +1485,7 @@ int __fastcall ITEM_ApplyQualityAndAffixes(::SGAMEDATA * pGame, D2UnitStrc * * p
         bTypeCheck = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(*ppItem);
         if (bTypeCheck) {
           wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(*ppItem);
-          if (wItemVersion) {
+          if (wItemVersion >= 1) {
             nAffixLoopIdx = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(*ppItem, UNITSTAT_durability, 0);
             iVar1 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(*ppItem, UNITSTAT_maxdurability, 0);
             nAffixLoopIdx *= 3;
@@ -2153,7 +2153,7 @@ int32_t __fastcall UNIT_GetMaxAvailableHPCharCode(D2UnitStrc * pUnit) {
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    if (pGame && (uint8_t)pGame->nDifficulty > 0) {
+    if (pGame && pGame->nDifficulty > 0) {
       neAct += ACT_III;
     }
     if ((uint32_t)neAct >= (uint32_t)HPLISTSIZE) {
@@ -2187,7 +2187,7 @@ int32_t __fastcall UNIT_GetMaxAvailableMPCharCode(D2UnitStrc * pUnit) {
     eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     ::SGAMEDATA* pGame = UNIT::SUnit::GetGamePointer(pUnit);
-    if (pGame && (uint8_t)pGame->nDifficulty > 0) {
+    if (pGame && pGame->nDifficulty > 0) {
       neAct += ACT_III;
     }
     if ((uint32_t)neAct >= (uint32_t)MPLISTSIZE) {
@@ -3348,7 +3348,7 @@ void __fastcall ITEMS_ReduceDurability(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       }
 
       wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pItemUnit);
-      if (wItemVersion) {
+      if (wItemVersion >= 1) {
         bIsArmor = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pItemUnit, UNITSTAT_quantity, 0);
         if ((int)bIsArmor > 1) {
           bIsArmor--;
@@ -4118,7 +4118,7 @@ void __fastcall SERVER_ITEM_RollItemToDrop(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 void __fastcall SERVER_ITEM_RollItemAndGetTreasureClass(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pAttacker, uint16_t nSelectedTC, eD2ItemTypes eItemType, int32_t nVictimLevel, BOOL bIsItemFindDrop, D2UnitStrc * * pUnitTable, int * pUnitIndex, int32_t nItemsCountToGenerate) {
     int pnMonsterLevel = 0;
-    if (pGame->bExpansion && (uint8_t)pGame->nDifficulty > 0 && pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+    if (pGame->bExpansion && pGame->nDifficulty > 0 && pUnit && pUnit->eUnitType == UNIT_MONSTER) {
       D2MonStatsTxt* pMonStatsTxt;
       pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
       if (pMonStatsTxt && !(gadwBitMasks[2] & (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc)) && !(gadwBitMasks[6] & (uint8_t)*((uint8_t*)pMonStatsTxt + 0xc))) {

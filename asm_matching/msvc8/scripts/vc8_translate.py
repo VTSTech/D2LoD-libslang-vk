@@ -39,14 +39,24 @@ What is rewritten, and why each is exact:
       GCC takes a calling convention before the return type; MSVC only after.
   T __thiscall f(A a, B b)  ->  T __fastcall f(A a, int, B b)
   T (__thiscall *p)(A, B)   ->  T (__fastcall *p)(A, int, B)
-  f(a, b)  /  x->p(a, b)    ->  f(a, 0, b)  /  x->p(a, 0, b)
+  f(a, b)  /  x->p(a, b)    ->  vc8_thiscall(f)(a, b)  /  vc8_thiscall(x->p)(a, b)
       The tree spells __thiscall on free functions that take the receiver as
       their first parameter, and on the pointer types that hold them; gcc
       passes it in ECX, VC8 accepts the keyword only on member functions
       (C3865). __fastcall with an unused int second parameter is the same
       callee: receiver in ECX, the rest on the stack, popped by the callee.
-      A caller pays one `xor edx, edx` it did not have, but pushed the
-      receiver and cleaned up the stack before, so it matched neither way.
+      A call casts the callee back to the __thiscall pointer type, which VC8
+      does accept (vc8_thiscall in vc8_compat.h), so the caller loads no EDX
+      for the unused int; the cast folds into a direct `call f`. A callee
+      expression the walk back cannot delimit gets the unused int (`f(a, 0,
+      b)`, one `xor edx, edx`) instead, and so does a call to a function
+      declared static or inline (thiscall_direct): through the cast VC8
+      would neither inline it nor give a static one its own register
+      convention, and for those the unused int costs nothing.
+      (VC8 SP1 does take __thiscall on a static member function, and a
+      caller compiles the same as through the cast; but it would need a
+      class around every function, declared once across the headers, and
+      would change every symbol, so the definitions stay __fastcall.)
       Calls are rewritten by name (thiscall_names); a name also declared
       without __thiscall with the same parameter count is left stripped, as
       __thiscall was before: compiled as __cdecl.
@@ -388,6 +398,20 @@ def thiscall_names(texts):
     return {k: v for k, v in funcs.items() if v}, {k: v for k, v in ptrs.items() if v}
 
 
+def thiscall_direct(texts):
+    """Names of the __thiscall functions declared static or inline. Their
+    calls stay direct calls by name: a call through a cast pointer is one VC8
+    neither inlines nor gives a static callee its own register convention
+    (TRANSTBL_UnicodeToSingleByte's callers show the original's)."""
+    out = set()
+    for s in texts:
+        for m in THISCALL_FN.finditer(s):
+            head = s[max(s.rfind('\n', 0, m.start()), s.rfind(';', 0, m.start()), s.rfind('}', 0, m.start())) + 1:m.start()]
+            if re.search(r'\b(?:static|inline|__inline|__forceinline)\b', head):
+                out.add(m.group(2))
+    return out
+
+
 def _insert_second(s, open_idx, text, counts, angle):
     """s with `text` added as the second item of the list at s[open_idx] when
     its item count is in `counts`, else None."""
@@ -435,10 +459,86 @@ def rewrite_thiscall(s):
             if re.search(r'(?:[\w>]\s*[*&]*|(?<!&)[*&])\s*$', head) and \
                     not re.search(r'\b(?:return|else|case|throw)\s*$', head):
                 continue                  # a declaration or definition, not a call
-            new = _insert_second(s, m.end() - 1, '0', names[m.group(1)], False)
-            if new is not None:
-                s = new
+            if _arg_count(s, m.end() - 1) not in names[m.group(1)]:
+                continue
+            if names is THISCALL_FUNCS and m.group(1) in THISCALL_DIRECT:
+                start = None
+            elif names is THISCALL_FUNCS:
+                start = m.start(1) - len(re.search(r'(?:::)?' + QUAL + r'$', s[max(0, m.start(1) - 200):m.start(1)]).group(0))
+            elif m.group(0).startswith('('):
+                start = m.start()
+            else:
+                start = _postfix_start(s, m.start(1))
+            if start is None:             # a direct call, or a callee not walked back: pass the unused int
+                s = _insert_second(s, m.end() - 1, '0', names[m.group(1)], False)
+                continue
+            args = s.rindex('(', 0, m.end())
+            lead = ' ' if start and (s[start - 1].isalnum() or s[start - 1] == '_') else ''
+            head = s[:start] + lead + 'vc8_thiscall(' + s[start:args] + ')'
+            s, pos = head + s[args:], len(head) + 1
     return s
+
+
+def _back_ws(s, i):
+    while i > 0 and s[i - 1] in ' \t\n':
+        i -= 1
+    return i
+
+
+def _back_match(s, close_idx):
+    """Index of the bracket that opens the one at s[close_idx], walking back
+    over string and char literals; -1 if there is none."""
+    pairs = {')': '(', ']': '['}
+    stack, i = [], close_idx
+    while i >= 0:
+        c = s[i]
+        if c in '"\'':
+            i -= 1
+            while i >= 0 and not (s[i] == c and (i == 0 or s[i - 1] != '\\')):
+                i -= 1
+        elif c in pairs:
+            stack.append(pairs[c])
+        elif c in '([':
+            if not stack or stack.pop() != c:
+                return -1
+            if not stack:
+                return i
+        elif c in ';{}':
+            return -1
+        i -= 1
+    return -1
+
+
+def _postfix_start(s, i):
+    """Where the postfix expression begins whose member name, reached through
+    -> or ., starts at s[i] (`a[k].b->p` for p): back over member accesses,
+    subscripts, calls and identifiers to a parenthesised primary or the first
+    name. None for a shape it does not know."""
+    while True:
+        j = _back_ws(s, i)
+        if s[j - 2:j] in ('->', '::'):
+            j -= 2
+        elif s[j - 1:j] == '.':
+            j -= 1
+        else:
+            return i
+        j = _back_ws(s, j)
+        while j > 0 and s[j - 1] in ')]':
+            closer, k = s[j - 1], _back_match(s, j - 1)
+            if k < 0:
+                return None
+            j = _back_ws(s, k)
+            if closer == ')' and not (j > 0 and (s[j - 1].isalnum() or s[j - 1] in '_)]')):
+                j = k                     # a parenthesised primary
+                break
+        else:
+            k = j
+            while k > 0 and (s[k - 1].isalnum() or s[k - 1] == '_'):
+                k -= 1
+            if k == j or s[k].isdigit():
+                return None
+            j = k
+        i = j
 
 
 def strip_ctors(s, names):
@@ -469,6 +569,7 @@ def strip_ctors(s, names):
 STRIP_CTORS = set()   # filled by mirror()'s pre-pass
 THISCALL_FUNCS = {}   # likewise: __thiscall function name -> its parameter counts
 THISCALL_PTRS = {}    # likewise: __thiscall pointer field name -> its parameter counts
+THISCALL_DIRECT = set()   # likewise: __thiscall functions declared static or inline
 CONSTRUCT = set()     # likewise: list-initialised structs whose braces become constructor calls
 
 
@@ -612,7 +713,7 @@ def load_quarantine(path):
 
 def mirror_state():
     """The per-tree state the pre-pass of mirror() leaves for translate()."""
-    return (dict(THISCALL_FUNCS), dict(THISCALL_PTRS), set(STRIP_CTORS), set(CONSTRUCT))
+    return (dict(THISCALL_FUNCS), dict(THISCALL_PTRS), set(STRIP_CTORS), set(CONSTRUCT), set(THISCALL_DIRECT))
 
 
 def mirror(root, out, quarantine=None, unchanged=None):
@@ -634,6 +735,8 @@ def mirror(root, out, quarantine=None, unchanged=None):
     THISCALL_FUNCS.update(funcs)
     THISCALL_PTRS.clear()
     THISCALL_PTRS.update(ptrs)
+    THISCALL_DIRECT.clear()
+    THISCALL_DIRECT.update(thiscall_direct([without_non_win32(t) for t in texts.values()]))
     STRIP_CTORS.clear()
     STRIP_CTORS.update(strip)
     CONSTRUCT.clear()

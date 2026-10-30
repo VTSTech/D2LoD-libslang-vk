@@ -890,7 +890,7 @@ int32_t __stdcall GetInventoryPage(D2UnitStrc * pUnit, int32_t nInvPage, BOOL bL
           }
 
           i = 0;
-          if ((uint32_t)nPlayerInventoryPageSize > 0) {
+          if (nPlayerInventoryPageSize > 0) {
             while (pUnit->nClassId != aPlayerInventoryPage[i * 2]) {
               i++;
               if (i >= nPlayerInventoryPageSize) {
@@ -2011,7 +2011,7 @@ BOOL __fastcall HasShield(D2UnitStrc * pUnit) {
     if (!pOverlayCode) {
       return 0;
     }
-    if ((uint32_t)UINT_00744584 > 0) {
+    if (UINT_00744584 > 0) {
       uint32_t nComponentIdx = 0;
       do {
         if (pOverlayCode == (D2UnitStrc*)gaHasShieldItemCodes[nComponentIdx]) {
@@ -3702,7 +3702,7 @@ void __stdcall UpdateAnimSpeed(D2UnitStrc * pUnit, char * szFile, int32_t nLine)
       }
 
       nVelocityPct = (uint32_t)(pDVar1->nAnimSpeed * (nBaseFrameTime + nFastStat)) / 100;
-      if (!nVelocityPct) {
+      if (nVelocityPct < 1) {
         nVelocityPct = 1;
       }
     }

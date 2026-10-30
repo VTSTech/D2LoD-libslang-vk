@@ -177,7 +177,7 @@ int __stdcall NET_D2GS_CLIENT_ParseRecvBufferIntoPacketQueues() {
     int bHasCompressionPacket = 0;
     D2PacketsClientStrc* pBytes = pD2PacketsClientBuffer;
     while (true) {
-      if (!pBytesSize) {
+      if (pBytesSize < 1) {
         break;
       }
 

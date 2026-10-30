@@ -477,7 +477,7 @@ BOOL __fastcall Skills_SrvDoFunc_018_Armor(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillTxt && pSkillTxt->aurastate >= 0 && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -507,7 +507,7 @@ BOOL __fastcall Skills_SrvDoFunc_018_Armor(::SGAMEDATA * pGame, D2UnitStrc * pUn
       SkillDruid::D2SetPassiveStatsFromSkills(pUnit, pStatsExTmp, pSkillTxt, eSkill, nSkillLvl);
       D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsExTmp, UNITSTAT_modifierlist_skill, eSkill, 0);
       D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsExTmp, UNITSTAT_modifierlist_level, nSkillLvl, 0);
-      if (-1 < pSkillTxt->auraevent[0]) {
+      if (pSkillTxt->auraevent[0] >= 0) {
         UNIT::SUnitEvent::SUNITEVENT_RemoveEventsByQueueAndOwner(pGameCtx, pUnit, 1, (int)pSkillTxt->aurastate);
         iAuraEvent = 0;
         psAuraEvent = pSkillTxt->auraevent;
@@ -793,7 +793,7 @@ BOOL __fastcall Skills_SrvDoFunc_023_Blaze_EnergyShield(::SGAMEDATA * pGame, D2U
     }
 
     D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillTxt && pSkillTxt->aurastat[0] >= -1 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize && -1 < pSkillTxt->aurastate && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
+    if (!(pSkillTxt && pSkillTxt->aurastat[0] >= -1 && (int)pSkillTxt->aurastat[0] < sgptDataTable->nTxtItemStatCostSize && pSkillTxt->aurastate >= 0 && (int)pSkillTxt->aurastate < sgptDataTable->nTxtStatesSize)) {
       return 0;
     }
 
@@ -820,7 +820,7 @@ BOOL __fastcall Skills_SrvDoFunc_023_Blaze_EnergyShield(::SGAMEDATA * pGame, D2U
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_skill, eSkill, 0);
     D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_modifierlist_level, nSkillLvl, 0);
     short int* psAuraEvent = pSkillTxt->auraevent;
-    if (-1 >= pSkillTxt->auraevent[0]) {
+    if (pSkillTxt->auraevent[0] < 0) {
       return 1;
     }
 
@@ -1388,7 +1388,7 @@ BOOL __fastcall ITEMEVENT_SorAuraManaAbsorb(::SGAMEDATA * pGame, uint32_t nUnitE
 
               nCurMana = (int)nCurMana <= 0 ? 0 : nCurMana;
               D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_mana, nCurMana, 0);
-              if (pTarget && (int)eSkill > 0 && -1 < pSkillTxt->prgoverlay && (int)pSkillTxt->prgoverlay <= sgptDataTable->nTxtOverlaySize) {
+              if (pTarget && (int)eSkill > 0 && pSkillTxt->prgoverlay >= 0 && (int)pSkillTxt->prgoverlay <= sgptDataTable->nTxtOverlaySize) {
                 nAbsorbPct = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
                 nDirection = D2Common::Units::GetDirectionToCoords(pUnit, D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), nAbsorbPct);
                 bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nDirection);

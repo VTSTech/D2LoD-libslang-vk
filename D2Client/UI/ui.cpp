@@ -1027,7 +1027,7 @@ void __stdcall DRAW_UI_DeathMessage() {
     D2Win::Src::D2WinFont::DRAW_text(wszDeathMessage, WindowSizeX / 2 - nTextWidth / 2, nDrawY, 1, 1);
     draw_exp_loss_line:
     nGameDifficulty = GAME::Game::GetDificulity();
-    if (nGameDifficulty == '\0') {
+    if (nGameDifficulty <= '\0') {
       return;
     }
 
@@ -4616,7 +4616,7 @@ static int32_t UI_GetControlConfigRowAtY(int32_t nParam) {
     }
 
     i = gnUICtrlConfigTotalRows;
-    if (-1 >= gnUICtrlConfigTotalRows) {
+    if (gnUICtrlConfigTotalRows < 0) {
       return i;
     }
 

@@ -624,7 +624,7 @@ static uint16_t gaZlibLengthExtraBitsTable[31] = {
       }
 
       nMaxBits--;
-    } while (nMaxBits);
+    } while (nMaxBits >= 1);
 
     uint32_t nRootBits;
     nRootBits = *pMaxBits;

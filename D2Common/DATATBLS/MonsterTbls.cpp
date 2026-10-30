@@ -5594,7 +5594,7 @@ void __fastcall TXT_AllocTxt_MonEquip(D2PoolManagerStrc * pMemory) {
             puVar4 = (uint32_t*)(pMonStatEntry + 4);
             nSlotLoop = 3;
             do {
-              if ((char)*pLocSlot < '\x01' || '\n' < (char)*pLocSlot || *puVar4 != 0x20202020 && (nErrCode = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nErrCode < 0)) {
+              if ((char)*pLocSlot < '\x01' || (char)*pLocSlot >= 11 || *puVar4 != 0x20202020 && (nErrCode = Fog::Src::Excel::GetClassIdFromName(sgptDataTable->sTxtItemsLink, *puVar4, 1) , nErrCode < 0)) {
                 *(char*)pLocSlot = '\0';
               }
 

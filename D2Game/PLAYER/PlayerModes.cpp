@@ -94,7 +94,7 @@ static BOOL PLRMODES_HasEndAnimEventAndSeqInput(::SGAMEDATA * pGame, D2UnitStrc 
     if (pSkill) {
       D2SkillsTxt* pSkillTxt;
       pSkillTxt = D2Common::Skills::GetSkillsTxt(pSkill);
-      if (pSkillTxt && pSkillTxt->seqinput != '\0') {
+      if (pSkillTxt && pSkillTxt->seqinput > '\0') {
         return 1;
       }
     }

@@ -376,7 +376,7 @@ static void SFILE_HandleAsyncReadError(D2StormAsyncOpStrc * pAsyncOp) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00779068);
     void** ppLockedBuffer = &pAsyncOp->pChunkWritePtr;
     HRESULT nResult = pAsyncOp->pStream->lpVtbl->Lock(pAsyncOp->pStream, pAsyncOp->nStreamPos, gnSFileWaveStreamBufferSize, ppLockedBuffer, (DWORD*)&nBytesRead, nullptr, nullptr, 0);
-    if (-1 < nResult && nBytesRead == gnSFileWaveStreamBufferSize) {
+    if (nResult >= 0 && nBytesRead == gnSFileWaveStreamBufferSize) {
       IDirectSoundBuffer* This;
       nCopyBytes = nBytesRead;
       if (pAsyncOp->nChunkBytesRead < nBytesRead) {
@@ -1538,7 +1538,7 @@ uint32_t __stdcall SFILE_InternalReadAligned(D2MPQFileStrc * pArchive, uint32_t 
           }
 
           nCount = 0;
-          if ((uint32_t)pArchive->nSectorCount > 0) {
+          if (pArchive->nSectorCount > 0) {
             pSectorOffsets = pArchive->pSectorTable;
             do {
               if (*pSectorOffsets > pSectorOffsets[1]) {
@@ -3920,7 +3920,7 @@ void __stdcall SFILE_ProcessAsyncRequests() {
 
               pChunkBuffer = 0;
               nStreamWriteResult = pRequest->pStream->lpVtbl->Lock(pRequest->pStream, pRequest->nWritePos, nBytesToRead, &pChunkBuffer, (DWORD*)&nBytesToRead, nullptr, nullptr, 0);
-              if (-1 < nStreamWriteResult) {
+              if (nStreamWriteResult >= 0) {
                 SSystem::SMemFill(pChunkBuffer, nBytesToRead, pRequest->bIs16Bit);
                 pRequest->pStream->lpVtbl->Unlock(pRequest->pStream, pChunkBuffer, nBytesToRead, nullptr, 0);
                 pRequest->nBytePos += nBytesToRead;
@@ -5272,7 +5272,7 @@ int __fastcall SFILE_s_OpenArchive(D2ArchiveStrc * ppArchive, uint32_t nFlags, i
     SFILE_ShiftSectorTable((int32_t)pListNode->pBlockTable, pListNode->pMpqHeader->dwBlockTableSize);
     if (pListNode->nArchiveOffset) {
       nBlockIndex = 0;
-      if ((uint32_t)pListNode->pMpqHeader->dwBlockTableSize > 0) {
+      if (pListNode->pMpqHeader->dwBlockTableSize > 0) {
         do {
           pbVar2 = (uint8_t*)(unsigned char*)&pListNode->pBlockTable[nBlockIndex].dwFilePos;
           if (*(int*)pbVar2) {
