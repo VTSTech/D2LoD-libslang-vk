@@ -37,7 +37,7 @@ uint32_t __stdcall BNDOWNLOAD_HasActiveDownloads();
 int32_t __fastcall BNDOWNLOAD_PerformCheckRevision(uint32_t * pdwVersionOut, uint32_t * pdwChecksumOut, uint8_t * pbResultOut);
 void __fastcall BNDOWNLOAD_ExtractFileFromArchive(char * szFileName, struct D2ArchiveStrc * pArchive, LPCSTR szFilePath);
 void __fastcall BNDOWNLOAD_UpdateProgressPercent(uint32_t dwUnused, int32_t nBytesDone, uint32_t nTotalSize);
-void __fastcall BNDOWNLOAD_ResetState(int nResetValue);
+void __fastcall BNDOWNLOAD_ResetState(uint32_t nResetValue);
 int __stdcall BNDOWNLOAD_GetProgress();
 int __fastcall BNDOWNLOAD_SetPatchFilename(char * szText);
 uint32_t __stdcall BNDOWNLOAD_HasPatchFilename();
@@ -47,7 +47,7 @@ int __fastcall BNDOWNLOAD_ApplyPrepatch(uint32_t * pdwParam);
 uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam);
 void __fastcall BNDOWNLOAD_InitiateFileDownload(struct D2BnetDownloadStateStrc * pDownloadCtx, uint32_t nParam, uint32_t eFileType, uint32_t nOpcode, FILETIME * pFileTime, char * szText1, char * szText2);
 // Processes downloaded BNFTP files: version info, cache files, ads, bnserver.ini, and ExtraWork DLLs. Handles extraction, loading, and cleanup.
-void __fastcall NET_BNFTP_CLIENT_ProcessFile(uint32_t eFileType, int32_t nOpcode, FILETIME * pModTime, LPCSTR szSourcePath, char * szDestPath, uint32_t * pPoolMgr, size_t nSize, int32_t bDeleteSource, int32_t bIsExtraWork);
+void __thiscall NET_BNFTP_CLIENT_ProcessFile(int32_t nOpcode, uint32_t eFileType, FILETIME * pModTime, LPCSTR szSourcePath, char * szDestPath, uint32_t * pPoolMgr, size_t nSize, int32_t bDeleteSource, int32_t bIsExtraWork);
 uintptr_t __fastcall BNDOWNLOAD_InitiatePatchDownload(BYTE * pbParam, size_t nSize);
 void StaticFini_CriticalSection_00881f64();
 // 7 internal functions (defined in .cpp)

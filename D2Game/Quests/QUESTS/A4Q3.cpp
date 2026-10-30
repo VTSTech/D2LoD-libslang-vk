@@ -153,7 +153,7 @@ void __fastcall Objects_InitFn78(D2ObjectInitFnArg * pInitArg) {
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 BOOL __fastcall OBJOP_A4Q2_PandemoniumFortressGate(D2ObjectOperateFnArg * pOperation) {
     int32_t nTradeTick;
-    uint8_t aQuestStatePacket[6];
+    D2GSPacketSrv0x5D aQuestStatePacket;
     ::SGAMEDATA* pGame = pOperation->sArg.pGame;
     if (!pGame->bExpansion) {
       return 0;
@@ -196,13 +196,12 @@ BOOL __fastcall OBJOP_A4Q2_PandemoniumFortressGate(D2ObjectOperateFnArg * pOpera
         if (!nTradeTick) {
           UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
           pPlayerData->dwTradeTick = 1;
-          aQuestStatePacket[4] = 0;
-          aQuestStatePacket[5] = 0;
-          aQuestStatePacket[0] = 0x5d;
-          aQuestStatePacket[1] = 0x17;
-          aQuestStatePacket[2] = 2;
-          aQuestStatePacket[3] = 0;
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, (D2GSPacketSrv0x5D*)aQuestStatePacket);
+          aQuestStatePacket.nExtra = 0;
+          aQuestStatePacket.nPacketId = ']';
+          aQuestStatePacket.nQuestId = '\x17';
+          aQuestStatePacket.nAlertFlags = '\x02';
+          aQuestStatePacket.nFilterStatus = '\0';
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pPlayerClient, &aQuestStatePacket);
           GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pPlayerClient, 5);
         }
       }
@@ -241,7 +240,7 @@ BOOL __fastcall Q28_PlayerNotifyCompletedForge(::SGAMEDATA * pGame, D2UnitStrc *
 void __fastcall Objects_InitFn48(D2ObjectInitFnArg * pInitArg) {
     uint8_t nUpdateFlag;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_HellsForge);
-    if (!pQuestData || !pQuestData->bIsNotIntroduction) {
+    if (!pQuestData || pQuestData->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 3);
     } else {
       uint16_t uVar1;
@@ -261,7 +260,8 @@ void __fastcall Objects_InitFn48(D2ObjectInitFnArg * pInitArg) {
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q3.cpp
 void __fastcall Q28_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+    D2UnitStrc* pPlayer = pQuestArgs->pPlayer;
+    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
     if (bQuestState) {
@@ -274,7 +274,7 @@ void __fastcall Q28_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-    if (!(!bQuestState && pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev != 0xd && !pQuestData->nStateFlag)) {
+    if (!(!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev != 0xd && !pQuestData->nStateFlag)) {
       return;
     }
 
@@ -324,7 +324,7 @@ void __fastcall Q28_PlayerCompleteForgeInAct4(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
 
-    int* pForgeCompletedCount = &pHellsForgeQuest->pQuestSpecificData.pA4Q3->nItemsToDrop;
+    int* pForgeCompletedCount = &pHellsForgeQuest->pQuestSpecificData.pA2Q6->nStatusCode;
     (*pForgeCompletedCount)++;
 }
 
@@ -350,7 +350,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
     /* GetQuestState(QUEST_HellsForge=0x1b, RewardAwaits=1): reward already pending?
                          bail */ if (bQuestState != 1) {
-      int16_t nAttackerPartyId;
+      uint16_t nAttackerPartyId;
       bQuestState = D2Common::QuestRecord::GetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
       if (bQuestState != 1) {
         pQuestItem = pOperation->sArg.pVictim;
@@ -367,84 +367,93 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
         if (pQuestItem) {
           eForgeMode = pQuestItem->eAnimMode.eObjectMode;
         }
-        if (eForgeMode == eD2ObjectAnimMode_ns::Neutral) {
-          /* HasQuestItem('mss '=0x2073736d, Mephisto's Soulstone): forge idle + player
+
+        switch (eForgeMode) {
+          case eD2ObjectAnimMode_ns::Neutral:
+            {
+              /* HasQuestItem('mss '=0x2073736d, Mephisto's Soulstone): forge idle + player
                          carries soulstone -> place stone on anvil (internal state 2) */ pQuestItem = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
-          if (pQuestItem) {
-            D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-            pGame = pOperation->sArg.pGame;
-            GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectsTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
-            pA4Q3Data->nForgeStage = 2;
-            pA4Q3Data->field_0x01 = 0;
-            pForgeQuestData->nQuestPacketFlags = '\0';
-            QUEST_SetStateAndBroadcast(pForgeQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
-            QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
-            return 0;
-          }
-
-          UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-          if (!pForgeQuestData->bIsNotIntroduction) {
-            return 0;
-          }
-          if (pForgeQuestData->nStateFlag) {
-            return 0;
-          }
-
-          QUEST_SetStateFlag(pForgeQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0xf1);
-          return 0;
-        }
-        if (eForgeMode != Opened) {
-          return 0;
-        }
-
-        pQuestItem = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20686668);
-        if (pQuestItem) {
-          pQuestItem = pOperation->pAttacker;
-          if (!pQuestItem->pInventory) {
-            UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pQuestItem, 0x13, pQuestItem);
-            return 0;
-          }
-
-          pQuestItem = D2Common::INVENTORY::Inventory::GetEquipedWeapon(pQuestItem->pInventory);
-          if (pQuestItem) {
-            pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pQuestItem->nClassId);
-            if (pItemsTxt->dwCode == 0x20686668) {
-              pStrikeCount = &pA4Q3Data->nHammerStrikeCount;
-              (*pStrikeCount)++;
-              if (pA4Q3Data->nHammerStrikeCount < 3) {
+              if (pQuestItem) {
+                D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
+                pGame = pOperation->sArg.pGame;
+                GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectsTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
+                pA4Q3Data->nForgeStage = 2;
+                pA4Q3Data->field_0x01 = 0;
+                pForgeQuestData->nQuestPacketFlags = '\0';
+                QUEST_SetStateAndBroadcast(pForgeQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
+                QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
                 return 0;
               }
 
-              D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 3);
-              pA4Q3Data->nForgeStage = 3;
-              pA4Q3Data->field_0x01 = 0;
-              QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x20686668);
-              pQuestBitBuffer = GetQuestBitBuffer(pOperation->sArg.pGame, pOperation->pAttacker);
-              /* SetQuestState(QUEST_HellsForge=0x1b, JustCompleted=0xd): the SMASH succeeded
-                         (3rd hammer strike) -> mark just-completed self game */ D2Common::QuestRecord::SetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_JustCompleted);
-              /* SetQuestState(QUEST_HellsForge=0x1b, RewardAwaits=1): reward (gems+rune) now
-                         pending pickup/turn-in */ D2Common::QuestRecord::SetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-              /* UnsetQuestStepStates(QUEST_HellsForge=0x1b): clear the intermediate step bits
-                         (Step0x02/03/05) now that quest is done */ D2Common::QuestRecord::UnsetQuestStepStates(pQuestBitBuffer, pForgeQuestData->nQuestIdReal);
-              pA4Q3Data->bSetupUpdateFlag = 1;
-              pA4Q3Data->bDropActive = 1;
-              pA4Q3Data->nGemQuality = 4;
-              pA4Q3Data->nItemsToDrop = 1;
-              nAttackerPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
-              if (nAttackerPartyId != -1) {
-                UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nAttackerPartyId, (::fpExecuteOnUnitFunction)Q28_PlayerCompleteForgeInAct4, 0);
+              UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+              if (pForgeQuestData->bIsNotIntroduction == '\0') {
+                return 0;
+              }
+              if (pForgeQuestData->nStateFlag) {
+                return 0;
               }
 
-              QUEST_SetStateFlag(pForgeQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0x125);
-              pForgeQuestData->nQuestPacketFlags = '\0';
-              QUEST_SetStateAndBroadcast(pForgeQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
-              pGame = pOperation->sArg.pGame;
-              GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 7, (pObjectsTxt->FrameCnt[3] >> 8) + pGame->dwGameFrame, 0, 0);
-              UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q28_PartyMember_SetCannotComplete);
-              NotifyPlayersAboutEvent(pOperation->sArg.pGame, 0xe);
+              QUEST_SetStateFlag(pForgeQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0xf1);
               return 0;
             }
-          }
+          default:
+            {
+              return 0;
+            }
+          case Opened:
+            {
+              pQuestItem = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20686668);
+              if (pQuestItem) {
+                pQuestItem = pOperation->pAttacker;
+                if (!pQuestItem->pInventory) {
+                  UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pQuestItem, 0x13, pQuestItem);
+                  return 0;
+                }
+
+                pQuestItem = D2Common::INVENTORY::Inventory::GetEquipedWeapon(pQuestItem->pInventory);
+                if (pQuestItem) {
+                  pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pQuestItem->nClassId);
+                  if (pItemsTxt->dwCode == 0x20686668) {
+                    pStrikeCount = &pA4Q3Data->nHammerStrikeCount;
+                    (*pStrikeCount)++;
+                    if (pA4Q3Data->nHammerStrikeCount <= 2) {
+                      return 0;
+                    }
+
+                    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 3);
+                    pA4Q3Data->nForgeStage = 3;
+                    pA4Q3Data->field_0x01 = 0;
+                    QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x20686668);
+                    pQuestBitBuffer = GetQuestBitBuffer(pOperation->sArg.pGame, pOperation->pAttacker);
+                    /* SetQuestState(QUEST_HellsForge=0x1b, JustCompleted=0xd): the SMASH succeeded
+                         (3rd hammer strike) -> mark just-completed self game */ D2Common::QuestRecord::SetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_JustCompleted);
+                    /* SetQuestState(QUEST_HellsForge=0x1b, RewardAwaits=1): reward (gems+rune) now
+                         pending pickup/turn-in */ D2Common::QuestRecord::SetQuestState(pQuestBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
+                    /* UnsetQuestStepStates(QUEST_HellsForge=0x1b): clear the intermediate step bits
+                         (Step0x02/03/05) now that quest is done */ D2Common::QuestRecord::UnsetQuestStepStates(pQuestBitBuffer, pForgeQuestData->nQuestIdReal);
+                    pA4Q3Data->bSetupUpdateFlag = 1;
+                    pA4Q3Data->bDropActive = 1;
+                    pA4Q3Data->nGemQuality = 4;
+                    pA4Q3Data->nItemsToDrop = 1;
+                    nAttackerPartyId = UNIT::SUnit::GetPartyId(pOperation->pAttacker);
+                    if (nAttackerPartyId != 0xffff) {
+                      UNIT::Party::ExecuteFunctionForEveryPartyMember(pOperation->sArg.pGame, nAttackerPartyId, (::fpExecuteOnUnitFunction)Q28_PlayerCompleteForgeInAct4, 0);
+                    }
+
+                    QUEST_SetStateFlag(pForgeQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0x125);
+                    pForgeQuestData->nQuestPacketFlags = '\0';
+                    QUEST_SetStateAndBroadcast(pForgeQuestData, 0xd, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
+                    pGame = pOperation->sArg.pGame;
+                    GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 7, (pObjectsTxt->FrameCnt[3] >> 8) + pGame->dwGameFrame, 0, 0);
+                    UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q28_PartyMember_SetCannotComplete);
+                    NotifyPlayersAboutEvent(pOperation->sArg.pGame, 0xe);
+                    return 0;
+                  }
+                }
+              }
+
+              break;
+            }
         }
       }
     }
@@ -465,11 +474,11 @@ bool __fastcall Q28_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-    if (!(!bQuestState && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer)) {
-      return false;
+    if (!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
+      return true;
     }
 
-    return true;
+    return false;
 }
 
 // A4Q3 Hell's Forge — Q28_SequenceFilter (fpSequenceFilter): quest-chain sequencer. If not yet started but introduced, sets internal stateFlag 1. If finished (stateFlag==5) or not introduced, looks up the next quest in the chain (nSequenceQuestId = QUEST_AbleGoToAct4) and invokes ITS sequence filter (with an IsBadCodePtr guard). Propagates quest unlocks down the Act4 chain. No QuestRecord writes.
@@ -478,22 +487,22 @@ bool __fastcall Q28_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool byTmp;
     D2QuestDataStrc* pSeqQuestData;
     BOOL bBadCodePtr;
-    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction) {
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0x155);
-    } else if (pQuestData->nStateFlag == 5 || !pQuestData->bIsNotIntroduction) {
+    } else if (pQuestData->nStateFlag == 5 || pQuestData->bIsNotIntroduction == '\0') {
       pSeqQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
-      if (!pSeqQuestData) {
-        return false;
+      if (pSeqQuestData) {
+        /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pSeqQuestData->fpSequenceFilter);
+        if (bBadCodePtr) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15d);
+          exit(-1);
+        }
+
+        byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
+        return byTmp;
       }
 
-      /* FARPROC lpfn for IsBadCodePtr */ bBadCodePtr = IsBadCodePtr((FARPROC)pSeqQuestData->fpSequenceFilter);
-      if (bBadCodePtr) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x15d);
-        exit(-1);
-      }
-
-      byTmp = pSeqQuestData->fpSequenceFilter(pSeqQuestData);
-      return byTmp;
+      return false;
     }
 
     return true;
@@ -584,7 +593,7 @@ void __fastcall Q28_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     int32_t nLine;
     short int nNpcClassId = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    short int nGossipMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nGossipMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     if (nNpcClassId != 0xf6) {
@@ -662,7 +671,9 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     BOOL bIsCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
     BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
-    if (!bRewardAwaits) {
+    if (bRewardAwaits) {
+      nGossipMsgIdx = 2;
+    } else {
       D2UnitStrc* pQuestItem;
       if (!pQuestArgs->pPlayer) {
         nGossipMsgIdx = -1;
@@ -681,7 +692,7 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (bIsCompleted == 1) {
         return;
       }
-      if (3 < pQuestData->nStateFlag && !bIsJustCompleted) {
+      if (pQuestData->nStateFlag >= 4 && !bIsJustCompleted) {
         return;
       }
 
@@ -689,7 +700,7 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (bIsCompleted) {
         return;
       }
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         return;
       }
       if (pQuestData->nStateFlag == 1) {
@@ -701,7 +712,7 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         if (pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
           return;
         }
-        if (2 < pQuestData->nStateFlagPrev) {
+        if (pQuestData->nStateFlagPrev >= 3) {
           return;
         }
 
@@ -713,7 +724,7 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       if (pQuestItem) {
         return;
       }
-      if (2 < pQuestData->nStateFlagPrev) {
+      if (pQuestData->nStateFlagPrev >= 3) {
         return;
       }
       if (pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
@@ -721,8 +732,6 @@ void __fastcall Q28_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       }
 
       nGossipMsgIdx = 1;
-    } else {
-      nGossipMsgIdx = 2;
     }
 
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, nGossipMsgIdx);
@@ -735,15 +744,15 @@ void __fastcall Q28_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     }
 
     D2QuestDataA4Q3Strc* pA4Q3Data = pQuestData->pQuestSpecificData.pA4Q3;
-    uint8_t nNewStateFlag = 1;
+    int nPrevStateFlag = 1;
     if (pA4Q3Data->bForgeQuestAccepted != 1) {
       return;
     }
     if (pA4Q3Data->bGotHammer) {
-      nNewStateFlag = 4;
+      nPrevStateFlag = 4;
     }
 
-    QUEST_SetStateAndBroadcast(pQuestData, nNewStateFlag, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
+    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
     pQuestData->nQuestPacketFlags = '\0';
     pA4Q3Data->bForgeQuestAccepted = 0;
     ::SGAMEDATA* pGame = pQuestData->pGame;
@@ -831,7 +840,7 @@ void __fastcall Q28_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 void __fastcall Q28_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int nQuestDataPtr;
     D2QuestDataA4Q3Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA4Q3;
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return;
     }
 
@@ -854,7 +863,7 @@ void __fastcall Q28_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->nStateFlagPrev = 0;
     pQuestData->nStateFlag = 0;
     pQuestData->pNpcMessages = &A4Q3::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->fpSequenceFilter = Q28_SequenceFilter;
     pQuestData->nSequenceQuestId = QUEST_AbleGoToAct4;
     pQuestData->nQuestIdReal = QUEST_HellsForge;
@@ -959,38 +968,38 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     aGemItemCode[3] = '\0';
     int nDropsSucceeded = 0;
     int iDropPass = 0;
-    if (0 >= pQuestSpecificData->nItemsToDrop) {
+    if (pQuestSpecificData->nItemsToDrop <= 0) {
       return;
     }
 
     do {
       D2UnitStrc* pDroppedGem;
       switch (pQuestSpecificData->nGemQuality) {
-        case 1:
-          pSeed = GetQuestControlSeed(pQuestData->pGame);
-        sSeedNext = D2_SEED_NEXT(*pSeed);
-        nRngMod = (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 7);
-        *pSeed = sSeedNext;
-        aRuneCode = Q28_aForgeRuneCodesAct3[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
-        break;
-        case 2:
-
-        case 3:
-          pSeed = GetQuestControlSeed(pQuestData->pGame);
-        sSeedNext = D2_SEED_NEXT(*pSeed);
-        nRngMod = (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 7);
-        *pSeed = sSeedNext;
-        aRuneCode = Q28_aForgeRuneCodesAct2[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
-        break;
         case 4:
           pSeed = GetQuestControlSeed(pQuestData->pGame);
         sSeedNext = D2_SEED_NEXT(*pSeed);
-        nRngMod = (int)(((uint64_t)d2_bits_of(sSeedNext) & 0xffffffff) / 7);
+        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
         *pSeed = sSeedNext;
         aRuneCode = Q28_aForgeRuneCodesAct1[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
         break;
         default:
           return;
+        case 2:
+
+        case 3:
+          pSeed = GetQuestControlSeed(pQuestData->pGame);
+        sSeedNext = D2_SEED_NEXT(*pSeed);
+        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
+        *pSeed = sSeedNext;
+        aRuneCode = Q28_aForgeRuneCodesAct2[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
+        break;
+        case 1:
+          pSeed = GetQuestControlSeed(pQuestData->pGame);
+        sSeedNext = D2_SEED_NEXT(*pSeed);
+        nRngMod = (int)((uint64_t)sSeedNext.nSeedLow * 0x24924925 >> 0x20);
+        *pSeed = sSeedNext;
+        aRuneCode = Q28_aForgeRuneCodesAct3[((sSeedNext.nSeedLow - nRngMod >> 1) + nRngMod >> 2) * -7 + sSeedNext.nSeedLow];
+        break;
       }
 
       pUnit->dwDropItemCode = aRuneCode;
@@ -1007,15 +1016,17 @@ void __fastcall Q28_TimerCallback_DropForgeRunes(D2QuestDataStrc * pQuestData, D
     }
 
     pQuestSpecificData->nGemQuality--;
-    if (pQuestSpecificData->nGemQuality < 1) {
+    if (pQuestSpecificData->nGemQuality <= 0) {
       pQuestSpecificData->bDropActive = 0;
       pGame = pQuestData->pGame;
       if (pGame->bExpansion) {
         pRuneTable = aRunesListNomal;
-        if (pGame->nDifficulty == 1) {
+        if (pGame->nDifficulty != 1) {
+          if (pGame->nDifficulty == 2) {
+            pRuneTable = aRunesListHell;
+          }
+        } else {
           pRuneTable = aRunesListNightmare;
-        } else if (pGame->nDifficulty == 2) {
-          pRuneTable = aRunesListHell;
         }
 
         pSeed = GetQuestControlSeed(pGame);

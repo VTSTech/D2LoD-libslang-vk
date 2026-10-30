@@ -160,7 +160,7 @@ void __stdcall SSYSTEM_SetShutdownFlag(uint32_t dwParam) {
     gbSSystemShutdownInProgress = dwParam;
 }
 
-uint32_t __fastcall SSYSTEM_ListOffsetToPointer(int * pBase, int * pNode) {
+uint32_t __thiscall SSYSTEM_ListOffsetToPointer(int * pNode, int * pBase) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -173,7 +173,7 @@ uint32_t __fastcall SSYSTEM_ListOffsetToPointer(int * pBase, int * pNode) {
     return nOffset + (int)pBase;
 }
 
-int32_t __fastcall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode) {
+int32_t __thiscall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode) {
     if (pNode) {
       return pNode;
     }
@@ -182,7 +182,7 @@ int32_t __fastcall SSYSTEM_ListGetPointer(int32_t pList, int32_t pNode) {
     return pNode;
 }
 
-void __fastcall SSYSTEM_ListUnlinkAndInsert(int * * pNode, int32_t nInsertMode, int * * ppTarget, int * * pList) {
+void __thiscall SSYSTEM_ListUnlinkAndInsert(int * * pList, int * * pNode, int32_t nInsertMode, int * * ppTarget) {
     int* ppPrevLink;
     int** pEffectiveNode = pNode;
     if (!pNode) {
@@ -206,42 +206,49 @@ void __fastcall SSYSTEM_ListUnlinkAndInsert(int * * pNode, int32_t nInsertMode, 
     if (!ppTarget) {
       ppTarget = pList + 1;
     }
-    if (nInsertMode != 1) {
-      pLink = *ppTarget;
-      *pEffectiveNode = pLink;
-      pEffectiveNode[1] = (int*)pLink[1];
-      pLink[1] = (int)pNode;
-      *ppTarget = (int*)pEffectiveNode;
-      return;
-    }
 
-    *pEffectiveNode = (int*)ppTarget;
-    pEffectiveNode[1] = ppTarget[1];
-    pLink = *pList;
-    ppPrevLink = ppTarget[1];
-    if ((int)ppPrevLink < 0) {
-      *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
-      ppTarget[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pLink < 0) {
-      pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pEffectiveNode = (int*)ppTarget;
+          pEffectiveNode[1] = ppTarget[1];
+          pLink = *pList;
+          ppPrevLink = ppTarget[1];
+          if ((int)ppPrevLink < 0) {
+            *(int***)~(uint32_t)ppPrevLink = (int**)pEffectiveNode;
+            ppTarget[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pLink < 0) {
+            pLink = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
 
-    *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
-    ppTarget[1] = (int*)pNode;
+          *(int***)((int)ppPrevLink + (int)pLink) = (int**)pEffectiveNode;
+          ppTarget[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pLink = *ppTarget;
+          *pEffectiveNode = pLink;
+          pEffectiveNode[1] = (int*)pLink[1];
+          pLink[1] = (int)pNode;
+          *ppTarget = (int*)pEffectiveNode;
+          return;
+        }
+    }
 }
 
-uint32_t __fastcall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
+uint32_t __thiscall SSYSTEM_ListGetNext(int32_t pList, int32_t pNode) {
     if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
     }
 
     pNode = pList + 4;
-    return (int)*(uint32_t*)(pNode + 4) < 1 ? 0 : *(uint32_t*)(pNode + 4);
+    return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
-void __fastcall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
+void __thiscall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
     int* pPrevLink;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -265,12 +272,12 @@ void __fastcall SSYSTEM_ListUnlink(int32_t pThis, int * pNode) {
     pNode[1] = 0;
 }
 
-uint32_t __fastcall SSYSTEM_ListGetData(int32_t pList, int32_t pNode) {
-    if (!pNode) {
-      return *(uint32_t*)(pList + 8);
+uint32_t __thiscall SSYSTEM_ListGetData(int32_t pList, int32_t pNode) {
+    if (pNode) {
+      return *(uint32_t*)(pNode + 4);
     }
 
-    return *(uint32_t*)(pNode + 4);
+    return *(uint32_t*)(pList + 8);
 }
 
 void __fastcall SSYSTEM_ListClearPositive(D2StormListHead * pList) {
@@ -280,7 +287,7 @@ void __fastcall SSYSTEM_ListClearPositive(D2StormListHead * pList) {
     while (true) {
       int pNext;
       pNode = (int*)pList->pNext;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -323,23 +330,23 @@ void __fastcall SSYSTEM_ListClearAll(D2StormListHead * pList) {
     pList->pNext = 0;
 }
 
-int * * __fastcall SSYSTEM_ListAllocNode(int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags, int * * pList) {
+int * * __thiscall SSYSTEM_ListAllocNode(int * * pList, int32_t nInsertMode, int32_t nDataSize, uint32_t nAllocFlags) {
     int** pNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, gszSSystemListAllocTag, -2, nAllocFlags | 8);
-    if (!pNode) {
-      pNode = 0;
-    } else {
+    if (pNode) {
       *pNode = 0;
       pNode[1] = 0;
+    } else {
+      pNode = 0;
     }
     if (!nInsertMode) {
       return pNode;
     }
 
-    SSYSTEM_ListUnlinkAndInsert(pNode, nInsertMode, nullptr, pList);
+    SSYSTEM_ListUnlinkAndInsert(pList, pNode, nInsertMode, nullptr);
     return pNode;
 }
 
-int * __fastcall SSYSTEM_ListFreeNode(uint8_t bFreeMemory, int * pNode) {
+int * __thiscall SSYSTEM_ListFreeNode(int * pNode, uint8_t bFreeMemory) {
     uint32_t nOffset;
     int pNext = *pNode;
     if (pNext) {
@@ -371,7 +378,7 @@ void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList) {
     while (true) {
       int pNext;
       pNode = *(int**)(pList + 8);
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -394,7 +401,7 @@ void __fastcall SSYSTEM_ListFreeAllNodes(int32_t pList) {
     }
 }
 
-uint32_t __fastcall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
+uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
     int* pPrevLink = pNode;
     if (!pNode) {
       pPrevLink = (int*)((int)pList + 4);
@@ -418,12 +425,12 @@ uint32_t __fastcall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
     }
 
     SMem::SMemFree(pNode, gszSSystemListAllocTag, -2, 0);
-    return (int)nResultOffset < 1 ? 0 : nResultOffset;
+    return (int)nResultOffset <= 0 ? 0 : nResultOffset;
 }
 
 int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLength) {
     int nResult;
-    for (; 3 < nLength; nLength -= 4) {
+    for (; nLength >= 4; nLength -= 4) {
       if (*(int*)pLeft != *(int*)pRight) {
         goto compare_bytes;
       }
@@ -458,7 +465,7 @@ int __stdcall SSYSTEM_MemCompare(uint8_t * pLeft, uint8_t * pRight, uint32_t nLe
       }
 
       nResult = 1;
-      if (nDiff < 1) {
+      if (nDiff <= 0) {
         return -1;
       }
     }
@@ -486,19 +493,19 @@ void __stdcall SMemZero(void * pMemory, size_t nSize) {
     memset(pMemory, 0, nSize);
 }
 
-void __fastcall LINKEDLIST_Unlink(uint32_t * pNode, int * pList) {
+void __thiscall LINKEDLIST_Unlink(int * pList, uint32_t * pNode) {
     *pList = (int)pNode;
     pList[1] = *pNode;
     *pList = (int)(pNode + 1);
     pList[2] = 0x20;
 }
 
-void __fastcall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits) {
+void __thiscall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits) {
     *(uint32_t*)(pBitBuffer + 4) >>= (uint8_t)nBits & 0x1f;
     *(int*)(pBitBuffer + 8) -= nBits;
 }
 
-void __fastcall LINKEDLIST_InsertAfter(uint8_t * pNode, int32_t pNewNode, D2BitStreamWriterStrc * pList) {
+void __thiscall LINKEDLIST_InsertAfter(D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode) {
     pList->pOutPtr = pNode;
     pList->nPad00 = (uint32_t)(uintptr_t)pNode;
     pList->nBytesRemaining = pNewNode;
@@ -506,7 +513,7 @@ void __fastcall LINKEDLIST_InsertAfter(uint8_t * pNode, int32_t pNewNode, D2BitS
     pList->nBitsHeld = 0;
 }
 
-void __fastcall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode) {
+void __thiscall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode) {
     int* pPrevLink;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -530,7 +537,7 @@ void __fastcall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode) {
     pNode[1] = 0;
 }
 
-void __fastcall LINKEDLIST_MoveNode(int * * pNode, int32_t nInsertAtHead, int * * pInsertRef, int * * pListHead) {
+void __thiscall LINKEDLIST_MoveNode(int * * pListHead, int * * pNode, int32_t nInsertAtHead, int * * pInsertRef) {
     int* pLinkTarget;
     int** pNodeCur = pNode;
     if (!pNode) {
@@ -554,30 +561,37 @@ void __fastcall LINKEDLIST_MoveNode(int * * pNode, int32_t nInsertAtHead, int * 
     if (!pInsertRef) {
       pInsertRef = pListHead + 1;
     }
-    if (nInsertAtHead != 1) {
-      pNeighbor = *pInsertRef;
-      *pNodeCur = pNeighbor;
-      pNodeCur[1] = (int*)pNeighbor[1];
-      pNeighbor[1] = (int)pNode;
-      *pInsertRef = (int*)pNodeCur;
-      return;
-    }
 
-    *pNodeCur = (int*)pInsertRef;
-    pNodeCur[1] = pInsertRef[1];
-    pNeighbor = *pListHead;
-    pLinkTarget = pInsertRef[1];
-    if ((int)pLinkTarget < 0) {
-      *(int***)~(uint32_t)pLinkTarget = (int**)pNodeCur;
-      pInsertRef[1] = (int*)pNode;
-      return;
-    }
-    if ((int)pNeighbor < 0) {
-      pNeighbor = (int*)((int)pInsertRef - (*pInsertRef)[1]);
-    }
+    switch (nInsertAtHead) {
+      case 1:
+        {
+          *pNodeCur = (int*)pInsertRef;
+          pNodeCur[1] = pInsertRef[1];
+          pNeighbor = *pListHead;
+          pLinkTarget = pInsertRef[1];
+          if ((int)pLinkTarget < 0) {
+            *(int***)~(uint32_t)pLinkTarget = (int**)pNodeCur;
+            pInsertRef[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pNeighbor < 0) {
+            pNeighbor = (int*)((int)pInsertRef - (*pInsertRef)[1]);
+          }
 
-    *(int***)((int)pLinkTarget + (int)pNeighbor) = (int**)pNodeCur;
-    pInsertRef[1] = (int*)pNode;
+          *(int***)((int)pLinkTarget + (int)pNeighbor) = (int**)pNodeCur;
+          pInsertRef[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pNeighbor = *pInsertRef;
+          *pNodeCur = pNeighbor;
+          pNodeCur[1] = (int*)pNeighbor[1];
+          pNeighbor[1] = (int)pNode;
+          *pInsertRef = (int*)pNodeCur;
+          return;
+        }
+    }
 }
 
 void __fastcall LINKEDLIST_UnlinkAll(int32_t pList) {
@@ -587,7 +601,7 @@ void __fastcall LINKEDLIST_UnlinkAll(int32_t pList) {
     while (true) {
       int pNext;
       pNode = *(int**)(pList + 8);
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -646,7 +660,7 @@ uint32_t __fastcall LINKEDLIST_GetNextOffset(int * pList) {
 }
 
 // Calculates the offset position of a node within a linked list structure. Handles both forward and backward traversal using signed offset values. Returns the absolute position when given a node pointer and its offset metadata.
-uint32_t __fastcall LINKEDLIST_GetNodeOffset(int * pNode, int * pListInfo) {
+uint32_t __thiscall LINKEDLIST_GetNodeOffset(int * pListInfo, int * pNode) {
     uint32_t nOffset = pListInfo[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -680,11 +694,11 @@ void __fastcall LINKEDLIST_UnlinkSelf(int * pNode) {
 }
 
 uint32_t __fastcall LINKEDLIST_GetCount(int * pList) {
-    return pList[2] < 1 ? 0 : pList[2];
+    return pList[2] <= 0 ? 0 : pList[2];
 }
 
 // Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
-int32_t __fastcall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode) {
+int32_t __thiscall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode) {
     if (nNode) {
       return nNode;
     }
@@ -729,43 +743,50 @@ void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t n
     if (!ppTargetList) {
       ppTargetList = pList + 1;
     }
-    if (nInsertMode != 1) {
-      pPrevNode = *ppTargetList;
-      *pTargetNode = pPrevNode;
-      pTargetNode[1] = (int*)pPrevNode[1];
-      pPrevNode[1] = (int)ppNodeSlot;
-      *ppTargetList = (int*)pTargetNode;
-      return;
-    }
 
-    *pTargetNode = (int*)ppTargetList;
-    pTargetNode[1] = ppTargetList[1];
-    pPrevNode = *pList;
-    pLinkSlot = ppTargetList[1];
-    if ((int)pLinkSlot < 0) {
-      *(int***)~(uint32_t)pLinkSlot = (int**)pTargetNode;
-      ppTargetList[1] = (int*)ppNodeSlot;
-      return;
-    }
-    if ((int)pPrevNode < 0) {
-      pPrevNode = (int*)((int)ppTargetList - (*ppTargetList)[1]);
-    }
+    switch (nInsertMode) {
+      case 1:
+        {
+          *pTargetNode = (int*)ppTargetList;
+          pTargetNode[1] = ppTargetList[1];
+          pPrevNode = *pList;
+          pLinkSlot = ppTargetList[1];
+          if ((int)pLinkSlot < 0) {
+            *(int***)~(uint32_t)pLinkSlot = (int**)pTargetNode;
+            ppTargetList[1] = (int*)ppNodeSlot;
+            return;
+          }
+          if ((int)pPrevNode < 0) {
+            pPrevNode = (int*)((int)ppTargetList - (*ppTargetList)[1]);
+          }
 
-    *(int***)((int)pLinkSlot + (int)pPrevNode) = (int**)pTargetNode;
-    ppTargetList[1] = (int*)ppNodeSlot;
+          *(int***)((int)pLinkSlot + (int)pPrevNode) = (int**)pTargetNode;
+          ppTargetList[1] = (int*)ppNodeSlot;
+          return;
+        }
+      default:
+        {
+          pPrevNode = *ppTargetList;
+          *pTargetNode = pPrevNode;
+          pTargetNode[1] = (int*)pPrevNode[1];
+          pPrevNode[1] = (int)ppNodeSlot;
+          *ppTargetList = (int*)pTargetNode;
+          return;
+        }
+    }
 }
 
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
-uint32_t __fastcall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode) {
+uint32_t __thiscall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode) {
     if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
     }
 
     nNode = pThis + 4;
-    return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+    return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
-void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
+void __thiscall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
     int* pLinkSlot;
     if (!pListHead) {
       pListHead = (int*)(pThis + 4);
@@ -790,12 +811,12 @@ void __fastcall LINKEDLIST_GetHead(int32_t pThis, int * pListHead) {
 }
 
 // Gets the value stored at a specific index within a linked list. Returns the value field at offset+4 from the node pointer. Handles NULL input by defaulting to the list head at this+8.
-uint32_t __fastcall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode) {
-    if (!nNode) {
-      return *(uint32_t*)((int)pListHead + 8);
+uint32_t __thiscall LINKEDLIST_GetValueAtIndex(void * pListHead, int32_t nNode) {
+    if (nNode) {
+      return *(uint32_t*)(nNode + 4);
     }
 
-    return *(uint32_t*)(nNode + 4);
+    return *(uint32_t*)((int)pListHead + 8);
 }
 
 void __fastcall LINKEDLIST_GetTail(D2StormListHead * pList) {
@@ -805,7 +826,7 @@ void __fastcall LINKEDLIST_GetTail(D2StormListHead * pList) {
     while (true) {
       int nNextNode;
       pNode = (int*)pList->pNext;
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -849,13 +870,13 @@ void __fastcall LINKEDLIST_InsertHead(D2StormListHead * pList) {
 }
 
 // Allocates a new linked list node via SMemAlloc with 12 bytes overhead plus data size. Initializes next/prev pointers to NULL. Optionally links the node into an existing list via LINKEDLIST_IsEmpty call.
-int * * __fastcall LINKEDLIST_AllocNode(int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags, int * * pListHead) {
+int * * __thiscall LINKEDLIST_AllocNode(int * * pListHead, int32_t pList, int32_t nDataSize, uint32_t dwAllocFlags) {
     int** pNewNode = (int**)SMem::SMemAlloc(nDataSize + 0xc, s___AUBREAKCMD___007088d8, -2, dwAllocFlags | 8);
-    if (!pNewNode) {
-      pNewNode = 0;
-    } else {
+    if (pNewNode) {
       *pNewNode = 0;
       pNewNode[1] = 0;
+    } else {
+      pNewNode = 0;
     }
     if (!pList) {
       return pNewNode;
@@ -866,7 +887,7 @@ int * * __fastcall LINKEDLIST_AllocNode(int32_t pList, int32_t nDataSize, uint32
 }
 
 // Unlinks a node from its doubly-linked list by updating prev/next pointers of adjacent nodes. If bit 0 of bFreeMemory is set, also frees the node memory via SMemFree. Returns the unlinked node pointer.
-int * __fastcall LINKEDLIST_UnlinkAndFree(uint8_t bFreeMemory, int * pNode) {
+int * __thiscall LINKEDLIST_UnlinkAndFree(int * pNode, uint8_t bFreeMemory) {
     uint32_t uPrevLink;
     int nNextNode = *pNode;
     if (nNextNode) {
@@ -892,7 +913,7 @@ int * __fastcall LINKEDLIST_UnlinkAndFree(uint8_t bFreeMemory, int * pNode) {
 }
 
 // Unlinks a node from the list, frees its memory, and returns the masked count value. Combines unlinking logic with memory cleanup and count extraction. Always deallocates via SMemFree after unlinking.
-uint32_t __fastcall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode) {
+uint32_t __thiscall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNode) {
     int* pLinkSlot = pNode;
     if (!pNode) {
       pLinkSlot = (int*)((int)pListHead + 4);
@@ -916,10 +937,10 @@ uint32_t __fastcall LINKEDLIST_UnlinkFreeAndGetCount(void * pListHead, int * pNo
     }
 
     SMem::SMemFree(pNode, s___AUBREAKCMD___007088d8, -2, 0);
-    return (int)uCount < 1 ? 0 : uCount;
+    return (int)uCount <= 0 ? 0 : uCount;
 }
 
-StormLinkStrc * __fastcall LINKEDLIST_GetNodePointer(int32_t nLinkOffset, StormLinkStrc * pLink) {
+StormLinkStrc * __thiscall LINKEDLIST_GetNodePointer(StormLinkStrc * pLink, int32_t nLinkOffset) {
     StormLinkStrc* pResult;
     uint32_t pNextItem = pLink->pNext;
     if ((int)pNextItem < 0) {
@@ -941,56 +962,63 @@ void __fastcall LINKEDLIST_UnlinkNodeSelf(StormLinkStrc * pLink) {
       return;
     }
 
-    StormLinkStrc* pNextLink = LINKEDLIST_GetNodePointer(-1, pLink);
+    StormLinkStrc* pNextLink = LINKEDLIST_GetNodePointer(pLink, -1);
     pNextLink->pPrevLink = pPrevLink;
     pLink->pPrevLink->pNext = pLink->pNext;
     pLink->pPrevLink = 0;
     pLink->pNext = 0;
 }
 
-StormLinkStrc * __fastcall LINKEDLIST_GetOffset(void * pItem, StormLinkedListStrc * pList) {
+StormLinkStrc * __thiscall LINKEDLIST_GetOffset(StormLinkedListStrc * pList, void * pItem) {
     StormLinkStrc* pOffsetResult = !pItem ? &pList->head : (StormLinkStrc*)(pList->nLinkOffset + (int)pItem);
     return pOffsetResult;
 }
 
-void __fastcall LINKEDLIST_SetNodeValue(int32_t dwValue, StormLinkedListStrc * pNode) {
+void __thiscall LINKEDLIST_SetNodeValue(StormLinkedListStrc * pNode, int32_t dwValue) {
     pNode->nLinkOffset = dwValue;
     StormLinkStrc* pSVar1 = &pNode->head;
     pSVar1->pPrevLink = pSVar1;
     pNode->head.pNext = ~(uint32_t)pSVar1;
 }
 
-void __fastcall LINKEDLIST_InsertNode(void * pNewItem, int32_t nInsertMode, void * pRefItem, StormLinkedListStrc * pList) {
+void __thiscall LINKEDLIST_InsertNode(StormLinkedListStrc * pList, void * pNewItem, int32_t nInsertMode, void * pRefItem) {
     StormLinkStrc* pAnchorLink;
     StormLinkStrc* pPrevLinkField;
-    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset(pNewItem, pList);
+    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset(pList, pNewItem);
     if (pNodeLink->pPrevLink) {
       LINKEDLIST_UnlinkNodeSelf(pNodeLink);
     }
-    if (!pRefItem) {
+    if (pRefItem) {
+      pAnchorLink = LINKEDLIST_GetOffset(pList, pRefItem);
+    } else {
       pAnchorLink = &pList->head;
-    } else {
-      pAnchorLink = LINKEDLIST_GetOffset(pRefItem, pList);
     }
-    if (nInsertMode == 1) {
-      pNodeLink->pPrevLink = pAnchorLink;
-      pNodeLink->pNext = pAnchorLink->pNext;
-      pPrevLinkField = LINKEDLIST_GetNodePointer(pList->nLinkOffset, pAnchorLink);
-      pPrevLinkField->pPrevLink = pNodeLink;
-      pAnchorLink->pNext = (int)pNewItem;
-    } else {
-      pPrevLinkField = pAnchorLink->pPrevLink;
-      pNodeLink->pPrevLink = pPrevLinkField;
-      pNodeLink->pNext = pPrevLinkField->pNext;
-      pPrevLinkField->pNext = (int)pNewItem;
-      pAnchorLink->pPrevLink = pNodeLink;
+
+    switch (nInsertMode) {
+      case 1:
+        {
+          pNodeLink->pPrevLink = pAnchorLink;
+          pNodeLink->pNext = pAnchorLink->pNext;
+          pPrevLinkField = LINKEDLIST_GetNodePointer(pAnchorLink, pList->nLinkOffset);
+          pPrevLinkField->pPrevLink = pNodeLink;
+          pAnchorLink->pNext = (int)pNewItem;
+          break;
+        }
+      default:
+        {
+          pPrevLinkField = pAnchorLink->pPrevLink;
+          pNodeLink->pPrevLink = pPrevLinkField;
+          pNodeLink->pNext = pPrevLinkField->pNext;
+          pPrevLinkField->pNext = (int)pNewItem;
+          pAnchorLink->pPrevLink = pNodeLink;
+        }
     }
 }
 
-int32_t __fastcall LINKEDLIST_GetNodeAt(int32_t nOffset, int * pList) {
-    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((void*)nOffset, (StormLinkedListStrc*)pList);
+int32_t __thiscall LINKEDLIST_GetNodeAt(int * pList, int32_t nOffset) {
+    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((StormLinkedListStrc*)pList, (void*)nOffset);
     int nNodeValue = pListNode->pNext;
-    if (nNodeValue >= 1) {
+    if (nNodeValue > 0) {
       return nNodeValue;
     }
 
@@ -998,8 +1026,8 @@ int32_t __fastcall LINKEDLIST_GetNodeAt(int32_t nOffset, int * pList) {
     return nNodeValue;
 }
 
-void __fastcall LINKEDLIST_RemoveNode(int32_t nOffset, int * pnParam) {
-    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset((void*)nOffset, (StormLinkedListStrc*)pnParam);
+void __thiscall LINKEDLIST_RemoveNode(int * pnParam, int32_t nOffset) {
+    StormLinkStrc* pNodeLink = LINKEDLIST_GetOffset((StormLinkedListStrc*)pnParam, (void*)nOffset);
     LINKEDLIST_UnlinkNodeSelf(pNodeLink);
 }
 
@@ -1007,8 +1035,8 @@ void __fastcall LINKEDLIST_RemoveNode(int32_t nOffset, int * pnParam) {
 // @evidence Calls LINKEDLIST_GetOffset(nOffset,p) then returns node[+4].
 // It counts nothing. 00426a60 is the real count (returns max(pList[+8],0)).
 // @caveat no xrefs - an inlined Storm TS-list template instance. Name is body-derived, not recovered.
-int32_t __fastcall LINKEDLIST_GetNodeLinkAtOffset(int32_t nOffset, int * pnParam) {
-    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((void*)nOffset, (StormLinkedListStrc*)pnParam);
+int32_t __thiscall LINKEDLIST_GetNodeLinkAtOffset(int * pnParam, int32_t nOffset) {
+    StormLinkStrc* pListNode = LINKEDLIST_GetOffset((StormLinkedListStrc*)pnParam, (void*)nOffset);
     return pListNode->pNext;
 }
 
@@ -1016,12 +1044,12 @@ void __fastcall LINKEDLIST_FreeNode(void * pParam) {
     while (true) {
       int nOffset;
       nOffset = *(int*)((int)pParam + 8);
-      if (0 >= nOffset) {
+      if (nOffset <= 0) {
         nOffset = 0;
         break;
       }
 
-      LINKEDLIST_RemoveNode(nOffset, (int*)pParam);
+      LINKEDLIST_RemoveNode((int*)pParam, nOffset);
     }
 }
 
@@ -1030,23 +1058,23 @@ void __fastcall LINKEDLIST_FreeNodeAndUnlink(void * pParam) {
     LINKEDLIST_UnlinkNodeSelf((StormLinkStrc*)((int)pParam + 4));
 }
 
-void * __fastcall LINKEDLIST_AllocAndInsertNode(int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags, StormLinkedListStrc * pList) {
+void * __thiscall LINKEDLIST_AllocAndInsertNode(StormLinkedListStrc * pList, int32_t nInsertMode, int32_t nExtraSize, uint32_t dwFlags) {
     uint32_t* pNewNode = (uint32_t*)SMem::SMemAlloc(nExtraSize + 0xc, s___AUTMESSAGESOURCE___0072f9fc, -2, dwFlags | 8);
-    if (!pNewNode) {
-      pNewNode = 0;
-    } else {
+    if (pNewNode) {
       *pNewNode = 0;
       pNewNode[1] = 0;
+    } else {
+      pNewNode = 0;
     }
     if (!nInsertMode) {
       return pNewNode;
     }
 
-    LINKEDLIST_InsertNode(pNewNode, nInsertMode, nullptr, pList);
+    LINKEDLIST_InsertNode(pList, pNewNode, nInsertMode, nullptr);
     return pNewNode;
 }
 
-FILE * __fastcall LINKEDLIST_DetachNode(uint8_t bFree, FILE * pFile) {
+FILE * __thiscall LINKEDLIST_DetachNode(FILE * pFile, uint8_t bFree) {
     LINKEDLIST_UnlinkNodeSelf((StormLinkStrc*)pFile);
     if (!(bFree & 1)) {
       return pFile;
@@ -1065,21 +1093,21 @@ void __fastcall LINKEDLIST_FreeAllNodes(void * pListHead) {
     while (true) {
       FILE* pObject;
       pObject = *(FILE**)((int)pListHead + 8);
-      if ((int)pObject < 1) {
+      if ((int)pObject <= 0) {
         pObject = 0;
       }
       if (!pObject) {
         break;
       }
 
-      LINKEDLIST_DetachNode(0, pObject);
+      LINKEDLIST_DetachNode(pObject, 0);
       SMem::SMemFree(pObject, s___AUTMESSAGESOURCE___0072f9fc, -2, 0);
     }
 }
 
-int32_t __fastcall LINKEDLIST_FindNode(void * pNode, int * pList) {
-    int32_t nNodeValue = LINKEDLIST_GetNodeAt((int32_t)pNode, pList);
-    LINKEDLIST_DetachNode(0, (FILE*)pNode);
+int32_t __thiscall LINKEDLIST_FindNode(int * pList, void * pNode) {
+    int32_t nNodeValue = LINKEDLIST_GetNodeAt(pList, (int32_t)pNode);
+    LINKEDLIST_DetachNode((FILE*)pNode, 0);
     SMem::SMemFree(pNode, s___AUTMESSAGESOURCE___0072f9fc, -2, 0);
     return nNodeValue;
 }

@@ -25,7 +25,7 @@ struct __attribute__((packed)) D2RosterStrc {
     /* 0x18 */ int nArenaScore; // Arena PvP score, set via packet 0x65, displayed by UI_DrawArenaKillCount at (600,25)
     /* 0x1C */ int nCharType;
     /* 0x20 */ short nUnitLevel;
-    /* 0x22 */ short nPartyId;
+    /* 0x22 */ uint16_t nPartyId;
     /* 0x24 */ eD2LevelId eLevelId;
     /* 0x28 */ int nX;
     /* 0x2C */ int nY;

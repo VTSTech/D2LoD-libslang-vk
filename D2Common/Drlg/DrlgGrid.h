@@ -43,7 +43,7 @@ int32_t __fastcall GetOffset(struct D2DrlgGridStrc * pGrid1, uint32_t nOffsetx, 
 int __fastcall GetGridFlags(struct D2DrlgGridStrc * pGrid, int nX, int nY);
 // Applies a flag operation (set/clear/xor) across all cells in the grid using the operation table apFlagOperations[eOperation].
 void __fastcall AlterAllGridFlags(struct D2DrlgGridStrc * pDrlgGrid, int32_t nFlag, int32_t eOperation);
-void __fastcall FlagOperations(struct D2DrlgGridStrc * pGrid, int32_t nCount, int32_t nOpIndex);
+void __fastcall FlagOperations(struct D2DrlgGridStrc * pGrid, int32_t nOpIndex, int32_t nCount);
 // Applies a flag operation to all cells along the border edges of a DrlgGrid. First iterates the last row (bottom edge), then iterates the last column (right edge). Uses apFlagOperations function pointer table. Custom calling convention (ECX=grid, EDX=param).
 void __fastcall DRLGGRID_ApplyFlagToBorderCells(struct D2DrlgGridStrc * pDrlgGrid, int nFlag, int eOperation);
 // Bresenham-like walk between vertices applying flags to each grid cell.

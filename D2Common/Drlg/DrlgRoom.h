@@ -82,10 +82,10 @@ void __fastcall DRLGWARP_UpdateWarpRoomExDeselect(struct D2RoomExStrc * pRoomEx,
 // rolls a seeded random index, then outputs the X/Y coordinates.
 // Also initializes the room at those coordinates.
 // Called by DRLGSPAWN_FindSpawnLocationInLevel.
-struct D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType, int * pnOutX, int * pnOutY, struct D2DrlgLevelStrc * pLevel);
+struct D2RoomExStrc * __thiscall DRLGSPAWN_GetRandomPresetSpawnPoint(struct D2DrlgLevelStrc * pLevel, int32_t nSpawnType, int * pnOutX, int * pnOutY);
 // Gets the room at the level's center position offset by (nOffsetX, nOffsetY).
 // Computes center as (WorldPos + WorldSize/2 - 2) plus the offsets.
-struct D2RoomExStrc * __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, struct D2DrlgLevelStrc * pLevel);
+struct D2RoomExStrc * __thiscall DRLGSPAWN_GetRoomAtLevelCenterOffset(struct D2DrlgLevelStrc * pLevel, int32_t nOffsetX, int32_t nOffsetY);
 // Returns warp-id array for a level. Prefer pDrlg->pWarpsInfo override list; otherwise use LevelDefs.txt Warp[]. Halts if warps list exists but lacks terminator.
 int * __fastcall DRLGACTMISC_GetWarpsIdIfExists(struct D2DrlgStrc * pDrlg, eD2LevelId eLevel);
 // Fetches warp-id array for level and calls TXT_LvlWarp_Setup(warpId, nDirection). Return value appears to be warpId (decompiler shows uninitialized temp).

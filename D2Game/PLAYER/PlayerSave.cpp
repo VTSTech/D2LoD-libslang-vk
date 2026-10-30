@@ -68,7 +68,6 @@
 #include "D2Win/DC6Block.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Save.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
@@ -134,13 +133,9 @@ static D2UnitStrc * PLRSAVE_CreateItemFromSaveData(::SGAMEDATA * pGame, D2Unknow
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnknownItemRelatedStruct * pItemUnknownStructure, D2UnitStrc * * ppItemOut, uint32_t * pnParam) {
     int32_t nItemGUID;
-    int32_t _unknownMightBeY;
-    int32_t _unknownMightBeX;
     int iVar1;
     BOOL bPlaceResult;
     char byItemWidth;
-    int32_t bNoOverlap;
-    int32_t bSendUpdate;
     uint32_t nX;
     uint32_t nY;
     D2InventoryStrc* pInventory;
@@ -166,11 +161,7 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
       D2Common::Units::SetYForStaticUnit(pUnit_00, nY);
       nItemGUID = pUnit_00->nUnitGUID;
       pInventory = 0;
-      bSendUpdate = 1;
-      bNoOverlap = 0;
-      _unknownMightBeY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-      _unknownMightBeX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, _unknownMightBeX, _unknownMightBeY, bNoOverlap, bSendUpdate, pInventory);
+      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0, 1, pInventory);
       break;
       case eD2PlayerAnimMode_ns::Neutral:
         D2Common::Units::SetupUpdateFlag(pUnit_00, 4);
@@ -222,7 +213,6 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
 // Server-side: restores one saved item onto a player by its saved animMode (storage location), dispatching: Death/default=drop to ground at the item's path position (SERVER_ItemToInventory); Neutral=equip to its body-loc (SERVER_EquipItemToBodyLoc); Walk=place in belt (ITEM_TryPlaceInBelt at the item's X); GetHit=copy into player inventory and apply as a quest reward (ITEMMODE_ApplyQuestReward); TownWalk=nest into the container item identified by eBodyLocation (PutItemInItem, container GUID at +0xc). Run/TownNeutral and any mode > TownWalk fail. Returns 0 on success, 0xc on failure. Used during character load to repopulate a player's items.
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pSourceItem, int32_t eBodyLocation) {
-    eD2BodyLoc eBodyLoc;
     eD2ItemAnimMode eAnimMode;
     int32_t nPosY;
     int32_t _unknownMightBeX;
@@ -239,7 +229,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       eAnimMode = Container;
     } else {
       eAnimMode = pSourceItem->eAnimMode.ePlayerMode;
-      if (InItem < eAnimMode) {
+      if (eAnimMode > InItem) {
         return 0xc;
       }
     }
@@ -270,8 +260,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       pBodyLocParam = &eBodyLocation;
       nPosY = 1;
-      eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit_00);
-      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, eBodyLoc, nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, D2Common::ITEMS::Items::GetBodyLocation(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
       break;
       case Belt:
         D2Common::Units::SetupUpdateFlag(pSourceItem, 4);
@@ -324,19 +313,16 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 // Server-side: re-instates one saved item onto a loaded player during character load. Recreates the item via PLRSAVE_CreateItemFromSaveData, then by the item's animMode places it: Death=drop to ground at recorded pos (SERVER_ItemToInventory); Neutral=equip to its saved body-loc (validates via INVENTORY_GetItemAtBodyLoc, puts in inv slot 3, or 4 for swapped weapon set, clears TARGETABLE/ISRESURRECT, refreshes inv, fires QUEST_OnItemPickedUp); TownWalk=nest into a container item (PutItemInItem). Returns 0 on success, 0xd on any failure. Writes the placed item back into pGame2->nToken (container cursor) and the storage-type byte into *pnParam.
 // @sourcefile .\PLAYER\PlrSave.cpp
 static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownItemRelatedStruct * pItemUnknownStructure, D2UnitStrc * * pGame2, uint32_t * pnParam, D2UnitStrc * pUnit) {
+    int32_t nItemGUID;
     eD2BodyLoc eBodyLoc;
     BOOL bPlaceResult;
     int nInventorySlot;
-    int nUnitPosY;
-    int nUnitPosX;
     int nPlaceResult;
     DWORD dwContainerGUID;
     uint32_t nBodyLocId;
-    int32_t nParam1;
     D2InventoryStrc* pCurInventory;
     int nBodyLocSlot;
     int nEquipResult;
-    int32_t nSendUpdate;
     D2InventoryStrc* pInventory;
     D2UnitStrc* pItem;
     pItem = PLRSAVE_CreateItemFromSaveData(pGame, pItemUnknownStructure);
@@ -346,70 +332,75 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
 
     eD2ItemAnimMode eItemMode;
     eItemMode = pItem->eAnimMode.eItemMode;
-    if (eItemMode == Container) {
-      int32_t nItemGUID;
-      D2Common::Units::SetupUpdateFlag(pItem, 4);
-      nBodyLocId = pItemUnknownStructure->nPosY;
-      D2Common::Units::SetXForStaticUnit(pItem, pItemUnknownStructure->nPosX);
-      D2Common::Units::SetYForStaticUnit(pItem, nBodyLocId);
-      nItemGUID = pItem->nUnitGUID;
-      pInventory = 0;
-      nSendUpdate = 0;
-      nParam1 = 0;
-      nUnitPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pItem);
-      nUnitPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pItem);
-      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, nUnitPosX, nUnitPosY, nParam1, nSendUpdate, pInventory);
-    } else {
-      if (eItemMode == Equipment) {
-        pCurInventory = pUnit->pInventory;
-        eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItem);
-        nBodyLocId = (uint32_t)eBodyLoc;
-        if (!nBodyLocId) {
+    switch (eItemMode) {
+      case Container:
+        {
+          D2Common::Units::SetupUpdateFlag(pItem, 4);
+          nBodyLocId = pItemUnknownStructure->nPosY;
+          D2Common::Units::SetXForStaticUnit(pItem, pItemUnknownStructure->nPosX);
+          D2Common::Units::SetYForStaticUnit(pItem, nBodyLocId);
+          nItemGUID = pItem->nUnitGUID;
+          pInventory = 0;
+          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), 0, 0, pInventory);
+          break;
+        }
+      case Equipment:
+        {
+          pCurInventory = pUnit->pInventory;
+          eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pItem);
+          nBodyLocId = (uint32_t)eBodyLoc;
+          if (!nBodyLocId) {
+            return 0xd;
+          }
+
+          bPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pCurInventory, pItem, nBodyLocId);
+          if (!bPlaceResult) {
+            return 0xd;
+          }
+
+          nInventorySlot = 3;
+          if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
+            nInventorySlot = 4;
+          }
+
+          bPlaceResult = D2Common::INVENTORY::Inventory::PutItemInInventory(pCurInventory, pItem, nInventorySlot);
+          if (!bPlaceResult) {
+            return 0xd;
+          }
+
+          D2Common::ITEMS::Items::SetBodyLoc(pItem, eBodyLoc);
+          pItem->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+          D2Common::Units::SetupUpdateFlag(pItem, 1);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
+          D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pItem, ITEMCMD_BODYLOC_PUT_ITEM, 1);
+          pItem->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
+          D2Common::INVENTORY::Inventory::UpsertToUpdateList(pCurInventory, pItem);
+          D2Common::Units::RefreshInventory(pUnit, 1);
+          Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit, pItem);
+          goto item_restored;
+        }
+      default:
+        {
           return 0xd;
         }
+      case InItem:
+        {
+          if (!*pGame2) {
+            return 0xd;
+          }
 
-        bPlaceResult = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pCurInventory, pItem, nBodyLocId);
-        if (!bPlaceResult) {
-          return 0xd;
+          D2Common::Units::SetupUpdateFlag(pItem, 4);
+          if (!*pGame2) {
+            dwContainerGUID = -1;
+          } else {
+            dwContainerGUID = (*pGame2)->nUnitGUID;
+          }
+
+          nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, pItem->nUnitGUID, dwContainerGUID, (int32_t*)&pCurInventory, 0, 1, 0, 0);
+          break;
         }
-
-        nInventorySlot = 3;
-        if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
-          nInventorySlot = 4;
-        }
-
-        bPlaceResult = D2Common::INVENTORY::Inventory::PutItemInInventory(pCurInventory, pItem, nInventorySlot);
-        if (!bPlaceResult) {
-          return 0xd;
-        }
-
-        D2Common::ITEMS::Items::SetBodyLoc(pItem, eBodyLoc);
-        pItem->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        D2Common::Units::SetupUpdateFlag(pItem, 1);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, INVPAGE_None);
-        D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pItem, ITEMCMD_BODYLOC_PUT_ITEM, 1);
-        pItem->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
-        D2Common::INVENTORY::Inventory::UpsertToUpdateList(pCurInventory, pItem);
-        D2Common::Units::RefreshInventory(pUnit, 1);
-        Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit, pItem);
-        goto item_restored;
-      }
-      if (eItemMode != InItem) {
-        return 0xd;
-      }
-      if (!*pGame2) {
-        return 0xd;
-      }
-
-      D2Common::Units::SetupUpdateFlag(pItem, 4);
-      if (!*pGame2) {
-        dwContainerGUID = -1;
-      } else {
-        dwContainerGUID = (*pGame2)->nUnitGUID;
-      }
-
-      nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, pItem->nUnitGUID, dwContainerGUID, (int32_t*)&pCurInventory, 0, 1, 0, 0);
     }
+
     if (!nPlaceResult) {
       return 0xd;
     }
@@ -425,6 +416,7 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
 // Restores an item from a save onto a body location.
 // @sourcefile .\PLAYER\PlrSave.cpp
 static int __stdcall PLRSAVE_RestoreItemToBodyLoc(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, D2UnitStrc * pUnit2, int32_t nParam) {
+    eD2BodyLoc eBodyLoc;
     eD2ItemAnimMode eAnimMode;
     int nPlaceResult;
     BOOL BVar1;
@@ -441,85 +433,94 @@ static int __stdcall PLRSAVE_RestoreItemToBodyLoc(D2UnitStrc * pUnit, ::SGAMEDAT
     }
 
     D2UnitStrc* pItem = pUnit;
-    if (eAnimMode == Container) {
-      D2Common::Units::SetupUpdateFlag(pUnit, 4);
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        nPlaceResult = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPlaceResult = 0;
-      } else {
-        nPlaceResult = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      }
+    switch (eAnimMode) {
+      case Container:
+        {
+          D2Common::Units::SetupUpdateFlag(pUnit, 4);
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPlaceResult = pUnit->pPath.pStaticPath->nPosY;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPlaceResult = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPlaceResult = 0;
+          }
 
-      eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
-        nPosX = pUnit->pPath.pStaticPath->nPosX;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPosX = 0;
-      } else {
-        nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-      }
+          eUnitType = pUnit->eUnitType;
+          if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+            nPosX = pUnit->pPath.pStaticPath->nPosX;
+          } else if (pUnit->pPath.pDynamicPath) {
+            nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+          } else {
+            nPosX = 0;
+          }
 
-      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x218, pGame, pUnit2, pUnit->nUnitGUID, nPosX, nPlaceResult, 0, 0, nullptr);
-    } else {
-      eD2BodyLoc eBodyLoc;
-      if (eAnimMode == Equipment) {
-        pInventory = pUnit2->pInventory;
-        eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit);
-        nBodyLocId = (uint32_t)eBodyLoc;
-        if (!nBodyLocId) {
+          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x218, pGame, pUnit2, pUnit->nUnitGUID, nPosX, nPlaceResult, 0, 0, nullptr);
+          break;
+        }
+      case Equipment:
+        {
+          pInventory = pUnit2->pInventory;
+          eBodyLoc = D2Common::ITEMS::Items::GetBodyLocation(pUnit);
+          nBodyLocId = (uint32_t)eBodyLoc;
+          if (!nBodyLocId) {
+            return 0xd;
+          }
+
+          BVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pInventory, pUnit, nBodyLocId);
+          if (!BVar1) {
+            return 0xd;
+          }
+
+          nInventorySlot = 3;
+          if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
+            nInventorySlot = 4;
+          }
+
+          BVar1 = D2Common::INVENTORY::Inventory::PutItemInInventory(pInventory, pUnit, nInventorySlot);
+          if (!BVar1) {
+            return 0xd;
+          }
+
+          D2Common::ITEMS::Items::SetBodyLoc(pUnit, eBodyLoc);
+          if (pUnit) {
+            pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+          }
+
+          D2Common::Units::SetupUpdateFlag(pUnit, 1);
+          D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, INVPAGE_None);
+          D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit, ITEMCMD_BODYLOC_PUT_ITEM, 1);
+          if (pUnit) {
+            pUnit->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
+          }
+
+          D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pUnit);
+          D2Common::Units::RefreshInventory(pUnit2, 1);
+          Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit2, pUnit);
+          return 0;
+        }
+      default:
+        {
           return 0xd;
         }
+      case InItem:
+        {
+          if (!nParam) {
+            return 0xd;
+          }
 
-        BVar1 = D2Common::INVENTORY::Inventory::INVENTORY_GetItemAtBodyLoc(pInventory, pUnit, nBodyLocId);
-        if (!BVar1) {
-          return 0xd;
+          D2Common::Units::SetupUpdateFlag(pUnit, 4);
+          if (!pUnit) {
+            dwItemGUID = -1;
+          } else {
+            dwItemGUID = pUnit->nUnitGUID;
+          }
+
+          nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit2, dwItemGUID, *(DWORD*)(nParam + 0xc), (int32_t*)&pItem, 0, 1, 0, 0);
+          break;
         }
-
-        nInventorySlot = 3;
-        if (nBodyLocId == 0xb || nBodyLocId == 0xc) {
-          nInventorySlot = 4;
-        }
-
-        BVar1 = D2Common::INVENTORY::Inventory::PutItemInInventory(pInventory, pUnit, nInventorySlot);
-        if (!BVar1) {
-          return 0xd;
-        }
-
-        D2Common::ITEMS::Items::SetBodyLoc(pUnit, eBodyLoc);
-        if (pUnit) {
-          pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        }
-
-        D2Common::Units::SetupUpdateFlag(pUnit, 1);
-        D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pUnit, INVPAGE_None);
-        D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit, ITEMCMD_BODYLOC_PUT_ITEM, 1);
-        if (pUnit) {
-          pUnit->eUnitFlags &= ~UNITFLAG_ISRESURRECT;
-        }
-
-        D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pUnit);
-        D2Common::Units::RefreshInventory(pUnit2, 1);
-        Quests::QUESTS::QUEST_OnItemPickedUp(pGame, pUnit2, pUnit);
-        return 0;
-      }
-      if (eAnimMode != InItem) {
-        return 0xd;
-      }
-      if (!nParam) {
-        return 0xd;
-      }
-
-      D2Common::Units::SetupUpdateFlag(pUnit, 4);
-      if (!pUnit) {
-        dwItemGUID = -1;
-      } else {
-        dwItemGUID = pUnit->nUnitGUID;
-      }
-
-      nPlaceResult = ITEMS::ItemMode::PutItemInItem(pGame, pUnit2, dwItemGUID, *(DWORD*)(nParam + 0xc), (int32_t*)&pItem, 0, 1, 0, 0);
     }
+
     if (nPlaceResult) {
       return 0;
     }
@@ -597,14 +598,7 @@ int __stdcall SAVE_SerializeInventoryItems(D2InventoryStrc * pInventory, uint16_
         pLeftArmItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
         pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pInventory);
         pInvEntry = pLeftArmItem;
-        if (!pEquippedWeapon) {
-          if (pRightArmItem) {
-            nSerializedSize = D2Common::ITEMS::Items::SerializeItem(pRightArmItem, aSerialBuf, 0x2000, (D2StatListExStrc*)0x1, 1, 0);
-            if (nSerializedSize < 0) {
-              return -1;
-            }
-          }
-        } else {
+        if (pEquippedWeapon) {
           if (pRightArmItem == pEquippedWeapon) {
             nSerializedSize = D2Common::ITEMS::Items::SerializeItem(pRightArmItem, aSerialBuf, 0x2000, (D2StatListExStrc*)0x1, 1, 0);
           } else {
@@ -613,6 +607,13 @@ int __stdcall SAVE_SerializeInventoryItems(D2InventoryStrc * pInventory, uint16_
           }
           if (nSerializedSize < 0) {
             return -1;
+          }
+        } else {
+          if (pRightArmItem) {
+            nSerializedSize = D2Common::ITEMS::Items::SerializeItem(pRightArmItem, aSerialBuf, 0x2000, (D2StatListExStrc*)0x1, 1, 0);
+            if (nSerializedSize < 0) {
+              return -1;
+            }
           }
         }
         if (pInvEntry && (nWritten = D2Common::ITEMS::Items::SerializeItem(pInvEntry, aSerialBuf, 0x2000, (D2StatListExStrc*)0x1, 1, 0) , nWritten < 0) || pCursorItem_lcl && pCursorItem_lcl->eUnitType == UNIT_ITEM && (nWritten = D2Common::ITEMS::Items::SerializeItem(pCursorItem_lcl, aSerialBuf, 0x2000, (D2StatListExStrc*)0x1, 1, 0) , nWritten < 0)) {
@@ -640,18 +641,7 @@ int __stdcall SAVE_SerializeInventoryItems(D2InventoryStrc * pInventory, uint16_
           if (pRightArmItem) {
             goto serialize_right_arm_item;
           }
-        } else if (pRightArmItem == pEquippedWeapon) {
-          serialize_right_arm_item:
-          nWritten = SAVE_SerializeItemIfValid(pRightArmItem, pWriteCursor, (int)pBuffer + (nBufSize - (int)pWriteCursor), nParam2, nParam3, nParam4);
-          if (nWritten < 0) {
-            return -1;
-          }
-
-          pWriteCursor += nWritten;
-          if (!nWritten && nCarriedCount) {
-            nCarriedCount--;
-          }
-        } else {
+        } else if (pRightArmItem != pEquippedWeapon) {
           nWritten = SAVE_SerializeItemIfValid(pLeftArmItem, pWriteCursor, (int)pBuffer + (nBufSize - (int)pWriteCursor), nParam2, nParam3, nParam4);
           if (nWritten < 0) {
             return -1;
@@ -659,6 +649,17 @@ int __stdcall SAVE_SerializeInventoryItems(D2InventoryStrc * pInventory, uint16_
 
           pWriteCursor += nWritten;
           pLeftArmItem = pRightArmItem;
+          if (!nWritten && nCarriedCount) {
+            nCarriedCount--;
+          }
+        } else {
+          serialize_right_arm_item:
+          nWritten = SAVE_SerializeItemIfValid(pRightArmItem, pWriteCursor, (int)pBuffer + (nBufSize - (int)pWriteCursor), nParam2, nParam3, nParam4);
+          if (nWritten < 0) {
+            return -1;
+          }
+
+          pWriteCursor += nWritten;
           if (!nWritten && nCarriedCount) {
             nCarriedCount--;
           }
@@ -716,7 +717,8 @@ int32_t __fastcall PLRSAVE_SerializeCorpseData(::SGAMEDATA * pGame, D2UnitStrc *
     uint32_t dwUninitSlot;
     D2UnitStrc* pCorpseUnit = 0;
     uint16_t wHasCorpse = 0;
-    D2CorpseStrc* pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory);
+    D2InventoryStrc* pInventory = pUnit->pInventory;
+    D2CorpseStrc* pRoomCorpse = D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pInventory);
     if (pRoomCorpse) {
       uint32_t nCorpseGUID;
       nCorpseGUID = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID(pRoomCorpse);
@@ -728,42 +730,42 @@ int32_t __fastcall PLRSAVE_SerializeCorpseData(::SGAMEDATA * pGame, D2UnitStrc *
 
     *pCorpseBuffer = 0x4d4a;
     pCorpseBuffer[1] = wHasCorpse;
-    if (!pCorpseUnit) {
-      return 4;
-    }
-
-    eD2UnitType eCorpseUnitType = pCorpseUnit->eUnitType;
-    if (eCorpseUnitType == UNIT_OBJECT || 3 < (int)eCorpseUnitType && (int)eCorpseUnitType < 6) {
-      nCorpsePosX = pCorpseUnit->pPath.pStaticPath->nPosX;
-    } else if (!pCorpseUnit->pPath.pDynamicPath) {
-      nCorpsePosX = 0;
-    } else {
-      nCorpsePosX = D2Common::PATH::DynamicPath::GetXPos(pCorpseUnit->pPath.pDynamicPath);
-    }
-
-    eCorpseUnitType = pCorpseUnit->eUnitType;
-    if (eCorpseUnitType == UNIT_OBJECT || 3 < (int)eCorpseUnitType && (int)eCorpseUnitType < 6) {
-      nCorpsePosY = pCorpseUnit->pPath.pStaticPath->nPosY;
-    } else if (!pCorpseUnit->pPath.pDynamicPath) {
-      nCorpsePosY = 0;
-    } else {
-      nCorpsePosY = D2Common::PATH::DynamicPath::GetYPos(pCorpseUnit->pPath.pDynamicPath);
-    }
-    if (nBufferSize - 4U < 0xc) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97a);
-      exit(-1);
-    } else {
-      *(uint32_t*)(pCorpseBuffer + 2) = dwUninitSlot;
-      *(int*)(pCorpseBuffer + 4) = nCorpsePosX;
-      *(int*)(pCorpseBuffer + 6) = nCorpsePosY;
-      nInventoryBytes = SAVE_SerializeInventoryItems(pCorpseUnit->pInventory, pCorpseBuffer + 8, nBufferSize - 0x10, 0, nParam, 0);
-      if (!(0 < nInventoryBytes)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x984);
-        exit(-1);
+    if (pCorpseUnit) {
+      eD2UnitType eCorpseUnitType = pCorpseUnit->eUnitType;
+      if (eCorpseUnitType == UNIT_OBJECT || (int)eCorpseUnitType > 3 && (int)eCorpseUnitType <= 5) {
+        nCorpsePosX = pCorpseUnit->pPath.pStaticPath->nPosX;
+      } else if (pCorpseUnit->pPath.pDynamicPath) {
+        nCorpsePosX = D2Common::PATH::DynamicPath::GetXPos(pCorpseUnit->pPath.pDynamicPath);
+      } else {
+        nCorpsePosX = 0;
       }
 
-      return nInventoryBytes + 0x10;
+      eCorpseUnitType = pCorpseUnit->eUnitType;
+      if (eCorpseUnitType == UNIT_OBJECT || (int)eCorpseUnitType > 3 && (int)eCorpseUnitType <= 5) {
+        nCorpsePosY = pCorpseUnit->pPath.pStaticPath->nPosY;
+      } else if (pCorpseUnit->pPath.pDynamicPath) {
+        nCorpsePosY = D2Common::PATH::DynamicPath::GetYPos(pCorpseUnit->pPath.pDynamicPath);
+      } else {
+        nCorpsePosY = 0;
+      }
+      if (nBufferSize - 4U < 0xc) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97a);
+        exit(-1);
+      } else {
+        *(uint32_t*)(pCorpseBuffer + 2) = dwUninitSlot;
+        *(int*)(pCorpseBuffer + 4) = nCorpsePosX;
+        *(int*)(pCorpseBuffer + 6) = nCorpsePosY;
+        nInventoryBytes = SAVE_SerializeInventoryItems(pCorpseUnit->pInventory, pCorpseBuffer + 8, nBufferSize - 0x10, 0, nParam, 0);
+        if (!(nInventoryBytes > 0)) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x984);
+          exit(-1);
+        }
+
+        return nInventoryBytes + 0x10;
+      }
     }
+
+    return 4;
 }
 
 D2SaveFileHeaderStrc * __stdcall PLRSAVE_MakeSaveFileReturnBuffer(int32_t nPlayerId, int32_t nExperiencePoints, ::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SaveFileHeaderStrc * pSaveFileHeader, int32_t nParam) {
@@ -800,7 +802,7 @@ int32_t __fastcall PLAYERSAVE_ByteToHexChar(uint8_t * pszHexOut, uint32_t nByteV
 
 uint8_t * __fastcall PLAYERSAVE_ByteArrayToHexString(uint8_t * pParam, uint8_t * pbParam, int32_t nLength) {
     uint8_t* pBytesCursor = pbParam;
-    if (nLength < 1) {
+    if (nLength <= 0) {
       return nullptr;
     }
 
@@ -827,7 +829,7 @@ uint32_t __fastcall PLAYERSAVE_CRC32MissileTable(D2MissilesTxt * pMissilesTxt, i
     uint32_t savedCltHitSubs = 0;
     uint32_t savedProgSounds = 0;
     uint32_t savedHitFlagsExtra = 0;
-    if (0x5b < nFieldCount) {
+    if (nFieldCount > 0x5b) {
       *(uint16_t*)(char*)&savedCltHitSubs = pMissilesTxt->CltHitSubMissile3;
       *(uint16_t*)((char*)&savedCltHitSubs + 2) = pMissilesTxt->CltHitSubMissile4;
       *(uint16_t*)(char*)&savedFuncIds = pMissilesTxt->nSrvDoFunc;
@@ -845,7 +847,7 @@ uint32_t __fastcall PLAYERSAVE_CRC32MissileTable(D2MissilesTxt * pMissilesTxt, i
     }
 
     uint32_t uVar1 = Storm::Source::SFile::CRC32_Calculate((uint8_t*)pMissilesTxt, nCrcSeed);
-    if (0x5b >= nFieldCount) {
+    if (nFieldCount <= 0x5b) {
       return uVar1;
     }
 
@@ -929,7 +931,7 @@ BOOL __fastcall SaveToFileBnet(::SGAMEDATA * pGame, uint32_t nAccountId, D2UnitS
         savedNTime32 = 0;
         savedTimeEx = 0;
         savedNInitSeed = 0;
-        if (0x5b < pSaveBuffer->dwFileVersion) {
+        if (pSaveBuffer->dwFileVersion > 0x5b) {
           savedChecksum = pSaveBuffer->dwChecksum;
           savedNTime32 = pSaveBuffer->nTime32;
           savedTimeEx = pSaveBuffer->nTimeEx;
@@ -944,7 +946,7 @@ BOOL __fastcall SaveToFileBnet(::SGAMEDATA * pGame, uint32_t nAccountId, D2UnitS
         savedTime32 = 0;
         savedNTimeEx = 0;
         savedInitSeed = 0;
-        if (0x5b < (uint32_t)*(uint32_t*)((char*)&__frame0.saveTempBuffer + 4)) {
+        if ((uint32_t)*(uint32_t*)((char*)&__frame0.saveTempBuffer + 4) > 0x5b) {
           *(uint8_t*)(char*)&savedChecksum2 = __frame0.saveTempBuffer[0xc];
           *(uint8_t*)((char*)&savedChecksum2 + 1) = __frame0.saveTempBuffer[0xd];
           *(uint8_t*)((char*)&savedChecksum2 + 2) = __frame0.saveTempBuffer[0xe];
@@ -1051,7 +1053,7 @@ void __fastcall SaveToFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int nParam, 
       nSize = 0;
       PlayerSave2::MakeSaveFile(pGame, pUnit, saveFileBuffer, (int*)&nSize, 0x2000, nParam, nParamExtra);
       nBytesWritten = nSize;
-      if (0 < (int)nSize) {
+      if ((int)nSize > 0) {
         pFile = fopen(szFilePath, "wb");
         if (pFile) {
           fwrite(saveFileBuffer, nBytesWritten, 1, pFile);
@@ -1075,7 +1077,7 @@ static void __stdcall SaveToBuffer(::SGAMEDATA * pGame, int32_t nSaveParam, D2Un
     size_t nSaveSize = 0;
     PlayerSave2::MakeSaveFile(pGame, pUnit, charSaveBuffer, (int*)&nSaveSize, 0x2000, nSaveParam, 0);
     size_t nSizeSave = nSaveSize;
-    if ((int)nSaveSize < 1) {
+    if ((int)nSaveSize <= 0) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0xb32);
       exit(-1);
     }
@@ -1121,11 +1123,11 @@ BOOL __fastcall SaveGameAllGameTypes(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ch
     if (pGame->nGameType == SGAMETYPE_OBNET_HOST || pGame->nGameType == SGAMETYPE_LAN_HOST) {
       ::SGAMEDATA* pGameCopy = pGame;
       SaveToBuffer(pGameCopy, bIsInteracting, pUnit, pClient);
-    } else if (!BattleNetServerService) {
-      PlayerSave::SaveToFile(pGame, pUnit, bIsInteracting, bUnknown, szCharName);
-    } else {
+    } else if (BattleNetServerService) {
       nSaveResult = SaveToFileBnet(pGame, (uint32_t)szAccountName, pUnit, (uint32_t)szCharName, bIsInteracting, clientContainer, bUnknown, nRealm);
       bSaveSucceeded = nSaveResult;
+    } else {
+      PlayerSave::SaveToFile(pGame, pUnit, bIsInteracting, bUnknown, szCharName);
     }
 
     _bHasInteractInfo = bSaveSucceeded;
@@ -1165,10 +1167,10 @@ static BOOL __stdcall SERVER_CreatePlayerUnit(::SGAMEDATA * pGameStrc, D2ClientS
     if (!byAct && pUnit) {
       D2CharStatsTxt* pCharStatsTxt;
       nClassIdCheck = pUnit->nClassId;
-      if (-1 < nClassIdCheck && nClassIdCheck < sgptDataTable->nTxtCharStatsSize) {
+      if (nClassIdCheck >= 0 && nClassIdCheck < sgptDataTable->nTxtCharStatsSize) {
         pCharStatsTxt = sgptDataTable->pTxtCharStats + nClassIdCheck;
         if (pCharStatsTxt && pCharStatsTxt->StartSkill) {
-          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum((int)pCharStatsTxt->StartSkill, pUnit);
+          pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, (int)pCharStatsTxt->StartSkill);
           if (pDVar1) {
             SKILLS::SkillsServer::Server_SelectSkill(pUnit, 0, (int)pCharStatsTxt->StartSkill, -1);
             pPlayerData->eRightSkillId = (int)pCharStatsTxt->StartSkill;
@@ -1217,16 +1219,16 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
     if (sOldSaveHeader.saveDataBuf[0] == -0x55aa55ab) {
       uint8_t byDifficultyHi;
       if (sOldSaveHeader.wSkillListSize != 0x82) {
-        if (!BattleNetServerService) {
-          return 0xe;
+        if (BattleNetServerService) {
+          *pBnetFlagOut = 1;
+          return 0;
         }
 
-        *pBnetFlagOut = 1;
-        return 0;
+        return 0xe;
       }
 
       *pExpansionFlag = sOldSaveHeader.saveDataBuf[1];
-      if ((uint32_t)sOldSaveHeader.saveDataBuf[1] < 0x47 || 0x60 < (uint32_t)sOldSaveHeader.saveDataBuf[1]) {
+      if ((uint32_t)sOldSaveHeader.saveDataBuf[1] < 0x47 || (uint32_t)sOldSaveHeader.saveDataBuf[1] > 0x60) {
         if (BattleNetServerService) {
           *pBnetFlagOut = 1;
           return 9;
@@ -1238,7 +1240,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       sOldSaveHeader.byCharNamePad = 0;
       pGuildNameDst = GAME::Clients::GetCharName(pClient);
       pGuildNameDst[0xf] = '\0';
-      nCopyCount = __stricmp(pGuildNameDst, sOldSaveHeader.szCharNameClient);
+      nCopyCount = _stricmp(pGuildNameDst, sOldSaveHeader.szCharNameClient);
       pGameCopy = pGameLocal;
       if (nCopyCount) {
         *pBnetFlagOut = 0;
@@ -1247,19 +1249,16 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
 
       wCharFlags = (uint16_t)sOldSaveHeader.dwCharFlags;
       pExpansionFlag = (uint32_t*)(sOldSaveHeader.dwCharFlags & 0x20);
-      if (!pExpansionFlag) {
+      if (pExpansionFlag) {
+        if (!pGameLocal->bExpansion) {
+          return 0x18;
+        }
+      } else {
         if (pGameLocal->bExpansion) {
           return 0x17;
         }
-      } else if (!pGameLocal->bExpansion) {
-        return 0x18;
       }
-      if (!(sOldSaveHeader.dwCharFlags & 4)) {
-        eArenaFlags = GAME::Arena::ARENA_GetFlags(pGameLocal);
-        if (eArenaFlags & ARENAFLAG_Hardcore) {
-          return 0x13;
-        }
-      } else {
+      if (sOldSaveHeader.dwCharFlags & 4) {
         if (sOldSaveHeader.dwCharFlags & 8) {
           return 0x15;
         }
@@ -1268,25 +1267,28 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
         if (!(eArenaFlags & ARENAFLAG_Hardcore)) {
           return 0x14;
         }
+      } else {
+        eArenaFlags = GAME::Arena::ARENA_GetFlags(pGameLocal);
+        if (eArenaFlags & ARENAFLAG_Hardcore) {
+          return 0x13;
+        }
       }
 
       wDifficultyBits = wCharFlags >> 8 & 0x1f;
-      if (wDifficultyBits < 8 && 1 < pGameCopy->nDifficulty) {
+      if (wDifficultyBits < 8 && pGameCopy->nDifficulty > 1) {
         return 0x12;
       }
-      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && pGameCopy->nDifficulty || wDifficultyBits < 4 && pGameCopy->nDifficulty) {
+      if ((short int)(uintptr_t)pExpansionFlag && wDifficultyBits < 5 && (uint8_t)pGameCopy->nDifficulty > 0) {
+        return 0x11;
+      }
+      if (wDifficultyBits < 4 && (uint8_t)pGameCopy->nDifficulty > 0) {
         return 0x11;
       }
 
       GAME::Clients::SetGuildFlags(pClient, sOldSaveHeader.wGuildFlags);
       pGuildDataSrc = sOldSaveHeader.guildNameRaw;
       pGuildNameDst = szGuildName;
-      for (nCopyCount = 7; nCopyCount; nCopyCount--) {
-        *(uint32_t*)pGuildNameDst = *(uint32_t*)pGuildDataSrc;
-        pGuildDataSrc += 4;
-        pGuildNameDst += 4;
-      }
-
+      memcpy(pGuildNameDst, pGuildDataSrc, 28);
       dwGuildTag = (uint32_t)((uint32_t)(uint16_t)sOldSaveHeader.wGuildTagLo << 16 | (uint32_t)(uint16_t)sOldSaveHeader.wGuildTagHi) & 0xffffff;
       szGuildName[0x1b] = '\0';
       GAME::Clients::SetGuildTag(pClient, (char*)&dwGuildTag);
@@ -1306,7 +1308,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       pGameCopy = pGameLocal;
       byActId = sOldSaveHeader.byDifficulty & 0xf;
       byDifficultyHi = sOldSaveHeader.byDifficulty >> 4;
-      if (4 < byActId || 2 < byDifficultyHi) {
+      if (byActId >= 5 || byDifficultyHi >= 3) {
         return 9;
       }
       if (pGameLocal->nGameType == SGAMETYPE_SINGLEPLAYER && !pGameLocal->bInitSeed) {
@@ -1329,11 +1331,10 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
       *ppUnitOut = pUnit;
       SERVER_InitPlayer(pGameCopy, pUnit, pClient);
       pClient_00 = pClient;
-      pGameCopy = GAME::Clients::CLIENT_GetGame(pClient);
-      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(pGameCopy, *ppUnitOut, pClient_00);
+      UNIT::SUnitMsg::SERVER_SendInitUnitPacket(GAME::Clients::CLIENT_GetGame(pClient), *ppUnitOut, pClient_00);
       *pnParam2 = 0x10;
       *pnParam3 = sgptDataTable->nTxtSkillsCount;
-      if (sOldSaveHeader.wSkillTabCount < 0x11) {
+      if (sOldSaveHeader.wSkillTabCount <= 0x10) {
         nSkillId = (uint32_t)sOldSaveHeader.wTxtSkillsCount;
         if ((int)nSkillId <= sgptDataTable->nTxtSkillsCount) {
           if (sOldSaveHeader.wSkillTabCount != 0x10) {
@@ -1347,7 +1348,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
           pHotkeyEntry = sOldSaveHeader.hotkeyData + 1;
           do {
             nSkillId = (uint32_t)pHotkeyEntry[-1];
-            if (nSkillId - 0x9c < 0x3d) {
+            if (nSkillId - 0x9c <= 0x3c) {
               nSkillId += 0x41;
             } else if (nSkillId == 0xff) {
               nSkillId = -1;
@@ -1359,7 +1360,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
           } while (nCopyCount < 8);
 
           nSkillId = (uint32_t)sOldSaveHeader.byLeftSkillHotkey;
-          if (nSkillId - 0x9c < 0x3d) {
+          if (nSkillId - 0x9c <= 0x3c) {
             nSkillId += 0x41;
           } else if (nSkillId == 0xff) {
             nSkillId = -1;
@@ -1367,7 +1368,7 @@ int __fastcall _oldSaveGameLoadingPart(::SGAMEDATA * pGame, D2ClientStrc * pClie
 
           *pnParam4 = nSkillId;
           nSkillId = (uint32_t)sOldSaveHeader.byRightSkillHotkey;
-          if (nSkillId - 0x9c < 0x3d) {
+          if (nSkillId - 0x9c <= 0x3c) {
             nSkillId += 0x41;
           } else if (nSkillId == 0xff) {
             nSkillId = -1;
@@ -1399,7 +1400,10 @@ int __fastcall _oldSaveGameLoadingPart2(D2UnitStrc * pUnit, int * pnParam, uint3
     }
 
     *(short int*)&pDstCopyPos->nMagic = (short int)*pnParam;
-    if (!(questDataBuf.nMagic == 0x216f6f57 && questDataBuf.nVersion == 6)) {
+    if (questDataBuf.nMagic != 0x216f6f57) {
+      return 2;
+    }
+    if (questDataBuf.nVersion != 6) {
       return 2;
     }
 
@@ -1419,23 +1423,17 @@ int __fastcall _oldSaveGameLoadingPart2(D2UnitStrc * pUnit, int * pnParam, uint3
 }
 
 int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    int nDiffIndex;
     uint8_t aWaypointBlock[80];
     int16_t wWaypointVersion;
     *pnBytesConsumed = 0;
     uint8_t* pCopyDst = aWaypointBlock;
-    for (nDiffIndex = 0x14; nDiffIndex; nDiffIndex--) {
-      *(uint32_t*)pCopyDst = *pdwParam;
-      pdwParam++;
-      pCopyDst += 4;
-    }
-
+    memcpy(pCopyDst, pdwParam, 0x50);
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (*(uint16_t*)(char*)&aWaypointBlock != 0x5357) {
       return 3;
     }
 
-    nDiffIndex = 0;
+    int nDiffIndex = 0;
     D2WaypointStrc** ppWaypoint = pPlayerData->pWaypoint;
     pCopyDst = aWaypointBlock + 8;
     while ((wWaypointVersion = *(int16_t*)pCopyDst , wWaypointVersion == 0x102 || wWaypointVersion == 0x101) || !wWaypointVersion) {
@@ -1443,7 +1441,7 @@ int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam,
       nDiffIndex++;
       ppWaypoint++;
       pCopyDst += 0x18;
-      if (2 < nDiffIndex) {
+      if (nDiffIndex >= 3) {
         *pnBytesConsumed = 0x50;
         return 0;
       }
@@ -1453,21 +1451,15 @@ int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam,
 }
 
 int __fastcall _oldSaveGameLoadingPart4(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    int nIntroOffset;
     uint8_t aIntroBlock[52];
     *pnBytesConsumed = 0;
     uint8_t* pCopyDst = aIntroBlock;
-    for (nIntroOffset = 0xd; nIntroOffset; nIntroOffset--) {
-      *(uint32_t*)pCopyDst = *pdwParam;
-      pdwParam++;
-      pCopyDst += 4;
-    }
-
+    memcpy(pCopyDst, pdwParam, 0x34);
     if (*(uint16_t*)(char*)&aIntroBlock != 0x7701) {
       return 0xb;
     }
 
-    nIntroOffset = 0x60;
+    int nIntroOffset = 0x60;
     uint32_t* pIntroBufPos = (uint32_t*)(aIntroBlock + 0x1c);
     do {
       D2UnitDataPlayerStrc* pPlayerData;
@@ -1491,14 +1483,14 @@ int __fastcall _oldSaveGameLoadingPart5(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     }
 
     int nStatValueCount = 0;
-    if (0 < nStatCount) {
+    if (nStatCount > 0) {
       eD2UnitStat eUnitStat = UNITSTAT_strength;
       do {
-        if (!(*(uint8_t*)((int)param_1 + (eUnitStat >> 3) + 2) & (uint8_t)(1 << ((uint8_t)eUnitStat & 7)))) {
-          nStatValue = 0;
-        } else {
+        if (*(uint8_t*)((int)param_1 + (eUnitStat >> 3) + 2) & (uint8_t)(1 << ((uint8_t)eUnitStat & 7))) {
           nStatValue = *(int32_t*)((int)param_1 + nStatValueCount * 4 + 5);
           nStatValueCount++;
+        } else {
+          nStatValue = 0;
         }
 
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nStatValue, 0);
@@ -1540,7 +1532,7 @@ static int __stdcall _oldSaveGameLoadingPart6(D2UnitStrc * dwParam1, short * nPa
     uint32_t nClassId = GAME::Clients::GetPlayerClassId((D2ClientStrc*)nParam2);
     int nSkillIndex = 0;
     int32_t iVar2 = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
-    if (0 < iVar2) {
+    if (iVar2 > 0) {
       uint8_t bVar1;
       do {
         eSkill = D2Common::Skills::SKILLS_GetClassSkillByIndex(nClassId, nSkillIndex);
@@ -1583,7 +1575,38 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
     if (bHasNewFormat) {
       uint32_t nBits;
       nBits = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_COMPACT);
-      if (!nBits) {
+      if (nBits) {
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 10);
+        pItemUnknownStructure->wItemFormat = (uint16_t)dwReadValue & 0xff;
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
+        pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
+        pItemUnknownStructure->nItemLevel = 1;
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
+        pItemUnknownStructure->Mode = (char)dwReadValue;
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
+        pItemUnknownStructure->nPosX = dwReadValue & 0xff;
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
+        pItemUnknownStructure->nPosY = dwReadValue & 0xff;
+        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
+        pItemUnknownStructure->pageMaybe = (char)dwReadValue;
+        dwReadValue = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_BODYPART);
+        if (dwReadValue) {
+          memcpy(pItemUnknownStructure->szCode, "ear ", 4);
+          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
+          pItemUnknownStructure->dwFileIndex = dwReadValue;
+          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
+          pItemUnknownStructure->bGrade = (char)dwReadValue;
+          nCharIdx = 0;
+          do {
+            bIsCompact = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 7);
+            pItemUnknownStructure->szCustomName[nCharIdx] = (char)bIsCompact;
+            nCharIdx++;
+          } while (nCharIdx < 0x10);
+        } else {
+          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
+          *(uint32_t*)pItemUnknownStructure->szCode = dwReadValue;
+        }
+      } else {
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 10);
         pItemUnknownStructure->wItemFormat = (uint16_t)dwReadValue & 0xff;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
@@ -1616,37 +1639,6 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
         pItemUnknownStructure->nModSeed = dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
         pItemUnknownStructure->pageMaybe = (char)dwReadValue;
-      } else {
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 10);
-        pItemUnknownStructure->wItemFormat = (uint16_t)dwReadValue & 0xff;
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-        pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
-        pItemUnknownStructure->nItemLevel = 1;
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-        pItemUnknownStructure->Mode = (char)dwReadValue;
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-        pItemUnknownStructure->nPosX = dwReadValue & 0xff;
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-        pItemUnknownStructure->nPosY = dwReadValue & 0xff;
-        dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-        pItemUnknownStructure->pageMaybe = (char)dwReadValue;
-        dwReadValue = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_BODYPART);
-        if (!dwReadValue) {
-          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
-          *(uint32_t*)pItemUnknownStructure->szCode = dwReadValue;
-        } else {
-          memcpy(pItemUnknownStructure->szCode, "ear ", 4);
-          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-          pItemUnknownStructure->dwFileIndex = dwReadValue;
-          dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-          pItemUnknownStructure->bGrade = (char)dwReadValue;
-          nCharIdx = 0;
-          do {
-            bIsCompact = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 7);
-            pItemUnknownStructure->szCustomName[nCharIdx] = (char)bIsCompact;
-            nCharIdx++;
-          } while (nCharIdx < 0x10);
-        }
       }
 
       nCharIndex = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(*(uint32_t*)pItemUnknownStructure->szCode);
@@ -1657,81 +1649,81 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
 
     pItemUnknownStructure->wItemFormat = 0;
     dwReadValue = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_BODYPART);
-    if (!dwReadValue) {
+    if (dwReadValue) {
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
       pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-      pItemUnknownStructure->nStorageType = (char)dwReadValue;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
-      pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
-      nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
+      pItemUnknownStructure->nItemLevel = 1;
+      Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
+      nItemClassIdTmp = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(0x20726165);
+      pItemUnknownStructure->nItemClassid = nItemClassIdTmp;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
       pItemUnknownStructure->Mode = (char)dwReadValue;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 4);
-      pItemUnknownStructure->eQuality = (char)dwReadValue;
-      nItemFileIndex = Fog::BitBuffer::ReadSigned(&bitBuffer, 0x14);
-      pItemUnknownStructure->nPriceMaybe = nItemFileIndex;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-      pItemUnknownStructure->durability = dwReadValue & 0xff;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-      pItemUnknownStructure->maxDurability = dwReadValue & 0xff;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
       pItemUnknownStructure->nPosX = dwReadValue & 0xff;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
       pItemUnknownStructure->nPosY = dwReadValue & 0xff;
-      nFileIndexSigned = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
-      pItemUnknownStructure->dwFileIndex = nFileIndexSigned;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
-      pItemUnknownStructure->nInitSeed = dwReadValue;
-      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
-      pItemUnknownStructure->nModSeed = dwReadValue;
+      nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
+      pItemUnknownStructure->dwFileIndex = nItemClassIdTmp;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
       pItemUnknownStructure->pageMaybe = (char)dwReadValue;
-      if (-1 < nItemClassIdTmp) {
-        dwReadValue = D2Common::DATATBLS::ItemTbls::TXT_Items_GetVersion(nItemClassIdTmp);
-        pItemUnknownStructure->nItemClassid = dwReadValue;
-        pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(dwReadValue);
-        if (pItemsTxt) {
-          *(int*)pItemUnknownStructure->szCode = pItemsTxt->dwCode;
-          return 0x19;
+      dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
+      pItemUnknownStructure->bGrade = (char)dwReadValue;
+      nCharIdx = 0;
+      do {
+        nCharBits = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 7);
+        pItemUnknownStructure->szCustomName[nCharIdx] = (char)nCharBits;
+        if ((char)nCharBits == '\0') {
+          break;
         }
-      }
 
-      memset(pItemUnknownStructure->szCode, 0, 4 * sizeof(pItemUnknownStructure->szCode[0]));
-      pItemUnknownStructure->nItemClassid = -1;
+        nCharIdx++;
+      } while (nCharIdx < 0x10);
+
+      memcpy(pItemUnknownStructure->szCode, "ear ", 4);
       return 0x19;
     }
 
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
     pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
-    pItemUnknownStructure->nItemLevel = 1;
-    Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
-    nItemClassIdTmp = D2Common::DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(0x20726165);
-    pItemUnknownStructure->nItemClassid = nItemClassIdTmp;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
+    pItemUnknownStructure->nStorageType = (char)dwReadValue;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
+    pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
+    nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
     pItemUnknownStructure->Mode = (char)dwReadValue;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 4);
+    pItemUnknownStructure->eQuality = (char)dwReadValue;
+    nItemFileIndex = Fog::BitBuffer::ReadSigned(&bitBuffer, 0x14);
+    pItemUnknownStructure->nPriceMaybe = nItemFileIndex;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
+    pItemUnknownStructure->durability = dwReadValue & 0xff;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
+    pItemUnknownStructure->maxDurability = dwReadValue & 0xff;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
     pItemUnknownStructure->nPosX = dwReadValue & 0xff;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
     pItemUnknownStructure->nPosY = dwReadValue & 0xff;
-    nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
-    pItemUnknownStructure->dwFileIndex = nItemClassIdTmp;
+    nFileIndexSigned = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
+    pItemUnknownStructure->dwFileIndex = nFileIndexSigned;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
+    pItemUnknownStructure->nInitSeed = dwReadValue;
+    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
+    pItemUnknownStructure->nModSeed = dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
     pItemUnknownStructure->pageMaybe = (char)dwReadValue;
-    dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-    pItemUnknownStructure->bGrade = (char)dwReadValue;
-    nCharIdx = 0;
-    do {
-      nCharBits = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 7);
-      pItemUnknownStructure->szCustomName[nCharIdx] = (char)nCharBits;
-      if ((char)nCharBits == '\0') {
-        break;
+    if (nItemClassIdTmp >= 0) {
+      dwReadValue = D2Common::DATATBLS::ItemTbls::TXT_Items_GetVersion(nItemClassIdTmp);
+      pItemUnknownStructure->nItemClassid = dwReadValue;
+      pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(dwReadValue);
+      if (pItemsTxt) {
+        *(int*)pItemUnknownStructure->szCode = pItemsTxt->dwCode;
+        return 0x19;
       }
+    }
 
-      nCharIdx++;
-    } while (nCharIdx < 0x10);
-
-    memcpy(pItemUnknownStructure->szCode, "ear ", 4);
+    memset(pItemUnknownStructure->szCode, 0, 4 * sizeof(pItemUnknownStructure->szCode[0]));
+    pItemUnknownStructure->nItemClassid = -1;
     return 0x19;
 }
 
@@ -1768,7 +1760,7 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
     nSubItemCount = 0;
     uint32_t nItemIndex;
     nItemIndex = 0;
-    if (!nHeaderItemCount) {
+    if (nHeaderItemCount <= 0) {
       store_bytes_read:
       *pBytesRead = nTotalBytesRead;
       nSubSocketIdx = 0;
@@ -1786,14 +1778,14 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
       pStreamPos = (short int*)((int)(pStreamPos + 1) + nItemBytesRead);
       nTotalBytesRead = nTotalBytesRead + 2 + nItemBytesRead;
       nCacheIdx = 0;
-      if (0 < nSubItemCount) {
+      if (nSubItemCount > 0) {
         pCacheWrite = &aDupeCache[nSubItemCount].dwFileIndex;
         pCacheIter = &aDupeCache[0].dwFileIndex;
         do {
           pUnit = pUnitLocal;
           if (sGfxData.dwRenderFlags == pCacheIter[-1] && sGfxData.nArmorToken == *pCacheIter && *(uint32_t*)((char*)&sGfxData + 2) == pCacheIter[1] && sGfxData.nWeaponClass == pCacheIter[2] && sGfxData.szFilename == (char*)pCacheIter[3]) {
             nSubSocketIdx = 0;
-            if (!*(uint8_t*)((char*)&sGfxData.nFrameNumber + 1)) {
+            if ((uint8_t)*(uint8_t*)((char*)&sGfxData.nFrameNumber + 1) <= 0) {
               goto next_item;
             }
 
@@ -1814,20 +1806,20 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
 
       nBytesAfterItem = 0;
       pLastItem = 0;
-      if (!nItemMode) {
-        nSubSocketIdx = PLRSAVE_RestoreItemFromSaveData(pGameLocal, pUnit, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nBytesAfterItem);
-        if (nSubSocketIdx) {
-          goto next_item;
-        }
-      } else {
+      if (nItemMode) {
         nSubSocketIdx = PLRSAVE_RestoreEquippedItem(pGameLocal, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nBytesAfterItem, pUnit);
         if (nSubSocketIdx) {
           return nSubSocketIdx;
         }
+      } else {
+        nSubSocketIdx = PLRSAVE_RestoreItemFromSaveData(pGameLocal, pUnit, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nBytesAfterItem);
+        if (nSubSocketIdx) {
+          goto next_item;
+        }
       }
 
       nSubItemIndex = 0;
-      if (0 < (int)nBytesAfterItem) {
+      if ((int)nBytesAfterItem > 0) {
         do {
           memset(&sGfxData, 0, 0x48);
           if (*pStreamPos != 0x4d4a) {
@@ -1837,10 +1829,10 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
           nItemBytesRead = PLAYERSAVE_ParseItemFromBuffer((D2UnknownItemRelatedStruct*)&sGfxData, (char*)(pStreamPos + 1));
           pStreamPos = (short int*)((int)(pStreamPos + 1) + nItemBytesRead);
           nTotalBytesRead = nTotalBytesRead + 2 + nItemBytesRead;
-          if (!nItemMode) {
-            nSubSocketIdx = PLRSAVE_RestoreItemFromSaveData(pGameLocal, pUnit, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nSubSocketCount);
-          } else {
+          if (nItemMode) {
             nSubSocketIdx = PLRSAVE_RestoreEquippedItem(pGameLocal, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nSubSocketCount, pUnit);
+          } else {
+            nSubSocketIdx = PLRSAVE_RestoreItemFromSaveData(pGameLocal, pUnit, (D2UnknownItemRelatedStruct*)&sGfxData, &pLastItem, &nSubSocketCount);
           }
           if (nSubSocketIdx) {
             return nSubSocketIdx;
@@ -1852,7 +1844,7 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
 
       next_item:
       nItemIndex++;
-      if (nHeaderItemCount <= nItemIndex) {
+      if (nItemIndex >= nHeaderItemCount) {
         goto store_bytes_read;
       }
     }
@@ -1863,7 +1855,7 @@ int __fastcall PLRSAVE_RestoreItemsFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
       pStreamPos = (short int*)((int)(pStreamPos + 1) + nItemBitSize);
       nTotalBytesRead = nTotalBytesRead + 2 + nItemBitSize;
       pUnit = pUnitLocal;
-      if ((int)(uint32_t)*(uint8_t*)((char*)&sGfxData.nFrameNumber + 1) <= nSubSocketIdx) {
+      if (nSubSocketIdx >= (int)(uint32_t)*(uint8_t*)((char*)&sGfxData.nFrameNumber + 1)) {
         break;
       }
 
@@ -1906,17 +1898,17 @@ int __fastcall PLRSAVE_LoadItemListFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
         }
 
         pItem = ITEMS::Items::Drop::ITEM_CreateFromSaveData(pGame, nullptr, (uint8_t*)pStreamCursor, sVar1, 1, &itemDetails, &nBytesConsumed, eItemFormat);
-        if (!pItem && nBytesConsumed < 1) {
+        if (!pItem && nBytesConsumed <= 0) {
           return 0xe;
         }
 
         pStreamCursor = (int*)((int)pStreamCursor + nBytesConsumed);
         if (pItem) {
           GAME::Task::TASK_Nop();
-          if (!bUsePageHandler) {
-            nRestoreResult = PLRSAVE_RestoreItemToUnit(pGame, pCurrentUnit, pItem, 0);
-          } else {
+          if (bUsePageHandler) {
             nRestoreResult = PLRSAVE_RestoreItemToBodyLoc(pItem, pGame, pCurrentUnit, 0);
+          } else {
+            nRestoreResult = PLRSAVE_RestoreItemToUnit(pGame, pCurrentUnit, pItem, 0);
           }
         }
 
@@ -1930,12 +1922,12 @@ int __fastcall PLRSAVE_LoadItemListFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
         }
 
         nRestoreResult = 0;
-        if (0 < (int)nUsedSockets) {
+        if ((int)nUsedSockets > 0) {
           do {
             sVar1 = (int)pItemLocal + (nStreamEnd - (int)pStreamCursor);
             D2Common::ITEMS::Items::ReadInfoFromStreamVersioned((uint8_t*)pStreamCursor, sVar1, 1, &itemDetails, eItemFormat);
             pSocketItem = ITEMS::Items::Drop::ITEM_CreateFromSaveData(pGame, nullptr, (uint8_t*)pStreamCursor, sVar1, 1, &itemDetails, &nBytesConsumed, eItemFormat);
-            if (!pSocketItem && nBytesConsumed < 1) {
+            if (!pSocketItem && nBytesConsumed <= 0) {
               return 0xe;
             }
 
@@ -1946,10 +1938,10 @@ int __fastcall PLRSAVE_LoadItemListFromStream(::SGAMEDATA * pGame, D2UnitStrc * 
               }
             } else if (pSocketItem) {
               GAME::Task::TASK_Nop();
-              if (!bUsePageHandler) {
-                PLRSAVE_RestoreItemToUnit(pGame, pCurrentUnit, pSocketItem, (int32_t)pItem);
-              } else {
+              if (bUsePageHandler) {
                 PLRSAVE_RestoreItemToBodyLoc(pSocketItem, pGame, pCurrentUnit, (int32_t)pItem);
+              } else {
+                PLRSAVE_RestoreItemToUnit(pGame, pCurrentUnit, pSocketItem, (int32_t)pItem);
               }
             }
 
@@ -1983,12 +1975,12 @@ int __fastcall PLRSAVE_DispatchItemLoadByFormat(::SGAMEDATA * pGame, D2UnitStrc 
       nNewStreamResult = PLRSAVE_RestoreItemsFromStream(pGame, pUnit, (short int*)pItemData, 0x47, nStreamEnd, bUsePageHandler, (int*)ppnShort);
       return nNewStreamResult;
     }
-    if (eFormat - 0x48 >= 0x19) {
-      return 1;
+    if (eFormat - 0x48 <= 0x18) {
+      nNewStreamResult = PLRSAVE_LoadItemListFromStream(pGame, pUnit, (D2UnitStrc*)pItemData, eFormat, nStreamEnd, bUsePageHandler, ppnShort);
+      return nNewStreamResult;
     }
 
-    nNewStreamResult = PLRSAVE_LoadItemListFromStream(pGame, pUnit, (D2UnitStrc*)pItemData, eFormat, nStreamEnd, bUsePageHandler, ppnShort);
-    return nNewStreamResult;
+    return 1;
 }
 
 // Creates a player corpse unit during save-game loading. Allocates a UNIT_PLAYER ghost with UNITFLAG_CANBEATTACKED cleared and STATE_playerbody set, copies client/name/seed from the live unit, sets inventory owner GUID, then restores the corpse's items from the save stream (either PLRSAVE_RestoreItemsFromStream for format 0x47 or PLRSAVE_LoadItemListFromStream for 0x48-0x60). On success appends an inventory notification and sends 0x8E CorpseAssign.
@@ -2030,7 +2022,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart7_part1(uint8_t * nParam1, uint3
     if (nParam == 0x47) {
       nItemLoadResult = PLRSAVE_RestoreItemsFromStream(pGame, pCorpseUnit, (short int*)(nParam1 + 0xc), 0x47, nParam2 - 0xc, 1, (int*)&pClientLocal);
     } else {
-      if (0x18 < nParam - 0x48) {
+      if (nParam - 0x48 > 0x18) {
         return 1;
       }
 
@@ -2051,36 +2043,37 @@ static int32_t __stdcall _oldSaveGameLoadingPart7_part1(uint8_t * nParam1, uint3
 int32_t __fastcall _oldSaveGameLoadingPart7(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * param_1, uint32_t param_2, uint32_t nParam, uint32_t * pbParam) {
     uint32_t pBytesPerCorpse;
     *pbParam = 0;
-    if (0x19 < param_2 - 0x47) {
-      return 1;
-    }
-    if (*param_1 != 0x4d4a) {
-      return 0xe;
+    if (param_2 - 0x47 <= 0x19) {
+      if (*param_1 != 0x4d4a) {
+        return 0xe;
+      }
+
+      uint16_t nCorpseCount = param_1[1];
+      uint8_t* pCorpseData = (uint8_t*)(param_1 + 2);
+      int nRemainingBytes = nParam - 4;
+      param_1 = (short int*)0x4;
+      nParam = 0;
+      D2UnitStrc* pCurrentUnit = pUnit;
+      if (nCorpseCount > 0) {
+        int32_t nCorpseResult;
+        do {
+          nCorpseResult = _oldSaveGameLoadingPart7_part1(pCorpseData, param_2, nRemainingBytes, &pBytesPerCorpse, pCurrentUnit, pGame);
+          if (nCorpseResult) {
+            return nCorpseResult;
+          }
+
+          param_1 = (short int*)((int)param_1 + pBytesPerCorpse);
+          pCorpseData += pBytesPerCorpse;
+          nRemainingBytes -= pBytesPerCorpse;
+          nParam++;
+        } while (nParam < nCorpseCount);
+      }
+
+      *pbParam = (uint32_t)param_1;
+      return 0;
     }
 
-    uint16_t nCorpseCount = param_1[1];
-    uint8_t* pCorpseData = (uint8_t*)(param_1 + 2);
-    int nRemainingBytes = nParam - 4;
-    param_1 = (short int*)0x4;
-    nParam = 0;
-    D2UnitStrc* pCurrentUnit = pUnit;
-    if (nCorpseCount) {
-      int32_t nCorpseResult;
-      do {
-        nCorpseResult = _oldSaveGameLoadingPart7_part1(pCorpseData, param_2, nRemainingBytes, &pBytesPerCorpse, pCurrentUnit, pGame);
-        if (nCorpseResult) {
-          return nCorpseResult;
-        }
-
-        param_1 = (short int*)((int)param_1 + pBytesPerCorpse);
-        pCorpseData += pBytesPerCorpse;
-        nRemainingBytes -= pBytesPerCorpse;
-        nParam++;
-      } while (nParam < nCorpseCount);
-    }
-
-    *pbParam = (uint32_t)param_1;
-    return 0;
+    return 1;
 }
 
 // Lookup table function: given a character class index (wParam, 0x00–0x1b) and a character level (nParam), returns the base experience-point threshold (or similar save-load scalar) for that class/level bracket. All paths return a constant or one of two bracket constants selected by level comparison. Part of the old save-game loading path (PlayerSave), used when reconstructing character progression data from .d2s files.
@@ -2197,7 +2190,6 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
     D2UnitStrc* pMercUnit;
     uint32_t nCurrentExp;
     int nLevel;
-    int32_t nLayer;
     D2PetDataStrc sPetData;
     int nMercLevel;
     int32_t nErrorLine;
@@ -2222,7 +2214,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
         }
 
         *pnParam2 = 0;
-        if (0x11 < nParam2) {
+        if (nParam2 >= 0x12) {
           nReplaceFlag = *(uint32_t*)((int)pnParam + 2) & 0x10000;
           puVar1 = pnParam + 3;
           pnParam = (uint32_t*)((int)pnParam + 0x12);
@@ -2231,83 +2223,81 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
             Fog::Src::LogManager::LOGFILE_WriteStringToFile("Unable to load merc.");
             return 0xe;
           }
-          if (nParam1 < 0x5a) {
+          if (nParam1 <= 0x59) {
             nConvertedExp = _oldSaveGameLoadingPart8_part1((int32_t)pGame, (uint16_t)puVar2[3], *(uint32_t*)((int)puVar2 + 0xe));
             *(uint32_t*)((int)puVar2 + 0xe) = nConvertedExp;
           }
 
           *(short int*)((int)puVar2 + 10) += pHirelingTxt->nNameFirst;
-          if ((uint16_t)pHirelingTxt->nNameLast < *(uint16_t*)((int)puVar2 + 10)) {
+          if (*(uint16_t*)((int)puVar2 + 10) > (uint16_t)pHirelingTxt->nNameLast) {
             *(short int*)((int)puVar2 + 10) = pHirelingTxt->nNameFirst;
           }
 
           pMercUnit = UNIT::SUNITNPC::CreateMerc(pGame, pUnit, *(uint16_t*)((int)puVar2 + 10), *(uint32_t*)((int)puVar2 + 6), (uint16_t)puVar2[3], pHirelingTxt->classId, nReplaceFlag);
-          if (pMercUnit) {
-            sPetData.nSeed = *(int*)((int)puVar2 + 6);
-            sPetData.nNameId = (int)*(uint16_t*)((int)puVar2 + 10);
-            sPetData.nType = (int)(uint16_t)puVar2[3];
-            PlayerPets::PETS_UpdatePetData(pUnit, 7, pMercUnit->nUnitGUID, &sPetData);
-            D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-            nErrorLine = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
-            dwStatValue = *(uint32_t*)((int)puVar2 + 0xe);
-            nMercLevel = 1;
-            nCurrentExp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMercUnit, UNITSTAT_experience, 0);
-            if (nCurrentExp < dwStatValue) {
-              D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_experience, dwStatValue, 0);
+          if (!pMercUnit) {
+            *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2);
+            return 0;
+          }
+
+          sPetData.nSeed = *(int*)((int)puVar2 + 6);
+          sPetData.nNameId = (int)*(uint16_t*)((int)puVar2 + 10);
+          sPetData.nType = (int)(uint16_t)puVar2[3];
+          PlayerPets::PETS_UpdatePetData(pUnit, 7, pMercUnit->nUnitGUID, &sPetData);
+          D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+          nErrorLine = D2Common::DATATBLS::DataTbls::TXT_Experience_GetMaxLevel(0);
+          dwStatValue = *(uint32_t*)((int)puVar2 + 0xe);
+          nMercLevel = 1;
+          nCurrentExp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMercUnit, UNITSTAT_experience, 0);
+          if (nCurrentExp < dwStatValue) {
+            D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_experience, dwStatValue, 0);
+          }
+
+          UNIT::SUnitMsg::UnitQueuePacket0x9E(pMercUnit, UNITSTAT_experience, dwStatValue);
+          pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)(uint16_t)puVar2[3], 1);
+          while (true) {
+            if (!pHirelingTxt) {
+              Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1660);
+              exit(-1);
             }
 
-            UNIT::SUnitMsg::UnitQueuePacket0x9E(pMercUnit, UNITSTAT_experience, dwStatValue);
-            pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)(uint16_t)puVar2[3], 1);
-            while (true) {
-              if (!pHirelingTxt) {
-                Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1660);
-                exit(-1);
-              }
-
-              nLevel = nMercLevel + 1;
-              if (nErrorLine < nLevel) {
-                break;
-              }
-
-              nCurrentExp = D2Common::Merc::GetBaseExperience(nLevel, pHirelingTxt->expPerLvl);
-              if (dwStatValue < nCurrentExp) {
-                break;
-              }
-
-              pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)(uint16_t)puVar2[3], nLevel);
-              nMercLevel = nLevel;
+            nLevel = nMercLevel + 1;
+            if (nLevel > nErrorLine) {
+              break;
             }
 
-            Monster::MonsterAI::MERC_ApplyLevelStats(pGame, pUnit, pMercUnit, nMercLevel);
-            if (!pMercUnit->pInventory) {
-              D2Common::INVENTORY::Inventory::STRUCT_CreatePlayerInventory(nullptr, pMercUnit);
-            }
-            if (nReplaceFlag) {
-              PlayerPets::SERVERUNIT_RemovePetFromUnit(pGame, pUnit, pMercUnit);
-              pMercUnit->eUnitFlags |= UNITFLAG_ISDEAD;
-              UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pMercUnit, 0xc);
-              Monster::MONSTER_StartAiAndRegenTimers(pGame, pMercUnit);
+            nCurrentExp = D2Common::Merc::GetBaseExperience(nLevel, pHirelingTxt->expPerLvl);
+            if (dwStatValue < nCurrentExp) {
+              break;
             }
 
-            puVar1 = pnParam;
-            nErrorLine = PLRSAVE_DispatchItemLoadByFormat(pGame, pMercUnit, (uint8_t*)pnParam, nParam1, (int)puVar2 + (nParam2 - (int)pnParam), 0, (short int**)&pnParam);
-            if (nErrorLine) {
-              return nErrorLine;
-            }
+            pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)(uint16_t)puVar2[3], nLevel);
+            nMercLevel = nLevel;
+          }
 
-            ITEMS::ItemMode::ITEMS_RecalcAndRefreshInventory(pGame, pMercUnit, 0, 0);
-            ITEMS::ItemMode::ITEMMODE_ReturnZero3(0);
-            nLayer = 0;
-            nErrorLine = D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit);
-            D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, nErrorLine, nLayer);
-            Monster::MonsterAI::SendMercPackets(pGame, pUnit, 1);
-            *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2 + (int)puVar1);
-            nErrorLine = 0;
+          Monster::MonsterAI::MERC_ApplyLevelStats(pGame, pUnit, pMercUnit, nMercLevel);
+          if (!pMercUnit->pInventory) {
+            D2Common::INVENTORY::Inventory::STRUCT_CreatePlayerInventory(nullptr, pMercUnit);
+          }
+          if (nReplaceFlag) {
+            PlayerPets::SERVERUNIT_RemovePetFromUnit(pGame, pUnit, pMercUnit);
+            pMercUnit->eUnitFlags |= UNITFLAG_ISDEAD;
+            UNIT::SUnit::FreeCombatAndChangeAnimMode(pGame, pMercUnit, 0xc);
+            Monster::MONSTER_StartAiAndRegenTimers(pGame, pMercUnit);
+          }
+
+          puVar1 = pnParam;
+          nErrorLine = PLRSAVE_DispatchItemLoadByFormat(pGame, pMercUnit, (uint8_t*)pnParam, nParam1, (int)puVar2 + (nParam2 - (int)pnParam), 0, (short int**)&pnParam);
+          if (nErrorLine) {
             return nErrorLine;
           }
 
-          *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2);
-          return 0;
+          ITEMS::ItemMode::ITEMS_RecalcAndRefreshInventory(pGame, pMercUnit, 0, 0);
+          ITEMS::ItemMode::ITEMMODE_ReturnZero3(0);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit), 0);
+          Monster::MonsterAI::SendMercPackets(pGame, pUnit, 1);
+          *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2 + (int)puVar1);
+          nErrorLine = 0;
+          return nErrorLine;
         }
       }
 
@@ -2327,7 +2317,7 @@ int __stdcall _oldSaveGameLoadingPart9(D2UnitStrc * pUnit, uint8_t * pbParam, ui
     }
 
     *pnParam = 0x30;
-    if (0x48 >= nParam) {
+    if (nParam <= 0x48) {
       return 0;
     }
 
@@ -2336,7 +2326,7 @@ int __stdcall _oldSaveGameLoadingPart9(D2UnitStrc * pUnit, uint8_t * pbParam, ui
     do {
       uint32_t nRawSkillId;
       nRawSkillId = (uint32_t)*pHotkeyEntry;
-      if (nRawSkillId - 0x9c < 0x3d) {
+      if (nRawSkillId - 0x9c <= 0x3c) {
         nRawSkillId += 0x41;
       } else if (nRawSkillId == 0xff) {
         nRawSkillId = -1;
@@ -2347,7 +2337,7 @@ int __stdcall _oldSaveGameLoadingPart9(D2UnitStrc * pUnit, uint8_t * pbParam, ui
       pHotkeyEntry += 6;
     } while (nHotkeyIndex < 0x10);
 
-    if (0x51 >= nParam) {
+    if (nParam <= 0x51) {
       return 0;
     }
 
@@ -2444,7 +2434,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
     __frame0.nSavedHp = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
     __frame1.pSavedMana = (D2UnitStrc*)D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
     nLoadResult = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_gold, 0);
-    if ((nLoadResult < 0 || (nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit) , (int)nGoldLimit < nLoadResult)) && pUnit) {
+    if ((nLoadResult < 0 || (nGoldLimit = D2Common::Units::GetInventoryGoldLimit(pUnit) , nLoadResult > (int)nGoldLimit)) && pUnit) {
       if (pUnit->eUnitType == UNIT_PLAYER) {
         D2Common::Units::GetInventoryGoldLimit(pUnit);
       }
@@ -2453,7 +2443,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
     }
 
     nLoadResult = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_goldbank, 0);
-    if ((nLoadResult < 0 || (nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit) , (int)nGoldLimit < nLoadResult)) && pUnit) {
+    if ((nLoadResult < 0 || (nGoldLimit = D2Common::Units::GetStashGoldLimit(pUnit) , nLoadResult > (int)nGoldLimit)) && pUnit) {
       if (pUnit->eUnitType == UNIT_PLAYER) {
         D2Common::Units::GetStashGoldLimit(pUnit);
       }

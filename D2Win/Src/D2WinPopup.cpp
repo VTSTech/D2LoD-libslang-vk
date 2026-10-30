@@ -60,12 +60,12 @@ BOOL __stdcall D2WINPOPUP_IsActiveAndVisible() {
       exit(-1);
     }
 
-    uint32_t dwState = gpD2WinPopupControl->sControl.dwState;
-    if (!(dwState & 4 && dwState & 1)) {
-      return 0;
+    uint32_t uVar1 = gpD2WinPopupControl->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Adds a message entry to the popup. Validates message count (max 8), copies 132-byte message data into next slot, calculates text width using font 1, updates popup width/height. Returns TRUE on success.
@@ -77,7 +77,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x74);
       exit(-1);
     }
-    if (7 < gpD2WinPopupControl->nMessageCount) {
+    if (gpD2WinPopupControl->nMessageCount >= 8) {
       return 0;
     }
 
@@ -92,7 +92,7 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
     D2WinFont::SetAndReturnLastFont(1);
     nLine = D2WinFont::DRAW_text0(pnParam->wszText);
     nCopyCount = pPopup->sControl.dwSizeX;
-    if (nLine < nCopyCount) {
+    if (nCopyCount > nLine) {
       nLine = nCopyCount;
     }
 
@@ -104,50 +104,55 @@ uint32_t __stdcall D2WINPOPUP_AddMessage(D2WinPopupEntry * pnParam) {
 
 // Handles click event on popup. Validates popup state, checks if a message is selected (nSelectedIndex != -1), retrieves callback function pointer for selected message, executes callback if present.
 BOOL __stdcall D2WINPOPUP_HandleClick(D2UIMouseMsgStrc * pMsg) {
+    pfnVoidNoArgCallback pfnCallback;
     if (gpD2WinPopupControl->sControl.neD2FormType != FORM_Popup) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x90);
       exit(-1);
     }
 
-    uint32_t dwState = gpD2WinPopupControl->sControl.dwState;
-    if (!(dwState & 4 && dwState & 1 && gpD2WinPopupControl->bCentered != -1)) {
-      return 0;
+    uint32_t uVar1 = gpD2WinPopupControl->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1 && gpD2WinPopupControl->bCentered != -1) {
+      pfnCallback = gpD2WinPopupControl->wszMessages[gpD2WinPopupControl->bCentered].pfnOnClick;
+      if (pfnCallback) {
+        (*pfnCallback)();
+        return 1;
+      }
     }
 
-    pfnVoidNoArgCallback pfnCallback = gpD2WinPopupControl->wszMessages[gpD2WinPopupControl->bCentered].pfnOnClick;
-    if (!pfnCallback) {
-      return 0;
-    }
-
-    (*pfnCallback)();
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall DrawEx(::D2WinPopup * pPopup) {
+    int iVar2;
+    int nRelX;
+    int nSizeY;
     if (pPopup->sControl.neD2FormType != FORM_Popup) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa6);
       exit(-1);
     }
 
-    uint32_t dwState = pPopup->sControl.dwState;
-    if (!(dwState & 4 && dwState & 1)) {
-      return 0;
-    }
+    uint32_t uVar1 = pPopup->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      nSizeY = pPopup->sControl.dwSizeY;
+      pPopup->bCentered = -1;
+      iVar2 = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
+      nRelX = nSizeY - pPopup->sControl.dwPosY + D2Client::Mouse::nPosY;
+      if (!(iVar2 >= 0 && iVar2 <= pPopup->sControl.dwSizeX && nRelX >= 0 && nRelX <= nSizeY)) {
+        return 1;
+      }
 
-    int nSizeY = pPopup->sControl.dwSizeY;
-    pPopup->bCentered = -1;
-    int iVar1 = D2Client::Mouse::nPosX - pPopup->sControl.dwPosX;
-    int nRelX = nSizeY - pPopup->sControl.dwPosY + D2Client::Mouse::nPosY;
-    if (!(-1 < iVar1 && iVar1 <= pPopup->sControl.dwSizeX && -1 < nRelX && nRelX <= nSizeY)) {
+      pPopup->bCentered = nRelX / 0x14;
       return 1;
     }
 
-    pPopup->bCentered = nRelX / 0x14;
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall Draw(::D2WinPopup * pPopup) {
     int32_t nBgColorVal;
+    int nMsgIdx;
+    D2WinPopupEntry* wMessage;
+    int nMsgCount;
     RECT sPopupRect;
     DWORD dwFillColor;
     if (pPopup->sControl.neD2FormType != FORM_Popup) {
@@ -155,41 +160,41 @@ BOOL __fastcall Draw(::D2WinPopup * pPopup) {
       exit(-1);
     }
 
-    uint32_t dwState = pPopup->sControl.dwState;
-    if (!(dwState & 4 && dwState & 1)) {
-      return 0;
-    }
+    uint32_t uVar1 = pPopup->sControl.dwState;
+    if (gadwBitMasks[2] & uVar1 && gadwBitMasks[0] & uVar1) {
+      nBgColorVal = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
+      dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBgColorVal);
+      sPopupRect.right = pPopup->sControl.dwPosX;
+      sPopupRect.left = sPopupRect.right - 5;
+      nMsgIdx = pPopup->sControl.dwPosY;
+      sPopupRect.bottom = nMsgIdx + 5;
+      sPopupRect.top = nMsgIdx - pPopup->sControl.dwSizeY - 5;
+      sPopupRect.right = pPopup->sControl.dwSizeX + 5 + sPopupRect.right;
+      D2gfx::D2GFX::D2GFX_DrawRectEx(&sPopupRect, 0xff);
+      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(sPopupRect.left, sPopupRect.bottom, sPopupRect.right, sPopupRect.top, dwFillColor, DRAW_LESSTRANSPARENT);
+      D2WinFont::SetAndReturnLastFont(1);
+      nMsgIdx = pPopup->nMessageCount;
+      if (nMsgIdx <= 0) {
+        return 1;
+      }
 
-    nBgColorVal = D2WinPalette::D2GFX_GetColorFromCurrentPallete(0x3f, 0x3f, 0x3f);
-    dwFillColor = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&dwFillColor + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nBgColorVal);
-    sPopupRect.right = pPopup->sControl.dwPosX;
-    sPopupRect.left = sPopupRect.right - 5;
-    int nMsgIdx = pPopup->sControl.dwPosY;
-    sPopupRect.bottom = nMsgIdx + 5;
-    sPopupRect.top = nMsgIdx - pPopup->sControl.dwSizeY - 5;
-    sPopupRect.right = pPopup->sControl.dwSizeX + 5 + sPopupRect.right;
-    D2gfx::D2GFX::D2GFX_DrawRectEx(&sPopupRect, 0xff);
-    D2gfx::D2GFX::D2GFX_DrawSolidRectEx(sPopupRect.left, sPopupRect.bottom, sPopupRect.right, sPopupRect.top, dwFillColor, DRAW_LESSTRANSPARENT);
-    D2WinFont::SetAndReturnLastFont(1);
-    nMsgIdx = pPopup->nMessageCount;
-    if (0 >= nMsgIdx) {
+      wMessage = pPopup->wszMessages;
+      nMsgCount = 0;
+      do {
+        D2WinFont::DRAW_text(wMessage->wszText, pPopup->sControl.dwPosX, pPopup->sControl.dwPosY + (nMsgCount - nMsgIdx + 1) * 0x14, nMsgCount != pPopup->bCentered ? 0 : 0x3, 0);
+        nMsgIdx = pPopup->nMessageCount;
+        nMsgCount++;
+        wMessage++;
+      } while (nMsgCount < nMsgIdx);
+
       return 1;
     }
 
-    D2WinPopupEntry* wMessage = pPopup->wszMessages;
-    int nMsgCount = 0;
-    do {
-      D2WinFont::DRAW_text(wMessage->wszText, pPopup->sControl.dwPosX, pPopup->sControl.dwPosY + (nMsgCount - nMsgIdx + 1) * 0x14, nMsgCount != pPopup->bCentered ? 0 : 0x3, 0);
-      nMsgIdx = pPopup->nMessageCount;
-      nMsgCount++;
-      wMessage++;
-    } while (nMsgCount < nMsgIdx);
-
-    return 1;
+    return 0;
 }
 
 void __stdcall D2WinPopup() {
-    uint32_t dwState;
+    uint32_t uVar1;
     if (gpD2WinPopupControl) {
       D2WinMain::FORMS_DestroyControl(&gpD2WinPopupControl->sControl);
       gpD2WinPopupControl = 0;
@@ -199,10 +204,10 @@ void __stdcall D2WinPopup() {
     memset(pNewPopup, 0, 0x468);
     pNewPopup->sControl.neD2FormType = FORM_Popup;
     int* pStateField = &pNewPopup->sControl.dwState;
-    *pStateField |= 1;
-    dwState = pNewPopup->sControl.dwState;
-    pNewPopup->sControl.dwState = dwState | 4;
-    pNewPopup->sControl.dwState = dwState | 0xc;
+    *pStateField |= gadwBitMasks[0];
+    uVar1 = pNewPopup->sControl.dwState | gadwBitMasks[2];
+    pNewPopup->sControl.dwState = uVar1;
+    pNewPopup->sControl.dwState = uVar1 | gadwBitMasks[3];
     pNewPopup->sControl.dwPosX = D2Client::Mouse::nPosX;
     pNewPopup->sControl.dwPosY = D2Client::Mouse::nPosY;
     pNewPopup->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinPopup*))D2WinPopup::Draw;

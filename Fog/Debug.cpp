@@ -532,7 +532,7 @@ void __fastcall SetSymbolSearchPath(char * szSearchPath) {
     ExceptionList = pSehFrame;
 }
 
-int __fastcall FindSymbolFile(char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext, void * pfnFindCallback) {
+int __thiscall FindSymbolFile(void * pfnFindCallback, char * szSearchPath, char * szFileName, uint32_t nId, uint32_t dwTimestamp, uint32_t nThree, uint32_t dwFlags, char * szFoundFile, void * pUserContext) {
     int bSymbolsInitOk;
     BOOL bFound;
     uint32_t nSehState;
@@ -796,10 +796,10 @@ bool __fastcall CrashDumpWriterThread(LPCSTR szDumpPath, char * pExceptionPtrs, 
         }
 
         pCrashDumpInfo = &sDumpRequest;
+        sDumpRequest.szComment = pExceptionPtrs;
+        sDumpRequest.dwThreadId = dwThreadId;
         /* HANDLE hEvent for SetEvent */ sDumpRequest.pExceptionPointers = nEventHandle;
         sDumpRequest.bSuccess = 0;
-        sDumpRequest.dwThreadId = dwThreadId;
-        sDumpRequest.szComment = pExceptionPtrs;
         SetEvent(hCrashDumpRequestEvent);
         /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(hCrashDumpCompleteEvent, -1);
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pCrashDumpInfo = 0;
@@ -2159,10 +2159,10 @@ void __fastcall WriteCrashDump(uint32_t dwHeader0, uint32_t dwHeader1, uint32_t 
     Storm::Source::SSTR::SStrPack(szDumpPath, "Crashdump", 0x104);
     FILE* _File = fopen(szDumpPath, "ab");
     if (_File) {
-      sRecord.dwRecordType = dwRecordType;
-      sRecord.nDwordCount = nDwordCount;
-      sRecord.dwHeader0 = dwHeader0;
       sRecord.dwHeader1 = dwHeader1;
+      sRecord.dwRecordType = dwRecordType;
+      sRecord.dwHeader0 = dwHeader0;
+      sRecord.nDwordCount = nDwordCount;
       Storm::Source::SSystem::SMemCopy(sRecord.aData, pData, nDwordCount * 4);
       fwrite(&sRecord, nDwordCount * 4 + 0x10, 1, _File);
       fclose(_File);

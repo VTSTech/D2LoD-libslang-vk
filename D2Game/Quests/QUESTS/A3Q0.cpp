@@ -44,13 +44,14 @@ namespace D2Game::Quests::QUESTS::A3Q0 {
 
 // A3Q0 handler [0x0b] — dialog/quote-finished event. If the speaking NPC is Hratli (0xfd) and the played message is 0x1d1/0x1d2 (Hratli's intro quotes), mark QUEST_SpokeToHratli Completed for this player and broadcast it as JustCompleted to the game. Transition: SpokeToHratli -> Completed.
 void __fastcall Q17_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0xfd) {
       return;
     }
 
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+    D2UnitStrc* pPlayer = pQuestArgs->pPlayer;
+    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
     if (!(nMessageIndex == 0x1d1 || nMessageIndex == 0x1d2)) {
       return;
     }
@@ -68,8 +69,9 @@ void __fastcall Q17_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SpokeToHratli, QUESTSTATE_Completed);
+    /* GetQuestState(QUEST_SpokeToHratli, QUESTSTATE_Completed) — skip gossip once
+                         player has already spoken to Hratli */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SpokeToHratli, QUESTSTATE_Completed);
     if (bQuestCompleted) {
       return;
     }
@@ -103,8 +105,9 @@ bool __fastcall Q17_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // A3Q0 handler [0x0d] — player join / quest refresh. If this player already has SpokeToHratli Completed, re-broadcast it as JustCompleted so the joining client's quest log syncs. No new progress.
 void __fastcall Q17_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bIsQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SpokeToHratli, QUESTSTATE_Completed);
+    /* GetQuestState(QUEST_SpokeToHratli, QUESTSTATE_Completed) — only resync if
+                         already completed (==1) */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bIsQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SpokeToHratli, QUESTSTATE_Completed);
     if (bIsQuestCompleted != 1) {
       return;
     }

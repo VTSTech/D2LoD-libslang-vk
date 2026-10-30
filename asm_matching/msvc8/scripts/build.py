@@ -589,7 +589,10 @@ def main():
         hashes = prev[3]
         print('translate: tree unchanged, %d kept' % len(files))
     else:
-        qhash = objcache.sha_file(QUARANTINE_TSV)
+        # The translator's own hash rides with the quarantine's: a changed
+        # translator retranslates every file, not only the changed sources.
+        qhash = objcache.sha_bytes(objcache.sha_file(QUARANTINE_TSV),
+                                   objcache.sha_file(os.path.join(HERE, 'vc8_translate.py')))
         hashes = {os.path.join(r, n): objcache.sha_file(os.path.join(REPO, r, n)) for r, n in files}
 
         def unchanged(r, n, _text):

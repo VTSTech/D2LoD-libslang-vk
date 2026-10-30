@@ -132,9 +132,9 @@ struct __attribute__((packed)) D2CompressEncoderStrc {
 namespace Storm::Source::SSComp {
 
 // Function declarations
-void __fastcall BITSTREAM_WriteBits(struct D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount);
+void __thiscall BITSTREAM_WriteBits(struct D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount);
 void __fastcall BITSTREAM_Flush(struct D2BitStreamWriterStrc * pBitStream);
-void __fastcall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol);
+void __thiscall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol);
 // @blizzard PkwareBufferRead (SCOMP.CPP)
 uint32_t SCOMP_PkwareBufferRead(void * pDst, uint32_t * pnReqSize, struct PKWARE_STREAM * pStream);
 // @blizzard PkwareBufferWrite (SCOMP.CPP)
@@ -171,12 +171,12 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
 BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t * pSrc, uint32_t nSrcSizeIn, uint32_t dwFlags);
 // @sourcefile .\SOURCE\SCOMP.CPP
 uint32_t __stdcall SCOMP_CleanupTempBuffer();
-void __fastcall COMPRESS_InitEncoderContext(struct D2CompressEncoderStrc * pEncoder, int * * pTableSel);
-void __fastcall COMPRESS_UpdateFrequencies(struct D2CompressEncoderStrc * pEncoder, struct D2CompressHuffNodeStrc * pSymbolNode);
+void __thiscall COMPRESS_InitEncoderContext(struct D2CompressEncoderStrc * pEncoder, int * * pTableSel);
+void __thiscall COMPRESS_UpdateFrequencies(struct D2CompressEncoderStrc * pEncoder, struct D2CompressHuffNodeStrc * pSymbolNode);
 void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder);
-void __fastcall COMPRESS_EncodeSymbol(struct D2CompressEncoderStrc * pEncoder, int * nSymbol);
+void __thiscall COMPRESS_EncodeSymbol(struct D2CompressEncoderStrc * pEncoder, int * nSymbol);
 void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder);
-int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel, uint32_t * pHuffCtx);
+int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel);
 // @blizzard HuffmanCompress (SCOMP.CPP)
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags);
 // @blizzard HuffmanDecompress (SCOMP.CPP)

@@ -72,7 +72,7 @@ void __stdcall GFX_SetSpriteCacheMaxSize(size_t nSize);
 void __stdcall BITSTREAM_InitWriter(uint32_t * pBitStream, int32_t nParam, struct D2CodecBitStateStrc * pdwParam);
 void __fastcall BITSTREAM_CopyState(int dest, int src);
 int __fastcall BITSTREAM_GetByteOffset(int nParam);
-void __fastcall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount);
+void __thiscall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount);
 void __stdcall GFX_InitGlobalCriticalSection();
 void __stdcall GFX_DestroyGlobalCriticalSection();
 void __fastcall CELCMP_ApplyColorKeyToAllPixels(void * pFrameData, pfnTilecmpPixelCallback pfnPixelCallback, uint32_t dwColorKey);

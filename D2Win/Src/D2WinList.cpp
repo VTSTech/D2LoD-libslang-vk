@@ -491,6 +491,7 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
     0x0
 }; D2_STATIC_GUARD(INT_ARRAY_006dd024, "D2Win::Src::D2WinList::D2WinList::INT_ARRAY_006dd024");
 
+    uint32_t uVar2;
     D2WinListEntry* pNewEntry;
     uint16_t* wszLocaleStr;
     int32_t nStrLen;
@@ -500,9 +501,10 @@ BOOL __stdcall Key(D2ControlMsg * pControlMsg) {
     memset(pList, 0, 0x6c);
     pList->sControl.neD2FormType = FORM_List;
     int* pItemCountPtr = &pList->sControl.dwState;
-    *pItemCountPtr |= 1;
+    *pItemCountPtr |= gadwBitMasks[0];
+    uVar2 = pList->sControl.dwState | gadwBitMasks[2];
     pList->sControl.dwSizeX = (int)nSizeX;
-    pList->sControl.dwState |= 4;
+    pList->sControl.dwState = uVar2;
     pList->sControl.dwPosX = nPosX;
     pList->sControl.dwPosY = nPosY;
     pList->sControl.dwSizeY = nSizeY;

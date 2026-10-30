@@ -5,7 +5,6 @@
 #include "D2Net/in_addr.h"
 #include "D2Net/sockaddr.h"
 #include "Fog/D2QSSocketStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
@@ -190,51 +189,55 @@ void __fastcall Free(D2NetDataStrc * pNetData) {
 }
 
 int32_t __fastcall WSASocket2_Read(D2NetDataStrc * pNetData, char * pBuffer, size_t nSize) {
-    if (!(pNetData && !pNetData->bBlocked)) {
-      return 0;
-    }
+    int nWSAError;
+    if (pNetData && !pNetData->bBlocked) {
+      int nBytesRead;
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pNetData->pSync);
+      /* int flags for recv */ /* int len for recv */ /* char * buf for recv */ /* SOCKET s for recv */ nBytesRead = recv(pNetData->hSocket, pBuffer, nSize, 0);
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pNetData->pSync);
+      if (nBytesRead > 0) {
+        return nBytesRead;
+      }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&pNetData->pSync);
-    int nBytesRead = recv(pNetData->hSocket, pBuffer, nSize, 0);
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&pNetData->pSync);
-    if (nBytesRead >= 1) {
+      nWSAError = WSAGetLastError();
+      pNetData->nWSALastError = nWSAError;
+      pNetData->nError = 4;
       return nBytesRead;
     }
 
-    int nWSAError = WSAGetLastError();
-    pNetData->nWSALastError = nWSAError;
-    pNetData->nError = 4;
-    return nBytesRead;
+    return 0;
 }
 
 int32_t __fastcall WSASocket2_Send(D2NetDataStrc * pNetData, char * pBytes, size_t nSize) {
     int nWSAError;
-    if (!(pNetData && !pNetData->bBlocked)) {
+    CRITICAL_SECTION* lpCriticalSection;
+    if (pNetData && !pNetData->bBlocked) {
+      size_t nBytesSent;
+      lpCriticalSection = &pNetData->pSync;
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
+      /* int flags for send */ /* int len for send */ /* char * buf for send */ /* SOCKET s for send */ nBytesSent = send(pNetData->hSocket, pBytes, nSize, 0);
+      if (nBytesSent == nSize) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+        return nBytesSent;
+      }
+      if (nBytesSent == -1) {
+        nWSAError = WSAGetLastError();
+        pNetData->nWSALastError = nWSAError;
+        if (nWSAError != 0x2733) {
+          pNetData->nError = 4;
+          /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+          return -1;
+        }
+      } else {
+        nWSAError = WSAGetLastError();
+        pNetData->nWSALastError = nWSAError;
+        pNetData->nError = 4;
+      }
+
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
       return 0;
     }
 
-    CRITICAL_SECTION* lpCriticalSection = &pNetData->pSync;
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
-    size_t nBytesSent = send(pNetData->hSocket, pBytes, nSize, 0);
-    if (nBytesSent == nSize) {
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-      return nBytesSent;
-    }
-    if (nBytesSent == -1) {
-      nWSAError = WSAGetLastError();
-      pNetData->nWSALastError = nWSAError;
-      if (nWSAError != 0x2733) {
-        pNetData->nError = 4;
-        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
-        return -1;
-      }
-    } else {
-      nWSAError = WSAGetLastError();
-      pNetData->nWSALastError = nWSAError;
-      pNetData->nError = 4;
-    }
-
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
     return 0;
 }
 
@@ -256,7 +259,7 @@ void __fastcall SAFESOCK_EnterCriticalSection(D2NetDataStrc * pNetData) {
 }
 
 // Leaves the critical section embedded at offset 0xC within the safesock structure. Thin wrapper around Win32 LeaveCriticalSection.
-void __stdcall LeaveCriticalSection_Safesock(void * pSafesockStrc) {
+void __fastcall LeaveCriticalSection_Safesock(void * pSafesockStrc) {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection((LPCRITICAL_SECTION)((int)pSafesockStrc + 0xc));
 }
 
@@ -286,12 +289,12 @@ int __fastcall Safesock_PollReadReady(D2NetDataStrc * pNetData) {
       /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &exceptFds);
       if (!nResult) {
         /* fd_set * param_2 for __WSAFDIsSet */ /* SOCKET param_1 for __WSAFDIsSet */ nResult = __WSAFDIsSet(pNetData->hSocket, &readFds);
-        if (!nResult) {
-          ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
-          exit(-1);
+        if (nResult) {
+          return 1;
         }
 
-        return 1;
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x22e);
+        exit(-1);
       }
     }
 
@@ -390,7 +393,7 @@ char * __fastcall inet_nameToIp(char * szText) {
     bool bDidStartUp;
     bDidStartUp = false;
     int nResult;
-    nResult = FID_conflict__sscanf(szText, "%d.%d.%d.%d", &__frame0.nOctet0, &__frame0.nOctets, &__frame0.nOctet2, &__frame0.nOctet3);
+    nResult = sscanf(szText, "%d.%d.%d.%d", &__frame0.nOctet0, &__frame0.nOctets, &__frame0.nOctet2, &__frame0.nOctet3);
     if (nResult == 4) {
       return szText;
     }
@@ -439,18 +442,21 @@ char * __fastcall inet_nameToIp(char * szText) {
 
 int __fastcall SAFESOCK_SetSocketNonBlocking(D2NetDataStrc * pNetData, u_long bNonBlocking) {
     u_long nIoctlArg = bNonBlocking;
-    /* u_long * argp for ioctlsocket */ /* long cmd for ioctlsocket */ /* SOCKET s for ioctlsocket */ ioctlsocket(pNetData->hSocket, -0x7ffb9982, &nIoctlArg);
+    /* u_long * argp for ioctlsocket */ /* long cmd for ioctlsocket */ /* SOCKET s for ioctlsocket */ unsigned int hSocket = pNetData->hSocket;
+    ioctlsocket(hSocket, -0x7ffb9982, &nIoctlArg);
     return 1;
 }
 
 void __fastcall SAFESOCK_EnableNonBlocking(D2NetDataStrc * pNetData) {
     u_long nIoctlArg = 1;
-    ioctlsocket(pNetData->hSocket, -0x7ffb9982, &nIoctlArg);
+    unsigned int hSocket = pNetData->hSocket;
+    ioctlsocket(hSocket, -0x7ffb9982, &nIoctlArg);
 }
 
 void __fastcall SAFESOCK_DisableNonBlocking(D2NetDataStrc * pNetData) {
     u_long nIoctlArg = 0;
-    ioctlsocket(pNetData->hSocket, -0x7ffb9982, &nIoctlArg);
+    unsigned int hSocket = pNetData->hSocket;
+    ioctlsocket(hSocket, -0x7ffb9982, &nIoctlArg);
 }
 
 D2NetDataStrc * __fastcall Create_Flag0(char * szText1, u_short nParam, LPTHREAD_START_ROUTINE pThreadProc, LPVOID pThreadParam, char * szText2) {

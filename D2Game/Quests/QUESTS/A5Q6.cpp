@@ -44,7 +44,6 @@
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
-#include "D2Game/Quests/QUESTS/A4Q2.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/Party.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -53,7 +52,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Save.h"
 #include "globals/globals.h"
@@ -115,7 +113,6 @@ BOOL __fastcall SendQuestBitsIfNeeded(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: if the player is in LEVEL_TheWorldstoneChamber, spawn object class 0x235 (a Baal tentacle / channel object) ~5 tiles away. Helper for Q36_Callback_02's Baal-fight setup.
 BOOL __fastcall CreateObject0x235Tentacle4(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    POINT ptSpawnPos;
     D2RoomStrc* pSpawnRoom;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (!pRoom) {
@@ -123,20 +120,21 @@ BOOL __fastcall CreateObject0x235Tentacle4(::SGAMEDATA * pGame, D2UnitStrc * pUn
     }
 
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    if (eLevelId != LEVEL_TheWorldstoneChamber) {
-      return 0;
-    }
+    if (eLevelId == LEVEL_TheWorldstoneChamber) {
+      POINT ptSpawnPos;
+      D2Common::Units::GetCoords(pUnit, &ptSpawnPos);
+      ptSpawnPos.x += 5;
+      pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      FindSpawnableLocation(pRoom, &ptSpawnPos, 5, 0x400, &pSpawnRoom, 0x12, 100);
+      if (!pSpawnRoom) {
+        return 1;
+      }
 
-    D2Common::Units::GetCoords(pUnit, &ptSpawnPos);
-    ptSpawnPos.x += 5;
-    pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    FindSpawnableLocation(pRoom, &ptSpawnPos, 5, 0x400, &pSpawnRoom, 0x12, 100);
-    if (!pSpawnRoom) {
+      UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x235, ptSpawnPos.x, ptSpawnPos.y, pGame, pSpawnRoom, 1, 1, nullptr);
       return 1;
     }
 
-    UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x235, ptSpawnPos.x, ptSpawnPos.y, pGame, pSpawnRoom, 1, 1, nullptr);
-    return 1;
+    return 0;
 }
 
 // A5Q6 Eve of Destruction (state-fn slot 2). When the target monster is class 0x209 (Baal) and the tentacle object hasn't been created yet, iterate players and spawn the 0x235 tentacle object near each (CreateObject0x235Tentacle4), then latch bCreatedTentacle. One-shot Baal-encounter prop spawner.
@@ -204,30 +202,25 @@ void __fastcall Q36_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     ::SGAMEDATA* pGame;
     eD2QuestState eQuestState;
     switch (pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex) {
-      case 0x4ecf:
+      case 0x4ed2:
         pGame = pQuestData->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      eQuestState = QUESTSTATE_Step0x07;
-      break;
-      case 0x4ed0:
-        pGame = pQuestData->pGame;
-      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      eQuestState = QUESTSTATE_Step0x09;
+      eQuestState = QUESTSTATE_Step0x04;
       break;
       case 0x4ed1:
         pGame = pQuestData->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       eQuestState = QUESTSTATE_Step0x05;
       break;
-      case 0x4ed2:
-        pGame = pQuestData->pGame;
-      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-      eQuestState = QUESTSTATE_Step0x04;
-      break;
       case 0x4ed3:
         pGame = pQuestData->pGame;
       pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
       eQuestState = QUESTSTATE_Step0x06;
+      break;
+      case 0x4ecf:
+        pGame = pQuestData->pGame;
+      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+      eQuestState = QUESTSTATE_Step0x07;
       break;
       case 0x4ed4:
         pGame = pQuestData->pGame;
@@ -236,6 +229,11 @@ void __fastcall Q36_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       break;
       default:
         return;
+      case 0x4ed0:
+        pGame = pQuestData->pGame;
+      pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
+      eQuestState = QUESTSTATE_Step0x09;
+      break;
     }
 
     /* SetQuestState(QUEST_EveOfDestruction, eState) — eState from dialog switch:
@@ -267,7 +265,7 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     D2QuestDataA5Q6Strc* pA5Q6Data;
     pA5Q6Data = pQuestData->pQuestSpecificData.pA5Q6;
-    if (0x218 < (int)nTargetClassId && (int)nTargetClassId < 0x21c) {
+    if ((int)nTargetClassId >= 0x219 && (int)nTargetClassId <= 0x21b) {
       D2QuestDataStrc* pA5Q5QuestData;
       pA5Q5QuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_RiteOfPassage);
       if (!pA5Q5QuestData) {
@@ -294,19 +292,7 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     /* GetQuestState(QUEST_EveOfDestruction, 0=Completed) — branch: pre-complete
                          uses nStateFlag table, post-complete uses per-NPC switch below */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Completed);
-    if (!_bQuestState) {
-      if (3 < pQuestData->nStateFlag) {
-        return;
-      }
-
-      nGossipMenuIndex = gdwQuestCallbackAddressQ36[pQuestData->nStateFlag];
-      if (nGossipMenuIndex == -1) {
-        return;
-      }
-      if (8 < nGossipMenuIndex) {
-        return;
-      }
-    } else {
+    if (_bQuestState) {
       switch (nTargetClassId) {
         case MonsterUnitLarzuk:
           /* GetQuestState(QUEST_EveOfDestruction, 4=Step0x04) — NPC 0x1ff:
@@ -324,19 +310,26 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
         nGossipMenuIndex = 3;
         break;
-        case MonsterUnitDrehya1:
-          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x09);
+        case MonsterUnitDeckardCain6:
+          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x10);
         if (_bQuestState) {
-          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
-          if (!_bQuestState) {
-            return;
-          }
-
-          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
           return;
         }
 
-        nGossipMenuIndex = 2;
+        /* GetQuestState(QUEST_EveOfDestruction, 5=Step0x05) — NPC 0x200: gate dialog
+                         menu selection */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x05);
+        if (!_bQuestState) {
+          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
+          return;
+        }
+
+        /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — NPC 0x200
+                         post-Step: show menu 5 once just-completed */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
+        if (!_bQuestState) {
+          return;
+        }
+
+        nGossipMenuIndex = 5;
         break;
         case MonsterUnitMalah:
           eQuestState = QUESTSTATE_Step0x06;
@@ -359,27 +352,6 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
         return;
-        case MonsterUnitDeckardCain6:
-          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x10);
-        if (_bQuestState) {
-          return;
-        }
-
-        /* GetQuestState(QUEST_EveOfDestruction, 5=Step0x05) — NPC 0x200: gate dialog
-                         menu selection */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x05);
-        if (!_bQuestState) {
-          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 4);
-          return;
-        }
-
-        /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — NPC 0x200
-                         post-Step: show menu 5 once just-completed */ _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
-        if (!_bQuestState) {
-          return;
-        }
-
-        nGossipMenuIndex = 5;
-        break;
         case MonsterUnitTyrael3:
           _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
         if (!_bQuestState) {
@@ -387,6 +359,33 @@ void __fastcall Q36_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         }
 
         nGossipMenuIndex = 2;
+        break;
+        case MonsterUnitDrehya1:
+          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_Step0x09);
+        if (_bQuestState) {
+          _bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
+          if (!_bQuestState) {
+            return;
+          }
+
+          AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nTargetClassId, 3);
+          return;
+        }
+
+        nGossipMenuIndex = 2;
+        break;
+      }
+    } else {
+      if (pQuestData->nStateFlag >= 4) {
+        return;
+      }
+
+      nGossipMenuIndex = gdwQuestCallbackAddressQ36[pQuestData->nStateFlag];
+      if (nGossipMenuIndex == -1) {
+        return;
+      }
+      if (nGossipMenuIndex >= 9) {
+        return;
       }
     }
 
@@ -465,14 +464,15 @@ static void __stdcall Q36_CompleteQuestAndSetStatus(D2UnitStrc * pUnit, D2BitBuf
 
 // A5Q6 Eve of Destruction. Per-player iterate callback: if this player's quest is JustCompleted(0xd), look up their party and propagate Baal-kill credit to every party member via ExecuteFunctionForEveryPartyMember(Q36_SetCompleteForPartyMember).
 BOOL __fastcall Q36_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
+    /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — only propagate
+                         to party if self player just killed Baal */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }
 
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -504,9 +504,9 @@ BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, D2UnitStrc *
     bool _bJustCompleted;
     bool bJustCompleted;
     D2GSPacketSrv0x5D abyQuestPacket;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     /* GetQuestState(QUEST_EveOfDestruction, 0xd=JustCompleted) — only send
-                         completion FX/packet if just killed Baal */ _bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
+                         completion FX/packet if just killed Baal */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    _bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
     if (!_bJustCompleted) {
       return 0;
     }
@@ -526,9 +526,9 @@ BOOL __fastcall Q36_SendCompletionNotification(::SGAMEDATA * pGame, D2UnitStrc *
 BOOL __fastcall Q36_CheckWorldstoneChamber(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     bool _bQuestState;
     bool bQuestState;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     /* GetQuestState(QUEST_EveOfDestruction, 0=Completed) — bail if already
-                         complete */ _bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_EveOfDestruction, QUESTSTATE_Completed);
+                         complete */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    _bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_Completed);
     if (_bQuestState == 1) {
       return 0;
     }
@@ -564,20 +564,17 @@ BOOL __fastcall Q36_CheckWorldstoneChamber(::SGAMEDATA * pGame, D2UnitStrc * pUn
 void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     bool _bQuestCompleted;
     bool bQuestCompleted;
-    D2UnitDataPlayerStrc* pPlayerData;
     int nBaseGold;
-    D2SeedStrc* pSeed;
     int32_t nGoldAmount;
     uint32_t nPosY;
     uint32_t nPosX;
     int i;
-    uint32_t nMax;
     uint32_t nGoldCap;
     ::SGAMEDATA* pGame;
     bool bPlayerNotYetComplete;
     D2QuestDataA5Q6Strc* pA5Q6Data = pQuestData->pQuestSpecificData.pA5Q6;
     NotifyPlayersAboutEvent(pQuestData->pGame, 0x13);
-    if (pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction != '\0') {
       D2RoomStrc* pRoom;
       bPlayerNotYetComplete = false;
       pRoom = D2Common::Units::UNITS_GetRoom(pQuestArgs->pTarget);
@@ -588,11 +585,11 @@ void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2Qu
 
       QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)SendQuestBitsIfNeeded, true);
       if (pQuestArgs->pPlayer) {
-        if (pQuestData->bIsNotIntroduction) {
+        if (pQuestData->bIsNotIntroduction != '\0') {
           pGame = pQuestArgs->pGame;
-          pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
           /* GetQuestState(QUEST_EveOfDestruction, 0=Completed) — track if the
-                         triggering player had not yet completed (gates gold reward) */ _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_EveOfDestruction, QUESTSTATE_Completed);
+                         triggering player had not yet completed (gates gold reward) */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+          _bQuestCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_EveOfDestruction, QUESTSTATE_Completed);
           if (!_bQuestCompleted) {
             bPlayerNotYetComplete = true;
           }
@@ -606,19 +603,14 @@ void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2Qu
         if (bPlayerNotYetComplete) {
           nBaseGold = (uint32_t)pQuestData->pGame->nDifficulty * 6000;
           nGoldCap = nBaseGold + 3000;
-          if (0xfffe < nGoldCap) {
+          if (nGoldCap >= 0xffff) {
             nGoldCap = 0xffff;
           }
-          if (0 < pA5Q6Data->nPlayersInWorldstone) {
-            i = 0;
-            do {
-              QUEST_StubEmpty(0x5f);
-              nMax = nGoldCap;
-              pSeed = GetQuestControlSeed(pQuestData->pGame);
-              nGoldAmount = D2Client::SEED_RollRange(pSeed, nBaseGold + 0x5dc, nMax);
-              ITEMS::Items::Drop::DROP_SpawnGoldOnGround(pQuestData->pGame, pQuestArgs->pTarget, nGoldAmount);
-              i++;
-            } while (i < pA5Q6Data->nPlayersInWorldstone);
+
+          for (i = 0; i < pA5Q6Data->nPlayersInWorldstone; i++) {
+            QUEST_StubEmpty(0x5f);
+            nGoldAmount = D2Client::SEED_RollRange(GetQuestControlSeed(pQuestData->pGame), nBaseGold + 0x5dc, nGoldCap);
+            ITEMS::Items::Drop::DROP_SpawnGoldOnGround(pQuestData->pGame, pQuestArgs->pTarget, nGoldAmount);
           }
         }
 
@@ -631,22 +623,22 @@ void __fastcall Q36_Callback_08_CompleteQuest(D2QuestDataStrc * pQuestData, D2Qu
 
     D2UnitStrc* pTargetUnit = pQuestArgs->pTarget;
     eD2UnitType eUnitType = pTargetUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pTargetUnit->pPath.pStaticPath->nPosY;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     pTargetUnit = pQuestArgs->pTarget;
     eD2UnitType eTargetUnitType = pTargetUnit->eUnitType;
-    if (eTargetUnitType == UNIT_OBJECT || 3 < (int)eTargetUnitType && (int)eTargetUnitType < 6) {
+    if (eTargetUnitType == UNIT_OBJECT || (int)eTargetUnitType > 3 && (int)eTargetUnitType <= 5) {
       nPosX = pTargetUnit->pPath.pStaticPath->nPosX;
-    } else if (!pTargetUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pTargetUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pTargetUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     D2UnitStrc* pMissile = SKILLS::SkillsServer::SKILLS_CreateMissileAtTarget(pQuestArgs->pGame, pQuestArgs->pTarget, SKILL_Attack, 1, MISSILE_BaalfxControl, nPosX, nPosY);
@@ -717,10 +709,10 @@ void __fastcall Q36_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)SetStep0x2And0x3);
       }
     }
-    if (0x82 >= nIndex) {
+    if (nIndex < 0x83) {
       return;
     }
-    if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 2) {
+    if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 2) {
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)SendQuestBitsIfNeeded, true);
     }
@@ -732,7 +724,7 @@ void __fastcall Q36_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 bool __fastcall Q36_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
     bool bQuestState;
     eD2QuestState eQuestState;
-    if ((uint32_t)(nTargetClassId - MonsterUnitAncientStatue1) < 3) {
+    if ((uint32_t)(nTargetClassId - MonsterUnitAncientStatue1) <= 2) {
       D2QuestDataStrc* pA5Q5QuestData;
       pA5Q5QuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_RiteOfPassage);
       if (pA5Q5QuestData && pA5Q5QuestData->pQuestSpecificData.pA5Q5->bAncientsSpawned && !pA5Q5QuestData->pQuestSpecificData.pA5Q5->nAncientsAlive && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA5Q6->bAnyaTransformed) {
@@ -786,7 +778,7 @@ bool __fastcall Q36_ActiveFilter(D2QuestDataStrc * pQuestData, eD2MonsterClassId
 // A5Q6 Eve of Destruction. fpSequenceFilter (linked to prerequisite QUEST_PrisonOfIce / Anya rescue). When this quest is active and not yet started (nStateFlag==0), latch bAnyaTransformed, force live nStateFlag=2, broadcast "in progress" (state 1), and push sub-steps to all players. Kicks the final quest into motion once Anya/prereq conditions are met.
 bool __fastcall Q36_SequenceFilter(D2QuestDataStrc * pQuestData) {
     D2QuestDataStrc* pA5Q6EveQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_EveOfDestruction);
-    if (!(pA5Q6EveQuestData->bIsNotIntroduction && !pA5Q6EveQuestData->nStateFlag)) {
+    if (!(pA5Q6EveQuestData->bIsNotIntroduction != '\0' && !pA5Q6EveQuestData->nStateFlag)) {
       return true;
     }
 
@@ -856,8 +848,7 @@ void __fastcall Q36_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     /* SetQuestState(QUEST_EveOfDestruction, 0xa=Step0x10) — final "left act V"
                          bit for already-completed loader */ D2Common::QuestRecord::SetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Step0x10);
     uint32_t nDifficulty = (uint32_t)pQuestData->pGame->nDifficulty;
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pQuestArgs->pPlayer, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x2fe);
-    GAME::Clients::SetClientStatus(pClient, 5, nDifficulty);
+    GAME::Clients::SetClientStatus(UNIT::SUnit::SUNIT_GetClient(pQuestArgs->pPlayer, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x2fe), 5, nDifficulty);
 }
 
 // A5Q6 Eve of Destruction — quest INIT (nInitNo=4). Allocates the 0xa8-byte A5Q6 quest-specific struct, wires up the state-handler vtable (slots: 0=Callback_00 gossip, 2=Callback_02 tentacle, 3=Callback_03 accept, 8=Callback_08 Baal death, 0xa=Callback_10 leave, 0xb=Callback_11 dialog, 0xd=Callback_13 load, 0xe=Callback_14), sets the act-V NPC gossip table (monstats 0x1ff/0x208/0x201/0x203/0x200), nQuestIdReal=QUEST_EveOfDestruction, fpActiveFilter=Q36_ActiveFilter, fpSequenceFilter=Q36_SequenceFilter, nSequenceQuestId=QUEST_PrisonOfIce. Zeroes the struct + GUID list.
@@ -874,7 +865,7 @@ void __fastcall Q36_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q36_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q36_Callback14_PlayerJoinedGame;
     pQuestData->pNpcMessages = &A5Q6::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x329);
     pQuestData->pQuestSpecificData.pA5Q6 = pQuestSpecificData;
@@ -898,7 +889,7 @@ void __fastcall SetFlagToOpenedStairs(::SGAMEDATA * pGame) {
     }
 
     pQuestData->pQuestSpecificData.pA5Q6->bAcceptedQuest = 1;
-    if (!(pQuestData->bIsNotIntroduction && pQuestData->nStateFlagPrev < 3)) {
+    if (!(pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlagPrev < 3)) {
       return;
     }
 
@@ -909,11 +900,11 @@ void __fastcall SetFlagToOpenedStairs(::SGAMEDATA * pGame) {
 // A5Q6 Eve of Destruction. Returns 0 if the quest has been accepted (bAcceptedQuest) — i.e. Baal's lair entry is unlocked — else 1. Effectively "is Baal still gated / not yet reachable". Gate check for the Worldstone descent.
 BOOL __fastcall Q36_IsBaalAlive(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_EveOfDestruction);
-    if (!(pQuestData && pQuestData->pQuestSpecificData.pA5Q6->bAcceptedQuest == 1)) {
-      return 1;
+    if (pQuestData && pQuestData->pQuestSpecificData.pA5Q6->bAcceptedQuest == 1) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // A5Q6 Eve of Destruction. Object init fn 75: tags the object with the quest's barricade-coord field then sets that field to 2 (one-time init flag). Worldstone-area quest object setup.
@@ -970,9 +961,7 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pOperation->pAttacker);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_EveOfDestruction, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-    } else {
+    if (bJustCompleted) {
       D2ClientStrc* pClient;
       GAME::Level::InitLevel(pOperation->sArg.pGame, pOperation->pAttacker, LEVEL_Harrogath, 0);
       pClient = UNIT::SUnit::SUNIT_GetClient(pOperation->pAttacker, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x39b);
@@ -989,6 +978,8 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
           return 0;
         }
       }
+    } else {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
     }
 
     return 0;
@@ -996,8 +987,6 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
 
 // A5Q6 Eve of Destruction object-init fn 79. One-time (guarded by init flag): rolls up to 10 times for a random MonStats id with zoo!=0 and stores it in the quest-specific struct as the quest's random monster seed; on failure falls back to id 0. After latching the init flag, broadcasts the quest-special packet to all players via Q36_SendQuestSpecialPacketCallback.
 void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
-    int32_t nRolledMonId;
-    int nMax;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q4 = pQuestData->pQuestSpecificData.pA5Q6;
     if (pQuestSpecificA1Q4->field_0xA0 != '\0') {
@@ -1007,17 +996,15 @@ void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
     int nMonStatsSize = sgptDataTable->nTxtMonStatsSize;
     int nAttempt = 0;
     do {
-      D2SeedStrc* pSeed;
-      if (9 < nAttempt) {
+      int32_t nRolledMonId;
+      if (nAttempt >= 10) {
         break;
       }
 
-      nMax = nMonStatsSize;
-      pSeed = GetQuestControlSeed(pQuestData->pGame);
-      nRolledMonId = D2Client::SEED_RollRange(pSeed, 1, nMax);
+      nRolledMonId = D2Client::SEED_RollRange(GetQuestControlSeed(pQuestData->pGame), 1, nMonStatsSize);
       nAttempt++;
       pQuestSpecificA1Q4->nQuestFlags = nRolledMonId;
-      if (-1 < nRolledMonId && nRolledMonId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nRolledMonId && sgptDataTable->pTxtMonStats[nRolledMonId].zoo) {
+      if (nRolledMonId >= 0 && nRolledMonId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nRolledMonId && (uint8_t)*((uint8_t*)&sgptDataTable->pTxtMonStats[nRolledMonId] + 0xe) & gadwBitMasks[6]) {
         pQuestSpecificA1Q4->field_0xA0 = '\x01';
       }
     } while (pQuestSpecificA1Q4->field_0xA0 == '\0');

@@ -42,7 +42,6 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Objects/Objects.h"
-#include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -53,7 +52,6 @@
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
@@ -112,64 +110,64 @@ uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassId(D2QuestDataStrc * pQuestD
     int nDecoysPlaced;
     int nTombsLeft;
     eD2LevelId eTombLevel = D2Common::DUNGEON::Dungeon::GetHoradricStaffTombLevelId(pQuestData->pGame->pAct[1]);
-    if (eTombLevel == LEVEL_None) {
-      return 0x133;
+    if (eTombLevel != LEVEL_None) {
+      D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
+      if (pSpecificData->bFalseTombRingInit == '\0') {
+        int iTomb;
+        nDecoysPlaced = 0;
+        pSpecificData->bFalseTombRingInit = '\x01';
+        iTomb = 0;
+        pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
+        nTombsLeft = 7;
+        do {
+          if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
+            iTomb++;
+          } else if (iTomb < 7 && nDecoysPlaced < 6) {
+            *pnDecoyRingEntry = gaArkaneThingIdTable[iTomb];
+            nDecoysPlaced++;
+            pnDecoyRingEntry++;
+            iTomb++;
+          }
+
+          nTombsLeft--;
+        } while (nTombsLeft);
+      }
+      if (pSpecificData->nFalseTombRingIndex == 6) {
+        pSpecificData->nFalseTombRingIndex = 0;
+      }
+
+      uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
+      pSpecificData->nFalseTombRingIndex++;
+      return nClassId;
     }
 
-    D2QuestDataA2Q6Strc* pSpecificData = pQuestData->pQuestSpecificData.pA2Q6;
-    if (pSpecificData->bFalseTombRingInit == '\0') {
-      int iTomb;
-      nDecoysPlaced = 0;
-      pSpecificData->bFalseTombRingInit = '\x01';
-      iTomb = 0;
-      pnDecoyRingEntry = pSpecificData->anFalseTombPortalClassId;
-      nTombsLeft = 7;
-      do {
-        if (iTomb == eTombLevel - LEVEL_TalRashasTomb1) {
-          iTomb++;
-        } else if (iTomb < 7 && nDecoysPlaced < 6) {
-          *pnDecoyRingEntry = gaArkaneThingIdTable[iTomb];
-          nDecoysPlaced++;
-          pnDecoyRingEntry++;
-          iTomb++;
-        }
-
-        nTombsLeft--;
-      } while (nTombsLeft);
-    }
-    if (pSpecificData->nFalseTombRingIndex == 6) {
-      pSpecificData->nFalseTombRingIndex = 0;
-    }
-
-    uint32_t nClassId = pSpecificData->anFalseTombPortalClassId[pSpecificData->nFalseTombRingIndex];
-    pSpecificData->nFalseTombRingIndex++;
-    return nClassId;
+    return 0x133;
 }
 
 // Q14 predicate (used as a quest-display/state filter): true if The Seven Tombs is NOT yet started (no quest record, or introduced and stateFlag < 2). nStateFlag<2 == still in step 0/1.
 uint8_t __fastcall Q14_IsSevenTombsNotStarted(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pDVar1 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pDVar1 && pDVar1->bIsNotIntroduction && pDVar1->nStateFlag < 2)) {
-      return '\x01';
-    }
-
-    return '\0';
-}
-
-// Q14 predicate: true if The Seven Tombs is introduced and stateFlag != 0 (any progress made).
-uint8_t __fastcall Q14_IsSevenTombsAtState1(::SGAMEDATA * pGame) {
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag == 1)) {
+    if (pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 2) {
       return '\0';
     }
 
     return '\x01';
 }
 
+// Q14 predicate: true if The Seven Tombs is introduced and stateFlag != 0 (any progress made).
+uint8_t __fastcall Q14_IsSevenTombsAtState1(::SGAMEDATA * pGame) {
+    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1) {
+      return '\x01';
+    }
+
+    return '\0';
+}
+
 // Q14 predicate: returns false (0) whenever The Seven Tombs is introduced (the inner test is a decompiler tautology bVar1||!bVar1). Effectively: true (1) only if quest data missing or not introduced. Used as a "not active yet" gate.
 int __fastcall Q14_IsSevenTombsProgressed(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
       return (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)((uint32_t)pQuestData >> 8) << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
     }
 
@@ -188,22 +186,23 @@ int __fastcall Q14_IsSevenTombsProgressed(::SGAMEDATA * pGame) {
 // and then 0059d720. A wrapper that supplies the quest record.
 uint32_t __fastcall A2Q6_GetNextFalseTombPortalClassIdForGame(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!pQuestData) {
-      return 0x133;
+    if (pQuestData) {
+      uint32_t uVar1;
+      uVar1 = A2Q6_GetNextFalseTombPortalClassId(pQuestData);
+      return uVar1;
     }
 
-    uint32_t uVar1 = A2Q6_GetNextFalseTombPortalClassId(pQuestData);
-    return uVar1;
+    return 0x133;
 }
 
 // Q14 accessor: returns the "town/Duriel portal already created" flag from A2Q6 data (field_0x0B). Returns 1 (treat as created) if quest not introduced. Used to gate the stairs-to-tombs operate and portal creation.
 uint8_t __fastcall Q14_GetPortalCreatedFlag(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
-      return 1;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
     }
 
-    return pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
+    return 1;
 }
 
 // A2Q7 (The Tainted Sun) timer callback that creates the two warp portals after the Horadric Staff is placed. If the pending-create flag (offset +0xd) is set: waits for the orifice object to reach Death/open anim and fires its open event; spawns the red town-portal object (class 100) in a nearby room and toggles HasPortal flags on both rooms. On success sets portal-created flag (+0xb=1) and clears the pending flag. No quest-record state change.
@@ -213,8 +212,6 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
     int32_t nOrificeY;
     D2RoomStrc* pNearbyRoom;
     D2UnitStrc* pUnit;
-    D2RoomStrc* pRoom;
-    BOOL bReset;
     int nSpawnY;
     D2QuestDataA2Q6Strc* pQuestSpecific = pQuestData->pQuestSpecificData.pA2Q6;
     int nObjectsReady = 0;
@@ -225,12 +222,12 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
         if (pDVar1) {
           nObjectsReady = 1;
           if (pDVar1->eAnimMode.ePlayerMode == Death) {
-            if (!pQuestSpecific->nStateResumeFlag) {
+            if (pQuestSpecific->nStateResumeFlag) {
+              D2Common::Units::SetupUpdateFlag(pDVar1, 2);
+            } else {
               D2Common::Units::SetupUpdateFlag(pDVar1, 1);
               pOrificeTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pDVar1->nClassId);
               GAME::Event::SetEvent(pQuestData->pGame, pDVar1, 1, (pOrificeTxt->FrameCnt[1] >> 8) + pQuestData->pGame->dwGameFrame, 0, 0);
-            } else {
-              D2Common::Units::SetupUpdateFlag(pDVar1, 2);
             }
           }
         }
@@ -247,14 +244,12 @@ uint8_t __fastcall Q14_TimerCreatePortal(::SGAMEDATA * pGame, D2QuestDataStrc * 
             pUnit = UNIT::SUnit::CreateUnit(UNIT_OBJECT, 100, nOrificeX - 0xd, nOrificeY + 3, pGame, pNearbyRoom, 1, 1, nullptr);
             if (pUnit) {
               nObjectsReady++;
-              if (!pQuestSpecific->nStateResumeFlag) {
-                D2Common::Units::SetupUpdateFlag(pUnit, 1);
-                bReset = 1;
-                pRoom = D2Common::Units::UNITS_GetRoom(pDVar1);
-                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pRoom, bReset);
-                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pNearbyRoom, 1);
-              } else {
+              if (pQuestSpecific->nStateResumeFlag) {
                 D2Common::Units::SetupUpdateFlag(pUnit, 2);
+              } else {
+                D2Common::Units::SetupUpdateFlag(pUnit, 1);
+                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(D2Common::Units::UNITS_GetRoom(pDVar1), 1);
+                D2Common::DUNGEON::Dungeon::ToggleHasPortalFlagRoom(pNearbyRoom, 1);
               }
             }
           }
@@ -286,7 +281,7 @@ void __fastcall TakeStairs(D2ObjectOperateFnArg * pOperateArg) {
 // Q14 object OperateFn: stairs/warp into the Tal Rasha tombs. Allows traversal only if The Seven Tombs isn't introduced yet OR the Duriel-area portal has already been created (field_0x0B), and the warp object is in Walk (open) anim. Calls TakeStairs. No quest-state transition.
 uint32_t __fastcall Q14_OperateStairsToTombs(D2ObjectOperateFnArg * pOperateArg) {
     D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pOperateArg->sArg.pGame, QUESTINT_TheSevenTombs);
-    if (!(!pDVar2 || !pDVar2->bIsNotIntroduction || pDVar2->pQuestSpecificData.pA2Q6->bPortalCreated)) {
+    if (!(!pDVar2 || pDVar2->bIsNotIntroduction != '\x01' || pDVar2->pQuestSpecificData.pA2Q6->bPortalCreated)) {
       return 0;
     }
 
@@ -314,7 +309,7 @@ void __fastcall Objects_InitFn37(D2ObjectInitFnArg * pInitArg) {
       }
 
       pA2Q6Data->nChamberObjectGUID = nObjectGUID;
-      if (!pQuestData->bIsNotIntroduction) {
+      if (pQuestData->bIsNotIntroduction == '\0') {
         D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
         return;
       }
@@ -349,7 +344,7 @@ void __fastcall Objects_InitFn38(D2ObjectInitFnArg * pInitArg) {
     }
 
     pDVar1->nTyraelObjectGUID = nObjectGUID;
-    if (!pDVar2->bIsNotIntroduction) {
+    if (pDVar2->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 2);
       return;
     }
@@ -360,11 +355,11 @@ void __fastcall Objects_InitFn38(D2ObjectInitFnArg * pInitArg) {
 // Q14 predicate: true if The Seven Tombs is introduced AND the Duriel/town portal has NOT yet been created (!field_0x0B). Inverse of Q14_GetPortalCreatedFlag.
 BOOL __fastcall Q14_IsPortalNotCreated(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction)) {
-      return 0;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      return (uint32_t)!pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
     }
 
-    return (uint32_t)!pQuestData->pQuestSpecificData.pA2Q6->bPortalCreated;
+    return 0;
 }
 
 // Q14 object InitFn (Objects_InitFn21): orifice/Tal Rasha chamber object init. Records GUID, marks present. If the staff has been used (state byte [3]) but portal not yet created ([0xb]==0), schedules the Q14_TimerCreatePortal timer to spawn the portals and marks timer-armed. Sets object hidden(2). No quest-record state change.
@@ -450,46 +445,47 @@ BOOL __fastcall OBJOP_A2Q7_OpenArcaneNpcTrade(D2ObjectOperateFnArg * pOperation)
     } else {
       eOrificeAnimMode = pInteractedNpc->eAnimMode.ePlayerMode;
     }
-    if (eOrificeAnimMode == eD2ObjectAnimMode_ns::Neutral) {
-      int32_t bPlayerTradeBusy;
-      bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
-      if (bPlayerTradeBusy == 1) {
-        return 1;
-      }
-
-      pInteractedNpc = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20747368);
-      if (pInteractedNpc) {
-        pInteractedNpc = pOperation->sArg.pVictim;
-        if (!pInteractedNpc) {
-          nOrificeGUID = -1;
-        } else {
-          nOrificeGUID = pInteractedNpc->nUnitGUID;
-        }
-
-        UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
-        D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
-        pInteractedNpc = pOperation->sArg.pVictim;
-        sPacket.nPacketId = 'X';
-        if (!pInteractedNpc) {
-          sPacket.nUnitGUID = -1;
-        } else {
-          sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
-        }
-
-        sPacket.nUIType = '\0';
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
+    if (eOrificeAnimMode != eD2ObjectAnimMode_ns::Neutral) {
+      if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
         return 0;
       }
 
-      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
-      return 1;
-    }
-    if (!(eOrificeAnimMode == Operating && pVictim == pInteractedNpc)) {
+      UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
+      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
       return 0;
     }
 
-    UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
-    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+    int32_t bPlayerTradeBusy;
+    bPlayerTradeBusy = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
+    if (bPlayerTradeBusy == 1) {
+      return 1;
+    }
+
+    pInteractedNpc = ITEMS::Items::Drop::HasQuestItem(pOperation->sArg.pGame, pOperation->pAttacker, 0x20747368);
+    if (!pInteractedNpc) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
+      return 1;
+    }
+
+    pInteractedNpc = pOperation->sArg.pVictim;
+    if (!pInteractedNpc) {
+      nOrificeGUID = -1;
+    } else {
+      nOrificeGUID = pInteractedNpc->nUnitGUID;
+    }
+
+    UNIT::SUnit::SetInteractInfo(pOperation->pAttacker, UNIT_OBJECT, nOrificeGUID);
+    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 1);
+    pInteractedNpc = pOperation->sArg.pVictim;
+    sPacket.nPacketId = 'X';
+    if (!pInteractedNpc) {
+      sPacket.nUnitGUID = -1;
+    } else {
+      sPacket.nUnitGUID = pInteractedNpc->nUnitGUID;
+    }
+
+    sPacket.nUIType = '\0';
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(pClient, &sPacket);
     return 0;
 }
 
@@ -507,13 +503,13 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20747368);
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x20706976);
     QUEST_RemoveQuestItemFromPlayer(pGame, pUnit, 0x2066736d);
-    int16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId != -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+    if (nPartyId != 0xffff) {
       UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q14_CompleteHoradricStaffOnPartyMember, 0);
     }
 
     NotifyPlayersAboutEvent(pGame, 3);
-    if (sgptDataTable->nTxtMissilesSize < 0x153) {
+    if (sgptDataTable->nTxtMissilesSize <= 0x152) {
       pMissileTxt = 0;
     } else {
       pMissileTxt = sgptDataTable->pTxtMissiles + 0x152;
@@ -537,21 +533,21 @@ void __fastcall Q14_OnStaffUsedInOrifice(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     eD2UnitType eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit2->pPath.pStaticPath->nPosY;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit2->pPath.pStaticPath->nPosX;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nPosX - 0xd, nPosY + 3);
@@ -588,24 +584,24 @@ BOOL __fastcall Q14_IsNpcStationary(::SGAMEDATA * pGame, D2UnitStrc * pNpc) {
     if (pA2Q6Data->bCompletedPlayerJoined) {
       return 1;
     }
-    if (!pA2Q6Data->bTyraelPortalSpawnLock) {
-      return 0;
+    if (pA2Q6Data->bTyraelPortalSpawnLock) {
+      pA2Q6Data->bTyraelSpawnSpotOccupied = false;
+      pA2Q6Data->pTyraelSpawnAnchor = pNpc;
+      UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q14_CheckUnitDistanceToTyrael, pA2Q6Data);
+      return (uint32_t)!pA2Q6Data->bTyraelSpawnSpotOccupied;
     }
 
-    pA2Q6Data->bTyraelSpawnSpotOccupied = false;
-    pA2Q6Data->pTyraelSpawnAnchor = pNpc;
-    UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q14_CheckUnitDistanceToTyrael, pA2Q6Data);
-    return (uint32_t)!pA2Q6Data->bTyraelSpawnSpotOccupied;
+    return 0;
 }
 
 // Q14 predicate: true if The Seven Tombs is introduced and stateFlag < 4 (not yet at the Duriel-killed/Tyrael step).
 bool __fastcall Q14_IsSevenTombsLessThanState4(::SGAMEDATA * pGame) {
     D2QuestDataStrc* pDVar1 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheSevenTombs);
-    if (!(pDVar1 && pDVar1->bIsNotIntroduction && pDVar1->nStateFlag < 4)) {
-      return true;
+    if (pDVar1 && pDVar1->bIsNotIntroduction != '\0' && pDVar1->nStateFlag < 4) {
+      return false;
     }
 
-    return false;
+    return true;
 }
 
 // Q14: compute Tyrael's post-Duriel spawn coordinates. Only if the portal-spawn-in-progress flag is set: picks a spot in Lut Gholein (LEVEL_LutGholein) near object class 0xc, finds free WARP-collision coords, writes x/y into pPoint and the room into *pdwParam. Returns 1 on success, 0 otherwise.
@@ -624,20 +620,20 @@ BOOL __fastcall Q14_GetTyraelSpawnCoords(::SGAMEDATA * pGame, POINT * pPoint, D2
 
     GAME::Server::SetSomeRoomFlags(pGame, pSpawnRoom);
     pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, pPoint, 3, 0xbe11, 7);
-    if (!pSpawnRoom) {
-      return 0;
+    if (pSpawnRoom) {
+      pPoint->x = nSpawnX;
+      pPoint->y = nSpawnY;
+      *pdwParam = pSpawnRoom;
+      return 1;
     }
 
-    pPoint->x = nSpawnX;
-    pPoint->y = nSpawnY;
-    *pdwParam = pSpawnRoom;
-    return 1;
+    return 0;
 }
 
 // Q14: set/clear the Izual(Tyrael) placement flag in A2Q6 data, only while the quest is introduced and field_0x0E unset. cParam==0 -> mark located (bIzualLocationSet=1) and set pIzualUnit sentinel (8 single-player / 9 multiplayer); cParam!=0 -> clear bIzualLocationSet. No quest-record state change.
 void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
     D2QuestDataStrc* pA4Q1Data = GetQuestDataByQuestNoInternal(*(::SGAMEDATA**)(nParam + 4), QUESTINT_TheSevenTombs);
-    if (!(pA4Q1Data && pA4Q1Data->bIsNotIntroduction)) {
+    if (!(pA4Q1Data && pA4Q1Data->bIsNotIntroduction != '\0')) {
       return;
     }
 
@@ -651,16 +647,10 @@ void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
       pSevenTombsData->bIzualLocationSet = 1;
       if (eGameType == SGAMETYPE_SINGLEPLAYER) {
         pSevenTombsData->nStatusCode = 8;
-        pSevenTombsData->field_0x15 = 0;
-        pSevenTombsData->field_0x16 = 0;
-        pSevenTombsData->field_0x17 = 0;
         return;
       }
 
       pSevenTombsData->nStatusCode = 9;
-      pSevenTombsData->field_0x15 = 0;
-      pSevenTombsData->field_0x16 = 0;
-      pSevenTombsData->field_0x17 = 0;
       return;
     }
 
@@ -669,11 +659,11 @@ void __fastcall Q14_SetTyraelState(int nParam, char cParam) {
 
 // Q15 (Act2Guard4Gossip / Jerhyn gossip pseudo-quest) state-2 handler. When the kill/target unit is Jerhyn (classId 0x179) and the one-shot bBloodRavenKilled-style flag is set, clears it and unhooks itself (handler[2]=null). One-time post-trigger cleanup; no quest-record write.
 void __fastcall Q15_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    if (!(pQuestArgs->pTarget && (short int)pQuestArgs->pTarget->nClassId == 0x179 && pQuestData->pQuestSpecificData.pA2Q7->bGossipAwaits)) {
+    if (!(pQuestArgs->pTarget && (short int)pQuestArgs->pTarget->nClassId == 0x179 && pQuestData->pQuestSpecificData.pA2Q7->bGossipAwaits == '\x01')) {
       return;
     }
 
-    pQuestData->pQuestSpecificData.pA2Q7->bGossipAwaits = false;
+    pQuestData->pQuestSpecificData.pA2Q7->bGossipAwaits = '\0';
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
 }
 
@@ -683,7 +673,7 @@ void __fastcall Q15_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     if (nMessageIndex != 0x3b && nMessageIndex != 0x3c) {
@@ -733,7 +723,7 @@ void __fastcall Q15_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       }
 
       pRadamentsQuestData = GetQuestDataByQuestNoInternal(pQuestData->pGame, QUESTINT_RadamentsLair);
-      if (pRadamentsQuestData && !pRadamentsQuestData->bIsNotIntroduction) {
+      if (pRadamentsQuestData && pRadamentsQuestData->bIsNotIntroduction == '\0') {
         nLineIndex = D2Client::Archive::UNIT_GetModuloFromSeed(&pQuestArgs->pPlayer->sSeed, 3);
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x179, nLineIndex + 2);
         return;
@@ -752,7 +742,7 @@ void __fastcall Q15_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     pick_random_gossip:
     DVar1 = D2_SEED_NEXT(pPlayer->sSeed);
     pPlayer->sSeed = DVar1;
-    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x179, DVar1.nSeedLow + (int)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) / 3) * -3 + 2);
+    AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, 0x179, DVar1.nSeedLow % 3 + 2);
 }
 
 // Q15 (Act2Guard4Gossip) state-8 handler: empty stub. No behavior.
@@ -806,12 +796,12 @@ void __fastcall Q15_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q15_Callback00_NpcActivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q15_Callback08_MonsterKilled;
     pQuestData->pNpcMessages = &A2Q7::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     D2QuestDataA2Q7Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA2Q7Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a2q7.cpp", 0xc2);
     pQuestData->pQuestSpecificData.pA2Q7 = pQuestSpecificData;
-    pQuestSpecificData->bGossipAwaits = false;
+    pQuestSpecificData->bGossipAwaits = '\0';
     pQuestData->nQuestIdReal = QUEST_Act2Guard4Gossip;
     pQuestData->fpStatusFilter = Q15_StatusFilter;
     pQuestData->fpActiveFilter = Q15_ActiveFilter;

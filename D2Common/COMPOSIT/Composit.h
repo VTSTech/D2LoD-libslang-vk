@@ -43,7 +43,7 @@ struct __attribute__((packed)) D2CompositTxt {
 namespace D2Common::COMPOSIT::Composit {
 
 // Function declarations
-void __fastcall COMPOSIT_ReadCompositeFileRow(int32_t nBodyIndex, char * szText);
+void __thiscall COMPOSIT_ReadCompositeFileRow(char * szText, int32_t nBodyIndex);
 int __stdcall COMPOSIT_GetItemTypeIndex(int32_t iItemType);
 // Resolves a unit's weapon-class token - the hth/1hs/2hs four-character code that forms the last component of every COF and AnimData name. Returns the token itself and writes the matching weapon-class INDEX through pnParam. Monsters take BaseW from MonStats2, objects and unarmed units take hth, and a player's is resolved from the equipped weapons: dual-wield pairs for the Assassin and Barbarian get the 1js/1jt/1st/1ss/2ht combinations, everything else comes from the item's own WClass or 2HandedWClass by handedness. The two by-handedness returns save the token in EDX across the GetItemTypeIndex call, which is why this function needs its callee typed __stdcall_edxsafe.
 uint32_t __stdcall COMPOSIT_ResolveWeaponClass(struct D2UnitStrc * pUnit, int32_t nUnitType, int32_t nClassIndex, int32_t nMode, struct D2InventoryStrc * pInventory, int32_t * pnParam);

@@ -151,7 +151,8 @@ void RollRooms(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(gaDrlgCatacombsRollRooms_D, "D2Common::Drlg::Maze::Act1::Jail::RollRooms::gaDrlgCatacombsRollRooms_D");
 
     D2SeedStrc DVar1 = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = DVar1;
+    pLevel->sSeed.nSeedHigh = DVar1.nSeedHigh;
+    pLevel->sSeed.nSeedLow = DVar1.nSeedLow;
     uint32_t nRoll = DVar1.nSeedLow & 3;
     ReplaceRoom(gaDrlgCatacombsRollRooms_E + nRoll, pLevel, &nRoll);
     if (pLevel->eD2LevelId == 0x1d) {

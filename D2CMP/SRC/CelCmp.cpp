@@ -118,11 +118,11 @@ uint32_t __stdcall CELCMP_GetPaletteShiftValue(uint32_t nPaletteIndex, uint32_t 
 }
 
 BOOL __stdcall CELCMP_CanConvertFormat(int32_t nSrcFormat, int32_t nDstFormat) {
-    if (!(nSrcFormat != 4 && nSrcFormat == 8 && nDstFormat == 0x10)) {
-      return 0;
+    if (nSrcFormat != 4 && nSrcFormat == 8 && nDstFormat == 0x10) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall CELCMP_GetFrameDecodeHandlerForward(uint32_t nParam1, uint32_t nParam2) {
@@ -2056,7 +2056,7 @@ int __fastcall BITSTREAM_GetByteOffset(int nParam) {
     return ((int)(nBitPosAligned + (nBitPosAligned >> 0x1f & 7U)) >> 3) + *(int*)(nParam + 4);
 }
 
-void __fastcall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount) {
+void __thiscall BITSTREAM_AdvanceBits(int32_t pThis, int32_t nBitCount) {
     uint32_t nNewBitPos = *(int*)(pThis + 0xc) + nBitCount;
     *(uint32_t*)(pThis + 0xc) = nNewBitPos & 0x1f;
     *(int*)(pThis + 4) += ((int)(nNewBitPos + ((int)nNewBitPos >> 0x1f & 0x1fU)) >> 5) * 4;

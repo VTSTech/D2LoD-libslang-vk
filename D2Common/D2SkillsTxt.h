@@ -88,7 +88,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x036 */ uint8_t field_0x36;
     /* 0x037 */ uint8_t field_0x37;
     /* 0x038 */ int prgcalc[3];
-    /* 0x044 */ char prgdam;
+    /* 0x044 */ uint8_t prgdam;
     /* 0x045 */ uint8_t field_0x45;
     /* 0x046 */ short srvmissile[4];
     /* 0x04E */ short srvoverlay;
@@ -139,7 +139,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x110 */ short cltoverlaya;
     /* 0x112 */ short cltoverlayb;
     /* 0x114 */ int cltcalc[3];
-    /* 0x120 */ char ItemTarget;
+    /* 0x120 */ uint8_t ItemTarget;
     /* 0x121 */ uint8_t field_0x121;
     /* 0x122 */ short ItemCastSound;
     /* 0x124 */ short ItemCastOverlay;
@@ -152,7 +152,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x134 */ int HitClass;
     /* 0x138 */ int calc[4];
     /* 0x148 */ int Param[8];
-    /* 0x168 */ char weapsel;
+    /* 0x168 */ uint8_t weapsel;
     /* 0x169 */ uint8_t field_0x169;
     /* 0x16A */ short ItemEffect;
     /* 0x16C */ short ItemCltEffect;
@@ -171,7 +171,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x18A */ short mana;
     /* 0x18C */ short lvlmana;
     /* 0x18E */ char attackrank;
-    /* 0x18F */ char lineofsight;
+    /* 0x18F */ uint8_t lineofsight;
     /* 0x190 */ int delay;
     /* 0x194 */ short skilldesc;
     /* 0x196 */ uint8_t field_0x196;
@@ -203,7 +203,7 @@ struct __attribute__((packed)) D2SkillsTxt {
     /* 0x228 */ char restrict;
     /* 0x229 */ uint8_t field_0x229;
     /* 0x22A */ short state[3];
-    /* 0x230 */ char aitype;
+    /* 0x230 */ uint8_t aitype;
     /* 0x231 */ uint8_t field_0x231;
     /* 0x232 */ short aibonus;
     /* 0x234 */ int costmult;

@@ -491,11 +491,11 @@ bool __stdcall DEBUG_EnumerateModules(int * pModuleList) {
     }
 
     bVar1 = DEBUG_EnumerateModulesViaToolhelp32(pModuleList);
-    if (bVar1) {
+    if (!bVar1) {
+      bVar1 = DEBUG_EnumerateModulesViaPEB(pModuleList);
       return bVar1;
     }
 
-    bVar1 = DEBUG_EnumerateModulesViaPEB(pModuleList);
     return bVar1;
 }
 
@@ -562,7 +562,7 @@ static uint32_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInf
 }
 
 // Unwinds stack frames for crash dumps. Walks EBP chain up to 128 frames, validates stack pointers, skips first N frames. Captures EIP, ESP, EBP for each frame. Handles current thread or remote thread via OpenThread/SuspendThread.
-int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames, CONTEXT * pContext) {
+int __thiscall DEBUG_UnwindStackFrames(CONTEXT * pContext, DWORD dwThreadId, D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames) {
     // Frame slots -780..-752 are ONE object: &nStackLimit is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -603,29 +603,7 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
     hOpenedThread = (HANDLE)0x0;
     uint32_t local_20;
     local_20 = uStack800;
-    if (!pContext) {
-      dwThreadIdOrSuspend = GetCurrentThreadId();
-      threadContext.ContextFlags = 0x10001;
-      if (dwThreadIdOrSuspend == dwThreadId) {
-        RtlCaptureContext(&threadContext);
-        goto walk_stack;
-      }
-
-      /* DWORD dwThreadId for OpenThread */ /* BOOL bInheritHandle for OpenThread */ /* DWORD dwDesiredAccess for OpenThread */ hThread = OpenThread(0x4a, 0, dwThreadId);
-      hOpenedThread = hThread;
-      /* HANDLE hThread for SuspendThread */ if (hThread) {
-        dwThreadIdOrSuspend = SuspendThread(hThread);
-        if (dwThreadIdOrSuspend != -1) {
-          /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGetContextOk = GetThreadContext(hThread, &threadContext);
-          if (bGetContextOk) {
-            goto walk_stack;
-          }
-
-          /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
-          /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
-        }
-      }
-    } else {
+    if (pContext) {
       pCtxCopy = &threadContext;
       pSavedEsp = &uStack800;
       for (nCtxCopyCount = 0xb3; nCtxCopyCount; nCtxCopyCount--) {
@@ -685,6 +663,28 @@ int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, D2CrashFrameStrc * pFram
       if (hOpenedThread) {
         /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
         /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
+      }
+    } else {
+      dwThreadIdOrSuspend = GetCurrentThreadId();
+      threadContext.ContextFlags = 0x10001;
+      if (dwThreadIdOrSuspend == dwThreadId) {
+        RtlCaptureContext(&threadContext);
+        goto walk_stack;
+      }
+
+      /* DWORD dwThreadId for OpenThread */ /* BOOL bInheritHandle for OpenThread */ /* DWORD dwDesiredAccess for OpenThread */ hThread = OpenThread(0x4a, 0, dwThreadId);
+      hOpenedThread = hThread;
+      /* HANDLE hThread for SuspendThread */ if (hThread) {
+        dwThreadIdOrSuspend = SuspendThread(hThread);
+        if (dwThreadIdOrSuspend != -1) {
+          /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGetContextOk = GetThreadContext(hThread, &threadContext);
+          if (bGetContextOk) {
+            goto walk_stack;
+          }
+
+          /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
+          /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
+        }
       }
     }
 
@@ -988,7 +988,7 @@ void __stdcall CloseDiablo() {
     exit(-1);
 }
 
-void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(D2IniConfigStrc * pD2IniData, char * szText) {
+void __thiscall MISC_ParseCommandLineAndPutIntoD2IniData(char * szText, D2IniConfigStrc * pD2IniData) {
     char* pcVar4;
     long int nConfigIdx;
     int nDstOffset;
@@ -1047,7 +1047,7 @@ void __fastcall MISC_InitD2IniAndIgnorelist(D2IniConfigStrc * D2IniData, char * 
     memset(D2IniData, 0, 0x3cd);
     MISC_GetValueFromD2Ini(D2IniData);
     D2Common::Chat::Ignorelist::MISC_InitIgnorelist();
-    MISC_ParseCommandLineAndPutIntoD2IniData(D2IniData, szCommandLine);
+    MISC_ParseCommandLineAndPutIntoD2IniData(szCommandLine, D2IniData);
 }
 
 // Dispatch current app mode via ApplicationBootstrapArray: init -> run -> shutdown for selected mode.
@@ -1375,11 +1375,11 @@ uint32_t __stdcall PATH_GetKnownFolderPath(LPSTR szOutPath, int32_t nBufferSize)
     BOOL bUsedDefaultChar = 0;
     int nWideConverted = WideCharToMultiByte(0, 0x400, pwszKnownPath, -1, szOutPath, nBufferSize, (LPCSTR)0x0, &bUsedDefaultChar);
     /* LPVOID pv for CoTaskMemFree */ CoTaskMemFree(pwszKnownPath);
-    if (!(nWideConverted && !bUsedDefaultChar)) {
-      return 0;
+    if (nWideConverted && !bUsedDefaultChar) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 } // namespace Fog::Engine::Application

@@ -51,10 +51,10 @@ namespace D2Game::GAME::Level {
 static void InitDrlgAct(::SGAMEDATA * pGame, char nActNo) {
     eD2LevelId townLevelId;
     uint32_t arenaModeFlag = Arena::ARENA_IsArenaLevel(pGame);
-    if (!arenaModeFlag) {
-      townLevelId = D2Common::DUNGEON::Dungeon::GetTownLevelIdFromActNo(nActNo);
-    } else {
+    if (arenaModeFlag) {
       townLevelId = Arena::GetTownLevelFromArenaCtrl(pGame);
+    } else {
+      townLevelId = D2Common::DUNGEON::Dungeon::GetTownLevelIdFromActNo(nActNo);
     }
 
     D2DrlgActStrc* pDrlgAct = D2Common::DUNGEON::Dungeon::AllocAct(nActNo, pGame->pInitSeed.nSeedLow, 0, pGame, pGame->nDifficulty, pGame->pMemoryPool, townLevelId, nullptr, nullptr);
@@ -83,7 +83,7 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
       return;
     }
 
-    int32_t nErrorLine = 0x53ace5;
+    int32_t nErrorLine;
     eAct eDestAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     if (eDestAct != pClient->nAct) {
       D2DynamicPathStrc* pDynamicPath;
@@ -95,75 +95,74 @@ void __fastcall CLIENT_WarpToAct(::SGAMEDATA * pGame, D2ClientStrc * pClient, eD
       ppDVar1 = ppSpawnActOut;
       Clients::CLIENT_SetConnectionState(pClient, 5);
       pUnit = Clients::CLIENTS_GetControlUnit(pClient, 0);
-      if (pUnit) {
-        if (!pGameSave->bExpansion && pUnit->eUnitType == UNIT_PLAYER) {
-          PLAYER::PlayerPets::PETS_FreeAllPetsByType(pGameSave, pUnit);
-        }
-
-        D2Common::Skills::STATES_RemoveAllProgressiveStates(pUnit);
-        bIsArena = D2Common::Units::GetUnitSizeX(pUnit);
-        pSpawnRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(*ppDVar1, eLevel, param_1, &nSpawnX, &nSpawnY, bIsArena);
-        if (!pSpawnRoom) {
-          return;
-        }
-
-        nSearchRadius = 5;
-        eCollisionFlag = 0x1c89;
-        ptSpawnPos.x = nSpawnX;
-        ptSpawnPos.y = nSpawnY;
-        nErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
-        pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, eCollisionFlag, nSearchRadius);
-        if (!pSpawnRoom) {
-          return;
-        }
-
-        nSpawnX = ptSpawnPos.x;
-        nSpawnY = ptSpawnPos.y;
-        pDynamicPath = pUnit->pPath.pDynamicPath;
-        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-        bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, nullptr, 0, 0);
-        if (!bCollisionOk) {
-          nErrorLine = 0x1d1;
-        } else {
-          UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, pRoom);
-          bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pSpawnRoom, (uint16_t)nSpawnX, (uint16_t)nSpawnY);
-          if (bCollisionOk) {
-            Clients::CLIENT_SetRoom(pClient, nullptr);
-            SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 5);
-            Clients::CLIENT_SetAct(pClient, eDestAct);
-            pUnit->nAct = eDestAct;
-            pUnit->pDrlgAct = *ppSpawnActOut;
-            Clients::TellClientToLoadAct(pGameSave, pClient);
-            Clients::CLIENT_SetRoom(pClient, pSpawnRoom);
-            D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-            pGamePost = pGameSave;
-            pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
-            UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, nullptr);
-            D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-            if (pUnit->eUnitType != UNIT_PLAYER) {
-              return;
-            }
-
-            nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-            wPosY = (uint16_t)nErrorLine;
-            nErrorLine = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-            PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)nErrorLine, wPosY);
-            return;
-          }
-
-          nErrorLine = 0x1d6;
-        }
-
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      if (!pUnit) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1af);
         exit(-1);
+      }
+      if (!pGameSave->bExpansion && pUnit->eUnitType == UNIT_PLAYER) {
+        PLAYER::PlayerPets::PETS_FreeAllPetsByType(pGameSave, pUnit);
+      }
+
+      D2Common::Skills::STATES_RemoveAllProgressiveStates(pUnit);
+      bIsArena = D2Common::Units::GetUnitSizeX(pUnit);
+      pSpawnRoom = D2Common::DUNGEON::Dungeon::SpawnUnit(*ppDVar1, eLevel, param_1, &nSpawnX, &nSpawnY, bIsArena);
+      if (!pSpawnRoom) {
         return;
       }
 
-      nErrorLine = 0x1af;
-    }
+      nSearchRadius = 5;
+      eCollisionFlag = 0x1c89;
+      ptSpawnPos.x = nSpawnX;
+      ptSpawnPos.y = nSpawnY;
+      nErrorLine = D2Common::Units::GetUnitSizeX(pUnit);
+      pSpawnRoom = D2Common::Collision::GetFreeCoordinates_WithIncrementValue(pSpawnRoom, &ptSpawnPos, nErrorLine, eCollisionFlag, nSearchRadius);
+      if (!pSpawnRoom) {
+        return;
+      }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
-    exit(-1);
+      nSpawnX = ptSpawnPos.x;
+      nSpawnY = ptSpawnPos.y;
+      pDynamicPath = pUnit->pPath.pDynamicPath;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, nullptr, 0, 0);
+      if (!bCollisionOk) {
+        nErrorLine = 0x1d1;
+      } else {
+        UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, pRoom);
+        bCollisionOk = D2Common::PATH::Path::PATH_GetCollisionMaskAt(pDynamicPath, pUnit, pSpawnRoom, (uint16_t)nSpawnX, (uint16_t)nSpawnY);
+        if (bCollisionOk) {
+          Clients::CLIENT_SetRoom(pClient, nullptr);
+          SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 5);
+          Clients::CLIENT_SetAct(pClient, eDestAct);
+          pUnit->nAct = eDestAct;
+          pUnit->pDrlgAct = *ppSpawnActOut;
+          Clients::TellClientToLoadAct(pGameSave, pClient);
+          Clients::CLIENT_SetRoom(pClient, pSpawnRoom);
+          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+          pGamePost = pGameSave;
+          pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
+          UNIT::SUnit::UNITS_UpdateRoomClientVisibility(pGameSave, pUnit, nullptr);
+          D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
+          if (pUnit->eUnitType != UNIT_PLAYER) {
+            return;
+          }
+
+          nErrorLine = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
+          wPosY = (uint16_t)nErrorLine;
+          PLAYER::PlayerPets::PETS_ManagePetsByType(pGamePost, pUnit, (uint16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), wPosY);
+          return;
+        }
+
+        nErrorLine = 0x1d6;
+      }
+
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      exit(-1);
+      return;
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x19f);
+      exit(-1);
+    }
 }
 
 // @sourcefile .\GAME\Level.cpp
@@ -245,13 +244,14 @@ void __fastcall ProcessUnitUpdateFlags(::SGAMEDATA * pGame) {
 
 // Counts the rooms of pGame->pAct[nAct] (DRLGROOM_GetRoomFromAct, pDrlgRoomNext chain); halts (line 660) when nAct >= 5.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
-int __stdcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct) {
-    if (4 < nAct) {
+int __fastcall LEVEL_CountRoomsInAct(::SGAMEDATA * pGame, uint8_t nAct) {
+    if (nAct >= 5) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x294);
       exit(-1);
     }
 
-    D2RoomStrc* pDVar1 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomFromAct(pGame->pAct[nAct]);
+    D2DrlgActStrc* pAct = pGame->pAct[nAct];
+    D2RoomStrc* pDVar1 = D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomFromAct(pAct);
     int iVar2 = 0;
     for (; pDVar1; pDVar1 = pDVar1->pDrlgRoomNext) {
       iVar2++;

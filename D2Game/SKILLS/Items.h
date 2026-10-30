@@ -170,9 +170,9 @@ int16_t __fastcall ITEMMOD_RollMagicAffixVersioned(struct D2UnitStrc * pUnit, in
 // Version dispatcher: tail-calls ITEMMOD_RollMagicAffixClassic (char*, "affix index+1") or ITEMMOD_RollMagicAffix (uint32_t, "affix index") as a bare statement, dropping the result both branches compute.
 int __fastcall ITEMMOD_RollMagicAffixVersionedEx(struct D2UnitStrc * pUnit, int32_t nParam, int bExclude, int32_t param_1, int nParam4, int nForcedAffix, int nParam6);
 // Selects a random eligible rare affix group for classic item generation. Iterates the prefix (this==0) or suffix half of the rare affix table, filters each entry with ITEMMOD_CanApplyAffix, builds a candidate index array (max 511 entries), then rolls the item seed to pick one. Returns the chosen table index + 1, or 0 if no candidates pass.
-uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, struct D2UnitStrc * pUnit);
+uint32_t __thiscall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, struct D2UnitStrc * pUnit);
 // Selects a random valid rare affix index for an item. Iterates the prefix (this==0) or suffix (this!=0) range of the rare-affix table, calls ITEMMOD_CanApplyAffix for each entry to build a candidate list (up to 511), then rolls a random index via the item's seed. Returns the 1-based affix table index of the chosen affix, or 0 if no valid affix found.
-uint32_t __fastcall GetMaxToRoll(int32_t pThis, struct D2UnitStrc * pUnit);
+uint32_t __thiscall GetMaxToRoll(int32_t pThis, struct D2UnitStrc * pUnit);
 // Version dispatcher: tail-calls GetMaxToRoll or ITEMMOD_GetMaxAffixGroupClassic, both uint32_t-returning ("chosen affix table index + 1, or 0"), as a bare statement.
 uint32_t __fastcall ITEMMOD_SelectMagicAffixVersioned(struct D2UnitStrc * pUnit, int32_t nParam);
 // Early-out returns bCanBeRare (0) directly; the dispatched branches tail-call ITEMMOD_GenerateRareAffixes or RollPrefixes, both documented "Returns 1 on success, 0 ..." and both dropped as bare statements.

@@ -41,6 +41,7 @@ namespace D2Client::Engine::GfxUtil {
 
 // Function declarations
 void GFXUTIL_PadTokenString(char * szText1, char * szText2);
+uint8_t __fastcall GFXUTIL_GetCompositePaletteIndex(struct D2UnitStrc * pUnit, uint8_t byComponent);
 void __stdcall InitializeModeTokens();
 // @sourcefile .\ENGINE\GfxUtil.cpp
 void __fastcall AllocGfxUtil(void * * pParam, uint32_t dwParam, uint32_t dwValue1, uint32_t dwValue2, int * pnParam1, int * pnParam2);
@@ -63,7 +64,7 @@ uint32_t __fastcall GFXUTIL_GetCofDrawOrder(uint8_t * pbParam, uint32_t nParam);
 int __fastcall GFXUTIL_IsValidUnitType(struct D2UnitStrc * pnParam);
 uint32_t __fastcall GFXUTIL_GetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam);
 void __fastcall GFXUTIL_SetGfxInfoComponent(struct D2UnitStrc * pUnit, int32_t nParam, uint8_t byComponentVal);
-void __fastcall GFXUTIL_CalcDirectionAndFrame(int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode, struct D2UnitStrc * pUnit, int32_t nAnimDir);
+void __fastcall GFXUTIL_CalcDirectionAndFrame(struct D2UnitStrc * pUnit, int32_t nAnimDir, int32_t nTypeId, int32_t nCofComponent, uint32_t * pnParam, uint32_t * pnFrameHandler, int * pnParam2, uint32_t nNumDirs, int32_t nAnimMode);
 // @sourcefile .\ENGINE\GfxUtil.cpp
 BOOL __fastcall GFXUTIL_GetEtherealTransparency(struct D2UnitStrc * pUnit, int32_t nParam, uint32_t * pOutTransTable, uint32_t nItemClassId);
 // @sourcefile .\ENGINE\GfxUtil.cpp
@@ -72,6 +73,6 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(struct D2UnitStrc * pUni
 // Build COF parameters from unit animation/equipment - determines graphics file, weapon, armor appearance
 // @sourcefile .\ENGINE\GfxUtil.cpp
 BOOL __stdcall GFXUTIL_BuildCofParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct D2UnitStrc * pEquipContext, int * pOutItemClassId);
-// 8 internal functions (defined in .cpp)
+// 7 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::GfxUtil

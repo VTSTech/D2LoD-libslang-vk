@@ -232,9 +232,9 @@ namespace Storm::Source::SFile {
 
 // Function declarations
 // Initializes a 4-element stream buffer structure by copying 4 sequential parameters into consecutive fields (param1→field[0], param2→field[1], param3→field[2], param4→field[3]). Used for stream buffer initialization in custom calling convention (ECX register for destination pointer).
-void __fastcall SFILE_SetStreamBuffer4(uint32_t pVal0, uint32_t pVal1, uint32_t pVal2, uint32_t pVal3, uint32_t * pdwParam);
+void __thiscall SFILE_SetStreamBuffer4(uint32_t * pdwParam, uint32_t pVal0, uint32_t pVal1, uint32_t pVal2, uint32_t pVal3);
 // Copies a 4-element stream buffer structure from source to destination by copying 4 consecutive fields. Custom calling convention uses ECX for destination pointer. Used for duplicating stream buffer state.
-void __fastcall SFILE_CopyStreamBuffer4(uint32_t * pDest, uint32_t * pSrc);
+void __thiscall SFILE_CopyStreamBuffer4(uint32_t * pDest, uint32_t * pSrc);
 // Reads data from an internal buffer with bounds checking. Calculates available bytes (param3[4] - param3[1]), clamps to requested size (*param2), memcpy's from buffer (param3[0] + param3[1]), and advances read position (param3[1] += size). Returns actual bytes read.
 // @blizzard DecompressLzw_BufferRead (SFILE.CPP)
 uint32_t SFILE_DecompressLzw_BufferRead(void * pDstBuf, uint32_t * pnBytesRequested, void * pReadState);
@@ -251,7 +251,7 @@ void SFILE_DecompressLzw_BufferWrite(void * pSrc, uint32_t * pnBytes, void * pBu
 // so SFile owning its own explode wrapper alongside SComp's is the real structure, not an error.
 // @blizzard DecompressLzw (SFILE.CPP)
 int32_t __stdcall SFILE_DecompressLzw(int32_t pSrcData, int32_t pDstData, int32_t nDstSize);
-void __fastcall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCount);
+void __thiscall SFILE_ShiftSectorTable(int32_t pSectorTable, uint32_t nSectorCount);
 // @blizzard BuildDefaultBasePath (SFILE.CPP)
 void __stdcall SFILE_BuildDefaultBasePath();
 // @blizzard CheckForCdRom (SFILE.CPP)
@@ -387,44 +387,44 @@ void __stdcall SFileSetPlatform(uint8_t bParam);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard SFileUnloadFile (Storm 1.10b PPC)
 int32_t __stdcall SFileUnloadFile(void * pFile);
-uint32_t __fastcall SFILE_CompareFileTime1(int * pLeft, int * pnParam);
-uint32_t __fastcall SFILE_CompareFileTime2(int * pLeft, int * pnParam);
-uint32_t __fastcall SFILE_CompareFileSize1(int * pLeft, int * pnParam);
-uint32_t __fastcall SFILE_CompareFileSize2(int * pLeft, int * pnParam);
-uint32_t __fastcall SFILE_CompareFileName(int * pLeft, int * pnParam);
+uint32_t __thiscall SFILE_CompareFileTime1(int * pnParam, int * pLeft);
+uint32_t __thiscall SFILE_CompareFileTime2(int * pnParam, int * pLeft);
+uint32_t __thiscall SFILE_CompareFileSize1(int * pnParam, int * pLeft);
+uint32_t __thiscall SFILE_CompareFileSize2(int * pnParam, int * pLeft);
+uint32_t __thiscall SFILE_CompareFileName(int * pnParam, int * pLeft);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard InternalReadAligned (SFILE.CPP)
 uint32_t __stdcall SFILE_InternalReadAligned(struct D2MPQFileStrc * pArchive, uint32_t nFileOffset, uint32_t * pDstBuf, uint32_t nReadLen);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard SFileAuthenticateArchive (SFILE.CPP)
 int __stdcall SFileAuthenticateArchive(struct D2ArchiveStrc * pArchive, uint32_t * pdwAuthResult);
-int __fastcall SFILE_AllocateFileRecord1(int32_t pThis, int32_t pLink);
-int __fastcall SFILE_FreeFileRecord1(int32_t pThis, int32_t pLink);
+int __thiscall SFILE_AllocateFileRecord1(int32_t pThis, int32_t pLink);
+int __thiscall SFILE_FreeFileRecord1(int32_t pThis, int32_t pLink);
 // @blizzard TSList::LinkNode (STORM.H)
-void __fastcall TSList_FILEREC_LinkNode(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer);
-uint32_t __fastcall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink);
-int __fastcall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink);
-void __fastcall SFILE_InsertFileRecordIntoList2(int * * pNode, int32_t nInsertMode, int * * ppListHead, struct D2StormListHead * ppListContainer);
-int __fastcall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink);
-void __fastcall SFILE_InsertFileRecordIntoList3(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer);
-uint32_t __fastcall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink);
-int __fastcall SFILE_FreeFileRecord4(int32_t pThis, int32_t pLink);
-void __fastcall SFILE_InsertFileRecordIntoList4(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer);
-uint32_t __fastcall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink);
-void __fastcall SFILE_RemoveFileRecordFromList1(int32_t pThis, int * pLink);
+void __thiscall TSList_FILEREC_LinkNode(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead);
+uint32_t __thiscall SFILE_CompareFileRecord1(int32_t pThis, int32_t pLink);
+int __thiscall SFILE_FreeFileRecord2(int32_t pThis, int32_t pLink);
+void __thiscall SFILE_InsertFileRecordIntoList2(struct D2StormListHead * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead);
+int __thiscall SFILE_FreeFileRecord3(int32_t pThis, int32_t pLink);
+void __thiscall SFILE_InsertFileRecordIntoList3(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead);
+uint32_t __thiscall SFILE_CompareFileRecord2(int32_t pThis, int32_t pLink);
+int __thiscall SFILE_FreeFileRecord4(int32_t pThis, int32_t pLink);
+void __thiscall SFILE_InsertFileRecordIntoList4(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead);
+uint32_t __thiscall SFILE_CompareFileRecord3(int32_t pThis, int32_t pLink);
+void __thiscall SFILE_RemoveFileRecordFromList1(int32_t pThis, int * pLink);
 int __fastcall SFILE_SearchFileInArchives(struct D2ArchiveStrc * pArchive, struct D2MPQBlockEntryStrc * * ppBlockEntryOut, char * szFileName, uint8_t bSearchFlags, struct D2ArchiveStrc * * ppArchiveOut, char * szDiskPathOut);
 BOOL __stdcall SFileDdaGetPos(struct D2MPQFileStrc * pFile, uint32_t * pdwCurrentPos, uint32_t * pdwEndPos);
 BOOL __stdcall SFileDdaGetVolume(int32_t hFile, int32_t * plVolume, int32_t * plPan);
 BOOL __stdcall SFileDdaSetVolume(int32_t hFile, int32_t lVolume, int32_t lPan);
 int __stdcall SFILE_OpenFileInternal(struct D2ArchiveStrc * pArchive, char * szFileName, uint8_t bSearchFlags);
-void __fastcall SFILE_InsertFileRecordIntoList5(int * * pNode, int32_t nInsertMode, int * * ppListHead, int * * ppListContainer);
-void __fastcall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink);
-uint32_t __fastcall SFILE_CompareFileRecord4(int32_t pThis, int32_t pLink);
-void __fastcall SFILE_RemoveFileRecordFromList3(int32_t pThis, int * pLink);
-void __fastcall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink);
-uint32_t __fastcall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink);
-uint32_t __fastcall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord);
-void __fastcall SFILE_RemoveFileRecordFromList5(int32_t pThis, int * pNode);
+void __thiscall SFILE_InsertFileRecordIntoList5(int * * ppListContainer, int * * pNode, int32_t nInsertMode, int * * ppListHead);
+void __thiscall SFILE_RemoveFileRecordFromList2(int32_t pThis, int * pLink);
+uint32_t __thiscall SFILE_CompareFileRecord4(int32_t pThis, int32_t pLink);
+void __thiscall SFILE_RemoveFileRecordFromList3(int32_t pThis, int * pLink);
+void __thiscall SFILE_RemoveFileRecordFromList4(int32_t pThis, int * pLink);
+uint32_t __thiscall SFILE_CompareFileRecord5(int32_t pThis, int32_t pLink);
+uint32_t __thiscall SFILE_CompareFileRecord6(int32_t pThis, int32_t pRecord);
+void __thiscall SFILE_RemoveFileRecordFromList5(int32_t pThis, int * pNode);
 void __fastcall SFILE_CloseStreamHandle1(struct D2StormListHead * pThis);
 void __fastcall SFILE_CloseStreamHandle2(struct D2StormListHead * pThis);
 void __fastcall SFILE_CloseStreamHandle3(struct D2StormListHead * pThis);
@@ -432,7 +432,7 @@ void __fastcall SFILE_CloseStreamHandle4(struct D2StormListHead * pThis);
 void __fastcall SFILE_CloseStreamHandle5(struct D2StormListHead * pThis);
 // @sourcefile .\SOURCE\SFILE.CPP
 void __fastcall SFILE_FreeArchiveRecord(struct D2ArchiveStrc * pArchive);
-struct D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord1(struct D2ArchiveStrc * pArchive, uint8_t bParam);
+struct D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord1(struct D2ArchiveStrc * pArchive, uint8_t bParam);
 uint32_t __stdcall SFILE_GetOpenFlags();
 void __stdcall SFILE_CloseArchiveByName(char * szText);
 void __fastcall SFILE_CloseAllOpenFiles1(struct D2ArchiveStrc * pArchive);
@@ -443,20 +443,20 @@ void __fastcall SFILE_CloseStream3(struct D2StormListHead * nParam);
 void __fastcall SFILE_CloseStream4(struct D2StormListHead * nParam);
 void __fastcall SFILE_CloseStream5(struct D2StormListHead * nParam);
 void __fastcall SFILE_DestroyFileRecord(struct D2MPQFileStrc * pMPQFile);
-struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord1(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
-struct D2MPQFileStrc * __fastcall SFILE_AllocFileRecord(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
-struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord2(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
-struct D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord2(struct D2ArchiveStrc * pArchive, uint8_t bParam);
+struct D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord1(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
+struct D2MPQFileStrc * __thiscall SFILE_AllocFileRecord(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
+struct D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord2(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
+struct D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord2(struct D2ArchiveStrc * pArchive, uint8_t bParam);
 // @sourcefile .\SOURCE\SFILE.CPP
 void __fastcall SFILE_FreeFileRecord(struct D2MPQFileStrc * pMPQFile);
-struct D2ArchiveStrc * __fastcall SFILE_FreeArchiveRecord3(struct D2ArchiveStrc * pArchive, uint8_t bParam);
+struct D2ArchiveStrc * __thiscall SFILE_FreeArchiveRecord3(struct D2ArchiveStrc * pArchive, uint8_t bParam);
 int __stdcall SFILE_EnumFilesInternal(struct D2ArchiveStrc * pArchive, char * szText, void * pParam, int nParam, struct D2ArchiveStrc * * ppArchive);
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard SFileOpenFileEx (SFILE.CPP)
 int __stdcall SFileOpenFileEx(struct D2ArchiveStrc * pArchive, char * szFileName, uint32_t dwFlags, void * * phFile);
-struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord3(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
-uint32_t __fastcall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode);
-struct D2MPQFileStrc * * __fastcall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
+struct D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord3(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
+uint32_t __thiscall SFILE_RemoveAsyncRequestFromQueue(void * pListContext, int * pNode);
+struct D2MPQFileStrc * * __thiscall SFILE_AllocFileRecord4(int * * ppArchive, int32_t nInsertMode, int32_t nExtraSize, uint32_t nFlags);
 // @blizzard SFileCloseFile (SFILE.CPP)
 int __stdcall SFileCloseFile(struct D2MPQFileStrc * pMPQFile);
 // @blizzard SFileOpenFile (SFILE.CPP)
@@ -466,12 +466,12 @@ int32_t __stdcall SFileOpenFile(char * szFilename, struct D2MPQFileStrc * * ppFi
 void __fastcall SFILE_DestroyAudioStream(struct D2StormAudioStreamRec * pAudioStream);
 // Scalar deleting destructor of the audio-stream record: SFILE_DestroyAudioStream, then frees it when bit0 of the flag is set; returns the record.
 // Provenance: CALL 004199a0, TEST [EBP+8],1, RET 4.
-struct D2StormAudioStreamRec * __fastcall SFILE_DeleteAudioStream(struct D2StormAudioStreamRec * pAudioStream, uint8_t bDelete);
+struct D2StormAudioStreamRec * __thiscall SFILE_DeleteAudioStream(struct D2StormAudioStreamRec * pAudioStream, uint8_t bDelete);
 // @blizzard SFileCloseArchive (SFILE.CPP)
 int __stdcall SFileCloseArchive(struct D2ArchiveStrc * pArchive);
 // Stream-list delete-node: destroys and frees pNode, returns the next node (NULL at the list end).
 // Provenance: next = [node+4] (<=0 -> NULL), CALL 004199a0, SMemFree(node), RET 4.
-struct D2StormAudioStreamRec * __fastcall SFILE_AudioStreamListDeleteNode(struct D2StormListHead * pList, struct D2StormAudioStreamRec * pNode);
+struct D2StormAudioStreamRec * __thiscall SFILE_AudioStreamListDeleteNode(struct D2StormListHead * pList, struct D2StormAudioStreamRec * pNode);
 // Drops one reference (nRefCount +0x4c) on pAudioStream (ESI); at zero runs SFILE_DestroyAudioStream and SMemFree.
 // No call, jump or stored pointer reaches it in 1.14d (rel32 and pointer-byte scans of the image are empty); body ends at the RET 0x419bf0 before INT3 padding.
 void __stdcall SFILE_ReleaseAudioStream(struct D2StormAudioStreamRec * pAudioStream);
@@ -481,13 +481,13 @@ BOOL __stdcall SFileDdaDestroy();
 // Takes a D2StormAsyncOpStrc: drops the request's references to its file record (+0xc) and parent audio stream (+0x30), freeing either at zero, then unlinks the request from its list. Provenance: 1.14d asm 0041a04a/0041a077.
 void __fastcall SFILE_ReleaseAsyncRequest(struct D2StormAsyncOpStrc * pAsyncOp);
 // Deleting destructor of an async request (D2StormAsyncOpStrc): SFILE_ReleaseAsyncRequest, then SMemFree when bit 0 of bParam is set. Provenance: 1.14d asm 0041a0e0; the record is allocated with the REQUEST tag.
-struct D2StormAsyncOpStrc * __fastcall SFILE_DeleteAsyncRequest(struct D2StormAsyncOpStrc * pAsyncOp, uint8_t bParam);
+struct D2StormAsyncOpStrc * __thiscall SFILE_DeleteAsyncRequest(struct D2StormAsyncOpStrc * pAsyncOp, uint8_t bParam);
 // Destroys SFile subsystem. Shuts down async I/O (sets gbAsyncIOWorkerShutdown, signals ghAsyncIOEvent, waits 1s for worker thread), frees gpCurrentAsyncIORequest and all linked lists (gSFileAsyncReqQueue.pNext, gSFileStreamRecordList.pNext pending requests, gSFileOpenFileList.pNext file records, g_pMpqArchiveListHead archives), and deallocates global buffers (g_pStormMpqCryptTable, gpSFileExplodeWorkBuffer, ghAsyncIOCompletionPort). Logs memory leaks via SSYSTEM_DebugMemoryHandleError.
 // @sourcefile .\SOURCE\SFILE.CPP
 // @blizzard SFileDestroy (SFILE.CPP)
 int __stdcall SFileDestroy();
 // Releases and frees one async request (REQUEST tag) and returns the next link of the list it was on (0 at the end). Provenance: 1.14d asm 0041a2c0.
-int __fastcall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, struct D2StormAsyncOpStrc * pAsyncOp);
+int __thiscall SFILE_DeleteAsyncRequestGetNext(int32_t pListContext, struct D2StormAsyncOpStrc * pAsyncOp);
 int __stdcall SFILE_CancelAsyncRequest(int32_t hFileHandle, struct D2MPQFileStrc * pMPQFile);
 void __stdcall SFILE_SelectAsyncRequest(int32_t nFileHandle, uint32_t nCurrentFilePos, int * * ppReadyRequest, int * * ppTimeoutRequest, int32_t * ppMinTimeout);
 // Async I/O worker thread (lpStartAddress for CreateThread). Main loop: process cancelled requests, select next request (priority vs normal queue), read file via SFILE_ReadFileBytes/SFILE_SyncReadFile, invoke completion callbacks, signal hCompletionEvent, and free request when done. Throttles based on gnSFileDataChunkSize/gnSFileAsyncBudgetBytesPerSec. Exits when gbAsyncIOWorkerShutdown shutdown flag is set. Updates gpCurrentAsyncIORequest during execution.

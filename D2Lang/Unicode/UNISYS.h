@@ -31,7 +31,7 @@ BOOL __fastcall UNICODE_CheckLineBreakPosition(int32_t pWszText, int32_t nPos);
 void __fastcall STRING_ConvertCharToWchar(uint16_t * pwszBuffer, char * pszBuffer, int32_t nSize);
 uint16_t * __fastcall STRING_CopyCharToWCharWithSetMaxSize(uint16_t * pDestination, char * szSource, int32_t nSize);
 char * __fastcall UNICODE_WideToMultiByte(char * pszDst, uint16_t * pwszSrc, int32_t nSize);
-bool __fastcall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar);
+bool __thiscall UNICODE_CheckTrailingPunctuation(char * szSourceFile, uint16_t * pwChar);
 void __fastcall UNICODE_FormatPossessiveName(uint16_t * wszText1, uint16_t * wszText2, uint16_t * wszSuffix, int32_t nMaxChars, int32_t nLang);
 void UNICODE_FreeBuffer(void * pParam);
 void UNICODE_AllocBuffer(uint32_t nSize);

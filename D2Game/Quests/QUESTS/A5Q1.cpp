@@ -201,7 +201,7 @@ BOOL __fastcall Q31_SyncQuestProgress(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 // A5Q1: Larzuk (NPC 0x1ff) dialog-select handler. Two menu strings: 0x4e6d = first conversation -> set in-memory stateFlag=2 and persist via Q31_SyncQuestProgress, then send gossip packet. 0x4e7a = "accept the reward": only if RewardAwaits(1) set -> mark bRewardAccepted, clear all Step bits, set Step0x05(5) (reward-given marker). If also JustCompleted(0xd) and stateFlag!=5, advance stateFlag to 5, chain the sequence filter, and broadcast state 0xd; finally register the player in the quest GUID list.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q1.cpp
 void __fastcall Q31_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2QuestDataA5Q1Strc* pA5Q1Data = pQuestData->pQuestSpecificData.pA5Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x1ff) {
       return;
@@ -390,8 +390,8 @@ void __fastcall Q31_SetCompleteForPartyMember(int32_t pGameRaw, D2UnitStrc * pUn
 
 // A5Q1: if this player just completed the quest (JustCompleted 0xd) and is in a party, propagate completion to every party member via Q31_SetCompleteForPartyMember.
 BOOL __fastcall Q31_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -431,8 +431,8 @@ BOOL __fastcall Q31_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A5Q1: per-player, if JustCompleted(0xd) play the quest-complete sound/event (SetupUpdateEvent 0x50). Iterator cb after Shenk's death.
 BOOL __fastcall Q31_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
+    D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SiegeOnHaggorath, QUESTSTATE_JustCompleted);
     if (!bQuestState) {
       return 0;
     }

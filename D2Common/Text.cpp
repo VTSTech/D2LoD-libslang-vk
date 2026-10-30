@@ -218,7 +218,7 @@ int32_t __fastcall TEXT_CompareMessagesByCode(uint16_t * pnCodeA, uint16_t * pnC
     return 1;
 }
 
-void __fastcall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextMessageCompare pfnCompare) {
+void __thiscall TEXT_SortMessages(uint16_t nCount, uint16_t * pEntries, pfnTextMessageCompare pfnCompare) {
     // Frame slots -40..-32 are ONE object: &wNextCode is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {

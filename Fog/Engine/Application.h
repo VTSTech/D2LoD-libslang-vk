@@ -50,7 +50,7 @@ bool __stdcall DEBUG_EnumerateModules(int * pModuleList);
 void __stdcall DEBUG_ExtractDebugDirectory64(uint32_t dwParam, uint32_t * pnRVA, uint32_t * pnSize, int32_t pOptHeader);
 void __stdcall DEBUG_ExtractDebugDirectory32(uint32_t dwParam, uint32_t * pnRVA, uint32_t * pnSize, int32_t pOptHeader);
 // Unwinds stack frames for crash dumps. Walks EBP chain up to 128 frames, validates stack pointers, skips first N frames. Captures EIP, ESP, EBP for each frame. Handles current thread or remote thread via OpenThread/SuspendThread.
-int __stdcall DEBUG_UnwindStackFrames(DWORD dwThreadId, struct D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames, CONTEXT * pContext);
+int __thiscall DEBUG_UnwindStackFrames(CONTEXT * pContext, DWORD dwThreadId, struct D2CrashFrameStrc * pFrameArray, uint32_t nSkipFrames);
 bool __stdcall DEBUG_FormatAddressInfo(uint32_t nAddress, char * pOutput);
 // Global operator delete: frees p through Storm SMemFree with the delete source tag, and ignores null. Counterpart of MISC_OperatorNewShim.
 // The CRT and std scalar deleting destructors call it, so it is the linked global operator delete.
@@ -61,7 +61,7 @@ int32_t __stdcall INI_FindConfigValueIndex(uint8_t * pbArgName);
 uint32_t __fastcall INI_IsDelimiterChar(char cChar);
 int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, int32_t pOutValue);
 void __stdcall CloseDiablo();
-void __fastcall MISC_ParseCommandLineAndPutIntoD2IniData(struct D2IniConfigStrc * pD2IniData, char * szText);
+void __thiscall MISC_ParseCommandLineAndPutIntoD2IniData(char * szText, struct D2IniConfigStrc * pD2IniData);
 void __fastcall MISC_InitD2IniAndIgnorelist(struct D2IniConfigStrc * D2IniData, char * szCommandLine);
 // Dispatch current app mode via ApplicationBootstrapArray: init -> run -> shutdown for selected mode.
 int32_t __stdcall ApplicationRunCurrentMode(struct D2IniConfigStrc * pD2IniData);

@@ -159,7 +159,10 @@ void __fastcall COMPRESS_BuildHuffmanDecodeTable(uint8_t * pCodeLengths) {
     uint8_t* pCurSortedLen;
     uint32_t* pTableEntry;
     int nIndex = 0;
-    memset(anOffsets, 0, 16 * sizeof(anOffsets[0]));
+    for (int iFill = 0; iFill < 16; iFill++) {
+      anOffsets[iFill] = 0;
+    }
+
     while (true) {
       byCodeLen = pCodeLengths[nIndex];
       if (!(byCodeLen && byCodeLen < 0x10)) {

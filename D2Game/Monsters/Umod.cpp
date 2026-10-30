@@ -33,7 +33,6 @@
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "globals/globals.h"
-#include "D2Common/D2SkillStrc.h"
 #include "D2Common/Unit/Unit.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -47,7 +46,8 @@ void __fastcall MONUMOD_RollNameSeed(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     }
 
     D2SeedStrc sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = sSeedNext;
+    pUnit->sSeed.nSeedHigh = sSeedNext.nSeedHigh;
+    pUnit->sSeed.nSeedLow = sSeedNext.nSeedLow;
     if (!(pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
@@ -59,22 +59,24 @@ static void UMOD_IncreaseMonsterHp(uint32_t nUmodConstant, D2UnitStrc * pUnit) {
     int nHpBonus;
     uint32_t nBaseHp;
     nBaseHp = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    if ((int)nBaseHp < 0x100001) {
-      if ((int)nUmodConstant < 0x10001) {
+    if ((int)nBaseHp > 0x100000) {
+      if ((int)(nBaseHp & -16) >= 0x640) {
+        nHpBonus = (int)nBaseHp / 100 * nUmodConstant;
+        goto apply_hp_bonus;
+      }
+    } else {
+      if ((int)nUmodConstant <= 0x10000) {
         nHpBonus = (int)(nBaseHp * nUmodConstant) / 100;
         goto apply_hp_bonus;
       }
-      if (0x63f < (int)(nUmodConstant & -16)) {
+      if ((int)(nUmodConstant & -16) >= 0x640) {
         nHpBonus = (int)nUmodConstant / 100 * nBaseHp;
         goto apply_hp_bonus;
       }
-    } else if (0x63f < (int)(nBaseHp & -16)) {
-      nHpBonus = (int)nBaseHp / 100 * nUmodConstant;
-      goto apply_hp_bonus;
     }
 
     int64_t nDivResult;
-    nDivResult = __alldiv((uint32_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant), (uint32_t)((uint64_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant) >> 0x20), 100, 0);
+    nDivResult = _alldiv((uint32_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant), (uint32_t)((uint64_t)((int64_t)(int)nBaseHp * (int64_t)(int)nUmodConstant) >> 0x20), 100, 0);
     nHpBonus = (int)nDivResult;
     apply_hp_bonus:
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, nBaseHp + nHpBonus, 0);
@@ -104,10 +106,10 @@ void __fastcall MONUMOD_ApplyHpBonus(D2UnitStrc * pUnit, int32_t nIndex, BOOL bU
     }
 
     nUmodConst = CheckMonsterType(pUnit, 4);
-    if (!nUmodConst) {
-      nUmodConstIdx = byDifficulty + 7;
-    } else {
+    if (nUmodConst) {
       nUmodConstIdx = byDifficulty + 4;
+    } else {
+      nUmodConstIdx = byDifficulty + 7;
     }
 
     nUmodConst = GetUmodConstant(nUmodConstIdx);
@@ -140,7 +142,7 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
       return;
     }
 
@@ -153,14 +155,14 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, nDamageBonus - 1, 0);
     uint32_t nExp = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_experience, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_experience, nExp + nExp / 5 * -2, 0);
-    if (sgptDataTable->nTxtMonUmodSize < 0xc) {
+    if (sgptDataTable->nTxtMonUmodSize <= 0xb) {
       nDamageBonus = 0;
     } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-352) {
       nDamageBonus = 0;
     } else {
       nDamageBonus = sgptDataTable->pTxtMonUmod[0xb].constants;
     }
-    if (sgptDataTable->nTxtMonUmodSize < 0xb) {
+    if (sgptDataTable->nTxtMonUmodSize <= 0xa) {
       nToHitBonus = 0;
     } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-320) {
       nToHitBonus = 0;
@@ -182,30 +184,37 @@ void __fastcall MONUMOD_ApplyChampionStats(D2UnitStrc * pUnit, int32_t nIndex, B
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_damagepercent, nDamageBonus, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_item_tohit_percent, nToHitBonus, 0);
     short int nVelocity = pMonStatsTxt[nClassId].Velocity;
-    if (!(0 < nVelocity && nIndex != 0x24)) {
+    if (!(nVelocity > 0 && nIndex != 0x24)) {
       return;
     }
-    if (nIndex != 0x24) {
-      if (nIndex != 0x25) {
-        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 0x14, 0);
-        return;
-      }
 
-      nBaseMonId = (int)(0x800 / (int64_t)(int)nVelocity) - 0x80;
-      if (10 < nBaseMonId) {
-        if (99 < nBaseMonId) {
-          nBaseMonId = 100;
+    switch (nIndex) {
+      case 0x24:
+        {
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, -0x21, 0);
+          break;
         }
+      case 0x25:
+        {
+          nBaseMonId = (int)(0x800 / (int64_t)(int)nVelocity) - 0x80;
+          if (nBaseMonId > 10) {
+            if (nBaseMonId >= 100) {
+              nBaseMonId = 100;
+            }
 
-        D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nBaseMonId, 0);
-        return;
-      }
+            D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, nBaseMonId, 0);
+            return;
+          }
 
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
-      return;
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
+          return;
+        }
+      default:
+        {
+          D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 0x14, 0);
+          return;
+        }
     }
-
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, -0x21, 0);
 }
 
 // Applies the Cold Enchanted monster modifier (umod) to pUnit. Validates the unit is a live UNIT_MONSTER with a game pointer and that bUnknown (apply flag) is set, then ORs 0x40 into the monster-data type flags, sets a 80% (0x50) damage-resist stat, applies champion stats, and adds cold min/max damage scaled from monlvl.txt DM[] by difficulty (clamped 0-2) using GetUmodConstant(diff+0x16/+0x19) percentages, plus a fixed 150-frame (0x96) cold length. No-op if unit/game null or apply flag clear. Server-side monster spawn modifier.
@@ -236,12 +245,12 @@ void __fastcall MONUMOD_ApplyColdEnchant(D2UnitStrc * pUnit, int32_t nIndex, BOO
     MONUMOD_ApplyChampionStats(pUnit, nIndex, bUnknown);
     uint8_t byDifficulty;
     byDifficulty = pGame->nDifficulty;
-    if (byDifficulty) {
+    if (byDifficulty > 0) {
       if (1 < byDifficulty) {
         bUnknown = 2;
         goto add_cold_damage;
       }
-      if (byDifficulty) {
+      if (byDifficulty > 0) {
         bUnknown = (BOOL)byDifficulty;
         goto add_cold_damage;
       }
@@ -256,14 +265,14 @@ void __fastcall MONUMOD_ApplyColdEnchant(D2UnitStrc * pUnit, int32_t nIndex, BOO
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLevelIdx = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLevelIdx = 1;
     }
 
     int nLvlTableIdx = sgptDataTable->nTxtMonLvlSize - 1;
     if (nLevelIdx < nLvlTableIdx) {
       nLvlTableIdx = nLevel;
-      if (nLevel < 2) {
+      if (nLevel <= 1) {
         nLvlTableIdx = 1;
       }
     }
@@ -276,8 +285,7 @@ void __fastcall MONUMOD_ApplyColdEnchant(D2UnitStrc * pUnit, int32_t nIndex, BOO
     nLvlDmgBase = pMonLvl->DM[nLvlDmgBase * 3 + bUnknown];
     int32_t nMaxDamConst = GetUmodConstant(bUnknown + 0x19);
     int16_t nLayer = 0;
-    int32_t nColdMinConst = GetUmodConstant(bUnknown + 0x16);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, nColdMinConst * nLvlDmgBase / 100, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmindam, GetUmodConstant(bUnknown + 0x16) * nLvlDmgBase / 100, nLayer);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldmaxdam, nMaxDamConst * nLvlDmgBase / 100, 0);
     D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_coldlength, 0x96, 0);
 }
@@ -377,7 +385,7 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     if (99 < nDmgRes) {
       bUnknown++;
     }
-    if (99 < nMagicRes) {
+    if (nMagicRes >= 100) {
       bUnknown++;
     }
     if ((uint32_t)bUnknown >= 2) {
@@ -386,20 +394,20 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     if (nIndex == 8) {
       if (nColdRes < 100) {
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_coldresist, nColdRes + 0x28, 0);
-        if (99 < nColdRes + 0x28) {
+        if (nColdRes + 0x28 >= 100) {
           bUnknown++;
         }
       }
       if ((uint32_t)bUnknown < 2) {
         if (nFireRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x28, 0);
-          if (99 < nFireRes + 0x28) {
+          if (nFireRes + 0x28 >= 100) {
             bUnknown++;
           }
         }
         if ((uint32_t)bUnknown < 2 && nLightRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x28, 0);
-          if (99 < nLightRes + 0x28) {
+          if (nLightRes + 0x28 >= 100) {
             return;
           }
         }
@@ -428,20 +436,20 @@ void __fastcall MagicResist(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
       if (nIndex == 0x1b) {
         if (nColdRes < 0x4b) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_coldresist, nColdRes + 0x14, 0);
-          if (99 < nColdRes + 0x14) {
+          if (nColdRes + 0x14 >= 100) {
             bUnknown++;
           }
         }
         if ((uint32_t)bUnknown < 2) {
           if (nFireRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x14, 0);
-            if (99 < nFireRes + 0x14) {
+            if (nFireRes + 0x14 >= 100) {
               bUnknown++;
             }
           }
           if ((uint32_t)bUnknown < 2 && nLightRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x14, 0);
-            if (99 < nLightRes + 0x14) {
+            if (nLightRes + 0x14 >= 100) {
               return;
             }
           }
@@ -458,9 +466,7 @@ void __fastcall TeleHeal(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     SKILLS::SkillsServer::SetSkill(pUnit, SKILL_MonTeleport, 1, 1);
-    uint32_t nMode = 4;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit);
-    D2Common::Skills::SetSkillMode(pSkill, nMode);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_MonTeleport), 4);
     Monster::AI::SetUnsetAiFlags0x20(pUnit, 1);
 }
 
@@ -534,7 +540,7 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
 
     bUnknown = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    if (bUnknown < 1) {
+    if (bUnknown <= 0) {
       bUnknown = 1;
     }
 
@@ -570,8 +576,7 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
 
     D2Common::Seed::SEED_InitDefault(&sNameSeed);
-    sNameSeed.nSeedLow = (uint32_t)wNameSeed;
-    sNameSeed.nSeedHigh = 0x29a;
+    D2Common::Seed::InitSeed_Param_666(&sNameSeed, (uint32_t)wNameSeed);
     uint32_t nAuraRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&sNameSeed, nAuraIndex);
     if (pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster && pUnit->pUnitData.pUnitDataMonster->nBossNo == 0x25) {
       nAuraRoll = 5;
@@ -583,10 +588,12 @@ void __fastcall AuraEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
 
     int32_t nSkillLevel = (gaAuraEnchantedTable[nAuraRoll].nSkillLevelBase + bUnknown) * gaAuraEnchantedTable[nAuraRoll].nSkillLevelMul / gaAuraEnchantedTable[nAuraRoll].nSkillLevelDiv;
-    if (nSkillLevel < 2) {
+    if (nSkillLevel > 1) {
+      if (nSkillLevel >= 0x63) {
+        nSkillLevel = 99;
+      }
+    } else {
       nSkillLevel = 1;
-    } else if (0x62 < nSkillLevel) {
-      nSkillLevel = 99;
     }
 
     SKILLS::SkillsServer::SetSkill(pUnit, gaAuraEnchantedTable[nAuraRoll].eSkill, nSkillLevel, 1);
@@ -613,34 +620,34 @@ void __fastcall ExtraStrong(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
 
     int nToHitConst;
     nToHitConst = sgptDataTable->nTxtMonUmodSize;
-    if (!bUnknown) {
-      if (nToHitConst < 0xf) {
-        nValue = 0;
-      } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-448) {
-        nValue = 0;
-      } else {
-        nValue = sgptDataTable->pTxtMonUmod[0xe].constants;
-      }
-      if (nToHitConst < 0xd) {
-        nToHitConst = 0;
-        goto scale_and_add_bonus;
-      }
-
-      pUmodEntry = sgptDataTable->pTxtMonUmod + 0xc;
-    } else {
-      if (nToHitConst < 0x10) {
+    if (bUnknown) {
+      if (nToHitConst <= 0xf) {
         nValue = 0;
       } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-480) {
         nValue = 0;
       } else {
         nValue = sgptDataTable->pTxtMonUmod[0xf].constants;
       }
-      if (nToHitConst < 0xe) {
+      if (nToHitConst <= 0xd) {
         nToHitConst = 0;
         goto scale_and_add_bonus;
       }
 
       pUmodEntry = sgptDataTable->pTxtMonUmod + 0xd;
+    } else {
+      if (nToHitConst <= 0xe) {
+        nValue = 0;
+      } else if (sgptDataTable->pTxtMonUmod == (D2MonUModTxt*)-448) {
+        nValue = 0;
+      } else {
+        nValue = sgptDataTable->pTxtMonUmod[0xe].constants;
+      }
+      if (nToHitConst <= 0xc) {
+        nToHitConst = 0;
+        goto scale_and_add_bonus;
+      }
+
+      pUmodEntry = sgptDataTable->pTxtMonUmod + 0xc;
     }
     if (!pUmodEntry) {
       nToHitConst = 0;
@@ -655,7 +662,7 @@ void __fastcall ExtraStrong(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
       nValue = pDiffLevels->ChampionDamageBonus * nValue / 100;
       nToHitConst = pDiffLevels->ChampionDamageBonus * nToHitConst / 100;
       nBaseClassId = D2Client::UNIT::Player::TXT_MonStats_GetBaseId(pUnit);
-      if (-1 < nBaseClassId && nBaseClassId < sgptDataTable->nTxtMonStatsSize && nBaseClassId == 0x76) {
+      if (nBaseClassId >= 0 && nBaseClassId < sgptDataTable->nTxtMonStatsSize && nBaseClassId == 0x76) {
         nValue /= 2;
       }
     }
@@ -670,21 +677,22 @@ void __fastcall ExtraFast(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nClassId)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!pMonStatsTxt) {
       return;
     }
 
-    short int nBaseVelocity = sgptDataTable->pTxtMonStats[nClassId].Velocity;
-    if (0 >= nBaseVelocity) {
+    short int nBaseVelocity = pMonStatsTxt->Velocity;
+    if (nBaseVelocity <= 0) {
       return;
     }
 
     int32_t nValue = (int)(0x800 / (int64_t)(int)nBaseVelocity) - 0x80;
-    if (nValue < 0xb) {
+    if (nValue <= 0xa) {
       D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_velocitypercent, 10, 0);
       return;
     }
-    if (99 < nValue) {
+    if (nValue >= 100) {
       nValue = 100;
     }
 
@@ -711,12 +719,12 @@ void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
 
     uint8_t byGameDifficulty;
     byGameDifficulty = pGame->nDifficulty;
-    if (byGameDifficulty) {
+    if (byGameDifficulty > 0) {
       if (1 < byGameDifficulty) {
         nDifficulty = 2;
         goto add_fire_damage;
       }
-      if (byGameDifficulty) {
+      if (byGameDifficulty > 0) {
         nDifficulty = (uint32_t)byGameDifficulty;
         goto add_fire_damage;
       }
@@ -729,29 +737,31 @@ void __fastcall FireEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLevelClamped = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLevelClamped = 1;
     }
 
     int nLevelIdx = sgptDataTable->nTxtMonLvlSize - 1;
-    if (nLevelClamped < nLevelIdx && (nLevelIdx = nLevel , nLevel < 2)) {
+    if (nLevelClamped < nLevelIdx && (nLevelIdx = nLevel , nLevel <= 1)) {
       nLevelIdx = 1;
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLevelClamped = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
-    if (!bUnknown) {
-      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
-      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
-      nLevel = nDifficulty + 0x13;
-    } else {
+    nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
+    if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
+    } else {
+      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
+      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
+      nLevel = nDifficulty + 0x13;
     }
 
     nMaxDamConst = GetUmodConstant(nLevel);
@@ -780,12 +790,12 @@ void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnk
 
     uint8_t byGameDifficulty;
     byGameDifficulty = pGame->nDifficulty;
-    if (byGameDifficulty) {
+    if (byGameDifficulty > 0) {
       if (1 < byGameDifficulty) {
         nDifficulty = 2;
         goto add_lightning_damage;
       }
-      if (byGameDifficulty) {
+      if (byGameDifficulty > 0) {
         nDifficulty = (uint32_t)byGameDifficulty;
         goto add_lightning_damage;
       }
@@ -798,29 +808,31 @@ void __fastcall LightningEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnk
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLevelClamped = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLevelClamped = 1;
     }
 
     int nLevelIdx = sgptDataTable->nTxtMonLvlSize - 1;
-    if (nLevelClamped < nLevelIdx && (nLevelIdx = nLevel , nLevel < 2)) {
+    if (nLevelClamped < nLevelIdx && (nLevelIdx = nLevel , nLevel <= 1)) {
       nLevelIdx = 1;
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLevelClamped = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
-    if (!bUnknown) {
-      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
-      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
-      nLevel = nDifficulty + 0x13;
-    } else {
+    nLevelClamped = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
+    if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
+    } else {
+      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
+      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLevelClamped) * 0x51eb851f) >> 0x20);
+      nLevel = nDifficulty + 0x13;
     }
 
     nMaxDamConst = GetUmodConstant(nLevel);
@@ -850,12 +862,12 @@ void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
 
     uint8_t byGameDifficulty;
     byGameDifficulty = pGame->nDifficulty;
-    if (byGameDifficulty) {
+    if (byGameDifficulty > 0) {
       if (1 < byGameDifficulty) {
         nDifficulty = 2;
         goto add_cold_damage;
       }
-      if (byGameDifficulty) {
+      if (byGameDifficulty > 0) {
         nDifficulty = (uint32_t)byGameDifficulty;
         goto add_cold_damage;
       }
@@ -868,29 +880,31 @@ void __fastcall ColdEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown)
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLvlDamage = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLvlDamage = 1;
     }
 
     int nLevelIdx = sgptDataTable->nTxtMonLvlSize - 1;
-    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel < 2)) {
+    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel <= 1)) {
       nLevelIdx = 1;
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
-    if (!bUnknown) {
-      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
-      nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
-      nLevel = nDifficulty + 0x13;
-    } else {
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
+    if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
+    } else {
+      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
+      nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
+      nLevel = nDifficulty + 0x13;
     }
 
     nMaxDamConst = GetUmodConstant(nLevel);
@@ -921,12 +935,12 @@ void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknow
 
     uint8_t byGameDifficulty;
     byGameDifficulty = pGame->nDifficulty;
-    if (byGameDifficulty) {
+    if (byGameDifficulty > 0) {
       if (1 < byGameDifficulty) {
         nDifficulty = 2;
         goto add_poison_damage;
       }
-      if (byGameDifficulty) {
+      if (byGameDifficulty > 0) {
         nDifficulty = (uint32_t)byGameDifficulty;
         goto add_poison_damage;
       }
@@ -939,29 +953,31 @@ void __fastcall PoisonEnchanted(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknow
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLvlDamage = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLvlDamage = 1;
     }
 
     int nLevelIdx = sgptDataTable->nTxtMonLvlSize - 1;
-    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel < 2)) {
+    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel <= 1)) {
       nLevelIdx = 1;
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
-    if (!bUnknown) {
-      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
-      nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
-      nLevel = nDifficulty + 0x13;
-    } else {
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
+    if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
+    } else {
+      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
+      nMinDamScaled = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
+      nLevel = nDifficulty + 0x13;
     }
 
     nMaxDamConst = GetUmodConstant(nLevel);
@@ -991,12 +1007,12 @@ void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
 
     uint8_t byGameDifficulty;
     byGameDifficulty = pGame->nDifficulty;
-    if (byGameDifficulty) {
+    if (byGameDifficulty > 0) {
       if (1 < byGameDifficulty) {
         nDifficulty = 2;
         goto add_mana_drain_damage;
       }
-      if (byGameDifficulty) {
+      if (byGameDifficulty > 0) {
         nDifficulty = (uint32_t)byGameDifficulty;
         goto add_mana_drain_damage;
       }
@@ -1009,29 +1025,31 @@ void __fastcall ManaBurn(D2UnitStrc * pUnit, int32_t nIndex, BOOL bUnknown) {
     }
     int nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     int nLvlDamage = nLevel;
-    if (nLevel < 2) {
+    if (nLevel <= 1) {
       nLvlDamage = 1;
     }
 
     int nLevelIdx = sgptDataTable->nTxtMonLvlSize - 1;
-    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel < 2)) {
+    if (nLvlDamage < nLevelIdx && (nLevelIdx = nLevel , nLevel <= 1)) {
       nLevelIdx = 1;
     } else if (nLevelIdx < 0) {
       return;
     }
-    if (!(nLevelIdx < sgptDataTable->nTxtMonLvlSize && sgptDataTable->pTxtMonLvl + nLevelIdx)) {
+
+    D2MonLvlTxt* pMonLvlTxt = nLevelIdx < sgptDataTable->nTxtMonLvlSize ? sgptDataTable->pTxtMonLvl + nLevelIdx : nullptr;
+    if (!pMonLvlTxt) {
       return;
     }
 
-    nLvlDamage = sgptDataTable->pTxtMonLvl[nLevelIdx].DM[bIsMultiplayer * 3 + nDifficulty];
-    if (!bUnknown) {
-      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
-      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
-      nLevel = nDifficulty + 0x13;
-    } else {
+    nLvlDamage = pMonLvlTxt->DM[bIsMultiplayer * 3 + nDifficulty];
+    if (bUnknown) {
       nMaxDamConst = GetUmodConstant(nDifficulty + 0x1c);
       nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
       nLevel = nDifficulty + 0x1f;
+    } else {
+      nMaxDamConst = GetUmodConstant(nDifficulty + 0x10);
+      nLevelIdx = (int)((uint64_t)((int64_t)(nMaxDamConst * nLvlDamage) * 0x51eb851f) >> 0x20);
+      nLevel = nDifficulty + 0x13;
     }
 
     nMaxDamConst = GetUmodConstant(nLevel);

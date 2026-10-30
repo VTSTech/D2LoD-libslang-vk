@@ -47,7 +47,7 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2RoomCoordListStrc) == 0x30, "D2_N
 namespace D2Common::Drlg::DrlgLogic {
 
 // @sourcefile .\DRLG\DrlgLogic.cpp
-D2DrlgCoordListStrc * __fastcall AllocEmptyDrlgCoordList_Unused(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx) {
+D2DrlgCoordListStrc * __thiscall AllocEmptyDrlgCoordList_Unused(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoomEx) {
     D2DrlgCoordListStrc* _Dst = D2_NEW_POOL_AT(pMemory, D2DrlgCoordListStrc, ".\\DRLG\\DrlgLogic.cpp", 0xdf);
     memset(_Dst, 0, 0x34);
     pRoomEx->pDrlgCoordList = _Dst;

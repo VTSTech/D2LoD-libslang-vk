@@ -430,7 +430,7 @@ def rewrite_thiscall(s):
             if not m:
                 break
             pos = m.end()
-            head = s[max(0, m.start() - 200):m.start()]
+            head = re.sub(r'//[^\n]*', '', s[max(0, m.start() - 200):m.start()])   # a line comment is not a type
             head = re.sub(r'(?:::)?' + QUAL + r'$', '', head) if names is THISCALL_FUNCS else ''
             if re.search(r'(?:[\w>]\s*[*&]*|(?<!&)[*&])\s*$', head) and \
                     not re.search(r'\b(?:return|else|case|throw)\s*$', head):

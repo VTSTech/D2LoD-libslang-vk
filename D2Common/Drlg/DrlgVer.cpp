@@ -97,15 +97,6 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
         pNewVertex = pThirdVertex;
         pEdgeVertex = pVertex1;
         goto use_x_axis;
-        case 2:
-          nCoordMin = pEffectiveCoord->nPosY;
-        nAnchorPos = pVertex2->nPosY;
-        nEdgeMin = pThirdVertex->nPosY;
-        nEdgeVtxPos = 1;
-        bHasGap = true;
-        nCoordMax = pEffectiveCoord->nHeight + nCoordMin;
-        pEdgeVertex = pThirdVertex;
-        break;
         case 3:
           nCoordMax = pEffectiveCoord->nPosX;
         nEdgeVtxPos = -1;
@@ -116,6 +107,15 @@ D2DrlgVertexStrc * __stdcall DRLGVER_CreateVerticesFromEdges(D2PoolManagerStrc *
         bHasGap = false;
         nAnchorPos = pNewVertex->nPosX;
         nEdgeMin = pEdgeVertex->nPosX;
+        break;
+        case 2:
+          nCoordMin = pEffectiveCoord->nPosY;
+        nAnchorPos = pVertex2->nPosY;
+        nEdgeMin = pThirdVertex->nPosY;
+        nEdgeVtxPos = 1;
+        bHasGap = true;
+        nCoordMax = pEffectiveCoord->nHeight + nCoordMin;
+        pEdgeVertex = pThirdVertex;
         break;
         default:
           nErrorCode = 0x6d;

@@ -316,7 +316,7 @@ static D2SoundChannelStrc * __stdcall SOUND_FindActiveStreamChannel(D2SoundChann
     return nChannelData;
 }
 
-int32_t __fastcall SOUND_CalculateDistance(int32_t pThis, int32_t nExcludeChannel) {
+int32_t __thiscall SOUND_CalculateDistance(int32_t pThis, int32_t nExcludeChannel) {
     D2SoundChannelStrc* nChannelData;
     D2SoundsTxt* pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pThis);
     D2SoundChannelNodeStrc* pDVar1 = gpActiveSoundChannelsHead;
@@ -358,7 +358,7 @@ static void __stdcall SOUND_CalculateUnitDirection(D2UnitStrc * pUnit, int32_t n
     pfDirection[1] = (float)(ptUnit.y - ptPlayer.y) + (float)(ptUnit.y - ptPlayer.y);
 }
 
-float __fastcall SOUND_CalculateUnitDistance(int32_t pThis, D2UnitStrc * pUnit) {
+float __thiscall SOUND_CalculateUnitDistance(int32_t pThis, D2UnitStrc * pUnit) {
     D2SoundEnvironTxt* pSoundEnvTxt;
     bool bIndoors;
     D2SoundsTxt* pSoundsTxt = DataTbls::TXT_sounds_GetLineBySoundId(pThis);
@@ -955,10 +955,10 @@ void __fastcall SOUND_UpdateAllChannels(uint32_t nFrameTime) {
             SOUND_CalculateUnitDirection(pUnit_00, pChanEntry->nSoundId, &__frame0.fDir1);
             __frame0.fUnitDistSmooth = _Utils::CalculateHypotenusePowered(__frame0.fDir1, __frame0.fDirX2);
             if (!__frame0.pClosestUnit || __frame0.fUnitDistSmooth < __frame0.fClosestDist.fValue) {
+              __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               afSoundDir[0] = __frame0.fDir1;
               afSoundDir[1] = __frame0.fDirX2;
               afSoundDir[2] = __frame0.fDirX3;
-              __frame0.fClosestDist.fValue = __frame0.fUnitDistSmooth;
               __frame0.pClosestUnit = pUnit_00;
             }
 
@@ -1585,7 +1585,7 @@ static void SOUND_SetVolumeForChannel(int32_t nChannelIndex) {
 void __stdcall SOUND_TogglePauseAll() {
     int32_t_007c8c7c = 0;
     int32_t_007c8c90 = 0;
-    int32_t_007c8c94 = 0;
+    UINT_007c8c94 = 0;
     int32_t_007c8c98 = 0;
     if (gnActiveSoundChannelCount) {
       SOUND_StopById(gnActiveSoundChannelCount);
@@ -1747,12 +1747,12 @@ void __fastcall SOUND_UpdateEnvironmentAmbience(int32_t nTick) {
       int32_t nPanAngle;
       if (nEventSoundId != int32_t_007c8c90) {
         nDayCycleIndex = _Utils::RollRandomNumberTimesTwo((uint32_t)pSoundEnvLine->Event_Delay / 3);
-        int32_t_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
-        nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(int32_t_007c8c94);
+        UINT_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
+        nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(UINT_007c8c94);
         int32_t_007c8c98 = nTick - nSoundEnvIndex;
         int32_t_007c8c90 = nEventSoundId;
       }
-      if ((uint32_t)int32_t_007c8c94 <= (uint32_t)(nTick - int32_t_007c8c98)) {
+      if ((uint32_t)(nTick - int32_t_007c8c98) >= UINT_007c8c94) {
         nVolume = SOUND_PlaySound(int32_t_007c8c90, nullptr, 0, 0, 0);
         if (nVolume) {
           nSoundEnvIndex = _Utils::RollRandomNumerUpToArgument(2);
@@ -1761,7 +1761,7 @@ void __fastcall SOUND_UpdateEnvironmentAmbience(int32_t nTick) {
           SOUND_PlayEnvironmentSound(nVolume, nDayCycleIndex * (nSoundEnvIndex ? 0x1 : -0x1), nPanAngle, 0);
           int32_t_007c8c98 = nTick;
           nDayCycleIndex = _Utils::RollRandomNumberTimesTwo((uint32_t)pSoundEnvLine->Event_Delay / 3);
-          int32_t_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
+          UINT_007c8c94 = nDayCycleIndex + pSoundEnvLine->Event_Delay;
         }
       }
     }

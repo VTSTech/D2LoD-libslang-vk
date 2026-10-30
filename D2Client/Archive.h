@@ -27,18 +27,18 @@ namespace D2Client::Archive {
 
 // Function declarations
 // Writes formatted text to a file handle using wvsprintfA. Variadic printf-style format arguments follow pFormat on the stack. Epilogue is a bare RET (no stack cleanup by callee), so the convention is __cdecl, not __stdcall.
-bool ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...);
-uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode);
-int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode);
-uint32_t __fastcall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode);
-void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode);
-void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget, int * * ppList);
-uint32_t __fastcall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode);
+BOOL ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...);
+uint32_t __thiscall ARCHIVE_ComputeAddress(int * pNode, int32_t nBaseAddr);
+int32_t __thiscall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode);
+uint32_t __thiscall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode);
+void __thiscall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode);
+void __thiscall ARCHIVE_LinkNode(int * * ppList, int * * ppNode, int32_t nMode, int * * ppTarget);
+uint32_t __thiscall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode);
 void __fastcall ARCHIVE_ClearList(int32_t nList);
 void __fastcall ARCHIVE_ClearAndFreeHead(int32_t nList);
-int * * __fastcall ARCHIVE_AllocNode(int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags, int * * ppList);
-int * __fastcall ARCHIVE_FreeNode(uint8_t byFree, int * pNode);
-uint32_t __fastcall ARCHIVE_RemoveNode(int32_t pThis, int * pNode);
+int * * __thiscall ARCHIVE_AllocNode(int * * ppList, int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags);
+int * __thiscall ARCHIVE_FreeNode(int * pNode, uint8_t byFree);
+uint32_t __thiscall ARCHIVE_RemoveNode(int32_t pThis, int * pNode);
 // NOTE: Callee-saved register params inferred (medium confidence): param_esi (ESI): LPOVERLAPPED, param_edi (EDI): LPOVERLAPPED, param_ebx (EBX): LPOVERLAPPED
 // @sourcefile SOURCE\D2HELL\Src\Archive.cpp
 void ARCHIVE_WriteMemoryCheckReport();

@@ -100,18 +100,19 @@ void __fastcall Objects_InitFn52(D2ObjectInitFnArg * pInitArg) {
 // A3Q7 / slot QUESTINT_TheGuardian (Mephisto). Q23_NotifyGuardianStateToPlayers(pGame, cParam): drives/broadcasts the quest's state-flag machine. While quest is active (bIsNotIntroduction) and nStateFlag<6: if cParam==0 it saves the current prev-flag and advances state to 6 (or 7 in multiplayer); else it restores the saved prev-flag. Calls QUEST_SetStateAndBroadcast with A3Q6::Q23_PlayerNotifyCompleted as the per-player notify cb. No GetQuestState/SetQuestState calls here (uses the broadcast helper instead).
 void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cParam) {
     uint8_t nBroadcastState;
+    int32_t nPrevStateFlag;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction && pQuestData->nStateFlag < 6)) {
+    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag < 6)) {
       return;
     }
-    if (cParam == '\0') {
-      pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev = (uint32_t)pQuestData->nStateFlagPrev;
-      nBroadcastState = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
+    if (cParam != '\0') {
+      nPrevStateFlag = pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
     } else {
-      nBroadcastState = (uint8_t)pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev;
+      pQuestData->pQuestSpecificData.pA3Q6->nPrevStateFlagPrev = (uint32_t)pQuestData->nStateFlagPrev;
+      nPrevStateFlag = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + 6;
     }
 
-    QUEST_SetStateAndBroadcast(pQuestData, nBroadcastState, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, pQuestData->nStateFlag != 0);
+    QUEST_SetStateAndBroadcast(pQuestData, nPrevStateFlag, nullptr, (::fpExecuteOnUnitFunction)A3Q6::Q23_PlayerNotifyCompleted, (uint8_t)pQuestData->nStateFlag > 0);
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.
@@ -276,8 +277,10 @@ void __fastcall Objects_InitFn43(D2ObjectInitFnArg * pInitArg) {
 // A3Q7 secondary slot QUESTINT_UnknownDuplicate1. Q24_Callback_13: quest state-handler installed at sStateFunctions[0xd] (the JustCompleted slot) by Q24_InitData. Reads the firing player's per-difficulty QuestRecord: if QUEST_UnknownDuplicate1 is Completed in the record, promote the live quest to JustCompleted and clear bQuestCompleted (one-shot completion latch syncing record->live state).
 void __fastcall Q24_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_UnknownDuplicate1, QUESTSTATE_Completed);
+    /* QuestRecord::GetQuestState(record, QUEST_UnknownDuplicate1=0x20, state
+                         0x0=QUESTSTATE_Completed). Tests whether self player's saved record has the
+                         duplicate quest marked Completed. */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_UnknownDuplicate1, QUESTSTATE_Completed);
     if (bQuestState != 1) {
       return;
     }
@@ -295,7 +298,7 @@ void __fastcall Q24_InitData(D2QuestDataStrc * pQuestData) {
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q24_Callback13_PlayerStartedGame;
     pQuestData->pNpcMessages = 0;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nStateFlagPrev = 0;
     D2QuestDataA3Q7Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA3Q7Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q7.cpp", 0xb9);
@@ -339,10 +342,13 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
     0x3
 }; D2_STATIC_GUARD(gnA3Q7ArchonState2, "D2Game::Quests::QUESTS::A3Q7::Q24_TimerCallback_SpawnPortals::gnA3Q7ArchonState2");
 
+    D2SeedStrc* pSeed;
+    D2RoomStrc* pRoom;
     D2UnitStrc* pDVar5;
     uint32_t uVar2;
     POINT ptUnitPos;
     POINT ptPortalPos;
+    ::SGAMEDATA* pGameSaved;
     D2QuestDataA3Q7Strc* pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q7;
     if (pQuestSpecificData->bPortalsSpawned) {
       return '\x01';
@@ -353,23 +359,25 @@ uint8_t __fastcall Q24_TimerCallback_SpawnPortals(::SGAMEDATA * pGame, D2QuestDa
     pQuestSpecificData->bPortalsSpawned = true;
     pQuestSpecificData->bTimerStarted = false;
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pQuestSpecificData->nDarkWandererGUID);
-    if (!pUnit) {
-      return '\x01';
-    }
-
-    D2SeedStrc* pSeed = GetQuestControlSeed(pGame);
-    D2SeedStrc DVar1 = D2_SEED_NEXT(*pSeed);
-    *pSeed = DVar1;
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    D2Common::Units::GetCoords(pUnit, &ptUnitPos);
-    ::SGAMEDATA* pGameSaved = pSpawnRoom;
-    for (uVar2 = DVar1.nSeedLow & 1; uVar2 < 8; uVar2++) {
-      ptPortalPos.y = ptUnitPos.y + gnA3Q7ArchonState2[uVar2 * 2 + 1];
-      ptPortalPos.x = gnA3Q7ArchonState2[uVar2 * 2] + ptUnitPos.x;
-      FindSpawnableLocation(pRoom, &ptPortalPos, 3, 0x3f11, (D2RoomStrc**)&pSpawnRoom, 0xb, 100);
-      if (pSpawnRoom) {
-        UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x83, ptPortalPos.x, ptPortalPos.y, pGameSaved, (D2RoomStrc*)pSpawnRoom, 1, 0, nullptr);
+    if (pUnit) {
+      D2SeedStrc DVar1;
+      pSeed = GetQuestControlSeed(pGame);
+      DVar1 = D2_SEED_NEXT(*pSeed);
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      D2Common::Units::GetCoords(pUnit, &ptUnitPos);
+      pGameSaved = pSpawnRoom;
+      for (uVar2 = DVar1.nSeedLow & 1; uVar2 < 8; uVar2++) {
+        ptPortalPos.y = ptUnitPos.y + gnA3Q7ArchonState2[uVar2 * 2 + 1];
+        ptPortalPos.x = gnA3Q7ArchonState2[uVar2 * 2] + ptUnitPos.x;
+        FindSpawnableLocation(pRoom, &ptPortalPos, 3, 0x3f11, (D2RoomStrc**)&pSpawnRoom, 0xb, 100);
+        if (pSpawnRoom) {
+          UNIT::SUnit::CreateUnit(UNIT_OBJECT, 0x83, ptPortalPos.x, ptPortalPos.y, pGameSaved, (D2RoomStrc*)pSpawnRoom, 1, 0, nullptr);
+        }
       }
+
+      return '\x01';
     }
 
     return '\x01';

@@ -228,8 +228,7 @@ struct D2QuestDataA2Q4Strc {
     /* 0x34 */ int32_t nSummonerY; // Y coordinate of the Summoner
     /* 0x38 */ int32_t nJerhynObjectGUID; // GUID of the Jerhyn object unit
     /* 0x3C */ int32_t nJerhynMonsterGUID; // GUID of the Jerhyn monster unit used for AI control
-    /* 0x40 */ uint8_t nPortalPlacedStateLo; // Lo byte of Sanctuary entrance portal-placement substate (the pair 0x40/0x41 is read as one int16 ==2 'placed' in Q12_IsSanctuaryComplete; aliased to A1Q4 sSub.nPortalGUID+2 written 1/2 in Q12_SetObjectOperateState)
-    /* 0x41 */ uint8_t nPortalPlacedStateHi; // Hi byte of Sanctuary entrance portal-placement substate int16 (see nPortalPlacedStateLo)
+    /* 0x40 */ uint16_t nPortalPlacedState; // Sanctuary entrance portal-placement state, always accessed as a word; 2 = placed (Q12_IsSanctuaryComplete)
     /* 0x42 */ short nObjectOperateState1; // Object operate state for Harem entrance
     /* 0x44 */ short nObjectOperateState2; // Object operate state for Palace Cellar entrance
     /* 0x46 */ uint8_t bHaremBlockerNeutral;
@@ -269,10 +268,7 @@ struct D2QuestDataA2Q6Strc {
     /* 0x11 */ uint8_t field_0x11;
     /* 0x12 */ uint8_t field_0x12;
     /* 0x13 */ uint8_t field_0x13;
-    /* 0x14 */ uint8_t nStatusCode;
-    /* 0x15 */ uint8_t field_0x15;
-    /* 0x16 */ uint8_t field_0x16;
-    /* 0x17 */ uint8_t field_0x17;
+    /* 0x14 */ int nStatusCode;
     /* 0x18 */ int nDurielState; // 0=alive, 2=killed; checked in Callback_00 for Tyrael
     /* 0x1C */ int field_0x1C;
     /* 0x20 */ int field_0x20;

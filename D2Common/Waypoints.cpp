@@ -71,17 +71,16 @@ BOOL __stdcall FindWaypointIdByLevelId(eD2LevelId eLevel, int16_t * pWaypointId)
     }
 
     D2LevelsTxt* pLevelsTxt = DATATBLS::LvlTbls::TXT_Levels_GetLine(eLevel);
-    if (!pLevelsTxt) {
-      return 0;
+    if (pLevelsTxt) {
+      uint8_t bVar1;
+      bVar1 = pLevelsTxt->Waypoint;
+      *pWaypointId = (uint16_t)bVar1;
+      if (bVar1 != 0xff) {
+        return 1;
+      }
     }
 
-    uint8_t bVar1 = pLevelsTxt->Waypoint;
-    *pWaypointId = (uint16_t)bVar1;
-    if (bVar1 == 0xff) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 uint32_t __stdcall CheckWaypoint(D2WaypointStrc * pWaypoint, uint16_t nWaypointId) {

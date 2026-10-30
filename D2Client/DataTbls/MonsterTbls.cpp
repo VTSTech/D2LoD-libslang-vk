@@ -19,40 +19,40 @@
 namespace D2Client::DataTbls::MonsterTbls {
 
 D2MonStatsTxt * __fastcall TXT_MonStats_GetLine(int32_t nMonStatsId) {
-    if (!(-1 < nMonStatsId && nMonStatsId < sgptDataTable->nTxtMonStatsSize)) {
-      return nullptr;
+    if (nMonStatsId >= 0 && nMonStatsId < sgptDataTable->nTxtMonStatsSize) {
+      return sgptDataTable->pTxtMonStats + nMonStatsId;
     }
 
-    return sgptDataTable->pTxtMonStats + nMonStatsId;
+    return nullptr;
 }
 
 D2MonStats2Txt * __fastcall TXT_MonStats_GetMonStats2(int32_t nClassId) {
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize)) {
-      return nullptr;
+    if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize) {
+      int nMonStats2Id;
+      nMonStats2Id = (int)sgptDataTable->pTxtMonStats[nClassId].MonStatsEx;
+      if (nMonStats2Id >= 0 && nMonStats2Id < sgptDataTable->nTxtMonStatsExSize) {
+        return sgptDataTable->pTxtMonStatsEx + nMonStats2Id;
+      }
     }
 
-    int nMonStats2Id = (int)sgptDataTable->pTxtMonStats[nClassId].MonStatsEx;
-    if (!(-1 < nMonStats2Id && nMonStats2Id < sgptDataTable->nTxtMonStatsExSize)) {
-      return nullptr;
-    }
-
-    return sgptDataTable->pTxtMonStatsEx + nMonStats2Id;
+    return nullptr;
 }
 
 D2StatesTxt * __fastcall TXT_States_GetLine(eD2States eState) {
-    if (!(-1 < (int)eState && (int)eState < sgptDataTable->nTxtStatesSize)) {
-      return nullptr;
+    if ((int)eState >= 0 && (int)eState < sgptDataTable->nTxtStatesSize) {
+      return sgptDataTable->pTxtStates + eState;
     }
 
-    return sgptDataTable->pTxtStates + eState;
+    return nullptr;
 }
 
 BOOL __fastcall TXT_MonStats_GetFlagsByBitOffset(int32_t nMonStatsId, TxtMonStatsField0x0c nBitOffset) {
-    if (!(-1 < nMonStatsId && nMonStatsId < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nMonStatsId)) {
+    D2MonStatsTxt* pMonStatsTxt = nMonStatsId >= 0 && nMonStatsId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonStatsId : nullptr;
+    if (!pMonStatsTxt) {
       return 0;
     }
 
-    return (uint32_t)(uint8_t)sgptDataTable->pTxtMonStats[nMonStatsId].Code[((int)nBitOffset >> 3) - 4] & gadwBitMasks[nBitOffset & primeevil];
+    return (uint32_t)(uint8_t)pMonStatsTxt->Code[((int)nBitOffset >> 3) - 4] & gadwBitMasks[nBitOffset & primeevil];
 }
 
 } // namespace D2Client::DataTbls::MonsterTbls

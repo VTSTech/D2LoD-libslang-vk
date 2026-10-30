@@ -11,7 +11,8 @@ namespace D2Game::Archive {
 
 int32_t __fastcall RollRandomSeed(D2SeedStrc * pSeed) {
     D2SeedStrc DVar1 = D2_SEED_NEXT(*pSeed);
-    *pSeed = DVar1;
+    pSeed->nSeedHigh = DVar1.nSeedHigh;
+    pSeed->nSeedLow = DVar1.nSeedLow;
     return DVar1.nSeedLow;
 }
 

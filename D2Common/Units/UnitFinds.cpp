@@ -91,7 +91,7 @@ BOOL __stdcall AreUnitsInNeighboredRooms(D2UnitStrc * pUnit, D2UnitStrc * pSrcUn
 
       /* Both arguments are reused here */ DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pSrcRoom, (D2RoomStrc***)&pSrcUnit, (int*)&pUnit);
       nRoomIdx = 0;
-      if (0 >= (int)pUnit) {
+      if ((int)pUnit <= 0) {
         return 0;
       }
 
@@ -120,7 +120,7 @@ D2UnitStrc * __stdcall FindUnitInNeighboredRooms(D2RoomStrc * pRoom, eD2UnitType
 
     DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&pRoom);
     int nAdjacentRoomIdx = 0;
-    /* Room turns to nCounter */ if (0 >= (int)pRoom) {
+    /* Room turns to nCounter */ if ((int)pRoom <= 0) {
       return nullptr;
     }
 
@@ -149,22 +149,24 @@ D2UnitStrc * __stdcall FindUnitInNeighboredRooms(D2RoomStrc * pRoom, eD2UnitType
 static BOOL CheckRoomIfNotInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance) {
     D2DrlgRoomCoordsStrc pCoords;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &pCoords);
-    if (!(pCoords.dwXStart < nX - nDistance && pCoords.dwYStart < nY - nDistance && nX + nDistance < pCoords.dwXSize + pCoords.dwXStart && nY + nDistance < pCoords.dwYSize + pCoords.dwYStart)) {
-      return 1;
+    if (nX - nDistance > pCoords.dwXStart && nY - nDistance > pCoords.dwYStart && nX + nDistance < pCoords.dwXSize + pCoords.dwXStart && nY + nDistance < pCoords.dwYSize + pCoords.dwYStart) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 static BOOL CheckRoomIfInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nDistance) {
     D2DrlgRoomCoordsStrc pRoomCoords;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &pRoomCoords);
-    if (nX + nDistance < pRoomCoords.dwXStart) {
-      if (nX - nDistance <= pRoomCoords.dwXSize + pRoomCoords.dwXStart && (pRoomCoords.dwYStart <= nY + nDistance || nY - nDistance <= pRoomCoords.dwYSize + pRoomCoords.dwYStart)) {
+    if (!(nX + nDistance < pRoomCoords.dwXStart)) {
+      if (nY + nDistance >= pRoomCoords.dwYStart || nY - nDistance <= pRoomCoords.dwYSize + pRoomCoords.dwYStart) {
         return 1;
       }
-    } else if (pRoomCoords.dwYStart <= nY + nDistance || nY - nDistance <= pRoomCoords.dwYSize + pRoomCoords.dwYStart) {
-      return 1;
+    } else {
+      if (nX - nDistance <= pRoomCoords.dwXSize + pRoomCoords.dwXStart && (nY + nDistance >= pRoomCoords.dwYStart || nY - nDistance <= pRoomCoords.dwYSize + pRoomCoords.dwYStart)) {
+        return 1;
+      }
     }
 
     return 0;
@@ -173,10 +175,9 @@ static BOOL CheckRoomIfInRange(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32
 int32_t __stdcall GetTestedUnitsFromRoom(D2RoomStrc * pRoom, D2UnitStrc * * ppUnitList, UNITFINDTEST nfpUnitTest, D2UnitFindArgStrc * pUnitFindArg) {
     D2UnitStrc* pUnit = pRoom->pUnitList;
     int nCount = 0;
-    int32_t nLine = 0x65a7a7;
     BOOL bBadPtr = IsBadCodePtr((FARPROC)nfpUnitTest);
     if (bBadPtr) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x72);
       exit(-1);
     }
 
@@ -190,7 +191,7 @@ int32_t __stdcall GetTestedUnitsFromRoom(D2RoomStrc * pRoom, D2UnitStrc * * ppUn
       if (bPassed) {
         ppUnitList[nCount] = pUnit;
         nCount++;
-        if (0xe < nCount) {
+        if (nCount >= 0xf) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78);
           exit(-1);
         }
@@ -326,31 +327,34 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
     uint32_t nSearchFlags;
     D2UnitFindArgStrc* pArgs = pUnitFindArg;
     D2UnitStrc* pTestUnit = pUnit;
-    if (!pUnitFindArg || pUnitFindArg->nFlags & 0x40 && pUnitFindArg->nMaxArrayEntries <= pUnitFindArg->nIndex) {
+    if (!pUnitFindArg) {
+      return 0;
+    }
+    if (pUnitFindArg->nFlags & 0x40 && pUnitFindArg->nIndex >= pUnitFindArg->nMaxArrayEntries) {
       return 0;
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       pUnitFindArg = (D2UnitFindArgStrc*)pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      pUnitFindArg = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       pUnitFindArg = (D2UnitFindArgStrc*)PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      pUnitFindArg = 0;
     }
 
     eD2UnitType eUnitTypeY = pTestUnit->eUnitType;
-    if (eUnitTypeY == UNIT_OBJECT || 3 < (int)eUnitTypeY && (int)eUnitTypeY < 6) {
+    if (eUnitTypeY == UNIT_OBJECT || (int)eUnitTypeY > 3 && (int)eUnitTypeY <= 5) {
       pUnit = *(D2UnitStrc**)&pTestUnit->pPath.pDynamicPath->nTargetX;
-    } else if (!pTestUnit->pPath.pDynamicPath) {
-      pUnit = 0;
-    } else {
+    } else if (pTestUnit->pPath.pDynamicPath) {
       pUnit = (D2UnitStrc*)PATH::DynamicPath::GetYPos(pTestUnit->pPath.pDynamicPath);
+    } else {
+      pUnit = 0;
     }
 
     int nOffsetX = (int)pUnitFindArg - pArgs->nX;
     int nOffsetY = (int)pUnit - pArgs->nY;
-    if (pArgs->nDistance * pArgs->nDistance < nOffsetY * nOffsetY + nOffsetX * nOffsetX) {
+    if (nOffsetY * nOffsetY + nOffsetX * nOffsetX > pArgs->nDistance * pArgs->nDistance) {
       return 0;
     }
 
@@ -360,15 +364,17 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
           return 0;
         }
       ePlayerMode = pTestUnit->eAnimMode.ePlayerMode;
-      if (!(pArgs->nFlags & 0x1000U)) {
+      if (pArgs->nFlags & 0x1000U) {
+        if (ePlayerMode != eD2PlayerAnimMode_ns::Dead) {
+          return 0;
+        }
+      } else {
         if (ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
           return 0;
         }
         if (ePlayerMode == Death) {
           return 0;
         }
-      } else if (ePlayerMode != eD2PlayerAnimMode_ns::Dead) {
-        return 0;
       }
 
       bFailed = pTestUnit == pArgs->pAttacker;
@@ -384,15 +390,17 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
       }
 
       nMonsterMode = pTestUnit->eAnimMode.ePlayerMode;
-      if (!(nSearchFlags & 0x1000)) {
+      if (nSearchFlags & 0x1000) {
+        if (nMonsterMode != 0xc) {
+          return 0;
+        }
+      } else {
         if (nMonsterMode == 0xc) {
           return 0;
         }
         if (!nMonsterMode) {
           return 0;
         }
-      } else if (nMonsterMode != 0xc) {
-        return 0;
       }
       if (nSearchFlags & 4) {
         bIsUndead = Monsters::MONSTERS::MONSTER_IsMonsterUndead(pTestUnit);
@@ -420,7 +428,7 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
       if (!pMissileTxt) {
         return 0;
       }
-      if (pMissileTxt->Explosion) {
+      if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[1]) {
         return 0;
       }
 
@@ -473,13 +481,12 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
 int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
     int iVar1;
     uint32_t nRoomIdx;
-    DWORD nLine;
     DWORD nRoomCount;
     D2UnitStrc* pNextUnit;
     D2UnitStrc* pUnit;
     D2UnitFindDataStrc* pFindData = pUnitFindData;
     if (!pUnitFindData) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int)Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10a);
       exit(-1);
     }
 
@@ -500,7 +507,7 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
     int nFoundCount = 0;
     int nIndex = 0;
     uint32_t nRoomIdxInner = 0;
-    if (nRoomCount) {
+    if (nRoomCount > 0) {
       BOOL bIsInTown;
       do {
         nRoomIdx = nRoomIdxInner;
@@ -517,9 +524,7 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
 
               pNextUnit = pUnit->pRoomNext;
               nRoomIdxInner = nRoomIdx;
-              if (!pFindData->fpUnitTest) {
-                iVar1 = TestUnit(pUnit, pFindData->pUnitFindArg);
-              } else {
+              if (pFindData->fpUnitTest) {
                 /* FARPROC lpfn for IsBadCodePtr */ bBadPtr = IsBadCodePtr((FARPROC)pFindData->fpUnitTest);
                 if (bBadPtr) {
                   Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int)Fog::Src::ErrorManager::GetInstructionPointer(), 0x13e);
@@ -527,6 +532,8 @@ int32_t __stdcall UNITFINDS_FindCullRange(D2UnitFindDataStrc * pUnitFindData) {
                 }
 
                 iVar1 = pFindData->fpUnitTest(pUnit, pFindData->pUnitFindArg);
+              } else {
+                iVar1 = TestUnit(pUnit, pFindData->pUnitFindArg);
               }
 
               nRoomIdx = nRoomIdxInner;

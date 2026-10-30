@@ -49,8 +49,6 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Sound/D2SoundUntil.h"
-#include "D2Win/DC6.h"
-#include "D2Win/DC6Block.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
@@ -69,11 +67,11 @@ namespace D2Client::UNIT::UnitSnd {
 static DWORD GetSndUnitClassId(D2UnitStrc * pUnit) {
     DWORD nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -88,11 +86,11 @@ static DWORD GetSndUnitClassId(D2UnitStrc * pUnit) {
 static eD2UnitType GetSndUnitType(D2UnitStrc * pUnit) {
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -107,11 +105,11 @@ static eD2UnitType GetSndUnitType(D2UnitStrc * pUnit) {
 static int32_t GetSndUnitMode(D2UnitStrc * pUnit) {
     int nClassId;
     eD2UnitType eUnitType = UNIT_COUNT;
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       eUnitType = pUnit->eUnitType;
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     int32_t nAnimMode = D2Common::Units::GetAnimOrSeqMode(pUnit);
@@ -124,7 +122,7 @@ static int32_t GetSndUnitMode(D2UnitStrc * pUnit) {
 }
 
 static int * UNITSND_GetBaseSoundId(uint32_t nUnitClassId) {
-    if (!(6 >= nUnitClassId)) {
+    if (!(nUnitClassId < 7)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb22);
       exit(-1);
     }
@@ -154,7 +152,7 @@ static D2MonSoundsTxt * TxtGetSoundIdLineFromUnit(D2UnitStrc * pUnit) {
         if (BVar1) {
           nBossId = MonUnique::GetBossId(pUnit);
           pSuperUniquesTxt = D2Common::DATATBLS::MonsterTbls::TXT_SuperUniques_GetLine((int)(short int)nBossId);
-          if (pSuperUniquesTxt && 0 < pSuperUniquesTxt->MonSound) {
+          if (pSuperUniquesTxt && pSuperUniquesTxt->MonSound > 0) {
             pMonSoundsResult = D2Common::DATATBLS::MonsterTbls::TxtGetMonSoundsLine(pSuperUniquesTxt->MonSound);
             return pMonSoundsResult;
           }
@@ -174,7 +172,7 @@ static D2MonSoundsTxt * TxtGetSoundIdLineFromUnit(D2UnitStrc * pUnit) {
           pMonSoundsResult = D2Common::DATATBLS::MonsterTbls::TxtGetMonSoundsLine(0);
           return pMonSoundsResult;
         }
-        if (0 < pMonStatsTxt->UMonSound) {
+        if (pMonStatsTxt->UMonSound > 0) {
           pUMonSoundsLine = D2Common::DATATBLS::MonsterTbls::TxtGetMonSoundsLine((int)pMonStatsTxt->UMonSound);
           return pUMonSoundsLine;
         }
@@ -193,12 +191,12 @@ int __fastcall UNITSND_GetSkillCastSound(D2UnitStrc * pUnit, uint32_t nAnimMode)
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb5c);
       exit(-1);
     } else {
-      if (!((nAnimMode & 0xf) < 0xe)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb60);
-        exit(-1);
+      if ((nAnimMode & 0xf) <= 0xd) {
+        return gaUnitSoundTable[(nAnimMode & 0xf) * 2];
       }
 
-      return gaUnitSoundTable[(nAnimMode & 0xf) * 2];
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb60);
+      exit(-1);
     }
 }
 
@@ -208,18 +206,18 @@ uint32_t __fastcall UNITSND_GetSkillStartSound(D2UnitStrc * pUnit, uint32_t nAni
       exit(-1);
     } else {
       uint32_t nAnimFrames;
-      if (!((nAnimMode & 0xf) < 0xe)) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb6f);
-        exit(-1);
-      }
+      if ((nAnimMode & 0xf) <= 0xd) {
+        nAnimFrames = (uint32_t)pUnit->nAnimSpeed;
+        if (nAnimFrames) {
+          return (gaUnitSoundTable[(nAnimMode & 0xf) * 2 + 1] * 0x100 + 0x80U) / nAnimFrames;
+        }
 
-      nAnimFrames = (uint32_t)pUnit->nAnimSpeed;
-      if (nAnimFrames) {
+        nAnimFrames = 1;
         return (gaUnitSoundTable[(nAnimMode & 0xf) * 2 + 1] * 0x100 + 0x80U) / nAnimFrames;
       }
 
-      nAnimFrames = 1;
-      return (gaUnitSoundTable[(nAnimMode & 0xf) * 2 + 1] * 0x100 + 0x80U) / nAnimFrames;
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb6f);
+      exit(-1);
     }
 }
 
@@ -247,6 +245,16 @@ void __fastcall UNITSND_ResolveSoundFromFlags(D2UnitStrc * pUnit, uint32_t nAnim
       case 1:
         *pnSoundIdOut = 0x141;
       break;
+      case 8:
+
+      case 9:
+        *pnSoundIdOut = 0x149;
+      break;
+      case 6:
+
+      case 7:
+        *pnSoundIdOut = 0x14f;
+      break;
       case 2:
 
       case 3:
@@ -255,16 +263,6 @@ void __fastcall UNITSND_ResolveSoundFromFlags(D2UnitStrc * pUnit, uint32_t nAnim
 
       case 5:
         *pnSoundIdOut = 0x155;
-      break;
-      case 6:
-
-      case 7:
-        *pnSoundIdOut = 0x14f;
-      break;
-      case 8:
-
-      case 9:
-        *pnSoundIdOut = 0x149;
       break;
       case 10:
 
@@ -276,12 +274,6 @@ void __fastcall UNITSND_ResolveSoundFromFlags(D2UnitStrc * pUnit, uint32_t nAnim
     }
 
     switch (nAnimFlags & 0xf0) {
-      case 0x10:
-        if (*pnSoundIdOut) {
-          *pnParam = 0x17b;
-          return;
-        }
-      break;
       case 0x20:
         *pnParam = *pnSoundIdOut ? 0x164 : 0x161;
       return;
@@ -302,6 +294,12 @@ void __fastcall UNITSND_ResolveSoundFromFlags(D2UnitStrc * pUnit, uint32_t nAnim
       case 0x50:
         if (!*pnSoundIdOut || eUnitType != UNIT_PLAYER && eUnitType != UNIT_MONSTER || bExcludePlayerMonster) {
           *pnParam = 0x178;
+          return;
+        }
+      break;
+      case 0x10:
+        if (*pnSoundIdOut) {
+          *pnParam = 0x17b;
           return;
         }
       break;
@@ -410,7 +408,7 @@ int32_t __fastcall UNITSND_GetMissileSound(D2UnitStrc * pUnit, int32_t nParam2) 
 
       nSfxSoundId = *pSfxNode;
       nChannelId = Sound::SOUND_StopChannelById(nSfxSoundId);
-      if (nSoundId <= nChannelId && nChannelId < (int)((uint32_t)bVar1 + nSoundId)) {
+      if (nChannelId >= nSoundId && nChannelId < (int)((uint32_t)bVar1 + nSoundId)) {
         break;
       }
 
@@ -425,11 +423,11 @@ int __fastcall UNITSND_GetMissileLoopSound(int32_t nParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc63);
       exit(-1);
     }
-    if (!*(int**)(nParam + 0x78)) {
-      return 0;
+    if (*(int**)(nParam + 0x78)) {
+      return **(int**)(nParam + 0x78);
     }
 
-    return **(int**)(nParam + 0x78);
+    return 0;
 }
 
 void __fastcall IterateUnitSfxData(D2UnitStrc * pUnit, int32_t nParam) {
@@ -603,7 +601,7 @@ static int * UNITSND_GetTileDataAtPosition(int32_t nPosX, D2RoomStrc * pRoom, in
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &local_28);
     D2DrlgTileDataStrc* pTileData = D2Common::DUNGEON::Dungeon::DRLGROOM_GetFloorTilesFromRoom(pRoom, (int*)&nTileCount);
     uint32_t nTileIdx = 0;
-    if (!nTileCount) {
+    if (nTileCount <= 0) {
       return nullptr;
     }
 
@@ -641,11 +639,11 @@ static uint32_t UNITSND_GetGroundMaterialType(int32_t pUnit) {
     if ((char)wTileFlags < '\0') {
       return 6;
     }
-    if (!(wTileFlags & 0x400)) {
-      return 0;
+    if (wTileFlags & 0x400) {
+      return 5;
     }
 
-    return 5;
+    return 0;
 }
 
 // Returns the ground material index (1–6) at the unit's current tile position, used to select footstep/ground sounds. Queries the sound environment table for a fallback material, resolves the unit's map coordinates from its path (static or dynamic), then samples tile data from the unit's room and adjacent rooms. Returns 0 if the room is unavailable, the fallback if no tile data is found in any room.
@@ -659,27 +657,27 @@ int32_t __fastcall UNITSND_GetGroundMaterial(D2UnitStrc * pUnit) {
     int nFallbackMaterial = 1;
     if (pSoundEnvLine) {
       nPosX = pSoundEnvLine->Material_1;
-      if (0 < nPosX && nPosX < 7) {
+      if (nPosX > 0 && nPosX < 7) {
         nFallbackMaterial = nPosX;
       }
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -692,7 +690,7 @@ int32_t __fastcall UNITSND_GetGroundMaterial(D2UnitStrc * pUnit) {
       int nAdjRoomIdx;
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, &nAdjacentRoomCount);
       nAdjRoomIdx = 0;
-      if (nAdjacentRoomCount < 1) {
+      if (nAdjacentRoomCount <= 0) {
         return nFallbackMaterial;
       }
 
@@ -703,7 +701,7 @@ int32_t __fastcall UNITSND_GetGroundMaterial(D2UnitStrc * pUnit) {
         }
 
         nAdjRoomIdx++;
-        if (nAdjacentRoomCount <= nAdjRoomIdx) {
+        if (nAdjRoomIdx >= nAdjacentRoomCount) {
           return nFallbackMaterial;
         }
       }
@@ -726,7 +724,7 @@ int32_t __fastcall UNITSND_GetFootstepSound(D2UnitStrc * pUnit, int32_t bIsRunni
     if (eUnitType == UNIT_PLAYER) {
       DWORD nClassId;
       nClassId = GetSndUnitClassId(pUnit);
-      if (6 < nClassId) {
+      if (nClassId >= 7) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb22);
         exit(-1);
       }
@@ -759,11 +757,12 @@ int32_t __fastcall UNITSND_GetFootstepSound(D2UnitStrc * pUnit, int32_t bIsRunni
       case 4:
         nFootstepSound += 0xc;
       break;
+      case 6:
+        nFootstepSound += 0x14;
+      break;
       case 5:
         nFootstepSound += 0x10;
       break;
-      case 6:
-        nFootstepSound += 0x14;
     }
 
     if (!bIsRunning) {
@@ -781,7 +780,6 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     int32_t nSoundChannelPrev;
     int32_t nSoundChannelNext;
     int32_t iVar2;
-    eD2Sounds nSoundId;
     D2UnitStrc* pLocalPlayer;
     bool bIsRunOrRespawn;
     int32_t nRunCheck;
@@ -792,7 +790,7 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     if (eUnitType == UNIT_MONSTER) {
       DWORD nMonClassIdOrSounds;
       nMonClassIdOrSounds = GetSndUnitClassId(pUnit);
-      if ((int)nMonClassIdOrSounds < 0 || sgptDataTable->nTxtMonStatsSize <= (int)nMonClassIdOrSounds) {
+      if ((int)nMonClassIdOrSounds < 0 || (int)nMonClassIdOrSounds >= sgptDataTable->nTxtMonStatsSize) {
         nMonClassIdOrSounds = -1;
       }
 
@@ -850,7 +848,7 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     nStepInterval = nFrameCount / (nFsCount * nAnimSpeed);
     uint32_t nElapsedTicks;
     nElapsedTicks = nRecordingIdx - pUnit->uSideData.pClientSide.dwSfxStepTicks;
-    if (1 < nFsCount && nElapsedTicks < nStepInterval * 2 / 3) {
+    if (nFsCount > 1 && nElapsedTicks < nStepInterval * 2 / 3) {
       return;
     }
 
@@ -858,10 +856,10 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     nSoundChannelPrev = Sound::SOUND_PlayFootstepSound(nCurrentFrame, nFsOffset, nFrameCount);
     nSoundChannelNext = Sound::SOUND_PlayFootstepSound(nCurrentFrame + nAnimSpeed, nFsOffset, nFrameCount);
     iVar2 = Sound::SOUND_PlayFootstepSound(nCurrentFrame - nAnimSpeed, nFsOffset, nFrameCount);
-    if (nSoundChannelNext <= nSoundChannelPrev) {
+    if (nSoundChannelPrev >= nSoundChannelNext) {
       return;
     }
-    if (iVar2 <= nSoundChannelPrev) {
+    if (nSoundChannelPrev >= iVar2) {
       return;
     }
 
@@ -883,15 +881,14 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
     nRunCheck = 0;
     iVar2 = 0;
     nSoundChannelNext = 0;
-    nSoundId = UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev);
-    nAnimSpeed = Sound::SOUND_PlaySound(nSoundId, pUnit, nSoundChannelNext, iVar2, nRunCheck);
+    nAnimSpeed = Sound::SOUND_PlaySound(UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev), pUnit, nSoundChannelNext, iVar2, nRunCheck);
     if (nAnimSpeed) {
       nFrameCount = 0xff;
       pLocalPlayer = Player::GetPlayerUnit_UI();
       if (pUnit != pLocalPlayer) {
         nFrameCount = 200;
       }
-      if (nStepInterval * 3 >> 1 < nElapsedTicks) {
+      if (nElapsedTicks > nStepInterval * 3 >> 1) {
         nFrameCount = nFrameCount * 0xa0 / 0xff;
       }
 
@@ -1008,13 +1005,16 @@ void __stdcall UNITSND_StopAllCombatSounds(D2UnitStrc * pUnit) {
 
 static eD2Sounds __stdcall UNITSND_GetModeChangeSound(int32_t nPrevMode, D2UnitStrc * pUnit, int32_t nNewMode) {
     DWORD nClassId = GetSndUnitClassId(pUnit);
-    if (0x23c < nClassId || 7 < nNewMode) {
+    if (nClassId >= 0x23d || nNewMode >= 8) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe72);
       exit(-1);
     }
 
     eD2Sounds* pSoundTable = gaUnitSoundTableByClassIdExtra[nClassId];
-    if (!(pSoundTable && (pSoundTable != gaUnitSoundTableModeChange || nPrevMode <= nNewMode))) {
+    if (!pSoundTable) {
+      return SOUND_NONE;
+    }
+    if (!(pSoundTable != gaUnitSoundTableModeChange || nPrevMode <= nNewMode)) {
       return SOUND_NONE;
     }
 
@@ -1040,7 +1040,7 @@ static eD2Sounds UNITSND_GetSpecialSoundByMode(D2UnitStrc * pUnit, int32_t nMode
 }; D2_STATIC_GUARD(gaUnitSoundTableSpecialMode, "D2Client::UNIT::UnitSnd::UNITSND_GetSpecialSoundByMode::gaUnitSoundTableSpecialMode");
 
     DWORD nSndClassId = GetSndUnitClassId(pUnit);
-    if (0x23c < nSndClassId || 7 < nMode) {
+    if (nSndClassId >= 0x23d || nMode >= 8) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe86);
       exit(-1);
     }
@@ -1107,13 +1107,13 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
       }
 
       eSpecialSound = UNITSND_GetSpecialSoundByMode(pUnit, nUnitMode);
-      if (eSpecialSound == SOUND_NONE) {
-        UNITSND_UpdatePositionalAudio(pUnit);
-      } else {
+      if (eSpecialSound != SOUND_NONE) {
         nSndOrResult = UNITSND_GetMissileSound(pUnit, eSpecialSound);
         if (!nSndOrResult) {
           Sound::SOUND_PlaySound(eSpecialSound, pUnit, 0, 0, 0);
         }
+      } else {
+        UNITSND_UpdatePositionalAudio(pUnit);
       }
 
       nClassId = GetSndUnitClassId(pUnit);
@@ -1136,7 +1136,7 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
 
     int iVar1;
     iVar1 = Player::TXT_MonStats_GetBaseId(pUnit);
-    if (iVar1 < 0 || sgptDataTable->nTxtMonStatsSize <= iVar1) {
+    if (iVar1 < 0 || iVar1 >= sgptDataTable->nTxtMonStatsSize) {
       iVar1 = -1;
     }
 
@@ -1176,17 +1176,17 @@ void __fastcall UpdateUnitSfxOnModeChange(D2UnitStrc * pUnit) {
     }
 
     nSndOrResult = UNITSND_GetMissileSound(pUnit, eNeutralSound);
-    if (!(!nSndOrResult && gnSoundInitCooldown <= nCurrentTick - gnSoundLastInitTick)) {
+    if (!(!nSndOrResult && nCurrentTick - gnSoundLastInitTick >= gnSoundInitCooldown)) {
       return;
     }
 
     uint32_t nRandRoll = GetSfxTicks((int32_t)pUnit);
-    if (nNeuTime > nCurrentTick - nRandRoll) {
+    if (!(nCurrentTick - nRandRoll >= nNeuTime)) {
       return;
     }
 
     nRandRoll = GetSfxAsyncTicks((int32_t)pUnit);
-    if (nNeuTime > nCurrentTick - nRandRoll) {
+    if (!(nCurrentTick - nRandRoll >= nNeuTime)) {
       return;
     }
 
@@ -1229,21 +1229,21 @@ void __fastcall UNITSND_PlayAttackSound(D2UnitStrc * pUnit, int32_t nAttackMode,
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb5c);
         exit(-1);
       } else {
-        if (!((nHitClass & 0xf) < 0xe)) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb60);
-          exit(-1);
+        if ((nHitClass & 0xf) <= 0xd) {
+          nSoundId = gaUnitSoundTable[(nHitClass & 0xf) * 2];
+          nHitClass = UNITSND_GetSkillStartSound(pUnit, nHitClass);
+          if (!bPlayDelayed) {
+            nHitClass = 0;
+          }
+
+          Sound::SOUND_PlaySound(nSoundId, pUnit, nHitClass, 0, 0);
+          nHitClass = GAME::Game::gnRecordingIndex();
+          pUnit->uSideData.pClientSide.dwSfxTicks = nHitClass;
+          return;
         }
 
-        nSoundId = gaUnitSoundTable[(nHitClass & 0xf) * 2];
-        nHitClass = UNITSND_GetSkillStartSound(pUnit, nHitClass);
-        if (!bPlayDelayed) {
-          nHitClass = 0;
-        }
-
-        Sound::SOUND_PlaySound(nSoundId, pUnit, nHitClass, 0, 0);
-        nHitClass = GAME::Game::gnRecordingIndex();
-        pUnit->uSideData.pClientSide.dwSfxTicks = nHitClass;
-        return;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb60);
+        exit(-1);
       }
     }
     if (eUnitType != UNIT_MONSTER) {
@@ -1275,7 +1275,7 @@ void __fastcall UNITSND_PlayAttackSound(D2UnitStrc * pUnit, int32_t nAttackMode,
     bSoundValid = eAttackSound != SOUND_NONE;
     if (bPlayDelayed < 100) {
       nErrorLine = GAME::Game::gnRecordingIndex();
-      bSoundValid = 0xe < nErrorLine - gdwSoundChannelIndex && bSoundValid;
+      bSoundValid = nErrorLine - gdwSoundChannelIndex >= 0xf && bSoundValid;
       nHitClass = Sound::SOUND_FindChannelForSound((int32_t)pUnit);
       if (nHitClass) {
         goto play_weapon_sound;
@@ -1401,15 +1401,12 @@ static void UNITSND_PlayFleeSound(D2UnitStrc * pUnit) {
     }
 
     int32_t nRecordingIdx = GAME::Game::gnRecordingIndex();
-    if (3 >= nRecordingIdx - gdwSoundChannelIndex) {
+    if (!(nRecordingIdx - gdwSoundChannelIndex >= 4)) {
       return;
     }
 
-    int32_t nSfxTick = 0;
-    nRecordingIdx = 0;
-    uint32_t nFleeDelay = _Utils::RollRandomNumerUpToArgument(3);
-    Sound::SOUND_PlaySound(pMonSoundsLine->Flee, pUnit, nFleeDelay + 6, nRecordingIdx, nSfxTick);
-    nFleeDelay = GAME::Game::gnRecordingIndex();
+    Sound::SOUND_PlaySound(pMonSoundsLine->Flee, pUnit, _Utils::RollRandomNumerUpToArgument(3) + 6, 0, 0);
+    uint32_t nFleeDelay = GAME::Game::gnRecordingIndex();
     SetSfxTicks(nFleeDelay, pUnit);
     gdwSoundChannelIndex = GAME::Game::gnRecordingIndex();
 }
@@ -1419,7 +1416,7 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
     uint32_t nResult;
     int nChannelId;
     int32_t nErrorLine;
-    if (!pUnit || 6 < (uint32_t)pUnit->nClassId) {
+    if (!pUnit || (uint32_t)pUnit->nClassId >= 7) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb22);
       exit(-1);
     }
@@ -1442,13 +1439,13 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
         return;
       }
     }
-    if (nAnimModeBase - 0x19 < 8) {
+    if (nAnimModeBase - 0x19 <= 7) {
       nResult = Sound::SOUND_FindChannelForSound((int32_t)pUnit);
       if (!nResult) {
         eSoundId = piVar1[8] - 0x32 + nAnimModeBase * 2;
       }
     }
-    if (nAnimModeBase - 0x21 < 0x33) {
+    if (nAnimModeBase - 0x21 <= 0x32) {
       eSoundId = piVar1[9] - 0x21 + nAnimModeBase;
       if (nAnimModeBase == 0x23) {
         GAME::Wall2::WALL2_ScheduleSoundSequence(0x1250, 0, 300, 1, eSoundId, 0xfa, 1);
@@ -1536,6 +1533,45 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
     eD2Sounds eLastAnimMode;
     eLastAnimMode = geSoundLastPlayerAnimMode;
     switch (nAnimModeBase) {
+      case 0x13:
+        eSoundId = piVar1[2];
+      goto skip_if_unit_playing;
+      case 0x18:
+        eSoundId = piVar1[7];
+      skip_if_unit_playing:
+      bCheckDuplicate = true;
+      nResult = Sound::SOUND_FindChannelForSound((int32_t)pUnit);
+      if (nResult) {
+        return;
+      }
+
+      dedupe_and_play:
+      if (eSoundId == SOUND_NONE) {
+        return;
+      }
+      nAnimMode = gnSoundLastPlayerAnimModeTime;
+      eLastAnimMode = geSoundLastPlayerAnimMode;
+      if (bCheckDuplicate) {
+        nAnimMode = GAME::Game::gnRecordingIndex();
+        eLastAnimMode = eSoundId;
+        if (eSoundId == geSoundLastPlayerAnimMode && nAnimMode - gnSoundLastPlayerAnimModeTime < 0x4b) {
+          return;
+        }
+      }
+
+      break;
+      case 0x15:
+        eSoundId = piVar1[3];
+      goto skip_if_unit_playing;
+      case 0x16:
+        eSoundId = piVar1[4];
+      goto skip_if_unit_playing;
+      case 0x17:
+        eSoundId = piVar1[5];
+      goto skip_if_unit_playing;
+      case 0x14:
+        eSoundId = piVar1[6];
+      goto skip_if_unit_playing;
       case 1:
         eSoundId = SOUND_ITEM_WAND;
       break;
@@ -1573,47 +1609,10 @@ void __fastcall UNITSND_PlayPlayerSound(D2UnitStrc * pUnit, uint32_t nAnimModePa
       case 0xb:
         eSoundId = SOUND_ITEM_QUIVER;
       break;
-      case 0x13:
-        eSoundId = piVar1[2];
-      goto skip_if_unit_playing;
-      case 0x14:
-        eSoundId = piVar1[6];
-      goto skip_if_unit_playing;
-      case 0x15:
-        eSoundId = piVar1[3];
-      goto skip_if_unit_playing;
-      case 0x16:
-        eSoundId = piVar1[4];
-      goto skip_if_unit_playing;
-      case 0x17:
-        eSoundId = piVar1[5];
-      goto skip_if_unit_playing;
-      case 0x18:
-        eSoundId = piVar1[7];
-      skip_if_unit_playing:
-      bCheckDuplicate = true;
-      nResult = Sound::SOUND_FindChannelForSound((int32_t)pUnit);
-      if (nResult) {
-        return;
-      }
-
-      dedupe_and_play:
-      if (eSoundId == SOUND_NONE) {
-        return;
-      }
-      nAnimMode = gnSoundLastPlayerAnimModeTime;
-      eLastAnimMode = geSoundLastPlayerAnimMode;
-      if (bCheckDuplicate) {
-        nAnimMode = GAME::Game::gnRecordingIndex();
-        eLastAnimMode = eSoundId;
-        if (eSoundId == geSoundLastPlayerAnimMode && nAnimMode - gnSoundLastPlayerAnimModeTime < 0x4b) {
-          return;
-        }
-      }
     }
 
-    geSoundLastPlayerAnimMode = eLastAnimMode;
     gnSoundLastPlayerAnimModeTime = nAnimMode;
+    geSoundLastPlayerAnimMode = eLastAnimMode;
     nChannelId = Sound::SOUND_PlaySound(eSoundId, pSoundTarget, 0, 0, 0);
     nResult = Sound::SOUND_StopChannelById(nChannelId);
     UI::Text::TEXT_SetUnitOverheadFromSoundTable(pUnit, nResult);
@@ -1642,12 +1641,18 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
     }
 
     switch (nSoundCmd & 0xffff) {
+      case 0x5a:
+        Sound::SOUND_PlaySound(0x111b, pMercUnit, 0, 0, 0);
+      return;
       case 10:
         nSoundChannel = Sound::SOUND_PlaySound(SOUND_AKARA_ACT1_Q4_INSTRUCTIONS, pMercUnit, 0, 0, 0);
       Sound::SOUND_SetChannelPriority(nSoundChannel, 0x78);
       return;
       default:
         goto forward_to_player_sound;
+      case 0x5d:
+        Sound::SOUND_PlaySound(SOUND_PALADIN_ACT2_FIND_RADAMENT, pMercUnit, 0, 0, 0);
+      return;
       case 0xc:
         pStatList = D2Common::Stats::StatsEx::GetStatsByState(pMercUnit, STATE_evade);
       if (!pStatList) {
@@ -1655,7 +1660,7 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       }
 
       eSkill = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_modifierlist_skill, 0);
-      pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(eSkill, pMercUnit);
+      pDVar1 = D2Common::Skills::SKILLS_GetSkillByEnum(pMercUnit, eSkill);
       if (!pDVar1) {
         return;
       }
@@ -1664,50 +1669,11 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       if (!pSkillsTxtLine) {
         return;
       }
-      if (pSkillsTxtLine->stsound < 1) {
+      if (pSkillsTxtLine->stsound <= 0) {
         return;
       }
 
       Sound::SOUND_PlaySound((int)pSkillsTxtLine->stsound, pMercUnit, 0, 0, 0);
-      return;
-      case 0xd:
-        Sound::SOUND_PlaySound(SOUND_SORCERESS_ACT3_FIND_GUARDIAN, pMercUnit, 0, 0, 0);
-      return;
-      case 0xe:
-        Sound::SOUND_PlaySound(SOUND_SORCERESS_ACT3_FIND_JADE, pMercUnit, 0, 0, 0);
-      return;
-      case 0xf:
-        nMercClassId = GetSndUnitClassId(pMercUnit);
-      if (nMercClassId != 0x10f) {
-        return;
-      }
-
-      Sound::SOUND_PlaySound(0x10c2, pMercUnit, 0, 0, 0);
-      return;
-      case 0x10:
-        eMercUnitType = GetSndUnitType(pMercUnit);
-      if (eMercUnitType != UNIT_MONSTER) {
-        return;
-      }
-
-      pMonSoundsLine = TxtGetSoundIdLineFromUnit(pMercUnit);
-      if (!pMonSoundsLine) {
-        Sound::SOUND_PlaySound(SOUND_NONE, pMercUnit, 0, 0, 0);
-        return;
-      }
-
-      Sound::SOUND_PlaySound(pMonSoundsLine->Taunt, pMercUnit, 0, 0, 0);
-      return;
-      case 0x11:
-        UNITSND_PlayFleeSound(pMercUnit);
-      return;
-      case 0x12:
-        nDelay = 0;
-      bStopChannels = 1;
-      nReserved = 0;
-      pLocalPlayer = Player::GetPlayerUnit_UI();
-      eGreetingSound = GAME::Sound::SOUND_SelectNpcGreetingSound(pMercUnit, 1);
-      Sound::SOUND_PlaySound(eGreetingSound, pLocalPlayer, nReserved, bStopChannels, nDelay);
       return;
       case 0x54:
         nMercClassId = GetSndUnitClassId(pMercUnit);
@@ -1753,8 +1719,47 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       }
 
       break;
-      case 0x5a:
-        Sound::SOUND_PlaySound(0x111b, pMercUnit, 0, 0, 0);
+      case 0xf:
+        nMercClassId = GetSndUnitClassId(pMercUnit);
+      if (nMercClassId != 0x10f) {
+        return;
+      }
+
+      Sound::SOUND_PlaySound(0x10c2, pMercUnit, 0, 0, 0);
+      return;
+      case 0x10:
+        eMercUnitType = GetSndUnitType(pMercUnit);
+      if (eMercUnitType != UNIT_MONSTER) {
+        return;
+      }
+
+      pMonSoundsLine = TxtGetSoundIdLineFromUnit(pMercUnit);
+      if (!pMonSoundsLine) {
+        Sound::SOUND_PlaySound(SOUND_NONE, pMercUnit, 0, 0, 0);
+        return;
+      }
+
+      Sound::SOUND_PlaySound(pMonSoundsLine->Taunt, pMercUnit, 0, 0, 0);
+      return;
+      case 0x11:
+        UNITSND_PlayFleeSound(pMercUnit);
+      return;
+      case 0x12:
+        nDelay = 0;
+      bStopChannels = 1;
+      nReserved = 0;
+      pLocalPlayer = Player::GetPlayerUnit_UI();
+      eGreetingSound = GAME::Sound::SOUND_SelectNpcGreetingSound(pMercUnit, 1);
+      Sound::SOUND_PlaySound(eGreetingSound, pLocalPlayer, nReserved, bStopChannels, nDelay);
+      return;
+      case 0xd:
+        Sound::SOUND_PlaySound(SOUND_SORCERESS_ACT3_FIND_GUARDIAN, pMercUnit, 0, 0, 0);
+      return;
+      case 0xe:
+        Sound::SOUND_PlaySound(SOUND_SORCERESS_ACT3_FIND_JADE, pMercUnit, 0, 0, 0);
+      return;
+      case 0x5c:
+        GAME::Wall2::WALL2_UpdateScheduledSound(0x19, 1);
       return;
       case 0x5b:
         nDelay = 0;
@@ -1762,12 +1767,6 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       nReserved = 0;
       pMercUnit = Player::GetPlayerUnit_UI();
       Sound::SOUND_PlaySound(SOUND_CURSOR_DURABILITY_BREAK, pMercUnit, nReserved, bStopChannels, nDelay);
-      return;
-      case 0x5c:
-        GAME::Wall2::WALL2_UpdateScheduledSound(0x19, 1);
-      return;
-      case 0x5d:
-        Sound::SOUND_PlaySound(SOUND_PALADIN_ACT2_FIND_RADAMENT, pMercUnit, 0, 0, 0);
       return;
     }
 
@@ -1788,15 +1787,17 @@ void __fastcall MuteOrUnmuteUnitSounds(D2UnitStrc * pUnit, int32_t nMuteDelta) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xcfd);
       exit(-1);
     }
-    if (!pUnit->uSideData.pClientSide.bHasActiveSound) {
+    if (pUnit->uSideData.pClientSide.bHasActiveSound) {
+      if (nMuteDelta > 0) {
+        return;
+      }
+    } else {
       if (nMuteDelta < 0) {
         return;
       }
-    } else if (0 < nMuteDelta) {
-      return;
     }
 
-    *(uint32_t*)((uintptr_t)&pUnit->uSideData + 0x24) = (uint32_t)(0 < nMuteDelta);
+    *(uint32_t*)((uintptr_t)&pUnit->uSideData + 0x24) = (uint32_t)(nMuteDelta > 0);
     if (nUnitType == 1) {
       D2MonSoundsTxt* pMonSoundsLine;
       pMonSoundsLine = TxtGetSoundIdLineFromUnit(pUnit);
@@ -1811,7 +1812,7 @@ void __fastcall MuteOrUnmuteUnitSounds(D2UnitStrc * pUnit, int32_t nMuteDelta) {
       }
     } else if (nUnitType == 2) {
       DVar2 = GetSndUnitClassId(pUnit);
-      if (0x23c < DVar2) {
+      if (DVar2 >= 0x23d) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1213);
         exit(-1);
       }
@@ -1855,7 +1856,6 @@ void __stdcall SOUND_UpdateAmbientMusic() {
     uint16_t wSoundHighWord;
     int32_t iVar3;
     int* nMusicTableEntryPtr;
-    uint8_t* pbPlayedFlag;
     D2UnitStrc* pUnit;
     pUnit = Player::GetPlayerUnit_UI();
     D2RoomStrc* pRoom;
@@ -1866,7 +1866,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
 
     eD2LevelId eCurrentLevelId;
     eCurrentLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    if (sgptDataTable->nTxtLevelsSize <= (int)eCurrentLevelId) {
+    if ((int)eCurrentLevelId >= sgptDataTable->nTxtLevelsSize) {
       return;
     }
     if (eCurrentLevelId == geLastProcessedAmbientMusicLevelId) {
@@ -1874,7 +1874,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
     }
 
     geLastProcessedAmbientMusicLevelId = eCurrentLevelId;
-    if (*(int*)(gaLevelAmbientMusicPlayedFlags + eCurrentLevelId * 4)) {
+    if (gaLevelAmbientMusicPlayedFlags[eCurrentLevelId]) {
       return;
     }
 
@@ -1900,19 +1900,15 @@ void __stdcall SOUND_UpdateAmbientMusic() {
       } while (nTableIdx < 10);
 
       pMusicTableRow++;
-      if ((uintptr_t)((char*)&gaLanguageNames_0072a300 + 19) < (int)pMusicTableRow) {
+      if ((int)pMusicTableRow >= (intptr_t)((char*)&gaLanguageNames_0072a300 + 20)) {
         return;
       }
     } while (true);
 
     while (true) {
       nTableIdx++;
-      pbPlayedFlag = gaLevelAmbientMusicPlayedFlags + *piVar1 * 4;
-      pbPlayedFlag[0] = 1;
-      pbPlayedFlag[1] = 0;
-      pbPlayedFlag[2] = 0;
-      pbPlayedFlag[3] = 0;
-      if (9 < nTableIdx) {
+      gaLevelAmbientMusicPlayedFlags[*piVar1] = 1;
+      if (nTableIdx >= 10) {
         break;
       }
 
@@ -1933,7 +1929,7 @@ void __stdcall SOUND_UpdateAmbientMusic() {
 
     uint32_t dwLastSfxTicks = pUnit->uSideData.pClientSide.dwSfxTicks;
     iVar3 = GAME::Game::gnRecordingIndex();
-    if (0x3e >= iVar3 - dwLastSfxTicks) {
+    if (!(iVar3 - dwLastSfxTicks > 0x3e)) {
       return;
     }
 
@@ -2099,30 +2095,6 @@ void __fastcall UNITSND_DispatchModeChangeSound(D2UnitStrc * pUnit, int32_t pnPa
     }
     if (eUnitType == UNIT_PLAYER) {
       switch (pnParam) {
-        case 0:
-
-        case 4:
-
-        case 0x13:
-          play_mode_change_sound:
-          UNITSND_PlayModeChangeSound(pnParam, pUnit);
-        return;
-        case 7:
-
-        case 8:
-          play_attack_sound:
-          UNITSND_PlayAttackSound(pUnit, pnParam, 1);
-        return;
-        case 9:
-          UNITSND_PlayGetHitSound(pUnit);
-        return;
-        case 0xc:
-          if (nClassId != 6) {
-            Sound::SOUND_PlaySound(SOUND_WEAPON_1HS_LARGE_1, pUnit, 0, 0, 0);
-            return;
-          }
-        Sound::SOUND_PlaySound(SOUND_WEAPON_1HS_LARGE_1, pUnit, 4, 0, 0);
-        return;
         case 0xf:
           if (nClassId == 4) {
             UNITSND_PlayAttackSound(pUnit, 0xf, 1);
@@ -2134,6 +2106,31 @@ void __fastcall UNITSND_DispatchModeChangeSound(D2UnitStrc * pUnit, int32_t pnPa
             UNITSND_PlayAttackSound(pUnit, 0x10, 1);
             return;
           }
+        break;
+        case 9:
+          UNITSND_PlayGetHitSound(pUnit);
+        return;
+        case 0xc:
+          if (nClassId != 6) {
+            Sound::SOUND_PlaySound(SOUND_WEAPON_1HS_LARGE_1, pUnit, 0, 0, 0);
+            return;
+          }
+        Sound::SOUND_PlaySound(SOUND_WEAPON_1HS_LARGE_1, pUnit, 4, 0, 0);
+        return;
+        case 7:
+
+        case 8:
+          play_attack_sound:
+          UNITSND_PlayAttackSound(pUnit, pnParam, 1);
+        return;
+        case 0:
+
+        case 4:
+
+        case 0x13:
+          play_mode_change_sound:
+          UNITSND_PlayModeChangeSound(pnParam, pUnit);
+        return;
       }
     } else if (eUnitType == UNIT_MONSTER && (pMonSoundsLine = TxtGetSoundIdLineFromUnit(pUnit) , pMonSoundsLine != 0)) {
       if (pnParam == (uint32_t)(uint8_t)pMonSoundsLine->CvtMo1 && pMonSoundsLine->CvtSk1 < 0) {

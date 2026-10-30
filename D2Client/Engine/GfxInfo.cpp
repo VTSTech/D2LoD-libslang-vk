@@ -640,7 +640,7 @@ void GFX_LoadObjectModeCof(D2UnitStrc * pUnit, uint32_t nComponent) {
     if (!pObjectsTxt) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4c2);
       exit(-1);
-    } else if (pObjectsTxt->Mode[nComponent]) {
+    } else if (pObjectsTxt->Mode[nComponent] == 1) {
       bComponentAlreadyLoaded = GfxUtil::GFXUTIL_GetGfxInfoComponent(pUnit, nComponent);
       if ((char)bComponentAlreadyLoaded != '\0') {
         return;
@@ -853,7 +853,7 @@ uint8_t GFX_GetUnitHealthBarColor(D2UnitStrc * pUnit) {
     } else {
       pMonStats = sgptDataTable->pTxtMonStats + nClassId;
     }
-    if (pMonStats->interact) {
+    if (*((uint8_t*)pMonStats + 0xd) & (uint8_t)gadwBitMasks[1]) {
       return gbHealthBarColorBlue;
     }
 
@@ -979,7 +979,7 @@ void __fastcall SetParticle(D2UnitStrc * pUnit, D2ParticleStrc * pParticle) {
     pGfxInfo->pParticle = pParticle;
 }
 
-void __fastcall GFX_RemoveOverlayById(int32_t nOverlayId, D2UnitStrc * pUnit) {
+void __thiscall GFX_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nOverlayId) {
     int* ppNextOverlay;
     if (!pUnit) {
       return;

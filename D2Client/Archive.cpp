@@ -13,17 +13,18 @@
 namespace D2Client::Archive {
 
 // Writes formatted text to a file handle using wvsprintfA. Variadic printf-style format arguments follow pFormat on the stack. Epilogue is a bare RET (no stack cleanup by callee), so the convention is __cdecl, not __stdcall.
-bool ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...) {
+BOOL ARCHIVE_WriteFormattedText(HANDLE hFile, char * pFormat, ...) {
+    bool _bResult;
     va_list __va;
     va_start(__va, pFormat);
+    bool bResult;
     char szBuffer[256];
     DWORD nBytes = wvsprintfA(szBuffer, pFormat, __va);
-    BOOL BVar1 = WriteFile(hFile, (LPCVOID)szBuffer, nBytes, &nBytes, (LPOVERLAPPED)0x0);
-    bool bResult = (uint8_t)(uint32_t)BVar1;
-    return bResult;
+    /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ _bResult = WriteFile(hFile, (LPCVOID)szBuffer, nBytes, &nBytes, (LPOVERLAPPED)0x0);
+    return _bResult;
 }
 
-uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode) {
+uint32_t __thiscall ARCHIVE_ComputeAddress(int * pNode, int32_t nBaseAddr) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -36,7 +37,7 @@ uint32_t __fastcall ARCHIVE_ComputeAddress(int32_t nBaseAddr, int * pNode) {
     return nOffset + nBaseAddr;
 }
 
-int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
+int32_t __thiscall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
     if (nNode) {
       return nNode;
     }
@@ -45,16 +46,16 @@ int32_t __fastcall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
     return nNode;
 }
 
-uint32_t __fastcall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
+uint32_t __thiscall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
     if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
     }
 
     nNode = pThis + 4;
-    return (int)*(uint32_t*)(nNode + 4) < 1 ? 0 : *(uint32_t*)(nNode + 4);
+    return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
-void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
+void __thiscall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
     int* pPrevLink;
     if (!pNode) {
       pNode = (int*)(pThis + 4);
@@ -78,7 +79,7 @@ void __fastcall ARCHIVE_UnlinkNode(int32_t pThis, int * pNode) {
     pNode[1] = 0;
 }
 
-void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget, int * * ppList) {
+void __thiscall ARCHIVE_LinkNode(int * * ppList, int * * ppNode, int32_t nMode, int * * ppTarget) {
     int* pPrevLink;
     int** ppCurNode = ppNode;
     if (!ppNode) {
@@ -102,38 +103,45 @@ void __fastcall ARCHIVE_LinkNode(int * * ppNode, int32_t nMode, int * * ppTarget
     if (!ppTarget) {
       ppTarget = ppList + 1;
     }
-    if (nMode != 1) {
-      pNext = *ppTarget;
-      *ppCurNode = pNext;
-      ppCurNode[1] = (int*)pNext[1];
-      pNext[1] = (int)ppNode;
-      *ppTarget = (int*)ppCurNode;
-      return;
-    }
 
-    *ppCurNode = (int*)ppTarget;
-    ppCurNode[1] = ppTarget[1];
-    pNext = *ppList;
-    pPrevLink = ppTarget[1];
-    if ((int)pPrevLink < 0) {
-      *(int***)~(uint32_t)pPrevLink = (int**)ppCurNode;
-      ppTarget[1] = (int*)ppNode;
-      return;
-    }
-    if ((int)pNext < 0) {
-      pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
-    }
+    switch (nMode) {
+      case 1:
+        {
+          *ppCurNode = (int*)ppTarget;
+          ppCurNode[1] = ppTarget[1];
+          pNext = *ppList;
+          pPrevLink = ppTarget[1];
+          if ((int)pPrevLink < 0) {
+            *(int***)~(uint32_t)pPrevLink = (int**)ppCurNode;
+            ppTarget[1] = (int*)ppNode;
+            return;
+          }
+          if ((int)pNext < 0) {
+            pNext = (int*)((int)ppTarget - (*ppTarget)[1]);
+          }
 
-    *(int***)((int)pPrevLink + (int)pNext) = (int**)ppCurNode;
-    ppTarget[1] = (int*)ppNode;
+          *(int***)((int)pPrevLink + (int)pNext) = (int**)ppCurNode;
+          ppTarget[1] = (int*)ppNode;
+          return;
+        }
+      default:
+        {
+          pNext = *ppTarget;
+          *ppCurNode = pNext;
+          ppCurNode[1] = (int*)pNext[1];
+          pNext[1] = (int)ppNode;
+          *ppTarget = (int*)ppCurNode;
+          return;
+        }
+    }
 }
 
-uint32_t __fastcall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {
-    if (!nNode) {
-      return *(uint32_t*)(pThis + 8);
+uint32_t __thiscall ARCHIVE_GetNodeSize(int32_t pThis, int32_t nNode) {
+    if (nNode) {
+      return *(uint32_t*)(nNode + 4);
     }
 
-    return *(uint32_t*)(nNode + 4);
+    return *(uint32_t*)(pThis + 8);
 }
 
 void __fastcall ARCHIVE_ClearList(int32_t nList) {
@@ -143,7 +151,7 @@ void __fastcall ARCHIVE_ClearList(int32_t nList) {
     while (true) {
       int nNext;
       pNode = *(int**)(nList + 8);
-      if (0 >= (int)pNode) {
+      if ((int)pNode <= 0) {
         break;
       }
 
@@ -186,23 +194,23 @@ void __fastcall ARCHIVE_ClearAndFreeHead(int32_t nList) {
     *(uint32_t*)(nList + 8) = 0;
 }
 
-int * * __fastcall ARCHIVE_AllocNode(int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags, int * * ppList) {
+int * * __thiscall ARCHIVE_AllocNode(int * * ppList, int32_t nLinkMode, int32_t nSize, uint32_t dwAllocFlags) {
     int** ppNode = (int**)Storm::SMem::SMemAlloc(nSize + 0x130, s___AUTALLOCREC___00711480, -2, dwAllocFlags | 8);
-    if (!ppNode) {
-      ppNode = 0;
-    } else {
+    if (ppNode) {
       *ppNode = 0;
       ppNode[1] = 0;
+    } else {
+      ppNode = 0;
     }
     if (!nLinkMode) {
       return ppNode;
     }
 
-    ARCHIVE_LinkNode(ppNode, nLinkMode, nullptr, ppList);
+    ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     return ppNode;
 }
 
-int * __fastcall ARCHIVE_FreeNode(uint8_t byFree, int * pNode) {
+int * __thiscall ARCHIVE_FreeNode(int * pNode, uint8_t byFree) {
     uint32_t nPrevOffset;
     int nNext = *pNode;
     if (nNext) {
@@ -227,7 +235,7 @@ int * __fastcall ARCHIVE_FreeNode(uint8_t byFree, int * pNode) {
     return pNode;
 }
 
-uint32_t __fastcall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
+uint32_t __thiscall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
     int* pPrevLink = pNode;
     if (!pNode) {
       pPrevLink = (int*)(pThis + 4);
@@ -251,7 +259,7 @@ uint32_t __fastcall ARCHIVE_RemoveNode(int32_t pThis, int * pNode) {
     }
 
     Storm::SMem::SMemFree(pNode, s___AUTALLOCREC___00711480, -2, 0);
-    return (int)nValue < 1 ? 0 : nValue;
+    return (int)nValue <= 0 ? 0 : nValue;
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): param_esi (ESI): LPOVERLAPPED, param_edi (EDI): LPOVERLAPPED, param_ebx (EBX): LPOVERLAPPED
@@ -290,11 +298,11 @@ void ARCHIVE_WriteMemoryCheckReport() {
     while (nResult) {
       int**** pNewRec;
       pNewRec = (int****)Storm::SMem::SMemAlloc(0x130, s___AUTALLOCREC___00711480, -2, 8);
-      if (!pNewRec) {
-        pNewRec = 0;
-      } else {
+      if (pNewRec) {
         *pNewRec = 0;
         pNewRec[1] = 0;
+      } else {
+        pNewRec = 0;
       }
 
       pSrcInfo = &sHeapDetails;
@@ -305,7 +313,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
         ppWalk++;
       }
 
-      if ((int)__frame0.pListPrev < 1 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwUnknown124)) {
+      if ((int)__frame0.pListPrev <= 0 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwUnknown124)) {
         pNextNode = *pNewRec;
         if (pNextNode) {
           pNextLink = pNewRec[1];
@@ -343,9 +351,9 @@ void ARCHIVE_WriteMemoryCheckReport() {
           if ((int)ppWalk < 1) {
             break;
           }
-        } while (sHeapDetails.dwUnknown124 < (uintptr_t)ppWalk[0x4b]);
+        } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwUnknown124);
 
-        ARCHIVE_LinkNode((int**)pNewRec, 1, (int**)ppInsertAfter, &__frame0.pListTail);
+        ARCHIVE_LinkNode(&__frame0.pListTail, (int**)pNewRec, 1, (int**)ppInsertAfter);
       }
 
       nResult = Storm::SMem::SMemFindNextHeap((uint32_t)pHeapEnum, (int*)&pHeapEnum, &sHeapDetails);
@@ -409,7 +417,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
         __frame0.pListHead[1] = __frame0.pListPrev;
         return;
       }
-      if (0x220 < sBlockInfo.nBlockSize && sBlockInfo.nBlockField40 && sBlockInfo.nBlockField44) {
+      if (sBlockInfo.nBlockSize > 0x220 && sBlockInfo.nBlockField40 && sBlockInfo.nBlockField44) {
         for (pScan = pBlock; hFileTmp = hFile , pScan < (uint16_t*)(sBlockInfo.nBlockSize + (int)pBlock); pScan += 2) {
           if (*(int*)pScan == 0x4c4f4144 && *(int*)(pScan + 2) == 0x4655434b && *(int*)(pScan + 4) == 0x54484953 && *(int*)(pScan + 6) == 0x4e4f5720) {
             ARCHIVE_WriteFormattedText(hFile, "%8d\t%50s\t(%s:%d)\n", *(int*)(pScan + 10), pScan + 0x8e, pScan + 0xc, *(int*)(pScan + 8));
@@ -454,15 +462,16 @@ void __fastcall ReadByteOrShort(D2BitBufferStrc * pBitBuffer) {
 
 uint32_t __fastcall UNIT_GetModuloFromSeed(D2SeedStrc * pSeed, uint32_t nModulo) {
     D2SeedStrc DVar2;
-    if ((int)nModulo < 1) {
+    if ((int)nModulo <= 0) {
       return 0;
     }
 
     int64_t lVar1 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
     if (nModulo & nModulo - 1) {
       DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-      *pSeed = DVar2;
-      return (uint32_t)(((uint64_t)d2_bits_of(DVar2) & 0xffffffff) % (uint64_t)nModulo);
+      pSeed->nSeedHigh = DVar2.nSeedHigh;
+      pSeed->nSeedLow = DVar2.nSeedLow;
+      return (uint32_t)(DVar2.nSeedLow % nModulo);
     }
 
     DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
@@ -472,13 +481,14 @@ uint32_t __fastcall UNIT_GetModuloFromSeed(D2SeedStrc * pSeed, uint32_t nModulo)
 
 uint32_t __fastcall RANDOM_RandomNumberSelector(D2SeedStrc * pSeed, uint32_t nModulo) {
     D2SeedStrc DVar1;
-    if ((int)nModulo < 1) {
+    if ((int)nModulo <= 0) {
       return 0;
     }
     if (nModulo & nModulo - 1) {
       DVar1 = D2_SEED_NEXT(*pSeed);
-      *pSeed = DVar1;
-      return (uint32_t)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) % (uint64_t)nModulo);
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
+      return (uint32_t)(DVar1.nSeedLow % nModulo);
     }
 
     DVar1 = D2_SEED_NEXT(*pSeed);

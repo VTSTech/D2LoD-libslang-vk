@@ -401,9 +401,9 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
       nScreenMode = 1;
     }
 
+    WindowSizeX = ScreenSizeX;
     WindowSizeY = ScreenSizeY - 0x28;
     gbScreenResolutionChangeInitInProgress = ScreenSizeX;
-    WindowSizeX = ScreenSizeX;
     D2Win::D2GFX::D2GFX_SetVideoMode(RequestedScreenModeMaybe);
     uint32_t nBorderType = UI::Path::DRAW_GetTypeOfBorder();
     UI::Path::TypeOfUiOverlayOverWorld(nBorderType);

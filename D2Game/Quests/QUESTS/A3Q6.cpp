@@ -566,8 +566,9 @@ void __fastcall Q23_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
 // [The Guardian (Q23)] Per-player iterator: if THIS player just completed (JustCompleted set), find
 // their party and propagate Mephisto-kill completion to every party member via Q23_PartyMember_SetCompleted.
 BOOL __fastcall Q23_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheGuardian, QUESTSTATE_JustCompleted);
+    /* GetQuestState(Guardian=0x16, JustCompleted=0x0d): only propagate from a
+                         player who just completed */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheGuardian, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }
@@ -608,8 +609,9 @@ BOOL __fastcall Q23_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
 // [The Guardian (Q23)] Per-player iterator: if THIS player just completed (JustCompleted), play the
 // quest-complete moo/sound event (0x42) on them. Cosmetic completion feedback.
 BOOL __fastcall Q23_PartyMember_PlayCompleteSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheGuardian, QUESTSTATE_JustCompleted);
+    /* GetQuestState(Guardian=0x16, JustCompleted=0x0d): only play sound for players
+                         who just completed */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheGuardian, QUESTSTATE_JustCompleted);
     if (!bJustCompleted) {
       return 0;
     }

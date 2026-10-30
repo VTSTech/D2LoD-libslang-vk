@@ -170,18 +170,19 @@ uint32_t __fastcall DRAW_GetVisibleViewportBounds(int * pnBounds) {
     pnBounds[2] = ScreenSizeX;
     pnBounds[1] = 0;
     pnBounds[3] = ScreenSizeX;
-    if (!(!GFX_bShowUIFlag.TradePrompt && !GFX_bShowUIFlag.StashMenu && !GFX_bShowUIFlag.CubeMenu && !GFX_bShowUIFlag.NpcShop && !GFX_bShowUIFlag.GuildVault && !GFX_bShowUIFlag.SteegStone)) {
-      return 0;
-    }
-    if (GFX_bShowUIFlag._x1D || GFX_bShowUIFlag.PartyMenu || GFX_bShowUIFlag.CharStat || GFX_bShowUIFlag.Quest || GFX_bShowUIFlag.MercMenu || GFX_bShowUIFlag.UnusedScroll || GFX_bShowUIFlag.WaypointMenu) {
-      *pnBounds = ScreenSizeX / 2;
-    }
-    if (!(GFX_bShowUIFlag.Inventory || GFX_bShowUIFlag.Skill)) {
+    if (!GFX_bShowUIFlag.TradePrompt && !GFX_bShowUIFlag.StashMenu && !GFX_bShowUIFlag.CubeMenu && !GFX_bShowUIFlag.NpcShop && !GFX_bShowUIFlag.GuildVault && !GFX_bShowUIFlag.SteegStone) {
+      if (GFX_bShowUIFlag._x1D || GFX_bShowUIFlag.PartyMenu || GFX_bShowUIFlag.CharStat || GFX_bShowUIFlag.Quest || GFX_bShowUIFlag.MercMenu || GFX_bShowUIFlag.UnusedScroll || GFX_bShowUIFlag.WaypointMenu) {
+        *pnBounds = ScreenSizeX / 2;
+      }
+      if (!(GFX_bShowUIFlag.Inventory || GFX_bShowUIFlag.Skill)) {
+        return (uint32_t)(*pnBounds != pnBounds[2]);
+      }
+
+      pnBounds[2] = ScreenSizeX / 2;
       return (uint32_t)(*pnBounds != pnBounds[2]);
     }
 
-    pnBounds[2] = ScreenSizeX / 2;
-    return (uint32_t)(*pnBounds != pnBounds[2]);
+    return 0;
 }
 
 int32_t __stdcall DRAW_GetBottomPanelY() {
@@ -208,13 +209,11 @@ uint32_t __stdcall DRAW_IsDialogActive() {
 
 static void __stdcall DRAW_CenteredText(int32_t nFontId, int32_t nY, DWORD dwColor, uint16_t * wszText) {
     int i;
+    uint16_t* pwszClear;
     uint16_t wszBuf[256];
     int anBounds[4];
-    uint16_t* pwszClear = wszBuf;
-    for (i = 0x80; i; i--) {
-      pwszClear[0] = L'\0';
-      pwszClear[1] = L'\0';
-      pwszClear += 2;
+    for (i = 0; i < 0x100; i++) {
+      wszBuf[i] = L'\0';
     }
 
     uint32_t bHasBounds = DRAW_GetVisibleViewportBounds(anBounds);
@@ -285,7 +284,7 @@ void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
     }
 
     int bIsMercenary = 0;
-    if (!pMonStats->interact && pMonStats->killable && pMonStats->NameStr) {
+    if (!(gadwBitMasks[1] & (uint8_t)*((uint8_t*)pMonStats + 0xd)) && gadwBitMasks[7] & (uint8_t)*((uint8_t*)pMonStats + 0xd) && pMonStats->NameStr) {
       D2RoomStrc* pRoom;
       if (!pUnit) {
         i = -1;
@@ -527,6 +526,12 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
       ui::UI_FormatPlayerNameAndStatus(pUnit, __frame0.wszNameBuf, 0x80, (bool*)&__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
       D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(__frame0.wszNameBuf, nHealthBarScreenX, gnMercenaryHealthBarScreenY - 0x48, __frame0.nScreenX, 1, (int32_t)__frame0.pLevelTxtResult);
       return;
+      case UNIT_ITEM:
+        if (!GFX_bShowUIFlag.AltShowItems) {
+          ui::UI_FormatItemNameWithQuality(pUnit, nullptr, 0);
+          return;
+        }
+      break;
       case UNIT_MONSTER:
         nClassId = pUnit->nClassId;
       if (nClassId == 0x1a1 || nClassId == 0x1a2) {
@@ -633,12 +638,6 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
         }
       }
 
-      break;
-      case UNIT_ITEM:
-        if (!GFX_bShowUIFlag.AltShowItems) {
-          ui::UI_FormatItemNameWithQuality(pUnit, nullptr, 0);
-          return;
-        }
       break;
       case UNIT_WARP:
         pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
@@ -868,21 +867,16 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
     HWND pHwnd;
     int32_t nHandlerCount;
     switch (eUIVar) {
+      case UI_AUTOMAP:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+      gbAutomapPanelOpened = 1;
+      return;
       case UI_GAME:
         nHandlerCount = 4;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nHandlerCount);
-      return;
-      case UI_INVENTORY:
-        Inv::INV_ResetInventoryState();
-      nHandlerCount = 4;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
-      return;
-      case UI_STATSCREEN:
-        nHandlerCount = 2;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
       return;
       case UI_SKILLSELECT:
         nHandlerCount = 1;
@@ -893,6 +887,17 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
         nHandlerCount = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawTownInit, nHandlerCount);
+      return;
+      case UI_STATSCREEN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
+      return;
+      case UI_INVENTORY:
+        Inv::INV_ResetInventoryState();
+      nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
       return;
       case UI_CHATBOX:
         Chat::CHAT_InitIME();
@@ -909,6 +914,11 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
         nHandlerCount = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawAreaInit, nHandlerCount);
+      return;
+      case UI_HIREABLES:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
       return;
       case UI_NEWSKILLS:
         nHandlerCount = 2;
@@ -939,12 +949,6 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawManufactureInit, nHandlerCount);
       GAME::Select::SELECT_UpdateUnitSelection(nullptr);
       return;
-      case UI_AUTOMAP:
-        nHandlerCount = 5;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
-      gbAutomapPanelOpened = 1;
-      return;
       case UI_CONFIG:
         ControlConfig::CONTROLCONFIG_OnToggleUI(1);
       DRAW_RegisterDrawHandlers();
@@ -968,20 +972,15 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawGoldInit, nHandlerCount);
       return;
-      case UI_QUESTSCROLL:
-        nHandlerCount = 2;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
-      return;
       case UI_QUESTLOG:
         nHandlerCount = 4;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 0x12, nHandlerCount);
       return;
-      case UI_HIREABLES:
-        nHandlerCount = 1;
+      case UI_QUESTSCROLL:
+        nHandlerCount = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
       return;
       case UI_WAYPOINT:
         nHandlerCount = 5;
@@ -1008,9 +1007,6 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawInventoryInit, nHandlerCount);
       return;
-      case UI_MSGLOG:
-        Text::TEXT_OpenMessageLogDialog();
-      return;
       case UI_STASH:
         CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
       Inv::INV_LoadStashImages();
@@ -1026,6 +1022,9 @@ void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
       nHandlerCount = 7;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitCubeHandlers, nHandlerCount);
+      return;
+      case UI_MSGLOG:
+        Text::TEXT_OpenMessageLogDialog();
       return;
       case UI_BELTROWS:
         ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagBeltKeyBindings);
@@ -1069,25 +1068,16 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
     D2UIFlagInitStrc* pHandlers;
     int32_t nHandlerCount;
     switch (ePanel) {
+      case UI_AUTOMAP:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+      gbAutomapPanelOpened = 0;
+      return;
       case UI_GAME:
         nHandlerCount = 4;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nHandlerCount);
-      return;
-      case UI_INVENTORY:
-        ui::UI_CloseCurrentDialog();
-      nHandlerCount = 4;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
-      ui::UI_UpdateCursorAnimationTimer();
-      return;
-      case UI_STATSCREEN:
-        ui::UI_CloseCurrentDialog();
-      nHandlerCount = 2;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
-      case UI_NODRAW:
-        ui::UI_UpdateCursorAnimationTimer();
       return;
       case UI_SKILLSELECT:
         nHandlerCount = 1;
@@ -1100,6 +1090,21 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawTownInit, nHandlerCount);
       ui::UI_UpdateCursorAnimationTimer();
       SpellSel::SKILLTREE_FreeResources();
+      return;
+      case UI_STATSCREEN:
+        ui::UI_CloseCurrentDialog();
+      nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
+      case UI_NODRAW:
+        ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_INVENTORY:
+        ui::UI_CloseCurrentDialog();
+      nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
+      ui::UI_UpdateCursorAnimationTimer();
       return;
       case UI_CHATBOX:
         Chat::CHAT_ShutdownIME();
@@ -1120,6 +1125,11 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawAreaInit, nHandlerCount);
       return;
+      case UI_HIREABLES:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
+      return;
       case UI_NEWSKILLS:
         nHandlerCount = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
@@ -1136,12 +1146,6 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawManufactureInit, nHandlerCount);
       GAME::Select::ClearSelectedUnit();
-      return;
-      case UI_AUTOMAP:
-        nHandlerCount = 5;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
-      gbAutomapPanelOpened = 0;
       return;
       case UI_CONFIG:
         nHandlerCount = 1;
@@ -1171,23 +1175,18 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       QuestLog::QUESTLOG_CloseAndFreeImages();
       ui::UI_UpdateCursorAnimationTimer();
       return;
-      case UI_QUESTSCROLL:
-        nHandlerCount = 2;
-      pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
-      Text::TEXT_OnPanelUnregister_NoOp();
-      ui::UI_UpdateCursorAnimationTimer();
-      return;
       case UI_QUESTLOG:
         nHandlerCount = 4;
       pHwnd = D2gfx::D2GFX::GetHwnd();
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 0x12, nHandlerCount);
       QuestLog::QUESTLOG_ResetNpcDialogState();
       return;
-      case UI_HIREABLES:
-        nHandlerCount = 1;
+      case UI_QUESTSCROLL:
+        nHandlerCount = 2;
       pHwnd = D2gfx::D2GFX::GetHwnd();
-      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
+      Text::TEXT_OnPanelUnregister_NoOp();
+      ui::UI_UpdateCursorAnimationTimer();
       return;
       case UI_WAYPOINT:
         nHandlerCount = 5;
@@ -1223,9 +1222,6 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       }
 
       break;
-      case UI_MSGLOG:
-        Text::TEXT_DestroyMessageLogDialog();
-      return;
       case UI_STASH:
         ui::UI_CloseCurrentDialog();
       Path::TypeOfUiOverlayOverWorld(0);
@@ -1244,6 +1240,9 @@ void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, pHandlers, nHandlerCount);
       ui::UI_UpdateCursorAnimationTimer();
       CmdTbl::CMD_ToggleKeyConfigMode(1, 1);
+      return;
+      case UI_MSGLOG:
+        Text::TEXT_DestroyMessageLogDialog();
       return;
       case UI_BELTROWS:
         nHandlerCount = 2;
@@ -1536,6 +1535,26 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
             nMouseY = ui::GetMouseY();
             if (!false) {
               switch (eUI) {
+                case UI_NPCSHOP:
+
+                case UI_ANVIL:
+
+                case UI_STASH:
+
+                case UI_CUBE:
+
+                case UI_STEEGSTONE:
+
+                case UI_GUILDVAULT:
+
+                case UI_0x1D:
+
+                case UI_0x20:
+                  eOverlayMode = 0;
+                goto apply_overlay_mode;
+                case UI_CONFIG:
+                  ui::UI_ConfigKeyBindModeCancelAndRevert();
+                break;
                 case UI_INVENTORY:
                   Inv::INV_ResetHoverAndContextState();
                 case UI_SKILLTREE:
@@ -1573,26 +1592,6 @@ BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse
                 }
 
                 break;
-                case UI_CONFIG:
-                  ui::UI_ConfigKeyBindModeCancelAndRevert();
-                break;
-                case UI_NPCSHOP:
-
-                case UI_ANVIL:
-
-                case UI_STASH:
-
-                case UI_CUBE:
-
-                case UI_STEEGSTONE:
-
-                case UI_GUILDVAULT:
-
-                case UI_0x1D:
-
-                case UI_0x20:
-                  eOverlayMode = 0;
-                goto apply_overlay_mode;
               }
             }
           }

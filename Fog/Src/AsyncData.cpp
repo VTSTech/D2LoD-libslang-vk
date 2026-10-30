@@ -442,7 +442,7 @@ size_t __fastcall ASYNCDATA_GetReadSize(D2AsyncData_Line0x128 * pAsyncData) {
 }
 
 // __thiscall shape (ECX=this, RET 8). Frees the old buffer at +0x3c then stores [EBP+8]->+0x3c (pReadBuffer, void*) and [EBP+0xc]->+0x40 (nReadSize, size_t).
-void __fastcall ASYNCDATA_SetResult(D2AsyncData_Line0x128 * pAsyncData, void * pNewBuffer, size_t nNewSize) {
+void __thiscall ASYNCDATA_SetResult(D2AsyncData_Line0x128 * pAsyncData, void * pNewBuffer, size_t nNewSize) {
     if (!pAsyncData) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x27e);
       exit(-1);

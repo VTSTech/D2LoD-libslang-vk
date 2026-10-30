@@ -74,7 +74,7 @@
 namespace D2Client::UNIT::MonUnique {
 
 uint8_t * __fastcall GetMonUModList(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataPlayer : 0)) {
       return nullptr;
     }
 
@@ -98,7 +98,7 @@ void __fastcall SetBossId(D2UnitStrc * pUnit, int16_t nBossId) {
 }
 
 uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -106,7 +106,7 @@ uint16_t __fastcall GetBossId(D2UnitStrc * pUnit) {
 }
 
 BOOL CheckMonTypeForMonster(D2UnitStrc * pUnit, eD2MonsterType eMonsterType, uint8_t byMonTypeMaskHi) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER ? pUnit->pUnitData.pUnitDataMonster : 0)) {
       return 0;
     }
 
@@ -199,9 +199,7 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
     } else {
       nNameSeed = (uint32_t)pUnit->pUnitData.pUnitDataMonster->nNameSeed;
     }
-    if (!pUnit) {
-      iVar3 = -1;
-    } else {
+    if (pUnit) {
       short int nBossNo;
       if (pUnit->eUnitType == UNIT_MONSTER) {
         pMonData = pUnit->pUnitData.pUnitDataMonster;
@@ -229,6 +227,8 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
       }
 
       iVar3 = pUnit->nClassId;
+    } else {
+      iVar3 = -1;
     }
 
     BOOL BVar1;
@@ -243,7 +243,7 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
         nChampTitleIdx++;
       } while (nChampTitleIdx < 4);
 
-      if (iVar3 < 0 || sgptDataTable->nTxtMonStatsSize <= iVar3) {
+      if (iVar3 < 0 || iVar3 >= sgptDataTable->nTxtMonStatsSize) {
         pMonStatsTxt = 0;
       } else {
         pMonStatsTxt = sgptDataTable->pTxtMonStats + iVar3;
@@ -258,14 +258,13 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
       return;
     }
 
-    pUnit->sSeed.nSeedLow = nNameSeed;
-    pUnit->sSeed.nSeedHigh = 0x29a;
+    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nNameSeed);
     if (pModifier == 0xc) {
       pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(0xc27);
       D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, pLocaleName);
       return;
     }
-    if (iVar3 < 0x221) {
+    if (iVar3 <= 0x220) {
       if (iVar3 == 0x220) {
         name_baal:
         pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(0xbf5);
@@ -349,9 +348,7 @@ void __fastcall MONUNIQUE_ApplyModifierBishbosh(D2UnitStrc * pUnit, int32_t eMod
     }
 
     CUnit::FreeLightMap(pUnit);
-    if (!pUnit) {
-      nClassId = -1;
-    } else {
+    if (pUnit) {
       D2SeedStrc sNewSeed;
       if (pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer && *(uint8_t*)((int)pUnit->pUnitData.pUnitDataPlayer->pQuestRecord + 6) & 4) {
         uSeedStep1 = (uint64_t)pUnit->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pUnit->sSeed.nSeedHigh;
@@ -363,6 +360,8 @@ void __fastcall MONUNIQUE_ApplyModifierBishbosh(D2UnitStrc * pUnit, int32_t eMod
       }
 
       nClassId = pUnit->nClassId;
+    } else {
+      nClassId = -1;
     }
 
     D2MonStats2Txt* pMonStats2;
@@ -384,9 +383,7 @@ void __fastcall MONUNIQUE_ApplyModifierBloodRaven(D2UnitStrc * pUnit, int32_t eM
     }
 
     D2Common::Skills::AddSkill(pUnit, SKILL_MonTeleport, 1, 1, ".\\UNIT\\MonUnique.cpp", 0x157);
-    uint32_t nMode = 4;
-    D2SkillStrc* pSkill = D2Common::Skills::SKILLS_GetSkillByEnum(SKILL_MonTeleport, pUnit);
-    D2Common::Skills::SetSkillMode(pSkill, nMode);
+    D2Common::Skills::SetSkillMode(D2Common::Skills::SKILLS_GetSkillByEnum(pUnit, SKILL_MonTeleport), 4);
 }
 
 // Applies a unique/champion monster resistance modifier to a unit (eModifier = the monster modifier/affix id). For mod 0x1c (stone skin) also doubles armorclass. Reads the unit's current fire/light/cold/poison/magic/damage resists and counts how many are already >=100 (maxed); if 2+ are maxed it skips additive mods (prevents over-stacking). mod 8 = +40 cold/fire/light (cold-resistant style), mod 0x1b = +20 to those, mods 9/0x12/0x11/0x17 = +75 single elemental resist, 0x19 = +20 magic resist, 0x1c = +50 damage resist. Does nothing unless bApply is non-zero. Mutates unit stats via STATLIST_SetUnitStat and returns nothing. __fastcall: pUnit in ECX, eModifier in EDX, bApply on the stack.
@@ -419,7 +416,7 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
     if (99 < nDmgRes) {
       bApply++;
     }
-    if (99 < iVar1) {
+    if (iVar1 >= 100) {
       bApply++;
     }
     if ((uint32_t)bApply >= 2) {
@@ -428,20 +425,20 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
     if (eModifier == 8) {
       if (nColdRes < 100) {
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_coldresist, nColdRes + 0x28, 0);
-        if (99 < nColdRes + 0x28) {
+        if (nColdRes + 0x28 >= 100) {
           bApply++;
         }
       }
       if ((uint32_t)bApply < 2) {
         if (nFireRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x28, 0);
-          if (99 < nFireRes + 0x28) {
+          if (nFireRes + 0x28 >= 100) {
             bApply++;
           }
         }
         if ((uint32_t)bApply < 2 && nLightRes < 100) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x28, 0);
-          if (99 < nLightRes + 0x28) {
+          if (nLightRes + 0x28 >= 100) {
             return;
           }
         }
@@ -470,20 +467,20 @@ void __fastcall SetResistances(D2UnitStrc * pUnit, int32_t eModifier, int32_t bA
       if (eModifier == 0x1b) {
         if (nColdRes < 0x4b) {
           D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_coldresist, nColdRes + 0x14, 0);
-          if (99 < nColdRes + 0x14) {
+          if (nColdRes + 0x14 >= 100) {
             bApply++;
           }
         }
         if ((uint32_t)bApply < 2) {
           if (nFireRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_fireresist, nFireRes + 0x14, 0);
-            if (99 < nFireRes + 0x14) {
+            if (nFireRes + 0x14 >= 100) {
               bApply++;
             }
           }
           if ((uint32_t)bApply < 2 && nLightRes < 0x4b) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_lightresist, nLightRes + 0x14, 0);
-            if (99 < nLightRes + 0x14) {
+            if (nLightRes + 0x14 >= 100) {
               return;
             }
           }
@@ -572,7 +569,7 @@ void __fastcall MONUNIQUE_ApplyModifierEffects(D2UnitStrc * pUnit) {
       }
 
       pInitFuncIter++;
-    } while ((int)pInitFuncIter < (uintptr_t)((char*)&gaMonUniqueBaseModIds + sizeof(gaMonUniqueBaseModIds)));
+    } while ((int)pInitFuncIter < (intptr_t)((char*)&gaMonUniqueBaseModIds + sizeof(gaMonUniqueBaseModIds)));
 
     int i = 0;
     do {
@@ -688,8 +685,7 @@ void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifie
     }
 
     nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(0x77, 0);
-    nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-    SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Coldunique, ~MISSILE_Arrow, SKILL_Attack, nLevel, nVelocity);
+    SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Coldunique, ~MISSILE_Arrow, SKILL_Attack, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nVelocity);
 }
 
 void __fastcall MONUNIQUE_DurielDeathAndSpawn(D2UnitStrc * pUnit, int32_t nUMod, int32_t nParam2) {
@@ -716,7 +712,7 @@ void __fastcall MONUNIQUE_DurielDeathAndSpawn(D2UnitStrc * pUnit, int32_t nUMod,
     } else if (pUnit->eAnimMode.ePlayerMode == Kick) {
       sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
       pUnit->sSeed = sNewSeed;
-      if (sNewSeed.nSeedLow == (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * 100 && (int)pMonData->pQuestRecord[2] < 100) {
+      if (sNewSeed.nSeedLow % 100 == 0 && (int)pMonData->pQuestRecord[2] < 100) {
         Units::GetXPosFromDynamicPathUnit(pUnit);
         Units::GetYPosFromDynamicPathUnit(pUnit);
         Source::ClientEngine::CLIENT_SpawnMonstersAroundUnit(pUnit, 0xe3, 4);
@@ -744,21 +740,21 @@ static void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMi
     eD2UnitType eUnitType = pUnit->eUnitType;
     sSkillArg.nFlags = 0x21;
     sSkillArg.pOwner = pUnit;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sSkillArg.nX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      sSkillArg.nX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      sSkillArg.nX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       sSkillArg.nY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      sSkillArg.nY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      sSkillArg.nY = 0;
     }
 
     sSkillArg.eSkillNo = SKILL_Attack;
@@ -781,28 +777,28 @@ static void __stdcall MONUNIQUE_SpawnDirectionalMissiles(D2UnitStrc * pUnit, eMi
       int32_t nMissileCopyIdx;
       nPosX = 0;
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPosX = pUnit->pPath.pStaticPath->nPosX;
       } else if (pUnit->pPath.pDynamicPath) {
         nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
       }
 
       eUnitType = pUnit->eUnitType;
-      if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+      if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
         nPosY = pUnit->pPath.pStaticPath->nPosY;
-      } else if (!pUnit->pPath.pDynamicPath) {
-        nPosY = 0;
-      } else {
+      } else if (pUnit->pPath.pDynamicPath) {
         nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+      } else {
+        nPosY = 0;
       }
 
       nDirX = *(int*)((int)anDirOffsets + eMissileId + MISSILE_Cr_Arrow4);
       nDirY = *(int*)((int)anDirOffsets + eMissileId);
       nMissileCopyIdx = 0;
       do {
+        sSkillArg.nFunctionParam = nMissileCopyIdx;
         sSkillArg.nUnitX = nDirX + nPosX;
         sSkillArg.nUnitY = nDirY + nPosY;
-        sSkillArg.nFunctionParam = nMissileCopyIdx;
         Missile::MakeMissile(&sSkillArg);
         nMissileCopyIdx++;
       } while (nMissileCopyIdx < 2);
@@ -861,7 +857,7 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     eMissilesId eMissileId = eMissileClass;
     D2UnitStrc* pMissileSelf = pUnit;
     D2UnitStrc* pOwnerUnit = Player::MISSILE_GetOwnerUnit(pUnit);
-    if (!(pOwnerUnit && -1 < (int)eMissileClass && (int)eMissileClass < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + eMissileClass && !sgptDataTable->pTxtMissiles[eMissileClass].NoMultiShot)) {
+    if (!(pOwnerUnit && (int)eMissileClass >= 0 && (int)eMissileClass < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + eMissileClass && !(*((uint8_t*)&sgptDataTable->pTxtMissiles[eMissileClass] + 0x5) & (uint8_t)gadwBitMasks[4]))) {
       return;
     }
 
@@ -881,7 +877,7 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     }
 
     D2Common::Seed::SEED_InitDefault(&sSeed);
-    sSeed.nSeedLow = 0x53454953;
+    D2Common::Seed::InitSeed_Param_666(&sSeed, 0x53454953);
     sSeed.nSeedHigh = pOwnerUnit->nUnitGUID;
     int32_t nOwnerPos = Units::GetXPosFromDynamicPathUnit(pOwnerUnit);
     int nDirY = nOwnerPos - nMissileTargetX;
@@ -897,7 +893,7 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     } else if (0 < nDirX) {
       nDirX = 1;
     }
-    if (0x3e < (int)eMissileId && (int)eMissileId < 0x43) {
+    if ((int)eMissileId >= 0x3f && (int)eMissileId <= 0x42) {
       nDirX = 0;
       nDirY = 0;
     }
@@ -907,11 +903,9 @@ void __fastcall MONUNIQUE_ApplyModifierNihlathak(D2UnitStrc * pUnit, int32_t nUM
     }
 
     nOwnerPos = D2Common::Units::Missile::GetLevel(pMissileSelf);
-    eD2Skills eMissileSkillId = D2Common::Units::Missile::GetSkillId(pMissileSelf);
-    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nMissileTargetX - nDirX, nDirY + nMissileTargetY, eMissileSkillId, nOwnerPos);
+    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nMissileTargetX - nDirX, nDirY + nMissileTargetY, D2Common::Units::Missile::GetSkillId(pMissileSelf), nOwnerPos);
     nOwnerPos = D2Common::Units::Missile::GetLevel(pMissileSelf);
-    eMissileSkillId = D2Common::Units::Missile::GetSkillId(pMissileSelf);
-    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nDirX + nMissileTargetX, nMissileTargetY - nDirY, eMissileSkillId, nOwnerPos);
+    Missile::MakeMissileAtXY(pOwnerUnit, eMissileId, nDirX + nMissileTargetX, nMissileTargetY - nDirY, D2Common::Units::Missile::GetSkillId(pMissileSelf), nOwnerPos);
     if (!(pOwnerUnit->eUnitType == UNIT_MONSTER && pOwnerUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
@@ -931,21 +925,21 @@ void __fastcall MONUNIQUE_SpawnExplodingArrowDeath(D2UnitStrc * pUnit, int32_t n
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     Missile::MakeMissileAtXY(pUnit, MISSILE_Explodingarrowexp, nPosX, nPosY, SKILL_Attack, 1);
@@ -962,7 +956,7 @@ void __fastcall MONUNIQUE_SpawnSuicideExplosion(D2UnitStrc * pUnit, int32_t nUMo
     int nCurrentFrame;
     eD2Skills eSkill;
     eD2UnitType eUnitType;
-    if (!pUnit || (nClassId = pUnit->nClassId , nClassId < 0) || sgptDataTable->nTxtMonStatsSize <= nClassId) {
+    if (!pUnit || (nClassId = pUnit->nClassId , nClassId < 0) || nClassId >= sgptDataTable->nTxtMonStatsSize) {
       pMonStatsTxt = 0;
     } else {
       pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId;
@@ -998,21 +992,21 @@ void __fastcall MONUNIQUE_SpawnSuicideExplosion(D2UnitStrc * pUnit, int32_t nUMo
     Missile::MakeMissileAtXY(pUnit, eMissileId, nPosX, nPosY, eSkill, nClassId);
     spawn_corpse_explosion:
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nClassId = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nClassId = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nClassId = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nClassId = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     Missile::MakeMissileAtXY(pUnit, MISSILE_Suicidecorpseexplode, nPosY, nClassId, SKILL_Attack, 1);
@@ -1022,21 +1016,21 @@ void __fastcall MONUNIQUE_PregnantCorpseBurst(D2UnitStrc * pUnit) {
     int nPosX;
     int nPosY;
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     Missile::CastAttack(pUnit, MISSILE_Monstercorpseexplode, nPosX, nPosY, SKILL_Attack, 1);

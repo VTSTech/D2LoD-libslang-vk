@@ -900,7 +900,7 @@ void __fastcall CloseLogFileByName(uint8_t * szFileName) {
     } while (true);
 }
 
-uint32_t __fastcall ComputeAbsoluteFromRelative(int * pBase, int * pNode) {
+uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase) {
     uint32_t nOffset = pNode[1];
     if ((int)nOffset < 0) {
       return ~nOffset;
@@ -1004,7 +1004,7 @@ void __fastcall UnlinkListNode(int * pNode) {
     pNode[1] = 0;
 }
 
-int32_t __fastcall NormalizeListNodePointer(int32_t pThis, int32_t pNodePtr) {
+int32_t __thiscall NormalizeListNodePointer(int32_t pThis, int32_t pNodePtr) {
     if (pNodePtr) {
       return pNodePtr;
     }
@@ -1137,7 +1137,7 @@ void __fastcall InitListHead(int * pListHead) {
     pListHead[2] = ~(uint32_t)pNextField;
 }
 
-void __fastcall InsertListNode(int * * pNode, int32_t bInsertAtHead, int * * ppTarget, int * * ppListHead) {
+void __thiscall InsertListNode(int * * ppListHead, int * * pNode, int32_t bInsertAtHead, int * * ppTarget) {
     int* pBackLink;
     int** ppCurNode = pNode;
     if (!pNode) {
@@ -1187,7 +1187,7 @@ void __fastcall InsertListNode(int * * pNode, int32_t bInsertAtHead, int * * ppT
     ppTarget[1] = (int*)pNode;
 }
 
-void __fastcall RemoveListNode(int32_t pListHead, int * pNode) {
+void __thiscall RemoveListNode(int32_t pListHead, int * pNode) {
     int* pPrevLink;
     if (!pNode) {
       pNode = (int*)(pListHead + 4);
@@ -1320,7 +1320,7 @@ void __fastcall DestroyAllListNodes(void * pListHead) {
     ExceptionList = pPrevExceptionList;
 }
 
-int * * __fastcall AllocateAndInsertMessageNode(int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags, int * * ppListHead) {
+int * * __thiscall AllocateAndInsertMessageNode(int * * ppListHead, int32_t nInsertMode, int32_t nPayloadSize, uint32_t dwAllocFlags) {
     uint32_t dwSEHTryLevel = -1;
     pfnEHHandlerRoutine pfnSEHHandler = __GSHandlerCheck_EH_6c9e11;
     void* pPrevExceptionList = ExceptionList;
@@ -1335,7 +1335,7 @@ int * * __fastcall AllocateAndInsertMessageNode(int32_t nInsertMode, int32_t nPa
 
     dwSEHTryLevel = -1;
     if (nInsertMode) {
-      InsertListNode(pNode, nInsertMode, nullptr, ppListHead);
+      InsertListNode(ppListHead, pNode, nInsertMode, nullptr);
     }
 
     ExceptionList = pPrevExceptionList;
@@ -1378,7 +1378,7 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDat
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogMessageQueueCS);
-    int** pNode = AllocateAndInsertMessageNode(0, nPayloadSize, 0, (int**)&gLogMessageQueueHead);
+    int** pNode = AllocateAndInsertMessageNode((int**)&gLogMessageQueueHead, 0, nPayloadSize, 0);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gLogMessageQueueCS);
     /* LPSYSTEMTIME lpSystemTime for GetLocalTime */ pNode[2] = (int*)(nPayloadSize + 0x24);
     pNode[3] = (int*)0x2;
@@ -1532,7 +1532,7 @@ void __fastcall EnqueueFormattedLogMessage(char * szText, int32_t nPriority, int
       nTotalLen = Storm::Source::SSTR::SStrLen(szFormatted);
       nPayloadSize = nTextLen + 2 + nTotalLen;
       /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogMessageQueueCS);
-      pNode = AllocateAndInsertMessageNode(0, nPayloadSize, 0, (int**)&gLogMessageQueueHead);
+      pNode = AllocateAndInsertMessageNode((int**)&gLogMessageQueueHead, 0, nPayloadSize, 0);
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gLogMessageQueueCS);
       pNode[2] = (int*)(nPayloadSize + 0x24);
       pNode[3] = (int*)0x1;

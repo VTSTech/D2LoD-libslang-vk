@@ -528,24 +528,27 @@ void __fastcall PLAYER_SendAllItemsToClient(D2UnitStrc * pUnit, D2ClientStrc * p
 }
 
 int32_t __fastcall GetPlayerTradeTickOrBusy(D2UnitStrc * pPlayer) {
+    D2UnitStrc* pCursorItem_lcl;
+    D2UnitDataPlayerStrc* pPlayerData;
     eD2UnitType eInteractUnitType;
     uint32_t nInteractUnitId;
-    if (!(pPlayer && pPlayer->eUnitType == UNIT_PLAYER)) {
-      return 0;
+    if (pPlayer && pPlayer->eUnitType == UNIT_PLAYER) {
+      BOOL bHasInteraction;
+      bHasInteraction = UNIT::SUnit::GetInteractInfo(pPlayer, &eInteractUnitType, &nInteractUnitId);
+      if (bHasInteraction) {
+        return 1;
+      }
+
+      pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pPlayer->pInventory);
+      if (pCursorItem_lcl) {
+        return 1;
+      }
+
+      pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
+      return pPlayerData->dwTradeTick;
     }
 
-    BOOL bHasInteraction = UNIT::SUnit::GetInteractInfo(pPlayer, &eInteractUnitType, &nInteractUnitId);
-    if (bHasInteraction) {
-      return 1;
-    }
-
-    D2UnitStrc* pCursorItem_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pPlayer->pInventory);
-    if (pCursorItem_lcl) {
-      return 1;
-    }
-
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
-    return pPlayerData->dwTradeTick;
+    return 0;
 }
 
 void __fastcall PLAYER_ClearTradeTick(D2UnitStrc * pUnit) {
@@ -568,16 +571,16 @@ void __fastcall PLAYER_EndInteraction(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       pInteractUnit = UNIT::SUnit::FindUnitFromTable(pGame, eInteractUnitType, nInteractUnitId);
       if (pInteractUnit) {
         switch (eInteractUnitType) {
-          case UNIT_PLAYER:
-            PlayerTrade::thunk_TRADE_CompleteTrade(pGame, pUnit);
-          Quests::QUESTS::A5Q5::Q35_OnPlayerLeavesSummit(pGame, pUnit);
-          return;
           case UNIT_MONSTER:
             UNIT::SUNITNPC::SUNITNPC_CloseNpcInteraction(pGame, pUnit, pInteractUnit);
           Quests::QUESTS::A5Q5::Q35_OnPlayerLeavesSummit(pGame, pUnit);
           return;
           case UNIT_OBJECT:
             Objects::ObjectsMode::OBJMODE_HandleObjectDeactivation(pGame, pUnit, pInteractUnit);
+          Quests::QUESTS::A5Q5::Q35_OnPlayerLeavesSummit(pGame, pUnit);
+          return;
+          case UNIT_PLAYER:
+            PlayerTrade::thunk_TRADE_CompleteTrade(pGame, pUnit);
           Quests::QUESTS::A5Q5::Q35_OnPlayerLeavesSummit(pGame, pUnit);
           return;
           case UNIT_ITEM:
@@ -611,9 +614,6 @@ void __fastcall PLAYER_CancelInteraction(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     } else {
       D2ItemsTxt* pItemTxt;
       switch (eInteractUnitType) {
-        case UNIT_PLAYER:
-          PlayerTrade::ClickButton(pGame, pUnit, 6, 0);
-        return;
         case UNIT_MONSTER:
           UNIT::SUNITNPC::SUNITNPC_CloseNpcInteraction(pGame, pUnit, pInteractUnit);
         nInteractGUID = pInteractUnit->nUnitGUID;
@@ -628,6 +628,9 @@ void __fastcall PLAYER_CancelInteraction(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         break;
         default:
           goto no_interact_target;
+        case UNIT_PLAYER:
+          PlayerTrade::ClickButton(pGame, pUnit, 6, 0);
+        return;
         case UNIT_ITEM:
           pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pInteractUnit->nClassId);
         if (pItemTxt->dwCode != 0x20786f62) {
@@ -1097,15 +1100,15 @@ void __fastcall PLAYER_CheckIsHostileToPlayer(::SGAMEDATA * pGame, D2UnitStrc * 
 }
 
 DWORD __fastcall PLAYER_CountPlayersWithFilter(::SGAMEDATA * pGame, D2UnitStrc * pnFilter) {
-    D2PlayerHostileCheckArgStrc sHostileArgs;
-    if (!(pGame && pnFilter && pnFilter->eUnitType == UNIT_PLAYER)) {
-      return 0;
+    if (pGame && pnFilter && pnFilter->eUnitType == UNIT_PLAYER) {
+      D2PlayerHostileCheckArgStrc sHostileArgs;
+      sHostileArgs.bHostile = 0;
+      sHostileArgs.pPlayer = pnFilter;
+      UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)PLAYER_CheckIsHostileToPlayer, &sHostileArgs);
+      return sHostileArgs.bHostile;
     }
 
-    sHostileArgs.bHostile = 0;
-    sHostileArgs.pPlayer = pnFilter;
-    UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)PLAYER_CheckIsHostileToPlayer, &sHostileArgs);
-    return sHostileArgs.bHostile;
+    return 0;
 }
 
 void __fastcall PLAYER_CheckPlayerIsHostileToThis(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2PlayerHostileCheckArgStrc * pbHostile) {
@@ -1118,15 +1121,15 @@ void __fastcall PLAYER_CheckPlayerIsHostileToThis(::SGAMEDATA * pGame, D2UnitStr
 }
 
 DWORD __fastcall PLAYER_CountPlayersWithFilter2(::SGAMEDATA * pGame, D2UnitStrc * pnFilter) {
-    D2PlayerHostileCheckArgStrc sHostileArgs;
-    if (!(pGame && pnFilter && pnFilter->eUnitType == UNIT_PLAYER)) {
-      return 0;
+    if (pGame && pnFilter && pnFilter->eUnitType == UNIT_PLAYER) {
+      D2PlayerHostileCheckArgStrc sHostileArgs;
+      sHostileArgs.bHostile = 0;
+      sHostileArgs.pPlayer = pnFilter;
+      UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)PLAYER_CheckPlayerIsHostileToThis, &sHostileArgs);
+      return sHostileArgs.bHostile;
     }
 
-    sHostileArgs.bHostile = 0;
-    sHostileArgs.pPlayer = pnFilter;
-    UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)PLAYER_CheckPlayerIsHostileToThis, &sHostileArgs);
-    return sHostileArgs.bHostile;
+    return 0;
 }
 
 // Returns the weapon unit the player should use when casting the current skill, respecting dual-wield and weapon-switch rules. For non-dual-wield classes returns the equipped primary weapon. For dual-wield capable classes dispatches on SkillsTxt.weapsel: 2=off-hand preference with main-hand fallback if no valid off-hand, 3=switch-state dependent (reads nSeqFrame weapon-switch bit), 4=no weapon (returns null), default/1=primary then off-hand fallback. Returns the equipped default if the resolved weapon is broken or disabled.

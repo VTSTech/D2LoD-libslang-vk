@@ -2,7 +2,6 @@
 
 #include "Storm/Source/SSComp.h"
 #include "Fog/3rdparty/crashy.h"
-#include "Fog/Debug.h"
 #include "Fog/SMem.h"
 #include "Storm/3rdparty/zlib/deflate.h"
 #include "Storm/3rdparty/zlib/inflate.h"
@@ -44,12 +43,12 @@ typedef void (__fastcall *pfnSCompCodec)(void * pDst, uint32_t * pnDstLen, void 
 
 namespace Storm::Source::SSComp {
 
-void __fastcall BITSTREAM_WriteBits(D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount) {
+void __thiscall BITSTREAM_WriteBits(D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount) {
     uint32_t nBitsHeld;
     pBitStream->nBitAccum |= nBitsValue << ((uint8_t)pBitStream->nBitsHeld & 0x1f);
     nBitsHeld = pBitStream->nBitsHeld + nBitCount;
     pBitStream->nBitsHeld = nBitsHeld;
-    while (7 < nBitsHeld) {
+    while (nBitsHeld >= 8) {
       if (pBitStream->nBytesRemaining) {
         *pBitStream->pOutPtr = (uint8_t)pBitStream->nBitAccum;
         pBitStream->pOutPtr++;
@@ -76,7 +75,7 @@ void __fastcall BITSTREAM_Flush(D2BitStreamWriterStrc * pBitStream) {
       nBitsTmp = pBitStream->nBitsHeld;
       pBitStream->nBitAccum >>= 8;
       nShift = 8;
-      if (nBitsTmp < 9) {
+      if (nBitsTmp <= 8) {
         nShift = nBitsTmp;
       }
 
@@ -85,7 +84,7 @@ void __fastcall BITSTREAM_Flush(D2BitStreamWriterStrc * pBitStream) {
     }
 }
 
-void __fastcall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol) {
+void __thiscall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol) {
     int pParent;
     int pNode = *(int*)(pHuffState + 0x306c + nSymbol * 4);
     uint32_t nCode = 0;
@@ -100,8 +99,8 @@ void __fastcall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStrea
 }
 
 static void SCOMP_SelectADPCMParams(uint8_t * pnBitsPerSample, uint32_t nChannels, uint32_t * pnStepShift) {
-    if (nChannels) {
-      if (nChannels < 3) {
+    if (nChannels > 0) {
+      if (nChannels <= 2) {
         *pnBitsPerSample = '\x04';
         *pnStepShift = 6;
         return;
@@ -146,7 +145,7 @@ static uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSam
     aChannelState[2] = 0x2c;
     aChannelState[3] = 0x2c;
     uint32_t nChannel = 0;
-    if (nChannels) {
+    if (nChannels > 0) {
       do {
         nSample = *pInSamples;
         aChannelState[nChannel] = (int)nSample;
@@ -163,115 +162,115 @@ static uint32_t __stdcall SCOMP_ADPCMEncode(uint32_t nMaxOutSize, short * pInSam
     nChannel = nChannels - 1;
     uint32_t nChannelIdx = nChannel;
     aChannelState[4] = nInSize >> 1;
-    if (nChannels < nInSize >> 1) {
-      int* piVar1;
-      do {
-        if ((int)nMaxOutSize < (int)(pOutCur + (2 - (int)pOutStart))) {
-          return (uint32_t)(pOutCur + (2 - (int)pOutStart));
-        }
-        if (nChannels == 2) {
-          nChannel = (uint32_t)!nChannel;
-          nChannelIdx = nChannel;
-        }
-
-        nChannelTmp = nChannelIdx;
-        nSample = *pInSamples;
-        pInSamples++;
-        nStepSize = (int)nSample - aChannelState[nChannel];
-        nDelta = (int)nStepSize >> 0x1f;
-        nDelta = (nStepSize ^ nDelta) - nDelta;
-        nStepSize = gdwADPCMCoefficient[aChannelState[nChannel + 2]];
-        nBitCount = (uint32_t)nBitsPerSample;
-        bySignBit = aChannelState[nChannel] <= (int)nSample ? 0 : 0x40;
-        nChannel = nChannelIdx;
-        if (nDelta < nStepSize >> (nBitsPerSample & 0x1f)) {
-          if (aChannelState[nChannelIdx + 2]) {
-            aChannelState[nChannelIdx + 2]--;
-          }
-
-          *pOutCur = 0x80;
-          pOutCur++;
-          nChannel = nChannelTmp;
-        } else {
-          while (true) {
-            nChannelIdx = nChannel;
-            if (!(nStepSize * 2 < nDelta && aChannelState[nChannelTmp + 2] < 0x58)) {
-              break;
-            }
-            if (!nMaxSamples) {
-              break;
-            }
-
-            nPredicted = aChannelState[nChannelTmp + 2];
-            aChannelState[nChannelTmp + 2] = nPredicted + 8;
-            if (0x58 < nPredicted + 8) {
-              aChannelState[nChannelTmp + 2] = 0x58;
-            }
-
-            nStepSize = gdwADPCMCoefficient[aChannelState[nChannelTmp + 2]];
-            nMaxSamples--;
-            *pOutCur = 0x81;
-            pOutCur++;
-            nChannel = nChannelIdx;
-          }
-
-          *(uint8_t*)((char*)&wHeader + 1) = (uint8_t)((uint16_t)wHeader >> 8);
-          nStepBase = nStepSize >> (*(uint8_t*)((char*)&wHeader + 1) & 0x1f);
-          nBitMask = 0;
-          nChannelTmp = 1 << ((char)nBitCount - 2U & 0x1f);
-          nAccum = 0;
-          nInSize = 1;
-          nBitCount = 0x20;
-          if (nChannelTmp < 0x21) {
-            nBitCount = nChannelTmp;
-          }
-
-          while (true) {
-            if (nAccum + nStepSize <= nDelta) {
-              nAccum += nStepSize;
-              nBitMask |= nInSize;
-            }
-            if (nInSize == nBitCount) {
-              break;
-            }
-
-            nStepSize >>= 1;
-            nInSize <<= 1;
-          }
-
-          nPredicted = nAccum + nStepBase;
-          if (!bySignBit) {
-            nPredicted = aChannelState[nChannel] + nPredicted;
-            if (0x7fff < nPredicted) {
-              nPredicted = 0x7fff;
-            }
-          } else {
-            nPredicted = aChannelState[nChannel] - nPredicted;
-            if (nPredicted < -0x8000) {
-              nPredicted = -0x8000;
-            }
-          }
-
-          *pOutCur = bySignBit | (uint8_t)nBitMask;
-          pOutCur++;
-          piVar1 = aChannelState + nChannel + 2;
-          *piVar1 += gnSSCompDeflateFlags[nBitMask & 0x1f];
-          aChannelState[nChannel] = nPredicted;
-          if (*piVar1 < 0) {
-            aChannelState[nChannel + 2] = 0;
-          } else if (0x58 < aChannelState[nChannel + 2]) {
-            aChannelState[nChannel + 2] = 0x58;
-          }
-        }
-
-        nSampleIdx++;
-      } while (nSampleIdx < (uint32_t)aChannelState[4]);
-
-      return (int)pOutCur - (int)pOutStart;
+    if (!(nChannels < nInSize >> 1)) {
+      nOutSize = (int)pOutCur - (int)pOutStart;
+      return nOutSize;
     }
 
-    nOutSize = (int)pOutCur - (int)pOutStart;
-    return nOutSize;
+    int* piVar1;
+    do {
+      if ((int)(pOutCur + (2 - (int)pOutStart)) > (int)nMaxOutSize) {
+        return (uint32_t)(pOutCur + (2 - (int)pOutStart));
+      }
+      if (nChannels == 2) {
+        nChannel = (uint32_t)!nChannel;
+        nChannelIdx = nChannel;
+      }
+
+      nChannelTmp = nChannelIdx;
+      nSample = *pInSamples;
+      pInSamples++;
+      nStepSize = (int)nSample - aChannelState[nChannel];
+      nDelta = (int)nStepSize >> 0x1f;
+      nDelta = (nStepSize ^ nDelta) - nDelta;
+      nStepSize = gdwADPCMCoefficient[aChannelState[nChannel + 2]];
+      nBitCount = (uint32_t)nBitsPerSample;
+      bySignBit = (int)nSample >= aChannelState[nChannel] ? 0 : 0x40;
+      nChannel = nChannelIdx;
+      if (nDelta < nStepSize >> (nBitsPerSample & 0x1f)) {
+        if (aChannelState[nChannelIdx + 2]) {
+          aChannelState[nChannelIdx + 2]--;
+        }
+
+        *pOutCur = 0x80;
+        pOutCur++;
+        nChannel = nChannelTmp;
+      } else {
+        while (true) {
+          nChannelIdx = nChannel;
+          if (!(nDelta > nStepSize * 2 && aChannelState[nChannelTmp + 2] < 0x58)) {
+            break;
+          }
+          if (!nMaxSamples) {
+            break;
+          }
+
+          nPredicted = aChannelState[nChannelTmp + 2];
+          aChannelState[nChannelTmp + 2] = nPredicted + 8;
+          if (nPredicted + 8 > 0x58) {
+            aChannelState[nChannelTmp + 2] = 0x58;
+          }
+
+          nStepSize = gdwADPCMCoefficient[aChannelState[nChannelTmp + 2]];
+          nMaxSamples--;
+          *pOutCur = 0x81;
+          pOutCur++;
+          nChannel = nChannelIdx;
+        }
+
+        *(uint8_t*)((char*)&wHeader + 1) = (uint8_t)((uint16_t)wHeader >> 8);
+        nStepBase = nStepSize >> (*(uint8_t*)((char*)&wHeader + 1) & 0x1f);
+        nBitMask = 0;
+        nChannelTmp = 1 << ((char)nBitCount - 2U & 0x1f);
+        nAccum = 0;
+        nInSize = 1;
+        nBitCount = 0x20;
+        if (nChannelTmp <= 0x20) {
+          nBitCount = nChannelTmp;
+        }
+
+        while (true) {
+          if (nAccum + nStepSize <= nDelta) {
+            nAccum += nStepSize;
+            nBitMask |= nInSize;
+          }
+          if (nInSize == nBitCount) {
+            break;
+          }
+
+          nStepSize >>= 1;
+          nInSize <<= 1;
+        }
+
+        nPredicted = nAccum + nStepBase;
+        if (bySignBit) {
+          nPredicted = aChannelState[nChannel] - nPredicted;
+          if (nPredicted < -0x8000) {
+            nPredicted = -0x8000;
+          }
+        } else {
+          nPredicted = aChannelState[nChannel] + nPredicted;
+          if (nPredicted > 0x7fff) {
+            nPredicted = 0x7fff;
+          }
+        }
+
+        *pOutCur = bySignBit | (uint8_t)nBitMask;
+        pOutCur++;
+        piVar1 = aChannelState + nChannel + 2;
+        *piVar1 += gnSSCompDeflateFlags[nBitMask & 0x1f];
+        aChannelState[nChannel] = nPredicted;
+        if (*piVar1 < 0) {
+          aChannelState[nChannel + 2] = 0;
+        } else if (aChannelState[nChannel + 2] > 0x58) {
+          aChannelState[nChannel + 2] = 0x58;
+        }
+      }
+
+      nSampleIdx++;
+    } while (nSampleIdx < (uint32_t)aChannelState[4]);
+
+    return (int)pOutCur - (int)pOutStart;
 }
 
 static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int32_t pIn, uint32_t nChannels, int32_t nInSize) {
@@ -288,7 +287,7 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
     uint32_t nChannel = 0;
     short int* pOutStart = pOut;
     uint8_t* pInEnd = (uint8_t*)(pIn + nInSize);
-    if (nChannels) {
+    if (nChannels > 0) {
       do {
         nSample = *(short int*)pInCur;
         pInCur += 2;
@@ -319,7 +318,37 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
       pInCur++;
       if ((char)byCode < '\0') {
         nStepSize = byCode & 0x7f;
-        if (!(byCode & 0x7f)) {
+        if (byCode & 0x7f) {
+          switch (nStepSize) {
+            case 1:
+              {
+                aChannelState[nChannel + 2] += 8;
+                if (0x58 < aChannelState[nChannel + 2]) {
+                  aChannelState[nChannel + 2] = 0x58;
+                }
+
+                break;
+              }
+            default:
+              {
+                continue;
+              }
+            case 2:
+              {
+                piVar1 = aChannelState + nChannel + 2;
+                *piVar1 += -8;
+                if (*piVar1 < 0) {
+                  aChannelState[nChannel + 2] = 0;
+                }
+
+                break;
+              }
+          }
+
+          if (nChannels == 2) {
+            nChannel = (uint32_t)!nChannel;
+          }
+        } else {
           if (aChannelState[nChannel + 2]) {
             aChannelState[nChannel + 2]--;
           }
@@ -330,26 +359,6 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
           *pOut = (short int)aChannelState[nChannel];
           pOut++;
           nOutSize -= 2;
-        } else {
-          if (nStepSize == 1) {
-            aChannelState[nChannel + 2] += 8;
-            if (0x58 < aChannelState[nChannel + 2]) {
-              aChannelState[nChannel + 2] = 0x58;
-            }
-          } else {
-            if (nStepSize != 2) {
-              continue;
-            }
-
-            piVar1 = aChannelState + nChannel + 2;
-            *piVar1 += -8;
-            if (*piVar1 < 0) {
-              aChannelState[nChannel + 2] = 0;
-            }
-          }
-          if (nChannels == 2) {
-            nChannel = (uint32_t)!nChannel;
-          }
         }
       } else {
         nStepSize = gdwADPCMCoefficient[aChannelState[nChannel + 2]];
@@ -372,15 +381,15 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
         if (byCode & 0x20) {
           nDelta += nStepSize >> 5;
         }
-        if (!(byCode & 0x40)) {
-          nPredicted = aChannelState[nChannel] + nDelta;
-          if (0x7ffe < nPredicted) {
-            nPredicted = 0x7fff;
+        if (byCode & 0x40) {
+          nPredicted = aChannelState[nChannel] - nDelta;
+          if (nPredicted <= -0x8000) {
+            nPredicted = -0x8000;
           }
         } else {
-          nPredicted = aChannelState[nChannel] - nDelta;
-          if (nPredicted < -0x7fff) {
-            nPredicted = -0x8000;
+          nPredicted = aChannelState[nChannel] + nDelta;
+          if (nPredicted >= 0x7fff) {
+            nPredicted = 0x7fff;
           }
         }
 
@@ -396,7 +405,7 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
         *piVar1 += gnSSCompDeflateFlags[byCode & 0x1f];
         if (*piVar1 < 0) {
           aChannelState[nChannel + 2] = 0;
-        } else if (0x58 < aChannelState[nChannel + 2]) {
+        } else if (aChannelState[nChannel + 2] > 0x58) {
           aChannelState[nChannel + 2] = 0x58;
         }
       }
@@ -409,7 +418,7 @@ static short * __stdcall SCOMP_ADPCMDecode(short * pOut, uint32_t nOutSize, int3
 uint32_t SCOMP_PkwareBufferRead(void * pDst, uint32_t * pnReqSize, PKWARE_STREAM * pStream) {
     uint32_t nAvail = pStream->nInLen - pStream->nInPos;
     uint32_t _Size = *pnReqSize;
-    if (nAvail <= *pnReqSize) {
+    if (*pnReqSize >= nAvail) {
       _Size = nAvail;
     }
 
@@ -422,7 +431,7 @@ uint32_t SCOMP_PkwareBufferRead(void * pDst, uint32_t * pnReqSize, PKWARE_STREAM
 void SCOMP_PkwareBufferWrite(void * pSrc, uint32_t * pnReqSize, PKWARE_STREAM * pStream) {
     uint32_t nAvail = pStream->nOutLen - pStream->nOutPos;
     uint32_t _Size = *pnReqSize;
-    if (nAvail <= *pnReqSize) {
+    if (*pnReqSize >= nAvail) {
       _Size = nAvail;
     }
 
@@ -442,10 +451,10 @@ void __fastcall SCOMP_PkwareCompress(void * pOutBuf, uint32_t * pdwOutLength, vo
     Stream.nInPos = 0;
     Stream.pInBuf = pInBuf;
     Stream.nInLen = nInLen;
-    if (nInLen < 0xc00) {
-      nDictSize = (nInLen < 0x600 ? -1024 : 0) + 0x800;
-    } else {
+    if (nInLen >= 0xc00) {
       nDictSize = 0x1000;
+    } else {
+      nDictSize = (nInLen < 0x600 ? -1024 : 0) + 0x800;
     }
 
     Stream.pOutBuf = pOutBuf;
@@ -461,11 +470,11 @@ void __fastcall SCOMP_PkwareDecompress(void * pOutBuf, uint32_t * pdwOutLength, 
     PKWARE_STREAM Stream;
     TDcmpStruct* pWorkBuf = (TDcmpStruct*)SMem::SMemAlloc(0x3134, ".\\SOURCE\\SCOMP.CPP", 0x47b, 0);
     Stream.nOutLen = *pdwOutLength;
+    Stream.pOutBuf = pOutBuf;
     Stream.nOutPos = 0;
     Stream.pInBuf = pInBuf;
     Stream.nInPos = 0;
     Stream.nInLen = nInLen;
-    Stream.pOutBuf = pOutBuf;
     PKWARE_explode((pfnPkwareRead)SCOMP_PkwareBufferRead, (pfnPkwareWrite)SCOMP_PkwareBufferWrite, pWorkBuf, &Stream);
     SMem::SMemFree(pWorkBuf, ".\\SOURCE\\SCOMP.CPP", 0x48d, 0);
     *pdwOutLength = Stream.nOutPos;
@@ -490,7 +499,7 @@ void * __fastcall SCOMP_ArenaAlloc(D2ScompArenaStrc * pArenaState, int32_t nItem
 
 // @sourcefile .\SOURCE\SCOMP.CPP
 void __fastcall SCOMP_ArenaFree(D2ScompArenaStrc * pArenaState, void * pBlock) {
-    if (!(pBlock < (void*)pArenaState->pBase || pArenaState->pBase + pArenaState->nSize <= (unsigned char*)pBlock)) {
+    if (!(pBlock < (void*)pArenaState->pBase || pBlock >= (void*)(pArenaState->pBase + pArenaState->nSize))) {
       return;
     }
 
@@ -514,15 +523,15 @@ static int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32
     if (!nRetInit) {
       uint32_t nRet;
       nRet = _3rdparty::zlib::deflate::deflate(&zStream, 4);
-      if (nRet == 1) {
-        *pnOutLen = zStream.total_out;
-        nRetInit = _3rdparty::zlib::deflate::deflateEnd(&zStream);
-      } else {
+      if (nRet != 1) {
         _3rdparty::zlib::deflate::deflateEnd(&zStream);
         nRetInit = -5;
         if (nRet) {
           return nRet;
         }
+      } else {
+        *pnOutLen = zStream.total_out;
+        nRetInit = _3rdparty::zlib::deflate::deflateEnd(&zStream);
       }
     }
 
@@ -531,12 +540,21 @@ static int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32
 
 void __fastcall SCOMP_ZlibCompressWithLevel(uint8_t * pDst, uint32_t * pnDstLen, uint32_t pSrc, uint32_t nSrcLen, uint32_t * pUserData, int32_t nLevel) {
     uint32_t nZlibLevel;
-    if (nLevel == 1) {
-      nZlibLevel = 9;
-    } else if (nLevel == 2) {
-      nZlibLevel = 1;
-    } else {
-      nZlibLevel = -1;
+    switch (nLevel) {
+      case 1:
+        {
+          nZlibLevel = 9;
+          break;
+        }
+      case 2:
+        {
+          nZlibLevel = 1;
+          break;
+        }
+      default:
+        {
+          nZlibLevel = -1;
+        }
     }
 
     nLevel = *pnDstLen;
@@ -574,15 +592,15 @@ static int __stdcall SCOMP_InflateZlibStackArena(uint8_t * pSrc, uint8_t * pDst,
     int nRetInit = _3rdparty::zlib::inflate::inflateInit_(&zStream, "1.1.3", 0x38);
     if (!nRetInit) {
       nRet = _3rdparty::zlib::inflate::inflate(&zStream, 4);
-      if (nRet == 1) {
-        *pnOutLen = zStream.total_out;
-        nRetInit = _3rdparty::zlib::inflate::inflateEnd(&zStream);
-      } else {
+      if (nRet != 1) {
         _3rdparty::zlib::inflate::inflateEnd(&zStream);
         nRetInit = -5;
         if (nRet) {
           return nRet;
         }
+      } else {
+        *pnOutLen = zStream.total_out;
+        nRetInit = _3rdparty::zlib::inflate::inflateEnd(&zStream);
       }
     }
 
@@ -732,7 +750,7 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
 
       nUnsupportedMask = nMethodMask & -204;
       if (!nUnsupportedMask) {
-        if (1 < nSrcLen || (__frame0.pTempBuf = 0 , pSrc < (uint32_t*)((int)pDst + nSrcLenCur) && pDst < (uint32_t*)((int)pSrc + nSrcLenCur)) && nSrcLen) {
+        if (nSrcLen >= 2 || (__frame0.pTempBuf = 0 , (uint32_t*)((int)pDst + nSrcLenCur) > pSrc && (uint32_t*)((int)pSrc + nSrcLenCur) > pDst) && nSrcLen) {
           __frame0.pTempBuf = (uint32_t*)nUnsupportedMask;
           __frame0.pTempBuf = SCOMP_AcquireTempBuffer(nSrcLenCur, (int32_t*)&nUnsupportedMask);
         }
@@ -750,9 +768,9 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
             }
 
             _Src = pScratch;
-            if (pSrcCur < (uint32_t*)((int)pScratch + nSrcLenCur) && pScratch < (uint32_t*)(nSrcLenCur + (int)pSrcCur)) {
+            if ((uint32_t*)((int)pScratch + nSrcLenCur) > pSrcCur && (uint32_t*)(nSrcLenCur + (int)pSrcCur) > pScratch) {
               _Src = __frame0.pTempBuf;
-              if (__frame0.pTempBuf < (uint32_t*)((int)pScratch + nSrcLenCur) && pScratch < (uint32_t*)(nSrcLenCur + (int)__frame0.pTempBuf)) {
+              if ((uint32_t*)((int)pScratch + nSrcLenCur) > __frame0.pTempBuf && (uint32_t*)(nSrcLenCur + (int)__frame0.pTempBuf) > pScratch) {
                 _Src = (uint32_t*)((int)pDst + 1);
               }
             }
@@ -761,7 +779,7 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
             ((pfnSCompEncodeCodec)pSrc[1])((short int*)_Src, &__frame0.nResultLen, (short int*)pSrcCur, nSrcLenCur, &nLevel, dwUserData);
             nMethodBit = nMethodMask;
             _Size = __frame0.nResultLen;
-            if (nSrcLenCur <= __frame0.nResultLen + 1) {
+            if (__frame0.nResultLen + 1 >= nSrcLenCur) {
               nMethodMask &= ~*pSrc;
               nMethodBit = nMethodMask;
               _Src = pSrcCur;
@@ -772,7 +790,7 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
           pSrc += 2;
           pSrcCur = _Src;
           nSrcLenCur = _Size;
-        } while ((int)pSrc < (uintptr_t)((char*)&paSCompCompressCodecTable + sizeof(paSCompCompressCodecTable)));
+        } while ((int)pSrc < (intptr_t)((char*)&paSCompCompressCodecTable + sizeof(paSCompCompressCodecTable)));
 
         if (_Src != pDst) {
           if (_Src != (uint32_t*)((int)pDst + 1)) {
@@ -871,7 +889,7 @@ BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t *
                          Any instrumentation that reads pSrc/nSrcSizeIn after 0041e7a4 reports the
                          reused value, not
                          the caller's argument. */ bTempBufShared = (int32_t)pSrc;
-      if (1 < nSrcSizeIn || pSrcCur < (uint32_t*)((int)pDst + nSrcSize) && pDst < (uint32_t*)((int)pSrcCur + nSrcSize) && nSrcSizeIn) {
+      if (nSrcSizeIn >= 2 || (uint32_t*)((int)pDst + nSrcSize) > pSrcCur && (uint32_t*)((int)pSrcCur + nSrcSize) > pDst && nSrcSizeIn) {
         pSrc = SCOMP_AcquireTempBuffer(__frame0.nDestSize, &bTempBufShared);
       }
 
@@ -897,7 +915,7 @@ BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t *
           }
 
           pStageBuf = puVar2;
-          if (pSrcCur < (uint32_t*)((int)puVar2 + nSrcSize) && puVar2 < (uint32_t*)(nSrcSize + (int)pSrcCur) && ((uint32_t*)((int)puVar2 + nSrcSize) <= pSrc || (pStageBuf = pDst , (uint32_t*)(nSrcSize + (int)pSrc) <= puVar2))) {
+          if ((uint32_t*)((int)puVar2 + nSrcSize) > pSrcCur && (uint32_t*)(nSrcSize + (int)pSrcCur) > puVar2 && ((uint32_t*)((int)puVar2 + nSrcSize) <= pSrc || (pStageBuf = pDst , (uint32_t*)(nSrcSize + (int)pSrc) <= puVar2))) {
             pStageBuf = pSrc;
           }
 
@@ -909,7 +927,7 @@ BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t *
 
         ppMethodEntry += -2;
         pSrcCur = pStageBuf;
-      } while ((uintptr_t)((char*)&paSCompDecompressCodecTable + 3) < (int)ppMethodEntry);
+      } while ((int)ppMethodEntry >= (intptr_t)((char*)&paSCompDecompressCodecTable + 4));
 
       if (pStageBuf != pDst) {
         SSystem::SMemCopy(pDst, pStageBuf, nSrcSize);
@@ -933,7 +951,7 @@ uint32_t __stdcall SCOMP_CleanupTempBuffer() {
     return 1;
 }
 
-void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, int * * pTableSel) {
+void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, int * * pTableSel) {
     // Static local variables (originally global data)
     static uint8_t gaCompressHuffmanWeightTables[2322] = {
     0xa,
@@ -3275,7 +3293,7 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
     while (true) {
       D2CompressHuffNodeStrc* pSiblingNode;
       pSortedNext = pEncoder->pWeightedListHead;
-      if (0 >= (int)pSortedNext) {
+      if ((int)pSortedNext <= 0) {
         break;
       }
 
@@ -3326,7 +3344,7 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
       nOffset = nMaxWeight;
       if (gaCompressHuffmanWeightTables[nSymbol + ((uint32_t)pTableSel & 0xff) * 0x102]) {
         pSortedNext = (D2CompressHuffNodeStrc*)pEncoder->ppFreeListTailLink;
-        if ((int)pSortedNext < 1 || !pSortedNext) {
+        if ((int)pSortedNext <= 0 || !pSortedNext) {
           pSortedNext = pEncoder->aNodePool + pEncoder->nNodeCount;
           pEncoder->nNodeCount++;
         }
@@ -3362,12 +3380,9 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
         pSortedNext->nWeight = nOffset;
         if (nOffset < nMaxWeight) {
           nLinkOff = pEncoder->pWeightedListHead;
-          if ((int)nLinkOff < 1) {
-            no_heavier_node:
-            nLinkOff = 0;
-          } else {
+          if ((int)nLinkOff >= 1) {
             do {
-              if (nOffset <= nLinkOff->nWeight) {
+              if (nLinkOff->nWeight >= nOffset) {
                 break;
               }
 
@@ -3376,6 +3391,9 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
                 goto no_heavier_node;
               }
             } while (nLinkOff);
+          } else {
+            no_heavier_node:
+            nLinkOff = 0;
           }
 
           pNewNode = pSortedNext->pNext;
@@ -3415,7 +3433,7 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
       nSymbol = iVar2;
       do {
         pSortedNext = (D2CompressHuffNodeStrc*)pEncoder->ppFreeListTailLink;
-        if ((int)pSortedNext < 1 || (nLinkOff = pSortedNext , !pSortedNext)) {
+        if ((int)pSortedNext <= 0 || (nLinkOff = pSortedNext , !pSortedNext)) {
           pSortedNext = pEncoder->aNodePool + pEncoder->nNodeCount;
           pEncoder->nNodeCount++;
           nLinkOff = pSortedNext;
@@ -3467,20 +3485,20 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
     }
 
     pSortedNext = pEncoder->pWeightedListHead;
-    if ((int)pSortedNext < 1) {
+    if ((int)pSortedNext <= 0) {
       pEncoder->nRootWeight = 1;
       return;
     }
 
     do {
       nLinkOff = pSortedNext->nPrevOffset;
-      if ((int)nLinkOff < 1) {
+      if ((int)nLinkOff <= 0) {
         pEncoder->nRootWeight = 1;
         return;
       }
 
       pNewNode = (D2CompressHuffNodeStrc*)pEncoder->ppFreeListTailLink;
-      if ((int)pNewNode < 1 || !pNewNode) {
+      if ((int)pNewNode <= 0 || !pNewNode) {
         pNewNode = pEncoder->aNodePool + pEncoder->nNodeCount;
         pEncoder->nNodeCount++;
       }
@@ -3521,12 +3539,9 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
       nOffset = pNewNode->nWeight;
       if (nOffset < nMaxWeight) {
         pSortedNext = nLinkOff->nPrevOffset;
-        if ((int)pSortedNext < 1) {
-          no_heavier_node_for_parent:
-          pSortedNext = 0;
-        } else {
+        if ((int)pSortedNext >= 1) {
           do {
-            if (nOffset <= pSortedNext->nWeight) {
+            if (pSortedNext->nWeight >= nOffset) {
               break;
             }
 
@@ -3535,6 +3550,9 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
               goto no_heavier_node_for_parent;
             }
           } while (pSortedNext);
+        } else {
+          no_heavier_node_for_parent:
+          pSortedNext = 0;
         }
 
         pDVar1 = pNewNode->pNext;
@@ -3576,7 +3594,7 @@ void __fastcall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
     } while (true);
 }
 
-void __fastcall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2CompressHuffNodeStrc * pSymbolNode) {
+void __thiscall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2CompressHuffNodeStrc * pSymbolNode) {
     D2CompressHuffNodeStrc* pPrev;
     int* pPrevLink;
     uint32_t* pPrevLinkSlot;
@@ -3593,12 +3611,12 @@ void __fastcall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2C
       while (true) {
         pPrev = nPrevOffsetVal;
         nPrevOffsetVal = pPrev->nPrevOffset;
-        if (0 >= (int)nPrevOffsetVal) {
+        if ((int)nPrevOffsetVal <= 0) {
           break;
         }
 
         pInsertAfter = nPrevOffsetVal;
-        if (!nPrevOffsetVal || pSymbolNode->nWeight <= nPrevOffsetVal->nWeight) {
+        if (!nPrevOffsetVal || nPrevOffsetVal->nWeight >= pSymbolNode->nWeight) {
           goto swap_and_ascend;
         }
       }
@@ -3686,13 +3704,13 @@ void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder) {
     *(uint32_t*)(pEncoder + 8) = 0;
 }
 
-void __fastcall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nSymbol) {
+void __thiscall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nSymbol) {
     D2CompressHuffNodeStrc* pDVar1;
     uint32_t* pInsertSlot;
     int* pLink;
-    D2CompressHuffNodeStrc* pParent = (D2CompressHuffNodeStrc*)((int)pEncoder->pWeightedListHead < 1 ? 0 : (uint32_t)pEncoder->pWeightedListHead);
+    D2CompressHuffNodeStrc* pParent = (D2CompressHuffNodeStrc*)((int)pEncoder->pWeightedListHead <= 0 ? 0 : (uint32_t)pEncoder->pWeightedListHead);
     D2CompressHuffNodeStrc* pNodeB = (D2CompressHuffNodeStrc*)pEncoder->ppFreeListTailLink;
-    if ((int)pNodeB < 1 || !pNodeB) {
+    if ((int)pNodeB <= 0 || !pNodeB) {
       pNodeB = pEncoder->aNodePool + pEncoder->nNodeCount;
       pEncoder->nNodeCount++;
     }
@@ -3743,7 +3761,7 @@ void __fastcall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nS
     pNodeB->nWeight = uVar2;
     pEncoder->apSymbolNodes[pNodeB->nSymbol] = pNodeB;
     pNodeB = (D2CompressHuffNodeStrc*)pEncoder->ppFreeListTailLink;
-    if ((int)pNodeB < 1 || !pNodeB) {
+    if ((int)pNodeB <= 0 || !pNodeB) {
       pNodeB = pEncoder->aNodePool + pEncoder->nNodeCount;
       pEncoder->nNodeCount++;
     }
@@ -3835,7 +3853,7 @@ void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder) {
     _eh_vector_destructor_iterator_(pEncoder + 2, 0x18, 0x203, SSystem::LINKEDLIST_NodeDestructor);
 }
 
-int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel, uint32_t * pHuffCtx) {
+int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel) {
     int nBitsLeft;
     int32_t nRemainingBits;
     uint32_t nShiftBits;
@@ -3858,7 +3876,7 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
           nBitsAvail = *(uint32_t*)(pBitStream + 0x10);
           *(uint32_t*)(pBitStream + 0xc) >>= 8;
           nShiftBits = 8;
-          if (nBitsAvail < 9) {
+          if (nBitsAvail <= 8) {
             nShiftBits = nBitsAvail;
           }
 
@@ -3898,10 +3916,9 @@ int __fastcall COMPRESS_EncodeBuffer(int32_t pBitStream, uint8_t * pbSrc, int32_
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags) {
     D2CompressEncoderStrc aHuffCtx;
     D2BitStreamWriterStrc aBitStream;
-    aBitStream.nBitsHeld = 0x41f98d;
-    SSystem::LINKEDLIST_InsertAfter(pBitStreamCtx, *pnBytesWritten, &aBitStream);
+    SSystem::LINKEDLIST_InsertAfter(&aBitStream, pBitStreamCtx, *pnBytesWritten);
     HUFFMAN_InitContext(&aHuffCtx);
-    int nBytesWritten = COMPRESS_EncodeBuffer((uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel, (uint32_t*)&aHuffCtx);
+    int nBytesWritten = COMPRESS_EncodeBuffer((uint32_t*)&aHuffCtx, (uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel);
     *pnBytesWritten = nBytesWritten;
     COMPRESS_DestroyEncoderContext((uint32_t*)&aHuffCtx);
 }
@@ -3910,10 +3927,9 @@ void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnByte
 void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_t * pBitStreamCtx, uint32_t dwFlags, uint32_t dwParam) {
     uint32_t aHuffCtx[3741];
     int sListHead[3];
-    sListHead[2] = 0x41f9ed;
-    SSystem::LINKEDLIST_Unlink(pBitStreamCtx, sListHead);
+    SSystem::LINKEDLIST_Unlink(sListHead, pBitStreamCtx);
     HUFFMAN_ConstructorWithTable((int32_t)aHuffCtx);
-    int pBytesWritten = HUFFMAN_DecompressBlock(pDst, *pnDstSize, (uint16_t**)sListHead, aHuffCtx);
+    int pBytesWritten = HUFFMAN_DecompressBlock(aHuffCtx, pDst, *pnDstSize, (uint16_t**)sListHead);
     *pnDstSize = pBytesWritten;
     COMPRESS_DestroyEncoderContext(aHuffCtx);
 }
@@ -3933,10 +3949,10 @@ static void SLOG_FlushLog(D2SLogStrc * pLog) {
 
 static void SLOG_OutputIndent(D2SLogStrc * pLog) {
     size_t nLen = pLog->nIndent;
-    if (0 >= (int)nLen) {
+    if ((int)nLen <= 0) {
       return;
     }
-    if (0x7f < (int)nLen) {
+    if ((int)nLen >= 0x80) {
       nLen = 0x80;
     }
 
@@ -4034,7 +4050,7 @@ void __stdcall SLogDump(uint32_t nHandle, int32_t pData, uint32_t nLength) {
     if (!pContext) {
       return;
     }
-    if (nLength) {
+    if (nLength > 0) {
       uint32_t nWritten;
       nRowStart = 0;
       do {
@@ -4065,7 +4081,10 @@ void __stdcall SLogDump(uint32_t nHandle, int32_t pData, uint32_t nLength) {
           for (; nRowStart < nRowEnd; nRowStart++) {
             if (nRowStart < nLength) {
               cByte = *(char*)(nRowStart + pData);
-              if (0x5e < (uint8_t)(cByte - 0x20U)) {
+              if ((uint8_t)(cByte - 0x20U) <= 0x5e) {
+                /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pContext->acBuffer + pContext->nUsed, "%c", (int)cByte);
+                nWritten = SSTR::SStrLen(pContext->acBuffer + pContext->nUsed);
+              } else {
                 szBufferInput = ".";
                 if (cByte == '\0') {
                   szBufferInput = " ";
@@ -4073,9 +4092,6 @@ void __stdcall SLogDump(uint32_t nHandle, int32_t pData, uint32_t nLength) {
                 } else {
                   nWritten = SSTR::SStrCopy(pContext->acBuffer + pContext->nUsed, szBufferInput, 0x7fffffff);
                 }
-              } else {
-                /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(pContext->acBuffer + pContext->nUsed, "%c", (int)cByte);
-                nWritten = SSTR::SStrLen(pContext->acBuffer + pContext->nUsed);
               }
             } else {
               szBufferInput = " ";
@@ -4099,7 +4115,7 @@ void __stdcall SLogDump(uint32_t nHandle, int32_t pData, uint32_t nLength) {
     }
 
     pContext->nLineStart = pContext->nUsed;
-    if (0xbfff < pContext->nUsed) {
+    if (pContext->nUsed >= 0xc000) {
       SLOG_FlushLog(pContext);
     }
 
@@ -4182,7 +4198,7 @@ void SLogWrite(uint32_t nHandle, char * szFormat, ...) {
     }
 
     pContext->nLineStart = pContext->nUsed;
-    if (0xbfff < pContext->nUsed) {
+    if (pContext->nUsed >= 0xc000) {
       SLOG_FlushLog(pContext);
     }
 
@@ -4437,7 +4453,7 @@ uint8_t PKWARE_explode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TDcmpStru
     *pBufByteCount = 0x800;
     uint32_t uVar1 = pWorkBuf->read_buf(pWorkBuf->in_buff, pBufByteCount, pWorkBuf->param);
     pWorkBuf->in_bytes = uVar1;
-    if (uVar1 < 5) {
+    if (uVar1 <= 4) {
       return 3;
     }
 
@@ -4447,28 +4463,28 @@ uint8_t PKWARE_explode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TDcmpStru
     pWorkBuf->extra_bits = 0;
     *pBufByteCount = 3;
     uVar1 = pWorkBuf->dsize_bits;
-    if (!(3 < uVar1 && uVar1 < 7)) {
-      return 1;
-    }
+    if (uVar1 >= 4 && uVar1 <= 6) {
+      pWorkBuf->dsize_mask = 0xffff >> (0x10U - (char)uVar1 & 0x1f);
+      if (pWorkBuf->ctype) {
+        if (pWorkBuf->ctype != 1) {
+          return 2;
+        }
 
-    pWorkBuf->dsize_mask = 0xffff >> (0x10U - (char)uVar1 & 0x1f);
-    if (pWorkBuf->ctype) {
-      if (pWorkBuf->ctype != 1) {
-        return 2;
+        PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ChBitsAsc, (uint32_t*)gaCRT_PKWareLitLenBitsTableC, 0x100);
+        PKWARE_IterateItemData(pWorkBuf);
       }
 
-      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ChBitsAsc, (uint32_t*)gaCRT_PKWareLitLenBitsTableC, 0x100);
-      PKWARE_IterateItemData(pWorkBuf);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableA, 0x10);
+      PKWARE_CompareItemValues(0x10, pWorkBuf->LenBits, gaCRT_PKWareLitLenBaseTableA, (char*)pWorkBuf->LengthCodes);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ExLenBits, (uint32_t*)gaCRT_PKWareDistBitsTable, 0x10);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBase, (uint32_t*)gaCRT_PKWareDistBaseTable, 0x20);
+      PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->DistBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableB, 0x40);
+      PKWARE_CompareItemValues(0x40, pWorkBuf->DistBits, gaCRT_PKWareLitLenBaseTableB, (char*)pWorkBuf->DistPosCodes);
+      uVar1 = PKWARE_ExplodeStream(pWorkBuf);
+      return uVar1 == 0x306 ? 4 : 0;
     }
 
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableA, 0x10);
-    PKWARE_CompareItemValues(0x10, pWorkBuf->LenBits, gaCRT_PKWareLitLenBaseTableA, (char*)pWorkBuf->LengthCodes);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->ExLenBits, (uint32_t*)gaCRT_PKWareDistBitsTable, 0x10);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->LenBase, (uint32_t*)gaCRT_PKWareDistBaseTable, 0x20);
-    PKWARE_SetMemoryValue((uint32_t*)pWorkBuf->DistBits, (uint32_t*)gaCRT_PKWareLitLenBitsTableB, 0x40);
-    PKWARE_CompareItemValues(0x40, pWorkBuf->DistBits, gaCRT_PKWareLitLenBaseTableB, (char*)pWorkBuf->DistPosCodes);
-    uVar1 = PKWARE_ExplodeStream(pWorkBuf);
-    return uVar1 == 0x306 ? 4 : 0;
+    return 1;
 }
 
 uint32_t PKWARE_ExplodeStream(TDcmpStruct * pItemData) {
@@ -4516,7 +4532,7 @@ uint32_t PKWARE_ExplodeStream(TDcmpStruct * pItemData) {
           __frame0.nInventoryResult--;
         } while (__frame0.nInventoryResult);
       }
-      if (0x1fff < pItemData->outputPos) {
+      if (pItemData->outputPos >= 0x2000) {
         __frame0.nInventoryResult = 0x1000;
         pItemData->write_buf(pItemData->out_buff + 0x1000, &__frame0.nInventoryResult, pItemData->param);
         PKWARE_SetMemoryValue((uint32_t*)pItemData->out_buff, (uint32_t*)(pItemData->out_buff + 0x1000), pItemData->outputPos - 0x1000);
@@ -4529,53 +4545,7 @@ uint32_t PKWARE_ProcessItemInventory(TDcmpStruct * nParam) {
     BOOL nRangeCheckResult;
     uint32_t nDecodedValue;
     uint8_t nExtraBitCount;
-    if (!(nParam->bit_buff & 1)) {
-      nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 1);
-      if (nRangeCheckResult) {
-        return 0x306;
-      }
-      if (!nParam->ctype) {
-        nDecodedValue = nParam->bit_buff & 0xff;
-        nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 8);
-        if (nRangeCheckResult) {
-          return 0x306;
-        }
-      } else {
-        nDecodedValue = nParam->bit_buff & 0xff;
-        if (!nDecodedValue) {
-          nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 8);
-          if (nRangeCheckResult) {
-            return 0x306;
-          }
-
-          nDecodedValue = (uint32_t)nParam->offs2EB4[nParam->bit_buff & 0xff];
-        } else {
-          nDecodedValue = (uint32_t)nParam->offs2C34[nDecodedValue];
-          if (nDecodedValue == 0xff) {
-            if (!(nParam->bit_buff & 0x3f)) {
-              nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 6);
-              if (nRangeCheckResult) {
-                return 0x306;
-              }
-
-              nDecodedValue = (uint32_t)nParam->offs2E34[nParam->bit_buff & 0x7f];
-            } else {
-              nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 4);
-              if (nRangeCheckResult) {
-                return 0x306;
-              }
-
-              nDecodedValue = (uint32_t)nParam->offs2D34[nParam->bit_buff & 0xff];
-            }
-          }
-        }
-
-        nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, (uint32_t)nParam->ChBitsAsc[nDecodedValue]);
-        if (nRangeCheckResult) {
-          return 0x306;
-        }
-      }
-    } else {
+    if (nParam->bit_buff & 1) {
       uint32_t nExtraBitsValue;
       nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 1);
       if (nRangeCheckResult) {
@@ -4600,6 +4570,52 @@ uint32_t PKWARE_ProcessItemInventory(TDcmpStruct * nParam) {
       }
 
       nDecodedValue += 0x100;
+    } else {
+      nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 1);
+      if (nRangeCheckResult) {
+        return 0x306;
+      }
+      if (!nParam->ctype) {
+        nDecodedValue = nParam->bit_buff & 0xff;
+        nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 8);
+        if (nRangeCheckResult) {
+          return 0x306;
+        }
+      } else {
+        nDecodedValue = nParam->bit_buff & 0xff;
+        if (nDecodedValue) {
+          nDecodedValue = (uint32_t)nParam->offs2C34[nDecodedValue];
+          if (nDecodedValue == 0xff) {
+            if (nParam->bit_buff & 0x3f) {
+              nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 4);
+              if (nRangeCheckResult) {
+                return 0x306;
+              }
+
+              nDecodedValue = (uint32_t)nParam->offs2D34[nParam->bit_buff & 0xff];
+            } else {
+              nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 6);
+              if (nRangeCheckResult) {
+                return 0x306;
+              }
+
+              nDecodedValue = (uint32_t)nParam->offs2E34[nParam->bit_buff & 0x7f];
+            }
+          }
+        } else {
+          nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, 8);
+          if (nRangeCheckResult) {
+            return 0x306;
+          }
+
+          nDecodedValue = (uint32_t)nParam->offs2EB4[nParam->bit_buff & 0xff];
+        }
+
+        nRangeCheckResult = PKWARE_CheckItemDataRange(nParam, (uint32_t)nParam->ChBitsAsc[nDecodedValue]);
+        if (nRangeCheckResult) {
+          return 0x306;
+        }
+      }
     }
 
     return nDecodedValue;
@@ -4631,7 +4647,7 @@ int PKWARE_GetItemDataValue(TDcmpStruct * pClientSideData, int nParam) {
 BOOL PKWARE_CheckItemDataRange(TDcmpStruct * pClientSideData, uint32_t nParam) {
     uint8_t bNextByte;
     uint32_t dwBitBuffer = pClientSideData->extra_bits;
-    if (nParam <= dwBitBuffer) {
+    if (dwBitBuffer >= nParam) {
       pClientSideData->extra_bits = dwBitBuffer - nParam;
       pClientSideData->bit_buff >>= (uint8_t)nParam & 0x1f;
       return 0;
@@ -4948,30 +4964,15 @@ void PKWARE_IterateItemData(TDcmpStruct * pState) {
       pCodeLengthByte = pState->ChBitsAsc + nSymbolIndex;
       byBitLength = *pCodeLengthByte;
       bySymbolValue = (uint8_t)nSymbolIndex;
-      if (byBitLength < 9) {
+      if (byBitLength <= 8) {
         nTableFillIndex = (uint32_t)*pHuffCodeWidthEntry;
         do {
           pState->offs2C34[nTableFillIndex] = bySymbolValue;
           nTableFillIndex += 1 << (byBitLength & 0x1f);
         } while (nTableFillIndex < 0x100);
-      } else if (!(*pHuffCodeWidthEntry & 0xff)) {
-        *pCodeLengthByte = byBitLength - 8;
-        nTableFillIndex = (uint32_t)(*pHuffCodeWidthEntry >> 8);
-        do {
-          pState->offs2EB4[nTableFillIndex] = bySymbolValue;
-          nTableFillIndex += 1 << (byBitLength - 8 & 0x1f);
-        } while (nTableFillIndex < 0x100);
-      } else {
+      } else if (*pHuffCodeWidthEntry & 0xff) {
         pState->offs2C34[*pHuffCodeWidthEntry & 0xff] = 0xff;
-        if (!(*pHuffCodeWidthEntry & 0x3f)) {
-          byBitLength = *pCodeLengthByte - 6;
-          *pCodeLengthByte = byBitLength;
-          nTableFillIndex = (uint32_t)(*pHuffCodeWidthEntry >> 6);
-          do {
-            pState->offs2E34[nTableFillIndex] = bySymbolValue;
-            nTableFillIndex += 1 << (byBitLength & 0x1f);
-          } while (nTableFillIndex < 0x80);
-        } else {
+        if (*pHuffCodeWidthEntry & 0x3f) {
           byBitLength = *pCodeLengthByte - 4;
           *pCodeLengthByte = byBitLength;
           nTableFillIndex = (uint32_t)(*pHuffCodeWidthEntry >> 4);
@@ -4979,7 +4980,22 @@ void PKWARE_IterateItemData(TDcmpStruct * pState) {
             pState->offs2D34[nTableFillIndex] = bySymbolValue;
             nTableFillIndex += 1 << (byBitLength & 0x1f);
           } while (nTableFillIndex < 0x100);
+        } else {
+          byBitLength = *pCodeLengthByte - 6;
+          *pCodeLengthByte = byBitLength;
+          nTableFillIndex = (uint32_t)(*pHuffCodeWidthEntry >> 6);
+          do {
+            pState->offs2E34[nTableFillIndex] = bySymbolValue;
+            nTableFillIndex += 1 << (byBitLength & 0x1f);
+          } while (nTableFillIndex < 0x80);
         }
+      } else {
+        *pCodeLengthByte = byBitLength - 8;
+        nTableFillIndex = (uint32_t)(*pHuffCodeWidthEntry >> 8);
+        do {
+          pState->offs2EB4[nTableFillIndex] = bySymbolValue;
+          nTableFillIndex += 1 << (byBitLength - 8 & 0x1f);
+        } while (nTableFillIndex < 0x100);
       }
 
       pHuffCodeWidthEntry--;
@@ -5747,19 +5763,7 @@ uint32_t PKWARE_implode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TCmpStru
       pWorkBuf->dsize_bits++;
       pWorkBuf->dsize_mask |= 0x10;
     }
-    if (!*pnType) {
-      uint16_t sCodeValue;
-      sCodeValue = 0;
-      nCodeIndex = 0;
-      psCodeTable = pWorkBuf->nChCodes;
-      do {
-        pWorkBuf->nChBits[nCodeIndex] = '\t';
-        *psCodeTable = sCodeValue;
-        nCodeIndex++;
-        sCodeValue += 2;
-        psCodeTable++;
-      } while (nCodeIndex < 0x100);
-    } else {
+    if (*pnType) {
       if (*pnType != 1) {
         return 2;
       }
@@ -5775,6 +5779,18 @@ uint32_t PKWARE_implode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TCmpStru
         psCodeTable++;
         pDistCodeEntry = pNextDistCodeEntry;
       } while (pNextDistCodeEntry < (short*)s_PKWARE_Data_Compression_Library_f_0074be60);
+    } else {
+      uint16_t sCodeValue;
+      sCodeValue = 0;
+      nCodeIndex = 0;
+      psCodeTable = pWorkBuf->nChCodes;
+      do {
+        pWorkBuf->nChBits[nCodeIndex] = '\t';
+        *psCodeTable = sCodeValue;
+        nCodeIndex++;
+        sCodeValue += 2;
+        psCodeTable++;
+      } while (nCodeIndex < 0x100);
     }
 
     uint32_t nLenCodeGroup = 0;
@@ -5789,7 +5805,7 @@ uint32_t PKWARE_implode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TCmpStru
           *psCodeTable = (short int)nGroupCodeIndex << (gaPKWARE_ExtraLenBitsTable[nLenCodeGroup] + 1 & 0x1f) | (uint16_t)gaCRT_PKWareLenBaseTable[nLenCodeGroup] * 2 | 1;
           nGroupCodeIndex = nNextGroupCodeIndex;
           psCodeTable++;
-        } while (nNextGroupCodeIndex < (uint32_t)(1 << (gbCRT_BitwiseOpState[nLenCodeGroup] & 0x1f)));
+        } while ((uint32_t)(1 << (gbCRT_BitwiseOpState[nLenCodeGroup] & 0x1f)) > nNextGroupCodeIndex);
       }
 
       nLenCodeGroup++;
@@ -5857,36 +5873,38 @@ void PKWARE_ProcessMemoryBlock(TCmpStruct * pnParam) {
       if (bEndOfInput) {
         pbWindowEnd += 0x204;
       }
-      if (!__frame0.nPassCount) {
+      if (__frame0.nPassCount) {
+        if (__frame0.nPassCount != 1) {
+          PKWARE_CopyBufferData(pnParam, (uint8_t*)((int)pbWindowCursor - uVar1), pbWindowEnd + 1);
+        } else {
+          PKWARE_CopyBufferData(pnParam, (uint8_t*)((int)pbWindowCursor + (0x204 - uVar1)), pbWindowEnd + 1);
+          __frame0.nPassCount++;
+        }
+      } else {
         PKWARE_CopyBufferData(pnParam, (uint8_t*)pbWindowCursor, pbWindowEnd + 1);
         __frame0.nPassCount++;
         if (pnParam->dsize_bytes != 0x1000) {
           __frame0.nPassCount++;
         }
-      } else if (__frame0.nPassCount == 1) {
-        PKWARE_CopyBufferData(pnParam, (uint8_t*)((int)pbWindowCursor + (0x204 - uVar1)), pbWindowEnd + 1);
-        __frame0.nPassCount++;
-      } else {
-        PKWARE_CopyBufferData(pnParam, (uint8_t*)((int)pbWindowCursor - uVar1), pbWindowEnd + 1);
       }
 
       encode_next:
-      if (pbWindowCursor < (unsigned short*)pbWindowEnd) {
+      if (pbWindowEnd > (unsigned char*)pbWindowCursor) {
         nDictSize = PKWARE_ParseByteStream(pnParam, (uint8_t*)pbWindowCursor);
         while (true) {
-          if (!nDictSize || nDictSize == 2 && 0xff < pnParam->distance) {
+          if (!nDictSize || nDictSize == 2 && pnParam->distance >= 0x100) {
             goto emit_literal;
           }
-          if (bEndOfInput && pbWindowEnd < (uint8_t*)((int)pbWindowCursor + nDictSize)) {
+          if (bEndOfInput && (uint8_t*)((int)pbWindowCursor + nDictSize) > pbWindowEnd) {
             break;
           }
-          if (7 < nDictSize || pbWindowEnd <= (uint8_t*)((int)pbWindowCursor + 1)) {
+          if (nDictSize >= 8 || (uint8_t*)((int)pbWindowCursor + 1) >= pbWindowEnd) {
             goto emit_match;
           }
 
           nBytesRead = pnParam->distance;
           nNextMatchLen = PKWARE_ParseByteStream(pnParam, (uint8_t*)((int)pbWindowCursor + 1));
-          if (nNextMatchLen <= nDictSize || nNextMatchLen <= nDictSize + 1 && nBytesRead < 0x81) {
+          if (nDictSize >= nNextMatchLen || nDictSize + 1 >= nNextMatchLen && nBytesRead <= 0x80) {
             pnParam->distance = nBytesRead;
             goto emit_match;
           }
@@ -5898,7 +5916,7 @@ void PKWARE_ProcessMemoryBlock(TCmpStruct * pnParam) {
         }
 
         nDictSize = (int)pbWindowEnd - (int)pbWindowCursor;
-        if (1 < nDictSize && (nDictSize != 2 || pnParam->distance < 0x100)) {
+        if (nDictSize >= 2 && (nDictSize != 2 || pnParam->distance < 0x100)) {
           emit_match:
           PKWARE_CalculateOffset(pnParam, (uint32_t)pnParam->nChBits[nDictSize + 0xfe], (uint32_t)pnParam->nChCodes[nDictSize + 0xfe]);
           if (nDictSize == 2) {
@@ -5979,15 +5997,15 @@ int PKWARE_ParseByteStream(TCmpStruct * pCmpState, uint8_t * pbSrcPos) {
           pbMatchCursor++;
         } while (nCandidateLen < 0x204);
 
-        if (nBestLen <= nCandidateLen) {
+        if (nCandidateLen >= nBestLen) {
           pCmpState->distance = (uint32_t)(pbSrcPos + (nCandidateLen - (int)pbCandidateMatch) - 1);
           nBestLen = nCandidateLen;
-          if (10 < nCandidateLen) {
+          if (nCandidateLen > 10) {
             if (nCandidateLen == 0x204) {
               pCmpState->distance--;
               return 0x204;
             }
-            if (pbWindowLimit <= pCmpState->work_buff + pCmpState->phash_offs[nHashIdx + 1]) {
+            if (pCmpState->work_buff + pCmpState->phash_offs[nHashIdx + 1] >= pbWindowLimit) {
               return nCandidateLen;
             }
 
@@ -6017,7 +6035,7 @@ int PKWARE_ParseByteStream(TCmpStruct * pCmpState, uint8_t * pbSrcPos) {
                 pChainLinkEntry++;
                 uVar1 = nHashIdx + 1;
                 pbCandidateMatch = pCmpState->work_buff + *pChainLinkEntry;
-                if (pbWindowLimit <= pbCandidateMatch) {
+                if (pbCandidateMatch >= pbWindowLimit) {
                   return nBestLen;
                 }
               } while (pbCandidateMatch + nCandidateLen < pbMatchEnd);
@@ -6035,7 +6053,7 @@ int PKWARE_ParseByteStream(TCmpStruct * pCmpState, uint8_t * pbSrcPos) {
                   pChainLinkEntry++;
                   nHashIdx++;
                   pbCandidateMatch = pCmpState->work_buff + *pChainLinkEntry;
-                  if (pbWindowLimit <= pbCandidateMatch) {
+                  if (pbCandidateMatch >= pbWindowLimit) {
                     return nBestLen;
                   }
                 } while (pbCandidateMatch[nBestLen - 2] != pbSrcPos[nBestLen - 2] || *pbSrcPos != *pbCandidateMatch);
@@ -6046,16 +6064,16 @@ int PKWARE_ParseByteStream(TCmpStruct * pCmpState, uint8_t * pbSrcPos) {
 
               while (pbSrcPos[nCandidateLen] == *pbMatchEnd) {
                 nCandidateLen++;
-                if (0x203 < nCandidateLen) {
+                if (nCandidateLen >= 0x204) {
                   break;
                 }
 
                 pbMatchEnd++;
               }
 
-              if (nBestLen <= nCandidateLen) {
+              if (nCandidateLen >= nBestLen) {
                 pCmpState->distance = (uint32_t)(pbSrcPos + (-1 - (int)pbCandidateMatch));
-                if (nBestLen < nCandidateLen) {
+                if (nCandidateLen > nBestLen) {
                   if (nCandidateLen == 0x204) {
                     return 0x204;
                   }
@@ -6091,7 +6109,7 @@ int PKWARE_ParseByteStream(TCmpStruct * pCmpState, uint8_t * pbSrcPos) {
 }
 
 void PKWARE_CalculateOffset(TCmpStruct * nParam, uint32_t nBitCount, uint32_t nBitValue) {
-    if (8 < nBitCount) {
+    if (nBitCount > 8) {
       nBitCount -= 8;
       PKWARE_CalculateOffset(nParam, 8, nBitValue);
       nBitValue >>= 8;
@@ -6101,19 +6119,19 @@ void PKWARE_CalculateOffset(TCmpStruct * nParam, uint32_t nBitCount, uint32_t nB
     uint32_t nNewBitOffset = nParam->out_bits + nBitCount;
     nParam->out_buff[nParam->out_bytes] |= (char)nBitValue << (nBitOffset & 0x1f);
     nParam->out_bits = nNewBitOffset;
-    if (nNewBitOffset < 9) {
-      nParam->out_bits = nNewBitOffset & 7;
-      if (!(nNewBitOffset & 7)) {
-        nParam->out_bytes++;
-      }
-    } else {
+    if (nNewBitOffset > 8) {
       uint32_t nByteIndex;
       nByteIndex = nParam->out_bytes;
       nParam->out_bytes = nByteIndex + 1;
       nParam->out_buff[nByteIndex + 1] = (uint8_t)(nBitValue >> (8 - nBitOffset & 0x1f));
       nParam->out_bits &= 7;
+    } else {
+      nParam->out_bits = nNewBitOffset & 7;
+      if (!(nNewBitOffset & 7)) {
+        nParam->out_bytes++;
+      }
     }
-    if (0x7ff >= nParam->out_bytes) {
+    if (nParam->out_bytes < 0x800) {
       return;
     }
 
@@ -6148,7 +6166,7 @@ void PKWARE_SetByteValue(uint32_t * pnParam, uint8_t bParam, uint32_t nParam) {
       uint32_t nDwordCount;
       pDwordDest = pnParam;
       nDwordCount = nCount;
-      if (nCount < 2) {
+      if (nCount <= 1) {
         nCount = 1;
         nDwordCount = nCount;
       }
@@ -6165,7 +6183,7 @@ void PKWARE_SetByteValue(uint32_t * pnParam, uint8_t bParam, uint32_t nParam) {
     if (!nCount) {
       return;
     }
-    if (nCount < 2) {
+    if (nCount <= 1) {
       nCount = 1;
     }
 
@@ -6207,7 +6225,7 @@ void PKWARE_CopyBufferData(TCmpStruct * nParam, uint8_t * pbStart, uint8_t * pbE
     uint16_t nCumulativeCount = 0;
     uint32_t nClearDwordCount = (uint32_t)((int)nParam + (0x1fcb - (int)pCountTableCursor)) >> 2;
     uint16_t* puVar2 = pCountTableCursor;
-    if (nClearDwordCount < 2) {
+    if (nClearDwordCount <= 1) {
       nClearDwordCount = 1;
     }
 
@@ -6221,14 +6239,14 @@ void PKWARE_CopyBufferData(TCmpStruct * nParam, uint8_t * pbStart, uint8_t * pbE
       pbNext = pbScan + 1;
       nParam->phash_to_index[(uint32_t)*pbScan * 4 + (uint32_t)*pbNext * 5]++;
       pbScan = pbNext;
-    } while (pbNext < pbEnd);
+    } while (pbEnd > pbNext);
 
     do {
       nCumulativeCount += *pCountTableCursor;
       puVar2 = pCountTableCursor + 1;
       *pCountTableCursor = nCumulativeCount;
       pCountTableCursor = puVar2;
-    } while (puVar2 < &nParam->phash_to_index_end);
+    } while (&nParam->phash_to_index_end > puVar2);
 
     pbScan = pbEnd - 1;
     do {

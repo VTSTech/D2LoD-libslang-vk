@@ -73,7 +73,8 @@ void DRLGMAZE_ReplaceSewerRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
 }; D2_STATIC_GUARD(DRLG_ACT3_SEWERS_REPLACE_TWO, "D2Common::Drlg::Maze::Act3::Sewers::DRLGMAZE_ReplaceSewerRooms::DRLG_ACT3_SEWERS_REPLACE_TWO");
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
-    pDrlgLevelStrc->sSeed = sNewSeed;
+    pDrlgLevelStrc->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pDrlgLevelStrc->sSeed.nSeedLow = sNewSeed.nSeedLow;
     uint32_t nVariant = sNewSeed.nSeedLow & 3;
     ReplaceRoom(DRLG_ACT3_SEWERS_REPLACE_ONE + nVariant, pDrlgLevelStrc, &nVariant);
     ReplaceRoom(DRLG_ACT3_SEWERS_REPLACE_TWO + nVariant, pDrlgLevelStrc, &nVariant);

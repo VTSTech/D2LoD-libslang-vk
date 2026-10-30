@@ -33,15 +33,17 @@
 namespace D2Game::MISSILES::MissilesMode::SrvDoFunc {
 
 int32_t __fastcall fpMissileSrvDoFuncData_MonsterOnly(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
-    if (!(pCtx && pCtx->pMissileTxt && pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return 0;
+    if (pCtx && pCtx->pMissileTxt && pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+      BOOL nResult;
+      nResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+      return (uint32_t)(nResult != 0);
     }
 
-    BOOL nResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-    return (uint32_t)(nResult != 0);
+    return 0;
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
+    int32_t nUnitAlignment;
     BOOL bHitResult;
     if (!(pCtx && pCtx->pMissileTxt)) {
       return 0;
@@ -51,43 +53,48 @@ int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrAllyMonster(D2UnitStrc * pUnit
     if (pUnit) {
       eUnitType = pUnit->eUnitType;
     }
-    if (eUnitType == UNIT_PLAYER) {
-      bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-      return (uint32_t)(bHitResult != 0);
-    }
-    if (eUnitType != UNIT_MONSTER) {
-      return 0;
+
+    switch (eUnitType) {
+      case UNIT_PLAYER:
+        {
+          bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+          return (uint32_t)(bHitResult != 0);
+        }
+      case UNIT_MONSTER:
+        {
+          nUnitAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
+          if (nUnitAlignment == 2) {
+            bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+            return (uint32_t)(bHitResult != 0);
+          }
+
+          break;
+        }
     }
 
-    int32_t nUnitAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
-    if (nUnitAlignment != 2) {
-      return 0;
-    }
-
-    bHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-    return (uint32_t)(bHitResult != 0);
+    return 0;
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_PlayerOrMonster(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
-    if (!(pCtx && pCtx->pMissileTxt && pUnit && -1 < (int)pUnit->eUnitType && (int)pUnit->eUnitType < 2)) {
-      return 0;
+    if (pCtx && pCtx->pMissileTxt && pUnit && (int)pUnit->eUnitType >= 0 && (int)pUnit->eUnitType <= 1) {
+      BOOL nHitResult;
+      nHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
+      return (uint32_t)(nHitResult != 0);
     }
 
-    BOOL nHitResult = GAME::Event::Dispatch::Monster::fpMissileDoSrvFuncHandler(pCtx->pGame, pCtx->pMissile, pCtx->pOwner, pCtx->pMissileTxt, pUnit);
-    return (uint32_t)(nHitResult != 0);
+    return 0;
 }
 
 int32_t __fastcall fpMissileSrvDoFuncData_MissileFlagCheck(D2UnitStrc * pUnit, D2MissileSrvCollideCtxStrc * pCtx) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE)) {
-      return 0;
+    if (pUnit && pUnit->eUnitType == UNIT_MISSILE) {
+      int nClassId;
+      nClassId = pUnit->nClassId;
+      if (nClassId >= 0 && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId && *((uint8_t*)&sgptDataTable->pTxtMissiles[nClassId] + 0x4) & (uint8_t)gadwBitMasks[4]) {
+        return 1;
+      }
     }
 
-    int nClassId = pUnit->nClassId;
-    if (!(-1 < nClassId && nClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nClassId && sgptDataTable->pTxtMissiles[nClassId].CanDestroy)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 } // namespace D2Game::MISSILES::MissilesMode::SrvDoFunc

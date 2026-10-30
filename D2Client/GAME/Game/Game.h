@@ -91,7 +91,7 @@ struct D2ClientTimerStrc {
 namespace D2Client::GAME::Game {
 
 // Function declarations
-void __fastcall GAMEDATA_TimerInitWithTickCount(uint32_t dwDurationMs, uint32_t * pTimerStruct);
+void __thiscall GAMEDATA_TimerInitWithTickCount(uint32_t * pTimerStruct, uint32_t dwDurationMs);
 void __fastcall GAMEDATA_SetByteInUshort(uint16_t * pWord, uint8_t byteValue);
 // Setter for gRunKeyDown (run modifier).
 void __fastcall SetRunKeyDown(uint32_t dwParam);
@@ -155,7 +155,7 @@ void __fastcall InGameDraw(int32_t nParam);
 // Draw localized loading message (single or multi-line) centered on screen.
 void __stdcall DrawLoadingMessage();
 // Compute frame-skip level based on elapsed ticks and fps_drawn.
-uint32_t __fastcall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn);
+uint32_t __thiscall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn);
 void __stdcall UpdateFrameStats();
 void __stdcall GAMEDATA_SendPeriodicPing();
 void __fastcall NET_D2GS_CLIENT_Incoming0x8F_HEARTBEAT_PING(char * pBytes);

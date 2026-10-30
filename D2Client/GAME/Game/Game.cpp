@@ -131,7 +131,7 @@ typedef void (__stdcall *pfnFaultError)(LPCSTR szFile, int nLine, LPCSTR szExpre
 
 namespace D2Client::GAME::Game {
 
-void __fastcall GAMEDATA_TimerInitWithTickCount(uint32_t dwDurationMs, uint32_t * pTimerStruct) {
+void __thiscall GAMEDATA_TimerInitWithTickCount(uint32_t * pTimerStruct, uint32_t dwDurationMs) {
     DWORD dwNowTick = GetTickCount();
     *pTimerStruct = dwNowTick;
     pTimerStruct[1] = dwDurationMs;
@@ -873,7 +873,7 @@ void __stdcall DrawLoadingMessage() {
 }
 
 // Compute frame-skip level based on elapsed ticks and fps_drawn.
-uint32_t __fastcall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn) {
+uint32_t __thiscall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDrawn) {
     uint32_t nSkipLevel = (uint32_t)(nFpsDrawn < 7);
     if (1 < nElapsedTicks) {
       nSkipLevel++;
@@ -1162,11 +1162,11 @@ uint32_t __stdcall DrawBetaScreen(uint32_t dwUnused) {
 BOOL __stdcall GAMEDATA_IsMouseInRect(int32_t width, int32_t height, int32_t bottomY, int32_t leftX) {
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (!(leftX <= nMouseX && nMouseX <= leftX + width && bottomY - height <= nMouseY && nMouseY <= bottomY)) {
-      return 0;
+    if (nMouseX >= leftX && nMouseX <= leftX + width && nMouseY >= bottomY - height && nMouseY <= bottomY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Set gCongratzOkClicked when congratz screen is clicked.
@@ -1186,14 +1186,11 @@ void __stdcall Congratz_SetOkClicked(D2UIMouseMsgStrc * pMsg) {
 int32_t __fastcall GAMEDATA_GetCenteredTextX(uint16_t nStringId, int32_t nCenterX) {
     int iClear;
     uint16_t wszText[100];
-    uint16_t* pSourceStr = wszText;
-    for (iClear = 0x32; iClear; iClear--) {
-      pSourceStr[0] = L'\0';
-      pSourceStr[1] = L'\0';
-      pSourceStr += 2;
+    for (iClear = 0; iClear < 0x64; iClear++) {
+      wszText[iClear] = L'\0';
     }
 
-    pSourceStr = D2Lang::StrTable::strtable::GetLocaleString(nStringId);
+    uint16_t* pSourceStr = D2Lang::StrTable::strtable::GetLocaleString(nStringId);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pSourceStr);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
     return nCenterX - nTextWidth / 2;
@@ -1202,15 +1199,12 @@ int32_t __fastcall GAMEDATA_GetCenteredTextX(uint16_t nStringId, int32_t nCenter
 void __stdcall GAMEDATA_DrawLoadingScreenText() {
     int iLoop;
     uint16_t wszText[100];
-    uint16_t* pClearPtr = wszText;
-    for (iLoop = 0x32; iLoop; iLoop--) {
-      pClearPtr[0] = L'\0';
-      pClearPtr[1] = L'\0';
-      pClearPtr += 2;
+    for (iLoop = 0; iLoop < 0x64; iLoop++) {
+      wszText[iLoop] = L'\0';
     }
 
     iLoop = ScreenSizeX / 2;
-    pClearPtr = D2Lang::StrTable::strtable::GetLocaleString(0x13ea);
+    uint16_t* pClearPtr = D2Lang::StrTable::strtable::GetLocaleString(0x13ea);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pClearPtr);
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszText);
     int32_t nTextY = 0x3e;
@@ -1236,11 +1230,8 @@ void __stdcall GAMEDATA_DrawLoadingScreenText() {
       nTextWidth = 0x110;
     }
 
-    pClearPtr = wszText;
-    for (iLoop = 0x32; iLoop; iLoop--) {
-      pClearPtr[0] = L'\0';
-      pClearPtr[1] = L'\0';
-      pClearPtr += 2;
+    for (iLoop = 0; iLoop < 0x64; iLoop++) {
+      wszText[iLoop] = L'\0';
     }
 
     iLoop = ScreenSizeX / 2;
@@ -2112,16 +2103,14 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     char* pcVar1;
     int nTitleIndex;
     uint32_t nCopyWords;
+    uint16_t* pwClearCursor;
     uint16_t awcTitle[100];
     uint16_t awcName[100];
     D2CharPortraitTextStrc sText;
     char cChar;
     D2IniConfigStrc* pIniData = ClientModeInGame::D2IniData_Getter();
-    uint16_t* pwClearCursor = awcName;
-    for (nTitleIndex = 0x32; nTitleIndex; nTitleIndex--) {
-      pwClearCursor[0] = L'\0';
-      pwClearCursor[1] = L'\0';
-      pwClearCursor += 2;
+    for (nTitleIndex = 0; nTitleIndex < 0x64; nTitleIndex++) {
+      awcName[nTitleIndex] = L'\0';
     }
 
     char* pSrcChar = pIniData->szNAME;
@@ -2136,11 +2125,8 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(awcName);
     D2Win::Src::D2WinFont::DRAW_text(awcName, ScreenSizeX / 2 - nTextWidth / 2, 0xbb, 4, 0);
     eD2PlayerStatus ePlayerStatus = pIniData->eCTEMP_eD2PlayerStatus;
-    pwClearCursor = awcTitle;
-    for (nTitleIndex = 0x32; nTitleIndex; nTitleIndex--) {
-      pwClearCursor[0] = L'\0';
-      pwClearCursor[1] = L'\0';
-      pwClearCursor += 2;
+    for (nTitleIndex = 0; nTitleIndex < 0x64; nTitleIndex++) {
+      awcTitle[nTitleIndex] = L'\0';
     }
 
     uint32_t nHardcoreFlag = ePlayerStatus & 4;

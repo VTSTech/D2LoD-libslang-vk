@@ -44,7 +44,6 @@ void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int
 
 void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCrashOutputLine pOutputCallback, ::Report * pReport, char bIncludeThreadName, char bIncludeStackInfo, uint32_t nMaxFrames) {
     D2CrashFrameStrc aFrames[128];
-    aFrames[0x7f].a14[3] = 0x40307d;
     int nFrameCountClamped = 0x7f;
     uint32_t* pFrameBufCursor = &aFrames[0].dw08;
     do {
@@ -58,11 +57,11 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
       nFrameCountClamped--;
     } while (-1 < nFrameCountClamped);
 
-    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames(dwThreadId, aFrames, nMaxFrames, (CONTEXT*)pContext);
+    int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames((CONTEXT*)pContext, dwThreadId, aFrames, nMaxFrames);
     if (0 >= nFrameCount) {
       return;
     }
-    if (0x80 < nFrameCount) {
+    if (nFrameCount > 0x80) {
       nFrameCount = 0x80;
     }
 
@@ -90,7 +89,7 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
     if (bIncludeStackInfo != '\0') {
       char cTmp;
       if (dwCurrentThreadId == dwThreadId) {
-        _strncpy_s(__frame0.szThreadName, 0x80, "Main Thread", -1);
+        strncpy_s(__frame0.szThreadName, 0x80, "Main Thread", -1);
       } else {
         __frame0.szThreadName[0] = '\0';
       }
@@ -110,7 +109,7 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
     }
 
-    for (; nNumFrames; nNumFrames--) {
+    for (; (uint32_t)nNumFrames > 0; nNumFrames--) {
       Engine::Application::DEBUG_FormatAddressInfo(aFrameAddrs->dwReturnAddr, __frame0.szAddressInfo);
       if (bIncludeThreadName == '\0') {
         __frame0.szAddressInfo[0] = '\0';
@@ -120,12 +119,12 @@ void __fastcall CRASH_FormatStackTrace(DWORD dwThreadId, D2CrashFrameStrc * aFra
       pszScan = __frame0.szLineBuffer;
       pszScan = pszScan + strlen(pszScan) + 1;
       nLineLen = (int)pszScan - (int)(__frame0.szLineBuffer + 1);
-      if (nLineLen < 0x3ff) {
-        __frame0.szLineBuffer[nLineLen] = '\n';
-        __frame0.szLineBuffer[nLineLen + 1] = '\0';
-      } else {
+      if (nLineLen >= 0x3ff) {
         __frame0.szLineBuffer[0x3fe] = '\n';
         __frame0.szLineBuffer[0x3ff] = '\0';
+      } else {
+        __frame0.szLineBuffer[nLineLen] = '\n';
+        __frame0.szLineBuffer[nLineLen + 1] = '\0';
       }
 
       (*pOutputCallback)(pReport, __frame0.szLineBuffer);
@@ -269,86 +268,86 @@ static void CRASH_GetExceptionName(char * szText, DWORD dwExceptionCode) {
     DWORD nMsgLen;
     if (dwExceptionCode < 0xc0000006) {
       if (dwExceptionCode == 0xc0000005) {
-        _strncpy_s(szText, 0x100, "ACCESS_VIOLATION", -1);
+        strncpy_s(szText, 0x100, "ACCESS_VIOLATION", -1);
         return;
       }
 
       switch (dwExceptionCode) {
-        case 0x80000001:
-          _strncpy_s(szText, 0x100, "GUARD_PAGE", -1);
-        return;
         case 0x80000002:
-          _strncpy_s(szText, 0x100, "DATATYPE_MISALIGNMENT", -1);
+          strncpy_s(szText, 0x100, "DATATYPE_MISALIGNMENT", -1);
         return;
         case 0x80000003:
-          _strncpy_s(szText, 0x100, "BREAKPOINT", -1);
+          strncpy_s(szText, 0x100, "BREAKPOINT", -1);
         return;
         case 0x80000004:
-          _strncpy_s(szText, 0x100, "SINGLE_STEP", -1);
+          strncpy_s(szText, 0x100, "SINGLE_STEP", -1);
+        return;
+        case 0x80000001:
+          strncpy_s(szText, 0x100, "GUARD_PAGE", -1);
         return;
       }
     } else {
       switch (dwExceptionCode) {
-        case 0xc0000006:
-          _strncpy_s(szText, 0x100, "IN_PAGE_ERROR", -1);
-        return;
-        case 0xc0000008:
-          _strncpy_s(szText, 0x100, "INVALID_HANDLE", -1);
-        return;
-        case 0xc000001d:
-          _strncpy_s(szText, 0x100, "ILLEGAL_INSTRUCTION", -1);
-        return;
-        case 0xc0000025:
-          _strncpy_s(szText, 0x100, "NONCONTINUABLE_EXCEPTION", -1);
-        return;
-        case 0xc0000026:
-          _strncpy_s(szText, 0x100, "INVALID_DISPOSITION", -1);
-        return;
         case 0xc000008c:
-          _strncpy_s(szText, 0x100, "ARRAY_BOUNDS_EXCEEDED", -1);
+          strncpy_s(szText, 0x100, "ARRAY_BOUNDS_EXCEEDED", -1);
         return;
         case 0xc000008d:
-          _strncpy_s(szText, 0x100, "FLT_DENORMAL_OPERAND", -1);
+          strncpy_s(szText, 0x100, "FLT_DENORMAL_OPERAND", -1);
         return;
         case 0xc000008e:
-          _strncpy_s(szText, 0x100, "FLT_DIVIDE_BY_ZERO", -1);
+          strncpy_s(szText, 0x100, "FLT_DIVIDE_BY_ZERO", -1);
         return;
         case 0xc000008f:
-          _strncpy_s(szText, 0x100, "FLT_INEXACT_RESULT", -1);
+          strncpy_s(szText, 0x100, "FLT_INEXACT_RESULT", -1);
         return;
         case 0xc0000090:
-          _strncpy_s(szText, 0x100, "FLT_INVALID_OPERATION", -1);
+          strncpy_s(szText, 0x100, "FLT_INVALID_OPERATION", -1);
         return;
         case 0xc0000091:
-          _strncpy_s(szText, 0x100, "FLT_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "FLT_OVERFLOW", -1);
         return;
         case 0xc0000092:
-          _strncpy_s(szText, 0x100, "FLT_STACK_CHECK", -1);
+          strncpy_s(szText, 0x100, "FLT_STACK_CHECK", -1);
         return;
         case 0xc0000093:
-          _strncpy_s(szText, 0x100, "FLT_UNDERFLOW", -1);
+          strncpy_s(szText, 0x100, "FLT_UNDERFLOW", -1);
         return;
         case 0xc0000094:
-          _strncpy_s(szText, 0x100, "INT_DIVIDE_BY_ZERO", -1);
+          strncpy_s(szText, 0x100, "INT_DIVIDE_BY_ZERO", -1);
         return;
         case 0xc0000095:
-          _strncpy_s(szText, 0x100, "INT_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "INT_OVERFLOW", -1);
         return;
         case 0xc0000096:
-          _strncpy_s(szText, 0x100, "PRIV_INSTRUCTION", -1);
+          strncpy_s(szText, 0x100, "PRIV_INSTRUCTION", -1);
+        return;
+        case 0xc0000006:
+          strncpy_s(szText, 0x100, "IN_PAGE_ERROR", -1);
+        return;
+        case 0xc000001d:
+          strncpy_s(szText, 0x100, "ILLEGAL_INSTRUCTION", -1);
+        return;
+        case 0xc0000025:
+          strncpy_s(szText, 0x100, "NONCONTINUABLE_EXCEPTION", -1);
         return;
         case 0xc00000fd:
-          _strncpy_s(szText, 0x100, "STACK_OVERFLOW", -1);
+          strncpy_s(szText, 0x100, "STACK_OVERFLOW", -1);
+        return;
+        case 0xc0000026:
+          strncpy_s(szText, 0x100, "INVALID_DISPOSITION", -1);
+        return;
+        case 0xc0000008:
+          strncpy_s(szText, 0x100, "INVALID_HANDLE", -1);
         return;
       }
     }
 
     HMODULE hNtdll = GetModuleHandleA("ntdll.dll");
-    /* va_list * Arguments for FormatMessageA */ /* DWORD nSize for FormatMessageA */ /* LPSTR lpBuffer for FormatMessageA */ /* DWORD dwLanguageId for FormatMessageA */ /* DWORD dwMessageId for FormatMessageA */ /* LPCVOID lpSource for FormatMessageA */ /* DWORD dwFlags for FormatMessageA */ if (!(!hNtdll || (nMsgLen = FormatMessageA(0xa00, (LPCVOID)hNtdll, dwExceptionCode, 0x400, szText, 0x100, nullptr) , !nMsgLen))) {
+    /* va_list * Arguments for FormatMessageA */ /* DWORD nSize for FormatMessageA */ /* LPSTR lpBuffer for FormatMessageA */ /* DWORD dwLanguageId for FormatMessageA */ /* DWORD dwMessageId for FormatMessageA */ /* LPCVOID lpSource for FormatMessageA */ /* DWORD dwFlags for FormatMessageA */ if (!(!hNtdll || (nMsgLen = FormatMessageA(0xa00, (LPCVOID)hNtdll, dwExceptionCode, 0x400, szText, 0x100, nullptr) , nMsgLen <= 0))) {
       return;
     }
 
-    _strncpy_s(szText, 0x100, "unknown exception", -1);
+    strncpy_s(szText, 0x100, "unknown exception", -1);
 }
 
 // FOG top-level unhandled-exception filter (SetUnhandledExceptionFilter target) — shows the Blizzard "application encountered an unexpected error" crash dialog.
@@ -386,12 +385,6 @@ LONG __stdcall ERRORMANAGER_UnhandledExceptionFilter(_EXCEPTION_POINTERS * pExce
       }
     }
 
-    // [d2crash] This filter is about to give up on the exception (return
-    // EXCEPTION_CONTINUE_SEARCH below): nothing in the process will handle it
-    // and the process dies. Write the last-chance crash report so a fatal
-    // fault in a DLL-own thread - no game frames, skipped by the VEH - is
-    // still reported with the module list naming the culprit DLL.
-    D2CRASH_ReportUnhandled(pExceptionPointers);
     return 0;
 }
 
@@ -422,19 +415,19 @@ uint32_t __stdcall FILETOOLS_ExtractDirectory(char * szDest, char * nDestSize, c
     }
 
     pSep = strrchr(szSrcPath, 0x5c);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
 
     pSep = strrchr(szSrcPath, 0x3a);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
     if (!pLastSep) {
       *szDest = '\0';
     } else {
       szDest = STRING_CopyStringBounded((int32_t)nDestSize, szDest, szSrcPath);
-      if (nDestSize <= szDest) {
+      if (szDest >= nDestSize) {
         return (uint32_t)szDest & -256;
       }
     }
@@ -452,12 +445,12 @@ uint32_t __stdcall FILETOOLS_ExtractFilename(char * szDest, char * szSrcPath, ch
     }
 
     pSep = strrchr(szSrcPath, 0x5c);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
 
     pSep = strrchr(szSrcPath, 0x3a);
-    if (pSep && pLastSep < pSep) {
+    if (pSep && pSep > pLastSep) {
       pLastSep = pSep;
     }
     if (pLastSep) {
@@ -548,32 +541,32 @@ char * __stdcall STRING_AppendStringToString(char * szDest, int32_t nDestSize, c
 
     int nDestLen = (int)pDestEnd - (int)szDest;
     nRemaining = nDestSize - nDestLen;
-    if (nRemaining) {
-      char* pSrcScan;
-      cCurChar = *szSrc;
-      pSrcScan = szSrc;
-      while (cCurChar != '\0') {
-        if (nRemaining != 1) {
-          *pDestEnd = *pSrcScan;
-          pDestEnd++;
-          nRemaining--;
-        }
-
-        pSrcScan++;
-        cCurChar = *pSrcScan;
-      }
-
-      *pDestEnd = '\0';
-      return pSrcScan + (nDestLen - (int)szSrc);
+    if (!nRemaining) {
+      pDestEnd = szSrc + 1;
+      szSrc = szSrc + strlen(szSrc) + 1;
+      return szSrc + (nDestLen - (int)pDestEnd);
     }
 
-    pDestEnd = szSrc + 1;
-    szSrc = szSrc + strlen(szSrc) + 1;
-    return szSrc + (nDestLen - (int)pDestEnd);
+    char* pSrcScan;
+    cCurChar = *szSrc;
+    pSrcScan = szSrc;
+    while (cCurChar != '\0') {
+      if (nRemaining != 1) {
+        *pDestEnd = *pSrcScan;
+        pDestEnd++;
+        nRemaining--;
+      }
+
+      pSrcScan++;
+      cCurChar = *pSrcScan;
+    }
+
+    *pDestEnd = '\0';
+    return pSrcScan + (nDestLen - (int)szSrc);
 }
 
 int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...) {
-    int iVar1 = __vsnprintf(szDest, nDestSize - 1, szFormat, (va_list)((uint8_t*)&szFormat + 4));
+    int iVar1 = vsnprintf(szDest, nDestSize - 1, szFormat, (va_list)((uint8_t*)&szFormat + 4));
     szDest[nDestSize - 1] = '\0';
     return iVar1;
 }
@@ -637,7 +630,7 @@ FILE * __stdcall FILETOOLS_OpenFile_WriteMode_UTF8(LPCSTR lpMultiByteStr) {
     if (nConverted) {
       /* int cchWideChar for MultiByteToWideChar */ /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nConverted = MultiByteToWideChar(0xfde9, 0, "w", -1, (LPWSTR)wszMode, 0x20);
       if (nConverted) {
-        pFVar1 = __wfopen(wszPath, wszMode);
+        pFVar1 = _wfopen(wszPath, wszMode);
         return pFVar1;
       }
     }
@@ -692,7 +685,7 @@ bool __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName) {
 
     LPWSTR pLastSep = wcsrchr(lpPathName, L'\\');
     LPWSTR pSep = wcsrchr(lpPathName, L'/');
-    if (pLastSep < pSep) {
+    if (pSep > pLastSep) {
       pLastSep = wcsrchr(lpPathName, L'/');
     }
     if (!pLastSep) {
@@ -710,16 +703,16 @@ bool __fastcall FILETOOLS_CreateDirectoryW(LPWSTR lpPathName) {
     return bCreated != 0;
 }
 
-BOOL __stdcall FILETOOLS_CreateFolder_UTF8(LPCSTR szPathName) {
+bool __stdcall FILETOOLS_CreateFolder_UTF8(LPCSTR szPathName) {
     uint32_t extraout_var;
     uint16_t wszPath[260];
     int nConverted = MultiByteToWideChar(0xfde9, 0, szPathName, -1, (LPWSTR)wszPath, 0x104);
     if (!nConverted) {
-      return 0;
+      return false;
     }
 
     bool bVar1 = FILETOOLS_CreateDirectoryW((LPWSTR)wszPath);
-    return (uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
+    return (bool)(uint8_t)(float)(uint32_t)((uint32_t)((uint32_t)extraout_var & 0xffffffu) << 8 | (uint32_t)(uint8_t)bVar1);
 }
 
 } // namespace Fog::File

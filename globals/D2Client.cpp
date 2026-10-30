@@ -777,522 +777,138 @@ D2MonMsgAnimModeStrc gaMonMsgAnimModeTable[30] = {
     }
 }; D2_GLOBAL_GUARD(gaMonMsgAnimModeTable, "gaMonMsgAnimModeTable");
 
-uint8_t ganMissileRingSinOffsets[256] = {
-    0x0,
-    0x0,
-    0x0,
+int ganMissileRingSinOffsets[64] = {
     0x0,
     0x2,
-    0x0,
-    0x0,
-    0x0,
     0x5,
-    0x0,
-    0x0,
-    0x0,
     0x8,
-    0x0,
-    0x0,
-    0x0,
     0xb,
-    0x0,
-    0x0,
-    0x0,
     0xe,
-    0x0,
-    0x0,
-    0x0,
     0x10,
-    0x0,
-    0x0,
-    0x0,
     0x13,
-    0x0,
-    0x0,
-    0x0,
     0x15,
-    0x0,
-    0x0,
-    0x0,
     0x17,
-    0x0,
-    0x0,
-    0x0,
     0x18,
-    0x0,
-    0x0,
-    0x0,
     0x1a,
-    0x0,
-    0x0,
-    0x0,
     0x1b,
-    0x0,
-    0x0,
-    0x0,
     0x1c,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1e,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1c,
-    0x0,
-    0x0,
-    0x0,
     0x1b,
-    0x0,
-    0x0,
-    0x0,
     0x1a,
-    0x0,
-    0x0,
-    0x0,
     0x18,
-    0x0,
-    0x0,
-    0x0,
     0x17,
-    0x0,
-    0x0,
-    0x0,
     0x15,
-    0x0,
-    0x0,
-    0x0,
     0x13,
-    0x0,
-    0x0,
-    0x0,
     0x10,
-    0x0,
-    0x0,
-    0x0,
     0xe,
-    0x0,
-    0x0,
-    0x0,
     0xb,
-    0x0,
-    0x0,
-    0x0,
     0x8,
-    0x0,
-    0x0,
-    0x0,
     0x5,
-    0x0,
-    0x0,
-    0x0,
     0x2,
     0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0xfe,
-    0xff,
-    0xff,
-    0xff,
-    0xfb,
-    0xff,
-    0xff,
-    0xff,
-    0xf8,
-    0xff,
-    0xff,
-    0xff,
-    0xf5,
-    0xff,
-    0xff,
-    0xff,
-    0xf2,
-    0xff,
-    0xff,
-    0xff,
-    0xf0,
-    0xff,
-    0xff,
-    0xff,
-    0xed,
-    0xff,
-    0xff,
-    0xff,
-    0xeb,
-    0xff,
-    0xff,
-    0xff,
-    0xe9,
-    0xff,
-    0xff,
-    0xff,
-    0xe8,
-    0xff,
-    0xff,
-    0xff,
-    0xe6,
-    0xff,
-    0xff,
-    0xff,
-    0xe5,
-    0xff,
-    0xff,
-    0xff,
-    0xe4,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe2,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe4,
-    0xff,
-    0xff,
-    0xff,
-    0xe5,
-    0xff,
-    0xff,
-    0xff,
-    0xe6,
-    0xff,
-    0xff,
-    0xff,
-    0xe8,
-    0xff,
-    0xff,
-    0xff,
-    0xe9,
-    0xff,
-    0xff,
-    0xff,
-    0xeb,
-    0xff,
-    0xff,
-    0xff,
-    0xed,
-    0xff,
-    0xff,
-    0xff,
-    0xf0,
-    0xff,
-    0xff,
-    0xff,
-    0xf2,
-    0xff,
-    0xff,
-    0xff,
-    0xf5,
-    0xff,
-    0xff,
-    0xff,
-    0xf8,
-    0xff,
-    0xff,
-    0xff,
-    0xfb,
-    0xff,
-    0xff,
-    0xff,
-    0xfe,
-    0xff,
-    0xff,
-    0xff
+    -0x2,
+    -0x5,
+    -0x8,
+    -0xb,
+    -0xe,
+    -0x10,
+    -0x13,
+    -0x15,
+    -0x17,
+    -0x18,
+    -0x1a,
+    -0x1b,
+    -0x1c,
+    -0x1d,
+    -0x1d,
+    -0x1e,
+    -0x1d,
+    -0x1d,
+    -0x1c,
+    -0x1b,
+    -0x1a,
+    -0x18,
+    -0x17,
+    -0x15,
+    -0x13,
+    -0x10,
+    -0xe,
+    -0xb,
+    -0x8,
+    -0x5,
+    -0x2
 }; D2_GLOBAL_GUARD(ganMissileRingSinOffsets, "ganMissileRingSinOffsets");
 
-uint8_t ganMissileRingCosOffsets[256] = {
+int ganMissileRingCosOffsets[64] = {
     0x1e,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
     0x1c,
-    0x0,
-    0x0,
-    0x0,
     0x1b,
-    0x0,
-    0x0,
-    0x0,
     0x1a,
-    0x0,
-    0x0,
-    0x0,
     0x18,
-    0x0,
-    0x0,
-    0x0,
     0x17,
-    0x0,
-    0x0,
-    0x0,
     0x15,
-    0x0,
-    0x0,
-    0x0,
     0x13,
-    0x0,
-    0x0,
-    0x0,
     0x10,
-    0x0,
-    0x0,
-    0x0,
     0xe,
-    0x0,
-    0x0,
-    0x0,
     0xb,
-    0x0,
-    0x0,
-    0x0,
     0x8,
-    0x0,
-    0x0,
-    0x0,
     0x5,
-    0x0,
-    0x0,
-    0x0,
     0x2,
     0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0xfe,
-    0xff,
-    0xff,
-    0xff,
-    0xfb,
-    0xff,
-    0xff,
-    0xff,
-    0xf8,
-    0xff,
-    0xff,
-    0xff,
-    0xf5,
-    0xff,
-    0xff,
-    0xff,
-    0xf2,
-    0xff,
-    0xff,
-    0xff,
-    0xf0,
-    0xff,
-    0xff,
-    0xff,
-    0xed,
-    0xff,
-    0xff,
-    0xff,
-    0xeb,
-    0xff,
-    0xff,
-    0xff,
-    0xe9,
-    0xff,
-    0xff,
-    0xff,
-    0xe8,
-    0xff,
-    0xff,
-    0xff,
-    0xe6,
-    0xff,
-    0xff,
-    0xff,
-    0xe5,
-    0xff,
-    0xff,
-    0xff,
-    0xe4,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe2,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe3,
-    0xff,
-    0xff,
-    0xff,
-    0xe4,
-    0xff,
-    0xff,
-    0xff,
-    0xe5,
-    0xff,
-    0xff,
-    0xff,
-    0xe6,
-    0xff,
-    0xff,
-    0xff,
-    0xe8,
-    0xff,
-    0xff,
-    0xff,
-    0xe9,
-    0xff,
-    0xff,
-    0xff,
-    0xeb,
-    0xff,
-    0xff,
-    0xff,
-    0xed,
-    0xff,
-    0xff,
-    0xff,
-    0xf0,
-    0xff,
-    0xff,
-    0xff,
-    0xf2,
-    0xff,
-    0xff,
-    0xff,
-    0xf5,
-    0xff,
-    0xff,
-    0xff,
-    0xf8,
-    0xff,
-    0xff,
-    0xff,
-    0xfb,
-    0xff,
-    0xff,
-    0xff,
-    0xfe,
-    0xff,
-    0xff,
-    0xff,
-    0x0,
-    0x0,
-    0x0,
+    -0x2,
+    -0x5,
+    -0x8,
+    -0xb,
+    -0xe,
+    -0x10,
+    -0x13,
+    -0x15,
+    -0x17,
+    -0x18,
+    -0x1a,
+    -0x1b,
+    -0x1c,
+    -0x1d,
+    -0x1d,
+    -0x1e,
+    -0x1d,
+    -0x1d,
+    -0x1c,
+    -0x1b,
+    -0x1a,
+    -0x18,
+    -0x17,
+    -0x15,
+    -0x13,
+    -0x10,
+    -0xe,
+    -0xb,
+    -0x8,
+    -0x5,
+    -0x2,
     0x0,
     0x2,
-    0x0,
-    0x0,
-    0x0,
     0x5,
-    0x0,
-    0x0,
-    0x0,
     0x8,
-    0x0,
-    0x0,
-    0x0,
     0xb,
-    0x0,
-    0x0,
-    0x0,
     0xe,
-    0x0,
-    0x0,
-    0x0,
     0x10,
-    0x0,
-    0x0,
-    0x0,
     0x13,
-    0x0,
-    0x0,
-    0x0,
     0x15,
-    0x0,
-    0x0,
-    0x0,
     0x17,
-    0x0,
-    0x0,
-    0x0,
     0x18,
-    0x0,
-    0x0,
-    0x0,
     0x1a,
-    0x0,
-    0x0,
-    0x0,
     0x1b,
-    0x0,
-    0x0,
-    0x0,
     0x1c,
-    0x0,
-    0x0,
-    0x0,
     0x1d,
-    0x0,
-    0x0,
-    0x0,
-    0x1d,
-    0x0,
-    0x0,
-    0x0
+    0x1d
 }; D2_GLOBAL_GUARD(ganMissileRingCosOffsets, "ganMissileRingCosOffsets");
 
 int gnPaladinSkillIndexTable[8] = { 0x0, -0x1, -0x2, -0x1, 0x0, 0x1, 0x2, 0x1 }; D2_GLOBAL_GUARD(gnPaladinSkillIndexTable, "gnPaladinSkillIndexTable");
@@ -1330,7 +946,7 @@ D2Missile032SpreadStrc gaMissile032SpreadConstData[6] = {
     }
 }; D2_GLOBAL_GUARD(gaMissile032SpreadConstData, "gaMissile032SpreadConstData");
 
-int gnIntensityTableModes[10] = {
+uint32_t gnIntensityTableModes[10] = {
     0x0,
     0x6,
     0x6,
@@ -41890,7 +41506,7 @@ D2NpcShopTabStrc gaNpcShopTabs[4] = {
     }
 }; D2_GLOBAL_GUARD(gaNpcShopTabs, "gaNpcShopTabs");
 
-uint32_t gaNpcShopButtonTable[2] = { 0x4, 0xffffffff }; D2_GLOBAL_GUARD(gaNpcShopButtonTable, "gaNpcShopButtonTable");
+int gaNpcShopButtonTable[2] = { 0x4, -0x1 }; D2_GLOBAL_GUARD(gaNpcShopButtonTable, "gaNpcShopButtonTable");
 
 int NPCButtonArray[16] = {
     0x111,
@@ -45236,7 +44852,7 @@ uint8_t PalShift_RandTransform[7680] = {}; D2_GLOBAL_GUARD(PalShift_RandTransfor
 
 LPCANDIDATELIST gpIMECandidateList = nullptr; D2_GLOBAL_GUARD(gpIMECandidateList, "gpIMECandidateList");
 
-uint32_t gnMiniPanelButtonX[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonX, "gnMiniPanelButtonX");
+int gnMiniPanelButtonX[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonX, "gnMiniPanelButtonX");
 
 uint32_t gnMiniPanelButtonY[8] = {}; D2_GLOBAL_GUARD(gnMiniPanelButtonY, "gnMiniPanelButtonY");
 
@@ -45254,7 +44870,7 @@ D2InventoryEntryStrc gaHirelingBodySlotScreenCoords[11] = {}; D2_GLOBAL_GUARD(ga
 
 RGBQUAD nColor = {}; D2_GLOBAL_GUARD(nColor, "nColor");
 
-uint8_t gaPanelImageLoadFlags[48] = {}; D2_GLOBAL_GUARD(gaPanelImageLoadFlags, "gaPanelImageLoadFlags");
+int gaPanelImageLoadFlags[12] = {}; D2_GLOBAL_GUARD(gaPanelImageLoadFlags, "gaPanelImageLoadFlags");
 
 uint8_t gaPanelBeltColors[4] = {}; D2_GLOBAL_GUARD(gaPanelBeltColors, "gaPanelBeltColors");
 
@@ -45306,7 +44922,7 @@ uint8_t aQuestAvailabilityPacket[37] = {}; D2_GLOBAL_GUARD(aQuestAvailabilityPac
 
 D2GroundItemLabelStrc gaGroundItemLabels[32] = {}; D2_GLOBAL_GUARD(gaGroundItemLabels, "gaGroundItemLabels");
 
-uint8_t gaLevelAmbientMusicPlayedFlags[4096] = {}; D2_GLOBAL_GUARD(gaLevelAmbientMusicPlayedFlags, "gaLevelAmbientMusicPlayedFlags");
+int gaLevelAmbientMusicPlayedFlags[1024] = {}; D2_GLOBAL_GUARD(gaLevelAmbientMusicPlayedFlags, "gaLevelAmbientMusicPlayedFlags");
 
 int gPlrModeTokens[20] = {}; D2_GLOBAL_GUARD(gPlrModeTokens, "gPlrModeTokens");
 
@@ -45343,8 +44959,8 @@ uint32_t gnSelectConstant13_X = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_X, "gnS
 uint32_t gnSelectConstant13_Y = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_Y, "gnSelectConstant13_Y");
 int gnCursorDataCount = 0x7; D2_GLOBAL_GUARD(gnCursorDataCount, "gnCursorDataCount");
 D2CmdBindingStrc gaCmdHandlerTable[57] = {}; D2_GLOBAL_GUARD(gaCmdHandlerTable, "gaCmdHandlerTable");
-uint32_t gnDenOfEvilLightTimerTick = -0x1; D2_GLOBAL_GUARD(gnDenOfEvilLightTimerTick, "gnDenOfEvilLightTimerTick");
-uint32_t gnDiabloSpawnLightTimer = -0x1; D2_GLOBAL_GUARD(gnDiabloSpawnLightTimer, "gnDiabloSpawnLightTimer");
+int gnDenOfEvilLightTimerTick = -0x1; D2_GLOBAL_GUARD(gnDenOfEvilLightTimerTick, "gnDenOfEvilLightTimerTick");
+int gnDiabloSpawnLightTimer = -0x1; D2_GLOBAL_GUARD(gnDiabloSpawnLightTimer, "gnDiabloSpawnLightTimer");
 uint32_t gnQuestMonsterUnitId = -0x1; D2_GLOBAL_GUARD(gnQuestMonsterUnitId, "gnQuestMonsterUnitId");
 uint32_t gnMonsterModePrecacheCount = 0xf; D2_GLOBAL_GUARD(gnMonsterModePrecacheCount, "gnMonsterModePrecacheCount");
 uint32_t gnBlizzardSoundPlayed = 0x1; D2_GLOBAL_GUARD(gnBlizzardSoundPlayed, "gnBlizzardSoundPlayed");
@@ -45370,7 +44986,7 @@ uint32_t gnHirelingRArmSlotImageOffsetX = 0x0; D2_GLOBAL_GUARD(gnHirelingRArmSlo
 uint32_t gnHirelingRArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnHirelingRArmSlotImageOffsetY, "gnHirelingRArmSlotImageOffsetY");
 uint32_t gnInvLArmSlotImageOffsetX = 0x0; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffsetX, "gnInvLArmSlotImageOffsetX");
 uint32_t gnInvLArmSlotImageOffsetY = -0x2; D2_GLOBAL_GUARD(gnInvLArmSlotImageOffsetY, "gnInvLArmSlotImageOffsetY");
-uint32_t AmountOfNPCTabs = 0x4; D2_GLOBAL_GUARD(AmountOfNPCTabs, "AmountOfNPCTabs");
+int AmountOfNPCTabs = 0x4; D2_GLOBAL_GUARD(AmountOfNPCTabs, "AmountOfNPCTabs");
 uint32_t CurrentNpcButtonSelection = 0x3; D2_GLOBAL_GUARD(CurrentNpcButtonSelection, "CurrentNpcButtonSelection");
 int gnBeltPanelState = 0x2; D2_GLOBAL_GUARD(gnBeltPanelState, "gnBeltPanelState");
 int32_t gnBeltSlotUnderCursor = -0x1; D2_GLOBAL_GUARD(gnBeltSlotUnderCursor, "gnBeltSlotUnderCursor");
@@ -45391,7 +45007,7 @@ uint32_t gnLightmapQualityLastCheck = 0x1; D2_GLOBAL_GUARD(gnLightmapQualityLast
 uint32_t gnDialogDataInitialized = 0x1; D2_GLOBAL_GUARD(gnDialogDataInitialized, "gnDialogDataInitialized");
 D2IniConfigStrc * D2IniData_client = 0; D2_GLOBAL_GUARD(D2IniData_client, "D2IniData_client");
 uint32_t gnClientAppModeQueueState = 0; D2_GLOBAL_GUARD(gnClientAppModeQueueState, "gnClientAppModeQueueState");
-uint32_t gClientAppModeQueueCounter = 0; D2_GLOBAL_GUARD(gClientAppModeQueueCounter, "gClientAppModeQueueCounter");
+int gClientAppModeQueueCounter = 0; D2_GLOBAL_GUARD(gClientAppModeQueueCounter, "gClientAppModeQueueCounter");
 uint32_t gbQServerRunning = 0; D2_GLOBAL_GUARD(gbQServerRunning, "gbQServerRunning");
 unsigned int gdwLastPacketActivityTick = {}; D2_GLOBAL_GUARD(gdwLastPacketActivityTick, "gdwLastPacketActivityTick");
 uint32_t gnClientModeInitValue = 0; D2_GLOBAL_GUARD(gnClientModeInitValue, "gnClientModeInitValue");
@@ -45491,14 +45107,14 @@ BOOL BOOL_007a5260 = 0; D2_GLOBAL_GUARD(BOOL_007a5260, "BOOL_007a5260");
 BOOL bRecursionClick = 0; D2_GLOBAL_GUARD(bRecursionClick, "bRecursionClick");
 D2UnitStrc * ClientSideUnitHashTables_3__0_[6][128] = {}; D2_GLOBAL_GUARD(ClientSideUnitHashTables_3__0_, "ClientSideUnitHashTables_3__0_");
 D2UnitStrc * pPlayerUnit = 0; D2_GLOBAL_GUARD(pPlayerUnit, "pPlayerUnit");
-uint32_t gnSelectExclusionRectLeft = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectLeft, "gnSelectExclusionRectLeft");
-uint32_t gnSelectExclusionRectTop = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectTop, "gnSelectExclusionRectTop");
-uint32_t gnSelectExclusionRectRight = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectRight, "gnSelectExclusionRectRight");
-uint32_t gnSelectExclusionRectBottom = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectBottom, "gnSelectExclusionRectBottom");
+int gnSelectExclusionRectLeft = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectLeft, "gnSelectExclusionRectLeft");
+int gnSelectExclusionRectTop = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectTop, "gnSelectExclusionRectTop");
+int gnSelectExclusionRectRight = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectRight, "gnSelectExclusionRectRight");
+int gnSelectExclusionRectBottom = 0; D2_GLOBAL_GUARD(gnSelectExclusionRectBottom, "gnSelectExclusionRectBottom");
 uint32_t gbSuppressItemSelection = 0; D2_GLOBAL_GUARD(gbSuppressItemSelection, "gbSuppressItemSelection");
 uint32_t gbSelectExclusionActive = 0; D2_GLOBAL_GUARD(gbSelectExclusionActive, "gbSelectExclusionActive");
 int MouseY = 0; D2_GLOBAL_GUARD(MouseY, "MouseY");
-uint32_t MouseX = 0; D2_GLOBAL_GUARD(MouseX, "MouseX");
+int MouseX = 0; D2_GLOBAL_GUARD(MouseX, "MouseX");
 uint32_t gnCursorType = 0; D2_GLOBAL_GUARD(gnCursorType, "gnCursorType");
 D2UnitStrc * pCursorItem = 0; D2_GLOBAL_GUARD(pCursorItem, "pCursorItem");
 int32_t gCursorAnimationFrame = 0; D2_GLOBAL_GUARD(gCursorAnimationFrame, "gCursorAnimationFrame");
@@ -45573,7 +45189,7 @@ char gaChatInputBuffer = 0; D2_GLOBAL_GUARD(gaChatInputBuffer, "gaChatInputBuffe
 uint8_t gbChatInputEnabled = 0; D2_GLOBAL_GUARD(gbChatInputEnabled, "gbChatInputEnabled");
 uint16_t gnChatHistoryFillCount = 0; D2_GLOBAL_GUARD(gnChatHistoryFillCount, "gnChatHistoryFillCount");
 uint32_t gnChatInputTextCursorPosition = 0; D2_GLOBAL_GUARD(gnChatInputTextCursorPosition, "gnChatInputTextCursorPosition");
-uint32_t gnChatInputTextLength = 0; D2_GLOBAL_GUARD(gnChatInputTextLength, "gnChatInputTextLength");
+int gnChatInputTextLength = 0; D2_GLOBAL_GUARD(gnChatInputTextLength, "gnChatInputTextLength");
 uint32_t gnIMEInputMode = 0; D2_GLOBAL_GUARD(gnIMEInputMode, "gnIMEInputMode");
 int gnEscMenuSelectedIndex = 0; D2_GLOBAL_GUARD(gnEscMenuSelectedIndex, "gnEscMenuSelectedIndex");
 D2EscMenuHeaderStrc * gpEscMenuItemCount = 0; D2_GLOBAL_GUARD(gpEscMenuItemCount, "gpEscMenuItemCount");
@@ -45598,9 +45214,9 @@ D2WardenModuleStrc * gpWardenPendingModule = 0; D2_GLOBAL_GUARD(gpWardenPendingM
 D2BNetClientCallbacksStrc * sgpUnknownSequence = 0; D2_GLOBAL_GUARD(sgpUnknownSequence, "sgpUnknownSequence");
 void * pSoundChannelDataArray = 0; D2_GLOBAL_GUARD(pSoundChannelDataArray, "pSoundChannelDataArray");
 D2SoundsTxt * pTxtSounds = 0; D2_GLOBAL_GUARD(pTxtSounds, "pTxtSounds");
-uint32_t nTxtSoundsSize = 0; D2_GLOBAL_GUARD(nTxtSoundsSize, "nTxtSoundsSize");
+int nTxtSoundsSize = 0; D2_GLOBAL_GUARD(nTxtSoundsSize, "nTxtSoundsSize");
 D2SoundEnvironTxt * pTxtSoundEnviron = 0; D2_GLOBAL_GUARD(pTxtSoundEnviron, "pTxtSoundEnviron");
-uint32_t nTxtSoundEnvironSize = 0; D2_GLOBAL_GUARD(nTxtSoundEnvironSize, "nTxtSoundEnvironSize");
+int nTxtSoundEnvironSize = 0; D2_GLOBAL_GUARD(nTxtSoundEnvironSize, "nTxtSoundEnvironSize");
 uint32_t gpSoundHdrGlobal = 0; D2_GLOBAL_GUARD(gpSoundHdrGlobal, "gpSoundHdrGlobal");
 uint32_t gnSoundIdRangeMax = 0; D2_GLOBAL_GUARD(gnSoundIdRangeMax, "gnSoundIdRangeMax");
 uint32_t gnCurrentGameAudioVolume = 0; D2_GLOBAL_GUARD(gnCurrentGameAudioVolume, "gnCurrentGameAudioVolume");
@@ -45612,7 +45228,7 @@ uint32_t gnSoundBufferBytesLoaded = 0; D2_GLOBAL_GUARD(gnSoundBufferBytesLoaded,
 char gbCutsceneActive = 0; D2_GLOBAL_GUARD(gbCutsceneActive, "gbCutsceneActive");
 uint8_t gbLoggerStateInactive = 0; D2_GLOBAL_GUARD(gbLoggerStateInactive, "gbLoggerStateInactive");
 uint8_t gbItemDescDirtyFlag = 0; D2_GLOBAL_GUARD(gbItemDescDirtyFlag, "gbItemDescDirtyFlag");
-unsigned short geCutsceneCurrentSoundId = {}; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
+uint8_t geCutsceneCurrentSoundId = 0; D2_GLOBAL_GUARD(geCutsceneCurrentSoundId, "geCutsceneCurrentSoundId");
 unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTickCount, "gdwInvLastActionTickCount");
 int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
 DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
@@ -45707,7 +45323,7 @@ DC6 * WaypointWayGateBackGround = 0; D2_GLOBAL_GUARD(WaypointWayGateBackGround, 
 DC6 * WaypointWayGateTabs = 0; D2_GLOBAL_GUARD(WaypointWayGateTabs, "WaypointWayGateTabs");
 DC6 * WaypointWaygateIcons = 0; D2_GLOBAL_GUARD(WaypointWaygateIcons, "WaypointWaygateIcons");
 uint32_t WaypointCurrentSelectedAct = 0; D2_GLOBAL_GUARD(WaypointCurrentSelectedAct, "WaypointCurrentSelectedAct");
-uint32_t MaximumAmountOfWaypointInSelectedAct = 0; D2_GLOBAL_GUARD(MaximumAmountOfWaypointInSelectedAct, "MaximumAmountOfWaypointInSelectedAct");
+int MaximumAmountOfWaypointInSelectedAct = 0; D2_GLOBAL_GUARD(MaximumAmountOfWaypointInSelectedAct, "MaximumAmountOfWaypointInSelectedAct");
 uint32_t NoOtherWaypointAvailableBool = 0; D2_GLOBAL_GUARD(NoOtherWaypointAvailableBool, "NoOtherWaypointAvailableBool");
 D2TextBoxStrc * gpTextScrollingBox = 0; D2_GLOBAL_GUARD(gpTextScrollingBox, "gpTextScrollingBox");
 D2TextBoxStrc * gpStaticTextPopup = 0; D2_GLOBAL_GUARD(gpStaticTextPopup, "gpStaticTextPopup");
@@ -45744,7 +45360,7 @@ DC6 * gpQuestScrollImageBottom = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBottom, "g
 DC6 * gpQuestScrollImageBg = 0; D2_GLOBAL_GUARD(gpQuestScrollImageBg, "gpQuestScrollImageBg");
 uint32_t gbTextEventHandlersRegistered = 0; D2_GLOBAL_GUARD(gbTextEventHandlersRegistered, "gbTextEventHandlersRegistered");
 int gnUICtrlConfigTotalRows = 0; D2_GLOBAL_GUARD(gnUICtrlConfigTotalRows, "gnUICtrlConfigTotalRows");
-uint32_t gnUICtrlConfigScrollMaxLines = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollMaxLines, "gnUICtrlConfigScrollMaxLines");
+int gnUICtrlConfigScrollMaxLines = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollMaxLines, "gnUICtrlConfigScrollMaxLines");
 uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
 uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
 uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
@@ -45857,7 +45473,7 @@ void * pAudioDeviceContext = 0; D2_GLOBAL_GUARD(pAudioDeviceContext, "pAudioDevi
 uint32_t gnSoundChannelIndex = 0; D2_GLOBAL_GUARD(gnSoundChannelIndex, "gnSoundChannelIndex");
 uint32_t gnSoundChannelPlaybackState = 0; D2_GLOBAL_GUARD(gnSoundChannelPlaybackState, "gnSoundChannelPlaybackState");
 int32_t int32_t_007c8c90 = 0; D2_GLOBAL_GUARD(int32_t_007c8c90, "int32_t_007c8c90");
-int32_t int32_t_007c8c94 = 0; D2_GLOBAL_GUARD(int32_t_007c8c94, "int32_t_007c8c94");
+unsigned int UINT_007c8c94 = {}; D2_GLOBAL_GUARD(UINT_007c8c94, "UINT_007c8c94");
 int32_t int32_t_007c8c98 = 0; D2_GLOBAL_GUARD(int32_t_007c8c98, "int32_t_007c8c98");
 int gnTileClipXMax = 0; D2_GLOBAL_GUARD(gnTileClipXMax, "gnTileClipXMax");
 int gnTileClipYMin = 0; D2_GLOBAL_GUARD(gnTileClipYMin, "gnTileClipYMin");

@@ -57,7 +57,7 @@ static void __stdcall D2WINFONT_BuildFontPath(char * szPathOut, int32_t nFontInd
       return;
     }
     if (nFontIndex == 0xd) {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathOut, "%s%s%s", szBasePath, "KOR\\", "FontInGameChat");
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szPathOut, "%s%s%s", szBasePath, "KOR\\", _FONT::aFontNames[0xd]);
       return;
     }
 
@@ -79,7 +79,7 @@ static void __stdcall GetFontTablePath(int32_t nBufSize, int32_t nFontIndex, LPS
       return;
     }
     if (nFontIndex == 0xd) {
-      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFontTablePath, "%s%s%s.tbl", szBasePath, "KOR\\", "FontInGameChat");
+      /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szFontTablePath, "%s%s%s.tbl", szBasePath, "KOR\\", _FONT::aFontNames[0xd]);
       return;
     }
 
@@ -909,8 +909,8 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
     uint32_t nFrameCount = D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pDC6);
     uint32_t nTotalWidth = 0;
     memset(&sGfxData, 0, 0x48);
-    sGfxData.nDirection = 0;
     sGfxData.pDC6 = pDC6;
+    sGfxData.nDirection = 0;
     if (nParam == 1 || (nDrawX = nPosX , nParam == 2)) {
       DC6Block* pBlock;
       nFrameIdx = 0;
@@ -1255,6 +1255,15 @@ void __stdcall D2WINFONT_InitFontSystem() {
       gnFontIdLarge = 0x10;
     } else {
       switch (nLangCode) {
+        case 0xc:
+          gbFontIsKoreanChatMode = 1;
+        memcpy(_FONT::sLanguageCode, "LATI", 4);
+        _FONT::sLanguageCode[4] = 'N';
+        _FONT::sLanguageCode[5] = '\\';
+        _FONT::sLanguageCode[6] = '\0';
+        *(uint32_t*)((char*)&_FONT::sLanguageCode + 4) = (uint32_t)((uint32_t)(uint8_t)byFontCacheByte << 24 | (uint32_t)((uint32_t)d2_load24((char*)&_FONT::sLanguageCode + 4) & 0xffffffu));
+        gpfnFontGetCharWidth = FONT_GetCharWidthCallback;
+        goto load_font_images;
         case 6:
           gnFontIdSmall = 0xe;
         gnFontIdLarge = 0xf;
@@ -1288,15 +1297,6 @@ void __stdcall D2WINFONT_InitFontSystem() {
           memcpy(_FONT::sLanguageCode, "CYR\\", 4);
         *(uint32_t*)((char*)&_FONT::sLanguageCode + 4) = (uint32_t)((uint32_t)d2_load24((char*)&_FONT::sLanguageCode + 5) & 0xffffffu) << 8;
         break;
-        case 0xc:
-          gbFontIsKoreanChatMode = 1;
-        memcpy(_FONT::sLanguageCode, "LATI", 4);
-        _FONT::sLanguageCode[4] = 'N';
-        _FONT::sLanguageCode[5] = '\\';
-        _FONT::sLanguageCode[6] = '\0';
-        *(uint32_t*)((char*)&_FONT::sLanguageCode + 4) = (uint32_t)((uint32_t)(uint8_t)byFontCacheByte << 24 | (uint32_t)((uint32_t)d2_load24((char*)&_FONT::sLanguageCode + 4) & 0xffffffu));
-        gpfnFontGetCharWidth = FONT_GetCharWidthCallback;
-        goto load_font_images;
         default:
           _FONT::sLanguageCode[0] = 'L';
         _FONT::sLanguageCode[1] = 'a';

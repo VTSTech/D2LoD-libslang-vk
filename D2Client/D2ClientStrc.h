@@ -71,7 +71,7 @@ struct D2ClientStrc {
     /* 0x004 */ int ConnectionState; // 0=init,3=loading,4=inGame,5=actChange
     /* 0x008 */ uint8_t nClass; // Player class ID
     /* 0x009 */ uint8_t nPad09;
-    /* 0x00A */ short nCharacterStatus; // Hardcore/expansion/ladder flags
+    /* 0x00A */ uint16_t nCharacterStatus; // Hardcore/expansion/ladder flags
     /* 0x00C */ uint8_t nCharTemplate; // Arena template class
     /* 0x00D */ char szCharName[16];
     /* 0x01D */ char szAccName[64];

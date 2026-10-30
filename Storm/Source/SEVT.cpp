@@ -252,8 +252,8 @@ int __stdcall SEvtRegisterHandler(uint32_t dwEventId, uint32_t dwSubId, uint32_t
         }
       }
 
-      gaEventRegistryHead = pvVar1;
       gpEventHashBuckets = pNewBuckets;
+      gaEventRegistryHead = pvVar1;
       nBucketIndex = (dwEventId ^ dwSubId) & (int)gaEventRegistryHead - 1U;
       pEvent = (uint32_t*)SMem::SMemAlloc(0x14, ".\\SOURCE\\SEVT.CPP", 0x15d, 8);
       *pEvent = dwEventId;

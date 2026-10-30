@@ -12,7 +12,6 @@
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/Skills.h"
 #include "Fog/Src/Excel.h"
@@ -115,7 +114,7 @@ int __fastcall MISSILETBLS_ValidateCalcCode(char * szText, int * pOutHasResolved
       } else if (nKeywordNumber == 4) {
         if (sgtDataTable.pTxtMissilesLink) {
           nLinkIdx = Fog::Src::Excel::GetLinkNodeIndex(sgtDataTable.pTxtMissilesLink, szText, 0);
-          if (-1 < nLinkIdx) {
+          if (nLinkIdx >= 0) {
             *pOutHasResolvedToConstant = 1;
             return nLinkIdx;
           }
@@ -170,7 +169,7 @@ void __fastcall MissileCalcLinker(char * pSrc, void * pRecord, int32_t nOffset, 
     }
     if (pSrc) {
       sVar1 = Fog::Skills::SKILLS_ParseCalcExpression(pSrc, byCalcBuf, 0x400, (CalcGetKeyWordToNumber_t)MapMissilesTxtKeywordToNumber, nullptr, MISSILETBLS_ValidateCalcCode);
-      if (0 < (int)sVar1) {
+      if ((int)sVar1 > 0) {
         nParsedLen = DataTbls::DATATBLS_AppendDataToBuffer(&sgtDataTable.pMissCode, &sgtDataTable.nMissCodeSize, &sgtDataTable.nMissCodeCapacity, byCalcBuf, sVar1);
         *(int32_t*)(nOffset + (int)pRecord) = nParsedLen;
         return;
@@ -182,7 +181,7 @@ void __fastcall MissileCalcLinker(char * pSrc, void * pRecord, int32_t nOffset, 
 
 // Validates a single field of a D2MissilesTxt row (indexed by nMissileIdx) against [nMinVal, nMaxVal] and clamps it in-place if out of range. Reads the field via eFieldType (0=signed byte, 1=unsigned byte, 2=signed short, 3=unsigned short, 4=uint32) at nFieldOffset into the Missile sub-struct. On violation, walks pFieldDescArray to find the matching descriptor, then writes back the clamped value at the same offset and width.
 void __stdcall MISSILETBLS_ValidateAndClampField(int32_t eFieldType, uint32_t nMinVal, uint32_t nMaxVal, int32_t nFieldOffset, int32_t pFieldDescArray, int32_t nMissileIdx) {
-    D2MissilesTxt* pMissileTxt = nMissileIdx < 0 || sgptDataTable->nTxtMissilesSize <= nMissileIdx ? 0 : sgptDataTable->pTxtMissiles + nMissileIdx;
+    D2MissilesTxt* pMissileTxt = nMissileIdx < 0 || nMissileIdx >= sgptDataTable->nTxtMissilesSize ? 0 : sgptDataTable->pTxtMissiles + nMissileIdx;
     uint32_t nRawVal = 0;
     switch (eFieldType) {
       case 0:
@@ -201,7 +200,7 @@ void __stdcall MISSILETBLS_ValidateAndClampField(int32_t eFieldType, uint32_t nM
         nRawVal = *(uint32_t*)((uintptr_t)&pMissileTxt->Missile + nFieldOffset);
     }
 
-    if (!((int)nRawVal < (int)nMinVal || (int)nMaxVal < (int)nRawVal)) {
+    if (!((int)nRawVal < (int)nMinVal || (int)nRawVal > (int)nMaxVal)) {
       return;
     }
 
@@ -991,7 +990,7 @@ void __fastcall TXT_AllocTxt_missiles(D2PoolManagerStrc * pMemory) {
       int iFieldIdx;
       sgptDataTable_lcl = sgptDataTable;
       do {
-        if (iMissileIdx < 0 || sgptDataTable_lcl->nTxtMissilesSize <= iMissileIdx) {
+        if (iMissileIdx < 0 || iMissileIdx >= sgptDataTable_lcl->nTxtMissilesSize) {
           pMissileTxt = 0;
         } else {
           pMissileTxt = &sgptDataTable_lcl->pTxtMissiles[iMissileIdx];
@@ -1011,10 +1010,12 @@ void __fastcall TXT_AllocTxt_missiles(D2PoolManagerStrc * pMemory) {
               pFieldDesc = missiles + iFieldIdx;
             } while (missiles[iFieldIdx].eType != FIELDTYPE_END);
           }
-          if (!byCollideType) {
+          if (byCollideType) {
+            if (7 < byCollideType) {
+              byCollideType = 8;
+            }
+          } else {
             byCollideType = 0;
-          } else if (7 < byCollideType) {
-            byCollideType = 8;
           }
 
           pMissileTxt->CollideType = byCollideType;
@@ -1048,17 +1049,17 @@ void __stdcall MISSILETBLS_FreeTxt() {
 }
 
 int32_t __stdcall MISSILETBLS_CalculateVelocity(int32_t nMissileId, int32_t nLevel) {
-    if (!(-1 < nMissileId && nMissileId < sgtDataTable.nTxtMissilesSize)) {
-      return 0;
+    int nVelLevProduct;
+    if (nMissileId >= 0 && nMissileId < sgtDataTable.nTxtMissilesSize) {
+      D2MissilesTxt* pMissileTxt;
+      pMissileTxt = sgtDataTable.pTxtMissiles + nMissileId;
+      if (pMissileTxt) {
+        nVelLevProduct = (uint32_t)(uint8_t)pMissileTxt->VelLev * nLevel;
+        return nVelLevProduct / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+      }
     }
 
-    D2MissilesTxt* pMissileTxt = sgtDataTable.pTxtMissiles + nMissileId;
-    if (!pMissileTxt) {
-      return 0;
-    }
-
-    int nVelLevProduct = (uint32_t)(uint8_t)pMissileTxt->VelLev * nLevel;
-    return ((int)(nVelLevProduct + (nVelLevProduct >> 0x1f & 7U)) >> 3) + (uint32_t)(uint8_t)pMissileTxt->Vel;
+    return 0;
 }
 
 } // namespace D2Common::DATATBLS::MissileTbls

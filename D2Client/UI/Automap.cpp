@@ -1323,8 +1323,9 @@ void __stdcall AUTOMAP_RevealUnitsInRoom(D2RoomStrc * pRoom, D2AutomapCellStrc *
             nAutomapCel = pUnit->nClassId;
             if (-1 < nAutomapCel && nAutomapCel < sgptDataTable->nTxtMonStatsSize) {
               nAutomapCel = (int)sgptDataTable->pTxtMonStats[nAutomapCel].MonStatsEx;
-              if (-1 < nAutomapCel && nAutomapCel < sgptDataTable->nTxtMonStatsExSize && sgptDataTable->pTxtMonStatsEx + nAutomapCel) {
-                nAutomapCel = sgptDataTable->pTxtMonStatsEx[nAutomapCel].nAutomapCel;
+              D2MonStats2Txt* pMonStatsExTxt = nAutomapCel >= 0 && nAutomapCel < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nAutomapCel : nullptr;
+              if (pMonStatsExTxt) {
+                nAutomapCel = pMonStatsExTxt->nAutomapCel;
                 if (nAutomapCel) {
                   AUTOMAP_AddCellForUnit(nAutomapCel, pAutomapCell, pUnit);
                 }
@@ -2128,17 +2129,18 @@ static uint32_t AUTOMAP_GetUnitColor(D2UnitStrc * pUnit, uint8_t * pbColorOut) {
 void __stdcall AUTOMAP_DrawGamePassword() {
     int32_t nTextWidth;
     int nY;
+    uint16_t* pZeroFill;
     uint16_t wszPasswordLine[50];
     char szPassUtf8[28];
     uint16_t wPassWide[26];
     BOOL bMultiLineCenter;
     int32_t dwColor;
-    memset(wPassWide, 0, 25 * sizeof(wPassWide[0]));
-    uint16_t* pZeroFill = wszPasswordLine;
-    for (nY = 0x19; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (int iFill = 0; iFill < 25; iFill++) {
+      wPassWide[iFill] = L'\0';
+    }
+
+    for (nY = 0; nY < 0x32; nY++) {
+      wszPasswordLine[nY] = L'\0';
     }
 
     char* szPassPart1 = ClientModeInGame::CLIENTMODE_GetGamePasswordPart1();
@@ -2182,14 +2184,11 @@ void __stdcall AUTOMAP_DrawGamePassword() {
 void __stdcall AUTOMAP_DrawExpansionTag() {
     int nY;
     uint16_t wText[50];
-    uint16_t* pZeroFill = wText;
-    for (nY = 0x19; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x32; nY++) {
+      wText[nY] = L'\0';
     }
 
-    /* EXPANSION */ pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x58ca);
+    uint16_t* pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x58ca);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wText, pZeroFill);
     BOOL bMultiLineCenter = 0;
     int32_t dwColor = 4;
@@ -2217,13 +2216,11 @@ void __stdcall AUTOMAP_DrawLevelName() {
 
 void __stdcall AUTOMAP_DrawVersion() {
     int i;
+    uint16_t* pZeroFill;
     uint16_t aWStack_130[100];
     char szVersionUtf8[100];
-    uint16_t* pZeroFill = aWStack_130;
-    for (i = 0x32; i; i--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (i = 0; i < 0x64; i++) {
+      aWStack_130[i] = L'\0';
     }
 
     Storm::Source::SSTR::SStrPrintf(szVersionUtf8, 100, "v %d.%d%c", 1, 0xe, 'd');
@@ -2235,13 +2232,11 @@ void __stdcall AUTOMAP_DrawVersion() {
 
 void __stdcall AUTOMAP_DrawServerIP() {
     int nY;
+    uint16_t* pZeroFill;
     uint16_t wIpWide[300];
     int32_t nTextWidth = 300;
-    uint16_t* pZeroFill = wIpWide;
-    for (nY = 0x96; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x12c; nY++) {
+      wIpWide[nY] = L'\0';
     }
 
     char* szLocalIp = Fog::Src::Safesock::NET_GetLocalIp();
@@ -2270,14 +2265,11 @@ void __stdcall AUTOMAP_DrawDifficulty() {
       /* Hell */ nDiffStringId = 0x1422;
     }
 
-    uint16_t* pZeroFill = wText;
-    for (nY = 0x96; nY; nY--) {
-      pZeroFill[0] = L'\0';
-      pZeroFill[1] = L'\0';
-      pZeroFill += 2;
+    for (nY = 0; nY < 0x12c; nY++) {
+      wText[nY] = L'\0';
     }
 
-    pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
+    uint16_t* pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(nDiffStringId);
     int32_t nTextWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);
     pZeroFill = D2Lang::StrTable::strtable::GetLocaleString(0x1057);
     int32_t nFormatLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pZeroFill);
@@ -2547,7 +2539,7 @@ void __stdcall AUTOMAP_InitPaletteColors() {
     // Static local variables (originally global data)
     static uint8_t nAutoMapColorGray; D2_STATIC_GUARD_BSS(nAutoMapColorGray, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGray");
     static uint8_t nAutoMapColorPortal; D2_STATIC_GUARD_BSS(nAutoMapColorPortal, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorPortal");
-    static short nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
+    static uint8_t nAutoMapColorGreen; D2_STATIC_GUARD_BSS(nAutoMapColorGreen, "D2Client::UI::Automap::AUTOMAP_InitPaletteColors::nAutoMapColorGreen");
 
     int32_t nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     nAutoMapColorSelf = (uint8_t)nColorIndex;
@@ -2570,7 +2562,7 @@ void __stdcall AUTOMAP_InitPaletteColors() {
     nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0, 0xff);
     nAutoMapColorPortal = (uint8_t)nColorIndex;
     nColorIndex = D2Win::Src::D2WinPalette::D2GFX_GetColorFromCurrentPallete(0, 0xff, 0);
-    *(uint8_t*)(char*)&nAutoMapColorGreen = (char)nColorIndex;
+    nAutoMapColorGreen = (uint8_t)nColorIndex;
 }
 
 int __stdcall AUTOMAP_GetMiniMapType() {

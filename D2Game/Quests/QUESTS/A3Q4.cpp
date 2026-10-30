@@ -159,7 +159,7 @@ void __fastcall Q21_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nMonStatsId, 6);
         return;
       }
-    } else if (nMonStatsId != 0xfe || !pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped) {
+    } else if (nMonStatsId != 0xfe || pQuestData->pQuestSpecificData.pA3Q4->bBirdDropped != '\x01') {
       /* GetQuestState RewardAwaits(1) -> Alkor offers reward: gossip line 5 */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_RewardAwaits);
       if (bQuestState) {
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, nMonStatsId, 5);
@@ -233,29 +233,29 @@ void __fastcall Q21_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
     short int sVar1 = !pQuestArgs->pTarget ? -1 : (short int)pQuestArgs->pTarget->nClassId;
     D2QuestDataA3Q4Strc* pQuestDataA3Q4 = pQuestData->pQuestSpecificData.pA3Q4;
     if (sVar1 == 0xfe) {
-      if (pQuestDataA3Q4->bRewardGivenToAlchemist) {
+      if (pQuestDataA3Q4->bRewardGivenToAlchemist == '\x01') {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 5, nullptr, (::fpExecuteOnUnitFunction)Q21_PlayerNotifyCompleted, true);
-        pQuestDataA3Q4->bRewardGivenToAlchemist = false;
-        pQuestDataA3Q4->bBirdDropped = true;
+        pQuestDataA3Q4->bRewardGivenToAlchemist = '\0';
+        pQuestDataA3Q4->bBirdDropped = '\x01';
         return;
       }
     } else if (sVar1 == 0xf5) {
-      if (pQuestDataA3Q4->bCainToldAboutTome) {
+      if (pQuestDataA3Q4->bCainToldAboutTome == '\x01') {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 2, nullptr, (::fpExecuteOnUnitFunction)Q21_PlayerNotifyCompleted, true);
-        pQuestDataA3Q4->bCainToldAboutTome = false;
+        pQuestDataA3Q4->bCainToldAboutTome = '\0';
       }
-      if (pQuestDataA3Q4->bAlchemistTradedBird) {
+      if (pQuestDataA3Q4->bAlchemistTradedBird == '\x01') {
         pQuestData->nQuestPacketFlags = '\0';
         QUEST_SetStateAndBroadcast(pQuestData, 4, nullptr, (::fpExecuteOnUnitFunction)Q21_PlayerNotifyCompleted, true);
-        pQuestDataA3Q4->bAlchemistTradedBird = false;
+        pQuestDataA3Q4->bAlchemistTradedBird = '\0';
         return;
       }
-    } else if (sVar1 == 0x108 && pQuestDataA3Q4->bJadeGivenToMeshif) {
+    } else if (sVar1 == 0x108 && pQuestDataA3Q4->bJadeGivenToMeshif == '\x01') {
       pQuestData->nQuestPacketFlags = '\0';
       QUEST_SetStateAndBroadcast(pQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q21_PlayerNotifyCompleted, true);
-      pQuestDataA3Q4->bJadeGivenToMeshif = false;
+      pQuestDataA3Q4->bJadeGivenToMeshif = '\0';
     }
 }
 
@@ -302,10 +302,10 @@ bool __fastcall Q21_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
       *nUnknown = (BVar1 != 0) + '\x01';
       return true;
     }
-    if (!pQuestData->bIsNotIntroduction) {
+    if (pQuestData->bIsNotIntroduction == '\0') {
       return true;
     }
-    if (5 < pQuestData->nStateFlagPrev) {
+    if (pQuestData->nStateFlagPrev >= 6) {
       *nUnknown = (pQuestData->pGame->nGameType != SGAMETYPE_SINGLEPLAYER) + '\x06';
       return true;
     }
@@ -345,8 +345,8 @@ void __fastcall Q21_PlayerSetGoldenBirdQuestState(::SGAMEDATA * pGame, D2UnitStr
 // every party member. Gets the player's party id (SUnit::GetPartyId); if in a party, runs
 // Q21_PlayerSetGoldenBirdQuestState over all members (ExecuteFunctionForEveryPartyMember). No-op solo.
 int __thiscall Q21_PartySetGoldenBirdState(void * pThis, ::SGAMEDATA * pGame) {
-    int16_t nPartyId = UNIT::SUnit::GetPartyId((D2UnitStrc*)pThis);
-    if (nPartyId == -1) {
+    uint16_t nPartyId = UNIT::SUnit::GetPartyId((D2UnitStrc*)pThis);
+    if (nPartyId == 0xffff) {
       return 0;
     }
 
@@ -370,7 +370,7 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitStrc* pQuestItem;
     int32_t nUnitGUID;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMsgId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -381,28 +381,27 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
     D2QuestDataA3Q4Strc* pA3Q4Data = pQuestData->pQuestSpecificData.pA3Q4;
     if (nNPCNo == 0xf5) {
-      int16_t nPartyId;
       if (nMsgId == 0x20f) {
         /* SetQuestState Step0x02(2) -- Meshif (msg 0x20f): player handed over the Jade
                          Figurine */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x02);
         if (pQuestData->nStateFlag == 1) {
           QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x1de);
-          pA3Q4Data->bCainToldAboutTome = true;
+          pA3Q4Data->bCainToldAboutTome = '\x01';
           pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q21_Callback02_NpcDeactivate;
         }
 
         QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
         pA3Q4Data->nGoldenBirdState = 2;
         pGame = pQuestArgs->pGame;
-        nPartyId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
-        if (nPartyId != -1) {
-          UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q21_PlayerSetGoldenBirdQuestState, 0);
+        nMsgId = UNIT::SUnit::GetPartyId(pQuestArgs->pPlayer);
+        if (nMsgId != 0xffff) {
+          UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nMsgId, (::fpExecuteOnUnitFunction)Q21_PlayerSetGoldenBirdQuestState, 0);
           return;
         }
       } else if (nMsgId == 0x213) {
         /* SetQuestState Step0x04(4) -- Meshif (msg 0x213): player showed the Golden
                          Bird */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x04);
-        pA3Q4Data->bAlchemistTradedBird = true;
+        pA3Q4Data->bAlchemistTradedBird = '\x01';
         QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
         pA3Q4Data->nGoldenBirdState = 4;
         Q21_PartySetGoldenBirdState(pQuestArgs->pPlayer, pQuestArgs->pGame);
@@ -419,13 +418,13 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
             if (!bQuestStateResult) {
               QUEST_RemoveQuestItemFromPlayer(pQuestArgs->pGame, pQuestArgs->pPlayer, 0x20343367);
               pA3Q4Data->nBirdItemCount--;
-              if (pQuestData->bIsNotIntroduction && pQuestData->nStateFlag != 4) {
+              if (pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag != 4) {
                 QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x1fd);
               }
 
               /* SetQuestState RewardAwaits(1) -- gave Golden Bird to Alkor; reward now
                          pending */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_RewardAwaits);
-              pA3Q4Data->bRewardGivenToAlchemist = true;
+              pA3Q4Data->bRewardGivenToAlchemist = '\x01';
               pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q21_Callback02_NpcDeactivate;
               pA3Q4Data->nGoldenBirdState = 1;
               Q21_PartySetGoldenBirdState(pQuestArgs->pPlayer, pQuestArgs->pGame);
@@ -446,7 +445,7 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
             /* UnsetQuestStepStates(0x65c3e0) -- clear all intermediate step bits now the
                          quest is done */ D2Common::QuestRecord::UnsetQuestStepStates(pBitBuffer, pQuestData->nQuestIdReal);
             /* SetQuestState Step0x05(5) -- final/quest-log "done" display bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x05);
-            if (pQuestData->bIsNotIntroduction) {
+            if (pQuestData->bIsNotIntroduction != '\0') {
               QUEST_SetStateFlag(pQuestData, 5, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x218);
             }
 
@@ -487,7 +486,7 @@ void __fastcall Q21_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         if (pQuestItem) {
           pA3Q4Data->nBirdItemCount++;
           QUEST_SetStateFlag(pQuestData, 3, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x236);
-          pA3Q4Data->bJadeGivenToMeshif = true;
+          pA3Q4Data->bJadeGivenToMeshif = '\x01';
           pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q21_Callback02_NpcDeactivate;
         }
       }
@@ -547,7 +546,7 @@ void __fastcall Q21_Callback04_ItemPickedUp(D2QuestDataStrc * pQuestData, D2Ques
 // quest chain. No QuestRecord state changes of its own; pure dispatch/IsBadCodePtr-guarded fp calls.
 bool __fastcall Q21_SequenceFilter(D2QuestDataStrc * pQuestData) {
     BOOL bBadCodePtr;
-    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction) {
+    if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
       return true;
     }
 
@@ -577,11 +576,11 @@ bool __fastcall Q21_SequenceFilter(D2QuestDataStrc * pQuestData) {
     {
       bool cGidbinnFilterResult;
       cGidbinnFilterResult = pNextQuestData->fpSequenceFilter(pNextQuestData);
-      if (!(!cGidbinnFilterResult && !cPrereqFilterResult)) {
-        return true;
+      if (!cGidbinnFilterResult && !cPrereqFilterResult) {
+        return false;
       }
 
-      return false;
+      return true;
     }
 }
 
@@ -599,9 +598,9 @@ void __fastcall Q21_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     D2QuestDataA3Q4Strc* pGoldenBirdItem = pQuestData->pQuestSpecificData.pA3Q4;
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Completed);
     /* GetQuestState RewardAwaits(1) -- reward pending: also deactivate intro */ if (bQuestState || (bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_RewardAwaits) , bQuestState != 0)) {
-      pQuestData->bIsNotIntroduction = false;
+      pQuestData->bIsNotIntroduction = '\0';
       pGoldenBirdItem->bBirdDropEnabled = false;
-      pGoldenBirdItem->bCanDropBird = false;
+      pGoldenBirdItem->bCanDropBird = '\0';
       return;
     }
 
@@ -610,9 +609,9 @@ void __fastcall Q21_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     /* GetQuestState RewardAwaits(1) -- re-check (has-Golden-Bird path): deactivate
                          if reward pending */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_RewardAwaits);
     if (bQuestState) {
-      pQuestData->bIsNotIntroduction = false;
+      pQuestData->bIsNotIntroduction = '\0';
       pGoldenBirdItem->bBirdDropEnabled = false;
-      pGoldenBirdItem->bCanDropBird = false;
+      pGoldenBirdItem->bCanDropBird = '\0';
       return;
     }
     if (!pPlayerData) {
@@ -620,22 +619,22 @@ void __fastcall Q21_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
         return;
       }
 
-      pGoldenBirdItem->bCanDropBird = false;
+      pGoldenBirdItem->bCanDropBird = '\0';
       pGoldenBirdItem->bBirdDropEnabled = false;
       /* GetQuestState Step0x02(2) -- holds Jade: stateFlag=1 if !given-to-Meshif, =2
                          if given */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x02);
-      if (!bQuestState) {
-        pQuestData->nStateFlag = 1;
-        pQuestData->nStateFlagPrev = 1;
+      if (bQuestState) {
+        pQuestData->nStateFlag = 2;
+        pQuestData->nStateFlagPrev = 2;
         return;
       }
 
-      pQuestData->nStateFlag = 2;
-      pQuestData->nStateFlagPrev = 2;
+      pQuestData->nStateFlag = 1;
+      pQuestData->nStateFlagPrev = 1;
       return;
     }
 
-    pGoldenBirdItem->bCanDropBird = false;
+    pGoldenBirdItem->bCanDropBird = '\0';
     pGoldenBirdItem->bBirdDropEnabled = false;
     /* GetQuestState Step0x04(4) -- holds Golden Bird: prev=3 if !shown-to-Meshif,
                          =4 if shown */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheGoldenBird, QUESTSTATE_Step0x04);
@@ -663,7 +662,7 @@ void __fastcall Q21_Callback09_PlayerDroppedWithQuestItem(D2QuestDataStrc * pQue
     D2QuestDataA3Q4Strc* pA3Q4Data = pQuestData->pQuestSpecificData.pA3Q4;
     int32_t* pnBirdItemCount = &pA3Q4Data->nBirdItemCount;
     (*pnBirdItemCount)--;
-    if (!(!*pnBirdItemCount && pQuestData->bIsNotIntroduction && pA3Q4Data->bBirdItemGiven && pQuestData->nStateFlag < 4)) {
+    if (!(!*pnBirdItemCount && pQuestData->bIsNotIntroduction != '\0' && pA3Q4Data->bBirdItemGiven && pQuestData->nStateFlag < 4)) {
       return;
     }
 
@@ -688,13 +687,13 @@ void __fastcall Q21_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
     if (pQuestItem) {
       pA3Q4Data->nBirdItemCount++;
     }
-    if (!(pA3Q4Data->nBirdItemCount == 1 && pQuestData->bIsNotIntroduction && pA3Q4Data->bReShowPending)) {
+    if (!(pA3Q4Data->nBirdItemCount == 1 && pQuestData->bIsNotIntroduction != '\0' && pA3Q4Data->bReShowPending)) {
       return;
     }
 
     pA3Q4Data->bReShowPending = 0;
     pQuestData->nQuestPacketFlags = '\0';
-    uint8_t nPrevStateFlag = 1;
+    int nPrevStateFlag = 1;
     if (pQuestItem) {
       nPrevStateFlag = 3;
     }
@@ -716,7 +715,7 @@ void __fastcall Q21_Callback14_PlayerJoinedGame(D2QuestDataStrc * pQuestData, D2
 void __fastcall Q21_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     pQuestData->pNpcMessages = A3Q4::aNpcGossipData;
-    pQuestData->bIsActive = true;
+    pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     pQuestData->nQuestIdReal = QUEST_TheGoldenBird;
     pQuestData->fpActiveFilter = Q21_ActiveFilter;
@@ -735,15 +734,15 @@ void __fastcall Q21_InitData(D2QuestDataStrc * pQuestData) {
     QUESTGUID_SetPlayerCountToZero(&pQuestData->sQuestGUID);
     D2QuestDataA3Q4Strc* pQuestSpecificData = D2_NEW_POOL_AT(pQuestData->pGame->pMemoryPool, D2QuestDataA3Q4Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a3q4.cpp", 0x340);
     pQuestData->pQuestSpecificData.pA3Q4 = pQuestSpecificData;
-    /* Should use here memset */ pQuestSpecificData->bBirdDropped = false;
-    pQuestSpecificData->bCanDropBird = false;
+    /* Should use here memset */ pQuestSpecificData->bBirdDropped = '\0';
+    pQuestSpecificData->bCanDropBird = '\0';
     pQuestSpecificData->bBossKillTracking = false;
     pQuestSpecificData->field_0x3 = 0;
     pQuestSpecificData->nBirdKillerGUID = 0;
-    pQuestSpecificData->bRewardGivenToAlchemist = false;
-    pQuestSpecificData->bCainToldAboutTome = false;
-    pQuestSpecificData->bAlchemistTradedBird = false;
-    pQuestSpecificData->bJadeGivenToMeshif = false;
+    pQuestSpecificData->bRewardGivenToAlchemist = '\0';
+    pQuestSpecificData->bCainToldAboutTome = '\0';
+    pQuestSpecificData->bAlchemistTradedBird = '\0';
+    pQuestSpecificData->bJadeGivenToMeshif = '\0';
     pQuestSpecificData->bBirdDropEnabled = false;
     pQuestSpecificData->field_0xD = 0;
     pQuestSpecificData->field_0xE = 0;
@@ -755,7 +754,7 @@ void __fastcall Q21_InitData(D2QuestDataStrc * pQuestData) {
     pQuestSpecificData->field_0x17 = 0;
     pQuestSpecificData->nGoldenBirdState = 0;
     /* Actual initialization */ pQuestSpecificData->bBirdDropEnabled = true;
-    pQuestSpecificData->bCanDropBird = true;
+    pQuestSpecificData->bCanDropBird = '\x01';
 }
 
 } // namespace D2Game::Quests::QUESTS::A3Q4

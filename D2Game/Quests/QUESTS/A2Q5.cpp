@@ -173,7 +173,7 @@ BOOL __fastcall Q13_UpdateQuestRecord(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
 
 // A2Q5 "The Summoner" - reward turn-in / gossip handler (sStateFunctions[0xb]). Fires when the player talks to an Arcane Sanctuary spirit (msg ids 0x1a3-0x1ad). If RewardAwaits is set: when JustCompleted is also set this is the moment of fresh completion -> broadcast state 0xd via QUEST_SetStateAndBroadcast (notify=Q13_NotifySummonerComplete), mark the server quest record JustCompleted (SetQuestRecordState 0x544720), and set the state flag to 3 (final stage). Then add this player to the participation GUID list, and in the per-player record set Completed and clear RewardAwaits. Finally sends the NPC gossip packet. This is the canonical Summoner-quest completion path.
 void __fastcall Q13_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
-    short int nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageId = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (!(nMessageId == 0x1ab || nMessageId == 0x1a8 || nMessageId == 0x1a3 || nMessageId == 0x1a7 || nMessageId == 0x1a6 || nMessageId == 0x1aa || nMessageId == 0x1ad || nMessageId == 0x1a9 || nMessageId == 0x1a5 || nMessageId == 0x1a4 || nMessageId == 0x1ac)) {
       return;
     }
@@ -275,8 +275,9 @@ void __fastcall Q13_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 
 // A2Q5 "The Summoner" - per-player completion-sound trigger. If this player's record has JustCompleted (0xd) set and the player is currently in the Arcane Sanctuary (level 0x4a), it attaches the quest-complete "Moo" update event/sound (event 0x33) to the player. Cosmetic feedback on Summoner kill. nParam is the quest data ptr; [nParam+0x6d] is the difficulty index into pQuestRecordPool.
 BOOL __fastcall Q13_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_TheSummoner, QUESTSTATE_JustCompleted);
+    /* GetQuestState(TheSummoner, JustCompleted=0xd): only play sound on a fresh
+                         kill self game */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL bIsJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheSummoner, QUESTSTATE_JustCompleted);
     if (!bIsJustCompleted) {
       return 0;
     }
@@ -352,8 +353,9 @@ void __fastcall Q13_SetSummonerRewardOnPartyMember(::SGAMEDATA * pGame, D2UnitSt
 
 // A2Q5 "The Summoner" - per-player party fan-out (iterated over players when Summoner dies). If this player's record has JustCompleted (0xd) set (i.e. they got kill credit) and they belong to a party (partyId != -1), run Q13_SetSummonerRewardOnPartyMember over every party member to share the completion.
 BOOL __fastcall Q13_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
-    D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
-    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pDVar1->pQuestRecord[pGame->nDifficulty], QUEST_TheSummoner, QUESTSTATE_JustCompleted);
+    /* GetQuestState(TheSummoner, JustCompleted=0xd): only fan out reward if self
+                         player just got the kill */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
+    BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TheSummoner, QUESTSTATE_JustCompleted);
     if (!BVar2) {
       return 0;
     }

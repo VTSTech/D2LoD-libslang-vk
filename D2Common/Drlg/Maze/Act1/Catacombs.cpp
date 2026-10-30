@@ -24,7 +24,7 @@
 namespace D2Common::Drlg::Maze::Act1::Catacombs {
 
 // DRLG maze generator for an Act 1 Catacombs level: subdivides the level's initial room into preset sub-rooms. With the stack flag bIsCatacombsLevel4 set it always carves 4 sub-rooms (final layout tag 0x122); otherwise it advances the level seed and uses its parity to pick a 2-room layout variant (tag 0x121 or 0x120). For each new room it allocates a D2RoomExStrc, copies SizeX/SizeY from pDrlgLevelData, calls ReplaceRoomWithNewRoom, and on success allocates shared nodes, picks room presets, and adds the room to the level (freeing it on failure). Marks the start room's RoomExData with the chosen layout tag and flags. Takes pLevel in ECX.
-void __fastcall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t dwParam2) {
+void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t dwParam2) {
     D2DrlgPresetRoomStrc* pDVar1;
     D2RoomExStrc* pNewRoom;
     int iVar2;
@@ -106,8 +106,9 @@ void __fastcall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
     }
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-    pLevel->sSeed = sNewSeed;
-    if (!((uint64_t)d2_bits_of(sNewSeed) & 1)) {
+    pLevel->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pLevel->sSeed.nSeedLow = sNewSeed.nSeedLow;
+    if (!(sNewSeed.nSeedLow & 1)) {
       pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pStartRoom->pLevel, 2);
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
@@ -242,7 +243,8 @@ void DRLGMAZE_ReplaceCatacombsRooms(D2DrlgLevelStrc * pDrlgLevelStrc) {
 }; D2_STATIC_GUARD(gaDrlgCatacombsReplacements_B, "D2Common::Drlg::Maze::Act1::Catacombs::DRLGMAZE_ReplaceCatacombsRooms::gaDrlgCatacombsReplacements_B");
 
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pDrlgLevelStrc->sSeed);
-    pDrlgLevelStrc->sSeed = sNewSeed;
+    pDrlgLevelStrc->sSeed.nSeedHigh = sNewSeed.nSeedHigh;
+    pDrlgLevelStrc->sSeed.nSeedLow = sNewSeed.nSeedLow;
     uint32_t nVariant = sNewSeed.nSeedLow & 3;
     ReplaceRoom(gaDrlgCatacombsReplacements_A + nVariant, pDrlgLevelStrc, &nVariant);
     if (pDrlgLevelStrc->eD2LevelId != 0x23) {

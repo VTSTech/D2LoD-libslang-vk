@@ -5,7 +5,6 @@
 #include "D2Common/D2BinFieldExcelStrc.h"
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "Fog/BitBuffer.h"
-#include "Fog/Debug.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
@@ -112,7 +111,7 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
       pDVar2 = aFieldHashNodes;
       pFieldIter = pBinFieldInput;
       do {
-        if (0x117 < nFieldCount) {
+        if (nFieldCount >= 0x118) {
           ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0xcc);
           exit(-1);
         }
@@ -136,7 +135,7 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
     pColNameIter = (char*)pBinFieldExcel->pD2Archive;
     uint32_t nColumnIndex;
     nColumnIndex = 0;
-    if (pBinFieldExcel->nColumnCount) {
+    if ((uint32_t)pBinFieldExcel->nColumnCount > 0) {
       do {
         nHashKey = Storm::Source::SSTR::SStrHash(pColNameIter, 0, 0);
         for (pHashNode = aHashBuckets[(((nHashKey >> 8 ^ nHashKey) >> 8 ^ nHashKey) >> 8 ^ nHashKey) & 0xff]; pHashNode; pHashNode = pHashNode->pNext) {
@@ -165,7 +164,7 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
         nOutputIndex = nErrorAddress;
       } while (nColumnIndex < (uint32_t)pBinFieldExcel->nColumnCount);
     }
-    if (!nFieldCount) {
+    if (nFieldCount <= 0) {
       return nErrorAddress;
     }
 
@@ -233,7 +232,7 @@ int32_t __stdcall GetClassIdFromName(D2TxtLinkStrc * pTxtLink, uint32_t pItemsTx
     int nMid;
     int nHigh = pTxtLink->nRecords;
     int nLow = 0;
-    if (0 >= nHigh) {
+    if (nHigh <= 0) {
       return -1;
     }
 
@@ -241,7 +240,7 @@ int32_t __stdcall GetClassIdFromName(D2TxtLinkStrc * pTxtLink, uint32_t pItemsTx
       uint32_t dwCode;
       nMid = (nHigh - nLow) / 2 + nLow;
       dwCode = *(uint32_t*)pTxtLink->pTxtLinkSub0x08[nMid].szItemCode;
-      if (dwCode < pItemsTxt) {
+      if (pItemsTxt > dwCode) {
         nLow = nMid + 1;
         nMid = nHigh;
       } else if (dwCode <= pItemsTxt) {
@@ -260,7 +259,7 @@ BOOL __stdcall FOG_GetTxtLinkRecord(D2TxtLinkStrc * pTxtLink, int nRecordId, voi
     if (!pSubRecord) {
       return 0;
     }
-    if (-1 >= nRecordId) {
+    if (nRecordId < 0) {
       return 0;
     }
 
@@ -270,7 +269,7 @@ BOOL __stdcall FOG_GetTxtLinkRecord(D2TxtLinkStrc * pTxtLink, int nRecordId, voi
     }
 
     int nSearchIdx = 0;
-    if (0 >= nRecordCount) {
+    if (nRecordCount <= 0) {
       return 0;
     }
 
@@ -338,7 +337,7 @@ uint32_t __stdcall FillUpTxtLinkSub0x08(D2TxtLinkStrc * pTxtLink, char * nItemCo
           nHighIndex = pTxtLink->nRecords;
           do {
             while (true) {
-              if (nHighIndex <= nLowIndex) {
+              if (nLowIndex >= nHighIndex) {
                 if (nLowIndex < pTxtLink->nRecords) {
                   memmove(pTxtLink->pTxtLinkSub0x08 + nLowIndex + 1, pTxtLink->pTxtLinkSub0x08 + nLowIndex, (pTxtLink->nRecords - nLowIndex) * 8);
                 }
@@ -400,16 +399,14 @@ int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nPara
 
 int __stdcall FOG_ParseIntField(int * pnParam, int nParam1, int nParam2) {
     char* pcVar1 = gnExcelRecordFieldNotFound;
-    if (!(pnParam && -1 < nParam1 && nParam1 < *pnParam)) {
-      return (int)pcVar1;
+    if (pnParam && nParam1 >= 0 && nParam1 < *pnParam) {
+      pcVar1 = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pnParam[3], nParam1);
+      if ((!pcVar1 || pcVar1 == gnExcelRecordFieldNotFound) && nParam2) {
+        return (int)gnExcelRecordFieldNotFound;
+      }
     }
 
-    pcVar1 = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pnParam[3], nParam1);
-    if (!((!pcVar1 || pcVar1 == gnExcelRecordFieldNotFound) && nParam2)) {
-      return (int)pcVar1;
-    }
-
-    return (int)gnExcelRecordFieldNotFound;
+    return (int)pcVar1;
 }
 
 int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uint32_t dwParam3) {
@@ -419,13 +416,15 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
     Storm::Source::SSTR::SStrCopy((char*)szUpperItemCode, szItemCode, 0x20);
     SMem::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
     D2TxtLinkNodeStrc* pCurNode = pLink->pTxtLinkNode;
-    if (!pLink->nRecords) {
+    if (pLink->nRecords) {
+      if (!pCurNode) {
+        ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x475);
+        exit(-1);
+      }
+    } else {
       if (!pCurNode) {
         return -1;
       }
-    } else if (!pCurNode) {
-      ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x475);
-      exit(-1);
     }
 
     do {
@@ -541,7 +540,7 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
     do {
       while (true) {
         pScanPos = pD2Archive;
-        if (pCurPos <= pScanPos) {
+        if (pScanPos >= pCurPos) {
           goto error;
         }
 
@@ -562,13 +561,13 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
       int32_t iVar1;
       pBinFieldExcel->nColumnCount++;
       pScanPos = (D2ArchiveStrc*)((uintptr_t)&pScanPos->pPrevLink + 2);
-      if (pCurPos <= pScanPos) {
+      if (pScanPos >= pCurPos) {
         error:
         D2_FREE_AT(pBinFieldExcel->pD2Archive, ".\\Src\\Excel\\Excel.cpp", 0x9a);
         D2_FREE_POOL_AT(nullptr, pBinFieldExcel, ".\\Src\\Excel\\Excel.cpp", 0x9b);
         return nullptr;
       }
-      if ((uint32_t)pBinFieldExcel->nColumnCount < 0x119) {
+      if ((uint32_t)pBinFieldExcel->nColumnCount <= 0x118) {
         pBinFieldExcel->pDataStart = (char*)pScanPos;
         pLineStart = pScanPos;
         do {
@@ -604,7 +603,7 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
 
           pScanPos = pNextLineStart;
           pLineStart = pNextLineStart;
-          if (pCurPos <= pNextLineStart) {
+          if (pNextLineStart >= pCurPos) {
             return pBinFieldExcel;
           }
         } while (true);
@@ -665,12 +664,12 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x112);
       exit(-1);
     } else {
-      if (nEndOffset) {
+      if ((uint32_t)nEndOffset > 0) {
         nMappedFieldCount = FOG_ParseBinField((int)aColumnFieldMap, pBinFieldExcel, pBinFieldInput);
         nColumnCount = pBinFieldExcel->nColumnCount;
         bHasLinkFields = false;
         nScanColIndex = 0;
-        if (0 < nColumnCount) {
+        if (nColumnCount > 0) {
           do {
             if (aColumnFieldMap[nScanColIndex] != 0x7fff && true) {
               switch (pBinFieldInput[aColumnFieldMap[nScanColIndex]].eType) {
@@ -695,10 +694,10 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
         if (bHasLinkFields) {
           pCurDataPos = pBinFieldExcel->pDataStart;
           nLineIndex = 0;
-          if (0 < (int)pBinFieldExcel->nLinesCount) {
+          if ((int)pBinFieldExcel->nLinesCount > 0) {
             do {
               nColIndex = 0;
-              if (0 < nColumnCount) {
+              if (nColumnCount > 0) {
                 do {
                   nFieldMapIdx = aColumnFieldMap[nColIndex];
                   if (nFieldMapIdx == 0x7fff) {
@@ -785,7 +784,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                           }
                         case FIELDTYPE_CODE1:
                           {
-                            if (0xff < nLinkIndex) {
+                            if (nLinkIndex > 0xff) {
                               ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x156);
                               exit(-1);
                             }
@@ -795,7 +794,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                           }
                         case FIELDTYPE_CODE2:
                           {
-                            if (0xffff < nLinkIndex) {
+                            if (nLinkIndex > 0xffff) {
                               ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x15a);
                               exit(-1);
                             }
@@ -872,14 +871,14 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
 
         pCurDataPos = pBinFieldExcel->pDataStart;
         nLineIndex = 0;
-        if ((int)pBinFieldExcel->nLinesCount < 1) {
+        if ((int)pBinFieldExcel->nLinesCount <= 0) {
           return;
         }
 
         do {
           nColIndex = 0;
           pDstChar = pCurDataPos;
-          if (0 < pBinFieldExcel->nColumnCount) {
+          if (pBinFieldExcel->nColumnCount > 0) {
             do {
               nFieldMapIdx = aColumnFieldMap[nColIndex];
               if (nFieldMapIdx == 0x7fff) {
@@ -906,7 +905,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                   } else {
                     do {
                       pCurDataPos = pDstChar;
-                      if (pFieldEnd <= pFieldCursor) {
+                      if (pFieldCursor >= pFieldEnd) {
                         cCurChar = *pCurDataPos;
                         while (cCurChar != '\0') {
                           pCurDataPos++;
@@ -1086,16 +1085,22 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
 
                   nFieldValue = GetClassIdFromName(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, dwCodePadded, 1);
                   eFieldType2 = pBinFieldInput[nFieldMapIdx].eType;
-                  if (eFieldType2 == FIELDTYPE_CODE_INT) {
-                    store_int:
-                    *(uint32_t*)pFieldCursor = nFieldValue;
-                  } else {
-                    if (eFieldType2 == FIELDTYPE_CODE_CHAR) {
-                      goto case_FIELDTYPE_CHAR;
-                    }
-                    if (eFieldType2 == FIELDTYPE_CODE_SHORT) {
-                      *(short int*)pFieldCursor = (short int)nFieldValue;
-                    }
+                  switch (eFieldType2) {
+                    case FIELDTYPE_CODE_INT:
+                      {
+                        store_int:
+                        *(uint32_t*)pFieldCursor = nFieldValue;
+                        break;
+                      }
+                    case FIELDTYPE_CODE_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
+                    case FIELDTYPE_CODE_SHORT:
+                      {
+                        *(short int*)pFieldCursor = (short int)nFieldValue;
+                        break;
+                      }
                   }
 
                   break;
@@ -1117,14 +1122,19 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
                   pDstChar = pCurDataPos + 1;
                   nFieldValue = GetLinkNodeIndex(*(D2TxtLinkStrc**)pBinFieldInput[nFieldMapIdx].fpLinker, (char*)&dwCodeBuf, 1);
                   eFieldType = pBinFieldInput[nFieldMapIdx].eType;
-                  if (eFieldType == FIELDTYPE_NAME_INT) {
-                    goto store_int;
-                  }
-                  if (eFieldType == FIELDTYPE_NAME_SHORT) {
-                    goto case_FIELDTYPE_SHORT;
-                  }
-                  if (eFieldType == FIELDTYPE_NAME_CHAR) {
-                    goto case_FIELDTYPE_CHAR;
+                  switch (eFieldType) {
+                    case FIELDTYPE_NAME_INT:
+                      {
+                        goto store_int;
+                      }
+                    case FIELDTYPE_NAME_SHORT:
+                      {
+                        goto case_FIELDTYPE_SHORT;
+                      }
+                    case FIELDTYPE_NAME_CHAR:
+                      {
+                        goto case_FIELDTYPE_CHAR;
+                      }
                   }
 
                   break;
@@ -1270,7 +1280,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
           pRecord += nEndOffset;
           nLineIndex++;
           pCurDataPos = pDstChar + 1;
-          if ((int)pBinFieldExcel->nLinesCount <= nLineIndex) {
+          if (nLineIndex >= (int)pBinFieldExcel->nLinesCount) {
             return;
           }
         } while (true);

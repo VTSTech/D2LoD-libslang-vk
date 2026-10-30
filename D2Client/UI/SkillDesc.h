@@ -756,7 +756,7 @@ struct __attribute__((packed)) D2StatesTxt {
     /* 0x28 */ short offsound;
     /* 0x2A */ short itemtype;
     /* 0x2C */ char itemtrans;
-    /* 0x2D */ char gfxtype;
+    /* 0x2D */ uint8_t gfxtype;
     /* 0x2E */ short gfxclass;
     /* 0x30 */ short cltevent;
     /* 0x32 */ short clteventfunc;
@@ -813,8 +813,8 @@ struct __attribute__((packed)) D2ItemStatCostTxt {
     /* 0x000 */ uint16_t stat;
     /* 0x002 */ uint16_t pad_02;
     /* 0x004 */ D2ItemStatCostFlags dwItemStatFlags;
-    /* 0x008 */ char sendBits;
-    /* 0x009 */ char sendParamBits;
+    /* 0x008 */ uint8_t sendBits;
+    /* 0x009 */ uint8_t sendParamBits;
     /* 0x00A */ char csvbits;
     /* 0x00B */ char csvparam;
     /* 0x00C */ int divide;
@@ -827,7 +827,7 @@ struct __attribute__((packed)) D2ItemStatCostTxt {
     /* 0x024 */ int saveParamBits;
     /* 0x028 */ int unused_28;
     /* 0x02C */ int minaccr;
-    /* 0x030 */ char encode;
+    /* 0x030 */ uint8_t encode;
     /* 0x031 */ uint8_t pad_31;
     /* 0x032 */ short maxstat;
     /* 0x034 */ short descpriority;

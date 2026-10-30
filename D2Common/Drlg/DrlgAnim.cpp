@@ -86,17 +86,17 @@ void __fastcall DRLGROOMTILE_CountAnimTilesFromGrid(D2RoomExStrc * pRoomEx, D2Dr
               nTileLibFlags = D2CMP::DUNGEON::Dungeon::TILEPROJECT_GetTileCount(aTileResults[0]);
               if (nTileLibFlags & 0x100) {
                 nCellY = nMatchCount - 1;
-                if (!(nGridFlags & 2)) {
-                  if (!(nGridFlags & 1)) {
-                    piVar1 = &pTileGrid->sRoomTiles.nRoofTilesCount;
-                    *piVar1 += nCellY;
-                  } else {
-                    piVar1 = &pTileGrid->sRoomTiles.nWallTilesCount;
-                    *piVar1 += nCellY;
-                  }
-                } else {
+                if (nGridFlags & 2) {
                   piVar1 = &pTileGrid->sRoomTiles.nFloorTilesCount;
                   *piVar1 += nCellY;
+                } else {
+                  if (nGridFlags & 1) {
+                    piVar1 = &pTileGrid->sRoomTiles.nWallTilesCount;
+                    *piVar1 += nCellY;
+                  } else {
+                    piVar1 = &pTileGrid->sRoomTiles.nRoofTilesCount;
+                    *piVar1 += nCellY;
+                  }
                 }
 
                 pRoomExCtx->eRoomExFlags |= 0x8000000;

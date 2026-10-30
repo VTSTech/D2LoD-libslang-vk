@@ -14,196 +14,188 @@
 namespace Storm::_3rdparty::zlib::deflate {
 
 int __fastcall deflateResetKeep(z_stream * pStream) {
-    uint32_t uChecksum;
-    if (!pStream) {
-      return -2;
+    deflate_state* pDeflateState;
+    if (pStream) {
+      uint32_t uChecksum;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState && pStream->zalloc && pStream->zfree) {
+        pStream->total_out = 0;
+        pStream->total_in = 0;
+        pStream->msg = 0;
+        pStream->data_type = 2;
+        pDeflateState->pending_out = pDeflateState->pending_buf;
+        pDeflateState->pending = 0;
+        if (pDeflateState->wrap < 0) {
+          pDeflateState->wrap = -pDeflateState->wrap;
+        }
+
+        pDeflateState->status = (pDeflateState->wrap ? -71 : 0) + 0x71;
+        if (pDeflateState->wrap == 2) {
+          uChecksum = crc32::crc32(0, nullptr, 0);
+          pStream->adler = uChecksum;
+          pDeflateState->last_flush = 0;
+          trees::_tr_init(pDeflateState);
+          return 0;
+        }
+
+        uChecksum = D2Client::Source::SSComp::ZLIB_Adler32(0, nullptr, 0);
+        pStream->adler = uChecksum;
+        pDeflateState->last_flush = 0;
+        trees::_tr_init(pDeflateState);
+        return 0;
+      }
     }
 
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!pDeflateState) {
-      return -2;
-    }
-    if (!pStream->zalloc) {
-      return -2;
-    }
-    if (!pStream->zfree) {
-      return -2;
-    }
-
-    pStream->total_out = 0;
-    pStream->total_in = 0;
-    pStream->msg = 0;
-    pStream->data_type = 2;
-    pDeflateState->pending_out = pDeflateState->pending_buf;
-    pDeflateState->pending = 0;
-    if (pDeflateState->wrap < 0) {
-      pDeflateState->wrap = -pDeflateState->wrap;
-    }
-
-    pDeflateState->status = (pDeflateState->wrap ? -71 : 0) + 0x71;
-    if (pDeflateState->wrap == 2) {
-      uChecksum = crc32::crc32(0, nullptr, 0);
-      pStream->adler = uChecksum;
-      pDeflateState->last_flush = 0;
-      trees::_tr_init(pDeflateState);
-      return 0;
-    }
-
-    uChecksum = D2Client::Source::SSComp::ZLIB_Adler32(0, nullptr, 0);
-    pStream->adler = uChecksum;
-    pDeflateState->last_flush = 0;
-    trees::_tr_init(pDeflateState);
-    return 0;
+    return -2;
 }
 
 int __fastcall deflateSetHeader(z_stream * pStream, gz_header * pHead) {
-    if (!pStream) {
-      return -2;
+    if (pStream) {
+      void* pvVar1;
+      pvVar1 = pStream->state;
+      if (pvVar1 && *(int*)((int)pvVar1 + 0x18) == 2) {
+        *(gz_header**)((int)pvVar1 + 0x1c) = (gz_header*)pHead;
+        return 0;
+      }
     }
 
-    void* pvVar1 = pStream->state;
-    if (!(pvVar1 && *(int*)((int)pvVar1 + 0x18) == 2)) {
-      return -2;
-    }
-
-    *(gz_header**)((int)pvVar1 + 0x1c) = (gz_header*)pHead;
-    return 0;
+    return -2;
 }
 
 uint32_t __fastcall deflatePending(z_stream * pStream, uint32_t * pPending, uint32_t * pBits) {
-    if (!(pStream && pStream->state)) {
-      return -2;
-    }
-    if (pPending) {
-      *pPending = *(uint32_t*)((int)pStream->state + 0x14);
-    }
-    if (!pBits) {
+    if (pStream && pStream->state) {
+      if (pPending) {
+        *pPending = *(uint32_t*)((int)pStream->state + 0x14);
+      }
+      if (!pBits) {
+        return 0;
+      }
+
+      *pBits = *(uint32_t*)((int)pStream->state + 0x16bc);
       return 0;
     }
 
-    *pBits = *(uint32_t*)((int)pStream->state + 0x16bc);
-    return 0;
+    return -2;
 }
 
 uint32_t __fastcall deflatePrime(z_stream * pStream, int32_t nBits, uint32_t uValue) {
+    deflate_state* pDeflateState;
     int nUsedBits;
-    if (!pStream) {
-      return -2;
-    }
-
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!pDeflateState) {
-      return -2;
-    }
-    if (pDeflateState->pending_out + 2 > (unsigned char*)pDeflateState->d_buf) {
-      return -5;
-    }
-
-    do {
+    if (pStream) {
       int nChunkBits;
-      nUsedBits = pDeflateState->bi_valid;
-      nChunkBits = 0x10 - nUsedBits;
-      if (nBits < 0x10 - nUsedBits) {
-        nChunkBits = nBits;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState) {
+        if (pDeflateState->d_buf < (unsigned short*)(pDeflateState->pending_out + 2)) {
+          return -5;
+        }
+
+        do {
+          nUsedBits = pDeflateState->bi_valid;
+          nChunkBits = 0x10 - nUsedBits;
+          if (0x10 - nUsedBits > nBits) {
+            nChunkBits = nBits;
+          }
+
+          pDeflateState->bi_valid = nUsedBits + nChunkBits;
+          pDeflateState->bi_buf |= (uint16_t)(((1 << ((uint8_t)nChunkBits & 0x1f)) - 1U & uValue) << ((uint8_t)nUsedBits & 0x1f));
+          trees::_tr_flush_bits(pDeflateState);
+          uValue = (int)uValue >> ((uint8_t)nChunkBits & 0x1f);
+          nBits -= nChunkBits;
+        } while (nBits);
+
+        return 0;
       }
+    }
 
-      pDeflateState->bi_valid = nUsedBits + nChunkBits;
-      pDeflateState->bi_buf |= (uint16_t)(((1 << ((uint8_t)nChunkBits & 0x1f)) - 1U & uValue) << ((uint8_t)nUsedBits & 0x1f));
-      trees::_tr_flush_bits(pDeflateState);
-      uValue = (int)uValue >> ((uint8_t)nChunkBits & 0x1f);
-      nBits -= nChunkBits;
-    } while (nBits);
-
-    return 0;
+    return -2;
 }
 
 uint32_t __fastcall deflateTune(z_stream * pStream, uint32_t nGoodMatch, uint32_t nMaxLazyMatch, int32_t nNiceMatch, uint32_t nMaxChainLen) {
-    if (!pStream) {
-      return -2;
+    if (pStream) {
+      deflate_state* pDeflateState;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState) {
+        pDeflateState->good_match = nGoodMatch;
+        pDeflateState->max_lazy_match = nMaxLazyMatch;
+        pDeflateState->nice_match = nNiceMatch;
+        pDeflateState->max_chain_length = nMaxChainLen;
+        return 0;
+      }
     }
 
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!pDeflateState) {
-      return -2;
-    }
-
-    pDeflateState->good_match = nGoodMatch;
-    pDeflateState->max_lazy_match = nMaxLazyMatch;
-    pDeflateState->nice_match = nNiceMatch;
-    pDeflateState->max_chain_length = nMaxChainLen;
-    return 0;
+    return -2;
 }
 
 int32_t __fastcall deflateBound(z_stream * pStream, uint32_t nSourceLen) {
     uint8_t* pszField;
+    deflate_state* pDeflateState;
     uint8_t cByte;
     gz_header* pGzipHeader;
     int nStoredBound = (nSourceLen + 7 >> 3) + 5 + (nSourceLen + 0x3f >> 6) + nSourceLen;
-    if (!pStream) {
-      return nStoredBound + 6;
+    if (pStream) {
+      int nHeaderLen;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState) {
+        nHeaderLen = pDeflateState->wrap;
+        switch (nHeaderLen) {
+          case 0:
+            {
+              nHeaderLen = 0;
+              break;
+            }
+          case 1:
+            {
+              nHeaderLen = pDeflateState->strstart ? 0xa : 0x6;
+              break;
+            }
+          case 2:
+            {
+              pGzipHeader = pDeflateState->gzhead;
+              nHeaderLen = 0x12;
+              if (pGzipHeader) {
+                if (pGzipHeader->extra) {
+                  nHeaderLen = pGzipHeader->extra_len + 0x14;
+                }
+
+                pszField = pGzipHeader->name;
+                if (pszField) {
+                  do {
+                    cByte = *pszField;
+                    nHeaderLen++;
+                    pszField++;
+                  } while (cByte != '\0');
+                }
+
+                pszField = pGzipHeader->comm;
+                if (pszField) {
+                  do {
+                    cByte = *pszField;
+                    nHeaderLen++;
+                    pszField++;
+                  } while (cByte != '\0');
+                }
+                if (pGzipHeader->hcrc) {
+                  nHeaderLen += 2;
+                }
+              }
+
+              break;
+            }
+          default:
+            {
+              nHeaderLen = 6;
+            }
+        }
+
+        if (pDeflateState->w_bits == 0xf && pDeflateState->hash_bits == 0xf) {
+          return (nSourceLen >> 0xc) + (nSourceLen >> 0xe) + nHeaderLen + (nSourceLen >> 0x19) + 7 + nSourceLen;
+        }
+
+        return nHeaderLen + nStoredBound;
+      }
     }
 
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!pDeflateState) {
-      return nStoredBound + 6;
-    }
-
-    int nHeaderLen = pDeflateState->wrap;
-    switch (nHeaderLen) {
-      case 0:
-        {
-          nHeaderLen = 0;
-          break;
-        }
-      case 1:
-        {
-          nHeaderLen = pDeflateState->strstart ? 0xa : 0x6;
-          break;
-        }
-      case 2:
-        {
-          pGzipHeader = pDeflateState->gzhead;
-          nHeaderLen = 0x12;
-          if (pGzipHeader) {
-            if (pGzipHeader->extra) {
-              nHeaderLen = pGzipHeader->extra_len + 0x14;
-            }
-
-            pszField = pGzipHeader->name;
-            if (pszField) {
-              do {
-                cByte = *pszField;
-                nHeaderLen++;
-                pszField++;
-              } while (cByte != '\0');
-            }
-
-            pszField = pGzipHeader->comm;
-            if (pszField) {
-              do {
-                cByte = *pszField;
-                nHeaderLen++;
-                pszField++;
-              } while (cByte != '\0');
-            }
-            if (pGzipHeader->hcrc) {
-              nHeaderLen += 2;
-            }
-          }
-
-          break;
-        }
-      default:
-        {
-          nHeaderLen = 6;
-        }
-    }
-
-    if (!(pDeflateState->w_bits == 0xf && pDeflateState->hash_bits == 0xf)) {
-      return nHeaderLen + nStoredBound;
-    }
-
-    return (nSourceLen >> 0xc) + (nSourceLen >> 0xe) + nHeaderLen + (nSourceLen >> 0x19) + 7 + nSourceLen;
+    return nStoredBound + 6;
 }
 
 void putShortMSB(deflate_state * pDeflateState, uint32_t wValue) {
@@ -218,7 +210,7 @@ static void flush_pending(z_stream * pStream) {
     deflate_state* pDeflateState = (deflate_state*)pStream->state;
     trees::_tr_flush_bits(pDeflateState);
     uint32_t nCopyLen = pDeflateState->pending;
-    if (pStream->avail_out < pDeflateState->pending) {
+    if (pDeflateState->pending > pStream->avail_out) {
       nCopyLen = pStream->avail_out;
     }
     if (!nCopyLen) {
@@ -240,103 +232,104 @@ static void flush_pending(z_stream * pStream) {
 }
 
 uint32_t __fastcall deflateEnd(z_stream * pStream) {
-    if (!pStream) {
-      return -2;
+    deflate_state* pDeflateState;
+    int nStatus;
+    if (pStream) {
+      void* pvVar1;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState) {
+        nStatus = pDeflateState->status;
+        if (nStatus != 0x2a && nStatus != 0x45 && nStatus != 0x49 && nStatus != 0x5b && nStatus != 0x67 && nStatus != 0x71 && nStatus != 0x29a) {
+          return -2;
+        }
+        if (pDeflateState->pending_buf) {
+          pStream->zfree(pStream->opaque, pDeflateState->pending_buf);
+        }
+
+        pvVar1 = *(void**)((int)pStream->state + 0x44);
+        if (pvVar1) {
+          pStream->zfree(pStream->opaque, pvVar1);
+        }
+
+        pvVar1 = *(void**)((int)pStream->state + 0x40);
+        if (pvVar1) {
+          pStream->zfree(pStream->opaque, pvVar1);
+        }
+
+        pvVar1 = *(void**)((int)pStream->state + 0x38);
+        if (pvVar1) {
+          pStream->zfree(pStream->opaque, pvVar1);
+        }
+
+        pStream->zfree(pStream->opaque, pStream->state);
+        pStream->state = 0;
+        return nStatus != 0x71 ? 0 : -3;
+      }
     }
 
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!pDeflateState) {
-      return -2;
-    }
-
-    int nStatus = pDeflateState->status;
-    if (nStatus != 0x2a && nStatus != 0x45 && nStatus != 0x49 && nStatus != 0x5b && nStatus != 0x67 && nStatus != 0x71 && nStatus != 0x29a) {
-      return -2;
-    }
-    if (pDeflateState->pending_buf) {
-      pStream->zfree(pStream->opaque, pDeflateState->pending_buf);
-    }
-
-    void* pvVar1 = *(void**)((int)pStream->state + 0x44);
-    if (pvVar1) {
-      pStream->zfree(pStream->opaque, pvVar1);
-    }
-
-    pvVar1 = *(void**)((int)pStream->state + 0x40);
-    if (pvVar1) {
-      pStream->zfree(pStream->opaque, pvVar1);
-    }
-
-    pvVar1 = *(void**)((int)pStream->state + 0x38);
-    if (pvVar1) {
-      pStream->zfree(pStream->opaque, pvVar1);
-    }
-
-    pStream->zfree(pStream->opaque, pStream->state);
-    pStream->state = 0;
-    return nStatus != 0x71 ? 0 : -3;
+    return -2;
 }
 
 uint32_t __fastcall deflateCopy(z_stream * pDestStream, z_stream * pSrcStream) {
+    uint8_t* pAllocTree;
+    uint16_t* pHashHead;
     int nCopyWords;
-    if (!pSrcStream) {
-      return -2;
-    }
-    if (!pDestStream) {
-      return -2;
+    z_stream* pzVar1;
+    deflate_state* pSrcState;
+    if (pSrcStream && pDestStream) {
+      deflate_state* pDestState;
+      pSrcState = (deflate_state*)pSrcStream->state;
+      if (pSrcState) {
+        pzVar1 = pDestStream;
+        for (nCopyWords = 0xe; nCopyWords; nCopyWords--) {
+          pzVar1->next_in = pSrcStream->next_in;
+          pSrcStream = (z_stream*)&pSrcStream->avail_in;
+          pzVar1 = (z_stream*)&pzVar1->avail_in;
+        }
+
+        pDestState = (deflate_state*)pDestStream->zalloc(pDestStream->opaque, 1, 0x16c4);
+        if (!pDestState) {
+          return -4;
+        }
+
+        pDestStream->state = pDestState;
+        memcpy(pDestState, pSrcState, 0x16c4);
+        pDestState->strm = pDestStream;
+        pAllocTree = (uint8_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->w_size, 2);
+        pDestState->window = pAllocTree;
+        pHashHead = (uint16_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->w_size, 2);
+        pDestState->prev = pHashHead;
+        pHashHead = (uint16_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->hash_size, 2);
+        pDestState->head = pHashHead;
+        pAllocTree = (uint8_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->lit_bufsize, 4);
+        pDestState->pending_buf = pAllocTree;
+        if (pDestState->window && pDestState->prev && pDestState->head && pAllocTree) {
+          memcpy(pDestState->window, pSrcState->window, pDestState->w_size * 2);
+          memcpy(pDestState->prev, pSrcState->prev, pDestState->w_size * 2);
+          memcpy(pDestState->head, pSrcState->head, pDestState->hash_size * 2);
+          memcpy(pDestState->pending_buf, pSrcState->pending_buf, pDestState->pending_buf_size);
+          pDestState->pending_out = pDestState->pending_buf + ((int)pSrcState->pending_out - (int)pSrcState->pending_buf);
+          pDestState->d_buf = (uint16_t*)(pAllocTree + (pDestState->lit_bufsize & -2));
+          pDestState->l_buf = pDestState->pending_buf + pDestState->lit_bufsize * 3;
+          pDestState->d_desc.dyn_tree = pDestState->dyn_dtree;
+          pDestState->l_desc.dyn_tree = pDestState->dyn_ltree;
+          pDestState->bl_desc.dyn_tree = pDestState->bl_tree;
+          return 0;
+        }
+
+        deflateEnd(pDestStream);
+        return -4;
+      }
     }
 
-    deflate_state* pSrcState = (deflate_state*)pSrcStream->state;
-    if (!pSrcState) {
-      return -2;
-    }
-
-    z_stream* pzVar1 = pDestStream;
-    for (nCopyWords = 0xe; nCopyWords; nCopyWords--) {
-      pzVar1->next_in = pSrcStream->next_in;
-      pSrcStream = (z_stream*)&pSrcStream->avail_in;
-      pzVar1 = (z_stream*)&pzVar1->avail_in;
-    }
-
-    deflate_state* pDestState = (deflate_state*)pDestStream->zalloc(pDestStream->opaque, 1, 0x16c4);
-    if (!pDestState) {
-      return -4;
-    }
-
-    pDestStream->state = pDestState;
-    memcpy(pDestState, pSrcState, 0x16c4);
-    pDestState->strm = pDestStream;
-    uint8_t* pAllocTree = (uint8_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->w_size, 2);
-    pDestState->window = pAllocTree;
-    uint16_t* pHashHead = (uint16_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->w_size, 2);
-    pDestState->prev = pHashHead;
-    pHashHead = (uint16_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->hash_size, 2);
-    pDestState->head = pHashHead;
-    pAllocTree = (uint8_t*)pDestStream->zalloc(pDestStream->opaque, pDestState->lit_bufsize, 4);
-    pDestState->pending_buf = pAllocTree;
-    if (pDestState->window && pDestState->prev && pDestState->head && pAllocTree) {
-      memcpy(pDestState->window, pSrcState->window, pDestState->w_size * 2);
-      memcpy(pDestState->prev, pSrcState->prev, pDestState->w_size * 2);
-      memcpy(pDestState->head, pSrcState->head, pDestState->hash_size * 2);
-      memcpy(pDestState->pending_buf, pSrcState->pending_buf, pDestState->pending_buf_size);
-      pDestState->pending_out = pDestState->pending_buf + ((int)pSrcState->pending_out - (int)pSrcState->pending_buf);
-      pDestState->d_buf = (uint16_t*)(pAllocTree + (pDestState->lit_bufsize & -2));
-      pDestState->l_buf = pDestState->pending_buf + pDestState->lit_bufsize * 3;
-      pDestState->d_desc.dyn_tree = pDestState->dyn_dtree;
-      pDestState->l_desc.dyn_tree = pDestState->dyn_ltree;
-      pDestState->bl_desc.dyn_tree = pDestState->bl_tree;
-      return 0;
-    }
-
-    deflateEnd(pDestStream);
-    return -4;
+    return -2;
 }
 
 uint32_t __fastcall read_buf(z_stream * pStream, uint8_t * pBuf, uint32_t nSize) {
     uint32_t uVar3;
     uint32_t uVar1 = pStream->avail_in;
     uint32_t _Size = uVar1;
-    if (nSize < uVar1) {
+    if (uVar1 > nSize) {
       _Size = nSize;
     }
     if (!_Size) {
@@ -391,7 +384,7 @@ static uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDef
     uint32_t nChainLen = pDeflateState->max_chain_length;
     uint8_t* pScanStart = pDeflateState->window + uStrStart;
     uint8_t* pBestLen = (uint8_t*)pDeflateState->prev_length;
-    if (pDeflateState->w_size - 0x106 < uStrStart) {
+    if (uStrStart > pDeflateState->w_size - 0x106) {
       nMatchLimit = uStrStart - pDeflateState->w_size + 0x106;
     } else {
       nMatchLimit = 0;
@@ -400,12 +393,12 @@ static uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDef
     uint8_t cScanEnd1 = pScanStart[(int)(pBestLen - 1)];
     uint8_t cScanEnd2 = pScanStart[(int)pBestLen];
     uint8_t* pScanEnd = pScanStart + 0x102;
-    if ((uint8_t*)pDeflateState->good_match <= pBestLen) {
+    if (pBestLen >= (uint8_t*)pDeflateState->good_match) {
       nChainLen >>= 2;
     }
 
     uint32_t nNiceMatch = pDeflateState->nice_match;
-    if (pDeflateState->lookahead < (uint32_t)pDeflateState->nice_match) {
+    if ((uint32_t)pDeflateState->nice_match > pDeflateState->lookahead) {
       nNiceMatch = pDeflateState->lookahead;
     }
 
@@ -443,16 +436,16 @@ static uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDef
           }
 
           pScan = pScanNext;
-          if (pScanEnd <= pScanNext) {
+          if (pScanNext >= pScanEnd) {
             break;
           }
         }
 
         pMatch = pScanNext + (0x102 - (int)pScanEnd);
-        if ((int)pBestLen < (int)pMatch) {
+        if ((int)pMatch > (int)pBestLen) {
           pDeflateState->match_start = nCurMatch;
-          if ((int)nNiceMatch <= (int)pMatch) {
-            if ((uint8_t*)pDeflateState->lookahead >= pMatch) {
+          if ((int)pMatch >= (int)nNiceMatch) {
+            if (pMatch <= (uint8_t*)pDeflateState->lookahead) {
               return (uint32_t)pMatch;
             }
 
@@ -469,7 +462,7 @@ static uint32_t __stdcall longest_match(uint32_t nCurMatch, deflate_state * pDef
       pMatch = pBestLen;
       nCurMatch = (uint32_t)pDeflateState->prev[pDeflateState->w_mask & nCurMatch];
       if (nCurMatch <= nMatchLimit || (nChainLen-- , pBestLen = pMatch , !nChainLen)) {
-        if ((uint8_t*)pDeflateState->lookahead >= pMatch) {
+        if (pMatch <= (uint8_t*)pDeflateState->lookahead) {
           return (uint32_t)pMatch;
         }
 
@@ -493,7 +486,7 @@ static void fill_window(deflate_state * pDeflateState) {
     while (true) {
       uint8_t* pWindowDst;
       nMore = pDeflateState->window_size - pDeflateState->lookahead - pDeflateState->strstart;
-      if (uVar1 - 0x106 + pDeflateState->w_size <= pDeflateState->strstart) {
+      if (pDeflateState->strstart >= uVar1 - 0x106 + pDeflateState->w_size) {
         memcpy(pDeflateState->window, pDeflateState->window + uVar1, uVar1);
         nChecksum = pDeflateState->hash_size;
         pDeflateState->match_start -= uVar1;
@@ -503,10 +496,10 @@ static void fill_window(deflate_state * pDeflateState) {
         do {
           pPrevHead = pHashEntry - 1;
           pHashEntry--;
-          if (*pPrevHead < uVar1) {
-            nNewHead = 0;
-          } else {
+          if (!(*pPrevHead < uVar1)) {
             nNewHead = *pPrevHead - (short int)uVar1;
+          } else {
+            nNewHead = 0;
           }
 
           nChecksum--;
@@ -518,10 +511,10 @@ static void fill_window(deflate_state * pDeflateState) {
         do {
           pPrevHead = pHashEntry - 1;
           pHashEntry--;
-          if (*pPrevHead < uVar1) {
-            nNewHead = 0;
-          } else {
+          if (!(*pPrevHead < uVar1)) {
             nNewHead = *pPrevHead - (short int)uVar1;
+          } else {
+            nNewHead = 0;
           }
 
           nCurrPos--;
@@ -539,7 +532,7 @@ static void fill_window(deflate_state * pDeflateState) {
       nCurrPos = pZStream->avail_in;
       pWindowDst = pDeflateState->window + pDeflateState->lookahead + pDeflateState->strstart;
       nReadLen = nCurrPos;
-      if (nMore < nCurrPos) {
+      if (nCurrPos > nMore) {
         nReadLen = nMore;
       }
       if (nReadLen) {
@@ -560,7 +553,7 @@ static void fill_window(deflate_state * pDeflateState) {
 
       pDeflateState->lookahead += nReadLen;
       nChecksum = pDeflateState->insert;
-      if (2 < nChecksum + pDeflateState->lookahead) {
+      if (nChecksum + pDeflateState->lookahead >= 3) {
         nCurrPos = pDeflateState->strstart - nChecksum;
         nReadLen = (uint32_t)pDeflateState->window[nCurrPos];
         pDeflateState->ins_h = nReadLen;
@@ -577,9 +570,9 @@ static void fill_window(deflate_state * pDeflateState) {
           pDeflateState->insert--;
           nChecksum = pDeflateState->insert;
           nCurrPos++;
-        } while (2 < pDeflateState->lookahead + nChecksum);
+        } while (pDeflateState->lookahead + nChecksum >= 3);
       }
-      if (0x105 < pDeflateState->lookahead || !pDeflateState->strm->avail_in) {
+      if (pDeflateState->lookahead >= 0x106 || !pDeflateState->strm->avail_in) {
         break;
       }
     }
@@ -593,7 +586,7 @@ static void fill_window(deflate_state * pDeflateState) {
     nReadLen = pDeflateState->lookahead + pDeflateState->strstart;
     if (uVar1 < nReadLen) {
       nCurrPos -= nReadLen;
-      if (0x102 < nCurrPos) {
+      if (nCurrPos > 0x102) {
         nCurrPos = 0x102;
       }
 
@@ -601,12 +594,12 @@ static void fill_window(deflate_state * pDeflateState) {
       pDeflateState->high_water = nCurrPos + nReadLen;
       return;
     }
-    if (uVar1 >= nReadLen + 0x102) {
+    if (!(uVar1 < nReadLen + 0x102)) {
       return;
     }
 
     nReadLen = nReadLen - uVar1 + 0x102;
-    if (nCurrPos - uVar1 < nReadLen) {
+    if (nReadLen > nCurrPos - uVar1) {
       nReadLen = nCurrPos - uVar1;
     }
 
@@ -628,7 +621,7 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
     do {
       uint32_t* pPendingCountField;
       nLen = pDeflateState->lookahead;
-      if (nLen < 2) {
+      if (nLen <= 1) {
         fill_window(pDeflateState);
         nLen = pDeflateState->lookahead;
         if (!nLen) {
@@ -639,13 +632,13 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
           pDeflateState->insert = 0;
           if (nFlush != 4) {
             nBlockStartOff = pDeflateState->block_start;
-            if (nBlockStartOff >= (int)pDeflateState->strstart) {
+            if ((int)pDeflateState->strstart <= nBlockStartOff) {
               return 1;
             }
-            if (nBlockStartOff < 0) {
-              pBlockStart = 0;
-            } else {
+            if (nBlockStartOff >= 0) {
               pBlockStart = pDeflateState->window + nBlockStartOff;
+            } else {
+              pBlockStart = 0;
             }
 
             trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 0);
@@ -659,10 +652,10 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
           }
 
           nBlockStartOff = pDeflateState->block_start;
-          if (nBlockStartOff < 0) {
-            pBlockStart = 0;
-          } else {
+          if (nBlockStartOff >= 0) {
             pBlockStart = pDeflateState->window + nBlockStartOff;
+          } else {
+            pBlockStart = 0;
           }
 
           trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 1);
@@ -677,13 +670,13 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
       nBlockStartOff = pDeflateState->block_start;
       pDeflateState->lookahead = 0;
       nLen = nBlockStartOff + nMaxBlock;
-      if (!*pPendingCountField || nLen <= pDeflateState->strstart) {
+      if (!*pPendingCountField || pDeflateState->strstart >= nLen) {
         pDeflateState->lookahead = pDeflateState->strstart - nLen;
         pDeflateState->strstart = nLen;
-        if (nBlockStartOff < 0) {
-          pBlockStart = 0;
-        } else {
+        if (nBlockStartOff >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nLen - nBlockStartOff, 0);
@@ -692,7 +685,7 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
         pFlushState = (deflate_state*)pStream->state;
         trees::_tr_flush_bits(pFlushState);
         nLen = pFlushState->pending;
-        if (pStream->avail_out < pFlushState->pending) {
+        if (pFlushState->pending > pStream->avail_out) {
           nLen = pStream->avail_out;
         }
         if (nLen) {
@@ -714,11 +707,11 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
 
       nBlockStartOff = pDeflateState->block_start;
       nLen = pDeflateState->strstart - nBlockStartOff;
-      if (pDeflateState->w_size - 0x106 <= nLen) {
-        if (nBlockStartOff < 0) {
-          pBlockStart = 0;
-        } else {
+      if (nLen >= pDeflateState->w_size - 0x106) {
+        if (nBlockStartOff >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nLen, 0);
@@ -727,7 +720,7 @@ int32_t __fastcall deflate_stored(deflate_state * pDeflateState, int32_t nFlush)
         pFlushState = (deflate_state*)pStream->state;
         trees::_tr_flush_bits(pFlushState);
         nLen = pFlushState->pending;
-        if (pStream->avail_out < pFlushState->pending) {
+        if (pFlushState->pending > pStream->avail_out) {
           nLen = pStream->avail_out;
         }
         if (nLen) {
@@ -774,17 +767,17 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
         if (!nHashHead) {
           nHashHead = pDeflateState->strstart;
           nInsertCount = nHashHead;
-          if (1 < nHashHead) {
+          if (nHashHead >= 2) {
             nInsertCount = 2;
           }
 
           pDeflateState->insert = nInsertCount;
           if (nFlush == 4) {
             nBlockStartOff = pDeflateState->block_start;
-            if (nBlockStartOff < 0) {
-              pBlockStart = 0;
-            } else {
+            if (nBlockStartOff >= 0) {
               pBlockStart = pDeflateState->window + nBlockStartOff;
+            } else {
+              pBlockStart = 0;
             }
 
             trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nHashHead - nBlockStartOff, 1);
@@ -797,10 +790,10 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
           }
 
           nBlockStartOff = pDeflateState->block_start;
-          if (nBlockStartOff < 0) {
-            pBlockStart = 0;
-          } else {
+          if (nBlockStartOff >= 0) {
             pBlockStart = pDeflateState->window + nBlockStartOff;
+          } else {
+            pBlockStart = 0;
           }
 
           trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nHashHead - nBlockStartOff, 0);
@@ -813,7 +806,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
           return 0;
         }
       }
-      if (2 < nHashHead) {
+      if (nHashHead >= 3) {
         nHashHead = (pDeflateState->ins_h << ((uint8_t)pDeflateState->hash_shift & 0x1f) ^ (uint32_t)pDeflateState->window[pDeflateState->strstart + 2]) & pDeflateState->hash_mask;
         pDeflateState->ins_h = nHashHead;
         pDeflateState->prev[pDeflateState->w_mask & pDeflateState->strstart] = pDeflateState->head[nHashHead];
@@ -824,16 +817,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
           pDeflateState->match_length = nHashHead;
         }
       }
-      if (pDeflateState->match_length < 3) {
-        byCode = pDeflateState->window[pDeflateState->strstart];
-        pDeflateState->d_buf[pDeflateState->last_lit] = 0;
-        pDeflateState->l_buf[pDeflateState->last_lit] = byCode;
-        pDeflateState->last_lit++;
-        pDeflateState->dyn_ltree[byCode].fc++;
-        bBlockFull = pDeflateState->last_lit == pDeflateState->lit_bufsize - 1;
-        pDeflateState->lookahead--;
-        pDeflateState->strstart++;
-      } else {
+      if (pDeflateState->match_length >= 3) {
         nDist = (short int)pDeflateState->strstart - (short int)pDeflateState->match_start;
         nMatchLenSaved = pDeflateState->match_length;
         pDeflateState->d_buf[pDeflateState->last_lit] = nDist;
@@ -852,7 +836,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
         nHashHead = pDeflateState->match_length;
         bBlockFull = pDeflateState->last_lit == pDeflateState->lit_bufsize - 1;
         pDeflateState->lookahead -= nHashHead;
-        if (pDeflateState->max_lazy_match < nHashHead || pDeflateState->lookahead < 3) {
+        if (nHashHead > pDeflateState->max_lazy_match || pDeflateState->lookahead < 3) {
           pDeflateState->strstart += nHashHead;
           pDeflateState->match_length = 0;
           nHashHead = (uint32_t)pDeflateState->window[pDeflateState->strstart];
@@ -872,13 +856,22 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
 
           pDeflateState->strstart++;
         }
+      } else {
+        byCode = pDeflateState->window[pDeflateState->strstart];
+        pDeflateState->d_buf[pDeflateState->last_lit] = 0;
+        pDeflateState->l_buf[pDeflateState->last_lit] = byCode;
+        pDeflateState->last_lit++;
+        pDeflateState->dyn_ltree[byCode].fc++;
+        bBlockFull = pDeflateState->last_lit == pDeflateState->lit_bufsize - 1;
+        pDeflateState->lookahead--;
+        pDeflateState->strstart++;
       }
       if (bBlockFull) {
         nBlockStartOff = pDeflateState->block_start;
-        if (nBlockStartOff < 0) {
-          pBlockStart = 0;
-        } else {
+        if (nBlockStartOff >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 0);
@@ -887,7 +880,7 @@ int32_t __fastcall deflate_fast(deflate_state * pDeflateState, int32_t nFlush) {
         pPendingState = (deflate_state*)pStream->state;
         trees::_tr_flush_bits(pPendingState);
         nHashHead = pPendingState->pending;
-        if (pStream->avail_out < pPendingState->pending) {
+        if (pPendingState->pending > pStream->avail_out) {
           nHashHead = pStream->avail_out;
         }
         if (nHashHead) {
@@ -945,7 +938,7 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
 
           nLookahead = pDeflateState->strstart;
           nInsHash = nLookahead;
-          if (1 < nLookahead) {
+          if (nLookahead >= 2) {
             nInsHash = 2;
           }
 
@@ -956,10 +949,10 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
             }
 
             nBlockStartOff2 = pDeflateState->block_start;
-            if (nBlockStartOff2 < 0) {
-              pBlockStart = 0;
-            } else {
+            if (nBlockStartOff2 >= 0) {
               pBlockStart = pDeflateState->window + nBlockStartOff2;
+            } else {
+              pBlockStart = 0;
             }
 
             trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nLookahead - nBlockStartOff2, 0);
@@ -973,10 +966,10 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
           }
 
           nBlockStartOff2 = pDeflateState->block_start;
-          if (nBlockStartOff2 < 0) {
-            pBlockStart = 0;
-          } else {
+          if (nBlockStartOff2 >= 0) {
             pBlockStart = pDeflateState->window + nBlockStartOff2;
+          } else {
+            pBlockStart = 0;
           }
 
           trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, nLookahead - nBlockStartOff2, 1);
@@ -987,7 +980,7 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
       }
 
       nHashHead = 0;
-      if (2 < nLookahead) {
+      if (nLookahead >= 3) {
         nLookahead = (pDeflateState->ins_h << ((uint8_t)pDeflateState->hash_shift & 0x1f) ^ (uint32_t)pDeflateState->window[pDeflateState->strstart + 2]) & pDeflateState->hash_mask;
         pDeflateState->ins_h = nLookahead;
         pDeflateState->prev[pDeflateState->w_mask & pDeflateState->strstart] = pDeflateState->head[nLookahead];
@@ -1002,11 +995,11 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
       if (nHashHead && nLookahead < pDeflateState->max_lazy_match && pDeflateState->strstart - nHashHead <= pDeflateState->w_size - 0x106) {
         nMatchLen = longest_match(nHashHead, pDeflateState);
         pDeflateState->match_length = nMatchLen;
-        if (nMatchLen < 6 && (pDeflateState->strategy == 1 || nMatchLen == 3 && 0x1000 < pDeflateState->strstart - pDeflateState->match_start)) {
+        if (nMatchLen <= 5 && (pDeflateState->strategy == 1 || nMatchLen == 3 && pDeflateState->strstart - pDeflateState->match_start > 0x1000)) {
           pDeflateState->match_length = 2;
         }
       }
-      if (pDeflateState->prev_length < 3 || pDeflateState->prev_length < pDeflateState->match_length) {
+      if (pDeflateState->prev_length < 3 || pDeflateState->match_length > pDeflateState->prev_length) {
         if (!pDeflateState->match_available) {
           pDeflateState->strstart++;
           pDeflateState->lookahead--;
@@ -1021,10 +1014,10 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
         pDeflateState->dyn_ltree[byCode].fc++;
         if (pDeflateState->last_lit == pDeflateState->lit_bufsize - 1) {
           nBlockStartOff2 = pDeflateState->block_start;
-          if (nBlockStartOff2 < 0) {
-            pBlockStart = 0;
-          } else {
+          if (nBlockStartOff2 >= 0) {
             pBlockStart = pDeflateState->window + nBlockStartOff2;
+          } else {
+            pBlockStart = 0;
           }
 
           trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff2, 0);
@@ -1033,7 +1026,7 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
           pPendingState = (deflate_state*)pStream->state;
           trees::_tr_flush_bits(pPendingState);
           nLookahead = pPendingState->pending;
-          if (pStream->avail_out < pPendingState->pending) {
+          if (pPendingState->pending > pStream->avail_out) {
             nLookahead = pStream->avail_out;
           }
           if (nLookahead) {
@@ -1097,10 +1090,10 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
         }
 
         nBlockStartOff2 = pDeflateState->block_start;
-        if (nBlockStartOff2 < 0) {
-          pBlockStart = 0;
-        } else {
+        if (nBlockStartOff2 >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff2;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff2, 0);
@@ -1109,7 +1102,7 @@ int32_t __fastcall deflate_slow(deflate_state * pDeflateState, int32_t nFlush) {
         pPendingState = (deflate_state*)pStream->state;
         trees::_tr_flush_bits(pPendingState);
         nLookahead = pPendingState->pending;
-        if (pStream->avail_out < pPendingState->pending) {
+        if (pPendingState->pending > pStream->avail_out) {
           nLookahead = pStream->avail_out;
         }
         if (nLookahead) {
@@ -1147,20 +1140,20 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
     do {
       uint32_t nCopyLen;
       nCopyLen = pDeflateState->lookahead;
-      if (nCopyLen < 0x103) {
+      if (nCopyLen <= 0x102) {
         fill_window(pDeflateState);
         nCopyLen = pDeflateState->lookahead;
-        if (nCopyLen < 0x103 && !nFlush) {
+        if (nCopyLen <= 0x102 && !nFlush) {
           return need_more;
         }
         if (!nCopyLen) {
           pDeflateState->insert = 0;
           if (nFlush == 4) {
             nBlockStartOff2 = pDeflateState->block_start;
-            if (nBlockStartOff2 < 0) {
-              pBlockStart = 0;
-            } else {
+            if (nBlockStartOff2 >= 0) {
               pBlockStart = pDeflateState->window + nBlockStartOff2;
+            } else {
+              pBlockStart = 0;
             }
 
             trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff2, 1);
@@ -1173,10 +1166,10 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
           }
 
           nBlockStartOff2 = pDeflateState->block_start;
-          if (nBlockStartOff2 < 0) {
-            pBlockStart = 0;
-          } else {
+          if (nBlockStartOff2 >= 0) {
             pBlockStart = pDeflateState->window + nBlockStartOff2;
+          } else {
+            pBlockStart = 0;
           }
 
           trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff2, 0);
@@ -1191,7 +1184,7 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
       }
 
       pDeflateState->match_length = 0;
-      if (2 < nCopyLen && pDeflateState->strstart) {
+      if (nCopyLen >= 3 && (uint32_t)pDeflateState->strstart > 0) {
         pBlockStart = pDeflateState->window + pDeflateState->strstart;
         byLit = pBlockStart[-1];
         if (byLit == *pBlockStart && byLit == pBlockStart[1] && byLit == pBlockStart[2]) {
@@ -1241,21 +1234,12 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
           } while (pScanNext < pBlockStart + 0x102);
 
           pDeflateState->match_length = (uint32_t)(pScanNext + (0x102 - (int)(pBlockStart + 0x102)));
-          if ((uint8_t*)pDeflateState->lookahead < pScanNext + (0x102 - (int)(pBlockStart + 0x102))) {
+          if (pScanNext + (0x102 - (int)(pBlockStart + 0x102)) > (uint8_t*)pDeflateState->lookahead) {
             pDeflateState->match_length = pDeflateState->lookahead;
           }
         }
       }
-      if (pDeflateState->match_length < 3) {
-        byLit = pDeflateState->window[pDeflateState->strstart];
-        pDeflateState->d_buf[pDeflateState->last_lit] = 0;
-        pDeflateState->l_buf[pDeflateState->last_lit] = byLit;
-        pDeflateState->last_lit++;
-        pDeflateState->dyn_ltree[byLit].fc++;
-        bBlockFull = pDeflateState->last_lit == pDeflateState->lit_bufsize - 1;
-        pDeflateState->lookahead--;
-        pDeflateState->strstart++;
-      } else {
+      if (pDeflateState->match_length >= 3) {
         nBlockStartOff = pDeflateState->match_length;
         pDeflateState->d_buf[pDeflateState->last_lit] = 1;
         byLit = (char)nBlockStartOff - 3;
@@ -1268,13 +1252,22 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
         pDeflateState->match_length = 0;
         pDeflateState->lookahead -= nBlockStartOff;
         pDeflateState->strstart += nBlockStartOff;
+      } else {
+        byLit = pDeflateState->window[pDeflateState->strstart];
+        pDeflateState->d_buf[pDeflateState->last_lit] = 0;
+        pDeflateState->l_buf[pDeflateState->last_lit] = byLit;
+        pDeflateState->last_lit++;
+        pDeflateState->dyn_ltree[byLit].fc++;
+        bBlockFull = pDeflateState->last_lit == pDeflateState->lit_bufsize - 1;
+        pDeflateState->lookahead--;
+        pDeflateState->strstart++;
       }
       if (bBlockFull) {
         nBlockStartOff2 = pDeflateState->block_start;
-        if (nBlockStartOff2 < 0) {
-          pBlockStart = 0;
-        } else {
+        if (nBlockStartOff2 >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff2;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff2, 0);
@@ -1283,7 +1276,7 @@ static block_state __stdcall deflate_rle(int32_t nFlush, deflate_state * pDeflat
         pPendingState = (deflate_state*)pStream->state;
         trees::_tr_flush_bits(pPendingState);
         nCopyLen = pPendingState->pending;
-        if (pStream->avail_out < pPendingState->pending) {
+        if (pPendingState->pending > pStream->avail_out) {
           nCopyLen = pStream->avail_out;
         }
         if (nCopyLen) {
@@ -1324,10 +1317,10 @@ static block_state __stdcall deflate_huff(int32_t nFlush, deflate_state * pDefla
       pDeflateState->lookahead--;
       if (pDeflateState->last_lit == pDeflateState->lit_bufsize - 1) {
         nBlockStartOff = pDeflateState->block_start;
-        if (nBlockStartOff < 0) {
-          pBlockStart = 0;
-        } else {
+        if (nBlockStartOff >= 0) {
           pBlockStart = pDeflateState->window + nBlockStartOff;
+        } else {
+          pBlockStart = 0;
         }
 
         trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 0);
@@ -1336,7 +1329,7 @@ static block_state __stdcall deflate_huff(int32_t nFlush, deflate_state * pDefla
         pPendingState = (deflate_state*)pStream2->state;
         trees::_tr_flush_bits(pPendingState);
         nCopyLen = pPendingState->pending;
-        if (pStream2->avail_out < pPendingState->pending) {
+        if (pPendingState->pending > pStream2->avail_out) {
           nCopyLen = pStream2->avail_out;
         }
         if (nCopyLen) {
@@ -1362,111 +1355,112 @@ static block_state __stdcall deflate_huff(int32_t nFlush, deflate_state * pDefla
     }
 
     pDeflateState->insert = 0;
-    if (nFlush != 4) {
-      if (!pDeflateState->last_lit) {
-        return block_done;
-      }
-
+    if (nFlush == 4) {
       nBlockStartOff = pDeflateState->block_start;
-      if (nBlockStartOff < 0) {
-        pBlockStart = 0;
-      } else {
+      if (nBlockStartOff >= 0) {
         pBlockStart = pDeflateState->window + nBlockStartOff;
+      } else {
+        pBlockStart = 0;
       }
 
-      trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 0);
+      trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 1);
       pDeflateState->block_start = pDeflateState->strstart;
       flush_pending(pDeflateState->strm);
-      if (pDeflateState->strm->avail_out) {
-        return block_done;
-      }
-
-      return need_more;
+      return pDeflateState->strm->avail_out ? finish_done : finish_started;
+    }
+    if (!pDeflateState->last_lit) {
+      return block_done;
     }
 
     nBlockStartOff = pDeflateState->block_start;
-    if (nBlockStartOff < 0) {
-      pBlockStart = 0;
-    } else {
+    if (nBlockStartOff >= 0) {
       pBlockStart = pDeflateState->window + nBlockStartOff;
+    } else {
+      pBlockStart = 0;
     }
 
-    trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 1);
+    trees::_tr_flush_block(pDeflateState, (char*)pBlockStart, pDeflateState->strstart - nBlockStartOff, 0);
     pDeflateState->block_start = pDeflateState->strstart;
     flush_pending(pDeflateState->strm);
-    return pDeflateState->strm->avail_out ? finish_done : finish_started;
+    if (pDeflateState->strm->avail_out) {
+      return block_done;
+    }
+
+    return need_more;
 }
 
 int __fastcall deflateSetDictionary(z_stream * pStream, uint8_t * pDictionary, uint32_t nDictLength) {
+    uint32_t nLookaheadSaved;
     uint32_t nHashInsPos;
-    if (!pStream) {
-      return -2;
-    }
+    uint32_t nSavedAvailIn;
+    int nWrap;
+    uint8_t* pSavedNextIn;
+    if (pStream) {
+      deflate_state* pDeflateState;
+      pDeflateState = (deflate_state*)pStream->state;
+      if (pDeflateState && pDictionary) {
+        nWrap = pDeflateState->wrap;
+        if (nWrap != 2 && (nWrap != 1 || pDeflateState->status == 0x2a) && !pDeflateState->lookahead) {
+          if (nWrap == 1) {
+            nHashInsPos = D2Client::Source::SSComp::ZLIB_Adler32(pStream->adler, pDictionary, nDictLength);
+            pStream->adler = nHashInsPos;
+          }
 
-    deflate_state* pDeflateState = (deflate_state*)pStream->state;
-    if (!(pDeflateState && pDictionary)) {
-      return -2;
-    }
+          pDeflateState->wrap = 0;
+          nHashInsPos = nDictLength;
+          if (nDictLength >= pDeflateState->w_size) {
+            if (!nWrap) {
+              pDeflateState->head[pDeflateState->hash_size - 1] = 0;
+              memset(pDeflateState->head, 0, pDeflateState->hash_size * 2 - 2);
+              pDeflateState->strstart = 0;
+              pDeflateState->block_start = 0;
+              pDeflateState->insert = 0;
+            }
 
-    int nWrap = pDeflateState->wrap;
-    if (!(nWrap != 2 && (nWrap != 1 || pDeflateState->status == 0x2a) && !pDeflateState->lookahead)) {
-      return -2;
-    }
-    if (nWrap == 1) {
-      nHashInsPos = D2Client::Source::SSComp::ZLIB_Adler32(pStream->adler, pDictionary, nDictLength);
-      pStream->adler = nHashInsPos;
-    }
+            nHashInsPos = pDeflateState->w_size;
+            pDictionary += nDictLength - nHashInsPos;
+          }
 
-    pDeflateState->wrap = 0;
-    nHashInsPos = nDictLength;
-    if (pDeflateState->w_size <= nDictLength) {
-      if (!nWrap) {
-        pDeflateState->head[pDeflateState->hash_size - 1] = 0;
-        memset(pDeflateState->head, 0, pDeflateState->hash_size * 2 - 2);
-        pDeflateState->strstart = 0;
-        pDeflateState->block_start = 0;
-        pDeflateState->insert = 0;
+          nSavedAvailIn = pStream->avail_in;
+          pSavedNextIn = pStream->next_in;
+          pStream->avail_in = nHashInsPos;
+          pStream->next_in = pDictionary;
+          fill_window(pDeflateState);
+          nLookaheadSaved = pDeflateState->lookahead;
+          while (nLookaheadSaved >= 3) {
+            nHashInsPos = pDeflateState->strstart;
+            nDictLength = pDeflateState->lookahead - 2;
+            do {
+              nLookaheadSaved = ((uint32_t)pDeflateState->window[nHashInsPos + 2] ^ pDeflateState->ins_h << ((uint8_t)pDeflateState->hash_shift & 0x1f)) & pDeflateState->hash_mask;
+              pDeflateState->ins_h = nLookaheadSaved;
+              pDeflateState->prev[pDeflateState->w_mask & nHashInsPos] = pDeflateState->head[nLookaheadSaved];
+              pDeflateState->head[pDeflateState->ins_h] = (uint16_t)nHashInsPos;
+              nHashInsPos++;
+              nDictLength--;
+            } while (nDictLength);
+
+            pDeflateState->strstart = nHashInsPos;
+            pDeflateState->lookahead = 2;
+            fill_window(pDeflateState);
+            nLookaheadSaved = pDeflateState->lookahead;
+          }
+
+          pDeflateState->strstart += pDeflateState->lookahead;
+          pDeflateState->block_start = pDeflateState->strstart;
+          pDeflateState->insert = pDeflateState->lookahead;
+          pDeflateState->prev_length = 2;
+          pDeflateState->match_length = 2;
+          pDeflateState->lookahead = 0;
+          pDeflateState->match_available = 0;
+          pStream->next_in = pSavedNextIn;
+          pStream->avail_in = nSavedAvailIn;
+          pDeflateState->wrap = nWrap;
+          return 0;
+        }
       }
-
-      nHashInsPos = pDeflateState->w_size;
-      pDictionary += nDictLength - nHashInsPos;
     }
 
-    uint32_t nSavedAvailIn = pStream->avail_in;
-    uint8_t* pSavedNextIn = pStream->next_in;
-    pStream->avail_in = nHashInsPos;
-    pStream->next_in = pDictionary;
-    fill_window(pDeflateState);
-    uint32_t nLookaheadSaved = pDeflateState->lookahead;
-    while (2 < nLookaheadSaved) {
-      nHashInsPos = pDeflateState->strstart;
-      nDictLength = pDeflateState->lookahead - 2;
-      do {
-        nLookaheadSaved = ((uint32_t)pDeflateState->window[nHashInsPos + 2] ^ pDeflateState->ins_h << ((uint8_t)pDeflateState->hash_shift & 0x1f)) & pDeflateState->hash_mask;
-        pDeflateState->ins_h = nLookaheadSaved;
-        pDeflateState->prev[pDeflateState->w_mask & nHashInsPos] = pDeflateState->head[nLookaheadSaved];
-        pDeflateState->head[pDeflateState->ins_h] = (uint16_t)nHashInsPos;
-        nHashInsPos++;
-        nDictLength--;
-      } while (nDictLength);
-
-      pDeflateState->strstart = nHashInsPos;
-      pDeflateState->lookahead = 2;
-      fill_window(pDeflateState);
-      nLookaheadSaved = pDeflateState->lookahead;
-    }
-
-    pDeflateState->strstart += pDeflateState->lookahead;
-    pDeflateState->block_start = pDeflateState->strstart;
-    pDeflateState->insert = pDeflateState->lookahead;
-    pDeflateState->prev_length = 2;
-    pDeflateState->match_length = 2;
-    pDeflateState->lookahead = 0;
-    pDeflateState->match_available = 0;
-    pStream->next_in = pSavedNextIn;
-    pStream->avail_in = nSavedAvailIn;
-    pDeflateState->wrap = nWrap;
-    return 0;
+    return -2;
 }
 
 int32_t __fastcall deflateReset(z_stream * pStream) {
@@ -1481,8 +1475,9 @@ int32_t __fastcall deflateReset(z_stream * pStream) {
 
 uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
     uint16_t uVar1;
-    uint8_t byOsFlags;
+    uint8_t bVar3;
     uint32_t nChecksum;
+    int byOsFlags;
     int nLevelFlag;
     block_state nBlockState;
     uint32_t nHeader;
@@ -1497,15 +1492,15 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
     if (!pDeflateState) {
       return -2;
     }
-    if (5 < (uint32_t)nFlush) {
+    if ((uint32_t)nFlush > 5) {
       return -2;
     }
     if (!pStream->next_out || !pStream->next_in && pStream->avail_in || pDeflateState->status == 0x29a && nFlush != 4) {
-      pStream->msg = "stream error";
+      pStream->msg = z_errmsg[4];
       return -2;
     }
     if (!pStream->avail_out) {
-      pStream->msg = "buffer error";
+      pStream->msg = z_errmsg[7];
       return -5;
     }
 
@@ -1536,14 +1531,14 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
           pDeflateState->pending_buf[pDeflateState->pending] = 0;
           pDeflateState->pending++;
           if (pDeflateState->level == 9) {
-            byOsFlags = 2;
-          } else if (pDeflateState->strategy < 2 && 1 < pDeflateState->level) {
-            byOsFlags = 0;
+            *(uint8_t*)(char*)&byOsFlags = 2;
+          } else if (pDeflateState->strategy < 2 && pDeflateState->level >= 2) {
+            *(uint8_t*)(char*)&byOsFlags = 0;
           } else {
-            byOsFlags = 4;
+            *(uint8_t*)(char*)&byOsFlags = 4;
           }
 
-          pDeflateState->pending_buf[pDeflateState->pending] = byOsFlags;
+          pDeflateState->pending_buf[pDeflateState->pending] = (uint8_t)byOsFlags;
           pDeflateState->pending++;
           pDeflateState->pending_buf[pDeflateState->pending] = 0xb;
           pDeflateState->pending++;
@@ -1560,14 +1555,14 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
           pDeflateState->pending_buf[pDeflateState->pending] = *(uint8_t*)((uintptr_t)&pDeflateState->gzhead->time + 3);
           pDeflateState->pending++;
           if (pDeflateState->level == 9) {
-            byOsFlags = 2;
-          } else if (pDeflateState->strategy < 2 && 1 < pDeflateState->level) {
-            byOsFlags = 0;
+            bVar3 = 2;
+          } else if (pDeflateState->strategy < 2 && pDeflateState->level >= 2) {
+            bVar3 = 0;
           } else {
-            byOsFlags = 4;
+            bVar3 = 4;
           }
 
-          pDeflateState->pending_buf[pDeflateState->pending] = byOsFlags;
+          pDeflateState->pending_buf[pDeflateState->pending] = bVar3;
           pDeflateState->pending++;
           pDeflateState->pending_buf[pDeflateState->pending] = (uint8_t)pDeflateState->gzhead->os;
           pDeflateState->pending++;
@@ -1632,7 +1627,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
         while ((uint32_t)pDeflateState->gzindex < (uint32_t)(uint16_t)pDeflateState->gzhead->extra_len) {
           nHeader = pDeflateState->pending;
           if (nHeader == pDeflateState->pending_buf_size) {
-            if (pDeflateState->gzhead->hcrc && nCrcPendingStart < nHeader) {
+            if (pDeflateState->gzhead->hcrc && nHeader > nCrcPendingStart) {
               nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, nHeader - nCrcPendingStart);
               pStream->adler = nChecksum;
             }
@@ -1650,7 +1645,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
           pDeflateState->gzindex++;
         }
 
-        if (pDeflateState->gzhead->hcrc && nCrcPendingStart < pDeflateState->pending) {
+        if (pDeflateState->gzhead->hcrc && pDeflateState->pending > nCrcPendingStart) {
           nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, pDeflateState->pending - nCrcPendingStart);
           pStream->adler = nChecksum;
         }
@@ -1668,7 +1663,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
         do {
           nHeader = pDeflateState->pending;
           if (nHeader == pDeflateState->pending_buf_size) {
-            if (pDeflateState->gzhead->hcrc && nCrcPendingStart < nHeader) {
+            if (pDeflateState->gzhead->hcrc && nHeader > nCrcPendingStart) {
               nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, nHeader - nCrcPendingStart);
               pStream->adler = nChecksum;
             }
@@ -1682,14 +1677,14 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
             }
           }
 
-          byOsFlags = pDeflateState->gzhead->name[pDeflateState->gzindex];
+          bVar3 = pDeflateState->gzhead->name[pDeflateState->gzindex];
           pDeflateState->gzindex++;
-          pDeflateState->pending_buf[nHeader] = byOsFlags;
+          pDeflateState->pending_buf[nHeader] = bVar3;
           pDeflateState->pending++;
           bDone = false;
-        } while (byOsFlags);
+        } while (bVar3);
 
-        if (pDeflateState->gzhead->hcrc && nCrcPendingStart < pDeflateState->pending) {
+        if (pDeflateState->gzhead->hcrc && pDeflateState->pending > nCrcPendingStart) {
           nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, pDeflateState->pending - nCrcPendingStart);
           pStream->adler = nChecksum;
         }
@@ -1707,7 +1702,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
         do {
           nHeader = pDeflateState->pending;
           if (nHeader == pDeflateState->pending_buf_size) {
-            if (pDeflateState->gzhead->hcrc && nCrcPendingStart < nHeader) {
+            if (pDeflateState->gzhead->hcrc && nHeader > nCrcPendingStart) {
               nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, nHeader - nCrcPendingStart);
               pStream->adler = nChecksum;
             }
@@ -1721,14 +1716,14 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
             }
           }
 
-          byOsFlags = pDeflateState->gzhead->comm[pDeflateState->gzindex];
+          bVar3 = pDeflateState->gzhead->comm[pDeflateState->gzindex];
           pDeflateState->gzindex++;
-          pDeflateState->pending_buf[nHeader] = byOsFlags;
+          pDeflateState->pending_buf[nHeader] = bVar3;
           pDeflateState->pending++;
           bDone = false;
-        } while (byOsFlags);
+        } while (bVar3);
 
-        if (pDeflateState->gzhead->hcrc && nCrcPendingStart < pDeflateState->pending) {
+        if (pDeflateState->gzhead->hcrc && pDeflateState->pending > nCrcPendingStart) {
           nChecksum = crc32::crc32(pStream->adler, pDeflateState->pending_buf + nCrcPendingStart, pDeflateState->pending - nCrcPendingStart);
           pStream->adler = nChecksum;
         }
@@ -1741,10 +1736,10 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
     }
     if (pDeflateState->status == 0x67) {
       if (pDeflateState->gzhead->hcrc) {
-        if (pDeflateState->pending_buf_size < pDeflateState->pending + 2) {
+        if (pDeflateState->pending + 2 > pDeflateState->pending_buf_size) {
           flush_pending(pStream);
         }
-        if (pDeflateState->pending_buf_size >= pDeflateState->pending + 2) {
+        if (pDeflateState->pending + 2 <= pDeflateState->pending_buf_size) {
           pDeflateState->pending_buf[pDeflateState->pending] = (uint8_t)pStream->adler;
           pDeflateState->pending++;
           pDeflateState->pending_buf[pDeflateState->pending] = *(uint8_t*)((uintptr_t)&pStream->adler + 1);
@@ -1757,20 +1752,20 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
         pDeflateState->status = 0x71;
       }
     }
-    if (!pDeflateState->pending) {
-      if (!pStream->avail_in && (int)(nFlush * 2 - (nFlush < 5 ? 0 : 0x9)) <= (int)(nOldFlush * 2 - (nOldFlush < 5 ? 0 : 0x9)) && nFlush != 4) {
-        pStream->msg = "buffer error";
-        return -5;
-      }
-    } else {
+    if (pDeflateState->pending) {
       flush_pending(pStream);
       if (!pStream->avail_out) {
         pDeflateState->last_flush = -1;
         return 0;
       }
+    } else {
+      if (!pStream->avail_in && (int)(nFlush * 2 - (nFlush <= 4 ? 0 : 0x9)) <= (int)(nOldFlush * 2 - (nOldFlush <= 4 ? 0 : 0x9)) && nFlush != 4) {
+        pStream->msg = z_errmsg[7];
+        return -5;
+      }
     }
     if (pDeflateState->status == 0x29a && pStream->avail_in) {
-      pStream->msg = "buffer error";
+      pStream->msg = z_errmsg[7];
       return -5;
     }
     if (pStream->avail_in || pDeflateState->lookahead || nFlush && pDeflateState->status != 0x29a) {
@@ -1815,7 +1810,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
     if (nFlush != 4) {
       return 0;
     }
-    if (pDeflateState->wrap < 1) {
+    if (pDeflateState->wrap <= 0) {
       return 1;
     }
     if (pDeflateState->wrap == 2) {
@@ -1849,7 +1844,7 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
     }
 
     flush_pending(pStream);
-    if (0 >= pDeflateState->wrap) {
+    if (pDeflateState->wrap <= 0) {
       return (uint32_t)!pDeflateState->pending;
     }
 
@@ -1858,6 +1853,12 @@ uint32_t __fastcall deflate(z_stream * pStream, int32_t nFlush) {
 }
 
 int32_t __fastcall deflateInit2_(z_stream * pStream, uint32_t nLevel, int32_t nMethod, int32_t nWindowBits, int32_t nMemLevel, uint32_t nStrategy, char * szVersion, int32_t nStreamSize) {
+    uint32_t nHashSize;
+    uint8_t* pAlloc;
+    uint16_t* pHash;
+    int32_t nResetRet;
+    uint32_t nWindowSize;
+    uint32_t nLitBufSize;
     int32_t nWrap = 1;
     if (!szVersion || *szVersion != '1' || nStreamSize != 0x38) {
       return -6;
@@ -1882,63 +1883,64 @@ int32_t __fastcall deflateInit2_(z_stream * pStream, uint32_t nLevel, int32_t nM
     if (nWindowBits < 0) {
       nWrap = 0;
       nWindowBits = -nWindowBits;
-    } else if (0xf < nWindowBits) {
+    } else if (nWindowBits > 0xf) {
       nWrap = 2;
       nWindowBits += -0x10;
     }
-    if (!(nMemLevel - 1U < 9 && nMethod == 8 && nWindowBits - 8U < 8 && nEffLevel < 10 && nStrategy < 5)) {
-      return -2;
-    }
-    if (nWindowBits == 8) {
-      nWindowBits = 9;
-    }
+    if (nMemLevel - 1U <= 8 && nMethod == 8 && nWindowBits - 8U <= 7 && nEffLevel <= 9 && nStrategy <= 4) {
+      deflate_state* pState;
+      if (nWindowBits == 8) {
+        nWindowBits = 9;
+      }
 
-    deflate_state* pState = (deflate_state*)pStream->zalloc(pStream->opaque, 1, 0x16c4);
-    if (!pState) {
+      pState = (deflate_state*)pStream->zalloc(pStream->opaque, 1, 0x16c4);
+      if (!pState) {
+        return -4;
+      }
+
+      pStream->state = pState;
+      pState->wrap = nWrap;
+      pState->w_bits = nWindowBits;
+      nWindowSize = 1 << ((uint8_t)nWindowBits & 0x1f);
+      nHashSize = 1 << ((uint8_t)(nMemLevel + 7U) & 0x1f);
+      pState->hash_bits = nMemLevel + 7U;
+      pState->w_mask = nWindowSize - 1;
+      pState->hash_size = nHashSize;
+      pState->hash_mask = nHashSize - 1;
+      pState->hash_shift = (nMemLevel + 9U) / 3;
+      pState->strm = pStream;
+      pState->gzhead = 0;
+      pState->w_size = nWindowSize;
+      pAlloc = (uint8_t*)pStream->zalloc(pStream->opaque, nWindowSize, 2);
+      pState->window = pAlloc;
+      pHash = (uint16_t*)pStream->zalloc(pStream->opaque, pState->w_size, 2);
+      pState->prev = pHash;
+      pHash = (uint16_t*)pStream->zalloc(pStream->opaque, pState->hash_size, 2);
+      nHashSize = 1 << ((char)nMemLevel + 6U & 0x1f);
+      pState->head = pHash;
+      pState->high_water = 0;
+      pState->lit_bufsize = nHashSize;
+      pAlloc = (uint8_t*)pStream->zalloc(pStream->opaque, nHashSize, 4);
+      nLitBufSize = pState->lit_bufsize;
+      pState->pending_buf = pAlloc;
+      pState->pending_buf_size = nLitBufSize * 4;
+      if (pState->window && pState->prev && pState->head && pAlloc) {
+        pState->d_buf = (uint16_t*)(pAlloc + (nLitBufSize & -2));
+        pState->level = nEffLevel;
+        pState->l_buf = pAlloc + nLitBufSize * 3;
+        pState->strategy = nStrategy;
+        pState->method = 8;
+        nResetRet = deflateReset(pStream);
+        return nResetRet;
+      }
+
+      pState->status = 0x29a;
+      pStream->msg = z_errmsg[6];
+      deflateEnd(pStream);
       return -4;
     }
 
-    pStream->state = pState;
-    pState->wrap = nWrap;
-    pState->w_bits = nWindowBits;
-    uint32_t nWindowSize = 1 << ((uint8_t)nWindowBits & 0x1f);
-    uint32_t nHashSize = 1 << ((uint8_t)(nMemLevel + 7U) & 0x1f);
-    pState->hash_bits = nMemLevel + 7U;
-    pState->w_mask = nWindowSize - 1;
-    pState->hash_size = nHashSize;
-    pState->hash_mask = nHashSize - 1;
-    pState->hash_shift = (nMemLevel + 9U) / 3;
-    pState->strm = pStream;
-    pState->gzhead = 0;
-    pState->w_size = nWindowSize;
-    uint8_t* pAlloc = (uint8_t*)pStream->zalloc(pStream->opaque, nWindowSize, 2);
-    pState->window = pAlloc;
-    uint16_t* pHash = (uint16_t*)pStream->zalloc(pStream->opaque, pState->w_size, 2);
-    pState->prev = pHash;
-    pHash = (uint16_t*)pStream->zalloc(pStream->opaque, pState->hash_size, 2);
-    nHashSize = 1 << ((char)nMemLevel + 6U & 0x1f);
-    pState->head = pHash;
-    pState->high_water = 0;
-    pState->lit_bufsize = nHashSize;
-    pAlloc = (uint8_t*)pStream->zalloc(pStream->opaque, nHashSize, 4);
-    uint32_t nLitBufSize = pState->lit_bufsize;
-    pState->pending_buf = pAlloc;
-    pState->pending_buf_size = nLitBufSize * 4;
-    if (pState->window && pState->prev && pState->head && pAlloc) {
-      int32_t nResetRet;
-      pState->d_buf = (uint16_t*)(pAlloc + (nLitBufSize & -2));
-      pState->level = nEffLevel;
-      pState->l_buf = pAlloc + nLitBufSize * 3;
-      pState->strategy = nStrategy;
-      pState->method = 8;
-      nResetRet = deflateReset(pStream);
-      return nResetRet;
-    }
-
-    pState->status = 0x29a;
-    pStream->msg = "insufficient memory";
-    deflateEnd(pStream);
-    return -4;
+    return -2;
 }
 
 uint32_t __fastcall deflateParams(z_stream * pStream, int32_t nLevel, uint32_t nStrategy) {
@@ -1957,11 +1959,11 @@ uint32_t __fastcall deflateParams(z_stream * pStream, int32_t nLevel, uint32_t n
       if (nLevel < 0) {
         return -2;
       }
-      if (9 < nLevel) {
+      if (nLevel > 9) {
         return -2;
       }
     }
-    if (nStrategy >= 5) {
+    if (nStrategy > 4) {
       return -2;
     }
     if ((nStrategy != pState->strategy || gaSSCompDeflateBlockTable[pState->level].pfnDeflateBlock != gaSSCompDeflateBlockTable[nLevel].pfnDeflateBlock) && pStream->total_in) {

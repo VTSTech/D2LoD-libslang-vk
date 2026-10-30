@@ -97,7 +97,7 @@ struct D2MonStatsTxt {
     /* 0x048 */ short MissSQ;
     /* 0x04A */ uint8_t nMaxChainId; // 0x4A max chain id for monster summon chains (read by GetMonsterChainInfo); not a monstats.txt column
     /* 0x04B */ uint8_t nChainId; // 0x4B chain id for monster summon chains (read by GetMonsterChainInfo); not a monstats.txt column
-    /* 0x04C */ char Align;
+    /* 0x04C */ uint8_t Align;
     /* 0x04D */ char TransLvl;
     /* 0x04E */ char threat;
     /* 0x04F */ uint8_t aidel[3]; // monstats.txt aidel / aidel(N) / aidel(H), indexed by difficulty. 2-D access proved in 1.14d by MOVZX reg,byte ptr [base + idx*0x1 + 0x4f] at 0057b1e8, 005a745c, 005f0793, 005f8b7e, 005f8c3d, 005f8eb7, 005f8f3b. Every load is MOVZX (never MOVSX), so the element is unsigned; it was declared signed char.
@@ -153,7 +153,7 @@ struct D2MonStatsTxt {
     /* 0x188 */ short aSkSeq[8]; // Sk1seq..Sk8seq, indexed by monster skill slot (monstats.txt loader descriptors)
     /* 0x198 */ char aSkLvl[8]; // Sk1lvl..Sk8lvl, indexed by monster skill slot (monstats.txt loader descriptors)
     /* 0x1A0 */ int DamageRegen;
-    /* 0x1A4 */ char SplEndDeath;
+    /* 0x1A4 */ uint8_t SplEndDeath;
     /* 0x1A5 */ char SplGetModeChart;
     /* 0x1A6 */ char SplEndGeneric;
     /* 0x1A7 */ char SplClientEnd;

@@ -89,30 +89,30 @@ void __fastcall Sha1_Pump(uint32_t * pHashState, uint8_t * pBuffer);
 // Storm SBig SHA-1 implementation - init, update, and finalize functions
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_SHA1Update. Oracle ".Append__4Sha1FPCvUl" @100a2c10 = Append(const void*, unsigned long). Basis: this+2 args in both; sole callee is Sha1_Pump / Sha1::Pump in both; both update a 64-bit bit counter by (len<<3) with carry before buffering.
-void __fastcall Sha1_Append(uint8_t * pData, uint32_t nLen, struct D2Sha1ContextStrc * pCtx);
+void __thiscall Sha1_Append(struct D2Sha1ContextStrc * pCtx, uint8_t * pData, uint32_t nLen);
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_PackTwoIntsToBytes. DESCRIPTIVE, not an oracle name. Writes 8 bytes big-endian: out[0..3] = the SECOND stack argument, out[4..7] = the first. The old parameter names (dwHighWord first) are therefore inverted with respect to the byte order it produces. This is the 64-bit bit-length encoder that Sha1_Finalize / Sha1::Finalize both emit inline (cf. Sha1_Finalize's byLen0..byLen7 stack bytes and the PPC's rlwimi/stb chain at 100a2b00). Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-uint32_t __fastcall SSIG_StoreBigEndian64(uint32_t dwHighWord, uint32_t dwParam, uint8_t * pParam);
+uint32_t __thiscall SSIG_StoreBigEndian64(uint8_t * pParam, uint32_t dwHighWord, uint32_t dwParam);
 // Storm SBig SHA-1 implementation - init, update, and finalize functions
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_SHA1Final. Oracle ".Finalize__4Sha1FPUc" @100a2ae0 = Finalize(unsigned char*). Basis: this+1 arg in both; sole callee is Sha1_Append / Sha1::Append in both; both emit the 8-byte big-endian bit length and then the 5 state words.
-int __fastcall Sha1_Finalize(uint8_t * pDigest, struct D2Sha1ContextStrc * pCtx);
+int __thiscall Sha1_Finalize(struct D2Sha1ContextStrc * pCtx, uint8_t * pDigest);
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_ModPowWrapper. DESCRIPTIVE, not an oracle name. Body = SBigPowMod(*p4, *p1, *p2, *p3) and nothing else - the middle of Crypt::RSA::Process, which the PPC emits inline. Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-struct BigData * * __fastcall SSIGNATURE_RsaPowMod(struct BigData * * ppBase, struct BigData * * pnParam1, struct BigData * * pnParam2, struct BigData * * pnParam3);
+struct BigData * * __thiscall SSIGNATURE_RsaPowMod(struct BigData * * pnParam3, struct BigData * * ppBase, struct BigData * * pnParam1, struct BigData * * pnParam2);
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_ExportBytesWithPadding. DESCRIPTIVE, not an oracle name. Body = SBigToBinaryBuffer into the caller's buffer, then zero-fill the remainder to the requested length - the exact tail of Crypt::RSA::Process. Zero callers: MSVC out-of-line COMDAT copy. Moved from SBig to SSignature.
-void * __fastcall SSIGNATURE_RsaExportZeroPadded(void * pOutBuf, uint32_t nParam, struct BigData * * pnParam);
+void * __thiscall SSIGNATURE_RsaExportZeroPadded(struct BigData * * pnParam, void * pOutBuf, uint32_t nParam);
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_LoadComponent. DESCRIPTIVE, not an oracle name - no PPC counterpart exists. Body is a single SBigFromBinary(this[0], bytes, len), i.e. one half of CryptRSA_Prepare. Zero callers in the whole program: an MSVC out-of-line COMDAT copy of a helper that was inlined at every use. Moved out of SBig into SSignature because that is the translation unit it belongs to.
-void __fastcall SSIGNATURE_RsaLoadComponent(void * pBytes, uint32_t nParam, struct BigData * * pnParam);
+void __thiscall SSIGNATURE_RsaLoadComponent(struct BigData * * pnParam, void * pBytes, uint32_t nParam);
 // @oracle 2026-08-28 pass 5. Oracle: Mac PPC 1.10b Storm.
 // Was SBIG_RSA_LoadKeyPair. Oracle: ".Prepare__Q25Crypt3RSAFPCvUlPCvUl" @100a2a50 = Crypt::RSA::Prepare(const void*, unsigned long, const void*, unsigned long). Basis: PPC body is exactly two bl .SBigFromBinary calls on this[0] and this[4], and reads r3..r7 = this+4 args; this function is byte-for-byte the same shape with this+4 params. So the object is a pair of BigBuffer handles at +0 and +4.
 // ppKey[0] is the modulus and ppKey[1] the exponent: CryptRSA_Process calls SBigPowMod(out, in, ppKey[1], ppKey[0]). SSignatureGenerate passes one modulus with its private then its public exponent, so neither pair is 'public' or 'private' as a whole.
-void __fastcall CryptRSA_Prepare(void * pModulusBytes, uint32_t nModulusLen, void * pExponentBytes, uint32_t nExponentLen, struct BigData * * ppKey);
+void __thiscall CryptRSA_Prepare(struct BigData * * ppKey, void * pModulusBytes, uint32_t nModulusLen, void * pExponentBytes, uint32_t nExponentLen);
 // Crypt::RSA::Process: one RSA operation in place on nDataLen bytes at pData. Loads the bytes into a BigData, computes SBigPowMod(out, in, ppKey[1] exponent, ppKey[0] modulus), writes the result back with SBigToBinaryBuffer and zero-fills any shorter tail; used for both signing (SSignatureGenerate) and verifying (SSignatureVerifyStream_Finish).
 // Provenance: 1.14d asm 004260a0; PPC Storm 1.10b symbol Process__Q25Crypt3RSAFPUcUl with the same callee set.
-void __fastcall CryptRSA_Process(void * pData, uint32_t nDataLen, struct BigData * * ppKey);
+void __thiscall CryptRSA_Process(struct BigData * * ppKey, void * pData, uint32_t nDataLen);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9ef8(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9f28(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 // 2 internal functions (defined in .cpp)

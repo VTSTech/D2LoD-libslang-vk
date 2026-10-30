@@ -287,7 +287,7 @@ void __fastcall FAULT_RegisterErrorHandler(pfnStormErrorHandler pfnHandler) {
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gcsErrorHandlerList);
-    StormFaultHandlerNodeStrc* pHandlerNode = (StormFaultHandlerNodeStrc*)Storm::Source::SSystem::LINKEDLIST_AllocAndInsertNode(1, 0, 0, &gFaultHandlerList);
+    StormFaultHandlerNodeStrc* pHandlerNode = (StormFaultHandlerNodeStrc*)Storm::Source::SSystem::LINKEDLIST_AllocAndInsertNode(&gFaultHandlerList, 1, 0, 0);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ pHandlerNode->pfnHandler = pfnHandler;
     LeaveCriticalSection(&gcsErrorHandlerList);
 }
@@ -725,41 +725,33 @@ void __stdcall QSERVER_InitGlobalGameState() {
 
 void StaticInit_6caa10() {
     int iVar1;
-    uint16_t* pWVar2 = UNICODE_007a2c80;
-    for (iVar1 = 0x28; iVar1; iVar1--) {
-      pWVar2[0] = L'\0';
-      pWVar2[1] = L'\0';
-      pWVar2 += 2;
+    uint16_t* pWVar2;
+    for (iVar1 = 0; iVar1 < 0x50; iVar1++) {
+      UNICODE_007a2c80[iVar1] = L'\0';
     }
 }
 
 void StaticInit_6caa30() {
     int nWordsRemaining;
-    uint16_t* pImmunityBuf1 = gU16ImmunityStringBuffer1;
-    for (nWordsRemaining = 0x80; nWordsRemaining; nWordsRemaining--) {
-      pImmunityBuf1[0] = 0;
-      pImmunityBuf1[1] = 0;
-      pImmunityBuf1 += 2;
+    uint16_t* pImmunityBuf1;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gU16ImmunityStringBuffer1[nWordsRemaining] = 0;
     }
 }
 
 void StaticInit_6caa50() {
     int nWordsRemaining;
-    uint16_t* pImmunityBuf2 = gU16ImmunityStringBuffer2;
-    for (nWordsRemaining = 0x80; nWordsRemaining; nWordsRemaining--) {
-      pImmunityBuf2[0] = 0;
-      pImmunityBuf2[1] = 0;
-      pImmunityBuf2 += 2;
+    uint16_t* pImmunityBuf2;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gU16ImmunityStringBuffer2[nWordsRemaining] = 0;
     }
 }
 
 void StaticInit_6caa70() {
     int nWordsRemaining;
-    uint16_t* pHealthBarBuf = gnMonsterHealthBarValue;
-    for (nWordsRemaining = 0x80; nWordsRemaining; nWordsRemaining--) {
-      pHealthBarBuf[0] = 0;
-      pHealthBarBuf[1] = 0;
-      pHealthBarBuf += 2;
+    uint16_t* pHealthBarBuf;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gnMonsterHealthBarValue[nWordsRemaining] = 0;
     }
 }
 
@@ -805,19 +797,22 @@ void StaticInit_6cab10() {
 }
 
 void StaticInit_6cab30() {
-    memset(gwcIMECompositionString, 0, 32 * sizeof(gwcIMECompositionString[0]));
+    for (int iFill = 0; iFill < 32; iFill++) {
+      gwcIMECompositionString[iFill] = L'\0';
+    }
 }
 
 void StaticInit_6cab90() {
-    memset(gwcImeCompositionBuffer, 0, 32 * sizeof(gwcImeCompositionBuffer[0]));
+    for (int iFill = 0; iFill < 32; iFill++) {
+      gwcImeCompositionBuffer[iFill] = L'\0';
+    }
 }
 
 void StaticInit_6cabf0() {
     int nDwordsRemaining;
-    uint8_t* pInvRecipeBuf = gpInvRecipeScrollImage;
-    for (nDwordsRemaining = 0x800; nDwordsRemaining; nDwordsRemaining--) {
-      memset(pInvRecipeBuf, 0, 4 * sizeof(pInvRecipeBuf[0]));
-      pInvRecipeBuf += 4;
+    uint8_t* pInvRecipeBuf;
+    for (nDwordsRemaining = 0; nDwordsRemaining < 0x2000; nDwordsRemaining++) {
+      gpInvRecipeScrollImage[nDwordsRemaining] = 0;
     }
 }
 
@@ -858,7 +853,9 @@ void StaticInit_6cad00() {
 }
 
 void StaticInit_6cad10() {
-    memset(gNpcMenuConfirmDialogStrings, 0, 40 * sizeof(gNpcMenuConfirmDialogStrings[0]));
+    for (int iFill = 0; iFill < 40; iFill++) {
+      gNpcMenuConfirmDialogStrings[iFill] = L'\0';
+    }
 }
 
 void StaticInit_6cad80() {

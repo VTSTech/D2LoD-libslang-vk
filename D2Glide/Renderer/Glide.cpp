@@ -97,21 +97,18 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
     FxU32 FVar1;
     D2FloatIntUnion fGammaVal;
     FxU32 nTableSize;
-    // [vanilla-plus fix 15] This global actually carries the video-options CONTRAST
-    // weight (written by SetOption(0xb, ...)); the decompiler named it gbWINDOWED.
-    // The windowed branch below feeds it to FOG_FillArrayWithRandomInts as a [0,100]
-    // percentage, and FOG halts (halt line 16) on anything larger. An out-of-range
-    // registry "Contrast" (planted by the mis-decompiled esc-menu slider) therefore
-    // halted every -3dfx boot. Clamp the weight so the halt is unreachable; the
-    // registry/source clamps upstream make this a second line of defense.
-    uint32_t nContrastWeight = gbWINDOWED;
-    if (nContrastWeight > 100) {
-      nContrastWeight = 100;
-    }
-    if (gbWINDOWED < 1) {
-      fGammaVal.fValue = (float)nGamma / 100.0;
-      FVar1 = (*GLIDEDLL_guGammaCorrectionRGB_12)(fGammaVal.fValue, fGammaVal.fValue, fGammaVal.fValue);
-    } else {
+    if (gbWINDOWED > 0) {
+      // [vanilla-plus fix 15] This global actually carries the video-options CONTRAST
+      // weight (written by SetOption(0xb, ...)); the decompiler named it gbWINDOWED.
+      // The FOG_FillArrayWithRandomInts call below feeds it as a [0,100] percentage,
+      // and FOG halts (halt line 16) on anything larger. An out-of-range registry
+      // "Contrast" (planted by the mis-decompiled esc-menu slider) therefore halted
+      // every -3dfx boot. Clamp the weight so the halt is unreachable; the
+      // registry/source clamps upstream make this a second line of defense.
+      uint32_t nContrastWeight = gbWINDOWED;
+      if (nContrastWeight > 100) {
+        nContrastWeight = 100;
+      }
       FxU32 nGrGetResult;
       fGammaVal = d2_bits_as<D2FloatIntUnion>(nGamma);
       nGrGetResult = (*GLIDEDLL_grGet_12)(5, 4, (FxI32*)&nTableSize);
@@ -127,6 +124,9 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
           return nFreeResult;
         }
       }
+    } else {
+      fGammaVal.fValue = (float)nGamma / 100.0;
+      FVar1 = (*GLIDEDLL_guGammaCorrectionRGB_12)(fGammaVal.fValue, fGammaVal.fValue, fGammaVal.fValue);
     }
 
     return FVar1;
@@ -171,13 +171,13 @@ BOOL __fastcall GetBackBuffer(BYTE * pBuffer) {
     uint16_t* pRowPtr = (uint16_t*)local_20.lfbPtr;
     int nY = 0;
     int nWidth = RENDERER_nWindowWidth;
-    if (0 < RENDERER_nWindowHeight) {
+    if (RENDERER_nWindowHeight > 0) {
       uint8_t* pDst;
       do {
         nX = 0;
         pDst = pBuffer;
         pSrcRow = (uint16_t*)local_20.lfbPtr;
-        if (0 < nWidth) {
+        if (nWidth > 0) {
           do {
             wPixel = *pSrcRow;
             *pDst = (uint8_t)(wPixel >> 8) & 0xf8;
@@ -222,7 +222,7 @@ void __fastcall SetPalette(LPPALETTEENTRY pPalette) {
       *(uint32_t*)(pSrc + ((int)((char*)&gGlidePaletteEntry0 + 10) - (int)pPalette)) = ((pSrc[10] + 0xff00) * 0x100 + (uint32_t)pSrc[0xb]) * 0x100 + (uint32_t)pSrc[0xc];
       pDst += 4;
       pSrc += 0x10;
-    } while ((int)pDst < (uintptr_t)((char*)&gGlidePaletteEntry0 + sizeof(gGlidePaletteEntry0)));
+    } while ((int)pDst < (intptr_t)((char*)&gGlidePaletteEntry0 + sizeof(gGlidePaletteEntry0)));
 
     (*GLIDEDLL_grTexDownloadTable_8)(2, gGlidePaletteEntry0);
 }
@@ -251,16 +251,22 @@ BOOL ActivateWindow() {
 }
 
 BOOL __fastcall SetOption(int32_t nOption, int32_t nValue) {
-    if (nOption == 10) {
-      *(uint32_t*)nValue = gbGlideInScene;
-      return 1;
+    switch (nOption) {
+      case 10:
+        {
+          *(uint32_t*)nValue = gbGlideInScene;
+          return 1;
+        }
+      case 0xb:
+        {
+          gbWINDOWED = nValue;
+          return 1;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-    if (nOption != 0xb) {
-      return 0;
-    }
-
-    gbWINDOWED = nValue;
-    return 1;
 }
 
 void __fastcall RENDERER_GLIDE_SetTextureMode(int32_t nParam) {
@@ -285,16 +291,16 @@ void __fastcall RENDERER_GLIDE_SetTextureMode(int32_t nParam) {
 void __fastcall RENDERER_GLIDE_SetColorCombine(int32_t nParam) {
     int nPrevMode;
     if (!gnGlideColorCombineMode || (nPrevMode = gnGlideColorCombineMode , nParam != gnGlideColorCombineMode)) {
-      if (nParam == 1) {
-        (*GLIDEDLL_grColorCombine_20)(3, 1, 0, 1, 0);
-        nPrevMode = nParam;
-      } else {
+      if (nParam != 1) {
         nPrevMode = nParam;
         if (nParam == 2) {
           (*GLIDEDLL_grColorCombine_20)(1, 0, 1, 2, 0);
           gnGlideColorCombineMode = nParam;
           return;
         }
+      } else {
+        (*GLIDEDLL_grColorCombine_20)(3, 1, 0, 1, 0);
+        nPrevMode = nParam;
       }
     }
 
@@ -334,23 +340,23 @@ void __fastcall RENDERER_GLIDE_SetAlphaBlendMode(int32_t nParam) {
 void __fastcall RENDERER_GLIDE_SetTextureFiltering(int32_t nParam) {
     int nFilterMode;
     if (!gnGlideTextureFilteringMode || (nFilterMode = gnGlideTextureFilteringMode , nParam != gnGlideTextureFilteringMode)) {
-      if (nParam == 1) {
-        (*GLIDEDLL_grTexFilterMode_12)(0, 0, 0);
-        nFilterMode = nParam;
-        if (1 < gnGlideTextureMemoryUsed) {
-          (*GLIDEDLL_grTexFilterMode_12)(1, 0, 0);
-          nFilterMode = nParam;
-        }
-      } else {
+      if (nParam != 1) {
         nFilterMode = nParam;
         if (nParam == 2) {
           (*GLIDEDLL_grTexFilterMode_12)(0, 1, 1);
           nFilterMode = nParam;
-          if (1 < gnGlideTextureMemoryUsed) {
+          if (gnGlideTextureMemoryUsed > 1) {
             (*GLIDEDLL_grTexFilterMode_12)(1, 1, 1);
             gnGlideTextureFilteringMode = nParam;
             return;
           }
+        }
+      } else {
+        (*GLIDEDLL_grTexFilterMode_12)(0, 0, 0);
+        nFilterMode = nParam;
+        if (gnGlideTextureMemoryUsed > 1) {
+          (*GLIDEDLL_grTexFilterMode_12)(1, 0, 0);
+          nFilterMode = nParam;
         }
       }
     }
@@ -394,7 +400,7 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     }
 
     int nTotalTexMem = 0;
-    if (0 < gnGlideTextureMemoryUsed) {
+    if (gnGlideTextureMemoryUsed > 0) {
       do {
         nTexMemAddr = (*GLIDEDLL_grTexMinAddress_4)(nTotalTexMem);
         gnGlideTexMemBaseAddress[nTotalTexMem] = nTexMemAddr;
@@ -411,89 +417,89 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     if (nCacheEnd < 0) {
       fTotalTexMemBytes += 4.2949673e+09;
     }
-    if (3670016.0 <= fTotalTexMemBytes) {
-      uint32_t uVar1;
-      if (!gbGlidePerspectiveMode) {
-        if (RENDERER_nWindowWidth == 800 && RENDERER_nWindowHeight == 600) {
-          iVar2 = GLSMACK_AllocTextureMemory(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
-          nCacheEnd = nMaskTmp + iVar2;
-          nTotalTexMem = gnGlideTextureMemoryMax[0] - nCacheEnd;
-          if (gnGlideTextureMemoryUsed < 2) {
-            nVramStart = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nLargeTexSize);
-            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
-            nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nVramStart, (uint32_t)(nTotalTexMem * 0x4b) / 100 + nCacheEnd, nMedTexSize);
-            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
-          } else {
-            nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nMedTexSize);
-            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, gnGlideTexMemBaseAddress[1], gnGlideTextureMemoryMax[1], nLargeTexSize);
-            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
-          }
-        }
-      } else {
-        uVar1 = gnGlideTextureMemoryMask - 1;
-        nSubtileTexSize = 0x400;
-        if (uVar1 & 0x400) {
-          nSubtileTexSize = (uVar1 | 0x400) + 1;
-        }
-
-        nFloorTexSize = 0x8000;
-        if (uVar1 & 0x8000) {
-          nFloorTexSize = (uVar1 | 0x8000) + 1;
-        }
-
-        iVar2 = RENDERER_GLIDE_InitDebugFont(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
-        nCacheEnd = nMaskTmp + iVar2;
-        nMaskTmp = gnGlideTextureMemoryMax[0] - nCacheEnd;
-        if (gnGlideTextureMemoryUsed < 2) {
-          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp >> 1;
-          if (0x2fffff < (uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes) {
-            gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x300000;
-          }
-
-          nMaskTmp >>= 2;
-          if (0xfffff < nMaskTmp) {
-            nMaskTmp = 0x100000;
-          }
-
-          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
-          gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = nMaskTmp;
-          nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, nMaskTmp + nCacheEnd, nSubtileTexSize);
-        } else {
-          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp * 3 >> 2;
-          if ((uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes < 0x1ccccc) {
-            gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x1ccccc;
-          }
-
-          nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
-          gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = gnGlideTextureMemoryMax[0] - nCacheEnd;
-          nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, gnGlideTextureMemoryMax[0], nSubtileTexSize);
-        }
-        if (1 < gnGlideTextureMemoryUsed) {
-          nMaskTmp = gnGlideTexMemBaseAddress[1];
-        }
-
-        nSecondaryTMUFlag = (uint32_t)(1 < gnGlideTextureMemoryUsed);
-        uVar1 = gnGlideTextureMemoryMax[nSecondaryTMUFlag];
-        nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nMaskTmp, (uVar1 - nMaskTmp) * 0x19 / 100 + nMaskTmp, nLargeTexSize);
-        gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
-        nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uVar1 - nMaskTmp) * 0x41 / 100 + nMaskTmp, nMedTexSize);
-        gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
-        glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[nSecondaryTMUFlag], nSmallTexSize);
-        gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
-      }
-
-      RENDERER_GLIDE_InitSpriteCache();
-      D2CMP::SRC::CelCmp::GFX_SetSpriteCacheMaxSize((size_t)(uintptr_t)glBlocks::GLBLOCKS_ReleaseTileTextures);
-      return 1;
+    if (!(3670016.0 <= fTotalTexMemBytes)) {
+      Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t have enough video memory (3.5 MB) to adequately run Diablo II!\n");
+      return 0;
     }
 
-    Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t have enough video memory (3.5 MB) to adequately run Diablo II!\n");
-    return 0;
+    uint32_t uVar1;
+    if (gbGlidePerspectiveMode) {
+      uVar1 = gnGlideTextureMemoryMask - 1;
+      nSubtileTexSize = 0x400;
+      if (uVar1 & 0x400) {
+        nSubtileTexSize = (uVar1 | 0x400) + 1;
+      }
+
+      nFloorTexSize = 0x8000;
+      if (uVar1 & 0x8000) {
+        nFloorTexSize = (uVar1 | 0x8000) + 1;
+      }
+
+      iVar2 = RENDERER_GLIDE_InitDebugFont(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
+      nCacheEnd = nMaskTmp + iVar2;
+      nMaskTmp = gnGlideTextureMemoryMax[0] - nCacheEnd;
+      if (gnGlideTextureMemoryUsed >= 2) {
+        gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp * 3 >> 2;
+        if ((uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes < 0x1ccccc) {
+          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x1ccccc;
+        }
+
+        nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
+        gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = gnGlideTextureMemoryMax[0] - nCacheEnd;
+        nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, gnGlideTextureMemoryMax[0], nSubtileTexSize);
+      } else {
+        gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp >> 1;
+        if ((uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes >= 0x300000) {
+          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x300000;
+        }
+
+        nMaskTmp >>= 2;
+        if (nMaskTmp >= 0x100000) {
+          nMaskTmp = 0x100000;
+        }
+
+        nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
+        gnTextureMemoryUsageBytes.nGlideSubtileCacheMemBytes = nMaskTmp;
+        nMaskTmp = glSubtileCache::GLSUBTILE_Initialize(&gGlideSubtileTextureCache, nCacheEnd, nMaskTmp + nCacheEnd, nSubtileTexSize);
+      }
+      if (1 < gnGlideTextureMemoryUsed) {
+        nMaskTmp = gnGlideTexMemBaseAddress[1];
+      }
+
+      nSecondaryTMUFlag = (uint32_t)(1 < gnGlideTextureMemoryUsed);
+      uVar1 = gnGlideTextureMemoryMax[nSecondaryTMUFlag];
+      nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nMaskTmp, (uVar1 - nMaskTmp) * 0x19 / 100 + nMaskTmp, nLargeTexSize);
+      gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+      nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uVar1 - nMaskTmp) * 0x41 / 100 + nMaskTmp, nMedTexSize);
+      gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+      glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[nSecondaryTMUFlag], nSmallTexSize);
+      gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+    } else {
+      if (RENDERER_nWindowWidth == 800 && RENDERER_nWindowHeight == 600) {
+        iVar2 = GLSMACK_AllocTextureMemory(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
+        nCacheEnd = nMaskTmp + iVar2;
+        nTotalTexMem = gnGlideTextureMemoryMax[0] - nCacheEnd;
+        if (gnGlideTextureMemoryUsed > 1) {
+          nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nMedTexSize);
+          gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+          glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
+          gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+          glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, gnGlideTexMemBaseAddress[1], gnGlideTextureMemoryMax[1], nLargeTexSize);
+          gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+        } else {
+          nVramStart = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nLargeTexSize);
+          gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
+          nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nVramStart, (uint32_t)(nTotalTexMem * 0x4b) / 100 + nCacheEnd, nMedTexSize);
+          gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
+          glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
+          gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
+        }
+      }
+    }
+
+    RENDERER_GLIDE_InitSpriteCache();
+    D2CMP::SRC::CelCmp::GFX_SetSpriteCacheMaxSize((size_t)(uintptr_t)glBlocks::GLBLOCKS_ReleaseTileTextures);
+    return 1;
 }
 
 BOOL __stdcall RENDERER_GLIDE_DestroyWindow() {
@@ -504,11 +510,11 @@ BOOL __stdcall RENDERER_GLIDE_DestroyWindow() {
 
     ghGlideWindow = 0;
     (*GLIDEDLL_grFinish_0)();
-    if (!gbGlidePerspectiveMode) {
-      GLSMACK_DestroyNoop();
-    } else {
+    if (gbGlidePerspectiveMode) {
       glFloorCache::GLFLOOR_Destroy(&gGlideFloorTextureCache.dwEntrySize, (GlFloorCacheStrc*)0x1);
       glSubtileCache::GLSUBTILE_Destroy(&gGlideSubtileTextureCache.dwEntrySize, (GlSubtileCacheStrc*)0x1);
+    } else {
+      GLSMACK_DestroyNoop();
     }
 
     glTextureCache::GLTEXCACHE_Destroy(gGlideVertex0.aTextureCache, (GlTextureCacheStrc*)0x1);
@@ -578,8 +584,15 @@ static BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
       RENDERER_nWindowHeight = 600;
       gbGlidePerspectiveMode = 0;
       refresh_rate = gnGlideRefreshRate800;
-      if (nParam != 2) {
-        goto open_sst_window;
+      switch (nParam) {
+        default:
+          {
+            goto open_sst_window;
+          }
+        case 2:
+          {
+            break;
+          }
       }
     }
 
@@ -587,9 +600,7 @@ static BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
     open_sst_window:
     gnGlideWindowHandle = nParam2;
     ghGlideSstWindow = (*GLIDEDLL_grSstWinOpen_28)(nParam2, screen_resolution, refresh_rate, 2, 0, 2, 0);
-    if (!ghGlideSstWindow) {
-      Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening Glide window failed!");
-    } else {
+    if (ghGlideSstWindow) {
       ghGlideWindow = 1;
       if (gnGlideRendererInitialized) {
         nTMUCount = 0;
@@ -640,6 +651,8 @@ static BOOL RENDERER_GLIDE_InitWindow(int32_t nParam, FxU32 nParam2) {
       if (bInitTexMemOk) {
         return 1;
       }
+    } else {
+      Fog::Src::LogManager::LOGFILE_WriteStringToFile("Opening Glide window failed!");
     }
 
     return __frame0.nResult;
@@ -738,12 +751,12 @@ BOOL __stdcall BeginCutScene() {
     }
 
     BOOL bResizeResult = Glide::ResizeWindow((HWND)gnGlideWindowHandle, 0);
-    if (!bResizeResult) {
-      return 0;
+    if (bResizeResult) {
+      Glide::SetGamma(100);
+      return 1;
     }
 
-    Glide::SetGamma(100);
-    return 1;
+    return 0;
 }
 
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
@@ -835,42 +848,42 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
     uint32_t nTexHeightPow2;
     uint32_t nTexWidthPow2;
     int nLodLevel = pTexInfo->nWidth;
-    if (nLodLevel < 0x81) {
-      if (nLodLevel < 0x41) {
-        if (nLodLevel < 0x21) {
-          if (nLodLevel < 0x11) {
-            nTexWidthPow2 = (uint32_t)(8 < nLodLevel) * 8 + 8;
-          } else {
-            nTexWidthPow2 = 0x20;
-          }
-        } else {
-          nTexWidthPow2 = 0x40;
-        }
-      } else {
-        nTexWidthPow2 = 0x80;
-      }
-    } else {
+    if (nLodLevel > 0x80) {
       nTexWidthPow2 = 0x100;
+    } else {
+      if (nLodLevel > 0x40) {
+        nTexWidthPow2 = 0x80;
+      } else {
+        if (nLodLevel > 0x20) {
+          nTexWidthPow2 = 0x40;
+        } else {
+          if (nLodLevel > 0x10) {
+            nTexWidthPow2 = 0x20;
+          } else {
+            nTexWidthPow2 = (uint32_t)(nLodLevel > 8) * 8 + 8;
+          }
+        }
+      }
     }
 
     nLodLevel = pTexInfo->nHeight;
     pTexInfo->nTexWidth = nTexWidthPow2;
-    if (nLodLevel < 0x81) {
-      if (nLodLevel < 0x41) {
-        if (nLodLevel < 0x21) {
-          if (nLodLevel < 0x11) {
-            nTexHeightPow2 = (uint32_t)(8 < nLodLevel) * 8 + 8;
-          } else {
-            nTexHeightPow2 = 0x20;
-          }
-        } else {
-          nTexHeightPow2 = 0x40;
-        }
-      } else {
-        nTexHeightPow2 = 0x80;
-      }
-    } else {
+    if (nLodLevel > 0x80) {
       nTexHeightPow2 = 0x100;
+    } else {
+      if (nLodLevel > 0x40) {
+        nTexHeightPow2 = 0x80;
+      } else {
+        if (nLodLevel > 0x20) {
+          nTexHeightPow2 = 0x40;
+        } else {
+          if (nLodLevel > 0x10) {
+            nTexHeightPow2 = 0x20;
+          } else {
+            nTexHeightPow2 = (uint32_t)(nLodLevel > 8) * 8 + 8;
+          }
+        }
+      }
     }
 
     pTexInfo->nTexHeight = nTexHeightPow2;
@@ -911,7 +924,7 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
       nLodLevel = 0;
       do {
         nTexWidthPow2 *= 2;
-        if ((int)nTexHeightPow2 < (int)nTexWidthPow2) {
+        if ((int)nTexWidthPow2 > (int)nTexHeightPow2) {
           break;
         }
 
@@ -924,7 +937,7 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
       nLodLevel = 0;
       do {
         nTexHeightPow2 *= 2;
-        if ((int)nTexWidthPow2 < (int)nTexHeightPow2) {
+        if ((int)nTexHeightPow2 > (int)nTexWidthPow2) {
           break;
         }
 
@@ -961,11 +974,10 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     char* pSrcPixelRow;
     GrTexInfo grTexInfo;
     char byPixel;
-    int32_t nErrorLine;
     int32_t iVar2 = nMode;
     DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
     if (!nParam) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d);
       exit(-1);
     }
 
@@ -988,12 +1000,12 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     }
     if (!*(int*)(nTexStartAddress + nMode * 8)) {
       nSpriteBufferPtr = pTexInfo->nTexArea;
-      if (nSpriteBufferPtr < 0x1001) {
+      if (nSpriteBufferPtr <= 0x1000) {
         *(uint32_t*)(nTexStartAddress + nMode * 8) = 3;
-      } else if (nSpriteBufferPtr < 0x4001) {
+      } else if (nSpriteBufferPtr <= 0x4000) {
         *(uint32_t*)(nTexStartAddress + nMode * 8) = 2;
       } else {
-        if (0x10000 < nSpriteBufferPtr) {
+        if (nSpriteBufferPtr > 0x10000) {
           return 0;
         }
 
@@ -1021,14 +1033,6 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     // its node backpointer/mode match by construction (node+8 =
     // nTexStartAddress, node+0xc = nMode - the same layout the upload writes
     // at the - 0x14 / - 0x10 sites below).
-    //
-    // Port note (cf36935 follow-up): pre-merge this ran against the
-    // gGlideSmallTextureCache[3] array with a 0-based class (fix 3's guard +
-    // decrement). Upstream's re-typing moved the three caches into
-    // gGlideVertex0.aTextureCache[] and indexes them with the raw 1-based
-    // class, so the guard+decrement is retired - the zero-and-recompute above
-    // already pins the class to 1..3 - and the validation is ported to the
-    // upstream holder.
     if (nNewCacheNode) {
       uint8_t* pSlotNode = gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + (nNewCacheNode - 1) * 0x1c;
       if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
@@ -1059,7 +1063,7 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
       exit(-1);
     } else {
       uint8_t* pBVar1;
-      if (!(pTexInfo->nTexArea < 0x10001)) {
+      if (!(pTexInfo->nTexArea <= 0x10000)) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x185);
         exit(-1);
       }
@@ -1076,7 +1080,7 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
         pBVar1 = gpPaletteTable[0x46];
         nSpriteBufferPtr = 0;
         pbyPalettePixel = (uint8_t*)gpGlideSpriteBuffer;
-        if (0 < pTexInfo->nTexArea) {
+        if (pTexInfo->nTexArea > 0) {
           do {
             if (*pbyPalettePixel) {
               *pbyPalettePixel = pBVar1[*pbyPalettePixel];
@@ -1095,7 +1099,7 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ad);
           exit(-1);
         }
-        if (0x10000 < pTexInfo->nTexArea) {
+        if (pTexInfo->nTexArea > 0x10000) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ae);
           exit(-1);
         }
@@ -1105,7 +1109,7 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
         pSrcPixelRow = (char*)(nNewCacheNode + (int)gpGlideSpriteBuffer);
         nSpriteBufferPtr = nNewCacheNode + (int)nErrorAddress;
         nMode = pTexInfo->nTexArea + nNewCacheNode * -2;
-        if (0 < nMode) {
+        if (nMode > 0) {
           do {
             byPixel = *pSrcPixelRow;
             pSrcPixelRow++;
@@ -1156,10 +1160,10 @@ static void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nPa
     nScreenXCenter = nParam3->nLeft + nParam3->nTop;
     nScreenXBase = nParam3->nTop - nTexHeight;
     if (bPerspectiveEnabled && gnGlidePerspectiveScale != 0x100) {
-      nScreenXCenter = (int)(gnGlidePerspectiveScale * nScreenXCenter + (gnGlidePerspectiveScale * nScreenXCenter >> 0x1f & 0xffU)) >> 8;
-      nScreenXBase = (int)(gnGlidePerspectiveScale * nScreenXBase + (gnGlidePerspectiveScale * nScreenXBase >> 0x1f & 0xffU)) >> 8;
-      nTexWidth = (int)(gnGlidePerspectiveScale * nTexWidth + (gnGlidePerspectiveScale * nTexWidth >> 0x1f & 0xffU)) >> 8;
-      nTexHeight = (int)(gnGlidePerspectiveScale * nTexHeight + (gnGlidePerspectiveScale * nTexHeight >> 0x1f & 0xffU)) >> 8;
+      nScreenXCenter = gnGlidePerspectiveScale * nScreenXCenter / 256;
+      nScreenXBase = gnGlidePerspectiveScale * nScreenXBase / 256;
+      nTexWidth = gnGlidePerspectiveScale * nTexWidth / 256;
+      nTexHeight = gnGlidePerspectiveScale * nTexHeight / 256;
     }
 
     gGlideVertex0.aVertex[0].fY = (float)(nScreenXBase + nParam2);
@@ -1187,7 +1191,6 @@ static void __stdcall RENDERER_GLIDE_DrawShadowQuad(int32_t nParam1, int32_t nPa
     gGlideVertex0.aVertex[3].fY = gGlideVertex0.aVertex[0].fY;
     gGlideVertex0.aVertex[3].fS = fTexS1;
     gGlideVertex0.aVertex[3].fT = fTexT0;
-    D2Glide::Renderer::ShadowDiag::OnShadowQuad(nParam3, &gGlideVertex0); // [glide fix 11]
     (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gGlideVertex0, 0x1c);
 }
 
@@ -1223,10 +1226,10 @@ static void __stdcall RENDERER_GLIDE_DrawPalettedQuad(GlideTexInfoStrc * pGlideQ
     int nQuadLeft = pGlideQuad->nLeft;
     int nQuadTop = pGlideQuad->nTop - nTexHeight;
     if (bPerspectiveEnabled && gnGlidePerspectiveScale != 0x100) {
-      nQuadLeft = (int)(gnGlidePerspectiveScale * nQuadLeft + (gnGlidePerspectiveScale * nQuadLeft >> 0x1f & 0xffU)) >> 8;
-      nQuadTop = (int)(gnGlidePerspectiveScale * nQuadTop + (gnGlidePerspectiveScale * nQuadTop >> 0x1f & 0xffU)) >> 8;
-      nParam3 = (int)(gnGlidePerspectiveScale * nParam3 + (gnGlidePerspectiveScale * nParam3 >> 0x1f & 0xffU)) >> 8;
-      nTexHeight = (int)(gnGlidePerspectiveScale * nTexHeight + (gnGlidePerspectiveScale * nTexHeight >> 0x1f & 0xffU)) >> 8;
+      nQuadLeft = gnGlidePerspectiveScale * nQuadLeft / 256;
+      nQuadTop = gnGlidePerspectiveScale * nQuadTop / 256;
+      nParam3 = gnGlidePerspectiveScale * nParam3 / 256;
+      nTexHeight = gnGlidePerspectiveScale * nTexHeight / 256;
     }
 
     gGlideVertex0.aVertex[0].fX = (float)(nQuadLeft + nParam1);
@@ -1263,26 +1266,19 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
         (*GLIDEDLL_grConstantColorValue_4)(0x40);
         return;
       }
-      if (nParam != 1) {
-        if (nParam != 2) {
-          return;
-        }
-
-        (*GLIDEDLL_grConstantColorValue_4)(0xc0);
+      if (nParam == 1) {
+        (*GLIDEDLL_grConstantColorValue_4)(0x80);
+        return;
+      }
+      if (nParam != 2) {
         return;
       }
 
-      (*GLIDEDLL_grConstantColorValue_4)(0x80);
+      (*GLIDEDLL_grConstantColorValue_4)(0xc0);
       return;
     }
 
     switch (nParam) {
-      case 3:
-        nBlendModeArg = 2;
-      break;
-      case 4:
-        nBlendModeArg = 3;
-      break;
       case 5:
 
       case 7:
@@ -1290,6 +1286,12 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
       return;
       default:
         goto default_case;
+      case 3:
+        nBlendModeArg = 2;
+      break;
+      case 4:
+        nBlendModeArg = 3;
+      break;
     }
 
     RENDERER_GLIDE_SetAlphaBlendMode(nBlendModeArg);
@@ -1345,7 +1347,7 @@ void __fastcall DrawPerspectiveImage(D2GfxDataStrc * pData, int32_t nPosX, int32
     gGlideVertex0.aVertex[3].fX = (float)nScreenX;
     gGlideVertex0.aVertex[3].fY = (float)nScreenY;
     gGlideVertex0.aVertex[3].fOOW = 1.0;
-    bSpriteResult = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
+    bSpriteResult = RENDERER_nWindowWidth / 4;
     gGlideVertex0.aVertex[3].fS = fTexT1Scaled;
     gGlideVertex0.aVertex[3].fT = fTexT0Scaled;
     if (nScreenMode == 1) {
@@ -1388,13 +1390,13 @@ BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, D
     GlideTexInfoStrc texInfo;
     int32_t nPosXSaved = nPosX;
     int nSpriteResult = RENDERER_GLIDE_GetSpriteMetadata(pData, (uint32_t**)&texInfo);
-    if (!nSpriteResult || RENDERER_nWindowWidth < texInfo.nLeft + nPosX || texInfo.nWidth + texInfo.nLeft + nPosX < 0) {
+    if (!nSpriteResult || texInfo.nLeft + nPosX > RENDERER_nWindowWidth || texInfo.nWidth + texInfo.nLeft + nPosX < 0) {
       return 0;
     }
     if (texInfo.nTop + nPosY < 0) {
       return 0;
     }
-    if (texInfo.nTop + nPosY - texInfo.nHeight >= RENDERER_nWindowHeight) {
+    if (!(texInfo.nTop + nPosY - texInfo.nHeight < RENDERER_nWindowHeight)) {
       return 0;
     }
 
@@ -1453,15 +1455,7 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
     BOOL bPerspective = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (!bPerspective) {
       float fTmp;
-      if (!nSkipLines) {
-        fTmp = (float)(texSizeBuf.nHeight - nDrawLines);
-        if (texSizeBuf.nHeight - nDrawLines < 0) {
-          fTmp += 4.2949673e+09;
-        }
-
-        texSizeBuf.nHeight = nDrawLines;
-        texSizeBuf.fTexT0 = fTmp * fInvTexHeight + texSizeBuf.fTexT0;
-      } else {
+      if (nSkipLines) {
         nPosY -= nSkipLines;
         nSpriteResult = texSizeBuf.nHeight - nSkipLines - nDrawLines;
         fTmp = (float)nSpriteResult;
@@ -1477,14 +1471,17 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
 
         texSizeBuf.nHeight = nDrawLines;
         texSizeBuf.fTexS1 -= fTmp * fInvTexHeight;
+      } else {
+        fTmp = (float)(texSizeBuf.nHeight - nDrawLines);
+        if (texSizeBuf.nHeight - nDrawLines < 0) {
+          fTmp += 4.2949673e+09;
+        }
+
+        texSizeBuf.nHeight = nDrawLines;
+        texSizeBuf.fTexT0 = fTmp * fInvTexHeight + texSizeBuf.fTexT0;
       }
     } else {
-      if (!nSkipLines) {
-        texSizeBuf.fTexT0 = (float)(texSizeBuf.nTexHeight - nDrawLines);
-        if (texSizeBuf.nTexHeight - nDrawLines < 0) {
-          texSizeBuf.fTexT0 += 4.2949673e+09;
-        }
-      } else {
+      if (nSkipLines) {
         nPosY -= nSkipLines;
         nSpriteResult = texSizeBuf.nTexHeight - nSkipLines;
         texSizeBuf.fTexT0 = (float)(nSpriteResult - nDrawLines);
@@ -1498,6 +1495,11 @@ void __fastcall DrawVerticalCropImage(D2GfxDataStrc * pData, int32_t nPosX, int3
         }
 
         texSizeBuf.fTexS1 *= fInvTexHeight;
+      } else {
+        texSizeBuf.fTexT0 = (float)(texSizeBuf.nTexHeight - nDrawLines);
+        if (texSizeBuf.nTexHeight - nDrawLines < 0) {
+          texSizeBuf.fTexT0 += 4.2949673e+09;
+        }
       }
 
       texSizeBuf.fTexT0 = fInvTexHeight * texSizeBuf.fTexT0;
@@ -1516,44 +1518,44 @@ static BOOL __stdcall RENDERER_GLIDE_CalculateClipRect(int32_t nScreenX, int32_t
     pnOutRect->nSkipLeft = 0;
     pnOutRect->nDrawWidth = nSpriteWidth;
     pnOutRect->nSkipTop = 0;
-    uint32_t nClipLeft = (int)*pnClipBounds < 1 ? 0 : *pnClipBounds;
+    uint32_t nClipLeft = (int)*pnClipBounds <= 0 ? 0 : *pnClipBounds;
     uint32_t nClampedRight = RENDERER_nWindowWidth;
     if ((int)pnClipBounds[1] < RENDERER_nWindowWidth) {
       nClampedRight = pnClipBounds[1];
     }
-    if (!((int)nClipLeft <= (int)nClampedRight && nScreenBottom < (int)nClampedRight && (int)nClipLeft <= nSpriteWidth + nScreenBottom)) {
+    if (!((int)nClipLeft <= (int)nClampedRight && nScreenBottom < (int)nClampedRight && nSpriteWidth + nScreenBottom >= (int)nClipLeft)) {
       return 1;
     }
 
-    uint32_t nClipTop = (int)(pnClipBounds[2] + 2) < 1 ? 0 : pnClipBounds[2] + 2;
+    uint32_t nClipTop = (int)(pnClipBounds[2] + 2) <= 0 ? 0 : pnClipBounds[2] + 2;
     uint32_t nClampedBottom = RENDERER_nWindowHeight;
     if ((int)pnClipBounds[3] < RENDERER_nWindowHeight) {
       nClampedBottom = pnClipBounds[3];
     }
-    if (!((int)nClipTop <= (int)nClampedBottom && (int)nClipTop <= nScreenRight && nScreenRight - nSpriteHeightTmp <= (int)nClampedBottom)) {
+    if (!((int)nClipTop <= (int)nClampedBottom && nScreenRight >= (int)nClipTop && nScreenRight - nSpriteHeightTmp <= (int)nClampedBottom)) {
       return 1;
     }
-    if (nScreenBottom < (int)nClipLeft) {
-      pnOutRect->nSkipLeft = nClipLeft - nScreenBottom;
-    } else {
+    if (!(nScreenBottom < (int)nClipLeft)) {
       pnOutRect->nSkipLeft = 0;
+    } else {
+      pnOutRect->nSkipLeft = nClipLeft - nScreenBottom;
     }
     if (nSpriteWidth + nScreenBottom < (int)nClampedRight) {
       pnOutRect->nDrawWidth = nSpriteWidth - pnOutRect->nSkipLeft;
     } else {
       pnOutRect->nDrawWidth = nClampedRight - pnOutRect->nSkipLeft - nScreenBottom;
     }
-    if ((int)nClampedBottom < nScreenRight) {
-      pnOutRect->nSkipTop = nScreenRight - nClampedBottom - 1;
-    } else {
+    if (!(nScreenRight > (int)nClampedBottom)) {
       pnOutRect->nSkipTop = 0;
-    }
-    if (nScreenRight - nSpriteHeightTmp < (int)nClipTop) {
-      pnOutRect->nDrawHeight = nScreenRight - pnOutRect->nSkipTop - nClipTop + 1;
     } else {
-      pnOutRect->nDrawHeight = nSpriteHeightTmp - pnOutRect->nSkipTop;
+      pnOutRect->nSkipTop = nScreenRight - nClampedBottom - 1;
     }
-    if (!(0 < pnOutRect->nDrawHeight)) {
+    if (!(nScreenRight - nSpriteHeightTmp < (int)nClipTop)) {
+      pnOutRect->nDrawHeight = nSpriteHeightTmp - pnOutRect->nSkipTop;
+    } else {
+      pnOutRect->nDrawHeight = nScreenRight - pnOutRect->nSkipTop - nClipTop + 1;
+    }
+    if (!(pnOutRect->nDrawHeight > 0)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x424);
       exit(-1);
     }
@@ -1586,32 +1588,32 @@ void __fastcall DrawClippedImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t n
     float fInvTexWidth = 1.0 / (float)texSizeBuf.nTexWidth;
     bPerspective = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (!bPerspective) {
-      if (!sClip.nSkipTop) {
-        nTmp = texSizeBuf.nHeight - sClip.nDrawHeight;
-      } else {
+      if (sClip.nSkipTop) {
         nPosY -= sClip.nSkipTop;
         nTmp = texSizeBuf.nHeight - sClip.nDrawHeight - sClip.nSkipTop;
         texSizeBuf.fTexS1 -= (float)sClip.nSkipTop * fInvSpriteHeight;
+      } else {
+        nTmp = texSizeBuf.nHeight - sClip.nDrawHeight;
       }
 
       texSizeBuf.fTexT0 += fInvSpriteHeight * (float)nTmp;
       texSizeBuf.nHeight = sClip.nDrawHeight;
-      if (!sClip.nSkipLeft) {
-        texSizeBuf.nWidth = sClip.nDrawWidth;
-        texSizeBuf.fTexS0 = (float)sClip.nDrawWidth * fInvTexWidth;
-      } else {
+      if (sClip.nSkipLeft) {
         nPosX += sClip.nSkipLeft;
         texSizeBuf.fScale0 = fInvTexWidth * (float)sClip.nSkipLeft;
         texSizeBuf.nWidth = sClip.nDrawWidth;
         texSizeBuf.fTexS0 = fInvTexWidth * (float)(sClip.nDrawWidth + sClip.nSkipLeft);
+      } else {
+        texSizeBuf.nWidth = sClip.nDrawWidth;
+        texSizeBuf.fTexS0 = (float)sClip.nDrawWidth * fInvTexWidth;
       }
     } else {
-      if (!sClip.nSkipTop) {
-        nTmp = texSizeBuf.nTexHeight - sClip.nDrawHeight;
-      } else {
+      if (sClip.nSkipTop) {
         nTmp = texSizeBuf.nTexHeight - sClip.nDrawHeight - sClip.nSkipTop;
         nPosY -= sClip.nSkipTop;
         texSizeBuf.fTexS1 = fInvSpriteHeight * (float)(texSizeBuf.nTexHeight - sClip.nSkipTop);
+      } else {
+        nTmp = texSizeBuf.nTexHeight - sClip.nDrawHeight;
       }
 
       texSizeBuf.fTexT0 = fInvSpriteHeight * (float)nTmp;
@@ -1645,11 +1647,11 @@ void __fastcall DrawShadow(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY) 
 
     RENDERER_GLIDE_SetColorCombine(1);
     BOOL bBlendedShadows = RENDERER_GLIDE_AreBlendedShadowsEnabled();
-    if (!bBlendedShadows) {
-      RENDERER_GLIDE_SetAlphaBlendMode(1);
-    } else {
+    if (bBlendedShadows) {
       RENDERER_GLIDE_SetAlphaBlendMode(4);
       (*GLIDEDLL_grConstantColorValue_4)(0xc0);
+    } else {
+      RENDERER_GLIDE_SetAlphaBlendMode(1);
     }
 
     RENDERER_GLIDE_SetTextureFiltering(1);
@@ -1684,33 +1686,33 @@ void __fastcall DebugFillBackBuffer(int32_t nPosX, int32_t nPosY) {
 
 // @sourcefile .\Src\glSprite.cpp
 void __stdcall RENDERER_GLIDE_InitSpriteCache() {
-    if (!gpGlideSpriteBuffer) {
-      BOOL bIsPerspective;
-      if (gpGlideSpritePixelBuffer) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
-        exit(-1);
-      }
-
-      gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
-      gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
-      D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
-      gnGlideTMUIndex = (uint32_t)(1 < gnGlideTextureMemoryUsed);
-      gnGlideSpriteSecondaryTMUEnabled = 0;
-      if (1 >= gnGlideTextureMemoryUsed) {
-        return;
-      }
-
-      bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
-      if (bIsPerspective) {
-        return;
-      }
-
-      gnGlideSpriteSecondaryTMUEnabled = 1;
-      return;
-    } else {
+    if (gpGlideSpriteBuffer) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4a);
       exit(-1);
     }
+
+    BOOL bIsPerspective;
+    if (gpGlideSpritePixelBuffer) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4b);
+      exit(-1);
+    }
+
+    gpGlideSpriteBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4c);
+    gpGlideSpritePixelBuffer = D2_ALLOC_AT(0x10000, ".\\Src\\glSprite.cpp", 0x4d);
+    D2CMP::SRC::CelCmp::CELCMP_SetPixelDataFreeCallback(GLIDE_PixelDataFreeCallback_ClearCacheNodes);
+    gnGlideSpriteSecondaryTMUEnabled = 0;
+    gnGlideTMUIndex = (uint32_t)(gnGlideTextureMemoryUsed > 1);
+    if (gnGlideTextureMemoryUsed <= 1) {
+      return;
+    }
+
+    bIsPerspective = RENDERER_GLIDE_IsPerspectiveMode();
+    if (bIsPerspective) {
+      return;
+    }
+
+    gnGlideSpriteSecondaryTMUEnabled = 1;
+    return;
 }
 
 int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
@@ -1764,7 +1766,7 @@ int32_t __fastcall RENDERER_GLIDE_InitDebugFont(FxU32 nParam2, int32_t nParam) {
       nTexAddress += nTexStride;
       nGlyphOffset += 0x80;
       pTexStartAddr++;
-    } while ((int)pTexStartAddr < (uintptr_t)((char*)&gaGlideDebugFontTexStartAddrs + sizeof(gaGlideDebugFontTexStartAddrs)));
+    } while ((int)pTexStartAddr < (intptr_t)((char*)&gaGlideDebugFontTexStartAddrs + sizeof(gaGlideDebugFontTexStartAddrs)));
 
     D2_FREE_AT(pTexBuf, ".\\Src\\glDebugFont.cpp", 0x70);
     gfGlideDebugFontVertex0X = 0.0;
@@ -1866,27 +1868,27 @@ void __stdcall RENDERER_GLIDE_FreeDebugFont() {
 }
 
 static LPINT __stdcall RENDERER_GLIDE_DrawDebugChar(int32_t nParam1, int32_t nParam2, char cParam) {
-    if (0x280 < nParam1) {
+    if (nParam1 > 0x280) {
       return (LPINT)0x0;
     }
     if (nParam1 < 0) {
       return (LPINT)lpBuffer_008802c8[cParam];
     }
-    if ((uint8_t)(cParam - 0x20U) >= 0x60) {
-      return (LPINT)lpBuffer_008802c8[0];
+    if ((uint8_t)(cParam - 0x20U) <= 0x5f) {
+      gfGlideDebugFontVertex0X = (float)nParam1;
+      gfGlideDebugFontVertex0Y = (float)nParam2;
+      gfGlideDebugFontVertex1X = gfGlideDebugFontVertex0X;
+      gfGlideDebugFontVertex1Y = (float)(nParam2 + 0x10);
+      gfGlideDebugFontVertex3S = (float)(nParam1 + 8);
+      gfGlideDebugFontVertex2T = gfGlideDebugFontVertex1Y;
+      gfGlideDebugFontVertex3X = gfGlideDebugFontVertex3S;
+      gfGlideDebugFontVertex3T = gfGlideDebugFontVertex0Y;
+      (*GLIDEDLL_grTexSource_16)(gnGlideDebugFontTMU, gaGlideDebugFontTexStartAddrs[(char)(cParam - 0x20)], 3, &gTexInfoDebugFontGlide);
+      (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gfGlideDebugFontVertex0X, 0x1c);
+      return (LPINT)lpBuffer_008802c8[(char)(cParam - 0x20)];
     }
 
-    gfGlideDebugFontVertex0X = (float)nParam1;
-    gfGlideDebugFontVertex0Y = (float)nParam2;
-    gfGlideDebugFontVertex1Y = (float)(nParam2 + 0x10);
-    gfGlideDebugFontVertex3S = (float)(nParam1 + 8);
-    gfGlideDebugFontVertex1X = gfGlideDebugFontVertex0X;
-    gfGlideDebugFontVertex2T = gfGlideDebugFontVertex1Y;
-    gfGlideDebugFontVertex3X = gfGlideDebugFontVertex3S;
-    gfGlideDebugFontVertex3T = gfGlideDebugFontVertex0Y;
-    (*GLIDEDLL_grTexSource_16)(gnGlideDebugFontTMU, gaGlideDebugFontTexStartAddrs[(char)(cParam - 0x20)], 3, &gTexInfoDebugFontGlide);
-    (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, &gfGlideDebugFontVertex0X, 0x1c);
-    return (LPINT)lpBuffer_008802c8[(char)(cParam - 0x20)];
+    return (LPINT)lpBuffer_008802c8[0];
 }
 
 void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_list va) {
@@ -1898,7 +1900,7 @@ void __fastcall DrawString(int32_t nPosX, int32_t nPosY, char * szFormat, va_lis
     RENDERER_GLIDE_SetTextureMode(gnGlideDebugFontTMU);
     int nCharIdx = 0;
     int nCurX = nPosX;
-    if (0 >= nStrLen) {
+    if (nStrLen <= 0) {
       return;
     }
 
@@ -2032,13 +2034,13 @@ BOOL __stdcall RENDERER_GLIDE_AreBlendedShadowsEnabled() {
 void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, int32_t nDrawMode) {
     GrColor_t nGlideColor;
     D2GlideVertexStrc fV0X[4];
-    uint32_t uVar1 = nXStart < 1 ? 0 : nXStart;
+    uint32_t uVar1 = nXStart <= 0 ? 0 : nXStart;
     uint32_t nClampedXStart = RENDERER_nWindowWidth;
     if ((int)uVar1 < RENDERER_nWindowWidth) {
       nClampedXStart = uVar1;
     }
 
-    uint32_t nClampedXEnd = nXEnd < 1 ? 0 : nXEnd;
+    uint32_t nClampedXEnd = nXEnd <= 0 ? 0 : nXEnd;
     uVar1 = RENDERER_nWindowWidth;
     if ((int)nClampedXEnd < RENDERER_nWindowWidth) {
       uVar1 = nClampedXEnd;
@@ -2047,13 +2049,13 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
       return;
     }
 
-    uint32_t uVar2 = nYStart < 1 ? 0 : nYStart;
+    uint32_t uVar2 = nYStart <= 0 ? 0 : nYStart;
     nClampedXEnd = RENDERER_nWindowHeight;
     if ((int)uVar2 < RENDERER_nWindowHeight) {
       nClampedXEnd = uVar2;
     }
 
-    uint32_t nClampedYEnd = nYEnd < 1 ? 0 : nYEnd;
+    uint32_t nClampedYEnd = nYEnd <= 0 ? 0 : nYEnd;
     uVar2 = RENDERER_nWindowHeight;
     if ((int)nClampedYEnd < RENDERER_nWindowHeight) {
       uVar2 = nClampedYEnd;
@@ -2120,13 +2122,13 @@ void __fastcall DrawSolidRectEx(int32_t nXStart, int32_t nYStart, int32_t nXEnd,
 
 void __fastcall DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha) {
     D2GlideVertexStrc fV0X[4];
-    uint32_t uVar1 = nXStart < 1 ? 0 : nXStart;
+    uint32_t uVar1 = nXStart <= 0 ? 0 : nXStart;
     uint32_t nScaledColor = RENDERER_nWindowWidth;
     if ((int)uVar1 < RENDERER_nWindowWidth) {
       nScaledColor = uVar1;
     }
 
-    uint32_t nClampedXEnd = nXEnd < 1 ? 0 : nXEnd;
+    uint32_t nClampedXEnd = nXEnd <= 0 ? 0 : nXEnd;
     uVar1 = RENDERER_nWindowWidth;
     if ((int)nClampedXEnd < RENDERER_nWindowWidth) {
       uVar1 = nClampedXEnd;
@@ -2135,13 +2137,13 @@ void __fastcall DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXE
       return;
     }
 
-    uint32_t uVar2 = nYStart < 1 ? 0 : nYStart;
+    uint32_t uVar2 = nYStart <= 0 ? 0 : nYStart;
     nClampedXEnd = RENDERER_nWindowHeight;
     if ((int)uVar2 < RENDERER_nWindowHeight) {
       nClampedXEnd = uVar2;
     }
 
-    uint32_t nClampedYEnd = nYEnd < 1 ? 0 : nYEnd;
+    uint32_t nClampedYEnd = nYEnd <= 0 ? 0 : nYEnd;
     uVar2 = RENDERER_nWindowHeight;
     if ((int)nClampedYEnd < RENDERER_nWindowHeight) {
       uVar2 = nClampedYEnd;
@@ -2185,7 +2187,7 @@ void __fastcall DrawSolidRectAlpha(int32_t nXStart, int32_t nYStart, int32_t nXE
 
 void __fastcall DrawLine(int32_t nXStart, int32_t nYStart, int32_t nXEnd, int32_t nYEnd, DWORD dwColor, BYTE nAlpha) {
     D2GlideVertexStrc fV0X[2];
-    if (!((-1 < nXEnd || -1 < nXStart) && (nXEnd <= RENDERER_nWindowWidth || nXStart <= RENDERER_nWindowWidth) && (-1 < nYEnd || -1 < nYStart) && (nYEnd <= RENDERER_nWindowHeight || nYStart <= RENDERER_nWindowHeight))) {
+    if (!((nXEnd >= 0 || nXStart >= 0) && (nXEnd <= RENDERER_nWindowWidth || nXStart <= RENDERER_nWindowWidth) && (nYEnd >= 0 || nYStart >= 0) && (nYEnd <= RENDERER_nWindowHeight || nYStart <= RENDERER_nWindowHeight))) {
       return;
     }
 
@@ -2233,7 +2235,7 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
     int nYEnd_00;
     int nRectTop;
     int nRectLeft = pRect->left;
-    if (pRect->right < nRectLeft) {
+    if (nRectLeft > pRect->right) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb9);
       exit(-1);
     } else {
@@ -2254,7 +2256,7 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
       nYEnd = nRectWidth + nRectTop;
       nXStart = (nRectHeight >> 1) + nRectLeft;
       nYEnd_00 = (nRectWidth >> 1) + nRectTop;
-      if (!(-1 < nXEnd && nRectLeft <= RENDERER_nWindowWidth && -1 < nYEnd && nRectTop <= RENDERER_nWindowHeight)) {
+      if (!(nXEnd >= 0 && nRectLeft <= RENDERER_nWindowWidth && nYEnd >= 0 && nRectTop <= RENDERER_nWindowHeight)) {
         return;
       }
 
@@ -2272,7 +2274,7 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
     uint32_t nClampedYStart;
     uint32_t nClampedXStart = pRect->left;
     uint32_t nClampedYEndTmp = pRect->right;
-    if ((int)nClampedYEndTmp < (int)nClampedXStart) {
+    if ((int)nClampedXStart > (int)nClampedYEndTmp) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdf);
       exit(-1);
     } else {
@@ -2286,11 +2288,11 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
 
       nXEnd = RENDERER_nWindowWidth - 1;
       nXStart = nXEnd;
-      if ((int)((int)nClampedXStart < 1 ? 0 : nClampedXStart) < (int)nXEnd) {
-        nXStart = (int)nClampedXStart < 1 ? 0 : nClampedXStart;
+      if ((int)((int)nClampedXStart <= 0 ? 0 : nClampedXStart) < (int)nXEnd) {
+        nXStart = (int)nClampedXStart <= 0 ? 0 : nClampedXStart;
       }
-      if ((int)((int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp) < (int)nXEnd) {
-        nXEnd = (int)nClampedYEndTmp < 1 ? 0 : nClampedYEndTmp;
+      if ((int)((int)nClampedYEndTmp <= 0 ? 0 : nClampedYEndTmp) < (int)nXEnd) {
+        nXEnd = (int)nClampedYEndTmp <= 0 ? 0 : nClampedYEndTmp;
       }
       if (nXStart == nXEnd) {
         return;
@@ -2298,11 +2300,11 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
 
       nClampedYEndTmp = RENDERER_nWindowHeight - 1;
       nClampedXStart = nClampedYEndTmp;
-      if ((int)((int)nClampedYStart < 1 ? 0 : nClampedYStart) < (int)nClampedYEndTmp) {
-        nClampedXStart = (int)nClampedYStart < 1 ? 0 : nClampedYStart;
+      if ((int)((int)nClampedYStart <= 0 ? 0 : nClampedYStart) < (int)nClampedYEndTmp) {
+        nClampedXStart = (int)nClampedYStart <= 0 ? 0 : nClampedYStart;
       }
-      if ((int)((int)nClampedYEnd < 1 ? 0 : nClampedYEnd) < (int)nClampedYEndTmp) {
-        nClampedYEndTmp = (int)nClampedYEnd < 1 ? 0 : nClampedYEnd;
+      if ((int)((int)nClampedYEnd <= 0 ? 0 : nClampedYEnd) < (int)nClampedYEndTmp) {
+        nClampedYEndTmp = (int)nClampedYEnd <= 0 ? 0 : nClampedYEnd;
       }
       if (nClampedYEndTmp == nClampedXStart) {
         return;
@@ -2321,7 +2323,7 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
 }
 
 void __fastcall DrawSolidRect(RECT * pRect, BYTE nPaletteIndex) {
-    if (pRect->right < pRect->left) {
+    if (pRect->left > pRect->right) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x100);
       exit(-1);
     } else {
@@ -2379,7 +2381,7 @@ static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode
         exit(-1);
       }
 
-      nHalfWidthDiv2 = (int)(RENDERER_nWindowWidth + (RENDERER_nWindowWidth >> 0x1f & 3U)) >> 2;
+      nHalfWidthDiv2 = RENDERER_nWindowWidth / 4;
       if (nScreenPanels == 1) {
         *pnXOffset = -nHalfWidthDiv2;
         pnBounds->right -= nHalfWidthDiv2;
@@ -2437,7 +2439,7 @@ void __stdcall RENDERER_GLIDE_InitPerspectiveTables() {
       } while (nCol < 3);
 
       nRow++;
-    } while ((int)pfGammaEntry < (uintptr_t)((char*)&gaGlidePerspectiveVertices + sizeof(gaGlidePerspectiveVertices) + 16));
+    } while ((int)pfGammaEntry < (intptr_t)((char*)&gaGlidePerspectiveVertices + sizeof(gaGlidePerspectiveVertices) + 16));
 
     if (gbGlidePerspectiveTablesInitialized) {
       return;
@@ -2458,7 +2460,7 @@ void __stdcall RENDERER_GLIDE_InitPerspectiveTables() {
       piPerspEntry[0xb] <<= 0x10;
       piPerspEntry[0xc] <<= 0x10;
       piPerspEntry += 0x12;
-    } while ((int)piPerspEntry < (uintptr_t)&gaGlideWallCornerTable + 736);
+    } while ((int)piPerspEntry < (intptr_t)&gaGlideWallCornerTable + 736);
 
     gbGlidePerspectiveTablesInitialized = 1;
 }
@@ -2489,7 +2491,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
       psSubtile = &pTile->pSubTiles[nSubtileIdx].nOffsetX;
       nSubtileX = *psSubtile + nPosX;
       nScreenY = (int)psSubtile[1] + nPosY + 0x20;
-      if (nWindowMinX <= nSubtileX && nSubtileX < nWindowMaxX && -1 < nScreenY && nScreenY < nWindowMaxY) {
+      if (nSubtileX >= nWindowMinX && nSubtileX < nWindowMaxX && nScreenY >= 0 && nScreenY < nWindowMaxY) {
         _bDrawn = 1;
         glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileIdx]);
         gGlidePerspectiveVertexBuffer[0].fX = (float)nSubtileX;
@@ -2533,7 +2535,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
     int nWorldXFixed = nPosX * 0x2000;
     int nSubtileIdx = 0;
     BOOL bDrawn = 0;
-    if (0 >= pTileStrc->nSubTiles) {
+    if (pTileStrc->nSubTiles <= 0) {
       return bDrawn;
     }
 
@@ -2580,7 +2582,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
 
           nWorldYFixed += 0x8000;
           bAnyDrawn += 0x8000;
-        } while ((int)pfVertexSlot < (uintptr_t)((char*)&gaGlidePerspectiveVertices + sizeof(gaGlidePerspectiveVertices)));
+        } while ((int)pfVertexSlot < (intptr_t)((char*)&gaGlidePerspectiveVertices + sizeof(gaGlidePerspectiveVertices)));
 
         (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsA);
         (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsB);
@@ -2596,31 +2598,31 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(D2TileLibraryEntryStrc 
 
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels) {
     BOOL bResult = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    if (!bResult) {
-      return 0;
-    }
-
-    RENDERER_GLIDE_SetColorCombine(1);
-    bResult = RENDERER_GLIDE_AreBlendedShadowsEnabled();
-    if (!bResult) {
-      RENDERER_GLIDE_SetAlphaBlendMode(1);
-    } else {
-      RENDERER_GLIDE_SetAlphaBlendMode(4);
-      (*GLIDEDLL_grConstantColorValue_4)(0xc0);
-    }
-
-    RENDERER_GLIDE_SetTextureFiltering(1);
-    bResult = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (bResult) {
-      bResult = RENDERER_GLIDE_DrawShadowTilePerspective(pTile, nPosX, nPosY, (uint8_t)nDrawMode, nScreenPanels);
+      RENDERER_GLIDE_SetColorCombine(1);
+      bResult = RENDERER_GLIDE_AreBlendedShadowsEnabled();
+      if (bResult) {
+        RENDERER_GLIDE_SetAlphaBlendMode(4);
+        (*GLIDEDLL_grConstantColorValue_4)(0xc0);
+      } else {
+        RENDERER_GLIDE_SetAlphaBlendMode(1);
+      }
+
+      RENDERER_GLIDE_SetTextureFiltering(1);
+      bResult = RENDERER_GLIDE_IsPerspectiveEnabled();
+      if (bResult) {
+        bResult = RENDERER_GLIDE_DrawShadowTilePerspective(pTile, nPosX, nPosY, (uint8_t)nDrawMode, nScreenPanels);
+        return bResult;
+      }
+
+      bResult = RENDERER_GLIDE_DrawShadowTileSimple(pTile, nPosX, nPosY, (uint8_t)nDrawMode, nScreenPanels);
       return bResult;
     }
 
-    bResult = RENDERER_GLIDE_DrawShadowTileSimple(pTile, nPosX, nPosY, (uint8_t)nDrawMode, nScreenPanels);
-    return bResult;
+    return 0;
 }
 
-BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable) {
+BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable) {
     int nScreenY;
     int nScreenX;
     uint32_t dwColor0;
@@ -2637,41 +2639,41 @@ BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
     }
 
     int nSubtileIdx = 0;
-    if (0 >= pTile->nSubTiles) {
-      return 0;
+    if (0 < pTile->nSubTiles) {
+      int nSubtileX;
+      do {
+        psSubtile = &pTile->pSubTiles[nSubtileIdx].nOffsetX;
+        nSubtileX = (int)*psSubtile;
+        nScreenY = (int)psSubtile[1] + nPosY + 0x20;
+        nScreenX = nPosX + nSubtileX;
+        if (nScreenX >= nWindowMinX && nScreenX < nWindowMaxX && nScreenY >= 0 && nScreenY < nWindowMaxY) {
+          nSubtileX >>= 5;
+          dwColor0 = *(uint32_t*)(pColorTable + nSubtileX * 4);
+          dwColor1 = *(uint32_t*)(pColorTable + 4 + nSubtileX * 4);
+          bDrawn = 1;
+          glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileIdx]);
+          gGlidePerspectiveVertexBuffer[0].fX = (float)nScreenX;
+          gGlidePerspectiveVertexBuffer[0].fY = (float)(nScreenY - 0x20);
+          gGlidePerspectiveVertexBuffer[1].fY = (float)nScreenY;
+          gGlidePerspectiveVertexBuffer[2].fX = (float)(nScreenX + 0x20);
+          gGlidePerspectiveVertexBuffer[1].fX = gGlidePerspectiveVertexBuffer[0].fX;
+          gGlidePerspectiveVertexBuffer[2].fY = gGlidePerspectiveVertexBuffer[1].fY;
+          gGlidePerspectiveVertexBuffer[3].fX = gGlidePerspectiveVertexBuffer[2].fX;
+          gGlidePerspectiveVertexBuffer[3].fY = gGlidePerspectiveVertexBuffer[0].fY;
+          RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer, dwColor0);
+          RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 1, dwColor0);
+          RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 2, dwColor1);
+          RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 3, dwColor1);
+          (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, gGlidePerspectiveVertexBuffer, 0x1c);
+        }
+
+        nSubtileIdx++;
+      } while (nSubtileIdx < pTile->nSubTiles);
+
+      return bDrawn;
     }
 
-    do {
-      int nSubtileX;
-      psSubtile = &pTile->pSubTiles[nSubtileIdx].nOffsetX;
-      nSubtileX = (int)*psSubtile;
-      nScreenY = (int)psSubtile[1] + nPosY + 0x20;
-      nScreenX = nPosX + nSubtileX;
-      if (nWindowMinX <= nScreenX && nScreenX < nWindowMaxX && -1 < nScreenY && nScreenY < nWindowMaxY) {
-        nSubtileX >>= 5;
-        dwColor0 = *(uint32_t*)(pColorTable + nSubtileX * 4);
-        dwColor1 = *(uint32_t*)(pColorTable + 4 + nSubtileX * 4);
-        bDrawn = 1;
-        glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileIdx]);
-        gGlidePerspectiveVertexBuffer[0].fX = (float)nScreenX;
-        gGlidePerspectiveVertexBuffer[0].fY = (float)(nScreenY - 0x20);
-        gGlidePerspectiveVertexBuffer[1].fY = (float)nScreenY;
-        gGlidePerspectiveVertexBuffer[2].fX = (float)(nScreenX + 0x20);
-        gGlidePerspectiveVertexBuffer[1].fX = gGlidePerspectiveVertexBuffer[0].fX;
-        gGlidePerspectiveVertexBuffer[2].fY = gGlidePerspectiveVertexBuffer[1].fY;
-        gGlidePerspectiveVertexBuffer[3].fX = gGlidePerspectiveVertexBuffer[2].fX;
-        gGlidePerspectiveVertexBuffer[3].fY = gGlidePerspectiveVertexBuffer[0].fY;
-        RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer, dwColor0);
-        RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 1, dwColor0);
-        RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 2, dwColor1);
-        RENDERER_GLIDE_ApplyColorLighting(gGlidePerspectiveVertexBuffer + 3, dwColor1);
-        (*GLIDEDLL_grDrawVertexArrayContiguous_16)(5, 4, gGlidePerspectiveVertexBuffer, 0x1c);
-      }
-
-      nSubtileIdx++;
-    } while (nSubtileIdx < pTile->nSubTiles);
-
-    return bDrawn;
+    return 0;
 }
 
 // Draw wall tile with perspective projection in Glide renderer. Calculates 4 corner positions, tests screen bounds, applies color averaging and texturing. Returns 1 if tile was drawn, 0 otherwise.
@@ -2700,125 +2702,125 @@ static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenP
     int nScreenXOffset = 0;
     RENDERER_GLIDE_CalculateScreenBounds(1, &nBoundsXMin, nScreenPanels, &nScreenXOffset);
     uint32_t dwTileType = pTile->nDirection;
-    if (9 < dwTileType) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
-      exit(-1);
-    }
+    if (dwTileType <= 9) {
+      int nSubtileCount = 0;
+      if (0 >= pTile->nSubTiles) {
+        return nZMid;
+      }
 
-    int nSubtileCount = 0;
-    if (0 >= pTile->nSubTiles) {
+      do {
+        int nCornerFixedX;
+        psVar2 = &pTile->pSubTiles[nSubtileCount].nOffsetX;
+        fScreenMinX = d2_bits_as<D2FloatIntUnion>((int)psVar2[1]);
+        fSubtileIndex = (float)((int)*psVar2 >> 5);
+        if ((uint32_t)fSubtileIndex > 4) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1bc);
+          exit(-1);
+        }
+
+        nCornerFixedY = (int)fSubtileIndex + dwTileType * 6;
+        nWorldYFixed = gaGlideWallCornerTable[nCornerFixedY].nY + nScreenY * 0x2000;
+        nCornerFixedX = gaGlideWallCornerTable[nCornerFixedY].nZ - (int)d2_bits_of(fScreenMinX);
+        nLeftFixedX = gaGlideWallCornerTable[nCornerFixedY + 1].nX + nScreenX * 0x2000;
+        nRightFixedZ = gaGlideWallCornerTable[nCornerFixedY + 1].nZ - (int)d2_bits_of(fScreenMinX);
+        nLeftFixedY = gaGlideWallCornerTable[nCornerFixedY + 1].nY + nScreenY * 0x2000;
+        nCornerFixedY = gaGlideWallCornerTable[nCornerFixedY].nX + nScreenX * 0x2000;
+        nScreenXMax = nCornerFixedY;
+        nScreenYMin = nWorldYFixed;
+        nScreenYMax = nCornerFixedX;
+        Glide::AdjustPerspectivePosition(nCornerFixedY, nWorldYFixed, nCornerFixedX, &nAdjX, &nAdjY);
+        gaGlidePerspectiveVertices[0].fX = (float)nAdjX;
+        gaGlidePerspectiveVertices[0].fY = (float)nAdjY;
+        Glide::AdjustPerspectivePosition(nCornerFixedY, nWorldYFixed, nCornerFixedX - 0x20, &nAdjX, &nAdjY);
+        gaGlidePerspectiveVertices[0xc].fX = (float)nAdjX;
+        gaGlidePerspectiveVertices[0xc].fY = (float)nAdjY;
+        Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nRightFixedZ - 0x20, &nAdjX, &nAdjY);
+        gaGlidePerspectiveVertices[0xe].fX = (float)nAdjX;
+        gaGlidePerspectiveVertices[0xe].fY = (float)nAdjY;
+        Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nRightFixedZ, &nAdjX, &nAdjY);
+        gaGlidePerspectiveVertices[2].fX = (float)nAdjX;
+        gaGlidePerspectiveVertices[2].fY = (float)nAdjY;
+        fScreenMinX.fValue = (float)nBoundsXMin.left;
+        if (fScreenMinX.fValue < gaGlidePerspectiveVertices[0].fX != (fScreenMinX.fValue == gaGlidePerspectiveVertices[0].fX) && gaGlidePerspectiveVertices[0].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0].fY) && gaGlidePerspectiveVertices[0].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[0xc].fX && gaGlidePerspectiveVertices[0xc].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0xc].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0xc].fY) && gaGlidePerspectiveVertices[0xc].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[0xe].fX && gaGlidePerspectiveVertices[0xe].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0xe].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0xe].fY) && gaGlidePerspectiveVertices[0xe].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[2].fX && gaGlidePerspectiveVertices[2].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[2].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[2].fY) && gaGlidePerspectiveVertices[2].fY < (float)nBoundsXMin.bottom) {
+          adwColors[0] = *(uint32_t*)(pColorTable + (int)fSubtileIndex * 4);
+          adwColors[2] = *(uint32_t*)(pColorTable + 4 + (int)fSubtileIndex * 4);
+          nZMid = nCornerFixedX + nRightFixedZ >> 1;
+          adwColors[3] = nCornerFixedY + nLeftFixedX >> 1;
+          adwColors[1] = ((((int)((adwColors[2] >> 0x18) + (adwColors[0] >> 0x18)) >> 1) * 0x100 + ((int)((adwColors[2] >> 0x10 & 0xff) + (adwColors[0] >> 0x10 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[2] >> 8 & 0xff) + (adwColors[0] >> 8 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[0] & 0xff) + (adwColors[2] & 0xff)) >> 1);
+          nYMid = nWorldYFixed + nLeftFixedY >> 1;
+          fSubtileIndex = (float)adwColors[2];
+          glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileCount]);
+          fSubtileIndex = (float)nScreenXOffset;
+          fScreenMinX.fValue = 0.0;
+          pfVertexSlot = gaGlidePerspectiveVertices + 2;
+          do {
+            DVar1 = fScreenMinX;
+            if (fScreenMinX.nValue && fScreenMinX.nValue != 4) {
+              nCornerFixedY = fScreenMinX.nValue * -8;
+              Glide::AdjustPerspectivePosition(nScreenXMax, nScreenYMin, nCornerFixedY + nScreenYMax, &nAdjX, &nAdjY);
+              pfVertexSlot[-2].fX = (float)nAdjX;
+              pfVertexSlot[-2].fY = (float)nAdjY;
+              Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nCornerFixedY + nRightFixedZ, &nAdjX, &nAdjY);
+              pfVertexSlot->fX = (float)nAdjX;
+              pfVertexSlot->fY = (float)nAdjY;
+            }
+
+            Glide::AdjustPerspectivePosition(adwColors[3], nYMid, nZMid + DVar1.nValue * -8, &nAdjX, &nAdjY);
+            nCornerFixedY = 0;
+            pfColorVertex = pfVertexSlot - 2;
+            pfVertexSlot[-1].fX = (float)nAdjX;
+            pfVertexSlot[-1].fY = (float)nAdjY;
+            do {
+              dwColorMid = adwColors[nCornerFixedY];
+              pfColorVertex->fX = fSubtileIndex + pfColorVertex->fX;
+              RENDERER_GLIDE_ApplyColorLighting(pfColorVertex, dwColorMid);
+              nCornerFixedY++;
+              pfColorVertex++;
+            } while (nCornerFixedY < 3);
+
+            fScreenMinX.nValue++;
+            pfVertexSlot += 3;
+          } while ((int)pfVertexSlot < (intptr_t)((char*)&gGlidePerspectiveVertexBuffer + 52));
+
+          (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsA);
+          (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsB);
+          nZMid = 1;
+        }
+
+        nSubtileCount++;
+      } while (nSubtileCount < pTile->nSubTiles);
+
       return nZMid;
     }
 
-    do {
-      int nCornerFixedX;
-      psVar2 = &pTile->pSubTiles[nSubtileCount].nOffsetX;
-      fScreenMinX = d2_bits_as<D2FloatIntUnion>((int)psVar2[1]);
-      fSubtileIndex = (float)((int)*psVar2 >> 5);
-      if (4 < (uint32_t)fSubtileIndex) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1bc);
-        exit(-1);
-      }
-
-      nCornerFixedY = (int)fSubtileIndex + dwTileType * 6;
-      nWorldYFixed = gaGlideWallCornerTable[nCornerFixedY].nY + nScreenY * 0x2000;
-      nCornerFixedX = gaGlideWallCornerTable[nCornerFixedY].nZ - (int)d2_bits_of(fScreenMinX);
-      nLeftFixedX = gaGlideWallCornerTable[nCornerFixedY + 1].nX + nScreenX * 0x2000;
-      nRightFixedZ = gaGlideWallCornerTable[nCornerFixedY + 1].nZ - (int)d2_bits_of(fScreenMinX);
-      nLeftFixedY = gaGlideWallCornerTable[nCornerFixedY + 1].nY + nScreenY * 0x2000;
-      nCornerFixedY = gaGlideWallCornerTable[nCornerFixedY].nX + nScreenX * 0x2000;
-      nScreenXMax = nCornerFixedY;
-      nScreenYMin = nWorldYFixed;
-      nScreenYMax = nCornerFixedX;
-      Glide::AdjustPerspectivePosition(nCornerFixedY, nWorldYFixed, nCornerFixedX, &nAdjX, &nAdjY);
-      gaGlidePerspectiveVertices[0].fX = (float)nAdjX;
-      gaGlidePerspectiveVertices[0].fY = (float)nAdjY;
-      Glide::AdjustPerspectivePosition(nCornerFixedY, nWorldYFixed, nCornerFixedX - 0x20, &nAdjX, &nAdjY);
-      gaGlidePerspectiveVertices[0xc].fX = (float)nAdjX;
-      gaGlidePerspectiveVertices[0xc].fY = (float)nAdjY;
-      Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nRightFixedZ - 0x20, &nAdjX, &nAdjY);
-      gaGlidePerspectiveVertices[0xe].fX = (float)nAdjX;
-      gaGlidePerspectiveVertices[0xe].fY = (float)nAdjY;
-      Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nRightFixedZ, &nAdjX, &nAdjY);
-      gaGlidePerspectiveVertices[2].fX = (float)nAdjX;
-      gaGlidePerspectiveVertices[2].fY = (float)nAdjY;
-      fScreenMinX.fValue = (float)nBoundsXMin.left;
-      if (fScreenMinX.fValue < gaGlidePerspectiveVertices[0].fX != (fScreenMinX.fValue == gaGlidePerspectiveVertices[0].fX) && gaGlidePerspectiveVertices[0].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0].fY) && gaGlidePerspectiveVertices[0].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[0xc].fX && gaGlidePerspectiveVertices[0xc].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0xc].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0xc].fY) && gaGlidePerspectiveVertices[0xc].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[0xe].fX && gaGlidePerspectiveVertices[0xe].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[0xe].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[0xe].fY) && gaGlidePerspectiveVertices[0xe].fY < (float)nBoundsXMin.bottom || fScreenMinX.fValue <= gaGlidePerspectiveVertices[2].fX && gaGlidePerspectiveVertices[2].fX < (float)nBoundsXMin.right && (float)nBoundsXMin.top < gaGlidePerspectiveVertices[2].fY != ((float)nBoundsXMin.top == gaGlidePerspectiveVertices[2].fY) && gaGlidePerspectiveVertices[2].fY < (float)nBoundsXMin.bottom) {
-        adwColors[0] = *(uint32_t*)(pColorTable + (int)fSubtileIndex * 4);
-        adwColors[2] = *(uint32_t*)(pColorTable + 4 + (int)fSubtileIndex * 4);
-        nZMid = nCornerFixedX + nRightFixedZ >> 1;
-        adwColors[3] = nCornerFixedY + nLeftFixedX >> 1;
-        adwColors[1] = ((((int)((adwColors[2] >> 0x18) + (adwColors[0] >> 0x18)) >> 1) * 0x100 + ((int)((adwColors[2] >> 0x10 & 0xff) + (adwColors[0] >> 0x10 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[2] >> 8 & 0xff) + (adwColors[0] >> 8 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[0] & 0xff) + (adwColors[2] & 0xff)) >> 1);
-        nYMid = nWorldYFixed + nLeftFixedY >> 1;
-        fSubtileIndex = (float)adwColors[2];
-        glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileCount]);
-        fSubtileIndex = (float)nScreenXOffset;
-        fScreenMinX.fValue = 0.0;
-        pfVertexSlot = gaGlidePerspectiveVertices + 2;
-        do {
-          DVar1 = fScreenMinX;
-          if (fScreenMinX.nValue && fScreenMinX.nValue != 4) {
-            nCornerFixedY = fScreenMinX.nValue * -8;
-            Glide::AdjustPerspectivePosition(nScreenXMax, nScreenYMin, nCornerFixedY + nScreenYMax, &nAdjX, &nAdjY);
-            pfVertexSlot[-2].fX = (float)nAdjX;
-            pfVertexSlot[-2].fY = (float)nAdjY;
-            Glide::AdjustPerspectivePosition(nLeftFixedX, nLeftFixedY, nCornerFixedY + nRightFixedZ, &nAdjX, &nAdjY);
-            pfVertexSlot->fX = (float)nAdjX;
-            pfVertexSlot->fY = (float)nAdjY;
-          }
-
-          Glide::AdjustPerspectivePosition(adwColors[3], nYMid, nZMid + DVar1.nValue * -8, &nAdjX, &nAdjY);
-          nCornerFixedY = 0;
-          pfColorVertex = pfVertexSlot - 2;
-          pfVertexSlot[-1].fX = (float)nAdjX;
-          pfVertexSlot[-1].fY = (float)nAdjY;
-          do {
-            dwColorMid = adwColors[nCornerFixedY];
-            pfColorVertex->fX = fSubtileIndex + pfColorVertex->fX;
-            RENDERER_GLIDE_ApplyColorLighting(pfColorVertex, dwColorMid);
-            nCornerFixedY++;
-            pfColorVertex++;
-          } while (nCornerFixedY < 3);
-
-          fScreenMinX.nValue++;
-          pfVertexSlot += 3;
-        } while ((int)pfVertexSlot < (uintptr_t)((char*)&gGlidePerspectiveVertexBuffer + 52));
-
-        (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsA);
-        (*GLIDEDLL_grDrawVertexArray_12)(4, 10, gapGlideStripVertexPtrsB);
-        nZMid = 1;
-      }
-
-      nSubtileCount++;
-    } while (nSubtileCount < pTile->nSubTiles);
-
-    return nZMid;
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1b4);
+    exit(-1);
 }
 
 static BOOL __stdcall RENDERER_GLIDE_DrawTransparentWallTile(int32_t nPosX, int32_t nPosY, int32_t pLight, GrColor_t nColor, D2TileLibraryEntryStrc * pTileLibraryEntry, int32_t nScreenPanels) {
     BOOL bPerspective = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTileLibraryEntry, 1, 0);
-    if (!bPerspective) {
-      return 0;
-    }
-
-    RENDERER_GLIDE_SetColorCombine(1);
-    if ((char)nColor == -1) {
-      RENDERER_GLIDE_SetAlphaBlendMode(1);
-    } else {
-      RENDERER_GLIDE_SetAlphaBlendMode(4);
-      (*GLIDEDLL_grConstantColorValue_4)(nColor & 0xff);
-    }
-
-    RENDERER_GLIDE_SetTextureFiltering(1);
-    bPerspective = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (bPerspective) {
-      int32_t nDrawResult;
-      nDrawResult = RENDERER_GLIDE_DrawWallTilePerspective(nScreenPanels, pTileLibraryEntry, nPosX, nPosY, pLight);
-      return nDrawResult;
+      RENDERER_GLIDE_SetColorCombine(1);
+      if ((char)nColor == -1) {
+        RENDERER_GLIDE_SetAlphaBlendMode(1);
+      } else {
+        RENDERER_GLIDE_SetAlphaBlendMode(4);
+        (*GLIDEDLL_grConstantColorValue_4)(nColor & 0xff);
+      }
+
+      RENDERER_GLIDE_SetTextureFiltering(1);
+      bPerspective = RENDERER_GLIDE_IsPerspectiveEnabled();
+      if (bPerspective) {
+        int32_t nDrawResult;
+        nDrawResult = RENDERER_GLIDE_DrawWallTilePerspective(nScreenPanels, pTileLibraryEntry, nPosX, nPosY, pLight);
+        return nDrawResult;
+      }
+
+      bPerspective = RENDERER_GLIDE_DrawWallTileSimple(nScreenPanels, pTileLibraryEntry, nPosX, nPosY, pLight);
+      return bPerspective;
     }
 
-    bPerspective = RENDERER_GLIDE_DrawWallTileSimple(nScreenPanels, pTileLibraryEntry, nPosX, nPosY, pLight);
-    return bPerspective;
+    return 0;
 }
 
 BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha) {
@@ -2828,22 +2830,22 @@ BOOL __fastcall DrawTransWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX,
 
 BOOL __fastcall DrawWallTile(D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, D2GfxLightStrc * pLight, int32_t nScreenPanels) {
     BOOL bResult = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    if (!bResult) {
-      return 0;
-    }
-
-    RENDERER_GLIDE_SetColorCombine(1);
-    RENDERER_GLIDE_SetAlphaBlendMode(1);
-    RENDERER_GLIDE_SetTextureFiltering(1);
-    bResult = RENDERER_GLIDE_IsPerspectiveEnabled();
     if (bResult) {
-      int32_t iVar1;
-      iVar1 = RENDERER_GLIDE_DrawWallTilePerspective(nScreenPanels, pTile, nPosX, nPosY, (int)pLight);
-      return iVar1;
+      RENDERER_GLIDE_SetColorCombine(1);
+      RENDERER_GLIDE_SetAlphaBlendMode(1);
+      RENDERER_GLIDE_SetTextureFiltering(1);
+      bResult = RENDERER_GLIDE_IsPerspectiveEnabled();
+      if (bResult) {
+        int32_t iVar1;
+        iVar1 = RENDERER_GLIDE_DrawWallTilePerspective(nScreenPanels, pTile, nPosX, nPosY, (int)pLight);
+        return iVar1;
+      }
+
+      bResult = RENDERER_GLIDE_DrawWallTileSimple(nScreenPanels, pTile, nPosX, nPosY, (int32_t)pLight);
+      return bResult;
     }
 
-    bResult = RENDERER_GLIDE_DrawWallTileSimple(nScreenPanels, pTile, nPosX, nPosY, (int32_t)pLight);
-    return bResult;
+    return 0;
 }
 
 void RENDERER_GLIDE_InitGroundTileVertices() {
@@ -2883,7 +2885,7 @@ void RENDERER_GLIDE_InitGroundTileVertices() {
       } while (nCol < 6);
 
       nRow++;
-      if (5 < nRow) {
+      if (nRow >= 6) {
         break;
       }
 
@@ -2907,11 +2909,10 @@ void RENDERER_GLIDE_InitGroundTileVertices() {
       ppVertexPtrs[10] = (void*)((int)pfVertexX + 0x8c);
       pfVertexX = (void*)((int)pfVertexX + 0xa8);
       ppVertexPtrs += 0xc;
-    } while ((int)pfVertexX < (uintptr_t)((char*)&gaGlideGroundTileVertices + sizeof(gaGlideGroundTileVertices)));
+    } while ((int)pfVertexX < (intptr_t)((char*)&gaGlideGroundTileVertices + sizeof(gaGlideGroundTileVertices)));
 }
 
 BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc * pLight, int32_t nPosX, int32_t nPosY, int32_t nWorldXpos, int32_t nWorldYpos, BYTE nAlpha, int32_t nScreenPanels, void * pTileData) {
-    D2Glide::Renderer::ShadowDiag::NoteWorldFrame(); // [glide fix 11] in-world marker: ground tiles only draw once the world is up
     // Static local variables (originally global data)
     static void * gapGlideGroundQuadCornerPtrs[4] = { (void*)gaGlideGroundTileVertices, (void*)&gaGlideGroundTileVertices[5].fX, (void*)&gaGlideGroundTileVertices[35].fX, (void*)&gaGlideGroundTileVertices[30].fX }; D2_STATIC_GUARD(gapGlideGroundQuadCornerPtrs, "D2Glide::Renderer::Glide::DrawGroundTile::gapGlideGroundQuadCornerPtrs");
 
@@ -3008,7 +3009,7 @@ BOOL __fastcall DrawGroundTile(D2TileLibraryEntryStrc * pTile, D2GfxLightExStrc 
     do {
       bResult = (*GLIDEDLL_grDrawVertexArray_12)(4, 0xc, ppVertexPtrs);
       ppVertexPtrs += 0xc;
-    } while ((int)ppVertexPtrs < (uintptr_t)((char*)&gapGlideGroundStripVertexPtrs + sizeof(gapGlideGroundStripVertexPtrs)));
+    } while ((int)ppVertexPtrs < (intptr_t)((char*)&gapGlideGroundStripVertexPtrs + sizeof(gapGlideGroundStripVertexPtrs)));
 
     return bResult;
 }
@@ -3080,13 +3081,13 @@ void __stdcall RENDERER_GLIDE_BuildPerspectiveLUT() {
     uint32_t* pLutEntry = (uint32_t*)gpPerspectiveLookupTable;
     do {
       int nClampedZ;
-      if (nZ < -0xbb6) {
-        nClampedZ = -2999;
-      } else {
+      if (nZ > -0xbb7) {
         nClampedZ = nZ;
-        if (0xbb6 < nZ) {
+        if (nZ >= 0xbb7) {
           nClampedZ = 2999;
         }
+      } else {
+        nClampedZ = -2999;
       }
 
       nZ++;
@@ -3099,11 +3100,11 @@ void __stdcall RENDERER_GLIDE_BuildPerspectiveLUT() {
 }
 
 BOOL __stdcall RENDERER_GLIDE_IsPerspectiveEnabled() {
-    if (!pD2GFXRenderedDataStrc->bPerspectiveCapable) {
-      return 0;
+    if (pD2GFXRenderedDataStrc->bPerspectiveCapable) {
+      return pD2GFXRenderedDataStrc->bPerspectiveEnabled;
     }
 
-    return pD2GFXRenderedDataStrc->bPerspectiveEnabled;
+    return 0;
 }
 
 void __fastcall SetPerspectiveScale(int32_t nScaleX, int32_t nScaleY) {
@@ -3291,7 +3292,7 @@ static void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerDat
     (*GLIDEDLL_grTexSource_16)(gnGlideTMUHandle, gnGlideSmackTex1StartAddr, 3, &gTexInfoBlocks0Glide);
     int nSmackWidth = pSmackerData->nX;
     int nAlphaClamped = 0x100;
-    if (nAlpha < 0x101) {
+    if (nAlpha <= 0x100) {
       nAlphaClamped = nAlpha;
     }
 
@@ -3376,7 +3377,21 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     }
 
     pBuffer->eMode = (char)nVersion;
-    if ((char)nVersion == 'p') {
+    if ((char)nVersion != 'p') {
+      if ((char)nVersion != 's') {
+        return;
+      }
+      if (pBuffer->hSmack) {
+        return;
+      }
+
+      nSmackHandle = (void*)SmackOpen(szSmacker, 0xfe000, -1);
+      pBuffer->hSmack = nSmackHandle;
+      if (nSmackHandle) {
+        SmackToBuffer(nSmackHandle, 0, 0, 0x200, 0x40, gpGlideSmackerTexBuf2, 0);
+        return;
+      }
+    } else {
       uint32_t bFileLoadOk;
       nVersion = 0;
       __frame0.dwFileSize = 0;
@@ -3403,26 +3418,12 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
             iVar1 += -0x200;
             nRowIdx--;
             bFileLoadOk = __frame0.nImgWidth;
-          } while (0 < iVar1);
+          } while (iVar1 > 0);
 
           GLSMACK_ConvertPaletteToRGB565(&__frame0.byPalette0);
           GLSMACK_UploadTextures();
           return;
         }
-      }
-    } else {
-      if ((char)nVersion != 's') {
-        return;
-      }
-      if (pBuffer->hSmack) {
-        return;
-      }
-
-      nSmackHandle = (void*)SmackOpen(szSmacker, 0xfe000, -1);
-      pBuffer->hSmack = nSmackHandle;
-      if (nSmackHandle) {
-        SmackToBuffer(nSmackHandle, 0, 0, 0x200, 0x40, gpGlideSmackerTexBuf2, 0);
-        return;
       }
     }
     if (pBuffer->eMode == 's' && pBuffer->hSmack) {

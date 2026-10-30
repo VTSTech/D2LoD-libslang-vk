@@ -40,15 +40,16 @@ uint32_t __fastcall RollRandomNumerUpToArgument(uint32_t nNumber) {
     D2SeedStrc seedResult;
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     D2SeedStrc* pSeed = &pPlayerUnit_lcl->sSeed;
-    if ((int)nNumber < 1) {
+    if ((int)nNumber <= 0) {
       return 0;
     }
 
     uint64_t uSeedCalc = (uint64_t)pPlayerUnit_lcl->sSeed.nSeedHigh;
     if (nNumber & nNumber - 1) {
       seedResult = D2_SEED_NEXT(*pSeed);
-      *pSeed = seedResult;
-      return (uint32_t)(((uint64_t)d2_bits_of(seedResult) & 0xffffffff) % (uint64_t)nNumber);
+      pSeed->nSeedHigh = seedResult.nSeedHigh;
+      pSeed->nSeedLow = seedResult.nSeedLow;
+      return (uint32_t)(seedResult.nSeedLow % nNumber);
     }
 
     seedResult = D2_SEED_NEXT(*pSeed);

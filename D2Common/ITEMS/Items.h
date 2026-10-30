@@ -338,7 +338,7 @@ int32_t __stdcall ITEMS_CheckBodyLocationFit(struct D2UnitStrc * pItem, uint32_t
 int32_t __fastcall ITEMS_CalcTransactionCost(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, int32_t nDifficulty, struct D2BitBufferStrc * pQuestBitBuffer, int32_t nNpcId, int32_t nTransactionType);
 int32_t __stdcall CalculateTransactionCost_Thunk(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, int32_t nDifficulty, struct D2BitBufferStrc * pQuestBitBuffer, int32_t nNpcId, int32_t nTransactionType);
 // Takes only pItem. The prologue's PUSH ECX reserves the 4-byte slot for the second body location byte ([EBP-1]); ECX is not an argument.
-uint32_t __fastcall ITEMS_GetRequiredBodyType(struct D2UnitStrc * pItem);
+uint32_t __stdcall ITEMS_GetRequiredBodyType(struct D2UnitStrc * pItem);
 // Computes the total gold cost to repair (and restock replenishable/charged items in) all 13 equipped slots of a player. For each slot item that needs repair, restocking, or recharging, calls CalculateTransactionCost with mode 3 and accumulates the sum. Invokes an optional pfnCallback after pricing each item. Returns total cost, or 0 if the player or inventory is null.
 int32_t __stdcall ITEMS_CalculateRepairAllCost(::SGAMEDATA * unk, struct D2UnitStrc * pPlayer, int32_t nNpcId, int32_t nDifficulty, struct D2BitBufferStrc * pBitBuffer, pfnItemTransactionCb pfnCallback);
 uint32_t __stdcall ITEM_IsActiveCharm(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);

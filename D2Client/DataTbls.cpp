@@ -20,61 +20,61 @@
 namespace D2Client::DataTbls {
 
 D2SoundsTxt * __fastcall TXT_sounds_GetLineBySoundId(int32_t nSoundId) {
-    if (!(pTxtSounds && -1 < nSoundId && nSoundId < nTxtSoundsSize)) {
-      return nullptr;
+    if (pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
+      return pTxtSounds + nSoundId;
     }
 
-    return pTxtSounds + nSoundId;
+    return nullptr;
 }
 
 D2CharStatsTxt * __fastcall INV_GetCharStatsTxtLine(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtCharStatsSize)) {
-      return nullptr;
+    if (nParam >= 0 && nParam < sgptDataTable->nTxtCharStatsSize) {
+      return sgptDataTable->pTxtCharStats + nParam;
     }
 
-    return sgptDataTable->pTxtCharStats + nParam;
+    return nullptr;
 }
 
 D2SetsTxt * __fastcall GetSetsLine(int32_t nSetId) {
-    if (!(-1 < nSetId && nSetId < sgptDataTable->nTxtSetsSize)) {
-      return nullptr;
+    if (nSetId >= 0 && nSetId < sgptDataTable->nTxtSetsSize) {
+      return sgptDataTable->pTxtSets + nSetId;
     }
 
-    return sgptDataTable->pTxtSets + nSetId;
+    return nullptr;
 }
 
 D2SetItemsTxt * __fastcall GetSetItemsLine(int32_t nSetItemId) {
-    if (!(-1 < nSetItemId && nSetItemId < sgptDataTable->nTxtSetItemsSize)) {
-      return nullptr;
+    if (nSetItemId >= 0 && nSetItemId < sgptDataTable->nTxtSetItemsSize) {
+      return sgptDataTable->pTxtSetItems + nSetItemId;
     }
 
-    return sgptDataTable->pTxtSetItems + nSetItemId;
+    return nullptr;
 }
 
 D2UniqueItemsTxt * __fastcall INV_GetUniqueItemsTxtLine(int32_t nParam) {
-    if (!(-1 < nParam && nParam < sgptDataTable->nTxtUniqueItemsSize)) {
-      return nullptr;
+    if (nParam >= 0 && nParam < sgptDataTable->nTxtUniqueItemsSize) {
+      return sgptDataTable->pTxtUniqueItems + nParam;
     }
 
-    return sgptDataTable->pTxtUniqueItems + nParam;
+    return nullptr;
 }
 
 D2SkillDescTxt * __fastcall GetSkillDescription(eD2Skills eSkillId) {
-    if (!(-1 < (int)eSkillId && (int)eSkillId < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkillId)) {
-      return nullptr;
+    D2SkillsTxt* pSkillsTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
+    if (pSkillsTxt) {
+      int nSkillDescIdx;
+      nSkillDescIdx = (int)pSkillsTxt->skilldesc;
+      if (nSkillDescIdx >= 0 && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize) {
+        return sgptDataTable->pTxtSkillDesc + nSkillDescIdx;
+      }
     }
 
-    int nSkillDescIdx = (int)sgptDataTable->pTxtSkills[eSkillId].skilldesc;
-    if (!(-1 < nSkillDescIdx && nSkillDescIdx < sgptDataTable->nTxtSkillDescSize)) {
-      return nullptr;
-    }
-
-    return sgptDataTable->pTxtSkillDesc + nSkillDescIdx;
+    return nullptr;
 }
 
 int32_t __fastcall SKILL_GetMaxLevelForSkill(int32_t skillId) {
     int32_t nMaxLevel;
-    if (!(skillId < 0 || sgptDataTable->nTxtSkillsCount <= skillId || (nMaxLevel = (int32_t)sgptDataTable->pTxtSkills[skillId].maxlvl , nMaxLevel < 1))) {
+    if (!(skillId < 0 || skillId >= sgptDataTable->nTxtSkillsCount || (nMaxLevel = (int32_t)sgptDataTable->pTxtSkills[skillId].maxlvl , nMaxLevel <= 0))) {
       return nMaxLevel;
     }
 
@@ -83,7 +83,7 @@ int32_t __fastcall SKILL_GetMaxLevelForSkill(int32_t skillId) {
 }
 
 int32_t __fastcall CheckMonStatId(int32_t nMonStatsId) {
-    if (!(nMonStatsId < 0 || sgptDataTable->nTxtMonStatsSize <= nMonStatsId)) {
+    if (!(nMonStatsId < 0 || nMonStatsId >= sgptDataTable->nTxtMonStatsSize)) {
       return nMonStatsId;
     }
 
@@ -92,12 +92,12 @@ int32_t __fastcall CheckMonStatId(int32_t nMonStatsId) {
 }
 
 int32_t __fastcall TXT_Skills_GetSkillRange(eD2Skills eSkill, int32_t pnSkillLevel) {
-    if (!(-1 < (int)eSkill && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+    if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
     D2SkillsTxt* pSkillsTxtLine = sgptDataTable->pTxtSkills + eSkill;
-    if (!(pSkillsTxtLine && 0 < pnSkillLevel)) {
+    if (!(pSkillsTxtLine && pnSkillLevel > 0)) {
       return 0;
     }
 

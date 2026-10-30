@@ -75,7 +75,7 @@ void * __fastcall ASYNCDATA_GetResult(struct D2AsyncData_Line0x128 * pAsyncData)
 // The SOUNDHDR callers add the result to their loaded-byte counters.
 size_t __fastcall ASYNCDATA_GetReadSize(struct D2AsyncData_Line0x128 * pAsyncData);
 // __thiscall shape (ECX=this, RET 8). Frees the old buffer at +0x3c then stores [EBP+8]->+0x3c (pReadBuffer, void*) and [EBP+0xc]->+0x40 (nReadSize, size_t).
-void __fastcall ASYNCDATA_SetResult(struct D2AsyncData_Line0x128 * pAsyncData, void * pNewBuffer, size_t nNewSize);
+void __thiscall ASYNCDATA_SetResult(struct D2AsyncData_Line0x128 * pAsyncData, void * pNewBuffer, size_t nNewSize);
 void __fastcall ASYNCDATA_Free(struct D2AsyncData_Line0x128 * pAsyncData);
 
 } // namespace Fog::Src::AsyncData

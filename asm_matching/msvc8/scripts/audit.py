@@ -111,7 +111,7 @@ RUNTIME = os.path.join(ORACLE, 'evidence', 'runtime.tsv')
 
 
 def runtime_starts(model, librows, path=RUNTIME):
-    """The original functions that are Microsoft's runtime, not Blizzard's code.
+    """The original functions that belong to the statically linked C runtime.
 
     Four sources, each evidence on its own: the functions libmap.tsv pairs with
     a libcmt.lib function; everything in the run of library code those pairs
@@ -219,7 +219,7 @@ def main():
              'mapped and compared: %d' % len(out)]
     for k in ('MATCH', 'REF_DIFF', 'INSN_MATCH', 'INSN_COUNT_MATCH', 'OUR+-N', 'QUARANTINE', 'MISSING'):
         lines.append('  %-17s %6d' % (k, statuses.get(k, 0)))
-    # The headline: Blizzard's code alone. The statically linked runtime is
+    # The headline: the game without the statically linked runtime, which is
     # Microsoft's, linked rather than reconstructed, so it is out of both the
     # matched and the total; the whole binary follows as the second figure.
     runtime, (rlo, rhi) = runtime_starts(model, librows)
@@ -228,7 +228,7 @@ def main():
     game_out = [r for r in out if r[0] not in runtime]
     game_match = [r for r in game_out if r[9] == 'MATCH']
     game_match_bytes = sum(r[1] - r[0] for r in game_match)
-    lines[1:1] = ['Blizzard code only: %d of %d functions MATCH (%.2f%%), %d of %d bytes (%.2f%%)' % (
+    lines[1:1] = ['Without the C runtime: %d of %d functions MATCH (%.2f%%), %d of %d bytes (%.2f%%)' % (
         len(game_match), len(game), 100.0 * len(game_match) / max(1, len(game)),
         game_match_bytes, game_bytes, 100.0 * game_match_bytes / max(1, game_bytes)),
         '  runtime left out: %d functions (%d bytes): libmap pairs, the library run %08x..%08x, import thunks, %s' % (

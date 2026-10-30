@@ -94,67 +94,6 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
     if (!false) {
       BOOL bImeStatus;
       switch (pUnderMouseLocal->nWParam) {
-        case 2:
-          if (gaIMECompositionBuffer != 9) {
-            goto cleanup;
-          }
-        /* DWORD idThread for GetKeyboardLayout */ hKbLayout = GetKeyboardLayout(0);
-        /* HKL param_1 for ImmIsIME */ bImeStatus = ImmIsIME(hKbLayout);
-        gnIMEInputMode = (bImeStatus ? -4 : 0) + 4;
-        break;
-        case 3:
-          if (gaIMECompositionBuffer != 9) {
-            goto cleanup;
-          }
-        CHAT_HandleIMECandidateList(hImc);
-        break;
-        case 4:
-          pMemoryToFree = gpIMECandidateList;
-        if (gaIMECompositionBuffer == 9) {
-          if (gpIMECandidateList) {
-            D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0x160);
-            gpIMECandidateList = (LPCANDIDATELIST)0x0;
-          }
-
-          pMemoryToFree = gpIMECandidateList;
-          pUnderMouseLocal->bHandled = 1;
-          pUnderMouseLocal->dwResult = 0;
-        }
-        if (gaIMECompositionBuffer != 8) {
-          goto cleanup;
-        }
-        if (pMemoryToFree) {
-          D2_FREE_AT(pMemoryToFree, ".\\UI\\chat.cpp", 0x16b);
-          gpIMECandidateList = (LPCANDIDATELIST)0x0;
-        }
-
-        break;
-        case 5:
-          if (gaIMECompositionBuffer == 9) {
-            CHAT_HandleIMECandidateList(hImc);
-            pUnderMouseLocal->bHandled = 1;
-            pUnderMouseLocal->dwResult = 0;
-          }
-        if (gaIMECompositionBuffer != 8) {
-          goto cleanup;
-        }
-
-        CHAT_HandleIMECandidateList(hImc);
-        break;
-        case 6:
-          /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hImc, (LPDWORD)&pMsg, &dwSentence);
-        if (gaIMECompositionBuffer != 7 && gaIMECompositionBuffer != 0xc) {
-          goto cleanup;
-        }
-        if ((uint32_t)pMsg & 1) {
-          gnIMEInputMode = 1;
-          gaChatInputBuffer = '\x01';
-          goto cleanup;
-        }
-
-        goto ime_off;
-        default:
-          goto cleanup;
         case 8:
           if (gaIMECompositionBuffer == 6) {
             /* HIMC param_1 for ImmGetOpenStatus */ bImeStatus = ImmGetOpenStatus(hImc);
@@ -186,6 +125,67 @@ void __stdcall INPUT_HandleIMENotify(D2UIMouseMsgStrc * pMsg) {
         gaChatInputBuffer = '\0';
         gnIMEInputMode = 0;
         goto cleanup;
+        case 6:
+          /* LPDWORD lpfdwSentence for ImmGetConversionStatus */ /* LPDWORD lpfdwConversion for ImmGetConversionStatus */ /* HIMC param_1 for ImmGetConversionStatus */ ImmGetConversionStatus(hImc, (LPDWORD)&pMsg, &dwSentence);
+        if (gaIMECompositionBuffer != 7 && gaIMECompositionBuffer != 0xc) {
+          goto cleanup;
+        }
+        if ((uint32_t)pMsg & 1) {
+          gnIMEInputMode = 1;
+          gaChatInputBuffer = '\x01';
+          goto cleanup;
+        }
+
+        goto ime_off;
+        default:
+          goto cleanup;
+        case 5:
+          if (gaIMECompositionBuffer == 9) {
+            CHAT_HandleIMECandidateList(hImc);
+            pUnderMouseLocal->bHandled = 1;
+            pUnderMouseLocal->dwResult = 0;
+          }
+        if (gaIMECompositionBuffer != 8) {
+          goto cleanup;
+        }
+
+        CHAT_HandleIMECandidateList(hImc);
+        break;
+        case 4:
+          pMemoryToFree = gpIMECandidateList;
+        if (gaIMECompositionBuffer == 9) {
+          if (gpIMECandidateList) {
+            D2_FREE_AT(gpIMECandidateList, ".\\UI\\chat.cpp", 0x160);
+            gpIMECandidateList = (LPCANDIDATELIST)0x0;
+          }
+
+          pMemoryToFree = gpIMECandidateList;
+          pUnderMouseLocal->bHandled = 1;
+          pUnderMouseLocal->dwResult = 0;
+        }
+        if (gaIMECompositionBuffer != 8) {
+          goto cleanup;
+        }
+        if (pMemoryToFree) {
+          D2_FREE_AT(pMemoryToFree, ".\\UI\\chat.cpp", 0x16b);
+          gpIMECandidateList = (LPCANDIDATELIST)0x0;
+        }
+
+        break;
+        case 3:
+          if (gaIMECompositionBuffer != 9) {
+            goto cleanup;
+          }
+        CHAT_HandleIMECandidateList(hImc);
+        break;
+        case 2:
+          if (gaIMECompositionBuffer != 9) {
+            goto cleanup;
+          }
+        /* DWORD idThread for GetKeyboardLayout */ hKbLayout = GetKeyboardLayout(0);
+        /* HKL param_1 for ImmIsIME */ bImeStatus = ImmIsIME(hKbLayout);
+        gnIMEInputMode = (bImeStatus ? -4 : 0) + 4;
+        break;
       }
 
       pUnderMouseLocal->dwResult = 0;
@@ -314,20 +314,6 @@ void __stdcall CHAT_InitIME() {
         }
 
         break;
-        case 8:
-          /* DWORD idThread for GetKeyboardLayout */ gaChatInputBuffer = '\0';
-        gbChatInputEnabled = 1;
-        hKeyboardLayout = GetKeyboardLayout(0);
-        /* HKL param_1 for ImmIsIME */ bResult = ImmIsIME(hKeyboardLayout);
-        if (!bResult) {
-          /* DWORD param_2 for ImmSimulateHotKey */ dwHotKeyId = 0x10;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(hWnd, dwHotKeyId);
-        }
-
-        /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 1);
-        gnIMEInputMode = 5;
-        break;
         case 9:
           /* DWORD idThread for GetKeyboardLayout */ gaChatInputBuffer = '\0';
         gbChatInputEnabled = 1;
@@ -344,6 +330,20 @@ void __stdcall CHAT_InitIME() {
         break;
         default:
           goto release_ime_context;
+        case 8:
+          /* DWORD idThread for GetKeyboardLayout */ gaChatInputBuffer = '\0';
+        gbChatInputEnabled = 1;
+        hKeyboardLayout = GetKeyboardLayout(0);
+        /* HKL param_1 for ImmIsIME */ bResult = ImmIsIME(hKeyboardLayout);
+        if (!bResult) {
+          /* DWORD param_2 for ImmSimulateHotKey */ dwHotKeyId = 0x10;
+          hWnd = D2gfx::D2GFX::GetHwnd();
+          /* HWND param_1 for ImmSimulateHotKey */ ImmSimulateHotKey(hWnd, dwHotKeyId);
+        }
+
+        /* BOOL param_2 for ImmSetOpenStatus */ /* HIMC param_1 for ImmSetOpenStatus */ ImmSetOpenStatus(hIMC, 1);
+        gnIMEInputMode = 5;
+        break;
       }
 
       nEventCount = 7;
@@ -501,7 +501,7 @@ void __stdcall CHAT_DrawIMEComposition(int32_t nPosX, int32_t nPosY) {
 void __stdcall CHAT_DrawIMECandidates() {
     int nWideCount;
     DWORD dwOffset;
-    uint16_t wszCandidate[256];
+    uint16_t* pwszClear;
     char szNumberPrefix[20];
     uint16_t wszNumberPrefix[20];
     uint32_t nEndIndex;
@@ -535,20 +535,20 @@ void __stdcall CHAT_DrawIMECandidates() {
     int nDisplayNumber = 0;
     DWORD dwIndex = dwOffset;
     do {
-      uint16_t* pwszClear;
+      uint16_t wszCandidate[256];
       dwOffset = *pdwCurOffset;
       pdwOffsetTable = pCandidateList->dwOffset;
       nPosY += nFontHeight;
       nDisplayNumber++;
-      memset(wszNumberPrefix, 0, 20 * sizeof(wszNumberPrefix[0]));
+      for (int iFill = 0; iFill < 20; iFill++) {
+        wszNumberPrefix[iFill] = L'\0';
+      }
+
       sprintf(szNumberPrefix, "%d: ", nDisplayNumber);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNumberPrefix, szNumberPrefix, 0x14);
       D2Win::Src::D2WinFont::DRAW_text(wszNumberPrefix, 0x14, nPosY - 0x170 + ScreenSizeY, 0, 0);
-      pwszClear = wszCandidate;
-      /* int cchWideChar for MultiByteToWideChar */ for (nWideCount = 0x80; nWideCount; nWideCount--) {
-        pwszClear[0] = L'\0';
-        pwszClear[1] = L'\0';
-        pwszClear += 2;
+      for (nWideCount = 0; nWideCount < 0x100; nWideCount++) {
+        wszCandidate[nWideCount] = L'\0';
       }
 
       /* LPWSTR lpWideCharStr for MultiByteToWideChar */ /* int cbMultiByte for MultiByteToWideChar */ /* LPCSTR lpMultiByteStr for MultiByteToWideChar */ /* DWORD dwFlags for MultiByteToWideChar */ /* UINT CodePage for MultiByteToWideChar */ nWideCount = MultiByteToWideChar(0, 1, (LPCSTR)((int)pdwOffsetTable + (dwOffset - 0x18)), -1, (LPWSTR)wszCandidate, 0x101);
@@ -577,21 +577,13 @@ void __stdcall DRAW_UI_ChatInput() {
     int32_t nPrevFont;
     nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(0xd);
     if (gbChatInputEnabled) {
-      memset(wszModeLabel, 0, 20 * sizeof(wszModeLabel[0]));
+      for (int iFill = 0; iFill < 20; iFill++) {
+        wszModeLabel[iFill] = L'\0';
+      }
+
       switch (gnIMEInputMode) {
         case 0:
           D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszModeLabel, "Alphanumeric", 0x14);
-        break;
-        case 1:
-          wszModeLabel[0] = L'한';
-        wszModeLabel[1] = L'글';
-        wszModeLabel[2] = L'\0';
-        wszModeLabel[3] = L'\0';
-        break;
-        case 2:
-
-        case 3:
-          memcpy(wszModeLabel, L"日本語", 8);
         break;
         case 4:
 
@@ -604,6 +596,17 @@ void __stdcall DRAW_UI_ChatInput() {
         CHAT_DrawIMECandidates();
         default:
           goto draw_input_box;
+        case 1:
+          wszModeLabel[0] = L'한';
+        wszModeLabel[1] = L'글';
+        wszModeLabel[2] = L'\0';
+        wszModeLabel[3] = L'\0';
+        break;
+        case 2:
+
+        case 3:
+          memcpy(wszModeLabel, L"日本語", 8);
+        break;
       }
 
       D2Win::Src::D2WinFont::DRAW_text(wszModeLabel, 0x14, ScreenSizeY - 0x80, 0, 0);
@@ -1102,12 +1105,7 @@ static BOOL CHAT_HandleResignCommand(char * szCommandName, char * szInput) {
     sprintf(szUsageMessage, "<BattleNet>: Correct usage is: %s", szCommandName);
     pScan = szUsageMessage;
     char* pdwMsgDst = MStack_124.message;
-    for (nCopyCount = 0x40; nCopyCount; nCopyCount--) {
-      *(uint32_t*)pdwMsgDst = *(uint32_t*)pScan;
-      pScan += 4;
-      pdwMsgDst += 4;
-    }
-
+    memcpy(pdwMsgDst, pScan, 0x100);
     Text::TEXT_ProcessChatMessage(&MStack_124);
     return 1;
 }
@@ -1210,12 +1208,7 @@ static BOOL __stdcall CHAT_HandleWhisperCommand(int32_t bInGame, char * szComman
     sprintf(sWhisperPacket.szMsg + 0xd, "<BattleNet>: Correct usage is: %s (name) (message)", szCommandName);
     pScan = sWhisperPacket.szMsg + 0xd;
     pdwMsgDst = MStack_334.message;
-    for (nTokenCount = 0x40; nTokenCount; nTokenCount--) {
-      *(uint32_t*)pdwMsgDst = *(uint32_t*)pScan;
-      pScan += 4;
-      pdwMsgDst += 4;
-    }
-
+    memcpy(pdwMsgDst, pScan, 0x100);
     Text::TEXT_ProcessChatMessage(&MStack_334);
     return 1;
 }
@@ -1232,7 +1225,7 @@ static void __stdcall CHAT_ExtractCommandParameter(int32_t nMaxLength, char * sz
 
 // Process chat commands (/fps, /framerate, /players, /nopickup, /ignore, /unignore, /filtermsg, /msg, /help, etc.). Parses command, checks game state, executes handler or sends message via NET_D2GS_CLIENT_Send_Chat.
 // Stack[0x8] nInputOffset is reused as the parse cursor: it is overwritten with pszInputBase + nInputOffset (asm 0047c44c..45b); the caller passes the count of leading spaces it skipped.
-static void __stdcall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
+static void __thiscall ChatCommandProcessor(uint16_t * pwInputMessage, char * pszInputBase, int32_t nInputOffset) {
     eD2GSGameType eGameType;
     int32_t nCmpResult;
     BOOL BVar1;

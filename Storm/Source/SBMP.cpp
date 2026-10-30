@@ -25,11 +25,11 @@ namespace Storm::Source::SBMP {
 // Validates TGA file header structure. Checks image type (1, 2, 9, or 10), color map type (0 or 1), bit depth (8, 24, or 32), and verifies image dimensions are within valid range (< 257).
 static BOOL __stdcall SBMP_ValidateTGAHeader(TGAHeaderStrc * descriptor) {
     uint8_t uVar1 = descriptor->nImageType;
-    if (!((uVar1 == '\x01' || uVar1 == '\x02' || uVar1 == '\t' || uVar1 == '\n') && (descriptor->nColorMapType == '\0' && (descriptor->nPixelDepth == '\x18' && !(descriptor->nDescriptor & 0xf) || descriptor->nPixelDepth == ' ' && (descriptor->nDescriptor & 0xf) == 8) || descriptor->nColorMapType == '\x01' && descriptor->nPixelDepth == '\b' && (uint32_t)descriptor->nCMapLength + (uint32_t)descriptor->nCMapFirst < 0x101 && (descriptor->nCMapEntrySize == '\x18' || descriptor->nCMapEntrySize == ' ')) && !(descriptor->nDescriptor & 0xc0))) {
-      return 0;
+    if ((uVar1 == '\x01' || uVar1 == '\x02' || uVar1 == '\t' || uVar1 == '\n') && (descriptor->nColorMapType == '\0' && (descriptor->nPixelDepth == '\x18' && !(descriptor->nDescriptor & 0xf) || descriptor->nPixelDepth == ' ' && (descriptor->nDescriptor & 0xf) == 8) || descriptor->nColorMapType == '\x01' && descriptor->nPixelDepth == '\b' && (uint32_t)descriptor->nCMapLength + (uint32_t)descriptor->nCMapFirst < 0x101 && (descriptor->nCMapEntrySize == '\x18' || descriptor->nCMapEntrySize == ' ')) && !(descriptor->nDescriptor & 0xc0)) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 // Decodes TGA color map (palette) into RGBA format. Reads palette entries from file, converts BGR(A) to RGBA byte order, and pads with alpha channel if needed. Supports 3 or 4 bytes per palette entry.
@@ -128,6 +128,9 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
           do {
             nPixelCount--;
             switch (nBytesPerPixelStored) {
+              case 4:
+                *(uint32_t*)pDstPixels = *(uint32_t*)pSrcData;
+              break;
               case 3:
                 pDstPixels[2] = pSrcData[2];
               case 2:
@@ -135,8 +138,6 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
               case 1:
                 *pDstPixels = *pSrcData;
               break;
-              case 4:
-                *(uint32_t*)pDstPixels = *(uint32_t*)pSrcData;
             }
 
             pDstPixels += nHStep;
@@ -190,6 +191,9 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
 
             nRunCount--;
             switch (nBytesPerPixelStored) {
+              case 4:
+                *(uint32_t*)pDstPixels = *(uint32_t*)nColRemaining;
+              break;
               case 3:
                 pDstPixels[2] = nColRemaining[2];
               case 2:
@@ -197,8 +201,6 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
               case 1:
                 *pDstPixels = *nColRemaining;
               break;
-              case 4:
-                *(uint32_t*)pDstPixels = *(uint32_t*)nColRemaining;
             }
 
             pSrcEnd = pDstPixels + nHStep;
@@ -232,6 +234,9 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
 
           nRunCount--;
           switch (nBytesPerPixelStored) {
+            case 4:
+              *(uint32_t*)pDstPixels = *(uint32_t*)nColRemaining;
+            break;
             case 3:
               pDstPixels[2] = pSrcEnd[3];
             case 2:
@@ -239,8 +244,6 @@ static BOOL __fastcall SBMP_DecodeTGAPixels(uint8_t * pSrcData, uint8_t * pTgaHe
             case 1:
               *pDstPixels = *nColRemaining;
             break;
-            case 4:
-              *(uint32_t*)pDstPixels = *(uint32_t*)nColRemaining;
           }
 
           pDstPixels += nHStep;
@@ -946,10 +949,10 @@ static int __stdcall SBMP_EncodeBmp256File(int nPalettePtr, uint32_t nSrcStride,
     /* DWORD nNumberOfBytesToWrite for WriteFile */ sBmpInfoHdr.biClrUsed = 0x100;
     sBmpInfoHdr.biClrImportant = 0x100;
     /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ sBmpInfoHdr.biSize = 0x28;
+    sBmpInfoHdr.biWidth = nSrcStride;
     sBmpInfoHdr.biPlanes = 1;
     sBmpInfoHdr.biBitCount = 8;
     sBmpInfoHdr.biCompression = 0;
-    sBmpInfoHdr.biWidth = nSrcStride;
     sBmpInfoHdr.biSizeImage = nSrcStride * height;
     WriteFile(hFile, (LPCVOID)&sBmpInfoHdr, 0x28, &dwBytesWritten, (LPOVERLAPPED)0x0);
     int nPalIndex = 0;

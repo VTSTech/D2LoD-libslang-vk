@@ -32,6 +32,7 @@
 #include "D2Common/Drlg/OutRoom.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Drlg/RoomTile.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Level.h"
@@ -185,7 +186,7 @@ void __fastcall DRLGWARP_UpdateWarpRoomExDeselect(D2RoomExStrc * pRoomEx, eD2Lev
 // rolls a seeded random index, then outputs the X/Y coordinates.
 // Also initializes the room at those coordinates.
 // Called by DRLGSPAWN_FindSpawnLocationInLevel.
-D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType, int * pnOutX, int * pnOutY, D2DrlgLevelStrc * pLevel) {
+D2RoomExStrc * __thiscall DRLGSPAWN_GetRandomPresetSpawnPoint(D2DrlgLevelStrc * pLevel, int32_t nSpawnType, int * pnOutX, int * pnOutY) {
     // Static local variables (originally global data)
     static int gaSpawnPointGroupTable[28] = {
     0x1,
@@ -227,7 +228,7 @@ D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType
     nSpawnIdx = pLevel->nSpawnPointCount;
     uint32_t nMatchingCount;
     nMatchingCount = 0;
-    if (0 < nSpawnIdx) {
+    if (nSpawnIdx > 0) {
       uint64_t nSeedHighU;
       pnSpawnType = &pLevel->aSpawnPoints[0].nSpawnType;
       do {
@@ -245,14 +246,15 @@ D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType
         } else {
           nSeedHighU = (uint64_t)pLevel->sSeed.nSeedHigh;
           nSeedLow = pLevel->sSeed.nSeedLow;
-          if (!(nMatchingCount & nMatchingCount - 1)) {
+          if (nMatchingCount & nMatchingCount - 1) {
+            sNextSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nSeedHighU);
+            pLevel->sSeed.nSeedHigh = sNextSeed.nSeedHigh;
+            pLevel->sSeed.nSeedLow = sNextSeed.nSeedLow;
+            nSelectedIdx = (int)(sNextSeed.nSeedLow % nMatchingCount) + 1;
+          } else {
             sNextSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nSeedHighU);
             nSelectedIdx = (nMatchingCount - 1 & sNextSeed.nSeedLow) + 1;
             pLevel->sSeed = sNextSeed;
-          } else {
-            sNextSeed = (D2SeedStrc)((uint64_t)nSeedLow * 0x6ac690c5 + nSeedHighU);
-            pLevel->sSeed = sNextSeed;
-            nSelectedIdx = (int)(((uint64_t)d2_bits_of(sNextSeed) & 0xffffffff) % (uint64_t)nMatchingCount) + 1;
           }
         }
 
@@ -263,13 +265,13 @@ D2RoomExStrc * __fastcall DRLGSPAWN_GetRandomPresetSpawnPoint(int32_t nSpawnType
     nSelectedIdx = 0;
     find_selected_point:
     nSpawnPointIdx = 0;
-    if (0 < pLevel->nSpawnPointCount) {
+    if (pLevel->nSpawnPointCount > 0) {
       pnSpawnType = &pLevel->aSpawnPoints[0].nSpawnType;
       do {
         if (nSpawnType == *pnSpawnType || gaSpawnPointGroupTable[nSpawnType * 2] && gaSpawnPointGroupTable[nSpawnType * 2 + 1] == gaSpawnPointGroupTable[*pnSpawnType * 2 + 1]) {
           nSelectedIdx--;
         }
-        if (nSelectedIdx < 1) {
+        if (nSelectedIdx <= 0) {
           break;
         }
 
@@ -312,7 +314,7 @@ static D2RoomExStrc * __stdcall DRLGSPAWN_FindWaypointRoomAndCoords(int * pX, in
       return pRoomEx;
     }
 
-    while (pPresetUnit->eType != UNIT_OBJECT || 0x23c < pPresetUnit->nClassId || (pObjectTxt = DATATBLS::ObjectTbls::TXT_Objects_GetLine(pPresetUnit->nClassId) , !(pObjectTxt->SubClass & 0x40U))) {
+    while (pPresetUnit->eType != UNIT_OBJECT || pPresetUnit->nClassId >= 0x23d || (pObjectTxt = DATATBLS::ObjectTbls::TXT_Objects_GetLine(pPresetUnit->nClassId) , !(pObjectTxt->SubClass & 0x40U))) {
       pPresetUnit = pPresetUnit->pPresetUnitNext;
       if (!pPresetUnit) {
         return pRoomEx;
@@ -326,7 +328,7 @@ static D2RoomExStrc * __stdcall DRLGSPAWN_FindWaypointRoomAndCoords(int * pX, in
 
 // Gets the room at the level's center position offset by (nOffsetX, nOffsetY).
 // Computes center as (WorldPos + WorldSize/2 - 2) plus the offsets.
-D2RoomExStrc * __fastcall DRLGSPAWN_GetRoomAtLevelCenterOffset(int32_t nOffsetX, int32_t nOffsetY, D2DrlgLevelStrc * pLevel) {
+D2RoomExStrc * __thiscall DRLGSPAWN_GetRoomAtLevelCenterOffset(D2DrlgLevelStrc * pLevel, int32_t nOffsetX, int32_t nOffsetY) {
     D2RoomExStrc* pDVar1 = GetRoomOfCoord(pLevel, pLevel->sCoordinatesAndSize.WorldSize.x / 2 + pLevel->sCoordinatesAndSize.WorldPosition.x - 2 + nOffsetX, pLevel->sCoordinatesAndSize.WorldSize.y / 2 + pLevel->sCoordinatesAndSize.WorldPosition.y - 2 + nOffsetY);
     return pDVar1;
 }
@@ -527,7 +529,7 @@ void __fastcall DRLGWARP_InitWarpConnectionsBetweenLevels(D2DrlgStrc * pDrlg, ui
       for (pPresetUnit = GetPresetUnits(pDstRoomEx); pPresetUnit && pPresetUnit->eType != UNIT_WARP; pPresetUnit = pPresetUnit->pPresetUnitNext) {}
 
       nPairIndex++;
-      if (7 < nPairIndex) {
+      if (nPairIndex >= 8) {
         return;
       }
     } while (true);
@@ -606,7 +608,7 @@ D2RoomStrc * __fastcall DRLGSPAWN_FindSpawnLocationInLevel(D2DrlgStrc * pDrlg, e
         return pFoundRoomEx->pRoom;
       }
 
-      pFoundRoomEx = DRLGSPAWN_GetRandomPresetSpawnPoint(nSpawnTypeOrMode, pX, pY, pLevel);
+      pFoundRoomEx = DRLGSPAWN_GetRandomPresetSpawnPoint(pLevel, nSpawnTypeOrMode, pX, pY);
       DUNGEON::Dungeon::InitRoomEx(pFoundRoomEx);
       return pFoundRoomEx->pRoom;
     }
@@ -642,21 +644,28 @@ D2RoomExStrc * __fastcall DRLGROOMEX_AllocRoomEx(D2DrlgLevelStrc * pLevel, int n
     pRoomEx->pLevel = pLevel;
     pRoomEx->fRoomStatus = '\x04';
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pLevel->sSeed);
-    D2SeedStrc* pSeedPtr = &pRoomEx->sSeed;
+    D2SeedStrc* pSeed = &pRoomEx->sSeed;
     pLevel->sSeed = sNewSeed;
-    pSeedPtr->nSeedLow = sNewSeed.nSeedLow;
-    pRoomEx->sSeed.nSeedHigh = 0x29a;
-    sNewSeed = D2_SEED_NEXT(*pSeedPtr);
-    *pSeedPtr = sNewSeed;
+    Seed::InitSeed_Param_666(pSeed, sNewSeed.nSeedLow);
+    sNewSeed = D2_SEED_NEXT(*pSeed);
+    pSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pSeed->nSeedLow = sNewSeed.nSeedLow;
     pRoomEx->nSeed = sNewSeed.nSeedLow;
     if (pLevel->dwFlags & 0x10) {
       pRoomEx->eRoomExFlags |= 0x40000;
     }
-    if (nPresetType == 1) {
-      OutRoom::DRLGOUTROOM_AllocOutdoorRoomData(pRoomEx);
-    } else if (nPresetType == 2) {
-      Preset::DRLGROOMEX_AllocRoomExDataPresetArea(pRoomEx);
-      return pRoomEx;
+
+    switch (nPresetType) {
+      case 1:
+        {
+          OutRoom::DRLGOUTROOM_AllocOutdoorRoomData(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGROOMEX_AllocRoomExDataPresetArea(pRoomEx);
+          return pRoomEx;
+        }
     }
 
     return pRoomEx;
@@ -773,7 +782,7 @@ void __fastcall DRLGROOMEX_FindReplaceAndFreeSub00ForBothRoomEx(D2PoolManagerStr
 // Sorting comparator: compares orths by direction first, then by coordinate for that direction.
 BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(D2DrlgOrthStrc * pOrth1, D2DrlgOrthStrc * pOrth2) {
     eDrlgDirection eDir1 = pOrth1->neDrlgDirection;
-    if ((int)eDir1 < (int)pOrth2->neDrlgDirection) {
+    if ((int)pOrth2->neDrlgDirection > (int)eDir1) {
       return 1;
     }
     if (pOrth2->neDrlgDirection != eDir1) {
@@ -782,7 +791,7 @@ BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(D2DrlgOrthStrc * pOrth1, D2D
 
     switch (eDir1) {
       case DIRECTION_SOUTHEAST:
-        if (pOrth1->psCoordinatesAndSize->WorldPosition.y < pOrth2->psCoordinatesAndSize->WorldPosition.y) {
+        if (pOrth2->psCoordinatesAndSize->WorldPosition.y > pOrth1->psCoordinatesAndSize->WorldPosition.y) {
           return 1;
         }
       break;
@@ -797,7 +806,7 @@ BOOL __fastcall DRLGORTH_CompareByDirectionAndCoord(D2DrlgOrthStrc * pOrth1, D2D
         }
       break;
       case DIRECTION_NORTHWEST:
-        if (pOrth1->psCoordinatesAndSize->WorldPosition.x < pOrth2->psCoordinatesAndSize->WorldPosition.x) {
+        if (pOrth2->psCoordinatesAndSize->WorldPosition.x > pOrth1->psCoordinatesAndSize->WorldPosition.x) {
           return 1;
         }
     }
@@ -869,11 +878,11 @@ BOOL __fastcall DRLGCOORDS_IsWithinDistance(D2DrlgCoordsStrc * pCoords, D2DrlgCo
     } else {
       *nY = nX1 - pCoords2->WorldSize.y - nX2;
     }
-    if (!(*nX < nSize && *nY < nSize)) {
-      return 1;
+    if (*nX < nSize && *nY < nSize) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 int __fastcall DRLGROOM_CoordsWithinDistance(D2DrlgCoordsStrc * pCoords1, D2DrlgCoordsStrc * pCoords2, int32_t nDistance) {
@@ -889,17 +898,17 @@ BOOL __fastcall DRLGCOORDS_IsAdjacentOrOverlapping(D2DrlgCoordsStrc * pDrlgCoord
     bool bSignedGreater;
     int nPosA = pDrlgCoords->WorldPosition.x;
     int nPosB = pCoordinatesAndSizeB->WorldPosition.x;
-    if (nPosB < nPosA || (nDistX = nPosB - pDrlgCoords->WorldSize.x - nPosA , nPosB < nPosA)) {
+    if (nPosA > nPosB || (nDistX = nPosB - pDrlgCoords->WorldSize.x - nPosA , nPosA > nPosB)) {
       nDistX = nPosA - pCoordinatesAndSizeB->WorldSize.x - nPosB;
     }
 
     nPosA = pDrlgCoords->WorldPosition.y;
     nPosB = pCoordinatesAndSizeB->WorldPosition.y;
-    if (nPosB < nPosA || (nDistY = nPosB - pDrlgCoords->WorldSize.y - nPosA , nPosB < nPosA)) {
+    if (nPosA > nPosB || (nDistY = nPosB - pDrlgCoords->WorldSize.y - nPosA , nPosA > nPosB)) {
       nDistY = nPosA - pCoordinatesAndSizeB->WorldSize.y - nPosB;
     }
     if (!nMaxDist) {
-      if (0 < nDistX) {
+      if (nDistX > 0) {
         return 0;
       }
 
@@ -971,7 +980,7 @@ BOOL __fastcall AreXYInsideCoordinates(D2DrlgCoordsStrc * pDrlgCoords, int32_t n
     }
 
     int nPosY = pDrlgCoords->WorldPosition.y;
-    if (!(nPosY <= nY && nX < pDrlgCoords->WorldSize.x + nPosX)) {
+    if (!(nY >= nPosY && nX < pDrlgCoords->WorldSize.x + nPosX)) {
       return 0;
     }
 
@@ -985,7 +994,7 @@ uint32_t __fastcall DRLGCOORDS_IsPointInside(D2DrlgCoordsStrc * pDrlgCoords, int
     }
 
     int nPosY = pDrlgCoords->WorldPosition.y;
-    if (!(nPosY <= nY && nX <= pDrlgCoords->WorldSize.x + nPosX)) {
+    if (!(nY >= nPosY && nX <= pDrlgCoords->WorldSize.x + nPosX)) {
       return 0;
     }
 
@@ -997,17 +1006,17 @@ uint32_t __fastcall DRLGCOORDS_IsPointInside(D2DrlgCoordsStrc * pDrlgCoords, int
 // Returns 1 if inside bounds, 0 otherwise.
 uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * pRoomCoords, int32_t nWorldX, int32_t nWorldY) {
     int nRoomPosScaled = pRoomCoords->WorldPosition.x * 5;
-    if (nRoomPosScaled > nWorldX) {
+    if (nWorldX < nRoomPosScaled) {
       return 0;
     }
 
     int iVar1 = pRoomCoords->WorldSize.x;
-    if (nWorldX >= nRoomPosScaled + iVar1 * 4 + iVar1) {
+    if (!(nWorldX < nRoomPosScaled + iVar1 * 4 + iVar1)) {
       return 0;
     }
 
     nRoomPosScaled = pRoomCoords->WorldPosition.y * 5;
-    if (nRoomPosScaled > nWorldY) {
+    if (nWorldY < nRoomPosScaled) {
       return 0;
     }
 
@@ -1016,26 +1025,38 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
 }
 
 uint32_t __fastcall CheckLOSDraw(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType == 1) {
-      return 1;
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          return 1;
+        }
+      case 2:
+        {
+          return pRoomEx->eRoomExFlags & 0x80000;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-    if (pRoomEx->nPresetType == 2) {
-      return pRoomEx->eRoomExFlags & 0x80000;
-    }
-
-    return 0;
 }
 
 // Returns whether a RoomEx is preset type 1 and has the outdoor border flag.
 // Delegates to DRLGOUTROOM_HasOutdoorBorderFlag if nPresetType == 1.
 // Caller: DRLGROOM_HasOutdoorBorder
 uint32_t __fastcall DRLGROOMEX_IsPresetWithOutdoorBorder(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 1) {
-      return 0;
+    uint32_t bHasOutdoorBorder;
+    switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          bHasOutdoorBorder = DRLGOUTROOM_HasOutdoorBorderFlag(pRoomEx);
+          return bHasOutdoorBorder;
+        }
+      default:
+        {
+          return 0;
+        }
     }
-
-    uint32_t bHasOutdoorBorder = DRLGOUTROOM_HasOutdoorBorderFlag(pRoomEx);
-    return bHasOutdoorBorder;
 }
 
 uint32_t __fastcall GetWaypointFlags(D2RoomExStrc * pRoomEx) {
@@ -1075,11 +1096,11 @@ eD2LevelId __fastcall GetLevelIdFromPopulatedRoomEx(D2RoomExStrc * pRoomEx) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x26b);
       exit(-1);
     }
-    if (!(pRoomEx->eRoomExFlags & 0x800000U)) {
-      return pRoomEx->pLevel->eD2LevelId;
+    if (pRoomEx->eRoomExFlags & 0x800000U) {
+      return LEVEL_None;
     }
 
-    return LEVEL_None;
+    return pRoomEx->pLevel->eD2LevelId;
 }
 
 BOOL __fastcall HasWaypoint(D2RoomExStrc * pRoomEx) {
@@ -1093,12 +1114,13 @@ BOOL __fastcall HasWaypoint(D2RoomExStrc * pRoomEx) {
 }
 
 char * __fastcall GetPickedLevelPrestFilePathFromRoomEx(D2RoomExStrc * pRoomEx) {
-    if (pRoomEx->nPresetType != 2) {
-      return "None";
+    if (pRoomEx->nPresetType == 2) {
+      char* szFilePath;
+      szFilePath = Preset::DRLGPRESET_GetPickedFilePathFromRoomEx(pRoomEx);
+      return szFilePath;
     }
 
-    char* szFilePath = Preset::DRLGPRESET_GetPickedFilePathFromRoomEx(pRoomEx);
-    return szFilePath;
+    return "None";
 }
 
 static void ReorderNearRoomList(int nRoomCount, D2RoomStrc * * ppRoomList) {
@@ -1106,14 +1128,14 @@ static void ReorderNearRoomList(int nRoomCount, D2RoomStrc * * ppRoomList) {
     D2RoomStrc* pRoomCurrent;
     D2RoomStrc* pRoomNext;
     int nListCount = nRoomCount - 1;
-    for (nPassRemaining = nListCount; 0 < nPassRemaining; nPassRemaining--) {
+    for (nPassRemaining = nListCount; nPassRemaining > 0; nPassRemaining--) {
       int nIndex;
       nIndex = 0;
-      if (0 < nListCount) {
+      if (nListCount > 0) {
         do {
           pRoomNext = ppRoomList[nIndex + 1];
           pRoomCurrent = ppRoomList[nIndex];
-          if ((int)(pRoomNext->nLastDeadGUIDs[1] + pRoomNext->eFlags) <= pRoomCurrent->eFlags || (int)(pRoomNext->nLastDeadGUIDs[2] + pRoomNext->nLastDeadGUIDs[0]) <= (int)pRoomCurrent->nLastDeadGUIDs[0]) {
+          if (pRoomCurrent->eFlags >= (int)(pRoomNext->nLastDeadGUIDs[1] + pRoomNext->eFlags) || (int)pRoomCurrent->nLastDeadGUIDs[0] >= (int)(pRoomNext->nLastDeadGUIDs[2] + pRoomNext->nLastDeadGUIDs[0])) {
             ppRoomList[nIndex] = pRoomNext;
             ppRoomList[nIndex + 1] = pRoomCurrent;
           }
@@ -1164,7 +1186,7 @@ void __stdcall DefineRoomsNear(D2PoolManagerStrc * pMemory, D2RoomExStrc * pRoom
     D2RoomExStrc** ppNearRooms = (D2RoomExStrc**)D2_ALLOC_POOL_AT(pMemory, nGapX * 4, ".\\DRLG\\DrlgRoom.cpp", 0x2cb);
     pRoomEx->ppDrlgRoomsExNear = ppNearRooms;
     nGapX = 0;
-    if (0 >= pRoomEx->nDrlgRoomsExNearCount) {
+    if (pRoomEx->nDrlgRoomsExNearCount <= 0) {
       return;
     }
 
@@ -1181,7 +1203,7 @@ int32_t __fastcall GetRoomsNearCount(D2RoomExStrc * pRoomEx) {
 int32_t __fastcall GetRealRoomsNearCount(D2RoomExStrc * pRoomEx, D2RoomStrc * * ppRoomList) {
     int32_t nRealCount = 0;
     int nIndex = 0;
-    if (0 < pRoomEx->nDrlgRoomsExNearCount) {
+    if (pRoomEx->nDrlgRoomsExNearCount > 0) {
       D2RoomStrc* pRoom;
       do {
         pRoom = pRoomEx->ppDrlgRoomsExNear[nIndex]->pRoom;
@@ -1215,7 +1237,7 @@ void DRLGROOM_FlagRoomExBorderingTown(D2RoomExStrc * pRoomEx) {
     }
 
     int nIndex = 0;
-    if (0 >= pRoomEx->nDrlgRoomsExNearCount) {
+    if (pRoomEx->nDrlgRoomsExNearCount <= 0) {
       return;
     }
 
@@ -1226,7 +1248,7 @@ void DRLGROOM_FlagRoomExBorderingTown(D2RoomExStrc * pRoomEx) {
       }
 
       nIndex++;
-      if (pRoomEx->nDrlgRoomsExNearCount <= nIndex) {
+      if (nIndex >= pRoomEx->nDrlgRoomsExNearCount) {
         return;
       }
     }
@@ -1411,10 +1433,18 @@ void __fastcall DRLGROOMEX_FreeDrlgRoomEx(D2RoomExStrc * pRoomEx) {
       pRoomEx->nDrlgRoomsExNearCount = 0;
       pRoomEx->ppDrlgRoomsExNear = 0;
     }
-    /* nPresetType */ if (pRoomEx->nPresetType == 1) {
-      OutRoom::DRLGOUTROOM_FreeDrlgOutdoorRoomData(pRoomEx);
-    } else if (pRoomEx->nPresetType == 2) {
-      Preset::DRLGROOMEX_FreeRoomExDataPresetArea(pRoomEx);
+
+    /* nPresetType */ switch (pRoomEx->nPresetType) {
+      case 1:
+        {
+          OutRoom::DRLGOUTROOM_FreeDrlgOutdoorRoomData(pRoomEx);
+          break;
+        }
+      case 2:
+        {
+          Preset::DRLGROOMEX_FreeRoomExDataPresetArea(pRoomEx);
+          break;
+        }
     }
 
     D2PresetUnitStrc* pPresetIter = pRoomEx->pPresetUnit;

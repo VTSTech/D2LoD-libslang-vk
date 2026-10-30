@@ -46,7 +46,7 @@ namespace D2Game::Quests::QUESTS::A2Q0 {
 void __fastcall Q08_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pPlayerData;
     short int nNPCNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
-    short int nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    uint16_t nMessageIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     if (nNPCNo == 0xc9) {
       D2UnitDataPlayerStrc* pGame;
       if (nMessageIndex == 0xfd) {
@@ -142,8 +142,9 @@ void __fastcall Q08_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // A2Q0 QUEST_SpokeToJerhyn — state-handler 0x0d (re-sync on join/refresh). If SpokeToJerhyn is already Completed for this difficulty, re-broadcast JustCompleted so the Warriv->Act3 travel option is (re)opened for the player.
 void __fastcall Q08_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pPlayerData->pQuestRecord[pGame->nDifficulty], QUEST_SpokeToJerhyn, QUESTSTATE_Completed);
+    /* GetQuestState(rec, QUEST_SpokeToJerhyn, QUESTSTATE_Completed=0) — if
+                         already done, re-fire JustCompleted */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer)->pQuestRecord[pGame->nDifficulty];
+    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SpokeToJerhyn, QUESTSTATE_Completed);
     if (bQuestState != 1) {
       return;
     }

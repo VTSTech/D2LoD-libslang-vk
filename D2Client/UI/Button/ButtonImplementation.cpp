@@ -45,11 +45,11 @@ void __thiscall Destructor(::ButtonImplementation * pThis) {
 BOOL __thiscall IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
     uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!(pThis->nPosX <= (int)uVar1 && (int)uVar1 <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= (int)uVar2 && (int)uVar2 <= pThis->nPosY)) {
-      return 0;
+    if ((int)uVar1 >= pThis->nPosX && (int)uVar1 <= pThis->nWidth + pThis->nPosX && (int)uVar2 >= pThis->nPosY - pThis->nHeight && (int)uVar2 <= pThis->nPosY) {
+      return 1;
     }
 
-    return 1;
+    return 0;
 }
 
 int __thiscall GetValue(::ButtonImplementation * pThis) {
@@ -63,13 +63,13 @@ void __thiscall SetAccelerator(::ButtonImplementation * pThis, BOOL bEnable) {
 int __thiscall OnMouseDown(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (!(pThis->nPosX <= nMouseX && nMouseX <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= nMouseY && nMouseY <= pThis->nPosY)) {
-      return 0;
+    if (nMouseX >= pThis->nPosX && nMouseX <= pThis->nWidth + pThis->nPosX && nMouseY >= pThis->nPosY - pThis->nHeight && nMouseY <= pThis->nPosY) {
+      pThis->bPressed = 1;
+      Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
+      return 1;
     }
 
-    pThis->bPressed = 1;
-    Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
-    return 1;
+    return 0;
 }
 
 int __thiscall OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
@@ -79,7 +79,7 @@ int __thiscall OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg
 
     int32_t nMouseX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     int32_t nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if (pThis->nPosX <= nMouseX && nMouseX <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= nMouseY && nMouseY <= pThis->nPosY) {
+    if (nMouseX >= pThis->nPosX && nMouseX <= pThis->nWidth + pThis->nPosX && nMouseY >= pThis->nPosY - pThis->nHeight && nMouseY <= pThis->nPosY) {
       int dwCallbackResult;
       pThis->bPressed = 0;
       dwCallbackResult = pThis->pfnOnActivate();
@@ -92,12 +92,13 @@ int __thiscall OnMouseUp(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg
 }
 
 int __thiscall OnChar(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
-    if (!(pThis->bAcceptEnterKey && !(pMsg->uLParam.nLParam & 0x40000000U) && pMsg->nWParam == 0xd)) {
-      return 0;
+    if (pThis->bAcceptEnterKey && !(pMsg->uLParam.nLParam & 0x40000000U) && pMsg->nWParam == 0xd) {
+      int dwCallbackResult;
+      dwCallbackResult = pThis->pfnOnActivate();
+      return dwCallbackResult;
     }
 
-    int dwCallbackResult = pThis->pfnOnActivate();
-    return dwCallbackResult;
+    return 0;
 }
 
 int __thiscall OnMouseMove(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
@@ -174,7 +175,7 @@ void __thiscall Draw(::ButtonImplementation * pThis) {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pThis->nPosX, pThis->nPosY, -1, DRAW_SOLID, nullptr);
     uint32_t nCurMouseX = ui::GetMouseX();
     uint32_t nCurMouseY = ui::GetMouseY();
-    if (!(pThis->nPosX <= (int)(nCurMouseX & 0xffff) && (int)(nCurMouseX & 0xffff) <= pThis->nWidth + pThis->nPosX && pThis->nPosY - pThis->nHeight <= (int)(nCurMouseY & 0xffff) && (int)(nCurMouseY & 0xffff) <= pThis->nPosY)) {
+    if (!((int)(nCurMouseX & 0xffff) >= pThis->nPosX && (int)(nCurMouseX & 0xffff) <= pThis->nWidth + pThis->nPosX && (int)(nCurMouseY & 0xffff) >= pThis->nPosY - pThis->nHeight && (int)(nCurMouseY & 0xffff) <= pThis->nPosY)) {
       return;
     }
 

@@ -127,7 +127,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(struct D2TileLibraryEntryStr
 // Renders shadow tile with perspective projection in GLIDE renderer. Takes screen coordinates and alpha, applies perspective transform and blending.
 BOOL __fastcall RENDERER_GLIDE_DrawShadowTilePerspective(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, uint8_t nAlpha, int32_t nScreenPanels);
 BOOL __fastcall DrawShadowTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t nDrawMode, int32_t nScreenPanels);
-BOOL __fastcall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable);
+BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, int32_t pColorTable);
 BOOL __fastcall DrawTransWallTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, struct D2GfxLightStrc * pLight, int32_t nScreenPanels, int32_t nAlpha);
 BOOL __fastcall DrawWallTile(struct D2TileLibraryEntryStrc * pTile, int32_t nPosX, int32_t nPosY, struct D2GfxLightStrc * pLight, int32_t nScreenPanels);
 void RENDERER_GLIDE_InitGroundTileVertices();

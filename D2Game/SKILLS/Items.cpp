@@ -33,9 +33,9 @@
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "Fog/D2PoolManagerStrc.h"
-#include "Fog/Debug.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Client/D2Client.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
@@ -58,11 +58,11 @@ static int32_t __stdcall SKILLITEMS_SetDispatchTableEntry(int32_t pCandidatePair
 }
 
 int32_t __stdcall SKILLITEMS_GetDispatchTableRange(int32_t pDispatchTable, int32_t nParam1, int32_t nParam2) {
-    if (nParam1 > nParam2) {
-      return pDispatchTable + nParam2 * 8;
+    if (nParam2 >= nParam1) {
+      return 0;
     }
 
-    return 0;
+    return pDispatchTable + nParam2 * 8;
 }
 
 // Returns max(nValue * nPercent / 100, nMinimum): nValue in EAX, nMinimum in ESI, nPercent on the stack (RET 4); the throw-damage scaling of the crude-quality item mods. Was named SKILLITEMS_NoOp.
@@ -90,32 +90,32 @@ eD2Skills __stdcall ITEMMOD_RollStaffModSkills(D2UnitStrc * pUnit, eD2Skills eSk
     D2SeedStrc* pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
     D2SeedStrc sSeed = D2_SEED_NEXT(*pItemSeed);
     *pItemSeed = sSeed;
-    int nSeedMod100 = sSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) / 100) * -100;
-    if (nSeedMod100 < 0x5b) {
-      if (nSeedMod100 < 0x47) {
-        if (nSeedMod100 < 0x1f) {
-          return (eD2Skills)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) * 0x51eb851f);
+    int nSeedMod100 = sSeed.nSeedLow % 100;
+    if (nSeedMod100 > 0x5a) {
+      anSkillIds[3] = 3;
+    } else {
+      if (nSeedMod100 > 0x46) {
+        anSkillIds[3] = 2;
+      } else {
+        if (nSeedMod100 <= 0x1e) {
+          return (eD2Skills)((uint64_t)sSeed.nSeedLow * 0x51eb851f);
         }
 
         anSkillIds[3] = 1;
-      } else {
-        anSkillIds[3] = 2;
       }
-    } else {
-      anSkillIds[3] = 3;
     }
 
     eD2Skills eSkillTierCount = SKILL_Kick;
-    if ((int)eSkill < 0x19) {
-      if ((int)eSkill < 0x13) {
-        if (0xb < (int)eSkill) {
+    if ((int)eSkill > 0x18) {
+      eSkillTierCount = SKILL_LeftHandThrow;
+    } else {
+      if ((int)eSkill > 0x12) {
+        eSkillTierCount = SKILL_Unsummon;
+      } else {
+        if ((int)eSkill > 0xb) {
           eSkillTierCount = SKILL_Throw;
         }
-      } else {
-        eSkillTierCount = SKILL_Unsummon;
       }
-    } else {
-      eSkillTierCount = SKILL_LeftHandThrow;
     }
 
     eD2Skills iSkillRollSlot = SKILL_Attack;
@@ -128,18 +128,18 @@ eD2Skills __stdcall ITEMMOD_RollStaffModSkills(D2UnitStrc * pUnit, eD2Skills eSk
       pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
       sSeed = D2_SEED_NEXT(*pItemSeed);
       *pItemSeed = sSeed;
-      nSeedMod100 = sSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) / 100) * -100;
-      if (nSeedMod100 < 0x51) {
+      nSeedMod100 = sSeed.nSeedLow % 100;
+      if (nSeedMod100 > 0x50) {
+        eSkill = eSkillTierCount + SKILL_Kick;
+      } else {
         eSkill = eSkillTierCount;
-        if (nSeedMod100 < 0x1f) {
-          if (nSeedMod100 < 0xb) {
-            eSkill = eSkillTierCount - SKILL_Throw;
-          } else {
+        if (nSeedMod100 <= 0x1e) {
+          if (nSeedMod100 > 0xa) {
             eSkill = eSkillTierCount - SKILL_Kick;
+          } else {
+            eSkill = eSkillTierCount - SKILL_Throw;
           }
         }
-      } else {
-        eSkill = eSkillTierCount + SKILL_Kick;
       }
       if ((int)eSkill < 1) {
         eSkill = SKILL_Kick;
@@ -150,7 +150,7 @@ eD2Skills __stdcall ITEMMOD_RollStaffModSkills(D2UnitStrc * pUnit, eD2Skills eSk
           pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
           sSeed = D2_SEED_NEXT(*pItemSeed);
           *pItemSeed = sSeed;
-          nPickedSkillId = sSeed.nSeedLow + (eSkill - (int)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) / 5) - 1) * 5 + nSkillBaseId;
+          nPickedSkillId = sSeed.nSeedLow + (eSkill - (int)(sSeed.nSeedLow / 5) - 1) * 5 + nSkillBaseId;
         } while (nPickedSkillId == 0x49);
       } while (nPickedSkillId == anSkillIds[0] || nPickedSkillId == anSkillIds[1] || nPickedSkillId == anSkillIds[2]);
 
@@ -159,13 +159,13 @@ eD2Skills __stdcall ITEMMOD_RollStaffModSkills(D2UnitStrc * pUnit, eD2Skills eSk
       pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
       sSeed = D2_SEED_NEXT(*pItemSeed);
       *pItemSeed = sSeed;
-      nSeedMod100 = sSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sSeed) & 0xffffffff) / 100) * -100;
-      if (nSeedMod100 < 0x5a) {
-        if (0x3b < nSeedMod100) {
+      nSeedMod100 = sSeed.nSeedLow % 100;
+      if (nSeedMod100 >= 0x5a) {
+        eSkill = SKILL_Unsummon;
+      } else {
+        if (nSeedMod100 >= 0x3c) {
           eSkill = SKILL_Throw;
         }
-      } else {
-        eSkill = SKILL_Unsummon;
       }
 
       pStatsEx = D2Common::Stats::StatsEx::GetStatList(pUnit, STATE_none, 0x40);
@@ -210,34 +210,34 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
     D2SeedStrc* pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
     D2SeedStrc sNewSeed = D2_SEED_NEXT(*pItemSeed);
     *pItemSeed = sNewSeed;
-    int nRngRoll = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * -100 + nBonusCount;
-    if (nRngRoll < 0x5b) {
-      if (nRngRoll < 0x47) {
-        if (nRngRoll < 0x1f && !nBonusCount) {
+    int nRngRoll = sNewSeed.nSeedLow % 100 + nBonusCount;
+    if (nRngRoll > 0x5a) {
+      nRngRoll = 3;
+    } else {
+      if (nRngRoll > 0x46) {
+        nRngRoll = 2;
+      } else {
+        if (nRngRoll <= 0x1e && !nBonusCount) {
           return;
         }
 
         nRngRoll = 1;
-      } else {
-        nRngRoll = 2;
       }
-    } else {
-      nRngRoll = 3;
     }
 
     int nSkillTier = 1;
     anSkillIds[3] = nRngRoll;
-    if (nSkillId < 0x25 || (wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit) , wItemVersion < 100)) {
-      if (nSkillId < 0x19) {
-        if (nSkillId < 0x13) {
-          if (0xb < nSkillId) {
+    if (nSkillId <= 0x24 || (wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit) , wItemVersion < 100)) {
+      if (nSkillId > 0x18) {
+        nSkillTier = 4;
+      } else {
+        if (nSkillId > 0x12) {
+          nSkillTier = 3;
+        } else {
+          if (nSkillId > 0xb) {
             nSkillTier = 2;
           }
-        } else {
-          nSkillTier = 3;
         }
-      } else {
-        nSkillTier = 4;
       }
     } else {
       nSkillTier = 5;
@@ -253,25 +253,25 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
       pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
       sNewSeed = D2_SEED_NEXT(*pItemSeed);
       *pItemSeed = sNewSeed;
-      nRngRoll = sNewSeed.nSeedLow + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * -100;
-      if (nRngRoll < 0x51) {
+      nRngRoll = sNewSeed.nSeedLow % 100;
+      if (nRngRoll > 0x50) {
+        nSkillId = nSkillTier + 1;
+      } else {
         nSkillId = nSkillTier;
-        if (nRngRoll < 0x1f) {
-          if (nRngRoll < 0xb) {
-            nSkillId = nSkillTier - 2;
-          } else {
+        if (nRngRoll <= 0x1e) {
+          if (nRngRoll > 0xa) {
             nSkillId = nSkillTier - 1;
+          } else {
+            nSkillId = nSkillTier - 2;
           }
         }
-      } else {
-        nSkillId = nSkillTier + 1;
       }
       if (nSkillId < 1) {
         nSkillId = 1;
       }
 
       nRngRoll = D2Common::ITEMS::Items::GetItemQuality(pUnit);
-      if (nRngRoll == 1 && 3 < nSkillId) {
+      if (nRngRoll == 1 && nSkillId >= 4) {
         nSkillId = 4;
       }
 
@@ -281,28 +281,28 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
         sNewSeed = D2_SEED_NEXT(*pItemSeed);
         nSkillLevel = 1;
         *pItemSeed = sNewSeed;
-        nParam = sNewSeed.nSeedLow + (nSkillId - (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 5) - 1) * 5 + nSkillBaseOffset;
-        if (((int)nParam < 0 || sgptDataTable->nTxtSkillsCount <= (int)nParam || !(sgptDataTable->pTxtSkills + nParam) || (wITypeA1 = sgptDataTable->pTxtSkills[nParam].itypea1 , wITypeA1 < 1 || (bIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, (int)wITypeA1) , bIsOfType != 0))) && nParam != anSkillIds[0] && nParam != anSkillIds[1] && nParam != anSkillIds[2]) {
+        nParam = sNewSeed.nSeedLow + (nSkillId - (int)(sNewSeed.nSeedLow / 5) - 1) * 5 + nSkillBaseOffset;
+        if (((int)nParam < 0 || (int)nParam >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + nParam) || (wITypeA1 = sgptDataTable->pTxtSkills[nParam].itypea1 , wITypeA1 <= 0 || (bIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, (int)wITypeA1) , bIsOfType != 0))) && nParam != anSkillIds[0] && nParam != anSkillIds[1] && nParam != anSkillIds[2]) {
           anSkillIds[iSkillSlot] = nParam;
           break;
         }
 
         nRetryCount--;
-      } while (0 < nRetryCount);
+      } while (nRetryCount > 0);
 
       wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
       if (wItemVersion < 100 || (nRngRoll = D2Common::ITEMS::Items::GetItemQuality(pUnit) , nRngRoll != 1)) {
         pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
         sNewSeed = D2_SEED_NEXT(*pItemSeed);
         *pItemSeed = sNewSeed;
-        nRngRoll = nBonusCount / 2 + (int)(((uint64_t)d2_bits_of(sNewSeed) & 0xffffffff) / 100) * -100 + sNewSeed.nSeedLow;
-        if (nRngRoll < 0x5a) {
+        nRngRoll = nBonusCount / 2 + (int)(sNewSeed.nSeedLow / 100) * -100 + sNewSeed.nSeedLow;
+        if (nRngRoll >= 0x5a) {
+          nSkillLevel = 3;
+        } else {
           nSkillLevel = 2;
           if (nRngRoll < 0x3c) {
             nSkillLevel = 1;
           }
-        } else {
-          nSkillLevel = 3;
         }
       }
 
@@ -329,12 +329,12 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
 // Staff mod entry point. Checks item eligibility (Staves, Orbs, Wands, Scepters, Javelins, Claws, Druid helms). Delegates to ITEMMOD_RollStaffModSkills for skill selection. Stores in separate stat list (flag 0x40).
 void __fastcall StaffMod(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemData) {
     uint32_t nClassId = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_staffmods(pUnit);
-    if (nClassId >= 7) {
+    if (nClassId > 6) {
       return;
     }
 
     int32_t nClassSkillTotal = D2Common::Skills::AmountOfSkillsByClassId(nClassId);
-    if (0 >= nClassSkillTotal) {
+    if (nClassSkillTotal <= 0) {
       return;
     }
 
@@ -360,7 +360,6 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     int nAffixIdx;
     int anCandidatePairs[1024];
     D2MagicAffixTxt* pAffixTable;
-    pAffixTable = (D2MagicAffixTxt*)0x5c12fd;
     D2MagicAffixTableStrc* pTableInfo;
     pTableInfo = D2Common::DATATBLS::ItemTbls::TXT_MagicAffixes_GetTableInfo();
     uint32_t nTotalAffixes;
@@ -368,12 +367,12 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     if (!pTableInfo) {
       return nTotalAffixes & -65536;
     }
-    if (!nParam4) {
-      pAffixTable = pTableInfo->pSuffixStart;
-      pAffixEntry = pTableInfo->pPrefixStart;
-    } else {
+    if (nParam4) {
       pAffixTable = pTableInfo->pPrefixStart;
       pAffixEntry = pTableInfo->pAutoMagicStart;
+    } else {
+      pAffixTable = pTableInfo->pSuffixStart;
+      pAffixEntry = pTableInfo->pPrefixStart;
     }
 
     nTotalAffixes = ((int)pAffixEntry - (int)pAffixTable) / 0x90;
@@ -389,12 +388,13 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
     D2SeedStrc sNewSeed;
     sNewSeed = D2_SEED_NEXT(*pItemSeed);
-    *pItemSeed = sNewSeed;
+    pItemSeed->nSeedHigh = sNewSeed.nSeedHigh;
+    pItemSeed->nSeedLow = sNewSeed.nSeedLow;
     uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     uint32_t nItemVersion;
     nItemVersion = (uint32_t)wItemVersion;
-    if (!((uint64_t)d2_bits_of(sNewSeed) & 1) && !bExclude) {
+    if (!(sNewSeed.nSeedLow & 1) && !bExclude) {
       nAffixIdx = -1;
       return nAffixIdx + 1;
     }
@@ -403,17 +403,17 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     nItemLvl = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pUnit);
     uint32_t pCurAffix;
     pCurAffix = nItemLvl + 2;
-    if ((int)pCurAffix < 2) {
-      nParam4 = 1;
-    } else {
+    if ((int)pCurAffix > 1) {
       nParam4 = pCurAffix;
-      if (0x62 < (int)pCurAffix) {
+      if ((int)pCurAffix >= 0x63) {
         nParam4 = 99;
       }
+    } else {
+      nParam4 = 1;
     }
 
     bExclude = 0;
-    if (0 >= (int)nTotalAffixes) {
+    if ((int)nTotalAffixes <= 0) {
       return pCurAffix & -65536;
     }
 
@@ -421,7 +421,7 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     uint32_t nCandidatesFound;
     nCandidatesFound = nCandidateCount;
     do {
-      if ((!bIsSuffix || *(bool*)((int)pAffixTable + 0x32)) && (*(uint16_t*)pAffixTable < 100 || 99 < (uint16_t)nItemVersion) && *(int*)((int)pAffixTable + 0x36) <= nParam4) {
+      if ((!bIsSuffix || *(bool*)((int)pAffixTable + 0x32)) && (*(uint16_t*)pAffixTable < 100 || (uint16_t)nItemVersion >= 100) && *(int*)((int)pAffixTable + 0x36) <= nParam4) {
         pAffixEntry = (D2MagicAffixTxt*)((int)pAffixTable - 0x22);
         BVar2 = D2Common::ITEMS::ItemMods::ITEMMOD_CanApplyAutomod(pUnit, (int32_t)pAffixEntry);
         if (BVar2 && (int)nCandidatesFound < 0x1ff) {
@@ -436,7 +436,7 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
       bExclude = pCurAffix;
     } while ((int)pCurAffix < (int)nTotalAffixes);
 
-    if (0 >= (int)nCandidatesFound) {
+    if ((int)nCandidatesFound <= 0) {
       return pCurAffix & -65536;
     }
 
@@ -457,11 +457,11 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     nAffixIdx = *piVar1;
     int* pSelectedPair;
     pSelectedPair = piVar1;
-    if (0 < nForcedAffix) {
+    if (nForcedAffix > 0) {
       nBaseOffset = nForcedAffix + nBaseOffset;
-      if (0 < nBaseOffset) {
+      if (nBaseOffset > 0) {
         nAffixIdx = 0;
-        if (0 < (int)nCandidatesFound) {
+        if ((int)nCandidatesFound > 0) {
           pSelectedPair = anCandidatePairs;
           do {
             if (*pSelectedPair == nBaseOffset - 1) {
@@ -518,7 +518,7 @@ static BOOL HasSufixOrPrefix(int32_t nGroupId, D2UnitStrc * pUnit) {
       }
 
       iSlot++;
-      if (2 < iSlot) {
+      if (iSlot >= 3) {
         return 0;
       }
     }
@@ -540,24 +540,22 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     int local_1024[1024];
     D2MagicAffixTxt* pCurAffixTxt;
     int bGroupExclusive;
-    D2MagicAffixTxt* pCandidateList;
-    pCandidateList = (D2MagicAffixTxt*)0x5c156d;
     D2MagicAffixTableStrc* pTableInfo;
     pTableInfo = D2Common::DATATBLS::ItemTbls::TXT_MagicAffixes_GetTableInfo();
     if (!pTableInfo) {
       return 0;
     }
-    if (!nAutoMagicGroup) {
-      if (!bIsPrefix) {
-        pDVar4 = pTableInfo->pSuffixStart;
-        nAffixRangeEnd = pTableInfo->pPrefixStart;
-      } else {
-        pDVar4 = pTableInfo->pPrefixStart;
-        nAffixRangeEnd = pTableInfo->pAutoMagicStart;
-      }
-    } else {
+    if (nAutoMagicGroup) {
       pDVar4 = pTableInfo->pAutoMagicStart;
       nAffixRangeEnd = pTableInfo->pTable + pTableInfo->nSize;
+    } else {
+      if (bIsPrefix) {
+        pDVar4 = pTableInfo->pPrefixStart;
+        nAffixRangeEnd = pTableInfo->pAutoMagicStart;
+      } else {
+        pDVar4 = pTableInfo->pSuffixStart;
+        nAffixRangeEnd = pTableInfo->pPrefixStart;
+      }
     }
 
     uint32_t nTotalAffixes;
@@ -568,12 +566,14 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 
     int nAffixBaseIdx;
     nAffixBaseIdx = ((int)pDVar4 - (int)pTableInfo->pTable) / 0x90;
+    D2MagicAffixTxt* pCandidateList;
     pCandidateList = 0;
     D2SeedStrc* pItemSeed;
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pItem);
     D2SeedStrc DVar2;
     DVar2 = D2_SEED_NEXT(*pItemSeed);
-    *pItemSeed = DVar2;
+    pItemSeed->nSeedHigh = DVar2.nSeedHigh;
+    pItemSeed->nSeedLow = DVar2.nSeedLow;
     uint16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pItem);
     uint32_t nItemVersion;
@@ -584,7 +584,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     byItemLvl = D2Common::ITEMS::Items::ITEM_GetItemsTxt_nLevel(pItem);
     uint32_t pCurAffixEntry;
     pCurAffixEntry = (uint32_t)byItemLvl;
-    if (!((uint64_t)d2_bits_of(DVar2) & 1) && !bForceRoll) {
+    if (!(DVar2.nSeedLow & 1) && !bForceRoll) {
       nCandidateIdx = -1;
       return nCandidateIdx + 1;
     }
@@ -609,26 +609,28 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 
     uint32_t nItemMagicLvl;
     nItemMagicLvl = (uint32_t)(uint8_t)pQualityCheck->bMagicLvl;
-    if (!nItemMagicLvl) {
+    if (nItemMagicLvl) {
+      bIsPrefix += nItemMagicLvl;
+    } else {
       pCurAffixEntry /= 2;
       if (bIsPrefix < (int)(99 - pCurAffixEntry)) {
         bIsPrefix -= pCurAffixEntry;
       } else {
         bIsPrefix = bIsPrefix * 2 - pCurAffixEntry - (99 - pCurAffixEntry);
       }
-    } else {
-      bIsPrefix += nItemMagicLvl;
     }
 
     pItemTxt = bIsPrefix;
-    if (bIsPrefix < 2) {
+    if (bIsPrefix > 1) {
+      if (bIsPrefix >= 0x63) {
+        bIsPrefix = 99;
+      }
+    } else {
       bIsPrefix = 1;
-    } else if (0x62 < bIsPrefix) {
-      bIsPrefix = 99;
     }
 
     bForceRoll = 0;
-    if (0 >= (int)nTotalAffixes) {
+    if ((int)nTotalAffixes <= 0) {
       return pItemTxt & -65536;
     }
 
@@ -639,9 +641,9 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
         pItemTxt = 0;
         if ((uint16_t)*(short int*)((int)pAffixEntry - 0x3e) < 100 || 99 < (uint16_t)nItemVersion) {
           pItemTxt = nExcludeGroup;
-          if (nExcludeGroup < 1 || (pItemTxt = nExcludeGroup - 1 , pItemTxt != bForceRoll)) {
+          if (nExcludeGroup <= 0 || (pItemTxt = nExcludeGroup - 1 , pItemTxt != bForceRoll)) {
             bGroupExclusive = 0;
-            if (bIsPrefix < pAffixEntry[-2]) {
+            if (pAffixEntry[-2] > bIsPrefix) {
               continue;
             }
 
@@ -663,7 +665,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
                     nCandidateIdx = bForceRoll + nAffixBaseIdx;
                     pItemTxt = (int32_t)pCurAffixTxt;
                     pDVar4 = pCurAffixTxt;
-                    if (-1 < nCandidateIdx) {
+                    if (nCandidateIdx >= 0) {
                       goto apply_selected_affix;
                     }
 
@@ -672,10 +674,10 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 
                   pItemTxt = SKILLITEMS_SetDispatchTableEntry((int32_t)local_1024, (int32_t)pCurAffixTxt, bForceRoll + nAffixBaseIdx, (int32_t)pCandidateList);
                   pCandidateList = (D2MagicAffixTxt*)pItemTxt;
-                  if (!nItemMagicLvl) {
-                    nWeightSum += (uint32_t)(uint8_t)*(char*)((int)pAffixEntry + 0x22);
-                  } else {
+                  if (nItemMagicLvl) {
                     nWeightSum += (uint32_t)(uint8_t)*(char*)((int)pAffixEntry + 0x22) * pAffixEntry[-2];
+                  } else {
+                    nWeightSum += (uint32_t)(uint8_t)*(char*)((int)pAffixEntry + 0x22);
                   }
                 }
               }
@@ -686,7 +688,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     }
 
     pDVar4 = pCandidateList;
-    if (0 >= (int)pCandidateList) {
+    if ((int)pCandidateList <= 0) {
       return pItemTxt & -65536;
     }
 
@@ -694,7 +696,7 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     pItemSeed = D2Common::ITEMS::Items::GetItemSeed(pItem);
     pItemTxt = D2Client::Seed::RollBetweenMinAndMax(pItemSeed, 0, nClassId);
     nCandidateIdx = 0;
-    if (0 >= (int)pDVar4) {
+    if ((int)pDVar4 <= 0) {
       return pItemTxt & -65536;
     }
 
@@ -702,15 +704,15 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
     do {
       int iVar1;
       pCandidateEntry = pAffixEntry;
-      if ((int)pDVar4 <= nCandidateIdx || !pCandidateEntry) {
+      if (nCandidateIdx >= (int)pDVar4 || !pCandidateEntry) {
         return pItemTxt & -65536;
       }
 
       iVar1 = pCandidateEntry[1];
-      if (!nItemMagicLvl) {
-        pCurAffixEntry = (uint32_t)*(uint8_t*)(iVar1 + 0x82);
-      } else {
+      if (nItemMagicLvl) {
         pCurAffixEntry = (uint32_t)*(uint8_t*)(iVar1 + 0x82) * *(int*)(iVar1 + 0x58);
+      } else {
+        pCurAffixEntry = (uint32_t)*(uint8_t*)(iVar1 + 0x82);
       }
 
       pItemTxt -= pCurAffixEntry;
@@ -760,34 +762,34 @@ int __fastcall ITEMMOD_RollMagicAffixVersionedEx(D2UnitStrc * pUnit, int32_t nPa
 }
 
 // Selects a random eligible rare affix group for classic item generation. Iterates the prefix (this==0) or suffix half of the rare affix table, filters each entry with ITEMMOD_CanApplyAffix, builds a candidate index array (max 511 entries), then rolls the item seed to pick one. Returns the chosen table index + 1, or 0 if no candidates pass.
-uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * pUnit) {
+uint32_t __thiscall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * pUnit) {
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
-    D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c19ad;
+    D2RareAffixTxt* pCurAffixEntry;
     D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
-    if (!pThis) {
-      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
-      pCurAffixEntry = pAffixRangeStart;
-    } else {
+    if (pThis) {
       pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;
       pCurAffixEntry = pRareAffixTableInfo->pPrefixStart;
+    } else {
+      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
+      pCurAffixEntry = pAffixRangeStart;
     }
     if (!pCurAffixEntry) {
       return (uint32_t)pAffixRangeStart & -65536;
     }
 
     int nAffixTableBaseIdx = ((int)pCurAffixEntry - (int)pRareAffixTableInfo->pTable) / 0x48;
-    if (!pThis) {
-      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
-    } else {
+    if (pThis) {
       nAffixRangeBytes = pRareAffixTableInfo->nSize * 0x48 - (int)pRareAffixTableInfo->pPrefixStart + (int)pRareAffixTableInfo->pTable;
+    } else {
+      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
     }
 
     uint32_t nCanApply = nAffixRangeBytes * 0x38e38e39;
     uint32_t nCandidateCount = 0;
     int iAffixEntry = 0;
-    if (0 >= nAffixRangeBytes / 0x48) {
+    if (!(nAffixRangeBytes / 0x48 > 0)) {
       return nCanApply & -65536;
     }
 
@@ -808,9 +810,7 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
       return nCanApply & -65536;
     }
 
-    uint32_t nMax = nCandidateCount;
-    D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nCanApply = D2Client::Seed::RollBetweenMinAndMax(pSeed, 0, nMax);
+    nCanApply = D2Client::Seed::RollBetweenMinAndMax(D2Common::ITEMS::Items::GetItemSeed(pUnit), 0, nCandidateCount);
     if ((int)nCanApply >= (int)nCandidateCount) {
       return nCanApply & -65536;
     }
@@ -825,34 +825,34 @@ uint32_t __fastcall ITEMMOD_GetMaxAffixGroupClassic(int32_t pThis, D2UnitStrc * 
 }
 
 // Selects a random valid rare affix index for an item. Iterates the prefix (this==0) or suffix (this!=0) range of the rare-affix table, calls ITEMMOD_CanApplyAffix for each entry to build a candidate list (up to 511), then rolls a random index via the item's seed. Returns the 1-based affix table index of the chosen affix, or 0 if no valid affix found.
-uint32_t __fastcall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
+uint32_t __thiscall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
     D2RareAffixTxt* pAffixRangeStart;
     int nAffixRangeBytes;
     uint32_t apiStack4108[1024];
-    D2RareAffixTxt* pCurAffixEntry = (D2RareAffixTxt*)0x5c1abd;
+    D2RareAffixTxt* pCurAffixEntry;
     D2RareAffixTableStrc* pRareAffixTableInfo = D2Common::DATATBLS::ItemTbls::TXT_RareAffixes_GetTableInfo();
-    if (!pThis) {
-      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
-      pCurAffixEntry = pAffixRangeStart;
-    } else {
+    if (pThis) {
       pAffixRangeStart = (D2RareAffixTxt*)pRareAffixTableInfo;
       pCurAffixEntry = pRareAffixTableInfo->pPrefixStart;
+    } else {
+      pAffixRangeStart = pRareAffixTableInfo->pSuffixStart;
+      pCurAffixEntry = pAffixRangeStart;
     }
     if (!pCurAffixEntry) {
       return (uint32_t)pAffixRangeStart & -65536;
     }
 
     int nAffixTableBaseIdx = ((int)pCurAffixEntry - (int)pRareAffixTableInfo->pTable) / 0x48;
-    if (!pThis) {
-      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
-    } else {
+    if (pThis) {
       nAffixRangeBytes = pRareAffixTableInfo->nSize * 0x48 - (int)pRareAffixTableInfo->pPrefixStart + (int)pRareAffixTableInfo->pTable;
+    } else {
+      nAffixRangeBytes = (int)pRareAffixTableInfo->pPrefixStart - (int)pRareAffixTableInfo->pSuffixStart;
     }
 
     uint32_t nCanApply = nAffixRangeBytes * 0x38e38e39;
     uint32_t nCandidateCount = 0;
     int iAffixEntry = 0;
-    if (0 >= nAffixRangeBytes / 0x48) {
+    if (!(nAffixRangeBytes / 0x48 > 0)) {
       return nCanApply & -65536;
     }
 
@@ -873,9 +873,7 @@ uint32_t __fastcall GetMaxToRoll(int32_t pThis, D2UnitStrc * pUnit) {
       return nCanApply & -65536;
     }
 
-    uint32_t nMax = nCandidateCount;
-    D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-    nCanApply = D2Client::Seed::RollBetweenMinAndMax(pSeed, 0, nMax);
+    nCanApply = D2Client::Seed::RollBetweenMinAndMax(D2Common::ITEMS::Items::GetItemSeed(pUnit), 0, nCandidateCount);
     if ((int)nCanApply >= (int)nCandidateCount) {
       return nCanApply & -65536;
     }
@@ -921,20 +919,20 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     bPrefixExhausted = false;
     int16_t wItemVersion;
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!wItemVersion) {
-      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
-      *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRolledGroup;
-    } else {
+    if (wItemVersion) {
       nRarePrefixGroup = GetMaxToRoll(1, pUnit);
       *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRarePrefixGroup;
+    } else {
+      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+      *(uint16_t*)(char*)&nRarePrefixGroup = (short int)nRolledGroup;
     }
 
     wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!wItemVersion) {
-      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (wItemVersion) {
+      nRolledGroup = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nRolledGroup;
     } else {
-      nRolledGroup = GetMaxToRoll(0, pUnit);
+      nRolledGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nRolledGroup;
     }
     if (!((short int)nRarePrefixGroup && wRareSuffix)) {
@@ -963,7 +961,7 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     nPrefixSlot2 = 0;
     int nRollIdx;
     nRollIdx = 0;
-    if (0 >= nAffixRollCount) {
+    if (nAffixRollCount <= 0) {
       return 0;
     }
 
@@ -972,54 +970,54 @@ static BOOL __stdcall ITEMMOD_GenerateRareAffixes(D2ItemGenContextStrc * pItemGe
     int* pPrefixTablePtr;
     pPrefixTablePtr = &pItemGenContext->nForcePrefix;
     do {
-      if (bPrefixExhausted) {
-        if (bSuffixExhausted) {
-          break;
-        }
-
-        roll_suffix:
-        if (2 < nSuffixCount) {
-          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x32e);
-          exit(-1);
-        }
-        pRolledAffixIdx = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, *pSuffixTablePtr, 0);
-        if (!(short int)pRolledAffixIdx) {
-          bSuffixExhausted = true;
-          nRollIdx--;
-        } else {
-          D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (short int)pRolledAffixIdx, nSuffixCount);
-          pSuffixTablePtr++;
-          nSuffixCount++;
-          if (2 < nSuffixCount) {
-            bSuffixExhausted = true;
-          }
-        }
-      } else {
+      if (!bPrefixExhausted) {
         if (!bSuffixExhausted) {
           seedState = D2_SEED_NEXT(*pSeed);
           *pSeed = seedState;
           nPrefixSlot2 = nPrefixCount;
-          if ((uint64_t)d2_bits_of(seedState) & 1) {
+          if (seedState.nSeedLow & 1) {
             goto roll_suffix;
           }
         }
-        if (2 < nPrefixSlot2) {
+        if (nPrefixSlot2 >= 3) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x31d);
           exit(-1);
         }
 
         pRolledAffixIdx = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 1, *pPrefixTablePtr, 0);
-        if (!(short int)pRolledAffixIdx) {
-          bPrefixExhausted = true;
-          nRollIdx--;
-        } else {
+        if ((uint16_t)(short int)pRolledAffixIdx > 0) {
           D2Common::ITEMS::Items::SetMagixPrefix(pUnit, (short int)pRolledAffixIdx, nPrefixSlot2);
           pPrefixTablePtr++;
           nPrefixSlot2++;
           nPrefixCount = nPrefixSlot2;
-          if (2 < nPrefixSlot2) {
+          if (nPrefixSlot2 >= 3) {
             bPrefixExhausted = true;
           }
+        } else {
+          bPrefixExhausted = true;
+          nRollIdx--;
+        }
+      } else {
+        if (bSuffixExhausted) {
+          break;
+        }
+
+        roll_suffix:
+        if (nSuffixCount >= 3) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x32e);
+          exit(-1);
+        }
+        pRolledAffixIdx = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, *pSuffixTablePtr, 0);
+        if ((uint16_t)(short int)pRolledAffixIdx > 0) {
+          D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (short int)pRolledAffixIdx, nSuffixCount);
+          pSuffixTablePtr++;
+          nSuffixCount++;
+          if (nSuffixCount >= 3) {
+            bSuffixExhausted = true;
+          }
+        } else {
+          bSuffixExhausted = true;
+          nRollIdx--;
         }
       }
 
@@ -1071,20 +1069,20 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
     D2SeedStrc seedState;
     int16_t sVar4;
     sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar4) {
-      nMax = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+    if (sVar4) {
+      nMax = GetMaxToRoll(1, pUnit);
       wRarePrefix = (short int)nMax;
     } else {
-      nMax = GetMaxToRoll(1, pUnit);
+      nMax = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
       wRarePrefix = (short int)nMax;
     }
 
     sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar4) {
-      nMax = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (sVar4) {
+      nMax = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nMax;
     } else {
-      nMax = GetMaxToRoll(0, pUnit);
+      nMax = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nMax;
     }
     if (!(wRarePrefix && wRareSuffix)) {
@@ -1118,20 +1116,20 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
     do {
       seedState = D2_SEED_NEXT(*pSeed);
       *pSeed = seedState;
-      if (nSuffixCount == 3 || nPrefixCount != 3 && (uint64_t)d2_bits_of(seedState) & 1) {
+      if (nSuffixCount == 3 || nPrefixCount != 3 && seedState.nSeedLow & 1) {
         nDupRetries = 0;
         do {
           sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-          if (!sVar4) {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, 0);
-          } else {
+          if (sVar4) {
             nRolledAffixRaw = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, 0, 0);
+          } else {
+            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, 0);
           }
 
           nRolledAffixMasked = nRolledAffixRaw & 0xffff;
           uVar1 = nRolledAffixMasked;
           *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)nRolledAffixRaw;
-          if (!(uint16_t)nRolledAffixMasked) {
+          if ((uint16_t)nRolledAffixMasked <= 0) {
             goto next_affix_roll;
           }
 
@@ -1147,14 +1145,14 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
             }
 
             iDupCheckSlot++;
-            if (2 < iDupCheckSlot) {
+            if (iDupCheckSlot >= 3) {
               D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (uint16_t)nRolledAffixMasked, nPrefixCount);
               nPrefixCount++;
               goto next_affix_roll;
             }
           }
 
-          bRetrying = nDupRetries < 0xfb;
+          bRetrying = nDupRetries <= 0xfa;
           nDupRetries++;
         } while (bRetrying);
 
@@ -1163,16 +1161,16 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
         nDupRetries = 0;
         do {
           sVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-          if (!sVar4) {
-            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, 0);
-          } else {
+          if (sVar4) {
             nRolledAffixRaw = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 1, 0, 0);
+          } else {
+            nRolledAffixRaw = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, 0);
           }
 
           nRolledAffixMasked = nRolledAffixRaw & 0xffff;
           uVar1 = nRolledAffixMasked;
           *(uint16_t*)(char*)&nRolledAffixMasked = (uint16_t)nRolledAffixRaw;
-          if (!(uint16_t)nRolledAffixMasked) {
+          if ((uint16_t)nRolledAffixMasked <= 0) {
             goto next_affix_roll;
           }
 
@@ -1188,14 +1186,14 @@ static BOOL __stdcall RollPrefixes(D2ItemGenContextStrc * pItemGenContext, D2Uni
             }
 
             iDupCheckSlot++;
-            if (2 < iDupCheckSlot) {
+            if (iDupCheckSlot >= 3) {
               D2Common::ITEMS::Items::SetMagixPrefix(pUnit, (uint16_t)nRolledAffixMasked, nSuffixCount);
               nSuffixCount++;
               goto next_affix_roll;
             }
           }
 
-          bRetrying = nDupRetries < 0xfb;
+          bRetrying = nDupRetries <= 0xfa;
           nDupRetries++;
         } while (bRetrying);
 
@@ -1267,20 +1265,20 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
     int32_t pExcludeAffixEntry;
     int16_t sVar5;
     sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar5) {
-      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
+    if (sVar5) {
+      nRarePrefixGroup = GetMaxToRoll(1, pUnit);
       wRarePrefix = (short int)nRarePrefixGroup;
     } else {
-      nRarePrefixGroup = GetMaxToRoll(1, pUnit);
+      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(1, pUnit);
       wRarePrefix = (short int)nRarePrefixGroup;
     }
 
     sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-    if (!sVar5) {
-      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
+    if (sVar5) {
+      nRarePrefixGroup = GetMaxToRoll(0, pUnit);
       wRareSuffix = (short int)nRarePrefixGroup;
     } else {
-      nRarePrefixGroup = GetMaxToRoll(0, pUnit);
+      nRarePrefixGroup = ITEMMOD_GetMaxAffixGroupClassic(0, pUnit);
       wRareSuffix = (short int)nRarePrefixGroup;
     }
     if (!wRarePrefix || !wRareSuffix) {
@@ -1299,13 +1297,13 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
     iApplySlot = pItemGenContext->nItemLevel;
     uint32_t nMinRolls;
     nMinRolls = 1;
-    if (0x1e < iApplySlot) {
+    if (iApplySlot > 0x1e) {
       nMinRolls = 2;
     }
-    if (0x32 < iApplySlot) {
+    if (iApplySlot > 0x32) {
       nMinRolls = 3;
     }
-    if (0x46 < iApplySlot) {
+    if (iApplySlot > 0x46) {
       nMinRolls = 4;
     }
 
@@ -1313,13 +1311,13 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
     seedState = D2_SEED_NEXT(*pItemSeed);
     *pItemSeed = seedState;
     uint32_t nSuffixLineIdx;
-    nSuffixLineIdx = seedState.nSeedLow + (int)(((uint64_t)d2_bits_of(seedState) & 0xffffffff) / 5) * -5;
-    if (nSuffixLineIdx < nMinRolls) {
+    nSuffixLineIdx = seedState.nSeedLow % 5;
+    if (nMinRolls > nSuffixLineIdx) {
       nSuffixLineIdx = nMinRolls;
     }
 
     do {
-      if (!nSuffixLineIdx) {
+      if (nSuffixLineIdx <= 0) {
         D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0);
         iApplySlot = 0;
         do {
@@ -1344,15 +1342,15 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
 
       seedState = D2_SEED_NEXT(*pItemSeed);
       *pItemSeed = seedState;
-      if (nPrefixSlot == 3 || nSuffixSlot != 3 && (uint64_t)d2_bits_of(seedState) & 1) {
+      if (nPrefixSlot == 3 || nSuffixSlot != 3 && seedState.nSeedLow & 1) {
         nDupRetries = 0;
         do {
           pExcludeAffixEntry = *(int32_t*)(pItemGenContext->szCustomName + nSuffixSlot * 4 + 0x1c);
           sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-          if (!sVar5) {
-            wRolledAffix = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, pExcludeAffixEntry);
-          } else {
+          if (sVar5) {
             wRolledAffix = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 0, pExcludeAffixEntry, 0);
+          } else {
+            wRolledAffix = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 0, pExcludeAffixEntry);
           }
 
           nMinRolls = wRolledAffix & 0xffff;
@@ -1370,14 +1368,14 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
             }
 
             iDupCheckSlot++;
-            if (2 < iDupCheckSlot) {
+            if (iDupCheckSlot >= 3) {
               D2Common::ITEMS::Items::SetMagicSuffix(pUnit, (uint16_t)nMinRolls, nSuffixSlot);
               nSuffixSlot++;
               goto next_affix_roll;
             }
           }
 
-          bRetrying = nDupRetries < 0xfb;
+          bRetrying = nDupRetries <= 0xfa;
           nDupRetries++;
         } while (bRetrying);
 
@@ -1387,10 +1385,10 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
         do {
           pExcludeAffixEntry = *(int32_t*)(pItemGenContext->szCustomName + nPrefixSlot * 4 + 0x10);
           sVar5 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
-          if (!sVar5) {
-            wRolledAffix = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, pExcludeAffixEntry);
-          } else {
+          if (sVar5) {
             wRolledAffix = ITEMMOD_RollMagicAffixClassic(pUnit, 1, 1, 0, 1, pExcludeAffixEntry, 0);
+          } else {
+            wRolledAffix = ITEMMOD_RollMagicAffix(pUnit, 1, 1, 0, 1, pExcludeAffixEntry);
           }
 
           nMinRolls = wRolledAffix & 0xffff;
@@ -1408,14 +1406,14 @@ BOOL __fastcall ITEMMOD_RollRareAffixes(D2UnitStrc * pUnit, D2ItemGenContextStrc
             }
 
             iDupCheckSlot++;
-            if (2 < iDupCheckSlot) {
+            if (iDupCheckSlot >= 3) {
               D2Common::ITEMS::Items::SetMagixPrefix(pUnit, (uint16_t)nMinRolls, nPrefixSlot);
               nPrefixSlot++;
               goto next_affix_roll;
             }
           }
 
-          bRetrying = nDupRetries < 0xfb;
+          bRetrying = nDupRetries <= 0xfa;
           nDupRetries++;
         } while (bRetrying);
 
@@ -1447,7 +1445,7 @@ int32_t __fastcall ITEMMOD_GetScrollBookIndex(D2UnitStrc * pUnit, int32_t nParam
 
     int nBookCount = pBookTableInfo->nSize;
     int iBookEntry = 0;
-    if (0 >= nBookCount) {
+    if (nBookCount <= 0) {
       return nBookCount;
     }
 
@@ -1460,12 +1458,12 @@ int32_t __fastcall ITEMMOD_GetScrollBookIndex(D2UnitStrc * pUnit, int32_t nParam
 
       iBookEntry++;
       pcVar1 += 0x20;
-      if (nBookCount <= iBookEntry) {
+      if (iBookEntry >= nBookCount) {
         return nBookCount;
       }
     }
 
-    if (-1 >= iBookEntry) {
+    if (iBookEntry < 0) {
       return nBookCount;
     }
 
@@ -1506,15 +1504,15 @@ static BOOL __stdcall ITEMMOD_GenerateSetItem(D2ItemGenContextStrc * pItemGenCon
     nSetItemsCount = sgptDataTable->nTxtSetItemsSize;
     DWORD nSetItemIdx;
     nSetItemIdx = 0;
-    if (0 >= nSetItemsCount) {
+    if (nSetItemsCount <= 0) {
       return 0;
     }
 
     short int* pSetItemLvl;
     pSetItemLvl = &sgptDataTable->pTxtSetItems->lvl;
     do {
-      if (((uint16_t)pSetItemLvl[-7] < 100 || 99 < (uint16_t)nItemVersionCached) && *pSetItemLvl <= nItemLvl && nItemCode == *(uint32_t*)(pSetItemLvl - 4) && (pSetItemLvl[-2] != 0x1d || (pItemGenContext->nFlags & ITEMFLAG_RELOAD) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
-        if (pItemGenContext->dwFileIndex && pItemGenContext->dwFileIndex - 1 == nSetItemIdx) {
+      if (((uint16_t)pSetItemLvl[-7] < 100 || (uint16_t)nItemVersionCached >= 100) && *pSetItemLvl <= nItemLvl && nItemCode == *(uint32_t*)(pSetItemLvl - 4) && (pSetItemLvl[-2] != 0x1d || (pItemGenContext->nFlags & ITEMFLAG_RELOAD) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
+        if ((uint32_t)pItemGenContext->dwFileIndex > 0 && pItemGenContext->dwFileIndex - 1 == nSetItemIdx) {
           nForcedSetItemIdx = nSetItemIdx;
         }
 
@@ -1535,7 +1533,7 @@ static BOOL __stdcall ITEMMOD_GenerateSetItem(D2ItemGenContextStrc * pItemGenCon
     } while ((int)nSetItemIdx < nSetItemsCount);
 
     nSetItemIdx = nForcedSetItemIdx;
-    if (-1 < (int)nForcedSetItemIdx) {
+    if ((int)nForcedSetItemIdx >= 0) {
       apply_set_item:
       D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pUnit, nSetItemIdx);
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, ITEMFLAG_IDENTIFIED, 0);
@@ -1549,25 +1547,25 @@ static BOOL __stdcall ITEMMOD_GenerateSetItem(D2ItemGenContextStrc * pItemGenCon
     D2SeedStrc* pSeed = D2Common::ITEMS::Items::GetItemSeed(pUnit);
     nAccumWeight = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nAccumWeight);
     nSetItemsCount = 0;
-    if (0 >= nCandidateCount) {
+    if (nCandidateCount <= 0) {
       return 0;
     }
 
     while (true) {
       int iCandidateStride;
       iCandidateStride = nSetItemsCount * 2;
-      if ((int)aDStack2072[iCandidateStride + 1] > (int)nAccumWeight) {
+      if ((int)nAccumWeight < (int)aDStack2072[iCandidateStride + 1]) {
         break;
       }
 
       nSetItemsCount++;
       nAccumWeight -= aDStack2072[iCandidateStride + 1];
-      if (nCandidateCount <= nSetItemsCount) {
+      if (nSetItemsCount >= nCandidateCount) {
         return 0;
       }
     }
 
-    if (-1 >= nSetItemsCount) {
+    if (nSetItemsCount < 0) {
       return 0;
     }
 
@@ -1584,10 +1582,10 @@ BOOL __stdcall ITEMMOD_GenerateUniqueItem(D2UnitStrc * pItem) {
     D2SeedStrc DVar3;
     uint32_t nItemClassId;
     int32_t nResult;
-    D2SetItemsTxt** ppDVar10;
+    D2SetItemsTxt** ppDVar9;
+    uint32_t uVar10;
     uint32_t uVar11;
     uint32_t uVar12;
-    uint32_t uVar13;
     DWORD DStack_14;
     int iStack_c;
     if (!pItem) {
@@ -1602,73 +1600,75 @@ BOOL __stdcall ITEMMOD_GenerateUniqueItem(D2UnitStrc * pItem) {
     }
 
     D2SeedStrc* pDVar5 = D2Common::ITEMS::Items::GetItemSeed(pItem);
-    uint32_t uVar6 = D2Common::Seed::GetSeed_nSeedLow(pDVar5);
+    uint32_t nInitSeed = D2Common::Seed::GetSeed_nSeedLow(pDVar5);
     uint16_t uVar4 = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pItem);
-    int iVar7 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
-    int32_t iVar8 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pItem, UNITSTAT_maxdurability, 0);
-    iVar7 *= 2;
-    if (0xfe < iVar7) {
-      iVar7 = 0xff;
+    int iVar6 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
+    int32_t iVar7 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pItem, UNITSTAT_maxdurability, 0);
+    iVar6 *= 2;
+    if (iVar6 >= 0xff) {
+      iVar6 = 0xff;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_durability, iVar7, 0);
-    iVar7 = iVar8 * 2;
-    if (0xfe < iVar7) {
-      iVar7 = 0xff;
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_durability, iVar6, 0);
+    iVar6 = iVar7 * 2;
+    if (iVar6 >= 0xff) {
+      iVar6 = 0xff;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_maxdurability, iVar7, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pItem, UNITSTAT_maxdurability, iVar6, 0);
     pDVar2 = sgptDataTable->pTxtSets;
-    uVar13 = 0;
-    if (0 < sgptDataTable->nTxtSetsSize) {
-      short int* psVar9;
-      psVar9 = &pDVar2->version;
+    uVar12 = 0;
+    if (sgptDataTable->nTxtSetsSize > 0) {
+      short int* psVar8;
+      psVar8 = &pDVar2->version;
       do {
-        if (99 < (uint16_t)*psVar9) {
+        if ((uint16_t)*psVar8 >= 100) {
           break;
         }
 
-        uVar13++;
-        psVar9 += 0x94;
-      } while ((int)uVar13 < sgptDataTable->nTxtSetsSize);
+        uVar12++;
+        psVar8 += 0x94;
+      } while ((int)uVar12 < sgptDataTable->nTxtSetsSize);
     }
 
     pDVar5 = D2Common::ITEMS::Items::GetItemSeed(pItem);
-    if ((int)uVar13 < 1) {
-      uVar11 = 0;
-    } else if (!(uVar13 & uVar13 - 1)) {
+    if ((int)uVar12 <= 0) {
+      uVar10 = 0;
+    } else if (uVar12 & uVar12 - 1) {
       DVar3 = D2_SEED_NEXT(*pDVar5);
-      *pDVar5 = DVar3;
-      uVar11 = uVar13 - 1 & DVar3.nSeedLow;
+      pDVar5->nSeedHigh = DVar3.nSeedHigh;
+      pDVar5->nSeedLow = DVar3.nSeedLow;
+      uVar10 = DVar3.nSeedLow % uVar12;
     } else {
       DVar3 = D2_SEED_NEXT(*pDVar5);
-      *pDVar5 = DVar3;
-      uVar11 = DVar3.nSeedLow % uVar13;
+      pDVar5->nSeedHigh = DVar3.nSeedHigh;
+      pDVar5->nSeedLow = DVar3.nSeedLow;
+      uVar10 = uVar12 - 1 & DVar3.nSeedLow;
     }
 
     DStack_14 = -1;
     iStack_c = 0;
-    if (0 < (int)uVar13) {
+    if ((int)uVar12 > 0) {
       do {
-        uVar12 = (iStack_c + uVar11) % uVar13;
-        if ((uint16_t)pDVar2[uVar12].version < 100 || 99 < uVar4) {
-          iVar7 = 0;
-          if (0 < pDVar2[uVar12].nTxtSetItemsCount) {
-            ppDVar10 = pDVar2[uVar12].pTxtSetItems;
+        uVar11 = (iStack_c + uVar10) % uVar12;
+        if ((uint16_t)pDVar2[uVar11].version < 100 || 99 < uVar4) {
+          iVar6 = 0;
+          if (pDVar2[uVar11].nTxtSetItemsCount > 0) {
+            ppDVar9 = pDVar2[uVar11].pTxtSetItems;
             do {
-              if (pDVar1->dwCode == (*ppDVar10)->dwItemCode) {
-                DStack_14 = (DWORD)pDVar2[uVar12].pTxtSetItems[iVar7]->nId;
+              if (pDVar1->dwCode == (*ppDVar9)->dwItemCode) {
+                DStack_14 = (DWORD)pDVar2[uVar11].pTxtSetItems[iVar6]->nId;
                 break;
               }
 
-              iVar7++;
-              ppDVar10++;
-            } while (iVar7 < pDVar2[uVar12].nTxtSetItemsCount);
+              iVar6++;
+              ppDVar9++;
+            } while (iVar6 < pDVar2[uVar11].nTxtSetItemsCount);
           }
         }
 
         iStack_c++;
-      } while (iStack_c < (int)uVar13);
+      } while (iStack_c < (int)uVar12);
 
       if (DStack_14 != -1) {
         D2Common::ITEMS::Items::ITEM_SetItemData_nFileIndex(pItem, DStack_14);
@@ -1679,8 +1679,7 @@ BOOL __stdcall ITEMMOD_GenerateUniqueItem(D2UnitStrc * pItem) {
     }
 
     pDVar5 = D2Common::ITEMS::Items::GetItemSeed(pItem);
-    pDVar5->nSeedLow = uVar6;
-    pDVar5->nSeedHigh = 0x29a;
+    D2Common::Seed::InitSeed_Param_666(pDVar5, nInitSeed);
     return 0;
 }
 
@@ -1701,7 +1700,7 @@ BOOL __fastcall ITEMMOD_GenerateSetOrUniqueVersioned(D2UnitStrc * pUnit, D2ItemG
 
 // @returns BOOL in EAX (1/0 on both cookie-checked exits)
 // Randomly selects and applies a superior-quality mod row from QualityItems.txt to pUnit. Limits the table to 4 entries for throwable or no-durability items. Uses the item's own seed in a rejection-sampling loop (tracks visited slots in aVisitedSlots[12]) to find a row that passes ITEMMOD_MatchesRepairType, then writes the file index, applies rune/gem stats via ApplyRuneAndGemStats, and calls StaffMod(pUnit, pItemGenContext). Protected by a stack-guard cookie.
-static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
+static BOOL __thiscall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemGenContext) {
     D2SeedStrc DVar1;
     int32_t iVar2;
     D2SeedStrc* pDVar7;
@@ -1730,16 +1729,18 @@ static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenC
       while (true) {
         do {
           pDVar7 = D2Common::ITEMS::Items::GetItemSeed(pUnit);
-          if ((int)nTableSize < 1) {
+          if ((int)nTableSize <= 0) {
             nRandIdx = 0;
-          } else if (!(nTableSize & nTableSize - 1)) {
+          } else if (nTableSize & nTableSize - 1) {
             DVar1 = D2_SEED_NEXT(*pDVar7);
-            *pDVar7 = DVar1;
-            nRandIdx = nTableSize - 1 & DVar1.nSeedLow;
+            pDVar7->nSeedHigh = DVar1.nSeedHigh;
+            pDVar7->nSeedLow = DVar1.nSeedLow;
+            nRandIdx = (DWORD)(DVar1.nSeedLow % nTableSize);
           } else {
             DVar1 = D2_SEED_NEXT(*pDVar7);
-            *pDVar7 = DVar1;
-            nRandIdx = (DWORD)(((uint64_t)d2_bits_of(DVar1) & 0xffffffff) % (uint64_t)nTableSize);
+            pDVar7->nSeedHigh = DVar1.nSeedHigh;
+            pDVar7->nSeedLow = DVar1.nSeedLow;
+            nRandIdx = nTableSize - 1 & DVar1.nSeedLow;
           }
         } while (aVisitedSlots[nRandIdx] != '\0');
 
@@ -1757,14 +1758,14 @@ static BOOL __stdcall ITEMMOD_GenerateQualityItem(D2UnitStrc * pUnit, D2ItemGenC
         }
 
         aVisitedSlots[nRandIdx] = '\x01';
-        if ((int)nTableSize < 1) {
+        if ((int)nTableSize <= 0) {
           break;
         }
 
         iVisitedIdx = 0;
         while (aVisitedSlots[iVisitedIdx] != '\0') {
           iVisitedIdx++;
-          if ((int)nTableSize <= iVisitedIdx) {
+          if (iVisitedIdx >= (int)nTableSize) {
             return 0;
           }
         }
@@ -1800,7 +1801,10 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
     }
 
     D2ItemsTxt* pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
-    if (!pnLowQualCount || !pItemsTxt) {
+    if (!pnLowQualCount) {
+      return 0;
+    }
+    if (!pItemsTxt) {
       return 0;
     }
 
@@ -1835,20 +1839,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
     }
 
     nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
-    if (!nClassId) {
-      nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
-      if (!nClassId) {
-        return 0;
-      }
-
-      nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
-      nScaledStat = nStatValue * 0x4b / 100;
-      if (nScaledStat < 1) {
-        nScaledStat = 1;
-      }
-
-      eUnitStat = UNITSTAT_armorclass;
-    } else {
+    if (nClassId) {
       nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_maxdamage, 0);
       nScaledStat = nStatValue * 0x4b / 100;
       if (nScaledStat < 2) {
@@ -1886,10 +1877,21 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQuality(D2UnitStrc * pUnit) {
       nStatValue = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_mindamage, 0);
       nStatValue = SKILLITEMS_ApplyPercentWithMinimum(nStatValue, 2, iVar1);
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nStatValue, 0);
-      iVar1 = 0x4b;
-      nStatValue = D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_maxdamage, 0);
-      nScaledStat = SKILLITEMS_ApplyPercentWithMinimum(nStatValue, 1, iVar1);
+      nScaledStat = SKILLITEMS_ApplyPercentWithMinimum(D2Common::Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pUnit, UNITSTAT_item_throw_maxdamage, 0), 1, 0x4b);
       eUnitStat = UNITSTAT_item_throw_maxdamage;
+    } else {
+      nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
+      if (!nClassId) {
+        return 0;
+      }
+
+      nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
+      nScaledStat = nStatValue * 0x4b / 100;
+      if (nScaledStat <= 0) {
+        nScaledStat = 1;
+      }
+
+      eUnitStat = UNITSTAT_armorclass;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nScaledStat, 0);
@@ -1951,21 +1953,7 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
     }
 
     nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
-    if (!nClassId) {
-      nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
-      if (!nClassId) {
-        goto apply_staff_mods;
-      }
-
-      nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
-      nScaledStat = nStatValue * 0x4b / 100;
-      if (nScaledStat < 1) {
-        nScaledStat = 1;
-      }
-
-      eUnitStat = UNITSTAT_armorclass;
-      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nScaledStat, 0);
-    } else {
+    if (nClassId) {
       nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_maxdamage, 0);
       nScaledStat = nStatValue * 0x4b / 100;
       if (nScaledStat < 2) {
@@ -2006,6 +1994,20 @@ BOOL __fastcall ITEMMOD_ApplyCrudeQualityClassic(D2UnitStrc * pUnit, D2ItemGenCo
         eUnitStat = UNITSTAT_item_throw_maxdamage;
         D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nScaledStat, 0);
       }
+    } else {
+      nClassId = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
+      if (!nClassId) {
+        goto apply_staff_mods;
+      }
+
+      nStatValue = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_armorclass, 0);
+      nScaledStat = nStatValue * 0x4b / 100;
+      if (nScaledStat <= 0) {
+        nScaledStat = 1;
+      }
+
+      eUnitStat = UNITSTAT_armorclass;
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nScaledStat, 0);
     }
 
     bResult = 1;

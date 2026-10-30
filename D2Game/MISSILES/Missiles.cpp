@@ -19,6 +19,7 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
+#include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillArgStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
@@ -28,6 +29,7 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Seed.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
@@ -64,11 +66,11 @@ void __fastcall FreeMissiles(::SGAMEDATA * pGame) {
       D2UnitStrc* pUnit;
       pUnit = *ppUnitSlot;
       while (pUnit) {
-        if (pUnit->eAnimMode.ePlayerMode == TownWalk) {
-          pUnit = UNIT::SUnit::GetNextUnit(pUnit);
-        } else {
+        if (pUnit->eAnimMode.ePlayerMode != TownWalk) {
           UNIT::SUnit::FreeServerUnit(pGame, pUnit);
           pUnit = *ppUnitSlot;
+        } else {
+          pUnit = UNIT::SUnit::GetNextUnit(pUnit);
         }
       }
 
@@ -107,12 +109,13 @@ static void __stdcall MISSILES_EvalDamageAndSetStats(D2UnitStrc * pUnit, D2UnitS
 }
 
 static void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+    D2SeedStrc sSeedState;
     if (!(pUnit2 && pUnit && pUnit->eUnitType == UNIT_MISSILE && (pUnit2->eUnitType == UNIT_PLAYER || pUnit2->eUnitType == UNIT_MONSTER))) {
       return;
     }
 
     D2MissilesTxt* pMissileTxt = D2Client::GetMissleById(pUnit->nClassId);
-    if (!pMissileTxt->Pierce) {
+    if (!(*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[2])) {
       return;
     }
 
@@ -123,15 +126,15 @@ static void __stdcall CalculatePierce(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     }
 
     int32_t nPierceIdx = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit2, UNITSTAT_pierce_idx, 0);
-    uint64_t sSeedState = (uint64_t)((uint64_t)(uint32_t)0x29a << 32 | (uint64_t)(uint32_t)nPierceIdx);
+    D2Common::Seed::InitSeed_Param_666(&sSeedState, nPierceIdx);
     int nPierceCount = 0;
     while (true) {
       if (nPierceCount >= 4) {
         break;
       }
 
-      sSeedState = (sSeedState & 0xffffffff) * 0x6ac690c5 + (sSeedState >> 0x20);
-      if ((int)sSeedState + (int)((sSeedState & 0xffffffff) / 100) * -100 >= nPierceStat + nItemPierceStat) {
+      sSeedState = D2_SEED_NEXT_VAL(sSeedState);
+      if ((int)(sSeedState.nSeedLow % 100) >= nPierceStat + nItemPierceStat) {
         break;
       }
 
@@ -160,7 +163,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     if ((int)eMissileId < 0) {
       return nullptr;
     }
-    if (sgptDataTable->nTxtMissilesSize <= (int)eMissileId) {
+    if ((int)eMissileId >= sgptDataTable->nTxtMissilesSize) {
       return nullptr;
     }
 
@@ -173,16 +176,16 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     if (!pMissileTxt) {
       return nullptr;
     }
-    if (!(pArgs->nFlags & 1)) {
+    if (pArgs->nFlags & 1) {
+      nPosX = pArgs->nX;
+      nPosY = pArgs->nY;
+    } else {
       if (!pArgs->pMissile) {
         return nullptr;
       }
 
       nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pArgs->pMissile);
       nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pArgs->pMissile);
-    } else {
-      nPosX = pArgs->nX;
-      nPosY = pArgs->nY;
     }
 
     int nTmpY = nPosY;
@@ -193,30 +196,30 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     }
 
     uint32_t dwFlags = pArgs->nFlags;
-    if (!(dwFlags & 2)) {
+    if (dwFlags & 2) {
+      nTargetX = pArgs->nUnitX + nPosX;
+      nTargetY = pArgs->nUnitY + nPosY;
+    } else {
       nTargetX = nPosX;
       nTargetY = nPosY;
       if (dwFlags & 0x20) {
         nTargetX = pArgs->nUnitX;
         nTargetY = pArgs->nUnitY;
       }
-    } else {
-      nTargetX = pArgs->nUnitX + nPosX;
-      nTargetY = pArgs->nUnitY + nPosY;
     }
-    if (!(dwFlags & 4)) {
-      nTmpY = (uint32_t)(uint8_t)pMissileTxt->VelLev * pArgs->nSkillLevel;
-      nVelocity = ((int)(nTmpY + (nTmpY >> 0x1f & 7U)) >> 3) + (uint32_t)(uint8_t)pMissileTxt->Vel;
-      nVelocity <<= 8;
-    } else {
-      if (!(dwFlags & 0x10)) {
+    if (dwFlags & 4) {
+      if (dwFlags & 0x10) {
         nVelocity = pArgs->nVelocityOverride;
-        nVelocity <<= 8;
       } else {
         nVelocity = pArgs->nVelocityOverride;
+        nVelocity <<= 8;
       }
+    } else {
+      nTmpY = (uint32_t)(uint8_t)pMissileTxt->VelLev * pArgs->nSkillLevel;
+      nVelocity = nTmpY / 8 + (uint32_t)(uint8_t)pMissileTxt->Vel;
+      nVelocity <<= 8;
     }
-    if (pMissileTxt->CanSlow) {
+    if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[3]) {
       eD2States eSlowMissileState;
       eSlowMissileState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pArgs->pOwner, STATE_slowmissiles);
       if (eSlowMissileState != STATE_none) {
@@ -263,7 +266,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
       if (nDeltaX < 0) {
         nDeltaX = -nDeltaX;
       }
-      if (99 < nDeltaX) {
+      if (nDeltaX >= 100) {
         return nullptr;
       }
 
@@ -271,7 +274,7 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
       if (nTmpY < 0) {
         nTmpY = -nTmpY;
       }
-      if (99 < nTmpY) {
+      if (nTmpY >= 100) {
         return nullptr;
       }
     }
@@ -282,13 +285,13 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     }
 
     dwFlags = pArgs->nFlags;
-    if (!(dwFlags & 0x8000)) {
+    if (dwFlags & 0x8000) {
+      nPosX = pArgs->nTotalFrames;
+    } else {
       nPosX = (int)pMissileTxt->LevRange * pArgs->nSkillLevel + (int)pMissileTxt->Range;
       if (dwFlags & 8 && pMissileTxt->SubLoop != '\0') {
         nPosX += ((uint32_t)(uint8_t)pMissileTxt->SubStop - (uint32_t)(uint8_t)pMissileTxt->SubStart) * pArgs->nSubLoopMult;
       }
-    } else {
-      nPosX = pArgs->nTotalFrames;
     }
     if (dwFlags & 0x200) {
       nPosX -= pArgs->nStartFrame;
@@ -310,20 +313,20 @@ D2UnitStrc * __fastcall CreatingMissile(::SGAMEDATA * pGame, D2SkillArgStrc * pA
     }
 
     D2Common::PATH::DynamicPath::SetVelocities(pDynamicPath, 0, ".\\MISSILES\\Missiles.cpp", 0x18e);
-    if (!pTargetUnit) {
-      D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)nTargetX, (int16_t)nTargetY);
-    } else {
+    if (pTargetUnit) {
       D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, pTargetUnit);
-    }
-    if (pMissileTxt->Collision == '\0') {
-      nOwnerX = 0;
     } else {
+      D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)nTargetX, (int16_t)nTargetY);
+    }
+    if (pMissileTxt->Collision != '\0') {
       nOwnerX = 0x40;
+    } else {
+      nOwnerX = 0;
     }
 
     D2Common::PATH::DynamicPath::PATH_ChangeCollisionType(pDynamicPath, nOwnerX);
     D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pDynamicPath, gaMissileSrvDoFuncTable[(uint8_t)pMissileTxt->CollideType].nFlags);
-    if (pMissileTxt->CanDestroy) {
+    if (*((uint8_t*)pMissileTxt + 0x4) & (uint8_t)gadwBitMasks[4]) {
       pUnit->eUnitFlags |= UNITFLAG_CANBEATTACKED;
     }
     if (nVelocity) {
@@ -385,7 +388,7 @@ void __fastcall MISSILES_SendMissilePacket(D2ClientStrc * pClient, ::SGAMEDATA *
     }
 
     int nMissileClassId = pUnit->nClassId;
-    if (!(-1 < nMissileClassId && nMissileClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileClassId && sgptDataTable->pTxtMissiles[nMissileClassId].ClientSend)) {
+    if (!(nMissileClassId >= 0 && nMissileClassId < sgptDataTable->nTxtMissilesSize && sgptDataTable->pTxtMissiles + nMissileClassId && *((uint8_t*)&sgptDataTable->pTxtMissiles[nMissileClassId] + 0x4) & (uint8_t)gadwBitMasks[5])) {
       return;
     }
 

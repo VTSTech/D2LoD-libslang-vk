@@ -38,7 +38,7 @@ namespace D2Client::UI::Trade {
 
 int __stdcall ConfirmExchange() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpTradeAgreeDialog);
     Dialog::gpTradeAgreeDialog = 0;
     g_nTradeWindowState = 3;
     GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 3, 0, 0);
@@ -47,7 +47,7 @@ int __stdcall ConfirmExchange() {
 
 int __stdcall TRADE_GetPlayerGoldAmount() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpTradeAgreeDialog);
     Dialog::gpTradeAgreeDialog = 0;
     g_nTradeWindowState = 7;
     GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 2, 0, 0);
@@ -62,37 +62,20 @@ int __stdcall DrawAgreeToTrade() {
 
     Dialog::gpTradeAgreeDialog = Dialog::AllocDialogStrc(0x140, 100, TRADE_GetPlayerGoldAmount, TRADE_GetPlayerGoldAmount, 0, 1, 1, 0, 0, 0, 1);
     Dialog::DIALOG_SetHighlightStyle(Dialog::gpTradeAgreeDialog, 1);
-    int32_t nLineNum = 0;
-    fpDialogFunc nCallbackParam = 0;
-    uint32_t nClickable = 1;
-    int32_t nStringIdx = 0;
-    uint32_t nColorOrFont = 0;
-    uint32_t nColor_lcl = 0xf;
-    uint16_t* szString = D2Lang::StrTable::strtable::GetLocaleString(0xfca);
-    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, szString, nColor_lcl, nColorOrFont, nStringIdx, nClickable, nCallbackParam, nLineNum);
-    nLineNum = 1;
+    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, D2Lang::StrTable::strtable::GetLocaleString(0xfca), 0xf, 0, 0, 1, 0, 0);
+    int32_t nLineNum = 1;
     fpDialogFunc pcVar1 = ConfirmExchange;
-    nClickable = 1;
-    nStringIdx = 0;
-    nColorOrFont = 0;
-    nColor_lcl = 0xf;
-    szString = D2Lang::StrTable::strtable::GetLocaleString(0xd49);
-    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, szString, nColor_lcl, nColorOrFont, nStringIdx, nClickable, pcVar1, nLineNum);
+    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, D2Lang::StrTable::strtable::GetLocaleString(0xd49), 0xf, 0, 0, 1, pcVar1, nLineNum);
     nLineNum = 1;
     fpDialogFunc nParam2 = TRADE_GetPlayerGoldAmount;
-    nClickable = 1;
-    nStringIdx = 0;
-    nColorOrFont = 0;
-    nColor_lcl = 0xf;
-    szString = D2Lang::StrTable::strtable::GetLocaleString(0xd48);
-    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, szString, nColor_lcl, nColorOrFont, nStringIdx, nClickable, nParam2, nLineNum);
+    Dialog::AddStringData(Dialog::gpTradeAgreeDialog, D2Lang::StrTable::strtable::GetLocaleString(0xd48), 0xf, 0, 0, 1, nParam2, nLineNum);
     Dialog::DIALOG_SetSelectedLine(Dialog::gpTradeAgreeDialog, -1);
     return 1;
 }
 
 int __stdcall TRADE_GetPartnerGoldAmount() {
     Sound::SOUND_PlaySound(SOUND_CURSOR_SELECT, nullptr, 0, 0, 0);
-    Dialog::FreeDialogStrc();
+    Dialog::FreeDialogStrc(Dialog::gpTradeCancelDialog);
     Dialog::gpTradeCancelDialog = 0;
     g_nTradeWindowState = 7;
     gdwTradeThrottleTimestamp = GetTickCount();
@@ -101,7 +84,6 @@ int __stdcall TRADE_GetPartnerGoldAmount() {
 }
 
 void __stdcall TRADE_HandleTradeCancel() {
-    int32_t nLineNum;
     if (Dialog::gpTradeCancelDialog) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13d);
       exit(-1);
@@ -109,22 +91,10 @@ void __stdcall TRADE_HandleTradeCancel() {
 
     Dialog::gpTradeCancelDialog = Dialog::AllocDialogStrc(0x140, 100, TRADE_GetPartnerGoldAmount, TRADE_GetPartnerGoldAmount, 0, 1, 1, 0, 0, 0, 1);
     Dialog::DIALOG_SetHighlightStyle(Dialog::gpTradeCancelDialog, 1);
-    int32_t iVar1 = 0;
-    fpDialogFunc nCallbackParam = 0;
-    uint32_t nClickable = 1;
-    nLineNum = 0;
-    uint32_t nColorOrFont = 0;
-    uint32_t nColor_lcl = 0xf;
-    uint16_t* szString = D2Lang::StrTable::strtable::GetLocaleString(0xfcb);
-    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nLineNum, nClickable, nCallbackParam, iVar1);
-    iVar1 = 1;
+    Dialog::AddStringData(Dialog::gpTradeCancelDialog, D2Lang::StrTable::strtable::GetLocaleString(0xfcb), 0xf, 0, 0, 1, 0, 0);
+    int32_t iVar1 = 1;
     fpDialogFunc fpCancelCallback = TRADE_GetPartnerGoldAmount;
-    nClickable = 1;
-    nLineNum = 0;
-    nColorOrFont = 0;
-    nColor_lcl = 0xf;
-    szString = D2Lang::StrTable::strtable::GetLocaleString(0xd48);
-    Dialog::AddStringData(Dialog::gpTradeCancelDialog, szString, nColor_lcl, nColorOrFont, nLineNum, nClickable, fpCancelCallback, iVar1);
+    Dialog::AddStringData(Dialog::gpTradeCancelDialog, D2Lang::StrTable::strtable::GetLocaleString(0xd48), 0xf, 0, 0, 1, fpCancelCallback, iVar1);
     Dialog::DIALOG_SetSelectedLine(Dialog::gpTradeCancelDialog, -1);
 }
 
@@ -145,6 +115,23 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
     DWORD dwSetUIFlagResult;
     BOOL bUIFlag;
     switch (pBytes[1]) {
+      case '\x15':
+        Inv::OpenCube();
+      return;
+      case '\x10':
+        Inv::CloseStash2();
+      return;
+      case '\x11':
+        Inv::CloseStash();
+      return;
+      case '\f':
+        g_nTradeWindowState = 0;
+      ui::UI_CloseTradeWindow(0);
+      return;
+      case '\r':
+        g_nTradeWindowState = 0;
+      ui::UI_CloseTradeWindow(1);
+      return;
       case '\0':
         if (!g_nTradeWindowState) {
           bUIFlag = ui::GetUIFlag(UI_MPTRADE);
@@ -164,6 +151,18 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
           return;
         }
       break;
+      case '\t':
+        pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
+      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
+      return;
+      case '\n':
+        pPlayerUnit_lcl = UNIT::Player::UNITS_FindClientSideUnit(gnTradeGoldUpdateBuffer, UNIT_PLAYER);
+      if (!pPlayerUnit_lcl) {
+        return;
+      }
+
+      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
+      return;
       case '\x01':
         if (!g_nTradeWindowState) {
           pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
@@ -239,17 +238,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
       gdwTradeThrottleTimestamp = -1;
       Inv::INV_InitTradeMode(1);
       switch (g_nTradeWindowState) {
-        case 1:
-          gnTradeAcceptedFlags = 0;
-        Inv::INV_PlayTradeStatusSound(0, 0);
-        g_nTradeWindowState = 3;
-        if (!Dialog::gpTradeCancelDialog) {
+        case 7:
           g_nTradeWindowState = 3;
-          return;
-        }
-
-        Dialog::FreeDialogStrc();
-        Dialog::gpTradeCancelDialog = 0;
+        case 3:
+          Inv::INV_PlayTradeStatusSound(0, 0);
         return;
         case 4:
 
@@ -259,48 +251,26 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
           Inv::INV_PlayTradeStatusSound(0, 0);
         g_nTradeWindowState = 3;
         return;
-        case 7:
+        case 1:
+          gnTradeAcceptedFlags = 0;
+        Inv::INV_PlayTradeStatusSound(0, 0);
+        g_nTradeWindowState = 3;
+        if (!Dialog::gpTradeCancelDialog) {
           g_nTradeWindowState = 3;
-        case 3:
-          Inv::INV_PlayTradeStatusSound(0, 0);
+          return;
+        }
+
+        Dialog::FreeDialogStrc(Dialog::gpTradeCancelDialog);
+        Dialog::gpTradeCancelDialog = 0;
         return;
       }
 
       break;
-      case '\t':
-        pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
-      return;
-      case '\n':
-        pPlayerUnit_lcl = UNIT::Player::UNITS_FindClientSideUnit(gnTradeGoldUpdateBuffer, UNIT_PLAYER);
-      if (!pPlayerUnit_lcl) {
-        return;
-      }
-
-      UNIT::UnitSnd::UNITSND_PlayPlayerSound(pPlayerUnit_lcl, 0x17);
-      return;
-      case '\f':
-        g_nTradeWindowState = 0;
-      ui::UI_CloseTradeWindow(0);
-      return;
-      case '\r':
-        g_nTradeWindowState = 0;
-      ui::UI_CloseTradeWindow(1);
-      return;
       case '\x0e':
         Inv::INV_SetItemDescPending();
       return;
       case '\x0f':
         Inv::INV_ClearItemDescPending();
-      return;
-      case '\x10':
-        Inv::CloseStash2();
-      return;
-      case '\x11':
-        Inv::CloseStash();
-      return;
-      case '\x15':
-        Inv::OpenCube();
       return;
     }
 

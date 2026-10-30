@@ -404,8 +404,8 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
       return;
     }
     if (eCurrentLevel != geAmbientMusicLevelId) {
-      gdwAmbientMusicLevelChangeTick = nTickCount;
       geAmbientMusicLevelId = eCurrentLevel;
+      gdwAmbientMusicLevelChangeTick = nTickCount;
     }
 
     eD2Sounds eSongId = SOUND_NONE;
@@ -703,7 +703,10 @@ static int32_t __stdcall WALL2_IsTileOccludingPlayer(D2DrlgTileDataStrc * pTileD
     if (gbWall2UsePrecomputedOccluder) {
       D2RoomCoordListStrc* pDVar1;
       pDVar1 = pTileData->nGridFlags;
-      if (!(pDVar1 && pDVar1->nIndex != gnPlayerTileGridIndex)) {
+      if (!pDVar1) {
+        return 0;
+      }
+      if (pDVar1->nIndex == gnPlayerTileGridIndex) {
         return 0;
       }
       if (pDVar1->pBox.nPosX > UNIT_CenterXCoordsDiv5) {
@@ -886,7 +889,7 @@ static void __stdcall WALL2_AddLowerWallTile(D2Wall2DrawListStrc * pDrawList, D2
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= 1;
+    pDrawList->dwWall2PassMask |= gadwBitMasks[0];
     pLastNode = pWall2Cell->pUnderFloorList;
     if (!pLastNode) {
       pWall2Cell->pUnderFloorList = pDVar1;
@@ -944,7 +947,7 @@ static void __stdcall WALL2_AddRoofTile(D2Wall2DrawListStrc * pDrawList, D2Wall2
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= 2;
+    pDrawList->dwWall2PassMask |= gadwBitMasks[1];
     pDVar3 = pWall2Cell->pRoofPassList;
     if (!pDVar3) {
       pWall2Cell->pRoofPassList = pDVar1;
@@ -993,7 +996,7 @@ static void __stdcall WALL2_AddShadowPassTile(D2Wall2CellStrc * pWall2Cell, D2Ro
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &roomCoords);
     pDVar1->nX = (roomCoords.dwXStart + pTileData->nPosX * 5) * 8;
     pDVar1->nY = (roomCoords.dwYStart + pTileData->nPosY * 5) * 8;
-    pDrawList->dwWall2PassMask |= 8;
+    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
     pCurNode = pWall2Cell->pShadowPassList;
     if (!pCurNode) {
       pWall2Cell->pShadowPassList = pDVar1;
@@ -1044,7 +1047,7 @@ static void __stdcall WALL2_InsertUnitDraw(D2Wall2CellStrc * pWall2Cell, D2UnitS
     }
 
     pDVar1->nY = nUnitPos * 8;
-    pDrawList->dwWall2PassMask |= 8;
+    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
     pDVar4 = pWall2Cell->pShadowPassList;
     if (!pWall2Cell->pShadowPassList) {
       pWall2Cell->pShadowPassList = pDVar1;
@@ -1098,7 +1101,7 @@ static void __stdcall WALL2_InsertUnitShadowDraw(D2Wall2CellStrc * pWall2Cell, D
     }
 
     pDVar1->nY = nUnitPos * 8;
-    pDrawList->dwWall2PassMask |= 8;
+    pDrawList->dwWall2PassMask |= gadwBitMasks[3];
     pDVar4 = pWall2Cell->pShadowPassList;
     if (!pDVar4) {
       pWall2Cell->pShadowPassList = pDVar1;

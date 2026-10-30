@@ -139,21 +139,21 @@ int32_t __stdcall GetDistanceBetweenUnits(D2UnitStrc * pUnit, D2UnitStrc * pUnit
     int nSizeAdjY;
     D2UnitStrc* pUnit1Saved = pUnit;
     eD2UnitType eUnitType = pUnit2->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nTargetX = pUnit2->pPath.pStaticPath->nPosX;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nTargetX = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nTargetX = PATH::DynamicPath::GetXPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nTargetX = 0;
     }
 
     eD2UnitType eUnitTypeTmp = pUnit->eUnitType;
-    if (eUnitTypeTmp == UNIT_OBJECT || 3 < (int)eUnitTypeTmp && (int)eUnitTypeTmp < 6) {
+    if (eUnitTypeTmp == UNIT_OBJECT || (int)eUnitTypeTmp > 3 && (int)eUnitTypeTmp <= 5) {
       eUnitType2 = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      eUnitType2 = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       eUnitType2 = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      eUnitType2 = 0;
     }
 
     pUnit = (D2UnitStrc*)(nTargetX - eUnitType2);
@@ -162,21 +162,21 @@ int32_t __stdcall GetDistanceBetweenUnits(D2UnitStrc * pUnit, D2UnitStrc * pUnit
     }
 
     eUnitTypeTmp = pUnit2->eUnitType;
-    if (eUnitTypeTmp == UNIT_OBJECT || 3 < (int)eUnitTypeTmp && (int)eUnitTypeTmp < 6) {
+    if (eUnitTypeTmp == UNIT_OBJECT || (int)eUnitTypeTmp > 3 && (int)eUnitTypeTmp <= 5) {
       nTargetX = pUnit2->pPath.pStaticPath->nPosY;
-    } else if (!pUnit2->pPath.pDynamicPath) {
-      nTargetX = 0;
-    } else {
+    } else if (pUnit2->pPath.pDynamicPath) {
       nTargetX = PATH::DynamicPath::GetYPos(pUnit2->pPath.pDynamicPath);
+    } else {
+      nTargetX = 0;
     }
 
     eUnitTypeTmp = pUnit1Saved->eUnitType;
-    if (eUnitTypeTmp == UNIT_OBJECT || 3 < (int)eUnitTypeTmp && (int)eUnitTypeTmp < 6) {
+    if (eUnitTypeTmp == UNIT_OBJECT || (int)eUnitTypeTmp > 3 && (int)eUnitTypeTmp <= 5) {
       eUnitType2 = pUnit1Saved->pPath.pStaticPath->nPosY;
-    } else if (!pUnit1Saved->pPath.pDynamicPath) {
-      eUnitType2 = 0;
-    } else {
+    } else if (pUnit1Saved->pPath.pDynamicPath) {
       eUnitType2 = PATH::DynamicPath::GetYPos(pUnit1Saved->pPath.pDynamicPath);
+    } else {
+      eUnitType2 = 0;
     }
 
     nTargetX -= eUnitType2;
@@ -197,7 +197,7 @@ int32_t __stdcall GetDistanceBetweenUnits(D2UnitStrc * pUnit, D2UnitStrc * pUnit
       if (eUnitType2 < 0) {
         eUnitType2 = 0;
       }
-      if (nSizeUnit2 < 2 || nSizeUnit < 2) {
+      if (nSizeUnit2 <= 1 || nSizeUnit <= 1) {
         return eUnitType2 + 1;
       }
     } else {
@@ -224,7 +224,7 @@ int32_t __stdcall GetDistanceBetweenUnits(D2UnitStrc * pUnit, D2UnitStrc * pUnit
       if (nTargetX < 0) {
         nTargetX = 0;
       }
-      if (nTargetX < eUnitType2) {
+      if (eUnitType2 > nTargetX) {
         return nTargetX + eUnitType2 * 2;
       }
 
@@ -243,21 +243,21 @@ int32_t __stdcall GetCollisionDistance(D2UnitStrc * pUnit, D2UnitStrc * pTarget)
     int32_t nSizeTarget;
     int nHalfSizeSum;
     eD2UnitType eUnitType = pTarget->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDx = pTarget->pPath.pStaticPath->nPosX;
-    } else if (!pTarget->pPath.pDynamicPath) {
-      nDx = 0;
-    } else {
+    } else if (pTarget->pPath.pDynamicPath) {
       nDx = PATH::DynamicPath::GetXPos(pTarget->pPath.pDynamicPath);
+    } else {
+      nDx = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDy = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nDy = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nDy = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nDy = 0;
     }
 
     nDx -= nDy;
@@ -266,21 +266,21 @@ int32_t __stdcall GetCollisionDistance(D2UnitStrc * pUnit, D2UnitStrc * pTarget)
     }
 
     eUnitType = pTarget->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDy = pTarget->pPath.pStaticPath->nPosY;
-    } else if (!pTarget->pPath.pDynamicPath) {
-      nDy = 0;
-    } else {
+    } else if (pTarget->pPath.pDynamicPath) {
       nDy = PATH::DynamicPath::GetYPos(pTarget->pPath.pDynamicPath);
+    } else {
+      nDy = 0;
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nSizeAdj = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nSizeAdj = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nSizeAdj = PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nSizeAdj = 0;
     }
 
     nDy -= nSizeAdj;
@@ -314,12 +314,12 @@ int32_t __stdcall GetDistanceToXY(D2UnitStrc * pUnit, int32_t nX, int32_t nY) {
     int nPosX;
     int nPosY;
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosX = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosX = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosX = 0;
     }
 
     nPosX = nX - nPosX;
@@ -328,12 +328,12 @@ int32_t __stdcall GetDistanceToXY(D2UnitStrc * pUnit, int32_t nX, int32_t nY) {
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nPosY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nPosY = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nPosY = PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nPosY = 0;
     }
 
     nPosY = nY - nPosY;
@@ -346,11 +346,11 @@ int32_t __stdcall GetDistanceToXY(D2UnitStrc * pUnit, int32_t nX, int32_t nY) {
     if (nPosY < 0) {
       nPosY = 0;
     }
-    if (nPosY >= nPosX) {
-      return (nPosX + nPosY * 2) / 2;
+    if (nPosX > nPosY) {
+      return (nPosY + nPosX * 2) / 2;
     }
 
-    return (nPosY + nPosX * 2) / 2;
+    return (nPosX + nPosY * 2) / 2;
 }
 
 // Returns 1 if pUnit's position is within nParam subtiles of the point (pnParam[0], pnParam[1]), using true squared Euclidean distance (|dx|²+|dy|² <= nParam²). Handles static vs. dynamic path units. pnParam is a 2-element int array [targetX, targetY].
@@ -358,12 +358,12 @@ uint32_t __stdcall COLLISION_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam, in
     int32_t nDx;
     int32_t nDy;
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDx = pUnit->pPath.pStaticPath->nPosX;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nDx = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nDx = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nDx = 0;
     }
 
     int nAbsDx = *pnParam - nDx;
@@ -372,12 +372,12 @@ uint32_t __stdcall COLLISION_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam, in
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nDy = pUnit->pPath.pStaticPath->nPosY;
-    } else if (!pUnit->pPath.pDynamicPath) {
-      nDy = 0;
-    } else {
+    } else if (pUnit->pPath.pDynamicPath) {
       nDy = PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+    } else {
+      nDy = 0;
     }
 
     int nAbsDy = pnParam[1] - nDy;
@@ -392,15 +392,17 @@ uint32_t __stdcall COLLISION_IsUnitInRange(D2UnitStrc * pUnit, int * pnParam, in
 static BOOL CoordIsInRoom(D2RoomStrc * pRoom, int32_t nX, int32_t nSize, int32_t nY) {
     D2DrlgRoomCoordsStrc local_24;
     DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &local_24);
-    if (nX + nSize < local_24.dwXStart) {
-      if (local_24.dwXSize + local_24.dwXStart < nX - nSize) {
+    if (!(nX + nSize < local_24.dwXStart)) {
+      if (nY + nSize < local_24.dwYStart && nY - nSize > local_24.dwYSize + local_24.dwYStart) {
         return 0;
       }
-      if (nY + nSize < local_24.dwYStart && local_24.dwYSize + local_24.dwYStart < nY - nSize) {
+    } else {
+      if (nX - nSize > local_24.dwXSize + local_24.dwXStart) {
         return 0;
       }
-    } else if (nY + nSize < local_24.dwYStart && local_24.dwYSize + local_24.dwYStart < nY - nSize) {
-      return 0;
+      if (nY + nSize < local_24.dwYStart && nY - nSize > local_24.dwYSize + local_24.dwYStart) {
+        return 0;
+      }
     }
 
     return 1;
@@ -423,7 +425,7 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
     D2UnitStrc* pCandidate;
     int32_t nUnitSizeX;
     nUnitSizeX = Units::GetUnitSizeX(pUnit);
-    if (2 < nUnitSizeX - 1U) {
+    if (nUnitSizeX - 1U > 2) {
       return nullptr;
     }
 
@@ -440,7 +442,7 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
     DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pUnitRoom, &ppAdjacentRooms, &nAdjacentRoomCount);
     int nAdjRoomIdx;
     nAdjRoomIdx = 0;
-    if (0 >= nAdjacentRoomCount) {
+    if (nAdjacentRoomCount <= 0) {
       return nullptr;
     }
 
@@ -465,7 +467,7 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
                 case_UNIT_MISSILE:
                 nCandidateSizeX = Units::GetUnitSizeX(pCandidate);
               if (nCandidateSizeX < 3) {
-                if (nCandidateSizeX < 1) {
+                if (nCandidateSizeX <= 0) {
                   break;
                 }
               } else {
@@ -473,21 +475,21 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
               }
 
               eUnitType = pCandidate->eUnitType;
-              if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+              if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
                 nRoomIdx = pCandidate->pPath.pStaticPath->nPosX;
-              } else if (!pCandidate->pPath.pDynamicPath) {
-                nRoomIdx = 0;
-              } else {
+              } else if (pCandidate->pPath.pDynamicPath) {
                 nRoomIdx = PATH::DynamicPath::GetXPos(pCandidate->pPath.pDynamicPath);
+              } else {
+                nRoomIdx = 0;
               }
 
               eUnitType = pCandidate->eUnitType;
-              if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+              if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
                 nCandidatePosY = pCandidate->pPath.pStaticPath->nPosY;
-              } else if (!pCandidate->pPath.pDynamicPath) {
-                nCandidatePosY = 0;
-              } else {
+              } else if (pCandidate->pPath.pDynamicPath) {
                 nCandidatePosY = PATH::DynamicPath::GetYPos(pCandidate->pPath.pDynamicPath);
+              } else {
+                nCandidatePosY = 0;
               }
 
               switch (nCandidateSizeX + nUnitSizeX * 3 - 4) {
@@ -515,7 +517,7 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
                 case 2:
 
                 case 6:
-                  if (nRoomIdx - 1 <= nPosX && nPosX <= nRoomIdx + 1 && nCandidatePosY - 1 <= nPosY) {
+                  if (nPosX >= nRoomIdx - 1 && nPosX <= nRoomIdx + 1 && nPosY >= nCandidatePosY - 1) {
                     iVar1 = nCandidatePosY + 1;
                     test_y_upper_bound:
                     bSignedLessOrEqual = nPosY <= iVar1;
@@ -555,17 +557,17 @@ D2UnitStrc * __stdcall _unused(D2UnitStrc * pUnit, pfnUnitProximityTest pfnCallb
                 if (nCallbackResult < 0) {
                   nCallbackResult = -nCallbackResult;
                 }
-                if (iVar1 < 3 && nCallbackResult < 2) {
+                if (iVar1 <= 2 && nCallbackResult <= 1) {
                   goto try_candidate;
                 }
-                if (nCallbackResult < 3) {
+                if (nCallbackResult <= 2) {
                   bSignedLessOrEqual = iVar1 <= 1;
                   goto test_in_range;
                 }
 
                 break;
                 case 8:
-                  if (nRoomIdx - 2 <= nPosX && nPosX <= nRoomIdx + 2 && nCandidatePosY - 2 <= nPosY) {
+                  if (nPosX >= nRoomIdx - 2 && nPosX <= nRoomIdx + 2 && nPosY >= nCandidatePosY - 2) {
                     iVar1 = nCandidatePosY + 2;
                     goto test_y_upper_bound;
                   }
@@ -596,7 +598,7 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
     int32_t nAdjacentRoomCount;
     eD2UnitType eUnitType;
     D2UnitStrc* pUnit;
-    if (!pRoom || 2 < nWidth - 1U) {
+    if (!pRoom || nWidth - 1U > 2) {
       return nullptr;
     }
 
@@ -604,7 +606,7 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
     DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, (D2RoomStrc***)&pRoom, &nAdjacentRoomCount);
     int nAdjRoomIdx;
     nAdjRoomIdx = 0;
-    if (0 >= nAdjacentRoomCount) {
+    if (nAdjacentRoomCount <= 0) {
       return nullptr;
     }
 
@@ -630,7 +632,7 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
                 case_UNIT_MISSILE:
                 nUnitSizeX = Units::GetUnitSizeX(pUnit);
               if (nUnitSizeX < 3) {
-                if (nUnitSizeX < 1) {
+                if (nUnitSizeX <= 0) {
                   break;
                 }
               } else {
@@ -638,29 +640,24 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
               }
 
               eUnitType = pUnit->eUnitType;
-              if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+              if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
                 nCandidatePosX = pUnit->pPath.pStaticPath->nPosX;
-              } else if (!pUnit->pPath.pDynamicPath) {
-                nCandidatePosX = 0;
-              } else {
+              } else if (pUnit->pPath.pDynamicPath) {
                 nCandidatePosX = PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+              } else {
+                nCandidatePosX = 0;
               }
 
               eUnitType = pUnit->eUnitType;
-              if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
+              if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
                 nCandidatePosY = pUnit->pPath.pStaticPath->nPosY;
-              } else if (!pUnit->pPath.pDynamicPath) {
-                nCandidatePosY = 0;
-              } else {
+              } else if (pUnit->pPath.pDynamicPath) {
                 nCandidatePosY = PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+              } else {
+                nCandidatePosY = 0;
               }
 
               switch (nUnitSizeX - 1 + nWidth) {
-                case 0:
-                  if (nX != nCandidatePosX || nY != nCandidatePosY) {
-                    break;
-                  }
-                goto try_candidate;
                 case 1:
 
                 case 3:
@@ -680,7 +677,7 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
                 case 2:
 
                 case 6:
-                  if (nCandidatePosX - 1 <= nX && nX <= nCandidatePosX + 1 && nCandidatePosY - 1 <= nY) {
+                  if (nX >= nCandidatePosX - 1 && nX <= nCandidatePosX + 1 && nY >= nCandidatePosY - 1) {
                     iVar1 = nCandidatePosY + 1;
                     test_y_upper_bound:
                     bSignedLessOrEqual = nY <= iVar1;
@@ -721,20 +718,26 @@ D2UnitStrc * __stdcall CallCollisionFunction(D2RoomStrc * pRoom, int32_t nX, int
                 if (iVar2 < 0) {
                   iVar2 = -iVar2;
                 }
-                if (iVar1 < 3 && iVar2 < 2) {
+                if (iVar1 <= 2 && iVar2 <= 1) {
                   goto try_candidate;
                 }
-                if (iVar2 < 3) {
+                if (iVar2 <= 2) {
                   bSignedLessOrEqual = iVar1 <= 1;
                   goto test_in_range;
                 }
 
                 break;
                 case 8:
-                  if (nCandidatePosX - 2 <= nX && nX <= nCandidatePosX + 2 && nCandidatePosY - 2 <= nY) {
+                  if (nX >= nCandidatePosX - 2 && nX <= nCandidatePosX + 2 && nY >= nCandidatePosY - 2) {
                     iVar1 = nCandidatePosY + 2;
                     goto test_y_upper_bound;
                   }
+                break;
+                case 0:
+                  if (nX != nCandidatePosX || nY != nCandidatePosY) {
+                    break;
+                  }
+                goto try_candidate;
               }
             }
           }
@@ -757,7 +760,7 @@ static void __stdcall TileLibrary_AddCollision(D2TileLibraryEntryStrc * pTileLib
 
     uint8_t* pTileFlags = D2CMP::DUNGEON::Dungeon::TILE_GetTileFlags(pTileLibraryEntry);
     int nGridXSize = pCollisionMap->sCoords.dwXSize;
-    uint32_t nXClamped = (int)nX < 1 ? 0 : nX;
+    uint32_t nXClamped = (int)nX <= 0 ? 0 : nX;
     uint8_t* pSubTileFlags = pTileFlags + ((nX - nXClamped + 4) * 5 - nY);
     if ((int)nXClamped >= (int)(nX + 5)) {
       return;
@@ -768,7 +771,7 @@ static void __stdcall TileLibrary_AddCollision(D2TileLibraryEntryStrc * pTileLib
     do {
       eCollisionFlags* pMapBase;
       pMapBase = pCollisionMap->pMapStart;
-      for (nXClamped = (int)nY < 1 ? 0 : nY; (int)nXClamped < (int)(nY + 5); nXClamped++) {
+      for (nXClamped = (int)nY <= 0 ? 0 : nY; (int)nXClamped < (int)(nY + 5); nXClamped++) {
         pCellPtr = (uint16_t*)((int)pMapBase + nXClamped * 2 + nRowByteOffset);
         *pCellPtr |= (uint16_t)pSubTileFlags[nXClamped];
       }
@@ -787,7 +790,7 @@ static void __stdcall TileLibrary_RemoveCollision(D2TileLibraryEntryStrc * pTile
 
     uint8_t* pTileFlags = D2CMP::DUNGEON::Dungeon::TILE_GetTileFlags(pTileLibraryEntry);
     int nGridXSize = pCollisionMap->sCoords.dwXSize;
-    uint32_t nXClamped = (int)nX < 1 ? 0 : nX;
+    uint32_t nXClamped = (int)nX <= 0 ? 0 : nX;
     uint8_t* pSubTileFlags = pTileFlags + ((nX - nXClamped + 4) * 5 - nY);
     if ((int)nXClamped >= (int)(nX + 5)) {
       return;
@@ -798,7 +801,7 @@ static void __stdcall TileLibrary_RemoveCollision(D2TileLibraryEntryStrc * pTile
     do {
       eCollisionFlags* pMapBase;
       pMapBase = pCollisionMap->pMapStart;
-      for (nXClamped = (int)nY < 1 ? 0 : nY; (int)nXClamped < (int)(nY + 5); nXClamped++) {
+      for (nXClamped = (int)nY <= 0 ? 0 : nY; (int)nXClamped < (int)(nY + 5); nXClamped++) {
         pCellPtr = (uint16_t*)((int)pMapBase + nXClamped * 2 + nRowByteOffset);
         *pCellPtr &= ~(uint16_t)pSubTileFlags[nXClamped];
       }
@@ -816,9 +819,9 @@ static void __stdcall TileLibrary_SetCollision(D2TileLibraryEntryStrc * pTileLib
 
     uint8_t* pTileFlags = D2CMP::DUNGEON::Dungeon::TILE_GetTileFlags(pTileLibraryEntry);
     int nGridXSize = pCollisionMap->sCoords.dwXSize;
-    uint32_t nXClamped = nX < 1 ? 0 : nX;
+    uint32_t nXClamped = nX <= 0 ? 0 : nX;
     uint8_t* pSubTileFlags = pTileFlags + ((nX - nXClamped + 4) * 5 - nY);
-    if ((int)nXClamped >= nX + 5) {
+    if (!((int)nXClamped < nX + 5)) {
       return;
     }
 
@@ -827,7 +830,7 @@ static void __stdcall TileLibrary_SetCollision(D2TileLibraryEntryStrc * pTileLib
     do {
       eCollisionFlags* pMapBase;
       pMapBase = pCollisionMap->pMapStart;
-      for (nXClamped = nY < 1 ? 0 : nY; (int)nXClamped < nY + 5; nXClamped++) {
+      for (nXClamped = nY <= 0 ? 0 : nY; (int)nXClamped < nY + 5; nXClamped++) {
         *(uint16_t*)((int)pMapBase + nXClamped * 2 + nRowByteOffset) = (uint16_t)pSubTileFlags[nXClamped];
       }
 
@@ -844,8 +847,8 @@ static void __stdcall AddCollisionFlagToCoords(int32_t nY, int32_t nX, D2RoomCol
     }
 
     int nGridXSize = pCollisionMap->sCoords.dwXSize;
-    uint32_t nXClamped = nX < 1 ? 0 : nX;
-    if ((int)nXClamped >= nX + 5) {
+    uint32_t nXClamped = nX <= 0 ? 0 : nX;
+    if (!((int)nXClamped < nX + 5)) {
       return;
     }
 
@@ -854,7 +857,7 @@ static void __stdcall AddCollisionFlagToCoords(int32_t nY, int32_t nX, D2RoomCol
     do {
       eCollisionFlags* pMapBase;
       pMapBase = pCollisionMap->pMapStart;
-      for (nXClamped = nY < 1 ? 0 : nY; (int)nXClamped < nY + 5; nXClamped++) {
+      for (nXClamped = nY <= 0 ? 0 : nY; (int)nXClamped < nY + 5; nXClamped++) {
         pCell = (eCollisionFlags*)((int)pMapBase + nXClamped * 2 + nRowByteOffset);
         *pCell |= eCollisionFlag;
       }
@@ -872,7 +875,7 @@ static void __stdcall TileLibrary_SetupCollision(D2DrlgTileDataStrc * pTileData,
     int nWorldY;
     int nWorldX;
     uint32_t nTileFlags;
-    if (0 >= nTilesSize) {
+    if (nTilesSize <= 0) {
       return;
     }
 
@@ -887,10 +890,10 @@ static void __stdcall TileLibrary_SetupCollision(D2DrlgTileDataStrc * pTileData,
       if (bIsInsideRoom) {
         nY = nWorldX - pCollisionMap->sCoords.dwXStart;
         nX = nWorldY - pCollisionMap->sCoords.dwYStart;
-        if (!bReplace) {
-          TileLibrary_AddCollision(*pTileLibraryEntry, nX, nY, pCollisionMap);
-        } else {
+        if (bReplace) {
           TileLibrary_SetCollision(*pTileLibraryEntry, nX, nY, pCollisionMap);
+        } else {
+          TileLibrary_AddCollision(*pTileLibraryEntry, nX, nY, pCollisionMap);
         }
 
         nTileFlags = (uint32_t)pTileLibraryEntry[-1];
@@ -978,7 +981,7 @@ void __fastcall AllocRoomCollisionGrid(D2PoolManagerStrc * pMemPool, D2RoomStrc 
     memset(pCollisionMapNew->aMap, 0, nRoomCoordsCount * 2);
     DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoomAdj, &pRoomsNear, &nAdjacentRoomsCount);
     nRoomsNearIndex = 0;
-    if (0 >= nAdjacentRoomsCount) {
+    if (nAdjacentRoomsCount <= 0) {
       return;
     }
 
@@ -1017,11 +1020,11 @@ static eCollisionFlags __stdcall COLLISN_CheckCellMask_RegArgs(D2RoomStrc * pRoo
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return COLLISION_INVALID;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & (eCollisionFlags)eCollisionFlag;
     }
 
-    return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & (eCollisionFlags)eCollisionFlag;
+    return COLLISION_INVALID;
 }
 
 static void __stdcall RemoveCollision_Vector1(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eCollisionFlags eCollisionFlag) {
@@ -1061,11 +1064,11 @@ eCollisionFlags __stdcall CheckCollision_BlockPlayerMissile(D2RoomStrc * pRoom, 
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return COLLISION_INVALID;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag;
     }
 
-    return pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag;
+    return COLLISION_INVALID;
 }
 
 void __stdcall AddCollision(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eCollisionFlags eCollisionFlag) {
@@ -1103,32 +1106,33 @@ static eCollisionFlags __stdcall CollisionGrid_CheckCollision_BoundingBox(D2Room
     int nGridXSize = pCollisionMap->sCoords.dwYStart;
     int nRelBottom = pBoundingBox->nBottom - nGridXSize;
     int nRelTop = pBoundingBox->nTop - nGridXSize;
+    int nRelRight = pBoundingBox->nRight - pCollisionMap->sCoords.dwXStart;
     nGridXSize = pCollisionMap->sCoords.dwXSize;
     int nRelLeft = pBoundingBox->nLeft - pCollisionMap->sCoords.dwXStart;
     eCollisionFlags* pCell = pCollisionMap->pMapStart + nGridXSize * nRelBottom + nRelLeft;
     eCollisionFlags eResult = COLBIT_NONE;
-    if (nRelBottom > nRelTop) {
-      return COLLIDE_NONE;
+    if (nRelBottom <= nRelTop) {
+      int nRowsRemaining;
+      nRowsRemaining = nRelTop - nRelBottom + 1;
+      do {
+        if (nRelLeft <= nRelRight) {
+          nRelBottom = nRelRight - nRelLeft + 1;
+          do {
+            eCellFlags = *pCell;
+            pCell++;
+            eResult |= eCellFlags & eCollisionFlag;
+            nRelBottom--;
+          } while (nRelBottom);
+        }
+
+        pCell = pCell + nGridXSize - 1 + (nRelLeft - nRelRight);
+        nRowsRemaining--;
+      } while (nRowsRemaining);
+
+      return eResult;
     }
 
-    int nRowsRemaining = nRelTop - nRelBottom + 1;
-    do {
-      int nRelRight = pBoundingBox->nRight - pCollisionMap->sCoords.dwXStart;
-      if (nRelLeft <= nRelRight) {
-        nRelBottom = nRelRight - nRelLeft + 1;
-        do {
-          eCellFlags = *pCell;
-          pCell++;
-          eResult |= eCellFlags & eCollisionFlag;
-          nRelBottom--;
-        } while (nRelBottom);
-      }
-
-      pCell = pCell + nGridXSize - 1 + (nRelLeft - nRelRight);
-      nRowsRemaining--;
-    } while (nRowsRemaining);
-
-    return eResult;
+    return COLLIDE_NONE;
 }
 
 static void __stdcall CollisionGrid_RemoveCollision_BoundingBox(D2RoomCollisionGridStrc * pCollisionMap, D2BoundingBoxStrc * pBoundingBox, int32_t eCollisionFlag) {
@@ -1191,10 +1195,10 @@ static void __stdcall CollisionGrid_AddCollision_BoundingBox(D2RoomCollisionGrid
 static int32_t __stdcall BoundnigBox_AdaptBoundingBoxToGrid(D2RoomStrc * pRoom, D2BoundingBoxStrc * pBoundingBox, D2BoundingBoxStrc * pBoundingBoxes) {
     int* pBoundingBoxSrc;
     int* pBoundingBoxDst;
-    if (pBoundingBoxes->nTop < pBoundingBoxes->nBottom) {
+    if (pBoundingBoxes->nBottom > pBoundingBoxes->nTop) {
       return 0;
     }
-    if (pBoundingBoxes->nRight < pBoundingBoxes->nLeft) {
+    if (pBoundingBoxes->nLeft > pBoundingBoxes->nRight) {
       return 0;
     }
 
@@ -1209,7 +1213,7 @@ static int32_t __stdcall BoundnigBox_AdaptBoundingBoxToGrid(D2RoomStrc * pRoom, 
     pBoundingBox->nRight = pBoundingBoxes->nRight;
     int nCoordMax = pCollisionMap->sCoords.dwXSize + pCollisionMap->sCoords.dwXStart;
     int nWidth = 1;
-    if (nCoordMax <= pBoundingBoxes->nRight) {
+    if (pBoundingBoxes->nRight >= nCoordMax) {
       pBoundingBox->nRight = nCoordMax - 1;
       pBoundingBox[1].nLeft = nCoordMax;
       pBoundingBox[1].nRight = pBoundingBoxes->nRight;
@@ -1219,17 +1223,17 @@ static int32_t __stdcall BoundnigBox_AdaptBoundingBoxToGrid(D2RoomStrc * pRoom, 
     }
 
     nCoordMax = pCollisionMap->sCoords.dwYStart + pCollisionMap->sCoords.dwYSize;
-    if (pBoundingBoxes->nTop < nCoordMax) {
-      return nWidth;
+    if (!(pBoundingBoxes->nTop < nCoordMax)) {
+      pBoundingBox->nTop = nCoordMax - 1;
+      D2BoundingBoxStrc* pSplitBox = pBoundingBox + nWidth;
+      pSplitBox->nLeft = pBoundingBox->nLeft;
+      pSplitBox->nRight = pBoundingBox->nRight;
+      pSplitBox->nBottom = pBoundingBox->nTop + 1;
+      pSplitBox->nTop = pBoundingBoxes->nTop;
+      return nWidth + 1;
     }
 
-    pBoundingBox->nTop = nCoordMax - 1;
-    D2BoundingBoxStrc* pSplitBox = pBoundingBox + nWidth;
-    pSplitBox->nLeft = pBoundingBox->nLeft;
-    pSplitBox->nRight = pBoundingBox->nRight;
-    pSplitBox->nBottom = pBoundingBox->nTop + 1;
-    pSplitBox->nTop = pBoundingBoxes->nTop;
-    return nWidth + 1;
+    return nWidth;
 }
 
 // The two stack locals at -0x38 and -0x28 are ONE D2BoundingBoxStrc[3]. BoundnigBox_AdaptBoundingBoxToGrid (0064cdf0) writes up to 3 sub-boxes through the pointer it is handed and the loop here walks elements 1..n-1 from it; naming only the first two elements made the callee's third write land on whatever local the compiler put next, which smashed pCollisionGrid with a tile coordinate.
@@ -1246,12 +1250,12 @@ int16_t __fastcall CheckCollision_BoundingBox(D2RoomStrc * pRoom, D2BoundingBoxS
     }
 
     int32_t nBboxCount = BoundnigBox_AdaptBoundingBoxToGrid(pRoom_00, aBboxSplit, pBoundingBox);
-    if (nBboxCount < 1) {
+    if (nBboxCount <= 0) {
       return 0x27;
     }
 
     short int eCollisionAccum = CollisionGrid_CheckCollision_BoundingBox(pCollisionGrid, aBboxSplit, (eCollisionFlags)eCollisionFlag);
-    if (1 >= nBboxCount) {
+    if (nBboxCount <= 1) {
       return eCollisionAccum;
     }
 
@@ -1283,7 +1287,7 @@ int32_t __fastcall CheckCollision_BlockPlayer_BoundingBox(D2RoomStrc * pRoom, D2
     }
 
     int32_t nBboxCount = BoundnigBox_AdaptBoundingBoxToGrid(pBetterRoom, aBboxSplit, pBoundingBox);
-    if (0 >= nBboxCount) {
+    if (nBboxCount <= 0) {
       return 1;
     }
 
@@ -1326,12 +1330,12 @@ void __fastcall RemoveCollision_BoundingBox(D2RoomStrc * pRoom, D2BoundingBoxStr
     }
 
     int nBboxCount = BoundnigBox_AdaptBoundingBoxToGrid(pNewRoom, aBboxSplit, pBoundingBox);
-    if (0 >= nBboxCount) {
+    if (nBboxCount <= 0) {
       return;
     }
 
     CollisionGrid_RemoveCollision_BoundingBox(pCollisionGrid, aBboxSplit, eCollisionFlag);
-    if (1 >= nBboxCount) {
+    if (nBboxCount <= 1) {
       return;
     }
 
@@ -1357,12 +1361,12 @@ void __fastcall AddCollision_BoundingBox(D2RoomStrc * pRoom, D2BoundingBoxStrc *
     }
 
     int32_t nBboxCount = BoundnigBox_AdaptBoundingBoxToGrid(pBetterRoom, aBboxSplit, pBoundingBox);
-    if (0 >= nBboxCount) {
+    if (nBboxCount <= 0) {
       return;
     }
 
     CollisionGrid_AddCollision_BoundingBox(pCollisionGrid, aBboxSplit, eCollisionFlag);
-    if (1 >= nBboxCount) {
+    if (nBboxCount <= 1) {
       return;
     }
 
@@ -1387,72 +1391,78 @@ D2BoundingBoxStrc * __fastcall BoundingBox(D2BoundingBoxStrc * pBox, int32_t nX,
 
 // ORs the collision flags of the center cell plus its four cardinal neighbours (N/S/E/W) at (nX,nY) in the room collision grid, masked by eCollisionFlag. Handles edge/boundary cases by fetching adjacent-room flags via CheckCollision_BlockPlayerMissile_Internal1 when any neighbour lies outside the current room grid. Returns the combined masked flags, or eCollisionFlag if the room/grid is missing.
 static eCollisionFlags __stdcall CheckCollision_Cross(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t eCollisionFlag) {
-    eCollisionFlags eAdjacentResult;
     eCollisionFlags eAdjacentResult2;
     eCollisionFlags eAdjacentFlags1;
     eCollisionFlags eAdjacentFlags2;
+    D2RoomCollisionGridStrc* pCollisionGrid;
+    int nYp1;
     uint8_t byEdgeMask;
+    char cEdgeCase;
+    int nGridStride;
+    int nXStart;
+    int nXp1;
+    int nYStart;
+    eCollisionFlags* pCellBase;
     D2RoomStrc* pRoom_00 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX, nY);
     eCollisionFlags eFlagMask = (eCollisionFlags)eCollisionFlag;
-    if (!pRoom_00) {
-      return eFlagMask;
-    }
+    if (pRoom_00) {
+      eCollisionFlags eAdjacentResult;
+      pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pRoom_00);
+      if (pCollisionGrid && pCollisionGrid->pMapStart) {
+        nXStart = pCollisionGrid->sCoords.dwXStart;
+        cEdgeCase = nXStart >= nX;
+        if (pCollisionGrid->sCoords.dwYStart >= nY) {
+          cEdgeCase += '\x02';
+        }
 
-    D2RoomCollisionGridStrc* pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pRoom_00);
-    if (!(pCollisionGrid && pCollisionGrid->pMapStart)) {
-      return eFlagMask;
-    }
+        nGridStride = pCollisionGrid->sCoords.dwXSize;
+        nXp1 = nX + 1;
+        if (nXStart + nGridStride <= nXp1) {
+          cEdgeCase += '\x04';
+        }
 
-    int nXStart = pCollisionGrid->sCoords.dwXStart;
-    char cEdgeCase = nX <= nXStart;
-    if (nY <= pCollisionGrid->sCoords.dwYStart) {
-      cEdgeCase += '\x02';
-    }
+        nYStart = pCollisionGrid->sCoords.dwYStart;
+        nYp1 = nY + 1;
+        if (pCollisionGrid->sCoords.dwYSize + nYStart <= nYp1) {
+          cEdgeCase += '\b';
+        }
 
-    int nGridStride = pCollisionGrid->sCoords.dwXSize;
-    int nXp1 = nX + 1;
-    if (nXStart + nGridStride <= nXp1) {
-      cEdgeCase += '\x04';
-    }
+        pCellBase = pCollisionGrid->pMapStart + ((nY - nYStart) * nGridStride - nXStart) + nX;
+        switch (cEdgeCase) {
+          case '\0':
+            return (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x01':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x02':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\x03':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\x04':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask;
+          case '\x06':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\b':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          return eAdjacentResult | (pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
+          case '\t':
+            eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
+          return eAdjacentResult2 | (pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
+          case '\f':
+            eAdjacentFlags1 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
+          eAdjacentFlags2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
+          return eAdjacentFlags2 | (pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentFlags1;
+        }
 
-    int nYStart = pCollisionGrid->sCoords.dwYStart;
-    int nYp1 = nY + 1;
-    if (pCollisionGrid->sCoords.dwYSize + nYStart <= nYp1) {
-      cEdgeCase += '\b';
-    }
-
-    eCollisionFlags* pCellBase = pCollisionGrid->pMapStart + ((nY - nYStart) * nGridStride - nXStart) + nX;
-    switch (cEdgeCase) {
-      case '\0':
-        return (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x01':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x02':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\x03':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\x04':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[nGridStride] | pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask;
-      case '\x06':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nY - 1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\b':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      return eAdjacentResult | (pCellBase[-nGridStride] | pCellBase[-1] | pCellBase[1] | *pCellBase) & eFlagMask;
-      case '\t':
-        eAdjacentResult = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      eAdjacentResult2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX - 1, nY, eCollisionFlag);
-      return eAdjacentResult2 | (pCellBase[-nGridStride] | pCellBase[1] | *pCellBase) & eFlagMask | eAdjacentResult;
-      case '\f':
-        eAdjacentFlags1 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nX, nYp1, eCollisionFlag);
-      eAdjacentFlags2 = COLLISN_CheckCellMask_RegArgs(pRoom_00, nXp1, nY, eCollisionFlag);
-      return eAdjacentFlags2 | (pCellBase[-nGridStride] | pCellBase[-1] | *pCellBase) & eFlagMask | eAdjacentFlags1;
+        return eFlagMask;
+      }
     }
 
     return eFlagMask;
@@ -1466,11 +1476,11 @@ static int32_t __stdcall COLLISN_CheckCellMaskOrBlocked(D2RoomStrc * pRoom, int3
     }
 
     D2RoomCollisionGridStrc* pCollisionMap = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pBetterRoom);
-    if (!(pCollisionMap && pCollisionMap->pMapStart)) {
-      return 0b00100111;
+    if (pCollisionMap && pCollisionMap->pMapStart) {
+      return (uint32_t)(pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag);
     }
 
-    return (uint32_t)(pCollisionMap->pMapStart[(nY - pCollisionMap->sCoords.dwYStart) * pCollisionMap->sCoords.dwXSize - pCollisionMap->sCoords.dwXStart + nX] & eCollisionFlag);
+    return 0b00100111;
 }
 
 static eCollisionFlags __stdcall CheckCollision_BoundingBox1(D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t eCollisionFlag) {
@@ -1505,10 +1515,10 @@ static int32_t __stdcall CheckCollision_BlockPlayer_Cross(D2RoomStrc * pRoom, in
     int nXStart;
     nXStart = pCollisionGrid->sCoords.dwXStart;
     char cEdgeCase;
-    cEdgeCase = nX <= nXStart;
+    cEdgeCase = nXStart >= nX;
     int nYStart;
     nYStart = pCollisionGrid->sCoords.dwYStart;
-    if (nY <= nYStart) {
+    if (nYStart >= nY) {
       cEdgeCase += '\x02';
     }
 
@@ -1701,7 +1711,7 @@ static int32_t __stdcall CheckCollision_BlockPlayer_BoundingBox1(D2RoomStrc * pR
 eCollisionFlags __stdcall CheckCollision_Vector(D2RoomStrc * pRoom, int32_t nX, int32_t nY, uint32_t nVectorX, uint32_t nVectorY, int32_t eCollisionFlag) {
     eCollisionFlags eBBoxCollisionResult;
     D2BoundingBoxStrc bboxFromVector;
-    if ((int)nVectorX < 2 && (int)nVectorY < 2) {
+    if ((int)nVectorX <= 1 && (int)nVectorY <= 1) {
       eBBoxCollisionResult = COLLISN_CheckCellMask_RegArgs(pRoom, nX, nY, eCollisionFlag);
       return eBBoxCollisionResult;
     }
@@ -1873,7 +1883,7 @@ static eCollisionFlags __stdcall RemoveCollision_BoundingBox1(D2RoomStrc * pRoom
 
 void __stdcall RemoveCollision_Vector(D2RoomStrc * pRoom, int32_t nX, int32_t nY, uint32_t nVectorX, uint32_t nVectorY, int32_t eCollisionFlag) {
     D2BoundingBoxStrc sBoundingBox;
-    if (!(0 < (int)nVectorX && 0 < (int)nVectorY)) {
+    if (!((int)nVectorX > 0 && (int)nVectorY > 0)) {
       return;
     }
     if (nVectorX == 1 && nVectorY == 1) {
@@ -2000,9 +2010,8 @@ D2RoomStrc * __stdcall GetFreeCoordinates(D2RoomStrc * pRoom, POINT * pPoint, PO
     int nStepPos;
     int nSearchRadius;
     int nYTop;
-    int32_t nErrorLine;
     if (!pPoint) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x726);
       exit(-1);
     }
 
@@ -2034,7 +2043,7 @@ D2RoomStrc * __stdcall GetFreeCoordinates(D2RoomStrc * pRoom, POINT * pPoint, PO
     }
 
     int nBestDist = -1;
-    if (1 < nMaxDistance) {
+    if (nMaxDistance > 1) {
       nYTop = nStartY + 1;
       iVar3 = nStartY - 1;
       nStepNeg = -2;
@@ -2146,17 +2155,16 @@ D2RoomStrc * __stdcall GetFreeCoordinates(D2RoomStrc * pRoom, POINT * pPoint, PO
     if (pFieldPath) {
       DATATBLS::FieldTbls::FIELDTBLS_FreePoint(pFieldPath);
     }
-    if (nBestDist == -1) {
-      if (!bAllowNeighboorRooms) {
-        return nullptr;
-      }
-
+    if (nBestDist != -1) {
+      pFoundRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, pPoint->y);
+      return pFoundRoom;
+    }
+    if (bAllowNeighboorRooms) {
       pFoundRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, pPoint->y);
       return pFoundRoom;
     }
 
-    pFoundRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, pPoint->x, pPoint->y);
-    return pFoundRoom;
+    return nullptr;
 }
 
 // Line-of-sight / collision raycast across the dungeon collision grid. Walks a Bresenham line from the start point (nIterY in/out) to pPoint2 within pRoom, testing each subtile cell of the room collision grid (DRLGROOM_GetCollisionGridFromRoom) against eCollisionFlag; crosses room boundaries by re-resolving the room via DRLGROOM_FindBetterNearbyRoom and clipping to room coords. Handles the axis-aligned (dx==0 / dy==0), shallow and steep diagonal cases separately. Returns TRUE (1) if the line reaches the destination without hitting a blocking cell (and writes the reached point back into pPoint2); returns FALSE (0) as soon as a cell matching the collision mask is hit (the cell where it stopped is reported via pPoint2). Used for missile/skill/movement LoS and path-blocking checks. NOTE: param nIterY/pPoint2 typed POINT* but used as {x,y} subtile coords; several locals carry mislabeled types from the decompiler.
@@ -2203,7 +2211,7 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
       nRoomYStart = (D2RoomStrc*)pRoom->sCoords.dwYStart;
       nRoomYEnd = (int)nRoomYStart->nLastDeadGUIDs + pRoom->sCoords.dwYSize - 0x38;
       nRoomXEnd = pRoom->sCoords.dwXSize + nRoomXStart;
-      if (nX1 < nRoomXStart || nRoomXEnd <= nX1 || (int)nY1 < (int)nRoomYStart || (pCurrentRoom = pRoom , nRoomYEnd <= (int)nY1)) {
+      if (nX1 < nRoomXStart || nX1 >= nRoomXEnd || (int)nY1 < (int)nRoomYStart || (pCurrentRoom = pRoom , (int)nY1 >= nRoomYEnd)) {
         pCurrentRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nX1, (int32_t)nY1);
         if (!pCurrentRoom) {
           goto report_blocked;
@@ -2213,7 +2221,7 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
         nRoomYStart = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
         nRoomYEnd = (int)nRoomYStart->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38;
         nRoomXEnd = pCurrentRoom->sCoords.dwXSize + nRoomXStart;
-        if (nX1 < nRoomXStart || nRoomXEnd <= nX1 || (int)nY1 < (int)nRoomYStart || nRoomYEnd <= (int)nY1) {
+        if (nX1 < nRoomXStart || nX1 >= nRoomXEnd || (int)nY1 < (int)nRoomYStart || (int)nY1 >= nRoomYEnd) {
           goto report_blocked;
         }
       }
@@ -2229,15 +2237,17 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
           nDifferenceX++;
           while (true) {
             nBresenhamErr2 = 0;
-            if (nDirY < 1) {
+            if (nDirY > 0) {
+              if (nY2 >= nRoomYEnd) {
+                nBresenhamErr2 = nDifferenceX - (nRoomYEnd - (int)nIterY);
+                nDifferenceX = nRoomYEnd - (int)nIterY;
+              }
+            } else {
               if (nY2 < (int)pRoom) {
                 nX2 = (int)nIterY + (1 - (int)pRoom);
                 nBresenhamErr2 = nDifferenceX - nX2;
                 nDifferenceX = nX2;
               }
-            } else if (nRoomYEnd <= nY2) {
-              nBresenhamErr2 = nDifferenceX - (nRoomYEnd - (int)nIterY);
-              nDifferenceX = nRoomYEnd - (int)nIterY;
             }
 
             pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pCurrentRoom);
@@ -2264,7 +2274,7 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
             pRoom = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
             nRoomXStart = pCurrentRoom->sCoords.dwXStart;
             nRoomYEnd = (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38;
-            if (nX1 < nRoomXStart || pCurrentRoom->sCoords.dwXSize + nRoomXStart <= nX1 || (int)nIterY < (int)pRoom || nRoomYEnd <= (int)nIterY) {
+            if (nX1 < nRoomXStart || nX1 >= pCurrentRoom->sCoords.dwXSize + nRoomXStart || (int)nIterY < (int)pRoom || (int)nIterY >= nRoomYEnd) {
               break;
             }
 
@@ -2276,16 +2286,18 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
           nDifferenceY++;
           do {
             nBresenhamErr = 0;
-            if (nDirX < 1) {
+            if (nDirX > 0) {
+              if (nX2 >= nRoomXEnd) {
+                nY2 = nRoomXEnd - nX1;
+                nBresenhamErr = nDifferenceY - nY2;
+                nDifferenceY = nY2;
+              }
+            } else {
               if (nX2 < nRoomXStart) {
                 nY2 = nX1 - nRoomXStart + 1;
                 nBresenhamErr = nDifferenceY - nY2;
                 nDifferenceY = nY2;
               }
-            } else if (nRoomXEnd <= nX2) {
-              nY2 = nRoomXEnd - nX1;
-              nBresenhamErr = nDifferenceY - nY2;
-              nDifferenceY = nY2;
             }
 
             pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pCurrentRoom);
@@ -2311,70 +2323,14 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
             nRoomXStart = pCurrentRoom->sCoords.dwXStart;
             pRoom = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
             nRoomXEnd = pCurrentRoom->sCoords.dwXSize + nRoomXStart;
-            if (nX1 < nRoomXStart || nRoomXEnd <= nX1 || (int)nY1 < (int)pRoom || (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38 <= (int)nY1) {
+            if (nX1 < nRoomXStart || nX1 >= nRoomXEnd || (int)nY1 < (int)pRoom || (int)nY1 >= (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38) {
               goto report_blocked;
             }
 
             nDifferenceY = nBresenhamErr;
           } while (true);
         }
-        if (nDifferenceY < nDifferenceX) {
-          nBresenhamErr2 = 0;
-          while (true) {
-            if (nDirX < 0) {
-              nRoomXEnd = nRoomXStart - 1;
-            }
-
-            nXBound = nRoomYEnd;
-            if (nDirY < 0) {
-              nXBound = (uintptr_t)&pRoom[-1].pDrlgRoomNext + 3;
-            }
-            if (nRoomYEnd <= (int)nIterY) {
-              break;
-            }
-
-            pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pCurrentRoom);
-            peCellCurrent = pCollisionGrid->pMapStart + (((int)nIterY - (int)pRoom) * pCollisionGrid->sCoords.dwXSize - nRoomXStart) + nX1;
-            while (true) {
-              if (eCollisionFlag & (uint32_t)*peCellCurrent) {
-                goto report_blocked;
-              }
-
-              nIterY = (POINT*)((uintptr_t)&nIterY->x + nDirY);
-              nBresenhamErr2 += nDifferenceY;
-              if (nDifferenceX <= nBresenhamErr2) {
-                nBresenhamErr2 -= nDifferenceX;
-                nX1 += nDirX;
-                peCellCurrent += nDirX;
-              }
-
-              peCellCurrent += pCurrentRoom->sCoords.dwXSize * nDirY;
-              if (nX1 == nRoomXEnd || nIterY == (POINT*)nXBound) {
-                break;
-              }
-              if (nIterY == (POINT*)(nY2 + nDirY)) {
-                return 0;
-              }
-            }
-
-            if (nIterY == (POINT*)(nY2 + nDirY)) {
-              return 0;
-            }
-
-            pCurrentRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pCurrentRoom, nX1, (int32_t)nIterY);
-            if (!pCurrentRoom) {
-              break;
-            }
-
-            nRoomXStart = pCurrentRoom->sCoords.dwXStart;
-            pRoom = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
-            nRoomXEnd = pCurrentRoom->sCoords.dwXSize + nRoomXStart;
-            nRoomYEnd = (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38;
-            if (nX1 < nRoomXStart || nRoomXEnd <= nX1 || (int)nIterY < (int)pRoom || nRoomYEnd <= (int)nIterY) {
-              break;
-            }
-          }
-        } else {
+        if (!(nDifferenceY < nDifferenceX)) {
           nBresenhamErr = 0;
           while (true) {
             nXBound = nRoomXEnd;
@@ -2386,7 +2342,7 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
             if (nDirY < 0) {
               nRoomXEnd = (uintptr_t)&pRoom[-1].pDrlgRoomNext + 3;
             }
-            if (nRoomYEnd <= (int)nIterY) {
+            if ((int)nIterY >= nRoomYEnd) {
               break;
             }
 
@@ -2399,7 +2355,7 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
 
               nBresenhamErr += nDifferenceX;
               nX1 += nDirX;
-              if (nDifferenceY <= nBresenhamErr) {
+              if (nBresenhamErr >= nDifferenceY) {
                 nBresenhamErr -= nDifferenceY;
                 nIterY = (POINT*)((uintptr_t)&nIterY->x + nDirY);
                 peCellCurrent += pCurrentRoom->sCoords.dwXSize * nDirY;
@@ -2427,7 +2383,63 @@ BOOL __stdcall TestCollision(D2RoomStrc * pRoom, POINT * nIterY, POINT * pPoint2
             pRoom = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
             nRoomXEnd = pCurrentRoom->sCoords.dwXSize + nRoomXStart;
             nRoomYEnd = (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38;
-            if (nX1 < nRoomXStart || nRoomXEnd <= nX1 || (int)nIterY < (int)pRoom || nRoomYEnd <= (int)nIterY) {
+            if (nX1 < nRoomXStart || nX1 >= nRoomXEnd || (int)nIterY < (int)pRoom || (int)nIterY >= nRoomYEnd) {
+              break;
+            }
+          }
+        } else {
+          nBresenhamErr2 = 0;
+          while (true) {
+            if (nDirX < 0) {
+              nRoomXEnd = nRoomXStart - 1;
+            }
+
+            nXBound = nRoomYEnd;
+            if (nDirY < 0) {
+              nXBound = (uintptr_t)&pRoom[-1].pDrlgRoomNext + 3;
+            }
+            if ((int)nIterY >= nRoomYEnd) {
+              break;
+            }
+
+            pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pCurrentRoom);
+            peCellCurrent = pCollisionGrid->pMapStart + (((int)nIterY - (int)pRoom) * pCollisionGrid->sCoords.dwXSize - nRoomXStart) + nX1;
+            while (true) {
+              if (eCollisionFlag & (uint32_t)*peCellCurrent) {
+                goto report_blocked;
+              }
+
+              nIterY = (POINT*)((uintptr_t)&nIterY->x + nDirY);
+              nBresenhamErr2 += nDifferenceY;
+              if (nBresenhamErr2 >= nDifferenceX) {
+                nBresenhamErr2 -= nDifferenceX;
+                nX1 += nDirX;
+                peCellCurrent += nDirX;
+              }
+
+              peCellCurrent += pCurrentRoom->sCoords.dwXSize * nDirY;
+              if (nX1 == nRoomXEnd || nIterY == (POINT*)nXBound) {
+                break;
+              }
+              if (nIterY == (POINT*)(nY2 + nDirY)) {
+                return 0;
+              }
+            }
+
+            if (nIterY == (POINT*)(nY2 + nDirY)) {
+              return 0;
+            }
+
+            pCurrentRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pCurrentRoom, nX1, (int32_t)nIterY);
+            if (!pCurrentRoom) {
+              break;
+            }
+
+            nRoomXStart = pCurrentRoom->sCoords.dwXStart;
+            pRoom = (D2RoomStrc*)pCurrentRoom->sCoords.dwYStart;
+            nRoomXEnd = pCurrentRoom->sCoords.dwXSize + nRoomXStart;
+            nRoomYEnd = (int)pRoom->nLastDeadGUIDs + pCurrentRoom->sCoords.dwYSize - 0x38;
+            if (nX1 < nRoomXStart || nX1 >= nRoomXEnd || (int)nIterY < (int)pRoom || (int)nIterY >= nRoomYEnd) {
               break;
             }
           }
@@ -2494,7 +2506,7 @@ void __fastcall COLLISION_FindFreeCoordSpiral(D2RoomStrc * pRoom, POINT * pPoint
           pRoomForY = pCurrentRoom;
           pPoint->y = nCheckX;
           nTestY = nCheckX;
-          if (nCheckX < sRoomCoords.dwYStart || sRoomCoords.dwYSize + sRoomCoords.dwYStart <= nCheckX) {
+          if (nCheckX < sRoomCoords.dwYStart || nCheckX >= sRoomCoords.dwYSize + sRoomCoords.dwYStart) {
             pRoomForY = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pCurrentRoom, pPoint->x, nCheckX);
             nCheckY = nRadiusNeg;
           }
@@ -2506,14 +2518,14 @@ void __fastcall COLLISION_FindFreeCoordSpiral(D2RoomStrc * pRoom, POINT * pPoint
               nTestX = nCandidateX;
               DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoomForY, &sRoomCoords);
               pPoint->x = nCandidateX;
-              if (nCandidateX < sRoomCoords.dwXStart || sRoomCoords.dwXSize + sRoomCoords.dwXStart <= nCandidateX) {
+              if (nCandidateX < sRoomCoords.dwXStart || nCandidateX >= sRoomCoords.dwXSize + sRoomCoords.dwXStart) {
                 pRoomForX = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoomForY, nCandidateX, pPoint->y);
               }
               if (pRoomForX) {
                 nCheckY = pPoint->y;
                 nCheckX = pPoint->x;
                 nCheckSize = nUnitSize + 2;
-                if ((int)nCheckSize < 2) {
+                if ((int)nCheckSize <= 1) {
                   pCollisionRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoomForX, nCheckX, nCheckY);
                   if (!pCollisionRoom || (pCollisionGrid = DUNGEON::Dungeon::DRLGROOM_GetCollisionGridFromRoom(pCollisionRoom) , !pCollisionGrid) || !pCollisionGrid->pMapStart) {
                     eCollisionResult = COLBIT_BLANK | COLBIT_MISSILE_BARRIER | COLBIT_VISIBLE | COLBIT_WALL;
@@ -2551,7 +2563,7 @@ void __fastcall COLLISION_FindFreeCoordSpiral(D2RoomStrc * pRoom, POINT * pPoint
 
       nRadiusNeg = nCheckY - 1;
       nRadiusPos++;
-      if (nRadiusNeg < -0x31) {
+      if (nRadiusNeg <= -0x32) {
         *ppRoom = 0;
         return;
       }
@@ -2559,22 +2571,27 @@ void __fastcall COLLISION_FindFreeCoordSpiral(D2RoomStrc * pRoom, POINT * pPoint
 }
 
 void __stdcall AddCollision_Width(D2RoomStrc * pRoom, int32_t nX, int32_t nY, eD2CollisionUnitSize nWidth, int32_t eCollisionFlag) {
-    if (nWidth == COLLISION_UNIT_SIZE_POINT) {
-      COLLISN_SetCellMask(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
-    } else {
-      D2BoundingBoxStrc sBox;
-      if (nWidth == COLLISION_UNIT_SIZE_SMALL) {
-        AddCollision_Cross(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
-        return;
-      }
-      if (nWidth == COLLISION_UNIT_SIZE_BIG) {
-        sBox.nLeft = nX - 1;
-        sBox.nRight = nX + 1;
-        sBox.nBottom = nY - 1;
-        sBox.nTop = nY + 1;
-        AddCollision_BoundingBox(pRoom, &sBox, eCollisionFlag);
-        return;
-      }
+    D2BoundingBoxStrc sBox;
+    switch (nWidth) {
+      case COLLISION_UNIT_SIZE_POINT:
+        {
+          COLLISN_SetCellMask(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
+          break;
+        }
+      case COLLISION_UNIT_SIZE_SMALL:
+        {
+          AddCollision_Cross(pRoom, nX, nY, (eCollisionFlags)eCollisionFlag);
+          return;
+        }
+      case COLLISION_UNIT_SIZE_BIG:
+        {
+          sBox.nLeft = nX - 1;
+          sBox.nRight = nX + 1;
+          sBox.nBottom = nY - 1;
+          sBox.nTop = nY + 1;
+          AddCollision_BoundingBox(pRoom, &sBox, eCollisionFlag);
+          return;
+        }
     }
 }
 

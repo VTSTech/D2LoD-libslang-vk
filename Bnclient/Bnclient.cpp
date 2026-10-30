@@ -261,12 +261,12 @@ bool __fastcall D2FILE_GetSignerOrganization(LPCSTR szFilePath, LPSTR szOrgOut, 
     return bGotOrg;
 }
 
-int * __fastcall BNCLIENT_InitFilestream(int * pStream, char * szFilePath) {
+int * __thiscall BNCLIENT_InitFilestream(int * pStream, char * szFilePath) {
     Storm::SLogCreate(szFilePath, 0, pStream);
     return pStream;
 }
 
-void * __fastcall BNCLIENT_DestroyCompressor(void * pCompressor, uint8_t bFreeMemory) {
+void * __thiscall BNCLIENT_DestroyCompressor(void * pCompressor, uint8_t bFreeMemory) {
     Storm::Source::SSComp::SLogClose(*(uint32_t*)pCompressor);
     if (!(bFreeMemory & 1)) {
       return pCompressor;
@@ -371,8 +371,8 @@ LPFILETIME * CACHE_GetFileTime(uint32_t nParam) {
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&sSystemTime, (LPFILETIME)&lpFileTime_008818ac);
     int64_t llAdjustedFileTime = (uint64_t)nParam * 10000000 + (uint64_t)((uint64_t)(uint32_t)gnCacheFileTimeHigh << 32 | (uint64_t)(uint32_t)(uintptr_t)lpFileTime_008818ac);
     lpFileTime_008818ac = (LPFILETIME)llAdjustedFileTime;
-    gnCacheFileTimeHigh = (int)((uint64_t)llAdjustedFileTime >> 0x20);
     gnCacheLastFileTimeParam = nParam;
+    gnCacheFileTimeHigh = (int)((uint64_t)llAdjustedFileTime >> 0x20);
     gdwCacheLastTickCount = GetTickCount();
     return &lpFileTime_008818ac;
 }

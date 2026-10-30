@@ -81,7 +81,7 @@ struct D2QuestArgStrcUnion2 {
     /* 0x00 */ short nNPCNo;
     /* 0x02 */ uint8_t field_0x2;
     /* 0x03 */ uint8_t field_0x3;
-    /* 0x04 */ short nMessageIndex;
+    /* 0x04 */ uint16_t nMessageIndex;
     /* 0x06 */ uint8_t field_0x6;
     /* 0x07 */ uint8_t field_0x7;
 };
