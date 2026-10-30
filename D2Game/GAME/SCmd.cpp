@@ -86,6 +86,7 @@
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -142,6 +143,7 @@ static void __stdcall SCMD_QueuePacketForClient(uint8_t * pBytes, size_t nSize, 
 }
 
 void __fastcall NET_D2GS_SERVER_SendStateCommand(D2ClientStrc * pClient, uint8_t nPacketId) {
+    D2BOOT_MarkFmt("srv state-cmd 0x%02x queued (clientid %u)", (unsigned)nPacketId, (unsigned)(pClient ? pClient->nClientNo : 0)); // [d2boot]
     uint8_t aPacketFrame[4];
     d2_store24((char*)&aPacketFrame, (uint32_t)((uint32_t)(uintptr_t)pClient & 0xffffffu));
     aPacketFrame[3] = nPacketId;

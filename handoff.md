@@ -1,6 +1,6 @@
 # 720p branch — handoff for future work
 
-*Rev 32 (2026-10-30, gold-dialog round): owner field-reported the stash "deposit gold" panel misaligned at 720p — the modal gold-transaction dialog (deposit/withdraw, stash/inventory/cube entries, `ui::UI_ShowGoldTransactionDialog`) anchored its background at raw 800-space (215,140) with all four sub-widgets (spinner 0xdf,0xdb; edit box 0x102,0xe4; OK 0xfa,0x11f; cancel 0x163,0x11f) in absolute 800-space too, so it sat one height-delta too high and one width-delta too left. Fixed at the construction site: dialog origin + sub-widget coords ride `VPRES_GetWideUiOffsetX()/Y()` (X: keeps vanilla's screen-centered placement, 400→640; Y: bottom-ride, 140→260). Draw and hit-test read the same stored coords, so both shift together — no inverse form needed. 0 at 800×600. Gates: ui.cpp Y 6→11 + new "gold dialog X shifts" x5 (suite 130/130). **Owner field-confirmed the same day: "Great job. Deposit Gold is aligned now."** Sibling dialogs still at raw 800-space (trade gold prompts, cube UI dialog, NPC menus, EscMenu) — exercise in §6 and ride any that misalign. Rev 31 (2026-10-30, renderer round): owner field-tested the providers at 720p — **Direct3D fullscreen (renderer 6) WORKS** ("-w is renderer 1, fullscreen is 6 so D3D does work"); the fps overlay's "Video: Software" line is the honest name of the windowed GDI provider (renderer 1). **Glide (renderer 4) fixed the same day**: `RENDERER_GLIDE_InitWindow` clamped every non-640 stop to an 800x600 surface AND left `gbGlidePerspectiveMode` 0 at a non-800x600 size — where `RENDERER_GLIDE_InitTextureMemory`'s non-perspective branch is gated on width==800 && height==600 and never runs, so the caches stay uninitialized (the D3D black-screen trap). Now: size table mode 4 = 1280x720 / mode 3 = dormant 1344x700, grSstWinOpen resolution enums 16/17, modes 2/3/4 take the perspective=1 path; 4 "resfix: glide*" gates (suite 129/129). **Requires the paired Glide3xVK wrapper patch** (`glide3xvk-720p-resolutions.patch` → `g3x_resolution_size` entries 16/17 + unknown-threshold 17) applied on branch `Glide3xVK`; older wrapper builds fail soft (640x480 + log line). Rev 30 (site-6 field-confirmed): belt potions and the inventory panel are correct (draws AND clicks; owner: "Great job. Belt Potions and Inventory Panel are correct"). Rev 29: the vertical half of the shift (§4) coded — `VPRES_GetWideUiOffsetY()` plus ~225 Y-ride sites across 9 files, gates "site-6:" (17 rows). Rev 28 history: handoff refocused on 720p, pre-720p content (revs 14–27, §1–§13) moved verbatim to HISTORY **H24**. Engineering record: [`docs/resolution-widelayout-audit.md`](docs/resolution-widelayout-audit.md); gates: `tools/check-vanilla-plus.sh` ("site-5:" + "site-6:" + "resfix:" rows).*
+*Rev 33 (2026-10-31, loading-freeze diagnostics round — **current task**): merge+vanilla-plus port compiles, boots, title screen + char select fine, single-player freezes at the end of the loading screen before entering the world. Owner directive: **diagnose from current code + d2boot.log only — no git-history archaeology** ("dont look at history. look at current code"). Owner deliverable preference: **overlay zips of changed files, not .patch files**. This round expands d2boot.log along the whole SP enter-world handshake (8 files, 36 anchored edits, gates 147/147) so one more owner run pinpoints the stage; reading guide + triage table in §8. Rev 32 (2026-10-30, gold-dialog round): owner field-reported the stash "deposit gold" panel misaligned at 720p — the modal gold-transaction dialog (deposit/withdraw, stash/inventory/cube entries, `ui::UI_ShowGoldTransactionDialog`) anchored its background at raw 800-space (215,140) with all four sub-widgets (spinner 0xdf,0xdb; edit box 0x102,0xe4; OK 0xfa,0x11f; cancel 0x163,0x11f) in absolute 800-space too, so it sat one height-delta too high and one width-delta too left. Fixed at the construction site: dialog origin + sub-widget coords ride `VPRES_GetWideUiOffsetX()/Y()` (X: keeps vanilla's screen-centered placement, 400→640; Y: bottom-ride, 140→260). Draw and hit-test read the same stored coords, so both shift together — no inverse form needed. 0 at 800×600. Gates: ui.cpp Y 6→11 + new "gold dialog X shifts" x5 (suite 130/130). **Owner field-confirmed the same day: "Great job. Deposit Gold is aligned now."** Sibling dialogs still at raw 800-space (trade gold prompts, cube UI dialog, NPC menus, EscMenu) — exercise in §6 and ride any that misalign. Rev 31 (2026-10-30, renderer round): owner field-tested the providers at 720p — **Direct3D fullscreen (renderer 6) WORKS** ("-w is renderer 1, fullscreen is 6 so D3D does work"); the fps overlay's "Video: Software" line is the honest name of the windowed GDI provider (renderer 1). **Glide (renderer 4) fixed the same day**: `RENDERER_GLIDE_InitWindow` clamped every non-640 stop to an 800x600 surface AND left `gbGlidePerspectiveMode` 0 at a non-800x600 size — where `RENDERER_GLIDE_InitTextureMemory`'s non-perspective branch is gated on width==800 && height==600 and never runs, so the caches stay uninitialized (the D3D black-screen trap). Now: size table mode 4 = 1280x720 / mode 3 = dormant 1344x700, grSstWinOpen resolution enums 16/17, modes 2/3/4 take the perspective=1 path; 4 "resfix: glide*" gates (suite 129/129). **Requires the paired Glide3xVK wrapper patch** (`glide3xvk-720p-resolutions.patch` → `g3x_resolution_size` entries 16/17 + unknown-threshold 17) applied on branch `Glide3xVK`; older wrapper builds fail soft (640x480 + log line). Rev 30 (site-6 field-confirmed): belt potions and the inventory panel are correct (draws AND clicks; owner: "Great job. Belt Potions and Inventory Panel are correct"). Rev 29: the vertical half of the shift (§4) coded — `VPRES_GetWideUiOffsetY()` plus ~225 Y-ride sites across 9 files, gates "site-6:" (17 rows). Rev 28 history: handoff refocused on 720p, pre-720p content (revs 14–27, §1–§13) moved verbatim to HISTORY **H24**. Engineering record: [`docs/resolution-widelayout-audit.md`](docs/resolution-widelayout-audit.md); gates: `tools/check-vanilla-plus.sh` ("site-5:" + "site-6:" + "resfix:" rows).*
 
 ## 1. What this branch is
 
@@ -73,3 +73,76 @@ SAME CLASS, needs the same offset — top-anchored raw-constant sites (eyeball t
 ## 7. Conventions (condensed)
 
 Overlay workflow (sandbox edits the tree; owner applies as their own commits via llvm-mingw i686 Win11 build — `tools/build-local-win11.cmd`; the full build is the owner's gate). `VP-BEGIN/VP-END` markers on every fork edit in upstream files; fork-only TUs (VanillaPlusCore) keep upstream files free of new code. Every source change updates `tools/check-vanilla-plus.sh` gates + `fork-surface.allowlist` (after committing the site-6 round, run `tools/check-fork-surface.sh --update` — the sandbox has no `upstream` ref fetched). All source files are CRLF; the sandbox patchers (`/home/z/my-project/scripts/site6_patch*.py`) preserve that byte-exactly. Full pre-720p history: HISTORY H1–H24 (H24 = the offloaded handoff revs 14–27 + §1–§13).
+
+## 8. Current task (rev 33): SP loading-screen freeze — d2boot.log expansion
+
+**Task**: merge+vanilla-plus port compiles, boots, title screen and char select work; single-player freezes at the end of the loading screen, before the world appears. **Constraint (owner directive)**: diagnose from the *current* tree + the owner-provided `d2boot.log` only — no regression archaeology in commit history.
+
+**Evidence so far** (`d2boot.log`, owner run): every stage up to `enter-world: game loop enter` succeeds (MPQs, GFX provider, window, sound, qserver start, connect wait `connected=1`, game data init). Then silence. No hangwatch dump before the owner killed the process — so either the main thread kept beating (a *live-loop* stall, not a wedged wait) or the kill came inside the 12 s threshold. `Client_CheckConnectionTimeouts` early-returns for SP (Game.cpp :2305), so nothing will ever time this load out — the hang is genuinely infinite, not a slow load.
+
+**Mechanism established from current code (rev 33)**: in SP the "server" is cooperative — it is pumped from the *client's* frame function (`CLIENT_GameLoopFrame`, Game.cpp :2419–2431): `NET_D2GS_SERVER_HandleAnyIncomingPacket` → `SrvProcessAllGames(1)` (25 FPS gate) → `QSERVER_DispatchAndCleanup` (flushes S→C packets back into the same process). The loading screen drops only when the client handles S→C **0x04 STARTACT** (`NET_D2GS_CLIENT_Incoming0x04_STARTACT` sets `ServerLoadingComplete=1`, SCmd.cpp :422). The whole handshake:
+
+1. EnterGame sends c2s **0x67** create-game (Game.cpp :2709, Msg.cpp :42).
+2. `CCmd` case 'g' → `SetupGameChecks` gate → `GAME_CreateSingleplayerGame`: allocates game + client, queues S→C 0x01 NEWGAME + state-cmd **0** + state-cmd **2**, sets client `ConnectionState=1`.
+3. Client 0x02 handler (`NET_D2GS_CLIENT_Incoming0x02_LoadSuccess`) replies c2s **0x6B** join-act.
+4. `CCmd` case 'k' → `NET_IsClientAllowedToJoin` (requires `ConnectionState==1`) → `NET_D2GS_SERVER_SrvJoinAct`: `CLIENT_LoadCharacterAndSendGameData` (save load) → `CLIENT_LoadActAndSetState2` (`EnsureDrlgActLoaded` **DRLG worldgen** + `TellClientToLoadAct` queues 0x03 NEWACT + 0x53) → `CLIENT_PlacePlayerInRoom` → `ConnectionState=3`.
+5. `UpdateClients` case 3 waits `DRLGROOM_AreAllNearRoomsActive(pClient->pRoom)`, then queues **0x04** → client sets `ServerLoadingComplete=1` → loading screen can drop.
+
+**Instrumentation added (rev 33)** — all `[d2boot]`-tagged, all quiet once 0x04 arrives: client frame telemetry (`game-loop: ...` while loading), one line per distinct S→C opcode during load (`s2c recv 0x..`), explicit 0x02/0x04 handler marks, c2s 0x67/0x6B send marks, bounded server dequeue trace (`srv c2s ...`), SP create enter/exit, `srv state-cmd` choke-point log, `SrvJoinAct` stage marks (enter / char-load refusal / char ok / placed), `join: load-act` + `DRLG: generating act`/`act generated` worldgen marks, `client state N -> M` transition log, state-3 `waiting for rooms` telemetry (first + every 250 server frames), `join: all rooms active -> 0x04` mark, server frame marks (first tick + every 250 up to frame 1000). Files: D2Client `GAME/Game/Game.cpp`, `GAME/SCmd.cpp`, `GAME/Msg.cpp`; D2Game `GAME/Server.cpp`, `GAME/CCmd.cpp`, `GAME/Clients.cpp`, `GAME/SCmd.cpp`, `GAME/Level.cpp`. Plus 16 `d2boot:` gate rows (suite 147/147). Delivered as an **overlay zip** (owner applies over their tree, builds via `tools/build-local-win11.cmd`); after committing, regenerate `fork-surface.allowlist` owner-side (`tools/check-fork-surface.sh --update`).
+
+**Healthy-load narrative to expect** (timestamps in ms; `[JOIN n]` SRVLog lines go to the server log, not here):
+
+```
+enter-world: game loop enter
+game-loop: first frame after 'game loop enter' (still loading)
+c2s send 0x67 create-game (gameType=3 class=.. diff=..)
+srv c2s setup pkt (clientid .., op 0x67)
+c2s 0x67 GAMELOGON_SP recv (clientid ..)
+SP create-game enter (clientid .. class .. diff ..)
+srv state-cmd 0x0 queued (clientid ..)
+SP create-game done (0x01 + state-cmd 0 + state-cmd 2 queued)
+s2c recv 0x01 during load / s2c recv 0x00 during load / s2c recv 0x02 during load
+s2c 0x02 LoadSuccess -> replying c2s 0x6B join-act
+c2s send 0x6B join-act
+srv c2s setup pkt (clientid .., op 0x6b)
+c2s 0x6B JOINGAME recv (clientid .., allowed=1)
+SrvJoinAct enter (clientid ..)
+join: LoadCharacter enter (clientid .., fromSave 1)
+SrvJoinAct: character loaded ok
+join: load-act enter (act 0)
+DRLG: generating act 0 (first load)
+DRLG: act generated
+join: DRLG act ready
+join: TellClientToLoadAct (act 0)
+join: 0x03 NEWACT + 0x53 ACTTIMEOFDAY queued, state -> 2
+client state 1 -> 2 (clientid ..)
+SrvJoinAct: player placed in room, state -> 3 (waiting rooms)
+client state 2 -> 3 (clientid ..)
+server: first game tick (world loop running)
+server: game frame 250/500/750/1000
+join: all rooms active -> 0x04 STARTACT queued (loading done server-side)
+srv state-cmd 0x4 queued (clientid ..)
+s2c recv 0x04 during load
+s2c 0x04 STARTACT received - loading screen can drop now
+```
+
+**Triage table — read the LAST d2boot line, it names the broken stage**:
+
+| last line seen | broken stage / where to look next |
+| --- | --- |
+| `enter-world: game loop enter`, no `game-loop: first frame` | `MessageGameLoop` never ran the frame fn — cutscene state stuck (`D2GFX_EndCutSceneReturnSceneState` at CLIENT_GameLoopFrame top) |
+| first frame ok, no `c2s send 0x67` | EnterGame's send branch didn't run (gametype routing before the loop) |
+| 0x67 sent, no `srv c2s setup pkt` | client→server loopback dead: Fog QServer mode-0 queue / packet-size classifier |
+| setup pkt seen, no `SP create-game enter` | `SetupGameChecks` rejected — the `c2s 0x67 REJECTED` line names it |
+| create enter, no `create done` | creation hung/crashed inside (subsystem allocs, seed, quest/monster/object controls) + hangwatch dump |
+| create done, no `s2c recv 0x02` | S→C dispatch dead: `QSERVER_DispatchAndCleanup`/`FlushClientPackets` loopback |
+| 0x02 recv, no `c2s send 0x6B` | client 0x02 handler path (Msg.cpp `NET_D2GS_CLIENT_Send_0x6B`) |
+| `0x6B JOINGAME recv (allowed=0)` | `ConnectionState != 1` at 0x6B time — ordering/double-send; also `QSERVER_IsClientAllowedToJoin` |
+| `SrvJoinAct enter`, no `character loaded ok` | save load hung, or REFUSED line (0xB4 reason) — `CLIENT_LoadOrCreatePlayerUnit` |
+| `load-act enter`, no `DRLG: act generated` | worldgen hang — hangwatch dump names the DRLG function |
+| act generated, no `player placed in room` | `CLIENT_PlacePlayerInRoom` hang (corpse/golem restore paths) |
+| `STILL waiting for rooms` repeating | `DRLGROOM_AreAllNearRoomsActive` never true — room activation (`InitNewRooms`, act dirty flags) |
+| 0x04 queued, no `s2c recv 0x04` | server→client loopback dead (same class as row 6, opposite direction) |
+| `s2c 0x04 STARTACT received` but screen frozen | client-side dismissal path — loading draw fn / load timer (`gLoadTimerDurationMs`), Game.cpp :2668–2683 |
+
+If the log ends mid-narrative AND a `hangwatch: === stall detected` block appears, the dump's symbolized stack IS the answer (copy `d2exe.map` beside d2.exe for names). If the loop stays alive with no further marks, the table's "no <mark>" row is the diagnosis. Next round: one owner run with this build, paste the new `d2boot.log` tail.

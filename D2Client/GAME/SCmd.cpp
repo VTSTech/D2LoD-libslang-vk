@@ -113,6 +113,7 @@
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -380,6 +381,7 @@ void __fastcall SCMD_Rcv_IgnoreShared(char * pBytes) {
 
 // JMP thunk
 void __fastcall NET_D2GS_CLIENT_Incoming0x02_LoadSuccess(char * pBytes) {
+    D2BOOT_Mark("s2c 0x02 LoadSuccess -> replying c2s 0x6B join-act"); // [d2boot]
     ::D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_0x6B(pBytes);
 }
 
@@ -420,6 +422,7 @@ int __fastcall CLIENT_GetUnitAct(D2UnitStrc * pUnit) {
 // / target. 0x05 @0045ca30 tears down: frees weather DC6s, reinitialises the memory pools, sets
 // ServerLoadingComplete=0 / _gLevelLoadInProgress=1, restarts the connect timeout.
 void __fastcall NET_D2GS_CLIENT_Incoming0x04_STARTACT(char * pBytes) {
+    D2BOOT_Mark("s2c 0x04 STARTACT received - loading screen can drop now"); // [d2boot]
     D2UnitStrc* pUnit;
     ServerLoadingComplete = 1;
     gLevelLoadInProgress = 0;
@@ -2655,6 +2658,15 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
         {
           if (++g_anClientPktCount[byPacketId] <= 2)
             D2TraceFmt("SPKT %02X", (unsigned)byPacketId); }
+        // [d2boot] one line per distinct S->C opcode seen before the load
+        // completes; a missing 0x04 here is the loading-screen hang signature.
+        if (!ServerLoadingComplete && byPacketId < 0xB5) {
+          static uint8_t s_byBootSeenS2C[0xB5];
+          if (!s_byBootSeenS2C[byPacketId]) {
+            s_byBootSeenS2C[byPacketId] = 1;
+            D2BOOT_MarkFmt("s2c recv 0x%02x during load", (unsigned)byPacketId);
+          }
+        }
         nPacketSize = D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(pBytes, nSize, &nVariableSize);
         if (!nPacketSize) {
           break;

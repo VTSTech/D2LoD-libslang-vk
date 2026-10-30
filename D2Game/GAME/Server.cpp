@@ -80,6 +80,7 @@
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Launch/CharSel.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -349,8 +350,11 @@ void __fastcall CLIENT_LoadActAndSetState2(::SGAMEDATA * pGame, D2ClientStrc * p
       exit(-1);
     }
 
+    D2BOOT_MarkFmt("join: load-act enter (act %d)", (int)pClient->nAct); // [d2boot]
     Level::EnsureDrlgActLoaded(pGame, pClient->nAct);
+    D2BOOT_Mark("join: DRLG act ready"); // [d2boot]
     Clients::TellClientToLoadAct(pGame, pClient);
+    D2BOOT_Mark("join: 0x03 NEWACT + 0x53 ACTTIMEOFDAY queued, state -> 2"); // [d2boot]
     Clients::CLIENT_SetConnectionState(pClient, 2);
 }
 
@@ -1004,6 +1008,12 @@ void NET_D2GS_SERVER_HandleAnyIncomingPacket() {
     size_t nSizeMode1;
     int nSizeMode2;
     char pBytes[512];
+    // [d2boot] bounded C->S dequeue trace: the 0x67 create / 0x6B join-act
+    // handshake must show up here in single player. One-shot counters keep
+    // the log finite; after the load these go silent.
+    static int s_nBootSetupPkts = 0;
+    static int s_nBootInGamePkts = 0;
+    static int s_nBootSystemPkts = 0;
     while (true) {
       int32_t nSizeMode0;
       nSizeMode0 = D2Net::Game::Server::NET_D2GS_SERVER_DequeueModePacket_Mode0(pBytes, 0x200);
@@ -1011,6 +1021,10 @@ void NET_D2GS_SERVER_HandleAnyIncomingPacket() {
         break;
       }
 
+      if (s_nBootSetupPkts < 24) {
+        s_nBootSetupPkts++;
+        D2BOOT_MarkFmt("srv c2s setup pkt (clientid %u, op 0x%02x)", (unsigned)((const D2GSClientMsgEnvelopeStrc*)pBytes)->nClientId, (unsigned)((const D2GSClientMsgEnvelopeStrc*)pBytes)->uMsg.nOpcode); // [d2boot]
+      }
       CCmd::NET_D2GS_SERVER_ProcessClientMessage_GameSetup((D2GSClientMsgEnvelopeStrc*)pBytes);
     }
 
@@ -1020,6 +1034,10 @@ void NET_D2GS_SERVER_HandleAnyIncomingPacket() {
         break;
       }
 
+      if (s_nBootInGamePkts < 4) {
+        s_nBootInGamePkts++;
+        D2BOOT_MarkFmt("srv c2s in-game pkt (size %d)", (int)nSizeMode1); // [d2boot]
+      }
       CCmd::NET_D2GS_SERVER_ProcessClientMessage_InGame(pBytes, nSizeMode1);
     }
 
@@ -1029,6 +1047,10 @@ void NET_D2GS_SERVER_HandleAnyIncomingPacket() {
         break;
       }
 
+      if (s_nBootSystemPkts < 4) {
+        s_nBootSystemPkts++;
+        D2BOOT_MarkFmt("srv c2s system pkt (size %d)", (int)nSizeMode2); // [d2boot]
+      }
       NET_D2GS_SERVER_ProcessClientMessage_System(pBytes, nSizeMode2);
     }
 }
@@ -1259,12 +1281,25 @@ static void UpdateClients(::SGAMEDATA * pGame) {
           {
             Clients::UpdateSingleClient(pGame, pClient);
             bAllRoomsActive = D2Common::DUNGEON::Dungeon::DRLGROOM_AreAllNearRoomsActive(pClient->pRoom);
+            // [d2boot] state-3 telemetry: announce the wait once, then one line
+            // every 250 server frames while the rooms never all go active - the
+            // silent-hang profile of the loading screen with a live main loop.
+            if (!bAllRoomsActive) {
+              static BOOL s_bBootState3WaitAnnounced = FALSE;
+              if (!s_bBootState3WaitAnnounced) {
+                s_bBootState3WaitAnnounced = TRUE;
+                D2BOOT_MarkFmt("join: clientid %d state 3 - waiting for rooms (frame %u)", (int)pClient->nClientNo, (unsigned)pGame->dwGameFrame);
+              } else if (!(pGame->dwGameFrame % 250)) {
+                D2BOOT_MarkFmt("join: clientid %d STILL waiting for rooms (frame %u)", (int)pClient->nClientNo, (unsigned)pGame->dwGameFrame);
+              }
+            }
             if (bAllRoomsActive) {
               pPlayerUnit_lcl = Clients::CLIENTS_GetControlUnit(pClient, 0);
               if (pPlayerUnit_lcl) {
                 szCharName = pClient->szCharName;
                 szCharNameLoop = szCharName;
                 SRVLog(6, "[JOIN 6] %d clientid, sUpdateClients: SCMD_STARTACT - Player(%s)", pClient->nClientNo, szCharName);
+                D2BOOT_Mark("join: all rooms active -> 0x04 STARTACT queued (loading done server-side)"); // [d2boot]
                 SCmd::NET_D2GS_SERVER_SendStateCommand(pClient, 4);
                 Clients::CLIENT_SetConnectionState(pClient, 4);
                 pPlayerUnit_lcl = Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -1420,6 +1455,13 @@ void __fastcall UpdateActEnvironments(::SGAMEDATA * pGame) {
 void __fastcall ServerGameLoop(::SGAMEDATA * pGame) {
     int nUpdateTickMode = pGame->dwUpdateTick;
     pGame->dwGameFrame++;
+    // [d2boot] first tick proves the game loop task runs; the periodic lines
+    // cover the first 1000 frames (40 s), i.e. the whole loading window.
+    if (pGame->dwGameFrame == 1) {
+      D2BOOT_Mark("server: first game tick (world loop running)"); // [d2boot]
+    } else if (pGame->dwGameFrame <= 1000 && !(pGame->dwGameFrame % 250)) {
+      D2BOOT_MarkFmt("server: game frame %u", (unsigned)pGame->dwGameFrame); // [d2boot]
+    }
     /* This is most likely something from the server, as sets 0 to a nullptr which
                          will cause a crash */ if (nUpdateTickMode == 1) {
       *(volatile uint8_t*)0x0 = 0;
@@ -3143,6 +3185,7 @@ void __stdcall QSERVER_ClientDisconnectCallback(int32_t nClientId, char * szFile
 // Server join handler: finds game by token, verifies client membership, calls CLIENT_LoadCharacterAndSendGameData (state 1), CLIENT_LoadActAndSetState2 (state 2), CLIENT_PlacePlayerInRoom (state 3). On validation failure sends 0xB4 ConnectionRefused and adds to hack list. Final log "[JOIN 5] Added to game".
 // @sourcefile .\GAME\Game.cpp
 void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
+    D2BOOT_MarkFmt("SrvJoinAct enter (clientid %d)", (int)nClientId); // [d2boot]
     D2ClientStrc* pClient;
     int32_t nReason;
     D2UnitStrc* pUnit;
@@ -3159,6 +3202,7 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
         pClient = Clients::SERVER_GetClientFromGmeByClientId(pGame, nClientId);
         nReason = Clients::CLIENT_LoadCharacterAndSendGameData(pClient, pGame, 1, nullptr, 0, 0);
         if (nReason) {
+          D2BOOT_MarkFmt("SrvJoinAct: char load REFUSED (reason %d) - client gets 0xB4", (int)nReason); // [d2boot]
           ServerCmd::NET_D2GS_SERVER_Send_0xB4_ConnectionRefused(nClientId, nReason);
           Clients::CleanUpClient(pGame, nClientId, 1);
           D2Net::Game::Server::NET_HACK_AddClientToHackList(nClientId, ".\\GAME\\Game.cpp", 0x672);
@@ -3166,6 +3210,7 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
           return;
         }
 
+        D2BOOT_Mark("SrvJoinAct: character loaded ok"); // [d2boot]
         CLIENT_LoadActAndSetState2(pGame, pClient);
         pGameNull = 0;
         pDrlgActNull = 0;
@@ -3173,6 +3218,7 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
         pGameArg = pGame;
         pUnit = Clients::CLIENTS_GetControlUnit(pClient, 1);
         Clients::CLIENT_PlacePlayerInRoom(pClient, pUnit, pGameArg, pRoom, pDrlgActNull, pGameNull, (uint32_t)pUnit);
+        D2BOOT_Mark("SrvJoinAct: player placed in room, state -> 3 (waiting rooms)"); // [d2boot]
         Clients::CLIENT_SetConnectionState(pClient, 3);
         Server::Unlock(pGame);
         SRVLog(6, "[JOIN 5] %d clientid, SrvJoinAct: Added to game.", nClientId);
@@ -3511,6 +3557,7 @@ void __fastcall GAME_CreateSingleplayerGame(int32_t nClientId, char * szGameName
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gpQServerGameState->tSync.m_critsect);
+    D2BOOT_MarkFmt("SP create-game enter (clientid %d class %d diff %d)", (int)nClientId, (int)ePlayerClass, (int)nDifficulty); // [d2boot]
     uint32_t dwGameToken = self->GenerateUniqueHandle();
     ::SGAMEDATA* pGame = self->TSHashTable<::SGAMEDATA, HASHKEY_NONE>::New(dwGameToken, &self->tKey, 0, 0);
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gpQServerGameState->tSync.m_critsect);
@@ -3579,6 +3626,7 @@ void __fastcall GAME_CreateSingleplayerGame(int32_t nClientId, char * szGameName
     }
 
     SCmd::NET_D2GS_SERVER_SendStateCommand(pClientCreated, 2);
+    D2BOOT_Mark("SP create-game done (0x01 + state-cmd 0 + state-cmd 2 queued)"); // [d2boot]
 }
 
 void __fastcall SetStat(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, int32_t nValue) {

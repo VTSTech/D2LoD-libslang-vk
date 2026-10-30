@@ -25,6 +25,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -132,11 +133,16 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
     uint32_t nClientId = pPacket->nClientId;
     switch (pPacket->uMsg.nOpcode) {
       case 'g':
-        /* D2GS_GAMELOGON_SP */ bFindMeCheckResult = Server::SetupGameChecks(nClientId, &pPacket->uMsg.sGameLogonSP);
+        /* D2GS_GAMELOGON_SP */ D2BOOT_MarkFmt("c2s 0x67 GAMELOGON_SP recv (clientid %u)", (unsigned)nClientId); // [d2boot]
+        bFindMeCheckResult = Server::SetupGameChecks(nClientId, &pPacket->uMsg.sGameLogonSP);
       if (bFindMeCheckResult) {
         Server::GAME_CreateSingleplayerGame(nClientId, pPacket->uMsg.sGameLogonSP.szGameName, pPacket->uMsg.sGameLogonSP.eHostGameType, pPacket->uMsg.sGameLogonSP.ePlayerClass, pPacket->uMsg.sGameLogonSP.szCharName, pPacket->uMsg.sGameLogonSP.field_0x25, pPacket->uMsg.sGameLogonSP.eArenaFlags, pPacket->uMsg.sGameLogonSP.nTemplate, pPacket->uMsg.sGameLogonSP.field_0x2b, pPacket->uMsg.sGameLogonSP.field_0x2c, pPacket->uMsg.sGameLogonSP.nDifficulty, pPacket->uMsg.sGameLogonSP.nLanguageCode, 0, 0);
         return;
       }
+
+      // [d2boot] SetupGameChecks said no: no SP game exists, the loading screen
+      // would sit forever with a live loop - this line names that case.
+      D2BOOT_Mark("c2s 0x67 REJECTED by SetupGameChecks - no SP game created");
 
       break;
       case 'm':
@@ -180,6 +186,7 @@ void __fastcall NET_D2GS_SERVER_ProcessClientMessage_GameSetup(D2GSClientMsgEnve
       break;
       case 'k':
         /* D2GS_JOINGAME */ bAllowed = Server::NET_IsClientAllowedToJoin(nClientId);
+      D2BOOT_MarkFmt("c2s 0x6B JOINGAME recv (clientid %u, allowed=%u)", (unsigned)nClientId, (unsigned)bAllowed); // [d2boot]
       if (bAllowed) {
         Server::NET_D2GS_SERVER_SrvJoinAct(nClientId);
         return;

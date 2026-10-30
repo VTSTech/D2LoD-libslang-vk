@@ -37,6 +37,26 @@ gate() { # gate <name> <file> <ERE> <expected>
 gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("vanilla-plus' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
+# ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
+# Marks along the single-player enter-world handshake, so d2boot.log alone
+# names the stage that never completes. See handoff.md §8 for the reading guide.
+gate "d2boot: loop frame telemetry"       D2Client/GAME/Game/Game.cpp     'game-loop: '                2
+gate "d2boot: s2c per-opcode mark"        D2Client/GAME/SCmd.cpp          's2c recv 0x'                1
+gate "d2boot: 0x02/0x04 handler marks"    D2Client/GAME/SCmd.cpp          's2c 0x0(2|4)'               2
+gate "d2boot: c2s send marks"             D2Client/GAME/Msg.cpp           'c2s send 0x6'               2
+gate "d2boot: setup dispatcher marks"     D2Game/GAME/CCmd.cpp            'c2s 0x6(7|B)'               3
+gate "d2boot: dequeue trace"              D2Game/GAME/Server.cpp          'srv c2s'                    3
+gate "d2boot: SrvJoinAct stage marks"     D2Game/GAME/Server.cpp          'SrvJoinAct enter|char load REFUSED|character loaded ok|player placed in room' 4
+gate "d2boot: load-act marks"             D2Game/GAME/Server.cpp          'join: (load-act|DRLG act ready|0x03 NEWACT)' 3
+gate "d2boot: 0x04 send mark"             D2Game/GAME/Server.cpp          'join: all rooms active'     1
+gate "d2boot: state-3 wait telemetry"     D2Game/GAME/Server.cpp          'waiting for rooms'          2
+gate "d2boot: server frame marks"         D2Game/GAME/Server.cpp          'server: (first game tick|game frame %u)' 2
+gate "d2boot: SP create-game marks"       D2Game/GAME/Server.cpp          'SP create-game'             2
+gate "d2boot: state-cmd choke mark"       D2Game/GAME/SCmd.cpp            'srv state-cmd 0x'           1
+gate "d2boot: state transition mark"      D2Game/GAME/Clients.cpp         'client state %d -> %d'      1
+gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter|TellClientToLoadAct)' 3
+gate "d2boot: DRLG worldgen marks"        D2Game/GAME/Level.cpp           'DRLG: '                     2
+
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
 gate "UI_VANILLAPLUS using-decl"          d2_enums.h                      'using eD2UIvars_ns::UI_VANILLAPLUS' 1

@@ -2433,6 +2433,20 @@ uint32_t __stdcall CLIENT_GameLoopFrame(uint32_t dwUnused) {
     /* Client side packet recving and processing */ NET_D2GS_CLIENT_HandleAllNonVariableSizePackets();
     UI::Chat::CHAT_ProcessBattleNetMessage();
     D2MCPClient::McpConnect::NET_MCP_CLIENT_ReadAndParsePacket();
+    // [d2boot] loading-phase frame telemetry: proves the frame loop keeps
+    // running after "enter-world: game loop enter" and carries the SP server
+    // tick result of this frame. Goes quiet the moment 0x04 arrives.
+    {
+      static uint32_t s_nLoadFrameNo = 0;
+      if (!ServerLoadingComplete) {
+        s_nLoadFrameNo++;
+        if (s_nLoadFrameNo == 1) {
+          D2BOOT_Mark("game-loop: first frame after 'game loop enter' (still loading)");
+        } else if (s_nLoadFrameNo % 250 == 0) {
+          D2BOOT_MarkFmt("game-loop: frame %u, still loading (serverTick=%d)", (unsigned)s_nLoadFrameNo, (int)serverTickResult);
+        }
+      }
+    }
     Client_CheckConnectionTimeouts();
     if (ServerLoadingComplete) {
       uint32_t nFrameSkipLevel;

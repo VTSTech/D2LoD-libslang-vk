@@ -41,6 +41,7 @@
 #include "globals/globals.h"
 #include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2SeedStrc.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -203,7 +204,11 @@ void __fastcall EnsureDrlgActLoaded(::SGAMEDATA * pGame, char nActNo) {
       return;
     }
 
+    // [d2boot] DRLG world generation: if the next mark never appears, worldgen
+    // itself hung (and the hangwatch dump names the room it died in).
+    D2BOOT_MarkFmt("DRLG: generating act %d (first load)", (int)(uint8_t)nActNo); // [d2boot]
     InitDrlgAct(pGame, nActNo);
+    D2BOOT_Mark("DRLG: act generated"); // [d2boot]
 }
 
 void __fastcall FreeAllUnits(::SGAMEDATA * pGame) {

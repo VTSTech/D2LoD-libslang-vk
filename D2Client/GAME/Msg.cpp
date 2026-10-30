@@ -20,6 +20,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -88,6 +89,7 @@ void __fastcall NET_D2GS_CLIENT_Send_0x67(char * szGameName) {
     packet.nUnused2C = D2IniData_client->nArenaReserved2;
     packet.nDifficulty = D2IniData_client->nDifficulty;
     Storm::Source::SSTR::SStrCopy(packet.szCharName, D2Game::Save::szSaveCharacterName, 0x7fffffff);
+    D2BOOT_MarkFmt("c2s send 0x67 create-game (gameType=%d class=%d diff=%d)", (int)packet.nGameType, (int)packet.nCharClass, (int)packet.nDifficulty); // [d2boot]
     D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(0x2e, 0, (char*)&packet);
     gnD2GSBytesSentTotal += 0x2e;
     gnD2GSPacketsSentTotal++;
@@ -97,6 +99,7 @@ void __fastcall NET_D2GS_CLIENT_Send_0x6B(char * pBytes) {
     uint8_t aPacketFrame[4];
     d2_store24((char*)&aPacketFrame, (uint32_t)((uint32_t)(uintptr_t)pBytes & 0xffffffu));
     aPacketFrame[3] = 0x6b;
+    D2BOOT_Mark("c2s send 0x6B join-act"); // [d2boot]
     D2Net::SRC::Client::NET_D2GS_CLIENT_SendPacketAfterChecks(1, 0, (char*)(aPacketFrame + 3));
     gnD2GSBytesSentTotal++;
     gnD2GSPacketsSentTotal++;

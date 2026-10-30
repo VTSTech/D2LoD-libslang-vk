@@ -75,6 +75,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/PlayerModes.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -939,6 +940,10 @@ void __fastcall CLIENT_SetConnectionState(D2ClientStrc * pClient, int32_t nConne
       exit(-1);
     }
 
+    // [d2boot] the 6-state join flow, one line per transition while it runs
+    if (pClient->ConnectionState <= 4 || nConnectionState <= 4) {
+      D2BOOT_MarkFmt("client state %d -> %d (clientid %u)", (int)pClient->ConnectionState, (int)nConnectionState, (unsigned)pClient->nClientNo);
+    }
     pClient->ConnectionState = nConnectionState;
 }
 
@@ -1661,6 +1666,8 @@ void __stdcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pUn
       return;
     }
 
+    D2BOOT_Mark("join: PlacePlayerInRoom enter"); // [d2boot]
+
     uint8_t bActNo = GetAct(pClient);
     if (!pRoom) {
       pDrlgAct = (D2DrlgActStrc*)(pGameOrig->pAct + bActNo);
@@ -1758,6 +1765,10 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x23f);
       exit(-1);
     } else {
+      // [d2boot] pClient is only proven non-null below, so guard here
+      if (pClient) {
+        D2BOOT_MarkFmt("join: LoadCharacter enter (clientid %u, fromSave %d)", (unsigned)pClient->nClientNo, (int)bLoadFromSave); // [d2boot]
+      }
       char* szCharNameLog;
       if (!pClient) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x242);
@@ -2714,6 +2725,7 @@ void __fastcall CLIENT_RemoveFromAdjacentRooms(D2RoomStrc * pRoom, int32_t nClie
 }
 
 void __fastcall TellClientToLoadAct(::SGAMEDATA * pGame, D2ClientStrc * pClient) {
+    D2BOOT_MarkFmt("join: TellClientToLoadAct (act %d)", (int)pClient->nAct); // [d2boot]
     uint8_t _byActNoArg;
     D2GSPacketSrv0x53 sPacket;
     uint8_t bEclipseOut[4];
