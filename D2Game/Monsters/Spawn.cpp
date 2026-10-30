@@ -904,7 +904,10 @@ static BOOL MONSTER_CanSpawnInRoom(D2RoomStrc * pRoom, ::SGAMEDATA * pGame) {
       nLevelRoomCount = D2Common::DUNGEON::Dungeon::GetNumberOfPopulatedRoomsInLevel(pGame->pAct[pMonsterRegion->nAct], eLevelId);
       pMonsterRegion->nLevelRoomsCount = nLevelRoomCount;
     }
-    if (!(pMonsterRegion->nMonsterDensity && pMonsterRegion->nLevelRoomsCount)) {
+    if (!pMonsterRegion->nMonsterDensity) {
+      return 0;
+    }
+    if (!pMonsterRegion->nLevelRoomsCount) {
       return 0;
     }
 

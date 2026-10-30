@@ -463,7 +463,10 @@ uint32_t __stdcall UnitIsMarkedBoss(D2MonStatsTxt * pMonStatsTxt, D2UnitStrc * p
 
 // 2022.01.09 - dzik
 BOOL __stdcall CheckIfMonsterIsDead(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == Kick))) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!(pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == Kick)) {
       return 0;
     }
 

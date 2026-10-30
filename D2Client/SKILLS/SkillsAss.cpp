@@ -417,7 +417,16 @@ BOOL __fastcall Skills_CltStFunc_AllocStatListByParam3(D2UnitStrc * pUnit, eD2Sk
 
 BOOL __fastcall Skills_CltDoFunc_Ass_AuraLevel_CastAttackTarget(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!pTargetUnit) {
+      return 0;
+    }
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
 

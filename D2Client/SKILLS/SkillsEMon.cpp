@@ -895,7 +895,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills e
     eMissilesId nMissileId;
     fpMissileSrvDoFuncData fpSkillValidCheck;
     void* pNullGameArg;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

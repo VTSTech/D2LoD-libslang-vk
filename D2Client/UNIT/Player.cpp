@@ -2056,7 +2056,10 @@ int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouse
     D2UnderMouseStrc mouse;
     int nXConverted = nX;
     BOOL bEscOpen = UI::ui::GetUIFlag(UI_ESCMENU);
-    if (!(!bEscOpen && (!bRecursionClick || !nXConverted && !nY))) {
+    if (bEscOpen) {
+      return 0;
+    }
+    if (!(!bRecursionClick || !nXConverted && !nY)) {
       return 0;
     }
 

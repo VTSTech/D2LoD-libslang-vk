@@ -205,7 +205,10 @@ int __fastcall SKILL_SelectProc_IsConvertibleCorpse(D2UnitStrc * pUnit, D2UnitSt
     }
 
     int bCanBeConverted = UNIT::Monster::MONSTER_CanBeConverted(pTargetUnit);
-    if (!(bCanBeConverted && pTargetUnit->eUnitType == UNIT_MONSTER)) {
+    if (!bCanBeConverted) {
+      return 0;
+    }
+    if (pTargetUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
@@ -3934,7 +3937,7 @@ void __fastcall SKILLSSOR_StatExpireCallback_ClearState(D2UnitStrc * pUnit, eD2S
 }
 
 int __fastcall SKILLSCLT_CheckSkillIsValid(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MISSILE) != UNIT_MISSILE) {
       return 0;
     }
 

@@ -1685,7 +1685,13 @@ void __stdcall CELCMP_DrawCelFrameCentered(D2GfxDataStrc * pGfxData, int32_t nDr
 
 uint32_t __stdcall CELCMP_ValidateGfxDataIndexInRange(uint32_t * pnParam) {
     int* piVar1 = (int*)pnParam[0xd];
-    if (!(piVar1 && *piVar1 == 6 && pnParam[0x10] < 0x40)) {
+    if (!piVar1) {
+      return 0;
+    }
+    if (*piVar1 != 6) {
+      return 0;
+    }
+    if (pnParam[0x10] >= 0x40) {
       return 0;
     }
 

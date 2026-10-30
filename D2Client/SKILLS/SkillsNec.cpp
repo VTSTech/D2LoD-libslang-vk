@@ -463,7 +463,19 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
     }
 
     eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize && nParam2 >= 0 && nParam2 < sgptDataTable->nTxtMonStatsSize && sgptDataTable->pTxtMonStats + nParam2)) {
+    if ((int)eMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
+      return 0;
+    }
+    if (nParam2 < 0) {
+      return 0;
+    }
+    if (!(nParam2 < sgptDataTable->nTxtMonStatsSize)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtMonStats + nParam2)) {
       return 0;
     }
     if (nTargetX && nParam1) {
@@ -566,12 +578,18 @@ BOOL __fastcall Skills_CltStFunc_CheckCasterRoomNotInTownNec(D2UnitStrc * pUnit,
 // @sourcefile .\SKILLS\SkillsNec.cpp
 BOOL __fastcall Skills_CltStFunc_CheckTargetIsUnclaimedGroundItem(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTargetItem = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetItem && pTargetItem->eUnitType == UNIT_ITEM)) {
+    if (!pTargetItem) {
+      return 0;
+    }
+    if (pTargetItem->eUnitType != UNIT_ITEM) {
       return 0;
     }
 
     uint32_t nItemBitField = D2Common::ITEMS::Items::TXT_Items_GetBitFieldAnd0x02(pTargetItem->nClassId);
-    if (!(nItemBitField && pTargetItem->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run)) {
+    if (!nItemBitField) {
+      return 0;
+    }
+    if (pTargetItem->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
       return 0;
     }
 

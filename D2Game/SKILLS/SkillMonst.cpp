@@ -1704,7 +1704,10 @@ BOOL __fastcall Skills_SrvDoFunc_102_FireRandomMultiMissile(::SGAMEDATA * pGame,
     }
 
     eMissilesId eVar1 = (eMissilesId)pSkillsTxt->srvmissile[1];
-    if (!((int)eVar1 >= 0 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eVar1 < 0) {
+      return 0;
+    }
+    if (!((int)eVar1 < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
     if (pUnit) {

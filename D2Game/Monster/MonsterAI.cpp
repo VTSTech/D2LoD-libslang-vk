@@ -615,7 +615,13 @@ void __fastcall AI_ClearSwitchAiTargetParams(D2UnitStrc * pUnit) {
 }
 
 uint32_t __fastcall NpcStateIsntZero(D2UnitStrc * pUnit, int32_t nParam) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!pUnit->pUnitData.pUnitDataMonster) {
       return 0;
     }
 

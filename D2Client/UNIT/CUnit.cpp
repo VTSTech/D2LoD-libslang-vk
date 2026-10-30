@@ -361,7 +361,7 @@ static uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills 
 // pTargetUnit is the hovered unit (HitTestScreen sets ESI from it at 00466913) and must be a monster (dwUnitType == 1 at 00464316); pUnit is the player whose left then right skill's SelectProc is tried.
 // @sourcefile .\UNIT\CUnit.cpp
 static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) {
-    if (!(pTargetUnit && pTargetUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pTargetUnit ? pTargetUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -501,7 +501,10 @@ static uint32_t __stdcall SKILL_IsSequenceInputReady(D2UnitStrc * pUnit, D2Skill
     }
 
     uint8_t bySeqInput = pSkillsTxt->seqinput;
-    if (!(bySeqInput && bySeqInput != 0xff)) {
+    if (!bySeqInput) {
+      return 0;
+    }
+    if (bySeqInput == 0xff) {
       return 0;
     }
 

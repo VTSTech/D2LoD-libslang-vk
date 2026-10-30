@@ -1309,7 +1309,10 @@ uint32_t __stdcall SKILLS_CalcToHit(D2UnitStrc * pUnit, eD2Skills eSkill, int32_
 
     uint32_t nToHitCalcIdx = pSkillTxt->ToHitCalc;
     if (nToHitCalcIdx != -1) {
-      if (!(sgptDataTable->pSkillsCode && nToHitCalcIdx < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
+      if (!sgptDataTable->pSkillsCode) {
+        return 0;
+      }
+      if (!(nToHitCalcIdx < (uint32_t)sgptDataTable->nSkillsCodeSize)) {
         return 0;
       }
 
@@ -1816,7 +1819,13 @@ int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * p
 }
 
 uint32_t __stdcall SKILLS_CheckMonsterCorpseSelectable(int32_t bCheckDead, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (pUnit->eAnimMode.ePlayerMode == Kick || bCheckDead && pUnit->eAnimMode.ePlayerMode == Death))) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!(pUnit->eAnimMode.ePlayerMode == Kick || bCheckDead && pUnit->eAnimMode.ePlayerMode == Death)) {
       return 0;
     }
 
@@ -3651,7 +3660,7 @@ static uint32_t SKILLS_CheckItemChargesRemaining(D2UnitStrc * pUnit, D2SkillStrc
 }
 
 static uint32_t __stdcall SKILL_IsDelayExpired(D2SkillStrc * pSkill, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 1;
     }
 

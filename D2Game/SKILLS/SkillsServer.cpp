@@ -252,7 +252,10 @@ uint32_t __fastcall SKILLS_CheckTargetFlags(D2UnitStrc * pUnit, D2UnitStrc * pUn
         return 0;
     }
 
-    if (!((-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1) && (!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1))) {
+    if (!(-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1)) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1)) {
       return 0;
     }
     if (nTargetFlags & 0x100) {
@@ -802,7 +805,7 @@ void __fastcall SKILLS_DeductManaCost(D2UnitStrc * pUnit, int32_t nManaCost) {
 
 // Returns nonzero if the player has enough mana (or charges) to cast their current skill without consuming any. For charged skills checks pSkill->nCharges > 0. For srvdofunc 0x74 (leap/charge type) checks a special item stat flag. Otherwise computes the mana cost from SkillsTxt and compares against current UNITSTAT_mana. Non-player units always return 1.
 uint32_t __fastcall SKILL_CheckManaForCast(D2UnitStrc * pUnit) {
-    if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 1;
     }
 
@@ -1299,7 +1302,16 @@ BOOL __fastcall SKILLS_SrvStFn02_Kick(::SGAMEDATA * pGame, D2UnitStrc * pUnit, e
 
 BOOL __fastcall SKILLS_SrvStFn03_Unsummon(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!(pTarget && pTarget->eUnitType == UNIT_MONSTER && pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if (!pTarget) {
+      return 0;
+    }
+    if (pTarget->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_PLAYER) {
       return 0;
     }
 
@@ -1310,7 +1322,10 @@ BOOL __fastcall SKILLS_SrvStFn03_Unsummon(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     int32_t nPetId = PLAYER::PlayerPets::GetOwnersPetType(pUnit, pTarget->nUnitGUID);
     D2PetTypeTxt* pPetTypeTxt = D2Client::GAME::RosterPets::GetPetTypeTxtById(nPetId);
-    if (!(pPetTypeTxt && *((uint8_t*)pPetTypeTxt + 0x4) & (uint8_t)gadwBitMasks[3])) {
+    if (!pPetTypeTxt) {
+      return 0;
+    }
+    if (!(*((uint8_t*)pPetTypeTxt + 0x4) & (uint8_t)gadwBitMasks[3])) {
       return 0;
     }
 
@@ -3662,7 +3677,13 @@ int32_t __fastcall SKILL_SpawnMissileFunction(::SGAMEDATA * pGame, D2UnitStrc * 
     } else {
       bIsPlayerOrMon = 0;
     }
-    if (!(-1 < pSkillsTxt->srvdofunc && pSkillsTxt->srvdofunc < 0xbf && (!bIsPlayerOrMon || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[5]) || (bHasMana = SKILL_CheckManaForCast(pUnit) , bHasMana != 0)))) {
+    if (-1 >= pSkillsTxt->srvdofunc) {
+      return 0;
+    }
+    if (pSkillsTxt->srvdofunc >= 0xbf) {
+      return 0;
+    }
+    if (!(!bIsPlayerOrMon || !(*((uint8_t*)pSkillsTxt + 0x8) & (uint8_t)gadwBitMasks[5]) || (bHasMana = SKILL_CheckManaForCast(pUnit) , bHasMana != 0))) {
       return 0;
     }
 

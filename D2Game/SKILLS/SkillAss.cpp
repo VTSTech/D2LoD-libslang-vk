@@ -2910,7 +2910,7 @@ BOOL __fastcall Skills_SrvDoFunc_050_DragonTail_FireExplosion(::SGAMEDATA * pGam
 }
 
 static uint32_t __stdcall SKILLAMZ_GetGuidedArrowPiercingBonus(int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

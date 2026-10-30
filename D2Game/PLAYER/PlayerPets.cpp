@@ -264,7 +264,13 @@ static int32_t GetPetUidByIndex(int32_t nIndex, D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x171);
       exit(-1);
     }
-    if (!(pPlayerData->pPets && nIndex >= 0 && nIndex < sgptDataTable->nTxtPetTypeSize)) {
+    if (!pPlayerData->pPets) {
+      return -1;
+    }
+    if (nIndex < 0) {
+      return -1;
+    }
+    if (!(nIndex < sgptDataTable->nTxtPetTypeSize)) {
       return -1;
     }
 

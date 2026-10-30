@@ -239,7 +239,13 @@ BOOL __fastcall Skills_SrvStFunc_19_IsTargetOutsideTown(::SGAMEDATA * pGame, D2U
 
 BOOL __fastcall Skills_SrvStFunc_20_IsGroundItemForIronGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!(pTarget && pTarget->eUnitType == UNIT_ITEM && pTarget->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run)) {
+    if (!pTarget) {
+      return 0;
+    }
+    if (pTarget->eUnitType != UNIT_ITEM) {
+      return 0;
+    }
+    if (pTarget->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Run) {
       return 0;
     }
 
@@ -258,7 +264,7 @@ BOOL __fastcall Skills_SrvStFunc_20_IsGroundItemForIronGolem(::SGAMEDATA * pGame
 }
 
 BOOL CorpseConsumedCheck(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -351,7 +357,13 @@ uint32_t __fastcall SKILLNEC_ValidateAttackableTarget(::SGAMEDATA * pGame, D2Uni
     }
 
     eD2UnitFlags eFlags = pTarget->eUnitFlags;
-    if (!(eFlags >> 2 & 1 && eFlags >> 3 & 1 && eFlags >> 1 & 1)) {
+    if (!(eFlags >> 2 & 1)) {
+      return 0;
+    }
+    if (!(eFlags >> 3 & 1)) {
+      return 0;
+    }
+    if (!(eFlags >> 1 & 1)) {
       return 0;
     }
 
@@ -760,7 +772,7 @@ BOOL __fastcall Skills_SrvDoFunc_059_CastCorpseSkill(::SGAMEDATA * pGame, D2Unit
 }
 
 uint32_t __fastcall SKILLNEC_ValidateReviveTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCorpse) {
-    if (!(pCorpse && pCorpse->eUnitType == UNIT_MONSTER)) {
+    if ((pCorpse ? pCorpse->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

@@ -673,7 +673,10 @@ BOOL __fastcall Skills_CltDoFunc_Sor_Blizzard(D2UnitStrc * pUnit, eD2Skills eSki
     }
 
     eMissilesId eMissileId = (eMissilesId)pSkillTxt->cltmissile[1];
-    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

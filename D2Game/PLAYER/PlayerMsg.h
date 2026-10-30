@@ -642,7 +642,6 @@ void __fastcall SendInitUpdateAttributes(struct D2UnitStrc * pUnit, struct D2Cli
 uint32_t __fastcall PLAYER_AreInDifferentActs(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2);
 // Server-side interact/pickup dispatcher: given a source player pUnit, a target eUnitType and its uuid, resolves the target via FindUnitFromTable and acts based on type and distance. PLAYER: pickup corpse if dead+not-trading else open trade (or walk if >8). MONSTER: trigger NPC AI think/interact if interact+npc, begin NPC interaction when close, else walk. OBJECT: validate range/LOS then Interact(mode 2) or walk. ITEM: SERVER_PickToCursor/SERVER_PickToInventory (per bSetting) when adjacent and unobstructed, else walk. WARP: TakeStairs when adjacent. Beyond ~0x33 tiles it bails. Returns eD2ServerIncomingStatus (OK / BAD_PARAMS / BAD_TARGET).
 eD2ServerIncomingStatus __fastcall SERVER_InteractOrPick(struct D2UnitStrc * pUnit, eD2UnitType eUnitType, uint32_t uuid, BOOL bSetting, ::SGAMEDATA * pGame);
-uint8_t __stdcall PLAYERMSG_GetMessageType(int32_t nParam1, int32_t nParam2);
 int32_t __stdcall PLAYERMSG_GetMessagePriority(uint32_t nParam);
 eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, struct D2UnitStrc * pUnit, uint32_t dwParam);
 eD2ServerIncomingStatus __thiscall IsPlayerTheOwner(void * pThis, struct D2UnitStrc * pOwner, uint32_t nItemGid);
@@ -936,6 +935,6 @@ eD2ServerIncomingStatus __fastcall NET_D2GS_SERVER_HandleIncomingPacketAfterClie
 // @sourcefile .\PLAYER\PlrMsg.cpp
 void __fastcall PLAYERMSG_BroadcastPlayerSlain(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pVictim);
 void __fastcall SendPlayerStopAndAtributeUpdate(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nStopReason);
-// 22 internal functions (defined in .cpp)
+// 23 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerMsg

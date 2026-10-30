@@ -42,6 +42,10 @@ typedef BOOL (__stdcall *ImageHitArea)(D2ControlMsg * pControlMsg);
 #define RECON_FPTD_OnPress
 typedef BOOL (__stdcall *OnPress)(D2ControlMsg * pControlMsg);
 #endif
+#ifndef RECON_FPTD_Draw
+#define RECON_FPTD_Draw
+typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
+#endif
 
 namespace D2Win::Src::D2WinImage {
 
@@ -405,9 +409,6 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     pNewImage->sControl.fpKey = pKey;
     pNewImage->sControl.dwPosX = nParam1;
     pNewImage->sControl.dwPosY = nParam2;
-    // Two functions named Draw now share D2Win::Src::D2WinImage (004fd1f0 and 004fd470), so the
-    // name is an overload set; the exact type selects 004fd1f0. Retire when Ghidra gives them
-    // distinct names or the generator selects the overload by address.
     pNewImage->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinImage*))D2WinImage::Draw;
     pNewImage->sControl.pNext = 0;
     pNewImage->sControl.fpPush = D2WinImage::Push;

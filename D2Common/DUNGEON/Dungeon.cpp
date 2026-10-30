@@ -329,7 +329,10 @@ uint32_t __stdcall DoRoomsTouchOrOverlap(D2RoomStrc * pRoom, D2RoomStrc * pRoom2
 
       iVar1 = pRoom2->sCoords.sTileRect.left;
       nRoom1Left = pRoom->sCoords.sTileRect.left;
-      if (!(nRoom1Left <= pRoom2->sCoords.sTileRect.right + iVar1 && pRoom->sCoords.sTileRect.right + nRoom1Left >= iVar1)) {
+      if (!(nRoom1Left <= pRoom2->sCoords.sTileRect.right + iVar1)) {
+        return 0;
+      }
+      if (!(pRoom->sCoords.sTileRect.right + nRoom1Left >= iVar1)) {
         return 0;
       }
 

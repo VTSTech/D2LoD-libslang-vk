@@ -549,7 +549,7 @@ BOOL __fastcall Skills_SrvDoFunc_129_AttachOrDetachFromHost(::SGAMEDATA * pGame,
 }
 
 BOOL __fastcall SKILLEMONST_SrvStFn61_SelfResurrect(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -606,7 +606,10 @@ BOOL __fastcall Skills_SrvDoFunc_130_SpawnSubMissiles(::SGAMEDATA * pGame, D2Uni
     }
 
     int32_t nSrvMissileId = (int32_t)pSkillRecord->srvmissile[1];
-    if (!(nSrvMissileId > 0 && nSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if (nSrvMissileId <= 0) {
+      return 0;
+    }
+    if (!(nSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -1136,7 +1139,10 @@ BOOL __fastcall Skills_SrvDoFunc_139_FireOrthogonalMissile(::SGAMEDATA * pGame, 
     }
 
     eMissilesId eMissileId = (eMissilesId)pSkillsTxt->srvmissile[1];
-    if (!((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eMissileId <= 0) {
+      return 0;
+    }
+    if (!((int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
     if (pUnit) {
@@ -1162,7 +1168,7 @@ BOOL __fastcall Skills_SrvDoFunc_139_FireOrthogonalMissile(::SGAMEDATA * pGame, 
 
 // SrvStFunc 63: monster-only skill that fires a missile at the target corpse. Checks the target lacks STATE_corpse_noselect, marks it with that state, creates a missile from srvmissilea using the owner as attacker and the corpse as the missile target, then sends a unit message packet to the caster.
 BOOL __fastcall SKILLEMONST_SrvStFn63_CorpseCycler(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

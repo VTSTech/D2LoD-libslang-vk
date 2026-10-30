@@ -6726,7 +6726,16 @@ uint32_t __stdcall ITEM_IsActiveCharm(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     }
 
     uint32_t bIsInInventory = ITEMS_IsA(pUnit, ITEMTYPE_Charm);
-    if (!(bIsInInventory && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem && pUnit->pUnitData.pUnitDataItem->ePage == INVPAGE_INVENTORY)) {
+    if (!bIsInInventory) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
+      return 0;
+    }
+    if (!pUnit->pUnitData.pUnitDataItem) {
+      return 0;
+    }
+    if (pUnit->pUnitData.pUnitDataItem->ePage != INVPAGE_INVENTORY) {
       return 0;
     }
 

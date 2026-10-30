@@ -1205,7 +1205,7 @@ uint32_t __fastcall DrawItemGfx(D2UnitStrc * pUnit, int32_t nHeight, int32_t nWi
     D2GfxDataStrc sGfxData;
     int nPalShiftIndex;
     char byColorOut;
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
 

@@ -1660,7 +1660,7 @@ int32_t __stdcall GetCurrentLifePercentage(D2UnitStrc * pUnit) {
 }
 
 BOOL __stdcall IsSoftMonster(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -1956,7 +1956,7 @@ int32_t __stdcall GetDefense(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall GetAttackRate(D2UnitStrc * pUnit) {
-    if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x107f);
       exit(-1);
     }
@@ -2103,7 +2103,10 @@ int32_t __stdcall GetBlockRate(D2UnitStrc * pUnit, BOOL bExpansion) {
 D2UnitStrc * __stdcall GetEquippedWeapon(D2UnitStrc * pUnit) {
     int32_t nBodyLoc;
     BOOL bSwitch;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pInventory)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return nullptr;
+    }
+    if (!pUnit->pInventory) {
       return nullptr;
     }
 
@@ -2729,7 +2732,10 @@ BOOL __fastcall CanSwitchAI(int32_t nMonsterId) {
     }
 
     uint32_t dwStatFlag = D2Client::Source::ClientEngine::GetSomeMonsterStatFlag(nMonsterId, 2);
-    if (!(dwStatFlag && !(*((uint8_t*)pMonStats + 0xc) & (uint8_t)gadwBitMasks[6]))) {
+    if (!dwStatFlag) {
+      return 0;
+    }
+    if (*((uint8_t*)pMonStats + 0xc) & (uint8_t)gadwBitMasks[6]) {
       return 0;
     }
 
@@ -2818,12 +2824,21 @@ BOOL __stdcall CanDualWield(D2UnitStrc * pUnit) {
 BOOL __stdcall IsCorpseUseable(D2UnitStrc * pUnit) {
     bool _bHasPassiveState;
     bool bHasPassiveState;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->eAnimMode.ePlayerMode == Kick)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return 0;
+    }
+    if (pUnit->eAnimMode.ePlayerMode != Kick) {
       return 0;
     }
 
     D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
-    if (!(pMonStats2 && !(*((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[3]) && *((uint8_t*)pMonStats2 + 0x4) & (uint8_t)gadwBitMasks[7])) {
+    if (!pMonStats2) {
+      return 0;
+    }
+    if (*((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[3]) {
+      return 0;
+    }
+    if (!(*((uint8_t*)pMonStats2 + 0x4) & (uint8_t)gadwBitMasks[7])) {
       return 0;
     }
 
@@ -2838,7 +2853,7 @@ BOOL __stdcall IsObjectInInteractRange(D2UnitStrc * pUnit, D2UnitStrc * pObject)
     int nUnitY;
     int nUnitX;
     int nObjY = 0;
-    if (!pObject || pObject->eUnitType != UNIT_OBJECT) {
+    if ((pObject ? pObject->eUnitType : ~UNIT_OBJECT) != UNIT_OBJECT) {
       return 0;
     }
 

@@ -539,7 +539,7 @@ BOOL __fastcall SKILLITEM_TownPortalScrollSpell(::SGAMEDATA * pGame, D2UnitStrc 
     int nItemGUID;
     int32_t nPortalObjId;
     D2UnitStrc** ppNewPortal;
-    if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return 0;
     }
 
@@ -2239,7 +2239,13 @@ BOOL __fastcall SKILL_ReviveMonsterFromCorpse(::SGAMEDATA * pGame, uint32_t nUni
     }
 
     uint32_t bCorpseUsable = D2Common::Skills::D2CheckIfCorpseIsConsumable(pAttacker, 0);
-    if (!(bCorpseUsable && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtMonStatsSize)) {
+    if (!bCorpseUsable) {
+      return 0;
+    }
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
     }
 

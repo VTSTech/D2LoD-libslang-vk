@@ -1562,7 +1562,7 @@ void __fastcall DAMAGE_ApplyDefensiveReduction(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 uint32_t __thiscall DAMAGE_GetMonsterDrainEffectiveness(void * pThis, D2UnitStrc * pUnit) {
-    if (!pThis || *(int*)pThis != 1) {
+    if ((pThis ? *(int*)pThis : 0) != 1) {
       return 100;
     }
     if (!*(int**)((int)pThis + 0x14)) {
@@ -1949,7 +1949,13 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
     uint32_t uRandRoll2;
     uint32_t nKbDivisor;
     eD2States eImmovableState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_freeze);
-    if (eImmovableState != STATE_none || pDamage1->dwPoisDamage && pDamage1->dwPoisDamage == pDamage1->dwDmgTotal || pDamage1->dwDmgTotal < 0x100) {
+    if (eImmovableState != STATE_none) {
+      return 1;
+    }
+    if (pDamage1->dwPoisDamage && pDamage1->dwPoisDamage == pDamage1->dwDmgTotal) {
+      return 1;
+    }
+    if (pDamage1->dwDmgTotal < 0x100) {
       return 1;
     }
 

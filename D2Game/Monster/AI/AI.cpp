@@ -2163,7 +2163,10 @@ uint32_t __fastcall MONSTERAI_FindNearestAllyCallback(::SGAMEDATA * pGame, D2Uni
 }
 
 int32_t __fastcall AI_ForEachFn04_FindDyingMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pOther, uint32_t * test) {
-    if (!(pOther && pOther->eUnitType == UNIT_MONSTER && pOther->eAnimMode.ePlayerMode == Death)) {
+    if ((pOther ? pOther->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return 0;
+    }
+    if (pOther->eAnimMode.ePlayerMode != Death) {
       return 0;
     }
 
@@ -2922,7 +2925,13 @@ D2UnitStrc * __fastcall AI_FindUnitAtPositionByBaseId(uint32_t nUnused, D2RoomSt
 
 // Returns TRUE if eState can be applied to pUnit as a debuff. Guards: pUnit is a living monster, eState &lt; 0x14, unit is not already STATE_uninterruptable, CanSwitchAI is true, unit is attackable or alive, monster type != 10 (cold-immune-like flag), and AI_CanApplyColdState approves (unless eState is STATE_weaken). Used to gate AI debuff skill usage.
 BOOL __fastcall MONSTERAI_CanApplyDebuffState(D2UnitStrc * pUnit, eD2States eState) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && (int)eState <= 0x13)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
+      return 0;
+    }
+    if ((int)eState > 0x13) {
       return 0;
     }
 
@@ -3466,7 +3475,7 @@ D2UnitStrc * __fastcall MONSTERAI_FindTargetInRange(::SGAMEDATA * pGame, D2UnitS
 D2UnitStrc * __fastcall MONSTERAI_FindNearestInteractNpc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pPlayerCandidate, D2UnitStrc * * pSearchData) {
     uint32_t nDistance;
     int nClassId;
-    if (!pPlayerCandidate || pPlayerCandidate->eUnitType != UNIT_PLAYER) {
+    if ((pPlayerCandidate ? pPlayerCandidate->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
       return nullptr;
     }
 
@@ -5822,7 +5831,13 @@ void __fastcall AI_Fn1_ReanimatedHorde(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 
 // ForEach callback that finds the closest eligible neutral monster for reanimate-type AI. Accepts pCandidate only if it is a living monster of the Reanimatable base ID (0x1EC), allied with pUnit, alignment 0, has no owner, and has dwArg0==-1 (not already targeted). Returns pCandidate pointer if it is nearer than *pBestDist, else 0.
 uint32_t __fastcall MONSTERAI_FindNeutralMonsterInRange(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, int * pBestDist) {
-    if (!(pUnit != pCandidate && pCandidate && pCandidate->eUnitType == UNIT_MONSTER)) {
+    if (pUnit == pCandidate) {
+      return 0;
+    }
+    if (!pCandidate) {
+      return 0;
+    }
+    if (pCandidate->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
@@ -9483,7 +9498,10 @@ bool __fastcall AI_Monster_ExecuteMapAiBehavior(::SGAMEDATA * pGame, D2UnitStrc 
 
     uint32_t nMapAiHandlerResult = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, pMapAi->nSize);
     int nMapAiDirection = pMapAi->pPosition[nMapAiHandlerResult].nDirection;
-    if (!(nMapAiDirection >= 0 && nMapAiDirection < 7)) {
+    if (nMapAiDirection < 0) {
+      return false;
+    }
+    if (nMapAiDirection >= 7) {
       return false;
     }
     if (gaMapAiDirectionHandlers[nMapAiDirection]) {
@@ -11867,7 +11885,15 @@ BOOL __fastcall AI_Summon_CheckSkillCooldownTimer(::SGAMEDATA * pGame, D2UnitStr
     int nCooldownEntryRefetchPtr;
     D2SkillsTxt* pSkillsTxt;
     D2UnitStrc* pOwner = Ai::AiGeneral::GetOwnerUnit(pUnit);
-    if (!pOwner || (pRoom = D2Common::Units::UNITS_GetRoom(pOwner) , !pRoom) || (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0)) {
+    if (!pOwner) {
+      MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0, 0, 0);
+      return 1;
+    }
+    if (pRoom = D2Common::Units::UNITS_GetRoom(pOwner) , !pRoom) {
+      MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0, 0, 0);
+      return 1;
+    }
+    if (bIsInTown = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom) , bIsInTown != 0) {
       MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0, 0, 0);
       return 1;
     }
@@ -12699,7 +12725,13 @@ void __fastcall AITHINK_Fn0_ShadowMasterNoInit(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 uint32_t __fastcall MONSTERAI_IsValidResurrectionTarget(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    if (!(pUnit2 && pUnit != pUnit2 && pUnit2->eUnitType == UNIT_MONSTER)) {
+    if (!pUnit2) {
+      return 0;
+    }
+    if (pUnit == pUnit2) {
+      return 0;
+    }
+    if (pUnit2->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
@@ -12709,7 +12741,13 @@ uint32_t __fastcall MONSTERAI_IsValidResurrectionTarget(D2UnitStrc * pUnit, D2Un
     }
 
     D2MonStatsTxt* pMonStats = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit2->nClassId);
-    if (!(pMonStats && !(gadwBitMasks[0] & (uint8_t)*((uint8_t*)pMonStats + 0xd)) && gadwBitMasks[7] & (uint8_t)*((uint8_t*)pMonStats + 0xd))) {
+    if (!pMonStats) {
+      return 0;
+    }
+    if (gadwBitMasks[0] & (uint8_t)*((uint8_t*)pMonStats + 0xd)) {
+      return 0;
+    }
+    if (!(gadwBitMasks[7] & (uint8_t)*((uint8_t*)pMonStats + 0xd))) {
       return 0;
     }
     if (pUnit2->eUnitType == UNIT_PLAYER) {
@@ -17788,7 +17826,7 @@ void __fastcall AITHINK_Fn1_Mosquito(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2
 }
 
 uint32_t __fastcall MONSTERAI_IsSpecificMonsterAlive(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -22429,7 +22467,10 @@ uint32_t __fastcall AI_Monster_ValidateSkillAtPosition(::SGAMEDATA * pGame, D2Un
       return 0;
     }
     if (*((uint8_t*)pSkillTxt + 0x8) & (uint8_t)gadwBitMasks[0]) {
-      if (!(pTargetUnit && pTargetUnit->eUnitFlags >> 1 & 1)) {
+      if (!pTargetUnit) {
+        return 0;
+      }
+      if (!(pTargetUnit->eUnitFlags >> 1 & 1)) {
         return 0;
       }
 

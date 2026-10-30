@@ -1148,7 +1148,13 @@ uint32_t __fastcall OBJECT_CanTargetMonster(D2UnitStrc * pUnit, D2UnitStrc * pUn
     bool _bIsAlly;
     bool bIsAlly;
     bool bIsDead;
-    if (!(pUnit != pUnit2 && pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if (pUnit == pUnit2) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
@@ -1163,7 +1169,10 @@ uint32_t __fastcall OBJECT_CanTargetMonster(D2UnitStrc * pUnit, D2UnitStrc * pUn
     }
 
     _bIsAlly = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
-    if (!(!_bIsAlly && (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral || pUnit->eAnimMode.ePlayerMode == Walk))) {
+    if (_bIsAlly) {
+      return 0;
+    }
+    if (!(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral || pUnit->eAnimMode.ePlayerMode == Walk)) {
       return 0;
     }
 

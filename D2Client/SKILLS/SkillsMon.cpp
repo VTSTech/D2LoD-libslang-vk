@@ -125,7 +125,10 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
     POINT* pSpawnPoint = &ptSpawnPos;
     pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, pSpawnPoint, nCollisionType, nY, bAllowNeighborRooms);
-    if (!(pRoom && pUnit->pPath.pStaticPath)) {
+    if (!pRoom) {
+      return 0;
+    }
+    if (!pUnit->pPath.pStaticPath) {
       return 0;
     }
 

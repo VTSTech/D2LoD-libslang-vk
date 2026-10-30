@@ -203,7 +203,16 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
     uint32_t nConcRandRoll;
     int32_t iVar1;
     eD2States eStunState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_uninterruptable);
-    if (eStunState != STATE_none || !pUnit || pUnit->eAnimMode.ePlayerMode == Death || pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
+    if (eStunState != STATE_none) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eAnimMode.ePlayerMode == Death) {
+      return 0;
+    }
+    if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
       return 0;
     }
     if (!nX || !nY) {

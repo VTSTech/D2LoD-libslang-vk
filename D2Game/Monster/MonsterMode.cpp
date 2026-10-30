@@ -1634,7 +1634,7 @@ int32_t __stdcall MONSTERAI_ExecuteLifecycleTransition(::SGAMEDATA * pGame, D2Mo
     uint32_t bHasAnimSequence;
     eD2MonsterAnimMode eActualAnimMode;
     D2UnitStrc* pUnit = pMonsterKill->pVictim;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 

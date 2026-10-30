@@ -144,7 +144,7 @@ int __stdcall ITEMMOD_FindChargedSkill(D2UnitStrc * pUnit, int32_t nParam1, int3
     if (ppStatList) {
       *ppStatList = 0;
     }
-    if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
     if (nParam1 < 0 || nParam1 >= sgptDataTable->nTxtSkillsCount || nParam2 - 1U > 0x3e) {
@@ -198,7 +198,7 @@ BOOL __stdcall ITEMMOD_SetChargedSkillCharges(D2UnitStrc * pUnit, int32_t nSkill
     BOOL bSubFound;
     uint32_t nMaxCharges;
     uint32_t nNewCharges;
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
 
@@ -1926,7 +1926,7 @@ uint32_t __fastcall ITEMPROP_AddMinDamage(uint32_t dwParam1, D2UnitStrc * pUnit,
     if (!nParam1) {
       return 0;
     }
-    if (!pUnit2 || pUnit2->eUnitType != UNIT_ITEM) {
+    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
@@ -1996,7 +1996,7 @@ uint32_t __fastcall ITEMPROP_AddMaxDamage(uint32_t dwParam1, D2UnitStrc * pUnit,
     if (!nParam1) {
       return 0;
     }
-    if (!pUnit2 || pUnit2->eUnitType != UNIT_ITEM) {
+    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
       return 0;
     }
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
@@ -2484,7 +2484,16 @@ uint32_t __fastcall ITEMPROP_AddStat_FixedOrRolledMaxDamageAware(uint32_t dwPara
 }
 
 uint32_t __fastcall ITEMPROP_SetIndestructible(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, uint32_t nParam1, uint32_t dwParam2, int32_t nParam, uint32_t dwParam3, uint32_t dwParam4, int32_t nParam2, uint32_t nParam3, uint32_t dwParam5) {
-    if (!(pUnit2 && pUnit2->eUnitType == UNIT_ITEM && nParam1 && sgptDataTable->nTxtItemStatCostSize > 0x98 && sgptDataTable->pTxtItemStatCost != (D2ItemStatCostTxt*)-49248)) {
+    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_ITEM) != UNIT_ITEM) {
+      return 0;
+    }
+    if (!nParam1) {
+      return 0;
+    }
+    if (sgptDataTable->nTxtItemStatCostSize <= 0x98) {
+      return 0;
+    }
+    if (sgptDataTable->pTxtItemStatCost == (D2ItemStatCostTxt*)-49248) {
       return 0;
     }
 

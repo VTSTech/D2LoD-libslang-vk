@@ -836,7 +836,7 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     int nDimY;
     int nDimX;
     uint32_t uStack_b;
-    if (!(pUnit2 && pUnit2->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -849,7 +849,13 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     if (pMonStatsTxt) {
       nBaseClassId = (int)pMonStatsTxt->BaseId;
     }
-    if (!(nBaseClassId >= 0 && nBaseClassId < sgptDataTable->nTxtMonStatsSize && nBaseClassId == 0x12a)) {
+    if (nBaseClassId < 0) {
+      return 0;
+    }
+    if (!(nBaseClassId < sgptDataTable->nTxtMonStatsSize)) {
+      return 0;
+    }
+    if (nBaseClassId != 0x12a) {
       return 0;
     }
 

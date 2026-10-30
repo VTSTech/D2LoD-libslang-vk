@@ -909,7 +909,13 @@ void __stdcall LVLTBLS_FreeLevelsTxt() {
 }
 
 int32_t __stdcall TXT_Levels_GetMonLvlForDifficulty(eD2LevelId eLevel, eD2Difficulty nDifficulty, BOOL bIsExpansion) {
-    if (!(nDifficulty < (DIFFICULTY_HELL | DIFFICULTY_NIGHTMARE) && (int)eLevel > 0 && (int)eLevel < sgptDataTable->nTxtLevelsSize)) {
+    if (!(nDifficulty < (DIFFICULTY_HELL | DIFFICULTY_NIGHTMARE))) {
+      return 1;
+    }
+    if ((int)eLevel <= 0) {
+      return 1;
+    }
+    if (!((int)eLevel < sgptDataTable->nTxtLevelsSize)) {
       return 1;
     }
 

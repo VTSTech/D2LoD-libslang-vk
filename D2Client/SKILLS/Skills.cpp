@@ -616,7 +616,10 @@ uint32_t __fastcall SKILL_ValidateTarget(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
         return 0;
     }
 
-    if (!((-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1) && (!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1))) {
+    if (!(-1 < (char)nTargetFlags || pUnit2->eUnitFlags >> 2 & 1)) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x400) || pUnit2->eUnitFlags >> 3 & 1)) {
       return 0;
     }
     if (nTargetFlags & 0x100) {
@@ -626,7 +629,16 @@ uint32_t __fastcall SKILL_ValidateTarget(D2UnitStrc * pUnit, D2UnitStrc * pUnit2
         return 0;
       }
     }
-    if (!((!(nTargetFlags & 0x10000) || (bTargetCheck = SKILLS_GetTargetTypeForSkill((int32_t)pUnit, (int*)pUnit2) , bTargetCheck && (pUnit2->eUnitType != UNIT_MONSTER || (pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit2->nClassId) , pMonStats && !(*((uint8_t*)pMonStats + 0xd) & (uint8_t)gadwBitMasks[0]))))) && (!(nTargetFlags & 0x8000) || (bTargetCheck = UNIT::CUnit::CanInteractWith(pUnit, pUnit2) , bTargetCheck != 0)) && (!(nTargetFlags & 0x20000) || (bInTown = D2Common::Units::IsInMeleeRange(pUnit, pUnit2, 0) , bInTown != 0)) && (!(nTargetFlags & 0x80000) || (eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_justhit) , eState == STATE_none)))) {
+    if (!(!(nTargetFlags & 0x10000) || (bTargetCheck = SKILLS_GetTargetTypeForSkill((int32_t)pUnit, (int*)pUnit2) , bTargetCheck && (pUnit2->eUnitType != UNIT_MONSTER || (pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit2->nClassId) , pMonStats && !(*((uint8_t*)pMonStats + 0xd) & (uint8_t)gadwBitMasks[0])))))) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x8000) || (bTargetCheck = UNIT::CUnit::CanInteractWith(pUnit, pUnit2) , bTargetCheck != 0))) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x20000) || (bInTown = D2Common::Units::IsInMeleeRange(pUnit, pUnit2, 0) , bInTown != 0))) {
+      return 0;
+    }
+    if (!(!(nTargetFlags & 0x80000) || (eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit2, STATE_justhit) , eState == STATE_none))) {
       return 0;
     }
     if (!(nTargetFlags & 0x200)) {
@@ -858,7 +870,10 @@ BOOL __fastcall Skills_CltStFunc_CheckThrowableAmmoAndWeapon(D2UnitStrc * pUnit,
 BOOL __fastcall Skills_CltStFunc_CheckTargetIsPetWithFlag(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     DWORD nUnitGUID;
     D2UnitStrc* pTargetUnit = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(pTargetUnit && pTargetUnit->eUnitType == UNIT_MONSTER)) {
+    if (!pTargetUnit) {
+      return 0;
+    }
+    if (pTargetUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
@@ -873,7 +888,13 @@ BOOL __fastcall Skills_CltStFunc_CheckTargetIsPetWithFlag(D2UnitStrc * pUnit, eD
     }
 
     int32_t nPetTypeIdx = GAME::RosterPets::GetSkillId(pTargetUnit->nUnitGUID);
-    if (!(nPetTypeIdx >= 0 && nPetTypeIdx < sgptDataTable->nTxtPetTypeSize && sgptDataTable->pTxtPetType + nPetTypeIdx)) {
+    if (nPetTypeIdx < 0) {
+      return 0;
+    }
+    if (!(nPetTypeIdx < sgptDataTable->nTxtPetTypeSize)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtPetType + nPetTypeIdx)) {
       return 0;
     }
 

@@ -1351,7 +1351,13 @@ BOOL __fastcall DrawImage(D2GfxDataStrc * pData, int32_t nPosX, int32_t nPosY, D
     GlideTexInfoStrc texInfo;
     int32_t nPosXSaved = nPosX;
     int nSpriteResult = RENDERER_GLIDE_GetSpriteMetadata(pData, (uint32_t**)&texInfo);
-    if (!nSpriteResult || texInfo.nLeft + nPosX > RENDERER_nWindowWidth || texInfo.nWidth + texInfo.nLeft + nPosX < 0) {
+    if (!nSpriteResult) {
+      return 0;
+    }
+    if (texInfo.nLeft + nPosX > RENDERER_nWindowWidth) {
+      return 0;
+    }
+    if (texInfo.nWidth + texInfo.nLeft + nPosX < 0) {
       return 0;
     }
     if (texInfo.nTop + nPosY < 0) {

@@ -923,7 +923,10 @@ void __stdcall STATLIST_ClearChangedStatFlags(D2UnitStrc * pUnit) {
 
 // @blizzard StatsGetAlignment
 int32_t __stdcall STATSEX_GetAlignment(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->pStatsEx)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (!pUnit->pStatsEx) {
       return 0;
     }
     if (!(pUnit->eUnitType > UNIT_MONSTER)) {
@@ -1173,7 +1176,13 @@ int32_t __stdcall GetTxtMaxDurability(D2UnitStrc * pUnit) {
     }
 
     int32_t nMaxDurability = STATLIST_LookupBaseStatWithMinAccr(pItemStatCostLine, pStatList, 0x490000);
-    if (!(nMaxDurability && pStatList && pItemStatCostLine)) {
+    if (!nMaxDurability) {
+      return 0;
+    }
+    if (!pStatList) {
+      return 0;
+    }
+    if (!pItemStatCostLine) {
       return 0;
     }
 

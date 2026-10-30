@@ -636,7 +636,13 @@ void __fastcall FreeWall2(D2GameViewStrc * pGameView) {
 BOOL WALL2_IsInDrawGrid(int nX, int nY, D2Wall2DrawListStrc * pDrawList) {
     int iVar1 = nX - pDrawList->nWall2GridOriginX;
     int nRelY = nY - pDrawList->nWall2GridOriginY;
-    if (!(iVar1 >= 0 && nRelY >= 0 && iVar1 < (int)pDrawList->nWall2GridDim)) {
+    if (iVar1 < 0) {
+      return 0;
+    }
+    if (nRelY < 0) {
+      return 0;
+    }
+    if (!(iVar1 < (int)pDrawList->nWall2GridDim)) {
       return 0;
     }
 

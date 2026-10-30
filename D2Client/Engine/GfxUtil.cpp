@@ -345,7 +345,13 @@ uint32_t __fastcall GFXUTIL_IsDC6BlockOnScreen(DC6Block * pDC6Block, int32_t nPa
       nScreenX -= nHeight;
       nWidth += nHeight;
     }
-    if (!(nScreenX <= ScreenSizeX && -1 < nWidth + nScreenX && nOffsetY + nScreenY - nHeight <= ScreenSizeY)) {
+    if (!(nScreenX <= ScreenSizeX)) {
+      return 0;
+    }
+    if (-1 >= nWidth + nScreenX) {
+      return 0;
+    }
+    if (!(nOffsetY + nScreenY - nHeight <= ScreenSizeY)) {
       return 0;
     }
 

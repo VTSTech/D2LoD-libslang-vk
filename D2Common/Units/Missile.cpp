@@ -1098,7 +1098,10 @@ uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * p
         }
       }
     }
-    if (!(sgptDataTable->pMissCode && nCalcExpression < (uint32_t)sgptDataTable->nMissCodeSize)) {
+    if (!sgptDataTable->pMissCode) {
+      return 0;
+    }
+    if (!(nCalcExpression < (uint32_t)sgptDataTable->nMissCodeSize)) {
       return 0;
     }
 

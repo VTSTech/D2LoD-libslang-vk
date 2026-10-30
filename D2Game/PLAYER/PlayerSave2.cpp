@@ -1099,7 +1099,13 @@ int32_t __fastcall PLAYERSAVE_ParseHeaderAndCreateUnit(::SGAMEDATA * pGame, D2Cl
 
 int __fastcall PLRSAVE_ReadQuestsFromBuffer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int * * ppQuestBuffer, int * pnBytesRead, uint32_t dwParam) {
     int* pBufStart = *ppQuestBuffer;
-    if (!((int*)((int)pBufStart + 0x12aU) <= pnBytesRead && *pBufStart == 0x216f6f57 && pBufStart[1] == 6)) {
+    if (!((int*)((int)pBufStart + 0x12aU) <= pnBytesRead)) {
+      return 0xf;
+    }
+    if (*pBufStart != 0x216f6f57) {
+      return 0xf;
+    }
+    if (pBufStart[1] != 6) {
       return 0xf;
     }
 

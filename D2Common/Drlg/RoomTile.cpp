@@ -696,7 +696,7 @@ static D2DrlgTileDataStrc * __stdcall DRLGROOMTILE_FindTileInNearRooms(int nFlag
 
 // Allocates a new D2DrlgTileLinkStrc (12 bytes), initializes it, and prepends it to the room's tile link list at pRoomEx->pRoomTiles->pMapLinks.
 // @sourcefile .\DRLG\RoomTile.cpp
-D2DrlgTileLinkStrc * __stdcall DRLGROOMTILE_AllocTileLink(D2PoolManagerStrc * pPoolManager, D2RoomExStrc * pRoomEx, int nTileId) {
+static inline D2DrlgTileLinkStrc * __stdcall DRLGROOMTILE_AllocTileLink(D2PoolManagerStrc * pPoolManager, D2RoomExStrc * pRoomEx, int nTileId) {
     D2DrlgTileLinkStrc* pTileLink = D2_NEW_POOL_AT(pPoolManager, D2DrlgTileLinkStrc, ".\\DRLG\\RoomTile.cpp", 0x37b);
     *(int*)pTileLink = nTileId;
     pTileLink->pTileData = 0;
@@ -731,11 +731,7 @@ static D2DrlgTileDataStrc * __stdcall DRLGROOMTILE_AddTileData(D2RoomExStrc * pR
       }
     }
 
-    pTileLink = D2_NEW_POOL_AT(pPoolManager, D2DrlgTileLinkStrc, ".\\DRLG\\RoomTile.cpp", 0x37b);
-    *(uint32_t*)pTileLink = nIsFloorLink;
-    pTileLink->pTileData = 0;
-    pTileLink->pNext = pRoomEx->pRoomTiles->pMapLinks;
-    pRoomEx->pRoomTiles->pMapLinks = pTileLink;
+    pTileLink = DRLGROOMTILE_AllocTileLink(pPoolManager, pRoomEx, nIsFloorLink);
     create_tile_in_link:
     nTileLibEntry = DRLG_FindHTile(pRoomEx, nTileType, nGridInfo);
     if (!nTileType) {
@@ -882,11 +878,7 @@ static void __stdcall DRLGROOMTILE_UpdateTileType(D2DrlgTileDataStrc * pTileData
         }
       }
 
-      pTileLink = D2_NEW_POOL_AT(pPoolManager, D2DrlgTileLinkStrc, ".\\DRLG\\RoomTile.cpp", 0x37b);
-      *(int*)pTileLink = 0;
-      pTileLink->pTileData = 0;
-      pTileLink->pNext = pRoomExStrc->pRoomTiles->pMapLinks;
-      pRoomExStrc->pRoomTiles->pMapLinks = pTileLink;
+      pTileLink = DRLGROOMTILE_AllocTileLink(pPoolManager, pRoomExStrc, 0);
       add_wall_tile:
       nTileTypeMapping = DRLG_FindHTile(pRoomExStrc, 3, nGridFlags);
       DRLGROOMTILE_CreateWallTileData(pRoomExStrc, &pTileLink->pTileData, nPosX, nPosY, nGridFlags, nTileTypeMapping, 3);

@@ -429,7 +429,10 @@ void __fastcall GetMonsterNameAndAi(D2UnitStrc * pUnit, uint32_t * pMonsterName,
 
 // Returns the owner unit for a monster. Walks pMonsterData->pAiGeneral->pGame to call FindUnitFromTable with the owner's type and GUID.
 D2UnitStrc * __fastcall GetOwnerUnit(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+      return nullptr;
+    }
+    if (!pUnit->pUnitData.pUnitDataMonster) {
       return nullptr;
     }
 
@@ -640,7 +643,7 @@ void __fastcall CallForEachMinion(D2UnitStrc * pUnit, void * pContext, void * pA
 
 void __fastcall GetAndRemoveMinionList(D2UnitStrc * pUnit, int * pOwnerId, eD2UnitType * pType, uint32_t * nFlagBit1, uint32_t * nFlagBit2, D2MonsterDataMinionList * * pMinionList) {
     D2AiGeneralStrc* pAiGeneral;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
       *pOwnerId = -1;
       return;
     }

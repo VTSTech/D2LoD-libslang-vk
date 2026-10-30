@@ -262,7 +262,16 @@ BOOL __fastcall SKILLSOR_SrvStFn12_TargetInAuraRange(::SGAMEDATA * pGame, D2Unit
     int32_t nDistSq;
     int32_t nCasterY;
     D2UnitStrc* pTarget = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    if (!(pTarget && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill)) {
+    if (!pTarget) {
+      return 0;
+    }
+    if ((int)eSkill < 0) {
+      return 0;
+    }
+    if (!((int)eSkill < sgptDataTable->nTxtSkillsCount)) {
+      return 0;
+    }
+    if (!(sgptDataTable->pTxtSkills + eSkill)) {
       return 0;
     }
 
@@ -901,7 +910,10 @@ BOOL __fastcall Skills_SrvDoFunc_024_FireWall(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     eMissilesId eSrvMissileId = (eMissilesId)pSkillTxt->srvmissile[1];
-    if (!((int)eSrvMissileId >= 0 && (int)eSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eSrvMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eSrvMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

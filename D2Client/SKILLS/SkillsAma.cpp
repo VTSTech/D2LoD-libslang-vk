@@ -598,7 +598,10 @@ BOOL __fastcall Skills_CltDoFunc_Ama_PiercingShot(D2UnitStrc * pUnit, eD2Skills 
     }
 
     eMissilesId eCltMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eCltMissileId >= 0 && (int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
+    if ((int)eCltMissileId < 0) {
+      return 0;
+    }
+    if (!((int)eCltMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 

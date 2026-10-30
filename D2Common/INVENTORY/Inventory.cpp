@@ -251,7 +251,7 @@ BOOL __fastcall INVENTORY_RemoveItemFromInventory(D2UnitStrc * pItem) {
     }
 
     D2InventoryStrc* pInventory = ppInventory->pInventory;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if ((pInventory ? pInventory->nSignatureMagic : 0) != 0x1020304) {
       return 0;
     }
 
@@ -367,7 +367,16 @@ void __stdcall STRUCT_FreeInventory(D2InventoryStrc * pInventory) {
 }
 
 BOOL __stdcall INVENTORY_CheckDoItemBelongToInventory(D2InventoryStrc * pInventory, D2UnitStrc * pUnit) {
-    if (!(pInventory && pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
+      return 0;
+    }
+    if (!pUnit->pUnitData.pUnitDataPlayer) {
       return 0;
     }
 
@@ -1062,12 +1071,30 @@ int __stdcall INVENTORY_FindItemGridPosition(D2InventoryStrc * pInventory, D2Uni
     BOOL nResultSlot;
     D2GridScreenCoordinates local_1c;
     D2InventoryStrc* pInventorySaved = pInventory;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304 && pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataPlayer && pUnit->pUnitData.pUnitDataPlayer != (D2UnitDataPlayerStrc*)-92)) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
+      return 0;
+    }
+    if (!pUnit->pUnitData.pUnitDataPlayer) {
+      return 0;
+    }
+    if (pUnit->pUnitData.pUnitDataPlayer == (D2UnitDataPlayerStrc*)-92) {
       return 0;
     }
 
     ITEMS::Items::ITEM_GetItemsTxt_nWidthAndHeight(pUnit, (char*)((uintptr_t)&pInventory + 3), (char*)((uintptr_t)&pUnit + 3), ".\\INVENTORY\\Inventory.cpp", 0x5ac);
-    if (!(*(uint8_t*)((char*)&pInventory + 3) != '\0' && *(uint8_t*)((char*)&pUnit + 3) != '\0')) {
+    if (*(uint8_t*)((char*)&pInventory + 3) == '\0') {
+      return 0;
+    }
+    if (*(uint8_t*)((char*)&pUnit + 3) == '\0') {
       return 0;
     }
 
@@ -1132,7 +1159,16 @@ BOOL __stdcall INVENTORY_CheckGridCollisions(D2InventoryStrc * pInventory, D2Uni
     int32_t nGridYCur = nGridY;
     D2InventoryStrc* pInventory_00 = pInventory;
     *pnParam = 0;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304 || !pUnit || pUnit->eUnitType != UNIT_ITEM) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
       return 0;
     }
     if ((char)nParam == -1) {
@@ -1199,7 +1235,16 @@ BOOL __stdcall INVENTORY_CheckGridOccupancy(D2InventoryStrc * pInventory, D2Unit
     uint32_t bIsBox = nPageByte;
     int32_t nRow = nGridY;
     D2InventoryStrc* pInventorySaved = pInventory;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304 || !pUnit || pUnit->eUnitType != UNIT_ITEM) {
+    if (!pInventory) {
+      return 0;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
+      return 0;
+    }
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
       return 0;
     }
     if ((char)nPageByte == -1) {
@@ -1292,7 +1337,10 @@ void __stdcall NullSub(D2InventoryStrc * dwParam) {
 D2UnitStrc * __stdcall GetUnitAndXAndY(D2InventoryStrc * pInventory, int32_t nGridX, int32_t nGridY, int * pnOutX, int * pnOutY, int32_t eInvPage, uint32_t nGridSize) {
     D2GridScreenCoordinates local_1c;
     D2UnitStrc* pUnit;
-    if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -2300,7 +2348,10 @@ D2UnitStrc * __stdcall INVENTORY_FindItemByType(D2InventoryStrc * pInventory, in
     uint32_t bIsOfType;
     D2GridScreenCoordinates local_1c;
     D2UnitDataItemStrc* pItemData;
-    if (!pInventory || pInventory->nSignatureMagic != 0x1020304) {
+    if (!pInventory) {
+      return nullptr;
+    }
+    if (pInventory->nSignatureMagic != 0x1020304) {
       return nullptr;
     }
 
@@ -4623,7 +4674,10 @@ int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2Bod
 }
 
 D2UnitStrc * __stdcall INVENTORY_GetNextItem(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if (!pUnit) {
+      return nullptr;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
       return nullptr;
     }
 
@@ -4657,7 +4711,10 @@ int32_t __stdcall ITEM_GetGUID(D2UnitStrc * pUnit) {
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 int32_t __stdcall ITEM_GetItemData_eD2InventoryGridType(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
+    if (!pUnit) {
+      return 0;
+    }
+    if (pUnit->eUnitType != UNIT_ITEM) {
       return 0;
     }
 
