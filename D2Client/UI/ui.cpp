@@ -1828,7 +1828,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           pPlayer = UNIT::Player::GetPlayerUnit_UI();
           pnCurrentGold = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pPlayer, eGoldStat, nStatLayer);
           gnGoldDialogTransactionType = nTransactionType;
-          Dialog::gpDialog = Dialog::AllocDialogStrcWithBackground(215, 140, UI_DialogCloseCallback, 0, 0, 1);
+          Dialog::gpDialog = Dialog::AllocDialogStrcWithBackground(215 + VPRES_GetWideUiOffsetX(), 140 + VPRES_GetWideUiOffsetY(), UI_DialogCloseCallback, 0, 0, 1); // VP: [resolution site-6]
           Dialog::DIALOG_SetHighlightStyle(Dialog::gpDialog, 1);
           D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
           Fog::File::CONTAINER_InitializeBuffer(wszPromptText, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
@@ -1866,7 +1866,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           if (!pAllocCtx) {
             gpCurrentDialog = 0;
           } else {
-            gpCurrentDialog = Spinner::SpinnerWrapper::Constructor((::SpinnerWrapper*)pAllocCtx, 0xdf, 0xdb, 0, (fpSpinnerRepeatAction)UI_GoldDialogScrollCallback);
+            gpCurrentDialog = Spinner::SpinnerWrapper::Constructor((::SpinnerWrapper*)pAllocCtx, 0xdf + VPRES_GetWideUiOffsetX(), 0xdb + VPRES_GetWideUiOffsetY(), 0, (fpSpinnerRepeatAction)UI_GoldDialogScrollCallback); // VP: [resolution site-6]
           }
 
           nCleanupStage = -1;
@@ -1876,7 +1876,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           if (!pAllocCtx) {
             gpDialogDefaultActionCallback = 0;
           } else {
-            gpDialogDefaultActionCallback = Editbox::EditBoxWrapper::Constructor(pAllocCtx, 0x102, 0xe4, 100, 1, pnCurrentGold, 10, UI_GoldInputCallback_ReturnZero, 1);
+            gpDialogDefaultActionCallback = Editbox::EditBoxWrapper::Constructor(pAllocCtx, 0x102 + VPRES_GetWideUiOffsetX(), 0xe4 + VPRES_GetWideUiOffsetY(), 100, 1, pnCurrentGold, 10, UI_GoldInputCallback_ReturnZero, 1); // VP: [resolution site-6]
           }
 
           nCleanupStage = -1;
@@ -1890,7 +1890,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           if (!pAllocCtx) {
             gpUiGoldTransactionDialog = 0;
           } else {
-            gpUiGoldTransactionDialog = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0xfa, 0x11f, 0, UI_GoldDialogConfirmCallback);
+            gpUiGoldTransactionDialog = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0xfa + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 0, UI_GoldDialogConfirmCallback); // VP: [resolution site-6]
           }
 
           nCleanupStage = -1;
@@ -1901,7 +1901,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           if (!pAllocCtx) {
             gpUiGoldDialogCancelButton = 0;
           } else {
-            gpUiGoldDialogCancelButton = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0x163, 0x11f, 1, UI_ButtonCallback_CloseDialog);
+            gpUiGoldDialogCancelButton = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0x163 + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 1, UI_ButtonCallback_CloseDialog); // VP: [resolution site-6]
           }
 
           nCleanupStage = -1;
