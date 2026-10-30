@@ -1072,7 +1072,7 @@
 39103	39189	globals/globals.cpp
 5506	5492	globals/globals.h
 7677	7677	globals/Storm.cpp
-70	0	handoff.md
+75	0	handoff.md
 549	0	HISTORY.md
 333	0	PLAN.md
 10	10	progress/report.json
@@ -1171,6 +1171,6 @@
 217	0	tools/build-local-win11.ps1
 12	0	tools/check-build.sh
 94	0	tools/check-fork-surface.sh
-235	0	tools/check-vanilla-plus.sh
+236	0	tools/check-vanilla-plus.sh
 229	0	VANILLA-PLUS.md
 32	0	vanilla-plus/cmake/sources.cmake
