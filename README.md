@@ -1,3 +1,5 @@
+<img width="1282" height="747" alt="image" src="https://github.com/user-attachments/assets/7fba89a9-bd10-4fd7-a39b-38ea96688c0c" />
+
 # D2LoD Vanilla+
 
 [![Redivivus Discord](https://img.shields.io/badge/Discord-join%20the%20chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/MHK2Dg9)
