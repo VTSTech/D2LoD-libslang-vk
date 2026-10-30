@@ -11,7 +11,8 @@
 // Forward declarations
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2TimerTypeDWORD;
 
 // Data types
 struct __attribute__((packed)) D2MonsterKillStrc {
@@ -35,7 +36,7 @@ void __fastcall RemoveStatListFromUnit(::SGAMEDATA * pGame, struct D2UnitStrc * 
 void __fastcall MONMODE_UpdateHoverTextExpiry(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 void __fastcall AI_ClearSwitchAiTargetParamsCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 // Server-side monster timer-event dispatcher. Routes a fired timer event (eTimerType) to the appropriate handler in pTimerMethods.fpFunctionExByType[]. For freeze-sensitive event types (STATREGEN, TRAP, ACTIVESTATE, PERIODICSKILLS, REMOVESTATE), dispatches unconditionally. For all other types, first checks that the monster is not frozen (STATE_freeze) or is in mode-zero-death before dispatching. Events beyond UNITEVENTCALLBACK_REMOVESKILLCOOLDOWN are silently ignored.
-void __fastcall MONSTEREVENT_DefaultCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, uint32_t eTimerType, int32_t nArg1, int32_t nArg2);
+void __fastcall MONSTEREVENT_DefaultCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t nArg1, int32_t nArg2);
 void __fastcall BarbFindItemSkill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pAttacker, uint32_t dwParam);
 // END-OF-FRAME AI DISPATCHER:
 // Called from movement mode processors (walk/run/skill cast)

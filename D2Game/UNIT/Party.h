@@ -12,7 +12,7 @@
 struct D2UnitPartyControlSub;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitStat;
+typedef uint32_t eD2UnitStat;
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);

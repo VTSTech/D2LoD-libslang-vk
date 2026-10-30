@@ -24,7 +24,7 @@ struct D2SUnitMsgStrc;
 struct D2SkillStrc;
 struct D2StatListExStrc;
 struct D2TimerStrc;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct D2AnimSeqStrc {
@@ -136,7 +136,7 @@ struct D2UnitStrc {
     /* 0xBC */ uint32_t unk0xBC; // unknown[0]
     /* 0xC0 */ uint32_t unk0xC0; // unknown[1]
     /* 0xC4 */ eD2UnitFlags eUnitFlags; // dwFlags
-    /* 0xC8 */ uint32_t eUnitFlagsEx; // dwFlagEx
+    /* 0xC8 */ eD2UnitFlagsEx eUnitFlagsEx; // dwFlagEx
     /* 0xCC */ uint8_t * pUnused0xCC; // may be quest related
     /* 0xD0 */ int nNodeTableIndex; // dwNodeIndex
     /* 0xD4 */ uint32_t dwTickCount;

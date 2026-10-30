@@ -17,7 +17,7 @@ struct D2RoomStrc;
 struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct __attribute__((packed)) D2ObjectControlSub0x1110 {

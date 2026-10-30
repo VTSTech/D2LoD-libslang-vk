@@ -19,9 +19,9 @@ struct D2UnitDataItemDetailsStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2ItemFlag;
-typedef int eD2ItemQuality;
-typedef int eD2ItemTypes;
-typedef int eD2LevelId;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct __attribute__((packed)) D2ItemGenContextStrc {

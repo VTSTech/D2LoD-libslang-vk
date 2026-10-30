@@ -25,9 +25,9 @@ struct D2SkillsTxt;
 struct D2StatListExStrc;
 struct D2TxtLinkNodeStrc;
 struct D2UnitStrc;
-typedef int eD2ElementalDamageTypeDWORD;
-typedef int eD2Skills;
-typedef int eD2States;
+typedef uint32_t eD2ElementalDamageTypeDWORD;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
 #ifndef RECON_FPTD_pfnSkillDescWeaponDmgCalc
 #define RECON_FPTD_pfnSkillDescWeaponDmgCalc
 typedef void (__fastcall *pfnSkillDescWeaponDmgCalc)(struct D2UnitStrc * pUnit, int * pnParam, uint32_t * pnOut1, uint32_t dwParam0, uint32_t dwParam1, int32_t nParam, struct D2SkillStrc * pSkill, uint32_t dwParam2, struct D2UnitStrc * pUnit2);

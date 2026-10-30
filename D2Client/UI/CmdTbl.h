@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2UIMouseMsgStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 typedef int32_t * PD2KeyBindSlot;

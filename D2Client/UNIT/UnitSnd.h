@@ -12,8 +12,8 @@
 struct D2MonSoundsTxt;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2MonsterAnimMode;
-typedef int eD2UnitType;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2UnitType;
 
 namespace D2Client::UNIT::UnitSnd {
 

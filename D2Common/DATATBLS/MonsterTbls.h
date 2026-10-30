@@ -20,7 +20,7 @@ struct D2ParsedTreasureClassStrc;
 struct D2PoolManagerStrc;
 struct D2SuperUniquesTxt;
 struct D2UnitStrc;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct D2MonItemPercentTxt {

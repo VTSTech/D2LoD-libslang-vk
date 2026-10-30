@@ -1123,7 +1123,7 @@ static void __stdcall COMCALLBACK_AddUserToChannelList(D2ChannelUserStrc * pChan
       }
     }
 
-    D2Win::Src::D2Comp::D2COMP_CreateCompositeUnit((uint32_t*)&pChannelUser->pComposite->nFlags, (uint32_t)bVar1, nPaletteShift, pChannelUser->pbCharData, pChannelUser->szCharItems);
+    D2Win::Src::D2Comp::D2COMP_CreateCompositeUnit(&pChannelUser->pComposite->nFlags, (uint32_t)bVar1, nPaletteShift, pChannelUser->pbCharData, pChannelUser->szCharItems);
     COMCALLBACK_FormatChannelUserData(pChannelUser);
     COMCALLBACK_UpdateChannelUserList();
 }

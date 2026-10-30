@@ -12,7 +12,7 @@
 // Forward declarations
 struct D2ServerMessageHandleStrc;
 struct D2UnitStrc;
-typedef int eD2PlayerAnimMode;
+typedef uint32_t eD2PlayerAnimMode;
 
 namespace D2Client::UNIT::UnitMode {
 

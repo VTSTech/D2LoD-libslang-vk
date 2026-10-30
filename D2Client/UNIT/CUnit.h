@@ -17,9 +17,9 @@ struct D2RoomStrc;
 struct D2ServerCmdStrc;
 struct D2SkillStrc;
 struct D2UnitStrc;
-typedef int eD2Skills;
-typedef int eD2UnitType;
-typedef int eOverlayId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitType;
+typedef uint32_t eOverlayId;
 #ifndef RECON_FPTD_fnUnitIterCallback
 #define RECON_FPTD_fnUnitIterCallback
 typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);

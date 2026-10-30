@@ -27,9 +27,9 @@ struct D2TimerStrc;
 struct D2UnitNodeStrc;
 struct D2UnitPartyControlSub;
 struct D2UnitStrc;
-typedef int eD2ArenaFlags;
-typedef int eD2GSGameType;
-typedef int eD2LevelId;
+typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2GSGameType;
+typedef uint32_t eD2LevelId;
 typedef uint8_t eD2HostGameType;
 
 struct D2ObjectControlStrc;

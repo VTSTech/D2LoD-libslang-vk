@@ -17,7 +17,7 @@ struct D2MapAIStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Quests;
+typedef uint32_t eD2Quests;
 struct D2QuestDataStrc;
 #ifndef RECON_FPTD_QUESTACTIVE
 #define RECON_FPTD_QUESTACTIVE

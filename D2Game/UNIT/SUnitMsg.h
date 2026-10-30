@@ -12,8 +12,8 @@
 struct D2ClientStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2GSPacketSrv0xA8 {

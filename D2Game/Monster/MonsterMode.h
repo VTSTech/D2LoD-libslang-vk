@@ -14,8 +14,8 @@ struct D2MonsterPathParamStrc;
 struct D2ObjectOperateFnArg;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
-typedef int eMissilesId;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eMissilesId;
 #ifndef RECON_FPTD_fnD2DropHandler
 #define RECON_FPTD_fnD2DropHandler
 typedef BOOL (__fastcall *fnD2DropHandler)(::SGAMEDATA * pGame, struct D2MonsterKillStrc * pMonsterKill);

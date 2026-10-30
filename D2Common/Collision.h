@@ -15,7 +15,7 @@ struct D2RoomCollisionGridStrc;
 struct D2RoomStrc;
 struct D2TileLibraryEntryStrc;
 struct D2UnitStrc;
-typedef int eD2CollisionShapeType;
+typedef uint32_t eD2CollisionShapeType;
 #ifndef RECON_FPTD_fpMissileSrvDoFuncData
 #define RECON_FPTD_fpMissileSrvDoFuncData
 typedef int (__fastcall *fpMissileSrvDoFuncData)(struct D2UnitStrc * pUnit, void * pContext);

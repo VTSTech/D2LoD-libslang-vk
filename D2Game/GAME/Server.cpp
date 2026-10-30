@@ -433,7 +433,6 @@ void __fastcall NET_SendPong(uint32_t nClientID, int32_t nPingTime, int32_t nSeq
 void __fastcall BroadcastPlayerJoin(::SGAMEDATA * pGame, D2ClientStrc * pClient) {
     D2CorpseStrc* pRoomCorpse;
     uint32_t dwCorpseGUIDArg;
-    uint32_t dwUnitGUID_param;
     uint8_t bAssign;
     D2ClientStrc* pClientOther;
     D2UnitStrc* pUnitJoining = Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -455,8 +454,7 @@ void __fastcall BroadcastPlayerJoin(::SGAMEDATA * pGame, D2ClientStrc * pClient)
                 dwCorpseGUIDArg = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID(pRoomCorpse);
                 if (dwCorpseGUIDArg != -1) {
                   bAssign = 1;
-                  dwUnitGUID_param = D2Client::UNIT::GetGUID(pUnit);
-                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, dwUnitGUID_param, dwCorpseGUIDArg, bAssign);
+                  SCmd::NET_D2GS_SERVER_Send_0x8E_CorpseAssign(pClient, D2Client::UNIT::GetGUID(pUnit), dwCorpseGUIDArg, bAssign);
                 }
               }
             }
@@ -853,7 +851,6 @@ void __fastcall SaveAllPlayers(::SGAMEDATA * pGame) {
 
 // Gracefully disconnects a single client from a game. Broadcasts a 0x5A leave-game event message with char name and account name, calls CleanUpClient to remove the client from game state, sends 0xB0 ConnectionTerminated packet, then calls QSERVER_KillConnection to close the network connection. nDisconnectReason byte is embedded in the event packet.
 void __fastcall SERVER_DisconnectClient(::SGAMEDATA * pGame, D2ClientStrc * pClient, uint32_t nDisconnectReason) {
-    uint32_t nKillResult;
     D2Packet0x5aEventStructure packet0x5a;
     int32_t nCleanupFlag;
     if (pClient) {
@@ -871,9 +868,7 @@ void __fastcall SERVER_DisconnectClient(::SGAMEDATA * pGame, D2ClientStrc * pCli
       *(uint32_t*)((char*)&packet0x5a.szName2 + 12) &= 0xffffff;
       Storm::Source::SSTR::SStrCopy(packet0x5a.szName1, Clients::GetCharName(pClient), nCleanupFlag);
       PLAYER::PlayerMsg::BroadcastEventMessage(pGame, &packet0x5a);
-      nCleanupFlag = 1;
-      nKillResult = Clients::GetClientNo(pClient);
-      Clients::CleanUpClient(pGame, nKillResult, nCleanupFlag);
+      Clients::CleanUpClient(pGame, Clients::GetClientNo(pClient), 1);
       ServerCmd::NET_D2GS_SERVER_Send_0xB0_ConnectionTerminated(nClientId);
       D2Net::Game::Server::QSERVER_KillConnection(nClientId);
     }
@@ -3249,9 +3244,7 @@ void __stdcall QSERVER_DisconnectClientFromGame(uint32_t nClientId) {
           memset(byPacketType.szName2, 0, 4 * sizeof(byPacketType.szName2[0]));
           Storm::Source::SSTR::SStrCopy(byPacketType.szName1, Clients::GetCharName(pClient), nCopyLen);
           PLAYER::PlayerMsg::BroadcastEventMessage(pGame, &byPacketType);
-          nCopyLen = 1;
-          nToken = Clients::GetClientNo(pClient);
-          Clients::CleanUpClient(pGame, nToken, nCopyLen);
+          Clients::CleanUpClient(pGame, Clients::GetClientNo(pClient), 1);
         }
 
         Server::Unlock(pGame);

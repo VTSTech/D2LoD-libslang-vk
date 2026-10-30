@@ -1344,9 +1344,7 @@ BOOL __fastcall Skills_SrvDoFunc_004_RemovePetBySkillParam(::SGAMEDATA * pGame, 
       return 0;
     }
 
-    BOOL bNotify = 1;
-    DWORD dwPetGuid = D2Common::Skills::SKILL_GetParam1(pSkill);
-    PLAYER::PlayerPets::RemovePetByGuidAndNotify(pGame, pUnit, dwPetGuid, bNotify);
+    PLAYER::PlayerPets::RemovePetByGuidAndNotify(pGame, pUnit, D2Common::Skills::SKILL_GetParam1(pSkill), 1);
     return 1;
 }
 

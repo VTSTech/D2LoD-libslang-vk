@@ -2547,7 +2547,7 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       sPacket0x5E.nPacketId = 0x5e;
       if (nQuestDataExtendedSize > 0) {
         do {
-          if (aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal < 0) {
+          if ((int32_t)aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal < 0) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x77);
             exit(-1);
           }
@@ -2562,7 +2562,7 @@ void __fastcall QUEST_OnPlayerJoinGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x67c);
               exit(-1);
             }
-            if (pQuestDataIter->nQuestNoInternal == aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal) {
+            if (pQuestDataIter->nQuestNoInternal == (int32_t)aQuestInitDataExtended[nExtendedIndex].nQuestNoInternal) {
               break;
             }
 

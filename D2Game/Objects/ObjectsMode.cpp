@@ -537,7 +537,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       if (pUnit->eUnitFlags >> 8 & 1) {
         UNIT::SUnitMsg::PLAYER_SendHoverTextToClient(pUnit, pClient);
       }
-      if (pUnit->eUnitFlagsEx & 1) {
+      if (pUnit->eUnitFlagsEx & UNITFLAGEX_HASINV) {
         UNIT::SendUpdatedItemsToClient(pGame, pUnit, pClient, nullptr);
       }
     }
@@ -574,7 +574,7 @@ static void AUTOMAP_RevealAfterTeleport(D2UnitStrc * pUnit, D2UnitStrc * pUnit2,
       return;
     }
 
-    pUnit2->eUnitFlagsEx |= 0x10000;
+    pUnit2->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
 }
 
 // Object operate-fn: searches the victim object's room and all adjacent rooms for another object of the same classId, then calls AUTOMAP_RevealAfterTeleport on the first match found. Used by Waygate-style objects that need to reveal the automap of their destination area. Always returns 0.

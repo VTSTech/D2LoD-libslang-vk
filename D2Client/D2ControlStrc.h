@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2ControlMsg;
 struct DC6;
-typedef int eD2FormType;
+typedef uint32_t eD2FormType;
 struct D2ControlStrc;
 #ifndef RECON_FPTD_Draw
 #define RECON_FPTD_Draw

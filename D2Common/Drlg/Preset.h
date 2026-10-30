@@ -20,8 +20,8 @@ struct D2MapAIStrc;
 struct D2PoolManagerStrc;
 struct D2RoomExStrc;
 struct D2SeedStrc;
-typedef int eD2LevelId;
-typedef int eD2UnitType;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2UnitType;
 
 struct D2DrlgRoomExDataPresetWorldCoordinatesBurialGrounds;
 

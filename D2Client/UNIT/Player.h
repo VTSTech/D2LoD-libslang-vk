@@ -17,7 +17,7 @@ struct D2SkillStrc;
 struct D2UnderMouseStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_PFN_PlayerModeMoveFn
 #define RECON_FPTD_PFN_PlayerModeMoveFn
 typedef void (__fastcall *PFN_PlayerModeMoveFn)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nModeIndex, int32_t nX, int32_t nY);

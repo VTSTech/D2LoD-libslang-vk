@@ -10,8 +10,8 @@
 
 // Forward declarations
 struct D2UIMouseMsgStrc;
-typedef int eD2UIvars;
-typedef int eD2UIvarsSetType;
+typedef uint32_t eD2UIvars;
+typedef uint32_t eD2UIvarsSetType;
 
 namespace D2Client::UI::Help {
 

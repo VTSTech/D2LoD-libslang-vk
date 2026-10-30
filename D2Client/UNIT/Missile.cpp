@@ -354,7 +354,7 @@ int32_t __fastcall MISSILE_CltHitFn34_MephistoDoNotDraw(D2UnitStrc * pUnit, D2Un
       return 1;
     }
 
-    pOwner->eUnitFlagsEx |= 0x40000;
+    pOwner->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     return 1;
 }
 
@@ -1015,7 +1015,7 @@ D2UnitStrc * __fastcall MakeMissile(D2SkillArgStrc * pSkillArg) {
       D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pDVar6, 0);
     }
     if (pMissileTxt->InitSteps != '\0') {
-      pDVar6->eUnitFlagsEx |= 0x40000;
+      pDVar6->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     }
 
     D2Common::Units::Missile::SetOwner(pDVar6, pSkillArg->pOwner);
@@ -5890,7 +5890,7 @@ void __fastcall MISSILE_CltDoFn01_BasicMissile(D2UnitStrc * pUnit) {
       if (pDynPath) {
         nCurFrame = D2Common::Units::Missile::GetRemainingFrames(pUnit);
         if (nCurFrame > (int)(uint32_t)(uint8_t)pDVar2->InitSteps) {
-          pUnit->eUnitFlagsEx &= -262145;
+          pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
         }
       }
 
@@ -8167,7 +8167,7 @@ void __fastcall MISSILE_CltDoFn51_RecyclerDelay(D2UnitStrc * pUnit) {
           if (-1 < pMissileTxt->CltSubMissile2 && nRemainingFrames == pMissileTxt->CltParam2) {
             pOwner = Player::MISSILE_GetOwnerUnit(pUnit);
             if (pOwner) {
-              pOwner->eUnitFlagsEx |= 0x40000;
+              pOwner->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
               memset(&sSkillArg, 0, 0x5c);
               sSkillArg.nMissileTxtNo = (eMissilesId)pMissileTxt->CltSubMissile2;
               sSkillArg.nFlags = 0x2000;

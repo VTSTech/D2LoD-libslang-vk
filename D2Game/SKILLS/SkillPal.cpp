@@ -1191,7 +1191,7 @@ BOOL __fastcall Skills_SrvDoFunc_073_BlessedHammer(::SGAMEDATA * pGame, D2UnitSt
       return 0;
     }
 
-    BOOL bGotTargetPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSaved, pUnit, (uint32_t*)&eSkill, &nTargetY);
+    BOOL bGotTargetPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameSaved, pUnit, &eSkill, &nTargetY);
     if (!bGotTargetPos) {
       return 0;
     }

@@ -454,7 +454,7 @@ BOOL __fastcall Skills_SrvDoFunc_088_FireMissileFromBodyPart(::SGAMEDATA * pGame
 
     eSkill = D2Common::Skills::SKILL_GetParam1(pSkill);
     uint32_t nOriginX = D2Common::Skills::SKILL_GetParam2(pSkill);
-    if (!(eSkill != SKILL_Attack && nOriginX || (nDirection = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameOrig, pUnit, (uint32_t*)&eSkill, &nOriginX) , nDirection != 0))) {
+    if (!(eSkill != SKILL_Attack && nOriginX || (nDirection = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameOrig, pUnit, &eSkill, &nOriginX) , nDirection != 0))) {
       return 0;
     }
 
@@ -1447,7 +1447,7 @@ BOOL __fastcall Skills_SrvDoFunc_098_TeleportToStoredPosition(::SGAMEDATA * pGam
     }
 
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlagsEx |= 0x10000;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
     return 1;
 }
 

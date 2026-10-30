@@ -9,8 +9,8 @@
 #include "d2_platform.h"
 
 // Forward declarations
-typedef int eD2ArenaFlags;
-typedef int eD2GSGameType;
+typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2GSGameType;
 typedef uint8_t eD2PlayerClassID;
 #ifndef RECON_FPTD_fnApplyPrepatch
 #define RECON_FPTD_fnApplyPrepatch

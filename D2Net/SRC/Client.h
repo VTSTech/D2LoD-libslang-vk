@@ -9,7 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
-typedef int eD2GSConnectionType;
+typedef uint32_t eD2GSConnectionType;
 
 // Data types
 struct D2GameClients_Line0x347 {

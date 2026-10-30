@@ -859,7 +859,7 @@ int32_t __fastcall RNG_GetRandomInRangeWithMin(uint32_t * pSeed, int32_t nMin, i
 
 // Returns 1 if the current arena level flag (bit 1 of CLIENT_ArenaFlags) is set, indicating the active level is designated as an arena level.
 int32_t __stdcall CLIENT_IsArenaLevel() {
-    return (uint8_t)CLIENT_ArenaFlags >> 1 & 1;
+    return (uint8_t)(uint8_t)CLIENT_ArenaFlags >> 1 & 1;
 }
 
 // Returns the global CLIENT_ArenaFlags bitmask controlling arena mode, arena level, and default-active state for the current game client context.
@@ -875,11 +875,11 @@ void __fastcall CLIENT_SetArenaFlags(eD2ArenaFlags eArenaFlags) {
 // Sets or clears the ARENAFLAG_DefaultActive bit in CLIENT_ArenaFlags. bSet!=0 clears the bit (marks client as not default-active); bSet==0 sets the bit.
 void __fastcall CLIENT_ToggleDefaultActiveFlag(int32_t bSet) {
     if (bSet) {
-      CLIENT_ArenaFlags &= -2;
+      CLIENT_ArenaFlags &= ~ARENAFLAG_DefaultActive;
       return;
     }
 
-    CLIENT_ArenaFlags |= 1;
+    CLIENT_ArenaFlags |= ARENAFLAG_DefaultActive;
 }
 
 uint32_t __stdcall ROSTER_GetArenaKillCountGlobal() {

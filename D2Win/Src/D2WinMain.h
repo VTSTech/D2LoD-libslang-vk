@@ -14,7 +14,7 @@ struct D2UIMouseMsgStrc;
 struct D2WinEditBox;
 struct DC6;
 struct FORMS_PredefinedFormStrc;
-typedef int eD2RendererMode;
+typedef uint32_t eD2RendererMode;
 #ifndef RECON_FPTD_pfnFramePump
 #define RECON_FPTD_pfnFramePump
 typedef int (__stdcall *pfnFramePump)(int nFrameIndex);

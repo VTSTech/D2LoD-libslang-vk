@@ -11,7 +11,7 @@
 
 // Forward declarations
 struct DC6;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 struct D2EscMenuItemStrc;
 struct D2UIMouseMsgStrc;
 #ifndef RECON_FPTD_pfnEscMenuItemAction

@@ -15,8 +15,8 @@ struct D2PathTypeArg;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2UnitType;
 typedef uint16_t eCollisionFlags;
+typedef uint32_t eD2UnitType;
 
 namespace D2Common::PATH::DynamicPath {
 

@@ -2027,8 +2027,7 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyTerrorToMonster(::SGAMEDATA * pGame, D2
     }
 
     nTerrorParam = D2Client::SKILLS::GetSkillParam4(eSkill, nSkillLvl);
-    uint32_t nBoltSpeed = D2Client::UNIT::Missile::MISSILE_GetBoltSpeed(eSkill, nSkillLvl);
-    Monster::AI::MONSTERAI_ApplyTerrorToMonster(pGame, pOwnerUnit, pTarget, eSkill, nBoltSpeed, nTerrorParam);
+    Monster::AI::MONSTERAI_ApplyTerrorToMonster(pGame, pOwnerUnit, pTarget, eSkill, D2Client::UNIT::Missile::MISSILE_GetBoltSpeed(eSkill, nSkillLvl), nTerrorParam);
     return 0;
 }
 
@@ -2456,8 +2455,7 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyTerrorNearMinion(::SGAMEDATA * pGame, D
     }
 
     nRange = D2Client::SKILLS::SkillsAma::GetTxtSkillParam5(eSkill);
-    dwFindGUID = D2Client::UI::SkillDesc::GetSkillParam4(eSkill);
-    Monster::AI::MONSTERAI_ApplyTerrorToMonster(pGame, pOwner, pTarget, eSkill, dwFindGUID, nRange);
+    Monster::AI::MONSTERAI_ApplyTerrorToMonster(pGame, pOwner, pTarget, eSkill, D2Client::UI::SkillDesc::GetSkillParam4(eSkill), nRange);
     return 1;
 }
 

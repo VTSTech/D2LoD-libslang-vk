@@ -63,6 +63,7 @@
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Client/Warden/WardenClient.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Gdi/Renderer/Windowed.h"
 #include "D2Launch/CharSel.h"
@@ -2708,6 +2709,8 @@ uint32_t gaMonsterModePrecacheEntries[15] = {
     0xa,
     0xb
 }; D2_GLOBAL_GUARD(gaMonsterModePrecacheEntries, "gaMonsterModePrecacheEntries");
+
+eD2ArenaFlags CLIENT_ArenaFlags = ARENAFLAG_ClientUpdate; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
 
 eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00 = CLASS_SORCERESS; D2_GLOBAL_GUARD(eD2PlayerClassIDDWORD_00712f00, "eD2PlayerClassIDDWORD_00712f00");
 
@@ -44666,7 +44669,6 @@ uint32_t gnMonsterModePrecacheCount = 0xf; D2_GLOBAL_GUARD(gnMonsterModePrecache
 uint32_t gnBlizzardSoundPlayed = 0x1; D2_GLOBAL_GUARD(gnBlizzardSoundPlayed, "gnBlizzardSoundPlayed");
 uint32_t gbLightmapColorEnabled = 0x1; D2_GLOBAL_GUARD(gbLightmapColorEnabled, "gbLightmapColorEnabled");
 D2SeedStrc * gpArcaneStarsSeed = (D2SeedStrc *)&gaSpriteArcaneStarYOffset; D2_GLOBAL_GUARD(gpArcaneStarsSeed, "gpArcaneStarsSeed");
-uint32_t CLIENT_ArenaFlags = 0x4; D2_GLOBAL_GUARD(CLIENT_ArenaFlags, "CLIENT_ArenaFlags");
 int gnChatHistoryReadIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryReadIndex, "gnChatHistoryReadIndex");
 uint32_t gnChatHistoryWriteIndex = 0x7; D2_GLOBAL_GUARD(gnChatHistoryWriteIndex, "gnChatHistoryWriteIndex");
 uint32_t gpWardenModuleParam = -0x1; D2_GLOBAL_GUARD(gpWardenModuleParam, "gpWardenModuleParam");

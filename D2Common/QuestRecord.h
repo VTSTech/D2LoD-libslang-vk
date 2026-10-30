@@ -11,8 +11,8 @@
 // Forward declarations
 struct D2BitBufferStrc;
 struct D2PoolManagerStrc;
-typedef int eD2QuestState;
-typedef int eD2Quests;
+typedef uint32_t eD2QuestState;
+typedef uint32_t eD2Quests;
 
 namespace D2Common::QuestRecord {
 

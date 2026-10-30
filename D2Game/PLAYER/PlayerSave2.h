@@ -17,7 +17,7 @@ struct D2SaveFileHeaderStrc;
 struct D2SaveHotKeyStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct __attribute__((packed)) D2SaveFileNpcStrc {

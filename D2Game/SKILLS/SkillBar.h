@@ -12,8 +12,8 @@
 struct D2SkillStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2States;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
 
 namespace D2Game::SKILLS::SkillBar {
 

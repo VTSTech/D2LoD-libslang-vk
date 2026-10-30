@@ -14,7 +14,7 @@ struct D2PlayerListStrc;
 struct D2RosterPartyListStrc;
 struct D2RosterStrc;
 struct D2UnitStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2RosterLinkListStrc {

@@ -15,10 +15,10 @@ struct D2SkillStrc;
 struct D2UnitStrc;
 struct D2WaypointStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
-typedef int eD2MonsterAnimMode;
-typedef int eD2Skills;
-typedef int eD2UnitType;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitType;
 
 struct D2GSPacketSrv0x26;
 struct D2ChatMessage;

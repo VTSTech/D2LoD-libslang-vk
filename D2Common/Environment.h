@@ -13,7 +13,7 @@ struct D2DrlgActStrc;
 struct D2DrlgEnvironmentStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 namespace D2Common::Environment {
 

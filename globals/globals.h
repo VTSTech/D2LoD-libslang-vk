@@ -78,6 +78,7 @@
 #include "D2Direct3D/d3dSubtileCache.h"
 #include "D2Direct3D/d3dTextureCache.h"
 #include "D2Game/D2QuestDataStrc.h"
+#include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Task.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/AI/Baal.h"
@@ -1757,7 +1758,7 @@ extern uint32_t gnMonsterModePrecacheCount;
 extern uint32_t gnBlizzardSoundPlayed;
 extern uint32_t gbLightmapColorEnabled;
 extern D2SeedStrc * gpArcaneStarsSeed;
-extern uint32_t CLIENT_ArenaFlags;
+extern eD2ArenaFlags CLIENT_ArenaFlags;
 extern eD2PlayerClassIDDWORD eD2PlayerClassIDDWORD_00712f00;
 extern int gnChatHistoryReadIndex;
 extern uint32_t gnChatHistoryWriteIndex;

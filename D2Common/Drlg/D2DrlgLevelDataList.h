@@ -10,7 +10,7 @@
 
 // Forward declarations
 struct D2DrlgLevelPlacementStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 #ifndef RECON_FPTD_fpLevelDataEntry
 #define RECON_FPTD_fpLevelDataEntry
 typedef BOOL (__fastcall *fpLevelDataEntry)(struct D2DrlgLevelPlacementStrc * pLevelUnknown);

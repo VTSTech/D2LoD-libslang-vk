@@ -15,7 +15,7 @@ struct D2SeedStrc;
 struct D2SkillArgStrc;
 struct D2UnitStrc;
 struct D2fpSkillFuncArg;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 #ifndef RECON_FPTD_fpMissileSrvDoFuncData
 #define RECON_FPTD_fpMissileSrvDoFuncData
 typedef int (__fastcall *fpMissileSrvDoFuncData)(struct D2UnitStrc * pUnit, void * pContext);

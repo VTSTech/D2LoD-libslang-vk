@@ -16,8 +16,8 @@ struct D2MonsterAiParameterStruct;
 struct D2ServerMessageHandleStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
-typedef int eMissilesId;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eMissilesId;
 struct D2AiParamStrc;
 #ifndef RECON_FPTD_AI_Main
 #define RECON_FPTD_AI_Main

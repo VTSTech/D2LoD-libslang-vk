@@ -302,8 +302,8 @@ void __fastcall PLRSKILLS_StateSetFn04_SourceUnit(D2UnitStrc * pUnit, eD2States 
       return;
     }
 
-    uint32_t eUnitType = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_source_unit_type, 0);
-    if (eUnitType >= 6) {
+    eD2UnitType eUnitType = D2Common::Stats::StatsEx::STATLIST_GetBaseStatValue(pStatList, UNITSTAT_source_unit_type, 0);
+    if (!(eUnitType < UNIT_COUNT)) {
       return;
     }
 
@@ -726,7 +726,7 @@ void __fastcall PLRSKILLS_StateSetFn10_Redeemed(D2UnitStrc * pUnit, eD2States eS
       return;
     }
 
-    pUnit->eUnitFlagsEx |= 0x40000;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW;
 }
 
@@ -771,7 +771,7 @@ void __fastcall PLRSKILLS_StateSetFn11_VineBeast(D2UnitStrc * pUnit, eD2States e
       return;
     }
 
-    pUnit->eUnitFlagsEx |= 0x40000;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
 }
 
 void __fastcall PLRSKILLS_StateSetFn12_Invis(D2UnitStrc * pUnit, eD2States eState) {
@@ -779,7 +779,7 @@ void __fastcall PLRSKILLS_StateSetFn12_Invis(D2UnitStrc * pUnit, eD2States eStat
       return;
     }
 
-    pUnit->eUnitFlagsEx |= 0x40000;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW;
 }
 
@@ -788,7 +788,7 @@ void __fastcall PLRSKILLS_StateRemFn08_Invis(D2UnitStrc * pUnit, eD2States eStat
       return;
     }
 
-    pUnit->eUnitFlagsEx &= -262145;
+    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
     pUnit->eUnitFlags &= ~UNITFLAG_DRAWSHADOW;
 }
 
@@ -1250,7 +1250,7 @@ void __fastcall STATES_SetStateOnUnit(D2UnitStrc * pUnit, eD2States eState) {
     if (bIsActive) {
       bActive = D2Common::DATATBLS::ItemStats::STATES_HasLightState(pUnit);
       if (bActive) {
-        pUnit->eUnitFlagsEx |= 0x40000;
+        pUnit->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
         pUnit->eUnitFlags = pUnit->eUnitFlags & ~UNITFLAG_TARGETABLE | UNITFLAG_DRAWSHADOW;
       }
     }

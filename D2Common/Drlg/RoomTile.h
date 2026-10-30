@@ -14,7 +14,7 @@ struct D2DrlgTileDataStrc;
 struct D2DrlgTileGridStrc;
 struct D2PoolManagerStrc;
 struct D2RoomExStrc;
-typedef int eD2GridCellFlags;
+typedef uint32_t eD2GridCellFlags;
 
 // Data types
 struct D2DrlgTileLinkStrc {

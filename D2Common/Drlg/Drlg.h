@@ -34,9 +34,9 @@ struct D2RoomStrc;
 struct D2UnitStrc;
 struct D2UnkOutdoorStrc;
 struct SGAMEDATA;
-typedef int eD2GridCellFlags;
-typedef int eD2Skills;
-typedef int eDrlgDirection;
+typedef uint32_t eD2GridCellFlags;
+typedef uint32_t eD2Skills;
+typedef uint32_t eDrlgDirection;
 typedef uint8_t eAct;
 struct D2DrlgLevelPlacementStrc;
 #ifndef RECON_FPTD_fAutoMap

@@ -15,7 +15,7 @@ struct D2UIMouseMsgStrc;
 struct D2UnitDataItemStrc;
 struct D2UnitStrc;
 struct IDirectSoundBuffer;
-typedef int eD2Sounds;
+typedef uint32_t eD2Sounds;
 #ifndef RECON_FPTD_DS3DB_SetMaxDistance
 #define RECON_FPTD_DS3DB_SetMaxDistance
 typedef HRESULT (__stdcall *DS3DB_SetMaxDistance)(void * This, float flMaxDistance, DWORD dwApply);

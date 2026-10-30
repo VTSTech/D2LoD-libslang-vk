@@ -809,7 +809,7 @@ bool __fastcall OBJECT_ClientFn_PeriodicOperate(D2UnitStrc * pUnit) {
       DVar1 = D2_SEED_NEXT(pUnit->sSeed);
       pUnit->sSeed = DVar1;
       pUnit->dwTickCount = DVar1.nSeedLow & 0x3f;
-      pUnit->eUnitFlagsEx = 1;
+      pUnit->eUnitFlagsEx = UNITFLAGEX_HASINV;
     }
     if (!(pUnit->dwTickCount & 0x3f) && pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
       pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
@@ -837,7 +837,7 @@ bool __fastcall OBJECT_ClientFn_PeriodicOperateWithSound(D2UnitStrc * pUnit) {
       DVar1 = D2_SEED_NEXT(pUnit->sSeed);
       pUnit->sSeed = DVar1;
       pUnit->dwTickCount = DVar1.nSeedLow & 0x3f;
-      pUnit->eUnitFlagsEx = 1;
+      pUnit->eUnitFlagsEx = UNITFLAGEX_HASINV;
     }
     if (!(pUnit->dwTickCount & 0x3f) && pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
       pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;

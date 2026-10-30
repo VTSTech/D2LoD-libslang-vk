@@ -11,7 +11,7 @@
 // Forward declarations
 struct D2PlayerListSubStrc;
 struct D2RosterLinkListStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2PlayerListStrc {

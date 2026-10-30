@@ -12,7 +12,7 @@
 struct D2RoomCoordListStrc;
 struct D2RoomStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterAnimMode;
+typedef uint32_t eD2MonsterAnimMode;
 
 // Data types
 struct __attribute__((packed)) D2UnknownCreateMonsterStrc {

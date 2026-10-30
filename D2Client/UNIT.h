@@ -10,8 +10,8 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eD2PlayerAnimMode;
-typedef int eD2UnitFlags;
+typedef uint32_t eD2PlayerAnimMode;
+typedef uint32_t eD2UnitFlags;
 
 namespace D2Client::UNIT {
 

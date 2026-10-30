@@ -19,9 +19,9 @@ struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ArenaFlags;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
+typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
 typedef uint8_t eD2PlayerClassID;
 #ifndef RECON_FPTD_fpForEachClientFn
 #define RECON_FPTD_fpForEachClientFn

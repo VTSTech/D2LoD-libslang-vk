@@ -21,7 +21,7 @@ using _EXCEPTION_DISPOSITION_ns::ExceptionNestedException;
 using _EXCEPTION_DISPOSITION_ns::ExceptionCollidedUnwind;
 #endif
 
-typedef int ADDRESS_MODE;
+typedef uint32_t ADDRESS_MODE;
 namespace ADDRESS_MODE_ns {
 constexpr ADDRESS_MODE AddrMode1616 = 0;
 constexpr ADDRESS_MODE AddrMode1632 = 1;
@@ -33,7 +33,7 @@ using ADDRESS_MODE_ns::AddrMode1632;
 using ADDRESS_MODE_ns::AddrModeReal;
 using ADDRESS_MODE_ns::AddrModeFlat;
 
-typedef int block_state;
+typedef uint32_t block_state;
 namespace block_state_ns {
 constexpr block_state need_more = 0;
 constexpr block_state block_done = 1;
@@ -45,7 +45,7 @@ using block_state_ns::block_done;
 using block_state_ns::finish_started;
 using block_state_ns::finish_done;
 
-typedef int D2AITypes;
+typedef uint32_t D2AITypes;
 namespace D2AITypes_ns {
 constexpr D2AITypes AI_DEFAULT = 0;
 constexpr D2AITypes AI_BASIC = 1;
@@ -61,7 +61,7 @@ using D2AITypes_ns::AI_SPECIAL;
 using D2AITypes_ns::AI_MULTILAYER;
 using D2AITypes_ns::AI_HIDDEN;
 
-typedef int D2CharSelCompFlags;
+typedef uint32_t D2CharSelCompFlags;
 namespace D2CharSelCompFlags_ns {
 constexpr D2CharSelCompFlags CHARSELCOMPFLAG_VISIBLE = 1;
 constexpr D2CharSelCompFlags CHARSELCOMPFLAG_DRAW_NAME_TITLE = 2;
@@ -93,7 +93,7 @@ using D2CharSelCompFlags_ns::CHARSELCOMPFLAG_SUPPRESS_LIST_RENDER;
 using D2CharSelCompFlags_ns::CHARSELCOMPFLAG_EXPANSION;
 using D2CharSelCompFlags_ns::CHARSELCOMPFLAG_DIMMED;
 
-typedef int D2ItemStatCostFlags;
+typedef uint32_t D2ItemStatCostFlags;
 namespace D2ItemStatCostFlags_ns {
 constexpr D2ItemStatCostFlags ITEMSTATCOSTFLAG_SEND_OTHER = 1;
 constexpr D2ItemStatCostFlags ITEMSTATCOSTFLAG_SIGNED = 2;
@@ -125,7 +125,7 @@ using D2ItemStatCostFlags_ns::ITEMSTATCOSTFLAG_FCALLBACK;
 using D2ItemStatCostFlags_ns::ITEMSTATCOSTFLAG_SAVED;
 using D2ItemStatCostFlags_ns::ITEMSTATCOSTFLAG_CSVSIGNED;
 
-typedef int D2LvlPrestId;
+typedef uint32_t D2LvlPrestId;
 namespace D2LvlPrestId_ns {
 constexpr D2LvlPrestId LVLPREST_NONE = 0;
 constexpr D2LvlPrestId LVLPREST_ACT_1_TOWN_1 = 1;
@@ -2359,7 +2359,7 @@ using D2MonsterDataMonType_ns::MONTYPE_POSSESSED;
 using D2MonsterDataMonType_ns::MONTYPE_GHOSTLY;
 using D2MonsterDataMonType_ns::MONTYPE_MULTISHOT;
 
-typedef int D2QServerClientReadFlags;
+typedef uint32_t D2QServerClientReadFlags;
 namespace D2QServerClientReadFlags_ns {
 constexpr D2QServerClientReadFlags QSRV_READFLAG_NONE = 0;
 constexpr D2QServerClientReadFlags QSRV_READFLAG_ENABLED = 1;
@@ -2369,7 +2369,7 @@ using D2QServerClientReadFlags_ns::QSRV_READFLAG_NONE;
 using D2QServerClientReadFlags_ns::QSRV_READFLAG_ENABLED;
 using D2QServerClientReadFlags_ns::QSRV_READFLAG_PENDING_IO;
 
-typedef int D2QServerClientWriteFlags;
+typedef uint32_t D2QServerClientWriteFlags;
 namespace D2QServerClientWriteFlags_ns {
 constexpr D2QServerClientWriteFlags QSRV_WRITEFLAG_NONE = 0;
 constexpr D2QServerClientWriteFlags QSRV_WRITEFLAG_ENABLED = 2;
@@ -2449,7 +2449,7 @@ constexpr define_WINVER WINVER = 2304;
 using define_WINVER_ns::WINVER;
 #endif
 
-typedef int DiabloDecision;
+typedef uint32_t DiabloDecision;
 namespace DiabloDecision_ns {
 constexpr DiabloDecision DECISION_NONE = 0;
 constexpr DiabloDecision DECISION_WALK_TO_TARGET = 1;
@@ -2485,7 +2485,7 @@ using DiabloDecision_ns::DECISION_SKILL6;
 using DiabloDecision_ns::DECISION_POSITIONING;
 using DiabloDecision_ns::DECISION_SPECIAL_TARGET;
 
-typedef int DNameStatus;
+typedef uint32_t DNameStatus;
 namespace DNameStatus_ns {
 constexpr DNameStatus DN_valid = 0;
 constexpr DNameStatus DN_invalid = 1;
@@ -2497,7 +2497,7 @@ using DNameStatus_ns::DN_invalid;
 using DNameStatus_ns::DN_truncated;
 using DNameStatus_ns::DN_error;
 
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 namespace DRAWMODE_ns {
 constexpr DRAWMODE DRAW_VERYTRANSPARENT = 0;
 constexpr DRAWMODE DRAW_TRANSPARENT = 1;
@@ -2639,7 +2639,7 @@ using eCollisionFlags_ns::COLLIDE_CORPSE;
 using eCollisionFlags_ns::COLLISION_WARP;
 using eCollisionFlags_ns::COLLISION_ALL;
 
-typedef int eD2ApplicationMode;
+typedef uint32_t eD2ApplicationMode;
 namespace eD2ApplicationMode_ns {
 constexpr eD2ApplicationMode APPMODE_mode0 = 0;
 constexpr eD2ApplicationMode APPMODE_client = 1;
@@ -2656,7 +2656,7 @@ using eD2ApplicationMode_ns::APPMODE_multiplayer;
 using eD2ApplicationMode_ns::APPMODE_launcher;
 using eD2ApplicationMode_ns::APPMODE_expand;
 
-typedef int eD2ArenaFlags;
+typedef uint32_t eD2ArenaFlags;
 namespace eD2ArenaFlags_ns {
 constexpr eD2ArenaFlags ARENAFLAG_DefaultActive = 1;
 constexpr eD2ArenaFlags ARENAFLAG_ArenaLevel = 2;
@@ -2682,7 +2682,7 @@ using eD2ArenaFlags_ns::ARENAFLAG_NoCubeRecipes;
 using eD2ArenaFlags_ns::ARENAFLAG_Expansion;
 using eD2ArenaFlags_ns::ARENAFLAG_Ladder;
 
-typedef int eD2BinFieldInputType;
+typedef uint32_t eD2BinFieldInputType;
 namespace eD2BinFieldInputType_ns {
 constexpr eD2BinFieldInputType FIELDTYPE_END = 0;
 constexpr eD2BinFieldInputType FIELDTYPE_ASCII = 1;
@@ -2782,7 +2782,7 @@ using eD2BodyLoc_ns::BODYLOC_SWAPPED_R_ARM;
 using eD2BodyLoc_ns::BODYLOC_SWAPPED_L_ARM;
 using eD2BodyLoc_ns::NUM_BODYLOCS;
 
-typedef int eD2BodyLocDWORD;
+typedef uint32_t eD2BodyLocDWORD;
 namespace eD2BodyLocDWORD_ns {
 constexpr eD2BodyLocDWORD BODYLOC_NONE = 0;
 constexpr eD2BodyLocDWORD BODYLOC_HEAD = 1;
@@ -2800,7 +2800,7 @@ constexpr eD2BodyLocDWORD BODYLOC_SWAPPED_L_ARM = 12;
 constexpr eD2BodyLocDWORD NUM_BODYLOCS = 13;
 }
 
-typedef int eD2ClientAppMode;
+typedef uint32_t eD2ClientAppMode;
 namespace eD2ClientAppMode_ns {
 constexpr eD2ClientAppMode APPMODE_CONTINUE = 1;
 constexpr eD2ClientAppMode APPMODE_ENTERGAME = 2;
@@ -2817,7 +2817,7 @@ using eD2ClientAppMode_ns::APPMODE_EXITGAME;
 using eD2ClientAppMode_ns::APPMODE_HOST;
 using eD2ClientAppMode_ns::APPMODE_RENDER;
 
-typedef int eD2CollisionShapeType;
+typedef uint32_t eD2CollisionShapeType;
 namespace eD2CollisionShapeType_ns {
 constexpr eD2CollisionShapeType COLLISION_PATTERN_NONE = 0;
 constexpr eD2CollisionShapeType COLLISION_PATTERN_SMALL_UNIT_PRESENCE = 1;
@@ -2833,7 +2833,7 @@ using eD2CollisionShapeType_ns::COLLISION_PATTERN_SMALL_PET_PRESENCE;
 using eD2CollisionShapeType_ns::COLLISION_PATTERN_BIG_PET_PRESENCE;
 using eD2CollisionShapeType_ns::COLLISION_PATTERN_SMALL_NO_PRESENCE;
 
-typedef int eD2CollisionUnitSize;
+typedef uint32_t eD2CollisionUnitSize;
 namespace eD2CollisionUnitSize_ns {
 constexpr eD2CollisionUnitSize COLLISION_UNIT_SIZE_NONE = 0;
 constexpr eD2CollisionUnitSize COLLISION_UNIT_SIZE_POINT = 1;
@@ -2857,14 +2857,14 @@ using eD2Difficulty_ns::DIFFICULTY_NORMAL;
 using eD2Difficulty_ns::DIFFICULTY_NIGHTMARE;
 using eD2Difficulty_ns::DIFFICULTY_HELL;
 
-typedef int eD2DifficultyDWORD;
+typedef uint32_t eD2DifficultyDWORD;
 namespace eD2DifficultyDWORD_ns {
 constexpr eD2DifficultyDWORD DIFFICULTY_NORMAL = 0;
 constexpr eD2DifficultyDWORD DIFFICULTY_NIGHTMARE = 1;
 constexpr eD2DifficultyDWORD DIFFICULTY_HELL = 2;
 }
 
-typedef int eD2DrlgType;
+typedef uint32_t eD2DrlgType;
 namespace eD2DrlgType_ns {
 constexpr eD2DrlgType DRLGTYPE_RandomMaze = 1;
 constexpr eD2DrlgType DRLGTYPE_PresetArea = 2;
@@ -2874,7 +2874,7 @@ using eD2DrlgType_ns::DRLGTYPE_RandomMaze;
 using eD2DrlgType_ns::DRLGTYPE_PresetArea;
 using eD2DrlgType_ns::DRLGTYPE_WildernessLevel;
 
-typedef int eD2DynamicPathFlags;
+typedef uint32_t eD2DynamicPathFlags;
 namespace eD2DynamicPathFlags_ns {
 constexpr eD2DynamicPathFlags PATH_ROOM_CHANGE = 1;
 constexpr eD2DynamicPathFlags PATH_ROOM_UNLINKED = 2;
@@ -2940,7 +2940,7 @@ using eD2ElementalDamageType_ns::ELEMENTAL_RANDOM;
 using eD2ElementalDamageType_ns::ELEMENTAL_BURNING;
 using eD2ElementalDamageType_ns::ELEMENTAL_FREEZE;
 
-typedef int eD2ElementalDamageTypeDWORD;
+typedef uint32_t eD2ElementalDamageTypeDWORD;
 namespace eD2ElementalDamageTypeDWORD_ns {
 constexpr eD2ElementalDamageTypeDWORD ELEMENTAL_NONE = 0;
 constexpr eD2ElementalDamageTypeDWORD ELEMENTAL_FIRE = 1;
@@ -2957,7 +2957,7 @@ constexpr eD2ElementalDamageTypeDWORD ELEMENTAL_BURNING = 11;
 constexpr eD2ElementalDamageTypeDWORD ELEMENTAL_FREEZE = 12;
 }
 
-typedef int eD2FormType;
+typedef uint32_t eD2FormType;
 namespace eD2FormType_ns {
 constexpr eD2FormType FORM_EditBox = 1;
 constexpr eD2FormType FORM_Image = 2;
@@ -2987,7 +2987,7 @@ using eD2FormType_ns::FORM_Popup;
 using eD2FormType_ns::FORM_AccountList;
 using eD2FormType_ns::FORM_ImageEx;
 
-typedef int eD2GridCellFlags;
+typedef uint32_t eD2GridCellFlags;
 namespace eD2GridCellFlags_ns {
 constexpr eD2GridCellFlags CELLFLAGS_NONE = 0;
 constexpr eD2GridCellFlags CELLFLAGS_0x01 = 1;
@@ -3019,7 +3019,7 @@ using eD2GridCellFlags_ns::CELLFLAGS_0x1000000;
 using eD2GridCellFlags_ns::CELLFLAGS_0x8000000;
 using eD2GridCellFlags_ns::CELLFLAGS_0x80000000;
 
-typedef int eD2GSConnectionType;
+typedef uint32_t eD2GSConnectionType;
 namespace eD2GSConnectionType_ns {
 constexpr eD2GSConnectionType CONNECTIONTYPE_SERVER = 0;
 constexpr eD2GSConnectionType CONNECTIONTYPE_SINGLEPLAYER = 1;
@@ -3029,7 +3029,7 @@ using eD2GSConnectionType_ns::CONNECTIONTYPE_SERVER;
 using eD2GSConnectionType_ns::CONNECTIONTYPE_SINGLEPLAYER;
 using eD2GSConnectionType_ns::CONNECTIONTYPE_SINGLEPLAYERUNCAPPED;
 
-typedef int eD2GSGameType;
+typedef uint32_t eD2GSGameType;
 namespace eD2GSGameType_ns {
 constexpr eD2GSGameType GAMETYPE_SINGLEPLAYER = 0;
 constexpr eD2GSGameType GAMETYPE_SINGLEPLAYER_UNCAPPED = 1;
@@ -3097,7 +3097,7 @@ using eD2InventoryGridType_ns::INVENTORY_GRID_TYPE_BODYLOC;
 using eD2InventoryGridType_ns::INVENTORY_GRID_TYPE_SWAPPED;
 using eD2InventoryGridType_ns::NUM_INVENTORY_GRID_TYPES;
 
-typedef int eD2ItemAnimMode;
+typedef uint32_t eD2ItemAnimMode;
 namespace eD2ItemAnimMode_ns {
 constexpr eD2ItemAnimMode Container = 0;
 constexpr eD2ItemAnimMode Equipment = 1;
@@ -3115,7 +3115,7 @@ using eD2ItemAnimMode_ns::Cursor;
 using eD2ItemAnimMode_ns::Dropped;
 using eD2ItemAnimMode_ns::InItem;
 
-typedef int eD2ItemCmd;
+typedef uint32_t eD2ItemCmd;
 namespace eD2ItemCmd_ns {
 constexpr eD2ItemCmd ITEMCMD_DELETE = 1;
 constexpr eD2ItemCmd ITEMCMD_INVENTORY_PUT_ITEM = 2;
@@ -3231,7 +3231,7 @@ using eD2ItemFlag_ns::ITEMFLAG_STAFFMODS;
 using eD2ItemFlag_ns::ITEMFLAG_CURSED;
 using eD2ItemFlag_ns::ITEMFLAG_DROW;
 
-typedef int eD2ItemQuality;
+typedef uint32_t eD2ItemQuality;
 namespace eD2ItemQuality_ns {
 constexpr eD2ItemQuality QUALITY_INVALID = 0;
 constexpr eD2ItemQuality QUALITY_LOW = 1;
@@ -3283,7 +3283,7 @@ using eD2ItemStatOp_ns::STATOP_PER_LEVEL_VITALITY;
 using eD2ItemStatOp_ns::STATOP_PERCENT_OF_VALUE;
 using eD2ItemStatOp_ns::STATOP_ADD_IF_ITEM_BASE;
 
-typedef int eD2ItemTypes;
+typedef uint32_t eD2ItemTypes;
 namespace eD2ItemTypes_ns {
 constexpr eD2ItemTypes ITEMTYPE_None1 = 0;
 constexpr eD2ItemTypes ITEMTYPE_None2 = 1;
@@ -3493,7 +3493,7 @@ using eD2ItemTypes_ns::ITEMTYPE_Sapphire;
 using eD2ItemTypes_ns::ITEMTYPE_Topaz;
 using eD2ItemTypes_ns::ITEMTYPE_Skull;
 
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 namespace eD2LevelId_ns {
 constexpr eD2LevelId LEVEL_None = 0;
 constexpr eD2LevelId LEVEL_RogueEncampment = 1;
@@ -3771,7 +3771,7 @@ using eD2LevelId_ns::LEVEL_FogottenSands;
 using eD2LevelId_ns::LEVEL_FurnaceofPain;
 using eD2LevelId_ns::LEVEL_UberTristram;
 
-typedef int eD2MissileHitFlags;
+typedef uint32_t eD2MissileHitFlags;
 namespace eD2MissileHitFlags_ns {
 constexpr eD2MissileHitFlags HITFLAG_SRCDAMAGE_MISSILE = 1;
 constexpr eD2MissileHitFlags HITFLAG_SUCCESSFUL_CRITICAL_HIT = 2;
@@ -3813,7 +3813,7 @@ using eD2MissileResultFlags_ns::RESULTFLAG_AVOID;
 using eD2MissileResultFlags_ns::RESULTFLAG_SOFTHIT;
 using eD2MissileResultFlags_ns::RESULTFLAG_WEAPONBLOCK;
 
-typedef int eD2MonsterAnimMode;
+typedef uint32_t eD2MonsterAnimMode;
 namespace eD2MonsterAnimMode_ns {
 constexpr eD2MonsterAnimMode Death = 0;
 constexpr eD2MonsterAnimMode Neutral = 1;
@@ -3836,7 +3836,7 @@ using eD2MonsterAnimMode_ns::Death;
 using eD2MonsterAnimMode_ns::Walk;
 using eD2MonsterAnimMode_ns::Knockback;
 
-typedef int eD2MonsterClassId;
+typedef uint32_t eD2MonsterClassId;
 namespace eD2MonsterClassId_ns {
 constexpr eD2MonsterClassId MonsterUnitSkeleton1 = 0;
 constexpr eD2MonsterClassId MonsterUnitReturned1 = 1;
@@ -5210,7 +5210,7 @@ constexpr eD2MonsterType MONTYPE_GHOSTLY = 64;
 constexpr eD2MonsterType MONTYPE_MULTISHOT = 128;
 }
 
-typedef int eD2NpcUiState;
+typedef uint32_t eD2NpcUiState;
 namespace eD2NpcUiState_ns {
 constexpr eD2NpcUiState NPCUI_NONE = 0;
 constexpr eD2NpcUiState NPCUI_MENU = 1;
@@ -5232,7 +5232,7 @@ using eD2NpcUiState_ns::NPCUI_ITEM_SERVICE;
 using eD2NpcUiState_ns::NPCUI_WAIT_SERVER;
 using eD2NpcUiState_ns::NPCUI_TRADE_REJECTED;
 
-typedef int eD2ObjectAnimMode;
+typedef uint32_t eD2ObjectAnimMode;
 namespace eD2ObjectAnimMode_ns {
 constexpr eD2ObjectAnimMode Neutral = 0;
 constexpr eD2ObjectAnimMode Operating = 1;
@@ -5293,7 +5293,7 @@ using eD2ObjectClientFn_ns::OBJCLIENTFN_TWO_STAGE_ANIM;
 using eD2ObjectClientFn_ns::OBJCLIENTFN_ZOO;
 using eD2ObjectClientFn_ns::OBJCLIENTFN_ZOO_KEEPER;
 
-typedef int eD2PathTypes;
+typedef uint32_t eD2PathTypes;
 namespace eD2PathTypes_ns {
 constexpr eD2PathTypes PATHTYPE_IDASTAR = 0;
 constexpr eD2PathTypes PATHTYPE_ASTAR_ALT = 1;
@@ -5335,7 +5335,7 @@ using eD2PathTypes_ns::PATHTYPE_MISSILE_STREAM;
 using eD2PathTypes_ns::PATH_TYPE_NONE;
 using eD2PathTypes_ns::PATH_TYPE_BEST;
 
-typedef int eD2PlayerAnimMode;
+typedef uint32_t eD2PlayerAnimMode;
 namespace eD2PlayerAnimMode_ns {
 constexpr eD2PlayerAnimMode Death = 0;
 constexpr eD2PlayerAnimMode Neutral = 1;
@@ -5384,7 +5384,7 @@ using eD2PlayerClassID_ns::CLASS_DRUID;
 using eD2PlayerClassID_ns::CLASS_ASSASSIN;
 using eD2PlayerClassID_ns::CLASS_COUNT;
 
-typedef int eD2PlayerClassIDDWORD;
+typedef uint32_t eD2PlayerClassIDDWORD;
 namespace eD2PlayerClassIDDWORD_ns {
 constexpr eD2PlayerClassIDDWORD CLASS_AMAZON = 0;
 constexpr eD2PlayerClassIDDWORD CLASS_SORCERESS = 1;
@@ -5416,7 +5416,7 @@ using eD2PlayerStatus_ns::PLAYERSTATUS_Expansion;
 using eD2PlayerStatus_ns::PLAYERSTATUS_Ladder;
 using eD2PlayerStatus_ns::PLAYERSTATUS_Unk7;
 
-typedef int eD2Quests;
+typedef uint32_t eD2Quests;
 namespace eD2Quests_ns {
 constexpr eD2Quests QUEST_SpokeToWarriv = 0;
 constexpr eD2Quests QUEST_DenOfEvil = 1;
@@ -5506,7 +5506,7 @@ using eD2Quests_ns::QUEST_EveOfDestruction;
 using eD2Quests_ns::QUEST_Respec;
 using eD2Quests_ns::QUEST_ActIntroduced;
 
-typedef int eD2QuestsInternal;
+typedef uint32_t eD2QuestsInternal;
 namespace eD2QuestsInternal_ns {
 constexpr eD2QuestsInternal QUESTINT_SpokeToWarriv = 0;
 constexpr eD2QuestsInternal QUESTINT_DenOfEvil = 1;
@@ -5592,7 +5592,7 @@ using eD2QuestsInternal_ns::QUESTINT_SimpleQuest2;
 using eD2QuestsInternal_ns::QUESTINT_SimpleQuest3;
 using eD2QuestsInternal_ns::QUESTINT_SimpleQuest4;
 
-typedef int eD2QuestState;
+typedef uint32_t eD2QuestState;
 namespace eD2QuestState_ns {
 constexpr eD2QuestState QUESTSTATE_Completed = 0;
 constexpr eD2QuestState QUESTSTATE_RewardAwaits = 1;
@@ -5628,7 +5628,7 @@ using eD2QuestState_ns::QUESTSTATE_JustCompleted;
 using eD2QuestState_ns::QUESTSTATE_CannotCompleteQuestInGame;
 using eD2QuestState_ns::QUESTSTATE_FinishedInPreviousGame;
 
-typedef int eD2RendererMode;
+typedef uint32_t eD2RendererMode;
 namespace eD2RendererMode_ns {
 constexpr eD2RendererMode RENDERER_Unused0 = 0;
 constexpr eD2RendererMode RENDERER_Windowed = 1;
@@ -5648,7 +5648,7 @@ using eD2RendererMode_ns::RENDERED_Unused5;
 using eD2RendererMode_ns::RENDERER_Direct3D;
 using eD2RendererMode_ns::RENDERER_COUNT;
 
-typedef int eD2ServerIncomingStatus;
+typedef uint32_t eD2ServerIncomingStatus;
 namespace eD2ServerIncomingStatus_ns {
 constexpr eD2ServerIncomingStatus SERVERSTATUS_OK = 0;
 constexpr eD2ServerIncomingStatus SERVERSTATUS_BAD_TARGET = 1;
@@ -5754,7 +5754,7 @@ using eD2SkillCalcToken_ns::TOKEN_CUSTOM_RAW_CONSTANT;
 using eD2SkillCalcToken_ns::TOKEN_CUSTOM_FUNCTION_PARAMETER_CONSTANT;
 using eD2SkillCalcToken_ns::TOKEN_CUSTOM_FUNCTION_TABLE;
 
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 namespace eD2Skills_ns {
 constexpr eD2Skills SKILL_Attack = 0;
 constexpr eD2Skills SKILL_Kick = 1;
@@ -6472,7 +6472,7 @@ using eD2Skills_ns::SKILL_UnHolyBoltEx;
 using eD2Skills_ns::SKILL_ShamanFireEx;
 using eD2Skills_ns::SKILL_ImpFireMissileEx;
 
-typedef int eD2SoundEnviron;
+typedef uint32_t eD2SoundEnviron;
 namespace eD2SoundEnviron_ns {
 constexpr eD2SoundEnviron SOUNDENVIRON_NONE = 0;
 constexpr eD2SoundEnviron SOUNDENVIRON_TOWN_1 = 1;
@@ -6548,7 +6548,7 @@ using eD2SoundEnviron_ns::SOUNDENVIRON_LAVA;
 using eD2SoundEnviron_ns::SOUNDENVIRON_DIABLO_LAIR;
 using eD2SoundEnviron_ns::SOUNDENVIRON_GUILD;
 
-typedef int eD2Sounds;
+typedef uint32_t eD2Sounds;
 namespace eD2Sounds_ns {
 constexpr eD2Sounds SOUND_NONE = 0;
 constexpr eD2Sounds SOUND_CURSOR_PASS = 1;
@@ -13724,7 +13724,7 @@ using eD2Sounds_ns::SOUND_MUSIC_QUEST_MEPHISTO;
 using eD2Sounds_ns::SOUND_MUSIC_QUEST_RADAMENT;
 using eD2Sounds_ns::SOUND_MUSIC_QUEST_TAINTED;
 
-typedef int eD2States;
+typedef uint32_t eD2States;
 namespace eD2States_ns {
 constexpr eD2States STATE_none = 0;
 constexpr eD2States STATE_freeze = 1;
@@ -14098,7 +14098,7 @@ using eD2States_ns::STATE_passive_resistcold;
 using eD2States_ns::STATE_passive_resistltng;
 using eD2States_ns::STATE_uberminion;
 
-typedef int eD2StatListFlags;
+typedef uint32_t eD2StatListFlags;
 namespace eD2StatListFlags_ns {
 constexpr eD2StatListFlags STATLIST_USESKILL = 1;
 constexpr eD2StatListFlags STATLIST_HASEXPIRED = 2;
@@ -14297,7 +14297,7 @@ using eD2TimerType_ns::UNITEVENTCALLBACK_REFRESHVENDOR;
 using eD2TimerType_ns::UNITEVENTCALLBACK_REMOVESKILLCOOLDOWN;
 using eD2TimerType_ns::UNITEVENTCALLBACK_COUNT;
 
-typedef int eD2TimerTypeDWORD;
+typedef uint32_t eD2TimerTypeDWORD;
 namespace eD2TimerTypeDWORD_ns {
 constexpr eD2TimerTypeDWORD UNITEVENTCALLBACK_MODECHANGE = 0;
 constexpr eD2TimerTypeDWORD UNITEVENTCALLBACK_ENDANIM = 1;
@@ -14320,7 +14320,7 @@ constexpr eD2TimerTypeDWORD UNITEVENTCALLBACK_REMOVESKILLCOOLDOWN = 14;
 constexpr eD2TimerTypeDWORD UNITEVENTCALLBACK_COUNT = 15;
 }
 
-typedef int eD2TradeState;
+typedef uint32_t eD2TradeState;
 namespace eD2TradeState_ns {
 constexpr eD2TradeState TRADESTATE_NONE = 0;
 constexpr eD2TradeState TRADESTATE_INIT_SIDE_A = 1;
@@ -14358,7 +14358,7 @@ using eD2TradeState_ns::TRADESTATE_LOCK2_BEGIN;
 using eD2TradeState_ns::TRADESTATE_LOCK2_SETTLE;
 using eD2TradeState_ns::TRADESTATE_LOCK2_WAIT;
 
-typedef int eD2UIvars;
+typedef uint32_t eD2UIvars;
 namespace eD2UIvars_ns {
 constexpr eD2UIvars UI_GAME = 0;
 constexpr eD2UIvars UI_INVENTORY = 1;
@@ -14436,7 +14436,7 @@ using eD2UIvars_ns::UI_HIREICONS;
 using eD2UIvars_ns::UI_MERCINV;
 using eD2UIvars_ns::UI_RECIPESCROLL;
 
-typedef int eD2UIvarsSetType;
+typedef uint32_t eD2UIvarsSetType;
 namespace eD2UIvarsSetType_ns {
 constexpr eD2UIvarsSetType UI_SET = 0;
 constexpr eD2UIvarsSetType UI_RESET = 1;
@@ -14446,7 +14446,7 @@ using eD2UIvarsSetType_ns::UI_SET;
 using eD2UIvarsSetType_ns::UI_RESET;
 using eD2UIvarsSetType_ns::UI_TOGGLE;
 
-typedef int eD2UnitFlags;
+typedef uint32_t eD2UnitFlags;
 namespace eD2UnitFlags_ns {
 constexpr eD2UnitFlags UNITFLAG_DOUPDATE = 1;
 constexpr eD2UnitFlags UNITFLAG_TARGETABLE = 2;
@@ -14508,7 +14508,7 @@ using eD2UnitFlags_ns::UNITFLAG_AUTOMAP2;
 using eD2UnitFlags_ns::UNITFLAG_PETIGNORE;
 using eD2UnitFlags_ns::UNITFLAG_ISREVIVE;
 
-typedef int eD2UnitFlagsEx;
+typedef uint32_t eD2UnitFlagsEx;
 namespace eD2UnitFlagsEx_ns {
 constexpr eD2UnitFlagsEx UNITFLAGEX_HASINV = 1;
 constexpr eD2UnitFlagsEx UNITFLAGEX_UPDATEINV = 2;
@@ -14540,7 +14540,7 @@ using eD2UnitFlagsEx_ns::UNITFLAGEX_NODRAW;
 using eD2UnitFlagsEx_ns::UNITFLAGEX_ISEXPANSION;
 using eD2UnitFlagsEx_ns::UNITFLAGEX_SERVERUNIT;
 
-typedef int eD2UnitModeAction;
+typedef uint32_t eD2UnitModeAction;
 namespace eD2UnitModeAction_ns {
 constexpr eD2UnitModeAction UNITMODEACTION_INTERACT = 1;
 constexpr eD2UnitModeAction UNITMODEACTION_ATTACK = 2;
@@ -14582,7 +14582,7 @@ using eD2UnitModeAction_ns::UNITMODEACTION_RIGHTSKILL_UNIT4;
 using eD2UnitModeAction_ns::UNITMODEACTION_RIGHTSKILL_12;
 using eD2UnitModeAction_ns::UNITMODEACTION_ITEM_INTERACT;
 
-typedef int eD2UnitStat;
+typedef uint32_t eD2UnitStat;
 namespace eD2UnitStat_ns {
 constexpr eD2UnitStat UNITSTAT_strength = 0;
 constexpr eD2UnitStat UNITSTAT_energy = 1;
@@ -15304,7 +15304,7 @@ using eD2UnitStat_ns::UNITSTAT_questitemdifficulty;
 using eD2UnitStat_ns::UNITSTAT_passive_mag_mastery;
 using eD2UnitStat_ns::UNITSTAT_passive_mag_pierce;
 
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 namespace eD2UnitType_ns {
 constexpr eD2UnitType UNIT_PLAYER = 0;
 constexpr eD2UnitType UNIT_MONSTER = 1;
@@ -15322,7 +15322,7 @@ using eD2UnitType_ns::UNIT_ITEM;
 using eD2UnitType_ns::UNIT_WARP;
 using eD2UnitType_ns::UNIT_COUNT;
 
-typedef int eD2UnknownFlags;
+typedef uint32_t eD2UnknownFlags;
 namespace eD2UnknownFlags_ns {
 constexpr eD2UnknownFlags FLAG_1 = 1;
 constexpr eD2UnknownFlags FLAG_HARDCORE = 2048;
@@ -15334,7 +15334,7 @@ using eD2UnknownFlags_ns::FLAG_HARDCORE;
 using eD2UnknownFlags_ns::FLAG_EXPANSION;
 using eD2UnknownFlags_ns::FLAG_800000;
 
-typedef int eDrlgDirection;
+typedef uint32_t eDrlgDirection;
 namespace eDrlgDirection_ns {
 constexpr eDrlgDirection DIRECTION_SOUTHEAST = 0;
 constexpr eDrlgDirection DIRECTION_NORTHEAST = 1;
@@ -15348,7 +15348,7 @@ using eDrlgDirection_ns::DIRECTION_SOUTHWEST;
 using eDrlgDirection_ns::DIRECTION_NORTHWEST;
 using eDrlgDirection_ns::DIRECTION_INVALID;
 
-typedef int eFOG_ErrorType;
+typedef uint32_t eFOG_ErrorType;
 namespace eFOG_ErrorType_ns {
 constexpr eFOG_ErrorType ERROR_NoError = 0;
 constexpr eFOG_ErrorType ERROR_UnknownError = 1;
@@ -15374,7 +15374,7 @@ using eFOG_ErrorType_ns::ERROR_MissingDll;
 using eFOG_ErrorType_ns::ERROR_RegistryError;
 using eFOG_ErrorType_ns::ERROR_Deadlock;
 
-typedef int eInventoryBodyLoc;
+typedef uint32_t eInventoryBodyLoc;
 namespace eInventoryBodyLoc_ns {
 constexpr eInventoryBodyLoc BODY_rArm = 0;
 constexpr eInventoryBodyLoc BODY_torso = 1;
@@ -15436,7 +15436,7 @@ using eInventoryPage_ns::INVPAGE_Druid;
 using eInventoryPage_ns::INVPAGE_Assassin;
 using eInventoryPage_ns::INVPAGE_None;
 
-typedef int eLvlTypes;
+typedef uint32_t eLvlTypes;
 namespace eLvlTypes_ns {
 constexpr eLvlTypes NONE = 0;
 constexpr eLvlTypes ACT1_TOWN = 1;
@@ -15512,7 +15512,7 @@ using eLvlTypes_ns::ACT5_ICE_CAVES;
 using eLvlTypes_ns::ACT5_BAAL;
 using eLvlTypes_ns::ACT5_LAVA;
 
-typedef int eMissilesId;
+typedef uint32_t eMissilesId;
 namespace eMissilesId_ns {
 constexpr eMissilesId MISSILE_Arrow = 0;
 constexpr eMissilesId MISSILE_Javelin = 1;
@@ -16884,7 +16884,7 @@ using eMissilesId_ns::MISSILE_Vampiremeteorfire;
 using eMissilesId_ns::MISSILE_Strafearrow;
 using eMissilesId_ns::MISSILE_Strafebolt;
 
-typedef int enum_3269;
+typedef uint32_t enum_3269;
 namespace enum_3269_ns {
 constexpr enum_3269 INTRNCVT_OK = 0;
 constexpr enum_3269 INTRNCVT_OVERFLOW = 1;
@@ -16894,7 +16894,7 @@ using enum_3269_ns::INTRNCVT_OK;
 using enum_3269_ns::INTRNCVT_OVERFLOW;
 using enum_3269_ns::INTRNCVT_UNDERFLOW;
 
-typedef int eOogCurrentCharSelectionMode;
+typedef uint32_t eOogCurrentCharSelectionMode;
 namespace eOogCurrentCharSelectionMode_ns {
 constexpr eOogCurrentCharSelectionMode CHAR_SELECTION_SP = 0;
 constexpr eOogCurrentCharSelectionMode CHAR_SELECTION_BNET = 1;
@@ -16906,7 +16906,7 @@ using eOogCurrentCharSelectionMode_ns::CHAR_SELECTION_BNET;
 using eOogCurrentCharSelectionMode_ns::CHAR_SELECTION_TCP_IP;
 using eOogCurrentCharSelectionMode_ns::CHAR_SELECTION_BNET_OPEN_Unsure;
 
-typedef int eOogErrorCode;
+typedef uint32_t eOogErrorCode;
 namespace eOogErrorCode_ns {
 constexpr eOogErrorCode OOG_ERROR_1 = 1;
 constexpr eOogErrorCode OOG_ERROR_2 = 2;
@@ -16964,7 +16964,7 @@ using eOogErrorCode_ns::OOG_ERROR_CREATE_ACCOUNT_7;
 using eOogErrorCode_ns::OOG_ERROR_CREATE_ACCOUNT_8;
 using eOogErrorCode_ns::OOG_ERROR_CUSTOM_MESSAGE;
 
-typedef int eOverlayId;
+typedef uint32_t eOverlayId;
 namespace eOverlayId_ns {
 constexpr eOverlayId OVERLAY_null = 0;
 constexpr eOverlayId OVERLAY_lightning = 1;
@@ -17556,7 +17556,7 @@ using eOverlayId_ns::OVERLAY_cobrastrike1;
 using eOverlayId_ns::OVERLAY_cobrastrike2;
 using eOverlayId_ns::OVERLAY_cobrastrike3;
 
-typedef int ePetType;
+typedef uint32_t ePetType;
 namespace ePetType_ns {
 constexpr ePetType PETTYPE_none = 0;
 constexpr ePetType PETTYPE_single = 1;
@@ -17600,7 +17600,7 @@ using ePetType_ns::PETTYPE_assassintrap;
 using ePetType_ns::PETTYPE_pettrap;
 using ePetType_ns::PETTYPE_hydra;
 
-typedef int eSkillEType;
+typedef uint32_t eSkillEType;
 namespace eSkillEType_ns {
 constexpr eSkillEType Physical = 0;
 constexpr eSkillEType Fire = 1;
@@ -17642,7 +17642,7 @@ using eTCFlags_ns::TC_Expansion;
 using eTCFlags_ns::TC_Unique;
 using eTCFlags_ns::TC_Set;
 
-typedef int GLOBALPALLETE;
+typedef uint32_t GLOBALPALLETE;
 namespace GLOBALPALLETE_ns {
 constexpr GLOBALPALLETE PALETTE_RED = 1;
 constexpr GLOBALPALLETE PALETTE_GREEN = 2;
@@ -17703,7 +17703,7 @@ constexpr MONSTATSEX05 noUniqueShift = 64;
 }
 using MONSTATSEX05_ns::isSmall;
 
-typedef int SectionFlags;
+typedef uint32_t SectionFlags;
 namespace SectionFlags_ns {
 #ifndef _WIN32  // provided by <windows.h>/<winnt.h> on Windows
 constexpr SectionFlags IMAGE_SCN_TYPE_NO_PAD = 8;
@@ -17785,7 +17785,7 @@ using SectionFlags_ns::IMAGE_SCN_MEM_READ;
 using SectionFlags_ns::IMAGE_SCN_MEM_WRITE;
 #endif
 
-typedef int Tokens;
+typedef uint32_t Tokens;
 
 typedef uint8_t TXTMonStats2Field0x04;
 namespace TXTMonStats2Field0x04_ns {
@@ -17826,7 +17826,7 @@ using TXTMonStats2Field0x04_ns::objCol;
 using TXTMonStats2Field0x04_ns::deadCol;
 using TXTMonStats2Field0x04_ns::unflatDead;
 
-typedef int TXTMonStats2Field0x04DWORD;
+typedef uint32_t TXTMonStats2Field0x04DWORD;
 namespace TXTMonStats2Field0x04DWORD_ns {
 constexpr TXTMonStats2Field0x04DWORD noGfxHitTest = 0;
 constexpr TXTMonStats2Field0x04DWORD noMap = 1;
@@ -17851,7 +17851,7 @@ constexpr TXTMonStats2Field0x04DWORD deadCol = 19;
 constexpr TXTMonStats2Field0x04DWORD unflatDead = 20;
 }
 
-typedef int TxtMonStatsField0x0c;
+typedef uint32_t TxtMonStatsField0x0c;
 namespace TxtMonStatsField0x0c_ns {
 constexpr TxtMonStatsField0x0c isSpawn = 0;
 constexpr TxtMonStatsField0x0c isMelee = 1;
@@ -17913,7 +17913,7 @@ using TxtMonStatsField0x0c_ns::NoShldBlock;
 using TxtMonStatsField0x0c_ns::noaura;
 using TxtMonStatsField0x0c_ns::rangedtype;
 
-typedef int XACTCONST;
+typedef uint32_t XACTCONST;
 namespace XACTCONST_ns {
 constexpr XACTCONST XACTCONST_TIMEOUTINFINITE = 0;
 }

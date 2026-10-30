@@ -19,13 +19,13 @@ struct D2SkillStrc;
 struct D2StatListExStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2ItemTypes;
-typedef int eD2LevelId;
-typedef int eD2MonsterAnimMode;
-typedef int eD2States;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitStat;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2MonsterAnimMode;
+typedef uint32_t eD2States;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitStat;
 #ifndef RECON_FPTD_PFN_StatExpireCallback
 #define RECON_FPTD_PFN_StatExpireCallback
 typedef void (__fastcall *PFN_StatExpireCallback)(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);

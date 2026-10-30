@@ -14,7 +14,7 @@ struct D2RoomStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitFindDataStrc;
 struct D2UnitStrc;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_UNITFINDTEST
 #define RECON_FPTD_UNITFINDTEST
 typedef int (__fastcall *UNITFINDTEST)(struct D2UnitStrc * pUnit, struct D2UnitFindArgStrc * pUnitFindArg);

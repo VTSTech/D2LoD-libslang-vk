@@ -1480,7 +1480,7 @@ static void __stdcall UNITS_ProcessDeadOrInactiveMonster(::SGAMEDATA * pGame, D2
       bShouldSave = true;
     }
     if (pPetRecord) {
-      pUnit->eUnitFlagsEx |= 0x100;
+      pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
       if (bShouldSave) {
         SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
       }
@@ -1545,7 +1545,7 @@ void __fastcall SERVER_GAME_UNIT_method(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
         if (eState != STATE_none) {
           save_and_unlink:
           GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ENDANIM, 0);
-          pUnit->eUnitFlagsEx |= 0x100;
+          pUnit->eUnitFlagsEx |= UNITFLAGEX_HASBEENDELETED;
           SUNITINACTIVE_SaveInactiveUnit(pGame, pUnit);
           D2Common::Unit::DRLGROOM_ClearUnitRoomLink(pUnit);
           return;

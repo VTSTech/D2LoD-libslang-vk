@@ -13,7 +13,7 @@
 struct D2DrlgLevelStrc;
 struct D2DrlgStrc;
 struct D2RoomExStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 typedef uint8_t eAct;
 
 // Data types

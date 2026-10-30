@@ -20,9 +20,9 @@ struct D2ServerMessageHandleStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
 typedef int eD2ItemFlag;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitStat;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
 typedef uint8_t eInventoryPage;
 #ifndef RECON_FPTD_D2ItemSpellDestroy
 #define RECON_FPTD_D2ItemSpellDestroy

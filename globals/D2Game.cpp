@@ -591,32 +591,32 @@ D2PlayerModeFnPairStrc gaPlayerModeMoveFuncs[20] = {
 D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
     {
         /* .fpShrineHandler = */ nullptr,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_RefillFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_HealthBoostFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ManaBoostFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_HealthExchangeFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ManaExchangeFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
@@ -626,7 +626,7 @@ D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_CombatBoostFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_shrine_combat
     },
     {
@@ -671,42 +671,42 @@ D2ShrinesTableEntryStrc OBJECTSHRINEFUNCTION[24] = {
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ShrineOfEnirhsFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_PortalShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_GemShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_StormShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_WarpingShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_ExplodingShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ &D2Game::Objects::ObjectsMode::Shrines_PoisonShrineFunction,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     },
     {
         /* .fpShrineHandler = */ nullptr,
-        /* .eStat = */ -1,
+        /* .eStat = */ (eD2UnitStat)-1,
         /* .nState = */ STATE_none
     }
 }; D2_GLOBAL_GUARD(OBJECTSHRINEFUNCTION, "OBJECTSHRINEFUNCTION");

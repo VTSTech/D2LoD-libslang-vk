@@ -15,8 +15,8 @@ struct D2RoomCoordListStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
-typedef int eD2MonsterAnimMode;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2MonsterAnimMode;
 
 namespace D2Game::Monsters::Spawn {
 

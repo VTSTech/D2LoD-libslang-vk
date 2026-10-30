@@ -21,9 +21,9 @@ struct D2StatListExStrc;
 struct D2UnitDataItemDetailsStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemCmd;
 typedef int eD2ItemFlag;
-typedef int eD2PlayerClassIDDWORD;
+typedef uint32_t eD2ItemCmd;
+typedef uint32_t eD2PlayerClassIDDWORD;
 typedef uint8_t eD2BodyLoc;
 typedef uint8_t eInventoryPage;
 #ifndef RECON_FPTD_pfnItemTransactionCb

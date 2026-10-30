@@ -16,9 +16,9 @@ struct D2GfxLightStrc;
 struct D2GfxTileRectStrc;
 struct D2SmackerContextStrc;
 struct D2TileLibraryEntryStrc;
-typedef int DRAWMODE;
-typedef int GLOBALPALLETE;
-typedef int eD2RendererMode;
+typedef uint32_t DRAWMODE;
+typedef uint32_t GLOBALPALLETE;
+typedef uint32_t eD2RendererMode;
 
 // Data types
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows

@@ -1512,7 +1512,7 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       int32_t eCollisionFlag;
       pTarget = UNIT::SUnit::GetTargetEx(pGame2, pUnit);
       if (!pTarget) {
-        nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, (uint32_t*)&eSkill, &nDestY);
+        nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &eSkill, &nDestY);
         if (!nResult) {
           goto cancel_skill;
         }
@@ -1550,7 +1550,7 @@ BOOL __fastcall SKILLBAR_SrvStFn40_Leap(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       eSkill = local_18.x;
       nDestY = local_18.y;
     } else {
-      nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, (uint32_t*)&eSkill, &nDestY);
+      nResult = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame2, pUnit, &eSkill, &nDestY);
       if (!nResult) {
         return 0;
       }
@@ -1856,7 +1856,7 @@ BOOL __fastcall SKILLBAR_SrvStFn41_LeapAttack(::SGAMEDATA * pGame, D2UnitStrc * 
     }
 
     D2UnitStrc* pUnit_00 = UNIT::SUnit::GetTargetEx(pGame, pUnit);
-    _bFoundTeleportPos = D2Common::Skills::SKILL_FindTeleportPosition(pUnit, pUnit_00, (uint32_t*)&eSkill, &nDestY);
+    _bFoundTeleportPos = D2Common::Skills::SKILL_FindTeleportPosition(pUnit, pUnit_00, &eSkill, &nDestY);
     if (!_bFoundTeleportPos) {
       BOOL bIsInMeleeRange;
       if (pUnit_00) {

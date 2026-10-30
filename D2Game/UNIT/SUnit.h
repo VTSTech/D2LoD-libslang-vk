@@ -19,9 +19,9 @@ struct D2SeedStrc;
 struct D2TimerStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2TimerTypeDWORD;
-typedef int eD2UnitType;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2TimerTypeDWORD;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_fpExecuteOnUnitFunction
 #define RECON_FPTD_fpExecuteOnUnitFunction
 typedef BOOL (__fastcall *fpExecuteOnUnitFunction)(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);

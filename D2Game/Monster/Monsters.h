@@ -18,7 +18,7 @@ struct D2RoomStrc;
 struct D2UnitDataMonsterStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2UnitStat;
+typedef uint32_t eD2UnitStat;
 
 struct D2MonsterPathParamStrc;
 

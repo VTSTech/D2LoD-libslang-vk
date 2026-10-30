@@ -15,9 +15,9 @@ struct D2ItemInventoryNodeStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2BodyLocDWORD;
-typedef int eD2ItemTypes;
-typedef int eD2UnitType;
+typedef uint32_t eD2BodyLocDWORD;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2CorpseStrc {

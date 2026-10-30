@@ -404,7 +404,7 @@ void __stdcall CLIENT_QuestEvent_NihlathakTransformation() {
     int32_t nY = Units::GetYPosFromDynamicPathUnit(pNihlathak);
     UNIT::Missile::CastAttack(pPlayer, MISSILE_Nehlithakcontrol, nX, nY, SKILL_Attack, 1);
     UNIT::Missile::CastAttack(pPlayer, MISSILE_Nihlithak1, nX, nY, SKILL_Attack, 1);
-    pNihlathak->eUnitFlagsEx |= 0x40000;
+    pNihlathak->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
 }
 
 void __stdcall CLIENT_QuestEvent_WorldstoneShake() {

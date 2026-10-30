@@ -1955,9 +1955,9 @@ static D2UnitStrc * __stdcall InitCommonData(D2UnitStrc * pUnit, int32_t nUnitGU
     pRoom = 0;
     if (pUnit) {
       if (bIsExpansion) {
-        pUnit->eUnitFlagsEx |= 0x2000000;
+        pUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
       } else {
-        pUnit->eUnitFlagsEx &= -33554433;
+        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
       }
     }
 
@@ -2056,9 +2056,9 @@ D2UnitStrc * __fastcall UNIT_CreatePlayer(int32_t nUnitGuid, int32_t nClassId, i
 
     BOOL bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
     if (bIsExpansion) {
-      pUnit->eUnitFlagsEx |= 0x2000000;
+      pUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
     } else {
-      pUnit->eUnitFlagsEx &= -33554433;
+      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
     }
 
     pUnit->nClassId = nClassId;

@@ -11,8 +11,8 @@
 
 // Forward declarations
 struct D2QServerStrc;
-typedef int eD2GSConnectionType;
-typedef int eD2GSGameType;
+typedef uint32_t eD2GSConnectionType;
+typedef uint32_t eD2GSGameType;
 #ifndef RECON_FPTD_fpD2QServerLineHook
 #define RECON_FPTD_fpD2QServerLineHook
 typedef void (*fpD2QServerLineHook)(int nLine);

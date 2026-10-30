@@ -19,9 +19,9 @@ struct EHExceptionRecord;
 struct EHRegistrationNode;
 struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2ClientAppMode;
-typedef int eD2GSGameType;
-typedef int eD2LevelId;
+typedef uint32_t eD2ClientAppMode;
+typedef uint32_t eD2GSGameType;
+typedef uint32_t eD2LevelId;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32

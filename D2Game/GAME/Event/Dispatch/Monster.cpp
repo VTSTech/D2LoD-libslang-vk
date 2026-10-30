@@ -80,10 +80,10 @@ void __fastcall AI_ClearSwitchAiTargetParamsCallback(::SGAMEDATA * pGame, D2Unit
 }
 
 // Server-side monster timer-event dispatcher. Routes a fired timer event (eTimerType) to the appropriate handler in pTimerMethods.fpFunctionExByType[]. For freeze-sensitive event types (STATREGEN, TRAP, ACTIVESTATE, PERIODICSKILLS, REMOVESTATE), dispatches unconditionally. For all other types, first checks that the monster is not frozen (STATE_freeze) or is in mode-zero-death before dispatching. Events beyond UNITEVENTCALLBACK_REMOVESKILLCOOLDOWN are silently ignored.
-void __fastcall MONSTEREVENT_DefaultCallback(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t eTimerType, int32_t nArg1, int32_t nArg2) {
+void __fastcall MONSTEREVENT_DefaultCallback(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t nArg1, int32_t nArg2) {
     bool _bIsModeZeroDeath;
     bool bIsModeZeroDeath;
-    if (eTimerType > 0xe) {
+    if (eTimerType > UNITEVENTCALLBACK_REMOVESKILLCOOLDOWN) {
       return;
     }
     if (false) {
@@ -102,15 +102,15 @@ void __fastcall MONSTEREVENT_DefaultCallback(::SGAMEDATA * pGame, D2UnitStrc * p
     }
 
     switch (eTimerType) {
-      case 3:
+      case UNITEVENTCALLBACK_STATREGEN:
 
-      case 4:
+      case UNITEVENTCALLBACK_TRAP:
 
-      case 5:
+      case UNITEVENTCALLBACK_ACTIVESTATE:
 
-      case 8:
+      case UNITEVENTCALLBACK_PERIODICSKILLS:
 
-      case 0xc:
+      case UNITEVENTCALLBACK_REMOVESTATE:
         goto run_timer_callback;
       default:
         goto skip_if_frozen;

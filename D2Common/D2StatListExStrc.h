@@ -13,9 +13,9 @@
 struct D2PoolManagerStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitType;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_PFN_StatExpireCallback
 #define RECON_FPTD_PFN_StatExpireCallback
 typedef void (__fastcall *PFN_StatExpireCallback)(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);

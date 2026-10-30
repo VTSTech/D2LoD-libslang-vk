@@ -16,7 +16,7 @@ struct D2UnitStrc;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2Quests;
+typedef uint32_t eD2Quests;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32

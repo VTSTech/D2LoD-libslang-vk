@@ -17,8 +17,8 @@ struct D2WinEditBox;
 struct D2WinTextBox;
 struct DC6;
 struct FORMS_AnimFrameStrc;
-typedef int DRAWMODE;
 typedef uint16_t eD2PlayerStatus;
+typedef uint32_t DRAWMODE;
 typedef uint8_t eD2PlayerClassID;
 struct D2ControlMsg;
 #ifndef RECON_FPTD_OnPress

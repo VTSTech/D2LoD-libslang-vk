@@ -10,8 +10,8 @@
 
 // Forward declarations
 struct D2UnitStrc;
-typedef int eD2Skills;
-typedef int eMissilesId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eMissilesId;
 #ifndef RECON_FPTD_fpMissileInitFunction
 #define RECON_FPTD_fpMissileInitFunction
 typedef void (__fastcall *fpMissileInitFunction)(struct D2UnitStrc * pMissile, int32_t nParam);

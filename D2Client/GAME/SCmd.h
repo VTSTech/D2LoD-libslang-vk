@@ -29,8 +29,8 @@ struct D2ServerCmdStrc;
 struct D2SkillsTxt;
 struct D2UnitStrc;
 typedef int eD2ItemFlag;
-typedef int eD2Skills;
-typedef int eD2UnitStat;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitStat;
 #ifndef RECON_FPTD_D2NET_CLIENT_D2GStoCLT
 #define RECON_FPTD_D2NET_CLIENT_D2GStoCLT
 typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT)(char * pBytes);

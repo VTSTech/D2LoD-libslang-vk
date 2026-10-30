@@ -2975,7 +2975,7 @@ static D2GfxInfoUnkStrc * __stdcall GFX_DrawUnitComponents(int32_t nWorldX, uint
                     nErrLine = GfxUtil::DC6_AssignParams(&sGfxData, pUnit, nullptr, nDirection, nFrameMetricX, (int*)&nFrameResult, byLayerComponent, (D2UnitStrc*)-1);
                     if (nErrLine) {
                       eDrawModeCalc = DRAW_SOLID;
-                      bEthereal = GfxUtil::GFXUTIL_GetEtherealTransparency(pUnit, nLayerComponentU, (uint32_t*)&eDrawModeCalc, nFrameResult);
+                      bEthereal = GfxUtil::GFXUTIL_GetEtherealTransparency(pUnit, nLayerComponentU, &eDrawModeCalc, nFrameResult);
                       if (bApplyItemColor && (eUnitType != UNIT_PLAYER || pUnit->uSideData.pClientSide.nPaletteIndex != 0x6c)) {
                         pPalette = (D2GamePalShiftGreenBloodStrc*)GfxUtil::GFXUTIL_GetItemColorForBodyLoc(pUnit, nLayerComponentU, pPalette->abyRemap);
                       }

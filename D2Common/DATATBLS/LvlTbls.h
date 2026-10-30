@@ -16,7 +16,7 @@ struct D2LvlPrestTxt;
 struct D2LvlSubTxt;
 struct D2LvlWarpTxt;
 struct D2PoolManagerStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 typedef uint8_t eD2Difficulty;
 
 // Data types

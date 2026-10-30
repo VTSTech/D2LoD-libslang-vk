@@ -9,7 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
-typedef int eD2ArenaFlags;
+typedef uint32_t eD2ArenaFlags;
 typedef uint8_t eD2HostGameType;
 typedef uint8_t eD2PlayerClassID;
 

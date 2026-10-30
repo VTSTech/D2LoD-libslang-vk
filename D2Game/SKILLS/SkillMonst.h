@@ -12,7 +12,7 @@
 struct D2SkillsTxt;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 namespace D2Game::SKILLS::SkillMonst {
 

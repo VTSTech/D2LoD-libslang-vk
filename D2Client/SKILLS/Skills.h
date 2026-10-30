@@ -14,8 +14,8 @@ struct D2RoomStrc;
 struct D2SkillArgStrc;
 struct D2UnitStrc;
 struct D2fpSkillFuncArg;
-typedef int eD2Skills;
-typedef int eMissilesId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eMissilesId;
 #ifndef RECON_FPTD_fpSkillsFunc
 #define RECON_FPTD_fpSkillsFunc
 typedef BOOL (__fastcall *fpSkillsFunc)(struct D2fpSkillFuncArg * pArg, struct D2UnitStrc * pUnit);

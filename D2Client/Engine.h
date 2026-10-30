@@ -11,9 +11,9 @@
 // Forward declarations
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
-typedef int eD2PlayerAnimMode;
-typedef int eD2UnitType;
-typedef int eSkillEType;
+typedef uint32_t eD2PlayerAnimMode;
+typedef uint32_t eD2UnitType;
+typedef uint32_t eSkillEType;
 
 namespace D2Client::Engine {
 

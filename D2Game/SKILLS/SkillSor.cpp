@@ -583,7 +583,7 @@ uint32_t __fastcall SKILLSOR_ApplyStaticFieldToUnit(D2SkillCallbackContextStrc *
     memset(&sDamage, 0, 0x70);
     eStatType = ~UNITSTAT_strength;
     eElemType = pDmgEvent[4];
-    SkillsServer::SERVER_AppendDamageToUnitEvent(pAttackerUnit, &sDamage, eElemType, nHp, pDmgEvent[3], (uint32_t*)&eStatType, (int*)&eElemType);
+    SkillsServer::SERVER_AppendDamageToUnitEvent(pAttackerUnit, &sDamage, eElemType, nHp, pDmgEvent[3], &eStatType, (int*)&eElemType);
     if ((int)eStatType >= 0) {
       nHpDrain = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pVictimSaved, eStatType, 0);
       if (nHpDrain < 0) {
@@ -1179,7 +1179,6 @@ BOOL __fastcall Skills_SrvDoFunc_028_Meteor_Blizzard(::SGAMEDATA * pGame, D2Unit
 }
 
 static D2UnitStrc * __stdcall SKILLSOR_CreateMissileAtTarget(::SGAMEDATA * pGame, eMissilesId eMissileId, eD2Skills eSkill, int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    uint32_t nUnitX;
     D2UnitStrc* pResult;
     if (!(pUnit2 && pUnit)) {
       return nullptr;
@@ -1196,8 +1195,7 @@ static D2UnitStrc * __stdcall SKILLSOR_CreateMissileAtTarget(::SGAMEDATA * pGame
     if (!bIsInTown) {
       uint32_t nUnitY;
       nUnitY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      nUnitX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      pResult = SkillsServer::SKILLS_CreateMissileAtTarget(pGame, pUnit2, eSkill, nParam, eMissileId, nUnitX, nUnitY);
+      pResult = SkillsServer::SKILLS_CreateMissileAtTarget(pGame, pUnit2, eSkill, nParam, eMissileId, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nUnitY);
       return pResult;
     }
 

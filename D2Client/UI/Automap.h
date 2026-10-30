@@ -18,9 +18,9 @@ struct D2RosterStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
 struct DC6;
-typedef int eD2LevelId;
-typedef int eD2MonsterAnimMode;
 typedef uint16_t eCollisionFlags;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2MonsterAnimMode;
 
 // Data types
 struct AutomapSeedHeader {

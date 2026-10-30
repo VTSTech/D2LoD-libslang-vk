@@ -17,7 +17,7 @@ struct D2SaveFileHeaderStrc;
 struct D2UnitStrc;
 struct D2UnknownItemRelatedStruct;
 struct SGAMEDATA;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 // Data types
 struct D2ItemDupeCacheEntryStrc {

@@ -18,8 +18,8 @@ struct D2PetListStrc;
 struct D2UnitDataPlayerStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemTypes;
-typedef int eD2ServerIncomingStatus;
+typedef uint32_t eD2ItemTypes;
+typedef uint32_t eD2ServerIncomingStatus;
 
 struct D2UnknownStructure0xc;
 

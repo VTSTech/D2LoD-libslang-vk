@@ -832,17 +832,17 @@ void __stdcall RefreshInventory(D2UnitStrc * pUnit, BOOL bHasInventory) {
     }
     if (pUnit) {
       if (!bHasInventory) {
-        pUnit->eUnitFlagsEx &= -2;
+        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_HASINV;
         return;
       }
 
-      pUnit->eUnitFlagsEx |= 1;
+      pUnit->eUnitFlagsEx |= UNITFLAGEX_HASINV;
     }
     if (!(bHasInventory && pUnit && pUnit->eUnitType == UNIT_PLAYER)) {
       return;
     }
 
-    pUnit->eUnitFlagsEx |= 2;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_UPDATEINV;
 }
 
 // Returns the eInventoryPage for a given unit and page index. For players, maps nInvPage (1-4) to trade/transmog/bank pages, or performs a class-specific lookup. For monsters, always returns INVPAGE_Monster. For objects, recognises Guild Vault (0x152) and Trophy Case (0x153). Returns INVPAGE_None on mismatch or null input (halts on null). RETURN WIDTH: every exit writes the whole of EAX (MOV EAX,imm32 / LEA EAX,[EAX*4+8] / MOV EAX,[ECX*8+0x744548]) and InitializeiInventoryPages takes it with MOV ESI,EAX - no MOVZX anywhere.
@@ -1527,7 +1527,7 @@ static void __stdcall StoreOwnerTypeAndGUID(D2UnitStrc * pUnit, eD2UnitType eUni
       Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_source_unit_id, nOwnerGUID, 0);
     }
 
-    pUnit->eUnitFlagsEx |= 0x400;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_STOREOWNERINFO;
 }
 
 void __stdcall StoreOwnerInfo(D2UnitStrc * pUnit, eD2UnitType eUnitType, int32_t nOwnerId) {
@@ -1552,7 +1552,7 @@ void __stdcall StoreOwner(D2UnitStrc * pUnit, D2UnitStrc * pOwner) {
         }
       }
 
-      pUnit->eUnitFlagsEx &= -1025;
+      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_STOREOWNERINFO;
       return;
     }
 
@@ -1568,12 +1568,12 @@ void __stdcall StoreLastAttacker(D2UnitStrc * pUnit, D2UnitStrc * pKiller) {
     if (pKiller) {
       pUnit->eKillerType = pKiller->eUnitType;
       nKillerGUID = pKiller->nUnitGUID;
-      pUnit->eUnitFlagsEx |= 0x20000;
+      pUnit->eUnitFlagsEx |= UNITFLAGEX_STORELASTATTACKER;
       pUnit->nKillerGUID = nKillerGUID;
       return;
     }
 
-    pUnit->eUnitFlagsEx &= -131073;
+    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_STORELASTATTACKER;
     pUnit->eKillerType = UNIT_PLAYER;
     pUnit->nKillerGUID = 0;
 }
@@ -2980,10 +2980,7 @@ void __stdcall RemoveCollision_Vector(D2UnitStrc * pUnit) {
     }
 
     int32_t eCollisionFlag = D2Common::Units::GetCollisionType(pUnit);
-    uint32_t nVectorY = GetUnitSizeY(pUnit);
-    uint32_t nVectorX = GetUnitSizeX(pUnit);
-    D2RoomStrc* pRoom = UNITS_GetRoom(pUnit);
-    Collision::RemoveCollision_Vector(pRoom, nX, nY, nVectorX, nVectorY, eCollisionFlag);
+    Collision::RemoveCollision_Vector(UNITS_GetRoom(pUnit), nX, nY, GetUnitSizeX(pUnit), GetUnitSizeY(pUnit), eCollisionFlag);
 }
 
 // Returns the current facing direction (0–15) for a unit based on its path. For objects/portals uses the static path position; for units with a dynamic path, compares current XY to the next-step waypoint (SP1). If both X and Y match (unit is at its next waypoint), falls back to DynamicPath::UpdateDirection. Otherwise calls GetDirectionToCoords toward the next SP1 position.

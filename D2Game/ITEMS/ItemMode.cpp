@@ -6370,7 +6370,6 @@ BOOL __fastcall ITEMMODE_ProcessCorpsePickup(::SGAMEDATA * pGame, D2UnitStrc * p
     D2UnitStrc* pInvIterNode;
     D2UnitStrc* pNewItem;
     int nCoord;
-    DWORD nItemGUID;
     BOOL BVar1;
     DWORD nSourceGUID;
     int32_t bAllowSocket;
@@ -6423,8 +6422,7 @@ BOOL __fastcall ITEMMODE_ProcessCorpsePickup(::SGAMEDATA * pGame, D2UnitStrc * p
       bCheckMode = 0;
       pResultOut = &__frame0.nPutItemResult;
       _bHasInv = nParam;
-      nItemGUID = D2Client::UNIT::GetGUID(pItem);
-      BVar1 = PutItemInItem(pGame, __frame0.pUnitAsPool, nSourceGUID, nItemGUID, pResultOut, _bHasInv, bCheckMode, bAllowSocket, bHandleCursor);
+      BVar1 = PutItemInItem(pGame, __frame0.pUnitAsPool, nSourceGUID, D2Client::UNIT::GetGUID(pItem), pResultOut, _bHasInv, bCheckMode, bAllowSocket, bHandleCursor);
       if (!BVar1) {
         return 0;
       }

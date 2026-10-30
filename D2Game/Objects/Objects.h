@@ -16,7 +16,7 @@ struct D2RoomStrc;
 struct D2TimerArgStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 #ifndef RECON_FPTD_pfnObjectPlaceTestCallback
 #define RECON_FPTD_pfnObjectPlaceTestCallback
 typedef uint32_t (__fastcall *pfnObjectPlaceTestCallback)(::SGAMEDATA * pGame, eD2LevelId eLevel, int32_t nX, int32_t nY);

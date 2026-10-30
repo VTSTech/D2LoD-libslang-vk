@@ -251,7 +251,7 @@ D2UnitStrc * __fastcall GetKillerUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 800);
       exit(-1);
     }
-    if (pUnit->eUnitFlagsEx & 0x20000) {
+    if (pUnit->eUnitFlagsEx & UNITFLAGEX_STORELASTATTACKER) {
       pKillerUnit = FindUnitFromTable(pGame, pUnit->eKillerType, pUnit->nKillerGUID);
       return pKillerUnit;
     }
@@ -437,7 +437,7 @@ void __fastcall UNITS_ResetUnitForReuse(::SGAMEDATA * pGame, D2UnitStrc * pUnit)
           D2Game::Monster::SetUnsetSummonerFlags(pUnit, 1, 0);
         }
 
-        pUnit->eUnitFlagsEx &= -65537;
+        pUnit->eUnitFlagsEx &= ~UNITFLAGEX_TELEPORTED;
         return;
         case UNIT_ITEM:
           pUnit->eUnitFlags &= ~UNITFLAG_SENDREFRESHMSG;
@@ -1219,7 +1219,7 @@ BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, int * p
       return 0;
     }
 
-    Ai::AiGeneral::GetMonsterNameAndAi(pTarget, (uint32_t*)&eSkill, (int*)&pTarget);
+    Ai::AiGeneral::GetMonsterNameAndAi(pTarget, &eSkill, (int*)&pTarget);
     if (!pTarget && eSkill == pnParam[3]) {
       return 1;
     }
@@ -1626,7 +1626,7 @@ void __fastcall UNITS_RelocateUnitToRoom(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     eAct neAct = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
     pUnit->nAct = neAct;
     D2DrlgActStrc* pDrlgAct = pGame->pAct[neAct];
-    pUnit->eUnitFlagsEx &= -257;
+    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_HASBEENDELETED;
     pUnit->pDrlgAct = pDrlgAct;
     switch (pUnit->eUnitType) {
       case UNIT_PLAYER:
@@ -1877,7 +1877,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
           if (nRelocMode) {
             pUnit->eUnitFlagsEx |= 0x800;
           } else {
-            pUnit->eUnitFlagsEx |= 0x10000;
+            pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
           }
 
           UNITS_UpdateRoomClientVisibility(pGameLocal, pUnit, nullptr);
@@ -1904,7 +1904,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
         if (nRelocMode) {
           pUnit->eUnitFlagsEx |= 0x800;
         } else {
-          pUnit->eUnitFlagsEx |= 0x10000;
+          pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
         }
 
         UNITS_UpdateRoomClientVisibility(pGameLocal, pUnit, nullptr);
@@ -2036,12 +2036,12 @@ D2UnitStrc * __fastcall CreateUnit(eD2UnitType eUnitType, int32_t nClassId, int3
     pAllocUnit->pMemory = pGame->pMemoryPool;
     pAllocUnit->uSideData.pServerSide.pGame = pGame;
     if (pGame->bExpansion) {
-      pAllocUnit->eUnitFlagsEx |= 0x2000000;
+      pAllocUnit->eUnitFlagsEx |= UNITFLAGEX_ISEXPANSION;
     } else {
-      pAllocUnit->eUnitFlagsEx &= -33554433;
+      pAllocUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISEXPANSION;
     }
 
-    pAllocUnit->eUnitFlagsEx |= 0x4000000;
+    pAllocUnit->eUnitFlagsEx |= UNITFLAGEX_SERVERUNIT;
     nLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
     eUnitAct = D2Common::Drlg::GetActNoFromLevelNumber(nLevelId);
     pAllocUnit->nAct = eUnitAct;

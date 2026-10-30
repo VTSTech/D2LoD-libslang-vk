@@ -12,11 +12,11 @@
 // Forward declarations
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ElementalDamageTypeDWORD;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
+typedef uint32_t eD2ElementalDamageTypeDWORD;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
 #ifndef RECON_FPTD_pfnAoEDamageFilter
 #define RECON_FPTD_pfnAoEDamageFilter
 typedef int32_t (__fastcall *pfnAoEDamageFilter)(::SGAMEDATA * pGame, struct D2UnitStrc * pSrcUnit, struct D2UnitStrc * pTargetUnit);

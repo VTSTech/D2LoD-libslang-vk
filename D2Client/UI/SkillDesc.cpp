@@ -209,7 +209,7 @@ static void __stdcall SKILLDESC_BuildStatListDesc(D2UnitStrc * pUnit, D2StatList
     // Static local variables (originally global data)
     static int gnSkillStatListDescCount = 0x8f; D2_STATIC_GUARD(gnSkillStatListDescCount, "D2Client::UI::SkillDesc::SKILLDESC_BuildStatListDesc::gnSkillStatListDescCount");
     static eD2UnitStat gnSkillDescLayoutA[572] = {
-    -1,
+    (eD2UnitStat)-1,
     UNITSTAT_vitality,
     UNITSTAT_strength,
     UNITSTAT_strength,

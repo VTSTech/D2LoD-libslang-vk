@@ -13,7 +13,7 @@
 struct D2DrlgStrc;
 struct D2PoolManagerStrc;
 struct D2RoomStrc;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 #ifndef RECON_FPTD_ACTCALLBACKFN
 #define RECON_FPTD_ACTCALLBACKFN
 typedef void (__fastcall *ACTCALLBACKFN)(struct D2RoomStrc * pRoom);

@@ -23,9 +23,9 @@ struct D2GSPacketSrv0x91;
 struct D2Packet0x5aEventStructure;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
-typedef int eD2Skills;
-typedef int eD2UnitType;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2GSPacketSrv0x01 {

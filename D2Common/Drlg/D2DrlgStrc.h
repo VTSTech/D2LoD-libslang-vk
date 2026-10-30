@@ -18,7 +18,7 @@ struct D2PoolManagerStrc;
 struct D2RoomStrc;
 struct D2TileLibraryHashStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 #ifndef RECON_FPTD_fAutoMap
 #define RECON_FPTD_fAutoMap
 typedef void (__stdcall *fAutoMap)(struct D2RoomStrc * pDrlgRoomEx);

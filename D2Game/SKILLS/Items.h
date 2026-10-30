@@ -12,7 +12,7 @@
 // Forward declarations
 struct D2ItemGenContextStrc;
 struct D2UnitStrc;
-typedef int eD2Skills;
+typedef uint32_t eD2Skills;
 
 struct D2BooksTxt;
 struct D2LowQualityItemsTxt;

@@ -628,7 +628,7 @@ BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * 
 
 void __fastcall SendInitUpdateAttributes(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
     // Static local variables (originally global data)
-    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, -1 }; D2_STATIC_GUARD(geInitAttrStatFirst, "D2Game::PLAYER::PlayerMsg::SendInitUpdateAttributes::geInitAttrStatFirst");
+    static eD2UnitStat geInitAttrStatFirst[6] = { UNITSTAT_velocitypercent, UNITSTAT_attackrate, UNITSTAT_level, UNITSTAT_strength, UNITSTAT_dexterity, (eD2UnitStat)-1 }; D2_STATIC_GUARD(geInitAttrStatFirst, "D2Game::PLAYER::PlayerMsg::SendInitUpdateAttributes::geInitAttrStatFirst");
 
     uint32_t nStatValue;
     D2UnitStrc* pClientUnit = GAME::Clients::CLIENTS_GetControlUnit(pClient, 0);
@@ -3686,7 +3686,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x4B_ForceUnitUpdate(::SGAMEDATA * pGame
     }
 
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pSrcUnit);
-    pSrcUnit->eUnitFlagsEx |= 0x10000;
+    pSrcUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
     return SERVERSTATUS_OK;
 }
 

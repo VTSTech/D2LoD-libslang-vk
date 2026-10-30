@@ -12,7 +12,7 @@
 struct D2ClientStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 
 // Data types
 struct D2ArenaTxt {

@@ -14,8 +14,8 @@ struct D2ItemsTxt;
 struct D2SkillStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
-typedef int eD2BodyLocDWORD;
-typedef int eD2UnitStat;
+typedef uint32_t eD2BodyLocDWORD;
+typedef uint32_t eD2UnitStat;
 
 // Data types
 struct D2BeltsEntryStrc {

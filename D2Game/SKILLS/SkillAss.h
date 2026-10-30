@@ -16,9 +16,9 @@ struct D2SkillsTxt;
 struct D2StatListExStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2States;
-typedef int eD2UnitStat;
-typedef int eMissilesId;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eMissilesId;
 
 // Data types
 struct D2MindBlastArgStrc {

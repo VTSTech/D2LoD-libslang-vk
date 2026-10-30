@@ -1291,7 +1291,7 @@ BOOL __fastcall Skills_SrvDoFunc_037_ChargeRelease_MultiElementScatter(::SGAMEDA
       return 0;
     }
 
-    BOOL bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameCopy, pUnit, &nTargetX, (uint32_t*)&eSkill);
+    BOOL bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameCopy, pUnit, &nTargetX, &eSkill);
     if (!bHasPos) {
       return 0;
     }
@@ -1326,7 +1326,7 @@ BOOL __fastcall Skills_SrvDoFunc_143_ChargeRelease_GroundStrike(::SGAMEDATA * pG
       return 0;
     }
 
-    BOOL bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameCopy, pUnit, &nTargetX, (uint32_t*)&eSkill);
+    BOOL bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameCopy, pUnit, &nTargetX, &eSkill);
     if (!bHasPos) {
       return 0;
     }
@@ -2109,12 +2109,7 @@ BOOL __fastcall Skills_SrvDoFunc_044_SummonBladeSentinel(::SGAMEDATA * pGame, D2
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_level, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), 0);
-    int32_t nRelocFlags = 0;
-    nMonClassIdOrLevel = 0;
-    uint32_t nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    uint32_t nPosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit_00, pRoom, nPosX, nPosY, nMonClassIdOrLevel, nRelocFlags);
+    UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit_00, D2Common::Units::UNITS_GetRoom(pUnit), D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), 0, 0);
     local_2c.nUnused0 = 0;
     local_2c.nUnused1 = 0;
     local_2c.nCmdArg1 = 0;
@@ -2150,7 +2145,7 @@ BOOL __fastcall Skills_SrvDoFunc_045_SummonTrapSentry(::SGAMEDATA * pGame, D2Uni
       pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
     }
 
-    _bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, &nTargetX, (uint32_t*)&eSkill);
+    _bHasPos = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, &nTargetX, &eSkill);
     if (!_bHasPos) {
       return 0;
     }
@@ -3197,7 +3192,7 @@ BOOL __fastcall Skills_SrvDoFunc_052_DragonFlight(::SGAMEDATA * pGame, D2UnitStr
       }
 
       pUnit->eUnitFlags &= ~UNITFLAG_SKSRVDOFUNC;
-      bCollision = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, (uint32_t*)&eSkill, (uint32_t*)&nSkillLvl);
+      bCollision = SkillsServer::SKILLS_GetTargetOrCursorPos(pGame, pUnit, &eSkill, (uint32_t*)&nSkillLvl);
       if (!bCollision) {
         return 0;
       }

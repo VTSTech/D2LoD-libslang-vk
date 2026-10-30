@@ -17,7 +17,7 @@ struct D2QuestDataStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2MonsterClassId;
+typedef uint32_t eD2MonsterClassId;
 
 namespace D2Game::Quests::QUESTS::A5Q6 {
 

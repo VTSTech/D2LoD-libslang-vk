@@ -21,8 +21,8 @@ struct EHExceptionRecord;
 struct EHRegistrationNode;
 struct SGAMEDATA;
 typedef int _EXCEPTION_DISPOSITION;
-typedef int eD2ArenaFlags;
-typedef int eD2States;
+typedef uint32_t eD2ArenaFlags;
+typedef uint32_t eD2States;
 #ifndef _WIN32  // provided by the Win32 SDK / CRT on Windows
 struct _CONTEXT;
 #endif // _WIN32

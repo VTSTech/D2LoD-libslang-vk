@@ -15,7 +15,7 @@ struct D2GfxMemoryStrc;
 struct D2PoolManagerStrc;
 struct D2TileLibraryEntryStrc;
 struct DC6Block;
-typedef int eD2UnitType;
+typedef uint32_t eD2UnitType;
 struct D2SpriteDecodeRequestStrc;
 #ifndef RECON_FPTD_fnSpriteCacheEntryRelease
 #define RECON_FPTD_fnSpriteCacheEntryRelease

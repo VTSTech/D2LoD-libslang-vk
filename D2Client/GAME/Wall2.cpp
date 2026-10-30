@@ -186,14 +186,14 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
         case UNIT_PLAYER:
           pUnit = UNIT::Player::GetPlayerUnit_Net();
         if (pUnit == pOtherUnit || pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
-          pOtherUnit->eUnitFlagsEx |= 0x80;
+          pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
           return 1;
         }
 
         break;
         case UNIT_MONSTER:
           if (pOtherUnit->eAnimMode.ePlayerMode == Death || pOtherUnit->eAnimMode.ePlayerMode == Kick) {
-            pOtherUnit->eUnitFlagsEx |= 0x80;
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
             return 1;
           }
         case UNIT_MISSILE:
@@ -203,7 +203,7 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
         break;
         default:
           {
-            pOtherUnit->eUnitFlagsEx |= 0x80;
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
             return 1;
           }
       }
@@ -215,19 +215,19 @@ static uint32_t __stdcall DRAW_WORLD_IsUnitInLineOfSight(D2UnitStrc * pOtherUnit
           eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
           nLOSDraw = D2Common::Drlg::TXT_LevelDefs_GetLOSDraw(eLevel);
           if (!nLOSDraw) {
-            pOtherUnit->eUnitFlagsEx |= 0x80;
+            pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
             return 1;
           }
         }
 
         bIsBlocked = D2Common::Units::TestCollisionWithUnit(pUnit, pOtherUnit, 2);
         if (bIsBlocked) {
-          pOtherUnit->eUnitFlagsEx &= -129;
+          pOtherUnit->eUnitFlagsEx &= ~UNITFLAGEX_ISINLOS;
           return 0;
         }
       }
 
-      pOtherUnit->eUnitFlagsEx |= 0x80;
+      pOtherUnit->eUnitFlagsEx |= UNITFLAGEX_ISINLOS;
       return 1;
     }
 

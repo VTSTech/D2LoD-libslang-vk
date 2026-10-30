@@ -2469,7 +2469,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
     finish_unit_setup:
     nReadBits = D2Common::Monsters::MONSTERS::MONSTER_GetMercType(pUnit);
     if (nReadBits && (char)eUnitTypeBits == '\x01') {
-      pUnit->eUnitFlagsEx &= -262145;
+      pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, (uint32_t)wPacketY + (uint32_t)wPacketX & 0xffff, 0);

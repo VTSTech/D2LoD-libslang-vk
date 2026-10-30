@@ -9,7 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
-typedef int eD2GridCellFlags;
+typedef uint32_t eD2GridCellFlags;
 
 // Data types
 struct D2DrlgGridStrc {

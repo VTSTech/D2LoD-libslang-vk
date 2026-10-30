@@ -12,7 +12,7 @@
 struct D2MonStatsTxt;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eMissilesId;
+typedef uint32_t eMissilesId;
 #ifndef RECON_FPTD_pfnMonsterSpawnClassIdCb
 #define RECON_FPTD_pfnMonsterSpawnClassIdCb
 typedef int32_t (__fastcall *pfnMonsterSpawnClassIdCb)(struct D2UnitStrc * pUnit);

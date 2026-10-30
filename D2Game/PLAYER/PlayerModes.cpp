@@ -680,7 +680,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
           UNIT::SUnit::SetSeed(pUnit_00, &pSavedGame->pGameSeed);
           D2Common::Units::SetupUpdateFlag(pUnit_00, 0x11);
           D2Common::DATATBLS::ItemStats::SetState(pUnit_00, STATE_playerbody, 1);
-          pUnit_00->eUnitFlagsEx |= 0x1000;
+          pUnit_00->eUnitFlagsEx |= UNITFLAGEX_ISCORPSE;
           pUnit_00->eUnitFlags |= UNITFLAG_TARGETABLE;
           uVar1 = GAME::Clients::GetExperience(pClient);
           if ((int)uVar1 > 0x100000) {
@@ -1538,7 +1538,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
       if (!pUnit) {
         goto send_unit_updates;
       }
-      if (pUnit->eUnitFlagsEx & 1) {
+      if (pUnit->eUnitFlagsEx & UNITFLAGEX_HASINV) {
         UNIT::SendUpdatedItemsToClient(pGame, pUnit, pClient, nullptr);
         GAME::SCmd::NET_D2GS_SERVER_Send_0x47_ITEMUPDATEMODIFIERS(pClient, pUnit);
         GAME::SCmd::NET_D2GS_SERVER_Send_0x48_ITEMUPDATEREQUIREMENTSMET(pClient, pUnit, '\0');

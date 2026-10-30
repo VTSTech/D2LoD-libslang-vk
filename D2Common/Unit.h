@@ -34,12 +34,12 @@ struct D2UnknownStructure0x18;
 struct D2WaypointStrc;
 struct SGAMEDATA;
 typedef int eD2ItemFlag;
-typedef int eD2ItemQuality;
-typedef int eD2LevelId;
-typedef int eD2Skills;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
-typedef int eSkillEType;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
+typedef uint32_t eSkillEType;
 typedef uint8_t eInventoryPage;
 
 // Data types

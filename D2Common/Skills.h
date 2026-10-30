@@ -18,11 +18,11 @@ struct D2SkillStrc;
 struct D2SkillsTxt;
 struct D2StatListExStrc;
 struct D2UnitStrc;
-typedef int eD2ElementalDamageTypeDWORD;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eD2UnitStat;
-typedef int eD2UnitType;
+typedef uint32_t eD2ElementalDamageTypeDWORD;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eD2UnitStat;
+typedef uint32_t eD2UnitType;
 
 // Data types
 struct __attribute__((packed)) D2SkillCalcContextStrc {

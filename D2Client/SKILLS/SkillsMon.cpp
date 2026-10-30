@@ -831,7 +831,7 @@ BOOL __fastcall Skills_CltStFunc_CheckTargetClearNodrawFlag(D2UnitStrc * pUnit, 
       return 1;
     }
 
-    pUnit->eUnitFlagsEx &= -262145;
+    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
     return 1;
 }
 

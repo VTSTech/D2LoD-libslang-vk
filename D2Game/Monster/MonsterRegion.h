@@ -16,7 +16,7 @@ struct D2RoomStrc;
 struct D2SeedStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
+typedef uint32_t eD2LevelId;
 typedef uint8_t eD2Difficulty;
 
 // Data types

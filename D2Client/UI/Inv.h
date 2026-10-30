@@ -14,7 +14,7 @@ struct D2InventoryStrc;
 struct D2ItemsTxt;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
-typedef int eD2UnitStat;
+typedef uint32_t eD2UnitStat;
 typedef uint8_t eInventoryPage;
 
 // Data types

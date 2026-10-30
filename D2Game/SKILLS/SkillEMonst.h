@@ -11,9 +11,9 @@
 // Forward declarations
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2Skills;
-typedef int eD2States;
-typedef int eMissilesId;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2States;
+typedef uint32_t eMissilesId;
 
 namespace D2Game::SKILLS::SkillEMonst {
 

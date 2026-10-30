@@ -1612,7 +1612,6 @@ BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     bool bPutResult;
     eD2ItemFlag eItemFlags;
     D2UnitStrc* pSocketedItem;
-    DWORD dwGolemGUID;
     D2UnitDataItemDetailsStrc local_34;
     int32_t bSocketMode;
     DWORD dwSocketedItemGUID;
@@ -1658,8 +1657,7 @@ BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
         bSocketMode = 1;
         nSocketBodyLoc = 0;
         pInvDummy = &__frame0.nPutItemResult;
-        dwGolemGUID = D2Client::UNIT::GetGUID(__frame0.pGolemItem);
-        _bPutResult = ITEMS::ItemMode::PutItemInItem(pGame, __frame0.pOwnerUnit, dwSocketedItemGUID, dwGolemGUID, pInvDummy, nSocketBodyLoc, bSocketMode, nSocketSlotX, nSocketSlotY);
+        _bPutResult = ITEMS::ItemMode::PutItemInItem(pGame, __frame0.pOwnerUnit, dwSocketedItemGUID, D2Client::UNIT::GetGUID(__frame0.pGolemItem), pInvDummy, nSocketBodyLoc, bSocketMode, nSocketSlotX, nSocketSlotY);
         if (!_bPutResult) {
           UNIT::SUnit::FreeServerUnit(pGame, __frame0.pGolemItem);
           return 0;

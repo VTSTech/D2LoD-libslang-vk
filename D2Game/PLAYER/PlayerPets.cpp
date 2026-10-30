@@ -557,7 +557,7 @@ static void __stdcall PETS_TeleportToRoom(D2UnitStrc * pUnit, ::SGAMEDATA * pGam
     pUnit->nAct = eNewAct;
     pUnit->pDrlgAct = pGame->pAct[eNewAct];
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
-    pUnit->eUnitFlagsEx |= 0x10000;
+    pUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnit);
     Monster::MONSTERAI_TriggerMageThink(pGame, pUnit);
     BVar2 = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
@@ -1159,8 +1159,6 @@ static void __stdcall PLAYERPETS_RemoveConflictingPetsByGroup(int32_t nParam, ::
 }
 
 void __fastcall PETS_SetMaxAndTrimExcess(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nIndex, int32_t nBaseMax) {
-    DWORD nPetGUID;
-    BOOL bKillHandler;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x200);
@@ -1178,9 +1176,7 @@ void __fastcall PETS_SetMaxAndTrimExcess(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     int nCurPetCount = pDVar1->nPets2;
     pDVar1->nMax = nBaseMax;
     while (nCurPetCount > nBaseMax && pDVar1->nPets2 > 0 && nIndex != 7) {
-      bKillHandler = 1;
-      nPetGUID = GetPetUidByIndex(nIndex, pUnit);
-      RemovePetByGuidAndNotify(pGame, pUnit, nPetGUID, bKillHandler);
+      RemovePetByGuidAndNotify(pGame, pUnit, GetPetUidByIndex(nIndex, pUnit), 1);
       nCurPetCount = pDVar1->nPets2;
     }
 }

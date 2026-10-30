@@ -24,10 +24,10 @@ struct D2SeedStrc;
 struct D2UnitDataPlayerInteractedNPCStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2ItemQuality;
-typedef int eD2LevelId;
-typedef int eD2QuestState;
-typedef int eD2Quests;
+typedef uint32_t eD2ItemQuality;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2QuestState;
+typedef uint32_t eD2Quests;
 typedef uint8_t eAct;
 #ifndef RECON_FPTD_QUESTINIT
 #define RECON_FPTD_QUESTINIT

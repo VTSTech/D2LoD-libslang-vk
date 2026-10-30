@@ -625,7 +625,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_DelayedLineMissileChain(D2UnitStrc * pUnit
           D2Common::Units::Missile::SetTotalFrames(pMissile, nChainFrameDelay + nChainBaseTotalFrames);
           D2Common::Units::Missile::SetCurrentFrame(pMissile, nChainFrameDelay + nChainBaseTotalFrames);
           D2Common::Units::Missile::SetActivateFrame(pMissile, nChainBaseTotalFrames - nChainFrameDelay);
-          pMissile->eUnitFlagsEx |= 0x40000;
+          pMissile->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
         }
 
         nCurDist += nChainSpacing;
@@ -657,7 +657,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_DelayedLineMissileChain(D2UnitStrc * pUnit
     D2Common::Units::Missile::SetTotalFrames(pMissile, nScaledDeltaY);
     D2Common::Units::Missile::SetCurrentFrame(pMissile, nScaledDeltaY);
     D2Common::Units::Missile::SetActivateFrame(pMissile, nCalcA - nUnitY);
-    pMissile->eUnitFlagsEx |= 0x40000;
+    pMissile->eUnitFlagsEx |= UNITFLAGEX_NODRAW;
     return 1;
 }
 

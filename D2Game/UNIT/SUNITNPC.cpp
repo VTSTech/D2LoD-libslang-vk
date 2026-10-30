@@ -243,7 +243,7 @@ void __fastcall SUNITNPC_SetItemForNpc(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, 
       return;
     }
     if (pUnit2) {
-      pUnit2->eUnitFlagsEx |= 4;
+      pUnit2->eUnitFlagsEx |= UNITFLAGEX_ISVENDORITEM;
     }
 
     BOOL bHasSocketedItems = ITEMS::ItemMode::ITEMMODE_HasSocketedItems(pUnit2, ".\\UNIT\\SUNITNPC.CPP", 0xe9);
@@ -403,7 +403,7 @@ void __fastcall SUNITNPC_RefreshNpcItem(int32_t nParam1, D2UnitStrc * pUnit, D2U
 
     ITEMS::ItemMode::SERVER_TakeItemToCursor(pGame, pUnit, pItemSaved->nUnitGUID, (uint32_t*)&pItem, 0, 0, pInventory, 0);
     if (nParam2) {
-      pItemSaved->eUnitFlagsEx |= 0x10;
+      pItemSaved->eUnitFlagsEx |= UNITFLAGEX_ITEMINIT;
       D2Common::Units::RefreshInventory(pUnit, 1);
       D2Common::INVENTORY::Inventory::UpsertToUpdateList(pInventory, pItemSaved);
       D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pItemSaved, ITEMCMD_DELETE, 1);
@@ -429,7 +429,7 @@ void __fastcall SUNITNPC_FillNpcInventory(D2UnitStrc * pUnit, D2UnitStrc * pUnit
 
       ITEMS::ItemMode::SERVER_TakeItemToCursor(pGame, pUnit, pUnit2->nUnitGUID, (uint32_t*)&pGame, 0, 0, nullptr, 0);
       if (bDeleteItem) {
-        pUnit2->eUnitFlagsEx |= 0x10;
+        pUnit2->eUnitFlagsEx |= UNITFLAGEX_ITEMINIT;
         D2Common::Units::RefreshInventory(pUnit, 1);
         D2Common::INVENTORY::Inventory::UpsertToUpdateList(pUnit->pInventory, pUnit2);
         D2Common::ITEMS::Items::ITEM_EditItemData_eD2ItemCmd(pUnit2, ITEMCMD_DELETE, 1);
@@ -682,7 +682,7 @@ void __fastcall SUNITNPC_RepairAllItems(D2UnitStrc * pPlayer, D2InventoryStrc * 
       pUnit_00 = D2Common::INVENTORY::Inventory::GetCarriedItem(pUnit);
       pUnit = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pUnit);
       if (pUnit_00) {
-        pUnit_00->eUnitFlagsEx |= 4;
+        pUnit_00->eUnitFlagsEx |= UNITFLAGEX_ISVENDORITEM;
       }
 
       bHasSocketed = ITEMS::ItemMode::ITEMMODE_HasSocketedItems(pUnit_00, ".\\UNIT\\SUNITNPC.CPP", 0x2da);
@@ -3100,7 +3100,7 @@ void __fastcall SUNITNPC_ProcessSellConfirmation(::SGAMEDATA * pGame, D2UnitStrc
     D2Common::DATATBLS::ItemStats::SetState(pMerc, STATE_shatter, 0);
     D2Common::DATATBLS::ItemStats::SetState(pMerc, STATE_recycled, 0);
     pMerc->eUnitFlags |= UNITFLAG_NOXP | UNITFLAG_NOTC | UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE;
-    pMerc->eUnitFlagsEx &= -262145;
+    pMerc->eUnitFlagsEx &= ~UNITFLAGEX_NODRAW;
     SUNITNPC_ProcessGambleResult(pMerc);
     eMonsterType = pUnit->eUnitType;
     if (eMonsterType == UNIT_OBJECT || (int)eMonsterType > 3 && (int)eMonsterType <= 5) {

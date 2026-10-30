@@ -2047,7 +2047,7 @@ void __stdcall D2COMP_FreeAllCompositeUnits() {
 }
 
 uint32_t * __stdcall D2COMP_GetCompositeUnitListHead() {
-    return (uint32_t*)&gpCompositeUnitListHead->nFlags;
+    return &gpCompositeUnitListHead->nFlags;
 }
 
 uint32_t * __stdcall D2COMP_GetNextCompositeUnit(uint32_t * pCompUnit) {

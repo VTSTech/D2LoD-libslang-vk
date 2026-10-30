@@ -7186,7 +7186,7 @@ int32_t __fastcall HirelingFollowOwnerAction(::SGAMEDATA * pGame, D2UnitStrc * p
 
       D2Common::Unit::ROOM_LinkUnitToUpdateList(pMerc);
       if (pMerc) {
-        pMerc->eUnitFlagsEx |= 0x10000;
+        pMerc->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
       }
 
       PlanNextAiMove(pGame, pMerc, 5);
@@ -7505,7 +7505,7 @@ int32_t __fastcall AI_Pet_ExecuteMovementBehavior(::SGAMEDATA * pGame, D2UnitStr
       }
 
       D2Common::Unit::ROOM_LinkUnitToUpdateList(pAdjacentUnit);
-      pAdjacentUnit->eUnitFlagsEx |= 0x10000;
+      pAdjacentUnit->eUnitFlagsEx |= UNITFLAGEX_TELEPORTED;
       PlanNextAiMove(pGame, pAdjacentUnit, 5);
       return 1;
       case 4:
@@ -11987,7 +11987,6 @@ void __fastcall AITHINK_Fn0_BladeCreeper(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 void __fastcall AITHINK_Fn1_BladeCreeper(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
     D2SkillStrc* pSkill;
     uint32_t nMissilePosY;
-    uint32_t nMissilePosX;
     D2UnitStrc* pMissile;
     D2MonsterAiCmdStrc* pDVar1;
     int32_t bWalkOk;
@@ -12013,8 +12012,7 @@ void __fastcall AITHINK_Fn1_BladeCreeper(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         }
 
         nMissilePosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        nMissilePosX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        pMissile = SKILLS::SkillsServer::SKILLS_CreateMissileAtTarget(pGame, pOwner, eSkill, nSkillLvl, (int)pSkillTxt->srvmissile[1], nMissilePosX, nMissilePosY);
+        pMissile = SKILLS::SkillsServer::SKILLS_CreateMissileAtTarget(pGame, pOwner, eSkill, nSkillLvl, (int)pSkillTxt->srvmissile[1], D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), nMissilePosY);
         if (pMissile) {
           D2Common::Units::StoreOwner(pMissile, pUnit);
           bWalkOk = D2Common::Units::GetAttackRate(pOwner);
@@ -15400,13 +15398,8 @@ void __fastcall AITHINK_Fn1_BaalToStairs(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
 // Baal's taunt AI tick. If the target is in Neutral mode, increments dwArg0 and casts SKILL_BaalTaunt once the counter exceeds the MonStats TreasureClass threshold; then resets dwArg0. If the target is outside the outer range threshold, teleports Baal adjacent to the target via SUNIT_RelocateUnit. Falls back to ResetCombatTargetAndIdle if within a close band but no action triggered, otherwise calls PlanNextAiMove(0x19).
 void __fastcall AITHINK_Fn1_BaalTaunt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
-    BOOL bRelocated;
     bool bTargetInNeutralMode;
-    int32_t bFindFreeSpace_00;
-    int32_t bFindFreeSpace;
     bool bTargetWasNeutral;
-    uint32_t nTargetPosX;
-    uint32_t nTargetPosY;
     int* pArg0Count;
     D2UnitStrc* pTarget;
     pTarget = pAiParam->pTarget;
@@ -15415,7 +15408,7 @@ void __fastcall AITHINK_Fn1_BaalTaunt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
     int nDistanceToTarget;
     nDistanceToTarget = pAiParam->nDistanceToTarget;
     if (pTarget) {
-      D2RoomStrc* pTargetRoom;
+      BOOL bRelocated;
       bTargetInNeutralMode = false;
       if (pTarget->eUnitType == UNIT_PLAYER || pTarget->eUnitType == UNIT_MONSTER) {
         bTargetInNeutralMode = pTarget->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral;
@@ -15438,12 +15431,7 @@ void __fastcall AITHINK_Fn1_BaalTaunt(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
         }
       }
       if (nDistanceToTarget > pMonStats->aip[2][pGame->nDifficulty]) {
-        bFindFreeSpace = 0;
-        bFindFreeSpace_00 = 0;
-        nTargetPosX = D2Client::Units::GetYPosFromDynamicPathUnit(pTarget);
-        nTargetPosY = D2Client::Units::GetXPosFromDynamicPathUnit(pTarget);
-        pTargetRoom = D2Common::Units::UNITS_GetRoom(pTarget);
-        bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, pTargetRoom, nTargetPosY, nTargetPosX, bFindFreeSpace_00, bFindFreeSpace);
+        bRelocated = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, D2Common::Units::UNITS_GetRoom(pTarget), D2Client::Units::GetXPosFromDynamicPathUnit(pTarget), D2Client::Units::GetYPosFromDynamicPathUnit(pTarget), 0, 0);
         if (bRelocated) {
           goto idle;
         }
@@ -21295,7 +21283,7 @@ void __fastcall AI_Fn1_SandMaggotQueen(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       return;
     }
 
-    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nClassId, &nSpawnOffset, (uint32_t*)&pAiParam, (uint32_t*)&eAnimMode, 0, Ai::AiGeneral::MONSTER_GetUnitData_AiGeneral_Offset0x3C);
+    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nClassId, &nSpawnOffset, (uint32_t*)&pAiParam, &eAnimMode, 0, Ai::AiGeneral::MONSTER_GetUnitData_AiGeneral_Offset0x3C);
     int32_t nSpawnY = (int32_t)pAiParam;
     D2RoomStrc* pDVar4 = D2Common::Units::UNITS_GetRoom(pUnit);
     pDVar4 = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pDVar4, nSpawnOffset, nSpawnY);
@@ -22143,7 +22131,7 @@ void __fastcall AI_Fn1_EvilHole(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiPar
         if (eAnimMode == eD2MonsterAnimMode_ns::Skill4 && pAiGeneral->dwArg1 > 0) {
           if (pGame->dwGameFrame > pAiGeneral->dwArg0) {
             pAiGeneral->dwArg0 = (int)pMonStats->aip[1][pGame->nDifficulty] + pGame->dwGameFrame;
-            D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nClassId, &nSpawnOffset, (uint32_t*)&pAiParam, (uint32_t*)&eSpawnAnimMode, 0, nullptr);
+            D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nClassId, &nSpawnOffset, (uint32_t*)&pAiParam, &eSpawnAnimMode, 0, nullptr);
             nDistToTarget = (int32_t)pAiParam;
             pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
             pSpawnRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pSpawnRoom, nSpawnOffset, nDistToTarget);

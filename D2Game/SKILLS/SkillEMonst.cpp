@@ -116,7 +116,7 @@ BOOL __fastcall Skills_SrvDoFunc_125_CatapultFireBomb(::SGAMEDATA * pGame, D2Uni
       return 0;
     }
 
-    _bHasTarget = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameLocal, pUnit, (uint32_t*)&eSkill, &nTargetYOrX);
+    _bHasTarget = SkillsServer::SKILLS_GetTargetOrCursorPos(pGameLocal, pUnit, &eSkill, &nTargetYOrX);
     if (!_bHasTarget) {
       return 0;
     }
@@ -535,11 +535,7 @@ BOOL __fastcall Skills_SrvDoFunc_129_AttachOrDetachFromHost(::SGAMEDATA * pGame,
       return 0;
     }
 
-    int32_t bRelocateSucceeded = 1;
-    uint32_t nPosX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-    uint32_t nPosY = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit_00);
-    bIsDead = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, pRoom, nPosY, nPosX, bRelocateSucceeded, bIsDead);
+    bIsDead = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit, D2Common::Units::UNITS_GetRoom(pUnit_00), D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 1, bIsDead);
     if (bIsDead) {
       SKILLEMONST_AttachToHost(pGame, pUnit, pUnit_00, eSkill, nSkillLvl);
       return 1;
@@ -1282,7 +1278,7 @@ BOOL __fastcall Skills_SrvDoFunc_140_BaalTentacle(::SGAMEDATA * pGame, D2UnitStr
     nSpawnCount = (uint32_t)pGame->nDifficulty + (int)(sNewSeed.nSeedLow / 3) * -3 + 2 + sNewSeed.nSeedLow;
     ::SGAMEDATA* pGameLocal;
     pGameLocal = pGame;
-    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nMonStatsId, &nOffsetX, &nOffsetY, (uint32_t*)&eSpawnAnimMode, (uint32_t)pGame->nDifficulty, nullptr);
+    D2Common::Monsters::MONSTERS::MONSTER_GetSpawnParameters(pUnit, (int*)&nMonStatsId, &nOffsetX, &nOffsetY, &eSpawnAnimMode, (uint32_t)pGame->nDifficulty, nullptr);
     D2UnitStrc* pSpawnedMinion;
     pSpawnedMinion = UNIT::SUnit::GetTargetEx(pGame, pUnit);
     int nSpawnY;

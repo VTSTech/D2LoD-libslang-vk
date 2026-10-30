@@ -18,8 +18,8 @@ struct D2SkillStrc;
 struct D2TimerArgStrc;
 struct D2UnitDataPlayerStrc;
 struct D2UnitStrc;
-typedef int eD2Skills;
-typedef int eD2UnitType;
+typedef uint32_t eD2Skills;
+typedef uint32_t eD2UnitType;
 
 namespace D2Common::Units {
 

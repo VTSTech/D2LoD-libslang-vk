@@ -19,9 +19,9 @@ struct D2PresetUnitStrc;
 struct D2RoomExStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
-typedef int eD2LevelId;
-typedef int eD2UnitType;
-typedef int eDrlgDirection;
+typedef uint32_t eD2LevelId;
+typedef uint32_t eD2UnitType;
+typedef uint32_t eDrlgDirection;
 
 struct D2LvlWarpTxt;
 

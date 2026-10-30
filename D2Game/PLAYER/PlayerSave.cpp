@@ -217,7 +217,6 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     int32_t nPosY;
     int32_t _unknownMightBeX;
     int nPlaceResult;
-    uint32_t nBeltSlot;
     BOOL BVar1;
     DWORD dwContainerGUID;
     int32_t bNoOverlap;
@@ -272,8 +271,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 
       pBodyLocParam = &eBodyLocation;
       nPosY = 0;
-      nBeltSlot = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, nBeltSlot, nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
       break;
       case Ground:
 
@@ -1104,7 +1102,7 @@ BOOL __fastcall SaveGameAllGameTypes(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ch
       return 0;
     }
 
-    pUnit->eUnitFlagsEx &= -3;
+    pUnit->eUnitFlagsEx &= ~UNITFLAGEX_UPDATEINV;
     bIsInteracting = 0;
     eInteractUnitType = UNIT_COUNT;
     _bHasInteractInfo = UNIT::SUnit::GetInteractInfo(pUnit, &eInteractUnitType, &nInteractUnitGUID);
@@ -2388,7 +2386,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
 
     __frame0.pClientOrig = pClient;
     __frame1.pGameLocal = pGame;
-    int nLoadResult = _oldSaveGameLoadingPart(pGame, pClient, (int*)pSavefile, &__frame1.pSavedMana, (uint32_t*)&__frame0.nSavedHp, &nSavefileSize, &nSkillMin, &nSkillMax, (uint32_t*)&rightSkill, (uint32_t*)&leftSkill, (uint32_t*)&ppUnit);
+    int nLoadResult = _oldSaveGameLoadingPart(pGame, pClient, (int*)pSavefile, &__frame1.pSavedMana, (uint32_t*)&__frame0.nSavedHp, &nSavefileSize, &nSkillMin, &nSkillMax, &rightSkill, &leftSkill, (uint32_t*)&ppUnit);
     D2UnitStrc* pUnit = __frame1.pSavedMana;
     if (nLoadResult) {
       return nLoadResult;

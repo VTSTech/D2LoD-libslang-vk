@@ -12,7 +12,7 @@
 struct D2ControlMsg;
 struct D2WinAnimImage;
 struct DC6;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 #ifndef RECON_FPTD_OnPress
 #define RECON_FPTD_OnPress
 typedef BOOL (__stdcall *OnPress)(struct D2ControlMsg * pControlMsg);

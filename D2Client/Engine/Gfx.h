@@ -16,7 +16,7 @@ struct D2LightMapStrc;
 struct D2MonStatsTxt;
 struct D2ParticleStrc;
 struct D2UnitStrc;
-typedef int DRAWMODE;
+typedef uint32_t DRAWMODE;
 #ifndef RECON_FPTD_fpDrawBlendedVisTile
 #define RECON_FPTD_fpDrawBlendedVisTile
 typedef void (__fastcall *fpDrawBlendedVisTile)(int a1, int a2, int a3, int a4);
