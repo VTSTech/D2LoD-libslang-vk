@@ -9,9 +9,7 @@
 #include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
 #include "D2Client/D2IniConfigStrc.h"
-#include "D2Client/DataTbls.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
@@ -28,6 +26,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -38,7 +37,6 @@
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/PATH/DynamicPath.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/Objects/Objects.h"
@@ -59,7 +57,7 @@
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
 #include "D2Common/Drlg/DrlgRoom.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units/MissileStream.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -91,7 +89,7 @@ namespace D2Client::GAME::Wall2 {
 
 void __fastcall WALL2_InitUnitGfx(D2UnitStrc * pUnit) {
     int32_t nLine;
-    D2GfxInfoStrc* pGfxInfo = Engine::GfxInfo::AllocGfxInfo();
+    D2GfxInfoStrc* pGfxInfo = Engine::Gfx::AllocGfxInfo();
     pUnit->pGfxInfo = pGfxInfo;
     if (!pGfxInfo) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x16);
@@ -398,7 +396,7 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
     BOOL BVar1;
     int32_t nVolume;
     bool bHasVolume;
-    eD2LevelId eCurrentLevel = D2Client::Sound::SOUND_GetCurrentLevelId();
+    eD2LevelId eCurrentLevel = D2Client::Sound::SoundHdr::SOUND_GetCurrentLevelId();
     if (eCurrentLevel == LEVEL_None) {
       return;
     }
@@ -495,7 +493,7 @@ void __fastcall WALL2_UpdateAmbientMusic(uint32_t nTickCount) {
       return;
     }
 
-    D2SoundsTxt* pSoundTxt = DataTbls::TXT_sounds_GetLineBySoundId(geCutsceneAmbientMusicSoundId);
+    D2SoundsTxt* pSoundTxt = D2Client::Sound::SoundHdr::TXT_sounds_GetLineBySoundId(geCutsceneAmbientMusicSoundId);
     eSongId = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
     if (!eSongId) {
       return;
@@ -533,7 +531,7 @@ void __fastcall WALL2_ScheduleSoundSequence(uint32_t dwParam1, int32_t nParam1, 
     void* pSoundHdrTable;
     if (geCutsceneAmbientMusicSoundId) {
       D2SoundsTxt* pSoundTxt;
-      pSoundTxt = DataTbls::TXT_sounds_GetLineBySoundId(geCutsceneAmbientMusicSoundId);
+      pSoundTxt = D2Client::Sound::SoundHdr::TXT_sounds_GetLineBySoundId(geCutsceneAmbientMusicSoundId);
       pStopHandle = D2Client::Sound::SOUND_StopSound(geCutsceneAmbientMusicSoundId);
       if (pStopHandle) {
         nActiveSoundId = D2Client::Sound::SOUND_GetSoundId(pStopHandle);

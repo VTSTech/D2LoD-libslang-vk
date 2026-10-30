@@ -4,7 +4,7 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MonStatsTxt.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/Monster/MonsterAI.h"
 #include "D2Game/Monster/Monsters.h"

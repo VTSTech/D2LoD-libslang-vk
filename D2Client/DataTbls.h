@@ -13,14 +13,12 @@ struct D2CharStatsTxt;
 struct D2SetItemsTxt;
 struct D2SetsTxt;
 struct D2SkillDescTxt;
-struct D2SoundsTxt;
 struct D2UniqueItemsTxt;
 typedef int eD2Skills;
 
 namespace D2Client::DataTbls {
 
 // Function declarations
-struct D2SoundsTxt * __fastcall TXT_sounds_GetLineBySoundId(int32_t nSoundId);
 struct D2CharStatsTxt * __fastcall INV_GetCharStatsTxtLine(int32_t nParam);
 struct D2SetsTxt * __fastcall GetSetsLine(int32_t nSetId);
 struct D2SetItemsTxt * __fastcall GetSetItemsLine(int32_t nSetItemId);

@@ -4,7 +4,7 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/DataTbls.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/RosterPets.h"
@@ -12,8 +12,7 @@
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/ui.h"
@@ -27,6 +26,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
@@ -34,7 +34,6 @@
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Clients.h"
@@ -684,7 +683,7 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
             if (bHasCharges && nChargesLeft <= 0) {
               bHasCharges = ui::GetUIFlag(UI_SKILLSELECT);
               if (bHasCharges) {
-                Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+                ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
               }
 
               pMsg->dwResult = 0;
@@ -693,7 +692,7 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
           }
 
           GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x3c, (gbSpellSelMouseHandFlag ? 0x80000000 : 0) + pSlotSkillIdPtr[-0x3c], *pSlotSkillIdPtr);
-          Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+          ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
           gbSpellSelMouseHandFlag = 0;
           bHandled = 1;
           GAME::Game::UI_ResetInputState();
@@ -705,7 +704,7 @@ void __stdcall INPUT_SpellSelectClick(D2UIMouseMsgStrc * pMsg) {
         if (nInitialMouseY <= ScreenSizeY - 0x31 && !bHandled) {
           bHasCharges = ui::GetUIFlag(UI_SKILLSELECT);
           if (bHasCharges) {
-            Draw::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
+            ui::SetUIFlag(UI_SKILLSELECT, UI_RESET, 0);
           }
         }
 
@@ -1471,7 +1470,7 @@ void __stdcall SPELLSEL_DrawTabHighlight(int32_t nParam) {
       return;
     }
 
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 5, 0x5a, 0x14, (uint32_t)gnSpellSelTabHighlightColor, DRAW_DARKERSOLID);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX - gnPanelOffsetX - 0x59, nHighlightY + 5, 0x5a, 0x14, (uint32_t)gnSpellSelTabHighlightColor, DRAW_DARKERSOLID);
     if (bBottomTabHovered) {
       nTextColor = 0;
       pwszLabel = D2Lang::StrTable::strtable::GetLocaleString(0x1082);
@@ -1670,7 +1669,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
               if (pSkillDesc) {
                 if (nSkillTreeActiveTab == (char)pSkillDesc->skillpage && (nTmpResult = SPELLSEL_GetSkillTreeRowOffset(pSkillDesc->skillrow) , (int)nClickY > nTmpResult - 0x30 && (int)nClickY < nTmpResult) && (nTmpResult = SPELLSEL_GetSkillTreeColumnOffset(pSkillDesc->skillcolumn) , (int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab] && !(*((uint8_t*)pSkillTxt + 0x4) & (uint8_t)gadwBitMasks[4]))) {
                   GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x3c, (int)pSkillTxt->skill, -1);
-                  Draw::SetUIFlag(UI_SKILLTREE, UI_RESET, 0);
+                  ui::SetUIFlag(UI_SKILLTREE, UI_RESET, 0);
                 } else {
                   pMsg->bHandled = 1;
                   pMsg->dwResult = 0;
@@ -1912,7 +1911,7 @@ void __stdcall ClickOnScreenSkillWindow(D2UIMouseMsgStrc * pMsg) {
 
     nSkillIdx = SKILLTREE_IsMouseOnSkillNode(0x22, 0x22, skillIdOfClass, nNewSkills);
     if (nSkillIdx) {
-      Draw::SetUIFlag(UI_SKILLTREE, UI_TOGGLE, 0);
+      ui::SetUIFlag(UI_SKILLTREE, UI_TOGGLE, 0);
     }
 
     consume_click:

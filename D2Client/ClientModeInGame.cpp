@@ -11,6 +11,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/ui.h"
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/Logging/ProfCore.h"
@@ -414,7 +415,7 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     UI::Path::TypeOfUiOverlayOverWorld(nBorderType);
     UI::Automap::AUTOMAP_CenterOnPlayer(1);
     UI::Draw::DRAW_NoOp();
-    UI::Draw::DRAW_RefreshNpcDialog();
+    UI::ui::DRAW_RefreshNpcDialog();
 }
 
 uint32_t __stdcall CLIENTMODE_Unused3(uint32_t dwUnused) {

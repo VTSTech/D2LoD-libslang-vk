@@ -4,28 +4,22 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/D2RosterStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Rendering.h"
 #include "D2Client/GAME/Roster.h"
-#include "D2Client/GAME/Sound.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
-#include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/ui.h"
-#include "D2Client/Warden/WardenClient.h"
 #include "D2Common/Chat/Ignorelist.h"
 #include "D2Common/Chat/Ignorelist/IgnoreList.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
-#include "D2Sound/Src/D2SoundFast.h"
-#include "D2Win/DC6.h"
 #include "D2Win/Src/D2WinFont.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/File.h"
@@ -612,13 +606,13 @@ void __stdcall DRAW_UI_ChatInput() {
 
     draw_input_box:
     gnChatInputTextLength++;
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(0x7f, ScreenSizeY - 0x67, ScreenSizeX - 0xff, 0x2f, 0, DRAW_TRANSPARENT);
+    Engine::Gfx::D2GFX_DrawSolidRectExBySize(0x7f, ScreenSizeY - 0x67, ScreenSizeX - 0xff, 0x2f, 0, DRAW_TRANSPARENT);
     int32_t nCursorX;
     nCursorX = 0;
     BOOL bExitFlag;
     bExitFlag = GAME::Game::GAMEDATA_GetExitFlag3();
     if (bExitFlag) {
-      Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+      ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
     }
 
     int nCursorLineIdx;
@@ -841,7 +835,7 @@ void __stdcall CHAT_CheckChatboxBounds(int32_t nParam) {
       return;
     }
 
-    Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+    ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
 }
 
 void __stdcall INPUT_HandleChatScroll(D2UIMouseMsgStrc * pMsg) {
@@ -1260,14 +1254,14 @@ static void __thiscall ChatCommandProcessor(uint16_t * pwInputMessage, char * ps
     nCompareResult = _stricmp(pszInput, "/fps");
     if (!nCompareResult) {
       GAME::Rendering::STATLIST_ResetIfNotUpdating();
-      Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+      ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
       return;
     }
 
     nCompareResult = _stricmp(pszInput, "/framerate");
     if (!nCompareResult) {
       GAME::Rendering::ResetStats();
-      Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+      ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
       return;
     }
 
@@ -1465,7 +1459,7 @@ static void __thiscall ChatCommandProcessor(uint16_t * pwInputMessage, char * ps
     print_reply:
     Text::TEXT_PrintGameString(pwMessage, 3);
     close_chatbox:
-    Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+    ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
 }
 
 void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
@@ -1551,7 +1545,7 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
         }
       }
 
-      Draw::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
+      ui::SetUIFlag(UI_CHATBOX, UI_RESET, 0);
     } else {
       if ((uint32_t)gnChatInputTextCursorPosition > 0) {
         gnChatInputTextCursorPosition--;
@@ -1563,113 +1557,6 @@ void __stdcall INPUT_HandleChatCharInput(D2UIMouseMsgStrc * pMsg) {
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
-}
-
-int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
-    int nStepCount = pSliderItem->nSubImageCount - 1;
-    float fStepCount = (float)nStepCount;
-    if (nStepCount < 0) {
-      fStepCount += 4.2949673e+09;
-    }
-
-    nStepCount = nMaxPos - nMinPos + 1;
-    float fRange = (float)nStepCount;
-    if (nStepCount < 0) {
-      fRange += 4.2949673e+09;
-    }
-
-    float fOffset = (float)(nCurrentPos - nMinPos);
-    if (nCurrentPos - nMinPos < 0) {
-      fOffset += 4.2949673e+09;
-    }
-
-    int32_t nResultValue = (int32_t)(int64_t)std::nearbyint(fRange * fStepCount / fOffset);
-    return nResultValue;
-}
-
-int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos) {
-    float fRange = (float)(nMaxPos - nMinPos);
-    if (nMaxPos - nMinPos < 0) {
-      fRange += 4.2949673e+09;
-    }
-
-    int nSteps = pSliderItem->nSubImageCount - 1;
-    float fStepCount = (float)nSteps;
-    if (nSteps < 0) {
-      fStepCount += 4.2949673e+09;
-    }
-
-    float fCurrentValue = (float)pSliderItem->nImageIndex;
-    if (pSliderItem->nImageIndex < 0) {
-      fCurrentValue += 4.2949673e+09;
-    }
-
-    float fBasePos = (float)nMinPos;
-    if (nMinPos < 0) {
-      fBasePos += 4.2949673e+09;
-    }
-
-    int32_t nResultPos = (int32_t)(int64_t)std::nearbyint(fBasePos + fCurrentValue * (fRange / fStepCount));
-    return nResultPos;
-}
-
-void __fastcall UI_SLIDER_ApplyMasterVolume(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    int nCurrentVolume = D2Sound::Src::D2SoundFast::SOUND_GetMasterVolume();
-    int32_t nSliderValue = UI_SLIDER_GetValueFromPosition(100, 0, pItem, nCurrentVolume);
-    pItem->nImageIndex = nSliderValue;
-}
-
-void __fastcall UI_SLIDER_ApplyMusicVolume(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    int nCurrentVolume = D2Sound::Src::D2SoundFast::SOUND_GetMusicVolume();
-    int32_t nSliderValue = UI_SLIDER_GetValueFromPosition(100, 0, pItem, nCurrentVolume);
-    pItem->nImageIndex = nSliderValue;
-}
-
-void __fastcall ESCMENU_Init3DSoundItem(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    bool _bIs3DActive;
-    bool bIs3DActive;
-    _bIs3DActive = GAME::Sound::SOUND_Is3DMixerActive();
-    pItem->nImageIndex = _bIs3DActive;
-}
-
-void __fastcall UI_SLIDER_ApplyPositionalBias(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    int nCurrentBias = D2Sound::Src::D2SoundFast::SOUND_GetPositionalBias();
-    int32_t nSliderValue = UI_SLIDER_GetValueFromPosition(100, 0, pItem, nCurrentBias);
-    pItem->nImageIndex = nSliderValue;
-}
-
-void __fastcall ESCMENU_InitEaxSoundItem(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    uint32_t bIsEaxActive = GAME::Sound::SOUND_IsEaxMixerActive();
-    pItem->nImageIndex = bIsEaxActive;
-}
-
-void __fastcall UI_SLIDER_ApplyNpcSpeech(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
-    D2Sound::Src::D2SoundFast::SOUND_SetNpcSpeech(pItem->nImageIndex);
-    int nSpeechVal = pItem->nImageIndex;
-    switch (nSpeechVal) {
-      default:
-        {
-          return;
-        }
-      case 0:
-        {
-          Warden::WARDEN_SetGlobalFlag(1);
-          Text::TEXT_SetTextDisplayMode(0);
-          return;
-        }
-      case 1:
-        {
-          Warden::WARDEN_SetGlobalFlag(0);
-          Text::TEXT_SetTextDisplayMode(1);
-          return;
-        }
-      case 2:
-        {
-          Warden::WARDEN_SetGlobalFlag(1);
-          Text::TEXT_SetTextDisplayMode(1);
-          return;
-        }
-    }
 }
 
 } // namespace D2Client::UI::Chat

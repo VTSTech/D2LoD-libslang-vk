@@ -132,6 +132,11 @@ struct __attribute__((packed)) D2CompressEncoderStrc {
 namespace Storm::Source::SSComp {
 
 // Function declarations
+void __thiscall LINKEDLIST_Unlink(int * pList, uint32_t * pNode);
+uint32_t __thiscall BITBUFFER_PeekBits(uint16_t * * pBitBuffer, uint16_t * nBitCount, uint32_t nMask);
+void __thiscall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits);
+void __thiscall LINKEDLIST_InsertAfter(struct D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode);
+int32_t __fastcall BITBUFFER_GetRemainingBits(int * pBitStream);
 void __thiscall BITSTREAM_WriteBits(struct D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount);
 void __fastcall BITSTREAM_Flush(struct D2BitStreamWriterStrc * pBitStream);
 void __thiscall BITSTREAM_WriteLiteralByte(int32_t pHuffState, int32_t pBitStream, int32_t nSymbol);
@@ -171,20 +176,36 @@ uint32_t __stdcall SCompCompress(uint32_t * pDst, uint32_t * pnDstLen, uint32_t 
 BOOL __stdcall SCompDecompress(uint32_t * pDst, uint32_t * pnDstSize, uint32_t * pSrc, uint32_t nSrcSizeIn, uint32_t dwFlags);
 // @sourcefile .\SOURCE\SCOMP.CPP
 uint32_t __stdcall SCOMP_CleanupTempBuffer();
+uint32_t __thiscall HUFFMAN_GetDecodedOffset(int * pNode, int * pBase);
+uint32_t __thiscall BITBUFFER_ReadBits(uint16_t * * pBitBuf, uint16_t * nBits, uint32_t nMask);
+void __stdcall SCOMP_DecompressSimple(uint32_t * pDst, uint32_t * pnDstSize, uint32_t * pSrc, uint32_t nSrcSize);
+int32_t __thiscall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrDefault);
+void __thiscall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode);
+int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf);
+void __thiscall LINKEDLIST_MoveNode(int * * pListHead, int * * pNode, int32_t nInsertAtHead, int * * pInsertRef);
+void __fastcall LINKEDLIST_UnlinkAll(int32_t pList);
+void __fastcall LINKEDLIST_LinkBefore(void * pNode);
+void __fastcall LINKEDLIST_NodeDestructor(void * pnParam);
+int * * __thiscall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode);
 void __thiscall COMPRESS_InitEncoderContext(struct D2CompressEncoderStrc * pEncoder, int * * pTableSel);
 void __thiscall COMPRESS_UpdateFrequencies(struct D2CompressEncoderStrc * pEncoder, struct D2CompressHuffNodeStrc * pSymbolNode);
 void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder);
+// Initialise a Huffman encoder/decoder context: zero all linked-list sentinels, set epoch to 1, clear node-count and quick-table epoch
+int32_t __fastcall HUFFMAN_InitContext(struct D2CompressEncoderStrc * pEncoder);
 void __thiscall COMPRESS_EncodeSymbol(struct D2CompressEncoderStrc * pEncoder, int * nSymbol);
 void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder);
+int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf);
 int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel);
+int32_t __fastcall HUFFMAN_Constructor(int32_t nParam);
+int32_t __fastcall HUFFMAN_ConstructorWithTable(int32_t pHuffCtx);
 // @blizzard HuffmanCompress (SCOMP.CPP)
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags);
 // @blizzard HuffmanDecompress (SCOMP.CPP)
 void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_t * pBitStreamCtx, uint32_t dwFlags, uint32_t dwParam);
-// @blizzard UnlockLog (SLOG.CPP)
-void SLOG_UnlockLog(int32_t nParam);
 // @blizzard SLogClose (SLOG.CPP)
 void __stdcall SLogClose(uint32_t nHandle);
+// @blizzard SLogCreate (SLOG.CPP)
+void __stdcall SLogCreate(LPCSTR szFileName, uint32_t dwUnused, int * pnHandleOut);
 // @blizzard SLogDump (SLOG.CPP)
 void __stdcall SLogDump(uint32_t nHandle, int32_t pData, uint32_t nLength);
 // @blizzard SLogFlush (SLOG.CPP)
@@ -195,6 +216,15 @@ void __stdcall SLogFlushAll();
 void __stdcall SLogInitialize();
 // @blizzard SLogPend (SLOG.CPP)
 void SLogPend(uint32_t nHandle, char * szFormat, ...);
+// Sets the log's indent (D2SLogStrc.nIndent) to nIndent and returns the previous indent; 0 if nHandle has no log.
+// Provenance: 1.14d asm 004200e0 (SLOG_LockLog, [ctx+0x14] = value).
+int32_t __stdcall SLogSetAbsIndent(uint32_t nHandle, int32_t nIndent);
+// Adds nDelta to the log's indent (D2SLogStrc.nIndent) and returns the previous indent; 0 if nHandle has no log.
+// Provenance: 1.14d asm 00420120 (SLOG_LockLog, [ctx+0x14] += delta); caller BNET_LogIndent.
+int32_t __stdcall SLogSetIndent(uint32_t nHandle, int32_t nDelta);
+// Sets D2SLogStrc.bTimestamps, which makes SLOG_OutputTime prefix each entry with the local time.
+// Provenance: 1.14d asm 00420160 (SLOG_LockLog, [ctx+0x18] = flag); name from the Mac PPC Storm import list (SLogSetTimestamp).
+void __stdcall SLogSetTimestamp(uint32_t nHandle, uint32_t bTimestamps);
 // @blizzard SLogWrite (SLOG.CPP)
 void SLogWrite(uint32_t nHandle, char * szFormat, ...);
 // @blizzard SLogDestroy (SLOG.CPP)
@@ -227,6 +257,6 @@ void PKWARE_SetByteValue(uint32_t * pnParam, uint8_t bParam, uint32_t nParam);
 void PKWARE_ProcessBuffer(struct TCmpStruct * nParam);
 void PKWARE_CopyBufferData(struct TCmpStruct * nParam, uint8_t * pbStart, uint8_t * pbEnd);
 void StaticFini_CriticalSection_00779214();
-// 12 internal functions (defined in .cpp)
+// 14 internal functions (defined in .cpp)
 
 } // namespace Storm::Source::SSComp

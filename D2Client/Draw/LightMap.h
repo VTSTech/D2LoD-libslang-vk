@@ -65,6 +65,6 @@ int __stdcall LIGHTMAP_GetQualityLevel();
 // Rebuilds the lightmap for the box +/-0x18 around the UI player, then updates every live light.
 void __stdcall dLightMapUpdate();
 void __stdcall LIGHTMAP_FreeAll();
-// 10 internal functions (defined in .cpp)
+// 11 internal functions (defined in .cpp)
 
 } // namespace D2Client::Draw::LightMap

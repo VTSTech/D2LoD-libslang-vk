@@ -2,7 +2,6 @@
 
 #include "D2Client/DataTbls.h"
 #include "D2Client/SKILLS/SkillsPal.h"
-#include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Common/D2MissilesTxt.h"
@@ -18,14 +17,6 @@
 
 
 namespace D2Client::DataTbls {
-
-D2SoundsTxt * __fastcall TXT_sounds_GetLineBySoundId(int32_t nSoundId) {
-    if (pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize) {
-      return pTxtSounds + nSoundId;
-    }
-
-    return nullptr;
-}
 
 D2CharStatsTxt * __fastcall INV_GetCharStatsTxtLine(int32_t nParam) {
     if (nParam >= 0 && nParam < sgptDataTable->nTxtCharStatsSize) {

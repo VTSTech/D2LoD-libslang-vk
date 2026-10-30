@@ -28,6 +28,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -43,8 +44,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/UnitFinds.h"
 #include "D2Game/Ai/AiGeneral.h"
@@ -66,6 +66,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerModes.h"
@@ -89,7 +90,7 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/SKILLS/SkillItem.h"
 #include "D2Game/SKILLS/SkillSor.h"
 #include "Fog/Src/Safesock.h"
@@ -2463,9 +2464,9 @@ BOOL __fastcall SKILLS_ForceAttackTarget(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, SKILL_Attack, -1);
       if (pUnit->eUnitType != UNIT_PLAYER) {
         if (pUnit->eUnitType == UNIT_MONSTER) {
-          GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Attack1, &sKillData);
+          Monster::MonsterMode::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Attack1, &sKillData);
           sKillData.pAttacker = pTarget;
-          GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillData, 1);
+          Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillData, 1);
           return 1;
         }
       } else {
@@ -4222,8 +4223,8 @@ void __thiscall SKILL_ApplyStunState(void * pThis, D2UnitStrc * pUnit, eD2States
       GAME::Event::SetEvent((::SGAMEDATA*)pThis, pUnit, 0xc, pExtendedExpiryFrame, 0, 0);
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Neutral, &local_28);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition((::SGAMEDATA*)pThis, &local_28, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Neutral, &local_28);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition((::SGAMEDATA*)pThis, &local_28, 1);
     pUnit->eUnitFlags &= ~UNITFLAG_DOUPDATE;
 }
 

@@ -29,6 +29,18 @@ struct D2DrlgTileLinkStrc {
 namespace D2Common::Drlg::RoomTile {
 
 // Function declarations
+// Converts world tile coordinates to screen position and room-relative offsets. Output: [0]=screenX, [1]=screenY+40, [2]=relativeX (world-roomOrigin), [3]=relativeY. Calls CoordsMiniMapToScreen for isometric transform.
+void __stdcall DRLGROOMTILE_WorldToTileScreenPos(int * pOutCoords, struct D2RoomExStrc * pRoomEx, int nWorldX, int nWorldY);
+// Allocates the next wall tile slot in pRoomEx's tile grid, links it into the *ppTileHead list, converts minimap coords to screen coords, sets colour/type/flags, then recursively creates a shadow tile (type 4) when nTileType==3 and propagates nGridFlags bits into that shadow tile's flags.
+struct D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateWallTileData(struct D2RoomExStrc * pRoomEx, struct D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry, int nTileType);
+// Initializes D2DrlgTileDataStrc: sets library entry, RGB to 0xFF, maps grid flags to tile flags.
+void __fastcall DRLGROOMTILE_FillTileData(struct D2RoomExStrc * pRoomEx, struct D2DrlgTileDataStrc * pTileData, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry);
+// Allocates from floor tile array, links into floor list, calls FillTileData.
+struct D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateFloorTileData(struct D2RoomExStrc * pRoomEx, struct D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry);
+// Allocates the next shadow tile entry from the room's pRoofTiles array, links it into the ppTileHead list, increments the shadow count, converts world coords to room-relative and screen coords (with +0x28 Y bias), copies RGB=white, hardcodes nTileType=0xD, and maps nGridFlags bits to nFlags (flip/lighting/transition bits).
+struct D2DrlgTileDataStrc * __fastcall DRLGROOMTILE_CreateShadowTileData(struct D2RoomExStrc * pRoomEx, struct D2DrlgTileDataStrc * * ppTileHead, int nPosX, int nPosY, uint32_t nGridFlags, int pTileLibEntry);
+// Creates a shadow tile data entry from grid cell flags. Gets the tile library entry for shadow type (0xd) and creates the shadow tile data for the room.
+void __fastcall DRLGROOMTILE_CreateShadowTileFromGrid(struct D2RoomExStrc * pRoomEx, struct D2RoomExStrc * nPosX, int nPosY, uint32_t nGridFlags);
 // Shrinks/reallocs tile data array.
 // @sourcefile .\DRLG\RoomTile.cpp
 void __fastcall DRLGROOMTILE_CompactTileDataArray(struct D2RoomExStrc * pRoomEx);
@@ -55,6 +67,6 @@ void __fastcall DRLGROOMTILE_AllocTileDataArrays(struct D2RoomExStrc * pRoomEx);
 void __fastcall DRLGROOMTILE_GrowTileDataArray(struct D2PoolManagerStrc * pMemory, struct D2DrlgTileGridStrc * pTileGrid, int nAdditionalTiles);
 // @sourcefile .\DRLG\RoomTile.cpp
 void __fastcall DRLGROOMTILE_FreeRoomTilesAll(struct D2RoomExStrc * pRoomEx);
-// 11 internal functions (defined in .cpp)
+// 13 internal functions (defined in .cpp)
 
 } // namespace D2Common::Drlg::RoomTile

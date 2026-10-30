@@ -16,6 +16,7 @@
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/Units.h"
+#include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2MissilesTxt.h"
 #include "D2Common/D2MonStatsTxt.h"
@@ -26,6 +27,7 @@
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatInfoStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
@@ -40,9 +42,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/SUnitDmg.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/UnitFinds.h"
 #include "D2Game/D2DamageStrc.h"
@@ -60,6 +60,7 @@
 #include "D2Game/MISSILES/MissilesMode.h"
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monster/MonsterAI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerModes.h"
@@ -2084,7 +2085,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
       return;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &pMonsterKill);
+    D2Game::Monster::MonsterMode::SetCurrentSkill(pUnit, Death, &pMonsterKill);
     if (pAttacker) {
       int32_t nAttackerYPos;
       nAttackerYPos = D2Client::Units::GetYPosFromDynamicPathUnit(pAttacker);
@@ -2096,7 +2097,7 @@ void __fastcall SERVER_KillMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Un
 
     pMonsterKill.pAttacker = pAttacker;
     pMonsterKill.nAnimatedMode1 = (uint8_t)nDirection;
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &pMonsterKill, 1);
+    D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &pMonsterKill, 1);
     if (-1 < (int)pUnit->eUnitFlags) {
       Quests::QUESTS::QUEST_OnMonsterKilled(pGame, pUnit, pAttacker);
     }
@@ -2260,9 +2261,9 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
             return;
           }
           if (wDmgResultFlags & 8) {
-            GAME::Event::Dispatch::Monster::SetCurrentSkill(pVictim, Knockback, &sMonsterKill);
+            D2Game::Monster::MonsterMode::SetCurrentSkill(pVictim, Knockback, &sMonsterKill);
             sMonsterKill.pAttacker = pAttacker;
-            GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
+            D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
             return;
           }
           if (wDmgResultFlags & 0x10) {
@@ -2271,8 +2272,8 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
               if (nStatOrFrame != 0xf3 && nStatOrFrame != 0x14d && nStatOrFrame != 0x2c1) {
                 uMonFlag = D2Client::Source::ClientEngine::GetSomeMonsterStatFlag(nStatOrFrame, 6);
                 if (uMonFlag) {
-                  GAME::Event::Dispatch::Monster::SetCurrentSkill(pVictim, eD2MonsterAnimMode_ns::Block, &sMonsterKill);
-                  GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
+                  D2Game::Monster::MonsterMode::SetCurrentSkill(pVictim, eD2MonsterAnimMode_ns::Block, &sMonsterKill);
+                  D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
                   return;
                 }
               }
@@ -2284,8 +2285,8 @@ void __fastcall SERVER_GetHitCalculation(::SGAMEDATA * pGameIn, D2UnitStrc * pUn
           if (wDmgResultFlags & 4) {
             pStatList = D2Common::Stats::StatsEx::GetStatsByState(pVictim, STATE_stunned);
             if (pStatList || (nLastBlockFrame = DAMAGE_CheckKnockbackThreshold(pVictim, pDamage, pDamage->dwHitClass) , !nLastBlockFrame)) {
-              GAME::Event::Dispatch::Monster::SetCurrentSkill(pVictim, eD2MonsterAnimMode_ns::GetHit, &sMonsterKill);
-              GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
+              D2Game::Monster::MonsterMode::SetCurrentSkill(pVictim, eD2MonsterAnimMode_ns::GetHit, &sMonsterKill);
+              D2Game::Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameLocal, &sMonsterKill, 1);
               Monsters::MONSTER_DispatchUModOnSpecial(pGameLocal, (int*)pVictim);
               return;
             }
@@ -2933,7 +2934,7 @@ void __fastcall DAMAGE_CalculateAndApplyDamage(::SGAMEDATA * pGame, D2UnitStrc *
 }
 
 // Returns the highest weapon-type-conditional skill damage bonus (stat 0x15C) applicable to the unit's currently equipped weapons (left and right arm slots). Iterates all bonus entries; an entry with ITEMTYPE_None1 matches unconditionally. Returns 0 if unit is null or no matching bonus is found.
-int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
+static int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
     eD2ItemTypes eItemType;
     D2StatStrc aStatEntries[32];
     int32_t nStatCount;
@@ -2971,17 +2972,140 @@ int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
     return nBestBonus;
 }
 
+// Rolls a unit's passive defensive avoidance against an incoming attack. For players in Run/Walk mode (or matching monster mode) rolls passive_evade; otherwise checks dodge (passive_dodge) when nParam==0 or avoid (passive_avoid) when nParam!=0, plus a weapon-class-0xD parry/block path keyed on DAMAGE_GetSkillDamageBonus. Uses the unit RNG seed (advances pUnit->sSeed). Returns a result bitcode: 0x10 (block/parry), 8 (evade), 4 (dodge), 2 (avoid), or 0 (none). __fastcall with pUnit in ESI, attacker pUnit2 in EDI.
+static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
+    int32_t nParryBonus;
+    uint32_t nRandRoll;
+    int nDodgeChance;
+    uint32_t nEvadeRoll;
+    int nAvoidChance;
+    uint32_t nWeaponClass3;
+    int32_t nDebugAddr;
+    uint32_t dwSeedLow;
+    eD2PlayerAnimMode eAnimMode;
+    char* nSeedMod;
+    int32_t nSkillBonus;
+    D2UnitStrc* pDefender;
+    uint32_t nWeaponClass2;
+    nWeaponClass2 = 0;
+    if (pUnit) {
+      D2SeedStrc DVar1;
+      eAnimMode = pUnit->eAnimMode.ePlayerMode;
+      if (pUnit->eUnitType == UNIT_PLAYER) {
+        if (eAnimMode == eD2PlayerAnimMode_ns::Run || eAnimMode == Walk) {
+          nParam = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
+          if (nParam <= 0) {
+            return 0;
+          }
+
+          dwSeedLow = pUnit->sSeed.nSeedLow;
+          roll_evade:
+          DVar1 = D2_SEED_NEXT(pUnit->sSeed);
+          pUnit->sSeed = DVar1;
+          nAvoidChance = DVar1.nSeedLow % 100;
+          nSeedMod = "evades";
+          nParryBonus = nParam;
+          nDodgeChance = nAvoidChance;
+          SUnit::GetGamePointer(pUnit2);
+          nullsub_4Arg(pUnit, nParryBonus, nDodgeChance, (uint32_t)nSeedMod);
+          nRandRoll = 8;
+          if (nAvoidChance < nParam) {
+            return nRandRoll;
+          }
+
+          nRandRoll = nWeaponClass2;
+          return nRandRoll;
+        }
+
+        nParryBonus = DAMAGE_GetSkillDamageBonus(pUnit);
+        if (nParryBonus > 0) {
+          D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, &nWeaponClass2, -1, 1);
+          if (nWeaponClass2 == 0xd) {
+            nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+            nDebugAddr = (int32_t)s_block_006e1730;
+            pDefender = pUnit;
+            nSkillBonus = nParryBonus;
+            nWeaponClass3 = nRandRoll;
+            SUnit::GetGamePointer(pUnit2);
+            nullsub_4Arg(pDefender, nSkillBonus, nRandRoll, nDebugAddr);
+            if ((int)nWeaponClass3 < nParryBonus) {
+              return 0x10;
+            }
+          }
+        }
+
+        goto roll_dodge_or_avoid;
+      }
+      if (eAnimMode == eD2PlayerAnimMode_ns::Skill3 || eAnimMode == Walk) {
+        nParam = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_evade, 0);
+        if (nParam <= 0) {
+          return 0;
+        }
+
+        dwSeedLow = pUnit->sSeed.nSeedLow;
+        goto roll_evade;
+      }
+    }
+
+    nParryBonus = DAMAGE_GetSkillDamageBonus(pUnit);
+    if (nParryBonus > 0) {
+      D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, &nWeaponClass3, -1, 1);
+      if (nWeaponClass3 == 0xd) {
+        nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+        nSeedMod = "block";
+        pDefender = pUnit;
+        nSkillBonus = nParryBonus;
+        nWeaponClass2 = nRandRoll;
+        SUnit::GetGamePointer(pUnit2);
+        nullsub_4Arg(pDefender, nSkillBonus, nRandRoll, (uint32_t)nSeedMod);
+        if ((int)nWeaponClass2 < nParryBonus) {
+          return 0x10;
+        }
+      }
+    }
+
+    roll_dodge_or_avoid:
+    if (!nParam) {
+      nDodgeChance = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_dodge, 0);
+      if (nDodgeChance > 0) {
+        nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+        nSeedMod = "dodges";
+        nAvoidChance = nDodgeChance;
+        nRandRoll = nEvadeRoll;
+        SUnit::GetGamePointer(pUnit2);
+        nullsub_4Arg(pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        if ((int)nEvadeRoll < nDodgeChance) {
+          return 4;
+        }
+      }
+    } else {
+      nDodgeChance = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_passive_avoid, 0);
+      if (nDodgeChance > 0) {
+        nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
+        nSeedMod = "avoids";
+        nAvoidChance = nDodgeChance;
+        nRandRoll = nEvadeRoll;
+        SUnit::GetGamePointer(pUnit2);
+        nullsub_4Arg(pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        if ((int)nEvadeRoll < nDodgeChance) {
+          return 2;
+        }
+      }
+    }
+    return 0;
+}
+
 uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pDefUnit, int32_t nAttackRating, int32_t nParam2) {
     uint32_t uBlockResult;
     if (!nParam2) {
-      uBlockResult = D2Common::Unit::SUnitDmg::DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
       return uBlockResult;
     }
 
     int bExpansion = pGame->bExpansion;
     int nBlockRate = D2Common::Units::GetBlockRate(pDefUnit, bExpansion);
     if (nBlockRate <= 0) {
-      uBlockResult = D2Common::Unit::SUnitDmg::DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
       return uBlockResult;
     }
     if (pDefUnit && pDefUnit->eUnitType == UNIT_PLAYER) {
@@ -3002,7 +3126,7 @@ uint32_t __fastcall DAMAGE_CheckBlockAndEvasion(::SGAMEDATA * pGame, D2UnitStrc 
     SUnit::GetGamePointer(pUnit);
     nullsub_4Arg(pDefender, nBlockRateTmp, nRandRoll, nDebugAddr);
     if (nSeedMod >= nBlockRate) {
-      uBlockResult = D2Common::Unit::SUnitDmg::DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
+      uBlockResult = DAMAGE_CheckDefenseEvasion(nAttackRating, pDefUnit, pUnit);
       return uBlockResult;
     }
 

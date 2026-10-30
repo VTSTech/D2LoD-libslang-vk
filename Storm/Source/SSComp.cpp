@@ -9,7 +9,6 @@
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
-#include "Storm/Storm.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 
@@ -42,6 +41,43 @@ typedef void (__fastcall *pfnSCompCodec)(void * pDst, uint32_t * pnDstLen, void 
 #endif
 
 namespace Storm::Source::SSComp {
+
+void __thiscall LINKEDLIST_Unlink(int * pList, uint32_t * pNode) {
+    *pList = (int)pNode;
+    pList[1] = *pNode;
+    *pList = (int)(pNode + 1);
+    pList[2] = 0x20;
+}
+
+uint32_t __thiscall BITBUFFER_PeekBits(uint16_t * * pBitBuffer, uint16_t * nBitCount, uint32_t nMask) {
+    uint16_t* nBitPos = pBitBuffer[2];
+    if (nBitPos > nBitCount) {
+      return (uint32_t)pBitBuffer[1] & nMask;
+    }
+
+    uint16_t wWord = **pBitBuffer;
+    pBitBuffer[2] = nBitPos + 8;
+    pBitBuffer[1] = (uint16_t*)((uint32_t)pBitBuffer[1] | (uint32_t)wWord << ((uint8_t)(uintptr_t)nBitPos & 0x1f));
+    (*pBitBuffer)++;
+    return (uint32_t)pBitBuffer[1] & nMask;
+}
+
+void __thiscall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits) {
+    *(uint32_t*)(pBitBuffer + 4) >>= (uint8_t)nBits & 0x1f;
+    *(int*)(pBitBuffer + 8) -= nBits;
+}
+
+void __thiscall LINKEDLIST_InsertAfter(D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode) {
+    pList->pOutPtr = pNode;
+    pList->nPad00 = (uint32_t)(uintptr_t)pNode;
+    pList->nBytesRemaining = pNewNode;
+    pList->nBitAccum = 0;
+    pList->nBitsHeld = 0;
+}
+
+int32_t __fastcall BITBUFFER_GetRemainingBits(int * pBitStream) {
+    return pBitStream[2] - *pBitStream;
+}
 
 void __thiscall BITSTREAM_WriteBits(D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount) {
     uint32_t nBitsHeld;
@@ -949,6 +985,278 @@ uint32_t __stdcall SCOMP_CleanupTempBuffer() {
     SMem::SMemFree(gpScompTempBuffer, ".\\SOURCE\\SCOMP.CPP", 0x733, 0);
     gpScompTempBuffer = 0;
     return 1;
+}
+
+uint32_t __thiscall HUFFMAN_GetDecodedOffset(int * pNode, int * pBase) {
+    uint32_t nOffset = pNode[1];
+    if ((int)nOffset < 0) {
+      return ~nOffset;
+    }
+    if ((int)pBase >= 0) {
+      return nOffset + (int)pBase;
+    }
+
+    pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
+    return nOffset + (int)pBase;
+}
+
+uint32_t __thiscall BITBUFFER_ReadBits(uint16_t * * pBitBuf, uint16_t * nBits, uint32_t nMask) {
+    uint16_t* pBitPos = pBitBuf[2];
+    if (pBitPos <= nBits) {
+      uint16_t wWord;
+      wWord = **pBitBuf;
+      pBitBuf[2] = pBitPos + 8;
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wWord << ((uint8_t)(uintptr_t)pBitPos & 0x1f));
+      (*pBitBuf)++;
+    }
+
+    pBitPos = pBitBuf[1];
+    pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - (int)nBits);
+    pBitBuf[1] = (uint16_t*)((uint32_t)pBitPos >> ((uint8_t)(uintptr_t)nBits & 0x1f));
+    return (uint32_t)pBitPos & nMask;
+}
+
+void __stdcall SCOMP_DecompressSimple(uint32_t * pDst, uint32_t * pnDstSize, uint32_t * pSrc, uint32_t nSrcSize) {
+    SCompDecompress(pDst, pnDstSize, pSrc, nSrcSize, 0);
+}
+
+int32_t __thiscall HUFFMAN_GetNextNodeOrDefault(int32_t pThis, int32_t nChildOrDefault) {
+    if (nChildOrDefault) {
+      return nChildOrDefault;
+    }
+
+    nChildOrDefault = pThis + 4;
+    return nChildOrDefault;
+}
+
+void __thiscall LINKEDLIST_UnlinkNode(int32_t pThis, int * pNode) {
+    int* pPrevLink;
+    if (!pNode) {
+      pNode = (int*)(pThis + 4);
+    }
+
+    int pNext = *pNode;
+    if (!pNext) {
+      return;
+    }
+
+    uint32_t nOffset = pNode[1];
+    if ((int)nOffset < 0) {
+      pPrevLink = (int*)~nOffset;
+    } else {
+      pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
+    }
+
+    *pPrevLink = pNext;
+    *(int*)(*pNode + 4) = pNode[1];
+    *pNode = 0;
+    pNode[1] = 0;
+}
+
+int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
+    uint16_t** pTreeNode;
+    int nQuickStep;
+    uint32_t nBitCount;
+    uint16_t* wBits;
+    uint16_t wRefill;
+    uint16_t** pBitBufAlias = pBitBuf;
+    uint32_t wWord = (uint32_t)pBitBuf[2];
+    if (wWord <= 7) {
+      wRefill = **pBitBuf;
+      pBitBuf[2] = (uint16_t*)(wWord + 0x10);
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
+      (*pBitBuf)++;
+    }
+
+    uint16_t* puVar2 = pBitBuf[1];
+    int* pQuickEntry = (int*)(pThis + (((uint32_t)puVar2 & 0x7f) * 3 + 0xd1d) * 4);
+    bool bNeedRebuild = *pQuickEntry != *(int*)(pThis + 4);
+    if (!bNeedRebuild) {
+      nBitCount = pQuickEntry[1];
+      if (nBitCount <= 7) {
+        pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - nBitCount);
+        pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> ((uint8_t)nBitCount & 0x1f));
+        return pQuickEntry[2];
+      }
+
+      pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - 7);
+      pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> 7);
+      pTreeNode = (uint16_t**)pQuickEntry[2];
+    } else {
+      nBitCount = *(uint32_t*)(**(int**)(pThis + 0x3060) + 4);
+      pTreeNode = (uint16_t**)((int)nBitCount <= 0 ? 0 : nBitCount);
+    }
+
+    nBitCount = 0;
+    pBitBuf = 0;
+    do {
+      uint16_t** ppuVar1;
+      wBits = pBitBufAlias[1];
+      pTreeNode = (uint16_t**)pTreeNode[5];
+      ppuVar1 = pBitBufAlias + 2;
+      *ppuVar1 = (uint16_t*)((int)*ppuVar1 - 1);
+      pBitBufAlias[1] = (uint16_t*)((uint32_t)wBits >> 1);
+      if (!*ppuVar1) {
+        pBitBufAlias[1] = *(uint16_t**)*pBitBufAlias;
+        *pBitBufAlias += 2;
+        pBitBufAlias[2] = (uint16_t*)0x20;
+      }
+      if ((uint32_t)wBits & 1) {
+        pTreeNode = (uint16_t**)pTreeNode[1];
+      }
+
+      nBitCount++;
+      if (nBitCount == 7) {
+        pBitBuf = pTreeNode;
+      }
+    } while (pTreeNode[5]);
+
+    if (!bNeedRebuild) {
+      return (int32_t)pTreeNode[2];
+    }
+    if (nBitCount > 7) {
+      nQuickStep = *(int*)(pThis + 4);
+      pQuickEntry[1] = nBitCount;
+      *pQuickEntry = nQuickStep;
+      pQuickEntry[2] = (int)pBitBuf;
+      return (int32_t)pTreeNode[2];
+    }
+
+    uint32_t nQuickIdx = 0xffffffffU >> (0x20 - (uint8_t)nBitCount & 0x1f) & (uint32_t)puVar2 & 0x7f;
+    nQuickStep = 1 << ((uint8_t)nBitCount & 0x1f);
+    uint32_t* pQuickFill = (uint32_t*)(pThis + 0x347c + nQuickIdx * 0xc);
+    do {
+      pQuickFill[-2] = *(uint32_t*)(pThis + 4);
+      pQuickFill[-1] = nBitCount;
+      *pQuickFill = (uint32_t)(uintptr_t)pTreeNode[2];
+      nQuickIdx += nQuickStep;
+      pQuickFill += nQuickStep * 3;
+    } while (nQuickIdx <= 0x7f);
+
+    return (int32_t)pTreeNode[2];
+}
+
+void __thiscall LINKEDLIST_MoveNode(int * * pListHead, int * * pNode, int32_t nInsertAtHead, int * * pInsertRef) {
+    int* pLinkTarget;
+    int** pNodeCur = pNode;
+    if (!pNode) {
+      pNodeCur = pListHead + 1;
+    }
+
+    int* pNeighbor = *pNodeCur;
+    if (pNeighbor) {
+      pLinkTarget = pNodeCur[1];
+      if ((int)pLinkTarget < 0) {
+        pLinkTarget = (int*)~(uint32_t)pLinkTarget;
+      } else {
+        pLinkTarget = (int*)((int)pLinkTarget + ((int)pNodeCur - pNeighbor[1]));
+      }
+
+      *pLinkTarget = (int)pNeighbor;
+      (*pNodeCur)[1] = (int)pNodeCur[1];
+      *pNodeCur = 0;
+      pNodeCur[1] = 0;
+    }
+    if (!pInsertRef) {
+      pInsertRef = pListHead + 1;
+    }
+
+    switch (nInsertAtHead) {
+      case 1:
+        {
+          *pNodeCur = (int*)pInsertRef;
+          pNodeCur[1] = pInsertRef[1];
+          pNeighbor = *pListHead;
+          pLinkTarget = pInsertRef[1];
+          if ((int)pLinkTarget < 0) {
+            *(int***)~(uint32_t)pLinkTarget = (int**)pNodeCur;
+            pInsertRef[1] = (int*)pNode;
+            return;
+          }
+          if ((int)pNeighbor < 0) {
+            pNeighbor = (int*)((int)pInsertRef - (*pInsertRef)[1]);
+          }
+
+          *(int***)((int)pLinkTarget + (int)pNeighbor) = (int**)pNodeCur;
+          pInsertRef[1] = (int*)pNode;
+          return;
+        }
+      default:
+        {
+          pNeighbor = *pInsertRef;
+          *pNodeCur = pNeighbor;
+          pNodeCur[1] = (int*)pNeighbor[1];
+          pNeighbor[1] = (int)pNode;
+          *pInsertRef = (int*)pNodeCur;
+          return;
+        }
+    }
+}
+
+void __fastcall LINKEDLIST_UnlinkAll(int32_t pList) {
+    int* pPrevLink;
+    uint32_t nOffset;
+    int* pNode;
+    while (true) {
+      int pNext;
+      pNode = *(int**)(pList + 8);
+      if ((int)pNode <= 0) {
+        break;
+      }
+
+      pNext = *pNode;
+      if (pNext) {
+        nOffset = pNode[1];
+        if ((int)nOffset < 0) {
+          pPrevLink = (int*)~nOffset;
+        } else {
+          pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
+        }
+
+        *pPrevLink = pNext;
+        *(int*)(*pNode + 4) = pNode[1];
+        *pNode = 0;
+        pNode[1] = 0;
+      }
+    }
+}
+
+void __fastcall LINKEDLIST_LinkBefore(void * pNode) {
+    *(uint32_t*)pNode = 0;
+    *(uint32_t*)((int)pNode + 4) = 0;
+}
+
+void __fastcall LINKEDLIST_NodeDestructor(void * pnParam) {
+    int* pPrevLink;
+    int pNext = *(int*)pnParam;
+    if (!pNext) {
+      return;
+    }
+
+    uint32_t nPrevEncoded = *(uint32_t*)((int)pnParam + 4);
+    if ((int)nPrevEncoded < 0) {
+      pPrevLink = (int*)~nPrevEncoded;
+    } else {
+      pPrevLink = (int*)((int)pnParam + (nPrevEncoded - *(int*)(pNext + 4)));
+    }
+
+    *pPrevLink = pNext;
+    *(uint32_t*)(*(int*)pnParam + 4) = *(uint32_t*)((int)pnParam + 4);
+    *(uint32_t*)pnParam = 0;
+    *(uint32_t*)((int)pnParam + 4) = 0;
+}
+
+int * * __thiscall HUFFMAN_AllocateNode(int32_t pThis, int32_t nInsertMode) {
+    int** pNode = *(int***)(pThis + 0x3058);
+    if ((int)pNode <= 0 || !pNode) {
+      pNode = (int**)(pThis + 8 + *(int*)(pThis + 0x3068) * 0x18);
+      (*(int*)(pThis + 0x3068))++;
+    }
+
+    LINKEDLIST_MoveNode((int**)(pThis + 0x305c), pNode, nInsertMode, nullptr);
+    pNode[4] = 0;
+    pNode[5] = 0;
+    return pNode;
 }
 
 void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, int * * pTableSel) {
@@ -3684,7 +3992,7 @@ void __thiscall COMPRESS_UpdateFrequencies(D2CompressEncoderStrc * pEncoder, D2C
 
 void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder) {
     int* pPrevLink;
-    SSystem::LINKEDLIST_UnlinkAll(pEncoder);
+    LINKEDLIST_UnlinkAll(pEncoder);
     int* pHeadLink = (int*)(pEncoder + 4);
     int pNode = *pHeadLink;
     if (!pNode) {
@@ -3702,6 +4010,24 @@ void __fastcall COMPRESS_FlushEncoderState(int32_t pEncoder) {
     *(uint32_t*)(*pHeadLink + 4) = *(uint32_t*)(pEncoder + 8);
     *pHeadLink = 0;
     *(uint32_t*)(pEncoder + 8) = 0;
+}
+
+// Initialise a Huffman encoder/decoder context: zero all linked-list sentinels, set epoch to 1, clear node-count and quick-table epoch
+int32_t __fastcall HUFFMAN_InitContext(D2CompressEncoderStrc * pEncoder) {
+    _eh_vector_constructor_iterator_(pEncoder->aNodePool, 0x18, 0x203, LINKEDLIST_LinkBefore, LINKEDLIST_NodeDestructor);
+    pEncoder->ppFreeListTailLink = 0;
+    D2CompressHuffNodeStrc** ppDVar1 = &pEncoder->pFreeListSentinel;
+    *ppDVar1 = (D2CompressHuffNodeStrc*)ppDVar1;
+    pEncoder->ppFreeListTailLink = (D2CompressHuffNodeStrc**)~(uint32_t)ppDVar1;
+    pEncoder->nFreeListBack = 0;
+    pEncoder->pWeightedListHead = 0;
+    ppDVar1 = &pEncoder->pSortedListRoot;
+    *ppDVar1 = (D2CompressHuffNodeStrc*)ppDVar1;
+    pEncoder->pWeightedListHead = (D2CompressHuffNodeStrc*)~(uint32_t)ppDVar1;
+    pEncoder->nFreeListLinkOff = 0;
+    pEncoder->nRootWeight = 1;
+    pEncoder->nNodeCount = 0;
+    return (int32_t)pEncoder;
 }
 
 void __thiscall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nSymbol) {
@@ -3816,7 +4142,7 @@ void __thiscall COMPRESS_EncodeSymbol(D2CompressEncoderStrc * pEncoder, int * nS
 void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder) {
     uint32_t* pPrevLink;
     uint32_t nOffset;
-    SSystem::LINKEDLIST_UnlinkAll((int32_t)(pEncoder + 0xc17));
+    LINKEDLIST_UnlinkAll((int32_t)(pEncoder + 0xc17));
     uint32_t* pHeadLink = pEncoder + 0xc18;
     uint32_t pNode = *pHeadLink;
     if (pNode) {
@@ -3833,7 +4159,7 @@ void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder) {
       pEncoder[0xc19] = 0;
     }
 
-    SSystem::LINKEDLIST_UnlinkAll((int32_t)(pEncoder + 0xc14));
+    LINKEDLIST_UnlinkAll((int32_t)(pEncoder + 0xc14));
     pHeadLink = pEncoder + 0xc15;
     pNode = *pHeadLink;
     if (pNode) {
@@ -3850,7 +4176,66 @@ void __fastcall COMPRESS_DestroyEncoderContext(uint32_t * pEncoder) {
       pEncoder[0xc16] = 0;
     }
 
-    _eh_vector_destructor_iterator_(pEncoder + 2, 0x18, 0x203, SSystem::LINKEDLIST_NodeDestructor);
+    _eh_vector_destructor_iterator_(pEncoder + 2, 0x18, 0x203, LINKEDLIST_NodeDestructor);
+}
+
+int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, int32_t nDstMax, uint16_t * * pBitBuf) {
+    uint16_t wRefill;
+    uint16_t** pBitBufAlias = pBitBuf;
+    if (!nDstMax) {
+      return 0;
+    }
+
+    uint32_t wWord = (uint32_t)pBitBuf[2];
+    if (wWord <= 8) {
+      wRefill = **pBitBuf;
+      pBitBuf[2] = (uint16_t*)(wWord + 0x10);
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
+      (*pBitBuf)++;
+    }
+
+    uint16_t* puVar1 = pBitBuf[1];
+    pBitBuf[2] += -4;
+    pBitBuf[1] = (uint16_t*)((uint32_t)puVar1 >> 8);
+    COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pDecoderCtx, (int**)((uint32_t)puVar1 & 0xff));
+    pBitBuf = (uint16_t**)pDst;
+    *pDecoderCtx = (uint32_t)((char)(uintptr_t)puVar1 == '\0');
+    while (true) {
+      int32_t nSymbol;
+      nSymbol = HUFFMAN_DecodeSymbol((int32_t)pDecoderCtx, pBitBufAlias);
+      if (nSymbol == 0x101) {
+        puVar1 = pBitBufAlias[2];
+        if (puVar1 < (uint16_t*)0x9) {
+          wRefill = **pBitBufAlias;
+          pBitBufAlias[2] = puVar1 + 8;
+          pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] | (uint32_t)wRefill << ((uint8_t)(uintptr_t)puVar1 & 0x1f));
+          (*pBitBufAlias)++;
+        }
+
+        pBitBufAlias[2] += -4;
+        nSymbol = (uint32_t)pBitBufAlias[1] & 0xff;
+        pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] >> 8);
+        COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pDecoderCtx, (int*)nSymbol);
+        if (!*pDecoderCtx) {
+          COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[nSymbol + 0xc1b]);
+        }
+      }
+      if ((int*)nSymbol == (int*)0x100) {
+        break;
+      }
+
+      *(char*)pBitBuf = (char)nSymbol;
+      pBitBuf = (uint16_t**)((int)pBitBuf + 1);
+      nDstMax--;
+      if (!nDstMax) {
+        return (int)pBitBuf - (int)pDst;
+      }
+      if (*pDecoderCtx) {
+        COMPRESS_UpdateFrequencies((D2CompressEncoderStrc*)pDecoderCtx, (D2CompressHuffNodeStrc*)pDecoderCtx[nSymbol + 0xc1b]);
+      }
+    }
+
+    return (int)pBitBuf - (int)pDst;
 }
 
 int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, uint8_t * pbSrc, int32_t nSrcLen, int * * nTableSel) {
@@ -3912,11 +4297,29 @@ int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, ui
     }
 }
 
+int32_t __fastcall HUFFMAN_Constructor(int32_t nParam) {
+    HUFFMAN_InitContext((D2CompressEncoderStrc*)nParam);
+    return nParam;
+}
+
+int32_t __fastcall HUFFMAN_ConstructorWithTable(int32_t pHuffCtx) {
+    HUFFMAN_InitContext((D2CompressEncoderStrc*)pHuffCtx);
+    uint32_t* pQuickEntry = (uint32_t*)(pHuffCtx + 0x3474);
+    int nCount = 0x80;
+    do {
+      *pQuickEntry = 0;
+      pQuickEntry += 3;
+      nCount--;
+    } while (nCount);
+
+    return pHuffCtx;
+}
+
 // @blizzard HuffmanCompress (SCOMP.CPP)
 void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnBytesWritten, uint8_t * pbSrc, int32_t nSrcLen, uint8_t * pbTableSel, uint32_t dwFlags) {
     D2CompressEncoderStrc aHuffCtx;
     D2BitStreamWriterStrc aBitStream;
-    SSystem::LINKEDLIST_InsertAfter(&aBitStream, pBitStreamCtx, *pnBytesWritten);
+    LINKEDLIST_InsertAfter(&aBitStream, pBitStreamCtx, *pnBytesWritten);
     HUFFMAN_InitContext(&aHuffCtx);
     int nBytesWritten = COMPRESS_EncodeBuffer((uint32_t*)&aHuffCtx, (uintptr_t)&aBitStream, pbSrc, nSrcLen, (int**)(uint32_t)*pbTableSel);
     *pnBytesWritten = nBytesWritten;
@@ -3927,7 +4330,7 @@ void __fastcall SCOMP_HuffmanCompress(uint8_t * pBitStreamCtx, uint32_t * pnByte
 void __fastcall SCOMP_HuffmanDecompress(uint8_t * pDst, int * pnDstSize, uint32_t * pBitStreamCtx, uint32_t dwFlags, uint32_t dwParam) {
     uint32_t aHuffCtx[3741];
     int sListHead[3];
-    SSystem::LINKEDLIST_Unlink(sListHead, pBitStreamCtx);
+    LINKEDLIST_Unlink(sListHead, pBitStreamCtx);
     HUFFMAN_ConstructorWithTable((int32_t)aHuffCtx);
     int pBytesWritten = HUFFMAN_DecompressBlock(aHuffCtx, pDst, *pnDstSize, (uint16_t**)sListHead);
     *pnDstSize = pBytesWritten;
@@ -3945,6 +4348,51 @@ static void SLOG_FlushLog(D2SLogStrc * pLog) {
     /* HANDLE hFile for FlushFileBuffers */ FlushFileBuffers(pLog->hFile);
     pLog->nUsed = 0;
     pLog->nLineStart = 0;
+}
+
+// @blizzard LockLog (SLOG.CPP)
+static D2SLogStrc * __stdcall SLOG_LockLog(uint32_t * pnSlotOut, int32_t bAllocate, uint32_t nHandle) {
+    if (!nHandle) {
+      *pnSlotOut = -1;
+      return nullptr;
+    }
+
+    uint32_t nSlot = nHandle & 3;
+    LPCRITICAL_SECTION lpCriticalSection = gaSLogCritSect + nSlot;
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
+    *pnSlotOut = nSlot;
+    D2SLogStrc** ppNext = gaSLogHead + nSlot;
+    D2SLogStrc* pDVar1 = gaSLogHead[nSlot];
+    while (pDVar1) {
+      if (pDVar1->nHandle == nHandle) {
+        return pDVar1;
+      }
+
+      ppNext = &pDVar1->pNext;
+      pDVar1 = *ppNext;
+    }
+
+    if (!bAllocate) {
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+      *pnSlotOut = -1;
+      return nullptr;
+    }
+
+    D2SLogStrc* pContext;
+    /* DWORD flProtect for VirtualAlloc */ /* DWORD flAllocationType for VirtualAlloc */ /* SIZE_T dwSize for VirtualAlloc */ /* LPVOID lpAddress for VirtualAlloc */ pContext = (D2SLogStrc*)VirtualAlloc((LPVOID)0x0, 0x1001c, 0x1000, 4);
+    *ppNext = pContext;
+    if (!pContext) {
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
+      *pnSlotOut = -1;
+      return nullptr;
+    }
+
+    pContext->nHandle = nHandle;
+    pContext->pNext = 0;
+    pContext->hFile = (HANDLE)-1;
+    pContext->nUsed = 0;
+    pContext->nLineStart = 0;
+    return pContext;
 }
 
 static void SLOG_OutputIndent(D2SLogStrc * pLog) {
@@ -4022,7 +4470,7 @@ static void SLOG_UnlockDeleteLog(LPVOID pTarget, int32_t nSlot) {
 }
 
 // @blizzard UnlockLog (SLOG.CPP)
-void SLOG_UnlockLog(int32_t nParam) {
+static void SLOG_UnlockLog(int32_t nParam) {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(gaSLogCritSect + nParam);
 }
 
@@ -4036,6 +4484,44 @@ void __stdcall SLogClose(uint32_t nHandle) {
     SLOG_FlushLog(pContext);
     /* HANDLE hObject for CloseHandle */ CloseHandle(pContext->hFile);
     SLOG_UnlockDeleteLog(pContext, nHandle);
+}
+
+// @blizzard SLogCreate (SLOG.CPP)
+void __stdcall SLogCreate(LPCSTR szFileName, uint32_t dwUnused, int * pnHandleOut) {
+    // Static local variables (originally global data)
+    static uint32_t gnSLogSequence; D2_STATIC_GUARD_BSS(gnSLogSequence, "Storm::Source::SSComp::SLogCreate::gnSLogSequence");
+
+    D2SLogStrc* pContext;
+    uint32_t nNewHandle;
+    int* pnHandleSaved = pnHandleOut;
+    char cFirstChar = (char)*szFileName;
+    if (pnHandleOut) {
+      HANDLE hFile;
+      *pnHandleOut = 0;
+      if (cFirstChar != '\0' && szFileName) {
+        /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ hFile = CreateFileA(szFileName, 0x40000000, 3, (LPSECURITY_ATTRIBUTES)0x0, 2, 0x80, (HANDLE)0x0);
+        if (hFile == (HANDLE)-1) {
+          return;
+        }
+
+        nNewHandle = gnSLogSequence + 1;
+        gnSLogSequence = nNewHandle;
+        *pnHandleSaved = nNewHandle;
+        pContext = SLOG_LockLog((uint32_t*)&szFileName, 1, nNewHandle);
+        if (!pContext) {
+          *pnHandleSaved = 0;
+          return;
+        }
+
+        pContext->hFile = hFile;
+        pContext->bTimestamps = 1;
+        pContext->nIndent = 0;
+        SLOG_UnlockLog((int32_t)szFileName);
+        return;
+      }
+    }
+
+    SErr::SErrSetLastError(0x57);
 }
 
 // @blizzard SLogDump (SLOG.CPP)
@@ -4176,6 +4662,46 @@ void SLogPend(uint32_t nHandle, char * szFormat, ...) {
     pContext->nUsed += nWritten;
     SLOG_OutputReturn(pContext);
     SLOG_UnlockLog(nSlot);
+}
+
+// Sets the log's indent (D2SLogStrc.nIndent) to nIndent and returns the previous indent; 0 if nHandle has no log.
+// Provenance: 1.14d asm 004200e0 (SLOG_LockLog, [ctx+0x14] = value).
+int32_t __stdcall SLogSetAbsIndent(uint32_t nHandle, int32_t nIndent) {
+    D2SLogStrc* pContext = SLOG_LockLog(&nHandle, 0, nHandle);
+    if (!pContext) {
+      return 0;
+    }
+
+    int32_t nOldIndent = pContext->nIndent;
+    pContext->nIndent = nIndent;
+    SLOG_UnlockLog(nHandle);
+    return nOldIndent;
+}
+
+// Adds nDelta to the log's indent (D2SLogStrc.nIndent) and returns the previous indent; 0 if nHandle has no log.
+// Provenance: 1.14d asm 00420120 (SLOG_LockLog, [ctx+0x14] += delta); caller BNET_LogIndent.
+int32_t __stdcall SLogSetIndent(uint32_t nHandle, int32_t nDelta) {
+    D2SLogStrc* pContext = SLOG_LockLog(&nHandle, 0, nHandle);
+    if (!pContext) {
+      return 0;
+    }
+
+    int32_t nOldIndent = pContext->nIndent;
+    pContext->nIndent = nOldIndent + nDelta;
+    SLOG_UnlockLog(nHandle);
+    return nOldIndent;
+}
+
+// Sets D2SLogStrc.bTimestamps, which makes SLOG_OutputTime prefix each entry with the local time.
+// Provenance: 1.14d asm 00420160 (SLOG_LockLog, [ctx+0x18] = flag); name from the Mac PPC Storm import list (SLogSetTimestamp).
+void __stdcall SLogSetTimestamp(uint32_t nHandle, uint32_t bTimestamps) {
+    D2SLogStrc* pContext = SLOG_LockLog(&nHandle, 0, nHandle);
+    if (!pContext) {
+      return;
+    }
+
+    pContext->bTimestamps = bTimestamps;
+    SLOG_UnlockLog(nHandle);
 }
 
 // @blizzard SLogWrite (SLOG.CPP)

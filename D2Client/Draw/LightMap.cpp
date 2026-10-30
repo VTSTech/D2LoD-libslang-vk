@@ -13,6 +13,7 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
@@ -20,7 +21,6 @@
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Environment.h"
 #include "D2Common/PATH/DynamicPath.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -32,7 +32,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -53,6 +53,17 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2LightMapStrc) == 0x34, "D2_NEW_AT
 
 
 namespace D2Client::Draw::LightMap {
+
+// Approximate 2D distance used by the weather and lightmap code. Non-standard convention: the X delta arrives in EAX and the Y delta on the stack, and the callee cleans up (RET 4). Declaring only the stack argument left the EAX delta looking like an unassigned local inside the abs() at the top.
+static uint32_t __stdcall WEATHER_ApproximateDistanceCustomCC(uint32_t nDeltaX, uint32_t nDeltaY) {
+    int nAbsX = (nDeltaX ^ (int)nDeltaX >> 0x1f) - ((int)nDeltaX >> 0x1f);
+    int nAbsY = (nDeltaY ^ (int)nDeltaY >> 0x1f) - ((int)nDeltaY >> 0x1f);
+    if (nAbsX >= nAbsY) {
+      return (uint32_t)(nAbsX * 0x3d7 + nAbsY * 0x197) >> 10;
+    }
+
+    return (uint32_t)(nAbsY * 0x3d7 + nAbsX * 0x197) >> 10;
+}
 
 D2LightMapStrc * __fastcall AllocLightMap(D2UnitStrc * pUnit, int32_t nLightType, int32_t nDiameter, uint8_t nGamma, uint8_t nRed, uint8_t nGreen, uint8_t nBlue) {
     // Static local variables (originally global data)
@@ -494,7 +505,7 @@ static void __stdcall LIGHTMAP_ApplyPointLight(int nQuality, D2LightMapStrc * pL
           nApproxDist = -nApproxDist;
         }
 
-        nApproxDist = Weather::WEATHER_ApproximateDistanceCustomCC(nApproxDist, nDistY);
+        nApproxDist = WEATHER_ApproximateDistanceCustomCC(nApproxDist, nDistY);
         nIntensity = (int)((nLightRadius - nApproxDist) * (int)((int64_t)((uint64_t)nGamma << 0x10) / (int64_t)nLightRadius)) >> 0x10;
         if (nIntensity > 0) {
           LIGHTMAP_AddLightToCell(nQuality, nIntensity, pLightMap->nRed, pLightMap->nGreen, pLightMap->nBlue, nCurX);

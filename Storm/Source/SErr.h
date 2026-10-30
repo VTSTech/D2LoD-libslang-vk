@@ -102,6 +102,7 @@ uint32_t __stdcall SErrGetErrorStr(DWORD dwMessageId, LPSTR szText, DWORD nBuffe
 // @oracle-basis Callee set {EnterCriticalSection, SMemAlloc, LeaveCriticalSection} is the oracle's exactly and is unique in the module - SErrRegisterMessageSource uses HeapAlloc, not SMemAlloc, which is what separates the two registration APIs in both builds. Arity 1 = 1.
 // @pairs-with SErrUnregisterHandler 0041d110, which walks the same list and removes the node whose +8 equals its argument.
 void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback);
+uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode);
 // Displays an error dialog with optional stack trace and custom message. Formats error information, logs to debugger, and either shows MessageBox or calls registered error handler callback.
 // @was SSYSTEM_DisplayErrorDialog (pass 6, 2026.08.28)
 // @oracle Storm 1.10b PPC export SErrDisplayError, code vector 10015f80 (from the TVector export block at 100cbe6c).

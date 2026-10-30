@@ -5,16 +5,15 @@
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Dialog.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Client/UNIT/UnitSnd.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -136,7 +135,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
         if (!g_nTradeWindowState) {
           bUIFlag = ui::GetUIFlag(UI_MPTRADE);
           if (!bUIFlag) {
-            dwSetUIFlagResult = Draw::SetUIFlag(UI_MPTRADE, UI_SET, 0);
+            dwSetUIFlagResult = ui::SetUIFlag(UI_MPTRADE, UI_SET, 0);
             if (!dwSetUIFlagResult) {
               break;
             }
@@ -176,7 +175,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x77_TRADEREQUEST(char * pBytes) {
                 if (!bUIFlag) {
                   bUIFlag = ui::GetUIFlag(UI_MPTRADE);
                   if (!bUIFlag) {
-                    dwSetUIFlagResult = Draw::SetUIFlag(UI_MPTRADE, UI_SET, 0);
+                    dwSetUIFlagResult = ui::SetUIFlag(UI_MPTRADE, UI_SET, 0);
                     if (!dwSetUIFlagResult) {
                       TRADE_CloseTrade();
                       return;

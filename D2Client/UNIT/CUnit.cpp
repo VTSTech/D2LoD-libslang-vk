@@ -12,7 +12,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Engine/GfxUtil.h"
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/Game.h"
@@ -54,6 +53,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
@@ -77,8 +77,7 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
 #include "D2Game/D2CreateMonsterUnitStrc.h"
@@ -147,7 +146,7 @@ void __fastcall SetGfxSequenceData(D2UnitStrc * pUnit, DWORD dwParam) {
       exit(-1);
     }
 
-    Engine::GfxInfo::GFX_SetCofDataFlags(pUnit->pGfxInfo, dwParam);
+    Engine::Gfx::GFX_SetCofDataFlags(pUnit->pGfxInfo, dwParam);
 }
 
 int32_t __fastcall GetGfxSequenceData(D2UnitStrc * pUnit) {
@@ -157,7 +156,7 @@ int32_t __fastcall GetGfxSequenceData(D2UnitStrc * pUnit) {
       exit(-1);
     }
 
-    nLine = Engine::GfxInfo::GFX_GetCofDataFlags(pUnit->pGfxInfo);
+    nLine = Engine::Gfx::GFX_GetCofDataFlags(pUnit->pGfxInfo);
     return nLine;
 }
 
@@ -167,7 +166,7 @@ void __fastcall SetPalShiftIndex(D2UnitStrc * pUnit, int32_t nPalShiftIndex) {
       exit(-1);
     }
 
-    Engine::GfxInfo::GFX_SetPalShiftIndex(pUnit->pGfxInfo, nPalShiftIndex);
+    Engine::Gfx::GFX_SetPalShiftIndex(pUnit->pGfxInfo, nPalShiftIndex);
 }
 
 int32_t __fastcall GetPalShiftIndex(D2UnitStrc * pUnit) {
@@ -177,7 +176,7 @@ int32_t __fastcall GetPalShiftIndex(D2UnitStrc * pUnit) {
       exit(-1);
     }
 
-    nLine = Engine::GfxInfo::GFX_GetPalShiftIndex(pUnit->pGfxInfo);
+    nLine = Engine::Gfx::GFX_GetPalShiftIndex(pUnit->pGfxInfo);
     return nLine;
 }
 
@@ -270,7 +269,7 @@ static uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t 
     int32_t nScreenZ;
     int nScreenBottom;
     D2GfxDataStrc spriteParams;
-    BOOL nWidth = Units::GFXUTIL_UnitHasAnimMode(pUnit, nAnimMode);
+    BOOL nWidth = Engine::GfxUtil::GFXUTIL_UnitHasAnimMode(pUnit, nAnimMode);
     if (!nWidth) {
       return 0;
     }
@@ -279,7 +278,7 @@ static uint32_t __stdcall CUNIT_CalculateSpriteBounds(uint32_t nFrame, uint32_t 
     D2UnitStrc* pDVar6 = (D2UnitStrc*)-1;
     int* pFrameCountOut = &__frame0.nFrameCountOut;
     uint32_t nFrameLocal = nFrame;
-    int32_t nOffset = DC6_AssignParams(&spriteParams, pUnit, nullptr, (uint32_t)D2Common::Units::GetDirection(pUnit), nFrameLocal, pFrameCountOut, (uint8_t)nAnimMode, pDVar6);
+    int32_t nOffset = Engine::GfxUtil::DC6_AssignParams(&spriteParams, pUnit, nullptr, (uint32_t)D2Common::Units::GetDirection(pUnit), nFrameLocal, pFrameCountOut, (uint8_t)nAnimMode, pDVar6);
     if (!nOffset) {
       return 0;
     }
@@ -2140,7 +2139,7 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
     if (nPalShiftIdx == nDifficulty) {
       pUnit = Player::FindUnit(nPalShiftIdx, ServerSideUnitHashTables[1], UNIT_MONSTER, nPalShiftIdx & 0x7f);
       if (pUnit) {
-        Engine::GfxInfo::FreeGfxInfo(pUnit);
+        Engine::Gfx::FreeGfxInfo(pUnit);
         GAME::Wall2::WALL2_InitUnitGfx(pUnit);
         D2Common::Units::SetupUpdateFlag(pUnit, pCreateData->eUnitType);
         return pUnit;
@@ -2267,8 +2266,8 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
       nPalShiftIdx = 2;
     }
 
-    Engine::GfxInfo::GFX_SetCofDataFlags(pUnit->pGfxInfo, nPalShiftIdx);
-    Engine::GfxInfo::GFX_SetPalShiftIndex(pUnit->pGfxInfo, nPalShiftIdx);
+    Engine::Gfx::GFX_SetCofDataFlags(pUnit->pGfxInfo, nPalShiftIdx);
+    Engine::Gfx::GFX_SetPalShiftIndex(pUnit->pGfxInfo, nPalShiftIdx);
     D2UnitStrc* pFinalUnit = FinalizeCreation(pUnit);
     nMercSkillId = GAME::RosterPets::GetSkillId(pFinalUnit->nUnitGUID);
     if (nMercSkillId == 7) {

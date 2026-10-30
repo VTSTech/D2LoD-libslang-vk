@@ -5,8 +5,8 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/D2DamageStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/GAME/Targets.h"
@@ -16,7 +16,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/SKILLS/SkillAss.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

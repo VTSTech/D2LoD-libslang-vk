@@ -89,8 +89,6 @@ uint32_t __fastcall SKILLS_AreaEffect_FindNearestUnit(struct D2SkillCallbackCont
 uint32_t __fastcall SKILLS_AreaEffect_IncrementHitCount(struct D2SkillCallbackContextStrc * pContext, struct D2UnitStrc * pTargetUnit);
 uint32_t __fastcall SKILLS_AreaEffect_TrackBestUnitByUnitId(struct D2SkillCallbackContextStrc * pContext, struct D2UnitStrc * pTargetUnit);
 void __fastcall SUNITDMG_StatExpireCallback_ResumeAI(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
-// @sourcefile .\PLAYER\PlrModes.cpp
-struct D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nX, int32_t nY, struct D2UnitStrc * pRoom);
 uint32_t __fastcall UNIT_IsAlive(struct D2UnitStrc * pUnit, struct D2UnitFindArgStrc * pUnitFindArg);
 void __fastcall Q33_SetCompleteForPartyMember(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, void * pArg);
 // Q34_SetCompleteForPartyMember (Betrayal of Harrogath). Party-propagation worker (called by Q34_PropagateCompleteToParty for each member). Grants the kill to a party member who is in Act V and whose Betrayal isn't already Completed/CannotComplete/RewardAwaits/JustCompleted, provided Prison of Ice is done: sets their RewardAwaits + JustCompleted bits. Mirrors Q34_CheckNearNihlathak but keyed on party membership rather than room proximity.

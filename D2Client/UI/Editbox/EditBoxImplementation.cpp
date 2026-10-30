@@ -2,10 +2,10 @@
 
 #include "D2Client/UI/Editbox/EditBoxImplementation.h"
 #include "D2Client/Core/Archive.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
 #include "D2Client/UI/Editbox/EditBoxWrapper.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Text.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -105,7 +105,7 @@ void __thiscall Draw(::EditBoxImplementation * pThis) {
     int nYOffset;
     nYOffset = 0;
     if (pThis->bDrawFrame) {
-      Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(pThis->nTextX - 10, pThis->nTextY - 0x10, pThis->nWidth, 0x12, 0, DRAW_LESSTRANSPARENT);
+      Engine::Gfx::D2GFX_DrawSolidRectExBySize(pThis->nTextX - 10, pThis->nTextY - 0x10, pThis->nWidth, 0x12, 0, DRAW_LESSTRANSPARENT);
     }
 
     D2Win::Src::D2WinFont::SetAndReturnLastFont(pThis->nFont);

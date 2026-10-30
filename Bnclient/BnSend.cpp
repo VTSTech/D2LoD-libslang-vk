@@ -5,7 +5,6 @@
 #include "Bnclient/BnDownload.h"
 #include "Bnclient/BnMessQueue.h"
 #include "Bnclient/Bnet.h"
-#include "Bnclient/Cache.h"
 #include "Bnclient/Debug.h"
 #include "Bnclient/net_sid.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
@@ -1285,7 +1284,7 @@ int __stdcall thunk_NET_SID_CLIENT_Send_0x10_LeaveChat() {
 BOOL __stdcall BNSEND_Disconnect() {
     BNSEND_FreeChannelListData();
     BNSEND_FreeGameListData();
-    Cache::CACHE_FreeAll();
+    BNGatewayAccess::CACHE_FreeAll();
     BNMESSQUEUE_ClearAll();
     _net_sid::NET_SID_CLIENT_FreeSRP();
     /* LONG Value for InterlockedExchange */ /* LONG * Target for InterlockedExchange */ InterlockedExchange(&Target_00881bfc, 1);
@@ -1896,7 +1895,7 @@ HANDLE ConnectingToBattleNet() {
         /* LONG Value for InterlockedExchange */ /* LONG * Target for InterlockedExchange */ InterlockedExchange(&Target_00881bfc, 0);
         /* DWORD dwMilliseconds for Sleep */ g_nBNetConnectionState = 0;
         Sleep(10);
-        Cache::CACHE_Open();
+        BNGatewayAccess::CACHE_Open();
         _net_sid::SID_InitializeProtocolState();
         _net_sid::NET_SID_CLIENT_InitializeSRP();
         /* LPDWORD lpThreadId for CreateThread */ /* DWORD dwCreationFlags for CreateThread */ /* LPVOID lpParameter for CreateThread */ /* LPTHREAD_START_ROUTINE lpStartAddress for CreateThread */ /* SIZE_T dwStackSize for CreateThread */ /* LPSECURITY_ATTRIBUTES lpThreadAttributes for CreateThread */ g_nBNetThreadInitFlag = 0;
@@ -2039,7 +2038,7 @@ void __stdcall BNNEWS_SaveToCache() {
     uint32_t* pCacheBlock = pMemoryToFree;
     /* LPSYSTEMTIME lpSystemTime for GetSystemTime */ GetSystemTime(&stSystemTime);
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&stSystemTime, &ftWriteTime);
-    Cache::CACHE_WriteData(szBnNewsChannelName, (LPCVOID)pMemoryToFree, nTotalSize, (uint32_t*)&ftWriteTime.dwLowDateTime, -1, -1);
+    BNGatewayAccess::CACHE_WriteData(szBnNewsChannelName, (LPCVOID)pMemoryToFree, nTotalSize, (uint32_t*)&ftWriteTime.dwLowDateTime, -1, -1);
     D2_FREE_AT(pMemoryToFree, ".\\BNNews.cpp", 0x17b);
 }
 
@@ -2343,7 +2342,7 @@ BOOL __stdcall BNNEWS_LoadCachedNews() {
     __frame0.bLoadSuccess = 0;
     __frame0.pCacheData = 0;
     BOOL bCacheReadOk;
-    bCacheReadOk = Cache::CACHE_ReadData(szBnNewsChannelName, adwCacheHeader, &__frame0.pCacheData, &__frame0.dwCacheDataSize);
+    bCacheReadOk = BNGatewayAccess::CACHE_ReadData(szBnNewsChannelName, adwCacheHeader, &__frame0.pCacheData, &__frame0.dwCacheDataSize);
     if (bCacheReadOk) {
       uint32_t nPageSize;
       g_dwNewsTimestamp = *__frame0.pCacheData;

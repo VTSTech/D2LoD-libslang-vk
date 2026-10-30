@@ -2,6 +2,7 @@
 
 #include "D2Common/PATH/Path.h"
 #include "D2Client/D2ClientStrc.h"
+#include "D2Client/UI/Path.h"
 #include "D2Client/UNIT/Player.h"
 #include "D2Common/Collision.h"
 #include "D2Common/D2DynamicPathStrc.h"
@@ -9,6 +10,7 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
@@ -17,8 +19,7 @@
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2PathTypeArg.h"
 #include "D2Game/GAME/Event.h"
@@ -40,6 +41,9 @@
 
 
 namespace D2Common::PATH::Path {
+
+static uint32_t gnPathCalcDirectionVectorX_Pad0 = 0x0; D2_STATIC_GUARD(gnPathCalcDirectionVectorX_Pad0, "D2Common::PATH::Path::gnPathCalcDirectionVectorX_Pad0");
+static uint32_t gnPathCalcDirectionVectorY_Pad0 = 0x0; D2_STATIC_GUARD(gnPathCalcDirectionVectorY_Pad0, "D2Common::PATH::Path::gnPathCalcDirectionVectorY_Pad0");
 
 void __fastcall PATH_CheckPathPointsInRoom(D2DynamicPathStrc * pPath) {
     uint32_t nPointX;
@@ -307,9 +311,864 @@ void __stdcall STRUCT_FreePath(D2PoolManagerStrc * pMemory, void * pPath) {
     D2_FREE_POOL_AT(pMemory, pPath, ".\\PATH\\Path.cpp", 0x3d9);
 }
 
+// DRLGPATH_UpdateUnitRoom - Checks if a unit's current position is still within its room's bounds. If not, finds the correct room via DRLGROOM_FindBetterNearbyRoom and transfers the unit to the new room.
+static void __stdcall DRLGPATH_UpdateUnitRoom(D2RoomStrc * pRoom, D2DynamicPathStrc * pDynamicPath) {
+    D2RoomStrc* pBetterRoom = pDynamicPath->pRoom;
+    uint16_t nPosX = pDynamicPath->Coords.tSubtile.nPosX;
+    uint16_t nPosY = pDynamicPath->Coords.tSubtile.nPosY;
+    if (pBetterRoom) {
+      int nCoordStart;
+      nCoordStart = pBetterRoom->sCoords.dwXStart;
+      if ((int)(uint32_t)nPosX >= nCoordStart && (int)(uint32_t)nPosX < pBetterRoom->sCoords.dwXSize + nCoordStart) {
+        nCoordStart = pBetterRoom->sCoords.dwYStart;
+        if ((int)(uint32_t)nPosY >= nCoordStart && (int)(uint32_t)nPosY < pBetterRoom->sCoords.dwYSize + nCoordStart) {
+          return;
+        }
+      }
+    }
+
+    pBetterRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pBetterRoom, (uint32_t)nPosX, (uint32_t)nPosY);
+    if (!pBetterRoom && (!pRoom || (pBetterRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, (uint32_t)nPosX, (uint32_t)nPosY) , !pBetterRoom)) && pDynamicPath->nFlags & 0x40000U) {
+      pDynamicPath->dwPathPoints = 0;
+      return;
+    }
+
+    D2UnitStrc* pUnit = pDynamicPath->pOwner;
+    pDynamicPath->pRoomNext = pDynamicPath->pRoom;
+    if (pDynamicPath->pRoom) {
+      Unit::RemoveUnitFromRoom(pUnit);
+    }
+
+    pDynamicPath->nFlags |= 2;
+    pDynamicPath->pRoom = pBetterRoom;
+    if (!pBetterRoom) {
+      return;
+    }
+
+    Unit::DRLGROOM_AddUnitToRoom(pUnit, pBetterRoom);
+    Unit::ROOM_LinkUnitToUpdateList(pUnit);
+}
+
+// DRLGPATH_SetPathPosition - Sets the world position of a dynamic path, converts to screen coordinates via DRLG_MapWorldToScreenCoords, and triggers room transfer if the unit has moved to a different room.
+static void __stdcall DRLGPATH_SetPathPosition(uint32_t nOffsetX, uint32_t nOffsetY, D2RoomStrc * pRoom, D2DynamicPathStrc * pDynamicPath) {
+    uint32_t nOffsetYCopy = nOffsetY;
+    if (pDynamicPath->nFlags & 0x40000U) {
+      D2RoomStrc* pValidRoom;
+      pValidRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pDynamicPath->pRoom, nOffsetX >> 0x10, nOffsetY >> 0x10);
+      if (!pValidRoom) {
+        pDynamicPath->dwPathPoints = 0;
+        return;
+      }
+    }
+
+    pDynamicPath->Coords.tFixed.x = nOffsetX;
+    pDynamicPath->Coords.tFixed.y = nOffsetYCopy;
+    nOffsetY = nOffsetX >> 0xb;
+    uint32_t nScreenY = nOffsetYCopy >> 0xb;
+    Drlg::Transform::DRLG_MapWorldToScreenCoords((int32_t*)&nOffsetY, (int32_t*)&nScreenY);
+    D2UnitStrc* pOwner = pDynamicPath->pOwner;
+    pDynamicPath->ScreenPos.x = nOffsetY;
+    pDynamicPath->ScreenPos.y = nScreenY;
+    if (!(pOwner && pDynamicPath->nFlags & 1)) {
+      return;
+    }
+
+    DRLGPATH_UpdateUnitRoom(pRoom, pDynamicPath);
+}
+
+// DRLGPATH_ClearPathPosition - Zeroes out a dynamic path's world and screen coordinates, resets path points, removes the unit from its room, and sets the pending-room-change flag (0x2).
+void __stdcall DRLGPATH_ClearPathPosition(D2DynamicPathStrc * pDynamicPath) {
+    pDynamicPath->Coords.tFixed.x = 0;
+    pDynamicPath->ScreenPos.x = 0;
+    D2RoomStrc* pDVar1 = pDynamicPath->pRoom;
+    pDynamicPath->Coords.tFixed.y = 0;
+    pDynamicPath->ScreenPos.y = 0;
+    pDynamicPath->dwPathPoints = 0;
+    if (!pDVar1) {
+      return;
+    }
+
+    pDynamicPath->pRoomNext = pDVar1;
+    Unit::RemoveUnitFromRoom(pDynamicPath->pOwner);
+    pDynamicPath->nFlags |= 2;
+}
+
+// Given two 16.16 fixed-point coordinate pairs (from/to), computes a unit direction POINT (pPoint->x/y) and a 0..63 direction index (returned and written to *pnParam). Determines the dominant axis (X vs Y), normalizes the minor/major ratio to a 0..0x7f index, and looks up the vector components and base direction in the gnDrlgPathDirectionX / gaPathCalcDirectionVectorX tables, then applies octant/sign corrections (axis swap, Y-negate, X-negate, +8 rotation) to produce the final 64-direction value. __fastcall. Core direction primitive used by the DRLG path-building routines.
+int __fastcall DRLGPATH_CalcDirectionVector(POINT * pPoint, uint32_t * pnParam, uint32_t nFromXfp, uint32_t nFromYfp, uint32_t nToXfp, uint32_t nToYfp) {
+    // Static local variables (originally global data)
+    static D2PathDirectionVectorStrc gaPathDirectionVectors[128] = {
+    {
+        /* .nX = */ 0x0,
+        /* .nY = */ 0x1000,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x20,
+        /* .nY = */ 0xfff,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x40,
+        /* .nY = */ 0xfff,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x60,
+        /* .nY = */ 0xffe,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x80,
+        /* .nY = */ 0xffd,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0xa1,
+        /* .nY = */ 0xffc,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0xc1,
+        /* .nY = */ 0xffb,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0xe1,
+        /* .nY = */ 0xff9,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x101,
+        /* .nY = */ 0xff7,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x121,
+        /* .nY = */ 0xff5,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x141,
+        /* .nY = */ 0xff3,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x161,
+        /* .nY = */ 0xff0,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x181,
+        /* .nY = */ 0xfed,
+        /* .nDirIndex = */ 0x0
+    },
+    {
+        /* .nX = */ 0x1a1,
+        /* .nY = */ 0xfea,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x1c0,
+        /* .nY = */ 0xfe7,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x1e0,
+        /* .nY = */ 0xfe3,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x1ff,
+        /* .nY = */ 0xfdf,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x21f,
+        /* .nY = */ 0xfdb,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x23e,
+        /* .nY = */ 0xfd7,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x25e,
+        /* .nY = */ 0xfd2,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x27d,
+        /* .nY = */ 0xfce,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x29c,
+        /* .nY = */ 0xfc9,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x2bb,
+        /* .nY = */ 0xfc3,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x2d9,
+        /* .nY = */ 0xfbe,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x2f8,
+        /* .nY = */ 0xfb8,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x317,
+        /* .nY = */ 0xfb2,
+        /* .nDirIndex = */ 0x1
+    },
+    {
+        /* .nX = */ 0x335,
+        /* .nY = */ 0xfac,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x353,
+        /* .nY = */ 0xfa6,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x371,
+        /* .nY = */ 0xf9f,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x38f,
+        /* .nY = */ 0xf99,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x3ad,
+        /* .nY = */ 0xf92,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x3cb,
+        /* .nY = */ 0xf8b,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x3e8,
+        /* .nY = */ 0xf83,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x406,
+        /* .nY = */ 0xf7c,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x423,
+        /* .nY = */ 0xf74,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x440,
+        /* .nY = */ 0xf6c,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x45d,
+        /* .nY = */ 0xf64,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x479,
+        /* .nY = */ 0xf5c,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x496,
+        /* .nY = */ 0xf54,
+        /* .nDirIndex = */ 0x2
+    },
+    {
+        /* .nX = */ 0x4b2,
+        /* .nY = */ 0xf4b,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x4ce,
+        /* .nY = */ 0xf42,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x4ea,
+        /* .nY = */ 0xf39,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x506,
+        /* .nY = */ 0xf30,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x521,
+        /* .nY = */ 0xf27,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x53c,
+        /* .nY = */ 0xf1e,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x558,
+        /* .nY = */ 0xf14,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x572,
+        /* .nY = */ 0xf0b,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x58d,
+        /* .nY = */ 0xf01,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x5a8,
+        /* .nY = */ 0xef7,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x5c2,
+        /* .nY = */ 0xeed,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x5dc,
+        /* .nY = */ 0xee3,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x5f6,
+        /* .nY = */ 0xed8,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x610,
+        /* .nY = */ 0xece,
+        /* .nDirIndex = */ 0x3
+    },
+    {
+        /* .nX = */ 0x629,
+        /* .nY = */ 0xec4,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x642,
+        /* .nY = */ 0xeb9,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x65b,
+        /* .nY = */ 0xeae,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x674,
+        /* .nY = */ 0xea3,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x68d,
+        /* .nY = */ 0xe98,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x6a5,
+        /* .nY = */ 0xe8d,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x6bd,
+        /* .nY = */ 0xe82,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x6d5,
+        /* .nY = */ 0xe77,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x6ed,
+        /* .nY = */ 0xe6c,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x704,
+        /* .nY = */ 0xe60,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x71c,
+        /* .nY = */ 0xe55,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x733,
+        /* .nY = */ 0xe49,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x74a,
+        /* .nY = */ 0xe3e,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x760,
+        /* .nY = */ 0xe32,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x777,
+        /* .nY = */ 0xe26,
+        /* .nDirIndex = */ 0x4
+    },
+    {
+        /* .nX = */ 0x78d,
+        /* .nY = */ 0xe1a,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x7a3,
+        /* .nY = */ 0xe0f,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x7b9,
+        /* .nY = */ 0xe03,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x7ce,
+        /* .nY = */ 0xdf7,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x7e4,
+        /* .nY = */ 0xdeb,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x7f9,
+        /* .nY = */ 0xddf,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x80e,
+        /* .nY = */ 0xdd3,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x822,
+        /* .nY = */ 0xdc6,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x837,
+        /* .nY = */ 0xdba,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x84b,
+        /* .nY = */ 0xdae,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x85f,
+        /* .nY = */ 0xda2,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x873,
+        /* .nY = */ 0xd96,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x887,
+        /* .nY = */ 0xd89,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x89a,
+        /* .nY = */ 0xd7d,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x8ad,
+        /* .nY = */ 0xd71,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x8c0,
+        /* .nY = */ 0xd64,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x8d3,
+        /* .nY = */ 0xd58,
+        /* .nDirIndex = */ 0x5
+    },
+    {
+        /* .nX = */ 0x8e6,
+        /* .nY = */ 0xd4b,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x8f8,
+        /* .nY = */ 0xd3f,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x90a,
+        /* .nY = */ 0xd33,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x91c,
+        /* .nY = */ 0xd26,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x92e,
+        /* .nY = */ 0xd1a,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x940,
+        /* .nY = */ 0xd0d,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x951,
+        /* .nY = */ 0xd01,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x962,
+        /* .nY = */ 0xcf5,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x973,
+        /* .nY = */ 0xce8,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x984,
+        /* .nY = */ 0xcdc,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x995,
+        /* .nY = */ 0xccf,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9a5,
+        /* .nY = */ 0xcc3,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9b6,
+        /* .nY = */ 0xcb7,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9c6,
+        /* .nY = */ 0xcaa,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9d6,
+        /* .nY = */ 0xc9e,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9e5,
+        /* .nY = */ 0xc92,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0x9f5,
+        /* .nY = */ 0xc85,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0xa04,
+        /* .nY = */ 0xc79,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0xa14,
+        /* .nY = */ 0xc6d,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0xa23,
+        /* .nY = */ 0xc61,
+        /* .nDirIndex = */ 0x6
+    },
+    {
+        /* .nX = */ 0xa31,
+        /* .nY = */ 0xc54,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa40,
+        /* .nY = */ 0xc48,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa4f,
+        /* .nY = */ 0xc3c,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa5d,
+        /* .nY = */ 0xc30,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa6b,
+        /* .nY = */ 0xc24,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa79,
+        /* .nY = */ 0xc18,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa87,
+        /* .nY = */ 0xc0c,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xa95,
+        /* .nY = */ 0xc00,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xaa2,
+        /* .nY = */ 0xbf4,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xab0,
+        /* .nY = */ 0xbe8,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xabd,
+        /* .nY = */ 0xbdc,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xaca,
+        /* .nY = */ 0xbd0,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xad7,
+        /* .nY = */ 0xbc4,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xae4,
+        /* .nY = */ 0xbb8,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xaf0,
+        /* .nY = */ 0xbac,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xafd,
+        /* .nY = */ 0xba1,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb09,
+        /* .nY = */ 0xb95,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb15,
+        /* .nY = */ 0xb89,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb21,
+        /* .nY = */ 0xb7e,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb2d,
+        /* .nY = */ 0xb72,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb39,
+        /* .nY = */ 0xb67,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb44,
+        /* .nY = */ 0xb5b,
+        /* .nDirIndex = */ 0x7
+    },
+    {
+        /* .nX = */ 0xb50,
+        /* .nY = */ 0xb50,
+        /* .nDirIndex = */ 0x7
+    }
+}; D2_STATIC_GUARD(gaPathDirectionVectors, "D2Common::PATH::Path::DRLGPATH_CalcDirectionVector::gaPathDirectionVectors");
+
+    int nRatioIndex;
+    uint32_t nMinXfp;
+    bool bSwappedX = nFromXfp > nToXfp;
+    if (!bSwappedX) {
+      nMinXfp = nFromXfp;
+    } else {
+      nMinXfp = nToXfp;
+      nToXfp = nFromXfp;
+    }
+
+    uint32_t nMaxYfp = nFromYfp;
+    uint32_t nMinCoord = nToYfp;
+    if (nToYfp >= nFromYfp) {
+      nMaxYfp = nToYfp;
+      nMinCoord = nFromYfp;
+    }
+
+    bool bMajorIsY = (int)(nToXfp - nMinXfp) <= (int)(nMaxYfp - nMinCoord);
+    uint32_t nMajorMax = nMaxYfp;
+    uint32_t nMinorMin = nMinCoord;
+    if (bMajorIsY) {
+      nMajorMax = nToXfp;
+      nToXfp = nMaxYfp;
+      nMinorMin = nMinXfp;
+      nMinXfp = nMinCoord;
+    }
+    if (nToXfp - nMinXfp) {
+      nRatioIndex = (int)((nMajorMax - nMinorMin) * 0x7f) / (int)(nToXfp - nMinXfp);
+    } else {
+      nRatioIndex = 0;
+    }
+
+    uint32_t nDirIndex = gaPathDirectionVectors[nRatioIndex].nDirIndex;
+    if (!bMajorIsY) {
+      pPoint->y = gaPathDirectionVectors[nRatioIndex].nX;
+      pPoint->x = gaPathDirectionVectors[nRatioIndex].nY;
+      nDirIndex = -nDirIndex - 1 & 0xf;
+    } else {
+      pPoint->x = gaPathDirectionVectors[nRatioIndex].nX;
+      pPoint->y = gaPathDirectionVectors[nRatioIndex].nY;
+    }
+    if (nToYfp < nFromYfp) {
+      pPoint->y = -pPoint->y;
+      nDirIndex = -nDirIndex - 1 & 0x1f;
+    }
+    if (!bSwappedX) {
+      nDirIndex = (-nDirIndex - 1 & 0x3f) + 8 & 0x3f;
+      *pnParam = nDirIndex;
+      return nDirIndex;
+    }
+
+    pPoint->x = -pPoint->x;
+    nDirIndex = nDirIndex + 8 & 0x3f;
+    *pnParam = nDirIndex;
+    return nDirIndex;
+}
+
+// DRLGPATH_CalcPathDirection - Wrapper for DRLGPATH_CalcDirectionVector. Converts path point coordinates to fixed-point format. Called by DRLGPATH_UpdatePathVelocityAndDirection and DRLGPATH_ScaleVelocityVector.
+void __fastcall DRLGPATH_CalcPathDirection(POINT * pPoint, uint32_t * pnParam, uint32_t nFromX, uint32_t nFromY) {
+    DRLGPATH_CalcDirectionVector(pPoint, pnParam, nFromX * 0x10000 + 0x8000, (nFromX & -65536) + 0x8000, nFromY * 0x10000 + 0x8000, (nFromY & -65536) + 0x8000);
+}
+
+// DRLGPATH_GetDirectionFromCoords - Converts tile coordinates to fixed-point and calls DRLGPATH_CalcDirectionVector. Used by GetDirectionToCoords, Skills_SrvDoFunc_062, and Update to determine facing direction.
+uint32_t __stdcall DRLGPATH_GetDirectionFromCoords(uint32_t nX, int32_t nY, int32_t nNewX, int32_t nNewY) {
+    POINT ptResult;
+    DRLGPATH_CalcDirectionVector(&ptResult, &nX, nX * 0x10000 + 0x8000, nY * 0x10000 + 0x8000, nNewX * 0x10000 + 0x8000, nNewY * 0x10000 + 0x8000);
+    return nX;
+}
+
 uint32_t __stdcall PATH_CalculateDistance(uint32_t nFromXfp, uint32_t nFromYfp, uint32_t nToXfp, uint32_t nToYfp) {
-    Drlg::Path::DRLGPATH_CalcDirectionVector((POINT*)&nFromXfp, &nToYfp, nFromXfp, nFromYfp, nToXfp, nToYfp);
+    DRLGPATH_CalcDirectionVector((POINT*)&nFromXfp, &nToYfp, nFromXfp, nFromYfp, nToXfp, nToYfp);
     return nToYfp;
+}
+
+// Advances a dynamic path along its path points: skips points already reached, computes the direction vector and velocity toward the current point (flips the direction index when flag 0x200 is set), and returns 1 when the last point is reached or the next step lands on the target subtile.
+int32_t __fastcall DRLGPATH_AdvanceAlongPathPoints(D2DynamicPathStrc * pDynamicPath, int32_t nParam, int32_t bForceDirection) {
+    int bReachedWaypoint;
+    POINT local_14;
+    uint32_t nNewDirIndex;
+    uint32_t nTargetXfp = (uint32_t)pDynamicPath->PathPoints[pDynamicPath->nPathPointIndex].nX * 0x10000 + 0x8000;
+    uint32_t nTargetYfp = (uint32_t)pDynamicPath->PathPoints[pDynamicPath->nPathPointIndex].nY * 0x10000 + 0x8000;
+    if (nTargetXfp == pDynamicPath->Coords.tFixed.x) {
+      uint32_t nTargetYfpLoop;
+      nTargetYfpLoop = pDynamicPath->Coords.tFixed.y;
+      do {
+        if (nTargetYfp != nTargetYfpLoop) {
+          break;
+        }
+
+        bReachedWaypoint = pDynamicPath->nPathPointIndex;
+        if (bReachedWaypoint >= pDynamicPath->dwPathPoints - 1) {
+          pDynamicPath->nDirectionVectorX = 0;
+          pDynamicPath->nVelocityX = 0;
+          pDynamicPath->nPathPointIndex = pDynamicPath->dwPathPoints;
+          pDynamicPath->nDirectionVectorY = 0;
+          pDynamicPath->nVelocityY = 0;
+          pDynamicPath->dwVelocity = 0;
+          return 1;
+        }
+
+        pDynamicPath->nPathPointIndex = bReachedWaypoint + 1;
+        nTargetXfp = (uint32_t)pDynamicPath->PathPoints[bReachedWaypoint + 1].nX * 0x10000 + 0x8000;
+        nTargetYfp = (uint32_t)pDynamicPath->PathPoints[bReachedWaypoint + 1].nY * 0x10000 + 0x8000;
+      } while (nTargetXfp == pDynamicPath->Coords.tFixed.x);
+    }
+
+    int bSetDir = nParam;
+    DRLGPATH_CalcDirectionVector(&local_14, &nNewDirIndex, pDynamicPath->Coords.tFixed.x, pDynamicPath->Coords.tFixed.y, nTargetXfp, nTargetYfp);
+    pDynamicPath->nDirectionVectorX = local_14.x;
+    pDynamicPath->nDirectionVectorY = local_14.y;
+    if (pDynamicPath->nFlags & 0x200U) {
+      nNewDirIndex = nNewDirIndex - 0x20 & 0x3f;
+    }
+
+    bReachedWaypoint = pDynamicPath->Coords.tFixed.x;
+    int nVelX = pDynamicPath->dwVelocity * local_14.x >> 8;
+    int nVelY = pDynamicPath->dwVelocity * local_14.y >> 8;
+    pDynamicPath->nVelocityX = nVelX;
+    pDynamicPath->nVelocityY = nVelY;
+    if (nTargetXfp >> 0x10 == (uint32_t)(bReachedWaypoint + nVelX) >> 0x10 && nTargetYfp >> 0x10 == (uint32_t)(pDynamicPath->Coords.tFixed.y + nVelY) >> 0x10) {
+      bReachedWaypoint = 1;
+    } else {
+      bReachedWaypoint = 0;
+    }
+    if (!(bForceDirection || bReachedWaypoint && bSetDir)) {
+      return bReachedWaypoint;
+    }
+
+    DynamicPath::PATH_SetDirection(pDynamicPath, (uint8_t)nNewDirIndex);
+    return bReachedWaypoint;
 }
 
 // Tests whether a single path step from nParam2 to nParam1 is passable for pDynamicPath's owner. If the path has flag 0x4 (teleport/move-collision update), directly calls UpdateCollision_Type and returns 1. Otherwise calls RemoveGetCollision_Type or RemoveGetCollision_Width (based on bbox flag 0x40000), accumulates the result into eCollisionFlag, and returns 1 (passable) or 0 (blocked) depending on collision bits 0x1/0x4.
@@ -638,7 +1497,7 @@ BOOL __stdcall PATH_HasReachedTarget(D2UnitStrc * pUnit) {
 }
 
 void __stdcall PATH_SnapPositionToTile(D2DynamicPathStrc * pDynamicPath) {
-    Drlg::Path::DRLGPATH_SetPathPosition((pDynamicPath->Coords.tFixed.x & 0xffff0000U) + 0x8000, (pDynamicPath->Coords.tFixed.y & 0xffff0000U) + 0x8000, nullptr, pDynamicPath);
+    DRLGPATH_SetPathPosition((pDynamicPath->Coords.tFixed.x & 0xffff0000U) + 0x8000, (pDynamicPath->Coords.tFixed.y & 0xffff0000U) + 0x8000, nullptr, pDynamicPath);
 }
 
 uint32_t __stdcall Get8FlagsFromDynamicPath(D2DynamicPathStrc * pDynamicPath) {
@@ -672,7 +1531,7 @@ void __stdcall PATH_SetPathTarget(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) 
         pSrcPath->nFlags |= 1;
       }
 
-      Drlg::Path::DRLGPATH_SetPathPosition(pTargetPath->Coords.tFixed.x, pTargetPath->Coords.tFixed.y, pTargetPath->pRoom, pSrcPath);
+      DRLGPATH_SetPathPosition(pTargetPath->Coords.tFixed.x, pTargetPath->Coords.tFixed.y, pTargetPath->pRoom, pSrcPath);
       return;
     }
 }
@@ -730,7 +1589,7 @@ static bool __stdcall PATH_ComputeMovementStep(uint32_t * pnOutX, uint32_t * pnO
 }
 
 static void PATH_ResetPathState(D2DynamicPathStrc * pDynamicPath) {
-    Drlg::Path::DRLGPATH_SetPathPosition((pDynamicPath->Coords.tFixed.x & 0xffff0000U) + 0x8000, (pDynamicPath->Coords.tFixed.y & 0xffff0000U) + 0x8000, nullptr, pDynamicPath);
+    DRLGPATH_SetPathPosition((pDynamicPath->Coords.tFixed.x & 0xffff0000U) + 0x8000, (pDynamicPath->Coords.tFixed.y & 0xffff0000U) + 0x8000, nullptr, pDynamicPath);
     pDynamicPath->nFlags &= -33;
     pDynamicPath->dwPathPoints = 0;
     pDynamicPath->nPathPointIndex = 0;
@@ -756,9 +1615,9 @@ BOOL __stdcall PATH_AdvanceUnitAlongPath(D2UnitStrc * pUnit, int pExternalPath) 
       PATH_UpdateVelocityWithAcceleration(pExternalPath, pDynamicPath);
       if (pDynamicPath->nVelocityX || pDynamicPath->nVelocityY) {
         PATH_ComputeMovementStep((uint32_t*)&sNewPos, (uint32_t*)&pUnit, pDynamicPath);
-        Drlg::Path::DRLGPATH_SetPathPosition(sNewPos.nX, sNewPos.nY, nullptr, pDynamicPath);
+        DRLGPATH_SetPathPosition(sNewPos.nX, sNewPos.nY, nullptr, pDynamicPath);
         if (pDynamicPath->ePathType != 4 && pDynamicPath->nPathPointIndex < pDynamicPath->dwPathPoints) {
-          Drlg::Path::DRLGPATH_AdvanceAlongPathPoints(pDynamicPath, 1, 1);
+          DRLGPATH_AdvanceAlongPathPoints(pDynamicPath, 1, 1);
         }
         if (pDynamicPath->nPathPointIndex < pDynamicPath->dwPathPoints) {
           return 1;
@@ -806,7 +1665,7 @@ static BOOL __stdcall PATH_MoveUnitToPosition(D2RoomStrc * pRoom, uint32_t nTarg
       pPath->nFlags |= 1;
     }
 
-    Drlg::Path::DRLGPATH_SetPathPosition(nTargetPos * 0x10000 + 0x8000, (uint32_t)uVar3 * 0x10000 + 0x8000, pRoom, pPath);
+    DRLGPATH_SetPathPosition(nTargetPos * 0x10000 + 0x8000, (uint32_t)uVar3 * 0x10000 + 0x8000, pRoom, pPath);
     if (nTargetPos || false) {
       D2RoomStrc* pBetterRoom;
       pBetterRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetPos & 0xffff, (uint32_t)uVar3);
@@ -838,7 +1697,7 @@ static int __stdcall PATH_MoveObjectToPosition(D2RoomStrc * pRoom, uint32_t nTar
       pPath[0xd] |= 1;
     }
 
-    Drlg::Path::DRLGPATH_SetPathPosition(nTargetPos * 0x10000 + 0x8000, (uint32_t)*(uint16_t*)((char*)&nTargetPos + 2) * 0x10000 + 0x8000, pRoom, (D2DynamicPathStrc*)pPath);
+    DRLGPATH_SetPathPosition(nTargetPos * 0x10000 + 0x8000, (uint32_t)*(uint16_t*)((char*)&nTargetPos + 2) * 0x10000 + 0x8000, pRoom, (D2DynamicPathStrc*)pPath);
     if (nTargetPos || false) {
       D2RoomStrc* pBetterRoom;
       pBetterRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetPos & 0xffff, (uint32_t)*(uint16_t*)((char*)&nTargetPos + 2));
@@ -896,7 +1755,7 @@ uint32_t __stdcall PATH_TestLineOfSight(D2DynamicPathStrc * pDynamicPath, int * 
         pDynamicPath->nFlags |= 1;
       }
 
-      Drlg::Path::DRLGPATH_SetPathPosition(nTargetX * 0x10000 + 0x8000, nTargetY * 0x10000 + 0x8000, pRoom, pDynamicPath);
+      DRLGPATH_SetPathPosition(nTargetX * 0x10000 + 0x8000, nTargetY * 0x10000 + 0x8000, pRoom, pDynamicPath);
       pBetterRoom = D2Client::UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, nTargetX, nTargetY);
       if (pBetterRoom) {
         PATH_ResetPathState(pDynamicPath);

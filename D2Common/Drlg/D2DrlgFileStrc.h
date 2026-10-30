@@ -7,10 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/Drlg/Drlg.h"
-
-// Forward declarations
-struct D2PresetUnitStrc;
+#include "D2Common/Drlg/Preset.h"
 
 struct D2DrlgSubstGroupStrc;
 

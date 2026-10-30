@@ -10,7 +10,6 @@
 #include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"
 #include "Fog/SMem.h"
-#include "Fog/Source/SSComp.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SReg.h"
@@ -1695,6 +1694,63 @@ static int BuildSymbolSearchPath(char * szSearchPath) {
     return cCurChar != '\0' ? (uint32_t)szSearchPath : 0;
 }
 
+static void __stdcall COMPRESS_Implode(void * pAddress, char * szModulePath, int * pnSectionIndex, void * * ppSectionOffset, int nBufferSize) {
+    _MEMORY_BASIC_INFORMATION _Stack_20;
+    uint32_t nSectionEnd;
+    Storm::Source::SSTR::SStrCopy(szModulePath, "unknown", nBufferSize);
+    /* SIZE_T dwLength for VirtualQuery */ /* PMEMORY_BASIC_INFORMATION lpBuffer for VirtualQuery */ *pnSectionIndex = 0;
+    /* LPCVOID lpAddress for VirtualQuery */ *ppSectionOffset = 0;
+    SIZE_T nVQueryResult = VirtualQuery(pAddress, &_Stack_20, 0x1c);
+    if (!nVQueryResult) {
+      return;
+    }
+    if (!_Stack_20.AllocationBase) {
+      /* LPCSTR lpModuleName for GetModuleHandleA */ _Stack_20.AllocationBase = GetModuleHandleA((LPCSTR)0x0);
+    }
+
+    DWORD nModuleNameLen = GetModuleFileNameA((HMODULE)_Stack_20.AllocationBase, szModulePath, nBufferSize);
+    if (!nModuleNameLen) {
+      Storm::Source::SSTR::SStrCopy(szModulePath, "unknown", nBufferSize);
+      return;
+    }
+    if (!(_Stack_20.AllocationBase && (short int)((HMODULE)_Stack_20.AllocationBase)->unused == 0x5a4d && ((HMODULE)((int)_Stack_20.AllocationBase + 0x3c))->unused)) {
+      return;
+    }
+
+    int* pNtHeader = (int*)((uintptr_t)&((HMODULE)_Stack_20.AllocationBase)->unused + ((HMODULE)((int)_Stack_20.AllocationBase + 0x3c))->unused);
+    if (*pNtHeader != 0x4550) {
+      return;
+    }
+
+    uint32_t nSectionVSize = (int)pAddress - (int)_Stack_20.AllocationBase;
+    uint32_t* pSectionHeader = (uint32_t*)((uint32_t)*(uint16_t*)(pNtHeader + 5) + (int)pNtHeader);
+    uint32_t nSectionIdx = 0;
+    if (*(uint16_t*)((int)pNtHeader + 6) <= 0) {
+      return;
+    }
+
+    while (true) {
+      uint32_t nSectionRawSize;
+      nSectionRawSize = pSectionHeader[10];
+      nSectionEnd = pSectionHeader[9];
+      if (nSectionRawSize <= pSectionHeader[8]) {
+        nSectionRawSize = pSectionHeader[8];
+      }
+      if (nSectionVSize >= nSectionEnd && nSectionVSize <= nSectionRawSize + nSectionEnd) {
+        break;
+      }
+
+      nSectionIdx++;
+      pSectionHeader += 10;
+      if (nSectionIdx >= *(uint16_t*)((int)pNtHeader + 6)) {
+        return;
+      }
+    }
+
+    *pnSectionIndex = nSectionIdx + 1;
+    *ppSectionOffset = (void*)(nSectionVSize - nSectionEnd);
+}
+
 // @sourcefile .\Src\Exceptions.cpp
 int __stdcall InitializeSymbolsWithRefcount() {
     // Static local variables (originally global data)
@@ -2075,7 +2131,7 @@ void __fastcall FullStackWalkWithAnnotations(HANDLE hThread, CONTEXT * pContext)
         __frame0.pszSymbolName = "unknown";
       }
 
-      Source::SSComp::COMPRESS_Implode((void*)tStackFrame.AddrPC.Offset, szModulePath, &nImplodeOutLen, &__frame0.pLineInfo, 0x104);
+      COMPRESS_Implode((void*)tStackFrame.AddrPC.Offset, szModulePath, &nImplodeOutLen, &__frame0.pLineInfo, 0x104);
       pszText = strrchr(szModulePath, 0x5c);
       if (pszText) {
         pszText++;

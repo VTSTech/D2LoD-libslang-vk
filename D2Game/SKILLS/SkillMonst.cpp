@@ -24,6 +24,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/MissileTbls.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
@@ -38,8 +39,7 @@
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2DamageStrc.h"
@@ -52,6 +52,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Create.h"
 #include "D2Game/Monster/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/MonsterRegion.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -1414,9 +1415,9 @@ BOOL __fastcall Skills_SrvDoFunc_097_ResurrectDeadMonster(::SGAMEDATA * pGame, D
       SKILLMONST_ResurrectUnit(pGameSaved, pTarget);
       if (pTarget->eUnitType == UNIT_MONSTER) {
         eReviveMode = Monster::AI::MONSTERAI_SetSpecialAttackSkill(pTarget, 1);
-        GAME::Event::Dispatch::Monster::SetCurrentSkill(pTarget, eReviveMode, &sMonKillData);
+        Monster::MonsterMode::SetCurrentSkill(pTarget, eReviveMode, &sMonKillData);
         Monster::AI::MONSTERAI_SetSpecialAttackSkill(pTarget, 1);
-        GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameForResurrect, &sMonKillData, (uint32_t)(eReviveMode != eD2MonsterAnimMode_ns::Sequence));
+        Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameForResurrect, &sMonKillData, (uint32_t)(eReviveMode != eD2MonsterAnimMode_ns::Sequence));
       }
 
       nSrvOverlay = pSkillsTxt->srvoverlay;

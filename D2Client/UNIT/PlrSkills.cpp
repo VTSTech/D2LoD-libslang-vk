@@ -6,7 +6,6 @@
 #include "D2Client/DataTbls.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
@@ -38,6 +37,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/OverlayTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
@@ -47,12 +47,11 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -61,7 +60,6 @@
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -194,7 +192,7 @@ static void __stdcall STATES_RemoveOverlayById(D2UnitStrc * pUnit, int32_t nPara
     }
 
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, i + nParam);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, i + nParam);
       i++;
     } while (i < nOverlayCount);
 }
@@ -211,7 +209,7 @@ void __fastcall PLRSKILLS_StateSetFn01_ProgressiveCharge(D2UnitStrc * pUnit, eD2
 
     int i = 0;
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + i);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + i);
       i++;
     } while (i < 3);
 
@@ -235,7 +233,7 @@ void __fastcall PLRSKILLS_StateRemFn01_ProgressiveCharge(D2UnitStrc * pUnit, eD2
 
     int nOverlayIdx = 0;
     do {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + nOverlayIdx);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, pDVar1->pgsvoverlay + nOverlayIdx);
       nOverlayIdx++;
     } while (nOverlayIdx < 3);
 }
@@ -894,9 +892,9 @@ void __fastcall PLRSKILLS_StateSetFn16_StackOverlay(D2UnitStrc * pUnit, eD2State
       if (nSkillLvl > 0) {
         do {
           if (nOverlayIdx != (nStackCount - 1) * nSkillLvl / nMaxOverlays) {
-            Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, eOverlay);
+            Engine::Gfx::GFX_RemoveOverlayById(pUnit, eOverlay);
           } else {
-            BVar2 = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, eOverlay);
+            BVar2 = Engine::Gfx::GFX_HasOverlayOfType(pUnit, eOverlay);
             if (!BVar2) {
               Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay, 3, 0, 0, 0, 0, 0);
             }
@@ -921,9 +919,9 @@ void __fastcall PLRSKILLS_StateSetFn16_StackOverlay(D2UnitStrc * pUnit, eD2State
 
     do {
       if (nSkillLvl != (nStackCount - 1) * nModLvl / nMaxOverlays) {
-        Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, eOverlay_00);
+        Engine::Gfx::GFX_RemoveOverlayById(pUnit, eOverlay_00);
       } else {
-        bHasOverlay = Engine::GfxInfo::GFX_HasOverlayOfType(pUnit, eOverlay_00);
+        bHasOverlay = Engine::Gfx::GFX_HasOverlayOfType(pUnit, eOverlay_00);
         if (!bHasOverlay) {
           Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay_00, 3, 0, 0, 0, 0, 0);
         }
@@ -948,7 +946,7 @@ void __fastcall PLRSKILLS_StateRemFn11_StackOverlay(D2UnitStrc * pUnit, eD2State
     int nOverlayIdx = (int)pDVar1->overlay[0];
     if (nOverlayIdx >= 0) {
       for (; nOverlayIdx <= nOverlayMax; nOverlayIdx++) {
-        Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, nOverlayIdx);
+        Engine::Gfx::GFX_RemoveOverlayById(pUnit, nOverlayIdx);
       }
     }
 
@@ -959,7 +957,7 @@ void __fastcall PLRSKILLS_StateRemFn11_StackOverlay(D2UnitStrc * pUnit, eD2State
     }
 
     for (; nOverlayId <= nOverlayMax; nOverlayId++) {
-      Engine::GfxInfo::GFX_RemoveOverlayById(pUnit, nOverlayId);
+      Engine::Gfx::GFX_RemoveOverlayById(pUnit, nOverlayId);
     }
 }
 
@@ -1193,7 +1191,7 @@ void __fastcall STATES_AddStateOverlays(D2UnitStrc * pUnit, eD2States eState) {
 }
 
 static void STATES_ResetUnitGfxAndMode(D2UnitStrc * pUnit) {
-    Engine::GfxInfo::GFX_FreeAllModesGfxInfo(pUnit);
+    Engine::Gfx::GFX_FreeAllModesGfxInfo(pUnit);
     if (pUnit) {
       if (pUnit->eUnitType == UNIT_PLAYER) {
         if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Sequence) {

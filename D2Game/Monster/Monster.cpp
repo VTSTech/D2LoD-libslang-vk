@@ -19,6 +19,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
@@ -36,8 +37,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
@@ -172,10 +172,10 @@ void __fastcall MONSTER_SetVelocityAndTransition(::SGAMEDATA * pGame, D2UnitStrc
     set_velocity_and_transition:
     D2Common::PATH::DynamicPath::SetVelocities(pUnit->pPath.pDynamicPath, (int)pMonStatsTxt->Velocity << 8, ".\\MONSTER\\Monster.cpp", 0x17f);
     D2Common::Units::UpdateAnimSpeed(pUnit, ".\\MONSTER\\Monster.cpp", 0x180);
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, nUnitMode, &killData);
+    MonsterMode::SetCurrentSkill(pUnit, nUnitMode, &killData);
     killData.nTargetX = nTargetX;
     killData.nTargetY = nTargetY;
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
+    MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &killData, 1);
 }
 
 void __fastcall FreeMonsters(::SGAMEDATA * pGame) {
@@ -493,8 +493,8 @@ void __fastcall MONSTER_KillAllInLevel(::SGAMEDATA * pGame, int32_t nAltMonClass
             if (!BVar1) {
               nMonAlignment = D2Common::Stats::StatsEx::STATSEX_GetAlignment(pUnit);
               if (!nMonAlignment) {
-                GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, Death, &killData);
-                GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameSaved, &killData, 1);
+                MonsterMode::SetCurrentSkill(pUnit, Death, &killData);
+                MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameSaved, &killData, 1);
               }
             }
           }

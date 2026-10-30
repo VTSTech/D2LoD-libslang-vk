@@ -5,7 +5,7 @@
 #include "support/d2_trace.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/UNIT/CUnitEvent.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"

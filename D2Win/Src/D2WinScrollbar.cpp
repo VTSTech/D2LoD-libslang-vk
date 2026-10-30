@@ -3,7 +3,7 @@
 #include "D2Win/Src/D2WinScrollbar.h"
 #include "D2Client/D2ControlStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"

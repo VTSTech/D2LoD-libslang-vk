@@ -8,12 +8,13 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Path.h"
 #include "D2Common/PATH/DynamicPath.h"
-#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/PATH/Path.h"
 #include "D2Common/Units.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/GAME/Event.h"
@@ -221,7 +222,7 @@ void __stdcall Update(D2UnitStrc * pUnit, D2UnitStrc * pMissile, int32_t nParam1
         do {
           nCurY = (uint32_t)pPathPoints[nPathIdx].nY;
           nCurX = (uint32_t)pPathPoints[nPathIdx].nX;
-          nDirection = Drlg::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
+          nDirection = PATH::Path::DRLGPATH_GetDirectionFromCoords((uint32_t)pPathPoints[nPathIdx + 1].nX, (uint32_t)pPathPoints[nPathIdx + 1].nY, nCurX, nCurY);
           nDirection_20 = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nDirection_20 + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)nDirection);
           if (nSubSegIdx < nExtraPerSegment / nDivisions || !nParam1) {
             nSubSegIdx++;

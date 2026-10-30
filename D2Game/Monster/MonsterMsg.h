@@ -11,11 +11,13 @@
 // Forward declarations
 struct D2ClientStrc;
 struct D2UnitStrc;
+struct SGAMEDATA;
 
 namespace D2Game::Monster::MonsterMsg {
 
 // Function declarations
-// Sends a skill-cast network message (0x4C or 0x4D) to pClient for a monster (pMonster) casting its current skill. If pTarget is near the client, sends 0x4C (unit-targeted cast) with target GUID; otherwise sends 0x4D (XY-targeted cast) using pMonster's SP1 path position. Skill ID and level are read from pMonster's active skill. EDI is callee-saved here (PUSH EDI on entry, then overwritten), not a parameter.
-void __stdcall SendCastSkillMsg(struct D2ClientStrc * pClient, struct D2UnitStrc * pTarget, struct D2UnitStrc * pMonster);
+// Server-side: serialize a monster/NPC unit's current animation state into the appropriate D2GS update packet and send it to one client (pClientSide). Branches on the unit's player/anim mode (Death, Run, TownWalk, Kick, Skill1, Neutral, Walk, etc.) and on whether it has a valid target near the client, choosing the packet opcode (0x67 NpcMove / 0x68 NpcMoveToEntity / 0x69 NpcState / 0x6A NpcStateToEntity / 0x6B NpcAction / 0x6C NpcAttack / 0x6D NpcStop, plus cast-skill msg). Fills move params, HP%, direction, step number, last-hit class, and target position/GUID from the unit's dynamic path. Halts with an internal error if pUnit/pClientSide/path are NULL. __fastcall.
+void __fastcall MONSTER_SendUpdateToClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClientSide);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Game::Monster::MonsterMsg

@@ -15,11 +15,11 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -31,7 +31,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

@@ -27,21 +27,21 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
-#include "D2Common/Drlg/Path.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Ai/D2AiGeneralStrc.h"
@@ -59,6 +59,7 @@
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monster/MonsterAI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/Quests/QUESTS/A5Q3.h"
@@ -75,8 +76,8 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/SKILLS/SkillSor.h"
@@ -1799,8 +1800,8 @@ void __stdcall SKILLNEC_ReviveCorpse(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     sKillStrc.nUnknown2 = '\0';
     sKillStrc.nMonType1 = 0;
     sKillStrc.nMonType2 = 0;
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Neutral, &sKillStrc);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Neutral, &sKillStrc);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillStrc, 1);
     SkillsServer::SKILLS_FreeMonsterMinions(pUnit);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_PERIODICSKILLS, 0);
     pSkill = D2Common::Units::GetRightSkill(pUnit);
@@ -2151,7 +2152,7 @@ BOOL __fastcall Skills_SrvDoFunc_062_BonePrison(::SGAMEDATA * pGame, D2UnitStrc 
           nDir = 0;
         }
 
-        nDir = D2Common::Drlg::Path::DRLGPATH_GetDirectionFromCoords(nDir, nY, nCursorX, nCursorY);
+        nDir = D2Common::PATH::Path::DRLGPATH_GetDirectionFromCoords(nDir, nY, nCursorX, nCursorY);
         D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pUnit_00->pPath.pDynamicPath, (uint8_t)nDir);
       }
 

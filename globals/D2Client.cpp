@@ -10,7 +10,7 @@
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Engine.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Record.h"
 #include "D2Client/GAME/SCmd.h"
@@ -33,7 +33,6 @@
 #include "D2Client/UI/Button/ButtonWrapper.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/ControlConfig.h"
 #include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Editbox/EditBoxImplementation.h"
@@ -310,7 +309,7 @@ D2UIFlagInitStrc gaUIFlagInitTable[22] = {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x201,
-        /* .pfHandler = */ &D2Client::UI::ControlConfig::InitConfigUiFlags
+        /* .pfHandler = */ &D2Client::UI::ui::InitConfigUiFlags
     },
     {
         /* .eEventType = */ 0x0,
@@ -320,7 +319,7 @@ D2UIFlagInitStrc gaUIFlagInitTable[22] = {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x204,
-        /* .pfHandler = */ &D2Client::UI::ControlConfig::InitConfigUiFlags
+        /* .pfHandler = */ &D2Client::UI::ui::InitConfigUiFlags
     },
     {
         /* .eEventType = */ 0x0,
@@ -15127,7 +15126,7 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2Client::GAME::Sound::SOUND_IsInitialized_ForSoundVolumeItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyMasterVolumeFromSlider,
-        /* .fpInitCallback = */ &D2Client::UI::Chat::UI_SLIDER_ApplyMasterVolume,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyMasterVolume,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x15,
         /* .nImageIndex = */ 0x0,
@@ -16451,7 +16450,7 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2Client::GAME::Sound::SOUND_IsInitialized_ForMusicVolumeItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyMusicVolumeFromSlider,
-        /* .fpInitCallback = */ &D2Client::UI::Chat::UI_SLIDER_ApplyMusicVolume,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyMusicVolume,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x15,
         /* .nImageIndex = */ 0x0,
@@ -17775,8 +17774,8 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2Client::Sound::SOUND_IsDirectSoundAvailable_For3DSoundItem,
         /* .fpClickCallback = */ &D2Client::Sound::SOUND_ToggleSoundMixerBinary,
-        /* .fpInitCallback = */ &D2Client::UI::Chat::ESCMENU_Init3DSoundItem,
-        /* .fpDrawCallback = */ &D2Client::UI::Chat::ESCMENU_Init3DSoundItem,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::ESCMENU_Init3DSoundItem,
+        /* .fpDrawCallback = */ &D2Client::UI::EscMenu::ESCMENU_Init3DSoundItem,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
         /* .bSelected = */ 0x0,
@@ -19099,8 +19098,8 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2Client::Sound::SOUND_IsEaxAvailable_ForEaxItem,
         /* .fpClickCallback = */ &D2Client::Sound::SOUND_CycleSoundMixerMode,
-        /* .fpInitCallback = */ &D2Client::UI::Chat::ESCMENU_InitEaxSoundItem,
-        /* .fpDrawCallback = */ &D2Client::UI::Chat::ESCMENU_InitEaxSoundItem,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::ESCMENU_InitEaxSoundItem,
+        /* .fpDrawCallback = */ &D2Client::UI::EscMenu::ESCMENU_InitEaxSoundItem,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
         /* .bSelected = */ 0x0,
@@ -20423,7 +20422,7 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2Client::GAME::Sound::SOUND_Is3DMixerActive_For3DBiasItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPositionalBiasFromSlider,
-        /* .fpInitCallback = */ &D2Client::UI::Chat::UI_SLIDER_ApplyPositionalBias,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPositionalBias,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x15,
         /* .nImageIndex = */ 0x0,
@@ -21746,8 +21745,8 @@ D2EscMenuItemStrc gaEscMenuSaveExitTable[8] = {
             '\x00'
         },
         /* .fpVisibilityCheck = */ &D2Client::GAME::Sound::SOUND_IsInitialized_ForNpcSpeechItem,
-        /* .fpClickCallback = */ &D2Client::UI::Chat::UI_SLIDER_ApplyNpcSpeech,
-        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyNpcSpeech,
+        /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyNpcSpeech,
+        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyNpcSpeech,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x3,
         /* .nImageIndex = */ 0x2,
@@ -42385,7 +42384,7 @@ D2ConfigControlDescStrc gaConfigControlBindings[51] = {
 D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
     {
         /* .nLabelStringId = */ 0xf86,
-        /* .pfnAction = */ &D2Client::CONTROLCONFIG_RevertAndClose,
+        /* .pfnAction = */ &D2Client::UI::ui::CONTROLCONFIG_RevertAndClose,
         /* .nTabId = */ 0x1,
         /* .aBounds = */ {
             '\x00',
@@ -42431,7 +42430,7 @@ D2UIConfigTabEntryStrc g_UIConfigTabTable[3] = {
     },
     {
         /* .nLabelStringId = */ 0xf85,
-        /* .pfnAction = */ &D2Client::CONTROLCONFIG_SaveAndCancel,
+        /* .pfnAction = */ &D2Client::UI::ui::CONTROLCONFIG_SaveAndCancel,
         /* .nTabId = */ 0x2,
         /* .aBounds = */ {
             '\x00',
@@ -44663,7 +44662,6 @@ uint32_t nNextGUID = 0x1; D2_GLOBAL_GUARD(nNextGUID, "nNextGUID");
 uint32_t gnSelectConstant13_X = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_X, "gnSelectConstant13_X");
 uint32_t gnSelectConstant13_Y = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_Y, "gnSelectConstant13_Y");
 int gnCursorDataCount = 0x7; D2_GLOBAL_GUARD(gnCursorDataCount, "gnCursorDataCount");
-D2CmdBindingStrc gaCmdHandlerTable[57] = {}; D2_GLOBAL_GUARD(gaCmdHandlerTable, "gaCmdHandlerTable");
 int gnDenOfEvilLightTimerTick = -0x1; D2_GLOBAL_GUARD(gnDenOfEvilLightTimerTick, "gnDenOfEvilLightTimerTick");
 int gnDiabloSpawnLightTimer = -0x1; D2_GLOBAL_GUARD(gnDiabloSpawnLightTimer, "gnDiabloSpawnLightTimer");
 uint32_t gnQuestMonsterUnitId = -0x1; D2_GLOBAL_GUARD(gnQuestMonsterUnitId, "gnQuestMonsterUnitId");
@@ -44739,6 +44737,7 @@ D2ExitCutsceneState gExitCutscenePlayed = {}; D2_GLOBAL_GUARD(gExitCutscenePlaye
 D2DrlgActStrc * sgpDrlgAct = 0; D2_GLOBAL_GUARD(sgpDrlgAct, "sgpDrlgAct");
 D2Game_Line0x546 * D2GameGame0x546 = 0; D2_GLOBAL_GUARD(D2GameGame0x546, "D2GameGame0x546");
 uint32_t gnWeatherOverlayActId = 0; D2_GLOBAL_GUARD(gnWeatherOverlayActId, "gnWeatherOverlayActId");
+D2GameViewStrc * D2GameView = 0; D2_GLOBAL_GUARD(D2GameView, "D2GameView");
 uint32_t ExitingGame = 0; D2_GLOBAL_GUARD(ExitingGame, "ExitingGame");
 uint32_t EnteringGame = 0; D2_GLOBAL_GUARD(EnteringGame, "EnteringGame");
 uint32_t gQueuedPrimaryClick = 0; D2_GLOBAL_GUARD(gQueuedPrimaryClick, "gQueuedPrimaryClick");

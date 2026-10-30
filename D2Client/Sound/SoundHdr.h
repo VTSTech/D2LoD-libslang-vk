@@ -10,11 +10,14 @@
 
 // Forward declarations
 struct D2SoundEnvironTxt;
+struct D2SoundsTxt;
+typedef int eD2LevelId;
 typedef int eD2Sounds;
 
 namespace D2Client::Sound::SoundHdr {
 
 // Function declarations
+eD2LevelId __stdcall SOUND_GetCurrentLevelId();
 uint32_t __stdcall GetSoundEnv();
 uint32_t __stdcall SOUNDHDR_GetGlobal0();
 int __stdcall SOUNDHDR_GetGlobal1();
@@ -23,6 +26,7 @@ int __stdcall SOUNDHDR_GetGlobal3();
 void __stdcall Cleanup();
 void __fastcall SOUNDHDR_SetGlobal4(uint32_t nMaxBytes);
 void __stdcall SOUNDHDR_Nop();
+struct D2SoundsTxt * __fastcall TXT_sounds_GetLineBySoundId(int32_t nSoundId);
 int __fastcall SOUNDHDR_GetSoundField0x60(int32_t nSoundId);
 uint8_t __fastcall SOUNDHDR_GetSoundGroupSize(int32_t nSoundId);
 uint32_t __fastcall SOUNDHDR_GetSoundLoopFlag(int32_t nSoundId);
@@ -48,5 +52,6 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
 void __fastcall SOUNDHDR_ProcessAsyncLoads(int32_t dwTick);
 void __stdcall DRAW_AfterDraw();
 void __fastcall SOUNDHDR_UpdateRegistryVersion(int32_t nSoundHeaderIndex);
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::Sound::SoundHdr

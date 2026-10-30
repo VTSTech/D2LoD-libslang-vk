@@ -77,7 +77,6 @@ void __stdcall InitializeSequence(struct D2UnitStrc * pUnit);
 void __stdcall SetSequenceFrame(struct D2UnitStrc * pUnit, int32_t nSequenceFrame);
 void __stdcall UpdateFrame(struct D2UnitStrc * pUnit);
 void __stdcall SetFrameNonRate(struct D2UnitStrc * pUnit, int32_t nRate, int32_t nFailRate);
-uint8_t * __stdcall UNITS_GetAnimTableEntry(int32_t nClassId, int32_t nAnimMode);
 // Returns non-zero if the unit's current animation mode triggers at frame-end. Checks offset [3] of the anim-table entry for unconditional frame-end; if offset [2] is set, also checks the current skill's SkillsTxt nFlags bit 3 (animate-at-end flag). Dispatches per unit type (player vs monster) to the appropriate table (gaPlayerAnimModeCheckTable / gaAnimTableClassic / gaAnimTableExpansion).
 // @sourcefile .\UNITS\Units.cpp
 uint32_t __fastcall UNITS_CheckAnimateAtFrameEnd(int32_t nAnimMode, eD2UnitType eUnitType, struct D2UnitStrc * pUnit, int32_t nClassId);
@@ -195,6 +194,6 @@ void __stdcall UpdateAnimSpeed(struct D2UnitStrc * pUnit, char * szFile, int32_t
 void __stdcall InitAnimMode(struct D2UnitStrc * pUnitArg);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 int32_t __stdcall SetupUpdateFlag(struct D2UnitStrc * pUnit, int32_t nAnimMode);
-// 9 internal functions (defined in .cpp)
+// 10 internal functions (defined in .cpp)
 
 } // namespace D2Common::Units

@@ -7,20 +7,16 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/Drlg/Path.h"
 
 // Forward declarations
 struct CMDPARAMS;
 struct D2EscMenuItemStrc;
-struct D2GfxDataStrc;
 struct D2MissilesTxt;
-struct D2MonStatsTxt;
 struct D2RC4StateStrc;
 struct D2SeedStrc;
 struct D2UIMouseMsgStrc;
 struct D2UnitFindArgStrc;
 struct D2UnitStrc;
-struct DC6;
 struct EHExceptionRecord;
 struct EHRegistrationNode;
 struct SGAMEDATA;
@@ -109,11 +105,6 @@ void __stdcall CMD_SetHoldAlt();
 void __stdcall CMD_StopRun();
 void __stdcall CMD_ClearClickModifier();
 void __stdcall CMD_ReleaseHoldAltAndClearSelection();
-// Validates whether a command can be bound to mouse buttons (0x103-0x104). Returns false if command handler exists and button is left/right click, true otherwise. Used during key binding setup to prevent invalid mouse button assignments.
-BOOL CMD_ValidateMouseButtonBinding(int32_t nCmdIndex, uint16_t * pErrorCode, uint32_t nMouseButton);
-int32_t SORT_CompareInts(int * pA, int * pB);
-// Rebuilds derived mouse button bindings (0x100-0x104) from command table. Scans all key bindings and populates gKeyBindingTable slots for left/right/middle/scroll/forward mouse buttons. Invalidates bindings (sets 0xFFFF) if command has no handler or conflicts with mouse-specific restrictions.
-void __stdcall CMD_RebuildDerivedBindings();
 struct D2MissilesTxt * __fastcall GetMissleById(int32_t nMissileId);
 // Update room light pulse using light map + sin table; reset when level changes or timer ends.
 void __stdcall ClientLight_UpdateRoomLightPulse();
@@ -137,8 +128,6 @@ void __stdcall INPUT_HandleIMEStartComposition(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_HandleIMEEndComposition(struct D2UIMouseMsgStrc * pMsg);
 // Small callback/thunk that reads a party names field from ECX+0x124 and forwards it to AUTOMAP_SetPartyNames.
 void __fastcall AUTOMAP_UpdatePartyNamesCallback(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UNITMODE_ExecuteDeferredAction(struct D2UnitStrc * pUnit);
-void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr);
 // The ECX slot that carries a function pointer was one variable holding three callees with two
 // different conventions - fpRequiredUserAction (bool __cdecl(void)), UI_ShowPopupDialog and
 // NET_D2GS_CLIENT_Send_0x6D_PING (void __stdcall(void)). Typing it void * split it into two register
@@ -151,8 +140,6 @@ void __stdcall INV_SetItemDescFlag();
 void __stdcall INV_ResetItemDescFlags();
 void __stdcall INV_SetItemDescHighlight();
 uint8_t __stdcall INV_GetItemDescDirtyFlag();
-void CONTROLCONFIG_SaveAndCancel();
-void CONTROLCONFIG_RevertAndClose();
 void __fastcall MONUNIQUE_Clt_ClearMonsterOverride(struct D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply);
 void __fastcall MONUNIQUE_DispatchDeathEffect(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
 void __fastcall MONUNIQUE_Clt_SpawnPainWormDeathExplosion(struct D2UnitStrc * pUnit, int32_t nUMod, int32_t bIsChampion);
@@ -178,17 +165,8 @@ BOOL __fastcall OBJECT_CheckAutoLight(struct D2UnitStrc * pUnit, int32_t bSkipCo
 int __stdcall TEXT_EmptyCallback();
 void __stdcall TEXT_InitializeTextSystem();
 void __stdcall TEXT_SetUnknownFlag(struct D2UIMouseMsgStrc * pMsg);
-void ITEM_ToggleHandState(struct D2UnitStrc * pUnit);
-void __stdcall TEXT_HandleMouseMove();
-void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2);
 void __stdcall SOUND_ClearGlobalState();
 void __fastcall MISSILES_StatExpireCallback_ClearState(struct D2UnitStrc * pUnit, eD2States eState, int32_t nParam);
-int32_t __fastcall DC6_AssignParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct DC6 * pDC6, int32_t nDirection, int32_t nFrameNumber, int * pnOutItemClassId, uint8_t nComponentType, struct D2UnitStrc * pEquipContext);
-int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(struct D2GfxDataStrc * pGfxData, int32_t nDirection, int32_t nFrameNumber, uint8_t nComponentType, int32_t nAnimMode, int32_t nWeaponClass, void * pCofFile, short * pComponentTable, struct D2MonStatsTxt * pMonStatsTxt, int32_t nComponentRow);
-int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(struct D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam);
-int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(struct D2UnitStrc * pUnit, int32_t pOverlayEntry);
-void __fastcall GFXUTIL_GetOverlayDimensions(struct D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam);
-uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY);
 void __stdcall DRAW_WORLD_SetWarpFadeTimer();
 // Guard on a non-zero global deadline; sample the
 // tick counter; clear the deadline once passed; otherwise compute remaining = deadline - now, height =
@@ -220,6 +198,5 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
 void AtexitCleanup_FreeLinkedListAndCritSec();
 _EXCEPTION_DISPOSITION SehHandler_6ca218(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION SehHandler_6ca238(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-// 2 internal functions (defined in .cpp)
 
 } // namespace D2Client

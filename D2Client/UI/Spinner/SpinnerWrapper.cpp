@@ -2,7 +2,7 @@
 
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinTextBox.h"

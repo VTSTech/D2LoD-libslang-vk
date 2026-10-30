@@ -374,10 +374,6 @@ uint32_t __fastcall MAINMENU_GetFlagBits8To12(uint32_t dwFlags);
 // Returns MAINMENU_GetRealmName(nIndex) when nIndex < MAINMENU_GetRealmCount(), else NULL (tail-jumps to 00430b50).
 // Provenance: asm 00437a00..00437a12; unreferenced in 1.14d.
 char * __stdcall MAINMENU_GetRealmNameIfValid(int nIndex);
-uint32_t CHARSEL_FindRealmByName(char * szText);
-BOOL __stdcall MAINMENU_OnPressShowExpansionCreditsPage(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_OnPressDestroyFormListIfExpansion(struct D2ControlMsg * pControlMsg);
-BOOL __stdcall MAINMENU_CharSelScrollbarCallback(struct D2ControlStrc * pControl);
 int __stdcall LAUNCHER_PollBNConnectionPump(int nFrameIndex);
 // 7 internal functions (defined in .cpp)
 

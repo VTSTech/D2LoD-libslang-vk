@@ -42,10 +42,6 @@ typedef BOOL (__stdcall *ImageHitArea)(D2ControlMsg * pControlMsg);
 #define RECON_FPTD_OnPress
 typedef BOOL (__stdcall *OnPress)(D2ControlMsg * pControlMsg);
 #endif
-#ifndef RECON_FPTD_Draw
-#define RECON_FPTD_Draw
-typedef BOOL (__fastcall *Draw)(D2ControlStrc * pControl);
-#endif
 
 namespace D2Win::Src::D2WinImage {
 
@@ -231,7 +227,7 @@ BOOL __fastcall Draw(::D2WinImage * pImage) {
     return 0;
 }
 
-void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStrc * pDstRect, D2GfxDataStrc * pGfxData) {
+static void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStrc * pDstRect, D2GfxDataStrc * pGfxData) {
     D2GfxTileRectStrc sClipRect;
     int nSrcX1;
     int nTileCountX = pDstRect->nX1 - pDstRect->nX0;
@@ -285,6 +281,64 @@ void __stdcall D2WinImage_Draw(D2GfxTileRectStrc * pScreenRect, D2GfxTileRectStr
       nDstOffsetX += iVar2;
       nTileRepeatX--;
     } while (nTileRepeatX);
+}
+
+BOOL __fastcall Draw(::D2WinImageEx * pImageEx) {
+    int nBorderY;
+    D2GfxDataStrc sGfxData;
+    D2GfxTileRectStrc sScreenRect;
+    D2GfxTileRectStrc sUVRect;
+    D2GfxNinePatchCoordsStrc sNinePatch;
+    if (pImageEx->sImage.sControl.neD2FormType != FORM_Image) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x10f);
+      exit(-1);
+    }
+
+    {
+      int nBorderX;
+      nBorderX = pImageEx->nBorderX;
+      nBorderY = pImageEx->nBorderY;
+      memset(&sGfxData, 0, 0x48);
+      sGfxData.pDC6 = pImageEx->sImage.sControl.pDC6;
+      sNinePatch.nUScale[2] = 0x100 - nBorderX;
+      sNinePatch.nUScale[3] = 0x100;
+      sNinePatch.nVScale[3] = 0x100;
+      sNinePatch.nScreenX[0] = pImageEx->sImage.sControl.dwPosX;
+      sNinePatch.nVScale[2] = 0x100 - nBorderY;
+      sNinePatch.nScreenX[1] = sNinePatch.nScreenX[0] + nBorderX;
+      sNinePatch.nScreenX[3] = sNinePatch.nScreenX[0] + pImageEx->sImage.sControl.dwSizeX;
+      sNinePatch.nScreenX[2] = sNinePatch.nScreenX[3] - nBorderX;
+      sNinePatch.nScreenY[3] = pImageEx->sImage.sControl.dwPosY;
+      sNinePatch.nScreenY[0] = sNinePatch.nScreenY[3] - pImageEx->sImage.sControl.dwSizeY;
+      sNinePatch.nScreenY[1] = sNinePatch.nScreenY[0] + nBorderY;
+      sNinePatch.nVScale[1] = nBorderY;
+      sGfxData.nDirection = 0;
+      sGfxData.nFrameNumber = 0;
+      sNinePatch.nUScale[0] = 0;
+      sNinePatch.nUScale[1] = nBorderX;
+      sNinePatch.nVScale[0] = 0;
+      sNinePatch.nScreenY[2] = sNinePatch.nScreenY[3] - nBorderY;
+      nBorderX = 0;
+      do {
+        sUVRect.nY0 = *(int*)((int)sNinePatch.nVScale + nBorderX);
+        sUVRect.nY1 = *(int*)((int)sNinePatch.nVScale + nBorderX + 4);
+        nBorderY = 0;
+        do {
+          sScreenRect.nY0 = *(int*)((int)sNinePatch.nScreenY + nBorderX);
+          sScreenRect.nX1 = *(int*)((int)sNinePatch.nScreenX + nBorderY + 4);
+          sScreenRect.nX0 = *(int*)((int)sNinePatch.nScreenX + nBorderY);
+          sScreenRect.nY1 = *(int*)((int)sNinePatch.nScreenY + nBorderX + 4);
+          sUVRect.nX0 = *(int*)((int)sNinePatch.nUScale + nBorderY);
+          sUVRect.nX1 = *(int*)((int)sNinePatch.nUScale + nBorderY + 4);
+          D2WinImage_Draw(&sScreenRect, &sUVRect, &sGfxData);
+          nBorderY += 4;
+        } while (nBorderY < 0xc);
+
+        nBorderX += 4;
+      } while (nBorderX < 0xc);
+
+      return 1;
+    }
 }
 
 BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
@@ -351,6 +405,9 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     pNewImage->sControl.fpKey = pKey;
     pNewImage->sControl.dwPosX = nParam1;
     pNewImage->sControl.dwPosY = nParam2;
+    // Two functions named Draw now share D2Win::Src::D2WinImage (004fd1f0 and 004fd470), so the
+    // name is an overload set; the exact type selects 004fd1f0. Retire when Ghidra gives them
+    // distinct names or the generator selects the overload by address.
     pNewImage->sControl.fpDraw = (::Draw)(BOOL (__fastcall *)(::D2WinImage*))D2WinImage::Draw;
     pNewImage->sControl.pNext = 0;
     pNewImage->sControl.fpPush = D2WinImage::Push;

@@ -23,7 +23,6 @@
 #include "D2Common/Drlg/OutPlace.h"
 #include "D2Common/Drlg/OutSiege.h"
 #include "D2Common/Drlg/OutWild.h"
-#include "D2Common/Drlg/Outdoors/Act4.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Drlg/TileSub.h"
 #include "D2Common/Drlg/Transform.h"
@@ -32,7 +31,8 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Memory.h"
 #include "globals/globals.h"
-#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/D2UnitStrc.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -72,7 +72,7 @@ int __stdcall DRLGOUTDOOR_GetPrimaryWallGridFlags(int * pLevelCtx, int32_t nGrid
 }
 
 // Already documented — existing description is accurate and meaningful.
-int __stdcall DRLGOUTDOOR_ValidateSubTilePlacement(D2UnkOutdoorStrc * pOutdoorCtx, int pBaseGridX, int pBaseGridY, D2DrlgCoordStrc * pSubRect, D2LvlSubTxt * pSubLvl) {
+static int __stdcall DRLGOUTDOOR_ValidateSubTilePlacement(D2UnkOutdoorStrc * pOutdoorCtx, int pBaseGridX, int pBaseGridY, D2DrlgCoordStrc * pSubRect, D2LvlSubTxt * pSubLvl) {
     int nGridIndex;
     int nSubTileFlags;
     int nCallbackResult;
@@ -208,6 +208,144 @@ int __stdcall DRLGOUTDOOR_ApplySubTileToGrid(int nBaseX, int nBaseY, D2UnkOutdoo
     } while (nResult < pCoords->nHeight);
 
     return nResult;
+}
+
+// Shuffles candidate border subtile positions using current level seed, then tries each until `ValidateSubTilePlacement` approves and calls `ApplySubTileToGrid`. Defaults to random variant (pRect[5]) and returns as soon as a placement succeeds when the level flag indicates only one patch per run.
+BOOL __stdcall DRLGOUTDOOR_PlaceRandomBorderSubTiles(D2UnkOutdoorStrc * pOutdoorCtx, int32_t pLevelPtr, int * pRect) {
+    uint32_t randIndexA;
+    int tempY;
+    uint32_t randIndexB;
+    int aPositions[513];
+    uint32_t nSeedHighTemp;
+    int nShuffleGridY;
+    int strictCornerLimit;
+    int posIter;
+    uint32_t variantCount;
+    int64_t lSeedMul;
+    D2SeedStrc sSeedRoll;
+    uint32_t uTemp;
+    bool isNotBaseLvlSub = pOutdoorCtx->nLvlSubId != 1;
+    D2DrlgLevelStrc* pDVar1 = pOutdoorCtx->pLevel;
+    if (pDVar1->eD2LevelId < 2 || (variantCount = 1 , pDVar1->eD2LevelId > 7)) {
+      variantCount = 0;
+    }
+    if (isNotBaseLvlSub || (posIter = -1 , !(pDVar1->pDrlgLevelData.pDrlgLevelOutdoorsData->dwFlags & 0xc))) {
+      posIter = 1;
+    }
+
+    posIter = pOutdoorCtx->pCoordsGrid->nWidth - pRect[2] * *(int*)(pLevelPtr + 0x4c) + posIter;
+    int posIndex = pOutdoorCtx->pCoordsGrid->nHeight - pRect[3] * *(int*)(pLevelPtr + 0x4c) + 1;
+    uint32_t totalPositions = posIndex * posIter;
+    if (!totalPositions) {
+      return 0;
+    }
+    if (isNotBaseLvlSub || !variantCount || posIter >= 6 || (strictCornerLimit = 1 , posIndex >= 6)) {
+      strictCornerLimit = 0;
+    }
+    if ((int)totalPositions > 0) {
+      int tempX;
+      posIndex = 0;
+      do {
+        tempX = posIndex / posIter;
+        tempY = posIndex % posIter;
+        posIndex++;
+        aPositions[posIndex * 2 - 2] = tempY;
+        aPositions[posIndex * 2 - 1] = tempX;
+      } while (posIndex < (int)totalPositions);
+
+      randIndexA = totalPositions;
+      if ((int)totalPositions > 0) {
+        do {
+          variantCount = randIndexA;
+          if ((int)totalPositions <= 0) {
+            randIndexA = 0;
+          } else {
+            randIndexA = pDVar1->sSeed.nSeedLow;
+            if (totalPositions & totalPositions - 1) {
+              sSeedRoll = D2_SEED_NEXT(pDVar1->sSeed);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexA = (uint32_t)(sSeedRoll.nSeedLow % totalPositions);
+            } else {
+              sSeedRoll = D2_SEED_NEXT(pDVar1->sSeed);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexA = totalPositions - 1 & sSeedRoll.nSeedLow;
+            }
+          }
+          if ((int)totalPositions <= 0) {
+            randIndexB = 0;
+          } else {
+            randIndexB = pDVar1->sSeed.nSeedLow;
+            if (totalPositions & totalPositions - 1) {
+              lSeedMul = (uint64_t)randIndexB * 0x6ac690c5;
+              posIter = (int)((uint64_t)lSeedMul >> 0x20);
+              sSeedRoll = (D2SeedStrc)(lSeedMul + (uint64_t)pDVar1->sSeed.nSeedHigh);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexB = sSeedRoll.nSeedLow % totalPositions;
+            } else {
+              lSeedMul = (uint64_t)randIndexB * 0x6ac690c5;
+              nSeedHighTemp = (uint32_t)((uint64_t)lSeedMul >> 0x20);
+              sSeedRoll = (D2SeedStrc)(lSeedMul + (uint64_t)pDVar1->sSeed.nSeedHigh);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexB = totalPositions - 1 & sSeedRoll.nSeedLow;
+            }
+          }
+
+          uTemp = variantCount - 1;
+          variantCount = uTemp;
+          posIndex = aPositions[randIndexA * 2];
+          nShuffleGridY = aPositions[randIndexA * 2 + 1];
+          aPositions[randIndexA * 2] = aPositions[randIndexB * 2];
+          aPositions[randIndexA * 2 + 1] = aPositions[randIndexB * 2 + 1];
+          tempX = nShuffleGridY;
+          aPositions[randIndexB * 2] = posIndex;
+          aPositions[randIndexB * 2 + 1] = tempX;
+          randIndexA = variantCount;
+        } while (uTemp);
+      }
+    }
+
+    posIter = 0;
+    if ((int)totalPositions <= 0) {
+      return 0;
+    }
+
+    do {
+      if (!strictCornerLimit || aPositions[posIter * 2] != 2 || aPositions[posIter * 2 + 1] != 2) {
+        posIndex = DRLGOUTDOOR_ValidateSubTilePlacement(pOutdoorCtx, aPositions[posIter * 2], aPositions[posIter * 2 + 1], (D2DrlgCoordStrc*)pRect, (D2LvlSubTxt*)pLevelPtr);
+        if (posIndex) {
+          variantCount = pRect[5];
+          if ((int)variantCount <= 0) {
+            randIndexA = 0;
+          } else {
+            randIndexA = pDVar1->sSeed.nSeedLow;
+            if (variantCount & variantCount - 1) {
+              sSeedRoll = D2_SEED_NEXT(pDVar1->sSeed);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexA = (uint32_t)(sSeedRoll.nSeedLow % variantCount);
+            } else {
+              sSeedRoll = D2_SEED_NEXT(pDVar1->sSeed);
+              pDVar1->sSeed.nSeedHigh = sSeedRoll.nSeedHigh;
+              pDVar1->sSeed.nSeedLow = sSeedRoll.nSeedLow;
+              randIndexA = variantCount - 1 & sSeedRoll.nSeedLow;
+            }
+          }
+
+          DRLGOUTDOOR_ApplySubTileToGrid(aPositions[posIter * 2], aPositions[posIter * 2 + 1], pOutdoorCtx, (D2DrlgCoordStrc*)pRect, (D2LvlSubTxt*)pLevelPtr, (pRect[2] + 1) * (randIndexA + 1));
+          if (!*(int*)(pLevelPtr + 0x44) || *(int*)(pLevelPtr + 0x44) == 1) {
+            return 1;
+          }
+        }
+      }
+
+      posIter++;
+    } while (posIter < (int)totalPositions);
+
+    return 0;
 }
 
 // Paste preset units from a LvlSub definition into the active outdoor room. Converts bounds to world coordinates, then for each preset check if it falls inside the sub-rect and spawn a new preset unit offset into the room’s local space.
@@ -1460,6 +1598,55 @@ static void DRLGOUTPLACE_PlaceAct4SpecialPresets(D2DrlgLevelStrc * pLevel) {
     SpawnOutdoorLevelPresetEx(pLevel, 0, 4, 0x31e, -1, 0);
 }
 
+// Spawns outdoor presets for Act4 City of Damned / Plains of Despair.
+static void DRLGOUTDOOR_SpawnAct4OutdoorPresets(D2DrlgLevelStrc * pLevel) {
+    // 0067e6c3 is LEA EAX,[EAX*0x4 + 0xfffffe60] and the loads are [EAX + 0x6f22b0] and
+    // [EAX + 0x6f22a4]. The -416 folds 104*4 out of the base so the loads index by a raw
+    // level id, and 0x6f22a4..0x6f22bf was unclaimed .rdata, so the decompiler rebased both
+    // onto the unrelated scalars sitting 416 bytes earlier and emitted (&scalar)[eD2LevelId]
+    // with eD2LevelId 105 or 106 - a read ~420 bytes past a single int.
+    // Ghidra v939 labels the real tables (aAct4OutdoorPresetBaseByLevel @0x6f22b0,
+    // aAct4OutdoorSceneryBaseByLevel @0x6f22a4) but its decompiler still prefers the earlier
+    // symbol for a folded base, so it cannot express this. Retire when the generator's
+    // interior-address pass rebases a folded base onto the symbol that owns the target range.
+    static const int aAct4OutdoorPresetBaseByLevel[3]  = {0x32c, 0x331, 0x337};
+    static const int aAct4OutdoorSceneryBaseByLevel[3] = {0x33c, 0x340, 0x340};
+
+    if (pLevel->eD2LevelId == 0x6a) {
+      SpawnOutdoorLevelPreset(pLevel, 0x32b, -1, 0, '\x0f');
+    }
+
+    int nLevelIndex = (int)pLevel->eD2LevelId - 104;
+    int nPresetBaseA = aAct4OutdoorPresetBaseByLevel[nLevelIndex];
+    int nPresetBaseB = aAct4OutdoorSceneryBaseByLevel[nLevelIndex];
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 1, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 1, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 2, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 2, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 3, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA + 3, -1, 0, '\x0f');
+    if (pLevel->eD2LevelId == 0x69) {
+      SpawnOutdoorLevelPreset(pLevel, 0x336, -1, 0, '\x0f');
+    }
+
+    nPresetBaseA += 4;
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseA, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB + 1, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB + 1, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB + 2, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB + 2, -1, 0, '\x0f');
+    nPresetBaseB += 3;
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB, -1, 0, '\x0f');
+    SpawnOutdoorLevelPreset(pLevel, nPresetBaseB, -1, 0, '\x0f');
+}
+
 static void BuildChaosSanctuary(D2DrlgLevelStrc * pLevel) {
     // Static local variables (originally global data)
     static int aChaosSanctuaryPresets[25] = {
@@ -1519,14 +1706,8 @@ void __fastcall InitAct4OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       AddAct124SecondaryBorder(pLevel, 1, 799);
       AddAct124SecondaryBorder(pLevel, 2, 799);
       AddAct124SecondaryBorder(pLevel, 3, 799);
-      Act4::DRLGOUTDOOR_SpawnAct4OutdoorPresets(pLevel);
+      DRLGOUTDOOR_SpawnAct4OutdoorPresets(pLevel);
     }
-}
-
-void AddAct124SecondaryBorderSubId213(D2DrlgLevelStrc * pLevel) {
-    AddAct124SecondaryBorder(pLevel, 2, 0x16c);
-    AddAct124SecondaryBorder(pLevel, 1, 0x16c);
-    AddAct124SecondaryBorder(pLevel, 3, 0x16c);
 }
 
 } // namespace D2Common::Drlg::Outdoors

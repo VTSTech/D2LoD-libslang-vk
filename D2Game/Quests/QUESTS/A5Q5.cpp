@@ -17,6 +17,7 @@
 #include "D2Common/D2SkillArgStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "D2Common/DATATBLS/ItemStats.h"
@@ -29,8 +30,7 @@
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
@@ -40,6 +40,7 @@
 #include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/MISSILES/Missiles.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -180,8 +181,8 @@ static bool Q35_KillAndRemoveAncient(::SGAMEDATA * pGame, DWORD dwParam) {
       return true;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pAncientUnit, eD2MonsterAnimMode_ns::Dead, &sMonsterKill);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
+    Monster::MonsterMode::SetCurrentSkill(pAncientUnit, eD2MonsterAnimMode_ns::Dead, &sMonsterKill);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sMonsterKill, 1);
     eD2UnitType eUnitType = UNIT_MONSTER;
     D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pAncientUnit), eUnitType, dwParam);
     D2Common::Units::RemoveCollision_Vector(pAncientUnit);

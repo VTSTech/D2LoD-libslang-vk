@@ -2692,6 +2692,6 @@ void __fastcall EVENT_TriggerWithCallback(::SGAMEDATA * pGame, struct D2UnitStrc
 void __fastcall SetEvent(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int eTimerType, int nDelay, int32_t nArg1, int32_t nArg2);
 // Specialized variant of SetEvent that accepts a custom fpTimerFunction callback. Used for map reveal timer which needs a specific callback (PLAYER_CancelMapReveal). Calls SetEventInternal with non-NULL fpFunction, overriding the default type dispatcher.
 void __fastcall SetEventMapReveal(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t nFrame, fpTimerFunctionUnit fpFunction, int32_t nArg1, int32_t nArg2);
-// 5 internal functions (defined in .cpp)
+// 11 internal functions (defined in .cpp)
 
 } // namespace D2Game::GAME::Event

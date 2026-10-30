@@ -8,7 +8,7 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "D2Common/D2SeedStrc.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Objects/Objects.h"
 

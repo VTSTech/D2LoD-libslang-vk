@@ -6,7 +6,7 @@
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Button/ButtonWrapper.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Win/DC6.h"

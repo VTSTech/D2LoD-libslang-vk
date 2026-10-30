@@ -9,7 +9,6 @@
 #include "d2_platform.h"
 
 // Forward declarations
-struct D2EscMenuItemStrc;
 struct D2UIMouseMsgStrc;
 
 // Data types
@@ -66,14 +65,6 @@ void __stdcall CHAT_ClearInput();
 // Routes incoming BNet chat packet by type - handles whispers, emotes, broadcasts, system messages
 void __stdcall CHAT_ProcessBattleNetMessage();
 void __stdcall INPUT_HandleChatCharInput(struct D2UIMouseMsgStrc * pMsg);
-int __stdcall UI_SLIDER_GetValueFromPosition(int32_t nCurrentPos, int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
-int __fastcall UI_SLIDER_GetPositionFromValue(int32_t nMinPos, struct D2EscMenuItemStrc * pSliderItem, int32_t nMaxPos);
-void __fastcall UI_SLIDER_ApplyMasterVolume(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyMusicVolume(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall ESCMENU_Init3DSoundItem(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyPositionalBias(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall ESCMENU_InitEaxSoundItem(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyNpcSpeech(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 // 10 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Chat

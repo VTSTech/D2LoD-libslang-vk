@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2ControlMsg;
+struct D2ControlStrc;
 struct DC6;
 
 // Data types
@@ -93,15 +94,12 @@ void __fastcall CHARSEL_CacheRealmData(char * szRealmName, void * pData, size_t 
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_FreeCachedRealmData();
 void __stdcall UIMENU_ItsLikeRealmSelectionMenuButOffsetToRightSide();
-void CHARSEL_SelectRealmInDropdown(char * szText);
 char * __stdcall GetPreferedRealm();
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_DestroySelectedChar();
 // Draws local character slots in selection screen. Iterates gaCharSelScreenSlotControls[0-7] to render each slot's character name, level, class, and hardcore/expansion flags. Highlights selected slot, draws character preview sprite, and handles expired characters.
 void __stdcall DRAW_LocalCharsInSelectionScreen();
 void __stdcall DRAW_LocalCharsInSelectionScreen0();
-// @sourcefile .\Src\CharSel.cpp
-BOOL __stdcall SAVEFILE_ParseSaveData(char * szRealmName, char * szCharacterName, char * aSaveData, uint32_t dwRealmParam, FILETIME ftLastWriteTime);
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_DestroyAllCharEntries();
 void __stdcall CHARSEL_EnumerateLocalSaves();
@@ -114,15 +112,17 @@ void __fastcall UIMENU_CALLBACK_SetDificultySingleplayerTcpIp(struct D2ControlMs
 BOOL __stdcall UIMENU_Callback_NormalButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall UIMENU_Callback_NightmareButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall UIMENU_Callback_HellButtonSingleplayerTcpIp(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressShowExpansionCreditsPage(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_OnPressDestroyFormListIfExpansion(struct D2ControlMsg * pControlMsg);
 void __stdcall UIMENU_AreYouSureWouWantToDeleteThisCharacter();
 BOOL __stdcall CHARSEL_OnPressDestroyFormList(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall CHARSEL_OnPressConfirmDeleteCharacter(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall CHARSEL_OnPressScrollCharListUp(struct D2ControlMsg * pControlMsg);
 BOOL __stdcall CHARSEL_OnPressScrollCharListDown(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall MAINMENU_CharSelScrollbarCallback(struct D2ControlStrc * pControl);
 void __stdcall CHARSEL_ScrollCharList(int32_t nScrollDelta);
 BOOL __stdcall CHARSEL_HandleKeyNavExpansion(int32_t pKeyMsg);
 BOOL __stdcall CHARSEL_HandleKeyNavClassic(int32_t pKeyMsg);
-void CHARSEL_SetStatusMessage(int32_t nStatusCode);
 void __stdcall CHARSEL_ShowWaitTimeout();
 BOOL __stdcall CHARSEL_InitRealmSelection();
 // @sourcefile .\Src\CharSel.cpp
@@ -131,6 +131,17 @@ void __stdcall CHARSEL_AddCreateNewEntry();
 void __stdcall CHARSEL_AddRetrievingEntry();
 // @sourcefile .\Src\CharSel.cpp
 void __stdcall CHARSEL_ClearCharDetailUI();
-// 4 internal functions (defined in .cpp)
+void __stdcall CHARSEL_ResetCharListUI();
+void __stdcall UIMENU_ChangeHavingMultipleRealmsAsia123();
+BOOL __stdcall ChangeClosedRealmChoice(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall CHARSEL_OpenRealmChangeDialog(struct D2ControlMsg * pControlMsg);
+BOOL __stdcall CHARSEL_HandleCharListClick(struct D2ControlMsg * pControlMsg);
+void __stdcall CHARSEL_ParseRealmCharList(char * szRealmName, char * szText, int32_t bShouldCache);
+BOOL __stdcall CHARSEL_OnPressPumpRealmCharListLoad(struct D2ControlMsg * pControlMsg);
+void __fastcall CHARSEL_LoadCharList(char * szText);
+// Initializes character selection screen. Creates 8 D2WinTextBox controls stored in gaCharSelScreenSlotControls[0-7] for character name display slots. Sets up UI callbacks, loads DC6 assets, initializes character list data structures.
+void __stdcall CHARSEL_InitCharSelScreen();
+void __stdcall UIMENU_CharacterSelectAllGameTypes();
+// 9 internal functions (defined in .cpp)
 
 } // namespace D2Launch::CharSel

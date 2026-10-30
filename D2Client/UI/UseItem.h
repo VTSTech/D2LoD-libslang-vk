@@ -10,6 +10,7 @@
 
 // Forward declarations
 struct D2UIMouseMsgStrc;
+struct D2UnitStrc;
 
 // Data types
 struct __attribute__((packed)) D2NpcCashTabStrc {
@@ -30,10 +31,14 @@ struct __attribute__((packed)) D2NpcCashTabStrc {
 namespace D2Client::UI::UseItem {
 
 // Function declarations
+void __stdcall TEXT_HandleMouseMove();
+void __fastcall TEXT_HandleItemUse(int32_t nParam1, int32_t nParam2);
 // @sourcefile .\UI\UseItem.cpp
 void __stdcall INPUT_UseItemClick(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_UseItemPassthrough(struct D2UIMouseMsgStrc * pMsg);
 // @sourcefile .\UI\UseItem.cpp
 void __stdcall TEXT_DrawCashDisplay();
+void __stdcall UI_CloseHoradricCubeWindow();
+// 1 internal function (defined in .cpp)
 
 } // namespace D2Client::UI::UseItem

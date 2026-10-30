@@ -16,6 +16,7 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/LvlTbls.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
@@ -23,7 +24,6 @@
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Environment.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -1374,17 +1374,6 @@ void __stdcall WeatherEffects() {
 }
 
 uint32_t __fastcall WEATHER_ApproximateDistance(uint32_t nDeltaX, uint32_t nDeltaY) {
-    int nAbsX = (nDeltaX ^ (int)nDeltaX >> 0x1f) - ((int)nDeltaX >> 0x1f);
-    int nAbsY = (nDeltaY ^ (int)nDeltaY >> 0x1f) - ((int)nDeltaY >> 0x1f);
-    if (nAbsX >= nAbsY) {
-      return (uint32_t)(nAbsX * 0x3d7 + nAbsY * 0x197) >> 10;
-    }
-
-    return (uint32_t)(nAbsY * 0x3d7 + nAbsX * 0x197) >> 10;
-}
-
-// Approximate 2D distance used by the weather and lightmap code. Non-standard convention: the X delta arrives in EAX and the Y delta on the stack, and the callee cleans up (RET 4). Declaring only the stack argument left the EAX delta looking like an unassigned local inside the abs() at the top.
-uint32_t __stdcall WEATHER_ApproximateDistanceCustomCC(uint32_t nDeltaX, uint32_t nDeltaY) {
     int nAbsX = (nDeltaX ^ (int)nDeltaX >> 0x1f) - ((int)nDeltaX >> 0x1f);
     int nAbsY = (nDeltaY ^ (int)nDeltaY >> 0x1f) - ((int)nDeltaY >> 0x1f);
     if (nAbsX >= nAbsY) {

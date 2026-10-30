@@ -288,8 +288,10 @@ void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, struct D2
 BOOL __fastcall Q32_CheckNearbyPrisoners(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnitFallback);
 // Quest item drop and callback functions for A1Q4 (Search for Cain), A1Q5 (Forgotten Tower), and A1Q6 (Sisters to the Slaughter)
 void __stdcall QUEST_AddPlayerGUIDToTrackingList(uint32_t nPlayerGUID, int32_t nParam1, int32_t nParam2);
-// A2Q4 (The Seven Tombs) quest timer callback that manages Jerhyn's replacement cycle: if Jerhyn's monster AI is still active it clears it (or removes the object unit if AI is absent), then once bShouldSpawnJerhyn is false spawns the Jerhyn NPC (classId 0xc9) at a position offset relative to whether the Seven Tombs quest has progressed, recording the spawn GUID and coordinates in the quest-specific data.
-void __stdcall ReplaceJerhyn(struct D2RoomStrc * pRoom, struct D2QuestDataStrc * pQuestData, POINT * pPoint);
+// A2Q4 - Callback_03 (quest state 3 handler). Index 0x4a: advance stateFlag to 4 (if <4) and broadcast state 4 via QUEST_SetStateAndBroadcast, then persist via UpdateQuestRecord. Index 0x32: directly set record Step0x08+Step0x07. For the Jerhyn (0x28) path: tear down/respawn Jerhyn's monster AI, optionally ReplaceJerhyn at his location, remove player from the participation list, and if not Completed(0)/RewardAwaits(1) and stateFlag==3 advance to 4 + persist.
+void __fastcall Q12_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData, struct D2QuestArgStrc * pQuestArgs);
+// A2Q4 - InitData. Quest registration/init. Allocates the A2Q4 quest-specific data block (0x48), zeroes state functions, wires the gossip table and the state-handler callbacks (0->Callback_00, 2->Callback_02, 3->Callback_03, 0xa->Callback_10, 0xb->Callback_11, 0xd->Callback_13), sets nQuestIdReal=TheArcaneSanctuary, fpActiveFilter=Q12_ActiveFilter, fpSequenceFilter=Q12_SequenceFilter, nSequenceQuestId=TheSummoner, and clears the Summoner/sun sub-flags.
+void __fastcall Q12_InitData(struct D2QuestDataStrc * pQuestData);
 void __fastcall PlaceJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
 void __fastcall PlaceGuardInFrontOfJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
 bool __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame);
@@ -300,6 +302,6 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, struct D2UnitStrc * 
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow1(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow2(struct D2ObjectOperateFnArg * pOperation);
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow3(struct D2ObjectOperateFnArg * pOperation);
-// 8 internal functions (defined in .cpp)
+// 9 internal functions (defined in .cpp)
 
 } // namespace D2Game::Quests::QUESTS

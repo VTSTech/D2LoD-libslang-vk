@@ -19,6 +19,7 @@
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ItemTbls.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
@@ -31,8 +32,7 @@
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Text.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/D2ObjectInitFnArg.h"
@@ -46,6 +46,7 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
 #include "D2Game/Monster/MonsterAI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Monsters/Spawn.h"
 #include "D2Game/Objects/Objects.h"
@@ -66,7 +67,6 @@
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/QuestLog.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/D2QuestGUIDStrc.h"
@@ -204,8 +204,8 @@ BOOL __fastcall Q33_OnFrozenAnyaKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
       return 1;
     }
 
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillInfo, 1);
+    Monster::MonsterMode::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillInfo, 1);
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_PrisonOfIce);
     if (!pQuestData) {
       return 1;
@@ -330,10 +330,10 @@ static void __fastcall A5Q3_KillMonsterInstantly(D2UnitStrc * pUnitStrc, ::SGAME
     D2Common::PATH::DynamicPath::ZeroPathPointsSize(pUnitStrc->pPath.pDynamicPath);
     GAME::Event::EVENT_RemoveUnitTimersByType(pGameStrc[1], pUnitStrc, UNITEVENTCALLBACK_AITHINK, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnitStrc, UNITSTAT_hitpoints, 0, 0);
-    GAME::Event::Dispatch::Monster::SetCurrentSkill(pUnitStrc, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
+    Monster::MonsterMode::SetCurrentSkill(pUnitStrc, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
     sKillInfo.nTargetX = 0;
     sKillInfo.nTargetY = 0;
-    GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pGameStrc[1], &sKillInfo, 1);
+    Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGameStrc[1], &sKillInfo, 1);
     D2Common::Unit::ROOM_LinkUnitToUpdateList(pUnitStrc);
     pUnitStrc->eUnitFlags |= UNITFLAG_DOUPDATE;
 }
@@ -363,8 +363,8 @@ static void Q33_CleanupQuestMonsters(D2QuestDataStrc * pQuestData) {
           Monster::MonsterAI::ClearAISub(pQuestData->pGame, pAnyaUnit, nullptr, false);
         }
 
-        GAME::Event::Dispatch::Monster::SetCurrentSkill(pAnyaUnit, eD2MonsterAnimMode_ns::Dead, &sMonsterKill);
-        GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pQuestData->pGame, &sMonsterKill, 1);
+        Monster::MonsterMode::SetCurrentSkill(pAnyaUnit, eD2MonsterAnimMode_ns::Dead, &sMonsterKill);
+        Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pQuestData->pGame, &sMonsterKill, 1);
         nAnyaGUID = pSpecificData->nFrozenAnyaGUID;
         eUnitType = pAnyaUnit->eUnitType;
         D2Common::DUNGEON::Dungeon::AllocDrlgDelete(D2Common::Units::UNITS_GetRoom(pAnyaUnit), eUnitType, nAnyaGUID);
@@ -823,8 +823,8 @@ void __fastcall Q33_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
         return;
       }
 
-      GAME::Event::Dispatch::Monster::SetCurrentSkill(pTargetUnit, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
-      GAME::Event::Dispatch::Monster::MONSTERAI_ExecuteLifecycleTransition(pQuestArgs->pGame, &sKillInfo, 1);
+      Monster::MonsterMode::SetCurrentSkill(pTargetUnit, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
+      Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pQuestArgs->pGame, &sKillInfo, 1);
       return;
     }
     if (nTargetClassId == 0x201) {

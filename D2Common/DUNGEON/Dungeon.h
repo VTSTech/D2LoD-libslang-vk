@@ -27,7 +27,6 @@ struct D2RoomExStrc;
 struct D2RoomStrc;
 struct D2UnitStrc;
 struct SGAMEDATA;
-typedef int eD2LevelId;
 typedef int eD2UnitType;
 #ifndef RECON_FPTD_ACTCALLBACKFN
 #define RECON_FPTD_ACTCALLBACKFN

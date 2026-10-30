@@ -402,7 +402,7 @@ void __stdcall SUBTILE_ExtractIsometricPixels(int32_t pSubTileEntry, int32_t pSr
     *(void**)(pSubTileEntry + 0x10) = (void*)nErrorAddr;
 }
 
-void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIndex, int pSrcSubTile, int pDstSubTile, uint32_t dwColorKey) {
+static void __stdcall SUBTILE_CompressWithColorKey(pfnRGBToPaletteIndex pfnGetPaletteIndex, int pSrcSubTile, int pDstSubTile, uint32_t dwColorKey) {
     BOOL BVar1;
     void* pMemoryToFree = SUBTILE_ConvertRGBToIndexed(*(char**)(pSrcSubTile + 0x10), (uint32_t)*(uint16_t*)(pSrcSubTile + 10), dwColorKey, pfnGetPaletteIndex);
     int iPixel = 0;
@@ -440,6 +440,54 @@ void __fastcall SUBTILE_RecompressExisting(int32_t pSubTileEntry) {
     }
 
     D2_FREE_AT(pMemoryToFree, ".\\SRC\\SubTile.cpp", 0x1de);
+}
+
+void __fastcall CELCMP_CompressAllFramesWithColorKey(int32_t pSrcCelFile, int32_t pDstCelFile, uint32_t dwColorKey, uint8_t * pfnGetPaletteIndex) {
+    int32_t pSrcFrameData;
+    uint32_t* pDstFrame;
+    int iFrame;
+    int nFrameOffset = 0;
+    if (!pSrcCelFile) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ec);
+      exit(-1);
+    } else if (!pDstCelFile) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ed);
+      exit(-1);
+    } else if (!pfnGetPaletteIndex) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ee);
+      exit(-1);
+    } else {
+      if (!(*(uint8_t*)(pSrcCelFile + 0x46) & 8)) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1ef);
+        exit(-1);
+      }
+
+      iFrame = 0;
+      if (0 >= *(int*)(pSrcCelFile + 0x50)) {
+        return;
+      }
+
+      do {
+        pSrcFrameData = *(int*)(pSrcCelFile + 0x54) + nFrameOffset;
+        pDstFrame = (uint32_t*)(*(int*)(pDstCelFile + 0x54) + nFrameOffset);
+        *pDstFrame = *(uint32_t*)(*(int*)(pSrcCelFile + 0x54) + nFrameOffset);
+        pDstFrame[1] = *(uint32_t*)(pSrcFrameData + 4);
+        pDstFrame[2] = *(uint32_t*)(pSrcFrameData + 8);
+        pDstFrame[3] = *(uint32_t*)(pSrcFrameData + 0xc);
+        pDstFrame[4] = 0;
+        if (*(int*)(pSrcFrameData + 0x10)) {
+          SUBTILE_CompressWithColorKey((pfnRGBToPaletteIndex)pfnGetPaletteIndex, pSrcFrameData, (int)pDstFrame, dwColorKey);
+          if (*(uint8_t*)(pDstFrame + 2) & 4) {
+            *(uint8_t*)(pDstCelFile + 0x46) |= 0x10;
+          }
+        }
+
+        iFrame++;
+        nFrameOffset += 0x14;
+      } while (iFrame < *(int*)(pSrcCelFile + 0x50));
+
+      return;
+    }
 }
 
 } // namespace D2CMP::SRC::SubTile

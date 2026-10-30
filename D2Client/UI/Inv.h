@@ -7,12 +7,12 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Launch/MainMenus.h"
 
 // Forward declarations
 struct D2GridScreenCoordinates;
 struct D2InventoryStrc;
 struct D2ItemsTxt;
+struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
 typedef int eD2UnitStat;
 typedef uint8_t eInventoryPage;
@@ -76,20 +76,6 @@ struct __attribute__((packed)) D2NpcShopButtonStrc {
     /* 0x0A */ int32_t nActionType; // 1=clear,2=buy,3=sell,9=close
     /* 0x0E */ uint16_t wCurrentSelection; // current selection state
     /* 0x10 */ int32_t nIconId; // cursor icon ID for this action
-};
-
-struct __attribute__((packed)) D2UIMouseMsgStrc {
-    /* 0x00 */ HWND hWnd; // HWND the message was delivered to. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local hMsgWnd at Stack[-0x24], which it passes to SEvtDispatch as the opaque pData.
-    /* 0x04 */ uint32_t uMsg; // Windows message id. WND_DispatchWindowMessage local uMsgL at Stack[-0x20].
-    /* 0x08 */ uint32_t nWParam; // WPARAM. WND_DispatchWindowMessage local nMsgWParam at Stack[-0x1c]. Read as a byte virtual-key code by INPUT_FormKeyHandler/INPUT_FormKeyUpHandler.
-    /* 0x0C */ D2UIMsgLParamUnion uLParam; // LPARAM. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local dwMsgLParam at Stack[-0x18]. For mouse messages the low half is the cursor x and the high half the cursor y (76 handlers read it as a ushort pair); for key messages the whole dword is the keyboard flag word, and 14 handlers test bit 30 (0x40000000, auto-repeat). Modelled as the raw LPARAM because that is the only reading true at every site.
-    /* 0x10 */ uint32_t nCmdCode; // WM_COMMAND notification code, HIWORD(wParam), else 0. WND_DispatchWindowMessage local nCmdCode at Stack[-0x14].
-    /* 0x14 */ uint8_t field_0x14;
-    /* 0x15 */ uint8_t field_0x15;
-    /* 0x16 */ uint8_t field_0x16;
-    /* 0x17 */ uint8_t field_0x17;
-    /* 0x18 */ uint32_t bHandled; // Handler sets 1 to mark the message consumed. Returned to the caller through WND_DispatchWindowMessage's pdwResult1.
-    /* 0x1C */ uint32_t dwResult; // Handler result, returned through WND_DispatchWindowMessage's pdwResult2.
 };
 
 // =============================================================================

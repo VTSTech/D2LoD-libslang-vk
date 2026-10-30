@@ -2,7 +2,7 @@
 
 #include "Storm/WindowHandle.h"
 #include "D2Client/Message.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "Storm/SMem.h"
 #include "Storm/Source/SEVT.h"
 #include "Storm/Source/SErr.h"

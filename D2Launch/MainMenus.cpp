@@ -845,7 +845,7 @@ static void MAINMENU_GetLocalizedFilePath(char * szPathFormat, char * szOutPath,
 void __stdcall MAINMENU_CloseAndLaunchCharSelect() {
     D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
     FORMS_DestroyLists();
-    Launcher::UIMENU_CharacterSelectAllGameTypes();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
 }
 
 int __stdcall MAINMENU_ValidateCharNameChar(::D2WinEditBox * pEditBox, int nTextLen, char * pKeyChar) {
@@ -1513,7 +1513,7 @@ BOOL __stdcall SAVEFILE_FindAllSaveFiles() {
 BOOL __stdcall MAINMENU_OnPressGotoCharacterSelect(D2ControlMsg * pControlMsg) {
     D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
     FORMS_DestroyLists();
-    Launcher::UIMENU_CharacterSelectAllGameTypes();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
     return 1;
 }
 
@@ -3715,7 +3715,7 @@ BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
     D2IniData_launcher->nJOINID = 1;
     D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
     FORMS_DestroyLists();
-    Launcher::UIMENU_CharacterSelectAllGameTypes();
+    CharSel::UIMENU_CharacterSelectAllGameTypes();
     return 1;
 }
 
@@ -4465,7 +4465,7 @@ int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(D2IniConfigStrc * pD2I
       OogCurrentCharSelectionMode = CHAR_SELECTION_BNET;
       if (bIsExpansion) {
         D2Win::D2GFX::D2GFX_SetVideoMode(1);
-        Launcher::UIMENU_CharacterSelectAllGameTypes();
+        CharSel::UIMENU_CharacterSelectAllGameTypes();
         goto run_menu_loop;
       }
     } else {
@@ -4507,7 +4507,7 @@ int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(D2IniConfigStrc * pD2I
       OogCurrentCharSelectionMode = CHAR_SELECTION_BNET_OPEN_Unsure;
       if (bIsExpansion) {
         D2Win::D2GFX::D2GFX_SetVideoMode(1);
-        Launcher::UIMENU_CharacterSelectAllGameTypes();
+        CharSel::UIMENU_CharacterSelectAllGameTypes();
         goto run_menu_loop;
       }
     }
@@ -4540,7 +4540,7 @@ BOOL __stdcall MAINMENU_Unused9(D2ControlMsg * pControlMsg) {
     if (bHasSaveFiles == 1) {
       D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
       FORMS_DestroyLists();
-      Launcher::UIMENU_CharacterSelectAllGameTypes();
+      CharSel::UIMENU_CharacterSelectAllGameTypes();
       return 1;
     }
 
@@ -4701,7 +4701,7 @@ BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * nParam) {
     if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
       D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
       FORMS_DestroyLists();
-      Launcher::UIMENU_CharacterSelectAllGameTypes();
+      CharSel::UIMENU_CharacterSelectAllGameTypes();
       return 1;
     }
 
@@ -4735,7 +4735,7 @@ BOOL __stdcall MAINMENU_Unused14(D2ControlMsg * pControlMsg) {
       if (BVar2) {
         D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
         FORMS_DestroyLists();
-        Launcher::UIMENU_CharacterSelectAllGameTypes();
+        CharSel::UIMENU_CharacterSelectAllGameTypes();
         return 1;
       }
 
@@ -5605,91 +5605,6 @@ char * __stdcall MAINMENU_GetRealmNameIfValid(int nIndex) {
     }
 
     return nullptr;
-}
-
-uint32_t CHARSEL_FindRealmByName(char * szText) {
-    char* pszRealmName;
-    int32_t nCmp;
-    int nIndex = 0;
-    while (true) {
-      int nRealmCount;
-      nRealmCount = MAINMENU_GetRealmCount();
-      if (nIndex >= nRealmCount) {
-        return 0;
-      }
-
-      pszRealmName = MAINMENU_GetRealmName(nIndex);
-      if (!pszRealmName) {
-        break;
-      }
-
-      nCmp = Storm::Source::SSTR::SStrCmpI(szText, pszRealmName, 0x7fffffff);
-      if (!nCmp) {
-        return 1;
-      }
-
-      nIndex++;
-    }
-
-    return 0;
-}
-
-BOOL __stdcall MAINMENU_OnPressShowExpansionCreditsPage(D2ControlMsg * pControlMsg) {
-    BOOL bIsExpansionGame = Fog::D2CheckExpansionGame();
-    if (!bIsExpansionGame) {
-      return 1;
-    }
-
-    FORMS_DestroyList();
-    D2ControlStrc* pFormControl = FORMS_CreateAnyFormFromList(0xda);
-    D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pFormControl, 1);
-    D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
-    pFormControl = FORMS_CreateAnyFormFromList(0xdb);
-    D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
-    pFormControl = FORMS_CreateAnyFormFromList(0xdc);
-    D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
-    ::D2WinTextBox* pTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromList(0xdd);
-    D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    int nAlignment = 0;
-    bool bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58ce), 0, bIndent, nAlignment);
-    nAlignment = 0;
-    bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58cf), 0, bIndent, nAlignment);
-    nAlignment = 0;
-    bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58d0), 0, bIndent, nAlignment);
-    return 1;
-}
-
-BOOL __stdcall MAINMENU_OnPressDestroyFormListIfExpansion(D2ControlMsg * pControlMsg) {
-    BOOL BVar1 = Fog::D2CheckExpansionGame();
-    if (!BVar1) {
-      return 1;
-    }
-
-    FORMS_DestroyList();
-    return 1;
-}
-
-BOOL __stdcall MAINMENU_CharSelScrollbarCallback(D2ControlStrc * pControl) {
-    int iVar1 = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_RefreshScrollbar(gpCtlCharSelScrollbar);
-    if (gpCharSelScrollbar == iVar1) {
-      return 0;
-    }
-
-    g_nCharSelNavigationIndex += (iVar1 - gpCharSelScrollbar) * 2;
-    if (g_nCharSelNavigationIndex < 0) {
-      g_nCharSelNavigationIndex = 0;
-    }
-    if (g_nCharSelNavigationIndex >= D2Client::CharScreen::TotalCurrentChars) {
-      g_nCharSelNavigationIndex = D2Client::CharScreen::TotalCurrentChars - 1;
-    }
-
-    gpCharSelScrollbar = iVar1;
-    CharSel::DRAW_LocalCharsInSelectionScreen0();
-    CharSel::CHARSEL_UpdateSelectedCharDisplay();
-    return 1;
 }
 
 int __stdcall LAUNCHER_PollBNConnectionPump(int nFrameIndex) {

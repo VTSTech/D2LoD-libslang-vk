@@ -10,7 +10,6 @@
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/Roster.h"
@@ -19,9 +18,7 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/SKILLS/SkillsPal.h"
-#include "D2Client/SRC/CelCmp.h"
 #include "D2Client/Source/ClientEngine.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/npcmenu.h"
@@ -48,6 +45,7 @@
 #include "D2Common/D2SkillStrc.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DATATBLS/ObjectTbls.h"
@@ -62,12 +60,11 @@
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -80,10 +77,9 @@
 #include "globals/globals.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
-#include "D2Common/Drlg/Drlg.h"
 #include "D2Common/ITEMS/ItemMods.h"
-#include "D2Common/Unit/D2UnitDataItemStrc.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "D2Launch/CharSel.h"
@@ -448,7 +444,7 @@ void __fastcall JoinRoomSetup(D2UnitStrc * pUnit, D2RoomStrc * pRoom, int32_t nX
 
 void __fastcall CLIENT_FreePlayerUnit(D2UnitStrc * pUnit) {
     Source::ClientEngine::CLIENT_UnregisterActiveUnitFromSlot((int32_t)pUnit);
-    Engine::GfxInfo::FreeGfxInfo(pUnit);
+    Engine::Gfx::FreeGfxInfo(pUnit);
     if (sgpDrlgAct) {
       D2Common::PATH::DynamicPath::PATH_RemoveCollision(pUnit);
       D2Common::Unit::RemoveUnitFromRoom(pUnit);
@@ -585,8 +581,8 @@ static void CLIENT_HandlePlayerDeath(D2UnitStrc * pUnit) {
       pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
     }
 
-    Engine::GfxInfo::GFX_FreeNonBaseGfxInfoEntries(pUnit);
-    Engine::GfxInfo::GFX_SetAllGfxInfoFlags(pUnit, '\0');
+    Engine::Gfx::GFX_FreeNonBaseGfxInfoEntries(pUnit);
+    Engine::Gfx::GFX_SetAllGfxInfoFlags(pUnit, '\0');
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0, 0);
 }
 
@@ -819,7 +815,7 @@ BOOL __fastcall PlayerMessage(int32_t nMessageType, D2UnitStrc * pUnit, D2Server
       case 8:
         pPlayerUnit_lcl = GetPlayerUnit_UI();
       if (pPlayerUnit_lcl == pUnit) {
-        UI::Draw::UI_CloseActivePanels(1, 0);
+        UI::ui::UI_CloseActivePanels(1, 0);
       }
 
       pMessageSaved = pMessage;
@@ -886,7 +882,7 @@ static void __stdcall PLAYER_ExecuteModeBasedAction(int32_t nActionContext, D2Un
     int32_t nX;
     D2UnitStrc* pUnit;
     int nMouseY = UI::ui::GetMouseY();
-    int32_t nSkillId = UI::Draw::DRAW_GetBottomPanelY();
+    int32_t nSkillId = UI::ui::DRAW_GetBottomPanelY();
     if (nMouseY > nSkillId) {
       return;
     }
@@ -2242,7 +2238,7 @@ void __fastcall PLAYER_HandlePlayerDeath(D2GSPacketSrv0x74 * pDeathMsg) {
         pItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pItem);
         D2Common::INVENTORY::Inventory::INVENTORY_SwapPrimaryWeaponOnRemoval(pInventory, pItem);
         bVar1 = PLAYER_GetWeaponTypeForAnimation(pUnit, pItem);
-        SRC::CelCmp::GFX_ClearAllModeFlags(pUnit, (uint32_t)bVar1);
+        Engine::Gfx::GFX_ClearAllModeFlags(pUnit, (uint32_t)bVar1);
         pItemOwner = D2Common::INVENTORY::Inventory::ItemBelongsToInventoryOfPlayer(pInventory, pItem);
         if (!pItemOwner) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xac8);

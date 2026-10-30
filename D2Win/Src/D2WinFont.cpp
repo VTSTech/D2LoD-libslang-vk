@@ -1483,30 +1483,4 @@ void __stdcall Draw_UnitNameUnderCursor() {
     SetAndReturnLastFont(pSavedFont);
 }
 
-// Pads input string to exactly 4 characters with spaces. Used for COF component code normalization.
-void D2COMP_PadStringTo4Chars(char * szInput, char * szOutput) {
-    if (*szInput == '\0') {
-      memcpy(szOutput, "    ", 4);
-      return;
-    }
-
-    *szOutput = *szInput;
-    if (szInput[1] == '\0') {
-      szOutput[1] = ' ';
-      szOutput[2] = ' ';
-      szOutput[3] = ' ';
-      return;
-    }
-
-    szOutput[1] = szInput[1];
-    if (szInput[2] == '\0') {
-      szOutput[2] = ' ';
-      szOutput[3] = ' ';
-      return;
-    }
-
-    szOutput[2] = szInput[2];
-    szOutput[3] = ' ';
-}
-
 } // namespace D2Win::Src::D2WinFont

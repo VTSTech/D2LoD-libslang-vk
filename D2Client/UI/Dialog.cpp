@@ -5,11 +5,13 @@
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/Engine/GfxInfo.h"
+#include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/Message.h"
+#include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/Path.h"
@@ -52,6 +54,80 @@ typedef int (__stdcall *fpDialogFunc)();
 
 namespace D2Client::UI::Dialog {
 
+static void UI_ScrollNpcMenuList(int32_t nParam1, D2DialogStrc * pDialog) {
+    if (pDialog->nClickableCount <= 1) {
+      return;
+    }
+
+    int iSelectedIndex = pDialog->nSelectedLine;
+    do {
+      iSelectedIndex += nParam1;
+      if (!(iSelectedIndex < pDialog->nSubCounter)) {
+        iSelectedIndex = 0;
+      } else {
+        if (iSelectedIndex < 0) {
+          iSelectedIndex = pDialog->nSubCounter - 1;
+        }
+      }
+    } while (!pDialog->aStringData[iSelectedIndex].nCallbackParam);
+
+    Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+    pDialog->nSelectedLine = iSelectedIndex;
+}
+
+static int32_t DIALOG_HandleMouseUpEvent(D2DialogStrc * pDialog, D2UIMouseMsgStrc * pMsg) {
+    int nEntryY;
+    if (!pDialog) {
+      return -1;
+    }
+
+    int32_t uMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseY;
+    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    int nItemIndex = 0;
+    int nScrollOffset = 0;
+    if (pDialog->nSubCounter <= 0) {
+      return -1;
+    }
+
+    int32_t* pEntry = &pDialog->aStringData[0].nYPos;
+    do {
+      if (pEntry[7] == 1) {
+        nEntryY = pDialog->pCoords2.x;
+        if ((int)uVar1 > nEntryY + 0xf && (int)uVar1 < pDialog->nBackgroundWidth - 0xf + nEntryY) {
+          nEntryY = pDialog->pCoords2.y + *pEntry + nScrollOffset;
+          if (uMouseY > nEntryY - 0xb && uMouseY < nEntryY + 4) {
+            return nItemIndex;
+          }
+        }
+      }
+
+      nScrollOffset += *pEntry;
+      nItemIndex++;
+      pEntry += 0x44;
+    } while (nItemIndex < pDialog->nSubCounter);
+
+    return -1;
+}
+
+static int __stdcall DIALOG_HandleMouseDownEvent(D2DialogStrc * pDialog, D2UIMouseMsgStrc * pMsg) {
+    int32_t nErrorLine;
+    if (!pDialog) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe1);
+      exit(-1);
+    }
+
+    int nPrevHighlight = pDialog->nSelectedLine;
+    nErrorLine = DIALOG_HandleMouseUpEvent(pDialog, pMsg);
+    pDialog->nSelectedLine = nErrorLine;
+    pDialog->nHighlightFrame = nErrorLine;
+    if (nErrorLine != nPrevHighlight && nErrorLine != -1) {
+      Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
+      return 1;
+    }
+
+    return 0;
+}
+
 void __stdcall INPUT_DialogClickHandler(D2UIMouseMsgStrc * pMsg) {
     D2DialogSubStrc* pDVar1;
     int nSubResult;
@@ -75,7 +151,7 @@ void __stdcall INPUT_DialogClickHandler(D2UIMouseMsgStrc * pMsg) {
       }
     }
 
-    ui::DIALOG_HandleMouseDownEvent(pDialog, pMsg);
+    DIALOG_HandleMouseDownEvent(pDialog, pMsg);
 }
 
 void __stdcall INPUT_DialogMouseUp(D2UIMouseMsgStrc * pMsg) {
@@ -127,7 +203,7 @@ void __stdcall INPUT_DialogMouseUp(D2UIMouseMsgStrc * pMsg) {
         return;
       }
 
-      nLine = ui::DIALOG_HandleMouseUpEvent(pDialog, pMsg);
+      nLine = DIALOG_HandleMouseUpEvent(pDialog, pMsg);
       if (pDialog->nHighlightFrame != nLine || nLine < 0 || nLine >= pDialog->nSubCounter || (pfVar1 = pDialog->aStringData[pDialog->nSelectedLine].fpOnClick , !pfVar1)) {
         pDialog->nDrawMode = 0;
         return;
@@ -184,7 +260,7 @@ void __stdcall INPUT_DialogMouseDown(D2UIMouseMsgStrc * pMsg) {
     }
 
     pDialog->nDrawMode = 1;
-    iResult = ui::DIALOG_HandleMouseDownEvent(pDialog, pMsg);
+    iResult = DIALOG_HandleMouseDownEvent(pDialog, pMsg);
     if (!iResult) {
       BOOL bMiniPanelFlag;
       nMouseY = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
@@ -309,7 +385,7 @@ void __stdcall INPUT_DialogMouseWheel(D2UIMouseMsgStrc * pMsg) {
           nErrorCode = 1;
         }
 
-        ui::UI_ScrollNpcMenuList(nErrorCode, pDialog);
+        UI_ScrollNpcMenuList(nErrorCode, pDialog);
       }
     }
 
@@ -361,7 +437,7 @@ void __stdcall INPUT_DialogNavigateUp(D2UIMouseMsgStrc * pMsg) {
     while (true) {
       ::UIWidget* self;
       if (!pDialogSub) {
-        ui::UI_ScrollNpcMenuList(-1, pDialog);
+        UI_ScrollNpcMenuList(-1, pDialog);
         return;
       }
 
@@ -392,7 +468,7 @@ void __stdcall INPUT_DialogNavigateDown(D2UIMouseMsgStrc * pMsg) {
     while (true) {
       ::UIWidget* self;
       if (!pDialogSub) {
-        ui::UI_ScrollNpcMenuList(1, pDialog);
+        UI_ScrollNpcMenuList(1, pDialog);
         return;
       }
 
@@ -423,7 +499,7 @@ void __stdcall INPUT_DialogPageUp(D2UIMouseMsgStrc * pMsg) {
     while (true) {
       ::UIWidget* self;
       if (!pDialogSub) {
-        ui::UI_ScrollNpcMenuList(-1, pDialog);
+        UI_ScrollNpcMenuList(-1, pDialog);
         return;
       }
 
@@ -454,7 +530,7 @@ void __stdcall INPUT_DialogPageDown(D2UIMouseMsgStrc * pMsg) {
     while (true) {
       ::UIWidget* self;
       if (!pDialogSub) {
-        ui::UI_ScrollNpcMenuList(1, pDialog);
+        UI_ScrollNpcMenuList(1, pDialog);
         return;
       }
 
@@ -850,7 +926,7 @@ void __fastcall DIALOG_DrawBackground(D2DialogStrc * pDialog) {
           D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, sBgRect.left, nBottom, -1, DRAW_SOLID, nullptr);
         }
       } else {
-        Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(sBgRect.left, sBgRect.top, sBgRect.right - sBgRect.left + 1, sBgRect.bottom - sBgRect.top + 1, 0, DRAW_TRANSPARENT);
+        Engine::Gfx::D2GFX_DrawSolidRectExBySize(sBgRect.left, sBgRect.top, sBgRect.right - sBgRect.left + 1, sBgRect.bottom - sBgRect.top + 1, 0, DRAW_TRANSPARENT);
         ui::DRAW_Direct_RectFrame(&sBgRect);
       }
 

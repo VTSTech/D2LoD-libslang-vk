@@ -8,8 +8,7 @@
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/Sound/Sound.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/MiniPanel.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
@@ -19,13 +18,13 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Common/Waypoints.h"
 #include "D2Game/GAME/Event.h"
@@ -424,7 +423,7 @@ void __stdcall DRAW_UI_Waypoint() {
     bIsDead = UNIT::Player::IsPlayerDead();
     if (bIsDead) {
       D2UnitStrc* pUnit;
-      Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+      ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
       if (!D2Client::Waypoint::bNeedAllocation) {
         pUnit = UNIT::Player::GetPlayerUnit_UI();
         if (pUnit) {
@@ -605,7 +604,7 @@ void __stdcall INPUT_WaypointTravel(D2UIMouseMsgStrc * pMsg) {
       }
     }
 
-    Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
+    ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
@@ -635,7 +634,7 @@ void __fastcall WAYPOINT_Init(int32_t pPacket) {
     D2RoomStrc* pRoom;
     eD2LevelId eLevel;
     DWORD dwUiResult;
-    dwUiResult = Draw::SetUIFlag(UI_WAYPOINT, UI_SET, 1);
+    dwUiResult = ui::SetUIFlag(UI_WAYPOINT, UI_SET, 1);
     if (dwUiResult != 1) {
       return;
     }
@@ -680,7 +679,7 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
       nRelMouseY = nMouseY + gnPanelOffsetY;
       if (gbWaypointButtonPressed != '\0') {
         if (nMouseX - 0x111U <= 0x23 && nRelMouseY - 0x183U <= 0x21) {
-          Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+          ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
           WAYPOINT_SendClosePacket();
         }
       } else {
@@ -695,7 +694,7 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
             WAYPOINT_SendClosePacket();
             gbWaypointButtonPressed = 0;
             ClickingDownOnWaypointEntry = -1;
-            Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
+            ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 0);
             Sound::SOUND_PlaySound(SOUND_HEAVY_RUN_DIRT_3, nullptr, 0, 0, 0);
             pMsg->bHandled = 1;
             pMsg->dwResult = 0;
@@ -741,7 +740,7 @@ void __stdcall INPUT_WaypointMouseDown(D2UIMouseMsgStrc * pMsg) {
         }
       }
 
-      Draw::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
+      ui::SetUIFlag(UI_WAYPOINT, UI_RESET, 1);
     } else {
       int32_t nAct;
       nWaypointMouseX = nMouseX - gnPanelOffsetX;

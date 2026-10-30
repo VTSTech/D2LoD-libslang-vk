@@ -21,6 +21,12 @@ struct __attribute__((packed)) D2KeyBindStrc {
     /* 0x06 */ int32_t nSlot; // binding slot 0 or 1, unaligned dword (CMP dword [EAX] at +6 in CMD_GetKeyForCommand 00469aad and siblings)
 };
 
+struct D2KeyFileHeaderStrc {
+    /* 0x00 */ uint16_t wSignature; // 0x5357
+    /* 0x02 */ uint16_t wVersion; // 0x25
+    /* 0x04 */ uint16_t wDataSize; // 0x47a
+};
+
 struct __attribute__((packed)) D2CmdTbl_Line0x50f {
     /* 0x00 */ uint16_t wMagic;
     /* 0x02 */ uint16_t wVersion;
@@ -51,6 +57,11 @@ void __stdcall CMDTBL_InvokeMouseRightButtonHandler();
 void __stdcall CMD_InvokeCallback_0x1148();
 void __stdcall CMDTBL_InvokeMouseMiddleButtonHandler();
 void __fastcall CMD_InvokeCallbackByParam(int32_t nParam);
+int32_t SORT_CompareInts(int * pA, int * pB);
+// Rebuilds derived mouse button bindings (0x100-0x104) from command table. Scans all key bindings and populates gKeyBindingTable slots for left/right/middle/scroll/forward mouse buttons. Invalidates bindings (sets 0xFFFF) if command has no handler or conflicts with mouse-specific restrictions.
+void __stdcall CMD_RebuildDerivedBindings();
+// Serializes the global key-bindings table (g_KeyBindingsTable, 0x474 bytes, 0x11d entries) to two files: the user's active key file (via GetKeyFileHandle) and the install-directory "default.key" fallback. Writes a header with signature 0x5357 and version 0x25 before the binding data.
+void __stdcall CMD_WriteKeyFile();
 // @sourcefile .\UI\CmdTbl.cpp
 void __stdcall CMD_LoadDefaultKeyBindings(DWORD dwParam);
 void __fastcall CMD_ResetKeyBindingsToDefaults(DWORD dwParam);
@@ -72,5 +83,6 @@ void __stdcall CMD_LoadUserKeyBindings();
 void __stdcall CMD_InitKeyBindings();
 void __stdcall CMD_ExitKeyConfigMode();
 void __fastcall CMD_InitKeyConfigUI(int32_t nFadeInDuration, int32_t nHoldDuration, int32_t nFadeOutDuration, eD2LevelId eLevelId, int32_t bForce);
+// 2 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::CmdTbl

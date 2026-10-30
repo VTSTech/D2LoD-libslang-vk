@@ -11,8 +11,7 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/ui.h"
@@ -25,11 +24,11 @@
 #include "D2Common/D2MonStatsTxt.h"
 #include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -364,7 +363,7 @@ void __stdcall DRAW_Overlay_PetsAndPartyMembers() {
       gnHireIconHoverX = 0;
       bHasRosterPet = ui::GetUIFlag(UI_HIREABLES);
       if (bHasRosterPet) {
-        Draw::SetUIFlag(UI_HIREABLES, UI_RESET, 0);
+        ui::SetUIFlag(UI_HIREABLES, UI_RESET, 0);
       }
     } else {
       int32_t nPetGUID;
@@ -377,7 +376,7 @@ void __stdcall DRAW_Overlay_PetsAndPartyMembers() {
 
       bHasRosterPet = ui::GetUIFlag(UI_HIREABLES);
       if (!bHasRosterPet) {
-        Draw::SetUIFlag(UI_HIREABLES, UI_SET, 0);
+        ui::SetUIFlag(UI_HIREABLES, UI_SET, 0);
         return;
       }
     }
@@ -621,12 +620,12 @@ void __stdcall UI_ToggleHirelingIconsVisibility() {
       if (eGameType == GAMETYPE_SINGLEPLAYER) {
         gnHireDisplayMode = 2;
         gnHireIconHoverIndex = 0;
-        Draw::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
+        ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
         return;
       }
 
       gnHireDisplayMode = 1;
-      Draw::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+      ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
       return;
     }
 
@@ -636,19 +635,19 @@ void __stdcall UI_ToggleHirelingIconsVisibility() {
           eGameType = GAME::Game::CLIENT_GetD2GSGameType();
           if (eGameType == GAMETYPE_SINGLEPLAYER) {
             gnHireDisplayMode = 0;
-            Draw::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+            ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
             return;
           }
 
           gnHireDisplayMode = 2;
           gnHireIconHoverIndex = 0;
-          Draw::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
+          ui::SetUIFlag(UI_HIREICONS, UI_RESET, 0);
           return;
         }
       default:
         {
           gnHireDisplayMode = 0;
-          Draw::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+          ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
           return;
         }
     }
@@ -692,7 +691,7 @@ void __stdcall INPUT_HireableLongPress(D2UIMouseMsgStrc * pMsg) {
           return;
         }
 
-        Draw::SetUIFlag(UI_MERCINV, UI_SET, 0);
+        ui::SetUIFlag(UI_MERCINV, UI_SET, 0);
       }
     }
 
@@ -701,7 +700,7 @@ void __stdcall INPUT_HireableLongPress(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall UI_InitializeHirelingIconsUI() {
     gnHireDisplayMode = 0;
-    Draw::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+    ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
     int32_t nRegHideValue = 0;
     Storm::Source::SReg::SRegLoadValue("Diablo II", "PopupHireling", 0, &nRegHideValue);
     if (nRegHideValue) {
@@ -1003,7 +1002,7 @@ void __stdcall UI_DrawHireableIcons() {
       if (!bResult && gnHireDisplayMode != 2) {
         nMercGUID = GAME::RosterPets::GetRosterPetGUID(pPlayer, 7, 0);
         if (nMercGUID != -1) {
-          Draw::SetUIFlag(UI_HIREICONS, UI_SET, 0);
+          ui::SetUIFlag(UI_HIREICONS, UI_SET, 0);
         }
       }
     }
@@ -1047,12 +1046,12 @@ void __stdcall UI_DrawHireableIcons() {
       }
     }
     if (!aCursorState[3]) {
-      Draw::SetUIFlag(UI_HIREABLES, UI_RESET, 0);
+      ui::SetUIFlag(UI_HIREABLES, UI_RESET, 0);
     }
     if (gbHireIconsVisible != '\0') {
       bResult = ui::GetUIFlag(UI_MERCINV);
       if (!bResult) {
-        bMercInvFlagChanged = Draw::SetUIFlag(UI_MERCINV, UI_SET, 0);
+        bMercInvFlagChanged = ui::SetUIFlag(UI_MERCINV, UI_SET, 0);
         if (bMercInvFlagChanged) {
           Storm::Source::SReg::SRegSaveValue("Diablo II", "PopupHireling", 0, 1);
           gbHireIconsVisible = '\0';

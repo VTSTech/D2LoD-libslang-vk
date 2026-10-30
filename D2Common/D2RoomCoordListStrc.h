@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/Preset.h"
 
 // Data types
 struct __attribute__((packed)) D2RoomCoordListStrc {

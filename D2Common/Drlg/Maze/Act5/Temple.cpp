@@ -12,6 +12,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

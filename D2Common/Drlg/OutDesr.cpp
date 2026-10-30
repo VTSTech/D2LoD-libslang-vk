@@ -16,6 +16,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -23,7 +24,7 @@
 namespace D2Common::Drlg::OutDesr {
 
 // Given an array of nVariants preset IDs, rolls the level seed to pick a starting index, then iterates all variants calling SpawnOutdoorLevelPreset for each. If bIterateFiles is set, expands each preset ID to all its LvlPrest file entries and spawns each file separately.
-void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, BOOL bIterateFiles) {
+static void __stdcall PlacePresetVariants(D2DrlgLevelStrc * pLevel, D2LvlPrestId * pLevelPrestIds, uint32_t nVariants, BOOL bIterateFiles) {
     D2LvlPrestTxt* pLvlPrest;
     uint32_t nRandVariantIdx;
     int nFileIdx;
@@ -271,6 +272,12 @@ static void PlaceCliffs(D2DrlgLevelStrc * pLevel) {
     } while (nEntriesLeft);
 }
 
+static void AddAct124SecondaryBorderSubId213(D2DrlgLevelStrc * pLevel) {
+    Outdoors::AddAct124SecondaryBorder(pLevel, 2, 0x16c);
+    Outdoors::AddAct124SecondaryBorder(pLevel, 1, 0x16c);
+    Outdoors::AddAct124SecondaryBorder(pLevel, 3, 0x16c);
+}
+
 void __fastcall AddExits(D2DrlgLevelStrc * pLevel) {
     int32_t nLine;
     switch (pLevel->eD2LevelId) {
@@ -328,6 +335,14 @@ static void PlaceFillsInDryHills(D2DrlgLevelStrc * pLevel) {
     nPresetId0[3] = 0x197;
     PlacePresetVariants(pLevel, nPresetId0 + 4, 4, 0);
     PlacePresetVariants(pLevel, nPresetId0, 4, 1);
+}
+
+// Places Act 2 desert scenery variant presets (0x18C and 0x18D) using the PlacePresetVariants system. Simple wrapper that configures the preset ID array and delegates.
+void DRLGOUTPLACE_PlaceAct2DesertVariants(D2DrlgLevelStrc * pLevel) {
+    D2LvlPrestId nPresetId0[2];
+    nPresetId0[0] = LVLPREST_ACT_2_DESERT_OASIS_2;
+    nPresetId0[1] = 0x18d;
+    PlacePresetVariants(pLevel, nPresetId0, 2, 0);
 }
 
 static void PlaceFillsInFarOasis(D2DrlgLevelStrc * pLevel) {
@@ -396,14 +411,14 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
     switch (pLevel->eD2LevelId) {
       case 0x29:
         DRLGOUTPLACE_PlaceAct2CanyonExitPresets(pLevel);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       AddExits(pLevel);
       Outdoors::SpawnAct12Shrines(pLevel, 5);
       PlaceFillsInRockyWaste(pLevel);
       return;
       case 0x2a:
         PlaceCliffs(pLevel);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       AddExits(pLevel);
       Outdoors::SpawnAct12Waypoint(pLevel);
       Outdoors::SpawnAct12Shrines(pLevel, 5);
@@ -411,7 +426,7 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       return;
       case 0x2b:
         PlaceCliffs(pLevel);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       AddExits(pLevel);
       nPresetId0[0] = LVLPREST_ACT_2_DESERT_OASIS_2;
       nPresetId0[1] = 0x18d;
@@ -422,7 +437,7 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       return;
       case 0x2c:
         PlaceCliffs(pLevel);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       AddExits(pLevel);
       PlaceRuinsInLostCity(pLevel);
       Outdoors::SpawnAct12Waypoint(pLevel);
@@ -434,7 +449,7 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
       return;
       case 0x2e:
         PlaceTombEntriesInCanyon(pLevel);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       Outdoors::SpawnAct12Shrines(pLevel, 5);
       PlaceFillsInCanyon(pLevel);
       return;
@@ -614,7 +629,7 @@ void __fastcall InitAct2OutdoorLevel(D2DrlgLevelStrc * pLevel) {
         return;
       case 0x86:
         Outdoors::SpawnOutdoorLevelPresetEx(pLevel, 4, 4, 0x18a, -1, 0);
-      Outdoors::AddAct124SecondaryBorderSubId213(pLevel);
+      AddAct124SecondaryBorderSubId213(pLevel);
       PlaceFillsInCanyon(pLevel);
       Outdoors::SpawnAct12Shrines(pLevel, 5);
       return;

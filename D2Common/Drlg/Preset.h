@@ -8,7 +8,6 @@
 #include <cstdarg>
 #include "d2_platform.h"
 #include "D2Common/Drlg/D2DrlgGridStrc.h"
-#include "D2Common/Drlg/Drlg.h"
 
 // Forward declarations
 struct D2AiGeneralStrc;
@@ -21,18 +20,17 @@ struct D2MapAIStrc;
 struct D2PoolManagerStrc;
 struct D2RoomExStrc;
 struct D2SeedStrc;
+typedef int eD2LevelId;
 typedef int eD2UnitType;
 
-struct D2DrlgPresetRoomStrc;
 struct D2DrlgRoomExDataPresetWorldCoordinatesBurialGrounds;
 
 // Data types
-struct __attribute__((packed)) D2DrlgGridTileDataStrc {
-    /* 0x00 */ D2DrlgCoordStrc tCoord;
-    /* 0x10 */ struct D2RoomExStrc * pRoom;
-    /* 0x14 */ struct D2PoolManagerStrc * pMemory;
-    /* 0x18 */ struct D2DrlgGridStrc * pGrid;
-    /* 0x1C */ struct D2DrlgPresetRoomStrc * pRoomExDataPreset;
+struct D2DrlgCoordStrc {
+    /* 0x00 */ int nPosX;
+    /* 0x04 */ int nPosY;
+    /* 0x08 */ int nWidth;
+    /* 0x0C */ int nHeight;
 };
 
 struct __attribute__((packed)) D2DrlgPresetRoomStrc {
@@ -328,6 +326,14 @@ struct __attribute__((packed)) D2PresetUnitStrc {
     /* 0x1C */ int nFlags; // Flags bitmask (bit 0 = auto-generated object)
 };
 
+struct __attribute__((packed)) D2DrlgGridTileDataStrc {
+    /* 0x00 */ D2DrlgCoordStrc tCoord;
+    /* 0x10 */ struct D2RoomExStrc * pRoom;
+    /* 0x14 */ struct D2PoolManagerStrc * pMemory;
+    /* 0x18 */ struct D2DrlgGridStrc * pGrid;
+    /* 0x1C */ struct D2DrlgPresetRoomStrc * pRoomExDataPreset;
+};
+
 namespace D2Common::Drlg::Preset {
 
 // Function declarations
@@ -408,9 +414,6 @@ void __fastcall DRLGPRESET_ReleaseDrlgFile(struct D2DrlgFileStrc * * ppDrlgFile)
 void __fastcall DRLGPRESET_FreeDrlgMapList(struct D2PoolManagerStrc * pMemory, struct D2DrlgMapStrc * pDrlgMap);
 // Searches for a matching preset type in the static preset type table. Compares the level ID, orientation bits, sub-type byte, and additional parameter against the table entries. Returns the matching index or -1 if not found. From Preset.cpp area.
 int32_t __stdcall DRLGPRESET_FindPresetTypeIndex(int32_t nLevelType, uint32_t nOrientationFlags, uint32_t nSubIndex);
-// Spawns a single preset unit (monster, object, or item) from a tile data record into the room. Looks up the preset type index via DRLGPRESET_FindPresetTypeIndex, transforms room-local tile coordinates to world space, bounds-checks against the room size, then calls AllocPresetUnit. Marks the preset-unit entry as consumed (flag 0x20) on success. Special-cases shrine objects (IDs 0x5b-0x5c) with a seed-modulo 3 branch.
-// Seven arguments, four in registers: pTileData in EDI, pRoomEx in ESI, nWorldY in EAX, nPresetId in EDX. nWorldY is a world Y coordinate: MOV EBX,EAX at 0066d9e7 then SUB EBX,[ESI+0x38] (WorldPosition.y) at 0066da33 mirrors SUB EAX,[ESI+0x34] on nWorldX (1.14d asm).
-void __stdcall CreatesPresets(struct D2RoomExStrc * pRoomEx, int nWorldY, uint32_t nPresetId, int * pPresetUnit, int nWorldX, int nTileType);
 void StaticFini_CriticalSection_0096d610();
 // 10 internal functions (defined in .cpp)
 

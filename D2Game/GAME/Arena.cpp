@@ -7,11 +7,11 @@
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/D2WaypointStrc.h"
 #include "D2Common/DATATBLS/ArenaTbls.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
-#include "D2Common/Unit/D2UnitStrc.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
@@ -28,7 +28,7 @@
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E

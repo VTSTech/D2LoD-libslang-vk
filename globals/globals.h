@@ -28,7 +28,6 @@
 #include "D2Client/Draw/LightMap.h"
 #include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Draw.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Record.h"
@@ -40,7 +39,6 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
-#include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/MiniPanel.h"
@@ -65,25 +63,26 @@
 #include "D2Common/COMPOSIT/Composit.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/DATATBLS/MonsterTbls.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgLevelDataList.h"
 #include "D2Common/Drlg/D2DrlgReplaceRoomStrc.h"
 #include "D2Common/Drlg/Drlg.h"
-#include "D2Common/Drlg/OutPlace/Act5/Act5.h"
+#include "D2Common/Drlg/OutSiege.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
 #include "D2Common/Logging/ProfCore.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Direct3D/d3dFloorCache.h"
 #include "D2Direct3D/d3dSubtileCache.h"
 #include "D2Direct3D/d3dTextureCache.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Arena.h"
-#include "D2Game/GAME/Event/Dispatch/Monster.h"
 #include "D2Game/GAME/Task.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/AI/Baal.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
 #include "D2Game/Quests/QUESTS.h"
@@ -1310,6 +1309,8 @@ extern uint32_t gdwCrc32Table0[256];
 extern uint32_t gdwCrc32Table5[256];
 extern char * z_errmsg[10];
 extern char * gaFrontEndPaletteFiles[4];
+extern char * gpszPaletteSkyDat[4];
+extern char * gpszPaletteSkyPl2[4];
 extern char gaLanguageCodeFallback[4];
 extern char gaLanguageCodeAbbrevTable[4];
 extern char gpCutsceneVideoFrameBuffer[8];
@@ -1524,8 +1525,6 @@ extern int gaUnitTypeInteractSizes[6];
 // index formula b+9*a (LEA [ECX+EAX*8]; ADD EAX) with a,b<=4 -> max index 40; string at +0xa4 = 41*4
 extern int gaPathDirectionStepDeltas[41];
 extern uint8_t DIFFDIRECTIONS[256];
-extern uint32_t gnPathCalcDirectionVectorX_Pad0;
-extern uint32_t gnPathCalcDirectionVectorY_Pad0;
 extern uint32_t gszHirelingFieldName_act;
 extern char s_A_006ed5ac[2];
 extern char s_B_006ed5b0[2];
@@ -1750,7 +1749,6 @@ extern D2CursorDataStrc CursorData[7];
 extern int gnCursorDataCount;
 extern int gaKeyBindingsDefault[285];
 extern D2CmdBindingStrc gaCmdBindings[57];
-extern D2CmdBindingStrc gaCmdHandlerTable[57];
 extern D2UIFlagInitStrc gsUICmdTblFlagInit[4];
 extern int gnDenOfEvilLightTimerTick;
 extern int gnDiabloSpawnLightTimer;

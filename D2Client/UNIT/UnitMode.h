@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
+#include "D2Common/Drlg/Path.h"
 
 // Forward declarations
 struct D2ServerMessageHandleStrc;
@@ -23,8 +24,6 @@ void __thiscall ClickWithSkillOnUnitOrCoord(eD2UnitModeAction pThis, int32_t nTa
 // @sourcefile .\UNIT\UnitMode.cpp
 uint32_t UNITMODE_CanInterruptSkill(struct D2UnitStrc * pUnit);
 BOOL __fastcall HandleMessage(int32_t pTargetUid, struct D2UnitStrc * pUnit, struct D2ServerMessageHandleStrc * pMessage, int32_t nParam);
-// Returns true if pUnit (the target) is within action range for pUnit2 performing nActionType. For action types 6/0xd (left/right skill use), checks SKILL_CheckAuraRange if the equipped skill is an aura (srvdofunc==0x13). For objects, uses IsObjectInInteractRange + collision test. For all others, checks melee range accounting for pUnit's current movement mode.
-BOOL UNITMODE_IsTargetInActionRange(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nActionType);
 // Client-side: when a player/monster unit enters a hit/death anim mode (player modes 0/4/0x13, monster modes 0/3/0xd), spawns the appropriate elemental-hit overlay graphic on the unit based on the high nibble of dwLastHitClass (provided the low nibble is also set). Maps element class 0x20->fire_hit, 0x30->ice_explode, 0x40->lightning, 0x10->doubledamage1, 0x70->bash, 0x80->hit_thorns, 0x90->sanctuaryknockback via GFX_AddOverlayToUnit. Visual only; no-op for other unit types or non-hit modes.
 void __fastcall UNITMODE_ShowElementalHitOverlay(struct D2UnitStrc * pUnit, int32_t nAnimMode);
 BOOL __stdcall UNITMODE_SetModeAndLoadCof(int32_t nAnimMode, struct D2UnitStrc * pUnit);
@@ -35,12 +34,7 @@ void __fastcall UNITMODE_SendWalkToPosition(struct D2UnitStrc * pUnit, int32_t n
 // Dispatches a queued player/unit action (nActionType 1..0x13) into the server-side UnitMode message pipeline. Resolves left/right skill id+owner GUID for skill actions, builds a D2ServerMessageHandleStrc on the stack and routes it through HandleMessage; on success increments the pierce stat (for skill cases) and calls ClickWithSkillOnUnitOrCoord. Validates targetable item for the 0x13 (item-interact) action. Clears the player's pending-interact/queued-skill/target fields on exit. No return; side-effects on pUnit's player data and stats.
 // @sourcefile .\UNIT\UnitMode.cpp
 void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, struct D2UnitStrc * pUnit, int32_t nTargetOrX, int32_t nTargetGUIDOrY, uint32_t dwUnused);
-// Client-side move-action callback invoked by the unit-mode system. Checks mouse-button flags: right-click (bit 3) issues message 0x18 and sends packet 4; otherwise issues message 0 and sends packet 2. Both paths call UNITMODE_CanInterruptSkill first; if the skill cannot be interrupted the pending-interact state is queued (eQueuedSkillId, eTargetUnitType, nTargetUnitGUID). Clears pending-interact on successful dispatch.
-// The whole 28-byte local area (SUB ESP,0x1c) is ONE message object, the first seven fields of D2ServerMessageHandleStrc. Both click paths zero all seven dwords and then write TWO of them before the call: MOV [EBP-0x1c],EAX = the target unit TYPE (arg at EBP+0xc) and MOV [EBP-0x18],EBX = the target GUID. Typed uint32_t[7] (the seven dwords) rather than D2ServerMessageHandleStrc because that struct is declared 32 bytes and does not fit this frame - its 8th field (nOwnerGUID) belongs to a different caller's frame.
-void __stdcall UNITMODE_HandleMoveAction(uint32_t dwUnused, int32_t nX, int32_t nY, struct D2UnitStrc * pUnit);
-BOOL __stdcall UNITMODE_HandleItemOrObjectInteraction(int32_t nActionType, int32_t nX, int32_t nTargetGUID, struct D2UnitStrc * pTargetUnit, struct D2UnitStrc * pPlayerUnit);
-// Validates a skill-use interaction between a player and a target unit. Checks target liveness and unit flags; for active targets selects the left- or right-skill based on nActionType and verifies the skill's aura flag (flags4 bit 0). If the target is in action range, dispatches UNITMODE_HandleMoveAction; otherwise clears the selection and returns false.
-// @sourcefile .\UNIT\UnitMode.cpp
-BOOL __stdcall UNITMODE_HandleSkillTargetInteraction(eD2UnitModeAction nActionType, int32_t nX, struct D2UnitStrc * pPlayerUnit, struct D2UnitStrc * pTargetUnit, int32_t nTargetGUID);
+void __fastcall UNITMODE_ExecuteDeferredAction(struct D2UnitStrc * pUnit);
+// 5 internal functions (defined in .cpp)
 
 } // namespace D2Client::UNIT::UnitMode

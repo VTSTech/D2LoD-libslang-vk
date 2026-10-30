@@ -3,12 +3,15 @@
 #include "Bnclient/BNGatewayAccess.h"
 #include "Bnclient/Bnet.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
+#include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/SMem.h"
+#include "Storm/Source/SErr.h"
 #include "Storm/Source/SFile.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
+#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Chat.h"
 
@@ -670,6 +673,929 @@ void __stdcall UpdateGatewaysFromIni(D2BNetGatewayAccessStr * pClientSideData, c
         return;
       }
     }
+}
+
+static uint32_t CACHE_ComputeCRC32(int32_t nByteLen, uint8_t * pbData) {
+    bool _bParamsValid;
+    bool bParamsValid;
+    if (pbData || (_bParamsValid = 0 , !nByteLen)) {
+      _bParamsValid = -1;
+    }
+    if (!pbData && nByteLen) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x91);
+      exit(-1);
+    }
+    if (!_bParamsValid) {
+      Storm::Source::SErr::SErrSetLastError(0x57);
+      return 0;
+    }
+
+    uint32_t dwCrcAccum = -1;
+    for (; nByteLen; nByteLen--) {
+      dwCrcAccum = dwCrcAccum >> 8 ^ gaBnCacheCrc32Table[(*pbData ^ dwCrcAccum) & 0xff];
+      pbData++;
+    }
+
+    return ~dwCrcAccum;
+}
+
+static void CACHE_DecryptBlock(uint32_t dwKey, uint32_t * pdwData, uint32_t nByteLen) {
+    uint32_t nLoopCount;
+    int nSeed = -0x11111112;
+    for (nLoopCount = nByteLen >> 2; nLoopCount; nLoopCount--) {
+      uint32_t dwPlain;
+      nSeed += *(int*)((int)g_pCacheCryptTable + (dwKey & 0xff) * 4 + 0x1000);
+      *pdwData ^= nSeed + dwKey;
+      dwPlain = *pdwData;
+      pdwData++;
+      dwKey = dwKey >> 0xb | ~dwKey * 0x200000 + 0x11111111;
+      nSeed = nSeed * 0x21 + 3 + dwPlain;
+    }
+}
+
+static void CACHE_EncryptBlock(uint32_t nParam1, uint32_t nParam2, uint32_t * pnParam) {
+    uint32_t nDwordCount;
+    void* pCryptTableBase = g_pCacheCryptTable;
+    int nEncSeed = -0x11111112;
+    for (nDwordCount = nParam2 >> 2; nDwordCount; nDwordCount--) {
+      uint32_t dwPlainDword;
+      nEncSeed += *(int*)((int)pCryptTableBase + (nParam1 & 0xff) * 4 + 0x1000);
+      dwPlainDword = *pnParam;
+      *pnParam = nEncSeed + nParam1 ^ dwPlainDword;
+      nParam1 = nParam1 >> 0xb | ~nParam1 * 0x200000 + 0x11111111;
+      pnParam++;
+      nEncSeed = nEncSeed * 0x21 + 3 + dwPlainDword;
+    }
+}
+
+static LPFILETIME * CACHE_GetFileTime(uint32_t nParam) {
+    // Static local variables (originally global data)
+    static LPFILETIME lpFileTime_008818ac; D2_STATIC_GUARD_BSS(lpFileTime_008818ac, "Bnclient::BNGatewayAccess::CACHE_GetFileTime::lpFileTime_008818ac");
+    static int gnCacheFileTimeHigh; D2_STATIC_GUARD_BSS(gnCacheFileTimeHigh, "Bnclient::BNGatewayAccess::CACHE_GetFileTime::gnCacheFileTimeHigh");
+    static uint32_t gdwCacheLastTickCount; D2_STATIC_GUARD_BSS(gdwCacheLastTickCount, "Bnclient::BNGatewayAccess::CACHE_GetFileTime::gdwCacheLastTickCount");
+    static uint32_t gnCacheLastFileTimeParam; D2_STATIC_GUARD_BSS(gnCacheLastFileTimeParam, "Bnclient::BNGatewayAccess::CACHE_GetFileTime::gnCacheLastFileTimeParam");
+
+    _SYSTEMTIME sSystemTime;
+    if (nParam == gnCacheLastFileTimeParam) {
+      DWORD dwCurTick;
+      dwCurTick = GetTickCount();
+      if (dwCurTick == gdwCacheLastTickCount) {
+        return &lpFileTime_008818ac;
+      }
+    }
+
+    /* LPSYSTEMTIME lpSystemTime for GetSystemTime */ GetSystemTime(&sSystemTime);
+    /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ SystemTimeToFileTime(&sSystemTime, (LPFILETIME)&lpFileTime_008818ac);
+    int64_t llAdjustedFileTime = (uint64_t)nParam * 10000000 + (uint64_t)((uint64_t)(uint32_t)gnCacheFileTimeHigh << 32 | (uint64_t)(uint32_t)(uintptr_t)lpFileTime_008818ac);
+    lpFileTime_008818ac = (LPFILETIME)llAdjustedFileTime;
+    gnCacheLastFileTimeParam = nParam;
+    gnCacheFileTimeHigh = (int)((uint64_t)llAdjustedFileTime >> 0x20);
+    gdwCacheLastTickCount = GetTickCount();
+    return &lpFileTime_008818ac;
+}
+
+static uint32_t __stdcall CACHE_HashString(int32_t nParam, char * szText) {
+    uint32_t dwHash = 0x7fed7fed;
+    int nHashSeed = -0x11111112;
+    for (; szText && *szText != '\0'; szText++) {
+      int nUpperChar;
+      nUpperChar = toupper((int)*szText);
+      dwHash = dwHash + nHashSeed ^ *(uint32_t*)((int)g_pCacheCryptTable + (nParam * 0x100 + (int)(char)nUpperChar) * 4);
+      nHashSeed = nHashSeed * 0x21 + (int)(char)nUpperChar + 3 + dwHash;
+    }
+
+    return dwHash;
+}
+
+void __stdcall CACHE_InitCryptTable() {
+    if (!g_pCacheCryptTable) {
+      return;
+    }
+
+    uint32_t uSeed1 = 0x100001;
+    uint32_t* pEntry = (uint32_t*)((int)g_pCacheCryptTable + 0x800);
+    int nCount = 0x100;
+    do {
+      uint32_t uSeed2;
+      uSeed1 = (uSeed1 * 0x7d + 3) % 0x2aaaab;
+      uSeed2 = (uSeed1 * 0x7d + 3) % 0x2aaaab;
+      pEntry[-0x200] = uSeed1 << 0x10 | uSeed2 & 0xffff;
+      uSeed1 = (uSeed2 * 0x7d + 3) % 0x2aaaab;
+      uSeed2 = (uSeed1 * 0x7d + 3) % 0x2aaaab;
+      pEntry[-0x100] = uSeed1 << 0x10 | uSeed2 & 0xffff;
+      uSeed1 = (uSeed2 * 0x7d + 3) % 0x2aaaab;
+      uSeed2 = (uSeed1 * 0x7d + 3) % 0x2aaaab;
+      *pEntry = uSeed1 << 0x10 | uSeed2 & 0xffff;
+      uSeed1 = (uSeed2 * 0x7d + 3) % 0x2aaaab;
+      uSeed2 = (uSeed1 * 0x7d + 3) % 0x2aaaab;
+      pEntry[0x100] = uSeed1 << 0x10 | uSeed2 & 0xffff;
+      uSeed2 = (uSeed2 * 0x7d + 3) % 0x2aaaab;
+      uSeed1 = (uSeed2 * 0x7d + 3) % 0x2aaaab;
+      pEntry[0x200] = uSeed2 << 0x10 | uSeed1 & 0xffff;
+      pEntry++;
+      nCount--;
+    } while (nCount);
+}
+
+static uint32_t __stdcall CACHE_FindHashEntry(uint32_t nParam, char * szText) {
+    uint32_t nHash0 = CACHE_HashString(0, szText);
+    uint32_t nHash1 = CACHE_HashString(1, szText);
+    uint32_t nHash2 = CACHE_HashString(2, szText);
+    uint32_t nHashTableMask = gpCacheFileHeader->nHashTableSize - 1;
+    uint32_t nStartHashSlot = nHashTableMask & nHash0;
+    int nHashSlotOffset = nStartHashSlot * 0x10;
+    int nBlockIdx = *(int*)(gpCacheBufferPoolFirst + nHashSlotOffset + 0xc);
+    uint32_t nFoundHashSlot = -1;
+    nHash0 = nStartHashSlot;
+    while (true) {
+      uint32_t* pdwHashEntry;
+      if (nBlockIdx == -1) {
+        return nFoundHashSlot;
+      }
+
+      pdwHashEntry = (uint32_t*)(gpCacheBufferPoolFirst + nHashSlotOffset);
+      if (*pdwHashEntry == nHash1 && pdwHashEntry[1] == nHash2 && nBlockIdx != -2) {
+        if (pdwHashEntry[2] == nParam) {
+          return nHash0;
+        }
+        if (!pdwHashEntry[2]) {
+          nFoundHashSlot = nHash0;
+        }
+      }
+
+      nHash0 = nHash0 + 1 & nHashTableMask;
+      if (nHash0 == nStartHashSlot) {
+        break;
+      }
+
+      nHashSlotOffset = nHash0 * 0x10;
+      nBlockIdx = *(int*)(gpCacheBufferPoolFirst + nHashSlotOffset + 0xc);
+    }
+
+    return nFoundHashSlot;
+}
+
+static void CACHE_RemoveEntry(char * szText) {
+    uint32_t* pBlockIdxField;
+    uint32_t nHashSlot = CACHE_FindHashEntry(0, szText);
+    void* pCacheBlockTable = gpCacheBlockTable;
+    while (nHashSlot != -1) {
+      uint32_t uVar1;
+      pBlockIdxField = (uint32_t*)(gpCacheBufferPoolFirst + nHashSlot * 0x10 + 0xc);
+      uVar1 = *pBlockIdxField;
+      gpCacheBlockTable = pCacheBlockTable;
+      if (uVar1 < gpCacheFileHeader->nBlockTableSize) {
+        *(uint32_t*)((int)pCacheBlockTable + uVar1 * 0x10 + 8) = 0;
+        *(uint32_t*)((int)pCacheBlockTable + uVar1 * 0x10 + 0xc) = 0;
+      }
+
+      *pBlockIdxField = -2;
+      nHashSlot = CACHE_FindHashEntry(0, szText);
+      pCacheBlockTable = gpCacheBlockTable;
+    }
+
+    gpCacheBlockTable = pCacheBlockTable;
+}
+
+static void CACHE_BuildFilePath(LPSTR szText) {
+    int nHResult = SHGetFolderPathA(0, 0x23, 0, 0, szText);
+    if (nHResult) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x112);
+      exit(-1);
+    }
+
+    Storm::Source::SSTR::SStrPack(szText, "\\Blizzard Entertainment", 0x104);
+    /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateDirectoryA */ /* LPCSTR lpPathName for CreateDirectoryA */ CreateDirectoryA(szText, (LPSECURITY_ATTRIBUTES)0x0);
+    Storm::Source::SSTR::SStrPack(szText, "\\Diablo II", 0x104);
+    /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateDirectoryA */ /* LPCSTR lpPathName for CreateDirectoryA */ CreateDirectoryA(szText, (LPSECURITY_ATTRIBUTES)0x0);
+    Storm::Source::SSTR::SStrPack(szText, "\\bncache.dat", 0x104);
+}
+
+// Closes and deletes the Fog cache file. Closes ghCacheFileHandle if open, builds cache file path to %APPDATA%\Blizzard Entertainment\Diablo II\bncache.dat, and deletes it via DeleteFileA.
+void __stdcall CACHE_DeleteFile() {
+    char szFilePath[260];
+    if (ghCacheFileHandle != (HANDLE)-1) {
+      /* HANDLE hObject for CloseHandle */ CloseHandle(ghCacheFileHandle);
+      ghCacheFileHandle = (HANDLE)-1;
+    }
+
+    szFilePath[0] = '\0';
+    CACHE_BuildFilePath(szFilePath);
+    /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(szFilePath);
+}
+
+// Frees all Fog cache resources. Closes ghCacheFileHandle if open (setting to INVALID_HANDLE_VALUE), frees global hash table if allocated, and resets all cache state.
+// @sourcefile .\CACHE.CPP
+void __stdcall CACHE_FreeAll() {
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881894);
+    gbCacheIsOpen = 0;
+    if (gpCacheBlockTable) {
+      Storm::SMem::SMemFree(gpCacheBlockTable, ".\\CACHE.CPP", 0x155, 0);
+      gpCacheBlockTable = 0;
+    }
+    if (gpCacheBufferPoolFirst) {
+      Storm::SMem::SMemFree(gpCacheBufferPoolFirst, ".\\CACHE.CPP", 0x159, 0);
+      gpCacheBufferPoolFirst = 0;
+    }
+    if (gpCacheFileHeader) {
+      Storm::SMem::SMemFree(gpCacheFileHeader, ".\\CACHE.CPP", 0x15d, 0);
+      gpCacheFileHeader = 0;
+    }
+    if (ghCacheFileHandle != (HANDLE)-1) {
+      /* HANDLE hObject for CloseHandle */ CloseHandle(ghCacheFileHandle);
+      ghCacheFileHandle = (HANDLE)-1;
+    }
+    if (g_pCacheCryptTable) {
+      Storm::SMem::SMemFree(g_pCacheCryptTable, ".\\CACHE.CPP", 0x165, 0);
+      g_pCacheCryptTable = 0;
+    }
+
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+}
+
+// @sourcefile .\CACHE.CPP
+int __fastcall CACHE_FreeMem(void * pParam) {
+    if (!pParam) {
+      return 0;
+    }
+
+    Storm::SMem::SMemFree(pParam, ".\\CACHE.CPP", 0x16f, 0);
+    return 1;
+}
+
+// Opens the Fog cache file for reading/writing. Creates %APPDATA%\Blizzard Entertainment\Diablo II\bncache.dat if missing, reads hash table header, validates magic/version, allocates hash table memory. Sets ghCacheFileHandle to opened file handle or INVALID_HANDLE_VALUE on error.
+// @sourcefile .\CACHE.CPP
+int32_t __stdcall CACHE_Open() {
+    // Frame slots -280..-8 are ONE object: &nBytesRead is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      DWORD nBytesRead;
+      uint32_t nFileSize;
+      DWORD nBytesRead2;
+      char szFilePath[260];
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 272, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    int nErrorCode;
+    uint32_t nCrc32;
+    uint32_t nTableSize;
+    uint8_t* pHashTableBuf;
+    int nInitCounter;
+    uint32_t nTableByteSize;
+    D2BnCacheFileHeaderStrc* pHashEntryInit;
+    D2BnCacheFileHeaderStrc* pHeaderBuf;
+    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00881894);
+    if (gbCacheIsOpen) {
+      CACHE_FreeAll();
+    }
+
+    __frame0.szFilePath[0] = '\0';
+    CACHE_BuildFilePath(__frame0.szFilePath);
+    /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ ghCacheFileHandle = CreateFileA(__frame0.szFilePath, 0xc0000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 4, 0x80, (HANDLE)0x0);
+    if (ghCacheFileHandle == (HANDLE)-1) {
+      CACHE_FreeAll();
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+      return 0;
+    }
+
+    g_pCacheCryptTable = Storm::SMem::SMemAlloc(0x1400, ".\\CACHE.CPP", 0x193, 0);
+    CACHE_InitCryptTable();
+    gpCacheFileHeader = (D2BnCacheFileHeaderStrc*)Storm::SMem::SMemAlloc(0x2c, ".\\CACHE.CPP", 0x197, 8);
+    __frame0.nFileSize = GetFileSize(ghCacheFileHandle, (LPDWORD)0x0);
+    if (!__frame0.nFileSize || __frame0.nFileSize > 0xa00000) {
+      recreate_cache:
+      if (gbCacheIsOpen) {
+        goto unlock_and_succeed;
+      }
+      if (gpCacheBufferPoolFirst) {
+        Storm::SMem::SMemFree(gpCacheBufferPoolFirst, ".\\CACHE.CPP", 0x1fc, 0);
+      }
+      if (gpCacheBlockTable) {
+        Storm::SMem::SMemFree(gpCacheBlockTable, ".\\CACHE.CPP", 0x1fe, 0);
+      }
+
+      CACHE_DeleteFile();
+      /* HANDLE hTemplateFile for CreateFileA */ /* DWORD dwFlagsAndAttributes for CreateFileA */ /* DWORD dwCreationDisposition for CreateFileA */ /* LPSECURITY_ATTRIBUTES lpSecurityAttributes for CreateFileA */ /* DWORD dwShareMode for CreateFileA */ /* DWORD dwDesiredAccess for CreateFileA */ /* LPCSTR lpFileName for CreateFileA */ ghCacheFileHandle = CreateFileA(__frame0.szFilePath, 0xc0000000, 0, (LPSECURITY_ATTRIBUTES)0x0, 4, 0x80, (HANDLE)0x0);
+      pHeaderBuf = gpCacheFileHeader;
+      if (ghCacheFileHandle == (HANDLE)-1) {
+        CACHE_FreeAll();
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+        return 0;
+      }
+
+      memset(gpCacheFileHeader, 0, 0x2c);
+      pHeaderBuf->dwSignature = 0x1a334e42;
+      pHeaderBuf->dwHeaderSize = 0x2c;
+      pHashTableBuf = (uint8_t*)Storm::SMem::SMemAlloc(0x4000, ".\\CACHE.CPP", 0x21c, 8);
+      pHeaderBuf = gpCacheFileHeader;
+      nCrc32 = gpCacheFileHeader->dwFileSize;
+      gpCacheBufferPoolFirst = pHashTableBuf;
+      gpCacheFileHeader->dwHashTableOffset = 0x2c;
+      pHeaderBuf->nHashTableSize = 0x400;
+      if (nCrc32 <= 0x402c) {
+        nCrc32 = 0x402c;
+      }
+
+      pHeaderBuf->dwFileSize = nCrc32;
+      pHashTableBuf += 0xc;
+      nInitCounter = 0x400;
+      do {
+        pHashTableBuf[0] = 0xff;
+        pHashTableBuf[1] = 0xff;
+        pHashTableBuf[2] = 0xff;
+        pHashTableBuf[3] = 0xff;
+        pHashTableBuf += 0x10;
+        nInitCounter--;
+      } while (nInitCounter);
+
+      gpCacheBlockTable = Storm::SMem::SMemAlloc(0x4000, ".\\CACHE.CPP", 0x229, 8);
+      pHeaderBuf = gpCacheFileHeader;
+      nCrc32 = gpCacheFileHeader->dwFileSize;
+      gpCacheFileHeader->dwBlockTableOffset = 0x402c;
+      if (nCrc32 <= 0x802c) {
+        nCrc32 = 0x802c;
+      }
+
+      pHeaderBuf->dwFileSize = nCrc32;
+    } else {
+      if (__frame0.nFileSize < 0x2c) {
+        nErrorCode = 1;
+        warn_invalid_cache:
+        Bnet::BnetLog_WriteLine("WARNING- cache file is invalid. Replacing with new cache file", nErrorCode);
+        goto recreate_cache;
+      }
+
+      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, gpCacheFileHeader, 0x2c, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+      pHeaderBuf = gpCacheFileHeader;
+      if (__frame0.nBytesRead < 0x2c) {
+        nErrorCode = 2;
+        goto warn_invalid_cache;
+      }
+      if (gpCacheFileHeader->dwSignature == 0x1a324e42) {
+        goto recreate_cache;
+      }
+      if (gpCacheFileHeader->dwSignature != 0x1a334e42) {
+        nErrorCode = 3;
+        goto warn_invalid_cache;
+      }
+
+      nTableByteSize = gpCacheFileHeader->dwHeaderCrc32;
+      gpCacheFileHeader->dwHeaderCrc32 = 0;
+      nCrc32 = -1;
+      nInitCounter = 0x2c;
+      pHashEntryInit = pHeaderBuf;
+      do {
+        nErrorCode = nInitCounter;
+        nCrc32 = nCrc32 >> 8 ^ gaBnCacheCrc32Table[((uint8_t)pHashEntryInit->dwSignature ^ nCrc32) & 0xff];
+        nInitCounter = nErrorCode - 1;
+        pHashEntryInit = (D2BnCacheFileHeaderStrc*)((uintptr_t)&pHashEntryInit->dwSignature + 1);
+      } while (nInitCounter);
+
+      if (nTableByteSize != ~nCrc32) {
+        nErrorCode += 3;
+        goto warn_invalid_cache;
+      }
+
+      pHeaderBuf->dwHeaderCrc32 = nTableByteSize;
+      if (!pHeaderBuf->dwHashTableOffset || (nCrc32 = pHeaderBuf->nHashTableSize , !nCrc32)) {
+        nErrorCode = 5;
+        goto warn_invalid_cache;
+      }
+      if (!pHeaderBuf->dwBlockTableOffset || !pHeaderBuf->nBlockTableSize) {
+        nErrorCode = 6;
+        goto warn_invalid_cache;
+      }
+      if (nCrc32 < 0x400) {
+        nCrc32 = 0x400;
+      }
+
+      nTableByteSize = nCrc32 * 0x10;
+      if (pHeaderBuf->dwHashTableOffset + nTableByteSize > __frame0.nFileSize) {
+        nErrorCode = 7;
+        goto warn_invalid_cache;
+      }
+
+      gpCacheBufferPoolFirst = (uint8_t*)Storm::SMem::SMemAlloc(nTableByteSize, ".\\CACHE.CPP", 0x1cc, 8);
+      /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, gpCacheFileHeader->dwHashTableOffset, (PLONG)0x0, 0);
+      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, gpCacheBufferPoolFirst, nTableByteSize, &__frame0.nBytesRead2, (LPOVERLAPPED)0x0);
+      if (__frame0.nBytesRead2 != nTableByteSize) {
+        nErrorCode = 8;
+        goto warn_invalid_cache;
+      }
+
+      nTableSize = CACHE_ComputeCRC32(nTableByteSize, gpCacheBufferPoolFirst);
+      if (gpCacheFileHeader->dwHashTableCrc32 != nTableSize) {
+        nErrorCode = 9;
+        goto warn_invalid_cache;
+      }
+
+      nTableSize = CACHE_HashString(3, "(hash table)");
+      CACHE_DecryptBlock(nTableSize, (uint32_t*)gpCacheBufferPoolFirst, nTableByteSize);
+      nCrc32 = gpCacheFileHeader->nBlockTableSize;
+      if (nCrc32 < 0x400) {
+        nCrc32 = 0x400;
+      }
+
+      nTableByteSize = nCrc32 * 0x10;
+      if (gpCacheFileHeader->dwBlockTableOffset + nTableByteSize > __frame0.nFileSize) {
+        nErrorCode = 10;
+        goto warn_invalid_cache;
+      }
+
+      gpCacheBlockTable = Storm::SMem::SMemAlloc(nTableByteSize, ".\\CACHE.CPP", 0x1e2, 8);
+      /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, gpCacheFileHeader->dwBlockTableOffset, (PLONG)0x0, 0);
+      /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, gpCacheBlockTable, nTableByteSize, &__frame0.nBytesRead2, (LPOVERLAPPED)0x0);
+      if (__frame0.nBytesRead2 != nTableByteSize) {
+        nErrorCode = 0xb;
+        goto warn_invalid_cache;
+      }
+
+      nTableSize = CACHE_ComputeCRC32(nTableByteSize, (uint8_t*)gpCacheBlockTable);
+      if (gpCacheFileHeader->dwBlockTableCrc32 != nTableSize) {
+        nErrorCode = 0xc;
+        goto warn_invalid_cache;
+      }
+
+      nTableSize = CACHE_HashString(3, "(block table)");
+      CACHE_DecryptBlock(nTableSize, (uint32_t*)gpCacheBlockTable, nTableByteSize);
+    }
+
+    gbCacheIsOpen = 1;
+    unlock_and_succeed:
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+    return 1;
+}
+
+void __stdcall CACHE_Rebuild() {
+    char szFilePath[260];
+    if (gbCacheIsOpen) {
+      CACHE_FreeAll();
+      CACHE_DeleteFile();
+    }
+
+    szFilePath[0] = '\0';
+    CACHE_BuildFilePath(szFilePath);
+    /* LPCSTR lpFileName for DeleteFileA */ DeleteFileA(szFilePath);
+    CACHE_Open();
+}
+
+// Reads cached data from bncache.dat using key lookup, validates CRC32, and returns decrypted data buffer
+// @sourcefile .\CACHE.CPP
+BOOL __fastcall CACHE_ReadData(char * szKey, uint32_t * pCrc32Out, uint32_t * * ppDataBuf, LPDWORD pDataSizeOut) {
+    // Frame slots -352..-8 are ONE object: &nBytesWritten is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      DWORD* nBytesWritten;
+      DWORD nBytesRead;
+      char* szKeySaved;
+      int nCorruptReason;
+      int nRebuildReason;
+      D2BnCacheEntryHeaderStrc entryHeader;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 344, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    uint32_t nHashSlot;
+    uint32_t nCrc32Computed;
+    FILETIME* pCurrentFileTime;
+    LONG nFileTimeCmp;
+    LPFILETIME* pFileTimePair;
+    uint32_t* pDataAlloc;
+    int nBlockTableOffset;
+    D2BnCacheEntryHeaderStrc* pCrc32Cursor;
+    char* szCorruptKey;
+    DWORD nHeaderWriteSize;
+    int nBlockEntryOffset;
+    HANDLE hFile;
+    if (pCrc32Out) {
+      *pCrc32Out = 0;
+      pCrc32Out[1] = 0;
+    }
+    if (ppDataBuf) {
+      *ppDataBuf = 0;
+    }
+    if (pDataSizeOut) {
+      *pDataSizeOut = 0;
+    }
+
+    __frame0.nBytesWritten = (DWORD*)pCrc32Out;
+    __frame0.szKeySaved = szKey;
+    if (!(!szKey || *szKey == '\0' || !ppDataBuf || !pDataSizeOut || !gbCacheIsOpen)) {
+      void* pvVar1;
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ __frame0.nRebuildReason = 0;
+      __frame0.nCorruptReason = 0;
+      EnterCriticalSection(&lpCriticalSection_00881894);
+      nHashSlot = CACHE_FindHashEntry(0, szKey);
+      if (nHashSlot == -1) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+      } else {
+        nCrc32Computed = *(uint32_t*)(gpCacheBufferPoolFirst + nHashSlot * 0x10 + 0xc);
+        if (!(nCrc32Computed < gpCacheFileHeader->nBlockTableSize)) {
+          __frame0.nRebuildReason = 1;
+          rebuild_corrupt_cache:
+          Bnet::BnetLog_WriteLine("bncache.dat is corrupt (%d) - rebuilding archive", __frame0.nRebuildReason);
+          CACHE_Rebuild();
+          discard_output:
+          if (*ppDataBuf) {
+            Storm::SMem::SMemFree(*ppDataBuf, ".\\CACHE.CPP", 0x2de, 0);
+            *ppDataBuf = 0;
+          }
+          *pDataSizeOut = 0;
+        } else {
+          memset(&__frame0.entryHeader, 0, 0x144);
+          nBlockEntryOffset = nCrc32Computed * 0x10;
+          nHashSlot = __frame0.entryHeader.dwHeaderCrc32;
+          if (*(uint32_t*)(nBlockEntryOffset + 0xc + (int)gpCacheBlockTable) & 0xc0000000) {
+            /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, *(LONG*)(nBlockEntryOffset + (int)gpCacheBlockTable), (PLONG)0x0, 0);
+            /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, &__frame0.entryHeader, 4, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+            if (__frame0.nBytesRead != 4) {
+              __frame0.nRebuildReason = 2;
+            } else {
+              if (__frame0.entryHeader.dwHeaderSize != 0x144) {
+                __frame0.nRebuildReason = 3;
+              } else {
+                /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, &__frame0.entryHeader.dwUnk04, 0x140, &__frame0.nBytesRead, (LPOVERLAPPED)0x0);
+                nHashSlot = __frame0.entryHeader.dwHeaderCrc32;
+                if (__frame0.nBytesRead == 0x140) {
+                  __frame0.entryHeader.dwHeaderCrc32 = 0;
+                  nBlockTableOffset = 0x144;
+                  pCrc32Cursor = &__frame0.entryHeader;
+                  nCrc32Computed = -1;
+                  do {
+                    nCrc32Computed = nCrc32Computed >> 8 ^ gaBnCacheCrc32Table[((uint8_t)pCrc32Cursor->dwHeaderSize ^ nCrc32Computed) & 0xff];
+                    nBlockTableOffset--;
+                    pCrc32Cursor = (D2BnCacheEntryHeaderStrc*)((uintptr_t)&pCrc32Cursor->dwHeaderSize + 1);
+                  } while (nBlockTableOffset);
+
+                  szKey = __frame0.szKeySaved;
+                  if (nHashSlot == ~nCrc32Computed) {
+                    goto validate_and_read_entry;
+                  }
+
+                  __frame0.nCorruptReason = 1;
+                  szCorruptKey = __frame0.szKeySaved;
+                  goto delete_corrupt_entry;
+                }
+
+                __frame0.nRebuildReason = 4;
+              }
+            }
+
+            goto rebuild_corrupt_cache;
+          }
+
+          validate_and_read_entry:
+          __frame0.entryHeader.dwHeaderCrc32 = nHashSlot;
+          nBlockTableOffset = _stricmp(szKey, __frame0.entryHeader.szKey);
+          if (nBlockTableOffset) {
+            __frame0.nCorruptReason = 2;
+            szCorruptKey = szKey;
+            delete_corrupt_entry:
+            Bnet::BnetLog_WriteLine("File: \'%s\' in bncache.dat is corrupt (%d) - deleting from cache", szCorruptKey, __frame0.nCorruptReason);
+            CACHE_RemoveEntry(szCorruptKey);
+            goto discard_output;
+          }
+
+          pCurrentFileTime = (FILETIME*)CACHE_GetFileTime(0);
+          /* FILETIME * lpFileTime2 for CompareFileTime */ /* FILETIME * lpFileTime1 for CompareFileTime */ nFileTimeCmp = CompareFileTime(pCurrentFileTime, &__frame0.entryHeader.ftCacheExpiry);
+          if (nFileTimeCmp > 0) {
+            __frame0.nCorruptReason = 3;
+            szCorruptKey = __frame0.szKeySaved;
+            goto delete_corrupt_entry;
+          }
+          if (*(uint32_t*)(nBlockEntryOffset + 8 + (int)gpCacheBlockTable) > 0x1000000) {
+            __frame0.nRebuildReason = 5;
+            goto rebuild_corrupt_cache;
+          }
+          if (__frame0.nBytesWritten) {
+            *__frame0.nBytesWritten = __frame0.entryHeader.ftFileTime.dwLowDateTime;
+            __frame0.nBytesWritten[1] = __frame0.entryHeader.ftFileTime.dwHighDateTime;
+          }
+
+          pFileTimePair = CACHE_GetFileTime(0);
+          __frame0.entryHeader.ftCurrent.dwLowDateTime = (DWORD)*pFileTimePair;
+          __frame0.entryHeader.ftCurrent.dwHighDateTime = (DWORD)pFileTimePair[1];
+          /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, *(LONG*)(nBlockEntryOffset + (int)gpCacheBlockTable), (PLONG)0x0, 0);
+          __frame0.entryHeader.dwHeaderCrc32 = 0;
+          nBlockTableOffset = 0x144;
+          pCrc32Cursor = &__frame0.entryHeader;
+          nCrc32Computed = -1;
+          do {
+            nCrc32Computed = nCrc32Computed >> 8 ^ gaBnCacheCrc32Table[((uint8_t)pCrc32Cursor->dwHeaderSize ^ nCrc32Computed) & 0xff];
+            nBlockTableOffset--;
+            pCrc32Cursor = (D2BnCacheEntryHeaderStrc*)((uintptr_t)&pCrc32Cursor->dwHeaderSize + 1);
+          } while (nBlockTableOffset);
+
+          __frame0.entryHeader.dwHeaderCrc32 = ~nCrc32Computed;
+          nHeaderWriteSize = __frame0.entryHeader.dwHeaderSize;
+          if (0x144 < __frame0.entryHeader.dwHeaderSize) {
+            nHeaderWriteSize = 0x144;
+          }
+
+          /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)&__frame0.entryHeader, nHeaderWriteSize, (LPDWORD)&__frame0.nBytesWritten, (LPOVERLAPPED)0x0);
+          if (__frame0.nBytesWritten != (DWORD*)nHeaderWriteSize) {
+            __frame0.nRebuildReason = 6;
+            goto rebuild_corrupt_cache;
+          }
+
+          pDataAlloc = (uint32_t*)Storm::SMem::SMemAlloc(*(uint32_t*)(nBlockEntryOffset + 8 + (int)gpCacheBlockTable), ".\\CACHE.CPP", 0x2b5, 0);
+          pvVar1 = gpCacheBlockTable;
+          hFile = ghCacheFileHandle;
+          *ppDataBuf = pDataAlloc;
+          /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(hFile, *(int*)(nBlockEntryOffset + (int)pvVar1) + __frame0.entryHeader.dwHeaderSize, (PLONG)0x0, 0);
+          /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, *ppDataBuf, *(DWORD*)(nBlockEntryOffset + 8 + (int)gpCacheBlockTable), pDataSizeOut, (LPOVERLAPPED)0x0);
+          if (*pDataSizeOut != *(DWORD*)(nBlockEntryOffset + 8 + (int)gpCacheBlockTable)) {
+            __frame0.nRebuildReason = 7;
+            goto rebuild_corrupt_cache;
+          }
+
+          nHashSlot = CACHE_ComputeCRC32(*pDataSizeOut, (uint8_t*)*ppDataBuf);
+          if (__frame0.entryHeader.dwDataCrc32 != nHashSlot) {
+            __frame0.nCorruptReason = 4;
+            szCorruptKey = __frame0.szKeySaved;
+            goto delete_corrupt_entry;
+          }
+        }
+
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+        if (!__frame0.nCorruptReason && !__frame0.nRebuildReason) {
+          return 1;
+        }
+      }
+    }
+
+    return 0;
+}
+
+// Writes data to Fog cache file. Encrypts data using CACHE_EncryptBlock, computes CRC32, seeks to entry offset in ghCacheFileHandle, writes encrypted data. Updates hash table entry with file time, size, and offset.
+// @sourcefile .\CACHE.CPP
+BOOL __fastcall CACHE_WriteData(char * szCacheKey, LPCVOID pDataToWrite, uint32_t nDataSize, uint32_t * pFileTime, uint32_t nExpiryTime, int32_t nCacheExpiry) {
+    // Frame slots -660..-8 are ONE object: &nBytesReadWrite is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      DWORD nBytesReadWrite;
+      D2BnCacheEntryHeaderStrc entryHeaderSize;
+      D2BnCacheEntryHeaderStrc abEntryHeader;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 652, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    LONG nFileTimeCmp;
+    uint32_t nHashKey;
+    uint32_t nHash2;
+    LPFILETIME* pFileTimePair;
+    uint32_t* pNewBlockEntry;
+    uint32_t nHashSlot;
+    uint32_t nProbeSlot;
+    DWORD* pHashEntry;
+    int nStrCopyOffset;
+    uint32_t* pBlockEntry;
+    D2BnCacheEntryHeaderStrc* pEncryptBuf;
+    D2BnCacheFileHeaderStrc* pCrc32Cursor;
+    int nBlockEntryOffset;
+    int nSearchBlockOffset;
+    char cKeyCh;
+    HANDLE hFile;
+    FILETIME* lpFileTime2;
+    void* pvVar2;
+    uint32_t nBlockIdx;
+    nBlockIdx = 0;
+    if (!szCacheKey || *szCacheKey == '\0' || !pDataToWrite || !nDataSize || !pFileTime || !nCacheExpiry || !gbCacheIsOpen || nDataSize > 0x1000000) {
+      return 0;
+    }
+
+    int nRebuildReason;
+    nRebuildReason = 0;
+    EnterCriticalSection(&lpCriticalSection_00881894);
+    CACHE_RemoveEntry(szCacheKey);
+    uint32_t nHashCount;
+    nHashCount = gpCacheFileHeader->nBlockTableSize;
+    if (nHashCount > 0) {
+      pBlockEntry = (uint32_t*)((int)gpCacheBlockTable + 4);
+      do {
+        if (!pBlockEntry[2] && *pBlockEntry >= nDataSize + 0x144) {
+          break;
+        }
+
+        nBlockIdx++;
+        pBlockEntry += 4;
+      } while (nBlockIdx < nHashCount);
+    }
+
+    D2BnCacheFileHeaderStrc* pFileHeader;
+    pFileHeader = gpCacheFileHeader;
+    if (nBlockIdx >= nHashCount) {
+      FILETIME* pCurrentFileTime;
+      nBlockIdx = 0;
+      if (nHashCount > 0) {
+        nSearchBlockOffset = 0;
+        do {
+          if (*(uint32_t*)(nSearchBlockOffset + 4 + (int)gpCacheBlockTable) >= nDataSize + 0x144) {
+            /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, *(LONG*)(nSearchBlockOffset + (int)gpCacheBlockTable), (PLONG)0x0, 0);
+            memset(&__frame0.entryHeaderSize, 0, 0x144);
+            /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ ReadFile(ghCacheFileHandle, &__frame0.entryHeaderSize, 4, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+            pFileHeader = gpCacheFileHeader;
+            /* LPOVERLAPPED lpOverlapped for ReadFile */ /* LPDWORD lpNumberOfBytesRead for ReadFile */ /* DWORD nNumberOfBytesToRead for ReadFile */ /* LPVOID lpBuffer for ReadFile */ /* HANDLE hFile for ReadFile */ if (__frame0.nBytesReadWrite != 4) {
+              break;
+            }
+            if (__frame0.entryHeaderSize.dwHeaderSize != 0x144) {
+              break;
+            }
+
+            ReadFile(ghCacheFileHandle, &__frame0.entryHeaderSize.dwUnk04, 0x140, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+            pFileHeader = gpCacheFileHeader;
+            if (__frame0.nBytesReadWrite != 0x140) {
+              break;
+            }
+
+            lpFileTime2 = &__frame0.entryHeaderSize.ftExpiry;
+            /* FILETIME * lpFileTime2 for CompareFileTime */ pCurrentFileTime = (FILETIME*)CACHE_GetFileTime(0);
+            /* FILETIME * lpFileTime1 for CompareFileTime */ nFileTimeCmp = CompareFileTime(pCurrentFileTime, lpFileTime2);
+            pFileHeader = gpCacheFileHeader;
+            if (nFileTimeCmp > 0) {
+              break;
+            }
+          }
+
+          nBlockIdx++;
+          nSearchBlockOffset += 0x10;
+        } while (nBlockIdx < pFileHeader->nBlockTableSize);
+      }
+    }
+    if (nBlockIdx < pFileHeader->nBlockTableSize) {
+      nHashCount = 0;
+      if ((uint32_t)pFileHeader->nHashTableSize > 0) {
+        pBlockEntry = (uint32_t*)(gpCacheBufferPoolFirst + 0xc);
+        do {
+          if (*pBlockEntry == nBlockIdx) {
+            *pBlockEntry = -2;
+          }
+
+          nHashCount++;
+          pBlockEntry += 4;
+        } while (nHashCount < pFileHeader->nHashTableSize);
+      }
+
+      write_cache_entry:
+      nHashKey = CACHE_HashString(0, szCacheKey);
+      __frame0.nBytesReadWrite = CACHE_HashString(1, szCacheKey);
+      nHash2 = CACHE_HashString(2, szCacheKey);
+      nHashCount = gpCacheFileHeader->nHashTableSize - 1;
+      nHashSlot = nHashCount & nHashKey;
+      nStrCopyOffset = *(int*)(gpCacheBufferPoolFirst + nHashSlot * 0x10 + 0xc);
+      nProbeSlot = nHashSlot;
+      while (true) {
+        if (nStrCopyOffset == -1) {
+          break;
+        }
+        if (nStrCopyOffset == -2) {
+          break;
+        }
+
+        nProbeSlot = nProbeSlot + 1 & nHashCount;
+        if (nProbeSlot == nHashSlot) {
+          break;
+        }
+
+        nStrCopyOffset = *(int*)(gpCacheBufferPoolFirst + nProbeSlot * 0x10 + 0xc);
+      }
+
+      pHashEntry = (DWORD*)(gpCacheBufferPoolFirst + nProbeSlot * 0x10);
+      if (*(int*)(gpCacheBufferPoolFirst + nProbeSlot * 0x10 + 0xc) == -1 || *(int*)(gpCacheBufferPoolFirst + nProbeSlot * 0x10 + 0xc) == -2) {
+        pHashEntry[1] = nHash2;
+        *pHashEntry = __frame0.nBytesReadWrite;
+        pvVar2 = gpCacheBlockTable;
+        pHashEntry[3] = nBlockIdx;
+        pHashEntry[2] = 0;
+        nBlockEntryOffset = nBlockIdx * 0x10;
+        *(uint32_t*)(nBlockEntryOffset + 8 + (int)pvVar2) = nDataSize;
+        *(uint32_t*)(nBlockEntryOffset + 0xc + (int)pvVar2) = 0xc0000000;
+        memset(&__frame0.abEntryHeader, 0, 0x144);
+        __frame0.abEntryHeader.dwHeaderSize = 0x144;
+        pFileTimePair = CACHE_GetFileTime(0);
+        __frame0.abEntryHeader.ftNow.dwLowDateTime = (DWORD)*pFileTimePair;
+        __frame0.abEntryHeader.ftNow.dwHighDateTime = (DWORD)pFileTimePair[1];
+        __frame0.abEntryHeader.ftFileTime.dwLowDateTime = *pFileTime;
+        __frame0.abEntryHeader.ftFileTime.dwHighDateTime = pFileTime[1];
+        pFileTimePair = CACHE_GetFileTime(nExpiryTime);
+        __frame0.abEntryHeader.ftExpiry.dwLowDateTime = (DWORD)*pFileTimePair;
+        __frame0.abEntryHeader.ftExpiry.dwHighDateTime = (DWORD)pFileTimePair[1];
+        pFileTimePair = CACHE_GetFileTime(nCacheExpiry);
+        __frame0.abEntryHeader.ftCacheExpiry.dwLowDateTime = (DWORD)*pFileTimePair;
+        __frame0.abEntryHeader.ftCacheExpiry.dwHighDateTime = (DWORD)pFileTimePair[1];
+        pFileTimePair = CACHE_GetFileTime(0);
+        __frame0.abEntryHeader.ftCurrent.dwLowDateTime = (DWORD)*pFileTimePair;
+        __frame0.abEntryHeader.ftCurrent.dwHighDateTime = (DWORD)pFileTimePair[1];
+        nStrCopyOffset = 0x40 - (int)szCacheKey;
+        do {
+          cKeyCh = *szCacheKey;
+          szCacheKey[(uintptr_t)&__frame0.abEntryHeader + nStrCopyOffset] = cKeyCh;
+          szCacheKey++;
+        } while (cKeyCh != '\0');
+
+        __frame0.abEntryHeader.dwDataCrc32 = CACHE_ComputeCRC32(nDataSize, (uint8_t*)pDataToWrite);
+        nStrCopyOffset = 0x144;
+        pEncryptBuf = &__frame0.abEntryHeader;
+        nBlockIdx = -1;
+        do {
+          nBlockIdx = nBlockIdx >> 8 ^ gaBnCacheCrc32Table[((uint8_t)pEncryptBuf->dwHeaderSize ^ nBlockIdx) & 0xff];
+          nStrCopyOffset--;
+          pEncryptBuf = (D2BnCacheEntryHeaderStrc*)((uintptr_t)&pEncryptBuf->dwHeaderSize + 1);
+        } while (nStrCopyOffset);
+
+        __frame0.abEntryHeader.dwHeaderCrc32 = ~nBlockIdx;
+        /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, *(LONG*)(nBlockEntryOffset + (int)gpCacheBlockTable), (PLONG)0x0, 0);
+        /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)&__frame0.abEntryHeader, 0x144, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+        if (__frame0.nBytesReadWrite != 0x144) {
+          nRebuildReason = 0xd;
+        } else {
+          /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, pDataToWrite, nDataSize, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+          if (__frame0.nBytesReadWrite != nDataSize) {
+            nRebuildReason = 0xe;
+          } else {
+            nBlockIdx = gpCacheFileHeader->nHashTableSize;
+            if (nBlockIdx < 0x400) {
+              nBlockIdx = 0x400;
+            }
+
+            nHashCount = gpCacheFileHeader->nBlockTableSize;
+            nBlockIdx *= 0x10;
+            if (nHashCount < 0x400) {
+              nHashCount = 0x400;
+            }
+
+            nHashCount *= 0x10;
+            nProbeSlot = nBlockIdx;
+            if (nBlockIdx <= nHashCount) {
+              nProbeSlot = nHashCount;
+            }
+
+            pBlockEntry = (uint32_t*)Storm::SMem::SMemAlloc(nProbeSlot, ".\\CACHE.CPP", 0x391, 0);
+            /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, gpCacheFileHeader->dwHashTableOffset, (PLONG)0x0, 0);
+            memcpy(pBlockEntry, gpCacheBufferPoolFirst, nBlockIdx);
+            nHashKey = CACHE_HashString(3, "(hash table)");
+            CACHE_EncryptBlock(nHashKey, nBlockIdx, pBlockEntry);
+            nHashKey = CACHE_ComputeCRC32(nBlockIdx, (uint8_t*)pBlockEntry);
+            /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ gpCacheFileHeader->dwHashTableCrc32 = nHashKey;
+            /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)pBlockEntry, nBlockIdx, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+            if (__frame0.nBytesReadWrite != nBlockIdx) {
+              Storm::SMem::SMemFree(pBlockEntry, ".\\CACHE.CPP", 0x39d, 0);
+              nRebuildReason = 0xf;
+            } else {
+              /* PLONG lpDistanceToMoveHigh for SetFilePointer */ /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, gpCacheFileHeader->dwBlockTableOffset, (PLONG)0x0, 0);
+              memcpy(pBlockEntry, gpCacheBlockTable, nHashCount);
+              nHashKey = CACHE_HashString(3, "(block table)");
+              CACHE_EncryptBlock(nHashKey, nHashCount, pBlockEntry);
+              nHashKey = CACHE_ComputeCRC32(nHashCount, (uint8_t*)pBlockEntry);
+              hFile = ghCacheFileHandle;
+              /* LPOVERLAPPED lpOverlapped for WriteFile */ gpCacheFileHeader->dwBlockTableCrc32 = nHashKey;
+              /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(hFile, (LPCVOID)pBlockEntry, nHashCount, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+              Storm::SMem::SMemFree(pBlockEntry, ".\\CACHE.CPP", 0x3ab, 0);
+              pFileHeader = gpCacheFileHeader;
+              if (__frame0.nBytesReadWrite != nHashCount) {
+                nRebuildReason = 0x10;
+              } else {
+                gpCacheFileHeader->dwHeaderCrc32 = 0;
+                nStrCopyOffset = 0x2c;
+                nBlockIdx = -1;
+                pCrc32Cursor = pFileHeader;
+                do {
+                  nBlockIdx = nBlockIdx >> 8 ^ gaBnCacheCrc32Table[((uint8_t)pCrc32Cursor->dwSignature ^ nBlockIdx) & 0xff];
+                  nStrCopyOffset--;
+                  pCrc32Cursor = (D2BnCacheFileHeaderStrc*)((uintptr_t)&pCrc32Cursor->dwSignature + 1);
+                } while (nStrCopyOffset);
+
+                /* DWORD dwMoveMethod for SetFilePointer */ /* PLONG lpDistanceToMoveHigh for SetFilePointer */ pFileHeader->dwHeaderCrc32 = ~nBlockIdx;
+                /* LONG lDistanceToMove for SetFilePointer */ /* HANDLE hFile for SetFilePointer */ SetFilePointer(ghCacheFileHandle, 0, (PLONG)0x0, 0);
+                /* LPOVERLAPPED lpOverlapped for WriteFile */ /* LPDWORD lpNumberOfBytesWritten for WriteFile */ /* DWORD nNumberOfBytesToWrite for WriteFile */ /* LPCVOID lpBuffer for WriteFile */ /* HANDLE hFile for WriteFile */ WriteFile(ghCacheFileHandle, (LPCVOID)gpCacheFileHeader, 0x2c, &__frame0.nBytesReadWrite, (LPOVERLAPPED)0x0);
+                if (__frame0.nBytesReadWrite == 0x2c) {
+                  goto cleanup;
+                }
+
+                nRebuildReason = 0x11;
+              }
+            }
+          }
+        }
+      } else {
+        nRebuildReason = 0xc;
+      }
+    } else {
+      if (nBlockIdx < 0x400) {
+        pNewBlockEntry = (uint32_t*)(nBlockIdx * 0x10 + (int)gpCacheBlockTable);
+        *pNewBlockEntry = pFileHeader->dwFileSize;
+        pNewBlockEntry[1] = nDataSize + 0x144;
+        pFileHeader->dwFileSize = pFileHeader->dwFileSize + nDataSize + 0x144;
+        pFileHeader->nBlockTableSize = nBlockIdx + 1;
+        goto write_cache_entry;
+      }
+
+      nRebuildReason = 0xb;
+    }
+
+    Bnet::BnetLog_WriteLine("bncache.dat is corrupt (%d) - rebuilding archive", nRebuildReason);
+    CACHE_Rebuild();
+    cleanup:
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_00881894);
+    return (uint32_t)!nRebuildReason;
 }
 
 } // namespace Bnclient::BNGatewayAccess

@@ -12,8 +12,7 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Source/ClientEngine.h"
-#include "D2Client/UI/Draw.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/npcmenu.h"
@@ -27,12 +26,12 @@
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2SeedStrc.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/QuestRecord.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
@@ -703,7 +702,7 @@ int __stdcall CloseQuestLogWeird(DWORD dwParam) {
     }
 
     FreeQuestImages();
-    Draw::SetUIFlag(UI_QUESTSCREEN, UI_RESET, dwParam);
+    ui::SetUIFlag(UI_QUESTSCREEN, UI_RESET, dwParam);
     return 1;
 }
 
@@ -812,7 +811,7 @@ void __stdcall QUESTLOG_OnCloseClick(D2UIMouseMsgStrc * pMsg) {
     }
 
     FreeQuestImages();
-    Draw::SetUIFlag(UI_QUESTSCREEN, UI_RESET, 1);
+    ui::SetUIFlag(UI_QUESTSCREEN, UI_RESET, 1);
     gQuestLog.bQuestLogScreenOpen = GetTickCount();
 }
 
@@ -910,7 +909,7 @@ void __stdcall QUESTLOG_DrawQuestLogButton() {
     uint32_t nDrawPos;
     nDrawPos = UNIT::Player::IsPlayerDead();
     if (nDrawPos) {
-      Draw::SetUIFlag(UI_QUESTLOG, UI_RESET, 0);
+      ui::SetUIFlag(UI_QUESTLOG, UI_RESET, 0);
       if (gQuestLog.bQuestLogOpen != 1) {
         return;
       }
@@ -1165,7 +1164,7 @@ void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, D2GSPacketClt0
     notify_quest_update:
     gQuestLog.MonstersleftInDenOfEvil = nPrevMonsterCount;
     if (!gQuestLog.bQuestLogOpen) {
-      nSetFlagResult = Draw::SetUIFlag(UI_QUESTLOG, UI_SET, 0);
+      nSetFlagResult = ui::SetUIFlag(UI_QUESTLOG, UI_SET, 0);
       if (nSetFlagResult == 1) {
         QUESTLOG_SelectQuestByIndex((uint32_t)pPacket->nActionType);
         gQuestLog.bQuestLogOpen = 1;
@@ -1510,7 +1509,7 @@ void __stdcall DRAW_UI_Quest() {
       }
 
       FreeQuestImages();
-      Draw::SetUIFlag(UI_QUESTSCREEN, UI_RESET, 0);
+      ui::SetUIFlag(UI_QUESTSCREEN, UI_RESET, 0);
       return;
     }
 
@@ -1900,7 +1899,7 @@ void __fastcall QUESTLOG_ToggleQuestScreen(DWORD dwParam) {
         if (!bPlayerDead) {
           bItemDescDirty = INV_GetItemDescDirtyFlag();
           if (bItemDescDirty == '\0') {
-            dwTickOrFlag = Draw::SetUIFlag(UI_QUESTSCREEN, UI_SET, dwParam);
+            dwTickOrFlag = ui::SetUIFlag(UI_QUESTSCREEN, UI_SET, dwParam);
             if (dwTickOrFlag == 1) {
               LoadQuestimages();
               gQuestLog.bQuestLogOpen = 2;
@@ -1923,7 +1922,7 @@ void __fastcall QUESTLOG_ToggleQuestScreen(DWORD dwParam) {
       gQuestLog.bQuestLogOpen = 0;
       bItemDescDirty = INV_GetItemDescDirtyFlag();
       if (bItemDescDirty == '\0') {
-        dwTickOrFlag = Draw::SetUIFlag(UI_QUESTSCREEN, UI_SET, dwParam);
+        dwTickOrFlag = ui::SetUIFlag(UI_QUESTSCREEN, UI_SET, dwParam);
         if (dwTickOrFlag == 1) {
           LoadQuestimages();
           gQuestLog.bQuestLogOpen = 2;
@@ -1961,7 +1960,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x52_QUESTSTATUS(char * pBytes) {
 void __stdcall QUESTLOG_OnButtonMouseUp(D2UIMouseMsgStrc * pMsg) {
     int bInQuestLog = QUESTLOG_IsPointInQuestLog((uint32_t)pMsg->uLParam.sMousePos.nMouseX, (uint32_t)pMsg->uLParam.sMousePos.nMouseY);
     if ((char)bInQuestLog != '\0' && gQuestLog.bQuestLogWindowOpen != '\0') {
-      Draw::SetUIFlag(UI_QUESTLOG, UI_RESET, 0);
+      ui::SetUIFlag(UI_QUESTLOG, UI_RESET, 0);
       QUESTLOG_ToggleQuestScreen(0);
       gQuestLog.bQuestLogWindowOpen = 0;
       pMsg->bHandled = 1;

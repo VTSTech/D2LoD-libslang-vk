@@ -3,7 +3,7 @@
 #include "D2Client/UI/Editbox/EditBoxWrapper.h"
 #include "D2Client/UI/Button/ButtonImplementation.h"
 #include "D2Client/UI/Editbox/EditBoxImplementation.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Win/Src/D2WinTextBox.h"
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Storm/SMem.h"

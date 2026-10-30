@@ -4,13 +4,10 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UNIT/MonUnique.h"
-#include "D2Client/Units.h"
-#include "D2Common/D2DynamicPathStrc.h"
 #include "D2Common/D2InventoryStrc.h"
 #include "D2Common/D2RoomStrc.h"
-#include "D2Common/D2SkillStrc.h"
-#include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
+#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/INVENTORY/Inventory.h"
@@ -18,7 +15,6 @@
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Stats/StatsEx.h"
-#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Common/Units.h"
 #include "D2Game/GAME/Clients.h"
 #include "D2Game/GAME/Event.h"
@@ -26,7 +22,6 @@
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/ItemMode.h"
 #include "D2Game/ITEMS/Items/Drop.h"
-#include "D2Game/Monster/AI/AI.h"
 #include "D2Game/Monster/Monster.h"
 #include "D2Game/Monster/MonsterAI.h"
 #include "D2Game/Monster/MonsterMsg.h"
@@ -41,8 +36,9 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit/Unit.h"
+#include "D2Common/Unit.h"
 #include "D2Game/Ai/AiGeneral.h"
+#include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -466,287 +462,6 @@ static void __stdcall MONSTER_SendNpcHealthUpdate(D2ClientStrc * pClient, D2Unit
     GAME::SCmd::NET_D2GS_SERVER_Send_0x0C_UNITCHANGE(pClient, '\f', '\x01', pUnit->nUnitGUID, '\x13', (uint8_t)uVar1, byHpPct);
 }
 
-// Server-side: serialize a monster/NPC unit's current animation state into the appropriate D2GS update packet and send it to one client (pClientSide). Branches on the unit's player/anim mode (Death, Run, TownWalk, Kick, Skill1, Neutral, Walk, etc.) and on whether it has a valid target near the client, choosing the packet opcode (0x67 NpcMove / 0x68 NpcMoveToEntity / 0x69 NpcState / 0x6A NpcStateToEntity / 0x6B NpcAction / 0x6C NpcAttack / 0x6D NpcStop, plus cast-skill msg). Fills move params, HP%, direction, step number, last-hit class, and target position/GUID from the unit's dynamic path. Halts with an internal error if pUnit/pClientSide/path are NULL. __fastcall.
-void __fastcall MONSTER_SendUpdateToClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2ClientStrc * pClientSide) {
-    // Static local variables (originally global data)
-    static int gaUnitModeUpdateFields[96] = {
-    0x0,
-    0x1,
-    0x0,
-    0x0,
-    0x8,
-    0x8,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x7,
-    0x7,
-    0x1,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x6,
-    0x6,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0xb,
-    0xa,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0x11,
-    0x10,
-    0x1,
-    0x1,
-    0x0,
-    0x0,
-    0x12,
-    0x12,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0x4,
-    0x5,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0xc,
-    0xd,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0xe,
-    0xf,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0x1a,
-    0x1b,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0x1c,
-    0x1d,
-    0x0,
-    0x0,
-    0x0,
-    0x0,
-    0x9,
-    0x9,
-    0x0,
-    0x1,
-    0x1,
-    0x0,
-    0x14,
-    0x14,
-    0x1,
-    0x1,
-    0x0,
-    0x1,
-    0xc,
-    0xd,
-    0x1,
-    0x1,
-    0x1,
-    0x0,
-    0x17,
-    0x18
-}; D2_STATIC_GUARD(gaUnitModeUpdateFields, "D2Game::UNIT::MONSTER_SendUpdateToClient::gaUnitModeUpdateFields");
-
-    BOOL nPosTmp;
-    D2SkillStrc* pSkill;
-    int bIsNear;
-    uint32_t nTargetY;
-    uint32_t nMonsterGUID;
-    int32_t nTmp2;
-    uint32_t wTargetX;
-    int32_t nLayer;
-    uint32_t dwTmp;
-    int byMoveParam2;
-    uint16_t wTargetY;
-    uint8_t byDistance;
-    byDistance = 0;
-    uint8_t byMoveParam1;
-    byMoveParam1 = 0;
-    uint8_t uVar1;
-    uVar1 = '\0';
-    uint8_t byLastHitClass;
-    byLastHitClass = '\0';
-    uint8_t byExtraParam;
-    byExtraParam = 0;
-    uint8_t byStepNum;
-    byStepNum = '\0';
-    if (!pUnit) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd4);
-      exit(-1);
-    }
-    if (!pClientSide) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd5);
-      exit(-1);
-    }
-
-    eD2MonsterAnimMode eAnimMode;
-    eAnimMode = pUnit->eAnimMode.ePlayerMode;
-    D2UnitStrc* pTargetUnit;
-    pTargetUnit = SUnit::GetTargetEx(pGame, pUnit);
-    if (pTargetUnit && (nPosTmp = GAME::Clients::IsUnitNearClient(pTargetUnit, pClientSide) , !nPosTmp) || !gaUnitModeUpdateFields[eAnimMode * 6]) {
-      pTargetUnit = 0;
-    }
-    if (eAnimMode == eD2MonsterAnimMode_ns::Sequence || (pSkill = D2Common::Units::GetCurrentSkill(pUnit) , pSkill != 0)) {
-      D2Game::Monster::MonsterMsg::SendCastSkillMsg(pClientSide, pTargetUnit, pUnit);
-      return;
-    }
-
-    D2DynamicPathStrc* pDynamicPath;
-    pDynamicPath = pUnit->pPath.pDynamicPath;
-    if (!pDynamicPath) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe6);
-      exit(-1);
-    }
-    if (pTargetUnit) {
-      *(uint8_t*)(char*)&byMoveParam2 = (uint8_t)gaUnitModeUpdateFields[eAnimMode * 6 + 5];
-      *(uint16_t*)(char*)&wTargetX = (uint16_t)pTargetUnit->eUnitType;
-      nTargetY = pTargetUnit->nUnitGUID;
-      dwTmp = 0x68;
-      if (eAnimMode == Walk || eAnimMode == eD2MonsterAnimMode_ns::Run) {
-        bIsNear = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-        if (bIsNear - 5U <= 1) {
-          *(uint8_t*)(char*)&byMoveParam2 = (uint8_t)gaUnitModeUpdateFields[eAnimMode * 6 + 4];
-          nTmp2 = D2Common::PATH::DynamicPath::GetLastPathPointX(pDynamicPath);
-          *(uint16_t*)(char*)&wTargetX = (uint16_t)nTmp2;
-          nTargetY = D2Common::PATH::DynamicPath::GetLastPathPointY(pDynamicPath);
-          dwTmp = 0x67;
-        }
-      }
-    } else {
-      *(uint8_t*)(char*)&byMoveParam2 = (uint8_t)gaUnitModeUpdateFields[eAnimMode * 6 + 4];
-      if (gaUnitModeUpdateFields[eAnimMode * 6 + 1]) {
-        nTmp2 = D2Common::PATH::DynamicPath::GetLastPathPointX(pDynamicPath);
-        *(uint16_t*)(char*)&wTargetX = (uint16_t)nTmp2;
-        nTargetY = D2Common::PATH::DynamicPath::GetLastPathPointY(pDynamicPath);
-      } else {
-        nTmp2 = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath);
-        *(uint16_t*)(char*)&wTargetX = (uint16_t)nTmp2;
-        nTargetY = D2Common::PATH::DynamicPath::GetYPos(pDynamicPath);
-      }
-
-      dwTmp = 0x67;
-    }
-    if (!false) {
-      switch (eAnimMode) {
-        case eD2MonsterAnimMode_ns::Block:
-          if (!pTargetUnit) {
-            *(uint16_t*)(char*)&wTargetX = 0;
-            nTargetY = -1;
-          }
-        break;
-        case Death:
-          byMoveParam1 = D2Common::PATH::DynamicPath::GetDirection(pDynamicPath);
-        byLastHitClass = (uint8_t)pUnit->dwLastHitClass;
-        break;
-        default:
-          goto default_case;
-        case eD2MonsterAnimMode_ns::Dead:
-          byMoveParam1 = D2Common::PATH::DynamicPath::GetDirection(pDynamicPath);
-        break;
-        case Knockback:
-          byDistance = D2Common::PATH::DynamicPath::GetDistance(pDynamicPath);
-        uVar1 = Monsters::MONSTER_GetHpPercent128(pUnit);
-        byExtraParam = (uint8_t)pUnit->dwLastHitClass;
-        goto send_path_ex_packet;
-        case eD2MonsterAnimMode_ns::GetHit:
-          byMoveParam1 = Monsters::MONSTER_GetHpPercent128(pUnit);
-        if (byMoveParam1 > 1) {
-          byMoveParam1--;
-        }
-
-        nMonsterGUID = Monsters::CheckMonsterType(pUnit, 0x100);
-        if (nMonsterGUID) {
-          byMoveParam1 |= 0x80;
-        }
-
-        byLastHitClass = (uint8_t)pUnit->dwLastHitClass;
-        break;
-      }
-    } else {
-      default_case:
-      nTmp2 = D2Common::PATH::DynamicPath::GetStepNum(pDynamicPath);
-      byStepNum = (uint8_t)nTmp2;
-      if (eAnimMode == eD2MonsterAnimMode_ns::Neutral) {
-        uVar1 = Monsters::MONSTER_GetHpPercent128(pUnit);
-        nTargetY = pUnit->nUnitGUID;
-        nTmp2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-        wTargetY = (uint16_t)nTmp2;
-        nTmp2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x6D_UNITCHANGE_MONSTERNEUTRAL(pClientSide, nTargetY, (uint16_t)nTmp2, wTargetY, uVar1);
-        nLayer = 0;
-        nTmp2 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0);
-        D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, nTmp2 + 1, nLayer);
-        return;
-      }
-      if (eAnimMode == Knockback) {
-        send_path_ex_packet:
-        if (dwTmp != 0x68) {
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH_Ex(pClientSide, (uint8_t)dwTmp, pUnit->nUnitGUID, (uint8_t)byMoveParam2, (uint16_t)wTargetX, (uint16_t)nTargetY, byDistance, uVar1, byExtraParam);
-          return;
-        }
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH_Ex(pClientSide, 0x68, pUnit->nUnitGUID, (uint8_t)byMoveParam2, (uint8_t)(uint16_t)wTargetX, nTargetY, byDistance, uVar1, byExtraParam);
-        return;
-      }
-    }
-
-    byExtraParam = (uint8_t)(uint16_t)wTargetX;
-    wTargetY = (uint16_t)nTargetY;
-    if (gaUnitModeUpdateFields[eAnimMode * 6 + 2]) {
-      if (dwTmp == 0x68) {
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH(pClientSide, 'h', pUnit->nUnitGUID, (uint8_t)byMoveParam2, byExtraParam, nTargetY, byStepNum);
-        return;
-      }
-
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH(pClientSide, (uint8_t)dwTmp, pUnit->nUnitGUID, (uint8_t)byMoveParam2, (uint16_t)wTargetX, wTargetY, byStepNum);
-      return;
-    }
-    if (!gaUnitModeUpdateFields[eAnimMode * 6 + 3]) {
-      if (dwTmp == 0x68) {
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x6A_UNITCHANGE_MONSTERIDNOPATH(pClientSide, 0x6a, pUnit->nUnitGUID, (uint8_t)byMoveParam2, byExtraParam, nTargetY, byMoveParam1);
-        return;
-      }
-
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x69_UNITCHANGE_MONSTERXYNOPATH(pClientSide, 'i', pUnit->nUnitGUID, (uint8_t)byMoveParam2, (uint16_t)wTargetX, wTargetY, byMoveParam1, byLastHitClass);
-      return;
-    }
-    if (dwTmp != 0x68) {
-      uint16_t wPosY;
-      nTargetY = pUnit->nUnitGUID;
-      nTmp2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      wPosY = (uint16_t)nTmp2;
-      nTmp2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      GAME::SCmd::NET_D2GS_SERVER_Send_0x6B_UNITCHANGE_MONSTERXYPOSITION(pClientSide, 'k', nTargetY, (uint8_t)byMoveParam2, (uint16_t)wTargetX, wTargetY, byMoveParam1, byLastHitClass, (uint16_t)nTmp2, wPosY);
-      return;
-    }
-
-    nMonsterGUID = pUnit->nUnitGUID;
-    nTmp2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-    wTargetY = (uint16_t)nTmp2;
-    nTmp2 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x6C_UNITCHANGE_MONSTERIDPOSITION(pClientSide, 'l', nMonsterGUID, (uint8_t)byMoveParam2, byExtraParam, nTargetY, byMoveParam1, (uint16_t)nTmp2, wTargetY);
-}
-
 // Server-side per-unit update flush: emits all pending network packets for one unit to one client (pClient) based on the unit's eUnitFlags/eUnitFlagsEx. Sends a 0x15 reassign packet on UNITFLAGEX_TELEPORTED (with current x/y) and refreshes room visibility; flushes monster update (DOUPDATE), queued unit messages, hover text, proxy/merc inventory items (HASINV), sound, NPC health, and (when nIsNew==0) state/overlay/enchant updates. Reads STATES_HasAnyGfxFlag / STATLIST_HasChangedStats to decide state/overlay sends, and clears UNITFLAG_MONMODEISCHANGING.
 void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2ClientStrc * pClient, int32_t nIsNew) {
     uint16_t wPosX;
@@ -784,7 +499,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
         SUnit::UNITS_UpdateRoomClientVisibility(pGame, pUnit, nullptr);
       }
       if (pUnit->eUnitFlags & UNITFLAG_DOUPDATE) {
-        MONSTER_SendUpdateToClient(pGame, pUnit, pClient);
+        D2Game::Monster::MonsterMsg::MONSTER_SendUpdateToClient(pGame, pUnit, pClient);
       }
 
       pUnit->eUnitFlags &= ~UNITFLAG_MONMODEISCHANGING;

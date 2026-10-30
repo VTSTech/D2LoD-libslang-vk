@@ -4,7 +4,7 @@
 #include "support/d2_control.h"
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Record.h"
-#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/Src/ErrorManager.h"

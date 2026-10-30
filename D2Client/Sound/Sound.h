@@ -15,7 +15,6 @@ struct D2UIMouseMsgStrc;
 struct D2UnitDataItemStrc;
 struct D2UnitStrc;
 struct IDirectSoundBuffer;
-typedef int eD2LevelId;
 typedef int eD2Sounds;
 #ifndef RECON_FPTD_DS3DB_SetMaxDistance
 #define RECON_FPTD_DS3DB_SetMaxDistance
@@ -235,7 +234,6 @@ BOOL __stdcall SOUND_IsDirectSoundAvailable_For3DSoundItem();
 void __fastcall SOUND_ToggleSoundMixerBinary(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 BOOL __stdcall SOUND_IsEaxAvailable_ForEaxItem();
 void __fastcall SOUND_CycleSoundMixerMode(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-eD2LevelId __stdcall SOUND_GetCurrentLevelId();
 uint32_t __fastcall SOUND_FileExists(char * szFileName);
 void SOUND_LocalizeSoundPath(char * szFormat, uint32_t * pszOutPath, char * pTmp);
 float __stdcall SOUND_CalculateAngle1(float fParam1, float fParam2);

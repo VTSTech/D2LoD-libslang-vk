@@ -18,9 +18,9 @@
 #include "D2Game/MISSILES/MissilesMode.h"
 #include "D2Game/MISSILES/MissilesMode/SrvDoFunc.h"
 #include "D2Game/Monster/AI/AI.h"
+#include "D2Game/Monster/MonsterMode.h"
 #include "D2Game/Monster/Monsters.h"
 #include "D2Game/Monsters/Umod.h"
-#include "D2Game/Objects/ArmorWeapon.h"
 #include "D2Game/Objects/Objects.h"
 #include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/PlayerModes.h"
@@ -965,11 +965,11 @@ D2ObjectPopulateEntryStrc gaObjectPopulateTable[7] = {
     },
     {
         /* .nEnabled = */ 0x1,
-        /* .pfnPopulate = */ &D2Game::Objects::ArmorWeapon::RollArmorStand
+        /* .pfnPopulate = */ &D2Game::Objects::RollArmorStand
     },
     {
         /* .nEnabled = */ 0x1,
-        /* .pfnPopulate = */ &D2Game::Objects::ArmorWeapon::RollWeaponRack
+        /* .pfnPopulate = */ &D2Game::Objects::RollWeaponRack
     }
 }; D2_GLOBAL_GUARD(gaObjectPopulateTable, "gaObjectPopulateTable");
 
@@ -2340,10 +2340,10 @@ namespace D2Game::GAME::Event::Dispatch::Monster {
 
 D2TimerTypeMethodsExStrc pTimerMethods = {
     /* .fpFunctionExByType = */ {
-        (fpTimerFunctionEx)&D2Game::GAME::Event::Dispatch::Monster::MONMODE_DispatchDeathDrop,
-        (fpTimerFunctionEx)&D2Game::GAME::Event::Dispatch::Monster::ExecuteDropHandlerFn3,
+        (fpTimerFunctionEx)&D2Game::Monster::MonsterMode::MONMODE_DispatchDeathDrop,
+        (fpTimerFunctionEx)&D2Game::Monster::MonsterMode::ExecuteDropHandlerFn3,
         (fpTimerFunctionEx)&D2Game::Monster::AI::MONSTERAI_ExecuteAiFunction,
-        (fpTimerFunctionEx)&D2Game::GAME::Event::Dispatch::Monster::RegenAndPsnDecreaser,
+        (fpTimerFunctionEx)&D2Game::Monster::MonsterMode::RegenAndPsnDecreaser,
         nullptr,
         (fpTimerFunctionEx)&D2Game::SKILLS::SkillsServer::SKILLS_DispatchStateActiveFunc,
         (fpTimerFunctionEx)&D2Game::GAME::Event::Dispatch::Monster::MONMODE_UpdateHoverTextExpiry,

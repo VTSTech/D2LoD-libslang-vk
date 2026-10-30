@@ -316,6 +316,33 @@ void __stdcall SErrRegisterHandler(pfnSErrDisplayCallback pfnCallback) {
     SERR_InternalLeaveCriticalSection();
 }
 
+uint32_t __thiscall SSYSTEM_ListRemoveAndFree(void * pList, int * pNode) {
+    int* pPrevLink = pNode;
+    if (!pNode) {
+      pPrevLink = (int*)((int)pList + 4);
+    }
+
+    uint32_t nResultOffset = pPrevLink[1];
+    int pNext = *pNode;
+    if (pNext) {
+      uint32_t nOffset;
+      nOffset = pNode[1];
+      if ((int)nOffset < 0) {
+        pPrevLink = (int*)~nOffset;
+      } else {
+        pPrevLink = (int*)((int)pNode + (nOffset - *(int*)(pNext + 4)));
+      }
+
+      *pPrevLink = pNext;
+      *(int*)(*pNode + 4) = pNode[1];
+      *pNode = 0;
+      pNode[1] = 0;
+    }
+
+    SMem::SMemFree(pNode, gszSSystemListAllocTag, -2, 0);
+    return (int)nResultOffset <= 0 ? 0 : nResultOffset;
+}
+
 // Displays an error dialog with optional stack trace and custom message. Formats error information, logs to debugger, and either shows MessageBox or calls registered error handler callback.
 // @was SSYSTEM_DisplayErrorDialog (pass 6, 2026.08.28)
 // @oracle Storm 1.10b PPC export SErrDisplayError, code vector 10015f80 (from the TVector export block at 100cbe6c).
@@ -602,7 +629,7 @@ void __stdcall SErrUnregisterHandler(int32_t nCallbackId) {
     int* piEntry = (int*)(gnStormErrorCallbackCount.pNext <= 0 ? 0 : gnStormErrorCallbackCount.pNext);
     while ((int)piEntry > 0) {
       if (piEntry[2] == nCallbackId) {
-        piEntry = (int*)SSystem::SSYSTEM_ListRemoveAndFree(&gnStormErrorCallbackCount, piEntry);
+        piEntry = (int*)SSYSTEM_ListRemoveAndFree(&gnStormErrorCallbackCount, piEntry);
       } else {
         piEntry = (int*)piEntry[1];
       }
