@@ -8,6 +8,7 @@
 5	7	asm_matching/msvc8/.gitignore
 20	20	asm_matching/msvc8/evidence/audit.tsv.summary
 5	5	asm_matching/msvc8/evidence/crtmap.tsv.summary
+11	11	asm_matching/msvc8/evidence/libmap.tsv.summary
 20	21	asm_matching/msvc8/flags.tsv
 57	69	asm_matching/msvc8/oracle
 13	90	asm_matching/msvc8/README.md
@@ -1050,6 +1051,7 @@
 35	35	Fog/Src/QServer/QServerNT.h
 460	459	Fog/Src/Safesock.cpp
 84	84	Fog/Src/Safesock.h
+2	2	ghidra_version.cpp
 882	882	globals/Bnclient.cpp
 47912	47629	globals/D2Client.cpp
 1130	1130	globals/D2CMP.cpp
