@@ -1651,7 +1651,7 @@ void __stdcall DRAW_UI_Quest() {
 
             sGfxData.pDC6 = gQuestLog.pQuestLogActImages[pQuestEntry[-1]];
             sGfxData.nFrameNumber = nQuestSlot;
-            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaQuestIconPositions[*pQuestEntry].nImagePosX + gnPanelOffsetX, gaQuestIconPositions[*pQuestEntry].nImagePosY - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+            D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaQuestIconPositions[*pQuestEntry].nImagePosX + gnPanelOffsetX, gaQuestIconPositions[*pQuestEntry].nImagePosY - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
             dwTickCount = GetTickCount();
             if (!gQuestLog.aQuestLogIconLastTick[gQuestLog.nQuestLogQuestCount]) {
               gQuestLog.aQuestLogIconLastTick[gQuestLog.nQuestLogQuestCount] = dwTickCount;
@@ -1680,7 +1680,7 @@ void __stdcall DRAW_UI_Quest() {
 
             sGfxData.nFrameNumber = (int)pQuestEntry[-1];
             sGfxData.pDC6 = gQuestLog.questdone;
-            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY + gQuestUIDescInitA;
+            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY + VPRES_GetWideUiOffsetY() + gQuestUIDescInitA;
             nQuestSlot = gaQuestIconPositions[nActIndex].nImagePosX + gbQuestLogDrawFlag;
             goto offset_and_draw_icon;
             case 2:
@@ -1689,7 +1689,7 @@ void __stdcall DRAW_UI_Quest() {
             sGfxData.nFrameNumber = 0x1a;
             use_act_icon_image:
             sGfxData.pDC6 = gQuestLog.pQuestLogActImages[pQuestEntry[-1]];
-            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY;
+            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
             nQuestSlot = gaQuestIconPositions[nActIndex].nImagePosX;
             offset_and_draw_icon:
             nQuestSlot += gnPanelOffsetX;
@@ -1706,7 +1706,7 @@ void __stdcall DRAW_UI_Quest() {
             gQuestLog.aQuestLogEntries[gQuestLog.nQuestLogQuestCount].bVisible = '\x01';
             sGfxData.pDC6 = gQuestLog.pQuestLogActImages[byIconId];
             nActIndex = (uint32_t)*pQuestEntry;
-            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY;
+            nDrawY = gaQuestIconPositions[nActIndex].nImagePosY - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
             sGfxData.nFrameNumber = gQuestLog.nQuestLogSelectedIcon != nActIndex ? 0 : 0x19;
             nQuestSlot = gaQuestIconPositions[nActIndex].nImagePosX + gnPanelOffsetX;
             goto draw_icon;
@@ -1719,7 +1719,7 @@ void __stdcall DRAW_UI_Quest() {
           }
 
           sGfxData.nFrameNumber = (int)(nActIndex == gQuestLog.nQuestLogActiveAct);
-          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaQuestIconPositions[*pQuestEntry].nImagePosX - 4 + gnPanelOffsetX, gaQuestIconPositions[*pQuestEntry].nImagePosY - gnPanelOffsetY + 5 + nQuestSlot, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gaQuestIconPositions[*pQuestEntry].nImagePosX - 4 + gnPanelOffsetX, gaQuestIconPositions[*pQuestEntry].nImagePosY - gnPanelOffsetY + VPRES_GetWideUiOffsetY() + 5 + nQuestSlot, -1, DRAW_SOLID, nullptr);
           nQuestSlot = gQuestLog.nQuestLogQuestCount;
         }
 
@@ -1754,7 +1754,7 @@ void __stdcall DRAW_UI_Quest() {
               nParam = gQuestLog.aQuestLogEntries[nQuestSlot].wTitleStringId;
               if (nParam != 0xe8c) {
                 pwszText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
-                nDrawY = gQuestUIDescInitC - gnPanelOffsetY;
+                nDrawY = gQuestUIDescInitC - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
                 bFlag = 0;
                 dwTextColor = 0;
                 nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
@@ -1765,7 +1765,7 @@ void __stdcall DRAW_UI_Quest() {
                 if (pWordWrapList) {
                   nQuestSlot = 0;
                   do {
-                    D2Win::Src::D2WinFont::DRAW_text(pWordWrapList->wszLine, gnPanelOffsetX + gQuestUIDescInitD, nQuestSlot - gnPanelOffsetY + gQuestUIDescInitE, 0, 0);
+                    D2Win::Src::D2WinFont::DRAW_text(pWordWrapList->wszLine, gnPanelOffsetX + gQuestUIDescInitD, nQuestSlot - gnPanelOffsetY + VPRES_GetWideUiOffsetY() + gQuestUIDescInitE, 0, 0);
                     pNextWrappedLine = pWordWrapList->pNext;
                     D2_FREE_AT(pWordWrapList->wszLine, ".\\UI\\QuestLog.cpp", 0x8d1);
                     D2_FREE_AT(pWordWrapList, ".\\UI\\QuestLog.cpp", 0x8d2);
@@ -1791,7 +1791,7 @@ void __stdcall DRAW_UI_Quest() {
     nQuestSlot = ui::GetMouseX();
     nDrawY = ui::GetMouseY();
     nQuestSlot -= gnPanelOffsetX;
-    nDrawY += gnPanelOffsetY;
+    nDrawY += gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     if (nQuestSlot - 0x116U < 0x24 && nDrawY - 0x188U < 0x22) {
       D2Win::Src::D2WinFont::SetAndReturnLastFont(9);
       pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x1030);
@@ -1845,7 +1845,7 @@ void __stdcall QUESTLOG_OnMouseDown(D2UIMouseMsgStrc * pMsg) {
     uint32_t nPanelRelX;
     nPanelRelX = uVar1 - gnPanelOffsetX;
     uint32_t nPanelRelY;
-    nPanelRelY = nMouseYRaw + gnPanelOffsetY;
+    nPanelRelY = nMouseYRaw + gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     if (gQuestLog.bQuestLogButtonDown == '\0') {
       uint32_t nActTab;
       nActTab = QUESTLOG_HitTestActTab(nPanelRelY, nPanelRelX);
@@ -2069,7 +2069,7 @@ void __stdcall QUESTLOG_OnMouseUp(D2UIMouseMsgStrc * pMsg) {
     uint32_t nBottomThresholdY;
     bool bSignedLessOrEqual;
     int nPanelRelX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX - gnPanelOffsetX;
-    int nPanelRelY = (uint32_t)pMsg->uLParam.sMousePos.nMouseY + gnPanelOffsetY;
+    int nPanelRelY = (uint32_t)pMsg->uLParam.sMousePos.nMouseY + gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     if (gQuestLog.bQuestLogOpenBtnPressed == '\0') {
       uint32_t bHitIcon;
       if (gQuestLog.bQuestLogButtonDown == '\0') {

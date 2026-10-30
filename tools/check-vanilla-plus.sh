@@ -175,6 +175,32 @@ gate "site-5: fork-api include in View.cpp" D2Client/GAME/View.cpp         'incl
 gate "site-5: fork-api include in GAME Draw.cpp" D2Client/GAME/Draw.cpp    'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "site-5: fork-api include in ListBox" D2Client/UI/ListBox/ListBoxImplementation.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
+# ---- resolution site-6: the vertical half of the shift ----------------------
+# Fixed (top-anchored) 800-space Y coordinates - Belts.txt/inventory.txt rect
+# Y bounds, "const - gnPanelOffsetY" texts and hit tests, raw border-frame Y -
+# ride the bottom-anchored panel art by VPRES_GetWideUiOffsetY() =
+# ScreenSizeY - 600 (0 at modes 0/1/2 -> byte-identical retail, 100 at mode 3,
+# 120 at mode 4). Input paths use the inverse form "gnPanelOffsetY -
+# VPRES_GetWideUiOffsetY". gnPanelOffsetY itself stays -60: bottom-anchored
+# expressions already contain ScreenSizeY and would double-shift.
+gate "site-6: Y offset defined"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetY' 1
+gate "site-6: Y offset declared"           D2Client/UI/VanillaPlusCore.h   'VPRES_GetWideUiOffsetY' 1
+gate "site-6: belt + border Y shifts"      D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetY' 17
+gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
+gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
+gate "site-6: waypoint Y shifts"           D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
+gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: questlog input inverse"      D2Client/UI/QuestLog.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
+gate "site-6: scrolling text Y shift"      D2Client/UI/Text.cpp            'VPRES_GetWideUiOffsetY' 1
+gate "site-6: stat tooltip Y shifts"       D2Client/UI/ui.cpp              'VPRES_GetWideUiOffsetY' 6
+gate "site-6: modal popup Y shifts"        D2Client/Engine.cpp             'VPRES_GetWideUiOffsetY' 18
+gate "site-6: help screen Y shifts"        D2Client/UI/Help.cpp            'VPRES_GetWideUiOffsetY' 74
+gate "site-6: fork-api include in Party.cpp"  D2Client/UI/Party.cpp        'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Waypoint.cpp" D2Client/UI/Waypoint.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Text.cpp"   D2Client/UI/Text.cpp         'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Engine.cpp" D2Client/Engine.cpp          'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
 # ---- resolution renderer dispatch (post-field-test fixes, 2026-10-30) -------
 # Mode 4 must take the fully-initialized perspective=1 D3D device path (the
 # goto left floor/subtile/font caches uninitialized -> black world), and the

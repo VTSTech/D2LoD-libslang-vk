@@ -1,6 +1,6 @@
 # 720p branch — handoff for future work
 
-*Rev 28 (2026-10-30, handoff refocused on the 720p effort — owner: "Let's rework the current handoff.md to focus just on 720p work. that is purpose of this branch"): the pre-720p content — revs 14–27 and the standing vanilla-plus sections (§1–§13) — moved verbatim to HISTORY **H24** (third offload, same pattern as H20 at rev 16); nothing rewritten, nothing dropped. Everything below is the 720p work: what this branch is, what landed, the live defect (in-game UI vertical misalignment at 720p, root-caused in-tree), the fix plan, and the field checklist. Engineering record: [`docs/resolution-widelayout-audit.md`](docs/resolution-widelayout-audit.md); gates: `tools/check-vanilla-plus.sh` ("site-5:" + "resfix:" rows).*
+*Rev 29 (2026-10-30, site-6 fix round implemented): the vertical half of the shift (§4) is now coded — `VPRES_GetWideUiOffsetY()` plus ~225 Y-ride sites across 9 files, gates "site-6:" (17 rows, suite 125/125 green). Awaiting owner build + field test (§6). Rev 28 history: handoff refocused on 720p, pre-720p content (revs 14–27, §1–§13) moved verbatim to HISTORY **H24**. Engineering record: [`docs/resolution-widelayout-audit.md`](docs/resolution-widelayout-audit.md); gates: `tools/check-vanilla-plus.sh` ("site-5:" + "site-6:" + "resfix:" rows).*
 
 ## 1. What this branch is
 
@@ -19,10 +19,13 @@ The `720p` branch adds a fourth stop to the in-game VIDEO OPTIONS Resolution row
 | `ddb2dbc` | Resolution slider row in VIDEO OPTIONS (EscMenu + Storm/_unnamespaced callbacks, Route-B "1280x720" label via blank-placeholder DC6 + font pick), VPRES primitives, site-5 gate stubs |
 | `4ee3211` | site 5: the wide-layout audit implementation — gnPanelOffset ride in DRAW_UI, ~100 X-shift sites (ui.cpp / Inv.cpp / Panel.cpp / SpellSel.cpp / Help.cpp / QuestLog.cpp / ListBox), inventory.txt coord shifts + wide coord-cache key, audit doc, 25 "site-5:" gates |
 | `0c52c70` | renderer dispatch fixes after the first field test — D3D modes 2/3/4 take the fully-initialized perspective=1 path; GDI windowed learns mode 4 (DIB 1280x720 + scale width); DDraw size tables extended (mode 3 = 1344x700, mode 4 = 1280x720) + 1280 render bounds; 5 "resfix:" gates |
+| *(sandbox, uncommitted)* | **site-6 fix round** — the Y half: `VPRES_GetWideUiOffsetY()` (`ScreenSizeY - 600`, clamped ≥0), ~225 Y-ride sites in VanillaPlusCore/Inv/Panel/Party/Waypoint/QuestLog/Text/ui/Engine/Help, coord-cache key keyed on the offsets (mode 3 vs 4), input paths get the inverse form; 17 "site-6:" gates |
 
 ## 3. Field status (2026-10-30)
 
 Owner, first in-game round at 720p: **"it just started displaying at 720p. there is still a lot of UI and Menu alignment issues. I do have it built already."** Screenshot (windowed GDI): VIDEO OPTIONS centered and readable at 1280x720; world renders; bottom interface bar correctly bottom-anchored and horizontally centered; **belt potions floating one bar-height above the bar**; owner: **"same issue occurs with inventory panel"**. Diagnosis below — the X half of the site-5 shift works; the Y half is missing where Y is *not* bottom-anchored.
+
+**Fix round coded the same day (site-6, sandbox — not yet built by owner).** Every fixed-800-space Y now rides the bottom-anchored art by `ScreenSizeY - 600`; input paths use the inverse. Belt draw + hit test, inventory page/grid/body rects, border frame, hireling/trade texts, party panel (draw AND click rects), waypoint (draw AND list/tab hit tests), quest log (draw AND buttons), help screen, stat tooltips, modal popups. Gates 125/125. §6 is the field checklist for this build.
 
 ## 4. Live defect: the vertical half of the shift (root-caused in-tree)
 
@@ -35,25 +38,27 @@ CONFIRMED — belt (the floating potions): every Belts.txt consumer in Panel.cpp
 
 CONFIRMED — inventory: `VP_SHIFT_InvPageCoords / InvGridCoords / InvBodyCoords` (Inv.cpp :140–156) shift X bounds only; the panel art is bottom-anchored (4-tile `gnPanelOffsetY - 0xe0/-0x30 + ScreenSizeY` pattern, e.g. ui.cpp :5045–5054) and moves +120 → grid/body/page rects sit 120 px above their art. Same for hireling / trade / bank / cube / stash / npc-shop page+grid coords fetched in `InitializeiInventoryPages` (:159–286).
 
-SAME CLASS, needs the same offset — top-anchored raw-constant sites (eyeball to confirm): 800BorderFrame pieces at raw Y `0x3f/0xfd/0x1e4/0x229` (Panel.cpp :1435–1443, :1460–1468); hireling name/stat texts (`0xd6 - gnPanelOffsetY` :5618, label rows :5729–5758, stat rows :5873–5875); trade window texts (`0x1b/0xf2 - gnPanelOffsetY` :9230–9276); stash gold text (:8881–8886); weapon-swap tooltip (`0x15 - gnPanelOffsetY` :8384); recipe scroll text (`0x82 - gnPanelOffsetY` :6727).
+SAME CLASS, needs the same offset — top-anchored raw-constant sites (eyeball to confirm): 800BorderFrame pieces at raw Y `0x3f/0xfd/0x1e4/0x229` (Panel.cpp :1435–1443, :1460–1468); hireling name/stat texts (`0xd6 - gnPanelOffsetY` :5618, label rows :5729–5758, stat rows :5873–5875); trade window texts (`0x1b/0xf2 - gnPanelOffsetY` :9230–9276); stash gold text (:8881–8886 — **confirmed bottom-anchored on eyeball, `gnPanelOffsetY - 0x19f + ScreenSizeY`, no fix needed**); weapon-swap tooltip (`0x15 - gnPanelOffsetY` :8384); recipe scroll text (`0x82 - gnPanelOffsetY` :6727).
 
-## 5. Fix plan (next round)
+## 5. Fix round (site-6) — what landed
 
-1. New primitive `VPRES_GetWideUiOffsetY()` in VanillaPlusCore.{h,cpp}, mirroring the X one: `ScreenSizeY - 600`, clamped ≥ 0 — 0 at modes 0/1/2 (byte-identical retail), +100 at mode 3, +120 at mode 4. Do **not** touch `gnPanelOffsetY` — bottom-anchored expressions already adapt; double-shifting is the failure mode.
-2. Table rects: add the Y offset in `VP_SHIFT_InvPageCoords/GridCoords/BodyCoords` (Y members — grids consume `nTop` as the Y base) and at every Belts.txt consumer in Panel.cpp (Y pair `aRect[2]/aRect[3]`, i.e. nTop/nBottom — draw sites AND the hit test, or potions render right but click wrong).
-3. Top-anchored constants: add the offset at the border-frame and text sites listed in §4.
-4. Trap — coord cache key: `nCoordPageKey = nScreenMode + 2 * (0 < VPRES_GetWideUiOffsetX())` (Inv.cpp :175) cannot tell mode 3 (272/100) from mode 4 (240/120) — an in-game 3↔4 switch serves stale shifted coords. Key on both offsets (or the mode) while touching this.
-5. Gates: add "site-6:" rows (Y primitive defined; VPRES_GetWideUiOffsetY counts in Inv.cpp / Panel.cpp); keep site-5/resfix counts green; refresh fork-surface.allowlist if touched-file hashes change.
-6. Design note: default keeps retail's bottom margin (panels hug the bar) per the audit doc. If the owner prefers vertically-centered panels instead, the delta becomes `(ScreenSizeY - 600) / 2` — one constant, same call sites; decide before implementing.
+1. **Primitive**: `VPRES_GetWideUiOffsetY()` in VanillaPlusCore.{h,cpp} — `ScreenSizeY - 600` clamped ≥ 0: 0 at modes 0/1/2 (byte-identical retail), +100 at mode 3, +120 at mode 4. `gnPanelOffsetY` untouched (-60) — bottom-anchored expressions already adapt; double-shifting is the failure mode. Design per audit doc default: panels keep retail's bottom margin (hug the bar).
+2. **Table rects**: `VP_SHIFT_InvPageCoords / GridCoords / BodyCoords` now shift `nTop`/`nBottom` too (covers inventory + hireling + trade + bank + cube + npc-shop + trophy + guild-vault pages). Every Belts.txt consumer in Panel.cpp shifts the Y pair: slot highlights (:789/:2027/:2044), item sprite (:2050), hotkey text (:2076), and the hit test (`nTop/nBottom` in `PANEL_GetPanelLayoutHeight` — clicks followed the draw).
+3. **Top-anchored constants**: 800BorderFrame raw-Y pieces (10 draws); hireling name/stat rows; trade window texts; weapon-swap tooltip; cube recipe scroll; party panel art + member rows + all click rects; waypoint act tabs/list/rows + the help-bubble; quest log icons/titles/description + open/close buttons; help screen (Xpac border/bullets/text rows — classic help untouched, mirroring site-5's Xpac-only X); stat-window tooltip hit tests; Engine modal popups (OK/cancel art, text, and their hit-test bases). Scrolling text box panel-mode top. Left alone deliberately: repair icon + help scroll button + hireling/pet onscreen icons (ScreenSize-anchored corner widgets) and the classic-help path.
+4. **Input half**: where the code converts screen→panel-relative mouse (`nMouseY += gnPanelOffsetY` idiom — waypoint :462/:684/:750, quest log :1794/:1848/:2072) the shift is subtracted back out: `+= gnPanelOffsetY - VPRES_GetWideUiOffsetY()`. Site-5 already did the X twin (`-= gnPanelOffsetX`) here.
+5. **Trap fixed — coord cache key**: `nCoordPageKey` was `nScreenMode + 2·(wide-X)` which collides for mode 3 (272/100) and mode 4 (240/120) — now `nScreenMode + X + 0x400·Y` (raw offsets, injective for all 12 combos), so an in-game 3↔4 switch refetches coords.
+6. **Gates**: 17 "site-6:" rows (primitive, per-file shift counts, waypoint/questlog input-inverse counts, 4 new fork-api includes); suite 125/125. `fork-surface.allowlist` must be regenerated by the owner after committing (`tools/check-fork-surface.sh --update`) — the sandbox has no `upstream` ref.
+
+**Regression surface**: every offset is 0 at modes 0/1/2, so 800x600 must stay byte-identical and 640x480 untouched — the §6 checklist applies to 800x600 as well as 720p.
 
 ## 6. Field checklist for the fix round (720p, windowed `-w` + fullscreen D3D)
 
 - Belt: potions inside bar slots; click/use per slot; place-with-cursor; hotkeys 1–4 highlight; expansion rows (hover) stack above the in-bar row; belt-full arrows.
 - Inventory: drop items in each grid corner; every body/equipment slot; gold drop button + coin draw; hireling panel (name, stat rows, slots); weapon-swap boxes.
-- Other panels: stash / trade / cube / bank pages, waypoint, quest log (per border-type), help screen art+text, NPC shop tabs/buttons.
-- Watch-items from the audit: esc/front-end menus at 720p, repair warning arrows, summit cloud tiling, cutscene mode round-trip.
+- Other panels: stash / trade / cube / bank pages, waypoint (list rows AND act-tab clicks), quest log (icons, title, description, open/close buttons, per border-type), party panel (member rows, loot icons, party-on/off buttons AND their clicks), help screen (art, bullets, text rows, close button), NPC shop tabs/buttons, EscMenu/front-end menus.
+- Watch-items from the audit: repair warning arrows (deliberately screen-anchored), summit cloud tiling, cutscene mode round-trip, in-game 800↔720 resolution switch (coord-cache refetch).
 - Regression: 800x600 byte-parity (same checklist — every offset must be 0 there) and 640x480 untouched.
 
 ## 7. Conventions (condensed)
 
-Overlay workflow (sandbox edits the tree; owner applies as their own commits via llvm-mingw i686 Win11 build — `tools/build-local-win11.cmd`; the full build is the owner's gate). `VP-BEGIN/VP-END` markers on every fork edit in upstream files; fork-only TUs (VanillaPlusCore) keep upstream files free of new code. Every source change updates `tools/check-vanilla-plus.sh` gates + `fork-surface.allowlist`. Full pre-720p history: HISTORY H1–H24 (H24 = the offloaded handoff revs 14–27 + §1–§13).
+Overlay workflow (sandbox edits the tree; owner applies as their own commits via llvm-mingw i686 Win11 build — `tools/build-local-win11.cmd`; the full build is the owner's gate). `VP-BEGIN/VP-END` markers on every fork edit in upstream files; fork-only TUs (VanillaPlusCore) keep upstream files free of new code. Every source change updates `tools/check-vanilla-plus.sh` gates + `fork-surface.allowlist` (after committing the site-6 round, run `tools/check-fork-surface.sh --update` — the sandbox has no `upstream` ref fetched). All source files are CRLF; the sandbox patchers (`/home/z/my-project/scripts/site6_patch*.py`) preserve that byte-exactly. Full pre-720p history: HISTORY H1–H24 (H24 = the offloaded handoff revs 14–27 + §1–§13).

@@ -15,6 +15,7 @@
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Inv.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
@@ -80,16 +81,16 @@ void __stdcall DrawPopupOk(int32_t nParam) {
 
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xbc, 0x148 - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xbc, 0x148 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x1bc, 0x148 - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x1bc, 0x148 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall LOADER_CheckForInsertedDiscs() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int32_t nColor_lcl = 0;
     uint16_t* wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5168);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     nColor_lcl = 0;
     if (!bIsExpansion) {
@@ -98,7 +99,7 @@ void __stdcall LOADER_CheckForInsertedDiscs() {
       /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
     }
 
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 205 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 205 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -108,14 +109,14 @@ void __stdcall DrawOkCancel(int32_t nParam) {
     sGfxData.pDC6 = (DC6*)IMG_okcancelbtn;
     sGfxData.nFrameNumber = nParam;
     sGfxData.nDirection = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x110, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x110, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall LOADER_DrawInsertDiscMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int32_t nColor_lcl = 0;
     uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x170, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x170, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -142,7 +143,7 @@ void __fastcall LOADER_DrawInsertDiscScreen(int32_t nUnused) {
 
 void __stdcall INPUT_CharScreenOkDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
-    int nBaseY = -gnPanelOffsetY;
+    int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0x110;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
@@ -170,7 +171,7 @@ void __stdcall INPUT_CharScreenOkUp(D2UIMouseMsgStrc * pMsg) {
     gnCharScreenOkButtonPressed = 0;
     if (gnCharScreenInputState) {
       int nMouseX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0x110;
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
@@ -208,7 +209,7 @@ void __stdcall LOADER_DrawConnectionLostMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int32_t nColor_lcl = 0;
     uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x1430);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
     uint16_t wStrTableId = 0x1432;
     if (gbConnectionLost) {
       wStrTableId = 0x5578;
@@ -216,7 +217,7 @@ void __stdcall LOADER_DrawConnectionLostMessage() {
 
     nColor_lcl = 0;
     wszMessage = D2Lang::StrTable::strtable::GetLocaleString(wStrTableId);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -226,19 +227,19 @@ void __stdcall LOADER_DrawOkCancelButtons(int32_t nOkFrame, int32_t nCancelFrame
     sGfxData.pDC6 = (DC6*)IMG_okcancelbtn;
     sGfxData.nFrameNumber = nOkFrame;
     sGfxData.nDirection = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xce, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xce, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = nCancelFrame;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x152, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x152, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall DRAW_UI_OkCancel() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int32_t nColor_lcl = 0;
     uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x12e, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x12e, wszMessage, nColor_lcl);
     nColor_lcl = 0;
     wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ef);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x1b2, wszMessage, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1b2, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -265,13 +266,13 @@ void __fastcall LOADER_DrawConnectionLostScreen(int32_t nUnused) {
 
 void __stdcall INPUT_CharScreenDualButtonDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
-    int nBaseY = -gnPanelOffsetY;
+    int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0xce;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
     if (nMouseX < nLeftEdge || nBaseX + 0x12e < nMouseX || nMouseY < nBaseY + 0x116 || nBaseY + 0x136 < nMouseY) {
       int nBaseX2 = gnPanelOffsetX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseX = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();
@@ -305,7 +306,7 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
     gnConnectionLostScreenState = 0;
     if (gnCharScreenInputState) {
       int nMouseX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0xce;
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
@@ -315,7 +316,7 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
         gnCharScreenInputState = 0;
       }
 
-      nBaseX = -gnPanelOffsetY;
+      nBaseX = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseY = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();

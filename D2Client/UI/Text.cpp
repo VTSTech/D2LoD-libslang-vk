@@ -27,6 +27,7 @@
 #include "D2Client/UI/ListBox/ListBoxWrapper.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
@@ -5701,7 +5702,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
     RECT nExclusionLeft;
     int32_t nHandlers;
     if (nParam2) {
-      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY;
+      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       gnTextBoxExclusionX = gnPanelOffsetX;
     } else {
       gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;

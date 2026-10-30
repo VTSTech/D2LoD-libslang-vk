@@ -131,28 +131,39 @@ static D2GridScreenCoordinates gnTradePage2ScreenLeft = {}; D2_STATIC_GUARD(gnTr
 static D2GridScreenCoordinates gnTradePage2ScreenRight = {}; D2_STATIC_GUARD(gnTradePage2ScreenRight, "D2Client::UI::Inv::gnTradePage2ScreenRight");
 static bool gbInvOverlayFlag = 0; D2_STATIC_GUARD(gbInvOverlayFlag, "D2Client::UI::Inv::gbInvOverlayFlag");
 
-// VP-BEGIN [resolution site-5]: D2Common layout tables (inventory.txt
-// nScreenMode=1 variants) hold 800x600-absolute screen coordinates. Wide
-// modes re-center the whole 800-px UI on the playfield, so every fetched
-// rect's X bounds shift by the centering offset. No-op at retail modes
-// (offset clamps to 0); the coord caches below are keyed on
-// nScreenMode + wide-flag so an in-game resolution change refetches them.
+// VP-BEGIN [resolution site-5/site-6]: D2Common layout tables
+// (inventory.txt nScreenMode=1 variants) hold 800x600-absolute screen
+// coordinates. Wide modes move the whole 800-px UI as one rigid unit, so
+// every fetched rect's X bounds shift by the centering offset (site-5) and
+// its Y bounds ride the bottom-anchored panel art by the height delta
+// (site-6: ScreenSizeY - 600). No-op at retail modes (both offsets clamp to
+// 0); the coord caches below are keyed on nScreenMode + offsets so an
+// in-game resolution change refetches them.
 static void VP_SHIFT_InvPageCoords(D2InventoryScreenCoordinates* pCoords) {
     int nOffsetX = VPRES_GetWideUiOffsetX();
+    int nOffsetY = VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pCoords->nLeft += nOffsetX;
     pCoords->nRight += nOffsetX;
+    pCoords->nTop += nOffsetY;
+    pCoords->nBottom += nOffsetY;
 }
 
 static void VP_SHIFT_InvGridCoords(D2GridScreenCoordinates* pCoords) {
     int nOffsetX = VPRES_GetWideUiOffsetX();
+    int nOffsetY = VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pCoords->nPixelLeft += nOffsetX;
     pCoords->nRight += nOffsetX;
+    pCoords->nTop += nOffsetY;
+    pCoords->nBottom += nOffsetY;
 }
 
 static void VP_SHIFT_InvBodyCoords(D2InventoryEntryStrc* pCoords) {
     int nOffsetX = VPRES_GetWideUiOffsetX();
+    int nOffsetY = VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pCoords->nLeft += nOffsetX;
     pCoords->nRight += nOffsetX;
+    pCoords->nTop += nOffsetY;
+    pCoords->nBottom += nOffsetY;
 }
 // VP-END [resolution site-5]
 
@@ -172,7 +183,8 @@ void __stdcall InitializeiInventoryPages() {
     int32_t nInteractedNpcGUID;
     // VP: [resolution site-5] key also distinguishes wide modes - 800x600
     // and 1280x720 share nScreenMode 1 but need different centered coords.
-    int nCoordPageKey = nScreenMode + 2 * (0 < VPRES_GetWideUiOffsetX());
+    int nCoordPageKey = nScreenMode + VPRES_GetWideUiOffsetX()
+        + 0x400 * VPRES_GetWideUiOffsetY(); // VP: [resolution site-6] mode 3 vs 4
     if (nCoordPageKey == gnInventoryPage) {
       if (bInventoryScreenCoordinatesInitialized) {
         goto init_npc_coords;
@@ -5615,7 +5627,7 @@ void __stdcall INV_DrawHirelingName(D2UnitStrc * pUnit) {
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
     }
 
-    D2Win::Src::D2WinFont::DRAW_text(wszNameBuf, gnPanelOffsetX + 0xf, 0xd6 - gnPanelOffsetY, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text(wszNameBuf, gnPanelOffsetX + 0xf, 0xd6 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -5726,7 +5738,7 @@ void __stdcall INV_DrawHirelingStatLabels() {
       nMaxChars = 99;
       pwZeroCursor = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)((uintptr_t)&gaHirelingStatLabelX[0].wStrId + nFieldOffset));
       D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(wszLabel, pwZeroCursor, nMaxChars);
-      nY = *(int*)((uintptr_t)&gaHirelingStatLabelX[0].nY + nFieldOffset) - gnPanelOffsetY;
+      nY = *(int*)((uintptr_t)&gaHirelingStatLabelX[0].nY + nFieldOffset) - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       wszLabel[99] = L'\0';
       nX = *(int*)((uintptr_t)&gaHirelingStatLabelX[0].nX + nFieldOffset) + gnPanelOffsetX;
       nCenterWidth = *(int*)((uintptr_t)&gaHirelingStatLabelX[0].nCenterWidth + nFieldOffset) + gnPanelOffsetX;
@@ -5872,7 +5884,7 @@ static void INV_DrawHirelingStats(D2UnitStrc * pUnit) {
 
       iRightX = gaHirelingStatRows[nStatArrayIdx * 5] + gnPanelOffsetX;
       iLeftX = gaHirelingStatRows[nStatArrayIdx * 5 + 1] + gnPanelOffsetX;
-      iYCoord = gaHirelingStatRows[nStatArrayIdx * 5 + 2] - gnPanelOffsetY - 2;
+      iYCoord = gaHirelingStatRows[nStatArrayIdx * 5 + 2] - gnPanelOffsetY + VPRES_GetWideUiOffsetY() - 2; // VP: [resolution site-6]
       if (false) {
         default_case:
         iDamageValue = iStatValue;
@@ -6724,7 +6736,7 @@ void __stdcall INV_DrawRecipeScroll() {
     sGfxData.nFrameNumber = 3;
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x30 + ScreenSizeY, -1, DRAW_SOLID, nullptr);
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(4);
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gpInvRecipeScrollImage, gnPanelOffsetX + 0x50, 0x82 - gnPanelOffsetY, gbInvRecipeScrollOpen, 0);
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gpInvRecipeScrollImage, gnPanelOffsetX + 0x50, 0x82 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gbInvRecipeScrollOpen, 0); // VP: [resolution site-6]
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -8381,7 +8393,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
                 nBound = 600;
               }
 
-              D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszWeaponSwapTip, nBound + gnPanelOffsetX, 0x15 - gnPanelOffsetY, 0, 1);
+              D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszWeaponSwapTip, nBound + gnPanelOffsetX, 0x15 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 1); // VP: [resolution site-6]
             }
           }
         }
@@ -9227,7 +9239,7 @@ void __stdcall DRAW_UI_Inventory() {
         } while (0x70 < nDrawTextWidth);
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(wszTradePartnerName, gnPanelOffsetX + 0x19, 0x1b - gnPanelOffsetY, 0, 0);
+      D2Win::Src::D2WinFont::DRAW_text(wszTradePartnerName, gnPanelOffsetX + 0x19, 0x1b - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
       D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszTradePartnerName, wszPlayerName);
       nDrawTextWidth = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(wszTradePartnerName);
       nDrawY = D2Win::Src::D2WinFont::DRAW_text0(wszTradePartnerName);
@@ -9240,9 +9252,9 @@ void __stdcall DRAW_UI_Inventory() {
         } while (0x70 < nDrawTextWidth);
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(wszTradePartnerName, gnPanelOffsetX + 0x19, 0xf2 - gnPanelOffsetY, 0, 0);
+      D2Win::Src::D2WinFont::DRAW_text(wszTradePartnerName, gnPanelOffsetX + 0x19, 0xf2 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0); // VP: [resolution site-6]
       bIsExpansion = 0;
-      bIsTwoHandedEquipped = 0x1b - gnPanelOffsetY;
+      bIsTwoHandedEquipped = 0x1b - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       nDrawY = 0;
       pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x8a7);
       nDrawTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
@@ -9254,12 +9266,12 @@ void __stdcall DRAW_UI_Inventory() {
       Storm::Source::SSTR::SStrPrintf(szGoldCount, 0xf, "%d", bIsTwoHandedEquipped);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszGoldText, szGoldCount, 0xf);
       bIsExpansion = 0;
-      bIsTwoHandedEquipped = 0x1b - gnPanelOffsetY;
+      bIsTwoHandedEquipped = 0x1b - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       nDrawY = 0;
       nDrawTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszGoldText);
       D2Win::Src::D2WinFont::DRAW_text(wszGoldText, gnPanelOffsetX - nDrawTextWidth + 0x124, bIsTwoHandedEquipped, nDrawY, bIsExpansion);
       bIsExpansion = 0;
-      bIsTwoHandedEquipped = 0xf2 - gnPanelOffsetY;
+      bIsTwoHandedEquipped = 0xf2 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       nDrawY = 0;
       pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x8a7);
       nDrawTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
@@ -9270,7 +9282,7 @@ void __stdcall DRAW_UI_Inventory() {
       Storm::Source::SSTR::SStrPrintf(szGoldCount, 0xf, "%d", bIsTwoHandedEquipped);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszGoldText, szGoldCount, 0xf);
       bIsExpansion = 0;
-      bIsTwoHandedEquipped = 0xf2 - gnPanelOffsetY;
+      bIsTwoHandedEquipped = 0xf2 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       nDrawY = 0;
       nDrawTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszGoldText);
       D2Win::Src::D2WinFont::DRAW_text(wszGoldText, gnPanelOffsetX - nDrawTextWidth + 0x124, bIsTwoHandedEquipped, nDrawY, bIsExpansion);

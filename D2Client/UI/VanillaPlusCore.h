@@ -56,6 +56,19 @@ BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode);
 // everything hanging off gnPanelOffsetX/gnPanelOffsetY (set once per frame
 // in DRAW_UI) needs no per-site change.
 int __stdcall VPRES_GetWideUiOffsetX();
+// [resolution site-6] Vertical companion to VPRES_GetWideUiOffsetX: the Y
+// half of the "move the 800-class UI as one rigid unit" rule. The 800-class
+// panel art is bottom-anchored ("gnPanelOffsetY - const + ScreenSizeY",
+// bar pieces at ScreenSizeY) and follows the screen height on its own, but
+// every FIXED Y coordinate - table rects from Belts.txt/inventory.txt and
+// "const - gnPanelOffsetY" text/hit-test expressions - stays in 800x600
+// space and lands exactly one height-delta too high. This offset is that
+// delta: ScreenSizeY - 600, clamped to 0. 0 at modes 0/1/2 (retail math
+// stays byte-identical), 100 at mode 3 (1344x700), 120 at mode 4 (1280x720).
+// Add it to fixed Y coordinates of the 800-class UI. DO NOT add it to
+// bottom-anchored expressions (anything already containing "+ ScreenSizeY")
+// or change gnPanelOffsetY (-60) - double-shifting is the failure mode.
+int __stdcall VPRES_GetWideUiOffsetY();
 
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:

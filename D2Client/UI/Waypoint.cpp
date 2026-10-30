@@ -11,6 +11,7 @@
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/MiniPanel.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/Player.h"
@@ -459,7 +460,7 @@ void __stdcall DRAW_UI_Waypoint() {
     int nMouseY;
     nMouseY = ui::GetMouseY();
     nMouseX -= gnPanelOffsetX;
-    nMouseY += gnPanelOffsetY;
+    nMouseY += gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     sDrawImageArgs.pDC6 = WaypointWayGateTabs;
     /* Figure out if game got 4 or 5 acts for spacing (classic/xpac) */ ActsInGame = (D2WaypointListEntryStrc*)0x5;
     _bIsExpansionCheck = Fog::D2CheckExpansionGame();
@@ -483,7 +484,7 @@ void __stdcall DRAW_UI_Waypoint() {
       do {
         if (nActIndex == WaypointCurrentSelectedAct) {
           sDrawImageArgs.nFrameNumber = nActIndex * 2;
-          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, anTabX[nActIndex] + gnPanelOffsetX, nTabYOffset - gnPanelOffsetY + 0x21, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, anTabX[nActIndex] + gnPanelOffsetX, nTabYOffset - gnPanelOffsetY + VPRES_GetWideUiOffsetY() + 0x21, -1, DRAW_SOLID, nullptr);
         } else {
           switch (nActIndex) {
             case 1:
@@ -520,7 +521,7 @@ void __stdcall DRAW_UI_Waypoint() {
           if (nWaypointIndex) {
             draw_unlocked_tab:
             sDrawImageArgs.nFrameNumber = nActIndex * 2 + 1;
-            D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, anTabX[nActIndex] + gnPanelOffsetX, nTabYOffset - gnPanelOffsetY + 0x21, -1, DRAW_SOLID, nullptr);
+            D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, anTabX[nActIndex] + gnPanelOffsetX, nTabYOffset - gnPanelOffsetY + VPRES_GetWideUiOffsetY() + 0x21, -1, DRAW_SOLID, nullptr);
           }
         }
 
@@ -531,7 +532,7 @@ void __stdcall DRAW_UI_Waypoint() {
 
     sDrawImageArgs.pDC6 = ui::GetBuySellBtnDC6();
     sDrawImageArgs.nFrameNumber = (gbWaypointButtonPressed != '\0') + 10;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, gnPanelOffsetX + 0x111, 0x1a1 - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, gnPanelOffsetX + 0x111, 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     pRoom = D2Common::Units::UNITS_GetRoom(pPlayerUnit_lcl);
     eCurrentLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
@@ -563,7 +564,7 @@ void __stdcall DRAW_UI_Waypoint() {
           D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
         }
 
-        nY = pDrawOffsets[3] - gnPanelOffsetY;
+        nY = pDrawOffsets[3] - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
         _bIsExpansionCheck = 0;
         nTextX = pDrawOffsets[2] + gnPanelOffsetX;
         wMessage = ui::CLIENT_GetLevelNameByLevelId(gaWaypointListEntries[nWaypointIndex].eLevelId);
@@ -577,8 +578,8 @@ void __stdcall DRAW_UI_Waypoint() {
       /* Draw cancel hoover */ pwszText = D2Lang::StrTable::strtable::GetLocaleString(0x1022);
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
       nMouseX = nTextWidth / 2;
-      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(gnPanelOffsetX - nMouseX + 0x11f, 0x172 - gnPanelOffsetY, nMouseX + 0x126 + gnPanelOffsetX, 0x183 - gnPanelOffsetY, 0, DRAW_LESSTRANSPARENT);
-      D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - nMouseX + 0x124, 0x181 - gnPanelOffsetY, 0, 0);
+      D2gfx::D2GFX::D2GFX_DrawSolidRectEx(gnPanelOffsetX - nMouseX + 0x11f, 0x172 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), nMouseX + 0x126 + gnPanelOffsetX, 0x183 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, DRAW_LESSTRANSPARENT);
+      D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - nMouseX + 0x124, 0x181 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0);
     }
     if (!NoOtherWaypointAvailableBool) {
       /* No wraps */ pwszText = D2Lang::StrTable::strtable::GetLocaleString(0xf97);
@@ -588,7 +589,7 @@ void __stdcall DRAW_UI_Waypoint() {
       nMouseX = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
     }
 
-    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - nMouseX / 2 + 0xa0, 0x30 - gnPanelOffsetY, 0, 0);
+    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - nMouseX / 2 + 0xa0, 0x30 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), 0, 0);
 }
 
 void __stdcall INPUT_WaypointTravel(D2UIMouseMsgStrc * pMsg) {
@@ -681,7 +682,7 @@ void __stdcall INPUT_WaypointMouseUp(D2UIMouseMsgStrc * pMsg) {
     if ((int)uVar1 <= ScreenSizeX && nMouseY <= ScreenSizeY - 0x31) {
       int32_t nWaypointIndex;
       nMouseX = uVar1 - gnPanelOffsetX;
-      nRelMouseY = nMouseY + gnPanelOffsetY;
+      nRelMouseY = nMouseY + gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       if (gbWaypointButtonPressed == '\0') {
         if (ClickingDownOnWaypointEntry != -1) {
           nWaypointIndex = WAYPOINT_GetWaypointIndexFromMouse(nMouseX, nRelMouseY);
@@ -747,7 +748,7 @@ void __stdcall INPUT_WaypointMouseDown(D2UIMouseMsgStrc * pMsg) {
     } else {
       int32_t nAct;
       nWaypointMouseX = nMouseX - gnPanelOffsetX;
-      nRelMouseY = nMouseY + gnPanelOffsetY;
+      nRelMouseY = nMouseY + gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       nAct = WAYPOINT_GetActIndexFromMouse(nWaypointMouseX, nRelMouseY);
       if (nAct != -1) {
         if (nAct != WaypointCurrentSelectedAct) {

@@ -804,3 +804,16 @@ int __stdcall VPRES_GetWideUiOffsetX() {
     int nOffsetX = (ScreenSizeX - 800) / 2;
     return 0 < nOffsetX ? nOffsetX : 0;
 }
+
+// [resolution site-6] see VanillaPlusCore.h - the Y half of the rigid-unit
+// rule: every fixed (top-anchored) 800-space Y coordinate rides the
+// bottom-anchored panel art by the same height delta the art gains
+// automatically ("gnPanelOffsetY - const + ScreenSizeY" forms). Clamped to
+// 0 at 640x480/800x600 so retail modes stay byte-identical; 100 at mode 3
+// (1344x700), 120 at mode 4 (1280x720). gnPanelOffsetY itself stays -60 -
+// bottom-anchored expressions already contain ScreenSizeY and would
+// double-shift.
+int __stdcall VPRES_GetWideUiOffsetY() {
+    int nOffsetY = ScreenSizeY - 600;
+    return 0 < nOffsetY ? nOffsetY : 0;
+}

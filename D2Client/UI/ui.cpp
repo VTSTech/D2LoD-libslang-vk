@@ -5742,26 +5742,26 @@ void __stdcall DRAW_UI_TradePrompt() {
       uint16_t* szTooltip;
       bIsDialogActive = Draw::DRAW_IsDialogActive();
       if (!bIsDialogActive) {
-        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0xa8 - gnPanelOffsetY <= nMouseY && nMouseY <= 0xca - gnPanelOffsetY) {
+        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0xa8 - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0xca - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
           nCenterFlag = 0;
           nColor = 0;
-          nTooltipY = 0xa7 - gnPanelOffsetY;
+          nTooltipY = 0xa7 - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
           nMouseX = gnPanelOffsetX + 0xef;
           szTooltip = D2Lang::StrTable::strtable::GetLocaleString(0x1023);
           D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(szTooltip, nMouseX, nTooltipY, nColor, nCenterFlag);
         }
-        if (gnPanelOffsetX + 0xdd <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0xff && 0x17f - gnPanelOffsetY <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY) {
+        if (gnPanelOffsetX + 0xdd <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0xff && 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
           nCenterFlag = 0;
           nColor = 0;
-          nTooltipY = 0x17e - gnPanelOffsetY;
+          nTooltipY = 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
           nMouseX = gnPanelOffsetX + 0xbb;
           szTooltip = D2Lang::StrTable::strtable::GetLocaleString(0x1023);
           D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(szTooltip, nMouseX, nTooltipY, nColor, nCenterFlag);
         }
-        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0x17f - gnPanelOffsetY <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY) {
+        if (gnPanelOffsetX + 0x111 <= nMouseX2 && nMouseX2 <= gnPanelOffsetX + 0x133 && 0x17f - gnPanelOffsetY + VPRES_GetWideUiOffsetY() <= nMouseY && nMouseY <= 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY()) {
           nCenterFlag = 0;
           nColor = 0;
-          nMouseY = 0x17e - gnPanelOffsetY;
+          nMouseY = 0x17e - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
           nMouseX2 = gnPanelOffsetX + 0x107;
           szTooltip = D2Lang::StrTable::strtable::GetLocaleString(0x1022);
           D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(szTooltip, nMouseX2, nMouseY, nColor, nCenterFlag);

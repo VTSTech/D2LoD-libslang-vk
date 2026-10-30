@@ -786,7 +786,7 @@ static void __stdcall PANEL_HighlightBeltSlot(int32_t nBeltSlot, int32_t nHighli
     D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, nRect, nBeltSlot);
     // VP: [resolution site-5] Belts.txt rects are 800-absolute (nScreenMode=1
     // variant); re-center X on wide modes (offset 0 at retail)
-    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nRect[0] + VPRES_GetWideUiOffsetX(), nRect[2], 0x1d, 0x1d, (uint32_t)gaPanelBeltColors[nHighlightColor], DRAW_VERYTRANSPARENT);
+    Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nRect[0] + VPRES_GetWideUiOffsetX(), nRect[2] + VPRES_GetWideUiOffsetY(), 0x1d, 0x1d, (uint32_t)gaPanelBeltColors[nHighlightColor], DRAW_VERYTRANSPARENT); // VP: [resolution site-6]
 }
 
 static void CLIENT_HandleBeltSlotClick(D2InventoryStrc * pInventory) {
@@ -1432,15 +1432,15 @@ void __stdcall DRAW_UI_BorderLeft() {
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
     sGfxData.pDC6 = _00BorderFrame;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0xfd, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0xfd + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x100, 0x3f, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x100, 0x3f + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 2;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0x1e4, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0x1e4 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 3;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0x229, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0, 0x229 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 4;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x100, 0x229, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x100, 0x229 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
 }
 
 void __stdcall DRAW_UI_BorderRight() {
@@ -1457,15 +1457,15 @@ void __stdcall DRAW_UI_BorderRight() {
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 5;
     sGfxData.pDC6 = pDVar1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 400, 0x3f, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 400, 0x3f + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 6;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x220, 0xfd, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x220, 0xfd + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 7;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x2c9, 0x1e4, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x2c9, 0x1e4 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 8;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x220, 0x229, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 0x220, 0x229 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
     sGfxData.nFrameNumber = 9;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 400, 0x229, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nBorderX + 400, 0x229 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
 }
 
 static int32_t __stdcall PANEL_GetPanelLayoutHeight(int32_t nMouseX, int32_t nMouseY) {
@@ -1483,6 +1483,11 @@ static int32_t __stdcall PANEL_GetPanelLayoutHeight(int32_t nMouseX, int32_t nMo
       // re-center them on wide modes (offset 0 at retail)
       sInvRect.nLeft += VPRES_GetWideUiOffsetX();
       sInvRect.nRight += VPRES_GetWideUiOffsetX();
+      // VP: [resolution site-6] nTop/nBottom are the Y pair - the hit test
+      // must follow the bottom-anchored bar art too, or clicks land one
+      // height-delta above the drawn slots
+      sInvRect.nTop += VPRES_GetWideUiOffsetY();
+      sInvRect.nBottom += VPRES_GetWideUiOffsetY();
       if (sInvRect.nLeft <= nMouseY && nMouseY <= sInvRect.nRight && sInvRect.nTop <= nMouseX && nMouseX <= sInvRect.nBottom) {
         return nBoxId;
       }
@@ -2019,7 +2024,7 @@ void __stdcall PANEL_DrawBottomPanel() {
               PANEL_InitBeltColors();
               D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, aRectGreen, nBeltState);
               nDrawY = aRectGreen[0] + VPRES_GetWideUiOffsetX(); // VP: site-5, belt rect re-centered
-              nRectYorW = aRectGreen[2];
+              nRectYorW = aRectGreen[2] + VPRES_GetWideUiOffsetY(); // VP: site-6, belt rect rides the bar
               byRectColor = gaPanelBeltColors[1];
               Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
             } else {
@@ -2036,13 +2041,13 @@ void __stdcall PANEL_DrawBottomPanel() {
             gaPanelBeltColors[3] = (uint8_t)nRectXorLen;
             D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, aRectRed, nBeltState);
             nDrawY = aRectRed[0] + VPRES_GetWideUiOffsetX(); // VP: site-5, belt rect re-centered
-            nRectYorW = aRectRed[2];
+            nRectYorW = aRectRed[2] + VPRES_GetWideUiOffsetY(); // VP: site-6, belt rect rides the bar
             byRectColor = gaPanelBeltColors[0];
             Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(nDrawY, nRectYorW, 0x1d, 0x1d, (uint32_t)byRectColor, DRAW_VERYTRANSPARENT);
           }
 
           D2Common::DATATBLS::BeltsTbls::GetInvRectFromBeltsTxt(gnBeltPanelState, nScreenMode, aRectItem, nBeltState);
-          Engine::GfxInfo::DrawItemGfx(pItem, aRectItem[0] + VPRES_GetWideUiOffsetX(), aRectItem[2]); // VP: site-5, belt rect re-centered
+          Engine::GfxInfo::DrawItemGfx(pItem, aRectItem[0] + VPRES_GetWideUiOffsetX(), aRectItem[2] + VPRES_GetWideUiOffsetY()); // VP: site-5 X + site-6 Y, belt rect rides the bar
           if (nSlotIndex < 4) {
             nRectXorLen = D2Common::ITEMS::Items::IsUseable(pItem);
             if (nRectXorLen) {
@@ -2068,7 +2073,7 @@ void __stdcall PANEL_DrawBottomPanel() {
                   } while (0x1c < nRectXorLen);
                 }
 
-                D2Win::Src::D2WinFont::DRAW_text(awsHotkeyText, aRectItem[0] + VPRES_GetWideUiOffsetX() + 2, aRectItem[3] - 2, 4, 0); // VP: site-5, belt rect re-centered
+                D2Win::Src::D2WinFont::DRAW_text(awsHotkeyText, aRectItem[0] + VPRES_GetWideUiOffsetX() + 2, aRectItem[3] + VPRES_GetWideUiOffsetY() - 2, 4, 0); // VP: site-5 X + site-6 Y
               }
             }
           }

@@ -110,19 +110,19 @@ void __stdcall DrawBorderXpac() {
     sGfxData.pDC6 = pHelpBorder;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0 + VPRES_GetWideUiOffsetX(), 0x100, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0 + VPRES_GetWideUiOffsetX(), 0x100 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0 + VPRES_GetWideUiOffsetX(), 0x200, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0 + VPRES_GetWideUiOffsetX(), 0x200 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 2;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x42 + VPRES_GetWideUiOffsetX(), 0x14, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x42 + VPRES_GetWideUiOffsetX(), 0x14 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 3;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x142 + VPRES_GetWideUiOffsetX(), 0x14, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x142 + VPRES_GetWideUiOffsetX(), 0x14 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 4;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x217 + VPRES_GetWideUiOffsetX(), 0x100, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x217 + VPRES_GetWideUiOffsetX(), 0x100 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 5;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x30c + VPRES_GetWideUiOffsetX(), 0x100, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x30c + VPRES_GetWideUiOffsetX(), 0x100 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
     sGfxData.nFrameNumber = 6;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x30c + VPRES_GetWideUiOffsetX(), 0x200, -1, DRAW_SOLID, nullptr); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x30c + VPRES_GetWideUiOffsetX(), 0x200 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
 }
 
 // Same as HELP_DrawDarkOverlay 00494eb0: the two bodies are byte-identical apart
@@ -138,7 +138,7 @@ void __stdcall HELP_DrawDarkOverlay_B() {
 void __stdcall DrawYellowBullet() {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
-    int nPositionY = 0x49;
+    int nPositionY = 0x49 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     sGfxData.pDC6 = HelpYellowBullet;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
@@ -191,39 +191,39 @@ void __stdcall DrawWhiteBulletXpac() {
     sGfxData.pDC6 = HelpWhiteBullet;
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x37 + VPRES_GetWideUiOffsetX(), 0x217, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x3a + VPRES_GetWideUiOffsetX(), 0x1e6, 0x3a + VPRES_GetWideUiOffsetX(), 0x214, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x3b + VPRES_GetWideUiOffsetX(), 0x1e6, 0x3b + VPRES_GetWideUiOffsetX(), 0x214, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x82 + VPRES_GetWideUiOffsetX(), 0x234, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x85 + VPRES_GetWideUiOffsetX(), 0x1bd, 0x85 + VPRES_GetWideUiOffsetX(), 0x231, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x86 + VPRES_GetWideUiOffsetX(), 0x1bd, 0x86 + VPRES_GetWideUiOffsetX(), 0x231, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0xd9 + VPRES_GetWideUiOffsetX(), 0x23f, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0xdc + VPRES_GetWideUiOffsetX(), 0x177, 0xdc + VPRES_GetWideUiOffsetX(), 0x23c, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0xdd + VPRES_GetWideUiOffsetX(), 0x177, 0xdd + VPRES_GetWideUiOffsetX(), 0x23c, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x104 + VPRES_GetWideUiOffsetX(), 0x249, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x107 + VPRES_GetWideUiOffsetX(), 0x20e, 0x107 + VPRES_GetWideUiOffsetX(), 0x246, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x108 + VPRES_GetWideUiOffsetX(), 0x20e, 0x108 + VPRES_GetWideUiOffsetX(), 0x246, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x136 + VPRES_GetWideUiOffsetX(), 0x249, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x139 + VPRES_GetWideUiOffsetX(), 0x1e6, 0x139 + VPRES_GetWideUiOffsetX(), 0x246, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x13a + VPRES_GetWideUiOffsetX(), 0x1e6, 0x13a + VPRES_GetWideUiOffsetX(), 0x246, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x16d + VPRES_GetWideUiOffsetX(), 0x235, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x170 + VPRES_GetWideUiOffsetX(), 0x20d, 0x170 + VPRES_GetWideUiOffsetX(), 0x232, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x171 + VPRES_GetWideUiOffsetX(), 0x20d, 0x171 + VPRES_GetWideUiOffsetX(), 0x232, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x1bd + VPRES_GetWideUiOffsetX(), 0x21c, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x1c0 + VPRES_GetWideUiOffsetX(), 0x1c3, 0x1c0 + VPRES_GetWideUiOffsetX(), 0x219, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x1c1 + VPRES_GetWideUiOffsetX(), 0x1c3, 0x1c1 + VPRES_GetWideUiOffsetX(), 0x219, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x212 + VPRES_GetWideUiOffsetX(), 0x239, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x215 + VPRES_GetWideUiOffsetX(), 0x20d, 0x215 + VPRES_GetWideUiOffsetX(), 0x236, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x216 + VPRES_GetWideUiOffsetX(), 0x20d, 0x216 + VPRES_GetWideUiOffsetX(), 0x236, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x23c + VPRES_GetWideUiOffsetX(), 0x23f, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x23f + VPRES_GetWideUiOffsetX(), 0x177, 0x23f + VPRES_GetWideUiOffsetX(), 0x23c, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x240 + VPRES_GetWideUiOffsetX(), 0x177, 0x240 + VPRES_GetWideUiOffsetX(), 0x23c, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x29e + VPRES_GetWideUiOffsetX(), 0x234, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x2a1 + VPRES_GetWideUiOffsetX(), 0x1bd, 0x2a1 + VPRES_GetWideUiOffsetX(), 0x231, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x2a2 + VPRES_GetWideUiOffsetX(), 0x1bd, 0x2a2 + VPRES_GetWideUiOffsetX(), 0x231, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x2e4 + VPRES_GetWideUiOffsetX(), 0x217, -1, DRAW_SOLID, nullptr); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x2e7 + VPRES_GetWideUiOffsetX(), 0x1e6, 0x2e7 + VPRES_GetWideUiOffsetX(), 0x214, 0xff, 0xff); // VP: site-5
-    D2gfx::D2GFX::D2GFX_DrawLine(0x2e8 + VPRES_GetWideUiOffsetX(), 0x1e6, 0x2e8 + VPRES_GetWideUiOffsetX(), 0x214, 0xff, 0xff); // VP: site-5
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x37 + VPRES_GetWideUiOffsetX(), 0x217 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x3a + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x3a + VPRES_GetWideUiOffsetX(), 0x214 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x3b + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x3b + VPRES_GetWideUiOffsetX(), 0x214 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x82 + VPRES_GetWideUiOffsetX(), 0x234 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x85 + VPRES_GetWideUiOffsetX(), 0x1bd + VPRES_GetWideUiOffsetY(), 0x85 + VPRES_GetWideUiOffsetX(), 0x231 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x86 + VPRES_GetWideUiOffsetX(), 0x1bd + VPRES_GetWideUiOffsetY(), 0x86 + VPRES_GetWideUiOffsetX(), 0x231 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0xd9 + VPRES_GetWideUiOffsetX(), 0x23f + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0xdc + VPRES_GetWideUiOffsetX(), 0x177 + VPRES_GetWideUiOffsetY(), 0xdc + VPRES_GetWideUiOffsetX(), 0x23c + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0xdd + VPRES_GetWideUiOffsetX(), 0x177 + VPRES_GetWideUiOffsetY(), 0xdd + VPRES_GetWideUiOffsetX(), 0x23c + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x104 + VPRES_GetWideUiOffsetX(), 0x249 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x107 + VPRES_GetWideUiOffsetX(), 0x20e + VPRES_GetWideUiOffsetY(), 0x107 + VPRES_GetWideUiOffsetX(), 0x246 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x108 + VPRES_GetWideUiOffsetX(), 0x20e + VPRES_GetWideUiOffsetY(), 0x108 + VPRES_GetWideUiOffsetX(), 0x246 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x136 + VPRES_GetWideUiOffsetX(), 0x249 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x139 + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x139 + VPRES_GetWideUiOffsetX(), 0x246 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x13a + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x13a + VPRES_GetWideUiOffsetX(), 0x246 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x16d + VPRES_GetWideUiOffsetX(), 0x235 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x170 + VPRES_GetWideUiOffsetX(), 0x20d + VPRES_GetWideUiOffsetY(), 0x170 + VPRES_GetWideUiOffsetX(), 0x232 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x171 + VPRES_GetWideUiOffsetX(), 0x20d + VPRES_GetWideUiOffsetY(), 0x171 + VPRES_GetWideUiOffsetX(), 0x232 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x1bd + VPRES_GetWideUiOffsetX(), 0x21c + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x1c0 + VPRES_GetWideUiOffsetX(), 0x1c3 + VPRES_GetWideUiOffsetY(), 0x1c0 + VPRES_GetWideUiOffsetX(), 0x219 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x1c1 + VPRES_GetWideUiOffsetX(), 0x1c3 + VPRES_GetWideUiOffsetY(), 0x1c1 + VPRES_GetWideUiOffsetX(), 0x219 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x212 + VPRES_GetWideUiOffsetX(), 0x239 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x215 + VPRES_GetWideUiOffsetX(), 0x20d + VPRES_GetWideUiOffsetY(), 0x215 + VPRES_GetWideUiOffsetX(), 0x236 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x216 + VPRES_GetWideUiOffsetX(), 0x20d + VPRES_GetWideUiOffsetY(), 0x216 + VPRES_GetWideUiOffsetX(), 0x236 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x23c + VPRES_GetWideUiOffsetX(), 0x23f + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x23f + VPRES_GetWideUiOffsetX(), 0x177 + VPRES_GetWideUiOffsetY(), 0x23f + VPRES_GetWideUiOffsetX(), 0x23c + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x240 + VPRES_GetWideUiOffsetX(), 0x177 + VPRES_GetWideUiOffsetY(), 0x240 + VPRES_GetWideUiOffsetX(), 0x23c + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x29e + VPRES_GetWideUiOffsetX(), 0x234 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x2a1 + VPRES_GetWideUiOffsetX(), 0x1bd + VPRES_GetWideUiOffsetY(), 0x2a1 + VPRES_GetWideUiOffsetX(), 0x231 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x2a2 + VPRES_GetWideUiOffsetX(), 0x1bd + VPRES_GetWideUiOffsetY(), 0x2a2 + VPRES_GetWideUiOffsetX(), 0x231 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x2e4 + VPRES_GetWideUiOffsetX(), 0x217 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x2e7 + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x2e7 + VPRES_GetWideUiOffsetX(), 0x214 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
+    D2gfx::D2GFX::D2GFX_DrawLine(0x2e8 + VPRES_GetWideUiOffsetX(), 0x1e6 + VPRES_GetWideUiOffsetY(), 0x2e8 + VPRES_GetWideUiOffsetX(), 0x214 + VPRES_GetWideUiOffsetY(), 0xff, 0xff); // VP: site-5 + site-6
 }
 
 void __stdcall DrawSellBtn() {
@@ -235,7 +235,7 @@ void __stdcall DrawSellBtn() {
     DWORD eResMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
     // VP: [resolution site-5] wide modes ride the re-centered help screen
     if (VPRES_IsWideLayoutMode(eResMode)) {
-      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x2ad + VPRES_GetWideUiOffsetX(), 0x38, -1, DRAW_SOLID, nullptr); // VP: site-5
+      D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, 0x2ad + VPRES_GetWideUiOffsetX(), 0x38 + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: site-5 + site-6
       return;
     }
 
@@ -273,7 +273,7 @@ void __stdcall INPUT_HelpCloseButtonDown(D2UIMouseMsgStrc * pMsg) {
     } else {
       nRelX -= 0x20d;
     }
-    if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18) < 0x21) {
+    if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
       gpHelpCloseButton = 1;
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
@@ -466,7 +466,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     BOOL bCentered = 0;
     int32_t nPosY = 0;
-    int32_t nLabelWidth = 0x11;
+    int32_t nLabelWidth = 0x11 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1066);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x17c + VPRES_GetWideUiOffsetX() - nPrevFont / 2, nLabelWidth, nPosY, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -481,7 +481,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nPrevFont = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nPosY = 0;
-    nLabelWidth = 0x49;
+    nLabelWidth = 0x49 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1030);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x2bd + VPRES_GetWideUiOffsetX() - nPrevFont / 2, nLabelWidth, nPosY, bCentered); // VP: site-5
     nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(5);
@@ -495,7 +495,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x22, 1);
     uint16_t* pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1067);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf4, pFormat, pStr);
-    D2Win::Src::D2WinFont::DRAW_text(wszBuf4, 0x75 + VPRES_GetWideUiOffsetX(), 0x4e, 0, 0); // VP: site-5
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf4, 0x75 + VPRES_GetWideUiOffsetX(), 0x4e + VPRES_GetWideUiOffsetY(), 0, 0); // VP: site-5 + site-6
     pStr = wszBuf1;
     for (i = 0x32; i; i--) {
       pStr[0] = L'\0';
@@ -506,7 +506,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x25, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1068);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf1, pFormat, pStr);
-    D2Win::Src::D2WinFont::DRAW_text(wszBuf1, 0x75 + VPRES_GetWideUiOffsetX(), 0x62, 0, 0); // VP: site-5
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf1, 0x75 + VPRES_GetWideUiOffsetX(), 0x62 + VPRES_GetWideUiOffsetY(), 0, 0); // VP: site-5 + site-6
     pStr = wszBuf2;
     for (i = 0x32; i; i--) {
       pStr[0] = L'\0';
@@ -517,7 +517,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     pStr = CmdTbl::CMD_GetKeyNameForCommand(0x24, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x1069);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf2, pFormat, pStr);
-    D2Win::Src::D2WinFont::DRAW_text(wszBuf2, 0x75 + VPRES_GetWideUiOffsetX(), 0x76, 0, 0); // VP: site-5
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf2, 0x75 + VPRES_GetWideUiOffsetX(), 0x76 + VPRES_GetWideUiOffsetY(), 0, 0); // VP: site-5 + site-6
     pStr = wszBuf3;
     for (i = 0x32; i; i--) {
       pStr[0] = L'\0';
@@ -528,20 +528,20 @@ void __stdcall DRAW_UI_HelpXpac() {
     pStr = CmdTbl::CMD_GetKeyNameForCommand(7, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106a);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf3, pFormat, pStr);
-    D2Win::Src::D2WinFont::DRAW_text(wszBuf3, 0x75 + VPRES_GetWideUiOffsetX(), 0x8a, 0, 0); // VP: site-5
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf3, 0x75 + VPRES_GetWideUiOffsetX(), 0x8a + VPRES_GetWideUiOffsetY(), 0, 0); // VP: site-5 + site-6
     bCentered = 0;
     nPosY = 0;
-    nLabelWidth = 0x9e;
+    nLabelWidth = 0x9e + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x106b);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x75 + VPRES_GetWideUiOffsetX(), nLabelWidth, nPosY, bCentered); // VP: site-5
     bCentered = 0;
     nPosY = 0;
-    nLabelWidth = 0xb2;
+    nLabelWidth = 0xb2 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x106c);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x75 + VPRES_GetWideUiOffsetX(), nLabelWidth, nPosY, bCentered); // VP: site-5
     bCentered = 0;
     nPosY = 0;
-    nLabelWidth = 0xc6;
+    nLabelWidth = 0xc6 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x106d);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x75 + VPRES_GetWideUiOffsetX(), nLabelWidth, nPosY, bCentered); // VP: site-5
     pStr = wszBuf5;
@@ -554,7 +554,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     pStr = CmdTbl::CMD_GetKeyNameForCommand(6, 1);
     pFormat = D2Lang::StrTable::strtable::GetLocaleString(0x106e);
     D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszBuf5, pFormat, pStr);
-    D2Win::Src::D2WinFont::DRAW_text(wszBuf5, 0x75 + VPRES_GetWideUiOffsetX(), 0xda, 0, 0); // VP: site-5
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf5, 0x75 + VPRES_GetWideUiOffsetX(), 0xda + VPRES_GetWideUiOffsetY(), 0, 0); // VP: site-5 + site-6
     pStr = wszBuf;
     for (i = 0x32; i; i--) {
       pStr[0] = L'\0';
@@ -567,7 +567,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     int32_t nColor_lcl = 0;
-    nPosY = 0x1e1;
+    nPosY = 0x1e1 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x106f);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x3b + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -582,7 +582,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x19a;
+    nPosY = 0x19a + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1070);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x86 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -597,7 +597,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1a9;
+    nPosY = 0x1a9 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1071);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x86 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -612,7 +612,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1b8;
+    nPosY = 0x1b8 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1072);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x86 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -627,7 +627,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x177;
+    nPosY = 0x177 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0xf92);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0xde + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -642,7 +642,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1fa;
+    nPosY = 0x1fa + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1074);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x108 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -657,7 +657,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x209;
+    nPosY = 0x209 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1075);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x108 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -672,7 +672,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1e1;
+    nPosY = 0x1e1 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1076);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x13a + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -687,7 +687,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1f9;
+    nPosY = 0x1f9 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1077);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x171 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -702,7 +702,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x208;
+    nPosY = 0x208 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1078);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x171 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -717,7 +717,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x191;
+    nPosY = 0x191 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1079);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x1c1 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -732,7 +732,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1a0;
+    nPosY = 0x1a0 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x107a);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x1c1 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -747,7 +747,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1af;
+    nPosY = 0x1af + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x107b);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x1c1 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -762,7 +762,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1be;
+    nPosY = 0x1be + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x107c);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x1c1 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -777,7 +777,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x208;
+    nPosY = 0x208 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x107d);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x216 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -792,7 +792,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x177;
+    nPosY = 0x177 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0xf93);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x23c + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -807,7 +807,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x19a;
+    nPosY = 0x19a + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1073);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x2a2 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -822,7 +822,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1a9;
+    nPosY = 0x1a9 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1071);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x2a2 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -837,7 +837,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1b8;
+    nPosY = 0x1b8 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x1072);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x2a2 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     pStr = wszBuf;
@@ -852,7 +852,7 @@ void __stdcall DRAW_UI_HelpXpac() {
     nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
     bCentered = 0;
     nColor_lcl = 0;
-    nPosY = 0x1e1;
+    nPosY = 0x1e1 + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     pStr = D2Lang::StrTable::strtable::GetLocaleString(0x107e);
     D2Win::Src::D2WinFont::DRAW_text(pStr, 0x2e8 + VPRES_GetWideUiOffsetX() - nLabelWidth / 2, nPosY, nColor_lcl, bCentered); // VP: site-5
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
@@ -1279,7 +1279,7 @@ void __stdcall INPUT_HelpCloseButtonUp(D2UIMouseMsgStrc * pMsg) {
       } else {
         nRelX -= 0x20d;
       }
-      if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18) < 0x21) {
+      if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
         Draw::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
         HELP_HideMiniPanel();
         goto consume_click;
