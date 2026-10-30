@@ -76,7 +76,12 @@ inline void g3x_resolution_size(GrScreenResolution_t res, unsigned* w, unsigned*
         {320, 200}, {320, 240}, {400, 256}, {512, 384}, {640, 200},
         {640, 350}, {640, 400}, {640, 480}, {800, 600}, {960, 720},
         {856, 480}, {512, 256}, {1024, 768}, {1280, 1024}, {1600, 1200},
-        {400, 300}
+        {400, 300},
+        // 16/17: Vanilla Plus stops passed by the 720p game branch
+        // (D2Glide RENDERER_GLIDE_InitWindow): 16 = 1280x720 in-game,
+        // 17 = dormant 1344x700. Older game builds never send these; the
+        // >17 fallback below keeps 640x480 + log for genuinely unknown values.
+        {1280, 720}, {1344, 700}
     };
     if (res < sizeof(kRes) / sizeof(kRes[0])) {
         *w = kRes[res][0];
