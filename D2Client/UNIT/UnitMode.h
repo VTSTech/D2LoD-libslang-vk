@@ -37,4 +37,9 @@ void __fastcall UNITMODE_ExecuteSkillAction(eD2UnitModeAction nActionType, struc
 void __fastcall UNITMODE_ExecuteDeferredAction(struct D2UnitStrc * pUnit);
 // 5 internal functions (defined in .cpp)
 
+BOOL UNITMODE_IsTargetInActionRange(struct D2UnitStrc * pUnit, struct D2UnitStrc * pUnit2, int32_t nActionType);
+void __stdcall UNITMODE_HandleMoveAction(uint32_t dwUnused, int32_t nX, int32_t nY, struct D2UnitStrc * pUnit);
+BOOL __stdcall UNITMODE_HandleItemOrObjectInteraction(int32_t nActionType, int32_t nX, int32_t nTargetGUID, struct D2UnitStrc * pTargetUnit, struct D2UnitStrc * pPlayerUnit);
+BOOL __stdcall UNITMODE_HandleSkillTargetInteraction(eD2UnitModeAction nActionType, int32_t nX, struct D2UnitStrc * pPlayerUnit, struct D2UnitStrc * pTargetUnit, int32_t nTargetGUID);
+
 } // namespace D2Client::UNIT::UnitMode

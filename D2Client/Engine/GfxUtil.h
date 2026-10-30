@@ -80,6 +80,8 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(struct D2UnitStrc * pUnit, uint8_
 int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(struct D2UnitStrc * pUnit, int32_t pOverlayEntry);
 void __fastcall GFXUTIL_GetOverlayDimensions(struct D2UnitStrc * pUnit, int nPaletteShift, uint32_t nAnimMode, uint32_t * pOutWidth, uint32_t * pdwParam);
 uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(struct D2UnitStrc * pUnit, int32_t nParam, int32_t nWorldY);
-// 10 internal functions (defined in .cpp)
+void GFXUTIL_PadTokenString(char * szText1, char * szText2);
+BOOL __stdcall GFXUTIL_BuildCofParams(struct D2GfxDataStrc * pGfxData, struct D2UnitStrc * pUnit, struct D2UnitStrc * pEquipContext, int * pOutItemClassId);
+// 8 internal functions (defined in .cpp)
 
 } // namespace D2Client::Engine::GfxUtil

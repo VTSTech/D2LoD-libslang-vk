@@ -67,7 +67,7 @@
 
 namespace D2Client::Engine::GfxUtil {
 
-static void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
+void GFXUTIL_PadTokenString(char * szText1, char * szText2) {
     if (*szText1 == '\0') {
       memcpy(szText2, "    ", 4);
       return;
@@ -1061,7 +1061,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
 
 // Build COF parameters from unit animation/equipment - determines graphics file, weapon, armor appearance
 // @sourcefile .\ENGINE\GfxUtil.cpp
-static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, D2UnitStrc * pEquipContext, int * pOutItemClassId) {
+BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, D2UnitStrc * pEquipContext, int * pOutItemClassId) {
     int32_t nComponentIdx;
     D2GfxInfoUnkStrc* pGfxInfo;
     D2GfxInfoUnkStrc* pGfxInfoFallback;

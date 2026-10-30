@@ -43,6 +43,7 @@
 // handlers keep reading coordinates from the message itself.
 
 #include "D2Client/UI/VanillaPlusOptions.h"
+#include "D2Client/UI/Inv.h"
 
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2Client/D2Client.h"

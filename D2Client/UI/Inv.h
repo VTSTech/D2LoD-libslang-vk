@@ -17,6 +17,39 @@ struct D2UnitStrc;
 typedef int eD2UnitStat;
 typedef uint8_t eInventoryPage;
 
+#ifndef D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
+#define D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
+struct D2UIMsgMousePosStrc {
+    operator uint32_t() const { return *reinterpret_cast<const uint32_t*>(this); }
+
+    /* 0x00 */ uint16_t nMouseX; // LOWORD(lParam): cursor x
+    /* 0x02 */ uint16_t nMouseY; // HIWORD(lParam): cursor y
+};
+
+union D2UIMsgLParamUnion {
+    /* 0x00 */ int32_t nLParam; // raw LPARAM; key messages test bit 30 (auto-repeat)
+    /* 0x00 */ D2UIMsgMousePosStrc sMousePos; // mouse messages: x in the low word, y in the high word
+};
+#endif // D2_UIMSG_MOUSEPOS_LPARAMUNION_DEFINED
+
+#ifndef D2_UIMOUSEMSGSTRC_DEFINED
+#define D2_UIMOUSEMSGSTRC_DEFINED
+struct __attribute__((packed)) D2UIMouseMsgStrc {
+    /* 0x00 */ HWND hWnd; // HWND the message was delivered to. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local hMsgWnd at Stack[-0x24], which it passes to SEvtDispatch as the opaque pData.
+    /* 0x04 */ uint32_t uMsg; // Windows message id. WND_DispatchWindowMessage local uMsgL at Stack[-0x20].
+    /* 0x08 */ uint32_t nWParam; // WPARAM. WND_DispatchWindowMessage local nMsgWParam at Stack[-0x1c]. Read as a byte virtual-key code by INPUT_FormKeyHandler/INPUT_FormKeyUpHandler.
+    /* 0x0C */ D2UIMsgLParamUnion uLParam; // LPARAM. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local dwMsgLParam at Stack[-0x18]. For mouse messages the low half is the cursor x and the high half the cursor y (76 handlers read it as a ushort pair); for key messages the whole dword is the keyboard flag word, and 14 handlers test bit 30 (0x40000000, auto-repeat). Modelled as the raw LPARAM because that is the only reading true at every site.
+    /* 0x10 */ uint32_t nCmdCode; // WM_COMMAND notification code, HIWORD(wParam), else 0. WND_DispatchWindowMessage local nCmdCode at Stack[-0x14].
+    /* 0x14 */ uint8_t field_0x14;
+    /* 0x15 */ uint8_t field_0x15;
+    /* 0x16 */ uint8_t field_0x16;
+    /* 0x17 */ uint8_t field_0x17;
+    /* 0x18 */ uint32_t bHandled; // Handler sets 1 to mark the message consumed. Returned to the caller through WND_DispatchWindowMessage's pdwResult1.
+    /* 0x1C */ uint32_t dwResult; // Handler result, returned through WND_DispatchWindowMessage's pdwResult2.
+};
+#endif // D2_UIMOUSEMSGSTRC_DEFINED
+
+
 // Data types
 typedef int32_t * PD2NpcShopButtonAction;
 

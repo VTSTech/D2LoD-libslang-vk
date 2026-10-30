@@ -1610,7 +1610,7 @@ void __fastcall MONSTER_FreeMonsterPath(int * pThis) {
 }
 
 int __stdcall NPCMENU_ConfirmTransactionReturn() {
-    UI::Dialog::FreeDialogStrc();
+    UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTransactionConfirmDialog);
     UI::Dialog::gpNpcTransactionConfirmDialog = 0;
     if (gnNpcMenuTransactionType == 5) {
       UI::npcmenu::NPCMENU_BuildMercHireMenu();
@@ -1626,7 +1626,7 @@ int __stdcall NPCMENU_ConfirmTransactionReturn() {
 int __stdcall NPCMENU_GetCurrentMenuId() {
     GAME::Select::ClearSelectedUnit();
     Sound::SOUND_PlaySound(SOUND_CURSOR_PASS, nullptr, 0, 0, 0);
-    UI::Dialog::FreeDialogStrc();
+    UI::Dialog::FreeDialogStrc(UI::Dialog::gpNpcTradeErrorDialog);
     UI::Dialog::gpNpcTradeErrorDialog = 0;
     if (_Interaction::geNpcUiState != NPCUI_TRADE_REJECTED) {
       if (gnNpcMenuTransactionType == 6) {
@@ -1854,7 +1854,7 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
       if (pUnit->eAnimMode.ePlayerMode == Death) {
         pUnit->eAnimMode.ePlayerMode = eD2PlayerAnimMode_ns::Neutral;
         if (!bSkipCofLoad) {
-          Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+          Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         }
 
         D2Common::Units::InitAnimMode(pUnit);
@@ -1870,7 +1870,7 @@ BOOL __fastcall OBJECT_CheckAutoLight(D2UnitStrc * pUnit, int32_t bSkipCofLoad) 
 
     pUnit->eAnimMode.ePlayerMode = Death;
     if (!bSkipCofLoad) {
-      Engine::Gfx::GFX_LoadUnitModeCof(pUnit);
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     }
 
     D2Common::Units::InitAnimMode(pUnit);
