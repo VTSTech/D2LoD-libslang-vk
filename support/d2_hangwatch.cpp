@@ -45,10 +45,11 @@ unsigned long g_dwLastDumpTick = 0;
 // ---------------------------------------------------------------------------
 // d2exe.map symbol table. Loaded once, at the first dump (a freeze already
 // happened; a few MB of parsing is irrelevant then). The ld -Map lists
-// absolute addresses; the image base is the PE default 0x00400000 for the
-// mingw -static build (no ASLR relocation), so map RVA = addr - 0x400000 and
-// dump RVA = eip - GetModuleHandleA(0). If the base ever differs the dump
-// says so and names stay off.
+// absolute addresses at the preferred base 0x00400000; ASLR can relocate the
+// runtime image (owner runs: 0x00890000, 0x004c0000). Names resolve by RVA
+// (relocation-invariant): largest map symbol <= rva + 0x400000. Offsets are
+// printed map-relative (rva + 0x400000 - sym) and a relocated run logs a note
+// line, so the dump is readable at a glance. [d2boot-fix rev36]
 // ---------------------------------------------------------------------------
 struct MapSym {
     unsigned long dwAddress;
@@ -166,7 +167,9 @@ void MapLoad() {
             for (int i = 0; i < g_nSymCount; i++) g_pOrder[i] = i;
             MapSort();
         }
-        D2BOOT_MarkFmt("hangwatch: d2exe.map loaded (%d symbols)", g_nSymCount);
+        D2BOOT_MarkFmt("hangwatch: d2exe.map loaded (%d symbols, %08lx..%08lx)", g_nSymCount,
+                       (unsigned long)g_pSyms[g_pOrder[0]].dwAddress,
+                       (unsigned long)g_pSyms[g_pOrder[g_nSymCount - 1]].dwAddress); // [d2boot-fix rev36] stale-map check: span must match the running build
     }
 }
 
@@ -219,8 +222,11 @@ void DumpFrameLine(const char* pszPrefix, unsigned long dwAddr, unsigned long dw
             lstrcpyA(szName + 220, "...");
             pszName = szName;
         }
+        // [d2boot-fix rev36] map-relative offset: the map sits at the preferred base
+        // 0x400000 while the runtime base relocates, so dwAddr - dwSymAddr printed every
+        // offset inflated by the relocation delta (+0x490000, +0xc0000 in the owner runs).
         D2BOOT_MarkFmt("%s %08lx rva %06lx  %s+0x%lx", pszPrefix, dwAddr, dwRva, pszName,
-                       (unsigned long)(dwAddr - dwSymAddr));
+                       (unsigned long)(dwRva + D2_IMAGE_BASE_DEFAULT - dwSymAddr));
     } else {
         D2BOOT_MarkFmt("%s %08lx rva %06lx", pszPrefix, dwAddr, dwRva);
     }
@@ -271,6 +277,10 @@ void DumpAllThreads(const char* pszReason) {
     unsigned long dwAge = (unsigned long)GetTickCount() - g_dwLastBeatTick;
     D2BOOT_MarkFmt("hangwatch: === %s: no main-loop beat for %lu ms (seq %lu, base %08lx) ===",
                    pszReason, dwAge, (unsigned long)g_nBeatSeq, dwBase);
+    if (dwBase != D2_IMAGE_BASE_DEFAULT) { // [d2boot-fix rev36]
+        D2BOOT_MarkFmt("hangwatch: note base %08lx = map %08lx + reloc %08lx; names reliable, offsets map-relative",
+                       dwBase, (unsigned long)D2_IMAGE_BASE_DEFAULT, dwBase - D2_IMAGE_BASE_DEFAULT);
+    }
     int nDumped = 0;
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
     if (hSnap != INVALID_HANDLE_VALUE) {

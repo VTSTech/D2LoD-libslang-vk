@@ -1455,20 +1455,35 @@ void __fastcall GetGuildName(D2ClientStrc * pClient, char * szGuildName) {
     char cChar;
     char* pcSrc = pClient->szGuildName;
     int nOffset = (int)szGuildName - (int)pcSrc;
+    // [d2boot-fix rev35] bounded copy: the field is NUL-terminated by SetGuildName, but if
+    // a corrupt client struct ever hands us 32+ bytes without a NUL this copy used to run
+    // off the end of the 0x5B packet guild area on the sender's stack. Valid guilds are
+    // <= 27 chars + NUL and are unaffected.
+    int nCopied = 0;
     do {
       cChar = *pcSrc;
       pcSrc[nOffset] = cChar;
       pcSrc++;
-    } while (cChar != '\0');
+      nCopied++;
+    } while (cChar != '\0' && nCopied < 32);
 }
 
 void __fastcall SetGuildName(D2ClientStrc * pClient, char * szGuildName) {
     char cCurrent;
     int nGuildNameOffset = 0x464 - (int)szGuildName;
+    // [d2boot-fix rev35] bounded write: field is 28 bytes (save path memcpy's 28 and NULs
+    // [27]); force the terminator so GetGuildName/0x5B can never walk an unterminated
+    // field. Valid guild names (<= 27 chars + NUL) are byte-identical.
+    int nCopied = 0;
     do {
       cCurrent = *szGuildName;
+      if (nCopied >= 27) {
+        ((char*)pClient)[0x464 + 27] = '\0';
+        break;
+      }
       szGuildName[(int)pClient + nGuildNameOffset] = cCurrent;
       szGuildName++;
+      nCopied++;
     } while (cCurrent != '\0');
 }
 

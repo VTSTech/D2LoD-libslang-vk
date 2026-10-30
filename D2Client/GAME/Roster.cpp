@@ -33,6 +33,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
 #include "D2Common/DUNGEON/Dungeon.h"
+#include "support/d2_boot.h" // [d2boot-fix rev35] roster-heal breadcrumb
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -57,19 +58,73 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2RosterStrc) == 0x84, "D2_NEW_AT(D
 
 namespace D2Client::GAME::Roster {
 
+// [d2boot-fix rev35] gpRosterPlayers is a hand-maintained singly-linked chain with no
+// ownership checks; heap corruption anywhere in the client can turn it cyclic, and then
+// EVERY roster walk spins forever: GetRosterPlayerByGUID, GetRosterByGuidOrName,
+// PlayerLeft's search, and the party regroup (ROSTER_GroupPlayersIntoParties, inlined
+// collect loop). That is the observed 1.14d-build loading-screen freeze (hangwatch: main
+// thread parked at ROSTER_GroupPlayersIntoParties rva 0x5f059, called from the 0x5B
+// player-join handler). Walk the chain with a hard cap; a clean chain (SP/MP max is 8
+// players) is untouched, a cyclic one is cut back to a finite chain (duplicates are safe
+// for the regroup logic) and a d2boot.log breadcrumb names the healing.
+static void ROSTER_SanitizePlayerChain() {
+    const int nMaxNodes = 64;
+    D2RosterStrc* pNode = gpRosterPlayers;
+    int nCount = 0;
+    while (pNode && nCount < nMaxNodes) {
+      pNode = pNode->pNext;
+      nCount++;
+    }
+    if (!pNode) {
+      return; // clean finite chain
+    }
+
+    D2RosterStrc* pCut = gpRosterPlayers;
+    for (int i = 1; i < nMaxNodes; i++) {
+      pCut = pCut->pNext;
+    }
+    pCut->pNext = 0;
+    D2BOOT_MarkFmt("roster heal: gpRosterPlayers cycle cut after %d nodes", nMaxNodes);
+}
+
+// [d2boot-fix rev36] The second hangwatch dump (base 004c0000) parked the main thread at
+// rva 0x5f1fe = ROSTER_FlattenPartyListsIntoSingleRosterChain+0xb4 (the pOwner tail walk);
+// the first dump parked it at ROSTER_GroupPlayersIntoParties+0x36. Both are unbounded
+// walks over the regroup structures, and rev35's sanitize only heals gpRosterPlayers at
+// the walk entry points - the pOwner chains, the party list, gpRosterOther and the
+// roster-link lists stay unguarded, so upstream corruption (the SP loopback race
+// dispatching garbage packets, wild writes) can still cycle them mid-regroup. Every walk
+// in the cluster therefore carries a hard 64-node cap. Well-formed data never reaches it
+// (SP/MP rosters max out at 8 players -> max 8 nodes per chain), so vanilla behavior is
+// unchanged; a capped walk logs one breadcrumb and degrades instead of freezing.
+static void ROSTER_WalkCapped(const char* pszWalk) {
+    D2BOOT_MarkFmt("roster heal: %s walk hit the 64-node cap (corrupt chain, degraded)", pszWalk);
+}
+
 static D2RosterStrc * __stdcall GetRosterPlayerByGUID(int32_t nRosterGUID) {
     D2RosterLinkListStrc* pRosterLink;
+    int nLinkGuard = 0; // [d2boot-fix rev36]
+    int nChainGuard = 0; // [d2boot-fix rev36]
+    ROSTER_SanitizePlayerChain(); // [d2boot-fix rev35]
     D2RosterStrc* pRosterIter = gpRosterPlayers;
     if (nRosterGUID == -1) {
       return nullptr;
     }
 
     for (; pRosterIter; pRosterIter = pRosterIter->pNext) {
+      if (++nChainGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("roster-by-guid walk");
+        break;
+      }
       if (pRosterIter->nRosterGUID == nRosterGUID) {
         return pRosterIter;
       }
 
       for (pRosterLink = pRosterIter->pRosterLinkList; pRosterLink; pRosterLink = pRosterLink->pNext) {
+        if (++nLinkGuard > 64) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("roster-link walk");
+          break;
+        }
         if (pRosterLink->nRosterGUID == nRosterGUID) {
           return pRosterIter;
         }
@@ -102,6 +157,7 @@ D2RosterStrc * __stdcall GetPlayerRoster() {
 static D2RosterStrc * GetRosterByGuidOrName(char * szPlayerName, int32_t nRosterGUID) {
     int nCmp;
     uint8_t* pInputCursor;
+    ROSTER_SanitizePlayerChain(); // [d2boot-fix rev35]
     D2RosterStrc* pRoster = gpRosterPlayers;
     do {
       D2RosterStrc* pNameCursor;
@@ -125,14 +181,22 @@ static D2RosterStrc * GetRosterByGuidOrName(char * szPlayerName, int32_t nRoster
 }
 
 // Writes identity/party/guild fields into a D2RosterStrc. 004793c4..004793c6 read EAX, EDI and EBX without ever loading them: the roster, the player name and the clan tag all arrive in registers. Modelled as locals, the reconstruction wrote the roster through an uninitialised pointer.
+// [d2boot-fix rev35] All four field writes are bounded now. The originals were unbounded
+// do-while copies (name -> +0x00, tag -> +0x46, guild name -> +0x4A, display name -> +0x66
+// via sprintf): one non-terminated source string and they run straight over
+// D2RosterStrc::pNext at +0x80 and into neighbouring heap chunks, which is how a roster
+// chain ends up cyclic (see ROSTER_SanitizePlayerChain). Field sizes: szRosterName[16],
+// szGuildTag[4], szGuildName[28], pRosterName[26]. Valid D2 names/tags/guilds fit and are
+// byte-identical; only pathological input is clamped.
 static void __stdcall ROSTER_InitializeFields(D2RosterStrc * pRoster, char * szPlayerName, char * szClanTag, int32_t nRosterGUID, int32_t nCharType, int16_t nUnitLevel, int16_t nPartyId, int32_t bInParty, int16_t nGuildFlags, char * szGuildTag) {
     char cChar;
-    char* pSrcCursor = szPlayerName;
+    int nNameIdx = 0;
     do {
-      cChar = *pSrcCursor;
-      pSrcCursor[(int)pRoster - (int)szPlayerName] = cChar;
-      pSrcCursor++;
-    } while (cChar != '\0');
+      cChar = szPlayerName[nNameIdx];
+      pRoster->szRosterName[nNameIdx] = cChar;
+      nNameIdx++;
+    } while (cChar != '\0' && nNameIdx < 15);
+    pRoster->szRosterName[15] = '\0';
 
     pRoster->nRosterGUID = nRosterGUID;
     pRoster->nCharType = nCharType;
@@ -140,39 +204,74 @@ static void __stdcall ROSTER_InitializeFields(D2RosterStrc * pRoster, char * szP
     pRoster->nPartyId = nPartyId;
     pRoster->nPartyState = bInParty;
     pRoster->nGuildFlags = nGuildFlags;
-    pSrcCursor = szClanTag;
+    int nTagIdx = 0;
     do {
-      cChar = *pSrcCursor;
-      pSrcCursor[(int)pRoster + (0x46 - (int)szClanTag)] = cChar;
-      pSrcCursor++;
-    } while (cChar != '\0');
+      cChar = szClanTag[nTagIdx];
+      pRoster->szGuildTag[nTagIdx] = cChar;
+      nTagIdx++;
+    } while (cChar != '\0' && nTagIdx < 3);
+    pRoster->szGuildTag[3] = '\0';
 
-    int iVar1 = 0x4a - (int)szGuildTag;
+    int nGuildIdx = 0;
     do {
-      cChar = *szGuildTag;
-      szGuildTag[(int)pRoster + iVar1] = cChar;
-      szGuildTag++;
-    } while (cChar != '\0');
+      cChar = szGuildTag[nGuildIdx];
+      pRoster->szGuildName[nGuildIdx] = cChar;
+      nGuildIdx++;
+    } while (cChar != '\0' && nGuildIdx < 27);
+    pRoster->szGuildName[27] = '\0';
 
     if (*szClanTag != '\0') {
-      sprintf(pRoster->pRosterName, "%s {%s}", szPlayerName, szClanTag);
+      // bounded "%s {%s}": 15 + 2 + 3 + 1 chars max, field is 26
+      int nOut = 0;
+      int nIn = 0;
+      while (nOut < 25 && (cChar = szPlayerName[nIn]) != '\0') {
+        pRoster->pRosterName[nOut++] = cChar;
+        nIn++;
+      }
+      if (nOut < 25) {
+        pRoster->pRosterName[nOut++] = ' ';
+      }
+      if (nOut < 25) {
+        pRoster->pRosterName[nOut++] = '{';
+      }
+      nIn = 0;
+      while (nOut < 25 && (cChar = szClanTag[nIn]) != '\0') {
+        pRoster->pRosterName[nOut++] = cChar;
+        nIn++;
+      }
+      if (nOut < 25) {
+        pRoster->pRosterName[nOut++] = '}';
+      }
+      pRoster->pRosterName[nOut] = '\0'; // terminate right after the composed text
       return;
     }
 
-    iVar1 = 0x66 - (int)szPlayerName;
+    int nDispIdx = 0;
     do {
-      cChar = *szPlayerName;
-      szPlayerName[(int)pRoster + iVar1] = cChar;
-      szPlayerName++;
-    } while (cChar != '\0');
+      cChar = szPlayerName[nDispIdx];
+      pRoster->pRosterName[nDispIdx] = cChar;
+      nDispIdx++;
+    } while (cChar != '\0' && nDispIdx < 25);
+    pRoster->pRosterName[25] = '\0';
 }
 
 // @sourcefile .\GAME\Roster.cpp
 void FreeRosterLinkList(D2RosterStrc * pRoster) {
     D2RosterLinkListStrc* pRosterLinkList = pRoster->pRosterLinkList;
+    D2RosterLinkListStrc* pFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
+    int nFreeGuard = 0; // [d2boot-fix rev36]
     while (pRosterLinkList) {
+      if (++nFreeGuard > 64 || pRosterLinkList == pFirstFreed) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("roster-link free");
+        break;
+      }
       D2RosterLinkListStrc* pNext;
       pNext = pRosterLinkList->pNext;
+      if (!pFirstFreed) {
+        pFirstFreed = pRosterLinkList;
+      }
+
+      pRosterLinkList->pNext = 0;
       D2_FREE_AT(pRosterLinkList, ".\\GAME\\Roster.cpp", 0x110);
       pRosterLinkList = pNext;
     }
@@ -187,36 +286,79 @@ void __stdcall ClearBothRosterLists() {
     D2RosterLinkListStrc* pNextOtherLink;
     D2RosterLinkListStrc* pOtherLink;
     D2RosterStrc* pOther = gpRosterPlayers;
+    D2RosterStrc* pFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
+    int nClearGuard = 0; // [d2boot-fix rev36]
+    int nClearLinkGuard = 0; // [d2boot-fix rev36]
     while (pOther) {
+      if (++nClearGuard > 64 || pOther == pFirstFreed) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("clear-roster players");
+        break;
+      }
       pNextOther = pOther->pNext;
+      if (!pFirstFreed) {
+        pFirstFreed = pOther;
+      }
       UNIT::PlayerList::FreePlayerList(pOther->pPlayerList);
       pOther->pPlayerList = 0;
       pOtherLink = pOther->pRosterLinkList;
+      nClearLinkGuard = 0; // [d2boot-fix rev36]
+      D2RosterLinkListStrc* pLinkFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
       while (pOtherLink) {
+        if (++nClearLinkGuard > 64 || pOtherLink == pLinkFirstFreed) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("clear-roster link");
+          break;
+        }
         pNextOtherLink = pOtherLink->pNext;
+        if (!pLinkFirstFreed) {
+          pLinkFirstFreed = pOtherLink;
+        }
+
+        pOtherLink->pNext = 0;
         D2_FREE_AT(pOtherLink, ".\\GAME\\Roster.cpp", 0x110);
         pOtherLink = pNextOtherLink;
       }
 
       pOther->pRosterLinkList = 0;
+      pOther->pNext = 0; // [d2boot-fix rev36] cycle-safe free
       D2_FREE_AT(pOther, ".\\GAME\\Roster.cpp", 0x14d);
       pOther = pNextOther;
     }
 
     gpRosterPlayers = 0;
     pOther = gpRosterOther;
+    nClearGuard = 0; // [d2boot-fix rev36]
+    pFirstFreed = 0; // [d2boot-fix rev36]
     while (pOther) {
+      if (++nClearGuard > 64 || pOther == pFirstFreed) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("clear-roster other");
+        break;
+      }
       pNextOther = pOther->pNext;
+      if (!pFirstFreed) {
+        pFirstFreed = pOther;
+      }
       UNIT::PlayerList::FreePlayerList(pOther->pPlayerList);
       pOther->pPlayerList = 0;
       pOtherLink = pOther->pRosterLinkList;
+      nClearLinkGuard = 0; // [d2boot-fix rev36]
+      D2RosterLinkListStrc* pLinkFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
       while (pOtherLink) {
+        if (++nClearLinkGuard > 64 || pOtherLink == pLinkFirstFreed) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("clear-roster link");
+          break;
+        }
         pNextOtherLink = pOtherLink->pNext;
+        if (!pLinkFirstFreed) {
+          pLinkFirstFreed = pOtherLink;
+        }
+
+        pOtherLink->pNext = 0;
         D2_FREE_AT(pOtherLink, ".\\GAME\\Roster.cpp", 0x110);
         pOtherLink = pNextOtherLink;
       }
 
       pOther->pRosterLinkList = 0;
+      pOther->pNext = 0; // [d2boot-fix rev36] cycle-safe free
       D2_FREE_AT(pOther, ".\\GAME\\Roster.cpp", 0x159);
       pOther = pNextOther;
     }
@@ -251,19 +393,30 @@ D2RosterStrc * __stdcall ROSTER_SortByName(D2RosterStrc * pRoster) {
     D2RosterStrc* pPrev;
     D2RosterStrc* pNext;
     D2RosterStrc* pSortedHead;
+    int nOuterGuard = 0; // [d2boot-fix rev36]
+    int nInnerGuard = 0; // [d2boot-fix rev36]
     pSortedHead = 0;
     if (!pRoster) {
       return nullptr;
     }
 
     while (true) {
+      if (++nOuterGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("sort-by-name outer");
+        return pSortedHead;
+      }
       pNext = pRoster->pNext;
       if (pSortedHead) {
         pCmpA = pRoster;
         pCmpB = pSortedHead;
         pPrev = 0;
         pCur = pSortedHead;
+        nInnerGuard = 0; // [d2boot-fix rev36]
         do {
+          if (++nInnerGuard > 64) { // [d2boot-fix rev36]
+            ROSTER_WalkCapped("sort-by-name scan");
+            goto insert_at_position;
+          }
           nCmp = strcmp(pCmpA->szRosterName, pCmpB->szRosterName);
           if (nCmp < 0 || (pCmpB = pCur->pNext , pCmpA = pRoster , pPrev = pCur , pCur = pCmpB , !pCmpB)) {
             goto insert_at_position;
@@ -295,7 +448,13 @@ static D2RosterStrc * ROSTER_SortByLevel(D2RosterStrc * pRoster) {
     D2RosterStrc* pScan;
     D2RosterStrc** ppNextLink;
     D2RosterStrc* pNextRoster = 0;
+    int nOuterGuard = 0; // [d2boot-fix rev36]
+    int nInnerGuard = 0; // [d2boot-fix rev36]
     do {
+      if (++nOuterGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("sort-by-level outer");
+        return pNextRoster;
+      }
       D2RosterStrc* pSavedNext;
       if (!pRoster) {
         return pNextRoster;
@@ -306,7 +465,12 @@ static D2RosterStrc * ROSTER_SortByLevel(D2RosterStrc * pRoster) {
       if (pNextRoster) {
         pScan = pNextRoster;
         pPrev = 0;
+        nInnerGuard = 0; // [d2boot-fix rev36]
         do {
+          if (++nInnerGuard > 64) { // [d2boot-fix rev36]
+            ROSTER_WalkCapped("sort-by-level scan");
+            break;
+          }
           pCur = pScan;
           if (pRoster->nArenaScore > pCur->nArenaScore) {
             break;
@@ -355,9 +519,20 @@ void AllocRosterPartyList(int16_t nPartyId) {
 // @sourcefile .\GAME\Roster.cpp
 void __stdcall FreeRosterPartyList() {
     D2RosterPartyListStrc* pMemoryToFree = pRosterPartyList;
+    D2RosterPartyListStrc* pFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
+    int nFreeGuard = 0; // [d2boot-fix rev36]
     while (pMemoryToFree) {
+      if (++nFreeGuard > 64 || pMemoryToFree == pFirstFreed) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("party-list free");
+        break;
+      }
       D2RosterPartyListStrc* pSavedNext;
       pSavedNext = pMemoryToFree->pNext;
+      if (!pFirstFreed) {
+        pFirstFreed = pMemoryToFree;
+      }
+
+      pMemoryToFree->pNext = 0;
       D2_FREE_AT(pMemoryToFree, ".\\GAME\\Roster.cpp", 0x22f);
       pMemoryToFree = pSavedNext;
     }
@@ -370,7 +545,12 @@ static D2RosterStrc * ROSTER_CollectPartiesIntoPartyList(D2RosterPartyListStrc *
     D2RosterStrc* ppRosterNext;
     D2RosterStrc* pNextRoster = 0;
     D2RosterStrc* pPrev = gpRosterPlayers;
+    int nWalkGuard = 0; // [d2boot-fix rev36]
     while (pPrev) {
+      if (++nWalkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("regroup collect");
+        break;
+      }
       if (pPrev->nPartyId == pRosterPartyList->nPartyId) {
         ppNextLink = &pPrev->pNext;
         ppRosterNext = *ppNextLink;
@@ -400,7 +580,14 @@ void __stdcall ROSTER_SortPartyListsByPartyId() {
     D2RosterPartyListStrc* pInsertAfter;
     D2RosterPartyListStrc* pScan;
     D2RosterPartyListStrc* pNextParty2 = 0;
+    int nOuterGuard = 0; // [d2boot-fix rev36]
+    int nInnerGuard = 0; // [d2boot-fix rev36]
     do {
+      if (++nOuterGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("sort-party-lists outer");
+        pRosterPartyList = pNextParty2;
+        return;
+      }
       D2RosterPartyListStrc* pNextParty;
       if (!pRosterPartyList) {
         pRosterPartyList = pNextParty2;
@@ -411,7 +598,12 @@ void __stdcall ROSTER_SortPartyListsByPartyId() {
       if (pNextParty2) {
         pScan = pNextParty2;
         pInsertAfter = 0;
+        nInnerGuard = 0; // [d2boot-fix rev36]
         do {
+          if (++nInnerGuard > 64) { // [d2boot-fix rev36]
+            ROSTER_WalkCapped("sort-party-lists scan");
+            break;
+          }
           pScanNode = pScan;
           if ((uint16_t)pRosterPartyList->nPartyId < (uint16_t)pScanNode->nPartyId) {
             break;
@@ -442,12 +634,18 @@ static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(int16_t nPartyId, in
     D2RosterStrc* pNext;
     D2RosterPartyListStrc* pList = pRosterPartyList;
     D2RosterPartyListStrc* pPrevParty = 0;
+    int nPartyGuard = 0; // [d2boot-fix rev36]
+    int nOwnerGuard = 0; // [d2boot-fix rev36]
     if (nPartyId == -1) {
       return;
     }
 
     while (true) {
-      D2RosterPartyListStrc* pCurrentRoster;
+      if (++nPartyGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("move-front-of-party list");
+        break;
+      }
+      D2RosterPartyListStrc* pCurrentRoster; // walks the party-list chain, not the player roster [d2boot-fix rev37]
       pCurrentRoster = pList;
       if (!pCurrentRoster) {
         break;
@@ -461,7 +659,12 @@ static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(int16_t nPartyId, in
 
         pNext = pCurrentRoster->pOwner;
         pPrevious = 0;
+        nOwnerGuard = 0; // [d2boot-fix rev36]
         while (true) {
+          if (++nOwnerGuard > 64) { // [d2boot-fix rev36]
+            ROSTER_WalkCapped("move-front-of-party owner");
+            return;
+          }
           pCurrent = pNext;
           if (!pCurrent) {
             return;
@@ -495,13 +698,24 @@ void __stdcall ROSTER_GroupPlayersIntoParties() {
     uint16_t nPartyId;
     D2RosterPartyListStrc* pPartyListHead;
     pPartyListHead = Roster::pRosterPartyList;
+    int nIterGuard = 0; // [d2boot-fix rev36]
+    int nScanGuard = 0; // [d2boot-fix rev36]
     do {
+      if (++nIterGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("regroup iterations");
+        return;
+      }
       if (!gpRosterPlayers) {
         return;
       }
 
       nPartyId = gpRosterPlayers->nPartyId;
+      nScanGuard = 0; // [d2boot-fix rev36]
       for (pRosterPartyList = pPartyListHead; pRosterPartyList; pRosterPartyList = pRosterPartyList->pNext) {
+        if (++nScanGuard > 64) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("regroup party scan");
+          break;
+        }
         if (pRosterPartyList->nPartyId == nPartyId) {
           goto move_members_into_party;
         }
@@ -522,7 +736,12 @@ void __stdcall ROSTER_GroupPlayersIntoParties() {
 void __stdcall ROSTER_SortAllParties() {
     D2RosterStrc* pSortedOwner;
     D2RosterPartyListStrc* pPartyIter;
+    int nPartyGuard = 0; // [d2boot-fix rev36]
     for (pPartyIter = pRosterPartyList; pPartyIter; pPartyIter = pPartyIter->pNext) {
+      if (++nPartyGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("sort-all-parties list");
+        break;
+      }
       int32_t bIsArena;
       bIsArena = CLIENT_IsArenaLevel();
       if (bIsArena) {
@@ -542,7 +761,13 @@ void __stdcall ROSTER_FlattenPartyListsIntoSingleRosterChain() {
     D2RosterStrc* pWalkCurrent;
     D2RosterStrc* pWalkNext;
     D2RosterStrc* pChainTail = 0;
+    int nPartyGuard = 0; // [d2boot-fix rev36]
+    int nWalkGuard = 0; // [d2boot-fix rev36]
     for (pPartyList = pRosterPartyList; pPartyList; pPartyList = pPartyList->pNext) {
+      if (++nPartyGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("flatten party list");
+        break;
+      }
       if (pChainTail) {
         pChainTail->pNext = pPartyList->pOwner;
       } else {
@@ -553,7 +778,15 @@ void __stdcall ROSTER_FlattenPartyListsIntoSingleRosterChain() {
       pPartyList->pOwner = 0;
       if (pChainTail) {
         pWalkNext = pChainTail->pNext;
+        nWalkGuard = 0; // [d2boot-fix rev36]
         while (true) {
+          if (++nWalkGuard > 64) { // [d2boot-fix rev36] the second dump's spin site
+            ROSTER_WalkCapped("flatten tail walk");
+            if (pChainTail) {
+              pChainTail->pNext = 0; // cut the cycled input instead of relaying it
+            }
+            break;
+          }
           pWalkCurrent = pWalkNext;
           if (!pWalkCurrent) {
             break;
@@ -569,7 +802,12 @@ void __stdcall ROSTER_FlattenPartyListsIntoSingleRosterChain() {
 static void ROSTER_MoveRosterPlayerToFront(int32_t nRosterGUID) {
     D2RosterStrc* pCur;
     D2RosterStrc* pPrev = 0;
+    int nWalkGuard = 0; // [d2boot-fix rev36]
     for (pCur = gpRosterPlayers; pCur; pCur = pCur->pNext) {
+      if (++nWalkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("move-to-front");
+        break;
+      }
       if (pCur->nRosterGUID == nRosterGUID && pPrev) {
         pPrev->pNext = pCur->pNext;
         pCur->pNext = gpRosterPlayers;
@@ -583,6 +821,7 @@ static void ROSTER_MoveRosterPlayerToFront(int32_t nRosterGUID) {
 void __stdcall ROSTER_RebuildPlayerParty() {
     int nRosterGUID;
     uint16_t nPartyId;
+    ROSTER_SanitizePlayerChain(); // [d2boot-fix rev35]
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     if (!pPlayerUnit_lcl) {
       nRosterGUID = -1;
@@ -1118,7 +1357,12 @@ void __fastcall SetRosterPortalGuidAndDestArea(int32_t nRosterGUID, int32_t nPor
 
 char * __fastcall GetPortalOwnerName(int32_t nPortalGUID) {
     D2RosterStrc* pRoster = gpRosterPlayers;
+    int nWalkGuard = 0; // [d2boot-fix rev36]
     while (true) {
+      if (++nWalkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("portal-owner walk");
+        return nullptr;
+      }
       if (!pRoster) {
         return nullptr;
       }
@@ -1146,7 +1390,12 @@ BOOL __fastcall CheckIfUnitHasPartiedRosters(D2UnitStrc * pUnit) {
       return 0;
     }
 
+    int nWalkGuard = 0; // [d2boot-fix rev36]
     for (; pCurRoster; pCurRoster = pCurRoster->pNext) {
+      if (++nWalkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("partied-roster walk");
+        break;
+      }
       if (pCurRoster->nPartyId == nPartyId && pCurRoster->nRosterGUID != nGUID) {
         return 1;
       }
@@ -1211,6 +1460,7 @@ void __fastcall ROSTER_SetPlayerHostileFlag(int32_t nUnitGUID, int32_t nRosterGU
 // @sourcefile .\GAME\Roster.cpp
 void __fastcall AllocRosterOther(int32_t nOwnerGUID, int32_t nRosterGUID) {
     D2RosterLinkListStrc* pRosterLinkList;
+    int nLinkGuard = 0; // [d2boot-fix rev36]
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nOwnerGUID);
     if (!pRoster) {
       pRoster = D2_NEW_AT(D2RosterStrc, ".\\GAME\\Roster.cpp", 0x686);
@@ -1226,6 +1476,10 @@ void __fastcall AllocRosterOther(int32_t nOwnerGUID, int32_t nRosterGUID) {
     }
 
     for (pRosterLinkList = pRoster->pRosterLinkList; pRosterLinkList; pRosterLinkList = pRosterLinkList->pNext) {
+      if (++nLinkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("roster-link walk");
+        break;
+      }
       if (pRosterLinkList->nRosterGUID == nRosterGUID) {
         return;
       }
@@ -1254,11 +1508,16 @@ void __fastcall FreeAllRosterPlayer(int32_t nOwnerGUID, int32_t nRosterGUID) {
 
     D2RosterLinkListStrc* pCurLink = pRoster->pRosterLinkList;
     D2RosterLinkListStrc* pPrevLink = 0;
+    int nLinkGuard = 0; // [d2boot-fix rev36]
     if (!pRoster->pRosterLinkList) {
       return;
     }
 
     while (true) {
+      if (++nLinkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("roster-link walk");
+        return;
+      }
       pMemoryToFree = pCurLink;
       if (pMemoryToFree->nRosterGUID == nRosterGUID) {
         break;
@@ -1435,6 +1694,7 @@ void __fastcall ROSTER_AllocOrUpdatePlayer(int nPlayerGUID, int nCharType, char 
     D2PlayerListStrc* pPlayerList;
     D2RosterStrc* pDVar1 = gpRosterOther;
     D2RosterStrc* pPrev = 0;
+    int nOtherGuard = 0; // [d2boot-fix rev36]
     if (nPlayerGUID == -1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xb3);
       exit(-1);
@@ -1444,6 +1704,11 @@ void __fastcall ROSTER_AllocOrUpdatePlayer(int nPlayerGUID, int nCharType, char 
     if (!pNewRoster) {
       for (; pNewRoster = 0 , pDVar1 && (pNewRoster = pDVar1 , pDVar1->nRosterGUID != nPlayerGUID); pDVar1 = pDVar1->pNext) {
         pPrev = pDVar1;
+        if (++nOtherGuard > 64) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("roster-other recycle");
+          pNewRoster = 0;
+          break;
+        }
       }
 
       if (pNewRoster) {
@@ -1476,12 +1741,17 @@ void __fastcall ROSTER_AllocOrUpdatePlayer(int nPlayerGUID, int nCharType, char 
 
 void __fastcall ROSTER_UpdatePlayerPartyInfo(int32_t nUnitGuid, int16_t nPartyId, int16_t nUnitLevel, uint32_t nRelationship, BOOL bInParty) {
     D2RosterLinkListStrc* pLink;
+    int nLinkGuard = 0; // [d2boot-fix rev36]
     D2RosterStrc* pRoster = GetRosterPlayerByGUID(nUnitGuid);
     if (!pRoster) {
       return;
     }
 
     for (pLink = pRoster->pRosterLinkList; pLink; pLink = pLink->pNext) {
+      if (++nLinkGuard > 64) { // [d2boot-fix rev36]
+        ROSTER_WalkCapped("roster-link walk");
+        break;
+      }
       if (pLink->nRosterGUID == nUnitGuid) {
         return;
       }
@@ -1501,6 +1771,7 @@ void __fastcall PlayerLeft(int32_t nPlayerUid) {
     D2RosterLinkListStrc* pCurrentRoster;
     D2RosterLinkListStrc* pNextRoster;
     D2RosterStrc** ppNext;
+    ROSTER_SanitizePlayerChain(); // [d2boot-fix rev35]
     if (nPlayerUid == -1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x121);
       exit(-1);
@@ -1529,8 +1800,19 @@ void __fastcall PlayerLeft(int32_t nPlayerUid) {
       UNIT::PlayerList::FreePlayerList(pCurrent->pPlayerList);
       pCurrent->pPlayerList = 0;
       pCurrentRoster = pCurrent->pRosterLinkList;
+      D2RosterLinkListStrc* pFirstFreed = 0; // [d2boot-fix rev36] cycle-safe free
+      int nFreeGuard = 0; // [d2boot-fix rev36]
       while (pCurrentRoster) {
+        if (++nFreeGuard > 64 || pCurrentRoster == pFirstFreed) { // [d2boot-fix rev36]
+          ROSTER_WalkCapped("roster-link free");
+          break;
+        }
         pNextRoster = pCurrentRoster->pNext;
+        if (!pFirstFreed) {
+          pFirstFreed = pCurrentRoster;
+        }
+
+        pCurrentRoster->pNext = 0;
         D2_FREE_AT(pCurrentRoster, ".\\GAME\\Roster.cpp", 0x110);
         pCurrentRoster = pNextRoster;
       }

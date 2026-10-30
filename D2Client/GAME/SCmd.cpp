@@ -1670,11 +1670,43 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x59_NEWPLAYERUNIT(char * pBytes) {
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x5B(D2GSPacketSrv0x5B * pBytes) {
-    char cCur;
+    // [d2boot-fix rev35] The guild area used to be parsed with two unbounded string walks
+    // (strlen for the tag, then InitializeFields' do-while for the name). A malformed or
+    // truncated 0x5B (lying length word, garbage bytes) sent strlen() past the packet into
+    // unrelated queue memory and fed the roster a bogus guild-name pointer. Bound both
+    // walks to the packet's own length word (wire size <= 0x122, guild area at +0x22).
+    // Valid packets parse identically.
+    uint32_t nPacketLen = (uint32_t)(uint16_t)pBytes->nPacketLength;
+    if (nPacketLen < 0x22 || nPacketLen > 0x122) {
+      nPacketLen = 0x122;
+    }
     char* szGuildTag = pBytes->szGuildTag;
+    char* szGuildAreaEnd = (char*)pBytes + nPacketLen;
     char* pScan = szGuildTag;
-    pScan = pScan + strlen(pScan) + 1;
-    Roster::ROSTER_AllocOrUpdatePlayer(pBytes->nPlayerGUID, (uint32_t)pBytes->nCharType, pBytes->szPlayerName, pBytes->nPlayerLevel, pBytes->nPartyId, pBytes->nUnused, (uint32_t)(uint16_t)pBytes->bInParty, pBytes->nGuildFlags, szGuildTag, szGuildTag + (int)(pScan + (1 - (int)(pBytes->szGuildTag + 1))));
+    while (pScan < szGuildAreaEnd && *pScan) {
+      pScan++;
+    }
+    if (pScan < szGuildAreaEnd) {
+      pScan++; // the tag's NUL
+    }
+    char* szGuildName = pScan;
+    if (szGuildName >= szGuildAreaEnd) {
+      szGuildName = szGuildAreaEnd - 1;
+    }
+    Roster::ROSTER_AllocOrUpdatePlayer(pBytes->nPlayerGUID, (uint32_t)pBytes->nCharType, pBytes->szPlayerName, pBytes->nPlayerLevel, pBytes->nPartyId, pBytes->nUnused, (uint32_t)(uint16_t)pBytes->bInParty, pBytes->nGuildFlags, szGuildTag, szGuildName);
+    // [d2boot-fix rev35] breadcrumb: every player-join roster op, with the fields that
+    // drive the party regroup. name is copied to a fixed buffer first: a malformed packet
+    // has no guaranteed NUL, and D2BOOT_MarkFmt would read past it.
+    char szNameSafe[17];
+    int nNameIdx = 0;
+    for (; nNameIdx < 16; nNameIdx++) {
+      szNameSafe[nNameIdx] = pBytes->szPlayerName[nNameIdx];
+      if (!szNameSafe[nNameIdx]) {
+        break;
+      }
+    }
+    szNameSafe[nNameIdx < 16 ? nNameIdx : 16] = '\0';
+    D2BOOT_MarkFmt("s2c 0x5B playerjoin guid=%d party=%d name='%s'", (int)pBytes->nPlayerGUID, (int)pBytes->nPartyId, szNameSafe);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x5C(char * pBytes) {

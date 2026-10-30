@@ -62,6 +62,55 @@ gate "d2boot-fix: unknown-size returns 0"    D2Net/Game/Server.cpp         'Unha
 gate "d2boot-fix: dispatch zero-consume guard" D2Client/GAME/SCmd.cpp      's2c dispatch guard' 1
 gate "d2boot-fix: pump drain watchdog"       D2Client/GAME/Game/Game.cpp   's2c pump: drained' 2
 
+# ---- [d2boot-fix] rev 35: roster chain sanitizer + bounded 0x5B guild parse
+# hangwatch on the expanded d2boot.log pinned the freeze: main thread spinning inside
+# ROSTER_GroupPlayersIntoParties (inlined collect walk) under the 0x5B player-join
+# handler -> ROSTER_AllocOrUpdatePlayer -> ROSTER_RebuildPlayerParty. The gpRosterPlayers
+# chain was cyclic (heap corruption upstream); every roster walk spins on it. Fix:
+# sanitize+heal at the walk entry points, bound every unbounded roster string copy.
+gate "d2boot-fix: roster chain sanitizer"    D2Client/GAME/Roster.cpp      'roster heal: gpRosterPlayers cycle cut' 1
+gate "d2boot-fix: roster sanitizer calls"    D2Client/GAME/Roster.cpp      'ROSTER_SanitizePlayerChain\(\); // \[d2boot-fix rev35\]' 4
+gate "d2boot-fix: bounded roster name copy"  D2Client/GAME/Roster.cpp      'nNameIdx < 15' 1
+gate "d2boot-fix: bounded roster tag copy"   D2Client/GAME/Roster.cpp      'nTagIdx < 3' 1
+gate "d2boot-fix: bounded guildname copy"    D2Client/GAME/Roster.cpp      'nGuildIdx < 27' 1
+gate "d2boot-fix: bounded display name"      D2Client/GAME/Roster.cpp      'nOut < 25' 5
+gate "d2boot-fix: bounded display copy"      D2Client/GAME/Roster.cpp      'nDispIdx < 25' 1
+gate "d2boot-fix: 0x5B bounded guild scan"   D2Client/GAME/SCmd.cpp        'szGuildAreaEnd' 5
+gate "d2boot-fix: 0x5B playerjoin mark"      D2Client/GAME/SCmd.cpp        's2c 0x5B playerjoin' 1
+gate "d2boot-fix: guild name getter cap"     D2Game/GAME/Clients.cpp       'nCopied < 32' 1
+gate "d2boot-fix: guild name setter cap"     D2Game/GAME/Clients.cpp       'nCopied >= 27' 1
+
+# ---- [d2boot-fix] rev 36: regroup-cluster walk caps (second dump round) ----
+# The second hangwatch dump (base 004c0000) parked the main thread at rva 0x5f1fe =
+# ROSTER_FlattenPartyListsIntoSingleRosterChain+0xb4 (pOwner tail walk); the first dump
+# was ROSTER_GroupPlayersIntoParties+0x36. rev35's sanitize only heals gpRosterPlayers at
+# walk entry points; the pOwner chains, the party list, gpRosterOther and the roster-link
+# lists stayed unguarded. Every unbounded walk in the regroup cluster now carries a
+# 64-node cap + "roster heal:" breadcrumb (SP rosters max out at 8 nodes -> vanilla data
+# never reaches the cap). hangwatch offsets are map-relative now and a relocated run logs
+# a base note; the build string is bumped to 0.0.5 so the next d2boot.log self-identifies.
+gate "d2boot-fix: rev36 walk-cap helper"     D2Client/GAME/Roster.cpp      'static void ROSTER_WalkCapped' 1
+gate "d2boot-fix: rev36 walk-cap call sites" D2Client/GAME/Roster.cpp      'ROSTER_WalkCapped\(' 31
+gate "d2boot-fix: rev36 flatten tail cap"    D2Client/GAME/Roster.cpp      'flatten tail walk' 1
+gate "d2boot-fix: rev36 flatten party cap"   D2Client/GAME/Roster.cpp      'flatten party list' 1
+gate "d2boot-fix: rev36 regroup iter cap"    D2Client/GAME/Roster.cpp      'regroup iterations' 1
+gate "d2boot-fix: rev36 regroup scan cap"    D2Client/GAME/Roster.cpp      'regroup party scan' 1
+gate "d2boot-fix: rev36 collect cap"         D2Client/GAME/Roster.cpp      'regroup collect' 1
+gate "d2boot-fix: rev36 sort caps"           D2Client/GAME/Roster.cpp      'ROSTER_WalkCapped\("sort' 7
+gate "d2boot-fix: rev36 move caps"           D2Client/GAME/Roster.cpp      'ROSTER_WalkCapped\("move' 3
+gate "d2boot-fix: rev36 roster-other cap"    D2Client/GAME/Roster.cpp      'roster-other recycle' 1
+gate "d2boot-fix: rev36 roster-link scan caps" D2Client/GAME/Roster.cpp    'roster-link walk' 4
+gate "d2boot-fix: rev36 roster-link free caps" D2Client/GAME/Roster.cpp    'roster-link free' 2
+gate "d2boot-fix: rev36 party-list free cap" D2Client/GAME/Roster.cpp      'party-list free' 1
+gate "d2boot-fix: rev36 clear-roster caps"   D2Client/GAME/Roster.cpp      'clear-roster' 4
+gate "d2boot-fix: rev36 portal-owner cap"    D2Client/GAME/Roster.cpp      'portal-owner walk' 1
+gate "d2boot-fix: rev36 partied-roster cap"  D2Client/GAME/Roster.cpp      'partied-roster walk' 1
+gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'roster-by-guid walk' 1
+gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
+gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
+gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
+gate "d2boot-fix: rev36 build version 0.0.5" D2Client/Engine/Application.cpp 'vanilla-plus 0\.0\.5' 1
+
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
 gate "UI_VANILLAPLUS using-decl"          d2_enums.h                      'using eD2UIvars_ns::UI_VANILLAPLUS' 1
