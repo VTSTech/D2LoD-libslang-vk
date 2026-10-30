@@ -56,6 +56,11 @@ gate "d2boot: state-cmd choke mark"       D2Game/GAME/SCmd.cpp            'srv s
 gate "d2boot: state transition mark"      D2Game/GAME/Clients.cpp         'client state %d -> %d'      1
 gate "d2boot: join stage marks (Clients)" D2Game/GAME/Clients.cpp         'join: (PlacePlayerInRoom|LoadCharacter|TellClientToLoadAct)' 3
 gate "d2boot: DRLG worldgen marks"        D2Game/GAME/Level.cpp           'DRLG: '                     2
+# ---- [d2boot-fix] rev 34: SP packet-queue race fix + dispatcher spin guards --
+gate "d2boot-fix: enqueue lock (queue race)" D2Net/SRC/Client.cpp          'Serialize with the pop path' 1
+gate "d2boot-fix: unknown-size returns 0"    D2Net/Game/Server.cpp         'Unhandled variable-length opcode' 1
+gate "d2boot-fix: dispatch zero-consume guard" D2Client/GAME/SCmd.cpp      's2c dispatch guard' 1
+gate "d2boot-fix: pump drain watchdog"       D2Client/GAME/Game/Game.cpp   's2c pump: drained' 2
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1

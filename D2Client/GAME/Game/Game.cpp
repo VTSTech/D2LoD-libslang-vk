@@ -535,15 +535,27 @@ void __stdcall GAMEDATA_CheckAutomapCenterOnLoad() {
 void __stdcall NET_D2GS_CLIENT_HandleAllNonVariableSizePackets() {
     size_t iSize;
     uint8_t pBytes[512];
+    // [d2boot-fix] drain watchdog: a packet queue that never yields -1 (torn chain,
+    // zero-consumption dispatch) would spin this pump forever with no diagnostics and
+    // stop the main-loop beat (the rev-34 loading-screen hang). Log every 4096 packets
+    // drained within a single pass so d2boot.log shows a runaway drain explicitly.
+    uint32_t nDrainedHigh = 0;
     do {
       iSize = D2Net::SRC::Client::NET_D2GS_CLIENT_ExtractPacketSize_from0xAE((char*)pBytes, 0x200);
       SCmd::NET_D2GS_CLIENT_PacketHandle_from0xAF(pBytes, iSize);
+      if (iSize != (size_t)-1 && ++nDrainedHigh % 4096 == 0) {
+        D2BOOT_MarkFmt("s2c pump: drained %u packets (op>=0xAF) in one pass", (unsigned)nDrainedHigh);
+      }
       /* DWORD dwMilliseconds for Sleep */ Sleep(0);
     } while (iSize != -1);
 
+    uint32_t nDrainedLow = 0;
     do {
       iSize = D2Net::SRC::Client::NET_D2GS_CLIENT_ExtractPacketSize_to0xAE((char*)pBytes, 0x200);
       SCmd::NET_D2GS_CLIENT_PacketHandle_to0xAF((char*)pBytes, iSize);
+      if (iSize != (size_t)-1 && ++nDrainedLow % 4096 == 0) {
+        D2BOOT_MarkFmt("s2c pump: drained %u packets (op<0xAF) in one pass", (unsigned)nDrainedLow);
+      }
       /* DWORD dwMilliseconds for Sleep */ Sleep(0);
     } while (iSize != -1);
 }

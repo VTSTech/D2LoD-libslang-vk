@@ -363,8 +363,12 @@ size_t __fastcall NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(
         break;
         default:
           {
+            // [d2boot-fix] Unhandled variable-length opcode: report "unknown size" (0),
+            // not success-with-size-0. A 1-return with a 0 size made the packet pump
+            // re-dispatch the same bytes forever (cursor never advances) and the TCP
+            // parser enqueue zero-size nodes forever.
             *pExpectedSize = 0;
-            return 1;
+            return 0;
           }
         case 0x26:
           if ((int)pBytesSize >= 10) {

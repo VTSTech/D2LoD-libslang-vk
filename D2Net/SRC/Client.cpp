@@ -431,15 +431,26 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
     uint8_t byFirstByte;
     D2OnePacketClientStrc* pWalkPacket;
     char* nPacketSize = pBytes;
+    // [d2boot-fix] This enqueue runs on the server/qserver thread (SP loopback via
+    // NET_D2GS_SERVER_SendPacketToClient / HandleIncomingPacketBuffer), while the main
+    // thread pops the same two queues in NET_D2GS_CLIENT_ExtractPacketSize under
+    // lpCriticalSection_00882ce8. Mutating them here unlocked let a pop/free interleave
+    // with a tail-walk and tear the chain into a self-sustaining cycle; the client pump
+    // (HandleAllNonVariableSizePackets) then never saw -1 and the main loop never beat
+    // again -> frozen loading screen (hangwatch stall inside the 0x5B dispatch).
+    // Serialize with the pop path.
+    EnterCriticalSection(&lpCriticalSection_00882ce8);
     while (true) {
       D2OnePacketClientStrc* pNewPacket;
       if ((int)pBytesSize <= 0) {
+        LeaveCriticalSection(&lpCriticalSection_00882ce8);
         return;
       }
 
       pNewPacket = D2_NEW_AT(D2OnePacketClientStrc, ".\\SRC\\Client.cpp", 0x1fd);
       nSizeResult = ::D2Net::Game::Server::NET_D2GS_CLIENT_GetIncomingPacketSizeFromTableAndVariableSize(pBytes, pBytesSize, (uint32_t*)&nPacketSize);
       if (!nSizeResult) {
+        LeaveCriticalSection(&lpCriticalSection_00882ce8);
         return;
       }
       if (nPacketSize > (char*)0x204) {
@@ -492,6 +503,7 @@ void __fastcall NET_D2GS_CLIENT_HandleIncomingBufferAndCreatePacket(char * pByte
       pBytes += (int)nPacketSize;
     }
 
+    LeaveCriticalSection(&lpCriticalSection_00882ce8);
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x203);
     exit(-1);
 }

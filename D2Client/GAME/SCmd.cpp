@@ -2729,6 +2729,14 @@ void __fastcall NET_D2GS_CLIENT_PacketHandle_to0xAF(char * pBytes, size_t nSize)
           }
         }
 
+        if (!(nConsumed & 0xffff)) {
+          // [d2boot-fix] A dispatched packet that consumes 0 bytes would spin this loop
+          // forever (cursor never advances -> same op re-dispatched endlessly, main-loop
+          // beat stops, loading screen freezes). Log it and drop the rest of the buffer.
+          D2BOOT_MarkFmt("s2c dispatch guard: op 0x%02x consumed 0 bytes; dropping %u trailing bytes",
+                         (unsigned)byPacketId, (unsigned)nRemaining);
+          return;
+        }
         uVar1 = nConsumed & 0xffff;
         gnTotalPacketBytesProcessed += uVar1;
         nRemaining -= uVar1;
