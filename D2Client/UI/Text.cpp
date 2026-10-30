@@ -82,6 +82,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Launch/MainMenus.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -5682,7 +5683,7 @@ void __fastcall TEXT_ShowScrollingText(uint16_t nParam, int32_t nParam2, int32_t
       gnTextBoxExclusionX = (ScreenSizeX - 0x145) / 2;
       gnScrollingTextBoxTopY = 0xc;
     } else {
-      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY;
+      gnScrollingTextBoxTopY = 0x105 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
       gnTextBoxExclusionX = gnPanelOffsetX;
     }
 

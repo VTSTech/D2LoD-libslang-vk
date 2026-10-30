@@ -125,6 +125,23 @@ BOOL __fastcall SetGamma(int32_t nGamma) {
         }
       }
     } else {
+      // VP: mode table + perspective path — retail clamped every non-640
+      // stop to an 800x600 surface and only ever exercised mode 2 through
+      // the perspective=1 path (modes 1/3 were dormant, unreachable via its
+      // own registry clamp). The Vanilla Plus stops need real sizes here:
+      // mode 4 = Vanilla Plus 1280x720, mode 3 = the dormant 1344x700.
+      // grSstWinOpen resolution enum gains 16 = 1280x720 and 17 = 1344x700;
+      // the paired Glide3xVK wrapper (branch Glide3xVK, g3x_resolution_size)
+      // maps both. Older wrapper builds fail soft: 640x480 surface plus an
+      // "unknown resolution" line in glide3x.log. The goto below is the D3D
+      // black-screen trap (field-tested 2026-10-30 on D3D, same shape): with
+      // gbGlidePerspectiveMode left 0 at a non-800x600 size,
+      // RENDERER_GLIDE_InitTextureMemory's non-perspective branch is gated
+      // on width==800 && height==600 and never runs, so the floor/subtile/
+      // sprite caches stay uninitialized and the world renders nothing.
+      // Modes 2/3/4 are the 800x600-class UI and take the SAME
+      // fully-initialized perspective=1 path as retail 800x600 — that
+      // branch is VRAM-budget based and resolution-independent.
       fGammaVal.fValue = (float)nGamma / 100.0;
       FVar1 = (*GLIDEDLL_guGammaCorrectionRGB_12)(fGammaVal.fValue, fGammaVal.fValue, fGammaVal.fValue);
     }
@@ -1270,7 +1287,16 @@ static void RENDERER_GLIDE_SetDrawMode(int32_t nParam) {
         (*GLIDEDLL_grConstantColorValue_4)(0x80);
         return;
       }
-      if (nParam != 2) {
+      if (nParam == 4) {
+        screen_resolution = 16; // Vanilla Plus 1280x720 (Glide3xVK g3x_resolution_size entry 16)
+        RENDERER_nWindowWidth = 1280;
+        RENDERER_nWindowHeight = 720;
+      } else if (nParam == 3) {
+        screen_resolution = 17; // dormant 1344x700 (Glide3xVK g3x_resolution_size entry 17)
+        RENDERER_nWindowWidth = 1344;
+        RENDERER_nWindowHeight = 700;
+      }
+      if (nParam != 2 && nParam != 3 && nParam != 4) {
         return;
       }
 

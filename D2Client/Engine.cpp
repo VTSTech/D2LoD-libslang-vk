@@ -13,7 +13,9 @@
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
-#include "D2Client/UI/EscMenu.h"
+#include "D2Client/UI/Draw.h"
+#include "D2Client/UI/Inv.h"
+#include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/ui.h"
 #include "D2Client/UNIT/CUnit.h"
 #include "D2Client/UNIT/Monster.h"
@@ -24,13 +26,13 @@
 #include "D2Common/D2RoomExStrc.h"
 #include "D2Common/D2RoomStrc.h"
 #include "D2Common/D2StatListExStrc.h"
-#include "D2Common/D2UnitStrc.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
+#include "D2Common/Unit/D2UnitStrc.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -49,7 +51,7 @@
 #include "globals/globals.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/Automap.h"
-#include "D2Common/Unit.h"
+#include "D2Common/Unit/Unit.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillSor.h"
 
@@ -61,43 +63,43 @@ namespace D2Client::Engine {
 BOOL __stdcall UI_IsMouseInRect(int32_t nRectLeftX, int32_t nRectBottomY, int32_t nRectWidth, int32_t nRectHeight) {
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (nMouseX >= nRectLeftX && nMouseX <= nRectLeftX + nRectWidth && nMouseY >= nRectBottomY - nRectHeight && nMouseY <= nRectBottomY) {
-      return 1;
+    if (!(nRectLeftX <= nMouseX && nMouseX <= nRectLeftX + nRectWidth && nRectBottomY - nRectHeight <= nMouseY && nMouseY <= nRectBottomY)) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void __stdcall DrawPopupOk(int32_t nParam) {
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, 0x48);
-    if (nParam) {
-      sGfxData.pDC6 = (DC6*)IMG_popupok_DiscPrompt;
-    } else {
+    if (!nParam) {
       sGfxData.pDC6 = (DC6*)IMG_popupok_ConnLost;
+    } else {
+      sGfxData.pDC6 = (DC6*)IMG_popupok_DiscPrompt;
     }
 
     sGfxData.nDirection = 0;
     sGfxData.nFrameNumber = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xbc, 0x148 - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xbc, 0x148 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = 1;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x1bc, 0x148 - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x1bc, 0x148 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall LOADER_CheckForInsertedDiscs() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int32_t nColor_lcl = 0;
     uint16_t* wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5168);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
     nColor_lcl = 0;
-    if (bIsExpansion) {
-      /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
-    } else {
+    if (!bIsExpansion) {
       /* Play Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5169);
+    } else {
+      /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
     }
 
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 205 - gnPanelOffsetY, gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 205 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -107,12 +109,14 @@ void __stdcall DrawOkCancel(int32_t nParam) {
     sGfxData.pDC6 = (DC6*)IMG_okcancelbtn;
     sGfxData.nFrameNumber = nParam;
     sGfxData.nDirection = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x110, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x110, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall LOADER_DrawInsertDiscMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x170, D2Lang::StrTable::strtable::GetLocaleString(0x13ee), 0);
+    int32_t nColor_lcl = 0;
+    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x110, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x170, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -139,11 +143,11 @@ void __fastcall LOADER_DrawInsertDiscScreen(int32_t nUnused) {
 
 void __stdcall INPUT_CharScreenOkDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
-    int nBaseY = -gnPanelOffsetY;
+    int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0x110;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
+    if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x170 && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
       gnCharScreenOkButtonPressed = 1;
       gnCharScreenInputState = 1;
       Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
@@ -167,11 +171,11 @@ void __stdcall INPUT_CharScreenOkUp(D2UIMouseMsgStrc * pMsg) {
     gnCharScreenOkButtonPressed = 0;
     if (gnCharScreenInputState) {
       int nMouseX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0x110;
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
-      if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x170 && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
+      if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x170 && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkPressed = 1;
         gnCharScreenInputState = 0;
         pMsg->bHandled = 1;
@@ -203,13 +207,17 @@ void __stdcall INPUT_CharScreenOkCancel(D2UIMouseMsgStrc * pMsg) {
 
 void __stdcall LOADER_DrawConnectionLostMessage() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, D2Lang::StrTable::strtable::GetLocaleString(0x1430), 0);
+    int32_t nColor_lcl = 0;
+    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x1430);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xbe - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
     uint16_t wStrTableId = 0x1432;
     if (gbConnectionLost) {
       wStrTableId = 0x5578;
     }
 
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY, gnPanelOffsetX + 0x1c4, D2Lang::StrTable::strtable::GetLocaleString(wStrTableId), 0);
+    nColor_lcl = 0;
+    wszMessage = D2Lang::StrTable::strtable::GetLocaleString(wStrTableId);
+    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 0x84, 0xcd - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1c4, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -219,15 +227,19 @@ void __stdcall LOADER_DrawOkCancelButtons(int32_t nOkFrame, int32_t nCancelFrame
     sGfxData.pDC6 = (DC6*)IMG_okcancelbtn;
     sGfxData.nFrameNumber = nOkFrame;
     sGfxData.nDirection = 0;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xce, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0xce, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     sGfxData.nFrameNumber = nCancelFrame;
-    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x152, 0x13e - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+    D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x152, 0x13e - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
 }
 
 void __stdcall DRAW_UI_OkCancel() {
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x12e, D2Lang::StrTable::strtable::GetLocaleString(0x13ee), 0);
-    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY, gnPanelOffsetX + 0x1b2, D2Lang::StrTable::strtable::GetLocaleString(0x13ef), 0);
+    int32_t nColor_lcl = 0;
+    uint16_t* wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ee);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0xce, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x12e, wszMessage, nColor_lcl);
+    nColor_lcl = 0;
+    wszMessage = D2Lang::StrTable::strtable::GetLocaleString(0x13ef);
+    UI::ui::UI_DrawTextCentered(gnPanelOffsetX + 0x152, 0x136 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 0x1b2, wszMessage, nColor_lcl);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
@@ -254,17 +266,17 @@ void __fastcall LOADER_DrawConnectionLostScreen(int32_t nUnused) {
 
 void __stdcall INPUT_CharScreenDualButtonDown(D2UIMouseMsgStrc * pMsg) {
     int nBaseX = gnPanelOffsetX;
-    int nBaseY = -gnPanelOffsetY;
+    int nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
     int nLeftEdge = gnPanelOffsetX + 0xce;
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
-    if (nMouseX < nLeftEdge || nMouseX > nBaseX + 0x12e || nMouseY < nBaseY + 0x116 || nMouseY > nBaseY + 0x136) {
+    if (nMouseX < nLeftEdge || nBaseX + 0x12e < nMouseX || nMouseY < nBaseY + 0x116 || nBaseY + 0x136 < nMouseY) {
       int nBaseX2 = gnPanelOffsetX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseX = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();
-      if (nBaseX < nMouseY || nBaseX > nBaseX2 + 0x1b2 || nMouseX < nBaseY + 0x116 || nMouseX > nBaseY + 0x136) {
+      if (nBaseX < nMouseY || nBaseX2 + 0x1b2 < nBaseX || nMouseX < nBaseY + 0x116 || nBaseY + 0x136 < nMouseX) {
         GAME::Game::GAMEDATA_ClearQueuedClicks();
         pMsg->bHandled = 1;
         pMsg->dwResult = 0;
@@ -294,21 +306,21 @@ void __stdcall INPUT_CharScreenDualButtonUp(D2UIMouseMsgStrc * pMsg) {
     gnConnectionLostScreenState = 0;
     if (gnCharScreenInputState) {
       int nMouseX;
-      nBaseY = -gnPanelOffsetY;
+      nBaseY = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nLeftEdge = gnPanelOffsetX + 0xce;
       nMouseX = UI::ui::GetMouseX();
       nMouseY = UI::ui::GetMouseY();
       nBaseX2 = gnPanelOffsetX;
-      if (nMouseX >= nLeftEdge && nMouseX <= nBaseX + 0x12e && nMouseY >= nBaseY + 0x116 && nMouseY <= nBaseY + 0x136) {
+      if (nLeftEdge <= nMouseX && nMouseX <= nBaseX + 0x12e && nBaseY + 0x116 <= nMouseY && nMouseY <= nBaseY + 0x136) {
         gbCharScreenOkButtonConfirmed = 1;
         gnCharScreenInputState = 0;
       }
 
-      nBaseX = -gnPanelOffsetY;
+      nBaseX = -gnPanelOffsetY + VPRES_GetWideUiOffsetY();
       nMouseY = gnPanelOffsetX + 0x152;
       nBaseY = UI::ui::GetMouseX();
       nMouseX = UI::ui::GetMouseY();
-      if (nBaseY >= nMouseY && nBaseY <= nBaseX2 + 0x1b2 && nMouseX >= nBaseX + 0x116 && nMouseX <= nBaseX + 0x136) {
+      if (nMouseY <= nBaseY && nBaseY <= nBaseX2 + 0x1b2 && nBaseX + 0x116 <= nMouseX && nMouseX <= nBaseX + 0x136) {
         gbCharScreenCancelPressed = 1;
         gnCharScreenInputState = 0;
       }
@@ -353,7 +365,7 @@ void __stdcall LOADER_FreePopupImages() {
       IMG_okcancelbtn = 0;
     }
 
-    UI::ui::PALETTE_LoadLoadingScreenPalette();
+    UI::Draw::PALETTE_LoadLoadingScreenPalette();
 }
 
 void __fastcall LOADER_SetConnectionLostFlag(BOOL bConnectionLost) {
@@ -399,9 +411,13 @@ bool fpRequiredUserAction() {
     IMG_okcancelbtn = (D2ArchiveStrc*)Core::Archive::IMAGE_LoadDC6Ex("Data\\Global\\UI\\Menu\\okcancelbtn", 0);
     D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette(0);
     GAME::Game::GAMEDATA_SetDrawFunction(1);
-    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
+    int32_t nHandlerCount = 4;
+    HWND hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
     _Message::MessageGameLoop((::fpGameLoopFunction)fpGameLoopFunction);
-    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
+    nHandlerCount = 4;
+    hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return true;
@@ -410,9 +426,13 @@ bool fpRequiredUserAction() {
 // Sets draw function mode, registers event handlers, runs game loop with custom fpGameLoopFunction, then cleans up
 uint32_t __fastcall ENGINE_RunDrawModeGameLoop(int32_t nDrawMode) {
     GAME::Game::GAMEDATA_SetDrawFunction(nDrawMode);
-    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
+    int32_t nHandlerCount = 4;
+    HWND hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
     _Message::MessageGameLoop((::fpGameLoopFunction)fpGameLoopFunction);
-    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
+    nHandlerCount = 4;
+    hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit, nHandlerCount);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return 1;
@@ -421,13 +441,17 @@ uint32_t __fastcall ENGINE_RunDrawModeGameLoop(int32_t nDrawMode) {
 // Alternate draw mode game loop with different event handler table and loop function
 uint32_t ENGINE_RunDrawModeGameLoopAlt(int32_t nDrawMode, uint32_t dwRetVal) {
     GAME::Game::GAMEDATA_SetDrawFunction(nDrawMode);
-    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit2, 4);
+    int32_t nHandlerCount = 4;
+    HWND hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, gsUIEngineFlagInit2, nHandlerCount);
     _Message::MessageGameLoop((::fpGameLoopFunction)LOADER_PopupGameLoopCallback);
     if (gbCharScreenCancelPressed) {
       dwRetVal = 0;
     }
 
-    _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit2, 4);
+    nHandlerCount = 4;
+    hWnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUIEngineFlagInit2, nHandlerCount);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
     return dwRetVal;
@@ -473,21 +497,21 @@ void __stdcall CLIENT_SetAnimModeAndMoveToCurrentPos(eD2PlayerAnimMode nAnimMode
     }
 
     eD2UnitType eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
       nX = pUnit->pPath.pStaticPath->nPosX;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
-    } else {
+    } else if (!pUnit->pPath.pDynamicPath) {
       nX = 0;
+    } else {
+      nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
     }
 
     eUnitType = pUnit->eUnitType;
-    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
+    if (eUnitType == UNIT_OBJECT || 3 < (int)eUnitType && (int)eUnitType < 6) {
       nY = pUnit->pPath.pStaticPath->nPosY;
-    } else if (pUnit->pPath.pDynamicPath) {
-      nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-    } else {
+    } else if (!pUnit->pPath.pDynamicPath) {
       nY = 0;
+    } else {
+      nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
     }
     if (!(nX && nY)) {
       return;
@@ -512,7 +536,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
 
     D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &pAdjacentRooms, (int*)&nRoomCount);
     uint32_t nCount = 0;
-    if (nRoomCount <= 0) {
+    if (!nRoomCount) {
       return;
     }
 
@@ -521,7 +545,7 @@ void __stdcall CLIENT_PreloadMonsterCofsInAdjacentRooms() {
         if (pUnit->eUnitType == UNIT_MONSTER) {
           eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_dopplezon);
           if (eState != STATE_none) {
-            Gfx::GFX_LoadUnitModeCof(pUnit, 0);
+            Gfx::GFX_LoadUnitModeCof(pUnit);
           }
         }
       }
@@ -563,7 +587,7 @@ void __fastcall CLIENT_UpdateUnitLightRadius(D2UnitStrc * pUnit, int32_t nRadius
     }
 
     nLightRadius += nRadiusBonus;
-    Draw::LightMap::LIGHTMAP_SetRadius(pLightMap, (int)nLightRadius <= 0 ? 0 : nLightRadius);
+    Draw::LightMap::LIGHTMAP_SetRadius(pLightMap, (int)nLightRadius < 1 ? 0 : nLightRadius);
 }
 
 void __fastcall CLIENT_SetUnitLightColor(D2UnitStrc * pUnit, int32_t dwRGB) {

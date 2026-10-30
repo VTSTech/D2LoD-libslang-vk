@@ -7,13 +7,12 @@
 #include <cstdio>
 #include <cstdarg>
 #include "d2_platform.h"
-#include "D2Launch/MainMenus.h"
 
 // Forward declarations
+struct D2UIMouseMsgStrc;
 struct DC6;
 typedef int DRAWMODE;
 struct D2EscMenuItemStrc;
-struct D2UIMouseMsgStrc;
 #ifndef RECON_FPTD_pfnEscMenuItemAction
 #define RECON_FPTD_pfnEscMenuItemAction
 typedef void (__fastcall *pfnEscMenuItemAction)(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
@@ -58,42 +57,19 @@ struct D2EscMenuUIFlagStrc {
     /* 0x08 */ int nSavedState;
 };
 
-struct __attribute__((packed)) D2UIMouseMsgStrc {
-    /* 0x00 */ HWND hWnd; // HWND the message was delivered to. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local hMsgWnd at Stack[-0x24], which it passes to SEvtDispatch as the opaque pData.
-    /* 0x04 */ uint32_t uMsg; // Windows message id. WND_DispatchWindowMessage local uMsgL at Stack[-0x20].
-    /* 0x08 */ uint32_t nWParam; // WPARAM. WND_DispatchWindowMessage local nMsgWParam at Stack[-0x1c]. Read as a byte virtual-key code by INPUT_FormKeyHandler/INPUT_FormKeyUpHandler.
-    /* 0x0C */ D2UIMsgLParamUnion uLParam; // LPARAM. Built by Storm::WindowHandle::WND_DispatchWindowMessage @00420b00 as its local dwMsgLParam at Stack[-0x18]. For mouse messages the low half is the cursor x and the high half the cursor y (76 handlers read it as a ushort pair); for key messages the whole dword is the keyboard flag word, and 14 handlers test bit 30 (0x40000000, auto-repeat). Modelled as the raw LPARAM because that is the only reading true at every site.
-    /* 0x10 */ uint32_t nCmdCode; // WM_COMMAND notification code, HIWORD(wParam), else 0. WND_DispatchWindowMessage local nCmdCode at Stack[-0x14].
-    /* 0x14 */ uint8_t field_0x14;
-    /* 0x15 */ uint8_t field_0x15;
-    /* 0x16 */ uint8_t field_0x16;
-    /* 0x17 */ uint8_t field_0x17;
-    /* 0x18 */ uint32_t bHandled; // Handler sets 1 to mark the message consumed. Returned to the caller through WND_DispatchWindowMessage's pdwResult1.
-    /* 0x1C */ uint32_t dwResult; // Handler result, returned through WND_DispatchWindowMessage's pdwResult2.
-};
-
 namespace D2Client::UI::EscMenu {
 
 // Function declarations
 void __fastcall UI_SLIDER_ApplyMasterVolumeFromSlider(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyMasterVolume(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyMusicVolumeFromSlider(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyMusicVolume(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall ESCMENU_Init3DSoundItem(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyPositionalBiasFromSlider(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyPositionalBias(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall ESCMENU_InitEaxSoundItem(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_ApplyNpcSpeech(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_LoadAndApplyNpcSpeech(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyLightQuality(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_InitLightQuality(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyBlendedShadows(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_InitBlendedShadows(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyResolution(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-void __fastcall UI_SLIDER_LoadAndApplyResolution(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
+void __fastcall UI_SLIDER_DrawResolutionValue(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg); // VP: 720p stop label
 void __fastcall UI_SLIDER_ApplyPerspective(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-// Reads the perspective setting from the registry, applies it via D2GFX_SetPerspective if the hardware supports it, and updates the view rectangle. (StorePerspective at 0047d187 was a stray entry inside this body.)
-void __fastcall UI_SLIDER_LoadAndApplyPerspective(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall StoreGamma(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_InitGamma(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall UI_SLIDER_ApplyContrast(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
@@ -146,6 +122,6 @@ void __fastcall ESCMENU_SwitchToExpansionSaveExitMenu(struct D2EscMenuItemStrc *
 void __fastcall ESCMENU_ShowControlConfig(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall ESCMENU_SwitchToMainMenu_alt(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 void __fastcall ESCMENU_SwitchToOptionsMenu(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
-// 5 internal functions (defined in .cpp)
+// 3 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::EscMenu

@@ -593,8 +593,13 @@ void __fastcall DirectDrawErrorHandler(char * szContext, int32_t nErrorCode) {
 
 static BOOL InternalOpenWindow(int32_t nResolutionMode) {
     // Static local variables (originally global data)
-    static uint32_t gdwDirectDrawPaletteSizes[4] = { 0x280, 0x320, 0x320, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
-    static uint32_t gdwDirectDrawSurfaceWidths[4] = { 0x1e0, 0x258, 0x258, 0x0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
+    // VP: display-mode (width, height) per resolution mode. Retail sized
+    // these [4] tables for modes 0-2 only and indexed them directly by the
+    // requested mode: mode 3 read the {0} sentinel and mode 4 read PAST the
+    // array (OOB). Filled 3 with its documented 1344x700 and added Vanilla
+    // Plus mode 4 = 1280x720 (0x500 x 0x2d0), 8bpp.
+    static uint32_t gdwDirectDrawPaletteSizes[5] = { 0x280, 0x320, 0x320, 0x540, 0x500 }; D2_STATIC_GUARD(gdwDirectDrawPaletteSizes, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawPaletteSizes");
+    static uint32_t gdwDirectDrawSurfaceWidths[5] = { 0x1e0, 0x258, 0x258, 0x2bc, 0x2d0 }; D2_STATIC_GUARD(gdwDirectDrawSurfaceWidths, "D2DDraw::Renderer::DirectDraw::InternalOpenWindow::gdwDirectDrawSurfaceWidths");
 
     char* szErrorMsg;
     DDSURFACEDESC ddSurfDesc;
@@ -1111,6 +1116,18 @@ void __fastcall RENDERER_DDRAW_SetHorizontalBounds(int32_t bWidescreen) {
     gnDDrawSurfaceXMin = 0;
     gnDDrawRenderWidth = 0x280;
     if (!bWidescreen) {
+      return;
+    }
+
+    // VP: modes 3/4 render the full (1344/1280-wide) playfield; retail
+    // clamped every nonzero mode to the 800-wide bound.
+    if (bWidescreen == 4) {
+      gnDDrawRenderWidth = 1280;
+      return;
+    }
+
+    if (bWidescreen == 3) {
+      gnDDrawRenderWidth = 0x540;
       return;
     }
 

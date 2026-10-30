@@ -9720,7 +9720,7 @@ D2EscMenuItemStrc gaEscMenuSwitchClassTable[7] = {
         },
         /* .fpVisibilityCheck = */ &D2gfx::D2GFX::D2GFX_GetPerspectiveCapable_ForPerspectiveItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPerspective,
-        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyPerspective,
+        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyPerspective,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
@@ -16343,9 +16343,9 @@ D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         },
         /* .fpVisibilityCheck = */ nullptr,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyResolution,
-        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyResolution,
-        /* .fpDrawCallback = */ nullptr,
-        /* .nSubImageCount = */ 0x2,
+        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyResolution,
+        /* .fpDrawCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue, // VP: 720p stop label (no MPQ asset)
+        /* .nSubImageCount = */ 0x2, // VP: keep 2 - the loader needs an MPQ DC6 per stop; stop 2 is attached at runtime
         /* .nImageIndex = */ 0x0,
         /* .bSelected = */ 0x0,
         /* .szSubImage1Path = */ {
@@ -20315,7 +20315,7 @@ D2EscMenuItemStrc gaEscMenuDeleteCharTable[8] = {
         },
         /* .fpVisibilityCheck = */ &D2gfx::D2GFX::D2GFX_GetPerspectiveCapable_ForPerspectiveItem,
         /* .fpClickCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_ApplyPerspective,
-        /* .fpInitCallback = */ &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyPerspective,
+        /* .fpInitCallback = */ &UI_SLIDER_LoadAndApplyPerspective,
         /* .fpDrawCallback = */ nullptr,
         /* .nSubImageCount = */ 0x2,
         /* .nImageIndex = */ 0x1,
@@ -37130,6 +37130,8 @@ uint32_t g_Palette32Bit[256] = {}; D2_GLOBAL_GUARD(g_Palette32Bit, "g_Palette32B
 
 D2D3DDeviceSlotStrc gD3DDeviceBlock0[2] = {}; D2_GLOBAL_GUARD(gD3DDeviceBlock0, "gD3DDeviceBlock0");
 
+D2SmackerGlideBufferStrc gnSmackerGlideYOffset = {}; D2_GLOBAL_GUARD(gnSmackerGlideYOffset, "gnSmackerGlideYOffset");
+
 char Rsrc_Manifest_1_409[1745] = { "<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">\r\n</assembly>PAPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGXXPADDINGPADDINGX" }; D2_GLOBAL_GUARD(Rsrc_Manifest_1_409, "Rsrc_Manifest_1_409");
 
 CLIENT_ID ClientId = {
@@ -37975,7 +37977,7 @@ uint32_t DWORD_007467b0 = 0x5070000; D2_GLOBAL_GUARD(DWORD_007467b0, "DWORD_0074
 uint32_t DEFAULT_SECURITY_COOKIE = 0xbb40e64e; D2_GLOBAL_GUARD(DEFAULT_SECURITY_COOKIE, "DEFAULT_SECURITY_COOKIE");
 unsigned int gaCRT_FPremData_3 = 0x6a9a24; D2_GLOBAL_GUARD(gaCRT_FPremData_3, "gaCRT_FPremData_3");
 BOOL BOOL_0074c020 = 0x64; D2_GLOBAL_GUARD(BOOL_0074c020, "BOOL_0074c020");
-int TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
+uint32_t TokenHashMapBucketSize = 0x10; D2_GLOBAL_GUARD(TokenHashMapBucketSize, "TokenHashMapBucketSize");
 uint32_t gnServiceRunning = 0x0; D2_GLOBAL_GUARD(gnServiceRunning, "gnServiceRunning");
 CRITICAL_SECTION gUICtrlSkillColumnState[256] = {}; D2_GLOBAL_GUARD(gUICtrlSkillColumnState, "gUICtrlSkillColumnState");
 CRITICAL_SECTION gUICtrlPanelArrowState[256] = {}; D2_GLOBAL_GUARD(gUICtrlPanelArrowState, "gUICtrlPanelArrowState");
@@ -37985,6 +37987,7 @@ pfnMCPGameListEntry g_pfnMCPGameListCallback = (pfnMCPGameListEntry)0; D2_GLOBAL
 pfnVoidNoArgCallback g_pfnMCPGameListCompleteCallback = (pfnVoidNoArgCallback)0; D2_GLOBAL_GUARD(g_pfnMCPGameListCompleteCallback, "g_pfnMCPGameListCompleteCallback");
 pfnMCPMessage g_pfnMCPMessageCallback = (pfnMCPMessage)0; D2_GLOBAL_GUARD(g_pfnMCPMessageCallback, "g_pfnMCPMessageCallback");
 LPCSTR gpszCmdLineCaptionStr = 0; D2_GLOBAL_GUARD(gpszCmdLineCaptionStr, "gpszCmdLineCaptionStr");
+D2GameViewStrc * D2GameView = 0; D2_GLOBAL_GUARD(D2GameView, "D2GameView");
 int WindowSizeY = 0; D2_GLOBAL_GUARD(WindowSizeY, "WindowSizeY");
 int WindowSizeX = 0; D2_GLOBAL_GUARD(WindowSizeX, "WindowSizeX");
 uint32_t gaSpriteArcaneStarYOffset = 0; D2_GLOBAL_GUARD(gaSpriteArcaneStarYOffset, "gaSpriteArcaneStarYOffset");
@@ -38078,6 +38081,7 @@ uint32_t gnSeedCounter = 0; D2_GLOBAL_GUARD(gnSeedCounter, "gnSeedCounter");
 unsigned int gpfnProfCoreInitCallback = {}; D2_GLOBAL_GUARD(gpfnProfCoreInitCallback, "gpfnProfCoreInitCallback");
 unsigned int UINT_0096d6a8 = {}; D2_GLOBAL_GUARD(UINT_0096d6a8, "UINT_0096d6a8");
 IDirectDrawSurface7 * g_pD3DSurfaceBackbuffer = 0; D2_GLOBAL_GUARD(g_pD3DSurfaceBackbuffer, "g_pD3DSurfaceBackbuffer");
+uint32_t gnSmackerDecodeState = 0; D2_GLOBAL_GUARD(gnSmackerDecodeState, "gnSmackerDecodeState");
 uint32_t dwCurrentThreadId = 0; D2_GLOBAL_GUARD(dwCurrentThreadId, "dwCurrentThreadId");
 uint8_t IMAGE_RESOURCE_DIRECTORY_00995000[16] = {}; D2_GLOBAL_GUARD(IMAGE_RESOURCE_DIRECTORY_00995000, "IMAGE_RESOURCE_DIRECTORY_00995000");
 uint8_t Rsrc_Icon_1_409[744] = {}; D2_GLOBAL_GUARD(Rsrc_Icon_1_409, "Rsrc_Icon_1_409");

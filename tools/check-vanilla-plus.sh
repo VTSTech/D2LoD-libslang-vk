@@ -54,16 +54,12 @@ gate "row-10 init callback wired (row + comment)" globals/D2Client.cpp        'E
 gate "row-10 draw callback wired (row + comment)" globals/D2Client.cpp        'VANILLAPLUS_DrawRowLabel'   2
 
 # ---- Draw.cpp / ui.cpp dispatch + guards ----------------------------------
-# upstream b1b32b8 (Ghidra 1775) re-filed the SetUIFlag/toggle machinery from
-# Draw.cpp into ui.cpp: register/unregister anchors follow the code, the
-# render anchor stays in Draw.cpp (DRAW_UI dispatch was not moved).
-gate "row-10 render VP block (Draw.cpp)"  D2Client/UI/Draw.cpp            'VP-BEGIN \[row-10 options page\]' 1
-gate "row-10 register/unregister VP blocks" D2Client/UI/ui.cpp            'VP-BEGIN \[row-10 options page\]' 2
+gate "SetUiFlagInit/unregister/render VP blocks" D2Client/UI/Draw.cpp     'VP-BEGIN \[row-10 options page\]' 3
 gate "auto-gold tick wired in DRAW_UI"    D2Client/UI/Draw.cpp            'AUTO_GOLD_Tick\(\);'        1
 gate "latch reset in InitializeUI"        D2Client/UI/Draw.cpp            'ALTTOGGLE_Reset\(\);'       1
-gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/ui.cpp       'case UI_VANILLAPLUS:'       2
-gate "VANILLAPLUS_OnToggleUI calls"       D2Client/UI/ui.cpp              'VANILLAPLUS_OnToggleUI\('   2
-gate "SetUIFlag bound widened to 38"      D2Client/UI/ui.cpp              'UI_VANILLAPLUS < eUI'       1
+gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/Draw.cpp     'case UI_VANILLAPLUS:'       2
+gate "VANILLAPLUS_OnToggleUI calls"       D2Client/UI/Draw.cpp            'VANILLAPLUS_OnToggleUI\('   2
+gate "SetUIFlag bound widened to 38"      D2Client/UI/Draw.cpp            'UI_VANILLAPLUS < eUI'       1
 gate "GetUIFlag bound widened to 38"      D2Client/UI/ui.cpp              'UI_VANILLAPLUS >= eUI'      1
 gate "0x27 guards in Draw.cpp"            D2Client/UI/Draw.cpp            'gnUIFlagCount (!=|==) 0x27' 5
 gate "0x27 guards in ui.cpp"              D2Client/UI/ui.cpp              'gnUIFlagCount (!=|==) 0x27' 1
@@ -131,6 +127,106 @@ gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int 
 # the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
+
+# ---- resolution-mode (1280x720 slider stop) --------------------------------
+# The registry value is the slider POSITION (0/1/2); stop 2 is attached at
+# runtime by the Resolution row's init callback because no MPQ label asset
+# exists for it. EscMenu.cpp mapping: 0 -> mode 0, 1 -> mode 2, 2 -> mode 4.
+gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 1
+gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
+gate "resolution: init attach + mode 4"      Storm/_unnamespaced.cpp     'VPRES_BuildBlankPlaceholder|RequestedScreenModeMaybe = 4' 2
+gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResolution > 2|nScreenMode_lcl = 4' 2
+gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
+gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
+gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
+gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
+# ---- resolution site-5: wide-layout classification + centered 800-px UI ----
+# Wide modes (3=1344x700 dormant, 4=1280x720) join the retail 800x600 UI
+# class via VPRES_IsWideLayoutMode and re-center the exactly-800-px-wide UI
+# with VPRES_GetWideUiOffsetX() = (ScreenSizeX-800)/2. The offset is 0 at
+# modes 0/1/2, so retail behavior stays byte-identical.
+gate "site-5: classifier defined"          D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_IsWideLayoutMode' 1
+gate "site-5: centering offset defined"    D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetX' 1
+gate "site-5: DRAW_UI gnPanelOffset block" D2Client/UI/Draw.cpp            'VP-BEGIN \[resolution site-5\]' 1
+gate "site-5: panel offset ride"           D2Client/UI/Draw.cpp            '80 \+ VPRES_GetWideUiOffsetX' 1
+gate "site-5: bar branch + borders gate"   D2Client/UI/Panel.cpp           'VPRES_IsWideLayoutMode' 2
+gate "site-5: bar/orb/belt X shifts"       D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetX' 37
+gate "site-5: ui.cpp 800-class gates"      D2Client/UI/ui.cpp              'VPRES_IsWideLayoutMode' 20
+gate "site-5: help art + text shifts"      D2Client/UI/Help.cpp            'VPRES_GetWideUiOffsetX' 75
+gate "site-5: questlog 800-class gates"    D2Client/UI/QuestLog.cpp        'VPRES_IsWideLayoutMode' 6
+gate "site-5: inventory table shifts"      D2Client/UI/Inv.cpp             'VP_SHIFT_Inv' 43
+gate "site-5: inv drop-click gate"         D2Client/UI/Inv.cpp             'VPRES_IsWideLayoutMode' 1
+gate "site-5: inv coord cache key"         D2Client/UI/Inv.cpp             'nCoordPageKey' 3
+gate "site-5: spell grid shifts"           D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 4
+gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
+gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
+gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
+gate "site-5: listbox metrics gate"        D2Client/UI/ListBox/ListBoxImplementation.cpp 'VPRES_IsWideLayoutMode' 1
+gate "site-5: fork-api include in ui.cpp"  D2Client/UI/ui.cpp              'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in Help.cpp" D2Client/UI/Help.cpp           'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in QuestLog.cpp" D2Client/UI/QuestLog.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in Inv.cpp" D2Client/UI/Inv.cpp             'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in SpellSel.cpp" D2Client/UI/SpellSel.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in View.cpp" D2Client/GAME/View.cpp         'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in GAME Draw.cpp" D2Client/GAME/Draw.cpp    'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-5: fork-api include in ListBox" D2Client/UI/ListBox/ListBoxImplementation.cpp 'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
+# ---- resolution site-6: the vertical half of the shift ----------------------
+# Fixed (top-anchored) 800-space Y coordinates - Belts.txt/inventory.txt rect
+# Y bounds, "const - gnPanelOffsetY" texts and hit tests, raw border-frame Y -
+# ride the bottom-anchored panel art by VPRES_GetWideUiOffsetY() =
+# ScreenSizeY - 600 (0 at modes 0/1/2 -> byte-identical retail, 100 at mode 3,
+# 120 at mode 4). Input paths use the inverse form "gnPanelOffsetY -
+# VPRES_GetWideUiOffsetY". gnPanelOffsetY itself stays -60: bottom-anchored
+# expressions already contain ScreenSizeY and would double-shift.
+gate "site-6: Y offset defined"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetY' 1
+gate "site-6: Y offset declared"           D2Client/UI/VanillaPlusCore.h   'VPRES_GetWideUiOffsetY' 1
+gate "site-6: belt + border Y shifts"      D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetY' 17
+gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
+gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
+gate "site-6: waypoint Y shifts"           D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
+gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: questlog input inverse"      D2Client/UI/QuestLog.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
+gate "site-6: scrolling text Y shift"      D2Client/UI/Text.cpp            'VPRES_GetWideUiOffsetY' 1
+gate "site-6: tooltip + gold dialog Y shifts" D2Client/UI/ui.cpp              'VPRES_GetWideUiOffsetY' 11
+gate "site-6: gold dialog X shifts"         D2Client/UI/ui.cpp              'VPRES_GetWideUiOffsetX' 5
+gate "site-6: modal popup Y shifts"        D2Client/Engine.cpp             'VPRES_GetWideUiOffsetY' 18
+gate "site-6: help screen Y shifts"        D2Client/UI/Help.cpp            'VPRES_GetWideUiOffsetY' 74
+gate "site-6: fork-api include in Party.cpp"  D2Client/UI/Party.cpp        'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Waypoint.cpp" D2Client/UI/Waypoint.cpp   'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Text.cpp"   D2Client/UI/Text.cpp         'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "site-6: fork-api include in Engine.cpp" D2Client/Engine.cpp          'include "D2Client/UI/VanillaPlusCore\.h"' 1
+
+# ---- resolution renderer dispatch (post-field-test fixes, 2026-10-30) -------
+# Mode 4 must take the fully-initialized perspective=1 D3D device path (the
+# goto left floor/subtile/font caches uninitialized -> black world), and the
+# software renderers must size their buffers to 1280x720 (GDI DIB stayed
+# 800x600 in the resized -w window; DDraw indexed its size tables OOB).
+gate "resfix: d3d mode-4 perspective path"  D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4' 1
+gate "resfix: gdi dib mode-4 1280x720"      D2Gdi/Renderer/Windowed.cpp   'nResolutionMode == 4' 1
+gate "resfix: gdi scale width 1280"         D2Gdi/Renderer/Windowed.cpp   'nParam == 4' 1
+gate "resfix: ddraw size tables extended"   D2DDraw/Renderer/DirectDraw.cpp '0x540, 0x500' 1
+gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnDDrawRenderWidth = 1280' 1
+
+# ---- glide 720p (post-"Video: Software" round, 2026-10-30) ------------------
+# Owner field-tested D3D at 720p as WORKING (renderer 6); Glide (renderer 4,
+# -3dfx + the paired Glide3xVK glide3x.dll) still failed: InitWindow clamped
+# every non-640 stop to an 800x600 surface AND left gbGlidePerspectiveMode 0
+# at a non-800x600 size, where InitTextureMemory's non-perspective branch is
+# gated on width==800 && height==600 and never runs -> uninitialized caches,
+# black world. Game side passes grSstWinOpen enum 16 = 1280x720 (17 = dormant
+# 1344x700); the paired wrapper learns both in g3x_resolution_size (Glide3xVK
+# branch patch, delivered alongside this one).
+gate "resfix: glide mode-4 surface 1280x720"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1280' 1
+gate "resfix: glide mode-3 surface 1344x700"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1344' 1
+gate "resfix: glide resolution enum 16"         D2Glide/Renderer/Glide.cpp 'screen_resolution = 16' 1
+gate "resfix: glide perspective path modes 2/3/4" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4' 1
+
 
 echo
 if [ "$FAIL" -eq 0 ]; then

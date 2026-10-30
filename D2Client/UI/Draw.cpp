@@ -2,26 +2,34 @@
 
 #include "D2Client/UI/Draw.h"
 #include "support/d2_trace.h"
+#include "D2CMP/Pallete.h"
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/ButtonWrapper.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2Client.h"
+#include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
+#include "D2Client/DataTbls/MonsterTbls.h"
+#include "D2Client/Draw/Weather.h"
 #include "D2Client/Engine/Gfx.h"
+#include "D2Client/Engine/GfxInfo.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
+#include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/Message.h"
+#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Chat.h"
 #include "D2Client/UI/CmdTbl.h"
+#include "D2Client/UI/ControlConfig.h"
 #include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Editbox/EditBoxWrapper.h"
 #include "D2Client/UI/EscMenu.h"
@@ -36,48 +44,1579 @@
 #include "D2Client/UI/VanillaPlusOptions.h" // VP: vanilla-plus options page API
 #include "D2Client/UI/VanillaPlusCore.h" // VP: vanilla-plus AUTO_GOLD_Tick / ALTTOGGLE_Reset
 #include "D2Client/UI/ShowItems.h"
+#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Spinner/SpinnerWrapper.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/Waypoint.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/ui.h"
+#include "D2Client/UNIT.h"
 #include "D2Client/UNIT/CUnit.h"
+#include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Object.h"
 #include "D2Client/UNIT/Player.h"
+#include "D2Common/Collision.h"
 #include "D2Common/D2InventoryStrc.h"
+#include "D2Common/D2MissilesTxt.h"
+#include "D2Common/D2MonStatsTxt.h"
+#include "D2Common/D2RoomExStrc.h"
+#include "D2Common/D2RoomStrc.h"
+#include "D2Common/D2SkillsTxt.h"
 #include "D2Common/D2StatListExStrc.h"
 #include "D2Common/D2TileLibraryEntryStrc.h"
-#include "D2Common/D2UnitStrc.h"
+#include "D2Common/DATATBLS/LvlTbls.h"
+#include "D2Common/DATATBLS/ObjectTbls.h"
+#include "D2Common/DUNGEON/Dungeon.h"
 #include "D2Common/Drlg/D2DrlgActStrc.h"
+#include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/Drlg.h"
+#include "D2Common/Drlg/DrlgRoom.h"
+#include "D2Common/Drlg/Preset.h"
+#include "D2Common/Monsters/MONSTERS.h"
+#include "D2Common/Unit/D2UnitStrc.h"
+#include "D2Common/Units.h"
+#include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/Objects/Objects.h"
 #include "D2Game/UNIT/SUnit.h"
+#include "D2Game/UNIT/SUnitDmg.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Lang/StrTable/strtable.h"
+#include "D2Lang/Unicode/UNISYS.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
 #include "D2Win/Src/D2WinFont.h"
 #include "D2Win/Src/D2WinPalette.h"
 #include "D2gfx/D2GFX.h"
 #include "Fog/D2PoolManagerStrc.h"
+#include "Fog/File.h"
 #include "Fog/Fog.h"
+#include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
+#include "D2Common/Unit/Unit.h"
+#include "D2Launch/MainMenus.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
 namespace D2Client::UI::Draw {
 
+static bool gbAutomapPanelOpened = 0; D2_STATIC_GUARD(gbAutomapPanelOpened, "D2Client::UI::Draw::gbAutomapPanelOpened");
+
+void __stdcall PALETTE_LoadLoadingScreenPalette() {
+    char acStack_20c[260];
+    char szPalPl2Path[260];
+    sprintf(acStack_20c, "%s\\Palette\\Loading\\pal.dat", "DATA\\GLOBAL");
+    sprintf(szPalPl2Path, "%s\\Palette\\Loading\\pal.pl2", "DATA\\GLOBAL");
+    D2Win::Src::D2WinPalette::LoadPalette(acStack_20c, szPalPl2Path);
+}
+
+void __fastcall SetActNo(int32_t nParam) {
+    nLoadedActNo = nParam;
+}
+
+void __stdcall CleanupAfterLoadingAct() {
+    // Static local variables (originally global data)
+    static bool gbCleanupAfterLoadingActFlag; D2_STATIC_GUARD_BSS(gbCleanupAfterLoadingActFlag, "D2Client::UI::Draw::CleanupAfterLoadingAct::gbCleanupAfterLoadingActFlag");
+
+    if (gnLoadedActIndex) {
+      Core::Archive::DC6_FreeAndDelete(gnLoadedActIndex);
+      gnLoadedActIndex = 0;
+      D2Win::Src::D2WinPalette::D2WINPAL_LoadActPalette((uint8_t)nLoadedActNo);
+      D2CMP::Pallete::PALETTE_SetAct(nLoadedActNo);
+      Automap::AUTOMAP_InitPaletteColors();
+      Inv::InitializeColors();
+      Party::SetPartyColors();
+      Party::SetRedToBlack();
+      SpellSel::thunk_D2GFX_GetColorFromPalette_C();
+      Panel::thunk_D2GFX_GetColorFromPalette_A();
+      Panel::PANEL_InitGoldColor();
+      Panel::PANEL_InitBeltColors();
+      Panel::thunk_D2GFX_GetColorFromPalette_B();
+      D2Client::Draw::Weather::MISC_PrepareWeatherOverlay(gnWeatherOverlayActId);
+      GAME::Game::GAMEDATA_ExtendTimeout(2000);
+    }
+
+    gbCleanupAfterLoadingActFlag = 0;
+    gnLoadedActIndex = 0;
+    gnLastOpenPanelId = 0;
+}
+
+int32_t __stdcall DRAW_GetLastPanelId() {
+    return gnLastOpenPanelId;
+}
+
+BOOL __stdcall DRAW_CheckTickRateLimiter() {
+    // Static local variables (originally global data)
+    static unsigned int gdwLastDrawTickTimestamp; D2_STATIC_GUARD_BSS(gdwLastDrawTickTimestamp, "D2Client::UI::Draw::DRAW_CheckTickRateLimiter::gdwLastDrawTickTimestamp");
+
+    DWORD dwNow = GetTickCount();
+    if (0x32 >= dwNow - gdwLastDrawTickTimestamp) {
+      return 0;
+    }
+
+    gdwLastDrawTickTimestamp = dwNow;
+    return 1;
+}
+
+// Fills a four-int array with the visible viewport bounds as left, top, right, bottom. Callers must model the destination as one 16-byte object (int[4]): splitting it into separate stack locals leaves the right and bottom elements looking unwritten.
+uint32_t __fastcall DRAW_GetVisibleViewportBounds(int * pnBounds) {
+    *pnBounds = 0;
+    pnBounds[2] = ScreenSizeX;
+    pnBounds[1] = 0;
+    pnBounds[3] = ScreenSizeX;
+    if (!(!GFX_bShowUIFlag.TradePrompt && !GFX_bShowUIFlag.StashMenu && !GFX_bShowUIFlag.CubeMenu && !GFX_bShowUIFlag.NpcShop && !GFX_bShowUIFlag.GuildVault && !GFX_bShowUIFlag.SteegStone)) {
+      return 0;
+    }
+    if (GFX_bShowUIFlag._x1D || GFX_bShowUIFlag.PartyMenu || GFX_bShowUIFlag.CharStat || GFX_bShowUIFlag.Quest || GFX_bShowUIFlag.MercMenu || GFX_bShowUIFlag.UnusedScroll || GFX_bShowUIFlag.WaypointMenu) {
+      *pnBounds = ScreenSizeX / 2;
+    }
+    if (!(GFX_bShowUIFlag.Inventory || GFX_bShowUIFlag.Skill)) {
+      return (uint32_t)(*pnBounds != pnBounds[2]);
+    }
+
+    pnBounds[2] = ScreenSizeX / 2;
+    return (uint32_t)(*pnBounds != pnBounds[2]);
+}
+
+int32_t __stdcall DRAW_GetBottomPanelY() {
+    return ScreenSizeY - 0x31;
+}
+
+void __stdcall DRAW_RegisterDrawHandlers() {
+    int32_t nCount = 0xd;
+    HWND pHwnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 5, nCount);
+    nCount = 1;
+    pHwnd = D2gfx::D2GFX::GetHwnd();
+    _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawPanelInit, nCount);
+}
+
+void __stdcall DRAW_RefreshNpcDialog() {
+    Text::TEXT_CloseMessageUI();
+    npcmenu::NPCMENU_RefreshMenuDialog();
+}
+
+uint32_t __stdcall DRAW_IsDialogActive() {
+    return (uint32_t)(Dialog::gpDialog != 0);
+}
+
+static void __stdcall DRAW_CenteredText(int32_t nFontId, int32_t nY, DWORD dwColor, uint16_t * wszText) {
+    int i;
+    uint16_t wszBuf[256];
+    int anBounds[4];
+    uint16_t* pwszClear = wszBuf;
+    for (i = 0x80; i; i--) {
+      pwszClear[0] = L'\0';
+      pwszClear[1] = L'\0';
+      pwszClear += 2;
+    }
+
+    uint32_t bHasBounds = DRAW_GetVisibleViewportBounds(anBounds);
+    if (!(bHasBounds && wszText)) {
+      return;
+    }
+
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+    D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszBuf, wszText);
+    int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszBuf);
+    D2Win::Src::D2WinFont::DRAW_text(wszBuf, (anBounds[2] + anBounds[0] >> 1) - (nTextWidth >> 1), nY, dwColor, 1);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
+}
+
+void __stdcall DRAW_MonsterUnderCursorImmunites() {
+    D2UnitStrc* pSelected = GAME::Select::GetSelectedUnit();
+    if (!(pSelected && pSelected->eUnitType == UNIT_MONSTER)) {
+      return;
+    }
+
+    uint32_t nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
+    int32_t nY = nFontHeight + 0x27;
+    DRAW_CenteredText(6, nY, gnImmunityText1Color, (uint16_t*)gU16ImmunityStringBuffer1);
+    if (gU16ImmunityStringBuffer1[0] || gnMonsterHealthBarValue[0]) {
+      nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
+      nY += nFontHeight;
+    }
+
+    DRAW_CenteredText(6, nY, gnImmunityText2Color, (uint16_t*)gU16ImmunityStringBuffer2);
+}
+
+void __fastcall DRAW_MonsterHealthBar(D2UnitStrc * pUnit) {
+    D2MonStats2Txt* pMonStats2;
+    uint16_t* pwszStr;
+    BOOL bResult;
+    uint32_t nResult;
+    int32_t nHpBarValue;
+    int i;
+    D2MonStatsTxt* pMonStats;
+    int nClassId;
+    uint16_t wMonTypeStrId;
+    uint16_t wszNameBuf[2048];
+    uint16_t wszDescBuf[512];
+    int anViewportBounds[4];
+    uint16_t wszParen[2];
+    int32_t nTextWidth;
+    DWORD nNameColor;
+    nNameColor = 0x454add;
+    int32_t nFontId;
+    nFontId = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    if (!pUnit) {
+      nClassId = -1;
+    } else {
+      nClassId = pUnit->nClassId;
+      if (-1 < nClassId && nClassId < sgptDataTable->nTxtMonStatsSize) {
+        pMonStats = sgptDataTable->pTxtMonStats + nClassId;
+        goto draw_hover_unit_label;
+      }
+    }
+
+    pMonStats = 0;
+    draw_hover_unit_label:
+    pwszStr = wszNameBuf;
+    for (i = 0x400; i; i--) {
+      pwszStr[0] = L'\0';
+      pwszStr[1] = L'\0';
+      pwszStr += 2;
+    }
+
+    int bIsMercenary = 0;
+    if (!pMonStats->interact && pMonStats->killable && pMonStats->NameStr) {
+      D2RoomStrc* pRoom;
+      if (!pUnit) {
+        i = -1;
+      } else {
+        i = pUnit->nClassId;
+      }
+
+      pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(i);
+      if (pMonStats2) {
+        gnMercenaryHealthBarScreenY -= (uint32_t)(uint8_t)pMonStats2->pixHeight;
+      }
+
+      pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+      D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszNameBuf, pwszStr);
+      pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+      pwszStr = UNIT::CUnit::GetName(pUnit);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+      pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+      if (pUnit && pUnit->eAnimMode.ePlayerMode == Kick) {
+        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+        bResult = D2Common::DUNGEON::Dungeon::DRLGROOM_IsRoomInTown(pRoom);
+        if (bResult) {
+          return;
+        }
+
+        bIsMercenary = 1;
+        nResult = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
+        if (!nResult) {
+          pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0x90b);
+        } else {
+          Fog::File::CONTAINER_InitializeBuffer(wszParen, 2, 2, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+          *(uint16_t*)(char*)&nNameColor = 0x28;
+          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszParen, (char*)&nNameColor, 2);
+          D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, wszParen);
+          pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0x90b);
+          D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+          nNameColor = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)((char*)&nNameColor + 2) << 16 | (uint32_t)(uint16_t)0x29);
+          D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszParen, (char*)&nNameColor, 2);
+          pwszStr = wszParen;
+        }
+
+        D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+        pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+        D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+      }
+
+      pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+      D2Lang::Unicode::UNISYS::AppendToBuffer(wszNameBuf, pwszStr);
+      nHpBarValue = ui::UI_GetMonsterHpBarValue(pUnit);
+      nNameColor = 0;
+      bResult = UNIT::Monster::IsMonsterUnique(pUnit);
+      if (bResult) {
+        nNameColor = 4;
+      }
+
+      bResult = UNIT::Monster::IsMonsterChampion(pUnit);
+      if (bResult) {
+        nNameColor = 3;
+      }
+      if (bIsMercenary) {
+        nNameColor = 1;
+      }
+      if (nClassId == 0xf3 || nClassId == 0x14d || nClassId == 0xf2 || nClassId == 0xd3 || nClassId == 0x220 || nClassId == 0x23a || nClassId == 0xe5 || nClassId == 0x2c4 || nClassId == 0x2c3 || nClassId == 0x2c2 || nClassId == 0x2c1 || nClassId == 0x2c5 || nClassId == 0x2c0) {
+        nNameColor = 4;
+      }
+
+      nResult = DRAW_GetVisibleViewportBounds(anViewportBounds);
+      if (nResult) {
+        nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszNameBuf);
+        D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(wszNameBuf, (anViewportBounds[0] + anViewportBounds[2] >> 1) - (nTextWidth >> 1), 0x20, nNameColor, 0, nHpBarValue);
+        if (bIsMercenary) {
+          gnMonsterHealthBarValue[0] = 0;
+          D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+          return;
+        }
+        if (!pUnit) {
+          nClassId = -1;
+        } else {
+          nClassId = pUnit->nClassId;
+        }
+
+        pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nClassId);
+        wMonTypeStrId = 0;
+        nResult = D2Common::Monsters::MONSTERS::IsDemon(pUnit);
+        if (!nResult) {
+          bResult = D2Common::Monsters::MONSTERS::MONSTER_IsMonsterUndead(pUnit);
+          if (bResult) {
+            wMonTypeStrId = 0x275d;
+          }
+        } else {
+          wMonTypeStrId = 0x275e;
+        }
+
+        bResult = ui::UI_GetUniqueMonsterName(pUnit, wMonTypeStrId);
+        if (!bResult) {
+          if (wMonTypeStrId) {
+            Fog::File::CONTAINER_InitializeBuffer(wszDescBuf, 2, 0x200, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(wMonTypeStrId);
+            D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszDescBuf, pwszStr);
+            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+            D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
+            if (pMonStats->DescStr != 0x1506) {
+              pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(wszDescBuf, pwszStr);
+            }
+
+            ui::UI_StoreGlobalUIText(wszDescBuf, nNameColor);
+            ui::UI_BuildUberBossImmunityString(pUnit);
+            D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+            return;
+          }
+          if (pMonStats->DescStr != 0x1506) {
+            pwszStr = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->DescStr);
+            ui::UI_StoreGlobalUIText(pwszStr, nNameColor);
+          }
+        }
+
+        ui::UI_BuildUberBossImmunityString(pUnit);
+        D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+        return;
+      }
+    } else {
+      gnMonsterHealthBarValue[0] = 0;
+      bResult = npcmenu::GetInteractedUnitGuid(&bIsMercenary);
+      if (!bResult) {
+        nResult = Text::TEXT_IsScrollingTextActive();
+        if (!nResult) {
+          if (!pUnit) {
+            nClassId = -1;
+          } else {
+            nClassId = pUnit->nClassId;
+          }
+
+          pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
+          if (pMonStats2) {
+            gnMercenaryHealthBarScreenY -= (uint32_t)(uint8_t)pMonStats2->pixHeight;
+          }
+
+          nTextWidth = 1;
+          nHpBarValue = 0;
+          nClassId = gnMercenaryHealthBarScreenY;
+          pwszStr = UNIT::CUnit::GetName(pUnit);
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(pwszStr, nHealthBarScreenX, nClassId, nHpBarValue, nTextWidth);
+        }
+      }
+    }
+
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nFontId);
+}
+
+// Draw UI label showing unit name/life under mouse cursor during gameplay
+void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
+    // Frame slots -1056..-4 are ONE object: &wszWarpName is passed out and the callee reaches the rest by byte offset.
+    // Separate locals let the compiler reorder them, so the run is one struct.
+    struct __frame0_t {
+      uint16_t wszWarpName;
+      uint8_t local_41e[142];
+      uint8_t wszObjBuf[256];
+      uint16_t wszObjectName;
+      uint8_t aObjectNameBuf[254];
+      char szTooltipBuf[128];
+      uint16_t wszNameBuf[130];
+      D2LevelsTxt* pLevelTxtResult;
+      int nScreenX;
+    };
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1052, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    __frame0_t __frame0;
+    int32_t nX;
+    int32_t nY;
+    int nClassId;
+    D2MonStatsTxt* pMonStats;
+    BOOL bHasInteract;
+    D2ObjectsTxt* pObjectTxt;
+    char* pszTooltip;
+    char* pszTooltipScan;
+    eD2LevelId eCurrentRoomLevel;
+    D2LevelsTxt* pLevelTxt;
+    D2RoomStrc* pRoom;
+    D2LvlWarpTxt* pShadow;
+    uint16_t* pwszTemp;
+    uint16_t wWarpStrId;
+    int nWarpTooltipY;
+    uint16_t wszLevelNameBuf[256];
+    uint8_t byObjSubClass;
+    char cTooltipChar;
+    uint32_t nObjClassId;
+    uint32_t nResult;
+    nResult = Path::DRAW_GetTypeOfBorder();
+    if (nResult == 3) {
+      return;
+    }
+    if (!pUnit) {
+      return;
+    }
+    if (pUnit->eUnitType == UNIT_WARP) {
+      D2UnitStrc* pPlayer;
+      pPlayer = UNIT::Player::GetPlayerUnit_UI();
+      nX = D2Common::Collision::GetCollisionDistance(pUnit, pPlayer);
+      if (100 < nX) {
+        return;
+      }
+    }
+
+    nResult = D2gfx::D2GFX::D2GFX_IsPerspectiveActive();
+    if (!nResult) {
+      nX = D2Common::Units::GetTargetX(pUnit);
+      nY = Path::DRAW_GetWorldOffsetX();
+      nHealthBarScreenX = nX - nY;
+      nX = D2Common::Units::GetTargetY(pUnit);
+      nY = Path::DRAW_GetWorldOffsetY();
+      gnMercenaryHealthBarScreenY = nX - nY;
+    } else {
+      nX = D2Common::Units::GetPrecisionX(pUnit);
+      nY = D2Common::Units::GetPrecisionY(pUnit);
+      nResult = D2gfx::D2GFX::D2GFX_IsInPerspectiveBounds(nX, nY);
+      if (!nResult) {
+        return;
+      }
+
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nX, nY, 0, &__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
+      nResult = Path::DRAW_GetTypeOfBorder();
+      if (nResult == 1) {
+        nClassId = -((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2);
+        __frame0.nScreenX += nClassId;
+      } else if (nResult == 2) {
+        nClassId = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+        __frame0.nScreenX += nClassId;
+      }
+
+      gnMercenaryHealthBarScreenY = (int)__frame0.pLevelTxtResult->MonLvl;
+      nHealthBarScreenX = __frame0.nScreenX;
+    }
+
+    switch (pUnit->eUnitType) {
+      case UNIT_PLAYER:
+        Fog::File::CONTAINER_InitializeBuffer(__frame0.wszNameBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      ui::UI_FormatPlayerNameAndStatus(pUnit, __frame0.wszNameBuf, 0x80, (bool*)&__frame0.nScreenX, (int*)&__frame0.pLevelTxtResult);
+      D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(__frame0.wszNameBuf, nHealthBarScreenX, gnMercenaryHealthBarScreenY - 0x48, __frame0.nScreenX, 1, (int32_t)__frame0.pLevelTxtResult);
+      return;
+      case UNIT_MONSTER:
+        nClassId = pUnit->nClassId;
+      if (nClassId == 0x1a1 || nClassId == 0x1a2) {
+        pMonStats = DataTbls::MonsterTbls::TXT_MonStats_GetLine(nClassId);
+        if (!pMonStats) {
+          gU16ImmunityStringBuffer2[0] = 0;
+          gU16ImmunityStringBuffer1[0] = 0;
+          gnMonsterHealthBarValue[0] = 0;
+          return;
+        }
+
+        pwszTemp = D2Lang::StrTable::strtable::GetLocaleString(pMonStats->NameStr);
+        D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, pwszTemp);
+      } else {
+        nResult = UNIT::CheckFlags(pUnit, UNITFLAG_ISMERC);
+        if (!nResult) {
+          if (nClassId == 0x164) {
+            __frame0.nScreenX = 3;
+            Fog::File::CONTAINER_InitializeBuffer(__frame0.wszNameBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+            __frame0.pLevelTxtResult = 0;
+            nResult = ui::UI_GetRosterPlayerInfoForDisplay(__frame0.wszNameBuf, (int*)&__frame0.pLevelTxtResult, &__frame0.nScreenX, (int32_t)pUnit);
+            if (nResult) {
+              if (__frame0.nScreenX == 3) {
+                return;
+              }
+
+              D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(__frame0.wszNameBuf, nHealthBarScreenX, gnMercenaryHealthBarScreenY - 0x48, __frame0.nScreenX, 1, (int32_t)__frame0.pLevelTxtResult);
+              return;
+            }
+          }
+
+          DRAW_MonsterHealthBar(pUnit);
+          return;
+        }
+      }
+
+      ui::UI_ShowMonsterNameBar(0, pUnit);
+      gU16ImmunityStringBuffer1[0] = 0;
+      gU16ImmunityStringBuffer2[0] = 0;
+      gnMonsterHealthBarValue[0] = 0;
+      return;
+      case UNIT_OBJECT:
+        Fog::File::CONTAINER_InitializeBuffer(__frame0.wszObjBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      Fog::File::CONTAINER_InitializeBuffer(wszLevelNameBuf, 2, 0x100, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      __frame0.wszObjectName = L'\0';
+      Fog::File::CONTAINER_InitializeBuffer(__frame0.aObjectNameBuf, 2, 0x7f, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+      bHasInteract = npcmenu::GetInteractedUnitGuid((int*)&__frame0.pLevelTxtResult);
+      if (!bHasInteract) {
+        nResult = Text::TEXT_IsScrollingTextActive();
+        if (nResult != 1) {
+          pwszTemp = UNIT::CUnit::GetName(pUnit);
+          nObjClassId = pUnit->nClassId;
+          __frame0.nScreenX = D2Common::Units::GetNameOffsetFromObject(pUnit);
+          pObjectTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(nObjClassId & 0xffff);
+          byObjSubClass = pObjectTxt->SubClass;
+          if (byObjSubClass & 4) {
+            Fog::File::CONTAINER_InitializeBuffer(__frame0.wszNameBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+            pwszTemp = ui::CLIENT_GetLevelNameByLevelId((eD2LevelId)pUnit->pUnitData.pUnitDataObject->nShrineId);
+            D2Lang::Unicode::UNISYS::STRING_CopyWideString(&__frame0.wszObjectName, pwszTemp);
+            if (eD2GSGameType_007a0610 != GAMETYPE_SINGLEPLAYER && eD2GSGameType_007a0610 != GAMETYPE_SINGLEPLAYER_UNCAPPED) {
+              pszTooltip = GAME::Roster::GetPortalOwnerName(pUnit->nUnitGUID);
+              if (!pszTooltip) {
+                pszTooltipScan = UNIT::Object::OBJECT_GetOwnerName(pUnit);
+                pszTooltip = pszTooltipScan + 1;
+                pszTooltipScan = pszTooltipScan + strlen(pszTooltipScan) + 1;
+                if (pszTooltipScan == pszTooltip) {
+                  goto show_portal_tooltip;
+                }
+
+                pszTooltip = UNIT::Object::OBJECT_GetOwnerName(pUnit);
+              }
+
+              sprintf(__frame0.szTooltipBuf, " (%s) ", pszTooltip);
+              D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(__frame0.wszNameBuf, __frame0.szTooltipBuf, 0x80);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(&__frame0.wszObjectName, __frame0.wszNameBuf);
+            }
+
+            show_portal_tooltip:
+            D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszObjectName, nHealthBarScreenX, gnMercenaryHealthBarScreenY + __frame0.nScreenX, 0, 1);
+            return;
+          }
+          if (-1 < (char)byObjSubClass) {
+            if (!(byObjSubClass & 0x40)) {
+              D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(pwszTemp, nHealthBarScreenX, gnMercenaryHealthBarScreenY + __frame0.nScreenX, 0, 1);
+              return;
+            }
+
+            pwszTemp = UNIT::CUnit::GetName(pUnit);
+            pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+            if (pRoom) {
+              eCurrentRoomLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+              pLevelTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eCurrentRoomLevel);
+              D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszLevelNameBuf, pwszTemp);
+              pwszTemp = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(wszLevelNameBuf, pwszTemp);
+              pwszTemp = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(wszLevelNameBuf, pwszTemp);
+              pwszTemp = D2Lang::StrTable::strtable::STRTABLE_GetStringByKey((uint8_t*)pLevelTxt->LevelName);
+              D2Lang::Unicode::UNISYS::AppendToBuffer(wszLevelNameBuf, pwszTemp);
+              D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(wszLevelNameBuf, nHealthBarScreenX, gnMercenaryHealthBarScreenY + __frame0.nScreenX, 0, 1);
+              return;
+            }
+          }
+        }
+      }
+
+      break;
+      case UNIT_ITEM:
+        if (!GFX_bShowUIFlag.AltShowItems) {
+          ui::UI_FormatItemNameWithQuality(pUnit, nullptr, 0);
+          return;
+        }
+      break;
+      case UNIT_WARP:
+        pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      eCurrentRoomLevel = D2Common::DUNGEON::Dungeon::GetWarpDestinationLevel(pRoom, pUnit->nClassId);
+      __frame0.pLevelTxtResult = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eCurrentRoomLevel);
+      if (__frame0.pLevelTxtResult) {
+        pShadow = D2Common::DUNGEON::Dungeon::DUNGEON_GetLvlWarpTxtForWarpUnit(pRoom, pUnit);
+        if (pShadow) {
+          nClassId = ((uint32_t)pShadow->SelectDX >> 1) + pShadow->SelectX + nHealthBarScreenX;
+          nWarpTooltipY = ((uint32_t)pShadow->SelectDY >> 1) + pShadow->SelectY + gnMercenaryHealthBarScreenY;
+          __frame0.wszWarpName = L'\0';
+          Fog::File::CONTAINER_InitializeBuffer(__frame0.local_41e, 2, 199, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
+          pwszTemp = __frame0.pLevelTxtResult->wszLevelWarp;
+          if (eCurrentRoomLevel == LEVEL_DenOfEvil) {
+            nResult = GetQuestAvailabilityByIndex(0, 1);
+            wWarpStrId = 0x13de;
+            if (!nResult) {
+              wWarpStrId = 0x13dd;
+            }
+
+            pwszTemp = D2Lang::StrTable::strtable::GetLocaleString(wWarpStrId);
+          }
+
+          D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(&__frame0.wszWarpName, pwszTemp, 199);
+          D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(&__frame0.wszWarpName, nClassId, nWarpTooltipY, 0, 1);
+        }
+      }
+    }
+}
+
+void __stdcall DRAW_UnitUModsUnderCursor() {
+    int32_t nNameLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength((uint16_t*)gnMonsterHealthBarValue);
+    if (!nNameLen) {
+      return;
+    }
+
+    D2UnitStrc* pUnit = GAME::Select::GetSelectedUnit();
+    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+      return;
+    }
+
+    DWORD dwColor = 0;
+    BOOL BVar1 = UNIT::Monster::IsMonsterUnique(pUnit);
+    if (BVar1) {
+      dwColor = 4;
+    }
+
+    BVar1 = UNIT::Monster::IsMonsterChampion(pUnit);
+    if (BVar1) {
+      dwColor = 3;
+    }
+
+    uint32_t nFontHeight = D2Win::Src::D2WinFont::D2WINFONT_GetCurrentFontHeight();
+    DRAW_CenteredText(6, nFontHeight + 0x27, dwColor, (uint16_t*)gnMonsterHealthBarValue);
+}
+
+void __stdcall DRAW_Overlay_EnteringAreaX() {
+    // Static local variables (originally global data)
+    static D2QuestAreaIntroStrc gnQuestAreaIntroLevelId_0[2] = {
+    {
+        /* .nLevelId = */ 0x8,
+        /* .nQuestId = */ 0x1,
+        /* .szDC6Name = */ { 'A', '1', 'Q', '1', '\x00' }
+    },
+    {
+        /* .nLevelId = */ 0x14,
+        /* .nQuestId = */ 0x5,
+        /* .szDC6Name = */ { 'A', '1', 'Q', '5', '\x00' }
+    }
+}; D2_STATIC_GUARD(gnQuestAreaIntroLevelId_0, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnQuestAreaIntroLevelId_0");
+    static int gnQuestAreaIntroCount = 0x2; D2_STATIC_GUARD(gnQuestAreaIntroCount, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnQuestAreaIntroCount");
+    static uint32_t gnAreaNameCurrentLevelId; D2_STATIC_GUARD_BSS(gnAreaNameCurrentLevelId, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameCurrentLevelId");
+    static D2ClientTimerStrc gnAreaNameOverlay = {}; D2_STATIC_GUARD(gnAreaNameOverlay, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gnAreaNameOverlay");
+    static bool gbAreaNameOverlayInitialized; D2_STATIC_GUARD_BSS(gbAreaNameOverlayInitialized, "D2Client::UI::Draw::DRAW_Overlay_EnteringAreaX::gbAreaNameOverlayInitialized");
+
+    eD2LevelId eRoomLevel;
+    uint32_t uResult;
+    D2LevelsTxt* pLevelTxt;
+    int nQuestIdx;
+    int* pnQuestEntry;
+    char szDC6Path[260];
+    char szActDir[32];
+    char szLangAbbrev[4];
+    D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
+    if (!pRoom) {
+      if (DC6_EnteredAreaName) {
+        Core::Archive::DC6_FreeAndDelete(DC6_EnteredAreaName);
+        DC6_EnteredAreaName = 0;
+        return;
+      }
+    } else {
+      eAct neAct;
+      if (!(gbAreaNameOverlayInitialized & 1)) {
+        gbAreaNameOverlayInitialized |= 1;
+        gnAreaNameOverlay.dwStartTick = 0;
+        gnAreaNameOverlay.dwDurationMs = 0;
+      }
+
+      eRoomLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+      if (eRoomLevel != gnAreaNameCurrentLevelId) {
+        Hireables::InitializeHealthBarColors(1);
+        if (DC6_EnteredAreaName) {
+          Core::Archive::DC6_FreeAndDelete(DC6_EnteredAreaName);
+          DC6_EnteredAreaName = 0;
+        }
+        if (gnAreaNameCurrentLevelId == LEVEL_None) {
+          gnAreaNameOverlay.dwStartTick = 0;
+          gnAreaNameOverlay.dwDurationMs = 0;
+          gnAreaNameCurrentLevelId = eRoomLevel;
+        } else {
+          gnAreaNameOverlay.dwStartTick = GetTickCount();
+          gnAreaNameOverlay.dwDurationMs = 2000;
+          gnAreaNameCurrentLevelId = eRoomLevel;
+        }
+      }
+
+      uResult = GAME::Game::GAMEDATA_CheckTimerExpired(&gnAreaNameOverlay);
+      if (!uResult) {
+        pLevelTxt = D2Common::DATATBLS::LvlTbls::TXT_Levels_GetLine(eRoomLevel);
+        if ((int)eRoomLevel < 0x6d) {
+          neAct = D2Common::Drlg::GetActNoFromLevelNumber(eRoomLevel);
+          sprintf(szActDir, "ACT%d", neAct + 1);
+        } else {
+          memcpy(szActDir, "EXPANSION", 10);
+        }
+
+        D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
+        sprintf(szDC6Path, "%s\\UI\\%s\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, szActDir, pLevelTxt->EntryFile);
+        nQuestIdx = 0;
+        if (0 < gnQuestAreaIntroCount) {
+          pnQuestEntry = &gnQuestAreaIntroLevelId_0[0].nQuestId;
+          do {
+            if (eRoomLevel == ((D2QuestAreaIntroStrc*)(pnQuestEntry - 1))->nLevelId) {
+              uResult = GetQuestAvailabilityByIndex(0, *pnQuestEntry);
+              if (uResult) {
+                /* Den Of Evil and Forgotten Tower */ sprintf(szDC6Path, "%s\\UI\\%s\\ACT1\\%s", "DATA\\LOCAL", szLangAbbrev, gnQuestAreaIntroLevelId_0[nQuestIdx].szDC6Name);
+                break;
+              }
+            }
+
+            nQuestIdx++;
+            pnQuestEntry = (int*)((int)pnQuestEntry + 0xd);
+          } while (nQuestIdx < gnQuestAreaIntroCount);
+        }
+        if (!DC6_EnteredAreaName) {
+          DC6_EnteredAreaName = Core::Archive::IMAGE_LoadDC6Ex(szDC6Path, 0);
+        }
+
+        D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(DC6_EnteredAreaName, ScreenSizeX / 2, ScreenSizeY / 2 - 0x8c, 1, DRAW_SOLID, PALETTE_RED);
+      } else if (DC6_EnteredAreaName) {
+        Core::Archive::DC6_FreeAndDelete(DC6_EnteredAreaName);
+        DC6_EnteredAreaName = 0;
+        return;
+      }
+    }
+}
+
+void __fastcall SetUiFlagInit(eD2UIvars eUIVar) {
+    // Static local variables (originally global data)
+    static D2UIKeyBindingSetStrc gnUIFlagShopKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x4,
+    /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x5,
+    /* .nHandlerIdx_Cmd16_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ 0x7,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ gaUIFlagInitNpcShopHandlers
+}; D2_STATIC_GUARD(gnUIFlagShopKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagShopKeyBindings");
+    static D2UIKeyBindingSetStrc gnUIFlagQuestScreenKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x5,
+    /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x6,
+    /* .nHandlerIdx_Cmd16_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ gUIFlagDrawGoldInit
+}; D2_STATIC_GUARD(gnUIFlagQuestScreenKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagQuestScreenKeyBindings");
+    static D2UIKeyBindingSetStrc gnUIFlagTradeKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x5,
+    /* .nHandlerIdx_Cmd16_Exp = */ 0x7,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x6,
+    /* .nHandlerIdx_Cmd16_Classic = */ 0xa,
+    /* .nHandlerIdx_Cmd29_Exp = */ 0xb,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ 0xc,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ gUIFlagDrawInventoryInit
+}; D2_STATIC_GUARD(gnUIFlagTradeKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagTradeKeyBindings");
+    static D2UIKeyBindingSetStrc gnUIFlagStashKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x4,
+    /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x5,
+    /* .nHandlerIdx_Cmd16_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ 0x7,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ gUIFlagDrawInfoInit
+}; D2_STATIC_GUARD(gnUIFlagStashKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagStashKeyBindings");
+    static D2UIKeyBindingSetStrc gnUIFlagCubeKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x4,
+    /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x5,
+    /* .nHandlerIdx_Cmd16_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ gaUIFlagInitCubeHandlers
+}; D2_STATIC_GUARD(gnUIFlagCubeKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagCubeKeyBindings");
+    static D2UIKeyBindingSetStrc gnUIFlagBeltKeyBindings = {
+    /* .nHandlerIdx_Cmd26_Exp = */ 0x0,
+    /* .nHandlerIdx_Cmd16_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd26_Classic = */ 0x1,
+    /* .nHandlerIdx_Cmd16_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd29_Classic = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Exp = */ -0x1,
+    /* .nHandlerIdx_Cmd2C_Classic = */ -0x1,
+    /* .pHandlers = */ g_UIFlagInitDrawPanel1
+}; D2_STATIC_GUARD(gnUIFlagBeltKeyBindings, "D2Client::UI::Draw::SetUiFlagInit::gnUIFlagBeltKeyBindings");
+
+    HWND pHwnd;
+    int32_t nHandlerCount;
+    switch (eUIVar) {
+      case UI_GAME:
+        nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nHandlerCount);
+      return;
+      case UI_INVENTORY:
+        Inv::INV_ResetInventoryState();
+      nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
+      return;
+      case UI_STATSCREEN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
+      return;
+      case UI_SKILLSELECT:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawMercInit, nHandlerCount);
+      return;
+      case UI_SKILLTREE:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawTownInit, nHandlerCount);
+      return;
+      case UI_CHATBOX:
+        Chat::CHAT_InitIME();
+      CmdTbl::CMD_ToggleKeyConfigMode(0, 1);
+      if (GFX_bShowUIFlag.Automap) {
+        nHandlerCount = 5;
+        pHwnd = D2gfx::D2GFX::GetHwnd();
+        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+      }
+
+      Chat::CHAT_InitEmpty();
+      return;
+      case UI_NEWSTATS:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawAreaInit, nHandlerCount);
+      return;
+      case UI_NEWSKILLS:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawHealthInit, nHandlerCount);
+      return;
+      case UI_NPCMENU:
+
+      case UI_HOLDALT:
+
+      case UI_ANVIL:
+
+      case UI_NODRAW:
+
+      case UI_STEEGSTONE:
+
+      case UI_GUILDVAULT:
+
+      case UI_0x1D:
+
+      case UI_GUILDVAULT | UI_STATSCREEN:
+
+      case UI_0x20:
+        return;
+      case UI_ESCMENU:
+        nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawManufactureInit, nHandlerCount);
+      GAME::Select::SELECT_UpdateUnitSelection(nullptr);
+      return;
+      case UI_AUTOMAP:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+      gbAutomapPanelOpened = 1;
+      return;
+      case UI_CONFIG:
+        ControlConfig::CONTROLCONFIG_OnToggleUI(1);
+      DRAW_RegisterDrawHandlers();
+      return;
+      // VP-BEGIN [row-10 options page]: register the page's mouse/Esc handlers (UI_CONFIG shape)
+      case UI_VANILLAPLUS:
+        VanillaPlus::VANILLAPLUS_OnToggleUI(1);
+      return;
+      // VP-END [row-10 options page]
+      case UI_NPCSHOP:
+        CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
+      Inv::SelectDefaultTabForNPC();
+      ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagShopKeyBindings);
+      nHandlerCount = 8;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitNpcShopHandlers, nHandlerCount);
+      return;
+      case UI_QUESTSCREEN:
+        ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagQuestScreenKeyBindings);
+      nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawGoldInit, nHandlerCount);
+      return;
+      case UI_QUESTSCROLL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
+      return;
+      case UI_QUESTLOG:
+        nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 0x12, nHandlerCount);
+      return;
+      case UI_HIREABLES:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
+      return;
+      case UI_WAYPOINT:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawMapInit, nHandlerCount);
+      return;
+      case UI_MINIPANEL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nHandlerCount);
+      return;
+      case UI_PARTYSCREEN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawLevelInit, nHandlerCount);
+      Party::ResetPartyUi();
+      return;
+      case UI_MPTRADE:
+        CmdTbl::CMD_ToggleKeyConfigMode(0, 1);
+      ui::UI_InitTradeState();
+      Inv::INV_ResetOverlayFlag();
+      ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagTradeKeyBindings);
+      nHandlerCount = 0xd;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawInventoryInit, nHandlerCount);
+      return;
+      case UI_MSGLOG:
+        Text::TEXT_OpenMessageLogDialog();
+      return;
+      case UI_STASH:
+        CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
+      Inv::INV_LoadStashImages();
+      ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagStashKeyBindings);
+      nHandlerCount = 8;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gUIFlagDrawInfoInit, nHandlerCount);
+      return;
+      case UI_CUBE:
+        CmdTbl::CMD_ToggleKeyConfigMode(2, 1);
+      Inv::INV_LoadCubeImages();
+      ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagCubeKeyBindings);
+      nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitCubeHandlers, nHandlerCount);
+      return;
+      case UI_BELTROWS:
+        ui::UI_SetMultipleButtonKeyBindings(&gnUIFlagBeltKeyBindings);
+      nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel1, nHandlerCount);
+      return;
+      case UI_HELPSCREEN:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, nHandlerCount);
+      return;
+      case UI_HELPSCREENBTN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit1, nHandlerCount);
+      return;
+      case UI_HIREICONS:
+        nHandlerCount = 3;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel2, nHandlerCount);
+      return;
+      case UI_MERCINV:
+        nHandlerCount = 3;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel3, nHandlerCount);
+      return;
+      case UI_RECIPESCROLL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel4, nHandlerCount);
+      return;
+      default:
+        return;
+    }
+}
+
+void __fastcall UI_UnregisterHandlersForPanel(eD2UIvars ePanel) {
+    int bTradeThrottled;
+    HWND pHwnd;
+    D2UIFlagInitStrc* pHandlers;
+    int32_t nHandlerCount;
+    switch (ePanel) {
+      case UI_GAME:
+        nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nHandlerCount);
+      return;
+      case UI_INVENTORY:
+        ui::UI_CloseCurrentDialog();
+      nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawConsoleInit, nHandlerCount);
+      ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_STATSCREEN:
+        ui::UI_CloseCurrentDialog();
+      nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawSkillInit, nHandlerCount);
+      case UI_NODRAW:
+        ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_SKILLSELECT:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gUIFlagDrawMercInit, nHandlerCount);
+      return;
+      case UI_SKILLTREE:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawTownInit, nHandlerCount);
+      ui::UI_UpdateCursorAnimationTimer();
+      SpellSel::SKILLTREE_FreeResources();
+      return;
+      case UI_CHATBOX:
+        Chat::CHAT_ShutdownIME();
+      Chat::CHAT_ShutdownEmpty();
+      if (!GFX_bShowUIFlag.NpcShop && !GFX_bShowUIFlag.TradePrompt && !GFX_bShowUIFlag.StashMenu && !GFX_bShowUIFlag.CubeMenu && !GFX_bShowUIFlag.SteegStone && !GFX_bShowUIFlag.GuildVault && !GFX_bShowUIFlag._x1D && !GFX_bShowUIFlag._x1E && !GFX_bShowUIFlag._x20) {
+        CmdTbl::CMD_ToggleKeyConfigMode(1, 1);
+      }
+      if (GFX_bShowUIFlag.Automap) {
+        nHandlerCount = 5;
+        pHwnd = D2gfx::D2GFX::GetHwnd();
+        _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+        return;
+      }
+
+      break;
+      case UI_NEWSTATS:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawAreaInit, nHandlerCount);
+      return;
+      case UI_NEWSKILLS:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawHealthInit, nHandlerCount);
+      return;
+      case UI_NPCMENU:
+
+      case UI_ANVIL:
+        ui::UI_UpdateCursorAnimationTimer();
+      npcmenu::CloseNPCInteract();
+      return;
+      case UI_ESCMENU:
+        nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawManufactureInit, nHandlerCount);
+      GAME::Select::ClearSelectedUnit();
+      return;
+      case UI_AUTOMAP:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable, nHandlerCount);
+      gbAutomapPanelOpened = 0;
+      return;
+      case UI_CONFIG:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gUIFlagDrawPanelInit, nHandlerCount);
+      nHandlerCount = 0xd;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 5, nHandlerCount);
+      ControlConfig::CONTROLCONFIG_OnToggleUI(0);
+      return;
+      // VP-BEGIN [row-10 options page]: unregister the page's handlers
+      case UI_VANILLAPLUS:
+        VanillaPlus::VANILLAPLUS_OnToggleUI(0);
+      return;
+      // VP-END [row-10 options page]
+      case UI_NPCSHOP:
+        nHandlerCount = 8;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitNpcShopHandlers, nHandlerCount);
+      npcmenu::CloseNPCInteract();
+      CmdTbl::CMD_ToggleKeyConfigMode(1, 1);
+      return;
+      case UI_QUESTSCREEN:
+        nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawGoldInit, nHandlerCount);
+      QuestLog::QUESTLOG_CloseAndFreeImages();
+      ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_QUESTSCROLL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitQuestScrollHandlers, nHandlerCount);
+      Text::TEXT_OnPanelUnregister_NoOp();
+      ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_QUESTLOG:
+        nHandlerCount = 4;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gaUIFlagInitTable + 0x12, nHandlerCount);
+      QuestLog::QUESTLOG_ResetNpcDialogState();
+      return;
+      case UI_HIREABLES:
+        nHandlerCount = 1;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, &gUIFlagDrawExperienceInit, nHandlerCount);
+      return;
+      case UI_WAYPOINT:
+        nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawMapInit, nHandlerCount);
+      Waypoint::WAYPOINT_SendOpenPacket();
+      ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_MINIPANEL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nHandlerCount);
+      return;
+      case UI_PARTYSCREEN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawLevelInit, nHandlerCount);
+      Party::FreeAllUiParty();
+      ui::UI_UpdateCursorAnimationTimer();
+      return;
+      case UI_MPTRADE:
+        bTradeThrottled = TRADE_IsTradeThrottled();
+      if (!bTradeThrottled) {
+        Path::TypeOfUiOverlayOverWorld(0);
+        ui::UI_CloseCurrentDialog();
+        nHandlerCount = 0xd;
+        pHwnd = D2gfx::D2GFX::GetHwnd();
+        _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gUIFlagDrawInventoryInit, nHandlerCount);
+        ui::UI_UpdateCursorAnimationTimer();
+        ui::UI_CloseTradeWindow(0);
+        CmdTbl::CMD_ToggleKeyConfigMode(1, 1);
+        return;
+      }
+
+      break;
+      case UI_MSGLOG:
+        Text::TEXT_DestroyMessageLogDialog();
+      return;
+      case UI_STASH:
+        ui::UI_CloseCurrentDialog();
+      Path::TypeOfUiOverlayOverWorld(0);
+      Inv::INV_FreeStashImages();
+      nHandlerCount = 8;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      pHandlers = gUIFlagDrawInfoInit;
+      goto unregister_storage_panel;
+      case UI_CUBE:
+        Path::TypeOfUiOverlayOverWorld(0);
+      Inv::INV_FreeCubeImages();
+      nHandlerCount = 7;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      pHandlers = gaUIFlagInitCubeHandlers;
+      unregister_storage_panel:
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, pHandlers, nHandlerCount);
+      ui::UI_UpdateCursorAnimationTimer();
+      CmdTbl::CMD_ToggleKeyConfigMode(1, 1);
+      return;
+      case UI_BELTROWS:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel1, nHandlerCount);
+      return;
+      case UI_HELPSCREEN:
+        Help::HELP_HideMiniPanel();
+      nHandlerCount = 5;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, nHandlerCount);
+      return;
+      case UI_HELPSCREENBTN:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit1, nHandlerCount);
+      return;
+      case UI_HIREICONS:
+        nHandlerCount = 3;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel2, nHandlerCount);
+      return;
+      case UI_MERCINV:
+        nHandlerCount = 3;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel3, nHandlerCount);
+      Inv::INV_ResetHoverAndContextState();
+      return;
+      case UI_RECIPESCROLL:
+        nHandlerCount = 2;
+      pHwnd = D2gfx::D2GFX::GetHwnd();
+      _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawPanel4, nHandlerCount);
+    }
+}
+
+DWORD __fastcall SetUIFlag(eD2UIvars eUI, eD2UIvarsSetType neD2UIvarsSetType, DWORD bAdjustMouse) {
+    int iVar1;
+    if (UI_VANILLAPLUS < eUI) { // VP: vanilla-plus bound UI_RECIPESCROLL(37) -> UI_VANILLAPLUS(38)
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fb);
+      exit(-1);
+    }
+    if (UI_TOGGLE < neD2UIvarsSetType) {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fc);
+      exit(-1);
+    }
+
+    int iVar2;
+    iVar2 = (&GFX_bShowUIFlag.Game)[eUI];
+    BOOL bIsExpansion;
+    bIsExpansion = Fog::D2CheckExpansionGame();
+    if ((!bIsExpansion || (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , !bIsExpansion)) && (eUI == UI_HIREICONS || eUI == UI_MERCINV || eUI == UI_RECIPESCROLL)) {
+      return 0;
+    }
+
+    uint32_t eOverlayMode;
+    eOverlayMode = ui::UI_HandleKeyInputAndDismiss(neD2UIvarsSetType, eUI);
+    if (!eOverlayMode) {
+      return 0;
+    }
+
+    D2UnitStrc* pUnit;
+    pUnit = UNIT::Player::GetPlayerUnit_UI();
+    switch (neD2UIvarsSetType) {
+      case UI_SET:
+        {
+          if (!pUnit || pUnit->eUnitType == UNIT_PLAYER && (iVar1 = UNIT::CUnit::IsActive(pUnit) , !iVar1)) {
+            (&GFX_bShowUIFlag.Game)[eUI] = 1;
+          }
+
+          break;
+        }
+      case UI_RESET:
+        {
+          (&GFX_bShowUIFlag.Game)[eUI] = 0;
+          break;
+        }
+      case UI_TOGGLE:
+        {
+          if (!pUnit) {
+            (&GFX_bShowUIFlag.Game)[eUI] = (uint32_t)!(&GFX_bShowUIFlag.Game)[eUI];
+          } else if (pUnit->eUnitType == UNIT_PLAYER && (iVar1 = UNIT::CUnit::IsActive(pUnit) , !iVar1)) {
+            (&GFX_bShowUIFlag.Game)[eUI] = (uint32_t)!(&GFX_bShowUIFlag.Game)[eUI];
+          } else if (eUI == UI_CHATBOX) {
+            GFX_bShowUIFlag.ChatInput = (BOOL)!GFX_bShowUIFlag.ChatInput;
+          }
+
+          break;
+        }
+    }
+
+    iVar1 = (&GFX_bShowUIFlag.Game)[eUI];
+    if (!iVar2) {
+      if (iVar1) {
+        SetUiFlagInit(eUI);
+        if (eUI == UI_CHATBOX) {
+          Chat::CHAT_ClearInput();
+        }
+      }
+    } else if (!iVar1) {
+      UI_UnregisterHandlersForPanel(eUI);
+    }
+
+    iVar2 = ui::GetMouseX();
+    int y;
+    y = ui::GetMouseY();
+    switch (eUI) {
+      case UI_INVENTORY:
+        Inv::INV_ResetHoverAndContextState();
+      case UI_SKILLTREE:
+        if (GFX_bShowUIFlag.CharStat || GFX_bShowUIFlag.WaypointMenu || GFX_bShowUIFlag.Quest || GFX_bShowUIFlag.PartyPane || GFX_bShowUIFlag.MercMenu || GFX_bShowUIFlag.UnusedScroll || GFX_bShowUIFlag.PartyMenu) {
+          if (!iVar1) {
+            Path::TypeOfUiOverlayOverWorld(2);
+            return 1;
+          }
+
+          Path::TypeOfUiOverlayOverWorld(3);
+          return 1;
+        }
+      if (!iVar1) {
+        Path::TypeOfUiOverlayOverWorld(0);
+        if (bAdjustMouse && iVar2 < ScreenSizeX / 2) {
+          ui::SetMouseXY(((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2) + iVar2, y);
+          return 1;
+        }
+      } else {
+        Path::TypeOfUiOverlayOverWorld(1);
+        if (bAdjustMouse) {
+          iVar1 = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+          if (iVar1 < iVar2) {
+            ui::SetMouseXY(iVar2 - iVar1, y);
+            return 1;
+          }
+        }
+      }
+
+      break;
+      case UI_STATSCREEN:
+
+      case UI_QUESTSCREEN:
+
+      case UI_QUESTSCROLL:
+
+      case UI_WAYPOINT:
+
+      case UI_PARTYSCREEN:
+
+      case UI_MERCINV:
+
+      case UI_RECIPESCROLL:
+        if (!GFX_bShowUIFlag.Inventory && !GFX_bShowUIFlag.Skill) {
+          if (!iVar1) {
+            Path::TypeOfUiOverlayOverWorld(0);
+            if (!bAdjustMouse) {
+              return 1;
+            }
+            if (iVar2 <= ScreenSizeX / 2) {
+              return 1;
+            }
+
+            ui::SetMouseXY(iVar2 - ((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2), y);
+            return 1;
+          }
+
+          Path::TypeOfUiOverlayOverWorld(2);
+          if (!bAdjustMouse) {
+            return 1;
+          }
+
+          iVar1 = (int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2;
+          if (ScreenSizeX - iVar1 <= iVar2) {
+            return 1;
+          }
+
+          ui::SetMouseXY(iVar1 + iVar2, y);
+          return 1;
+        }
+      eOverlayMode = 3;
+      if (!iVar1) {
+        eOverlayMode = 1;
+        Path::TypeOfUiOverlayOverWorld(eOverlayMode);
+        break;
+      }
+
+      Path::TypeOfUiOverlayOverWorld(eOverlayMode);
+      break;
+      default:
+        break;
+      case UI_CONFIG:
+        if (iVar1) {
+          return 1;
+        }
+      ui::UI_ConfigKeyBindModeCancelAndRevert();
+      return 1;
+      case UI_NPCSHOP:
+
+      case UI_STASH:
+
+      case UI_CUBE:
+
+      case UI_STEEGSTONE:
+
+      case UI_GUILDVAULT:
+
+      case UI_0x1D:
+
+      case UI_0x20:
+        if (!iVar1) {
+          clear_world_overlay:
+          Path::TypeOfUiOverlayOverWorld(0);
+          return 1;
+        }
+      Path::TypeOfUiOverlayOverWorld(3);
+      return 1;
+      case UI_ANVIL:
+        if (!iVar1) {
+          goto clear_world_overlay;
+        }
+      eOverlayMode = 1;
+      Path::TypeOfUiOverlayOverWorld(eOverlayMode);
+    }
+
+    return 1;
+}
+
+BOOL __fastcall UI_CloseActivePanels(int32_t bForceAutomap, int32_t bAdjustMouse) {
+    // Static local variables (originally global data)
+    static uint32_t gnUICloseActivePanelsFlag[38] = {
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x0,
+    0x0,
+    0x0,
+    0x1,
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x0,
+    0x1,
+    0x1,
+    0x0,
+    0x1,
+    0x0,
+    0x1,
+    0x0,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x1,
+    0x0,
+    0x0,
+    0x1,
+    0x1
+}; D2_STATIC_GUARD(gnUICloseActivePanelsFlag, "D2Client::UI::Draw::UI_CloseActivePanels::gnUICloseActivePanelsFlag");
+
+    int iVar1;
+    int nMouseY;
+    uint32_t eOverlayMode;
+    BOOL bClosedAny;
+    bClosedAny = 0;
+    eD2UIvars eUI;
+    eUI = UI_GAME;
+    do {
+      if ((&GFX_bShowUIFlag.Game)[eUI] == 1 && (gnUICloseActivePanelsFlag[eUI] == 1 || bForceAutomap && eUI == UI_AUTOMAP)) {
+        if (UI_RECIPESCROLL < eUI) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x13fb);
+          exit(-1);
+        }
+
+        bClosedAny = Fog::D2CheckExpansionGame();
+        if (!((!bClosedAny || (bClosedAny = GAME::Game::CLIENT_CheckExpansion() , !bClosedAny)) && (eUI == UI_HIREICONS || eUI == UI_MERCINV || eUI == UI_RECIPESCROLL))) {
+          eOverlayMode = ui::UI_HandleKeyInputAndDismiss(1, eUI);
+          if (eOverlayMode) {
+            UNIT::Player::GetPlayerUnit_UI();
+            (&GFX_bShowUIFlag.Game)[eUI] = 0;
+            UI_UnregisterHandlersForPanel(eUI);
+            iVar1 = ui::GetMouseX();
+            nMouseY = ui::GetMouseY();
+            if (!false) {
+              switch (eUI) {
+                case UI_INVENTORY:
+                  Inv::INV_ResetHoverAndContextState();
+                case UI_SKILLTREE:
+                  if (!GFX_bShowUIFlag.CharStat && !GFX_bShowUIFlag.WaypointMenu && !GFX_bShowUIFlag.Quest && !GFX_bShowUIFlag.PartyPane && !GFX_bShowUIFlag.MercMenu && !GFX_bShowUIFlag.UnusedScroll && !GFX_bShowUIFlag.PartyMenu) {
+                    Path::TypeOfUiOverlayOverWorld(0);
+                    if (bAdjustMouse && iVar1 < ScreenSizeX / 2) {
+                      ui::SetMouseXY(((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2) + iVar1, nMouseY);
+                    }
+                  } else {
+                    eOverlayMode = 2;
+                    apply_overlay_mode:
+                    Path::TypeOfUiOverlayOverWorld(eOverlayMode);
+                  }
+                break;
+                case UI_STATSCREEN:
+
+                case UI_QUESTSCREEN:
+
+                case UI_QUESTSCROLL:
+
+                case UI_WAYPOINT:
+
+                case UI_PARTYSCREEN:
+
+                case UI_MERCINV:
+
+                case UI_RECIPESCROLL:
+                  if (GFX_bShowUIFlag.Inventory || GFX_bShowUIFlag.Skill) {
+                    eOverlayMode = 1;
+                    goto apply_overlay_mode;
+                  }
+                Path::TypeOfUiOverlayOverWorld(0);
+                if (bAdjustMouse && ScreenSizeX / 2 < iVar1) {
+                  ui::SetMouseXY(iVar1 - ((int)(ScreenSizeX + (ScreenSizeX >> 0x1f & 3U)) >> 2), nMouseY);
+                }
+
+                break;
+                case UI_CONFIG:
+                  ui::UI_ConfigKeyBindModeCancelAndRevert();
+                break;
+                case UI_NPCSHOP:
+
+                case UI_ANVIL:
+
+                case UI_STASH:
+
+                case UI_CUBE:
+
+                case UI_STEEGSTONE:
+
+                case UI_GUILDVAULT:
+
+                case UI_0x1D:
+
+                case UI_0x20:
+                  eOverlayMode = 0;
+                goto apply_overlay_mode;
+              }
+            }
+          }
+        }
+
+        bClosedAny = 1;
+        if (eUI == UI_STASH || eUI == UI_INVENTORY) {
+          Inv::INV_ResetHoverAndContextState();
+        }
+      }
+
+      eUI += UI_INVENTORY;
+      if (0x25 < (int)eUI) {
+        return bClosedAny;
+      }
+    } while (true);
+}
+
 void __stdcall LoadingsScreen() {
     char szPath[260];
     char* _Format;
     char* pszBaseDir;
-    ui::CleanupAfterLoadingAct();
-    ui::PALETTE_LoadLoadingScreenPalette();
+    CleanupAfterLoadingAct();
+    PALETTE_LoadLoadingScreenPalette();
     uint32_t nLangCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     if (!nLangCode) {
       pszBaseDir = "DATA\\GLOBAL";
@@ -134,7 +1673,7 @@ void __fastcall Draw_UI_LoadGame(int32_t bAdvanceFrame) {
             D2gfx::D2GFX::D2GFX_DrawSolidRectEx(ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0xa0, ScreenSizeX / 2 + 0x80, ScreenSizeY / 2 + 0xb0, 0, DRAW_SOLID);
             nSizeX = GAME::Msg::LOADING_GetProgressRatio();
             if (nSizeX) {
-              Engine::Gfx::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0xa0, nSizeX, 0x10, (uint32_t)gbLoadBarColorInitialized, DRAW_SOLID);
+              Engine::GfxInfo::D2GFX_DrawSolidRectExBySize(ScreenSizeX / 2 - 0x80, ScreenSizeY / 2 + 0xa0, nSizeX, 0x10, (uint32_t)gbLoadBarColorInitialized, DRAW_SOLID);
             }
           }
         }
@@ -197,7 +1736,7 @@ void __stdcall UI_ToggleMiniPanel() {
               case 0:
                 break;
               case 1:
-                ui::SetUIFlag(eUI, UI_RESET, 0);
+                SetUIFlag(eUI, UI_RESET, 0);
               break;
               default:
                 return;
@@ -321,7 +1860,7 @@ void __stdcall InitializeUI() {
                 case 0:
                   break;
                 case 1:
-                  ui::SetUIFlag(eUI, UI_RESET, 0);
+                  SetUIFlag(eUI, UI_RESET, 0);
                 break;
                 case 2:
                   goto init_mini_panel_and_help_button;
@@ -374,7 +1913,7 @@ void __stdcall InitializeUI() {
                   case 0:
                     break;
                   case 1:
-                    ui::SetUIFlag(eUI, UI_RESET, 0);
+                    SetUIFlag(eUI, UI_RESET, 0);
                   break;
                   default:
                     goto load_ui_resources;
@@ -424,7 +1963,7 @@ void __stdcall InitializeUI() {
         QuestLog::GameOverWtf();
         CmdTbl::CMD_InitKeyBindings();
         EscMenu::ESCMENU_Initialize();
-        ui::CONTROLCONFIG_Initialize();
+        ControlConfig::CONTROLCONFIG_Initialize();
         return;
       }
     }
@@ -503,7 +2042,7 @@ void __stdcall FreeDraw() {
 
     CmdTbl::CMD_ExitKeyConfigMode();
     EscMenu::ESCMENU_Shutdown();
-    ui::CONTROLCONFIG_Cleanup();
+    ControlConfig::CONTROLCONFIG_Cleanup();
 }
 
 // UI rendering layer. Drawn AFTER world, BEFORE cursor.
@@ -524,13 +2063,21 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
 
     DWORD dwResolutionMode;
     dwResolutionMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
-    if (dwResolutionMode == 2) {
-      gnPanelOffsetX = 80;
+    // VP-BEGIN [resolution site-5]: wide modes (3/4) reuse the retail
+    // 800x600 panel layout, re-centered on the playfield. gnPanelOffsetX/Y
+    // anchor every 800-class panel expression ("gnPanelOffsetX + const" /
+    // "ScreenSizeX - gnPanelOffsetX - const"), so bumping gnPanelOffsetX by
+    // the centering offset moves the whole panel set as one rigid unit.
+    // At retail 800x600 VPRES_GetWideUiOffsetX() is 0 and this matches the
+    // vanilla (80, -60) byte-for-byte; 640x480 keeps (0, 0).
+    if (VPRES_IsWideLayoutMode(dwResolutionMode)) {
+      gnPanelOffsetX = 80 + VPRES_GetWideUiOffsetX();
       gnPanelOffsetY = -60;
     } else {
       gnPanelOffsetX = 0;
       gnPanelOffsetY = 0;
     }
+    // VP-END [resolution site-5]
 
     D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
     /* Render ingame ESC menu */ gU16ImmunityStringBuffer1[0] = 0;
@@ -539,7 +2086,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       EscMenu::DRAW_EscMenu();
     }
     /* Render Key Assigment menu */ if (GFX_bShowUIFlag.ConfigControls) {
-      ui::DRAW_ConfigControlsMenu();
+      ControlConfig::DRAW_ConfigControlsMenu();
     }
     // VP-BEGIN [row-10 options page]: render the page (UI_CONFIG dispatch shape)
     if (GFX_bShowUIFlag.VanillaPlus) {
@@ -549,7 +2096,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
 
     D2UnitStrc* pUnit;
     pUnit = GAME::Select::GetSelectedUnit();
-    ui::DRAW_UnitUnderMouse(pUnit);
+    DRAW_UnitUnderMouse(pUnit);
     if (GFX_bShowUIFlag.HireIcons) {
       ui::UI_DrawMercenaryHealthBar();
     }
@@ -564,7 +2111,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       }
     }
 
-    ui::DRAW_Overlay_EnteringAreaX();
+    DRAW_Overlay_EnteringAreaX();
     Hireables::DRAW_Overlay_PetsAndPartyMembers();
     if (GFX_bShowUIFlag.PartyIcons) {
       Hireables::UI_DrawHireableIcons();
@@ -645,7 +2192,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     }
     if (GFX_bShowUIFlag.HelpMenu) {
       BOOL bIsExpansion;
-      ui::UI_CloseActivePanels(0, 0);
+      UI_CloseActivePanels(0, 0);
       bWasHelpOpen = GFX_bShowUIFlag.HelpMenu;
       bIsExpansion = Fog::D2CheckExpansionGame();
       if (bIsExpansion) {
@@ -666,7 +2213,7 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
                   case 0:
                     break;
                   case 1:
-                    ui::SetUIFlag(eUIIndex, UI_RESET, 0);
+                    SetUIFlag(eUIIndex, UI_RESET, 0);
                   break;
                   default:
                     goto draw_help_menu;
@@ -735,9 +2282,9 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
     Panel::PANEL_DrawHostileIndicator();
     Text::TEXT_DrawMessageLogAndOverhead(pGameView, pnNpcParam);
     D2Win::Src::D2WinFont::Draw_UnitNameUnderCursor();
-    ui::DRAW_MonsterUnderCursorImmunites();
+    DRAW_MonsterUnderCursorImmunites();
     ui::UI_DrawStoredTooltip();
-    ui::DRAW_UnitUModsUnderCursor();
+    DRAW_UnitUModsUnderCursor();
     ui::UI_DrawArenaKillCount();
     ui::DRAW_UI_DeathMessage();
     Source::ClientEngine::thunk_DRAW_Overlay_SecondsLeftToGame(nullptr);
@@ -809,7 +2356,7 @@ void __stdcall DRAW_NoOp() {
 }
 
 void __stdcall DRAW_PfHandlerCallback_CloseActivePanels(D2UIMouseMsgStrc * pMsg) {
-    ui::UI_CloseActivePanels(1, 0);
+    UI_CloseActivePanels(1, 0);
 }
 
 } // namespace D2Client::UI::Draw

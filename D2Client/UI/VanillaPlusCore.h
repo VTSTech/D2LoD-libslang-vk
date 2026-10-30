@@ -13,6 +13,63 @@
 
 #pragma once
 
+struct DC6;
+
+// [resolution-mode] Route-B label primitives for the 1280x720 stop of the
+// video-options Resolution row (attached by the row's fpInitCallback
+// UI_SLIDER_LoadAndApplyResolution in Storm/_unnamespaced.cpp and drawn by
+// its fpDrawCallback UI_SLIDER_DrawResolutionValue in
+// D2Client/UI/EscMenu.cpp). The static esc-menu table keeps nSubImageCount
+// = 2 on purpose: ESCMENU_LoadLocalizedImages loads one label DC6 per stop
+// from the MPQs and no "1280x720" asset exists, so a third static entry
+// would halt the menu load. Instead the init callback attaches the blank
+// placeholder below into pDC6SubImages[2] at runtime (retail-shape 8x8
+// transparent DC6; the menu DC6s are process-lifetime, same as every
+// file-loaded label) and the visible label is font-drawn per frame. Same
+// Route B the Vanilla+ row label was field-proven with (see
+// VanillaPlusOptions.cpp for the Route A post-mortem).
+// FALSE = allocation/fixup failure; caller keeps nSubImageCount = 2 and the
+// init callback clamps the slider position back to 800x600.
+BOOL __stdcall VPRES_BuildBlankPlaceholder(struct DC6** ppOut);
+// Pick the in-tree menu font whose capital 'S' glyph frame height best
+// matches the frame-0 pixel height of pTargetDC6 (the retail "800x600"
+// value image of the same row). Probes Font24/Font30/Font42 ascending
+// (same probe list as the Vanilla+ row label), ties resolve to the larger
+// font, fallback Font42. Saves/restores the current font around the probes
+// and caches the result per process for the given target pointer (the
+// retail label DC6 lives from ESCMENU_Initialize to shutdown).
+int __stdcall VPRES_PickFontMatchingDC6(struct DC6* pTargetDC6);
+// [resolution site-5] TRUE when eResolutionMode renders the retail 800x600
+// UI class (the "800*" art set + nScreenMode=1 D2Common layout tables +
+// count-based stat/skill button input): mode 2 (retail 800x600), mode 3
+// (dormant 1344x700, same class) and mode 4 (Vanilla Plus 1280x720). Every
+// retail D2GFX_GetResolutionMode() consumer that tests == 2 / != 2 to pick
+// the 800-vs-640 layout routes through here, so a future wide mode is
+// added in exactly one place.
+BOOL __stdcall VPRES_IsWideLayoutMode(DWORD eResolutionMode);
+// [resolution site-5] Horizontal offset that centers the exactly-800-px-wide
+// retail UI class on the current playfield: (ScreenSizeX - 800) / 2, clamped
+// to 0 on narrower widths. 0 at modes 0/1/2 (retail math stays
+// byte-identical), 240 at mode 4 (1280x720), 272 at mode 3 (1344x700).
+// Add it to left-anchored X coordinates and subtract it from
+// ScreenSizeX-relative right anchors. Screen-center-anchored widgets and
+// everything hanging off gnPanelOffsetX/gnPanelOffsetY (set once per frame
+// in DRAW_UI) needs no per-site change.
+int __stdcall VPRES_GetWideUiOffsetX();
+// [resolution site-6] Vertical companion to VPRES_GetWideUiOffsetX: the Y
+// half of the "move the 800-class UI as one rigid unit" rule. The 800-class
+// panel art is bottom-anchored ("gnPanelOffsetY - const + ScreenSizeY",
+// bar pieces at ScreenSizeY) and follows the screen height on its own, but
+// every FIXED Y coordinate - table rects from Belts.txt/inventory.txt and
+// "const - gnPanelOffsetY" text/hit-test expressions - stays in 800x600
+// space and lands exactly one height-delta too high. This offset is that
+// delta: ScreenSizeY - 600, clamped to 0. 0 at modes 0/1/2 (retail math
+// stays byte-identical), 100 at mode 3 (1344x700), 120 at mode 4 (1280x720).
+// Add it to fixed Y coordinates of the 800-class UI. DO NOT add it to
+// bottom-anchored expressions (anything already containing "+ ScreenSizeY")
+// or change gnPanelOffsetY (-60) - double-shifting is the failure mode.
+int __stdcall VPRES_GetWideUiOffsetY();
+
 // [vanilla-plus alt-toggle] Config-gated Alt-key ground-item-label toggle
 // (D2R "Show Items: Toggle" parity). d2vp.ini next to d2.exe:
 //   [features]
