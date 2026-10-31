@@ -1,0 +1,44 @@
+d2linux milestone 0 - scaffold (branch `linux`, commit 4036ca3)
+================================================================
+
+The build sandbox has no GitHub credentials, so apply this overlay onto your
+local `linux` branch and push (from the repo root):
+
+  git checkout linux
+  unzip -o d2linux-scaffold-m0.zip -d .
+
+  # Recreate the SDL3 submodule gitlink (a zip cannot carry it):
+  git update-index --add --cacheinfo 160000,829a65d769d935c4852f8159e964312c0957260a,external/SDL
+  git submodule update --init --depth 1 external/SDL
+
+  # (equivalent alternative to the two lines above:)
+  #   rm .gitmodules
+  #   git submodule add --depth 1 https://github.com/libsdl-org/SDL external/SDL
+  #   git -C external/SDL fetch --depth 1 origin 'refs/tags/release-3.4.18:refs/tags/release-3.4.18'
+  #   git -C external/SDL checkout --detach release-3.4.18
+
+  git add -A
+  git commit -m "linux: d2linux milestone 0 - SDL3 host scaffold + CI job + port docs"
+  git push origin linux
+
+Build + smoke (native arch for M0; see docs/linux-port.md):
+
+  git submodule update --init --depth 1 external/SDL   # if not already done
+  cmake -S . -B build-linux -G Ninja -DD2LINUX_ARCH=native
+  cmake --build build-linux -j --target d2linux
+  ./build-linux/d2linux --smoke      # headless self-test, exit 0 = green
+  ./build-linux/d2linux              # 800x600 window, ESC quits (WSLg works)
+
+CI: on push, build.yml runs the new `linux-native` job (clean clone, submodules
+recursive, X11/Wayland dev set, check-build-linux.sh, binary artifact). The
+mingw-i686 PE job is untouched.
+
+Contents
+--------
+  platform/linux/               host skeleton (main / video / audio / build.cmake)
+  tools/check-build-linux.sh    clean-clone build + smoke (what CI runs)
+  docs/linux-port.md            mission split, i386 target, milestone ladder
+  CMakeLists.txt                Linux routing (PE logic untouched)
+  .github/workflows/build.yml   linux-native CI job
+  handoff.md                    Rev 70 carry + Rev 71 track M entry
+  .gitmodules                   SDL3 submodule record

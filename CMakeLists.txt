@@ -14,9 +14,19 @@
 cmake_minimum_required(VERSION 3.16)
 project(Redivivus LANGUAGES C CXX ASM)
 
+if(UNIX AND NOT APPLE AND NOT WIN32)
+    # [d2linux] native Linux track (branch `linux`): route to the platform
+    # layer and skip every PE assumption below. The Windows line keeps this
+    # file's d2.exe logic unchanged. See platform/linux/ and docs/linux-port.md.
+    include("${CMAKE_SOURCE_DIR}/platform/linux/build.cmake")
+    return()
+endif()
+
 if(NOT WIN32 OR NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-    message(FATAL_ERROR "Redivivus targets 32-bit Windows. Configure with "
-        "-DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake (or a native i686 mingw-w64 g++).")
+    message(FATAL_ERROR "Redivivus targets 32-bit Windows (d2.exe) or, on Linux, "
+        "the native d2linux build. Windows: configure with "
+        "-DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake (or a native i686 mingw-w64 "
+        "g++). Linux: configure natively (docs/linux-port.md).")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
