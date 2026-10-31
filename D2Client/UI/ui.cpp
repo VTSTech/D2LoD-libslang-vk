@@ -3,6 +3,11 @@
 // VP-BEGIN [resolution site-5]: wide-layout classifier + centering offset.
 #include "D2Client/UI/VanillaPlusCore.h"
 // VP-END [resolution site-5]
+// VP-BEGIN [quest-gossip-mark]: boot-log mark support for the c2s 0x31 gossip
+// send trace (issue #13) - the id the client echoes back decides the server's
+// 0x4c turn-in gate.
+#include "support/d2_boot.h"
+// VP-END [quest-gossip-mark]
 #include "D2Client/UI/ui.h"
 #include "D2CMP/Pallete.h"
 #include "D2CMP/SRC/CelCmp.h"
@@ -7613,6 +7618,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       npcmenu::NPCMENU_AddHandledMessageId(wMsgType0);
       gnNpcMenuTradeActionGold = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType0);
       GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x31, pNpcUnit->nUnitGUID, dwMsgType & 0xffff);
+      // VP-BEGIN [quest-gossip-mark]: log the gossip id actually sent (issue #13)
+      D2BOOT_MarkFmt("c2s 0x31 gossip send npc=%08x gossip=0x%04x", (unsigned)pNpcUnit->nUnitGUID, (unsigned)(dwMsgType & 0xffff));
+      // VP-END [quest-gossip-mark]
       gnNpcMenuActiveMode = 1;
       Text::TEXT_SetScrollCompleteCallback((pfnTextScrollComplete)npcmenu::NPCMENU_OnScrollComplete, nullptr);
       npcmenu::SetInteractedUnitInfo(pNpcUnit);

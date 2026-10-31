@@ -121,6 +121,7 @@
 #include "D2Game/Quests/QUESTS/Quest39.h"
 #include "D2Game/Quests/QUESTS/Quest40.h"
 #include "Fog/Src/Safesock.h"
+#include "support/d2_boot.h" // [d2boot] quest gossip diagnostics [R53] (issue #13)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -859,6 +860,11 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, D2UnitStrc * 
       sPacket.nExtra = (uint16_t)iVar1;
     }
 
+    // [d2boot][R53] what the server pushes for the Den quest (issue #13):
+    // the join-time sync and every state change carry the status byte.
+    if (pQuestData->nQuestIdReal == QUEST_DenOfEvil) {
+      D2BOOT_MarkFmt("quest: s2c 0x5D DenOfEvil sync status=0x%02x left=%u", (unsigned)sPacket.nFilterStatus, (unsigned)sPacket.nExtra);
+    }
     GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &sPacket);
 }
 
@@ -906,6 +912,9 @@ void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, D2UnitStrc * pPlayer, uin
     }
 
     questArg.sQuestArgs.sNpcActivate.nIndex = nGossipIndex & 0xffff;
+    // [d2boot][R53] the gossip request as the server received it (issue #13):
+    // no line = the client never sent c2s 0x31 (client-side menu problem).
+    D2BOOT_MarkFmt("quest: c2s 0x31 gossip npcGUID=0x%08x gossip=0x%04x", (unsigned)nNpcGUID, (unsigned)(nGossipIndex & 0xffff));
     QUEST_DispatchBroadcast(true, '\x01', &questArg);
 }
 

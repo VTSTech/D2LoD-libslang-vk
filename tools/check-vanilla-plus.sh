@@ -524,6 +524,28 @@ if command -v awk >/dev/null 2>&1; then
   fi
 fi
 
+# ---- [R53] quest: den turn-in diagnostics (issue #13) ------------------------
+# The Akara turn-in interaction was invisible in d2boot.log (mode-1 c2s
+# logging caps at 4 packets and the quest path had no marks). These marks
+# trace the full turn-in loop: server gossip pick (Q01_Callback00_NpcActivate)
+# -> client c2s 0x31 echo -> gossip dispatch (QUEST_OnNpcGossip) -> turn-in
+# gate (Q01_Callback11_ScrollMessage, msg 0x4c + server-record RewardAwaits)
+# -> grant; plus the den counter per kill, the clear, the state-5 timer
+# broadcast, the rejoin state restore (Q01_Callback13_PlayerStartedGame) and
+# the Den 0x5D quest-state sync.
+gate "quest: gossip dispatch mark (R53)"      D2Game/Quests/QUESTS.cpp        'quest: c2s 0x31 gossip' 1
+gate "quest: den 0x5D sync mark (R53)"        D2Game/Quests/QUESTS.cpp        'quest: s2c 0x5D DenOfEvil sync' 1
+gate "quest: akara activate marks (R53)"      D2Game/Quests/QUESTS/A1Q1.cpp   'quest: akara activate' 3
+gate "quest: akara gossip entry mark (R53)"   D2Game/Quests/QUESTS/A1Q1.cpp   'quest: akara gossip msg=' 1
+gate "quest: turn-in gate mark (R53)"         D2Game/Quests/QUESTS/A1Q1.cpp   'quest: turn-in gate' 1
+gate "quest: turn-in grant mark (R53)"        D2Game/Quests/QUESTS/A1Q1.cpp   'quest: den reward GRANTED' 1
+gate "quest: rejoin restore marks (R53)"      D2Game/Quests/QUESTS/A1Q1.cpp   'quest: rejoin Den' 6
+gate "quest: den kill mark (R53)"             D2Game/Quests/QUESTS/A1Q1.cpp   'quest: den kill left=' 1
+gate "quest: den cleared mark (R53)"          D2Game/Quests/QUESTS/A1Q1.cpp   'quest: den CLEARED' 1
+gate "quest: den state-5 broadcast mark (R53)" D2Game/Quests/QUESTS/A1Q1.cpp  'quest: den final state 5' 1
+gate "client: gossip send mark (R53)"         D2Client/UI/ui.cpp              'c2s 0x31 gossip send' 1
+gate "client: gossip send VP block (R53)"     D2Client/UI/ui.cpp              'VP-BEGIN \[quest-gossip-mark\]' 2
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

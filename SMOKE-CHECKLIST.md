@@ -1,15 +1,17 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R52** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R53** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Known-fail — skip, don't burn time:** Necro skeleton spawn tint (issue #8). R51 spawn-polarity fix is pending re-verify; symptom = own raised skeletons spawn yellow and (per R51 theory) should never re-tint. One useful datum for the next round: raise a skeleton and note whether it *ever* re-tints (e.g. after a roster-update event) or stays yellow forever — "never re-tints" would falsify the R51 theory.
+
+**Also wanted this pass — Den of Evil turn-in (issue #13, new R53 boot marks):** section F below. The Akara reward interaction now writes one `quest:` line per step to `d2boot.log` — a single cleared-then-rejoin character run captures everything the issue needs.
 
 ---
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R52`. If it says R51 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R53`. If it says R52 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -40,6 +42,13 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 ## E. Wrapper route (optional, if testing `-3dfx`)
 
 - [ ] **14.** Launch with `-3dfx` → glide3xvk renders, `glide3x.log` gets written, presets/chain load.
+
+## F. Quest trace — A1Q1 Den of Evil ([issue #13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13), R53 boot marks)
+
+Every step below writes a `quest:` line to `d2boot.log`. One char that clears the Den and rejoins covers both scenarios.
+
+- [ ] **15. Fresh clear (same-game turn-in):** on a char whose Den is NOT done: clear the Den → log must show `quest: den kill left=...` per kill (ticking down), then `quest: den CLEARED -> JustCompleted set...`, then `quest: den final state 5 broadcast (8-tick timer)`, and the completion sting plays. Talk to Akara **in the same game**: expect `quest: akara activate ... rewardAwaits=1`, `c2s 0x31 gossip send ... gossip=0x4c`, `quest: akara gossip msg=0x4c`, and `quest: den reward GRANTED (+1 skill...)`. If the reward lands here but not after a rejoin, the fault is the server-side state restore, not the turn-in.
+- [ ] **16. Rejoin turn-in (the issue #13 repro):** with a char that cleared but never claimed: join a new game → look for `quest: rejoin Den Step0x04 -> flag 3/prev 2 (cleared, return to Akara) rewardAwaits=?` — **the logged `rewardAwaits` value is the server-side bit; 0 here is the bug** (the client panel + Akara's `!` come from the client's own copy, which is why they look right). Then talk to Akara and note which `c2s 0x31 gossip send ... gossip=0x???` id goes out, and whether `quest: turn-in gate REJECTED` or `quest: den reward GRANTED` follows. Attach the log.
 
 ---
 

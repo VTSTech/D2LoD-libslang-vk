@@ -38,6 +38,7 @@
 #include "D2Common/Text.h"
 #include "D2Game/D2Game.h"
 #include "D2Game/D2QuestGUIDStrc.h"
+#include "support/d2_boot.h" // [d2boot] quest turn-in diagnostics [R53] (issue #13)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -171,6 +172,10 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
+    // [d2boot][R53] the gossip msg the client echoed back (0x4c = den
+    // turn-in, issue #13); any other id here silently skips the reward.
+    D2BOOT_MarkFmt("quest: akara gossip msg=0x%04x", (unsigned)nMessageIndex);
+
     ::SGAMEDATA* pGame = pQuestData->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
@@ -187,6 +192,7 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (bQuestState != 1) {
+      D2BOOT_MarkFmt("quest: turn-in gate REJECTED msg=0x%04x rewardAwaits=0 (server record)", (unsigned)nMessageIndex); // [d2boot][R53]
       return;
     }
 
@@ -220,6 +226,7 @@ void __fastcall Q01_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
                          sub-states now that it's done */ D2Common::QuestRecord::UnsetQuestStepStates(pBitBuffer, pQuestData->nQuestIdReal);
     /* STATLIST_AddUnitStat(UNITSTAT_newskills, +1) -- the Den-of-Evil reward: Akara
                          grants one free skill point */ D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pQuestArgs->pPlayer, UNITSTAT_newskills, 1, 0);
+    D2BOOT_Mark("quest: den reward GRANTED (+1 skill, Den->Completed, Respec armed)"); // [d2boot][R53]
     if (!pQuestArgs->pPlayer) {
       nLine = -1;
     } else {
@@ -250,12 +257,16 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     }
 
     BOOL bRewardAwaits = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+    // [d2boot][R53] server-side quest record at Akara activate (issue #13):
+    // rewardAwaits=1 here is what picks gossip line 3 ("return for reward").
+    D2BOOT_MarkFmt("quest: akara activate classId=0x%04x rewardAwaits=%d completed=%d justCompleted=%d stateFlag=%u introduced=%d", (unsigned)iTargetClassId & 0xffff, (int)bRewardAwaits, (int)bQuestCompleted, (int)bQuestJustCompleted, (unsigned)pQuestData->nStateFlag, (int)pQuestData->bIsNotIntroduction);
     if (bRewardAwaits) {
       nMessageIndex = 3;
     } else {
       int32_t nPlayerId = !pQuestArgs->pPlayer ? -1 : pQuestArgs->pPlayer->nUnitGUID;
       bRewardAwaits = QUEST_HasPlayerParticipated(pQuestData, nPlayerId);
       if (bRewardAwaits == 1) {
+        D2BOOT_Mark("quest: akara activate -> participant line 4"); // [d2boot][R53]
         AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, 4);
         return;
       }
@@ -278,6 +289,8 @@ void __fastcall Q01_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       }
     }
 
+    // [d2boot][R53] the gossip line the server picked (3 = "return for reward")
+    D2BOOT_MarkFmt("quest: akara activate -> gossip line %u", (unsigned)nMessageIndex);
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetClassId, nMessageIndex);
 }
 
@@ -386,6 +399,7 @@ uint8_t __fastcall Q01_TimerNotifyCompletion(::SGAMEDATA * pGame, D2QuestDataStr
     D2QuestDataA1Q1Strc* pQuestDataA1Q1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestData->nStateFlag == 4) {
       pQuestData->nQuestPacketFlags = '\0';
+      D2BOOT_Mark("quest: den final state 5 broadcast (8-tick timer)"); // [d2boot][R53]
       QUEST_SetStateAndBroadcast(pQuestData, 5, nullptr, (::fpExecuteOnUnitFunction)MarkCompleteQuest, true);
     }
 
@@ -411,6 +425,9 @@ void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
     }
 
     pQuestGUID->nDenMonstersLeftToKillCount = pMonsterRegion->dwMonSpawnCount - pMonsterRegion->dwMonKillCount;
+    // [d2boot][R53] per-kill den counter (issue #13): a counter that never
+    // reaches 0 = dispatch works but spawn over-count / kill under-count.
+    D2BOOT_MarkFmt("quest: den kill left=%u (spawn=%u kill=%u)", (unsigned)pQuestGUID->nDenMonstersLeftToKillCount, (unsigned)pMonsterRegion->dwMonSpawnCount, (unsigned)pMonsterRegion->dwMonKillCount);
     if (pQuestArgs->pPlayer) {
       nPopulatedRooms = pQuestArgs->pPlayer->nUnitGUID;
       BVar1 = QUESTGUID_SearchForValueInIntArray32(&pQuestGUID->sQuestGUID, nPopulatedRooms);
@@ -436,6 +453,9 @@ void __fastcall Q01_Callback08_MonsterKilled(D2QuestDataStrc * pQuestData, D2Que
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q01_PropagateRewardToParty);
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q01_SetCannotCompleteInGame);
         UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestArgs->pGame, 0, pQuestArgs->pTarget, (::fpExecuteOnUnitFunction)Q01_PlayCompletionSound);
+        // [d2boot][R53] den completion fired (issue #13 discriminator: this
+        // line + the completion sting on the last kill)
+        D2BOOT_Mark("quest: den CLEARED -> JustCompleted set, reward propagated, completion sound 0x23");
         NotifyPlayersAboutEvent(pQuestData->pGame, 0);
         if (pQuestGUID->bNotifiedCompletion) {
           return;
@@ -564,13 +584,16 @@ void __fastcall Q01_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
+    int nRejoinRewardAwaits = (int)D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_RewardAwaits); // [R53] mark-only read (issue #13)
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
     if (bQuestState) {
+      D2BOOT_Mark("quest: rejoin Den record Completed (no restore)"); // [d2boot][R53]
       return;
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_FinishedInPreviousGame);
     if (bQuestState) {
+      D2BOOT_Mark("quest: rejoin Den FinishedInPreviousGame (no restore)"); // [d2boot][R53]
       return;
     }
 
@@ -578,6 +601,7 @@ void __fastcall Q01_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (bQuestState == 1) {
       pQuestData->nStateFlagPrev = 2;
       pQuestData->nStateFlag = 3;
+      D2BOOT_MarkFmt("quest: rejoin Den Step0x04 -> flag 3/prev 2 (cleared, return to Akara) rewardAwaits=%d", nRejoinRewardAwaits); // [d2boot][R53]
       return;
     }
 
@@ -585,16 +609,19 @@ void __fastcall Q01_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
     if (bQuestState == 1) {
       pQuestData->nStateFlag = 3;
       pQuestData->nStateFlagPrev = 1;
+      D2BOOT_MarkFmt("quest: rejoin Den Step0x03 -> flag 3/prev 1 (entered) rewardAwaits=%d", nRejoinRewardAwaits); // [d2boot][R53]
       return;
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_DenOfEvil, QUESTSTATE_Step0x02);
     if (bQuestState != 1) {
+      D2BOOT_MarkFmt("quest: rejoin Den no journal steps (flag stays 1) rewardAwaits=%d", nRejoinRewardAwaits); // [d2boot][R53]
       return;
     }
 
     pQuestData->nStateFlag = 2;
     pQuestData->nStateFlagPrev = 1;
+    D2BOOT_MarkFmt("quest: rejoin Den Step0x02 -> flag 2/prev 1 (accepted) rewardAwaits=%d", nRejoinRewardAwaits); // [d2boot][R53]
 }
 
 // A1Q1 (Den of Evil) init (Q01_InitData) -- registers the quest. Allocates the A1Q1-specific data block, wires up the state-handler callback table (slot 0=Q01_Callback_00 gossip-line, 2=Q01_Callback_02 accept-ack, 3=Q01_Callback_03 entered-Den, 8=Q01_Callback_08 monster-kill/clear, 0x0a=Q01_Callback_10 player-left, 0x0b=Q01_Callback_11 Akara-dialog, 0x0d=Q01_Callback_13 reload), sets the Akara gossip table (NPC 0x94, string 0x40), and configures: nQuestIdReal=QUEST_DenOfEvil, nSubQuestId=QUEST_Respec (free respec), fpActiveFilter=Q01_ActiveFilter, fpSequenceFilter=Q01_SequenceFilter, nSequenceQuestId=QUEST_SistersBurialGrounds (next quest), initial nStateFlag=1. No quest-record state ops here -- pure registration.
