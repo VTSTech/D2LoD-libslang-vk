@@ -300,9 +300,10 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
     }
 
     int pPalShiftEntryPtr = *(int*)((int)gpMonsterPalShiftList + pUnit->nClassId * 8 + 4);
-    if (!pPalShiftEntryPtr) {
-      return nullptr;
-    }
+    // [R49] no early entry-out here: RandTransforms.dat is a GLOBAL table (indices 8-0x25) and must
+    // resolve for monsters without a per-monster palshift.dat — the entry pointer is consumed only by
+    // the index 0-7 sub-table paths below, which carry the guard themselves. The unconditional
+    // entry-out made every rolled unique/champion tint (the issue #9 "no unique colors") unreachable.
 
     int32_t nPalShiftIndex = UNIT::CUnit::GetPalShiftIndex(pUnit);
     switch (nPalShiftIndex) {
@@ -311,6 +312,9 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
       case 1:
         if (pUnit->nClassId - 0x16bU > 1) {
           return nullptr;
+        }
+        if (!pPalShiftEntryPtr) {
+          return nullptr; // [R49] index 0/1 sub-tables live in the monster's own palshift.dat entry
         }
       break;
       default:
@@ -334,6 +338,9 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
       case 6:
 
       case 7:
+        if (!pPalShiftEntryPtr) {
+          return nullptr; // [R49] index 2-7 blood/base sub-tables live in the monster's own palshift.dat entry
+        }
         nBloodFlag = Game::GAMEDATA_GetBloodFlag();
       if (nBloodFlag) {
         pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);

@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R48' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R49' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R48" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R48' 1
+gate "d2boot-fix: build version 0.0.6-R49" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R49' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -439,6 +439,30 @@ if command -v awk >/dev/null 2>&1; then
     PASS=$((PASS + 1))
   else
     printf 'FAIL %-46s ok=%s bad=%s (want ok=4 bad=0) - VP rider resolved into the alloc-FAILURE branch (dead store)\n' "gold-dialog: riders in success branch (R48)" "${vp_gd_ok:-0}" "${vp_gd_bad:-0}"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
+# ---- [R49] palshift: rolled unique tint reachable (issue #9) ----------------
+# GetMonsterTransform must NOT early-out on a missing palshift.dat entry:
+# RandTransforms.dat is a GLOBAL table (indices 8-0x25, the rolled unique/
+# champion tints) and resolves without any per-monster entry. The entry
+# pointer is consumed only by the index 0-7 sub-table paths, so entry
+# guards must live inside the switch arms (after `switch (nPalShiftIndex) {`),
+# never before it. Regression signature of the R49 fix: any entry-guard
+# line preceding the switch = the unconditional early-out is back.
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /switch \(nPalShiftIndex\) \{/ { if (swl==0) swl=NR }
+    /if \(!pPalShiftEntryPtr\) \{/ { if (swl==0) pse++; else psg++ }
+    /PalShift_RandTransform \+ \(nPalShiftIndex - 8U\)/ { if (psr==0) psr=NR }
+    END { printf "vp_ps_swl=%d vp_ps_guard=%d vp_ps_early=%d vp_ps_rand=%d", swl+0, psg+0, pse+0, psr+0 }
+  ' D2Client/GAME/PalShift.cpp)"
+  if [ "${vp_ps_swl:-0}" -ge 1 ] && [ "${vp_ps_guard:-0}" -eq 2 ] && [ "${vp_ps_early:-0}" -eq 0 ] && [ "${vp_ps_rand:-0}" -ge 1 ]; then
+    printf 'ok   %-46s %s guards=%s early=%s\n' "palshift: rand-transform reachable (R49)" "D2Client/GAME/PalShift.cpp" "$vp_ps_guard" "$vp_ps_early"
+    PASS=$((PASS + 1))
+  else
+    printf 'FAIL %-46s switch=%s guards=%s early=%s rand=%s (want switch>=1 guards=2 early=0 rand>=1) - unconditional entry-out before the switch kills the unique tint (issue #9)\n' "palshift: rand-transform reachable (R49)" "${vp_ps_swl:-0}" "${vp_ps_guard:-0}" "${vp_ps_early:-0}" "${vp_ps_rand:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi
