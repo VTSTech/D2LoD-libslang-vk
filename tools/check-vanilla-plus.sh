@@ -33,8 +33,12 @@ gate() { # gate <name> <file> <ERE> <expected>
     fi
 }
 
-# ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R52' 1
+# ---- boot & d2boot instrumentation ----------------------------------------
+# The build self-ID (D2BOOT_Mark "Vanilla+0.0.6-RXX") is deliberately NOT
+# gate-pinned (rev 58, owner: "remove the version pin from the gate, gate is
+# for features and fixes") — the owner bumps it every code round, so a pinned
+# banner would red the suite by design. Check it manually: d2boot.log line 1
+# (SMOKE-CHECKLIST item 0).
 gate "boot: log overwrites per run"       support/d2_boot.cpp             '0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL' 2
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
@@ -111,7 +115,8 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R52" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R52' 1
+# (the "build version" gate that lived here pinned the self-ID string and was
+# removed at rev 58 together with the banner gate — see the boot section note)
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1

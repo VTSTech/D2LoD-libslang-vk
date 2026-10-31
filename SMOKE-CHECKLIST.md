@@ -35,7 +35,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 ## D. 720p alignment regressions (R47/R48 territory)
 
 - [ ] **13.** At 1280x720: inventory + skill flyouts align; open stash → **deposit/withdraw gold dialogs** centered properly (the R48 casualty — easy to regress).
-- [ ] **13b. Belt hover (720p regression found in the field, FIXED R52):** hover the belt HUD → expanded belt popup opens **and stays open** while the cursor is inside it; clicking a slot in the popup uses/drops that potion; hovering a filled slot shows the item-name tooltip anchored to the slot (not 60px too high).
+- [ ] **13b. Belt hover (720p regression found in the field, FIXED R52 — [issue #14](https://github.com/VTSTech/D2LoD-libslang-vk/issues/14)):** hover the belt HUD → expanded belt popup opens **and stays open** while the cursor is inside it; clicking a slot in the popup uses/drops that potion; hovering a filled slot shows the item-name tooltip anchored to the slot (not 60px too high).
 
 ## E. Wrapper route (optional, if testing `-3dfx`)
 
