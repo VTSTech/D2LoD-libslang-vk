@@ -748,7 +748,7 @@ BOOL __stdcall RENDERER_WINDOWED_CheckBlendedShadowsEnabled() {
     return pD2GFXRenderedDataStrc->bBlendedShadows;
 }
 
-void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, int nDrawMode) { // [vanilla-plus resfix] DWORD matches the fpDrawSolidRectEx renderer typedef
+void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, int nDrawMode) {
     uint8_t* pbPixel;
     int nRowsLeft;
     int nBlendMode;

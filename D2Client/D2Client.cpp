@@ -776,7 +776,7 @@ void __stdcall CMD_SetHoldAlt() {
 }
 
 void __stdcall CMD_StopRun() {
-    bool _bAlwaysRun;
+    BOOL _bAlwaysRun;
     bool bAlwaysRun;
     GAME::Game::SetRunKeyDown(0);
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();

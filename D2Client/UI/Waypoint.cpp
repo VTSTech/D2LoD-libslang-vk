@@ -396,7 +396,7 @@ void __stdcall WAYPOINT_PopulateList() {
 }
 
 void __stdcall DRAW_UI_Waypoint() {
-    bool _bIsExpansionCheck;
+    BOOL _bIsExpansionCheck;
     bool bIsExpansionCheck;
     D2UnitStrc* pPlayerUnit_lcl;
     D2RoomStrc* pDrlgRoom;
