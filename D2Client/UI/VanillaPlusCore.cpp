@@ -118,6 +118,7 @@
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SSTR.h" // [item-ilvl] SStrPrintf for the level digits
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
@@ -214,7 +215,13 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "; Persistent globe text:\r\n"
         ";   0 = the Life/Mana text above the orbs shows on hover only (vanilla)\r\n"
         ";   1 = keep the Life/Mana text above the orbs always visible\r\n"
-        "globe_persistent=0\r\n";
+        "globe_persistent=0\r\n"
+        "\r\n"
+        "; Item level tooltips:\r\n"
+        ";   0 = item tooltips exactly as retail               (vanilla behavior)\r\n"
+        ";   1 = add an \"Item Level: <ilvl>\" line to every item\r\n"
+        ";       tooltip, right below the Required Level line\r\n"
+        "item_ilvl=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -454,7 +461,55 @@ BOOL __stdcall VANILLAPLUS_GlobeTextPersistent() {
     return gbGlobeTextPersistentMode;
 }
 
-// ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ===========
+// ===== [vanilla-plus item-ilvl] optional "Item Level" tooltip line ==========
+// D2R "Advanced Tooltips" parity (the ilvl readout half). See VanillaPlusCore.h
+// for the feature contract. Gate = the shared 2 s hot-read cache pattern
+// (globe_persistent shape): tooltip rebuilds happen every frame the cursor
+// dwells, so no rebuild trigger is needed - the next hover after the flip
+// carries the new state.
+static int gbItemIlvlMode = 0;
+static DWORD dwItemIlvlLastCheck = 0;
+
+BOOL __stdcall ITEMILVL_Active() {
+    DWORD dwNow = GetTickCount();
+    if (!dwItemIlvlLastCheck || dwNow - dwItemIlvlLastCheck >= 2000) {
+        dwItemIlvlLastCheck = dwNow;
+        gbItemIlvlMode = D2VP_GetFeatureToggle("item_ilvl");
+    }
+    return gbItemIlvlMode;
+}
+
+// Same line idiom as Inv.cpp's INV_FormatReqStrText: label, white code
+// (locale 0xf9b), "%i" digits, line separator (locale 0xf9e). The caller
+// applies the line's base color via AppendAsWideChar. OFF = empty buffer =
+// the upstream appends are no-ops (AppendToBuffer copies just the terminator,
+// AppendAsWideChar returns empty buffers untouched) - vanilla byte-for-byte.
+void __stdcall ITEMILVL_FormatLine(D2UnitStrc * pItem, uint16_t * wszText) {
+    uint16_t wszNumBuffer[10];
+    char szNumBuffer[12];
+    if (!wszText) {
+        return;
+    }
+    wszText[0] = L'\0';
+    if (!ITEMILVL_Active() || !pItem) {
+        return;
+    }
+    int nItemLevel = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pItem);
+    if (nItemLevel < 1) {
+        return;   // not an item unit / no parsed level (accessor returns 0)
+    }
+    // Hardcoded ASCII label: the vanilla string table has no "Item Level"
+    // entry and the fork never edits MPQ data. 12 chars + terminator = 13.
+    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszText, (char*)"Item Level: ", 13);
+    memset(wszNumBuffer, 0, sizeof(wszNumBuffer));
+    Storm::Source::SSTR::SStrPrintf(szNumBuffer, 10, "%i", nItemLevel);
+    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNumBuffer, szNumBuffer, 9);
+    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, D2Lang::StrTable::strtable::GetLocaleString(0xf9b));
+    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, wszNumBuffer);
+    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, D2Lang::StrTable::strtable::GetLocaleString(0xf9e));
+}
+
+// ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ==========
 // The "Vanilla+ Options" page (D2Client/UI/VanillaPlusOptions.cpp) reads and
 // flips the same [features] keys the gates consume. Reads go through the
 // gate's own accessor path (path builder + template ensure + 0 default);
@@ -495,6 +550,7 @@ void __stdcall D2VP_ConfigReloaded() {
     dwAltToggleLastCheck = 0;     // next ALTTOGGLE_Active() re-reads alt_toggle
     dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
     dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
+    dwItemIlvlLastCheck = 0;      // next ITEMILVL_Active() re-reads item_ilvl
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }
 

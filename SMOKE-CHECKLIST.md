@@ -33,6 +33,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 - [ ] **10. `globe_persistent`:** HP/MP text above orbs always visible, no hover needed.
 - [ ] **11. Hot-reload:** edit `d2vp.ini` while in-game (flip a key) → applies within ~2 s, no restart.
 - [ ] **12. `portable_save`:** enabled → save & exit → `.d2s` lands in `<game folder>\save`, re-enters fine.
+- [ ] **12b. `item_ilvl` (new in R55):** set `item_ilvl=1` → every item tooltip shows `Item Level: <ilvl>` directly below the Required Level line (or in its slot when there is none). Sanity pairs: an early-act normal drop (small ilvl) vs a late-game unique/rare (large); a **set piece** (second tooltip builder); an **unidentified** item (line still shows); gold/potions (line shows, harmless). Negative: key off/missing → tooltips exactly as retail; the in-game **Vanilla+ Options** row `Item Level Tooltips` flips it and applies within ~2 s without a restart.
 
 ## D. 720p alignment regressions (R47/R48 territory)
 

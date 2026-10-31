@@ -565,6 +565,27 @@ gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
+# ---- [item-ilvl] R55: optional "Item Level" tooltip line (d2vp.ini item_ilvl)
+# D2R "Advanced Tooltips" parity (the ilvl readout half). OFF = the formatter
+# (fork-owned TU, VanillaPlusCore.cpp) writes an EMPTY wide string, so the
+# unconditionally-appended upstream buffers are no-ops and the two decomp
+# tooltip builders stay byte-identical to retail (charter rule 1). ON = one
+# line - "Item Level: <ilvl>" - anchored directly below the retail Required
+# Level line in BOTH LoadItemDesc (all normal/unidentified/uniques) and
+# ITEM_BuildSetItemTooltip (set pieces). Data source = D2Common's parsed
+# item data (ITEM_GetItemData_nItemLevel), same struct the retail req-level
+# line already reads client-side. Shop-narrow / book / transmogrify tooltips
+# stay vanilla by design.
+gate "ilvl: gate fn defined"                  D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_Active' 1
+gate "ilvl: formatter defined"                D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_FormatLine' 1
+gate "ilvl: ini key read by the gate"         D2Client/UI/VanillaPlusCore.cpp   '"item_ilvl"' 1
+gate "ilvl: ini template key"                 D2Client/UI/VanillaPlusCore.cpp   'item_ilvl=0' 1
+gate "ilvl: decl + cache busted on write"     D2Client/UI/VanillaPlusCore.cpp   'dwItemIlvlLastCheck = 0' 2
+gate "ilvl: header declares gate + formatter" D2Client/UI/VanillaPlusCore.h     'ITEMILVL_' 2
+gate "ilvl: call sites in Inv.cpp (main+set)" D2Client/UI/Inv.cpp               'ITEMILVL_FormatLine' 2
+gate "ilvl: line buffer sites in Inv.cpp"     D2Client/UI/Inv.cpp               'wszItemLevel' 8
+gate "options page: ilvl row present"         D2Client/UI/VanillaPlusOptions.cpp '"item_ilvl"' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

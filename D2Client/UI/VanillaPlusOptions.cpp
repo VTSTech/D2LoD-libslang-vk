@@ -142,14 +142,15 @@ struct VPPFeatureRow {
     const char* szKey;        // d2vp.ini [features] key
     const wchar_t* wszLabel;  // row label
 };
-static const VPPFeatureRow gaVanillaPlusRows[4] = {
+static const VPPFeatureRow gaVanillaPlusRows[5] = {
     { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
     { "globe_persistent", L"Persistent Globe Text" },
+    { "item_ilvl", L"Item Level Tooltips" },
 };
-static const int VPP_ROW_COUNT = 4;
-static const int VPP_ROW_BACK = 4; // hit-test index of the Previous Menu row
+static const int VPP_ROW_COUNT = 5;
+static const int VPP_ROW_BACK = 5; // hit-test index of the Previous Menu row
 
 // Input handlers (definitions below; the batch array references them).
 // Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:

@@ -118,6 +118,31 @@ void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
 // retail's above-orb Life/Mana text shows persistently; 0 = vanilla
 // hover-only. Display-only, no state, no input changes.
 BOOL __stdcall VANILLAPLUS_GlobeTextPersistent(); // per-frame, Panel.cpp draw conditions
+// [vanilla-plus item-ilvl] Optional "Item Level" tooltip line (D2R "Advanced
+// Tooltips" parity, the ilvl readout half). d2vp.ini next to d2.exe:
+//   [features]
+//   item_ilvl=1
+// Default/missing file/section/key/garbage value = 0 = vanilla byte-for-byte:
+// the formatter writes an empty wide string and the upstream call sites
+// (Inv.cpp LoadItemDesc + ITEM_BuildSetItemTooltip) append that buffer
+// unconditionally, so OFF reproduces retail output exactly (an empty buffer
+// is a no-op for both AppendToBuffer and AppendAsWideChar). While on, every
+// item tooltip gains one line - "Item Level: <ilvl>" - anchored directly
+// below the retail "Required Level" line (or in its slot when the item has
+// none). Data source: the client's own item unit, D2Common's parsed item
+// data (same struct that feeds the retail req-level line) - ilvl travels in
+// the item bitstream on every path that reaches this tooltip (dropped,
+// bought, gambled, traded, socketed, mercenary). The label is a hardcoded
+// ASCII wide string: the vanilla string table has no "Item Level" entry and
+// the fork never edits MPQ data. Display-only, no state, no input changes;
+// the tooltip is rebuilt every frame the cursor dwells, so the 2 s hot-read
+// gate below applies the ini flip without any rebuild trigger.
+BOOL __stdcall ITEMILVL_Active(); // config: item_ilvl on?
+// Writes "Item Level: <ilvl>" (label in the line color, white digits, line
+// separator) into wszText, or an empty string when the gate is off / the
+// item carries no level. Called from Inv.cpp's two tooltip builders; the
+// line's base color is applied by the caller's AppendAsWideChar (white).
+void __stdcall ITEMILVL_FormatLine(struct D2UnitStrc * pItem, uint16_t * wszText);
 // [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
 // page reads/flips the same [features] keys the gates consume; writes use
 // WritePrivateProfileStringA and flush every gate's 2 s hot-read cache.
