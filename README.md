@@ -1,4 +1,5 @@
 <img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8bcf5198-8c29-463c-b68f-230cf5745206" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3e5f2205-691c-41aa-a943-1ffb003b6a2c" />
 
 # D2LoD Vanilla+
 
