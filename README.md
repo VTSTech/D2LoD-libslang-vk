@@ -1,3 +1,5 @@
+<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8bcf5198-8c29-463c-b68f-230cf5745206" />
+
 # D2LoD Vanilla+
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.6-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6)
@@ -44,8 +46,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
 
 ## Status
 
-- **Current release: [`D2LoD-Vanilla-Plus-0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
-  first `d2boot.log` line self-identifies the build (`Vanilla+0.0.6-R45`), so a shipped
+- **Current release: [`D2LoD-Vanilla-Plus-0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R49)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
+  first `d2boot.log` line self-identifies the build (`Vanilla+0.0.6-R49`), so a shipped
   exe can always be pinned to its source round.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
