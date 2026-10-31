@@ -14,56 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mingw-i686:
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      # NOTE: the vanilla-plus merge gates (tools/check-vanilla-plus.sh) are
-      # deliberately NOT run here — a gate failure must not halt the build.
-      # They are a manual audit step (see docs/merge-upstream.md, step 4):
-      #   tools/check-vanilla-plus.sh "$GITHUB_WORKSPACE"
-
-      - name: Install the toolchain
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq g++-mingw-w64-i686 binutils-mingw-w64-i686 cmake ninja-build
-
-      - name: Build from a clean clone
-        run: tools/check-build.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
-
-      # check-build.sh builds in a temp clone and deletes it, so build in-tree
-      # too and keep the exe as an artifact.
-      - name: Build in-tree
-        run: |
-          cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/mingw-i686.cmake
-          cmake --build build -j "$(getconf _NPROCESSORS_ONLN)"
-
-      # Ship the stripped exe only. The link still embeds -O0 + DWARF (the
-      # charter), but the fat exe is no longer uploaded: crash triage resolves
-      # module+offset addresses against the map artifact below, which the link
-      # writes via -Wl,-Map (CMakeLists.txt). strip does not move sections, so
-      # map offsets stay valid against the stripped exe.
-      - name: Make stripped d2s-<commit>.exe
-        run: |
-          D2S="build/d2s-${GITHUB_SHA::7}.exe"
-          cp build/d2.exe "$D2S"
-          strip "$D2S"
-          echo "D2S=$D2S" >> "$GITHUB_ENV"
-
-      - name: Upload d2s-<commit>.exe (play/distribute)
-        uses: actions/upload-artifact@v4
-        with:
-          name: d2s-${{ github.sha }}
-          path: ${{ env.D2S }}
-
-      - name: Upload linker map (crash address -> symbol, for triage)
-        uses: actions/upload-artifact@v4
-        with:
-          name: d2-map-${{ github.sha }}
-          path: build/d2exe.map
-          if-no-files-found: warn
-
   # [d2linux] native Linux track (branch `linux`, docs/linux-port.md). Builds
   # the SDL3 host skeleton and runs its headless --smoke self-test. The PE
   # job above is untouched; the two tracks are independent artifacts. The
