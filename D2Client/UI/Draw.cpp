@@ -714,12 +714,16 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
 
       draw_help_menu:
       Help::DrawBackgroundHelpMenu();
+    }
     // VP-BEGIN [auto-gold]: walk-over gold pickup trigger. Per frame, in
     // the same stage as the label renderer but OUTSIDE its AltShowItems
     // gate; inert (0 sends) unless [features] auto_gold=1 in d2vp.ini.
+    // R47: this block MUST sit after the closing brace of the HelpMenu
+    // block - the d6affdd merge port once re-parented it one brace early
+    // (inside if (GFX_bShowUIFlag.HelpMenu)), so the tick only ran while
+    // the help overlay was open and auto gold was dead (issue #10).
     AUTO_GOLD_Tick();
     // VP-END [auto-gold]
-    }
     if (GFX_bShowUIFlag.AltShowItems) {
       eBorderType = Path::DRAW_GetTypeOfBorder();
       if (eBorderType != 3) {

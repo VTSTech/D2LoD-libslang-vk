@@ -49,13 +49,12 @@ be fixed, replaced and released independently. The releases bundle both as one d
   exe can always be pinned to its source round.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
-  mode; sound (intro video, title music, UI and in-game SFX); the Vanilla+ Options page;
-  inventory, skill flyouts and dialogs aligned at 720p.
-- Not finished. Known issues:
-  - **Glide (`-3dfx`) is not playable yet.** The wrapper comes up (Vulkan swapchain and
-    slang chain ready, first frame starts) and an own-code divide-by-zero takes the exe
-    down ~0.5 s in — one symbolised crash report away from a named site. Use Direct3D
-    in the meantime.
+  mode; **Glide (`-3dfx`) through the glide3xvk wrapper** — fixed in the R46 round,
+  root cause + fix documented in
+  [#11](https://github.com/VTSTech/D2LoD-libslang-vk/issues/11); sound (intro video,
+  title music, UI and in-game SFX); the Vanilla+ Options page; inventory, skill
+  flyouts and dialogs aligned at 720p.
+- Not finished. One known issue remains:
   - **Unique monsters render in base colors, and unique-pack minion skeletons render
     gold.** One mechanism family (the palette-transform roll), under investigation.
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the

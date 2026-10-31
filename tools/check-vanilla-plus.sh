@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R46' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R47' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R46" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R46' 1
+gate "d2boot-fix: build version 0.0.6-R47" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R47' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -133,6 +133,14 @@ gate "row-10 draw callback wired (row + comment)" globals/D2Client.cpp        'V
 # register/unregister blocks follow them there (the DRAW_UI render block stays in Draw.cpp).
 gate "SetUiFlagInit/unregister VP blocks"  D2Client/UI/ui.cpp      'VP-BEGIN \[row-10 options page\]' 2
 gate "render VP block"                     D2Client/UI/Draw.cpp    'VP-BEGIN \[row-10 options page\]' 1
+# rev47 track G: PRESENCE is not PLACEMENT. Row "auto-gold tick wired in
+# DRAW_UI" stayed green through the d6affdd merge port even though the port
+# re-inserted the VP block one brace early - INSIDE the HelpMenu block of
+# DRAW_UI - so AUTO_GOLD_Tick only ran while the help overlay was open and
+# auto gold was dead in normal play (issue #10). The awk order-check below
+# pins the placement: after DrawBackgroundHelpMenu(); the NEXT code line must
+# be the HelpMenu block's closing brace, and VP-BEGIN [auto-gold] must come
+# AFTER that brace (never before it).
 gate "auto-gold tick wired in DRAW_UI"    D2Client/UI/Draw.cpp            'AUTO_GOLD_Tick\(\);'        1
 gate "latch reset in InitializeUI"        D2Client/UI/Draw.cpp            'ALTTOGGLE_Reset\(\);'       1
 gate "case UI_VANILLAPLUS (register+unregister)" D2Client/UI/ui.cpp       'case UI_VANILLAPLUS:'       2
@@ -372,6 +380,32 @@ gate "glide texmem: debug font wired (R46)"      D2Glide/Renderer/Glide.cpp 'REN
 gate "glide texmem: VRAM gate present (R46)"     D2Glide/Renderer/Glide.cpp 'have enough video memory' 1
 gate "glide fix-3: class-slot guard (R46)"       D2Glide/Renderer/Glide.cpp '< 1 \|\| 3 <' 1
 gate "glide fix-2: stale-nodeIdx guard (R46)"    D2Glide/Renderer/Glide.cpp 'pSlotNode \+ 8\) != nTexStartAddress' 1
+
+# ---- rev47 track G: auto-gold trigger placement (issue #10) ----------------
+# The d6affdd merge port re-parented the VP [auto-gold] block into the
+# HelpMenu block of DRAW_UI (marker + call both present - the presence gate
+# above could not see it). Tick body, send path and server pick were all
+# intact; only the reachability died. The order-check mirrors the rev44
+# site-5 pair-order gate: DrawBackgroundHelpMenu(); -> closing brace ->
+# VP-BEGIN, with VP-BEGIN-before-brace counted as the regression signature.
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /Help::DrawBackgroundHelpMenu\(\);/ { if (stage==0) stage=1; next }
+    stage==1 && /VP-BEGIN \[auto-gold\]/ { bad++; stage=9; next }
+    stage==1 && /^[[:space:]]*}[[:space:]]*$/ { stage=2; next }
+    stage==1 && NF { stage=9 }
+    stage==2 && /VP-BEGIN \[auto-gold\]/ { ok++; stage=0; next }
+    stage==2 && NF { stage=9 }
+    END { printf "vp_ag_ok=%d vp_ag_bad=%d", ok+0, bad+0 }
+  ' D2Client/UI/Draw.cpp)"
+  if [ "${vp_ag_ok:-0}" -eq 1 ] && [ "${vp_ag_bad:-0}" -eq 0 ]; then
+    printf 'ok   %-46s %s brace-after-call x%s\n' "auto-gold: trigger outside help block (R47)" "D2Client/UI/Draw.cpp" "$vp_ag_ok"
+    PASS=$((PASS + 1))
+  else
+    printf 'FAIL %-46s ok=%s bad=%s (want ok=1 bad=0) - VP block re-parented into the HelpMenu block\n' "auto-gold: trigger outside help block (R47)" "${vp_ag_ok:-0}" "${vp_ag_bad:-0}"
+    FAIL=$((FAIL + 1))
+  fi
+fi
 
 echo
 if [ "$FAIL" -eq 0 ]; then
