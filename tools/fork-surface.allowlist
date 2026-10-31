@@ -692,7 +692,7 @@
 64	64	D2Sound/Sound.h
 506	506	D2Sound/Src/D2SoundFast.cpp
 43	43	D2Sound/Src/D2SoundFast.h
-8	8	D2Sound/Src/D2SoundSmp.cpp
+25	14	D2Sound/Src/D2SoundSmp.cpp
 109	109	D2Sound/Src/D2SoundSmp.h
 99	99	D2Win/D2GFX.cpp
 29	29	D2Win/D2GFX.h
@@ -805,7 +805,7 @@
 13	99	globals/globals.cpp
 12	10	globals/globals.h
 7677	7677	globals/Storm.cpp
-126	0	handoff.md
+128	0	handoff.md
 786	0	HISTORY.md
 333	0	PLAN.md
 4	4	progress/report.json
@@ -883,6 +883,6 @@
 4	0	tools/build-local-win11.cmd
 217	0	tools/build-local-win11.ps1
 94	0	tools/check-fork-surface.sh
-315	0	tools/check-vanilla-plus.sh
+329	0	tools/check-vanilla-plus.sh
 229	0	VANILLA-PLUS.md
 32	0	vanilla-plus/cmake/sources.cmake
