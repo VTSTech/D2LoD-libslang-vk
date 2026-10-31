@@ -69,6 +69,15 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     #    regen inverted the branch shape (decompiler-equivalent) and the port
     #    matched by text. Flags any VP-marked store nulled out on the next
     #    line: a dead store, never the intended placement.
+    python3 scripts/d2boot_visibility_audit.py
+    #    [d2boot] INCLUDE-VISIBILITY audit (added Rev 76, after the 1781 sync
+    #    compile break): presence gates cannot see a lost #include. The 1781
+    #    merge re-planted SCmd.cpp's srv state-cmd mark but dropped the fork's
+    #    include of support/d2_boot.h (last include-block line) - fatal at
+    #    compile: "D2BOOT_MarkFmt was not declared in this scope". This walks
+    #    every D2BOOT_* user TU and proves it still reaches the declaration
+    #    (direct include or transitively). Mandatory when the merge touched
+    #    include blocks; cheap enough to always run.
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
