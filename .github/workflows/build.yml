@@ -84,8 +84,11 @@ jobs:
           # runner can afford the real backends).
           sudo apt-get install -y -qq cmake ninja-build \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
-            libxfixes-dev libxss-dev libwayland-dev libxkbcommon-dev \
+            libxfixes-dev libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev \
             libegl1-mesa-dev libasound2-dev
+          # libxtst-dev: XTEST — SDL3 hard-errors at configure time without it
+          # (sdlchecks.cmake CheckX11); the rest of the family is above, EGL +
+          # ALSA below, matching SDL3's README-linux build-deps list.
 
       - name: Build d2linux from a clean clone + headless smoke
         # bash prefix: runs regardless of the git exec bit (the bit cannot be
