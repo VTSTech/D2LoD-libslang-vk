@@ -75,7 +75,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
     __frame0.bSoundInit = 0;
     Fog::Source::SFile::SFILE_InitializeFileSystem((uint32_t)pD2IniData->bDIRECT, 0);
     D2BOOT_Mark("SFile filesystem init ok"); // [d2boot]
-    Fog::Src::AsyncData::STRUCT_AllocAsyncData(1);
+    Fog::Src::AsyncData::STRUCT_AllocAsyncData(1, 0);
     Fog::Return();
     Fog::Src::D2Net::NET_SERVER_SentPacketLog_Clear();
     if (geD2ApplicationMode != APPMODE_server) {
