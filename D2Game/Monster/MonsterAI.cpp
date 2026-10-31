@@ -62,6 +62,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Common/Units/Missile.h"
 #include "D2Game/SKILLS/SkillAss.h"
+#include "support/d2_boot.h" // [d2boot] quest gossip diagnostics [R54] (issue #13)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -338,6 +339,9 @@ static uint32_t __stdcall NPC_BeginInteraction(::SGAMEDATA * pGame, D2MonsterAiS
     npcInfoPkt.nId = 0x27;
     npcInfoPkt.eUnitType = (uint8_t)pNpcUnit->eUnitType;
     D2Common::Game::BuildPacket0x27Messages(pTxtMsg, (uint32_t*)&npcInfoPkt.nMessageCount);
+    // VP-BEGIN [quest-gossip-mark]: issue #13 — the gossip batch leaving for the client (Akara's reward line rides this); msgs=0 here = nothing for the client to echo
+    D2BOOT_MarkFmt("quest: npc interact 0x27 send npc=0x%04x type=%u msgs=%u", (unsigned)pNpcUnit->nClassId, (unsigned)npcInfoPkt.eUnitType, (unsigned)pTxtMsg->nCount);
+    // VP-END [quest-gossip-mark]
     GAME::SCmd::NET_D2GS_SERVER_Send_0x27_NpcInfo(pClient, &npcInfoPkt);
     D2Common::Text::STRUCT_FreeTxtMessageForPacket0x27(pTxtMsg);
     Quests::QUESTS::NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(pGame, pClient);

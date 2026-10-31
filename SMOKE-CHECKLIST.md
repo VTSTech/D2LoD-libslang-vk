@@ -1,17 +1,17 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R53** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R54** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Known-fail — skip, don't burn time:** Necro skeleton spawn tint (issue #8). R51 spawn-polarity fix is pending re-verify; symptom = own raised skeletons spawn yellow and (per R51 theory) should never re-tint. One useful datum for the next round: raise a skeleton and note whether it *ever* re-tints (e.g. after a roster-update event) or stays yellow forever — "never re-tints" would falsify the R51 theory.
 
-**Also wanted this pass — Den of Evil turn-in (issue #13, new R53 boot marks):** section F below. The Akara reward interaction now writes one `quest:` line per step to `d2boot.log` — a single cleared-then-rejoin character run captures everything the issue needs.
+**Also wanted this pass — Den of Evil turn-in (issue #13, ROOT-CAUSED + FIXED R54):** section F below. The R53 marks caught the failing site (client never echoed c2s 0x31) and R54 both fixed the cause (the Den reward gossip line didn't exist in the data) and instrumented the whole gossip chain (`quest: gossip add` / 0x27 / `npc menu:` marks). The rejoin-repro run alone verifies the fix.
 
 ---
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R53`. If it says R52 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R54`. If it says R53 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -43,12 +43,13 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 - [ ] **14.** Launch with `-3dfx` → glide3xvk renders, `glide3x.log` gets written, presets/chain load.
 
-## F. Quest trace — A1Q1 Den of Evil ([issue #13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13), R53 boot marks)
+## F. Quest trace — A1Q1 Den of Evil ([issue #13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13), R53/R54 boot marks)
 
-Every step below writes a `quest:` line to `d2boot.log`. One char that clears the Den and rejoins covers both scenarios.
+Every step writes to `d2boot.log`. One char that clears the Den and rejoins covers both scenarios.
 
-- [ ] **15. Fresh clear (same-game turn-in):** on a char whose Den is NOT done: clear the Den → log must show `quest: den kill left=...` per kill (ticking down), then `quest: den CLEARED -> JustCompleted set...`, then `quest: den final state 5 broadcast (8-tick timer)`, and the completion sting plays. Talk to Akara **in the same game**: expect `quest: akara activate ... rewardAwaits=1`, `c2s 0x31 gossip send ... gossip=0x4c`, `quest: akara gossip msg=0x4c`, and `quest: den reward GRANTED (+1 skill...)`. If the reward lands here but not after a rejoin, the fault is the server-side state restore, not the turn-in.
-- [ ] **16. Rejoin turn-in (the issue #13 repro):** with a char that cleared but never claimed: join a new game → look for `quest: rejoin Den Step0x04 -> flag 3/prev 2 (cleared, return to Akara) rewardAwaits=?` — **the logged `rewardAwaits` value is the server-side bit; 0 here is the bug** (the client panel + Akara's `!` come from the client's own copy, which is why they look right). Then talk to Akara and note which `c2s 0x31 gossip send ... gossip=0x???` id goes out, and whether `quest: turn-in gate REJECTED` or `quest: den reward GRANTED` follows. Attach the log.
+- [ ] **15. Fresh clear (same-game turn-in):** on a char whose Den is NOT done: clear the Den → log must show `quest: den kill left=...` per kill (ticking down), then `quest: den CLEARED -> JustCompleted set...`, then `quest: den final state 5 broadcast (8-tick timer)`, and the completion sting plays. Talk to Akara **in the same game** and expect the R54 chain: `quest: akara activate ... rewardAwaits=1` → `gossip line 3` → **`quest: gossip add quest=0x.. slot=3 npc=0x0094`** → **`str=0x004c menu=0 -> added`** → **`quest: npc interact 0x27 send npc=0x0094 type=1 msgs=1`** → **`s2c 0x27 overhead ... msgType0=0x004c`** → `npc menu: msgType0=0x004c` → `c2s 0x31 gossip send ... gossip=0x004c` → `quest: akara gossip msg=0x004c` → `quest: den reward GRANTED (+1 skill...)`.
+- [ ] **16. Rejoin turn-in (the issue #13 repro — now the FIX verification):** with a char that cleared but never claimed: join a new game → `quest: rejoin Den ...` line (state note only — R53 proved the server bit arrives correct). Talk to Akara → **the same 7-step chain as item 15 must appear, ending `quest: den reward GRANTED`, and the +1 skill point must land on the character.** If instead you see `quest: gossip add slot=3 EMPTY (count=...)` or `NO CLASS MATCH`, the running exe predates the fix (check the self-ID line). Any `npc menu:` mark naming a no-echo branch (`interaction path` / `generic menu` / `hand-item bail`) with `msgType0=0xffff` is the old defect shape — attach the log.
+- [ ] **17. Accept regression (R54 touched the accept table's neighbors):** a fresh character talks to Akara → Den quest accepts as before (`quest: gossip add ... slot=0 ... str=0x0040 -> added` → echo 0x40). Slot 0 was already in-bounds pre-fix — this is a cheap regression guard.
 
 ---
 

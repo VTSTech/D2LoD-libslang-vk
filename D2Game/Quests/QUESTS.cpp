@@ -252,11 +252,23 @@ void __fastcall AddGossipMessageOnMonster(D2QuestDataStrc * pQuestData, D2GSPack
     int32_t nMenu;
     D2NPCMessageTableStrc* pNpcMsgTable = pQuestData->pNpcMessages;
     int nMsgIdx = 0;
+    // VP-BEGIN [quest-gossip-mark]: issue #13 root-cause probe. Several regen
+    // gossip tables were emitted SINGULAR (1 slot) while callers index
+    // pNpcMessages[slot] (0..4+); slot>0 reads PAST the object. count<=0 here =
+    // client never receives a scroll message = no c2s 0x31 echo = silent turn-in
+    // failure; a huge/garbage count = the OOB read itself. Fixed tables (A1Q1/A2Q1
+    // R54) log count=1 + the str/menu pair instead.
+    D2BOOT_MarkFmt("quest: gossip add quest=0x%02x slot=%d npc=0x%04x", (unsigned)pQuestData->nQuestIdReal, nMessageIndexMaybe, (unsigned)nMonStatsId);
+    // VP-END [quest-gossip-mark]
     if (pNpcMsgTable[nMessageIndexMaybe].nMessagesCount <= 0) {
+      // VP-BEGIN [quest-gossip-mark]: the silent no-text early-out (empty slot or OOB slot)
+      D2BOOT_MarkFmt("quest: gossip add slot=%d EMPTY (count=%d) -> no text, no 0x31 echo", nMessageIndexMaybe, pNpcMsgTable[nMessageIndexMaybe].nMessagesCount);
+      // VP-END [quest-gossip-mark]
       return;
     }
 
     uint8_t* pMsgEntry = (uint8_t*)&pNpcMsgTable[nMessageIndexMaybe].pMessages[0].nStringIndex;
+    int nGossipAddedCount = 0; // VP [quest-gossip-mark R54]
     do {
       if (*(int*)(pMsgEntry - 4) == nMonStatsId) {
         nMenu = *(int32_t*)(pMsgEntry + 4);
@@ -264,12 +276,22 @@ void __fastcall AddGossipMessageOnMonster(D2QuestDataStrc * pQuestData, D2GSPack
           nMenu = 0;
         }
 
+        // VP-BEGIN [quest-gossip-mark]: str = the id the client echoes back on c2s 0x31 (0x40 accept / 0x4c Den turn-in for A1Q1)
+        D2BOOT_MarkFmt("quest: gossip add slot=%d npc=0x%04x str=0x%04x menu=%d -> added", nMessageIndexMaybe, (unsigned)nMonStatsId, (unsigned)*(uint16_t*)pMsgEntry, nMenu);
+        // VP-END [quest-gossip-mark]
+        nGossipAddedCount++; // VP [quest-gossip-mark R54]
         D2Common::Text::AddNewGossipText(sTextMessage, (uint32_t)*(uint16_t*)pMsgEntry, nMenu);
       }
 
       nMsgIdx++;
       pMsgEntry += 0xc;
     } while (nMsgIdx < pNpcMsgTable[nMessageIndexMaybe].nMessagesCount);
+
+    // VP-BEGIN [quest-gossip-mark]: slot had entries but none for this NPC class
+    if (nGossipAddedCount == 0) {
+      D2BOOT_MarkFmt("quest: gossip add slot=%d NO CLASS MATCH npc=0x%04x (count=%d) -> no text", nMessageIndexMaybe, (unsigned)nMonStatsId, pNpcMsgTable[nMessageIndexMaybe].nMessagesCount);
+    }
+    // VP-END [quest-gossip-mark]
 }
 
 // @sourcefile .\QUESTS\QUESTS.CPP

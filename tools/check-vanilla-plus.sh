@@ -544,7 +544,22 @@ gate "quest: den kill mark (R53)"             D2Game/Quests/QUESTS/A1Q1.cpp   'q
 gate "quest: den cleared mark (R53)"          D2Game/Quests/QUESTS/A1Q1.cpp   'quest: den CLEARED' 1
 gate "quest: den state-5 broadcast mark (R53)" D2Game/Quests/QUESTS/A1Q1.cpp  'quest: den final state 5' 1
 gate "client: gossip send mark (R53)"         D2Client/UI/ui.cpp              'c2s 0x31 gossip send' 1
-gate "client: gossip send VP block (R53)"     D2Client/UI/ui.cpp              'VP-BEGIN \[quest-gossip-mark\]' 2
+gate "client: gossip send VP block (R53)"     D2Client/UI/ui.cpp              'VP-BEGIN \[quest-gossip-mark\]' 8
+
+# ---- [gossip] R54: issue #13 turn-in root cause — truncated gossip tables + chain marks
+# Field log (R53) proved T2: activate rewardAwaits=1 + gossip line 3, then no c2s 0x31.
+# Root cause: the regen emitted A1Q1/A2Q1 gossip tables SINGULAR (1 slot) while the
+# gossip handlers index slots 0..4 — slot 3 (the reward line) read past the object.
+# Fixed to 5-slot arrays (slot 0 accept + slot 3 turn-in, ids pinned by each quest's
+# own turn-in gate; flavor slots left empty). Chain marks make the whole
+# table->0x27->overhead->menu-branch->echo path visible in d2boot.log.
+gate "quest: gossip add marks (R54)"          D2Game/Quests/QUESTS.cpp        'quest: gossip add' 4
+gate "quest: npc interact 0x27 mark (R54)"    D2Game/Monster/MonsterAI.cpp    'quest: npc interact 0x27 send' 1
+gate "s2c 0x27 overhead marks (R54)"          D2Client/UI/Text.cpp            's2c 0x27 overhead' 2
+gate "npc menu branch marks (R54)"            D2Client/UI/ui.cpp              'npc menu:' 6
+gate "gossip: A1Q1 5-slot table (R54)"        globals/D2Game.cpp              'A1Q1 gossip table 5 slots' 1
+gate "gossip: A2Q1 5-slot table (R54)"        globals/D2Game.cpp              'A2Q1 gossip table 5 slots' 1
+gate "gossip: Den turn-in entry present (R54)" globals/D2Game.cpp             '/\* .nStringIndex = \*/ 0x4c' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

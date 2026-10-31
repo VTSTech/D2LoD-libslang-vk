@@ -7554,6 +7554,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     short int wMsgType1;
     if (nUpdateType == 6) {
       D2Common::QuestRecord::ReadQuestRecordFromBuffer(gpNpcMenuBitBuffer, pQuestBuffer, 0x60, 0);
+      // VP-BEGIN [quest-gossip-mark]: record-only interact variant — no menu is built, no 0x31 echo can happen
+      D2BOOT_Mark("npc menu: type 6 quest-record-only (no menu, no 0x31 echo)");
+      // VP-END [quest-gossip-mark]
       return;
     }
 
@@ -7582,6 +7585,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       gnNpcMenuActiveMode = 1;
       npcmenu::SetInteractedUnitInfo(pNpcUnit);
       pNpcUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
+      // VP-BEGIN [quest-gossip-mark]: shortcut path skips the scroll-message check entirely (no 0x31 echo)
+      D2BOOT_Mark("npc menu: initialized shortcut (no 0x31 echo)");
+      // VP-END [quest-gossip-mark]
       return;
     }
 
@@ -7601,6 +7607,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     pPlayerUnit_lcl = D2Common::INVENTORY::Inventory::INVENTORY_GetHandItem(pPlayerUnit_lcl->pInventory);
     if (pPlayerUnit_lcl) {
+      // VP-BEGIN [quest-gossip-mark]: item-on-cursor bail — menu reset, no 0x31 echo
+      D2BOOT_Mark("npc menu: hand-item bail (no 0x31 echo)");
+      // VP-END [quest-gossip-mark]
       _Interaction::bInteractingWithNpc = 1;
       _Interaction::nCurrentInteractedNpcGUID = pNpcUnit->nUnitGUID;
       _Interaction::nCurrentInteractedNpcClassId = pNpcUnit->nClassId;
@@ -7611,6 +7620,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
 
     wMsgType0 = (uint16_t)dwMsgType;
     gnNpcMenuScrollMessageHead = 0;
+    // VP-BEGIN [quest-gossip-mark]: the branch decider — 0xffff sends the menu down a no-echo path (issue #13 discriminator)
+    D2BOOT_MarkFmt("npc menu: msgType0=0x%04x (0xffff = no scroll msg)", (unsigned)dwMsgType & 0xffff);
+    // VP-END [quest-gossip-mark]
     if (wMsgType0 != 0xffff) {
       UI_CloseActivePanels(0, 0);
       gnNpcMenuRepairCostGold = wMsgType0;
@@ -7644,6 +7656,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
       gnNpcMenuTradeActionGold = npcmenu::NPCMENU_FindNextUnhandledMessage(wMsgType1);
       npcmenu::NPCMENU_OpenInteraction(pNpcUnit);
       gnNpcMenuShopMode = 0;
+      // VP-BEGIN [quest-gossip-mark]: interaction path — shop/menu opens, no 0x31 echo
+      D2BOOT_Mark("npc menu: interaction path (no 0x31 echo)");
+      // VP-END [quest-gossip-mark]
       return;
     }
 
@@ -7671,6 +7686,9 @@ void __fastcall UI_HandleNpcInteractionPacket(uint8_t nUpdateType, int32_t nUnit
 
     Inv::INV_ResetHoverAndContextState();
     UI_CloseActivePanels(0, 0);
+    // VP-BEGIN [quest-gossip-mark]: generic menu tail — plain NPC menu, no 0x31 echo (the observed issue #13 shape when msgType0=0xffff)
+    D2BOOT_Mark("npc menu: generic menu (no 0x31 echo)");
+    // VP-END [quest-gossip-mark]
     npcmenu::NPCMENU_HandleMenuSelection(0, pNpcUnit);
     gnNpcMenuShopMode = 0;
 }

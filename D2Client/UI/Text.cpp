@@ -83,6 +83,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Launch/MainMenus.h"
+#include "support/d2_boot.h" // [d2boot] quest gossip diagnostics [R54] (issue #13)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -5790,6 +5791,10 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
 
     D2UnitStrc* pUnit;
     char szMsgBuffer[20];
+    // VP-BEGIN [quest-gossip-mark]: issue #13 — every s2c 0x27 arrival; the gossip
+    // batch (eUnitType 1) is what feeds the NPC-menu scroll-message check.
+    D2BOOT_MarkFmt("s2c 0x27 overhead type=%u guid=%08x msgs=%u", (unsigned)pPacket->eUnitType, (unsigned)pPacket->nUnitGUID, (unsigned)pPacket->nMessageCount);
+    // VP-END [quest-gossip-mark]
     if (pPacket->eUnitType == 1) {
       D2HoverTextStrc* pHoverText;
       pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, UNIT_MONSTER);
@@ -5810,6 +5815,11 @@ void __fastcall TEXT_HandleOverheadTextPacket(D2GSPacketSrv0x27 * pPacket) {
       gpOverHeadStrc = D2Common::Game::STRUCT_AllocTxtMessageForPacket0x27(nullptr);
       D2Common::Text::StoreMessages(gpOverHeadStrc, &pPacket->nMessageCount);
       D2Common::Text::TEXT_SortMessageList(gpOverHeadStrc);
+      // VP-BEGIN [quest-gossip-mark]: the value UI_HandleNpcInteractionPacket will
+      // read back; 0xffff = no scroll msg = the NPC menu opens with no 0x31 echo
+      // (the issue #13 field shape: talk -> nothing).
+      D2BOOT_MarkFmt("s2c 0x27 overhead msgType0=0x%04x (0xffff = no scroll msg, no 0x31 echo)", (unsigned)D2Common::Text::OVERHEAD_GetMessageType0(gpOverHeadStrc, 0));
+      // VP-END [quest-gossip-mark]
       return;
     }
     if (pPacket->eUnitType != 2) {

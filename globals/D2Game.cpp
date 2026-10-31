@@ -3846,31 +3846,48 @@ namespace D2Game::Quests::QUESTS::A1Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x94,
-            /* .nStringIndex = */ 0x40,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+// VP-BEGIN [gossip-table-fix]: issue #13 ROOT CAUSE. The regen emitted this
+// table SINGULAR (1 slot) while Q01_Callback00_NpcActivate indexes
+// pNpcMessages[slot] 0..4 (AddGossipMessageOnMonster reads pNpcMsgTable[slot]) —
+// slots 1..4 read past the object, so the Den reward line never existed and
+// Akara's turn-in never echoed c2s 0x31 (field log: activate rewardAwaits=1 +
+// gossip line 3, then silence). 5 slots now: slot 0 = accept line 0x40 (was the
+// only slot present), slot 3 = turn-in line 0x4c — pinned by
+// Q01_Callback11_ScrollMessage's own gate (0x40 accept / 0x4c reward; bMenu 0
+// mirrors the accept entry, and bMenu 1 would be converted to 0 at add time).
+// Slots 1/2/4 are vanilla flavor lines (state 2/3 progress + participant) whose
+// string ids are NOT in the tree — left empty (count=0 ->
+// AddGossipMessageOnMonster early-outs, R54 marks make it visible) rather than
+// invented. [R54] A1Q1 gossip table 5 slots.
+// VP-END [gossip-table-fix]
+D2NPCMessageTableStrc aNpcGossipData[5] = {
+    { /* slot 0: accept (msg 0x40) */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x40,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {}, // slot 1: vanilla flavor (state 2 "found the Den") — string id not in tree [R54]
+    {}, // slot 2: vanilla flavor (state 3 "entered the Den") — string id not in tree [R54]
+    { /* slot 3: turn-in (msg 0x4c) — the Den reward line */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x94,
+                /* .nStringIndex = */ 0x4c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {}  // slot 4: vanilla flavor (participant) — string id not in tree [R54]
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
@@ -4603,31 +4620,42 @@ namespace D2Game::Quests::QUESTS::A2Q1 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0xb0,
-            /* .nStringIndex = */ 0x130,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x0
+// VP-BEGIN [gossip-table-fix]: issue #13 family — same truncation shape as
+// A1Q1 (this round's proven root cause): singular 1-slot table while
+// A2Q1's gossip handler indexes slots 0..4 (reward line = slot 3). Slot 0 =
+// accept line 0x130 (was the only slot present), slot 3 = turn-in line 0x14e —
+// pinned by A2Q1's own gossip gate (0x130 accept / 0x14e reward, Atma 0xb0;
+// bMenu 0 mirrors the accept entry). Slots 1/2/4 left empty — vanilla flavor
+// string ids not in the tree, not invented. [R54] A2Q1 gossip table 5 slots.
+// VP-END [gossip-table-fix]
+D2NPCMessageTableStrc aNpcGossipData[5] = {
+    { /* slot 0: accept (msg 0x130) */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x130,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {}, // slot 1: vanilla flavor — string id not in tree [R54]
+    {}, // slot 2: vanilla flavor — string id not in tree [R54]
+    { /* slot 3: turn-in (msg 0x14e) — the Radament reward line */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0xb0,
+                /* .nStringIndex = */ 0x14e,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {}  // slot 4: vanilla flavor (participant) — string id not in tree [R54]
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A2Q1::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
