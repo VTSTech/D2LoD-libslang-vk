@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("vanilla-plus' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R45' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R44" D2Client/Engine/Application.cpp 'vanilla-plus+0\.0\.6-R44\)' 1
+gate "d2boot-fix: build version 0.0.6-R45" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R45' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -281,7 +281,18 @@ fi
 # the page was invisible. The dispatch must be a SIBLING of that guard.
 gate "row-10: page draw call"              D2Client/UI/Draw.cpp            'DRAW_VanillaPlusOptions\(\);' 1
 gate "row-10: dispatch hoisted (rev44)"    D2Client/UI/Draw.cpp            'render the page as a SIBLING of the' 1
-gate "site-5: spell grid shifts"           D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 4
+# rev45 track F: the merge port had scrambled the two icon-pass anchors in
+# SPELLSEL_RenderAllSkillGrids - the right-hand grid icons drew at the swap
+# grid's anchor (0x50 + offset = left half of the screen at wide modes) and
+# the swap grid icons drew at vanilla 0x50 (off the centered panel), while
+# both tooltip passes kept the correct anchors. The icon passes also register
+# the click regions, so the flyout opened on the wrong side. Gate the pairing:
+# both icon passes must consume nStartX (right grid) or the shifted 0x50
+# (swap grid) exactly as their tooltip passes do.
+gate "site-5: spell grid shifts (R45)"      D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 5
+gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, nStartX,' 2
+gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, 0x50 \+ VPRES_GetWideUiOffsetX' 2
+gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(pPlayerUnit_lcl, 0x50,' 0
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
