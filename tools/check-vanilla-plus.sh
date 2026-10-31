@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6 (rev41)" D2Client/Engine/Application.cpp 'vanilla-plus 0\.0\.6 \(rev41\)' 1
+gate "d2boot-fix: build version 0.0.6-R44" D2Client/Engine/Application.cpp 'vanilla-plus+0\.0\.6-R44\)' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -254,6 +254,33 @@ gate "site-5: questlog 800-class gates"    D2Client/UI/QuestLog.cpp        'VPRE
 gate "site-5: inventory table shifts"      D2Client/UI/Inv.cpp             'VP_SHIFT_Inv' 43
 gate "site-5: inv drop-click gate"         D2Client/UI/Inv.cpp             'VPRES_IsWideLayoutMode' 1
 gate "site-5: inv coord cache key"         D2Client/UI/Inv.cpp             'nCoordPageKey' 3
+# rev44 track D: the fec99ff merge port had placed every VP_SHIFT_* call BEFORE
+# its paired TokTbls fetch; the fetch overwrites the struct (TokTbls.cpp:806-894
+# are pure overwrites), so all 40 table-rect sets ran vanilla-unshifted at wide
+# modes - grid items drew 240/120 px off the shifted panel art. Gate the ORDER,
+# not just the counts: every fetch line must be IMMEDIATELY followed by its own
+# shift call, and every shift call must carry its paired fetch's target.
+vp_pair_ok=0; vp_pair_bad=0
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /D2Common::DATATBLS::TokTbls::Get(Inv|Grid|Body)Dimensions\(/ { pend=1; next }
+    /VP_SHIFT_Inv(Page|Grid|Body)Coords\((&|ga)/ { if (pend) { ok++; pend=0 } else { bad++ }; next }
+    { if (pend) { bad++; pend=0 } }
+    END { print "vp_pair_ok=" ok+0; print "vp_pair_bad=" bad+0 }
+  ' D2Client/UI/Inv.cpp)"
+fi
+if [ "${vp_pair_bad:-1}" = 0 ] && [ "${vp_pair_ok:-0}" = 40 ]; then
+    printf 'ok   %-46s %s fetch->shift pairs x%s\n' "site-5: fetch->shift pair order (rev44)" "D2Client/UI/Inv.cpp" "$vp_pair_ok"
+    PASS=$((PASS + 1))
+else
+    printf 'FAIL %-46s ok=%s bad=%s (want ok=40 bad=0)\n' "site-5: fetch->shift pair order (rev44)" "${vp_pair_ok:-0}" "${vp_pair_bad:-0}"
+    FAIL=$((FAIL + 1))
+fi
+# rev44 track E: the row-10 page draw sat INSIDE the ConfigControls guard -
+# the page opens with ConfigControls clear, so the nested check never ran and
+# the page was invisible. The dispatch must be a SIBLING of that guard.
+gate "row-10: page draw call"              D2Client/UI/Draw.cpp            'DRAW_VanillaPlusOptions\(\);' 1
+gate "row-10: dispatch hoisted (rev44)"    D2Client/UI/Draw.cpp            'render the page as a SIBLING of the' 1
 gate "site-5: spell grid shifts"           D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 4
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1

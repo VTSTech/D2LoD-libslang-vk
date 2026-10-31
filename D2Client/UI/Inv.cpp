@@ -201,82 +201,82 @@ void __stdcall InitializeiInventoryPages() {
     D2UnitStrc* pNpc;
     pNpc = UNIT::Player::GetPlayerUnit_UI();
     nInvPageIndex = D2Common::Units::GetInventoryPage(pNpc, nInvPageIndex, bIsExpansion);
-    VP_SHIFT_InvPageCoords(&pInventoryScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(nInvPageIndex, nScreenMode, &pInventoryScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pInventoryGridScreenCoordinated); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pInventoryScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(nInvPageIndex, nScreenMode, &pInventoryGridScreenCoordinated);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 4); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pInventoryGridScreenCoordinated); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 4, BODY_rArm);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 3); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 4); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 3, BODY_torso);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 5); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 3); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 5, BODY_lArm);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 1); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 5); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 1, BODY_head);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 2); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 1); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 2, BODY_neck);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 6); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 2); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 6, BODY_lHand);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 7); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 6); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 7, BODY_rHand);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 8); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 7); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 8, BODY_belt);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 9); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 8); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 9, BODY_feet);
-    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 10); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 9); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(nInvPageIndex, nScreenMode, gaPlayerBodySlotScreenCoords + 10, BODY_gloves);
-    VP_SHIFT_InvPageCoords(&pHirelingScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaPlayerBodySlotScreenCoords + 10); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(0xd, nScreenMode, &pHirelingScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pHirelingGridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pHirelingScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(0xd, nScreenMode, &pHirelingGridScreenCoordinates);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 4); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pHirelingGridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 4, BODY_rArm);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 3); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 4); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 3, BODY_torso);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 5); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 3); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 5, BODY_lArm);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 1); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 5); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 1, BODY_head);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 2); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 1); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 2, BODY_neck);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 6); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 2); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 6, BODY_lHand);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 7); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 6); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 7, BODY_rHand);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 8); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 7); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 8, BODY_belt);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 9); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 8); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 9, BODY_feet);
-    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 10); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 9); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetBodyDimensions(0xd, nScreenMode, gaHirelingBodySlotScreenCoords + 10, BODY_gloves);
-    VP_SHIFT_InvPageCoords(&pTradePage1ScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvBodyCoords(gaHirelingBodySlotScreenCoords + 10); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(6, nScreenMode, &pTradePage1ScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pTradePage1GridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pTradePage1ScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(6, nScreenMode, &pTradePage1GridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&pTradePage2ScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pTradePage1GridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(7, nScreenMode, &pTradePage2ScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pTradePage2GridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pTradePage2ScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(7, nScreenMode, &pTradePage2GridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&pBankPageScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pTradePage2GridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(8, nScreenMode, &pBankPageScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pBankPageGridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pBankPageScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(8, nScreenMode, &pBankPageGridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&BigBankPageScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pBankPageGridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(0xc, nScreenMode, &BigBankPageScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pBigBankPageGridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&BigBankPageScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(0xc, nScreenMode, &pBigBankPageGridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&pTranspogrifyBoxScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pBigBankPageGridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(9, nScreenMode, &pTranspogrifyBoxScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pTransmogrifyBoxGridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pTranspogrifyBoxScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(9, nScreenMode, &pTransmogrifyBoxGridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&pGuildVaultPageScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pTransmogrifyBoxGridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(10, nScreenMode, &pGuildVaultPageScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pGuildVaultPageGridScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pGuildVaultPageScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(10, nScreenMode, &pGuildVaultPageGridScreenCoordinates);
-    VP_SHIFT_InvPageCoords(&pThrophyCasePageScreenCoordinates); // VP: site-5
+    VP_SHIFT_InvGridCoords(&pGuildVaultPageGridScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetInvDimensions(0xb, nScreenMode, &pThrophyCasePageScreenCoordinates);
-    VP_SHIFT_InvGridCoords(&pTrophyCasePageGridCoordinates); // VP: site-5
+    VP_SHIFT_InvPageCoords(&pThrophyCasePageScreenCoordinates); // VP: site-5
     D2Common::DATATBLS::TokTbls::GetGridDimensions(0xb, nScreenMode, &pTrophyCasePageGridCoordinates);
+    VP_SHIFT_InvGridCoords(&pTrophyCasePageGridCoordinates); // VP: site-5
     bInventoryScreenCoordinatesInitialized = 1;
     init_npc_coords:
     if (!gbInvNpcScreenCoordsInitialized && g_nCurrentInventoryPage) {
@@ -286,10 +286,10 @@ void __stdcall InitializeiInventoryPages() {
         if (pNpc) {
           bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
           nInvPageIndex = D2Common::Units::GetInventoryPage(pNpc, 0, bIsExpansion);
-          VP_SHIFT_InvPageCoords(&pNpcInventoryScreenCoordinates); // VP: site-5
           D2Common::DATATBLS::TokTbls::GetInvDimensions(nInvPageIndex, nScreenMode, &pNpcInventoryScreenCoordinates);
-          VP_SHIFT_InvGridCoords(&pNpcInventoryGridScreenCoordinates); // VP: site-5
+          VP_SHIFT_InvPageCoords(&pNpcInventoryScreenCoordinates); // VP: site-5
           D2Common::DATATBLS::TokTbls::GetGridDimensions(nInvPageIndex, nScreenMode, &pNpcInventoryGridScreenCoordinates);
+          VP_SHIFT_InvGridCoords(&pNpcInventoryGridScreenCoordinates); // VP: site-5
           gbInvNpcScreenCoordsInitialized = 1;
         }
       }

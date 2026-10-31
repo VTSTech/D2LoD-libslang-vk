@@ -539,13 +539,18 @@ void DRAW_UI(D2GameViewStrc * pGameView, short * pnNpcParam) {
       EscMenu::DRAW_EscMenu();
     }
     /* Render Key Assigment menu */ if (GFX_bShowUIFlag.ConfigControls) {
-    // VP-BEGIN [row-10 options page]: render the page (UI_CONFIG dispatch shape)
+      ui::DRAW_ConfigControlsMenu();
+    }
+    // VP-BEGIN [row-10 options page]: render the page as a SIBLING of the
+    // ConfigControls dispatch, never a child of it. ESCMENU_ShowVanillaPlusOptions
+    // clears UI_ESCMENU and sets ONLY UI_VANILLAPLUS, so ConfigControls is
+    // clear the whole time the page is open and a nested check never ran
+    // (field-visible 2026-10-31: menu closes, game shows, page invisible,
+    // Esc round-trips via the page's registered input batch).
     if (GFX_bShowUIFlag.VanillaPlus) {
       VanillaPlus::DRAW_VanillaPlusOptions();
     }
     // VP-END [row-10 options page]
-      ui::DRAW_ConfigControlsMenu();
-    }
 
     D2UnitStrc* pUnit;
     pUnit = GAME::Select::GetSelectedUnit();
