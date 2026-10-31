@@ -87,16 +87,20 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
 - **Risk**: none beyond draw-order; zero interaction surface.
 - **Exit**: clock visible in-game only, no input eaten, `0` = vanilla.
 
-### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED R55, name-suffix presentation R56, bare digits R57)
+### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED R55, name-suffix presentation R56, bare digits R57, single-space trim R59)
 
 - **D2R behavior**: 2.5 shipped a toggleable display-item-level (advanced item stats).
-- **Shipped (R55 + R56 + R57)**: with `item_ilvl=1`, the tooltip's **name line** reads
+- **Shipped (R55 + R56 + R57 + R59)**: with `item_ilvl=1`, the tooltip's **name line** reads
   `Long Sword (12)` — the ilvl is appended to the item name in all three
   tooltip builders (`LoadItemDesc` identified + unidentified paths,
   `ITEM_BuildSetItemTooltip`), rendering in the name's own color. R55 shipped a
   standalone `Item Level: <ilvl>` line below Required Level; R56 moved it into
   the name per owner preference; R57 dropped the `ilvl` label word — players
-  know what the bare `(N)` means. The ilvl lives on the item unit data
+  know what the bare `(N)` means. R59 trims the name's trailing spaces
+  before appending: `GetItemName` glues string-table entries (magic affix
+  words, unique/set names, separators) and some of those entries end with
+  their own space, which used to render a double gap (`Name  (12)`); the
+  gap before `(N)` is now always exactly one space. The ilvl lives on the item unit data
   (`D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel`, item-data offset 0x2C
   — the same parsed-item struct the retail req-level line reads client-side);
   ilvl travels in the item bitstream on every path that reaches the tooltip.

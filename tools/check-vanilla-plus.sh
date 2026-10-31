@@ -571,11 +571,14 @@ gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
-# ---- [item-ilvl] R57: optional " (N)" suffix on the tooltip name (d2vp.ini item_ilvl)
+# ---- [item-ilvl] R57+R59: optional " (N)" suffix on the tooltip name (d2vp.ini item_ilvl)
 # D2R "Advanced Tooltips" parity (the ilvl readout half), R56 presentation
 # (owner: "append the item name with (ilvl) in the tooltip instead" of the R55
 # standalone line) + R57 polish (owner: "Instead of saying (ilvl #) we can
-# just say (#) they know it's the ilvl" - the label word is dropped). OFF =
+# just say (#) they know it's the ilvl" - the label word is dropped) + R59
+# spacing (owner: "Sometimes there is more than one space between Item Name
+# and (#)" - the suffix fn trims string-table trailing spaces off the name
+# before the append). OFF =
 # the suffix fn (fork-owned TU, VanillaPlusCore.cpp) returns without touching
 # the name buffer, so the decomp tooltip builders stay byte-identical to
 # retail (charter rule 1). ON = the name line reads
@@ -589,6 +592,7 @@ gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'p
 gate "ilvl: gate fn defined"                  D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_Active' 1
 gate "ilvl: suffix fn defined"                D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_AppendNameSuffix' 1
 gate "ilvl: suffix format string pinned"      D2Client/UI/VanillaPlusCore.cpp   '" \(%i\)"' 1
+gate "ilvl: trailing-space trim (R59)"        D2Client/UI/VanillaPlusCore.cpp   'nNameLen--' 1
 gate "ilvl: ini key read by the gate"         D2Client/UI/VanillaPlusCore.cpp   '"item_ilvl"' 1
 gate "ilvl: ini template key"                 D2Client/UI/VanillaPlusCore.cpp   'item_ilvl=0' 1
 gate "ilvl: decl + cache busted on write"     D2Client/UI/VanillaPlusCore.cpp   'dwItemIlvlLastCheck = 0' 2

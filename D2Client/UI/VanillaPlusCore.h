@@ -146,7 +146,10 @@ BOOL __stdcall ITEMILVL_Active(); // config: item_ilvl on?
 // untouched when the gate is off / the name is empty / the item carries no
 // level. Called from Inv.cpp's three GetItemName sites right after the name
 // is built and before the color wrap; the suffix inherits the name's color
-// from the caller's own AppendAsWideChar.
+// from the caller's own AppendAsWideChar. Gate on: the name's trailing
+// spaces/tabs are trimmed off first (R59) - the GetItemName composition
+// glues string-table entries and some (magic affix words, unique names) end
+// with their own space, which read as a double gap before (N).
 void __stdcall ITEMILVL_AppendNameSuffix(struct D2UnitStrc * pItem, uint16_t * wszName);
 // [vanilla-plus options page] d2vp.ini feature-toggle bridge (row 10). The
 // page reads/flips the same [features] keys the gates consume; writes use

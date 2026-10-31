@@ -482,7 +482,11 @@ BOOL __stdcall ITEMILVL_Active() {
 // Appends " (N)" to the caller's item-name buffer (Inv.cpp's three
 // GetItemName sites). No-op when the gate is off / the name is empty / the
 // item carries no parsed level: the upstream builders then proceed
-// byte-identical to retail. The suffix joins the name buffer BEFORE the
+// byte-identical to retail. Gate ON: the name's trailing spaces/tabs are
+// trimmed off first (R59) - GetItemName glues string-table entries (magic
+// affix words, unique/set names, the separator) and some end with their own
+// space, which used to read as a double gap before (N). The suffix joins the
+// name buffer BEFORE the
 // caller's AppendAsWideChar color wrap, so it renders in the item's own name
 // color. Hardcoded ASCII: the vanilla string table has no such entry and the
 // fork never edits MPQ data. Digit idiom = the FormatLine round's (SStrPrintf
@@ -499,6 +503,23 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
     int nItemLevel = D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel(pItem);
     if (nItemLevel < 1) {
         return;   // not an item unit / no parsed level (accessor returns 0)
+    }
+    // VP: [item-ilvl] R59 trailing-space trim - GetItemName glues string-table
+    // entries together (base names, magic affix words, unique/set names, the
+    // 0xf9e separator) and some of those entries end with their own space, so
+    // a plain append read "Name  (12)". Strip the name's trailing spaces/tabs
+    // first; the gap before (N) is then always the one space the format owns.
+    // Sits below every early-out, so OFF still never writes the buffer.
+    int nNameLen = 0;
+    while (wszName[nNameLen] != L'\0') {
+        nNameLen++;
+    }
+    while (nNameLen > 0 && (wszName[nNameLen - 1] == L' ' || wszName[nNameLen - 1] == L'\t')) {
+        nNameLen--;
+        wszName[nNameLen] = L'\0';
+    }
+    if (nNameLen == 0) {
+        return;   // paranoia: name was all whitespace
     }
     memset(wszSuffix, 0, sizeof(wszSuffix));
     Storm::Source::SSTR::SStrPrintf(szSuffix, sizeof(szSuffix), " (%i)", nItemLevel);
