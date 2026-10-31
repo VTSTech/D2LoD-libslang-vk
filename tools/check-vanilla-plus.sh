@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R49' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R50' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R49" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R49' 1
+gate "d2boot-fix: build version 0.0.6-R50" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R50' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -463,6 +463,31 @@ if command -v awk >/dev/null 2>&1; then
     PASS=$((PASS + 1))
   else
     printf 'FAIL %-46s switch=%s guards=%s early=%s rand=%s (want switch>=1 guards=2 early=0 rand>=1) - unconditional entry-out before the switch kills the unique tint (issue #9)\n' "palshift: rand-transform reachable (R49)" "${vp_ps_swl:-0}" "${vp_ps_guard:-0}" "${vp_ps_early:-0}" "${vp_ps_rand:-0}"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
+# ---- [R50] roster: pet recolor polarity (issue #8) ---------------------------
+# The skeleton recolor must write the RAW hostility flag: bHostile=0 (own/ally
+# pet) -> palshift.dat sub-table 0 (bone-white), bHostile=1 (hostile owner) ->
+# sub-table 1 (yellow tell). The transcribed `!bHostile` inverted the pair and
+# fed every own raised skeleton the yellow hostile table (issue #8 "Minion
+# Skeletons are Yellow"). Regression signature: any `!bHostile` inside a
+# SetPalShiftIndex/SetGfxSequenceData recolor call in RosterPets.cpp, and both
+# fields must stay equal-valued (dwCofDataFlags is the re-sync latch shadow).
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /SetPalShiftIndex\(pRosterUnit, \(uint32_t\)!bHostile\)/ { rp++ }
+    /SetGfxSequenceData\(pRosterUnit, \(uint32_t\)!bHostile\)/ { rg++ }
+    /SetPalShiftIndex\(pRosterUnit, \(uint32_t\)bHostile\)/ { gp++ }
+    /SetGfxSequenceData\(pRosterUnit, \(uint32_t\)bHostile\)/ { gg++ }
+    END { printf "vp_rp_bad=%d vp_rp_good=%d", rp+rg, gp+gg }
+  ' D2Client/GAME/RosterPets.cpp)"
+  if [ "${vp_rp_bad:-0}" -eq 0 ] && [ "${vp_rp_good:-0}" -eq 4 ]; then
+    printf 'ok   %-46s %s inverted=%s raw=%s\n' "roster: pet recolor polarity (R50)" "D2Client/GAME/RosterPets.cpp" "${vp_rp_bad:-0}" "${vp_rp_good:-0}"
+    PASS=$((PASS + 1))
+  else
+    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=4) - !bHostile feeds own skeletons the yellow hostile sub-table (issue #8)\n' "roster: pet recolor polarity (R50)" "${vp_rp_bad:-0}" "${vp_rp_good:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi

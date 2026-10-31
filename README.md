@@ -1,7 +1,7 @@
 # D2LoD Vanilla+
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.6-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-203%2F203-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-204%2F204-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -53,13 +53,23 @@ be fixed, replaced and released independently. The releases bundle both as one d
   root cause + fix documented in
   [#11](https://github.com/VTSTech/D2LoD-libslang-vk/issues/11); sound (intro video,
   title music, UI and in-game SFX); the Vanilla+ Options page; inventory, skill
-  flyouts and dialogs aligned at 720p; **Auto Gold Pickup** (`[features] auto_gold`)
+  flyouts and dialogs aligned at 720p; stash gold deposit/withdraw dialogs aligned
+  at 720p — restored in the R48 round (a merge-port casualty: the dialog widgets had
+  been resolved into the failure branch of the widget alloc-checks), root cause + fix
+  documented in [#12](https://github.com/VTSTech/D2LoD-libslang-vk/issues/12);
+  **Auto Gold Pickup** (`[features] auto_gold`)
   — restored in the R47 round (a merge-port casualty: the walk-over trigger had
   been re-parented inside the help-menu UI block), root cause + fix documented in
-  [#10](https://github.com/VTSTech/D2LoD-libslang-vk/issues/10).
+  [#10](https://github.com/VTSTech/D2LoD-libslang-vk/issues/10); **unique monster
+  colors** — restored in the R49 round (a baseline transcription defect: the tint
+  lookup early-returned on monsters without a `palshift.dat` entry, starving the
+  global `RandTransforms.dat` palettes), root cause + fix documented in
+  [#9](https://github.com/VTSTech/D2LoD-libslang-vk/issues/9).
 - Not finished. One known issue remains:
-  - **Unique monsters render in base colors, and unique-pack minion skeletons render
-    gold.** One mechanism family (the palette-transform roll), under investigation.
+  - **Unique-pack minion skeleton coloring.** Root-caught + fixed in the R50 round
+    (the roster pet-recolor inverted the hostility polarity — own raised skeletons
+    were reading the yellow hostile palette instead of bone-white), field
+    verification pending ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
@@ -140,7 +150,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **203 checks**, green at the current tip.
+  telemetry) with **204 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README.

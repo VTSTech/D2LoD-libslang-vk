@@ -407,8 +407,15 @@ void __stdcall ROSTER_UpdateHostileColors() {
         pRosterUnit = UNIT::Player::UNITS_FindClientSideUnit(pRosterIter->nRosterGUID, UNIT_MONSTER);
         if (pRosterUnit) {
           bHostile = ROSTER_AreUnitsHostile(pPlayer, pRosterUnit);
-          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)!bHostile);
-          UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)!bHostile);
+          // [R50] recolor polarity: the RAW hostility flag selects the palshift.dat
+          // sub-table pair — bHostile=0 (own/ally pet) -> sub-table 0 (bone-white),
+          // bHostile=1 (hostile owner) -> sub-table 1 (yellow tell). The transcribed
+          // `!bHostile` inverted the pair and fed every own raised skeleton the
+          // yellow hostile table (issue #8 "Minion Skeletons are Yellow"). Both
+          // fields must carry the SAME value: dwCofDataFlags is the roster
+          // re-sync latch shadow (see ROSTER_UpdateMercHostileColors).
+          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)bHostile);
+          UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)bHostile);
         }
       }
     }
@@ -582,10 +589,12 @@ void __fastcall ROSTER_UpdateMercHostileColors(int32_t nOwnerGUID) {
           bHostile = ROSTER_IsUnitHostileToPlayer(pRosterUnit);
           nGfxSeq = UNIT::CUnit::GetGfxSequenceData(pRosterUnit);
           if (nPalShift == nGfxSeq) {
-            UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)!bHostile);
+            // [R50] same polarity fix as ROSTER_UpdateHostileColors: raw bHostile,
+            // own pet -> white sub-table 0; the latch shadow stays equal-valued.
+            UNIT::CUnit::SetPalShiftIndex(pRosterUnit, (uint32_t)bHostile);
           }
 
-          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)!bHostile);
+          UNIT::CUnit::SetGfxSequenceData(pRosterUnit, (uint32_t)bHostile);
         }
       }
     }
