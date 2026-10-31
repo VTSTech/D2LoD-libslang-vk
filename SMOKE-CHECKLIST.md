@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R54** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R56** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Known-fail — skip, don't burn time:** Necro skeleton spawn tint (issue #8). R51 spawn-polarity fix is pending re-verify; symptom = own raised skeletons spawn yellow and (per R51 theory) should never re-tint. One useful datum for the next round: raise a skeleton and note whether it *ever* re-tints (e.g. after a roster-update event) or stays yellow forever — "never re-tints" would falsify the R51 theory.
@@ -11,7 +11,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R54`. If it says R53 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R56`. If it says R55 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -33,7 +33,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 - [ ] **10. `globe_persistent`:** HP/MP text above orbs always visible, no hover needed.
 - [ ] **11. Hot-reload:** edit `d2vp.ini` while in-game (flip a key) → applies within ~2 s, no restart.
 - [ ] **12. `portable_save`:** enabled → save & exit → `.d2s` lands in `<game folder>\save`, re-enters fine.
-- [ ] **12b. `item_ilvl` (new in R55):** set `item_ilvl=1` → every item tooltip shows `Item Level: <ilvl>` directly below the Required Level line (or in its slot when there is none). Sanity pairs: an early-act normal drop (small ilvl) vs a late-game unique/rare (large); a **set piece** (second tooltip builder); an **unidentified** item (line still shows); gold/potions (line shows, harmless). Negative: key off/missing → tooltips exactly as retail; the in-game **Vanilla+ Options** row `Item Level Tooltips` flips it and applies within ~2 s without a restart.
+- [ ] **12b. `item_ilvl` (new in R55, name-suffix presentation R56):** set `item_ilvl=1` → every item tooltip's **name line** reads `Long Sword (ilvl 12)` — the suffix joins the item name (no separate `Item Level:` line anymore; R55's standalone line is gone). The suffix renders in the name's own color (gold on a unique, green on a set piece). Sanity pairs: an early-act normal drop (small ilvl) vs a late-game unique/rare (large); a **set piece** (second tooltip builder); an **unidentified** item (suffix still shows); gold/potions (suffix shows, harmless). Negative: key off/missing → tooltips exactly as retail; the in-game **Vanilla+ Options** row `Item Level Tooltips` flips it and applies within ~2 s without a restart.
 
 ## D. 720p alignment regressions (R47/R48 territory)
 

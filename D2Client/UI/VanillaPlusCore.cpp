@@ -219,8 +219,8 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "\r\n"
         "; Item level tooltips:\r\n"
         ";   0 = item tooltips exactly as retail               (vanilla behavior)\r\n"
-        ";   1 = add an \"Item Level: <ilvl>\" line to every item\r\n"
-        ";       tooltip, right below the Required Level line\r\n"
+        ";   1 = append \" (ilvl N)\" to the item name on every item\r\n"
+        ";       tooltip, e.g. Long Sword (ilvl 12)\r\n"
         "item_ilvl=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -461,7 +461,7 @@ BOOL __stdcall VANILLAPLUS_GlobeTextPersistent() {
     return gbGlobeTextPersistentMode;
 }
 
-// ===== [vanilla-plus item-ilvl] optional "Item Level" tooltip line ==========
+// ===== [vanilla-plus item-ilvl] optional " (ilvl N)" item-name suffix =====
 // D2R "Advanced Tooltips" parity (the ilvl readout half). See VanillaPlusCore.h
 // for the feature contract. Gate = the shared 2 s hot-read cache pattern
 // (globe_persistent shape): tooltip rebuilds happen every frame the cursor
@@ -479,18 +479,20 @@ BOOL __stdcall ITEMILVL_Active() {
     return gbItemIlvlMode;
 }
 
-// Same line idiom as Inv.cpp's INV_FormatReqStrText: label, white code
-// (locale 0xf9b), "%i" digits, line separator (locale 0xf9e). The caller
-// applies the line's base color via AppendAsWideChar. OFF = empty buffer =
-// the upstream appends are no-ops (AppendToBuffer copies just the terminator,
-// AppendAsWideChar returns empty buffers untouched) - vanilla byte-for-byte.
-void __stdcall ITEMILVL_FormatLine(D2UnitStrc * pItem, uint16_t * wszText) {
-    uint16_t wszNumBuffer[10];
-    char szNumBuffer[12];
-    if (!wszText) {
+// Appends " (ilvl N)" to the caller's item-name buffer (Inv.cpp's three
+// GetItemName sites). No-op when the gate is off / the name is empty / the
+// item carries no parsed level: the upstream builders then proceed
+// byte-identical to retail. The suffix joins the name buffer BEFORE the
+// caller's AppendAsWideChar color wrap, so it renders in the item's own name
+// color. Hardcoded ASCII: the vanilla string table has no such entry and the
+// fork never edits MPQ data. Digit idiom = the FormatLine round's (SStrPrintf
+// + char->wchar copy); AppendToBuffer is the tooltip builder's own concat.
+void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName) {
+    uint16_t wszSuffix[24];
+    char szSuffix[20];
+    if (!wszName || *wszName == L'\0') {
         return;
     }
-    wszText[0] = L'\0';
     if (!ITEMILVL_Active() || !pItem) {
         return;
     }
@@ -498,15 +500,10 @@ void __stdcall ITEMILVL_FormatLine(D2UnitStrc * pItem, uint16_t * wszText) {
     if (nItemLevel < 1) {
         return;   // not an item unit / no parsed level (accessor returns 0)
     }
-    // Hardcoded ASCII label: the vanilla string table has no "Item Level"
-    // entry and the fork never edits MPQ data. 12 chars + terminator = 13.
-    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszText, (char*)"Item Level: ", 13);
-    memset(wszNumBuffer, 0, sizeof(wszNumBuffer));
-    Storm::Source::SSTR::SStrPrintf(szNumBuffer, 10, "%i", nItemLevel);
-    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszNumBuffer, szNumBuffer, 9);
-    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, D2Lang::StrTable::strtable::GetLocaleString(0xf9b));
-    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, wszNumBuffer);
-    D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, D2Lang::StrTable::strtable::GetLocaleString(0xf9e));
+    memset(wszSuffix, 0, sizeof(wszSuffix));
+    Storm::Source::SSTR::SStrPrintf(szSuffix, sizeof(szSuffix), " (ilvl %i)", nItemLevel);
+    D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszSuffix, szSuffix, sizeof(wszSuffix) / sizeof(wszSuffix[0]) - 1);
+    D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszSuffix);
 }
 
 // ===== [vanilla-plus options page] d2vp.ini feature toggle bridge ==========

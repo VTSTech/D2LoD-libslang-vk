@@ -7580,7 +7580,6 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
     uint16_t wszItemName[256];
     uint16_t wszKeepInInv[64];
     uint16_t wszTransactionCost[64];
-    uint16_t wszItemLevel[64]; // VP: [item-ilvl] optional "Item Level" tooltip line
     int nTextWidth;
     int nTextHeight;
     int nReqDexFailColor;
@@ -7611,10 +7610,6 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
 
     for (nSetItemLoopIdx = 0; nSetItemLoopIdx < 0x100; nSetItemLoopIdx++) {
       wszStackCount[nSetItemLoopIdx] = L'\0';
-    }
-
-    for (nSetItemLoopIdx = 0; nSetItemLoopIdx < 0x20; nSetItemLoopIdx++) { // VP: [item-ilvl] clear the optional ilvl line
-      wszItemLevel[nSetItemLoopIdx] = L'\0';
     }
 
     for (nSetItemLoopIdx = 0; nSetItemLoopIdx < 0x100; nSetItemLoopIdx++) {
@@ -7740,8 +7735,6 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
       INV_FormatStackCountText(nIsOfType, wszStackCount);
     }
 
-    ITEMILVL_FormatLine(pItemToDescribe, wszItemLevel); // VP: [item-ilvl] optional line, empty when the gate is off
-
     nIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pItemToDescribe, ITEMTYPE_Weapon);
     if (nIsOfType || (nIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pItemToDescribe, ITEMTYPE_AnyArmor) , nIsOfType != 0)) {
       nReqAdjust = 0;
@@ -7776,8 +7769,6 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
 
     pwLocaleStr = ui::AppendAsWideChar(wszStackCount, pReqLevelFailFlag);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszStatsBlock, pwLocaleStr);
-    pwLocaleStr = ui::AppendAsWideChar(wszItemLevel, 0); // VP: [item-ilvl] below Required Level (no-op when the buffer is empty)
-    D2Lang::Unicode::UNISYS::AppendToBuffer(wszStatsBlock, pwLocaleStr);
     pwLocaleStr = ui::AppendAsWideChar(wszReqStr, nReqStrColor);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszStatsBlock, pwLocaleStr);
     pwLocaleStr = ui::AppendAsWideChar(wszReqDex, nReqDexColor);
@@ -7840,6 +7831,7 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
     }
 
     GetItemName(pItemToDescribe, wszItemName, 0x100);
+    ITEMILVL_AppendNameSuffix(pItemToDescribe, wszItemName); // VP: [item-ilvl] name suffix, no-op when the gate is off
     bFlagCheck = D2Common::ITEMS::Items::CheckItemFlag(pItemToDescribe, ITEMFLAG_BROKEN, 0xddb, ".\\UI\\inv.cpp");
     nSetItemLoopIdx = 1;
     if (!bFlagCheck) {
@@ -8062,7 +8054,6 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
     uint16_t wszStatCost[256];
     uint16_t szItemDescription[1024];
     uint16_t wszUnidentified[256];
-    uint16_t wszItemLevel[64]; // VP: [item-ilvl] optional "Item Level" tooltip line
     uint16_t wszWorkBuf[1024];
     int nReqDexMet;
     int nReqStrMet;
@@ -8138,10 +8129,6 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
 
     for (nTmp = 0; nTmp < 0x100; nTmp++) {
       wszStatCost[nTmp] = L'\0';
-    }
-
-    for (nTmp = 0; nTmp < 0x20; nTmp++) { // VP: [item-ilvl] clear the optional ilvl line
-      wszItemLevel[nTmp] = L'\0';
     }
 
     for (nTmp = 0; nTmp < 0x400; nTmp++) {
@@ -8390,8 +8377,6 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
         }
       }
 
-      ITEMILVL_FormatLine(pItemToDescribe, wszItemLevel); // VP: [item-ilvl] optional line, empty when the gate is off
-
       nTmp2 = D2Common::ITEMS::Items::ITEMS_IsA(pItemToDescribe, ITEMTYPE_SocketFiller);
       if (nTmp2) {
         INV_FormatSocketFillerDesc(wszSocketFiller);
@@ -8527,6 +8512,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
 
       INV_FormatItemSpellDescText((uint32_t)pItemToDescribe, pItemsTxt, wszStatCost);
       GetItemName(pItemToDescribe, szItemName, 0x100);
+      ITEMILVL_AppendNameSuffix(pItemToDescribe, szItemName); // VP: [item-ilvl] name suffix, no-op when the gate is off
       pwTmp = ui::AppendAsWideChar(wszEtherealSock, 3);
       D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszWorkBuf, pwTmp);
       nTmp = pItemsTxt->dwCode;
@@ -8541,8 +8527,6 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
       pwTmp = ui::AppendAsWideChar(wszAttackSpeed, 0);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwTmp);
       pwTmp = ui::AppendAsWideChar(wszStackCount, nReqLvlColor);
-      D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwTmp);
-      pwTmp = ui::AppendAsWideChar(wszItemLevel, 0); // VP: [item-ilvl] below Required Level (no-op when the buffer is empty)
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwTmp);
       pwTmp = ui::AppendAsWideChar(wszReqStr, nReqStrColor);
       D2Lang::Unicode::UNISYS::AppendToBuffer(wszWorkBuf, pwTmp);
@@ -8622,6 +8606,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
       }
     } else {
       GetItemName(pItemToDescribe, szItemName, 0x80);
+      ITEMILVL_AppendNameSuffix(pItemToDescribe, szItemName); // VP: [item-ilvl] name suffix, no-op when the gate is off
       pwTmp = D2Lang::StrTable::strtable::GetLocaleString(0xd7f);
       D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszUnidentified, pwTmp);
       pwTmp = pwSeparator;

@@ -34,7 +34,7 @@ Every slate row must satisfy all of these before it ships:
 | 0b | Shift equipment-compare | Controls | D2R hover-compare | M | Med | `shift_compare` |
 | 1 | Persistent globe text (was: hover values) | HUD | D2R globe hover shows current/max | S | Low | **Repurposed 2026-10-30** — orb-face readout removed (retail already prints cur/max above each orb on hover); `globe_persistent` now pins that text on (ledger row 40; options page row 4) |
 | 2 | Clock / game-timer overlay | HUD | D2R Tab-screen game timer; BH wall-clock | S | Low | `clock_overlay` |
-| 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | `ilvl_tooltip` |
+| 3 | Item ilvl on tooltips | Loot | D2R 2.5 display-item-level toggle | S–M | Low | **Implemented** (R55 standalone line, R56 name-suffix presentation — `item_ilvl`, see item 3 below; handoff Rev 65/66) |
 | 4 | Transparent bottom bar | HUD | None — owner suggestion; see-through-HUD staple elsewhere | S–M | Low–Med | `transparent_hud` |
 | 5 | Monster HP bar on hover | HUD | D2R enemy health bar (PC) | M | Low–Med | `monster_hp_bar` |
 | 6 | Auto gold pickup | Loot | D2R "Gold Pickup" gameplay option | M | Med | **Implemented** (2026-10-29: ledger row 33; field-verified, coexists with alt_toggle) |
@@ -87,20 +87,20 @@ the slate's head, not new scope. Rows 1–9 were the new candidates; row 6 shipp
 - **Risk**: none beyond draw-order; zero interaction surface.
 - **Exit**: clock visible in-game only, no input eaten, `0` = vanilla.
 
-### 3. Item ilvl on tooltips — `[features] ilvl_tooltip`
+### 3. Item ilvl on tooltips — `[features] item_ilvl` (SHIPPED R55, name-suffix presentation R56)
 
 - **D2R behavior**: 2.5 shipped a toggleable display-item-level (advanced item stats).
-- **Proposed**: append `Item Level: N` as the last tooltip line for inventory and
-  ground-label tooltips; the ilvl lives on the item unit data
-  (`D2UnitDataItemStrc`, accessor family in `D2Common/ITEMS/Items.*` — grep hit
-  confirmed).
-- **Candidate regions**: tooltip text assembly for inventory items
-  (`D2Client/UI/Inv.cpp` region) + ground labels (`D2Client/UI/ShowItems.cpp`, the
-  row-31 mapped path). Both funnels presumably share the stat-line builder — verify the
-  choke point before patching both.
+- **Shipped (R55 + R56)**: with `item_ilvl=1`, the tooltip's **name line** reads
+  `Long Sword (ilvl 12)` — the ilvl is appended to the item name in all three
+  tooltip builders (`LoadItemDesc` identified + unidentified paths,
+  `ITEM_BuildSetItemTooltip`), rendering in the name's own color. R55 shipped a
+  standalone `Item Level: <ilvl>` line below Required Level; R56 moved it into
+  the name per owner preference. The ilvl lives on the item unit data
+  (`D2Common::ITEMS::Items::ITEM_GetItemData_nItemLevel`, item-data offset 0x2C
+  — the same parsed-item struct the retail req-level line reads client-side);
+  ilvl travels in the item bitstream on every path that reaches the tooltip.
+  Shop-narrow / book / transmogrify tooltips stay vanilla by design.
 - **Prior art**: D2R 2.5; BH ilvl display; hackmap.
-- **Risk**: string-append only; watch fixed tooltip buffer sizes (the recovered code
-  allocates tight); S–M.
 - **Exit**: ilvl matches ATMA/goMule-reported values on a sample, `0` = vanilla.
 
 ### 4. Transparent bottom bar — `[features] transparent_hud`
