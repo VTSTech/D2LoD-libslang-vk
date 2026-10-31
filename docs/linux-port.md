@@ -85,8 +85,19 @@ cmake -S . -B build-linux -G Ninja     # D2LINUX_ARCH=i386 is the default
 SDL3 needs at least one desktop backend's dev packages on Linux (it hard-errors
 otherwise; `SDL_UNIX_CONSOLE_BUILD=ON` skips that for container-only builds):
 `libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev
-libxss-dev libwayland-dev libxkbcommon-dev libegl1-mesa-dev libasound2-dev`.
-The CI `linux-native` job installs this set.
+libxss-dev libxtst-dev libwayland-dev libxkbcommon-dev libdecor-0-dev
+libegl1-mesa-dev libasound2-dev`. The CI `linux-native` job installs this set.
+Two of these behave differently at configure time: `libxtst-dev` (XTEST) is a
+HARD dep (SDL3 fatal-errors without it), while `libdecor-0-dev` (Wayland
+client-side decorations) is SOFT — a warning only, and the binary then ships
+without decoration support: bare windows on GNOME/Weston Wayland (KDE is
+unaffected; Mutter provides no server-side fallback).
+
+Runtime requirements (running the binary, not building): SDL3 is statically
+linked, and X11/Wayland/ALSA are dlopen'd — no -dev packages needed. GNOME
+Wayland sessions need `libdecor-0-0` + `libdecor-0-plugin-1-gtk` for a
+titlebar/resize; on any session `SDL_VIDEODRIVER=x11 ./d2linux` forces the
+WM-decorated X11 path.
 
 Windows owner note: the skeleton runs under WSL2/WSLg (GUI apps just work);
 `--smoke` runs anywhere, display or not.
