@@ -1025,7 +1025,7 @@ void NET_D2GS_SERVER_HandleAnyIncomingPacket() {
         s_nBootSetupPkts++;
         D2BOOT_MarkFmt("srv c2s setup pkt (clientid %u, op 0x%02x)", (unsigned)((const D2GSClientMsgEnvelopeStrc*)pBytes)->nClientId, (unsigned)((const D2GSClientMsgEnvelopeStrc*)pBytes)->uMsg.nOpcode); // [d2boot]
       }
-      CCmd::NET_D2GS_SERVER_ProcessClientMessage_GameSetup((D2GSClientMsgEnvelopeStrc*)pBytes);
+      CCmd::NET_D2GS_SERVER_ProcessClientMessage_GameSetup((D2GSClientMsgEnvelopeStrc*)pBytes, nSizeMode0);
     }
 
     while (true) {
