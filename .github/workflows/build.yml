@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [linux]
+    branches: [main, vanilla-plus-port, linux]
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
   pull_request:
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
@@ -88,7 +88,10 @@ jobs:
             libegl1-mesa-dev libasound2-dev
 
       - name: Build d2linux from a clean clone + headless smoke
-        run: tools/check-build-linux.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
+        # bash prefix: runs regardless of the git exec bit (the bit cannot be
+        # set from a Windows checkout; also record it via
+        # git update-index --chmod=+x tools/check-build-linux.sh).
+        run: bash tools/check-build-linux.sh "$GITHUB_WORKSPACE" "$GITHUB_SHA"
 
       # check-build-linux.sh builds in a temp clone and deletes it, so build
       # in-tree too and keep the binary as an artifact.
