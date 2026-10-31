@@ -57,6 +57,12 @@ rule in it was learned the hard way (see "War stories" at the bottom).
 
     # 4) one-second feature audit, no toolchain needed:
     tools/check-vanilla-plus.sh           # per-feature grep gates
+    python3 scripts/rev47_vp_placement_audit.py
+    #    VP-marker PLACEMENT audit (added R47, after issue #10): presence
+    #    checks pass a marked block that survived at the wrong brace depth;
+    #    this diffs every VP marker's context against 44e3518 (the last
+    #    field-verified pre-port tree). Mandatory when the merge resolved
+    #    around braces; cheap enough to always run.
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
@@ -129,3 +135,13 @@ PR) so acceptance is frictionless.
   *blocker* it halted otherwise-good builds - owner call: gate off CI,
   run it manually (step 4). Rule: the gate's verdict is consumed by a human
   during the merge, not enforced by the build pipeline.
+- **R47 auto-gold re-parenting (issue #10):** the same `d6affdd` port left
+  every marker *present* but re-inserted the auto-gold trigger one brace
+  early inside `DRAW_UI`'s HelpMenu block - `AUTO_GOLD_Tick()` only ran
+  while the help overlay was open, auto gold was dead in normal play, and
+  every presence-based check (marker audit, gate counts) was green. The
+  last-known-good diff against `44e3518` caught it; the fix was one brace
+  move plus a placement audit and an order-check gate row. Rule: presence
+  is not placement - when a merge resolves around braces, diff each marked
+  block's context against the last field-verified tree, not just its
+  existence (step 4 now runs both instruments).
