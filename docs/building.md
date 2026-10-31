@@ -32,7 +32,10 @@ cmake --build build
 ```
 
 That produces `build/d2.exe`, a 32-bit Windows executable. `tools/check-build.sh` does
-the same from a clean clone and checks the result; CI runs it on every push.
+the same from a clean clone and checks the result — run it locally to verify a tree.
+CI no longer builds the PE (the mingw-i686 job was retired; the d2.exe gate is the
+owner's local Win11 build). CI on the `linux` branch builds the native `d2linux`
+instead — see [linux-port.md](linux-port.md).
 
 ## Run
 

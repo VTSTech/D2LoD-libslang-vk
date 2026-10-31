@@ -15,10 +15,10 @@ concurrency:
 
 jobs:
   # [d2linux] native Linux track (branch `linux`, docs/linux-port.md). Builds
-  # the SDL3 host skeleton and runs its headless --smoke self-test. The PE
-  # job above is untouched; the two tracks are independent artifacts. The
-  # game-code milestone (M1) switches this job to -DD2LINUX_ARCH=i386 with
-  # the multilib toolchain.
+  # the SDL3 host skeleton and runs its headless --smoke self-test. This is
+  # the only CI job: the retired mingw-i686 PE job lives on as the owner's
+  # local Win11 build + the manual PE gate suite. The game-code milestone
+  # (M1) switches this job to -DD2LINUX_ARCH=i386 with the multilib toolchain.
   linux-native:
     runs-on: ubuntu-24.04
     steps:

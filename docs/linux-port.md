@@ -16,8 +16,9 @@ its charter unchanged.
 
 The two tracks share the decompiled game source; neither may break the other.
 Any decomp translation-unit change made *for* Linux must be `#ifdef`-guarded and
-must leave the PE build byte-identical (that is checked by the existing PE gates
-and CI job, which keep running on this branch).
+must leave the PE build byte-identical (that is checked by the PE gates, run as a
+manual audit, and by the owner's local Win11 llvm-mingw build — CI on this branch
+is the linux-native job only, the mingw job having been retired).
 
 ## Why i386 is the ship target
 
@@ -105,7 +106,8 @@ Windows owner note: the skeleton runs under WSL2/WSLg (GUI apps just work);
 ## Rules for this track
 
 1. Decomp TU edits are `#ifdef`-guarded, PE-identical when the guard is off —
-   the PE gates + PE CI job are the referee and keep running here.
+   the PE gates (manual audit) + the owner's local Win11 build are the referee;
+   CI on this branch is the linux-native job only.
 2. PE line files (`FEATURES.md`, `SMOKE-CHECKLIST.md`, `check-vanilla-plus.sh`,
    `Application.cpp` self-ID) are not touched for Linux-only work.
 3. Everything new ships with its own verification (M0's is `--smoke`).
