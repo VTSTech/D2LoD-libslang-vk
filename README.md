@@ -2,7 +2,7 @@
 
 # D2LoD Vanilla+
 
-[![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.6-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6)
+[![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.6-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-204%2F204-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
@@ -46,8 +46,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
 
 ## Status
 
-- **Current release: [`D2LoD-Vanilla-Plus-0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R49)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
-  first `d2boot.log` line self-identifies the build (`Vanilla+0.0.6-R49`), so a shipped
+- **Current release: [`D2LoD-Vanilla-Plus-0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/latest)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
+  first `d2boot.log` line self-identifies the build (`Vanilla+0.0.6-RXX`), so a shipped
   exe can always be pinned to its source round.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
