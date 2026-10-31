@@ -54,6 +54,16 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 
 ---
 
+## G. Save → re-enter regression ([issue #19](https://github.com/VTSTech/D2LoD-libslang-vk/issues/19), R60 probes)
+
+"Saving a game and then trying to enter a game again crashes the game." R60 ships probes + guards, no behavioral change on healthy state. One char — ideally one WITH a live mercenary — covers the round; the log is the deliverable either way.
+
+- [ ] **18. Clean-exit baseline:** boot → enter any game → ~1 min → Save & Exit. `d2boot.log` line 1 reads `Vanilla+0.0.6-R60`; at exit expect **`roster: clear lists players=0x… other=0x… partyList=0x0 [R60]`** — `partyList=nil` = clean exit; a **non-nil** partyList is the stale-cross-session-state discriminator firing (send the log).
+- [ ] **19. Re-enter (the issue repro):** same process, select the same char → Play. Load must complete and the game must be playable. At the join expect `s2c 0x5B playerjoin …` then **`roster state: players=0x… other=0x0 partyList=0x0 [R60]`** (players = the fresh node; partyList nil = clean). **No `roster heal:` marks may appear on a healthy join** — any `roster heal:` cap mark during this load means the upstream corruptor struck again (the R54 shape): send the whole log.
+- [ ] **20. Merc re-enter (suspect cluster):** char WITH a live mercenary re-enters → watch for **`merc: RollMercStats FALSE - petdata not registered [R60]`** (the merc was re-created without its pet-data node) and on the next save **`save: merc petdata missing - merc fields skipped [R60]`** (the R60 guard working — the merc is omitted from that .d2s instead of NULL-derefing the save). Either mark fires → attach the log; that names the load-time merc re-creation as the broken site.
+
+---
+
 ## Evidence to keep if anything breaks
 
 | Artifact | Comes from | Tells us |

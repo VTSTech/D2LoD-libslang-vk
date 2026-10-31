@@ -728,6 +728,12 @@ void __fastcall MERC_HireAndReplaceMerc(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     nAct = D2Common::Merc::GetMercAct(pGame->bExpansion, 0, pHireInfo->nNameStringId);
     BVar1 = D2Common::Merc::RollMercStats(pGame->bExpansion, pUnit, pHireInfo->nSeed, nAct, (uint32_t)pGame->nDifficulty, &sMercHireData);
     if (!BVar1) {
+      // [R60 issue #19] visibility: this early-out leaves the already-flagged merc
+      // unit WITHOUT a pet-data node (RecastPetAndAssign below is skipped) - the
+      // state whose next SaveMercData was an unguarded NULL deref, now guarded.
+      // If this mark fires, send the log: it names the load-time merc re-creation
+      // as the petdata-less site.
+      D2BOOT_Mark("merc: RollMercStats FALSE - petdata not registered [R60]");
       return;
     }
 

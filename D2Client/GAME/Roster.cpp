@@ -282,6 +282,14 @@ void FreeRosterLinkList(D2RosterStrc * pRoster) {
 // Frees and NULLs every node in both gpRosterPlayers and gpRosterOther linked lists, releasing each roster's pPlayerList (via FreePlayerList) and pRosterLinkList chain (via FreeClientMemory) before freeing the D2RosterStrc itself. Leaves both globals as NULL.
 // @sourcefile .\GAME\Roster.cpp
 void __stdcall ClearBothRosterLists() {
+    // [R60 issue #19] leave-game probe + coverage hole. pfModes_ExitGame is the only
+    // caller; if pRosterPartyList is non-NULL here it survived the session's last
+    // ROSTER_RebuildPlayerParty (or the session never ran one) - the state the next
+    // session's first 0x5B regroup would inherit. FreeRosterPartyList is idempotent
+    // (NULLs the global after freeing), so the call is safe in both cases; the mark
+    // discriminates "stale cross-session party list" from "clean exit" in one log.
+    D2BOOT_MarkFmt("roster: clear lists players=%p other=%p partyList=%p [R60]", (void*)gpRosterPlayers, (void*)gpRosterOther, (void*)pRosterPartyList);
+    FreeRosterPartyList();
     D2RosterStrc* pNextOther;
     D2RosterLinkListStrc* pNextOtherLink;
     D2RosterLinkListStrc* pOtherLink;

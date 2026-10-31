@@ -600,6 +600,24 @@ gate "ilvl: header declares gate + suffix"    D2Client/UI/VanillaPlusCore.h     
 gate "ilvl: suffix call sites (id+unid+set)"  D2Client/UI/Inv.cpp               'ITEMILVL_AppendNameSuffix' 3
 gate "options page: ilvl row present"         D2Client/UI/VanillaPlusOptions.cpp '"item_ilvl"' 1
 
+# ---- [save-reenter] R60: issue #19 (save a game, re-enter crashes) — instrumentation + hardening
+# Theory of record: the upstream heap corruptor (proven alive by the R54 field log's
+# two roster-heal 64-node cap marks during load, on regroup code that is provably
+# correct on clean data) lands fatally on the second session. No save/load block
+# asymmetry exists (R60 audit: all ten .d2s blocks byte-symmetric), so the round
+# ships (a) join/exit roster-state probes that discriminate cross-session stale
+# state in one log, (b) the merc petdata null guard (RollMercStats FALSE leaves a
+# petdata-less merc whose next SaveMercData was an unguarded NULL deref), (c) the
+# pRosterPartyList exit free (the only roster-adjacent global ClearBothRosterLists
+# never cleaned), (d) the corpse-flags determinism fix. One owner field run names
+# the corruptor's landing site via the walk names + probes.
+gate "roster: exit-state probe (R60)"         D2Client/GAME/Roster.cpp          'roster: clear lists players=' 1
+gate "roster: party-list freed at exit (R60)" D2Client/GAME/Roster.cpp          'FreeRosterPartyList\(\);' 2
+gate "client: 0x5B roster-state probe (R60)"  D2Client/GAME/SCmd.cpp            'roster state: players=' 1
+gate "save: merc petdata null guard (R60)"    D2Game/PLAYER/PlayerSave2.cpp     'merc petdata missing - merc fields skipped' 1
+gate "save: corpse flags initialized (R60)"   D2Game/PLAYER/PlayerSave2.cpp     'dwCorpseFlags = 1' 1
+gate "merc: roll-fail mark (R60)"             D2Game/Monster/MonsterAI.cpp      'merc: RollMercStats FALSE - petdata not registered' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

@@ -68,6 +68,7 @@
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Save.h"
 #include "Fog/Src/ErrorManager.h"
+#include "support/d2_boot.h" // [d2boot] issue #19 save-path diagnostics [R60]
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Common/D2SeedStrc.h"
@@ -162,6 +163,16 @@ void __fastcall SaveMercData(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SaveFile
     }
 
     D2PetDataStrc* pPetData = PlayerPets::GetPlayersPetData(pUnit, pMerc->nUnitGUID);
+    if (!pPetData) {
+      // [R60 issue #19] the merc unit exists but its pet-data node was never
+      // registered (see MERC_HireAndReplaceMerc: the RollMercStats FALSE early-out
+      // returns before RecastPetAndAssign). The unguarded pPetData->nType below is a
+      // guaranteed NULL deref on every subsequent save of this session - the save
+      // path must never crash: skip the merc header fields instead (sMerc stays
+      // zeroed = the merc is omitted from the .d2s) and name the site in d2boot.log.
+      D2BOOT_Mark("save: merc petdata missing - merc fields skipped [R60]");
+      return;
+    }
     int nStatValue = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pMerc, UNITSTAT_level, 0);
     D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, pPetData->nType, nStatValue);
     if (!pHirelingTxt) {
@@ -634,6 +645,7 @@ int __fastcall SaveCorpseItems(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t
     int nSaveItemsResult;
     uint32_t nTotalCost;
     uint32_t dwCorpseFlags;
+    dwCorpseFlags = 1; // [R60 issue #19] was uninitialized stack garbage written verbatim into every corpse record; real 1.10+ .d2s files carry 01 00 00 00 here
     uint8_t* pWritePtrSaved;
     D2InventoryStrc* pInventory;
     uint8_t* pWritePtr = (uint8_t*)*ppWritePos;
