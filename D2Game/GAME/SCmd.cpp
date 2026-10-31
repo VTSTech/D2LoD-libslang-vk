@@ -86,6 +86,7 @@
 #include "D2Game/Ai/AiGeneral.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
+#include "support/d2_boot.h" // [d2boot] loading-screen freeze diagnostics
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 

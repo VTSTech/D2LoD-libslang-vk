@@ -633,6 +633,15 @@ gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
 gate "res: self-id R61"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R61' 1
 
+# ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
+# [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line
+# of the include block - classic merge-drop, invisible to presence gates and
+# fatal at compile: "D2BOOT_MarkFmt was not declared in this scope"). This row
+# pins the regression site; scripts/d2boot_visibility_audit.py checks the
+# WHOLE class (every D2BOOT_* user TU must see the declaration) - run it
+# alongside rev47/rev48 after any merge (docs/merge-upstream.md step 4).
+gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'support/d2_boot\.h' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"
