@@ -54,6 +54,16 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 
 ---
 
+## G. Save → re-enter regression ([issue #19](https://github.com/VTSTech/D2LoD-libslang-vk/issues/19), R61 ROOT-CAUGHT + FIXED — FIELD-CONFIRMED 2026-11-01, issue CLOSED)
+
+"Saving a game and then trying to enter a game again crashes the game." **ROOT-CAUGHT R61** (field log 2026-10-31, crash report + d2exe.map): the VP Resolution row's runtime blank-attach mutates the static esc-menu table (`nSubImageCount` 2→3, `szSubImage3Path` stays empty); every game entry re-runs `ESCMENU_Initialize` (0x01 → `InitializeUI`), so init #2 walked the empty third stop and hit the retail fatal `HaltTail(0x501)` = `HALT line=1281` in the field report. The save is irrelevant — ANY second game entry in one process died. R61 degrades both data guards in the loader to marks (empty stop → keep the prior DC6; count out of range → clamp) and guards the type-1 draw site (NULL slot skip + index clamp). One char, two game entries in one process — the fix is proven by NOT crashing:
+
+- [x] **18. Re-enter (the issue repro, now the fix proof):** boot → enter any game → ~30 s → Save & Exit → same process, select the same char → Play. `d2boot.log` line 1 reads `Vanilla+0.0.6-R61`. **The second entry must load and be playable.** Expected in the log at the second entry: exactly one **`escmenu: video item 1 stop 2 path empty - prior dc6 kept [R61]`** (the Resolution row's synthesized stop skipping its re-load — this mark IS the fix working; the 720p stop survives because the runtime blank DC6 stays in its slot). No `halt report:`/`d2crash-*.txt` may appear. — **CONFIRMED 2026-11-01 (R61 field run, owner: "R61 Confirmed fixes #19"):** the second entry loaded and played — issue #19 CLOSED. Keep as a per-build regression check.
+- [x] **19. Resolution row still whole (feature regression guard):** in game 2, open the in-game menu → Options → Video → Resolution: **three stops — 640x480 / 800x600 / Vanilla Plus 1280x720** — the 720p stop selectable and the "1280x720" label visible (the blank slot survived the re-init). Switching stops applies as before. If the 720p stop is missing or the label is blank, send the log — the slot-keep path misfired. — **No regression reported in the R61 confirmation run (2026-11-01).** Keep as a per-build regression check.
+- [x] **20. Esc menu + roster watches unchanged:** in-game ESC menu draws every row (the type-1 rows — 3DSound/EAX/NPCSpeech/AutoMap — draw their toggle images; a NULL slot would now be skipped, not drawn, not crashed). `roster heal:` cap marks during load are the SEPARATE standing corruptor watch (they fired in this run's session 1 too — the R54 shape) — if they appear, send the log; the R60 probes (`roster: clear lists …`, `roster state: …`) stay live around them. — **No regression reported in the R61 confirmation run (2026-11-01); the corruptor watch stays armed.** Keep as a per-build regression check.
+
+---
+
 ## Evidence to keep if anything breaks
 
 | Artifact | Comes from | Tells us |

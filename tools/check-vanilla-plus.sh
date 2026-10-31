@@ -600,6 +600,39 @@ gate "ilvl: header declares gate + suffix"    D2Client/UI/VanillaPlusCore.h     
 gate "ilvl: suffix call sites (id+unid+set)"  D2Client/UI/Inv.cpp               'ITEMILVL_AppendNameSuffix' 3
 gate "options page: ilvl row present"         D2Client/UI/VanillaPlusOptions.cpp '"item_ilvl"' 1
 
+# ---- [save-reenter] R60: issue #19 (save a game, re-enter crashes) — instrumentation + hardening
+# Theory of record: the upstream heap corruptor (proven alive by the R54 field log's
+# two roster-heal 64-node cap marks during load, on regroup code that is provably
+# correct on clean data) lands fatally on the second session. No save/load block
+# asymmetry exists (R60 audit: all ten .d2s blocks byte-symmetric), so the round
+# ships (a) join/exit roster-state probes that discriminate cross-session stale
+# state in one log, (b) the merc petdata null guard (RollMercStats FALSE leaves a
+# petdata-less merc whose next SaveMercData was an unguarded NULL deref), (c) the
+# pRosterPartyList exit free (the only roster-adjacent global ClearBothRosterLists
+# never cleaned), (d) the corpse-flags determinism fix. One owner field run names
+# the corruptor's landing site via the walk names + probes.
+gate "roster: exit-state probe (R60)"         D2Client/GAME/Roster.cpp          'roster: clear lists players=' 1
+gate "roster: party-list freed at exit (R60)" D2Client/GAME/Roster.cpp          'FreeRosterPartyList\(\);' 2
+gate "client: 0x5B roster-state probe (R60)"  D2Client/GAME/SCmd.cpp            'roster state: players=' 1
+gate "save: merc petdata null guard (R60)"    D2Game/PLAYER/PlayerSave2.cpp     'merc petdata missing - merc fields skipped' 1
+gate "save: corpse flags initialized (R60)"   D2Game/PLAYER/PlayerSave2.cpp     'dwCorpseFlags = 1' 1
+gate "merc: roll-fail mark (R60)"             D2Game/Monster/MonsterAI.cpp      'merc: RollMercStats FALSE - petdata not registered' 1
+
+# ---- [save-reenter] R61: issue #19 ROOT-CAUGHT — the VP Resolution row's runtime
+# blank-attach mutates the STATIC esc-menu table (nSubImageCount 2->3) while
+# szSubImage3Path stays empty; ESCMENU_Initialize re-runs on every game entry
+# (0x01 -> InitializeUI), so init #2 walked the empty third path and hit the
+# retail fatal HaltTail(0x501) = the field crash ("HALT line=1281"). The save is
+# irrelevant: ANY second game entry in one process died. Fix: the loader's two
+# data guards degrade to marks (empty stop -> keep prior DC6; count out of range
+# -> clamp) and the type-1 draw site skips NULL slots + clamps the index.
+gate "escmenu: empty-stop degrade (R61)"      D2Client/UI/EscMenu.cpp           'path empty - prior dc6 kept' 1
+gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           'out of range - clamped' 1
+gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
+gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
+gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
+gate "res: self-id R61"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R61' 1
+
 echo
 if [ "$FAIL" -eq 0 ]; then
     echo "vanilla-plus gates: $PASS passed"

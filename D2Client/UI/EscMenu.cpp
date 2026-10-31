@@ -30,6 +30,7 @@
 #include "Storm/Source/SReg.h"
 #include "Storm/Storm.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] issue #19 esc-menu degrade marks [R61]
 #include "D2Client/UI/Panel.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -813,6 +814,18 @@ void __stdcall INPUT_EscMenuExecuteSelection(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
+// [R61 issue #19] display names for the degrade marks (pointer identity; the
+// loader only sees the table pointer). Order matches ESCMENU_Initialize.
+static const char* ESCMENU_TableName(const D2EscMenuItemStrc* pTable) {
+    if (pTable == gaEscMenuMainTable) return "main";
+    if (pTable == gaEscMenuOptionsTable) return "options";
+    if (pTable == gaEscMenuSaveExitTable) return "saveexit";
+    if (pTable == gaEscMenuDeleteCharTable) return "video";
+    if (pTable == gaEscMenuClassicSaveExitTable) return "classic-saveexit";
+    if (pTable == gaEscMenuExpansionSaveExitTable) return "exp-saveexit";
+    return "?";
+}
+
 // Loads all localized DC6 images for an escape menu table. Iterates menu items, fetches language abbreviation from INI config (e.g., "ENG", "DEU"), constructs paths like "DATA\LOCAL\{lang}\UI\{item}.dc6" and loads main image plus up to 4 sub-images per item. Skips expansion-only items in classic mode. Calls item initialization callbacks after loading.
 void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc * pMenuTable) {
     // Frame slots -284..-8 are ONE object: &szImagePath is passed out and the callee reaches the rest by byte offset.
@@ -861,7 +874,15 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
             if (nSubImageCount == 1) {
               nSubImageCount = pMenuTable[__frame0.nItemIndex].nSubImageCount;
               if (nSubImageCount <= 0 || nSubImageCount > 4) {
-                ESCMENU_LoadLocalizedImages_HaltTail(0x4fe);
+                // [R61 issue #19] was: fatal HaltTail(0x4fe). Retail data can never
+                // land here (static tables parsed well-formed), but the Vanilla+
+                // Resolution row legitimately mutates nSubImageCount 2->3 at runtime
+                // (UI_SLIDER_LoadAndApplyResolution), so this field is now LIVE data
+                // and a scribbled/miswired value must not kill the process at game
+                // entry (issue #19: second game entry died in this loader). Clamp:
+                // the slot writes below stay in-bounds either way.
+                D2BOOT_MarkFmt("escmenu: %s item %d sub-image count %d out of range - clamped [R61]", ESCMENU_TableName(pMenuTable), __frame0.nItemIndex, nSubImageCount);
+                nSubImageCount = nSubImageCount > 4 ? 4 : 0;
               }
 
               nSubImageIndex = 0;
@@ -869,7 +890,22 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
                 pSubImagePath = pMenuTable[__frame0.nItemIndex].szSubImage1Path;
                 do {
                   if (*pSubImagePath == '\0') {
-                    ESCMENU_LoadLocalizedImages_HaltTail(0x501);
+                    // [R61 issue #19] was: fatal HaltTail(0x501). ROOT CAUSE of
+                    // issue #19: the VP Resolution row attaches its runtime blank
+                    // DC6 into pDC6SubImages[2] and bumps nSubImageCount to 3, but
+                    // szSubImage3Path stays empty (no MPQ asset exists - the stop
+                    // is synthesized). Init #1 loads with count 2 (clean), the
+                    // callback then mutates the STATIC table, and init #2 (every
+                    // game entry re-runs ESCMENU_Initialize via 0x01 ->
+                    // InitializeUI) walks three sub-paths and died HERE. Degrade:
+                    // keep the previously loaded DC6 in the slot (the runtime
+                    // blank survives re-inits; first init just leaves the slot
+                    // NULL and the draw site skips NULLs) and go on.
+                    D2BOOT_MarkFmt("escmenu: %s item %d stop %u path empty - prior dc6 kept [R61]", ESCMENU_TableName(pMenuTable), __frame0.nItemIndex, nSubImageIndex);
+                    pSubImagePath += 0x104;
+                    pMenuHeader = __frame0.nUnused14;
+                    nSubImageIndex++;
+                    continue;
                   }
 
                   sprintf(&__frame0.szImagePath, "%s\\UI\\%s\\%s", "DATA\\LOCAL", szLangAbbrev, pSubImagePath);
@@ -879,7 +915,7 @@ void __fastcall ESCMENU_LoadLocalizedImages(int * pMenuHeader, D2EscMenuItemStrc
                   *(DC6**)(__frame0.nUnused18->szLocalizedImagePath + nTableOffset * 4 - 0xc) = (DC6*)pLoadedDC6;
                   pSubImagePath += 0x104;
                   pMenuHeader = __frame0.nUnused14;
-                } while (nSubImageIndex < (uint32_t)pMenuTable[__frame0.nItemIndex].nSubImageCount);
+                } while (nSubImageIndex < nSubImageCount);
               }
             }
           }
@@ -1291,7 +1327,20 @@ void __stdcall DRAW_EscMenu() {
               break;
               case 1:
                 D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pCurrentTable[nItemIndex].pDC6Main, ScreenSizeX / 2 - 0xe6, nItemBottomY, 0, eDrawMode, -1);
-              D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(gpEscMenuCurrentTable[nItemIndex].pDC6SubImages[gpEscMenuCurrentTable[nItemIndex].nImageIndex], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
+              // [R61 issue #19] sub-image slots can legitimately be NULL on the
+              // first init after a degraded load (empty runtime-attached stop -
+              // the VP Resolution row's stop 2). The old pointer read is also an
+              // unguarded index; clamp it to the slot array either way.
+              {
+                D2EscMenuItemStrc* pDrawItem = &gpEscMenuCurrentTable[nItemIndex];
+                int nDrawIdx = pDrawItem->nImageIndex;
+                if (nDrawIdx < 0 || nDrawIdx > 3) {
+                  nDrawIdx = 0;
+                }
+                if (pDrawItem->pDC6SubImages[nDrawIdx]) {
+                  D2Win::Src::D2WinFont::IMAGE_DrawDC6ImageOnScreen(pDrawItem->pDC6SubImages[nDrawIdx], ScreenSizeX / 2 + 0xe6, nItemBottomY, 2, eDrawMode, -1);
+                }
+              }
               pCurrentTable = gpEscMenuCurrentTable;
               break;
               case 2:
