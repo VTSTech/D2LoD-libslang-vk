@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R47' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R48' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R47" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R47' 1
+gate "d2boot-fix: build version 0.0.6-R48" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R48' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -403,6 +403,42 @@ if command -v awk >/dev/null 2>&1; then
     PASS=$((PASS + 1))
   else
     printf 'FAIL %-46s ok=%s bad=%s (want ok=1 bad=0) - VP block re-parented into the HelpMenu block\n' "auto-gold: trigger outside help block (R47)" "${vp_ag_ok:-0}" "${vp_ag_bad:-0}"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
+# ---- rev48 track H: gold-dialog rider BRANCH placement (issue #12) ---------
+# The d6affdd merge port resolved the 720p gold-dialog edit (cef3cf8) into
+# the FAILURE arm of the widget-alloc null-checks: upstream's regen had
+# inverted the if/else shape (decompiler-equivalent churn), and the port
+# matched the VP-marked line onto the constructor call that now sat next to
+# the same-LHS null-out. Presence (x5) stayed green; in play the raw
+# 800-space constants ran and the dialog was misaligned at 720p. Order-check:
+# each VP-marked constructor must sit directly inside an `if (pAllocCtx) {`
+# arm (ok=4), and a VP-marked constructor may NEVER be followed by a
+# same-LHS "= 0;" line (bad=0 - the dead-store regression signature).
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /if \(pAllocCtx\) \{/ { stage=1; next }
+    stage==1 && /\/\// && !/site-6/ { next }
+    stage==1 && NF {
+      if (/Constructor\(/ && /VPRES_GetWideUiOffset/ && /site-6/) ok++;
+      stage=0
+    }
+    /Constructor\(/ && /VPRES_GetWideUiOffset/ && /site-6/ {
+      vp=NR; vplhs=$0; sub(/^[ \t]*/,"",vplhs); sub(/[ \t]*=.*/,"",vplhs); next
+    }
+    vp && NR==vp+1 {
+      lhs=$0; sub(/^[ \t]*/,"",lhs); sub(/[ \t]*=.*/,"",lhs);
+      if (lhs==vplhs && /= 0;/) bad++; vp=0
+    }
+    END { printf "vp_gd_ok=%d vp_gd_bad=%d", ok+0, bad+0 }
+  ' D2Client/UI/ui.cpp)"
+  if [ "${vp_gd_ok:-0}" -eq 4 ] && [ "${vp_gd_bad:-0}" -eq 0 ]; then
+    printf 'ok   %-46s %s success-branch-rider x%s\n' "gold-dialog: riders in success branch (R48)" "D2Client/UI/ui.cpp" "$vp_gd_ok"
+    PASS=$((PASS + 1))
+  else
+    printf 'FAIL %-46s ok=%s bad=%s (want ok=4 bad=0) - VP rider resolved into the alloc-FAILURE branch (dead store)\n' "gold-dialog: riders in success branch (R48)" "${vp_gd_ok:-0}" "${vp_gd_bad:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi

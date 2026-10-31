@@ -63,6 +63,12 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     #    this diffs every VP marker's context against 44e3518 (the last
     #    field-verified pre-port tree). Mandatory when the merge resolved
     #    around braces; cheap enough to always run.
+    python3 scripts/rev48_wrong_branch_audit.py
+    #    VP-marker BRANCH audit (added R48, after issue #12): presence checks
+    #    also pass a marked edit resolved into the WRONG if/else arm - the
+    #    regen inverted the branch shape (decompiler-equivalent) and the port
+    #    matched by text. Flags any VP-marked store nulled out on the next
+    #    line: a dead store, never the intended placement.
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1

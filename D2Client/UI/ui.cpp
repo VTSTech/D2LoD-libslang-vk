@@ -1871,9 +1871,12 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 0;
           if (pAllocCtx) {
-            gpCurrentDialog = Spinner::SpinnerWrapper::Constructor((::SpinnerWrapper*)pAllocCtx, 0xdf, 0xdb, 0, (fpSpinnerRepeatAction)UI_GoldDialogScrollCallback);
-          } else {
+            // R48: the VP rider belongs in the alloc-SUCCESS branch. The d6affdd
+            // merge port resolved it into the failure arm next to the null-out
+            // (upstream regen inverted the if/else shape), so the widget always
+            // took the raw 800-space constants at 720p - issue #12.
             gpCurrentDialog = Spinner::SpinnerWrapper::Constructor((::SpinnerWrapper*)pAllocCtx, 0xdf + VPRES_GetWideUiOffsetX(), 0xdb + VPRES_GetWideUiOffsetY(), 0, (fpSpinnerRepeatAction)UI_GoldDialogScrollCallback); // VP: [resolution site-6]
+          } else {
             gpCurrentDialog = 0;
           }
 
@@ -1882,9 +1885,8 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 1;
           if (pAllocCtx) {
-            gpDialogDefaultActionCallback = Editbox::EditBoxWrapper::Constructor(pAllocCtx, 0x102, 0xe4, 100, 1, pnCurrentGold, 10, UI_GoldInputCallback_ReturnZero, 1);
-          } else {
             gpDialogDefaultActionCallback = Editbox::EditBoxWrapper::Constructor(pAllocCtx, 0x102 + VPRES_GetWideUiOffsetX(), 0xe4 + VPRES_GetWideUiOffsetY(), 100, 1, pnCurrentGold, 10, UI_GoldInputCallback_ReturnZero, 1); // VP: [resolution site-6]
+          } else {
             gpDialogDefaultActionCallback = 0;
           }
 
@@ -1897,9 +1899,8 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 2;
           if (pAllocCtx) {
-            gpUiGoldTransactionDialog = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0xfa, 0x11f, 0, UI_GoldDialogConfirmCallback);
-          } else {
             gpUiGoldTransactionDialog = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0xfa + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 0, UI_GoldDialogConfirmCallback); // VP: [resolution site-6]
+          } else {
             gpUiGoldTransactionDialog = 0;
           }
 
@@ -1909,9 +1910,8 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 3;
           if (pAllocCtx) {
-            gpUiGoldDialogCancelButton = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0x163, 0x11f, 1, UI_ButtonCallback_CloseDialog);
-          } else {
             gpUiGoldDialogCancelButton = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0x163 + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 1, UI_ButtonCallback_CloseDialog); // VP: [resolution site-6]
+          } else {
             gpUiGoldDialogCancelButton = 0;
           }
 
