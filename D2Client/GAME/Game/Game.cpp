@@ -747,7 +747,7 @@ void __fastcall InGameDraw(int32_t nParam) {
       View::ViewDraw2(D2GameView);
     }
 
-    UI::Draw::DRAW_UI(D2GameView, (short int*)nParam);
+    UI::Draw::DRAW_UI(D2GameView);
     D2Win::Src::D2WinMain::RENDERER_DrawOutOfGameScene();
     UI::ui::nullSub_CharonGameDraw();
     if (!nParam) {
@@ -1747,7 +1747,8 @@ void __stdcall GAMEDATA_LoadActTiles(uint32_t nAct) {
     D2CMP::SRC::TileProjects::Alloc((D2TileLibraryHashStrc**)&nAct, "data\\global\\tiles\\act1\\outdoors\\blank.dt1");
 }
 
-static void GAMEDATA_CheckColorTxtOverride(uint32_t pUnused) {
+// ESI is not an argument: the body never reads it.
+void GAMEDATA_CheckColorTxtOverride() {
     D2MPQFileStrc* pFileHandle;
     char byColorByte;
     if (gbBloodFlag) {
@@ -1934,7 +1935,7 @@ void __stdcall GAME_InitClientSide() {
     memset(&gClientGameData, 0, 0x80);
     Fog::Memory::InitializePoolSystem(&gClientGameData.gpClientPoolManager, "Client Pool System", 0x40000);
     UNIT::Player::HANDSHAKE_SetClientPlayerUnit(nullptr);
-    GAMEDATA_CheckColorTxtOverride(0);
+    GAMEDATA_CheckColorTxtOverride();
     if (!D2GameView) {
       D2GameView = View::AllocGameView();
     }
