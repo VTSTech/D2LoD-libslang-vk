@@ -805,8 +805,8 @@
 13	99	globals/globals.cpp
 12	10	globals/globals.h
 7677	7677	globals/Storm.cpp
-231	0	handoff.md
-549	0	HISTORY.md
+126	0	handoff.md
+786	0	HISTORY.md
 333	0	PLAN.md
 4	4	progress/report.json
 5	5	README.md

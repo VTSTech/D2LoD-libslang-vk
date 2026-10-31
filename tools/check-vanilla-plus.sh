@@ -39,7 +39,8 @@ gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BE
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
 # Marks along the single-player enter-world handshake, so d2boot.log alone
-# names the stage that never completes. See handoff.md §8 for the reading guide.
+# names the stage that never completes. Reading guide: HISTORY.md H25
+# (archived 720p-era handoff §8).
 gate "d2boot: loop frame telemetry"       D2Client/GAME/Game/Game.cpp     'game-loop: '                2
 gate "d2boot: s2c per-opcode mark"        D2Client/GAME/SCmd.cpp          's2c recv 0x'                1
 gate "d2boot: 0x02/0x04 handler marks"    D2Client/GAME/SCmd.cpp          's2c 0x0(2|4)'               2
@@ -88,7 +89,7 @@ gate "d2boot-fix: guild name setter cap"     D2Game/GAME/Clients.cpp       'nCop
 # lists stayed unguarded. Every unbounded walk in the regroup cluster now carries a
 # 64-node cap + "roster heal:" breadcrumb (SP rosters max out at 8 nodes -> vanilla data
 # never reaches the cap). hangwatch offsets are map-relative now and a relocated run logs
-# a base note; the build string is bumped to 0.0.5 so the next d2boot.log self-identifies.
+# a base note; the build string is bumped to 0.0.6 (rev41) so the next d2boot.log self-identifies.
 gate "d2boot-fix: rev36 walk-cap helper"     D2Client/GAME/Roster.cpp      'static void ROSTER_WalkCapped' 1
 gate "d2boot-fix: rev36 walk-cap call sites" D2Client/GAME/Roster.cpp      'ROSTER_WalkCapped\(' 31
 gate "d2boot-fix: rev36 flatten tail cap"    D2Client/GAME/Roster.cpp      'flatten tail walk' 1
@@ -109,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: rev36 build version 0.0.5" D2Client/Engine/Application.cpp 'vanilla-plus 0\.0\.5' 1
+gate "d2boot-fix: build version 0.0.6 (rev41)" D2Client/Engine/Application.cpp 'vanilla-plus 0\.0\.6 \(rev41\)' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -204,6 +205,19 @@ gate "sound table Druid restored (retail .data)"       globals/globals.cpp 'int 
 # the decompile's phantom "init flag" (really Amazon[0]'s low byte) must stay gone
 gate "bUnitSoundTableInit phantom gone (cpp)" globals/globals.cpp 'uint8_t bUnitSoundTableInit' 0
 gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnitSoundTableInit' 0
+
+# ---- rev41: sound FP-constant decode (upstream PR #10 commit 2 port) -------
+# The merge port d6affdd re-took D2SoundSmp.cpp from the Ghidra-era tree and
+# silently dropped the defect-12 fix (HISTORY.md H3): the IEEE-754 volume
+# literals pasted as C integer casts evaluate to ~4.54e18 instead of 0.0001,
+# so ClampVolume pinned EVERY engine volume to DSBVOLUME_MIN (-10000) — the
+# "sound only on the intro video" field signature. These gates hold the
+# decoded state so no future merge can lose it again.
+gate "sound: ClampVolume/Attenuation epsilon decoded" D2Sound/Src/D2SoundSmp.cpp '\(long double\)0\.0001'    4
+gate "sound: -2000 centibel scale restored"           D2Sound/Src/D2SoundSmp.cpp 'fVar1 \* -2000\.0'        1
+gate "sound: ClampAttenuation bound decoded"          D2Sound/Src/D2SoundSmp.cpp '\(long double\)-10000\.0' 1
+gate "sound: ClampAttenuation divisor decoded"        D2Sound/Src/D2SoundSmp.cpp '\(long double\)2000\.0'   1
+gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp '\(double\)(0x3f1a36e2e0000000|-0x3f3c780000000000|0x409f400000000000|-0x3f60c00000000000)' 0
 
 # ---- resolution-mode (1280x720 slider stop) --------------------------------
 # The registry value is the slider POSITION (0/1/2); stop 2 is attached at

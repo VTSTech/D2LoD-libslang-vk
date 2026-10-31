@@ -1,10 +1,12 @@
 # main branch — handoff for future work (Sound + Glide booting)
 
+*Rev 41 (2026-10-31, sound-fix port round — "lets see if PR4 can fix sound in main"): ported upstream PR #10 commit 2 (`e614f5e`) onto merged main — the defect-12 FP-constant decode the merge port dropped. Pre-state verified first: main's `ClampVolume`/`ClampAttenuation` are **byte-identical to pr4's pre-patch state** (function-body diff), so the port is a clean transform; patches 1 (hwnd) and 3 (fix 16) confirmed already in main. **Landed (sandbox, uncommitted)**: `D2Sound/Src/D2SoundSmp.cpp` (6 literal decodes + two self-contained comments — verbatim pr4 text, one em-dash adapted to ASCII `--`; **no VP markers**: the sound series follows the fix-16/upstream-PR-10 convention), `D2Client/Engine/Application.cpp` (self-ID bump **`vanilla-plus 0.0.6 (rev41)`**), `tools/check-vanilla-plus.sh` (+5 sound gates incl. an absence gate holding the raw literals out; version gate re-pinned to 0.0.6 (rev41)). Toolchain-free verification: function-body diff vs pr4-fixed = code-identical; curve harness `scripts/rev41_curve_check.py` **ALL PASS** (255→0, 110→−730 raw −730.295, 0→−10000; monotonic over 0..255; inverse round-trip ≤ 1.1e-16; pre-fix integer-cast eps 4.547e18 pins every input to −10000 = the field signature). Gates: **188/188**. Finding of record: **merged main is LF-normalized** (only overlay-era leftovers such as `D2Net/SRC/Client.cpp` are CRLF) — the old "all source files CRLF" convention described the pre-merge tree; patchers must detect and preserve per-file endings (`scripts/rev41_sound_fp_decode.py` does). Remaining: **owner build + field round** — d2boot.log first mark must read `0.0.6 (rev41)`; expect title music + UI audio per the defect-12 field test ("Music works now! Both at title and in game."), then SFX/NPC speech (fix 16 already in main). If still silent: §3.4 discriminator (`dsoundInit=?`) and re-cut sounddiag marks (H4). After committing: fork-surface allowlist refresh owner-side. Overlay zip: `vanilla-plus-rev41-sound-fp-decode.zip`.
+
 *Rev 40 (2026-10-31, handoff-refocus round — **handoff-only, zero source changes**): owner retired the `720p` branch (absorbed into `main` by merge `fec99ff`; PR branches all sent upstream). Owner status verbatim: **"Current status: D3D FS/Window booting. normal+720p res. Sound on Intro Video. No sound at/after Title Screen."** and **"the merge and port work is done so far as it compiles green and boots now. But the individual fixes vanilla-plus implemented have not been tested or re-litigated yet."** All 720p/crash-era handoff content (revs 28–39 + §1–§9) moved verbatim to **HISTORY.md H25**. This round verified in-tree facts for the two open tracks: **(A) SOUND — the merge port (`d6affdd`) dropped the defect-12 fix**: main's `D2Sound/Src/D2SoundSmp.cpp` again carries the raw IEEE-754 hex-literal casts (:769/:774/:785/:790/:793/:797) that were decoded and field-verified on the vanilla-plus line (H3 Defect 12, "Music works now! Both at title and in game.") and are still fixed on both `720p` and upstream `pr4/sound-except-intro` — as integer casts they are ≈4.54e18, not 0.0001, so every game-engine volume pins to DSBVOLUME_MIN (-10000) while Bink intro audio (own DirectSound) survives: exactly the field signature. Fix spec in §3.3 (constant decode only — do not re-audit the SMP layer, H3 exoneration). Fix 16 and the hwnd fix DID survive the merge. **(B) GLIDE — game-side site-7 verified intact** (size table, grSstWinOpen enums 16/17, perspective path; gates green); the DLL is built on branch `Glide3xVK` where the resolution table is absorbed in-source; prime suspect is a stale/unpatched deployed glide3x.dll; needs `glide3x.log` + `d2boot.log`. Gates re-run sandbox-side on merged main: **183/183**. No new overlay this round; the first code round on main bumps the self-ID (§8).*
 
 ## 1. Branch topology (owner-corrected, 2026-10-31)
 
-- **`main`** — the only integration branch. The `720p` suite (merge `fec99ff`) and the vanilla-plus line are absorbed. Build self-ID `vanilla-plus 0.0.5 (rev37)` (`D2Client/Engine/Application.cpp:66`); gates **183/183** (`tools/check-vanilla-plus.sh`). Work happens here.
+- **`main`** — the only integration branch. The `720p` suite (merge `fec99ff`) and the vanilla-plus line are absorbed. Build self-ID `vanilla-plus 0.0.6 (rev41)` once the rev41 overlay builds (`D2Client/Engine/Application.cpp:66` — the in-tree string is already bumped; `0.0.5 (rev37)` shows only until then); gates **188/188** (`tools/check-vanilla-plus.sh`). Work happens here.
 - **`720p`** — retired, read-only archive. Its handoff era (revs 28–39) lives in **HISTORY.md H25**.
 - **PR branches** (`pr1..pr5`, `jaenster-main`) — sent upstream (jaenster/redivivus) already; **not integration targets; do not merge from them.** They remain useful as read-only references for fix specs (e.g. `pr4/sound-except-intro` = upstream PR #10, the sound trio).
 - **`Glide3xVK`** — the glide3x.dll wrapper branch. **All Glide DLL work happens there.** `D2Glide/` + `D2Client/Renderer/Glide.cpp` in main are the game-side glide renderer client and stay in main.
@@ -17,7 +19,7 @@
 | Boot → Intro → Title → Char Select → In game | WORKING |
 | D3D fullscreen + windowed, 800x600 and 1280x720 | WORKING |
 | Intro video sound | WORKING (Bink path — explains why "sound" is split) |
-| Sound at/after title screen | **NOT WORKING** → track A (§3) |
+| Sound at/after title screen | **NOT WORKING** → track A (§3) — fix landed rev41, pending owner build + field test |
 | Glide (`-3dfx`) boot | **NOT WORKING** → track B (§4) |
 
 "Compiles green and boots" ≠ fixes verified: the individual vanilla-plus fixes are in-tree but untested on main's build — see the re-litigation ledger (§5) and checklist (§7).
@@ -45,7 +47,7 @@
 - **the hwnd fix** — `Application.cpp:170–179` passes the real window handle (`[sound fix]` comment in-tree).
 - **d2boot sound marks** — `Application.cpp:175–177`: `SOUND_Initialize enter (hwnd=...)` / `SOUND_Initialize done (dsoundInit=%d eax=%d)`.
 
-### 3.3 The fix (verbatim spec from H3 Defect 12 / upstream PR #10 commit 2)
+### 3.3 The fix (verbatim spec from H3 Defect 12 / upstream PR #10 commit 2) — **LANDED rev41** (sandbox, uncommitted; pending owner build + field round; code verified identical to pr4-fixed, curve harness ALL PASS, gates 188/188)
 
 In `D2Sound/Src/D2SoundSmp.cpp`, decode five literals and restore the scale — nothing else:
 
@@ -97,7 +99,7 @@ Curve of record (retail FUN_005165f0, user-supplied): `value ≤ min+0.0001 → 
 
 - **Rule of the round**: merge green + boots ≠ fixes verified. The gates statically cover site-5/6/7 + d2boot-fix surfaces, but the sound fixes have **no gate rows**, and `D2SoundSmp.cpp` is the first proven drop.
 - **Method**: for each fix file in the ledger (H21 rows 1–27 + the 720p-era rounds archived in H25), diff main against the ref that carried the fix: `720p` for the site/gold/roster-era work, `origin/pr4/sound-except-intro` for the sound trio (other PR branches are upstream copies of their series). Watch for H17-style supersession ("upstream's re-typed tree supersedes N hand fixes").
-- **Standing rule going forward**: every fix that lands on main adds a gate row (grep for the fixed token) so a future merge cannot silently drop it. The sound constant gates (§3.3) are the first to add.
+- **Standing rule going forward**: every fix that lands on main adds a gate row (grep for the fixed token) so a future merge cannot silently drop it. The sound constant gates (§3.3) were added in rev41 — 5 rows, suite 188 (incl. an absence gate pinning the raw literals out).
 - **Field re-pass**: §7 checklist on main's build, D3D first, then glide.
 
 ## 6. Standing watches (carry-overs, unchanged)
@@ -119,8 +121,8 @@ Curve of record (retail FUN_005165f0, user-supplied): `value ≤ min+0.0001 → 
 - **Overlay workflow**: sandbox edits the tree → overlay **zip of changed files** (owner preference, not .patch) → owner applies as own commits → llvm-mingw i686 Win11 build (`tools/build-local-win11.cmd`; MSYS2 MINGW32 `cmake --build build -j 8`, ~501 targets). The full build is the owner's gate.
 - **VP-BEGIN/VP-END markers** on every fork edit in upstream files; fork-only TUs (`VanillaPlusCore.{h,cpp}` at `D2Client/UI/`) keep upstream files free of new code.
 - Every source change updates `tools/check-vanilla-plus.sh` gates + `fork-surface.allowlist` (owner-side `tools/check-fork-surface.sh --update` after committing — the sandbox has no upstream ref).
-- All source files CRLF; sandbox patchers preserve that byte-exactly.
-- **Version self-ID** (`Application.cpp:66`) bumps on the first code round after this one so d2boot.log pins the build (suggest `vanilla-plus 0.0.6 (rev40)` — final naming owner's call).
+- Line endings: **merged main is LF-normalized** (rev41 finding; only overlay-era leftovers such as `D2Net/SRC/Client.cpp` are CRLF) — patchers detect and preserve each file's ending, never mix.
+- **Version self-ID** (`Application.cpp:66`) bumps every code round so d2boot.log pins the build — current: `vanilla-plus 0.0.6 (rev41)` (bumped in-tree rev41; the next d2boot.log must show it).
 - Sandbox: **no mingw toolchain, no apt** — constants-level fixes are verified by diff review + curve math; the owner's local build is the compile gate.
-- Diagnostic channels: `d2boot.log` (`[d2boot]` marks, permanent), hangwatch stall dumps, the game log (`DirectSound error:` lines), `glide3x.log` (wrapper side), `d2loud-*.txt` (LOUD builds only).
+- Diagnostic channels: `d2boot.log` (`[d2boot]` marks, permanent), hangwatch stall dumps, the game log (`DirectSound error:` lines), `glide3x.log` (wrapper side), `d2loud-*.txt` (LOUD builds only). Sandbox tooling of record: `scripts/rev41_sound_fp_decode.py` (ending-aware patcher), `scripts/rev41_curve_check.py` (volume-curve harness).
 - Full history: HISTORY.md H1–H24 (pre-720p) and **H25** (the 720p era, incl. the freeze-era reading guide referenced by the `d2boot:` gate comments).
