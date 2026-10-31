@@ -1,4 +1,6 @@
-# main branch — handoff for future work (Sound + Glide booting)
+# main branch — handoff (post-0.0.6 cut: Glide booting, unique colors, 720p inventory)
+
+*Rev 42 (2026-10-31, **0.0.6 cut round** — handoff-only, zero source changes): owner field report verbatim: **"Great job. Sound works. 720p works. Still some issues. But let's cut 0.0.6 here."** The rev41 sound port is **FIELD-VERIFIED** — defect-12 decode + fix 16 + the hwnd fix all confirmed working on main's build; 720p re-confirmed. **0.0.6 = the build that self-IDs `vanilla-plus 0.0.6 (rev41)`** (first d2boot.log mark pins it); the string is intentionally NOT bumped this round so the shipped exe and the tree stay identical. Known-issue manifest at cut — four open tracks: **(1) Glide `-3dfx` does not boot** — track B (§4) unchanged, still waiting on `glide3x.log` + `d2boot.log` + deployed-DLL provenance; **(2) unique monsters render base colors** and **(3) unique-pack minion skeletons render gold** — new **track C (§9.1)**, one mechanism family; **(4) at 1280x720 the inventory is misaligned** — new **track D (§9.2)**. Re-litigation finding of record for C/D (this round, via content-only `git diff main 720p --ignore-cr-at-eol`): **not merge casualties** — the PalShift.cpp / Pallete.cpp / MonUnique.cpp diffs are decompiler-noise (guard inversions, `n > 0` ↔ `0 < n`, include order) and main's Inv.cpp is NEWER upstream code than the 720p-era file (trade-page Right/top/bottom/left split, `gbInvOverlayFlag`, `init_npc_coords` path) with the site-5/6 VP machinery intact and identical — `fec99ff` dropped nothing here. Seeds in §9 — C: hunt a defect-12-style constant-pin on the unique RandTransform index (`PALSHIFT_GetMonsterTransform` PalShift.cpp:307, `PALSHIFT_LoadMonsterPalShift` :209, draw-time `D2GFX_DrawShiftedImage` D2GFX.cpp:972 GLOBALPALLETE plumbing; the static `Monster.cpp:1238–1298` TransLvl path is structurally sane and NOT the suspect); D: audit every coordinate write in Inv.cpp's newer upstream paths for a paired `VP_SHIFT_*` call (43 shift vs 40 fetch sites counted — near-paired, so the miss is likely OUTSIDE `InitializeiInventoryPages`, e.g. the NPC-inventory block or trade splits), ask the owner which sub-panel misaligns, add a `VP_SHIFT_`-count gate row. Gates unchanged **188/188**. No new overlay; docs ride `vanilla-plus-0.0.6-cut-docs.zip`.
 
 *Rev 41 (2026-10-31, sound-fix port round — "lets see if PR4 can fix sound in main"): ported upstream PR #10 commit 2 (`e614f5e`) onto merged main — the defect-12 FP-constant decode the merge port dropped. Pre-state verified first: main's `ClampVolume`/`ClampAttenuation` are **byte-identical to pr4's pre-patch state** (function-body diff), so the port is a clean transform; patches 1 (hwnd) and 3 (fix 16) confirmed already in main. **Landed (sandbox, uncommitted)**: `D2Sound/Src/D2SoundSmp.cpp` (6 literal decodes + two self-contained comments — verbatim pr4 text, one em-dash adapted to ASCII `--`; **no VP markers**: the sound series follows the fix-16/upstream-PR-10 convention), `D2Client/Engine/Application.cpp` (self-ID bump **`vanilla-plus 0.0.6 (rev41)`**), `tools/check-vanilla-plus.sh` (+5 sound gates incl. an absence gate holding the raw literals out; version gate re-pinned to 0.0.6 (rev41)). Toolchain-free verification: function-body diff vs pr4-fixed = code-identical; curve harness `scripts/rev41_curve_check.py` **ALL PASS** (255→0, 110→−730 raw −730.295, 0→−10000; monotonic over 0..255; inverse round-trip ≤ 1.1e-16; pre-fix integer-cast eps 4.547e18 pins every input to −10000 = the field signature). Gates: **188/188**. Finding of record: **merged main is LF-normalized** (only overlay-era leftovers such as `D2Net/SRC/Client.cpp` are CRLF) — the old "all source files CRLF" convention described the pre-merge tree; patchers must detect and preserve per-file endings (`scripts/rev41_sound_fp_decode.py` does). Remaining: **owner build + field round** — d2boot.log first mark must read `0.0.6 (rev41)`; expect title music + UI audio per the defect-12 field test ("Music works now! Both at title and in game."), then SFX/NPC speech (fix 16 already in main). If still silent: §3.4 discriminator (`dsoundInit=?`) and re-cut sounddiag marks (H4). After committing: fork-surface allowlist refresh owner-side. Overlay zip: `vanilla-plus-rev41-sound-fp-decode.zip`.
 
@@ -6,7 +8,7 @@
 
 ## 1. Branch topology (owner-corrected, 2026-10-31)
 
-- **`main`** — the only integration branch. The `720p` suite (merge `fec99ff`) and the vanilla-plus line are absorbed. Build self-ID `vanilla-plus 0.0.6 (rev41)` once the rev41 overlay builds (`D2Client/Engine/Application.cpp:66` — the in-tree string is already bumped; `0.0.5 (rev37)` shows only until then); gates **188/188** (`tools/check-vanilla-plus.sh`). Work happens here.
+- **`main`** — the only integration branch. The `720p` suite (merge `fec99ff`) and the vanilla-plus line are absorbed. Build self-ID **`vanilla-plus 0.0.6 (rev41)`** (`D2Client/Engine/Application.cpp:66`) — field-confirmed by the 0.0.6 cut round; gates **188/188** (`tools/check-vanilla-plus.sh`). Work happens here.
 - **`720p`** — retired, read-only archive. Its handoff era (revs 28–39) lives in **HISTORY.md H25**.
 - **PR branches** (`pr1..pr5`, `jaenster-main`) — sent upstream (jaenster/redivivus) already; **not integration targets; do not merge from them.** They remain useful as read-only references for fix specs (e.g. `pr4/sound-except-intro` = upstream PR #10, the sound trio).
 - **`Glide3xVK`** — the glide3x.dll wrapper branch. **All Glide DLL work happens there.** `D2Glide/` + `D2Client/Renderer/Glide.cpp` in main are the game-side glide renderer client and stay in main.
@@ -19,12 +21,17 @@
 | Boot → Intro → Title → Char Select → In game | WORKING |
 | D3D fullscreen + windowed, 800x600 and 1280x720 | WORKING |
 | Intro video sound | WORKING (Bink path — explains why "sound" is split) |
-| Sound at/after title screen | **NOT WORKING** → track A (§3) — fix landed rev41, pending owner build + field test |
-| Glide (`-3dfx`) boot | **NOT WORKING** → track B (§4) |
+| Sound at/after title screen | **WORKING** (field-verified rev42 — track A §3 CLOSED) |
+| Glide (`-3dfx`) boot | **NOT WORKING** → track B (§4) — known issue #1 at the 0.0.6 cut |
+| Unique monster colors | **NOT WORKING** (base colors, no unique tint) → track C (§9.1) — known issue #2 |
+| Unique-pack minion colors | **NOT WORKING** (minion skeletons render gold) → track C (§9.1) — known issue #3 |
+| Inventory at 1280x720 | **PARTIAL** (misaligned at 720p; fine at 800x600) → track D (§9.2) — known issue #4 |
 
-"Compiles green and boots" ≠ fixes verified: the individual vanilla-plus fixes are in-tree but untested on main's build — see the re-litigation ledger (§5) and checklist (§7).
+Sound is now FIELD-VERIFIED on main's build (defect-12 decode + fix 16 + hwnd fix); the rest of the re-litigation ledger (§5) and the §7 checklist still stand. The four NOT-WORKING/PARTIAL rows above are the 0.0.6 known-issue manifest (§9).
 
-## 3. Defect track A — Sound silent at/after title screen
+## 3. Defect track A — Sound silent at/after title screen — **CLOSED (field-verified rev42)**
+
+Kept as the record of the defect class (IEEE-754 bit-pattern mistranscription) and the fix spec; §9.1 hunts the same class elsewhere.
 
 ### 3.0 The two audio paths (why intro works and everything after doesn't)
 
@@ -47,7 +54,7 @@
 - **the hwnd fix** — `Application.cpp:170–179` passes the real window handle (`[sound fix]` comment in-tree).
 - **d2boot sound marks** — `Application.cpp:175–177`: `SOUND_Initialize enter (hwnd=...)` / `SOUND_Initialize done (dsoundInit=%d eax=%d)`.
 
-### 3.3 The fix (verbatim spec from H3 Defect 12 / upstream PR #10 commit 2) — **LANDED rev41** (sandbox, uncommitted; pending owner build + field round; code verified identical to pr4-fixed, curve harness ALL PASS, gates 188/188)
+### 3.3 The fix (verbatim spec from H3 Defect 12 / upstream PR #10 commit 2) — **LANDED rev41, FIELD-VERIFIED rev42** (code identical to pr4-fixed; curve harness ALL PASS; gates 188/188; owner: "Sound works.")
 
 In `D2Sound/Src/D2SoundSmp.cpp`, decode five literals and restore the scale — nothing else:
 
@@ -97,7 +104,7 @@ Curve of record (retail FUN_005165f0, user-supplied): `value ≤ min+0.0001 → 
 
 ## 5. Re-litigation ledger — the individual fixes on main
 
-- **Rule of the round**: merge green + boots ≠ fixes verified. The gates statically cover site-5/6/7 + d2boot-fix surfaces, but the sound fixes have **no gate rows**, and `D2SoundSmp.cpp` is the first proven drop.
+- **Status after the 0.0.6 field round**: the sound trio (defect-12 decode, fix 16, hwnd fix) is **field-verified** on main's build; `D2SoundSmp.cpp` was the first proven drop (healed rev41) and its gate rows now exist. Still unverified: the site-5/6/7 + d2boot-fix surfaces beyond the rev30/32 confirmations (§7 pass), and tracks C/D (§9) — which this round's diffs show are NEW findings, not drops.
 - **Method**: for each fix file in the ledger (H21 rows 1–27 + the 720p-era rounds archived in H25), diff main against the ref that carried the fix: `720p` for the site/gold/roster-era work, `origin/pr4/sound-except-intro` for the sound trio (other PR branches are upstream copies of their series). Watch for H17-style supersession ("upstream's re-typed tree supersedes N hand fixes").
 - **Standing rule going forward**: every fix that lands on main adds a gate row (grep for the fixed token) so a future merge cannot silently drop it. The sound constant gates (§3.3) were added in rev41 — 5 rows, suite 188 (incl. an absence gate pinning the raw literals out).
 - **Field re-pass**: §7 checklist on main's build, D3D first, then glide.
@@ -113,8 +120,10 @@ Curve of record (retail FUN_005165f0, user-supplied): `value ≤ min+0.0001 → 
 ## 7. Field checklist (re-litigation pass on main)
 
 - **Pending from the 720p era (H25 §6)**: waypoint / quest log / party / help deep-pass; sibling dialogs (trade gold, cube UI, NPC menus, EscMenu); in-game 800↔720 switch (coord-cache refetch); 800x600 byte-parity + 640x480 untouched.
-- **Sound (after §3.3 lands)**: title music, UI clicks, NPC speech, monster/player SFX, footsteps, quest fanfares, pickup-fail voice, in-game music transitions.
-- **Glide**: §4.3 step 4.
+- **Sound — title music + in-game audio field-VERIFIED rev42 ("Sound works.")**; keep the fine-grain pass as regression watch: UI clicks, NPC speech, footsteps, quest fanfares, pickup-fail voice, music transitions, volume-slider behavior.
+- **Glide**: §4.3 step 4 (known issue #1).
+- **Track C (§9.1)**: unique/champion/minion colors vs retail on the same pack.
+- **Track D (§9.2)**: 720p screenshot naming the misaligned inventory sub-panel; 800x600 parity unchanged.
 
 ## 8. Conventions (condensed, unchanged)
 
@@ -122,7 +131,36 @@ Curve of record (retail FUN_005165f0, user-supplied): `value ≤ min+0.0001 → 
 - **VP-BEGIN/VP-END markers** on every fork edit in upstream files; fork-only TUs (`VanillaPlusCore.{h,cpp}` at `D2Client/UI/`) keep upstream files free of new code.
 - Every source change updates `tools/check-vanilla-plus.sh` gates + `fork-surface.allowlist` (owner-side `tools/check-fork-surface.sh --update` after committing — the sandbox has no upstream ref).
 - Line endings: **merged main is LF-normalized** (rev41 finding; only overlay-era leftovers such as `D2Net/SRC/Client.cpp` are CRLF) — patchers detect and preserve each file's ending, never mix.
-- **Version self-ID** (`Application.cpp:66`) bumps every code round so d2boot.log pins the build — current: `vanilla-plus 0.0.6 (rev41)` (bumped in-tree rev41; the next d2boot.log must show it).
+- **Version self-ID** (`Application.cpp:66`) bumps every code round so d2boot.log pins the build — the **0.0.6 cut ships as `vanilla-plus 0.0.6 (rev41)`** (field-confirmed); the docs-only cut round does NOT bump it, and the next code round takes 0.0.7 + the next rev number (final naming owner's call).
 - Sandbox: **no mingw toolchain, no apt** — constants-level fixes are verified by diff review + curve math; the owner's local build is the compile gate.
 - Diagnostic channels: `d2boot.log` (`[d2boot]` marks, permanent), hangwatch stall dumps, the game log (`DirectSound error:` lines), `glide3x.log` (wrapper side), `d2loud-*.txt` (LOUD builds only). Sandbox tooling of record: `scripts/rev41_sound_fp_decode.py` (ending-aware patcher), `scripts/rev41_curve_check.py` (volume-curve harness).
 - Full history: HISTORY.md H1–H24 (pre-720p) and **H25** (the 720p era, incl. the freeze-era reading guide referenced by the `d2boot:` gate comments).
+
+## 9. Known-issue manifest at the 0.0.6 cut (owner, 2026-10-31)
+
+| # | Owner symptom (verbatim) | Track |
+| --- | --- | --- |
+| 1 | "No Glide" | B (§4) — carries over, unchanged |
+| 2 | "Unique Monsters are not Unique Colors" | C (§9.1) |
+| 3 | "Minion Skeletons are Gold" | C (§9.1) |
+| 4 | "(720p) Inventory not aligned" | D (§9.2) |
+
+### 9.1 Track C — unique monsters uncolored / minion skeletons gold
+
+- **Not a dropped fix** (verified rev42): main-vs-720p content-only diffs of `PalShift.cpp` / `Pallete.cpp` / `MonUnique.cpp` are decompiler-noise (guard inversions, `n > 0` ↔ `0 < n`, include order); no color fix exists anywhere in the H21 ledger. This is first-time work on upstream behavior.
+- **Mechanism map (where retail colors live)**:
+  - Static per-class palettes: `D2Client/UNIT/Monster.cpp:1238–1298` — default `TransLvl+2` (clamped <8), Andariel/Duriel (`0x9c`/`0xd3`) take difficulty palettes 3/4, `0x14d` → 5; structurally sane on main, **not** the suspect.
+  - Random unique transforms (the gold/silver/red rolls): `PALSHIFT_GetMonsterTransform` (`D2Client/GAME/PalShift.cpp:307`) — note the `case 0/1: nClassId - 0x16bU` early-out and the `nPalShiftIndex - 8U` bound over 0x1d entries; `PALSHIFT_LoadMonsterPalShift` (:209) reads palshift.txt rows by monster code; `PALSHIFT_InitPalShiftTable` (:275).
+  - Draw-time application: `D2GFX_DrawShiftedImage(..., GLOBALPALLETE)` (`D2gfx/D2GFX.cpp:972`) → renderer `nfpDrawShiftedImage`; unit→index plumbing via `CUnit::SetPalShiftIndex`/getter (`D2Client/UNIT/CUnit.cpp`).
+  - Unique seed → transform roll: `MonUnique.cpp` (`sNewSeed.nSeedLow % 100`); master→minion inheritance is the shared mechanism behind symptoms #2 and #3 — if the master's roll is lost but minions read a default, you get exactly "uniques plain, minions gold".
+- **Pattern to hunt first (defect-12 precedent)**: a Ghidra transcription artifact pinning the transform index to one constant — "everything gold" is what a pinned index looks like. Audit the index math as constants/int-casts before touching logic.
+- **Cheap first data ask**: one 800x600 D3D screenshot of a unique pack + whether ALL uniques are affected or act/class-specific; note whether champion (blue/orange) naming still works (same pack-generation path).
+- **When the track opens**: sweep the PR branches (`jaenster-main`, `pr2`) for color-related fixes before writing anything; every fix lands with a gate row (§5 rule).
+
+### 9.2 Track D — (720p) inventory misaligned
+
+- **Not a dropped fix** (verified rev42): the site-5/6 VP machinery is in main and identical to the field-verified 720p branch; main's `Inv.cpp` is NEWER upstream code, so the miss is probably a path upstream added that never learned site-5.
+- **What's verified in main**: `VP_SHIFT_InvPage/Grid/BodyCoords` (`D2Client/UI/Inv.cpp:140–166`) shift every fetched rect by X=`(ScreenSizeX-800)/2`, Y=`ScreenSizeY-600` (clamped ≥0; 240/60 at 1280x720 — `VanillaPlusCore.cpp:816`); `InitializeiInventoryPages` (:170+) caches coords keyed `nScreenMode + offsetX + 0x400*offsetY` (800x600 key=1 vs 720p key=1+240+0x400·60 — distinct, in-game res change refetches); 43 `VP_SHIFT_*` call sites vs 40 `GetInv/GetGrid/GetBodyDimensions` fetch sites.
+- **Prime suspect**: coordinate paths OUTSIDE `InitializeiInventoryPages` — the `init_npc_coords` NPC-inventory block (:196/:200), the trade-page Right/top/bottom/left splits, `gbInvOverlayFlag` paths — plus any rect written without a paired `VP_SHIFT_*` call.
+- **Cheap first data ask**: a 1280x720 screenshot naming WHICH sub-panel misaligns (player grid / body slots / vendor inv / stash / cube / trade / hireling) — one screenshot collapses the audit to one function. Also state whether items PICK UP correctly (hit-test uses the same stored coords as the draw; if clicks land where the art is, only the art path is wrong).
+- **Gate row to add with the fix**: pin the `VP_SHIFT_` count in `Inv.cpp` so a future merge cannot silently unshift a site.
