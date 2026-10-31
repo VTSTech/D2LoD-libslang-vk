@@ -704,7 +704,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x6D_UNITCHANGE_MONSTERNEUTRAL(D2UnitStr
     sMsg.nMaxDistance = 4;
     sMsg.nTargetX = 0;
     UNIT::Path::PATH_MoveUnitToPoint(pUnit, *(uint16_t*)(pBytes + 5), sMsg.nItemId, 0, 0, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
+    uint16_t nLayer = 0;
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
     UNIT::UnitMode::HandleMessage(7, pUnit, &sMsg, 1);
 }
 
@@ -882,7 +883,7 @@ static void ITEM_CltRecalcEquippedFromUnit(D2UnitStrc * pUnit) {
     sFakePacket.nUnitGUID = pUnit->nUnitGUID;
     sFakePacket.eUnitType = (uint8_t)pUnit->eUnitType;
     sFakePacket.nPacketId = 0x47;
-    UNIT::ITEM_CltRecalcAllEquippedItems(&sFakePacket);
+    UNIT::ITEM_CltRecalcAllEquippedItems(&sFakePacket, 0);
 }
 
 // Recomputes stat contributions of all items in pUnit's inventory. Snapshots the unit's current left/right skills, iterates every item via INVENTORY_GetFirstItem/GetNextItem, and for each carried item whose owner is confirmed, strips and re-applies its stat list via STATLIST_RemoveFromOwnerAndRecalc + STATLIST_SetItemStatActive. Finally re-selects the saved left/right skills to update skill state. Called after inventory changes that may alter active stats.
@@ -1565,7 +1566,7 @@ void __fastcall NET_D2GS_CLIENT_RecvRecalcEquippedItems(char * pBytes) {
     *(uint32_t*)((char*)&packet + 4) = *(uint32_t*)(pBytes + 4);
     packet.wPad1 = *(uint16_t*)(pBytes + 8);
     packet.byPad2 = pBytes[10];
-    UNIT::ITEM_CltRecalcAllEquippedItems(&packet);
+    UNIT::ITEM_CltRecalcAllEquippedItems(&packet, 1);
 }
 
 // Client receiver for S2C packet 0x48 (11 bytes). Copies packet bytes into D2GSPacketSrv0x48 struct and calls ITEM_CltRecalcAllEquippedItems2 to re-evaluate equipped item requirements.
@@ -1598,7 +1599,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x53(char * pBytes) {
     recalcPacket.eUnitType = (uint8_t)pPlayer->eUnitType;
     recalcPacket.nUnitGUID = pPlayer->nUnitGUID;
     recalcPacket.nPacketId = 0x47;
-    UNIT::ITEM_CltRecalcAllEquippedItems(&recalcPacket);
+    UNIT::ITEM_CltRecalcAllEquippedItems(&recalcPacket, 0);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x50(char * pBytes) {

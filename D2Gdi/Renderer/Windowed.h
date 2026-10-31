@@ -102,7 +102,7 @@ void __fastcall DrawString(int nPosX, int nPosY, char * szFormat, va_list va);
 void __fastcall DrawLight(DWORD * pLight, DWORD * pPlayerLight, int nPosX, int nPosY);
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 BOOL __stdcall RENDERER_WINDOWED_CheckBlendedShadowsEnabled();
-void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, int nDrawMode); // [vanilla-plus resfix] matches fpDrawSolidRectEx typedef
+void __fastcall DrawSolidRectEx(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor, int nDrawMode);
 void __fastcall DrawSolidRectAlpha(int nXStart, int nYStart, int nXEnd, int nYEnd, DWORD dwColor, BYTE nAlpha);
 // Windowed GDI renderer helper functions - DIB section allocation, palette conversion, line drawing (Bresenham), crop rect calculation, Smacker video blitting
 void __fastcall RENDERER_WINDOWED_DrawPixel(int nPosX, int nPosY, BYTE byColor);

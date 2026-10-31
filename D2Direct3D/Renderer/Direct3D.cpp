@@ -4111,7 +4111,7 @@ void __fastcall DrawLine(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dw
       return;
     }
 
-    uint32_t dwRGBColor = PALETTE_GetColorByIndex(dwColor & 0xff);
+    uint32_t dwRGBColor = PALETTE_GetColorByIndex((uint32_t)dwColor);
     RENDERER_D3D_SetBlendMode(2);
     if (nAlpha == 0xff) {
       SetBlendMode(1);
@@ -4156,6 +4156,7 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
     uint32_t nWidth;
     int nXStart;
     int nYEnd_00;
+    uint8_t dwColor;
     int nXEnd = pRect->left;
     if (pRect->right < nXEnd) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc5);
@@ -4182,16 +4183,18 @@ void __fastcall DrawRect(RECT * pRect, DWORD nPaletteIndex) {
         return;
       }
 
-      Renderer::DrawLine(nXStart, nYStart, nXEnd_00, nYEnd_00, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXEnd_00, nYEnd_00, nXStart, nYEnd, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXStart, nYEnd, nXEnd, nYEnd_00, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXEnd, nYEnd_00, nXStart, nYStart, nPaletteIndex, 0xff);
+      dwColor = (uint8_t)nPaletteIndex;
+      Renderer::DrawLine(nXStart, nYStart, nXEnd_00, nYEnd_00, dwColor, 0xff);
+      Renderer::DrawLine(nXEnd_00, nYEnd_00, nXStart, nYEnd, dwColor, 0xff);
+      Renderer::DrawLine(nXStart, nYEnd, nXEnd, nYEnd_00, dwColor, 0xff);
+      Renderer::DrawLine(nXEnd, nYEnd_00, nXStart, nYStart, dwColor, 0xff);
       return;
     }
 }
 
 void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
     uint32_t nXEnd;
+    uint8_t dwColor;
     uint32_t nClampedRight;
     uint32_t nClampedTop;
     uint32_t nClampedLeft = pRect->left;
@@ -4236,10 +4239,11 @@ void __fastcall DrawRectEx(RECT * pRect, DWORD nPaletteIndex) {
         exit(-1);
       }
 
-      Renderer::DrawLine(nXStart, nClampedLeft, nXEnd, nClampedLeft, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXEnd, nClampedLeft, nXEnd, nClampedBottom, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXEnd, nClampedBottom, nXStart, nClampedBottom, nPaletteIndex, 0xff);
-      Renderer::DrawLine(nXStart, nClampedBottom, nXStart, nClampedLeft, nPaletteIndex, 0xff);
+      dwColor = (uint8_t)nPaletteIndex;
+      Renderer::DrawLine(nXStart, nClampedLeft, nXEnd, nClampedLeft, dwColor, 0xff);
+      Renderer::DrawLine(nXEnd, nClampedLeft, nXEnd, nClampedBottom, dwColor, 0xff);
+      Renderer::DrawLine(nXEnd, nClampedBottom, nXStart, nClampedBottom, dwColor, 0xff);
+      Renderer::DrawLine(nXStart, nClampedBottom, nXStart, nClampedLeft, dwColor, 0xff);
       return;
     }
 }
