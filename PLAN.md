@@ -1,333 +1,243 @@
-# PLAN.md — libslang-vk Integration (D2LoD-libslang-vk)
+# PLAN.md — d2linux: the native Linux host track (D2LoD-libslang-vk)
 
-> Status: v5, 2026-10-28. **The d2.exe source line is fork `main`** (the former `vanilla-plus` branch, repo default since the 2026-10-28 restructure) — upstream `main`
-> (eef5f2c) is merged; the glide fix chain (1–13), the drops fix (14) and the sound series
-> (15–16, defects 12+13) are closed and field-verified; the sound fixes are upstreamed as
-> jaenster/redivivus **PR #10** (open, merge-clean); the fullscreen-D3D recovery (fixes 17–27)
-> is closed and field-verified; releases **`D2LoD-Vanilla-Plus-0.0.1`** (`4857c30`) and
-> **`D2LoD-Vanilla-Plus-0.0.2`** (`9cf9f69` — first opt-in feature: alt-key item-label toggle
-> + `d2vp.ini` auto-creation) (see `VANILLA-PLUS.md` + `handoff.md`). **The wrapper line `Glide3xVK` is at 0.4.5** with P1–P3 delivered and
-> packaging partially done (per-phase status in §5). **CI is back (2026-10-28)** —
-> mingw-i686 green on the 0.0.2 tag; local Win11 builds (`tools/build-local-win11.ps1`)
-> remain the authoritative gate; the sandbox holds a llvm-mingw toolchain for per-TU
-> verification (§2). Owner: VTSTech. Agent session log: `/home/z/my-project/worklog.md`.
-> Live task list: `handoff.md` §9.
-> **All integration work happens on the `Glide3xVK` branch (see §0); all d2.exe fixes
-> happen on `main` (the former `vanilla-plus` branch — 2026-10-28 restructure).**
+> Status: v6, 2026-10-31 — **this plan is the native Linux port (branch `linux`)**. It supersedes the
+> libslang-vk integration plan that lived here (v1–v5): that workflow is closed — the wrapper line
+> `Glide3xVK` finished at **0.4.5** (`3a52553`), P1–P3 delivered and shipped inside the Vanilla+
+> releases through **`D2LoD-Vanilla-Plus-0.0.6`**, and its record lives in `VANILLA-PLUS.md`,
+> `HISTORY.md` and `handoff.md`. Track charter: `docs/linux-port.md`. Live task list: `handoff.md`
+> §9. Journal: `/home/z/my-project/worklog.md`. Owner: VTSTech. Agent session log: `handoff.md` Rev.
+>
+> **M0 is FIELD-PROVEN** (owner Ubuntu VM, build `c8e8d54`): banner + `--smoke` green, the animated
+> pattern live, and after the libdecor build fix plain `./d2linux` shows titlebar + resize on GNOME
+> Wayland. CI on this branch is the **linux-native job only** — the mingw-i686 PE job was retired by
+> the owner; the PE gate is the owner's local Win11 llvm-mingw build + the manual gate suite (240/240).
 
 ---
 
 ## 0. Branching & git workflow
 
-Lesson learned from the DevilutionX fork: feature commits landed straight on
-`master` and tangled it. This fork keeps the lines separate from day one:
-
 | Branch | Role |
 |---|---|
-| [`main`](https://github.com/VTSTech/D2LoD-libslang-vk) | **The d2.exe source line (default branch).** All game-source fixes (glide chain 1–13, drops 14, sound 15–16, D3D recovery 17–27) plus the bootlog/diagnostic work: `[d2boot]` boot trace, `support/d2_boot.{h,cpp}`, VEH `d2crash-*.txt` reporter, signature-verification fixes (`Bnclient/Bnclient.cpp` CERT_INFO + direct handle cleanup). Merged with upstream `main` (`ad964f3`). Tip `569fc5c` = release `D2LoD-Vanilla-Plus-0.0.3` (0.0.2 = `9cf9f69`, 0.0.1 = `4857c30`); fullscreen-D3D recovery closed and field-verified; opt-in features (alt-key item-label toggle + click-through fix, portable saves, `d2vp.ini` auto-creation) shipped; d2boot.log quieted (diag probes retired). Builds: local Win11 `tools/build-local-win11.ps1` or CI (mingw-i686) → fat `d2.exe` + stripped `d2s-<sha>.exe` + DWARF map. **Branch history: this was `vanilla-plus` until the 2026-10-28 restructure moved it to `main`; the old fork-baseline `main` (`fd236ce` + README edits, tip `9d68dac`) is retired.** |
-| [`pr2/glide-renderer-fixes`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr2/glide-renderer-fixes) · [`pr3/mobs-drop-items`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr3/mobs-drop-items) · [`pr4/sound-except-intro`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/pr4/sound-except-intro) | Upstream-PR lines — what was proposed to jaenster/redivivus: PR #6 (glide, **closed by the maintainer 2026-10-27** — confirmed defects fixed in the Ghidra DB, land via the next export), drops, and the sound series (**upstream PR #10**, open, `Fixes #N` in place). The old [`jaenster-main`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/jaenster-main) CI-split line is retired (superseded by the merge era — `HISTORY.md` H2). |
-| [`Glide3xVK`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/Glide3xVK) | **Active development line — all glide3x / Vulkan / libslang-vk integration work happens here.** Wrapper tip `0.4.5` (`3a52553`). (Branch was `libslang-vk` until the 2026-10-28 restructure.) |
+| [`main`](https://github.com/VTSTech/D2LoD-libslang-vk) | **The d2.exe source line (default branch).** Byte-match charter (retail 1.14d Game.exe), Vanilla+ R-rounds (`Vanilla+0.0.6-R59` self-ID), mingw-w64 i686 PE builds. Built locally on the owner's Win11 box (`tools/build-local-win11.ps1`) — the standing "full build is the owner's gate" convention — and verified by the manual `tools/check-vanilla-plus.sh` suite (240/240). **Untouched by this plan**; the linux track must never break it. |
+| [`linux`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/linux) | **Active development line — this plan.** `d2linux`, the native ELF host. Milestone ladder in §5. |
+| [`Glide3xVK`](https://github.com/VTSTech/D2LoD-libslang-vk/tree/Glide3xVK) | The glide3x→Vulkan→libslang-vk wrapper line — complete at 0.4.5, shipped; maintenance only. The linux track does not depend on it (a native slang chain is a post-M5 stretch, §5). |
+| `pr2/…`–`pr5/…` | Upstream-PR lines to jaenster/redivivus (sound series = upstream PR #10, open). |
 
 Rules:
 
-- Every phase below (P1–P5) commits to `Glide3xVK` only.
-- `main` carries the game-source line directly (fork layout since the 2026-10-28
-  restructure; the old PR-from-wrapper-branch flow is retired); upstream-able
-  d2.exe fixes travel as a format-patch series onto upstream `main` (the route
-  proven on sound PR #10 — `handoff.md` §7).
-- The glide3x DLL lands as a new `glide3xvk/` subtree (§4), so the branch diff
-  stays reviewable.
+- Every phase below commits to `linux` only. The two tracks share the decompiled game source;
+  **any decomp translation-unit change made for Linux is `#ifdef`-guarded and must leave the PE
+  build byte-identical** (refereed by the PE gates + the owner's Win11 build; PE-line files
+  `FEATURES.md`, `SMOKE-CHECKLIST.md`, `check-vanilla-plus.sh`, `Application.cpp` self-ID are
+  not touched for Linux-only work).
+- **Delivery convention: overlay zips.** The sandbox holds no GitHub credentials — changes ship
+  as `download/<name>-overlay.zip` with a `README-FIRST.txt`; the owner applies them as their own
+  commits. No `.patch` files.
+- **Exec-bit hygiene:** git modes are commit properties, invisible from a Windows checkout; zip
+  round-trips cannot carry them. The canonical CI call is mode-immune —
+  `bash tools/check-build-linux.sh …` (build.yml). Mode audits go by
+  `git ls-tree HEAD tools/` (want `100755` for shell gates; 2026-10-31 audit: the bit never
+  landed on the canonical line — tree shows `100644` throughout; the bash prefix carries CI, so
+  this is cosmetic, not a defect).
 
 ---
 
 ## 1. Goal
 
-Run Diablo II: LoD 1.14d (Redivivus recovered source) with its final frame routed
-through libretro `.slangp` shader presets via **libslang-vk** (Vulkan), the same
-pattern proven in **chocolate-doom-vk** (Doom) and **DevilutionX-libslang-vk**
-(Diablo/Hellfire). Concretely: pick a preset (CRT Royale, etc.), launch the game,
-and every presented frame passes through the preset chain at up-scaled resolution
-with integer/fit scaling modes and hot-swappable presets.
+Run Diablo II: LoD 1.14d (Redivivus recovered source) as a **native Linux ELF binary that *is*
+the game host** — no Windows, no Wine, no PE. Concretely: `./d2linux` on an Ubuntu/GNOME Wayland
+session opens a decorated, resizable window and plays the game (single player first), with
+D2's own presentation model intact: 8-bit paletted surfaces composited by the host, retail
+22.05 kHz S16-stereo sound shape, and the game's 4:3 logical size letterboxed to the desktop.
 
-Non-goals for v1: Battle.net (upstream limitation), HD asset replacement,
-per-element game shaders (d2dx territory), Vulkanizing D2's internal 2D pipeline
-beyond what the Glide surface requires.
+Non-goals for this track: Battle.net (upstream limitation), byte-matching anything (impossible
+for a port — verification is behavioral), changing the PE line's charter, and re-porting the
+glide3x wrapper (the shader-preset chain is a stretch goal only after M5).
 
----
-
-## 2. Where we are (baseline)
-
-**Update 2026-10-27:** **CI is retired** (chronic 15-minute apt step-cap timeouts and a
-corrupted snapshot killed it after the merge era — `HISTORY.md` H2; `build.yml` is parked
-at the last working version `5931e15`, historical, not load-bearing). The authoritative
-build is **VTSTech's Win11 box** via `tools/build-local-win11.ps1` (consolidated by fix
-15): strict `-std=c++17`, zero `-fpermissive`, fat `d2.exe` + stripped `d2s-<sha>.exe` +
-DWARF linker map (still produced for crash symbolization). The agent sandbox holds **no
-mingw toolchain and no apt rights** — sandbox QA is diff review, patch round-trips and
-anchor-grep gates; the local Win11 build is the compile gate for everything. **Update 2026-10-28:** CI is back
-in service — mingw-i686 ran green on the 0.0.2 tag commit (`9cf9f69`) and ships the exe
-artifacts; and a llvm-mingw 20261020 toolchain now lives in the sandbox (`tools/llvm-mingw-*`),
-building the tree with exactly 11 documented pre-existing clang-strictness TU failures —
-sufficient for per-TU verification of every fix/feature round since fix 26 (the gcc full
-build remains the release gate).
+## 2. Where we are (baseline, 2026-10-31)
 
 | Item | Value |
 |---|---|
-| Build output | `build/d2.exe`, `pei-i386` (-g, no -O, per project policy; ~348 MB unstripped) |
-| Toolchain | `i686-w64-mingw32-g++` (GCC 13-win32) over ~514 TUs, GNU mingw-w64 headers — the same set CI used |
-| Why not llvm-mingw | clang 23 rejects the game tree: mingw-w64 header drift (`_EXCEPTION_DISPOSITION` enum vs project `typedef int`, missing `threadlocinfo`). GNU headers avoid all of it; zero source drift. Our DLL (`glide3xvk`) is a separate target and may use llvm-mingw freely. *(Update 2026-10-28: llvm-mingw now also builds the game tree for per-TU QA — 11 documented strictness TUs fail, everything else compiles; see §2 update.)* |
-| Sandbox recipe | historical (deb-extract into `~/.local/opt/mingw-root`) — `HISTORY.md` H7; recreate on demand only |
+| Artifact | `build-linux/d2linux`, native ELF (x86-64 today; **i386 when game code joins at M1**), ~4.2 MB, static SDL3 |
+| Toolchain | host gcc/clang + vendored SDL3 submodule `external/SDL` pinned **release-3.4.18** (gitlink `829a65d`) |
+| Arch policy | `D2LINUX_ARCH` default **i386** (`-m32`, what game code requires, needs multilib); `native` escape used by M0/CI/sandbox |
+| CI | one job, `linux-native` (ubuntu-24.04): full X11/Wayland dev set → configure → build → `--smoke` verdict, via `tools/check-build-linux.sh` (clean-clone mirror: temp clone → submodule init → configure → build → smoke) |
+| Field status | **M0 field-proven** on the owner's Ubuntu VM (Wayland/GNOME): banner `d2linux scaffold c8e8d54`, `d2linux smoke OK (3 frames, dummy video/audio)`, animated INDEX8 pattern, titlebar + resize without parameters after the libdecor build fix |
+| Sandbox | no GitHub creds (overlay-zip delivery), no X11 dev libraries — configure via `SDL_UNIX_CONSOLE_BUILD=ON` console path; full configure+build+smoke end-to-end is proven |
 
----
+How M0 got there — three CI defect rounds, each root-caused **in-source** (not flakiness):
 
-## 3. The seam: the game still speaks Glide 3 through a replaceable DLL
+1. **exit 126 / Permission denied** — the scaffold recorded the gate scripts as git mode
+   `100644`; the exec bit is a commit property and cannot be set from a Windows checkout.
+   Fixed for CI by the mode-immune `bash` prefix (content fix), documented for later canonical
+   recording.
+2. **SDL3 XTEST configure fatal** — vendored `external/SDL/cmake/sdlchecks.cmake` treats a
+   missing X11 sub-feature as fatal (first one: XTEST). `libxtst-dev` was the only gap vs
+   SDL3's README-linux build-dep set (XRender arrives via `libxcursor-dev`; SDL3 vendors its
+   Wayland protocols; pulse/jack/KMSDRM disable non-fatally).
+3. **Bare window on GNOME Wayland** — `SDL_VIDEODRIVER=x11` showed a titlebar, plain Wayland
+   did not → `SDL_WAYLAND_LIBDECOR` is a **soft build-time dep**: without `libdecor-0-dev` SDL3
+   compiles with no decoration support at all (WARNING-only), and Mutter offers no server-side
+   xdg-decoration fallback (KDE does). Fixed by adding `libdecor-0-dev` to the runner apt set.
 
-Reverse-engineering the renderer dispatch turned up the ideal integration point —
-**no generated game code needs to change**:
+## 3. The seam: the game still assumes Win32; the host replaces the platform layer
 
-- `D2Client/Renderer/Glide.cpp` → `RENDERER_GLIDE_LoadLibrarySymbols()` does
-  `LoadLibraryA("glide3x.dll")` and resolves **45 stdcall exports**
-  (`_grBufferSwap@4`, `_grSstWinOpen@28`, `_grDrawVertexArrayContiguous@16`, ...).
-  A missing export halts via `ErrorManager` with a per-symbol line code.
-- `D2Client/Renderer/Glide.cpp::Initialize()` gates on `grGet(0xf, ...)` — the
-  game requires **secondary TMU count ≥ 1** before accepting the Glide renderer.
-- The whole renderer is classic fixed-function Glide: palette-indexed 8-bit
-  textures (`grTexDownloadMipMap`, `grTexDownloadTable` palettes), quad/line/point
-  submits (`grDrawVertexArrayContiguous` — vertex stride 0x1C, `D2GlideVertexStrc`:
-  x, y, ARGB color, oow, s, t, w), combine/blend state machines
-  (`grColorCombine`/`grAlphaCombine`/`grAlphaBlendFunction`), clip window, gamma
-  (`guGammaCorrectionRGB`), and LFB access (`grLfbLock`/`grLfbUnlock`).
-- Frame structure (see `D2Glide/Renderer/Glide.cpp`): `BeginScene` → draw calls →
-  `EndScene1`/`EndScene2` → `grBufferSwap(vsync)`. Cutscenes (Smacker/Bink) draw
-  through the same vertex path.
-- In-tree `D2Glide/` (glBlocks, glTextureCache, glFloorCache, glSubtileCache,
-  Renderer/Glide.cpp) is the **behavioral spec** for exactly how D2 uses the API:
-  which combine modes occur, how LOD/aspect are picked, how palettes ride along.
+The decompiled tree is Windows-PE-shaped by construction. The port seam is the same one the
+PE line's own layering already draws — D2 speaks DirectDraw/DirectSound/Winsock/registry/SEH
+to the outside world, and `d2_platform.h` models the 32-bit MSVC x86 ABI it was recovered
+against (byte-annotated struct offsets carry embedded 4-byte pointers — on x86-64 every
+pointer-bearing struct changes layout and game state corrupts; hence the i386 charter, §5/§7).
 
-This is the **d2dx architecture** (bayaraa/d2dx ships a Glide→D3D11 wrapper DLL
-for D2, MIT-licensed — primary prior art for API semantics), upgraded: instead of
-D3D11, our `glide3x.dll` implements Glide on Vulkan and threads the final frame
-through libslang-vk before present.
+The M0 skeleton already proves the presentation half of the seam: **INDEX8 palettized staging
+surface → palette lookup → XRGB8888 streaming texture upload → letterboxed logical present** is
+exactly DirectDraw's surface/palette model carried onto SDL3's renderer, and SDL3's
+device-stream audio maps DirectSound mixing directly. What remains is the shim work of M1–M3
+(§6), not a renderer redesign.
 
-**Why not alternatives:**
-
-- *New in-tree Vulkan renderer module*: the renderer contract
-  (`D2RendererFunctionsStrc`) is large (draw tiles/sprites/shadows, lighting,
-  cutscenes, LFB, window mgmt) and the tree is machine-regenerated — every
-  hand-edit risks upstream regen conflicts. Rejected for now.
-- *Wrap an existing glide3x (OpenGlide/nGlide) and filter only at present*:
-  adds a third renderer dependency and GL readback hops; nGlide is closed-source.
-  Rejected — we control the whole path instead.
-- *Post-present DDraw/Direct3D hook*: D2's DDraw path is 8-bit paletted and
-  low-level; the Glide path is the cleanest documented contract (45 named exports,
-  in-tree behavioral spec). Rejected.
-
----
+Prior art for the shape: the same house pattern as the wrapper line — a self-contained
+host binary, fail-soft subsystems, a headless self-test (`--smoke`) as the CI verdict.
 
 ## 4. Architecture
 
 ```
-+------------------------------------------------------------+
-| d2.exe (Redivivus, unchanged)                              |
-|   D2Client::Renderer::Glide  ---- LoadLibraryA ------------|--.
-+------------------------------------------------------------|  |
-                                                             v  |
-+------------------------------------------------------------+--+
-| glide3x.dll  (ours, i686, stdcall exports; subdir glide3xvk/ in fork)  |
-|                                                                |
-|  Glide3 API surface (45 exports) -> GlideState machine         |
-|      |                                                         |
-|      v                                                         |
-|  VK raster backend:                                            |
-|    - palette-indexed textures (8bpp index + palette LUT)       |
-|    - pipeline variants per combine/alpha/chromakey state       |
-|    - quads/tris/lines/points -> offscreen RGBA8 frame image    |
-|      |  (game res: 640x480 / 800x600, per nResolutionMode)     |
-|      v                                                         |
-|  Present pass (per grBufferSwap):                              |
-|    slangvk_chain_render_swapchain(chain, in=frame, out=swap)   |
-|    -> libretro .slangp chain -> swapchain on game HWND         |
-|    -> vkQueuePresentKHR                                        |
-+------------------------------------------------------------+---+
-                                                             |
-                                             libslang-vk (static, C API)
-                                             volk loads vulkan-1.dll (32-bit)
++------------------------------------------------------------------+
+| d2linux (native ELF; i386 game code + host shims from M1)        |
+|                                                                  |
+|  game TUs (Redivivus decomp, #ifdef D2LINUX_GUARDED edits)       |
+|      |  DirectDraw / DirectSound / Winsock / registry / SEH       |
+|      v                                                           |
+|  platform/linux shims (this track's code)                        |
+|    - video:  INDEX8 surface + palette -> streaming texture       |
+|              -> letterboxed logical present (M0-proven path)     |
+|    - audio:  22.05 kHz S16-stereo device stream (M0: silence)    |
+|    - M1+:    sockets, signals+backtrace, file-backed registry,   |
+|              input, CRT odds and ends                            |
+|      |                                                           |
+|      v                                                           |
+|  SDL3 (static, vendored release-3.4.18)                          |
+|    Wayland + libdecor / X11 / ALSA backends dlopen'd at runtime  |
++------------------------------------------------------------------+
 ```
 
 Key properties:
 
-- **Zero game-source drift.** The DLL is a separate CMake target in a new
-  `glide3xvk/` directory (globbed into the build automatically by the root
-  CMakeLists — actually better: own `glide3xvk/CMakeLists.txt` producing
-  `glide3x.dll`, kept out of the `d2` glob via the existing build-dir/regex
-  excludes or a `.gitignore`-style filter). Upstream regens stay pain-free.
-- **GPU-resident frame, no readback.** In the full implementation, D2's quads
-  render into an offscreen image whose view feeds `slangvk_input_frame` directly
-  (SHADER_READ_ONLY layout per libslang-vk contract). `grBufferSwap` becomes:
-  chain render → present. No CPU round-trip.
-- **libslang-vk owns Vulkan init** via `slangvk_device_create`
-  (headless-friendly; loads the runtime through volk — no Vulkan SDK at build
-  time), `slangvk_device_get_handles()` for swapchain creation in `grSstWinOpen`.
-  Presets compile at runtime through the embedded glslang — no slang SDK either.
-- **Fail-soft present.** If Vulkan is unavailable (no 32-bit loader/ICD), the DLL
-  still loads and presents the raw frame (unfiltered, scaled) so the game remains
-  playable; presets simply don't engage. Config flag controls the fallback.
+- **Self-contained binary.** Static SDL3 (`SDL_SHARED OFF` → `SDL3::SDL3-static`), same
+  self-contained ethos as the PE line's `-static` link; backends are dlopen'd at runtime, so
+  no -dev packages are needed to *run* it (GNOME Wayland needs `libdecor-0-0` +
+  `libdecor-0-plugin-1-gtk` installed for decorations; `SDL_VIDEODRIVER=x11` is the escape hatch).
+- **Fail-soft subsystems.** Audio absence is non-fatal (M0 ships silence); video failure is
+  fatal with a diagnosed reason; `--smoke` forces the SDL `dummy` drivers so the self-test runs
+  display-less anywhere (CI, WSL, containers).
+- **The pattern producer is scaffolding.** `d2_linux_video.cpp`'s animated moiré exists to prove
+  the present pipeline; M2 replaces it with the game's composed 8-bit frame. Nothing in the
+  shim API assumes it stays.
+- **Zero PE drift.** `platform/linux/build.cmake` routes only on `UNIX AND NOT APPLE` and
+  `return()`s before the PE target graph; the Windows guard is untouched for Win32 builds.
 
-### Present-pass frame loop (libslang-vk C API, verbatim contract)
+## 5. Milestone ladder
 
-```c
-/* once per mode change (grSstWinOpen / resolution switch) */
-slangvk_chain_create(dev, preset, SWAP_W, SWAP_H, swap_format, &chain);
+| M | Scope | Status |
+|---|---|---|
+| **M0 — scaffold** | SDL3 host skeleton: window + renderer, INDEX8 staging surface + palette + streaming-texture present, letterboxed logical presentation, 22.05 kHz S16-stereo silence feeder, d2boot-style self-ID banner, headless `--smoke`; CI job `linux-native` | **FIELD-PROVEN** (owner VM `c8e8d54`; pattern + smoke + Wayland titlebar/resize) |
+| **M1 — game logic compiles on Linux i386** | The shim layer (§6): Winsock→BSD sockets, SEH/VEH→signals (+ `libbacktrace` elf path), registry→file-backed, remaining CRT bits; CMake source list grows game TUs; CI switches to `-DD2LINUX_ARCH=i386` with multilib; first gates added (gates follow when game TUs join the build) | next |
+| **M2 — title screen offline** | MPQ loading via the vendored Storm, one renderer path onto the M0 presentation surface (pattern producer retired), input shim; cinematics stubbed | |
+| **M3 — playable offline** | Single player end to end; DirectDraw/D2Sound shims complete; palette-ramp lighting verified visually | |
+| **M4 — codecs** | binkw32→ffmpeg-based shim (long pole), smackw32→libsmacker, ijl11→libjpeg | |
+| **M5 — networking** | Full Winsock surface, Bnclient paths | |
+| stretch | Native slang preset chain (the wrapper line's payoff, linux-side), packaging (AppImage/deb), 720p+ UI follow-ups | |
 
-/* per grBufferSwap */
-slangvk_input_frame in = {.view=frame_view, .format=VK_FORMAT_R8G8B8A8_UNORM,
-                          .width=GAME_W, .height=GAME_H};
-slangvk_swapchain_frame out = {.swapchain_image_view=swap_views[idx],
-                               .format=swap_format, .width=SWAP_W, .height=SWAP_H,
-                               .acquire_semaphore=acq_sem};
-slangvk_frame_info fi = { frame_count++, delta_us, +1 };
-slangvk_chain_render_swapchain(chain, &in, &out, &fi); /* sync + fenced */
-vkQueuePresentKHR(...);
-```
+## 6. Work breakdown
 
----
+### M1 — i386 game logic + shim layer *(next; the meat)*
+- Inventory pass: enumerate the Win32 surface the first playable slice actually needs
+  (sockets touched? registry keys read at boot? which SEH sites?) before writing shims —
+  the decomp's `d2_platform.h` and the PE line's `support/` code are the map.
+- Socket shim: Winsock → BSD sockets (handles are fds; `closesocket`→`close`,
+  `WSAGetLastError`→`errno` mapping table).
+- Exception shim: SEH/VEH → signal handlers + `libbacktrace` for the elf crash path
+  (the PE's `d2crash-*.txt` reporter gets a linux twin).
+- Registry shim: file-backed store under `~/.config/d2linux/` (or `-registry` switch);
+  video-mode keys are the known first readers.
+- CRT bits: whatever the game TUs actually reference beyond what glibc provides
+  (`-m32` + glibc covers most; inventory first, no speculative shims).
+- CMake: grow the source list incrementally (5–10 TUs per step, each step keeps
+  `--smoke` and the PE gates green); CI flips to `i386` + `gcc-multilib g++-multilib`.
+- Exit: the chosen game TUs compile and link i386, `d2linux --smoke` still green, PE
+  gates still 240/240 on the shared-TU diff.
 
-## 5. Work breakdown
+### M2 — title screen offline
+- Storm/MPQ: vendored Storm opens the MPQs from the game dir; file-API shim routes the
+  game's opens through it; missing-MPQ is a clean diagnosed error, not a crash.
+- Renderer: the game's composed 8-bit frame lands in the M0 INDEX8 surface — palette-ramp
+  and all; the pattern producer is deleted.
+- Input: keyboard + mouse through SDL events into the game's input path; window close = quit.
+- Cinematics: stubbed to skip.
+- Exit: title screen renders, main menu navigable, character select visible.
 
-**Phase status (2026-10-27):**
+### M3 — playable offline
+- Complete the DirectDraw surface semantics the game really uses (locks, blits, palette
+  ramps) and the D2Sound device-stream path (mixer fed from game, not silence).
+- Exit: a single-player session — menu → new character → Act 1 outdoors/indoors → combat →
+  save/exit — visually correct against the PE build on the same save, ~60 fps.
 
-| Phase | Status |
-|---|---|
-| P1 — Skeleton DLL + Vulkan bootstrap | **Done** — `glide3xvk` boots the game to the menu; proven on real hardware; the libslang-vk i686 spike resolved on the gcc path. |
-| P2 — Glide raster core | **Done** — palette-indexed textures, combine/alpha pipeline variants, fans/quads, LFB, cutscenes render in-game (0.4.x line). |
-| P3 — libslang-vk preset chain | **Done** — the 0.4.5 wrapper carries window presets, the slang chain, controller support and base_res (tip `3a52553`). |
-| P4 — Hardening + packaging | **Partial** — releases `D2LoD-Vanilla-Plus-0.0.1`/`0.0.2` ship the drop-in (Glide3xVK 0.4.5; the 0.0.2 7z bundles client + wrapper + launcher/debug scripts); still open: the d2crash + wrapper ring-buffer hook, an export-check gate for the DLL (was a CI step — re-home as a local-build check), and the 0.0.2 script-name swap (`Launch.cmd` installs shaders / `install_shaders.cmd` launches — fix before the next packaging run). |
-| P5 — Stretch | Open. |
+### M4 — codecs
+- binkw32 → ffmpeg-based shim (long pole — schedule it as its own round), smackw32 →
+  libsmacker, ijl11 → libjpeg.
+- Exit: intro and in-game cinematics play.
 
-The d2.exe side of the house moved in parallel and is fully green: the glide fix chain
-(1–13) that de-risked P2's assumptions about what the game actually submits, the drops
-fix (14), and the sound series (15–16 — dead-hwnd music binding, Ghidra FP bit-pattern
-constants, float-storage punning of integer out params) are all closed and
-field-verified on `vanilla-plus`. The sound series is upstreamed as jaenster/redivivus
-**PR #10** (open; `Fixes #N` in place); PR #6 (the glide chain) was **closed by the
-maintainer** — the confirmed defects were fixed in the Ghidra DB and arrive with the
-next upstream export (vanilla-plus holds its defect-2/defect-4 fixes until post-export
-re-verification). Releases: **`D2LoD-Vanilla-Plus-0.0.1`** from `4857c30` (known issue then: fullscreen Direct3D
-broken — `-3dfx` fullscreen and `-w` work in all modes) and **`D2LoD-Vanilla-Plus-0.0.2`** from
-`9cf9f69` — the D3D recovery (fixes 17–27, HISTORY H18) closed that known issue and shipped the
-first opt-in feature (alt-key item-label toggle + auto-created `d2vp.ini`, HISTORY H19). Live
-task list: `handoff.md` §9.
+### M5 — networking
+- Full Winsock surface; Bnclient paths compile and link (open play / TCP as the target;
+  Battle.net stays out of scope).
+- Exit: LAN/TCP open game joins between the linux build and the PE build.
 
-### P1 — Skeleton DLL + Vulkan bootstrap  *(de-risk first)*
-Deliver `glide3x.dll` that loads in the game, opens a swapchain, clears black,
-presents — game reaches the menu with a black screen and no crash.
-
-- Export all 45 symbols with correct stdcall decorations; implement state
-  tracking stubs; correct `grGet` (TMU count ≥ 1), `grGetString`, `grGetProcAddress`.
-- `grSstWinOpen`: take the game's HWND → volk init → `slangvk_device_create` →
-  surface + swapchain (32-bit!). `grBufferSwap`: acquire/present (unfiltered).
-- **Spike (gate for everything): build libslang-vk itself as i686 Windows**
-  with the sandbox mingw toolchain (C++23 on gcc-13 i686; static `slangvk`
-  target + vendored volk/VMA). Fallbacks if C++23 gaps appear: compile the
-  library as C++20 with pinned features, or build a 32-bit C shim against a
-  reduced core. Record findings in `glide3xvk/BUILD-32BIT.md`.
-- **Open question to resolve:** how 1.14d exposes the Glide video mode to the
-  user (video test app, registry `VideoConfig`, command-line switch). The loader
-  path exists in-source; find what selects it (trace `Initialize` callers, check
-  `d2vidtst` equivalents; d2dx docs describe 1.14d specifics).
-- Exit: game boots, menu UI invisible but present (nothing rasterized yet),
-  clean log, crash-free 5-minute idle in menu.
-
-### P2 — Glide raster core  *(the meat)*
-Render what D2 actually draws, unfiltered, through the new backend.
-
-- Texture path: `grTexDownloadMipMap`/`grTexSource` uploads as 8bpp index
-  textures + `grTexDownloadTable` palette LUTs; shader does `palette[idx]`
-  lookup; TMU memory emulation kept minimal (the game addresses TMU like Voodoo
-  but we can hash-allocate; in-tree `glTextureCache` shows usage).
-- State machine: map `grColorCombine`/`grAlphaCombine`/`grAlphaBlendFunction`/
-  chromakey/depth/dither onto pipeline variants (enumerate the exact states the
-  game sets — bounded set; spec = in-tree D2Glide + d2dx).
-- Geometry: `grDrawVertexArrayContiguous` quads/tris/fans, `grDrawLine/Point`;
-  clip window; `D2GlideVertexStrc` layout (stride 0x1C) direct as vertex input.
-- Special cases: LFB lock/unlock (fades, screenshots) → linear views over the
-  frame image; gamma via `guGammaCorrectionRGB` (fold into present pass);
-  Smacker cutscene quads.
-- Exit: single-player session — menu, character select, a few acts' outdoor +
-  indoor areas, combat, cutscene — visually correct vs original (screenshot
-  diffs), 60 fps at 640x480 on RX 560.
-
-### P3 — libslang-vk preset chain
-The payoff. Everything above already runs through our swapchain.
-
-- Offscreen frame image feeds `slangvk_input_frame`; chain created per preset at
-  startup; resolution changes (video mode switch, cutscenes) →
-  `slangvk_chain_resize` / chain recreate.
-- Scaling modes: integer, fit (letterbox, `output_rect` all-zero default), stretch.
-- Preset management: `d2slangvk.conf` (preset path, scale mode, vsync override,
-  fallback behavior); hot-reload preset on file change (chain recreate).
-- Exit: CRT Royale + a scanline + a simple sharpening preset run live in-game at
-  1440p/4K output from 640x480 input; preset hot-swap works; frame cost measured.
-
-### P4 — Hardening + packaging
-- Failure paths: no Vulkan → unfiltered present; device lost → libslang-vk's
-  recovery path (SLANGVK_ERR_DEVICE_LOST_RECOVERY_FAILED handling); alt-tab,
-  windowed mode (`-w`), resolution changes.
-- Crash reporting: hook the fork's VEH crash reporter (`support/d2_crash.cpp`,
-  `d2crash-*.txt` — lives on `master`, see §0) to include the DLL's
-  last-N-Glide-calls ring buffer.
-- Packaging: drop-in zip (`glide3x.dll` + `presets/` + `d2slangvk.conf`) laid
-  over a D2 install; README with video-mode instructions.
-- CI: extend the fork's `tools/check-build.sh` pattern with a `check-glide3x.sh`
-  (build DLL, verify exports present via objdump, link-check); agent sandbox
-  build-only smoke (no ICD in CI).
-
-### P5 — Stretch
-- Per-preset retro CRT curvature/geometry defaults per D2's 4:3 vs wide hacks.
-- `grLfbWriteMode` screen-capture compatibility (F9 screenshot stays paletted-correct).
-- Revisit an in-tree renderer only if Glide-surface limitations bite.
-
----
-
-## 6. Risk register
+## 7. Risk register
 
 | # | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| R1 | libslang-vk C++23 doesn't build i686-mingw gcc-13 | Med | High (blocks all) | P1 spike first; fallbacks: C++20 core / reduced core / clang the DLL only (llvm-mingw is fine for OUR DLL — header drift only affects the game tree, not a fresh library) |
-| R2 | No 32-bit Vulkan loader/ICD on VTSTech's box | Low | Med | 32-bit vulkan-1.dll ships with modern GPU drivers (verify on RX 560 early); fail-soft unfiltered present regardless |
-| R3 | 1.14d doesn't expose Glide video mode in UI | Med | Med | Registry/video-test investigation in P1; d2dx documents 1.14d Glide selection; worst case a tiny d2vidtst-style selector or conf-forced mode |
-| R4 | Glide state semantics subtly wrong (combine functions) | Med | Med | In-tree D2Glide is a complete usage spec; d2dx as prior art; screenshot-diff loop vs original renderer in P2 |
-| R5 | Optimized codegen breaks decompiled game code | — | — | Non-issue: project policy pins -O0/-g; our DLL may optimize freely (separate target) |
-| R6 | TMU memory emulation complexity | Low | Low | Game's usage bounded by in-tree caches; allocate-on-upload + LRU eviction is enough (grTexMinAddress/MaxAddress answered generously) |
+| R1 | 64-bit build corrupts game state (pointer-bearing struct layouts) | certain if tried | High | The i386 charter — `D2LINUX_ARCH=i386` default, `-m32` probe FATALs with the multilib hint; `native` exists only for the M0 skeleton/CI |
+| R2 | MSVC-isms run deeper than inventoried (SEH scope, `__declspec`, inline asm) | Med | Med | Inventory-first rule (§6 M1); shims grow only at named call sites; each step keeps CI green |
+| R3 | SDL3 backend drift (hard vs soft configure deps) | — | — | Retired as a live risk: all three defect rounds root-caused in-source; the apt set + hard/soft table live in `docs/linux-port.md` and build.yml comments; libdecor field-proven |
+| R4 | Linux-only edit regresses the PE line | Low | High | `#ifdef` discipline (PE-identical when the guard is off), PE files untouchable (rule 2), referee = manual 240/240 gate suite + owner's Win11 build; CI on this branch carries no PE job by design |
+| R5 | Multilib toolchain absent on a builder | Low | Med | CI installs `gcc-multilib g++-multilib` at M1; `D2LINUX_ARCH=native` remains the no-multilib escape for skeleton work |
+| R6 | Audio fidelity (device-stream vs DirectSound mixing semantics) | Med | Med | Fail-soft until M3; M3's exit criteria include a listening pass on real hardware |
+| R7 | CI runtime creep (temp clone + submodule init per run) | Low | Low | Shallow clone + `cancel-in-progress` concurrency already in build.yml; the smoke verdict runs in minutes today |
+| R8 | git mode drift from Windows-side commits (exec bits silently lost) | certain (observed) | Low | Cosmetic by construction: CI calls gates through `bash`; mode audits by `git ls-tree` only (§0); no Windows-side re-chmod rituals |
 
----
+## 8. Test plan
 
-## 7. Test plan
+- **Sandbox (agent):** configure + build against the vendored SDL via the console path
+  (`SDL_UNIX_CONSOLE_BUILD=ON` — no X11 dev libs in the container), `d2linux --smoke`
+  headless, diff review + anchor greps, overlay-zip round-trips with `git ls-tree` mode
+  checks. No GitHub push; the owner applies overlays.
+- **CI (`linux-native`, ubuntu-24.04):** the automated gate — full X11/Wayland dev set,
+  real configure (both backends detected), build, `--smoke` verdict grep. This is the only
+  CI job on the branch; PR/paths-ignore rules unchanged from the house workflow.
+- **Owner's Ubuntu VM (authoritative field pass):** real Wayland/GNOME session — banner,
+  smoke, pattern, decorations, resize, ESC quit. Runtime needs: none beyond
+  `libdecor-0-0` + `libdecor-0-plugin-1-gtk` on GNOME (static SDL3 dlopens the rest);
+  `SDL_VIDEODRIVER=x11` as the escape hatch. Windows owner note: the skeleton runs under
+  WSL2/WSLg; `--smoke` runs anywhere.
+- **PE gates (shared-source referee):** `tools/check-vanilla-plus.sh` manual suite (240/240)
+  re-run on every round that touches a shared TU; the owner's local Win11 llvm-mingw build
+  stays the PE compile gate.
 
-- **Sandbox (agent):** static QA only — patch round-trips, anchor-grep gates,
-  diff review, export-table reads of DLLs the user supplies. No local build
-  (no mingw, no apt; recreate per `HISTORY.md` H7 only if a sandbox build
-  becomes unavoidable). The headless slangvk smoke (lavapipe per
-  `libslang-vk/benchmarks/README.md`) and the 2,658-preset corpus parse bench
-  are recreate-on-demand for wrapper work.
-- **VTSTech VM (Ubuntu 26.04, VirtualBox):** optional cross-build parity
-  (`apt install g++-mingw-w64-i686`) and a wine smoke test (Vulkan via
-  lavapipe) — menus only.
-- **Real hardware (Win11 + RX 560):** the authoritative pass per phase exit
-  criteria; frame-time capture at 640x480→1440p; preset sweep with the corpus.
+## 9. References
 
-## 8. References
-
-- libslang-vk: `include/slangvk/c.h` (whole integration on one page), `USAGE.md`,
-  `benchmarks/README.md` (lavapipe recipe), `corpus/` (preset pack).
-- d2dx (bayaraa): Glide→D3D11 wrapper for D2 — API semantics prior art (MIT).
-- In-tree spec: `D2Client/Renderer/Glide.cpp` (loader, 45 exports),
-  `D2Glide/Renderer/Glide.{h,cpp}` + `gl*Cache` (usage patterns),
-  `D2Client/Renderer/Renderer.h` (renderer contract typedefs).
-- chocolate-doom-vk, DevilutionX-libslang-vk: house precedents for the present-pass
-  pattern and preset UX.
-- House state docs: `VANILLA-PLUS.md` (branch charter), `handoff.md` (current state +
-  live tasks) + `HISTORY.md` (closed record), `/home/z/my-project/worklog.md` (journal).
-- Upstream: jaenster/redivivus PR #10 (sound series — open, `Fixes #N` in place);
-  PR #6 (glide) closed by the maintainer 2026-10-27 — defect fixes return via the next
-  Ghidra export; fork releases `D2LoD-Vanilla-Plus-0.0.1`/`0.0.2`.
+- `docs/linux-port.md` — track charter: mission split, i386 rationale, SDL3 rationale, the
+  milestone ladder, build/runtime requirements, track rules (read this first).
+- `handoff.md` — Rev journal (Rev 71 = scaffold, Rev 72 = M0 field-proven + CI shape change,
+  Rev 73 = this plan), live task list §9. `HISTORY.md` / `VANILLA-PLUS.md` — the PE + wrapper
+  record (closed lines).
+- `.github/workflows/build.yml` — the `linux-native` job (apt set with per-package rationale
+  comments, bash-prefixed gate call, concurrency rule).
+- `tools/check-build-linux.sh` — clean-clone CI mirror (temp clone → submodule init →
+  configure → build → smoke); `tools/check-vanilla-plus.sh` — the PE gate suite.
+- `platform/linux/` — `build.cmake` (routing + arch probe + SDL3 resolution), `d2_linux.h`,
+  `d2_linux_main.cpp` (banner, `--smoke`), `d2_linux_video.cpp` (present pipeline),
+  `d2_linux_audio.cpp` (silence feeder).
+- SDL3: vendored submodule `external/SDL` @ `829a65d` (release-3.4.18); its
+  `cmake/sdlchecks.cmake` is the ground truth for hard-vs-soft configure deps;
+  `README-linux.md` is the build-dep checklist.
+- House precedents: chocolate-doom-vk / DevilutionX-libslang-vk (host-binary pattern);
+  the Glide3xVK wrapper (self-contained static-link ethos, fail-soft subsystems, self-test
+  as CI verdict).
