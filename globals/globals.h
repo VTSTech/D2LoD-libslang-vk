@@ -3681,7 +3681,7 @@ extern D2FogArchiveStrc * MPQ_d2music;
 extern D2FogArchiveStrc * MPQ_d2Xvideo;
 extern D2FogArchiveStrc * MPQ_patch_d2;
 extern D2FogArchiveStrc * MPQ_d2exp;
-extern uint32_t gnPaletteGammaShiftState;
+extern int gnPaletteGammaShiftState;
 extern uint8_t gnPaletteIndexCounter[39]; // [vanilla-plus fix 24b, merged: true extent 39B = 9 PALETTEENTRY + 3B manual triple; upstream form kept]
 extern uint8_t gPaletteTransposeBase[3328];
 extern uint8_t gPaletteMenuInGame[256];
@@ -3790,7 +3790,7 @@ extern int gnGlideSecondaryTMUCount[2];
 extern uint32_t ghGlideWindow;
 extern uint32_t gbGlideInitialized;
 extern uint32_t gbPlayingCutScene;
-extern uint32_t gbWINDOWED;
+extern int gbWINDOWED;
 extern uint32_t gnGlideColorCombineMode;
 extern uint32_t gnGlideAlphaBlendMode;
 extern uint32_t gnGlideTextureFilteringMode;
@@ -4760,7 +4760,7 @@ extern uint32_t AutoMapLeft3;
 
 namespace D2Game::GAME::Rendering {
 
-extern uint32_t CurrentRendingEngine;
+extern int CurrentRendingEngine;
 
 } // namespace D2Game::GAME::Rendering
 

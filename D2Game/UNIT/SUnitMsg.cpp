@@ -135,7 +135,8 @@ void __fastcall PLAYER_InitBaseStats(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxstamina, nStatValue, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, 1, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(pUnit->nClassId, 1), 0);
+    uint16_t nLayer = 0;
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(pUnit->nClassId, 1), nLayer);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_attackrate, 100, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_velocitypercent, 100, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_other_animrate, 100, 0);
@@ -170,7 +171,8 @@ void __fastcall UpdateGameInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     uint32_t nExperience = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_experience, 0);
     int nNewLevel = D2Common::DATATBLS::DataTbls::DATATBLS_GetLevelFromExperience(nCurHp, nExperience);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, nNewLevel, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, nNewLevel), 0);
+    uint16_t nLayer = 0;
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, D2Common::DATATBLS::DataTbls::TXT_Experience_GetLineLevel(nCurHp, nNewLevel), nLayer);
     int nLevelDelta = nNewLevel - nCurrentStat;
     if (nLevelDelta <= 0) {
       return;
@@ -217,8 +219,8 @@ void __fastcall UpdateGameInfo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     (**ppfnUpdateGameInfo)((uint32_t)pGame->nServerToken, (int)nLevelDelta_00);
 }
 
-static void PLAYER_AddEnergyStatPoints(D2UnitStrc * pUnit, int32_t nParam) {
-    if (!(nParam && pUnit)) {
+static void PLAYER_AddEnergyStatPoints(D2UnitStrc * pUnit, int32_t nPoints) {
+    if (!(nPoints && pUnit)) {
       return;
     }
 
@@ -232,13 +234,13 @@ static void PLAYER_AddEnergyStatPoints(D2UnitStrc * pUnit, int32_t nParam) {
       return;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nParam, 0);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_energy, nParam, 0);
-    if (nParam > 0) {
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_mana, (uint32_t)(uint8_t)pCharStats->ManaPerMagic * nParam * 0x40, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nPoints, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_energy, nPoints, 0);
+    if (nPoints > 0) {
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_mana, (uint32_t)(uint8_t)pCharStats->ManaPerMagic * nPoints * 0x40, 0);
     }
 
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxmana, (uint32_t)(uint8_t)pCharStats->ManaPerMagic * nParam * 0x40, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxmana, (uint32_t)(uint8_t)pCharStats->ManaPerMagic * nPoints * 0x40, 0);
     nCharClassId = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxmana, 0);
     int nCurMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
     if (nCurMana <= nCharClassId) {
@@ -249,8 +251,8 @@ static void PLAYER_AddEnergyStatPoints(D2UnitStrc * pUnit, int32_t nParam) {
 }
 
 // Spends nParam stat points into Vitality: decrements statpts by nParam, adds nParam to vitality, adds LifePerVitality*nParam*64 to maxhp (and to current HP if nParam>0, capped at maxhp), and adds StaminaPerVitality*nParam*64 to maxstamina (and stamina if nParam>0, capped). Uses CharStats.txt per-vitality multipliers.
-static void PLAYER_AddVitalityStatPoints(int32_t nParam, D2UnitStrc * pUnit) {
-    if (!(nParam && pUnit)) {
+static void PLAYER_AddVitalityStatPoints(int32_t nPoints, D2UnitStrc * pUnit) {
+    if (!(nPoints && pUnit)) {
       return;
     }
 
@@ -264,11 +266,11 @@ static void PLAYER_AddVitalityStatPoints(int32_t nParam, D2UnitStrc * pUnit) {
       return;
     }
 
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nParam, 0);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_vitality, nParam, 0);
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxhp, (uint32_t)(uint8_t)pCharStats->LifePerVitality * nParam * 0x40, 0);
-    if (nParam > 0) {
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_hitpoints, (uint32_t)(uint8_t)pCharStats->LifePerVitality * nParam * 0x40, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_statpts, -nPoints, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_vitality, nPoints, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxhp, (uint32_t)(uint8_t)pCharStats->LifePerVitality * nPoints * 0x40, 0);
+    if (nPoints > 0) {
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_hitpoints, (uint32_t)(uint8_t)pCharStats->LifePerVitality * nPoints * 0x40, 0);
     }
 
     nMaxStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxhp, 0);
@@ -277,9 +279,9 @@ static void PLAYER_AddVitalityStatPoints(int32_t nParam, D2UnitStrc * pUnit) {
       D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, nMaxStat, 0);
     }
 
-    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxstamina, (uint32_t)(uint8_t)pCharStats->StaminaPerVitality * nParam * 0x40, 0);
-    if (nParam > 0) {
-      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_stamina, (uint32_t)(uint8_t)pCharStats->StaminaPerVitality * nParam * 0x40, 0);
+    D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_maxstamina, (uint32_t)(uint8_t)pCharStats->StaminaPerVitality * nPoints * 0x40, 0);
+    if (nPoints > 0) {
+      D2Common::Stats::StatsEx::STATLIST_AddUnitStat(pUnit, UNITSTAT_stamina, (uint32_t)(uint8_t)pCharStats->StaminaPerVitality * nPoints * 0x40, 0);
     }
 
     nMaxStat = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxstamina, 0);

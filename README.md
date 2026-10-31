@@ -157,12 +157,26 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **205 checks**, green at the current tip.
+  telemetry) with **252 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README.
 
 ## Crash reports
+[`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
+compares the machine code of each function with 1.14d. It is a check on the decompilation:
+where the code comes out identical, the decompiled function was read correctly.
+At this commit, generated from version 1781 of the Ghidra database:
+
+|Measure|Identical machine code|
+|-|-|
+|Functions|5,697 of 14,812 (38.5%)|
+|Code|394,199 of 2,555,443 bytes (15.43%)|
+
+These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
+rebuild links a runtime instead of reconstructing it. Over the whole binary, runtime
+included: 6,052 of 15,521 functions (39.0%), 445,194 of
+2,678,537 bytes (16.62%).
 
 A decompiler-reconstructed rebuild will keep yielding single-wrong-type crashes upstream
 hasn't hit yet. To attribute a crash correctly, collect **both** artifacts from one repro:
@@ -177,6 +191,12 @@ Rule of thumb: faulting frame in `glide3xvk`/`vk_backend`/slang → wrapper issu
 game-source issue, report upstream if it's a reconstruction bug. No d2crash file and a
 silent death → suspect the boundary (exports, calling conventions, the driver swap).
 Attach both files to an issue — a crash without both artifacts cannot be attributed.
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the detail: which paths are generated and which are
+hand-written, and which door a given finding goes through so that it survives.
+
+With an AI agent you can read the Ghidra databases behind the tree (1.14d Windows and Mac)
+through a read-only MCP server, and report such fixes with the evidence. In Claude Code:
 
 ## Project documents
 

@@ -3188,11 +3188,6 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
     D2BOOT_MarkFmt("SrvJoinAct enter (clientid %d)", (int)nClientId); // [d2boot]
     D2ClientStrc* pClient;
     int32_t nReason;
-    D2UnitStrc* pUnit;
-    D2DrlgActStrc* pDrlgActNull;
-    ::SGAMEDATA* pGameArg;
-    ::SGAMEDATA* pGameNull;
-    D2RoomStrc* pRoom;
     uint32_t nToken = D2Net::Game::Server::QSERVER_GetClientGameToken(nClientId);
     ::SGAMEDATA* pGame = QSERVER_FindAndLockGame(nToken);
     if (pGame) {
@@ -3212,12 +3207,7 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
 
         D2BOOT_Mark("SrvJoinAct: character loaded ok"); // [d2boot]
         CLIENT_LoadActAndSetState2(pGame, pClient);
-        pGameNull = 0;
-        pDrlgActNull = 0;
-        pRoom = 0;
-        pGameArg = pGame;
-        pUnit = Clients::CLIENTS_GetControlUnit(pClient, 1);
-        Clients::CLIENT_PlacePlayerInRoom(pClient, pUnit, pGameArg, pRoom, pDrlgActNull, pGameNull, (uint32_t)pUnit);
+        Clients::CLIENT_PlacePlayerInRoom(pClient, Clients::CLIENTS_GetControlUnit(pClient, 1), pGame, 0, 0, 0);
         D2BOOT_Mark("SrvJoinAct: player placed in room, state -> 3 (waiting rooms)"); // [d2boot]
         Clients::CLIENT_SetConnectionState(pClient, 3);
         Server::Unlock(pGame);
@@ -3525,7 +3515,7 @@ uint32_t __stdcall GAME_CreateBattleNetGame(char * szGameName, char * szGamePass
     pGame->nDifficulty = (uint8_t)(flags >> 0xc) & 7;
     Server::RollSeed(pGame);
     Event::EVENT_AllocTimerQueue(pGame);
-    Arena::AllocArenaControl(pGame, flags, '\0');
+    Arena::AllocArenaControl(pGame, 0, flags, '\0');
     Clients::SetGameDataHook(pGame);
     UNIT::Party::AllocPartyControl(pGame);
     Monster::MonsterRegion::AllocMonsterRegionForGame(pGame);
@@ -3550,7 +3540,7 @@ uint32_t __stdcall GAME_CreateBattleNetGame(char * szGameName, char * szGamePass
 
 // Already-documented — existing description accurately covers SP/LAN game creation: allocates SGAMEDATA in hash map with generated token, initializes critical section and five unit-type lists, rolls seed, allocates Event/Arena/Party/MonsterRegion/ObjectControl/NpcControl/QuestControl subsystems, creates local D2ClientStrc, sends 0x01 GameFlags and state packets, and enqueues the game-loop task.
 // @sourcefile .\GAME\Game.cpp
-void __fastcall GAME_CreateSingleplayerGame(int32_t nClientId, char * szGameName, eD2HostGameType neD2HostGameType, eD2PlayerClassID ePlayerClass, char * szCharName, int16_t Unknown4, eD2ArenaFlags eArenaFlags, uint8_t nTemplate, uint8_t Unknown6, uint8_t Unknown7, uint8_t nDifficulty, uint8_t nLanguageCode, uint32_t arg11, uint32_t arg12) {
+void __fastcall GAME_CreateSingleplayerGame(int32_t nClientId, char * szGameName, eD2HostGameType neD2HostGameType, eD2PlayerClassID ePlayerClass, char * szCharName, int32_t Unknown4, eD2ArenaFlags eArenaFlags, uint8_t nTemplate, uint8_t Unknown6, uint8_t Unknown7, uint8_t nDifficulty, uint8_t nLanguageCode, uint32_t arg11, uint32_t arg12) {
     TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>* self = gpQServerGameState;
     if (!gpQServerGameState) {
       return;
@@ -3593,7 +3583,7 @@ void __fastcall GAME_CreateSingleplayerGame(int32_t nClientId, char * szGameName
     pGame->eGameType = eArenaFlags >> 0x15 & GAMETYPE_SINGLEPLAYER_UNCAPPED;
     Server::RollSeed(pGame);
     Event::EVENT_AllocTimerQueue(pGame);
-    Arena::AllocArenaControl(pGame, eArenaFlags, nTemplate);
+    Arena::AllocArenaControl(pGame, Unknown4, eArenaFlags, nTemplate);
     Clients::SetGameDataHook(pGame);
     D2ClientStrc* pClientCreated = Clients::CreateClient(pGame, nClientId, ePlayerClass, szCharName, "", nullptr, nLanguageCode, arg11, arg12);
     D2Net::Game::Server::AssignClientToToken(nClientId, dwGameToken);
