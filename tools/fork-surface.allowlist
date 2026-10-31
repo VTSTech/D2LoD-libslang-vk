@@ -101,7 +101,7 @@
 2	2	D2Client/Engine/GfxUtil.h
 45	45	D2Client/Engine/Particle.h
 13	5	D2Client/GAME/Draw.cpp
-39	9	D2Client/GAME/Game/Game.cpp
+51	9	D2Client/GAME/Game/Game.cpp
 4	4	D2Client/GAME/Game/Game.h
 198	198	D2Client/GAME/Game/SGAMEDATA.h
 3	3	D2Client/GAME/Game/stpl_SGAMEDATA.cpp
@@ -111,11 +111,11 @@
 338	338	D2Client/GAME/Record.cpp
 59	59	D2Client/GAME/Record.h
 28	28	D2Client/GAME/Rendering.h
-4	4	D2Client/GAME/Roster.cpp
+308	26	D2Client/GAME/Roster.cpp
 135	135	D2Client/GAME/Roster.h
 2	3	D2Client/GAME/RosterPets.cpp
 49	50	D2Client/GAME/RosterPets.h
-22	10	D2Client/GAME/SCmd.cpp
+65	13	D2Client/GAME/SCmd.cpp
 2	2	D2Client/GAME/SCmd.h
 3	3	D2Client/GAME/Select.cpp
 37	37	D2Client/GAME/Select.h
@@ -474,7 +474,7 @@
 73	74	D2Game/GAME/Arena.h
 8	1	D2Game/GAME/CCmd.cpp
 94	94	D2Game/GAME/CCmd.h
-28	14	D2Game/GAME/Clients.cpp
+44	15	D2Game/GAME/Clients.cpp
 193	193	D2Game/GAME/Clients.h
 1	1	D2Game/GAME/Event.h
 2	2	D2Game/GAME/Event/Dispatch/Monster.h
@@ -673,13 +673,13 @@
 16	16	D2Multi/OOG/ChatDlg.h
 6	6	D2Multi/OOGUtilities.cpp
 258	258	D2Multi/OOGUtilities.h
-672	672	D2Net/Game/Server.cpp
+676	672	D2Net/Game/Server.cpp
 72	72	D2Net/Game/Server.h
 18	18	D2Net/in_addr.h
 57	57	D2Net/SHA.cpp
 26	26	D2Net/SHA.h
 21	21	D2Net/sockaddr.h
-498	498	D2Net/SRC/Client.cpp
+510	498	D2Net/SRC/Client.cpp
 1362	1362	D2Net/SRC/Client.h
 78	78	D2Net/SRC/D2Net.cpp
 23	23	D2Net/SRC/D2Net.h
@@ -805,7 +805,7 @@
 13	99	globals/globals.cpp
 12	10	globals/globals.h
 7677	7677	globals/Storm.cpp
-148	0	handoff.md
+231	0	handoff.md
 549	0	HISTORY.md
 333	0	PLAN.md
 4	4	progress/report.json
@@ -850,7 +850,7 @@
 100	100	support/d2_crt_impl.cpp
 180	180	support/d2_crt_support.cpp
 10	10	support/d2_hand.h
-332	0	support/d2_hangwatch.cpp
+342	0	support/d2_hangwatch.cpp
 20	0	support/d2_hangwatch.h
 76	76	support/d2_link_support.s
 859	859	support/d2_loud.cpp
@@ -883,6 +883,6 @@
 4	0	tools/build-local-win11.cmd
 217	0	tools/build-local-win11.ps1
 94	0	tools/check-fork-surface.sh
-261	0	tools/check-vanilla-plus.sh
+315	0	tools/check-vanilla-plus.sh
 229	0	VANILLA-PLUS.md
 32	0	vanilla-plus/cmake/sources.cmake
