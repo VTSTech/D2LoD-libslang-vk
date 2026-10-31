@@ -1711,7 +1711,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x5B(D2GSPacketSrv0x5B * pBytes) {
     // runs. A non-NULL partyList here (or a players pointer equal to the exit mark's)
     // means cross-session state survived pfModes_ExitGame - the discriminator for the
     // save-and-re-enter crash. Clean SP: players=one fresh node, partyList=nil.
-    D2BOOT_MarkFmt("roster state: players=%p other=%p partyList=%p [R60]", (void*)gpRosterPlayers, (void*)gpRosterOther, (void*)pRosterPartyList);
+    D2BOOT_MarkFmt("roster state: players=%p other=%p partyList=%p [R60]", (void*)Roster::gpRosterPlayers, (void*)Roster::gpRosterOther, (void*)Roster::pRosterPartyList);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x5C(char * pBytes) {
