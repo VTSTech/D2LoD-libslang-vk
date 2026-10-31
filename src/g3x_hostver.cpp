@@ -39,7 +39,7 @@ const char* g3x_hostver_patch_name(unsigned ver_ms, unsigned ver_ls) {
 // a comment (the CRC alone identifies the build; the log carries bytes=).
 const char* g3x_hostver_crc_name(uint32_t crc) {
     static const struct { uint32_t crc; const char* name; } kTable[] = {
-        { 0xAB566EAAu, "D2 Retail 1.12A" },   // Game.exe, 57344 bytes (56 KiB)
+        { 0xCB0C9290u, "D2 Retail 1.12A" },   // Game.exe, 57344 bytes (56 KiB)
         { 0xAB566EAAu, "LoD Retail 1.12A" },   // Game.exe, 61440 bytes (60 KiB)
         { 0x4F393243u, "LoD Retail 1.14D" },   // Game.exe, 3618792 bytes (3533 KiB)
         { 0x1706E55Au, "Vanilla+ 0.0.1" }, // d2s-4857c30.exe, 23550478 bytes (22 MiB)
