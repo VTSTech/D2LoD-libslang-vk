@@ -363,6 +363,8 @@ gate "site-6: fork-api include in Engine.cpp" D2Client/Engine.cpp          'incl
 gate "resfix: d3d mode-4 perspective path"  D2Direct3D/Renderer/Direct3D.cpp 'nResolutionMode != 2 && nResolutionMode != 3 && nResolutionMode != 4' 1
 gate "resfix: gdi dib mode-4 1280x720"      D2Gdi/Renderer/Windowed.cpp   'nResolutionMode == 4' 1
 gate "resfix: gdi scale width 1280"         D2Gdi/Renderer/Windowed.cpp   'nParam == 4' 1
+gate "resfix: gdi DrawSolidRectEx sig header (link tripwire)"     D2Gdi/Renderer/Windowed.h   'void __fastcall DrawSolidRectEx\(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor' 1
+gate "resfix: gdi DrawSolidRectEx sig definition (link tripwire)"  D2Gdi/Renderer/Windowed.cpp 'void __fastcall DrawSolidRectEx\(int nXStart, int nYStart, int nXEnd, int nYEnd, BYTE dwColor' 1
 gate "resfix: ddraw size tables extended"   D2DDraw/Renderer/DirectDraw.cpp '0x540, 0x500' 1
 gate "resfix: ddraw horizontal bound 1280"  D2DDraw/Renderer/DirectDraw.cpp 'gnDDrawRenderWidth = 1280' 1
 

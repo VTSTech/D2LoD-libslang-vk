@@ -160,3 +160,16 @@ PR) so acceptance is frictionless.
   is not placement - when a merge resolves around braces, diff each marked
   block's context against the last field-verified tree, not just its
   existence (step 4 now runs both instruments).
+- **Rev 77 DrawSolidRectEx undefined reference:** the `d6affdd` port's
+  renderer resfix lived on BOTH sides of a signature pair - `DWORD dwColor`
+  in `D2Gdi/Renderer/Windowed.h` AND `Windowed.cpp` for `DrawSolidRectEx`.
+  The 1776-1781 merge absorbed upstream's regen header (`BYTE`) and dropped
+  the header-side resfix while the .cpp side survived: declaration and
+  definition silently became two overloads, every caller bound the
+  declared-but-undefined one, and d2.exe died at LINK (not compile) with an
+  undefined reference. Nothing was VP-marked (the resfix predates the marker
+  convention), so the marker/placement/visibility audits were all blind -
+  only the paired signature tripwires (`resfix: gdi DrawSolidRectEx sig *`
+  gate rows) cover this class. Rule: when a fork edit pairs a header
+  declaration with an implementation, gate BOTH sides; when a regen
+  legitimately retypes one side, move both gates in the same commit.
