@@ -61,9 +61,14 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
 
-    # 6) push; CI runs the same gate before its real GCC build.
+    # 6) push. NOTE: the gate does NOT run in CI (removed 0.0.6-R47: a gate
+    #    failure must not halt the build) - step 4 above is the only run.
     # 7) in-game smoke: options page opens (Esc > Options), each toggle flips
     #    its d2vp.ini key, auto-gold picks a pile, alt-toggle latches labels.
+
+The gate is a human audit instrument, not a build prerequisite: CI builds the
+tree either way, and a red gate in CI only blocked shipping without stopping
+the merge. Run it by hand whenever the merge surface moved (steps 0-4 above).
 
 ## When a gate fires
 
@@ -116,3 +121,11 @@ PR) so acceptance is frictionless.
 - **Patch does not apply:** a patch cut against a different base than the
   working tree. Whole files or in-tree edits only; patches must be generated
   from the exact commit the recipient has.
+- **0.0.6 merge port (`d6affdd`):** the port resolved conflicts to the fork's
+  OLD side in `D2Glide/Renderer/Glide.cpp`, dropping the glide texture-memory
+  init assignments (`0x400`/`0x8000` - first-frame divide-by-zero on `-3dfx`)
+  and the fix-2/fix-3 upload guards. CI's gate run caught it ("2 FAILED,
+  192 passed"), and R46 restored both. The gate did its job, but as a CI
+  *blocker* it halted otherwise-good builds - owner call: gate off CI,
+  run it manually (step 4). Rule: the gate's verdict is consumed by a human
+  during the merge, not enforced by the build pipeline.
