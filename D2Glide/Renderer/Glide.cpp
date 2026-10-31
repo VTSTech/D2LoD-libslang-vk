@@ -434,28 +434,31 @@ BOOL __stdcall RENDERER_GLIDE_InitTextureMemory() {
     if (nCacheEnd < 0) {
       fTotalTexMemBytes += 4.2949673e+09;
     }
-    if (3670016.0 <= fTotalTexMemBytes) {
-      uint32_t uVar1;
-      if (!gbGlidePerspectiveMode) {
-        if (RENDERER_nWindowWidth == 800 && RENDERER_nWindowHeight == 600) {
-          iVar2 = GLSMACK_AllocTextureMemory(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
-          nCacheEnd = nMaskTmp + iVar2;
-          nTotalTexMem = gnGlideTextureMemoryMax[0] - nCacheEnd;
-          if (gnGlideTextureMemoryUsed < 2) {
-            nVramStart = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nLargeTexSize);
-            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
-            nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nVramStart, (uint32_t)(nTotalTexMem * 0x4b) / 100 + nCacheEnd, nMedTexSize);
-            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
-          } else {
-            nCacheEnd = glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 1, nCacheEnd, (uint32_t)(nTotalTexMem * 0x32) / 100 + nCacheEnd, nMedTexSize);
-            gnTextureMemoryUsageBytes.nGlideMediumTextureCacheMemBytes = gGlideVertex0.aTextureCache[1].nMaxEntries * nMedTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache + 2, nCacheEnd, gnGlideTextureMemoryMax[0], nSmallTexSize);
-            gnTextureMemoryUsageBytes.nGlideLargeTextureCacheMemBytes = gGlideVertex0.aTextureCache[2].nMaxEntries * nSmallTexSize;
-            glTextureCache::GLTEXCACHE_Initialize(gGlideVertex0.aTextureCache, gnGlideTexMemBaseAddress[1], gnGlideTextureMemoryMax[1], nLargeTexSize);
-            gnTextureMemoryUsageBytes.nGlideSmallTextureCacheMemBytes = gGlideVertex0.aTextureCache[0].nMaxEntries * nLargeTexSize;
-          }
+    if (!(3670016.0 <= fTotalTexMemBytes)) {
+      Fog::Src::LogManager::LOGFILE_WriteStringToFile("\t\tDoesn\'t have enough video memory (3.5 MB) to adequately run Diablo II!\n");
+      return 0;
+    }
+
+    uint32_t uVar1;
+    if (gbGlidePerspectiveMode) {
+      uVar1 = gnGlideTextureMemoryMask - 1;
+      nSubtileTexSize = 0x400;
+      if (uVar1 & 0x400) {
+        nSubtileTexSize = (uVar1 | 0x400) + 1;
+      }
+
+      nFloorTexSize = 0x8000;
+      if (uVar1 & 0x8000) {
+        nFloorTexSize = (uVar1 | 0x8000) + 1;
+      }
+
+      iVar2 = RENDERER_GLIDE_InitDebugFont(gnGlideTexMemBaseAddress[0], gnGlideTextureMemoryMask);
+      nCacheEnd = nMaskTmp + iVar2;
+      nMaskTmp = gnGlideTextureMemoryMax[0] - nCacheEnd;
+      if (gnGlideTextureMemoryUsed >= 2) {
+        gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = nMaskTmp * 3 >> 2;
+        if ((uint32_t)gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes < 0x1ccccc) {
+          gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes = 0x1ccccc;
         }
 
         nCacheEnd = glFloorCache::GLFLOOR_Initialize(&gGlideFloorTextureCache, nCacheEnd, gnTextureMemoryUsageBytes.nTextureMemoryUsageBytes + nCacheEnd, nFloorTexSize);
@@ -1009,8 +1012,14 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     grTexInfo.smallLodLog2 = pTexInfo->nLodLevel;
     grTexInfo.aspectRatioLog2 = pTexInfo->nAspect;
     grTexInfo.format = 5;
-    // [vanilla-plus fix 3] Sprite headers come from a non-zeroing pool, so a
     grTexInfo.data = gpGlideSpriteBuffer;
+    // [vanilla-plus fix 3] Sprite headers come from a non-zeroing pool, so a
+    // first-use header can carry pool garbage in the size-class slot. Treat an
+    // out-of-range class like an unset one (recompute below) and zero the slot
+    // so the recompute sticks, instead of skipping the upload forever.
+    if (*(int*)(nTexStartAddress + nMode * 8) < 1 || 3 < *(int*)(nTexStartAddress + nMode * 8)) {
+      *(uint32_t*)(nTexStartAddress + nMode * 8) = 0;
+    }
     if (!*(int*)(nTexStartAddress + nMode * 8)) {
       nSpriteBufferPtr = pTexInfo->nTexArea;
       if (nSpriteBufferPtr <= 0x1000) {
@@ -1032,8 +1041,27 @@ static int32_t __stdcall RENDERER_GLIDE_UploadTextureToCache(GlideTexInfoStrc * 
     }
 
     int nNewCacheNode = *(int*)(nTexStartAddress + 4 + nMode * 8);
-    // [vanilla-plus fix 2, jaenster/redivivus#5] A recycled sprite header can
     int* pnCacheEntryIndex = (int*)(nTexStartAddress + 4 + nMode * 8);
+    // [vanilla-plus fix 2, jaenster/redivivus#5] A recycled sprite header can
+    // inherit a stale node index: GLIDE_PixelDataFreeCallback_ClearCacheNodes
+    // clears the node's header backpointer (node+8) but never the header
+    // slots, and sprite headers come from a non-zeroing pool. Promoting a
+    // stale index splices a free-list node onto the active list without
+    // nUsedCount++ (RemoveNodeByIndex walks the node's own links, which the
+    // free list shares), draining the cache early and halting
+    // GLTEXCACHE_AllocateNode with error 0xc1. Validate the slot against the
+    // node's own backpointer; on mismatch drop the slot and allocate fresh.
+    // The legit palette-change re-upload (same sprite and node) still passes:
+    // its node backpointer/mode match by construction (node+8 =
+    // nTexStartAddress, node+0xc = nMode - the same layout the upload writes
+    // at the - 0x14 / - 0x10 sites below).
+    if (nNewCacheNode) {
+      uint8_t* pSlotNode = gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + (nNewCacheNode - 1) * 0x1c;
+      if (*(FxU32*)(pSlotNode + 8) != nTexStartAddress || *(int*)(pSlotNode + 0xc) != nMode) {
+        nNewCacheNode = 0;
+        *pnCacheEntryIndex = 0;
+      }
+    }
     grTexInfo.largeLodLog2 = grTexInfo.smallLodLog2;
     if (nNewCacheNode && (*(uint8_t**)(gGlideVertex0.aTextureCache[nSpriteBufferPtr - 1].pNodes + nNewCacheNode * 0x1c - 0xc) == pPalette || iVar2 == 4)) {
       glTextureCache::GLTEXCACHE_PromoteNodeToMRU(gGlideVertex0.aTextureCache + nSpriteBufferPtr - 1, *pnCacheEntryIndex);
