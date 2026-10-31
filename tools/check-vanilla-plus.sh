@@ -565,13 +565,15 @@ gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
-# ---- [item-ilvl] R56: optional " (ilvl N)" suffix on the tooltip name (d2vp.ini item_ilvl)
+# ---- [item-ilvl] R57: optional " (N)" suffix on the tooltip name (d2vp.ini item_ilvl)
 # D2R "Advanced Tooltips" parity (the ilvl readout half), R56 presentation
 # (owner: "append the item name with (ilvl) in the tooltip instead" of the R55
-# standalone line). OFF = the suffix fn (fork-owned TU, VanillaPlusCore.cpp)
-# returns without touching the name buffer, so the decomp tooltip builders
-# stay byte-identical to retail (charter rule 1). ON = the name line reads
-# "Long Sword (ilvl 12)" - the suffix joins the GetItemName buffer before the
+# standalone line) + R57 polish (owner: "Instead of saying (ilvl #) we can
+# just say (#) they know it's the ilvl" - the label word is dropped). OFF =
+# the suffix fn (fork-owned TU, VanillaPlusCore.cpp) returns without touching
+# the name buffer, so the decomp tooltip builders stay byte-identical to
+# retail (charter rule 1). ON = the name line reads
+# "Long Sword (12)" - the suffix joins the GetItemName buffer before the
 # color wrap, in all THREE name sites: LoadItemDesc identified + unidentified
 # paths (all normal/uniques/rares/whites/mercenary) and ITEM_BuildSetItemTooltip
 # (set pieces). Data source = D2Common's parsed item data
@@ -580,7 +582,7 @@ gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'p
 # by design.
 gate "ilvl: gate fn defined"                  D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_Active' 1
 gate "ilvl: suffix fn defined"                D2Client/UI/VanillaPlusCore.cpp   '__stdcall ITEMILVL_AppendNameSuffix' 1
-gate "ilvl: suffix format string pinned"      D2Client/UI/VanillaPlusCore.cpp   '" \(ilvl %i\)"' 1
+gate "ilvl: suffix format string pinned"      D2Client/UI/VanillaPlusCore.cpp   '" \(%i\)"' 1
 gate "ilvl: ini key read by the gate"         D2Client/UI/VanillaPlusCore.cpp   '"item_ilvl"' 1
 gate "ilvl: ini template key"                 D2Client/UI/VanillaPlusCore.cpp   'item_ilvl=0' 1
 gate "ilvl: decl + cache busted on write"     D2Client/UI/VanillaPlusCore.cpp   'dwItemIlvlLastCheck = 0' 2

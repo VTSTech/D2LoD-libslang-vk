@@ -118,7 +118,7 @@ void __stdcall AUTO_GOLD_Tick();     // per-frame trigger, called from DRAW_UI
 // retail's above-orb Life/Mana text shows persistently; 0 = vanilla
 // hover-only. Display-only, no state, no input changes.
 BOOL __stdcall VANILLAPLUS_GlobeTextPersistent(); // per-frame, Panel.cpp draw conditions
-// [vanilla-plus item-ilvl] Optional " (ilvl N)" suffix on the tooltip's item
+// [vanilla-plus item-ilvl] Optional " (N)" suffix on the tooltip's item
 // name (D2R "Advanced Tooltips" parity, the ilvl readout half). d2vp.ini next
 // to d2.exe:
 //   [features]
@@ -127,7 +127,7 @@ BOOL __stdcall VANILLAPLUS_GlobeTextPersistent(); // per-frame, Panel.cpp draw c
 // the formatter returns without touching the name buffer, so the upstream
 // builders (Inv.cpp LoadItemDesc identified + unidentified paths and
 // ITEM_BuildSetItemTooltip) proceed exactly as retail. While on, the hovered
-// item's name line reads "Long Sword (ilvl 12)" - the suffix is appended to
+// item's name line reads "Long Sword (12)" - the suffix is appended to
 // the GetItemName buffer BEFORE the caller's AppendAsWideChar color wrap, so
 // it renders in the item's own name color (gold on uniques, green on sets).
 // One line, no extra tooltip row, same coverage as the tooltip line it
@@ -138,11 +138,11 @@ BOOL __stdcall VANILLAPLUS_GlobeTextPersistent(); // per-frame, Panel.cpp draw c
 // ASCII wide string: the vanilla string table has no such entry and the fork
 // never edits MPQ data. Name buffers have big slack (real names cap near 40
 // chars vs 0x80-0x400 buffers; GetItemName truncates at nSize), and the
-// suffix adds <= 12 wchars. Display-only, no state, no input changes; the
+// suffix adds <= 7 wchars. Display-only, no state, no input changes; the
 // tooltip is rebuilt every frame the cursor dwells, so the 2 s hot-read gate
 // below applies the ini flip without any rebuild trigger.
 BOOL __stdcall ITEMILVL_Active(); // config: item_ilvl on?
-// Appends " (ilvl N)" to the caller's item-name wide buffer, or returns
+// Appends " (N)" to the caller's item-name wide buffer, or returns
 // untouched when the gate is off / the name is empty / the item carries no
 // level. Called from Inv.cpp's three GetItemName sites right after the name
 // is built and before the color wrap; the suffix inherits the name's color

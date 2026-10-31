@@ -219,8 +219,8 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "\r\n"
         "; Item level tooltips:\r\n"
         ";   0 = item tooltips exactly as retail               (vanilla behavior)\r\n"
-        ";   1 = append \" (ilvl N)\" to the item name on every item\r\n"
-        ";       tooltip, e.g. Long Sword (ilvl 12)\r\n"
+        ";   1 = append \" (N)\" to the item name on every item\r\n"
+        ";       tooltip, e.g. Long Sword (12)\r\n"
         "item_ilvl=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -461,7 +461,7 @@ BOOL __stdcall VANILLAPLUS_GlobeTextPersistent() {
     return gbGlobeTextPersistentMode;
 }
 
-// ===== [vanilla-plus item-ilvl] optional " (ilvl N)" item-name suffix =====
+// ===== [vanilla-plus item-ilvl] optional " (N)" item-name suffix =====
 // D2R "Advanced Tooltips" parity (the ilvl readout half). See VanillaPlusCore.h
 // for the feature contract. Gate = the shared 2 s hot-read cache pattern
 // (globe_persistent shape): tooltip rebuilds happen every frame the cursor
@@ -479,7 +479,7 @@ BOOL __stdcall ITEMILVL_Active() {
     return gbItemIlvlMode;
 }
 
-// Appends " (ilvl N)" to the caller's item-name buffer (Inv.cpp's three
+// Appends " (N)" to the caller's item-name buffer (Inv.cpp's three
 // GetItemName sites). No-op when the gate is off / the name is empty / the
 // item carries no parsed level: the upstream builders then proceed
 // byte-identical to retail. The suffix joins the name buffer BEFORE the
@@ -501,7 +501,7 @@ void __stdcall ITEMILVL_AppendNameSuffix(D2UnitStrc * pItem, uint16_t * wszName)
         return;   // not an item unit / no parsed level (accessor returns 0)
     }
     memset(wszSuffix, 0, sizeof(wszSuffix));
-    Storm::Source::SSTR::SStrPrintf(szSuffix, sizeof(szSuffix), " (ilvl %i)", nItemLevel);
+    Storm::Source::SSTR::SStrPrintf(szSuffix, sizeof(szSuffix), " (%i)", nItemLevel);
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszSuffix, szSuffix, sizeof(wszSuffix) / sizeof(wszSuffix[0]) - 1);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszName, wszSuffix);
 }
