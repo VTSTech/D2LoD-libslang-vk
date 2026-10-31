@@ -1,7 +1,7 @@
 <img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8bcf5198-8c29-463c-b68f-230cf5745206" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3e5f2205-691c-41aa-a943-1ffb003b6a2c" />
 
-# D2LoD Vanilla+
+# D2LoD Vanilla+ Linux
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.6-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-204%2F204-2ea043)](tools/check-vanilla-plus.sh)
