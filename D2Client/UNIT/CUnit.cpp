@@ -2248,7 +2248,16 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
             nPalShiftIdx = (uint32_t)pMonStats2Diff->byUtrans[bVar1];
             if (nPalShiftIdx == 0xff) {
               uMercType = GAME::RosterPets::ROSTER_IsUnitHostileToPlayer(pUnit);
-              nPalShiftIdx = (uint32_t)!uMercType;
+              // [R51] spawn-time ownership polarity: the RAW hostility flag selects
+              // the palshift.dat sub-table pair — uMercType=0 (own/ally unit) ->
+              // sub-table 0 (bone-white), 1 (hostile owner) -> sub-table 1 (yellow
+              // tell). The transcribed `!uMercType` spawned every own raised
+              // skeleton straight into the yellow hostile table (issue #8), and the
+              // event-driven roster recolors (R50, same raw-flag convention) only
+              // run from roster-update packets, so in SP the wrong spawn tint stuck
+              // for the unit's whole life. Same baseline transcription defect class
+              // as the R50 roster fix; both write sites must agree on the raw flag.
+              nPalShiftIdx = (uint32_t)uMercType;
             }
           }
         }

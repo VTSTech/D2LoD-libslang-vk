@@ -68,10 +68,14 @@ be fixed, replaced and released independently. The releases bundle both as one d
   global `RandTransforms.dat` palettes), root cause + fix documented in
   [#9](https://github.com/VTSTech/D2LoD-libslang-vk/issues/9).
 - Not finished. One known issue remains:
-  - **Unique-pack minion skeleton coloring.** Root-caught + fixed in the R50 round
-    (the roster pet-recolor inverted the hostility polarity — own raised skeletons
-    were reading the yellow hostile palette instead of bone-white), field
-    verification pending ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)).
+  - **Necro minion skeleton coloring.** Re-root-caught + re-fixed in the R51 round:
+    the R50 round corrected the roster pet-recolor polarity, but the spawn-time
+    write (`CreateObject`'s MonStats2 `Utrans==0xFF` ownership fallback) carried the
+    same inverted polarity — every own raised skeleton spawned straight into the
+    yellow hostile palette, and the roster recolor (event-driven, roster-update
+    packets only) never rewrites SP summons, so the wrong tint stuck. R51 writes the
+    raw hostility flag at spawn too; field verification pending
+    ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
@@ -152,7 +156,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **204 checks**, green at the current tip.
+  telemetry) with **205 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README.

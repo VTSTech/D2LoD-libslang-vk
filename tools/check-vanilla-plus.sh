@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R50' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R51' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R50" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R50' 1
+gate "d2boot-fix: build version 0.0.6-R51" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R51' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -488,6 +488,30 @@ if command -v awk >/dev/null 2>&1; then
     PASS=$((PASS + 1))
   else
     printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=4) - !bHostile feeds own skeletons the yellow hostile sub-table (issue #8)\n' "roster: pet recolor polarity (R50)" "${vp_rp_bad:-0}" "${vp_rp_good:-0}"
+    FAIL=$((FAIL + 1))
+  fi
+fi
+
+# ---- [R51] spawn: ownership palshift polarity (issue #8) ---------------------
+# CreateObject's MonStats2 Utrans==0xFF fallback picks the palshift.dat
+# ownership sub-table pair from the RAW hostility flag: 0 (own/ally unit) ->
+# sub-table 0 (bone-white), 1 (hostile owner) -> sub-table 1 (yellow tell).
+# The transcribed `!uMercType` spawned every own raised skeleton straight into
+# the yellow hostile table (issue #8) and the event-driven roster recolors
+# (R50) only run from roster-update packets, so in SP the wrong spawn tint
+# stuck for the unit's whole life. Regression signature: any `!uMercType`
+# feeding nPalShiftIdx in CUnit.cpp.
+if command -v awk >/dev/null 2>&1; then
+  eval "$(awk '
+    /nPalShiftIdx = \(uint32_t\)!uMercType;/ { sp_bad++ }
+    /nPalShiftIdx = \(uint32_t\)uMercType;/ { sp_good++ }
+    END { printf "vp_sp_bad=%d vp_sp_good=%d", sp_bad+0, sp_good+0 }
+  ' D2Client/UNIT/CUnit.cpp)"
+  if [ "${vp_sp_bad:-0}" -eq 0 ] && [ "${vp_sp_good:-0}" -eq 1 ]; then
+    printf 'ok   %-46s %s inverted=%s raw=%s\n' "spawn: ownership palshift polarity (R51)" "D2Client/UNIT/CUnit.cpp" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
+    PASS=$((PASS + 1))
+  else
+    printf 'FAIL %-46s inverted=%s raw=%s (want inverted=0 raw=1) - !uMercType spawns own skeletons into the yellow hostile sub-table (issue #8)\n' "spawn: ownership palshift polarity (R51)" "${vp_sp_bad:-0}" "${vp_sp_good:-0}"
     FAIL=$((FAIL + 1))
   fi
 fi
