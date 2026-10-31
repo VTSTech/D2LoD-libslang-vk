@@ -2,7 +2,7 @@ name: build
 
 on:
   push:
-    branches: [main, linux]
+    branches: [linux]
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
   pull_request:
     paths-ignore: ['**.md', '.recomp.json', 'progress/**', '.github/workflows/progress.yml']
