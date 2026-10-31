@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R51** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R52** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Known-fail — skip, don't burn time:** Necro skeleton spawn tint (issue #8). R51 spawn-polarity fix is pending re-verify; symptom = own raised skeletons spawn yellow and (per R51 theory) should never re-tint. One useful datum for the next round: raise a skeleton and note whether it *ever* re-tints (e.g. after a roster-update event) or stays yellow forever — "never re-tints" would falsify the R51 theory.
@@ -9,7 +9,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R51`. If it says R50 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R52`. If it says R51 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -35,6 +35,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 ## D. 720p alignment regressions (R47/R48 territory)
 
 - [ ] **13.** At 1280x720: inventory + skill flyouts align; open stash → **deposit/withdraw gold dialogs** centered properly (the R48 casualty — easy to regress).
+- [ ] **13b. Belt hover (720p regression found in the field, FIXED R52):** hover the belt HUD → expanded belt popup opens **and stays open** while the cursor is inside it; clicking a slot in the popup uses/drops that potion; hovering a filled slot shows the item-name tooltip anchored to the slot (not 60px too high).
 
 ## E. Wrapper route (optional, if testing `-3dfx`)
 

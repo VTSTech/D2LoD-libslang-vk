@@ -1567,7 +1567,7 @@ static void CLIENT_HandleBeltMouseDown(D2InventoryStrc * pInventory, int32_t nMo
         gpPanelBeltHoverItem = pItem;
         gpPanelBeltLastHoverItem = pItem;
         gnBeltTooltipX = aInvRect[0] + VPRES_GetWideUiOffsetX() + 0xe; // VP: site-5, belt rect re-centered
-        gnBeltTooltipY = aInvRect[2];
+        gnBeltTooltipY = aInvRect[2] + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6] anchor follows the re-centered rect
         return;
       }
     } else {
@@ -1788,11 +1788,17 @@ BOOL __fastcall PANEL_CalculateBeltSlotIndex(D2UIMouseMsgStrc * pMsg) {
     // VP: [resolution site-5] expanded-belt rects are 800-absolute (Belts.txt
     // nScreenMode=1 variant); compare X in virtual-800 space on wide modes
     int nVirtualMouseX = nMouseX - VPRES_GetWideUiOffsetX();
+    // VP: [resolution site-6] ...and Y in virtual-600 space. The rect is drawn
+    // +WideUiOffsetY at 720p, so a raw mouse Y sat one height-delta below the
+    // rect: the popup opened (the HUD-rect open path uses real screen coords)
+    // and collapsed on the next mouse event - hover belt slots would not stay
+    // open. Offsets are 0 at retail 640x480/800x600 - vanilla there.
+    int nVirtualMouseY = nMouseY - VPRES_GetWideUiOffsetY();
     if (!gnPanelBeltRowsExpanded) {
       if (nMouseY > ScreenSizeY - 0x30 && nMouseX >= ScreenSizeX / 2 + 0x17 && nMouseX <= ScreenSizeX / 2 + 0x91 && nMouseY >= ScreenSizeY - 0x27 && nMouseY <= ScreenSizeY - 10) {
         return 1;
       }
-    } else if (nVirtualMouseX >= *(int*)(sBeltsTxt.pad0x01 + (uint32_t)(uint8_t)sBeltsTxt.nBoxes * 0x10 - 0x39) && nVirtualMouseX <= sBeltsTxt.beltBoxes[3].nRight && nMouseY >= *(int*)(sBeltsTxt.pad0x01 + (uint32_t)(uint8_t)sBeltsTxt.nBoxes * 0x10 - 0x31) && nMouseY <= sBeltsTxt.beltBoxes[3].nBottom) {
+    } else if (nVirtualMouseX >= *(int*)(sBeltsTxt.pad0x01 + (uint32_t)(uint8_t)sBeltsTxt.nBoxes * 0x10 - 0x39) && nVirtualMouseX <= sBeltsTxt.beltBoxes[3].nRight && nVirtualMouseY >= *(int*)(sBeltsTxt.pad0x01 + (uint32_t)(uint8_t)sBeltsTxt.nBoxes * 0x10 - 0x31) && nVirtualMouseY <= sBeltsTxt.beltBoxes[3].nBottom) {
       return 1;
     }
 

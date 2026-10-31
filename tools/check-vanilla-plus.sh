@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R51' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R52' 1
 gate "boot: log overwrites per run"       support/d2_boot.cpp             '0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL' 2
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
@@ -111,7 +111,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R51" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R51' 1
+gate "d2boot-fix: build version 0.0.6-R52" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R52' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -325,7 +325,9 @@ gate "site-5: fork-api include in ListBox" D2Client/UI/ListBox/ListBoxImplementa
 # expressions already contain ScreenSizeY and would double-shift.
 gate "site-6: Y offset defined"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_GetWideUiOffsetY' 1
 gate "site-6: Y offset declared"           D2Client/UI/VanillaPlusCore.h   'VPRES_GetWideUiOffsetY' 1
-gate "site-6: belt + border Y shifts"      D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetY' 17
+gate "site-6: belt + border Y shifts"      D2Client/UI/Panel.cpp           'VPRES_GetWideUiOffsetY' 19
+gate "site-6: belt hover Y virtualization (R52)" D2Client/UI/Panel.cpp           'nVirtualMouseY = nMouseY - VPRES_GetWideUiOffsetY' 1
+gate "site-6: belt tooltip Y anchor (R52)"        D2Client/UI/Panel.cpp           'gnBeltTooltipY = aInvRect\[2\] \+ VPRES_GetWideUiOffsetY' 1
 gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
 gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
 gate "site-6: waypoint Y shifts"           D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 10
