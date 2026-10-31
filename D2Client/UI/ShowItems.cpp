@@ -207,9 +207,19 @@ void __stdcall DRAW_AltItems() {
                       // even a far walk click to the item, picking it up).
                       // Hold mode: vanilla condition byte-for-byte (the added
                       // clause is dead there).
+                      // R58 (issue #15): the sprite test MUST pass a non-null
+                      // pObjectsTxt - HitTestScreen short-circuits on a null
+                      // 4th arg (CUnit.cpp "if (!pObjectsTxt) return 1;") to
+                      // validity-only with NO geometry, which made this spare
+                      // always-true and the revoke unreachable in toggle mode:
+                      // one label brush pinned the item selection forever and
+                      // every click-away re-targeted to it. The 0x1 marker cast
+                      // to the pObjectsTxt arg type = Select.cpp's own
+                      // real-geometry idiom for item candidates (never
+                      // dereferenced on the ITEM path).
                       if (__frame0.pCurrentItem != pPlayerUnit_lcl ||
                           (ALTTOGGLE_LabelClickThrough() &&
-                           UNIT::CUnit::HitTestScreen(__frame0.pCurrentItem, nMouseX, nMouseY, nullptr))) {
+                           UNIT::CUnit::HitTestScreen(__frame0.pCurrentItem, nMouseX, nMouseY, (D2ObjectsTxt*)0x1))) {
                         goto color_by_quality;
                       }
                       // VP-END [alt-toggle]
@@ -307,10 +317,19 @@ void __stdcall DRAW_AltItems() {
     // so toggle mode clears only a ground-item selection the cursor is
     // neither on (this path = over no label rect) nor over by sprite hit.
     // Hold mode (feature off): vanilla byte-for-byte below.
+    // R58 (issue #15): the sprite hit MUST pass a non-null pObjectsTxt.
+    // HitTestScreen short-circuits on a null 4th arg (CUnit.cpp
+    // "if (!pObjectsTxt) return 1;" - validity-only, NO geometry), which
+    // made this unload's sprite-hit test always-true and the whole clear
+    // dead: the R58 root cause of the re-filed symptom (standing within
+    // pickup radius, click away to move = item picked up). The 0x1 marker
+    // cast to the pObjectsTxt arg type = the Select.cpp real-geometry
+    // idiom; on the ITEM path the pointer is never dereferenced (run-mode
+    // + hold-alt checks, then unit frame sprite bounds).
     if (ALTTOGGLE_LabelClickThrough()) {
       D2UnitStrc* pSelectedStale = GAME::Select::GetSelectedUnit();
       if (pSelectedStale && pSelectedStale->eUnitType == UNIT_ITEM &&
-          !UNIT::CUnit::HitTestScreen(pSelectedStale, ui::GetMouseX(), ui::GetMouseY(), nullptr)) {
+          !UNIT::CUnit::HitTestScreen(pSelectedStale, ui::GetMouseX(), ui::GetMouseY(), (D2ObjectsTxt*)0x1)) {
         GAME::Select::ClearSelectedUnit();
         D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(nullptr, 0, 0, 0, 0);
       }

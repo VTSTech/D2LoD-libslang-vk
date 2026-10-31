@@ -158,6 +158,12 @@ gate "0x27 guards in ui.cpp"              D2Client/UI/ui.cpp              'gnUIF
 
 # ---- alt-toggle consumers -------------------------------------------------
 gate "label click-through in DRAW_AltItems" D2Client/UI/ShowItems.cpp     'ALTTOGGLE_LabelClickThrough\(\)' 2
+# R58 (issue #15): both stale-selection sprite-hit tests MUST pass the real-
+# geometry marker (D2ObjectsTxt*)0x1 - HitTestScreen short-circuits a null
+# 4th arg to validity-only (CUnit.cpp "if (!pObjectsTxt) return 1;"), which
+# made the Rev-23-era nullptr version of both clauses dead code and re-pinned
+# the walk-click-retarget pickup (issue #15 = row 37 reopened).
+gate "alt-toggle: stale-clear real sprite hit" D2Client/UI/ShowItems.cpp  '\(D2ObjectsTxt\*\)0x1' 2
 
 # ---- fork-api includes at every external call site (missed-include guard) --
 # Upstream TUs no longer get fork decls transitively (D2Client.h is pristine);

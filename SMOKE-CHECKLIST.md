@@ -28,7 +28,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 ## C. Vanilla+ features (needs `d2vp.ini`)
 
 - [ ] **7. Auto-create:** with no `d2vp.ini` present, first run creates it (documented, all-defaults) and the game plays vanilla.
-- [ ] **8. `alt_toggle`:** each Alt press flips ground labels on/off. Click a *label* to pick up. Labels stay latched after you click something.
+- [ ] **8. `alt_toggle`:** each Alt press flips ground labels on/off. Click a *label* to pick up. Labels stay latched after you click something. **R58 regression guard (issue #15):** with labels latched, hover an item's label once, then move the cursor to EMPTY ground well away from any item and walk-click — the click must **walk** (no pickup, no walk-to-loot). Then: click the item's *sprite* still picks up; click a *label* still picks up; a combat click (monster under cursor) still attacks; `alt_toggle=0` untouched. If a click-away ever picks up or walks to loot again, the R58 stale-clear has regressed.
 - [ ] **9. `auto_gold`:** walk over a gold pile → auto-collected. Negative checks: does **not** move your character, does **not** fire mid-attack, picks up **gold only** (drop a gem, walk over — gem stays).
 - [ ] **10. `globe_persistent`:** HP/MP text above orbs always visible, no hover needed.
 - [ ] **11. Hot-reload:** edit `d2vp.ini` while in-game (flip a key) → applies within ~2 s, no restart.
