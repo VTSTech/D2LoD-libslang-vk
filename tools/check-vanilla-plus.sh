@@ -34,7 +34,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 }
 
 # ---- boot & self-identification -------------------------------------------
-gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R45' 1
+gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R46' 1
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
@@ -110,7 +110,7 @@ gate "d2boot-fix: rev36 by-guid walk cap"    D2Client/GAME/Roster.cpp      'rost
 gate "d2boot-fix: rev36 hangwatch map-relative offsets" support/d2_hangwatch.cpp 'map-relative' 3
 gate "d2boot-fix: rev36 hangwatch base-reloc note" support/d2_hangwatch.cpp 'hangwatch: note base' 1
 gate "d2boot-fix: rev36 hangwatch map span"  support/d2_hangwatch.cpp      '%08lx\.\.%08lx' 1
-gate "d2boot-fix: build version 0.0.6-R45" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R45' 1
+gate "d2boot-fix: build version 0.0.6-R46" D2Client/Engine/Application.cpp 'Vanilla\+0\.0\.6-R46' 1
 
 # ---- enum & stores (flag 38 = UI_VANILLAPLUS) -----------------------------
 gate "UI_VANILLAPLUS defined = 38"        d2_enums.h                      'UI_VANILLAPLUS = 38'        1
@@ -357,6 +357,21 @@ gate "resfix: glide mode-4 surface 1280x720"    D2Glide/Renderer/Glide.cpp 'REND
 gate "resfix: glide mode-3 surface 1344x700"    D2Glide/Renderer/Glide.cpp 'RENDERER_nWindowWidth = 1344' 1
 gate "resfix: glide resolution enum 16"         D2Glide/Renderer/Glide.cpp 'screen_resolution = 16' 1
 gate "resfix: glide perspective path modes 2/3/4" D2Glide/Renderer/Glide.cpp 'nParam != 2 && nParam != 3 && nParam != 4' 1
+
+# ---- glide texmem init + fix-2/3 guards (R46: d6affdd merge-port casualties) --
+# The d6affdd "merge port" replaced InitTextureMemory with the fork's pre-merge
+# version: the subtile/floor cache size assignments (retail 0x400/0x8000) were
+# lost, so GLFLOOR/GLSUBTILE_Initialize divided by uninitialized stack (the
+# -3dfx first-frame 0xC0000094, track B); the 3.5 MB VRAM gate, the debug-font
+# init and the TMU>=2 split went with it. The same commit dropped the glide-side
+# fix-3 class-slot guard and fix-2 stale-nodeIdx validation (their D3D mirrors,
+# fixes 21/22, stayed). These rows pin the restored surface.
+gate "glide texmem: subtile size assigned (R46)" D2Glide/Renderer/Glide.cpp 'nSubtileTexSize = 0x400' 1
+gate "glide texmem: floor size assigned (R46)"   D2Glide/Renderer/Glide.cpp 'nFloorTexSize = 0x8000' 1
+gate "glide texmem: debug font wired (R46)"      D2Glide/Renderer/Glide.cpp 'RENDERER_GLIDE_InitDebugFont\(gnGlideTexMemBaseAddress\[0\]' 1
+gate "glide texmem: VRAM gate present (R46)"     D2Glide/Renderer/Glide.cpp 'have enough video memory' 1
+gate "glide fix-3: class-slot guard (R46)"       D2Glide/Renderer/Glide.cpp '< 1 \|\| 3 <' 1
+gate "glide fix-2: stale-nodeIdx guard (R46)"    D2Glide/Renderer/Glide.cpp 'pSlotNode \+ 8\) != nTexStartAddress' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then
