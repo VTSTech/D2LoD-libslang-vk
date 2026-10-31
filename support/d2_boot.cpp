@@ -1,6 +1,11 @@
 // [d2boot] Diagnostic boot trace — see support/d2_boot.h.
 // Always-on and unbuffered on purpose: the failure being chased is a silent
 // exit, so every mark is flushed to disk the moment it is written.
+// Each run OVERWRITES the previous log (CREATE_ALWAYS, not OPEN_ALWAYS +
+// append): d2boot.log stays the trail of the most recent run only. The file
+// is truncated once, at the first mark of the process — every mark after
+// that still accumulates within the run. Two simultaneous instances would
+// truncate each other's log; diagnostic tool, accepted trade-off.
 #include <windows.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -19,16 +24,18 @@ static void BootLogOpen() {
     if (n == 0 || n >= MAX_PATH) return;
     while (n > 0 && szPath[n - 1] != '\\') n--;
     lstrcpyA(szPath + n, "d2boot.log");
-    g_hBootLog = CreateFileA(szPath, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                             0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+    // GENERIC_WRITE + CREATE_ALWAYS: fresh log every run (pointer starts at 0,
+    // sequential WriteFile calls then accumulate the run's marks in order).
+    g_hBootLog = CreateFileA(szPath, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                             0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
     if (g_hBootLog == INVALID_HANDLE_VALUE) {
         // Game dir not writable - fall back to %TEMP% and say so in the log.
         char szTmp[MAX_PATH];
         DWORD m = GetTempPathA(MAX_PATH, szTmp);
         if (m == 0 || m >= MAX_PATH) return;
         lstrcatA(szTmp, "d2boot.log");
-        g_hBootLog = CreateFileA(szTmp, FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE,
-                                 0, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+        g_hBootLog = CreateFileA(szTmp, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE,
+                                 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
         if (g_hBootLog == INVALID_HANDLE_VALUE) return;
         lstrcpyA(szPath, szTmp);
     }

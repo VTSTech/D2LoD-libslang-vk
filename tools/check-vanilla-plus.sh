@@ -35,6 +35,7 @@ gate() { # gate <name> <file> <ERE> <expected>
 
 # ---- boot & self-identification -------------------------------------------
 gate "banner (d2boot.log self-ID)"        D2Client/Engine/Application.cpp 'D2BOOT_Mark\("Vanilla\+0\.0\.6-R51' 1
+gate "boot: log overwrites per run"       support/d2_boot.cpp             '0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL' 2
 gate "boot: ini template hook"            D2Client/Engine/Application.cpp 'VP-BEGIN \[alt-toggle\]'    1
 
 # ---- [d2boot] rev 33: SP loading-screen freeze trace (overlay round) -------
