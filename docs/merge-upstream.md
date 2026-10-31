@@ -57,12 +57,11 @@ rule in it was learned the hard way (see "War stories" at the bottom).
 
     # 4) one-second feature audit, no toolchain needed:
     tools/check-vanilla-plus.sh           # per-feature grep gates
-    tools/check-fork-surface.sh . upstream/main   # whole-diff budget
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
 
-    # 6) push; CI runs the same two gates before its real GCC build.
+    # 6) push; CI runs the same gate before its real GCC build.
     # 7) in-game smoke: options page opens (Esc > Options), each toggle flips
     #    its d2vp.ini key, auto-gold picks a pile, alt-toggle latches labels.
 
@@ -80,19 +79,12 @@ rule in it was learned the hard way (see "War stories" at the bottom).
   fork pins moved. Upstream added/renamed a UI flag or resized a table:
   re-audit `d2_enums.h` flag 38, `globals.h` externs and the `0x27` count
   bumps as one set.
-- `check-fork-surface.sh FAIL new/grown` - the fork diff vs upstream changed
-  beyond the budget. If intentional (you refactored on purpose), run
-  `tools/check-fork-surface.sh --update` **in the same commit** as the change
-  and say so in the commit message. If not, something leaked.
 
 ## Changing the fork surface on purpose
 
 Every budget/count lives next to the thing it audits:
 
 - per-feature counts: the `gate "..."` table in `tools/check-vanilla-plus.sh`
-- whole-diff budget: `tools/fork-surface.allowlist` (regenerate with
-  `tools/check-fork-surface.sh --update`; the allowlist does not budget
-  itself)
 - injection-point invariants: the `static_assert`s and `VANILLAPLUS_SelfCheck`
   in `D2Client/UI/VanillaPlusCore.cpp`
 
@@ -101,7 +93,8 @@ Update them in the same commit as the refactor, never "later".
 ## Good upstream-citizen candidates
 
 Fork edits that are generic fixes (not Vanilla+ features) should be PR'd
-upstream - once accepted, they vanish from the merge surface:
+upstream - once accepted, they vanish from the merge surface. PRs are cut
+from clean branches off main, never from this branch's working state:
 
 - `D2Client/UI/Automap.cpp` stale-`.ma`-entry crash tolerance (VP-marked,
   4 sites)

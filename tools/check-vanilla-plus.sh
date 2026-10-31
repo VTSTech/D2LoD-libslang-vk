@@ -11,8 +11,8 @@
 # INTENDED (a conscious refactor changed the surface), update the expected
 # count here in the same commit.
 #
-# Companions: tools/check-fork-surface.sh (whole-diff budget) and the
-# VP-BEGIN/VP-END markers (// VP: for one-liners) this script partly counts.
+# Companions: the VP-BEGIN/VP-END markers (// VP: for one-liners) this script
+# partly counts.
 set -u
 
 ROOT=${1:-$(cd "$(dirname "$0")/.." && pwd)}

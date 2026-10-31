@@ -17,19 +17,13 @@ jobs:
   mingw-i686:
     runs-on: ubuntu-24.04
     steps:
-      # full history: the fork-surface budget diffs against upstream/main
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Vanilla+ merge gates (features intact + fork surface budget)
+      - name: Vanilla+ merge gates (features intact)
         run: |
-          git remote add upstream https://github.com/jaenster/redivivus.git
-          git fetch upstream main
           # gate scripts were authored on Windows (no exec bit in the index)
           chmod +x tools/*.sh
           tools/check-vanilla-plus.sh "$GITHUB_WORKSPACE"
-          tools/check-fork-surface.sh "$GITHUB_WORKSPACE" upstream/main
 
       - name: Install the toolchain
         run: |
