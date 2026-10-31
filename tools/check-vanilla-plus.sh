@@ -560,6 +560,10 @@ gate "npc menu branch marks (R54)"            D2Client/UI/ui.cpp              'n
 gate "gossip: A1Q1 5-slot table (R54)"        globals/D2Game.cpp              'A1Q1 gossip table 5 slots' 1
 gate "gossip: A2Q1 5-slot table (R54)"        globals/D2Game.cpp              'A2Q1 gossip table 5 slots' 1
 gate "gossip: Den turn-in entry present (R54)" globals/D2Game.cpp             '/\* .nStringIndex = \*/ 0x4c' 1
+gate "gossip: A1Q1 extern 5-slot (R54)"       globals/globals.h               'A1Q1: 5-slot gossip table' 1
+gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A2Q1: 5-slot gossip table' 1
+gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
+gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

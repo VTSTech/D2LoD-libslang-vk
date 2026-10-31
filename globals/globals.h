@@ -4856,7 +4856,7 @@ extern D2NPCMessageTableStrc aNpcGossipData;
 
 namespace D2Game::Quests::QUESTS::A1Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A1Q1: 5-slot gossip table (was singular 1-slot)
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
 
@@ -4910,7 +4910,7 @@ extern D2NPCMessageTableStrc aNpcGossipData;
 
 namespace D2Game::Quests::QUESTS::A2Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A2Q1: 5-slot gossip table (was singular 1-slot)
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
 
