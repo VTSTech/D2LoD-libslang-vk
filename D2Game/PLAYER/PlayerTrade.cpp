@@ -73,6 +73,7 @@
 #include "D2Client/UI/Automap.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/PLAYER/PlayerMsg.h"
+#include "D2Game/PLAYER/VanillaPlusStash.h" // [vanilla-plus shared-stash]
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -2528,6 +2529,16 @@ eD2ServerIncomingStatus __fastcall ClickButton(::SGAMEDATA * pGame, D2UnitStrc *
     if (!pUnit) {
       return SERVERSTATUS_BAD_TARGET;
     }
+
+    // VP-BEGIN [vanilla-plus shared-stash] the shared-page toggle rides
+    // button 0x7D, outside every retail range handled below, so a retail
+    // server would reject it as a harmless trade-path error; ours parks or
+    // restores the shared stash page (D2Game/PLAYER/VanillaPlusStash.cpp).
+    if (VPSHARED_ShouldInterceptClickButton(pGame, pUnit, nButtonId)) {
+      VPSHARED_OnClickButton(pGame, pUnit, nButtonId, dwParam);
+      return SERVERSTATUS_OK;
+    }
+    // VP-END [vanilla-plus shared-stash]
 
     BOOL bHasInteractInfo;
     bHasInteractInfo = UNIT::SUnit::GetInteractInfo(pUnit, &eInteractType, &dwInteractGUID);

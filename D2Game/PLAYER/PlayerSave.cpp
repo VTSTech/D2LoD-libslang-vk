@@ -56,6 +56,7 @@
 #include "D2Game/PLAYER/PlayerPets.h"
 #include "D2Game/PLAYER/PlayerSave2.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
+#include "D2Game/PLAYER/VanillaPlusStash.h" // [vanilla-plus shared-stash]
 #include "D2Game/Quests/QUESTS.h"
 #include "D2Game/SKILLS/SkillsServer.h"
 #include "D2Game/UNIT/PlayerList.h"
@@ -1088,6 +1089,13 @@ BOOL __fastcall SaveGameAllGameTypes(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ch
     if (!pUnit) {
       return 0;
     }
+
+    // VP-BEGIN [vanilla-plus shared-stash] park the shared page before any
+    // .d2s is built - the shared set goes to _d2vp_shared.sss and the
+    // personal set + personal goldbank come back, so the character save
+    // only ever carries retail bytes (I1: retail-compat hard invariant).
+    VPSHARED_FlushBeforeSave(pGame, pUnit);
+    // VP-END [vanilla-plus shared-stash]
 
     pUnit->eUnitFlagsEx &= ~UNITFLAGEX_UPDATEINV;
     bIsInteracting = 0;

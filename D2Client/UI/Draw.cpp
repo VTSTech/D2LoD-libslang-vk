@@ -275,6 +275,11 @@ void __stdcall InitializeUI() {
     // entering a game starts with labels off (vanilla parity).
     ALTTOGGLE_Reset();
     // VP-END [alt-toggle]
+    // VP-BEGIN [shared-stash]: wholesale UI reset drops the page mirror too,
+    // so entering a game starts on the personal stash page (the server
+    // starts every game on the personal page as well).
+    VPSHAREDUI_ResetForNewGame();
+    // VP-END [shared-stash]
     GFX_bShowUIFlag.AltShowItems = 0;
     GFX_bShowUIFlag.Cash = 0;
     GFX_bShowUIFlag.Quest = 0;

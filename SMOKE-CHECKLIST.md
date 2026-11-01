@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R62** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R64** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
@@ -13,7 +13,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R62`. If it says R61 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R64`. If it says R63 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -63,6 +63,22 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 - [x] **18. Re-enter (the issue repro, now the fix proof):** boot → enter any game → ~30 s → Save & Exit → same process, select the same char → Play. `d2boot.log` line 1 reads `Vanilla+0.0.6-R62`. **The second entry must load and be playable.** Expected in the log at the second entry: exactly one **`escmenu: video item 1 stop 2 path empty - prior dc6 kept [R61]`** (the Resolution row's synthesized stop skipping its re-load — this mark IS the fix working; the 720p stop survives because the runtime blank DC6 stays in its slot). No `halt report:`/`d2crash-*.txt` may appear. — **CONFIRMED 2026-11-01 (R61 field run, owner: "R61 Confirmed fixes #19"):** the second entry loaded and played — issue #19 CLOSED. Keep as a per-build regression check.
 - [x] **19. Resolution row still whole (feature regression guard):** in game 2, open the in-game menu → Options → Video → Resolution: **three stops — 640x480 / 800x600 / Vanilla Plus 1280x720** — the 720p stop selectable and the "1280x720" label visible (the blank slot survived the re-init). Switching stops applies as before. If the 720p stop is missing or the label is blank, send the log — the slot-keep path misfired. — **No regression reported in the R61 confirmation run (2026-11-01).** Keep as a per-build regression check.
 - [x] **20. Esc menu + roster watches unchanged:** in-game ESC menu draws every row (the type-1 rows — 3DSound/EAX/NPCSpeech/AutoMap — draw their toggle images; a NULL slot would now be skipped, not drawn, not crashed). `roster heal:` cap marks during load are the SEPARATE standing corruptor watch (they fired in this run's session 1 too — the R54 shape) — if they appear, send the log; the R60 probes (`roster: clear lists …`, `roster state: …`) stay live around them. — **No regression reported in the R61 confirmation run (2026-11-01); the corruptor watch stays armed.** Keep as a per-build regression check.
+
+---
+
+## H. Shared stash — 1 page ([SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) track N round 1, R64)
+
+Owner spec: "Give us 1 page of retail-shaped shared stash to start. Accessible from Stash Panel. No hotkey. Gold and Items can be deposited. If that works we'll do 10 pages. Then 100." One character covering both sides of the round trip is enough for the first pass; `d2boot.log` carries the whole chain (`shared stash:` marks).
+
+Setup: `d2vp.ini` → `[features] shared_stash=1` (hot-reloads within ~2 s; the tab only appears with the key on).
+
+- [ ] **21. Tab appears (gate on):** with the key on, open any stash in town — a **"Shared"** text tab sits top-right on the same row as the stash gold label (white = personal page visible). The grid below it is the untouched retail stash grid. No hotkey exists — the tab is the only affordance.
+- [ ] **22. Gate off = vanilla:** with `shared_stash=0`/missing (or before the 2 s poll), the tab is absent and the stash behaves exactly as retail. No `_d2vp_shared.sss` may exist in the save folder from this run.
+- [ ] **23. Item deposit + cross-character round trip (the core test):** char A: put an item in the personal stash → click **Shared** (tab turns green `> Shared`) → the grid swaps to the shared page (empty first time; log: `shared stash: no file - starting empty` then `shared stash: shared page active`) → drop the item into the grid → click the tab again to go personal (log: `shared stash: saved`, `shared stash: personal page restored`) → Save & Exit. Char B (same PC): join, stash, **Shared** → **the same item is on the shared page** → pick it up into inventory → tab back → Save & Exit. Log must show char B's `shared stash: loaded N items` on first toggle.
+- [ ] **24. Gold deposit + withdraw:** with the shared page active, use the stash panel's normal gold buttons: **deposit** moves carried gold into the shared pool (the stash gold display reads the shared amount — it borrows the retail goldbank slot), **withdraw** takes shared gold back out. Tab back to personal: the display returns to the character's own banked gold (log: `shared stash: saved ... gold N` carrying the shared remainder). The character's personal banked gold must come back exactly what it was.
+- [ ] **25. `.d2s` stays retail (I1, the hard invariant):** after a session that used the shared page, the character's `.d2s` **must still load in an unmodified retail client** (owner has retail — one boot, one load). The save folder shows `_d2vp_shared.sss` (the pool's own file) next to the `.d2s`; the `.d2s` itself contains only personal items/gold. Personal stash items deposited before toggling shared must be back on the personal page after the save.
+- [ ] **26. Per-game reset:** enter a new game — the client starts on the personal page (tab white) and the server re-loads the pool from the file on the first Shared toggle (`shared stash: loaded N items`), so the previous session's deposits are there.
+- [ ] **27. Degrade drill (one minute, worth it):** scribble one byte inside the item block of `_d2vp_shared.sss` (offset ≥ 20) → in game, toggle Shared → log: `shared stash: checksum fail - file - starting empty`, the shared page is empty, **the file on disk is untouched**; fix the byte (or delete the file) and the pool behaves again. Delete the file entirely → `no file - starting empty`, and the next tab-back recreates it.
 
 ---
 

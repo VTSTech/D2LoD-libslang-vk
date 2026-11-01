@@ -221,7 +221,16 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         ";   0 = item tooltips exactly as retail               (vanilla behavior)\r\n"
         ";   1 = append \" (N)\" to the item name on every item\r\n"
         ";       tooltip, e.g. Long Sword (12)\r\n"
-        "item_ilvl=0\r\n";
+        "item_ilvl=0\r\n"
+        "\r\n"
+        "; Shared stash (single-player):\r\n"
+        ";   0 = off                                        (vanilla behavior)\r\n"
+        ";   1 = add a \"Shared\" tab to the stash panel. The shared page is a\r\n"
+        ";       second stash page every character on this PC shares: items\r\n"
+        ";       and gold deposited there survive the character. Stored in its\r\n"
+        ";       own file (_d2vp_shared.sss) next to the saves - character\r\n"
+        ";       .d2s files stay retail-compatible, with or without the key.\r\n"
+        "shared_stash=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
@@ -890,4 +899,116 @@ int __stdcall VPRES_GetWideUiOffsetX() {
 int __stdcall VPRES_GetWideUiOffsetY() {
     int nOffsetY = ScreenSizeY - 600;
     return 0 < nOffsetY ? nOffsetY : 0;
+}
+
+// ===== [vanilla-plus shared-stash] ==========================================
+// Client half of the 1-page shared stash (track N round 1; the server half
+// lives in D2Game/PLAYER/VanillaPlusStash.cpp - materialization, the .sss
+// file, the goldbank borrow, the save flush). This side is three small
+// pieces:
+//
+//   1. the config gate below (same charter as every feature: missing
+//      file/section/key or garbage = 0 = vanilla byte-for-byte, hot-re-read
+//      at most every 2 s);
+//   2. the "Shared" text tab on the stash panel (top-right, same text row
+//      as the stash gold label) - hit-tested in INV_HandleStashLeftClick via
+//      VPSHAREDUI_HandleStashClick, drawn by VPSHAREDUI_DrawTab right after
+//      the gold-button draw. No hotkey: the tab is the only affordance
+//      (owner decision 2026-11-01);
+//   3. a per-game reset so entering a game always starts on the personal
+//      page (the server starts every game on the personal page too).
+//
+// Clicking the tab sends the C->S 0x4F Click-Button packet with the
+// out-of-retail-range button id 0x7D and the desired page in the param word
+// (0 personal / 1 shared). Everything else - the grid, the item moves, the
+// gold buttons - is untouched retail; while the shared page is active the
+// server serves page 4 from the shared pool and the goldbank stat carries
+// shared gold, so the retail deposit/withdraw buttons and the gold display
+// just work.
+//
+// Client/server agreement: in SP every click is delivered, so the client
+// flag and the server page cannot drift (the server toggle is idempotent
+// even if a packet were retried). The feature is inert outside SP on the
+// server side (the toggle is refused), so a TCP/BNet session with the key
+// on shows a tab that toggles only its own label - documented v1 scope.
+
+static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
+static DWORD dwVpSharedStashGateTick = 0;
+static int gbVpSharedPageActive = 0;  // client mirror of the page toggle
+
+BOOL __stdcall VPSHAREDUI_FeatureActive() {
+    DWORD dwNow = GetTickCount();
+    if (!dwVpSharedStashGateTick || dwNow - dwVpSharedStashGateTick >= 2000) {
+        char szIniPath[260];
+        dwVpSharedStashGateTick = dwNow;
+        if (ALTTOGGLE_BuildIniPath(szIniPath)) {
+            ALTTOGGLE_EnsureIni();
+            // Missing file/section/key or a non-numeric value = 0 = vanilla.
+            gbVpSharedStashMode = GetPrivateProfileIntA("features", "shared_stash", 0, szIniPath) ? 1 : 0;
+        } else {
+            gbVpSharedStashMode = 0;
+        }
+    }
+    return gbVpSharedStashMode;
+}
+
+int __stdcall VPSHAREDUI_IsSharedPage() {
+    return gbVpSharedPageActive;
+}
+
+void __stdcall VPSHAREDUI_ResetForNewGame() {
+    gbVpSharedPageActive = 0;
+}
+
+// Tab geometry: the top-right corner of the stash panel, on the same text
+// row as the stash gold label the panel draws at (gnPanelOffsetX + 0x4e,
+// gnPanelOffsetY - (expansion ? 0x19f : 0xdb) + ScreenSizeY). The hit rect
+// is deliberately generous around the drawn word.
+static int VPSHAREDUI_TabBaselineY() {
+    BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
+    return gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
+}
+
+static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
+    *pnLeft = gnPanelOffsetX + 0x188;
+    *pnRight = gnPanelOffsetX + 0x1f8;
+    int nBaselineY = VPSHAREDUI_TabBaselineY();
+    *pnTop = nBaselineY - 14;
+    *pnBottom = nBaselineY + 5;
+}
+
+BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
+    if (!VPSHAREDUI_FeatureActive()) {
+        return FALSE;
+    }
+
+    int nLeft, nRight, nTop, nBottom;
+    VPSHAREDUI_TabHitRect(&nLeft, &nRight, &nTop, &nBottom);
+    if (nMouseX < nLeft || nMouseX > nRight || nMouseY < nTop || nMouseY > nBottom) {
+        return FALSE;
+    }
+
+    gbVpSharedPageActive = !gbVpSharedPageActive;
+    // C->S 0x4F Click Button, VP toggle id 0x7D. The send helper packs the
+    // param word as (arg2 << 16) | (uint16)arg3, so the desired page rides
+    // arg3 and the server reads dwParam = 0 (personal) / 1 (shared).
+    D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 0x7d, 0, (int16_t)gbVpSharedPageActive);
+    return TRUE;
+}
+
+void __stdcall VPSHAREDUI_DrawTab() {
+    if (!VPSHAREDUI_FeatureActive()) {
+        return;
+    }
+
+    // "Shared" in white when the personal page is visible, in the green
+    // active color when the shared page is visible (same color convention
+    // the options page uses for Off/On). Font 1 = the stash panel's own
+    // text font; saved/restored around the draw like every retail site.
+    uint16_t * pwszText = (uint16_t *)(gbVpSharedPageActive ? L"> Shared" : L"Shared");
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    int nWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
+    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + 0x1f8 - nWidth, VPSHAREDUI_TabBaselineY(),
+                                     gbVpSharedPageActive ? 2 : 0, 0);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }

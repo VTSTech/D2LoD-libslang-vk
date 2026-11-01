@@ -5021,6 +5021,18 @@ void __stdcall INV_HandleStashLeftClick(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
+    // VP-BEGIN [vanilla-plus shared-stash] "Shared" tab (top-right of the
+    // stash panel, d2vp.ini [features] shared_stash=1, no hotkey): flips
+    // the visible stash page by sending the VP 0x4F/0x7D toggle to the
+    // server, which swaps the page-4 contents (VanillaPlusStash.cpp).
+    if (VPSHAREDUI_HandleStashClick((int)uMouseX, (int)uMouseY)) {
+      pMsg->bHandled = 1;
+      pMsg->dwResult = 0;
+      Storm::SMsgBreakHandlerChain(pMsg);
+      return;
+    }
+    // VP-END [vanilla-plus shared-stash]
+
     gbInvStashPageOpen = 0;
     gbInvStashDepositClicked = 0;
     bHoverFlag = Panel::PANEL_GetBeltSlotHoverFlag();
@@ -8880,6 +8892,7 @@ void __stdcall DRAW_UI_Inventory() {
         nDrawY = INV_GetGoldButtonY();
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, nDrawTextWidth, nDrawY, nDrawColor, eDrawMode, pPalette);
         DRAW_UI_INVENTORY_Gold(0);
+        VPSHAREDUI_DrawTab(); // VP: site-N [vanilla-plus shared-stash] "Shared" page tab (no-op when gated off)
         bIsTwoHandedEquipped = ui::GetMouseX();
         nTradeNameWidth = ui::GetMouseY();
         bIsExpansion = GAME::Game::CLIENT_CheckExpansion();

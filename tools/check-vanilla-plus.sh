@@ -633,7 +633,40 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id R62"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R62' 1
+gate "res: self-id R64"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R64' 1
+
+# ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
+# stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
+# set into the retail page-4 stash grid; the .sss file (_d2vp_shared.sss) is
+# the pool's own save; the client tab rides 0x4F/0x7D; the save flush keeps
+# every .d2s retail-pure (I1). Owner constraints: own save file, retail-
+# compatible character saves, stash-panel access, no hotkey, gold + items.
+gate "stash: server TU header"                D2Game/PLAYER/VanillaPlusStash.h   'VPSHARED_BUTTON_TOGGLE = 0x7D' 1
+gate "stash: sss io DWORD outparam"           D2Game/PLAYER/VanillaPlusStash.cpp 'DWORD dwGot' 1
+gate "stash: click-button intercept site"     D2Game/PLAYER/PlayerTrade.cpp      'VPSHARED_ShouldInterceptClickButton\(pGame, pUnit, nButtonId\)' 1
+gate "stash: click-button include"            D2Game/PLAYER/PlayerTrade.cpp      'PLAYER/VanillaPlusStash\.h' 1
+gate "stash: save flush site"                 D2Game/PLAYER/PlayerSave.cpp       'VPSHARED_FlushBeforeSave\(pGame, pUnit\)' 1
+gate "stash: save flush include"              D2Game/PLAYER/PlayerSave.cpp       'PLAYER/VanillaPlusStash\.h' 1
+gate "stash: client tab draw site"            D2Client/UI/Inv.cpp                'VPSHAREDUI_DrawTab\(\); // VP: site-N' 1
+gate "stash: client tab click site"           D2Client/UI/Inv.cpp                'VPSHAREDUI_HandleStashClick\(\(int\)uMouseX, \(int\)uMouseY\)' 1
+gate "stash: client reset site"               D2Client/UI/Draw.cpp               'VPSHAREDUI_ResetForNewGame\(\);' 1
+gate "stash: ini template key"                D2Client/UI/VanillaPlusCore.cpp    'shared_stash=0' 1
+gate "stash: client gate key"                 D2Client/UI/VanillaPlusCore.cpp    '"features", "shared_stash", 0' 1
+gate "stash: server gate key"                 D2Game/PLAYER/VanillaPlusStash.cpp '"features", "shared_stash", 0' 1
+gate "stash: sss file name"                   D2Game/PLAYER/VanillaPlusStash.cpp '_d2vp_shared\.sss' 2
+gate "stash: sss magic"                       D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '1'" 1
+gate "stash: load marks"                      D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (no file|bad header|checksum fail|item count)' 5
+gate "stash: write marks"                     D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (write failed|saved)' 5
+gate "stash: toggle marks"                    D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (shared page active|personal page restored)' 2
+gate "stash: save flush mark"                 D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: flush before save' 1
+gate "stash: atomic write"                    D2Game/PLAYER/VanillaPlusStash.cpp 'MoveFileExA' 3
+gate "stash: .bak generation"                 D2Game/PLAYER/VanillaPlusStash.cpp 'CopyFileA' 1
+gate "stash: goldbank borrow"                 D2Game/PLAYER/VanillaPlusStash.cpp 'UNITSTAT_goldbank' 5
+gate "stash: retail item encoder"             D2Game/PLAYER/VanillaPlusStash.cpp 'Items::SerializeItem' 2
+gate "stash: retail item loader"              D2Game/PLAYER/VanillaPlusStash.cpp 'PLRSAVE_DispatchItemLoadByFormat' 2
+gate "stash: dematerialize via retail remove" D2Game/PLAYER/VanillaPlusStash.cpp 'ITEM_RemoveItemFromCurrentLocation' 2
+gate "stash: client resync 0x9C"              D2Game/PLAYER/VanillaPlusStash.cpp 'Send0x9CItemPutInContainer' 1
+gate "stash: scope guard SP-only"             D2Game/PLAYER/VanillaPlusStash.cpp 'SGAMETYPE_SINGLEPLAYER' 2
 
 # ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
 # [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line

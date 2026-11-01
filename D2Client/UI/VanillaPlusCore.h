@@ -161,3 +161,28 @@ void __stdcall D2VP_ConfigReloaded();                     // bust all 2 s gate c
 // table rows). Halts loudly with a d2boot.log line when a merge dropped an
 // edit - see docs/merge-upstream.md. Cheap; called from ALTTOGGLE_EnsureIni.
 void __stdcall VANILLAPLUS_SelfCheck();
+// [vanilla-plus shared-stash] Client side of the 1-page shared stash (track
+// N round 1; server half lives in D2Game/PLAYER/VanillaPlusStash.cpp).
+// d2vp.ini next to d2.exe, [features] shared_stash=0|1 - default/missing
+// file/missing key/garbage = 0 = vanilla byte-for-byte (no tab pixels, no
+// clicks, no state). While on, the stash panel gains a "Shared" text tab
+// (top-right, no hotkey by owner decision): clicking it flips the visible
+// stash page by sending the C->S 0x4F Click-Button packet with the
+// out-of-retail-range button id 0x7D and the desired page in the param word
+// (0 personal, 1 shared). The server materializes the shared set into the
+// retail stash grid (page 4) - every retail stash flow keeps working - and
+// borrows the goldbank stat for shared gold while the page is active, so
+// the retail deposit/withdraw gold buttons move shared gold untouched. The
+// save flush (PlayerSave::SaveGameAllGameTypes VP site) parks the shared
+// page into _d2vp_shared.sss and restores the personal page + personal
+// gold before any .d2s is built (I1: character saves stay retail-pure).
+BOOL __stdcall VPSHAREDUI_FeatureActive();   // config: shared_stash on?
+int __stdcall VPSHAREDUI_IsSharedPage();     // client mirror: shared page active?
+void __stdcall VPSHAREDUI_ResetForNewGame(); // entering a game starts personal
+// Hit-test + toggle for the tab. TRUE = the click hit the tab: the flag is
+// flipped, the 0x4F/0x7D toggle is sent, and the caller must swallow the
+// message (VP site in INV_HandleStashLeftClick).
+BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY);
+// Per-frame tab draw (VP site in Inv.cpp's stash draw branch, right after
+// the gold-button draw). Draws nothing when the gate is off.
+void __stdcall VPSHAREDUI_DrawTab();
