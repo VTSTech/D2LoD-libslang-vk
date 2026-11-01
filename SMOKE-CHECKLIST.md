@@ -3,7 +3,7 @@
 Build: **Vanilla+0.0.6-R62** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
-**Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
+**Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
 
 **Known-fail — skip, don't burn time:** Necro skeleton spawn tint (issue #8). R51 spawn-polarity fix is pending re-verify; symptom = own raised skeletons spawn yellow and (per R51 theory) should never re-tint. One useful datum for the next round: raise a skeleton and note whether it *ever* re-tints (e.g. after a roster-update event) or stays yellow forever — "never re-tints" would falsify the R51 theory.
 
