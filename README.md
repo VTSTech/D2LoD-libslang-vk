@@ -4,6 +4,11 @@
 
 # D2LoD Vanilla+
 
+<a href="https://madeopenly.com/?t=325ab9ffa5494159843c9f9999b41dc3" title="Made Openly: Mostly AI">
+  <img src="https://madeopenly.com/b/325ab9ffa5494159843c9f9999b41dc3.svg?l=mostly-ai&s=dark&z=small&v=robot&m=robot"
+       width="88" height="31" alt="Made Openly: Mostly AI">
+</a>
+
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-297%2F297-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
