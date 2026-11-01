@@ -78,6 +78,25 @@ rule in it was learned the hard way (see "War stories" at the bottom).
     #    every D2BOOT_* user TU and proves it still reaches the declaration
     #    (direct include or transitively). Mandatory when the merge touched
     #    include blocks; cheap enough to always run.
+    bash scripts/merge_site_syntax_sweep.sh "$(git log --merges -1 --format=%h)"
+    #    MERGE-SITE SYNTAX SWEEP (added Rev 92, reworked Rev 93 - baseline
+    #    diffing): every audit above is grep-based, and a merge that keeps
+    #    BOTH sides' local declarations, double-splices one function from
+    #    both parents' shapes, or drops a brace is textually plausible and
+    #    semantically fatal. This compiles every TU that differs from BOTH
+    #    merge parents (the true merge sites) THREE ways with the host shims
+    #    - merge result + both parents' bodies against the same headers -
+    #    and flags only errors unique to the merge result (plus the parse
+    #    danger classes unconditionally). Pre-existing host noise (undeclared
+    #    Win32 surface, shim overlaps, 64-bit precision casts) cancels out
+    #    against the parents' own compile results; no SDK allowlist to
+    #    maintain. Rev 92's name-allowlist version missed nothing it saw but
+    #    needed a name per Win32 API; v2 borrows the parents as the baseline
+    #    instead. Negative-tested on the 1792 merge: caught Inv.cpp pNpc,
+    #    SpellSel.cpp pPlayerUnit_lcl x4, Direct3D.cpp double-splice x2 and
+    #    SFile.cpp double-case (all pre-fix), clean post-fix. Takes minutes,
+    #    not seconds - mandatory after every merge, skippable for
+    #    overlay-only rounds.
 
     # 5) build locally (Win11):
     powershell -File tools/build-local-win11.ps1
@@ -173,3 +192,46 @@ PR) so acceptance is frictionless.
   gate rows) cover this class. Rule: when a fork edit pairs a header
   declaration with an implementation, gate BOTH sides; when a regen
   legitimately retypes one side, move both gates in the same commit.
+- **Rev 92 double-declared locals (the 1792 merge):** the merge kept BOTH
+  sides' `D2UnitStrc* pNpc;` in `D2Client/UI/Inv.cpp` - upstream's flattened
+  shape declares it at the top of `InitializeiInventoryPages` (line 182),
+  the fork side at the use site (line 202) - and dropped the declaration
+  line under `SPELLSEL_RenderAllSkillGrids` that the fork-side body's four
+  `pPlayerUnit_lcl` uses still needed (upstream's shape inlines
+  `GetPlayerUnit_UI()` into every call). Both files are textually plausible:
+  every line existed in a parent, no marker lost, no gate count changed -
+  and the merge round's 4-TU fork battery was green because neither file is
+  fork-owned. The owner's Win11 build died on the first one. Fix (R73):
+  Inv.cpp keeps upstream's top declaration and drops the use-site duplicate;
+  SpellSel.cpp re-expresses the four VP-marked calls on upstream's inlined
+  receiver (zero future merge surface); the R45 gate rows re-pin the new
+  call shape with unchanged counts. Rule: a resolution that merges
+  declaration blocks from both parents must be COMPILED, not diffed - the
+  redeclaration class is invisible to every grep instrument and only the
+  merge-site syntax sweep (step 4e) sees it.
+- **Rev 93 double-spliced regions (the same 1792 merge, second and third
+  classes):** the owner's next build died in `D2Direct3D/Renderer/
+  Direct3D.cpp` with `a function-definition is not allowed here` x20. TWO
+  more artifacts, both in the same resolution style as Rev 92's:
+  (1) `RENDERER_D3D_RenderWallTileWithPerspective` contained the whole
+  subtile do-loop TWICE - the fork-resolved shape AND upstream's flat shape
+  concatenated inside one `if (nTileType <= 9) {` wrapper whose closing
+  brace the splice consumed, so the FUNCTION never closed and every later
+  signature parsed inside it; (2) `Direct3DCallBack` had the same
+  double-splice (upstream's `iVar4` rename dropped with it, `expected '}'
+  before 'else'`); (3) `Fog/Source/SFile.cpp` `LOGFILE_StoreGameStartupInfo`
+  had `case 9:`/`case 10:` TWICE inside one switch - fork-side (`szOsName`)
+  and upstream-side (`__frame0.szOsName`, a local the merge tree does not
+  declare) concatenated. All three regions carry ZERO VP marks - pure
+  decompiled code - so the fix per house policy was upstream's shape
+  VERBATIM (zero future merge surface; RenderWallTileWithPerspective is now
+  byte-identical to upstream's). Why the Rev 92 sweep passed them: its
+  30-line per-TU error cap cut the parse errors off behind precision-cast
+  noise, and its SDK allowlist chased names the decompiled TUs would never
+  stop needing. Fixes: `tools/syntax-check.sh` grew `VP_SYNTAX_FULL=1`
+  (cap off), the sweep switched to baseline diffing (compile each TU's
+  parent bodies too; only errors unique to the merge result are real), and
+  the parse danger classes surface unconditionally. Rules: a region whose
+  conflict resolution touches BOTH parents' shapes must be diffed against
+  BOTH parents, not one; and an audit's output cap is part of its blind
+  spot - truncation is how a clean sweep lies.

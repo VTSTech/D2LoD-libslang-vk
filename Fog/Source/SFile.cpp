@@ -705,13 +705,6 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
       szOsName[7] = '\0';
       memcpy(szOsName, "unkn", 4);
       break;
-      case 9:
-        memcpy(__frame0.szOsName, "MacO", 4);
-      __frame0.szOsName[4] = 'S';
-      __frame0.szOsName[5] = '\0';
-      break;
-      case 10:
-        memcpy(__frame0.szOsName, "MacOS X", 8);
     }
 
     Src::LogManager::LOGFILE_WriteStringToFile("%s running under %s (Version %.3f)", "Diablo II", szOsName, (double)(float)fGameVersion);

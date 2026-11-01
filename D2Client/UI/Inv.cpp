@@ -199,7 +199,6 @@ void __stdcall InitializeiInventoryPages() {
     bIsExpansion = GAME::Game::CLIENT_CheckExpansion();
     int32_t nInvPageIndex;
     nInvPageIndex = 0;
-    D2UnitStrc* pNpc;
     pNpc = UNIT::Player::GetPlayerUnit_UI();
     nInvPageIndex = D2Common::Units::GetInventoryPage(pNpc, nInvPageIndex, bIsExpansion);
     D2Common::DATATBLS::TokTbls::GetInvDimensions(nInvPageIndex, nScreenMode, &pInventoryScreenCoordinates);

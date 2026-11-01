@@ -145,7 +145,17 @@ for tu in "${TUS[@]}"; do
         printf 'syntax %-30s ok\n' "$tu"
     else
         printf 'syntax %-30s FAILED\n' "$tu"
-        printf '%s\n' "$err" | sed 's/^/    /' | head -30
+        # VP_SYNTAX_FULL=1 disables the 30-line cap: a big decompiled TU can
+        # produce 30+ lines of 64-bit-host noise (precision casts, SDK gaps)
+        # BEFORE a real parse error ("function-definition is not allowed")
+        # further down - the cap hid exactly that class in the 1792 merge
+        # (Rev 93). scripts/merge_site_syntax_sweep.sh always sets it; human
+        # runs keep the readable cap.
+        if [ "${VP_SYNTAX_FULL:-0}" = "1" ]; then
+            printf '%s\n' "$err" | sed 's/^/    /'
+        else
+            printf '%s\n' "$err" | sed 's/^/    /' | head -30
+        fi
         FAILED=$((FAILED + 1))
     fi
 done

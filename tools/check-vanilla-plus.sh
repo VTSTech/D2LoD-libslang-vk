@@ -310,9 +310,9 @@ gate "row-10: dispatch hoisted (rev44)"    D2Client/UI/Draw.cpp            'rend
 # both icon passes must consume nStartX (right grid) or the shifted 0x50
 # (swap grid) exactly as their tooltip passes do.
 gate "site-5: spell grid shifts (R45)"      D2Client/UI/SpellSel.cpp        'VPRES_GetWideUiOffsetX' 5
-gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, nStartX,' 2
-gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(pPlayerUnit_lcl, 0x50 \+ VPRES_GetWideUiOffsetX' 2
-gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(pPlayerUnit_lcl, 0x50,' 0
+gate "site-5: spell right-grid icons bar-anchored (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), nStartX,' 2
+gate "site-5: spell swap-grid icons ride panel (R45)" D2Client/UI/SpellSel.cpp 'SPELLSEL_DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50 \+ VPRES_GetWideUiOffsetX' 2
+gate "site-5: spell icons not vanilla-anchored (R45)" D2Client/UI/SpellSel.cpp 'DrawSkillGrid\(UNIT::Player::GetPlayerUnit_UI\(\), 0x50,' 0
 gate "site-5: summit clouds gate"          D2Client/GAME/View.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (GAME)"     D2Client/GAME/Draw.cpp          'VPRES_IsWideLayoutMode' 1
 gate "site-5: level edges gate (client)"   D2Client/D2Client.cpp           'VPRES_IsWideLayoutMode' 1
@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R72"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R72' 1
+gate "res: self-id 0.0.7-R74"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R74' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
