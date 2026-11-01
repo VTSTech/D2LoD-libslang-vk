@@ -11,7 +11,7 @@ restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
 renamed `libslang-vk` → `Glide3xVK`.)
 
 **Latest release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7)** — one 7z with the client (build self-ID
-`Vanilla+0.0.7-R66`; release notes `RELEASE-NOTES-0.0.7-R59-R66.md` — the 1-page shared stash, the #19 save-and-re-enter crash fix, upstream sync to Ghidra 1783), the Glide3xVK 0.4.6 wrapper and launcher/debug scripts.
+`Vanilla+0.0.7-R66` — the 1-page shared stash, the #19 save-and-re-enter crash fix, upstream sync to Ghidra 1783), the Glide3xVK 0.4.6 wrapper and launcher/debug scripts.
 
 ## The two layers
 

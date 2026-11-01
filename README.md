@@ -50,8 +50,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
 
 - **Current release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
-  exe can always be pinned to its source round. Release notes for R59→R66:
-  [`RELEASE-NOTES-0.0.7-R59-R66.md`](RELEASE-NOTES-0.0.7-R59-R66.md).
+  exe can always be pinned to its source round. The R59→R66 release record lives in
+  [`HISTORY.md`](HISTORY.md), the verbatim round journal.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
   mode; **Glide (`-3dfx`) through the glide3xvk wrapper** — fixed in the R46 round,
@@ -164,13 +164,13 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`0.0.4`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4) | Auto Gold Pickup; globe hover values. |
 | [`0.0.5`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5) | Per-class player sounds restored (77 values byte-matched from the retail exe); full-inventory pickup crash and walk-click mis-pickup fixed; Persistent Globe Text. |
 | [`0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6) | The 720p release: native 1280x720 mode; loading-screen freeze fixed; sound constants repaired; Options page visible; inventory, skill flyouts and dialogs aligned at 720p. |
-| [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Notes: `RELEASE-NOTES-0.0.7-R59-R66.md` (R59→R66). |
+| [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Record: [`HISTORY.md`](HISTORY.md) round journal (R59→R66). |
 
 Between tags, work is tracked as revision rounds (`-Rxx`); the shipped 0.0.7 build
-self-IDs `Vanilla+0.0.7-R66`, and round notes for the post-0.0.6 rounds live in
-`RELEASE-NOTES-0.0.6-R46-R52.md` / `RELEASE-NOTES-0.0.6-R52-R59.md` (0.0.6-era) and
-`RELEASE-NOTES-0.0.7-R59-R66.md` (this release). Post-release rounds (R67+, through the Ghidra-1792
-sync at R74) are journaled in [`handoff.md`](handoff.md) with archive records in [`HISTORY.md`](HISTORY.md).
+self-IDs `Vanilla+0.0.7-R66`. Every round's record lives in [`HISTORY.md`](HISTORY.md)
+(the verbatim archive; per-release summaries for the 0.0.6-era rounds also on the
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — post-release rounds R67+
+through the Ghidra-1792 sync at R74 — in [`handoff.md`](handoff.md).
 
 ## Verification
 

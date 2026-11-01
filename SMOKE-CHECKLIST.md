@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.7-R71** (confirm via line 1 of `d2boot.log` before starting) — release line 0.0.7, field round R71; release notes for R59→R66: `RELEASE-NOTES-0.0.7-R59-R66.md`.
+Build: **Vanilla+0.0.7-R74** (confirm via line 1 of `d2boot.log` before starting) — release line 0.0.7, first post-1792 build (R73 never booted; §I carries the merge-pass items).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** **Latest field pass — same day, the R66 build:** the Shared tab is visible and the shared page works (owner: **"Great job. I see it. It works."**) — §H item 21 confirmed. Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
