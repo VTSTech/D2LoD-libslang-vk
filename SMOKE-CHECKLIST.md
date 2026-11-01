@@ -13,7 +13,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.7-R71`. If it says R70 or lower (or still carries the `0.0.6` prefix), wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.7-R74`. If it says R73 or lower (or still carries the `0.0.6` prefix), wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -101,8 +101,8 @@ Boot gate: the first `d2boot.log` line must print `Vanilla+0.0.7-R74` (R73 never
 
 | Artifact | Comes from | Tells us |
 | --- | --- | --- |
-| `d2boot.log` | `d2.exe` | build self-ID (which round you actually ran) |
-| `d2crash-<date>-<time>.txt` | `d2.exe` (auto-written next to the exe; hangwatch dumps one after 12 s) | symbolised crashed module/function/offset |
+| `d2boot.log` | `d2vp.exe` | build self-ID (which round you actually ran) |
+| `d2crash-<date>-<time>.txt` | `d2vp.exe` (auto-written next to the exe; hangwatch dumps one after 12 s) | symbolised crashed module/function/offset |
 | `glide3x.log` | glide3xvk wrapper | frame, preset, chain state; whether the faulting thread was wrapper code |
 
 A crash without both artifacts cannot be attributed — attach all to the issue.

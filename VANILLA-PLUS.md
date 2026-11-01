@@ -6,7 +6,7 @@ Diablo II 1.14d made directly in the recovered source, on top of
 recovered function-by-function as C++ that builds). It is kept deliberately
 clean of the glide3x→Vulkan wrapper work — that lives on the `Glide3xVK`
 branch of [VTSTech/D2LoD-libslang-vk](https://github.com/VTSTech/D2LoD-libslang-vk)
-and overlays on top of whatever `d2.exe` is running. (Branch history: the
+and overlays on top of whatever game exe is running (`d2.exe` upstream, `d2vp.exe` in this fork's releases). (Branch history: the
 restructure on 2026-10-28 moved the former `vanilla-plus` branch to `main` and
 renamed `libslang-vk` → `Glide3xVK`.)
 
@@ -17,7 +17,7 @@ renamed `libslang-vk` → `Glide3xVK`.)
 
 ```
 +----------------------------------------------------------+
-|  d2.exe   (this branch: redivivus source + vanilla-plus  |
+|  d2vp.exe (this branch: redivivus source + vanilla-plus  |
 |            fixes/improvements, built with mingw i686)    |
 +----------------------------------------------------------+
 |  glide3x.dll                                             |
@@ -94,7 +94,7 @@ each can be fixed, replaced and released independently.
   sprite picks the item up (vanilla hold-Alt keeps its retail click-through
   quirks untouched); overhead player names follow
   the toggle; entering a game starts with labels off. **Default OFF**: set
-  `[features] alt_toggle=1` in `d2vp.ini` next to `d2.exe` (missing
+  `[features] alt_toggle=1` in `d2vp.ini` next to `d2vp.exe` (missing
   file/section/key/garbage value = vanilla hold-Alt behavior byte-for-byte;
   the key is hot-re-read at most every 2 s). A missing `d2vp.ini` is created
   at startup with a documented all-defaults template — one attempt per
@@ -144,7 +144,7 @@ cmake --build build          # -> build/d2.exe
 ```
 
 Copy `d2.exe` next to the original `Game.exe` in a 1.14d install and run
-`d2.exe -w`. Works with the `Glide3xVK` overlay: drop that overlay's
+`d2.exe -w` (releases ship this exe renamed to `d2vp.exe` — same binary). Works with the `Glide3xVK` overlay: drop that overlay's
 `glide3x.dll` in the same folder as usual.
 
 On Windows the same build runs natively - `tools/win11-build.ps1` sets up
@@ -165,7 +165,7 @@ correctly, collect **both** reports from one repro:
 
 | Artifact | Comes from | Tells us |
 |---|---|---|
-| `d2crash-<date>-<time>.txt` | this d2.exe (upstream's symbolized report, written next to the exe) | the crashed module, function and offset **in game source terms** |
+| `d2crash-<date>-<time>.txt` | this d2vp.exe (upstream's symbolized report format, written next to the exe) | the crashed module, function and offset **in game source terms** |
 | `glide3x.log` | the glide3xvk wrapper | what the wrapper was doing (frame, preset, chain, controller state) and whether the faulting thread was in wrapper code |
 
 Decision rule:

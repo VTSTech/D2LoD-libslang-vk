@@ -13,10 +13,10 @@ know* them, not because it gets them wrong.
 
 ## If it crashes
 
-The game writes `d2crash-YYYYMMDD-HHMMSS.txt` next to `d2.exe` (or in `%TEMP%` when that folder
+The game writes `d2crash-YYYYMMDD-HHMMSS.txt` next to `d2vp.exe` (or in `%TEMP%` when that folder
 is not writable). **Send that file.** It names the build, the exception, the registers, the stack
 as function and `file:line`, and every loaded module (wrappers such as cnc-ddraw, glide or an
-overlay show up there). The names come from the DWARF in your own `d2.exe`, read with the vendored
+overlay show up there). The names come from the DWARF in your own `d2vp.exe`, read with the vendored
 libbacktrace (`thirdparty/libbacktrace`), so the report is readable without your exe - keep the
 build unstripped. One report is written per crash; the game's own error handling runs after it.
 A Fog halt (`ERROR_UnrecoverableInternalError_Halt`, the engine's assert) writes the same report,
