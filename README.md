@@ -82,6 +82,9 @@ be fixed, replaced and released independently. The releases bundle both as one d
   the Vanilla+ Options page followed in R67; the tab label sits one size class up
   since R68 (Font24, `d2vp.ini [ui] stash_tab_font` tunes it live) and floats above
   the panel over the gold display since R69.
+- **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R70 text-backdrop pill behind the floating tab, then merge `6c552f9` + the R73/R74
+  compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
+  field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending.
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring.** Re-root-caught + re-fixed in the R51 round:
     the R50 round corrected the roster pet-recolor polarity, but the spawn-time
@@ -166,7 +169,8 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 Between tags, work is tracked as revision rounds (`-Rxx`); the shipped 0.0.7 build
 self-IDs `Vanilla+0.0.7-R66`, and round notes for the post-0.0.6 rounds live in
 `RELEASE-NOTES-0.0.6-R46-R52.md` / `RELEASE-NOTES-0.0.6-R52-R59.md` (0.0.6-era) and
-`RELEASE-NOTES-0.0.7-R59-R66.md` (this release).
+`RELEASE-NOTES-0.0.7-R59-R66.md` (this release). Post-release rounds (R67+, through the Ghidra-1792
+sync at R74) are journaled in [`handoff.md`](handoff.md) with archive records in [`HISTORY.md`](HISTORY.md).
 
 ## Verification
 
