@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Vanilla+ merge gates: grep-audit of every edit the fork injects into upstream
 # files. After any upstream merge, run this BEFORE building - it answers "did
-# the merge lose a Vanilla+ edit?" in one second, without a toolchain.
+# the merge lose a Vanilla+ edit?" in one second, without a toolchain (and,
+# since R71, when a host C++ compiler IS present it also syntax-checks the
+# fork TUs with the build's flags - the R70 overlay shipped a compile break
+# no text gate could see; see tools/syntax-check.sh).
 #
 #   tools/check-vanilla-plus.sh [repo-root]
 #
@@ -642,7 +645,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R69"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R69' 1
+gate "res: self-id 0.0.7-R71"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R71' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -668,6 +671,28 @@ gate "stash: tab floats above gold box (R69)" D2Client/UI/VanillaPlusCore.cpp   
 gate "stash: tab headroom fallback (R69)"     D2Client/UI/VanillaPlusCore.cpp    'nFloatBaseline >= 0x18' 1
 gate "stash: tab hit-test helper (R69)"       D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TabHitTest' 3
 gate "stash: tab down swallow site (R69)"     D2Client/UI/Inv.cpp                'VPSHAREDUI_TabHitTest\(nX, nY\)' 1
+
+# ---- [shared-stash tab backing] R70: field verdict on the R69 build -
+# position + click CONFIRMED ("The Stash label is in the right place,
+# clicking around switches the tab"), word INVISIBLE again. Not R85's
+# draw-order overpaint (the late frame queue is bottom/right/hover-anchored
+# - swept Draw.cpp 540-759): the float rides the LIVE WORLD strip above the
+# panel and un-outlined white glyphs washed out on bright terrain (the R69
+# handoff's flagged tradeoff). Fix = the retail text-backdrop recipe -
+# UI_DrawPartyRoster (ui.cpp 1506) draws a black DRAW_VERYTRANSPARENT rect
+# under its DRAW_text; the tab does the same, same-site, float rows only
+# (the 640x480 legacy row keeps its field-proven bare parchment look).
+# R71: the first R70 overlay DID NOT COMPILE - the pill call used the short
+# Engine::Gfx:: form, which only resolves from TUs inside namespace D2Client
+# (VanillaPlusOptions is one; VanillaPlusCore is a global-scope TU - see its
+# own GetPlayerUnit_UI note). Fixed to D2Client::Engine::Gfx::, the pill gate
+# now pins the qualified form, the tripwire below rejects the bare form in
+# this TU, and the suite grew the host syntax check (below) so a text gate
+# can never again be the last line of defense.
+gate "stash: tab backing pill (R70)"          D2Client/UI/VanillaPlusCore.cpp    'D2Client::Engine::Gfx::D2GFX_DrawSolidRectExBySize' 1
+gate "stash: tab pill translucent (R70)"      D2Client/UI/VanillaPlusCore.cpp    '0, DRAW_VERYTRANSPARENT\);' 1
+gate "stash: tab pill float-only (R70)"       D2Client/UI/VanillaPlusCore.cpp    'if \(bFloating\) \{' 1
+gate "stash: tab pill call qualified (R71)"   D2Client/UI/VanillaPlusCore.cpp    '(^|[^:a-zA-Z0-9_])Engine::Gfx::' 0
 gate "stash: click-button intercept site"     D2Game/PLAYER/PlayerTrade.cpp      'VPSHARED_ShouldInterceptClickButton\(pGame, pUnit, nButtonId\)' 1
 gate "stash: click-button include"            D2Game/PLAYER/PlayerTrade.cpp      'PLAYER/VanillaPlusStash\.h' 1
 gate "stash: save flush site"                 D2Game/PLAYER/PlayerSave.cpp       'VPSHARED_FlushBeforeSave\(pGame, pUnit\)' 1
@@ -712,6 +737,20 @@ gate "stash: scope guard SP-only"             D2Game/PLAYER/VanillaPlusStash.cpp
 # WHOLE class (every D2BOOT_* user TU must see the declaration) - run it
 # alongside rev47/rev48 after any merge (docs/merge-upstream.md step 4).
 gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'support/d2_boot\.h' 1
+
+# ---- [host syntax check] R71: compile the fork TUs on the sandbox host
+# with the build's exact flags (tools/syntax-check.sh). R70 shipped a compile
+# break (short Engine::Gfx:: in a global-scope TU) that every text gate was
+# blind to - the gates pin TEXT, not semantics. Failures fail the suite; a
+# box with no C++ compiler SKIPS the step so the gates stay runnable bare.
+SYNTAX_OUT=$(bash tools/syntax-check.sh "$ROOT" 2>&1); SYNTAX_RC=$?
+[ -n "$SYNTAX_OUT" ] && printf '%s\n' "$SYNTAX_OUT"
+if [ "$SYNTAX_RC" -eq 1 ]; then
+    FAIL=$((FAIL + 1))
+    echo "vanilla-plus: syntax check FAILED (see above)"
+elif [ "$SYNTAX_RC" -eq 2 ]; then
+    echo "vanilla-plus: syntax check SKIPPED (no host C++ compiler)"
+fi
 
 echo
 if [ "$FAIL" -eq 0 ]; then

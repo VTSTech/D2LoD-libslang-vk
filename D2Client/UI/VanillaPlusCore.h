@@ -195,5 +195,9 @@ BOOL __stdcall VPSHAREDUI_TabHitTest(int nMouseX, int nMouseY);
 // overrides, hot-read with the same 2 s gate). Position = the R69 floating
 // anchor: above the stash panel, over the gold amount box (right edge
 // +0xdc, baseline 55 px above the box's text row; the R66 in-panel row
-// remains as the 640x480 fallback).
+// remains as the 640x480 fallback). R70: on float rows the word gets a
+// black DRAW_VERYTRANSPARENT backing pill (the retail UI_DrawPartyRoster
+// text-backdrop recipe) - un-outlined white washed out on bright terrain
+// in the field; the pill makes the glyphs terrain-independent. The 640x480
+// legacy row keeps its field-proven bare look.
 void __stdcall VPSHAREDUI_DrawTab();
