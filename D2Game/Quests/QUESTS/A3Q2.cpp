@@ -498,8 +498,7 @@ BOOL __fastcall Q19_CheckPlayerHasKhalimsEye(::SGAMEDATA * pGame, D2UnitStrc * p
       return 0;
     }
 
-    int32_t* piVar1 = &pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount;
-    (*piVar1)++;
+    pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount++;
     return 0;
 }
 
@@ -520,8 +519,7 @@ BOOL __fastcall Q19_CheckPlayerHasKhalimsBrain(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int32_t* piVar1 = &pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount;
-    (*piVar1)++;
+    pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount++;
     return 0;
 }
 
@@ -542,8 +540,7 @@ BOOL __fastcall Q19_CheckPlayerHasKhalimsHeart(::SGAMEDATA * pGame, D2UnitStrc *
       return 0;
     }
 
-    int32_t* piVar1 = &pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount;
-    (*piVar1)++;
+    pDVar3->pQuestSpecificData.pA3Q2->nKhalimsEyeCount++;
     return 0;
 }
 
@@ -575,7 +572,7 @@ BOOL __fastcall OBJOP_A3Q2_KhalimsRelicPortalDrop1(D2ObjectOperateFnArg * pOpera
       pDVar1 = pKhalimsWillQuestData->pQuestSpecificData.pA3Q2;
       pDVar1->nKhalimsEyeCount = 0;
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q19_CheckPlayerHasKhalimsHeart);
-      if (0 < pDVar1->nKhalimsEyeCount) {
+      if (pDVar1->nKhalimsEyeCount > 0) {
         do {
           pDroppedUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationArg, nullptr, -1, 1);
           if (pDroppedUnit) {
@@ -620,7 +617,7 @@ BOOL __fastcall OBJOP_A3Q2_KhalimsRelicPortalDrop2(D2ObjectOperateFnArg * pOpera
       pDVar1 = pKhalimsWillQuestData->pQuestSpecificData.pA3Q2;
       pDVar1->nKhalimsEyeCount = 0;
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q19_CheckPlayerHasKhalimsEye);
-      if (0 < pDVar1->nKhalimsEyeCount) {
+      if (pDVar1->nKhalimsEyeCount > 0) {
         do {
           pDroppedUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationArg, nullptr, -1, 1);
           if (pDroppedUnit) {
@@ -665,7 +662,7 @@ BOOL __fastcall OBJOP_A3Q2_KhalimsRelicPortalDrop3(D2ObjectOperateFnArg * pOpera
       pDVar1 = pKhalimsWillQuestData->pQuestSpecificData.pA3Q2;
       pDVar1->nKhalimsEyeCount = 0;
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pOperation->sArg.pGame, 0, pOperation->pAttacker, (::fpExecuteOnUnitFunction)Q19_CheckPlayerHasKhalimsBrain);
-      if (0 < pDVar1->nKhalimsEyeCount) {
+      if (pDVar1->nKhalimsEyeCount > 0) {
         do {
           pDroppedUnit = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationArg, nullptr, -1, 1);
           if (pDroppedUnit) {
@@ -690,8 +687,7 @@ void __fastcall Q19_UpdateOrbCount(::SGAMEDATA * pGame, int nParam) {
     }
 
     D2QuestDataA3Q2Strc* pQuestData = pKhalimsWillQuestData->pQuestSpecificData.pA3Q2;
-    int32_t* pnOrbCount = &pQuestData->nKhalimsWillCount;
-    *pnOrbCount += nParam;
+    pQuestData->nKhalimsWillCount += nParam;
     pQuestData->bOrbCountUpdated = true;
 }
 

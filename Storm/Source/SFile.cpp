@@ -184,19 +184,19 @@ static void SFILE_InitializeHashSource(uint32_t nSeed) {
       uint32_t nHi;
       nHi = (nSeed * 0x7d + 3) % 0x2aaaab;
       nLo = (nHi * 0x7d + 3) % 0x2aaaab;
-      pCryptEntry[-0x200] = nHi << 0x10 | nLo & 0xffff;
+      pCryptEntry[-0x200] = nHi << 0x10 | (uint16_t)nLo;
       nHi = (nLo * 0x7d + 3) % 0x2aaaab;
       nLo = (nHi * 0x7d + 3) % 0x2aaaab;
-      pCryptEntry[-0x100] = nHi << 0x10 | nLo & 0xffff;
+      pCryptEntry[-0x100] = nHi << 0x10 | (uint16_t)nLo;
       nHi = (nLo * 0x7d + 3) % 0x2aaaab;
       nLo = (nHi * 0x7d + 3) % 0x2aaaab;
-      *pCryptEntry = nHi << 0x10 | nLo & 0xffff;
+      *pCryptEntry = nHi << 0x10 | (uint16_t)nLo;
       nHi = (nLo * 0x7d + 3) % 0x2aaaab;
       nLo = (nHi * 0x7d + 3) % 0x2aaaab;
-      pCryptEntry[0x100] = nHi << 0x10 | nLo & 0xffff;
+      pCryptEntry[0x100] = nHi << 0x10 | (uint16_t)nLo;
       nHi = (nLo * 0x7d + 3) % 0x2aaaab;
       nSeed = (nHi * 0x7d + 3) % 0x2aaaab;
-      pCryptEntry[0x200] = nHi << 0x10 | nSeed & 0xffff;
+      pCryptEntry[0x200] = nHi << 0x10 | (uint16_t)nSeed;
       pCryptEntry++;
       nEntriesLeft--;
     } while (nEntriesLeft);
@@ -448,20 +448,20 @@ static int __stdcall SFILE_CheckFileHandle(D2MPQFileStrc * pMPQFile, D2MPQFileSt
 
 // @blizzard CheckForCdRom (SFILE.CPP)
 BOOL __stdcall SFILE_CheckForCdRom(char * szText) {
-    // Frame slots -288..-8 are ONE object: &dwTotalClusters is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -284..-8 are ONE object: &dwFsFlags is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      DWORD dwTotalClusters;
       DWORD dwFsFlags;
       DWORD dwFreeClusters;
       DWORD dwBytesPerSector;
       char szRootPath[4];
       uint32_t szFsName[65];
     };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 280, "frame group __frame0_t must reproduce the Ghidra frame layout");
+    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 276, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     uint32_t nChecksum;
     LPDWORD dwSectorsPerCluster;
+    DWORD dwTotalClusters;
     uint16_t nFoldedChecksum;
     SSTR::SStrCopy(__frame0.szRootPath, szText, 4);
     UINT nDriveType = GetDriveTypeA(__frame0.szRootPath);
@@ -472,8 +472,8 @@ BOOL __stdcall SFILE_CheckForCdRom(char * szText) {
       /* LPDWORD lpTotalNumberOfClusters for GetDiskFreeSpaceA */ /* LPDWORD lpNumberOfFreeClusters for GetDiskFreeSpaceA */ /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ dwSectorsPerCluster = (LPDWORD)0x0;
       __frame0.dwBytesPerSector = 0;
       __frame0.dwFreeClusters = 0;
-      __frame0.dwTotalClusters = 0;
-      bApiOk = GetDiskFreeSpaceA(__frame0.szRootPath, (LPDWORD)&dwSectorsPerCluster, &__frame0.dwBytesPerSector, &__frame0.dwFreeClusters, &__frame0.dwTotalClusters);
+      dwTotalClusters = 0;
+      bApiOk = GetDiskFreeSpaceA(__frame0.szRootPath, (LPDWORD)&dwSectorsPerCluster, &__frame0.dwBytesPerSector, &__frame0.dwFreeClusters, &dwTotalClusters);
       if (bApiOk) {
         nChecksum = __frame0.dwFsFlags & 4 ^ __frame0.szFsName[0] ^ __frame0.dwFreeClusters ^ __frame0.dwBytesPerSector ^ nDriveType;
         nFoldedChecksum = (uint16_t)(nChecksum >> 0x10) ^ (uint16_t)nChecksum;
@@ -1367,7 +1367,7 @@ DWORD __stdcall SFileSetFilePointer(D2MPQFileStrc * pMPQFile, int32_t nParam, in
       switch (dwParam) {
         case 1:
           {
-            if (-1 < nParam || (uint32_t)pnParam[0x48] >= (uint32_t)-nParam) {
+            if (nParam >= 0 || (uint32_t)pnParam[0x48] >= (uint32_t)-nParam) {
               pnParam[0x48] += nParam;
               goto finish_seek;
             }
@@ -1380,7 +1380,7 @@ DWORD __stdcall SFileSetFilePointer(D2MPQFileStrc * pMPQFile, int32_t nParam, in
           }
         case 2:
           {
-            if (-1 < nParam || *(uint32_t*)(pnParam[0x46] + 8) >= (uint32_t)-nParam) {
+            if (nParam >= 0 || *(uint32_t*)(pnParam[0x46] + 8) >= (uint32_t)-nParam) {
               nParam = *(int*)(pnParam[0x46] + 8) + nParam;
               goto seek_absolute;
             }
@@ -3437,7 +3437,6 @@ int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint3
     char szResolvedPath[260];
     D2MPQBlockEntryStrc* pSavedBlockEntry;
     D2ArchiveStrc* pFileArchive;
-    int* pRefCount;
     uint32_t nResult = -1;
     char* pFileName = szFileName;
     if (!phFile) {
@@ -3525,8 +3524,7 @@ int __stdcall SFileOpenFileEx(D2ArchiveStrc * pArchive, char * szFileName, uint3
         nResult = pSavedBlockEntry->dwCRC32 ? gbSFileStreamCallbackPending : 0;
         pMpqFileRecord->nChecksumState = 1;
         pMpqFileRecord->bChecksumEnabled = nResult;
-        pRefCount = &pFileArchive->nRefCount;
-        (*pRefCount)++;
+        pFileArchive->nRefCount++;
         *phFile = pMpqFileRecord;
         nResult = 1;
         szFileName = pFileName;
@@ -4034,7 +4032,7 @@ BOOL __stdcall SFileDdaDestroy() {
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ gbSFileAsyncIOShutdown = 1;
     LeaveCriticalSection(&lpCriticalSection_00779068);
     while (ghAsyncIOThread) {
-      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ if (!gpCurrentAsyncIORequest && gSFileAsyncReqQueue.pNext < 1) {
+      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ if (!gpCurrentAsyncIORequest && gSFileAsyncReqQueue.pNext <= 0) {
         break;
       }
 
@@ -4046,12 +4044,12 @@ BOOL __stdcall SFileDdaDestroy() {
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_00779068);
     D2StormAudioStreamRec* pCurrentRequest = (D2StormAudioStreamRec*)gSFileStreamRecordList.pNext;
-    if (0 < gSFileStreamRecordList.pNext) {
+    if (gSFileStreamRecordList.pNext > 0) {
       uint32_t* puVar1;
       do {
         pListPrev = pCurrentRequest->pNext;
         pListNext = pCurrentRequest->pPrevLink;
-        pNextRequest = (D2StormAudioStreamRec*)((int)pListPrev < 1 ? 0 : (uint32_t)pListPrev);
+        pNextRequest = (D2StormAudioStreamRec*)((int)pListPrev <= 0 ? 0 : (uint32_t)pListPrev);
         if (pListNext) {
           if ((int)pListPrev < 0) {
             pPrevLink = (int*)~(uint32_t)pListPrev;
@@ -4168,7 +4166,7 @@ int __stdcall SFileDestroy() {
 
     while (true) {
       pListHead = gSFileAsyncReqQueue.pNext;
-      if (0 >= gSFileAsyncReqQueue.pNext) {
+      if (gSFileAsyncReqQueue.pNext <= 0) {
         break;
       }
 
@@ -4178,7 +4176,7 @@ int __stdcall SFileDestroy() {
 
     while (true) {
       pListHead = gSFileStreamRecordList.pNext;
-      if (0 >= gSFileStreamRecordList.pNext) {
+      if (gSFileStreamRecordList.pNext <= 0) {
         break;
       }
 
@@ -4189,7 +4187,7 @@ int __stdcall SFileDestroy() {
 
     while (true) {
       pListHead = gSFileOpenFileList.pNext;
-      if (0 >= gSFileOpenFileList.pNext) {
+      if (gSFileOpenFileList.pNext <= 0) {
         break;
       }
 
@@ -4200,7 +4198,7 @@ int __stdcall SFileDestroy() {
 
     while (true) {
       pListHead = gMpqArchiveList.pNext;
-      if (0 >= gMpqArchiveList.pNext) {
+      if (gMpqArchiveList.pNext <= 0) {
         break;
       }
 
@@ -4582,7 +4580,7 @@ BOOL __stdcall SFileDdaEnd(D2MPQFileStrc * hFile) {
     pCurrentRequest = (D2StormAudioStreamRec*)gSFileStreamRecordList.pNext;
     if (gSFileStreamRecordList.pNext > 0) {
       do {
-        pNextRequest = (D2StormAudioStreamRec*)((int)pCurrentRequest->pNext < 1 ? 0 : (uint32_t)pCurrentRequest->pNext);
+        pNextRequest = (D2StormAudioStreamRec*)((int)pCurrentRequest->pNext <= 0 ? 0 : (uint32_t)pCurrentRequest->pNext);
         if (pCurrentRequest->pMpqFile == hFile) {
           if (gpCurrentAsyncIORequest && gpCurrentAsyncIORequest->pStream && gpCurrentAsyncIORequest->pStream == pCurrentRequest->pStream) {
             gpCurrentAsyncIORequest->pStream = 0;
@@ -7876,7 +7874,7 @@ uint32_t __fastcall CRC32_Calculate(uint8_t * pbData, int nLen) {
 
     uint32_t uCRC = -1;
     do {
-      uCRC = uCRC >> 8 ^ CRC32_LookupTable[(uint32_t)*pbData ^ uCRC & 0xff];
+      uCRC = uCRC >> 8 ^ CRC32_LookupTable[(uint32_t)*pbData ^ (uint8_t)uCRC];
       nLen--;
       pbData++;
     } while (nLen);

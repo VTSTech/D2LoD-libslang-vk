@@ -124,7 +124,7 @@ static int __stdcall ProcessReceivedData(D2QSSocketStrc * pQServerStrc, void * p
 
         iVar2 = pQServerStrc->pfnPacketHandler(pQServerStrc->pHandlerContext);
         if (!iVar2) {
-          if (0 < pQServerStrc->nSizeFieldOffset) {
+          if (pQServerStrc->nSizeFieldOffset > 0) {
             pParam = pvVar4;
             wMsgSize = wPacketSize;
           }
@@ -278,7 +278,7 @@ int __stdcall ReceiveLoopCallback(D2QSSocketStrc * pQSSocket) {
 
 // lpStartAddress parameter of CreateThread
 DWORD __stdcall QSSOCKET_ThreadEntryPoint(void * lpThreadParam) {
-    D2NetDataStrc* pSafesock = Safesock::Create_Flag0((char*)((int)lpThreadParam + 8), (u_short)*(uint32_t*)((int)lpThreadParam + 0x10c), (LPTHREAD_START_ROUTINE)ReceiveLoopCallback, lpThreadParam, (char*)((int)lpThreadParam + 0x128));
+    D2NetDataStrc* pSafesock = Safesock::Create_Flag0((char*)((int)lpThreadParam + 8), *(int*)((int)lpThreadParam + 0x10c), (LPTHREAD_START_ROUTINE)ReceiveLoopCallback, lpThreadParam, (char*)((int)lpThreadParam + 0x128));
     *(D2NetDataStrc**)((int)lpThreadParam + 0x110) = (D2NetDataStrc*)pSafesock;
     return 1;
 }

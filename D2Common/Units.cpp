@@ -319,6 +319,8 @@ int32_t __stdcall GetUnitSizeX(D2UnitStrc * pUnit) {
       }
 
       break;
+      case 5:
+        return 0;
     }
 
     return 0;
@@ -353,6 +355,8 @@ int32_t __stdcall GetUnitSizeY(D2UnitStrc * pUnit) {
       }
 
       break;
+      case 5:
+        return 0;
     }
 
     return 0;
@@ -846,7 +850,7 @@ void __stdcall RefreshInventory(D2UnitStrc * pUnit, BOOL bHasInventory) {
 }
 
 // Returns the eInventoryPage for a given unit and page index. For players, maps nInvPage (1-4) to trade/transmog/bank pages, or performs a class-specific lookup. For monsters, always returns INVPAGE_Monster. For objects, recognises Guild Vault (0x152) and Trophy Case (0x153). Returns INVPAGE_None on mismatch or null input (halts on null). RETURN WIDTH: every exit writes the whole of EAX (MOV EAX,imm32 / LEA EAX,[EAX*4+8] / MOV EAX,[ECX*8+0x744548]) and InitializeiInventoryPages takes it with MOV ESI,EAX - no MOVZX anywhere.
-int32_t __stdcall GetInventoryPage(D2UnitStrc * pUnit, int32_t nInvPage, BOOL bLoD) {
+int32_t __stdcall GetInventoryPage(D2UnitStrc * pUnit, uint8_t nInvPage, BOOL bLoD) {
     // Static local variables (originally global data)
     static int aPlayerInventoryPage[14] = {
     0x0,
@@ -878,14 +882,14 @@ int32_t __stdcall GetInventoryPage(D2UnitStrc * pUnit, int32_t nInvPage, BOOL bL
     switch (eUnitType) {
       case UNIT_PLAYER:
         {
-          switch (nInvPage & 0xff) {
-            case 1:
+          switch (nInvPage) {
+            case '\x01':
               return 6;
-            case 2:
+            case '\x02':
               return 7;
-            case 4:
+            case '\x04':
               /* Lod/Classic inventory sizes decide */ return (uint32_t)(bLoD != 0) * 4 + 8;
-            case 3:
+            case '\x03':
               return 9;
           }
 
@@ -1628,7 +1632,7 @@ void __stdcall SetOverlay(D2UnitStrc * pUnit, uint32_t nOverlay, int32_t nParam)
     }
 
     Stats::StatsEx::STATLIST_ClearOverlayFlags(pUnit);
-    Stats::StatsEx::STATLIST_SetStatValueSimple(pStatsEx, UNITSTAT_unit_dooverlay, nOverlay & 0xffff, nParam);
+    Stats::StatsEx::STATLIST_SetStatValueSimple(pStatsEx, UNITSTAT_unit_dooverlay, (uint16_t)nOverlay, nParam);
     Unit::ROOM_LinkUnitToUpdateList(pUnit);
 }
 
@@ -3617,8 +3621,7 @@ void __stdcall UpdateAnimSpeed(D2UnitStrc * pUnit, char * szFile, int32_t nLine)
           nAnimFrameTime = 0xd0a;
           pUnit_00->nAnimSpeed = (short int)nVelocityPct;
           szFile_00 = ".\\UNITS\\Units.cpp";
-          nFastStat = UNITS_GetBaseWalkVelocity((eD2UnitType)pUnit, nFastStat);
-          PATH::DynamicPath::SetVelocities(pUnit_00->pPath.pDynamicPath, nFastStat * nBaseFrameTime / 100, szFile_00, nAnimFrameTime);
+          PATH::DynamicPath::SetVelocities(pUnit_00->pPath.pDynamicPath, UNITS_GetBaseWalkVelocity((eD2UnitType)pUnit, nFastStat) * nBaseFrameTime / 100, szFile_00, nAnimFrameTime);
           return;
         }
 
@@ -3816,8 +3819,8 @@ void __stdcall InitAnimMode(D2UnitStrc * pUnitArg) {
         if ((int)nAnimRate <= 0x10000) {
           wAnimSpeed = (short int)((int)(nAnimRate * 0x100) / 1024);
         } else if ((int)(nAnimRate & -16) < 0x4000) {
-          qwAnimCalc = _allmul(nAnimRate, (int)nAnimRate >> 0x1f, 0x100, 0);
-          lVar2 = _alldiv((uint32_t)qwAnimCalc, (uint32_t)(qwAnimCalc >> 0x20), 0x400, 0);
+          qwAnimCalc = (int64_t)(int)nAnimRate * 0x100;
+          lVar2 = (int64_t)qwAnimCalc / 0x400;
           wAnimSpeed = (short int)lVar2;
         } else {
           wAnimSpeed = (short int)((int)nAnimRate / 1024 << 8);

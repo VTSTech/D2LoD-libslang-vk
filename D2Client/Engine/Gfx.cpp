@@ -592,7 +592,6 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     int nFrame;
     int nFrameField;
     int nThisOverlayId;
-    int32_t nTmpZ;
     int32_t* pAdjustX;
     int32_t* pAdjustY;
     D2UnitStrc* pDVar9;
@@ -624,10 +623,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     } else {
       pAdjustY = &nScreenY;
       pAdjustX = &nScreenX;
-      nTmpZ = 0;
-      iVar2 = D2Common::Units::GetPrecisionY(pUnit);
-      nOffset = D2Common::Units::GetPrecisionX(pUnit);
-      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nOffset, iVar2, nTmpZ, pAdjustX, pAdjustY);
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(D2Common::Units::GetPrecisionX(pUnit), D2Common::Units::GetPrecisionY(pUnit), 0, pAdjustX, pAdjustY);
       bPerspective = UI::Path::DRAW_GetTypeOfBorder();
       switch (bPerspective) {
         case 1:
@@ -651,7 +647,7 @@ void __stdcall DRAW_UNIT_States(D2UnitStrc * pUnit, int32_t nBlendMode, int32_t 
     draw_overlays:
     iVar2 = Particle::PARTICLE_GetX(pUnit);
     nOffset = Particle::PARTICLE_GetY(pUnit);
-    nTmpZ = Particle::PARTICLE_GetScreenZ(pUnit);
+    int32_t nTmpZ = Particle::PARTICLE_GetScreenZ(pUnit);
     nDrawY = nDrawY + nOffset + nTmpZ;
     if (bRaiseY) {
       nDrawY += -8;
@@ -1228,16 +1224,14 @@ uint32_t __fastcall DrawItemGfx(D2UnitStrc * pUnit, int32_t nHeight, int32_t nWi
       return 0;
     }
 
-    BOOL bEthereal = 0;
-    nDC6Height = D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block);
-    uint32_t uVar1 = GfxUtil::GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nHeight, nDC6Height + nWidth, bEthereal);
+    uint32_t uVar1 = GfxUtil::GFXUTIL_IsDC6BlockOnScreen(sGfxData.pDC6Block, nHeight, D2CMP::SRC::CelCmp::GetDC6Height(sGfxData.pDC6Block) + nWidth, 0);
     if (!uVar1) {
       return 0;
     }
 
     D2GamePalShiftGreenBloodStrc* pPalette = (D2GamePalShiftGreenBloodStrc*)D2Common::ITEMS::Items::GetItemColor(nullptr, pUnit, &byColorOut, 1);
     DRAWMODE eDrawMode = DRAW_SOLID;
-    bEthereal = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_ETHEREAL, 0xac2, ".\\ENGINE\\Gfx.cpp");
+    BOOL bEthereal = D2Common::ITEMS::Items::CheckItemFlag(pUnit, ITEMFLAG_ETHEREAL, 0xac2, ".\\ENGINE\\Gfx.cpp");
     if (bEthereal) {
       eDrawMode = DRAW_TRANSPARENT;
     }
@@ -2384,7 +2378,7 @@ void __fastcall GFX_LoadUnitModeCof(D2UnitStrc * pUnit, int32_t nUnused) {
 }
 
 // @sourcefile .\ENGINE\Gfx.cpp
-void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, uint8_t byComponent, int32_t * pOffsetX, int32_t * pOffsetY) {
+void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, int byComponent, int32_t * pOffsetX, int32_t * pOffsetY) {
     // Frame slots -32..-16 are ONE object: &nFrameResult is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
@@ -2399,6 +2393,7 @@ void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, uint8_t byComponent,
     D2UnitStrc* pOwnerUnit;
     D2InventoryStrc* pInventoryUsed;
     D2GfxDataStrc sSpriteParams;
+    uint8_t nComponentType = (uint8_t)byComponent;
     __frame0.uPathUnion = pUnit->pPath;
     eD2UnitType eUnitType = pUnit->eUnitType;
     int nClassId = pUnit->nClassId;
@@ -2445,7 +2440,7 @@ void __fastcall GFX_GetUnitSpriteOffset(D2UnitStrc * pUnit, uint8_t byComponent,
     pOwnerUnit = (D2UnitStrc*)-1;
     int* pResolvedAnimMode = &__frame0.nFrameResult;
     int nResultTmp = pUnit->nGfxCurrentFrame >> 8;
-    nErrLine = GfxUtil::DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)D2Common::PATH::DynamicPath::GetDirection(__frame0.uPathUnion.pDynamicPath), nResultTmp, pResolvedAnimMode, byComponent, pOwnerUnit);
+    nErrLine = GfxUtil::DC6_AssignParams(&sSpriteParams, pUnit, nullptr, (uint32_t)D2Common::PATH::DynamicPath::GetDirection(__frame0.uPathUnion.pDynamicPath), nResultTmp, pResolvedAnimMode, nComponentType, pOwnerUnit);
     if (!nErrLine) {
       return;
     }
@@ -3176,14 +3171,6 @@ BOOL __fastcall GFX_DrawUnitShadow(D2UnitStrc * pUnit) {
 // Draw shadow sprite layers for a unit. Skips hidden/dead units. Handles perspective view toggling for player unit. Returns 1 if shadow was drawn, 0 if skipped or off-screen.
 // @sourcefile .\ENGINE\Gfx.cpp
 int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
-    // Frame slots -12..-4 are ONE object: &nScreenX is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      int nScreenX;
-      int nScreenY;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     D2UnitStrc* pPlayerOrOwner;
     eD2UnitType eUnitType;
     int32_t nTmp;
@@ -3211,6 +3198,8 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
     int32_t nSeqMode;
     uint8_t* pZHalfOffset;
     int nDrawX;
+    int nScreenX;
+    int nScreenY;
     if (pUnit && pUnit->eUnitFlags >> 5 & 1) {
       return 0;
     }
@@ -3265,31 +3254,31 @@ int32_t __fastcall DrawUnitShadows(D2UnitStrc * pUnit) {
         return 0;
       }
 
-      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nPrecisionX, nResult, 0, &__frame0.nScreenX, &__frame0.nScreenY);
+      D2gfx::D2GFX::D2GFX_AdjustPerspectivePosition(nPrecisionX, nResult, 0, &nScreenX, &nScreenY);
       nTmp = UI::Path::DRAW_GetWorldOffsetX();
-      __frame0.nScreenX += nTmp;
+      nScreenX += nTmp;
       nTmp = UI::Path::DRAW_GetWorldOffsetY();
-      __frame0.nScreenY = __frame0.nScreenY + 0x10 + nTmp;
+      nScreenY = nScreenY + 0x10 + nTmp;
     } else {
       nTmp = Particle::PARTICLE_GetScreenZ(pUnit);
       nCoordTmp = D2Common::Units::GetTargetX(pUnit);
-      __frame0.nScreenX = nCoordTmp + nTmp / 2;
+      nScreenX = nCoordTmp + nTmp / 2;
       nCoordTmp = D2Common::Units::GetTargetY(pUnit);
-      __frame0.nScreenY = nCoordTmp + nTmp / 2;
+      nScreenY = nCoordTmp + nTmp / 2;
     }
     if (bPerspToggled) {
-      __frame0.nScreenY += -8;
+      nScreenY += -8;
     }
 
     nTmp = Particle::PARTICLE_GetX(pUnit);
-    __frame0.nScreenX += nTmp;
+    nScreenX += nTmp;
     nTmp = Particle::PARTICLE_GetY(pUnit);
-    __frame0.nScreenY += nTmp;
+    nScreenY += nTmp;
     nTmp = UI::Path::DRAW_GetWorldOffsetX();
-    nCoordTmp = __frame0.nScreenX - nTmp - 2;
+    nCoordTmp = nScreenX - nTmp - 2;
     nDrawX = nCoordTmp;
     nTmp = UI::Path::DRAW_GetWorldOffsetY();
-    nResult = __frame0.nScreenY - nTmp;
+    nResult = nScreenY - nTmp;
     nDrawY = nResult;
     if (pUnit && pUnit->eUnitType == UNIT_OBJECT) {
       pObjectsTxt = D2Common::DATATBLS::ObjectTbls::TXT_Objects_GetLine(pUnit->nClassId);

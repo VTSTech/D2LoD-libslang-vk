@@ -552,7 +552,7 @@ void __thiscall Draw(::ListBoxImplementation * pThis) {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pThis->nScrollBarX, pThis->nScrollBarY, -1, DRAW_SOLID, nullptr);
     int nVisibleLineCount;
     nVisibleLineCount = 0;
-    if (0 < (int)pThis->field_0x180762) {
+    if ((int)pThis->field_0x180762 > 0) {
       do {
         sGfxData.nFrameNumber = 0xd;
         D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, pThis->nScrollBarX, nScrollOffset + 0xc + pThis->nScrollBarY, -1, DRAW_SOLID, nullptr);
@@ -828,7 +828,7 @@ int __thiscall OnMouseUp(::ListBoxImplementation * pThis, D2UIMouseMsgStrc * pMs
       Fog::File::CONTAINER_InitializeBuffer(pBuffer->wszText + 5, 2, 0x400, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
       pBuffer++;
       nInitRow--;
-    } while (-1 < nInitRow);
+    } while (nInitRow >= 0);
 
     pThis->nPosY = nPosY;
     pThis->nWidth = nWidth;

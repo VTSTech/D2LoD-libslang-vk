@@ -422,7 +422,7 @@ void __fastcall MISSILESMODE_SetElementalDamageField(int32_t nMissileUnit, int32
       return;
       case ELEMENTAL_COLD:
         pDamageStruct->dwColdDmg = nParam2;
-      if (nParam2 < 1) {
+      if (nParam2 <= 0) {
         pDamageStruct->dwColdLength = 0;
         return;
       }
@@ -430,7 +430,7 @@ void __fastcall MISSILESMODE_SetElementalDamageField(int32_t nMissileUnit, int32
       break;
       case ELEMENTAL_POISON:
         pDamageStruct->dwPoisDamage = nParam2;
-      if (nParam2 < 1) {
+      if (nParam2 <= 0) {
         pDamageStruct->dwPoisLength = 0;
         return;
       }
@@ -450,7 +450,7 @@ void __fastcall MISSILESMODE_SetElementalDamageField(int32_t nMissileUnit, int32
       return;
       case ELEMENTAL_BURNING:
         pDamageStruct->dwBurnDmg = nParam2;
-      if (nParam2 < 1) {
+      if (nParam2 <= 0) {
         pDamageStruct->dwBurnLen = 0;
         return;
       }
@@ -458,7 +458,7 @@ void __fastcall MISSILESMODE_SetElementalDamageField(int32_t nMissileUnit, int32
       break;
       case ELEMENTAL_FREEZE:
         pDamageStruct->dwColdDmg = nParam2;
-      if (nParam2 < 1) {
+      if (nParam2 <= 0) {
         pDamageStruct->dwFrzLength = 0;
       }
     }
@@ -2208,7 +2208,6 @@ BOOL __fastcall Missiles_SrvHitFunc_SpawnSubMissileAtFrameInArea(::SGAMEDATA * p
 
 // Server hit callback: like ApplyTimedAuraState but first applies an aurafilter target-flag check (mask 0xA783 if aurafilter is set). Only applies the auratargetstate if the target passes SKILLS_CheckTargetFlags. Uses SetStateWithExpiryTime helper and D2SetAurastatsFromSkills. Returns 0 on success, 1 on bad owner/target/skill/state or filter failure.
 BOOL __fastcall Missiles_SrvHitFunc_ApplyTimedAuraStateFiltered(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarget) {
-    D2StateExArgStrc local_2c;
     D2UnitStrc* pUnit_00 = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
     if (!pUnit_00 || !pTarget) {
       return 1;
@@ -2233,11 +2232,7 @@ BOOL __fastcall Missiles_SrvHitFunc_ApplyTimedAuraStateFiltered(::SGAMEDATA * pG
     uTargetFlags = SKILLS::SkillsServer::SKILLS_CheckTargetFlags(pUnit_00, pTarget, uTargetFlags);
     if (uTargetFlags) {
       D2StatListExStrc* pStatList;
-      local_2c.nDurationInFrames = 0;
-      local_2c.eStat = UNITSTAT_strength;
-      local_2c.nSkillCalc = 0;
-      local_2c.eAuraState = STATE_none;
-      local_2c.pFunction = 0;
+      D2StateExArgStrc local_2c = {0};
       local_2c.pTarget = pTarget;
       local_2c.nSkillLvl = nSkillLvl;
       local_2c.pUnit = pUnit_00;
@@ -3777,9 +3772,7 @@ void __fastcall Missiles_SrvDmgFunc_RecalcElementalWithClear(::SGAMEDATA * pGame
     }
 
     uint32_t nCalcExpression = pMissilesTxt->DmgCalc1;
-    int32_t nElemDamage = -1;
-    int32_t nScaledDamage = -1;
-    uint32_t nCalcResult = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpression, nScaledDamage, nElemDamage);
+    uint32_t nCalcResult = D2Common::Units::Missile::MISSILE_EvalMissileCalc(pUnit, UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nCalcExpression, -1, -1);
     if ((int)nCalcResult <= 0) {
       return;
     }
@@ -3787,12 +3780,12 @@ void __fastcall Missiles_SrvDmgFunc_RecalcElementalWithClear(::SGAMEDATA * pGame
       nCalcResult = 100;
     }
 
-    nScaledDamage = D2Client::Stats::D2ApplyPercent(pDamage->dwPhysDamage, nCalcResult, 100);
+    int32_t nScaledDamage = D2Client::Stats::D2ApplyPercent(pDamage->dwPhysDamage, nCalcResult, 100);
     if (nScaledDamage >= pDamage->dwPhysDamage) {
       nScaledDamage = pDamage->dwPhysDamage;
     }
 
-    nElemDamage = MISSILES_CalculateElementalDamage(pGame, pUnit, pTarget, pDamage);
+    int32_t nElemDamage = MISSILES_CalculateElementalDamage(pGame, pUnit, pTarget, pDamage);
     MISSILES_ClearDamageStruct(pGame, (int32_t)pUnit, pDamage);
     MISSILES_AddElementalDamageBonus(pGame, pUnit, pTarget, pDamage, nScaledDamage + nElemDamage);
 }
@@ -4286,6 +4279,8 @@ static BOOL MISSMODE_CheckCollisionMode(int nCollisionMode, int * pnParam) {
           return 0;
         }
       return 1;
+      case 3:
+        return 1;
     }
 
     return 1;
@@ -4593,10 +4588,7 @@ int __fastcall Hits(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarge
     int32_t nToHitThenStat;
     uint32_t nHitFuncResult;
     D2RoomStrc* pRoom;
-    eD2CollisionUnitSize nWidth;
-    int32_t nX;
     int32_t eCurrMode;
-    int32_t eCollisionFlag;
     D2DamageStrc tDamage;
     D2UnitStrc* pOwnerSaved;
     ::SGAMEDATA* pGameSaved;
@@ -4732,11 +4724,7 @@ int __fastcall Hits(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTarge
         return 2;
       }
 
-      eCollisionFlag = 0x40;
-      nWidth = D2Common::Units::GetUnitSizeX(pUnit);
-      nToHitThenStat = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
-      nX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-      D2Common::Collision::RemoveCollision_Width(pRoom, nX, nToHitThenStat, nWidth, eCollisionFlag);
+      D2Common::Collision::RemoveCollision_Width(pRoom, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), D2Common::Units::GetUnitSizeX(pUnit), 0x40);
       return 2;
     }
     return 1;
@@ -5213,8 +5201,7 @@ int __fastcall MISSMODE_SrvDoFn10_BlizzardCenter(::SGAMEDATA * pGame, D2UnitStrc
     D2UnitStrc* pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
     int32_t nMissileCount = D2Common::Skills::D2GetSkillCalc(pOwner, nClassId, eSkillForCalc, nSkillLvl_00);
     nClassId = pSkillsTxt->calc[1];
-    pOwner = UNIT::SUnit::GetOwnerUnit(pGame, pUnit);
-    int32_t nSpawnInterval = D2Common::Skills::D2GetSkillCalc(pOwner, nClassId, eSkill, nSkillLvl);
+    int32_t nSpawnInterval = D2Common::Skills::D2GetSkillCalc(UNIT::SUnit::GetOwnerUnit(pGame, pUnit), nClassId, eSkill, nSkillLvl);
     MISSILES_SpawnPeriodicRandom(pGame, nMissileCount, (int)pMissilesTxt->SubMissile1, 5, nSpawnInterval, pUnit);
     nClassId = MISSMODE_SrvDoFn01_BasicMissile(pGame, pUnit);
     return nClassId;
@@ -6567,7 +6554,6 @@ int __fastcall MISSILESMODE_SrvDoFn34_BaalTauntControl(::SGAMEDATA * pGame, D2Un
     int32_t nSeedHighOut;
     uint32_t nSeedHigh;
     eD2UnitType eUnitType;
-    int64_t lSeedProduct2;
     ::SGAMEDATA* pGameLocal;
     D2SeedStrc sSeedResult;
     if (!pUnit) {
@@ -6617,15 +6603,11 @@ int __fastcall MISSILESMODE_SrvDoFn34_BaalTauntControl(::SGAMEDATA * pGame, D2Un
       pSeed = &pUnit->sSeed;
       D2Common::Seed::InitSeed_Param_666(pSeed, nSubMissileCount);
       if (nSelectedIndex & nSelectedIndex - 1) {
-        lSeedProduct2 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
-        nSeedHigh = (uint32_t)((uint64_t)lSeedProduct2 >> 0x20);
-        sSeedResult = (D2SeedStrc)(lSeedProduct2 + (uint64_t)pUnit->sSeed.nSeedHigh);
+        sSeedResult = D2_SEED_NEXT(*pSeed);
         nSelectedIndex = sSeedResult.nSeedLow % nSelectedIndex;
         *pSeed = sSeedResult;
       } else {
-        lSeedProduct2 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
-        nSeedHighOut = (int32_t)((uint64_t)lSeedProduct2 >> 0x20);
-        sSeedResult = (D2SeedStrc)(lSeedProduct2 + (uint64_t)pUnit->sSeed.nSeedHigh);
+        sSeedResult = D2_SEED_NEXT(*pSeed);
         pSeed->nSeedHigh = sSeedResult.nSeedHigh;
         pSeed->nSeedLow = sSeedResult.nSeedLow;
         nSelectedIndex = nSelectedIndex - 1 & sSeedResult.nSeedLow;

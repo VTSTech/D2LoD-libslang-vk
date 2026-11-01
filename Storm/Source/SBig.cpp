@@ -2991,7 +2991,7 @@ static void __stdcall BigBuffer_Div(BigBuffer * pQuotient, BigBuffer * pRemainde
           nDividend64 = _allmul(pDividendData[nAlignChunk + nDivisorLen], 0, 0, 1);
           nDividend64 += (uint64_t)pTopWordData[uBitIter + nTopIndex];
           SBIG_GrowToIndex(pQuotient, 0);
-          uAligned = _aulldiv((uint32_t)nDividend64, (uint32_t)((uint64_t)nDividend64 >> 0x20), nDivisorHigh, 0);
+          uAligned = (uint64_t)nDividend64 / nDivisorHigh;
           nAlignChunk = (uint32_t)uAligned;
         }
 
@@ -3811,8 +3811,7 @@ void __stdcall SBigDiv(BigData * pResult, BigData * pBigA, BigData * pBigB) {
     uint32_t uVar2 = pResult->sStack.nUsed;
     pResult->sStack.nUsed = uVar2 + 1;
     BigBuffer_Div(&pResult->sPrimary, pResult->sStack.aBuffers + uVar2, &pBigB->sPrimary, &pResult->sStack, &pBigA->sPrimary);
-    uint32_t* puVar1 = &pResult->sStack.nUsed;
-    (*puVar1)--;
+    pResult->sStack.nUsed--;
 }
 
 // @renamed-from SBIG_GCDWrapper (2026-08-28, Storm PowerPC oracle pass 4)
@@ -3829,8 +3828,7 @@ void __stdcall SBigMod(BigData * pResult, BigData * pBigA, BigData * pBigB) {
     uint32_t uVar2 = pResult->sStack.nUsed;
     pResult->sStack.nUsed = uVar2 + 1;
     BigBuffer_Div(pResult->sStack.aBuffers + uVar2, &pResult->sPrimary, &pBigB->sPrimary, &pResult->sStack, &pBigA->sPrimary);
-    uint32_t* puVar1 = &pResult->sStack.nUsed;
-    (*puVar1)--;
+    pResult->sStack.nUsed--;
 }
 
 // @renamed-from SBIG_MontgomeryMulWrapper (2026-08-28, Storm PowerPC oracle pass 4)

@@ -157,8 +157,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_FallingMissileWithZ(D2UnitStrc * pUnit, eD
     if (pTargetUnit) {
       nTmp = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
       nY = (int16_t)nTmp;
-      nTmp = Units::GetXPosFromDynamicPathUnit(pTargetUnit);
-      D2Common::PATH::DynamicPath::SetSP1(pUnit->pPath.pDynamicPath, (int16_t)nTmp, nY);
+      D2Common::PATH::DynamicPath::SetSP1(pUnit->pPath.pDynamicPath, (int16_t)Units::GetXPosFromDynamicPathUnit(pTargetUnit), nY);
       UNIT::CUnit::FaceTarget(pUnit, 1);
     }
 
@@ -890,7 +889,6 @@ BOOL __fastcall Skills_CltDoFunc_EMon_HomingToOwner(D2UnitStrc * pUnit, eD2Skill
 // @sourcefile .\SKILLS\SkillsEMon.cpp
 BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     uint32_t nRandMod;
-    D2RoomStrc* pRoom;
     D2UnitStrc* pHitUnit;
     eMissilesId nMissileId;
     fpMissileSrvDoFuncData fpSkillValidCheck;
@@ -934,10 +932,7 @@ BOOL __fastcall Skills_CltDoFunc_EMon_VineAttack(D2UnitStrc * pUnit, eD2Skills e
             nTargetY = 1;
             pNullGameArg = 0;
             fpSkillValidCheck = (fpMissileSrvDoFuncData)SKILLSCLT_CheckSkillIsValid;
-            nHitCount = Units::GetYPosFromDynamicPathUnit(pUnit);
-            nTargetX = Units::GetXPosFromDynamicPathUnit(pUnit);
-            pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-            pHitUnit = D2Common::Collision::CallCollisionFunction(pRoom, nTargetX, nHitCount, fpSkillValidCheck, pNullGameArg, nTargetY);
+            pHitUnit = D2Common::Collision::CallCollisionFunction(D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), fpSkillValidCheck, pNullGameArg, nTargetY);
             if (pHitUnit) {
               UNIT::Missile::MISSILE_ClientHitExplode(pHitUnit, nullptr, 0);
             }

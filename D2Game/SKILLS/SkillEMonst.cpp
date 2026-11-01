@@ -211,8 +211,7 @@ BOOL __fastcall Skills_SrvDoFunc_126_ImpInferno(::SGAMEDATA * pGame, D2UnitStrc 
         if (pDynamicPath) {
           nCalcResult = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
           nY = (int16_t)nCalcResult;
-          nCalcResult = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-          D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)nCalcResult, nY);
+          D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), nY);
           D2Common::Units::SetTargetUnitForDynamicUnit(pUnit, pUnit_00);
         }
       }
@@ -493,8 +492,7 @@ void __fastcall SKILLEMONST_DetachFromHost(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
             pUnit->eUnitFlags |= UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE;
             GAME::Event::EVENT_RemoveUnitTimersByType(pGame, pUnit, UNITEVENTCALLBACK_ACTIVESTATE, nEventParam);
-            nParasiteBaseId = 0;
-            Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, UNIT::Monster::GetAiGeneral(pUnit), nParasiteBaseId);
+            Monster::AI::AttachCorrectAiFunctionToMonster(pGame, pUnit, UNIT::Monster::GetAiGeneral(pUnit), 0);
             break;
           }
     }
@@ -631,7 +629,6 @@ BOOL __fastcall Skills_SrvDoFunc_130_SpawnSubMissiles(::SGAMEDATA * pGame, D2Uni
 }
 
 static void __stdcall SKILLEMONST_ApplyAuraBuff(D2UnitStrc * pUnit, D2UnitStrc * pTarget, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2StateExArgStrc sStateExArg;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return;
     }
@@ -641,11 +638,7 @@ static void __stdcall SKILLEMONST_ApplyAuraBuff(D2UnitStrc * pUnit, D2UnitStrc *
       return;
     }
 
-    sStateExArg.nDurationInFrames = 0;
-    sStateExArg.eStat = UNITSTAT_strength;
-    sStateExArg.nSkillCalc = 0;
-    sStateExArg.eAuraState = STATE_none;
-    sStateExArg.pFunction = 0;
+    D2StateExArgStrc sStateExArg = {0};
     sStateExArg.pUnit = pUnit;
     sStateExArg.pTarget = pTarget;
     sStateExArg.eSkill = eSkill;
@@ -852,8 +845,7 @@ void __fastcall SKILLEMONST_OnDeathSpawnExpire(D2UnitStrc * pUnit, eD2States eSt
       return;
     }
 
-    int16_t nSpawnY = 0;
-    Monster::Create::SpawnMonsterBase(UNIT::SUnit::GetGamePointer(pUnit), pUnit, nSummonMonStatsId, eSpawnAnimMode, 1, nSpawnY);
+    Monster::Create::SpawnMonsterBase(UNIT::SUnit::GetGamePointer(pUnit), pUnit, nSummonMonStatsId, eSpawnAnimMode, 1, 0);
 }
 
 BOOL __fastcall Skills_SrvDoFunc_133_SetDeathSpawnState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
@@ -1381,15 +1373,7 @@ BOOL __fastcall fpBaalWaveFunction(::SGAMEDATA * pGame, D2UnitStrc * pAttacker, 
 // SrvDoFunc 141: initiates Baal's corpse explosion wave. Builds a D2BaalWaveParamStrc from the caster's position, sets skill to SKILL_BaalCorpseExplode, computes wave distance from Param[4]+Param[5]*(lvl-1), assigns fpBaalWaveFunction callback, then calls SKILLS_ForEachUnitBaalWave to propagate the wave.
 BOOL __fastcall Skills_SrvDoFunc_141_BaalCorpseExplosionWave(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     D2SkillsTxt* pSkillRecord;
-    D2BaalWaveParamStrc sBaalWaveParam;
-    sBaalWaveParam.pAttacker = 0;
-    sBaalWaveParam.eSkillId = SKILL_Attack;
-    sBaalWaveParam.nX = 0;
-    sBaalWaveParam.nY = 0;
-    sBaalWaveParam.nDistance = 0;
-    sBaalWaveParam.nSkillLevel = 0;
-    sBaalWaveParam.nCallbackArg = 0;
-    sBaalWaveParam.fpFunction = 0;
+    D2BaalWaveParamStrc sBaalWaveParam = {0};
     eD2UnitType ePosUnitType = pUnit->eUnitType;
     sBaalWaveParam.nUnitFindFlags = 12290;
     if (ePosUnitType == UNIT_OBJECT || (int)ePosUnitType > 3 && (int)ePosUnitType <= 5) {

@@ -953,7 +953,7 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
         nLodLevel++;
       } while (nLodLevel < 3);
 
-      pTexInfo->nTexWidth = (int)nTexHeightPow2 >> ((uint8_t)nLodLevel & 0x1f);
+      pTexInfo->nTexWidth = (int)nTexHeightPow2 >> (uint8_t)nLodLevel;
       pTexInfo->nAspect = gnGlideCacheSizeB[nLodLevel];
     } else {
       nLodLevel = 0;
@@ -966,7 +966,7 @@ static void RENDERER_GLIDE_CalculateTextureSize(GlideTexInfoStrc * pTexInfo) {
         nLodLevel++;
       } while (nLodLevel < 3);
 
-      pTexInfo->nTexHeight = (int)nTexWidthPow2 >> ((uint8_t)nLodLevel & 0x1f);
+      pTexInfo->nTexHeight = (int)nTexWidthPow2 >> (uint8_t)nLodLevel;
       pTexInfo->nAspect = gnGlideCacheSizeA[nLodLevel];
     }
 
@@ -2514,7 +2514,7 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
     }
 
     nSubtileIdx = 0;
-    if (0 >= pTile->nSubTiles) {
+    if (pTile->nSubTiles <= 0) {
       return _bDrawn;
     }
 
@@ -2670,7 +2670,7 @@ BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
     }
 
     int nSubtileIdx = 0;
-    if (0 < pTile->nSubTiles) {
+    if (pTile->nSubTiles > 0) {
       int nSubtileX;
       do {
         psSubtile = &pTile->pSubTiles[nSubtileIdx].nOffsetX;
@@ -2735,7 +2735,7 @@ static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenP
     uint32_t dwTileType = pTile->nDirection;
     if (dwTileType <= 9) {
       int nSubtileCount = 0;
-      if (0 >= pTile->nSubTiles) {
+      if (pTile->nSubTiles <= 0) {
         return nZMid;
       }
 
@@ -2777,7 +2777,7 @@ static int32_t __stdcall RENDERER_GLIDE_DrawWallTilePerspective(int32_t nScreenP
           adwColors[2] = *(uint32_t*)(pColorTable + 4 + (int)fSubtileIndex * 4);
           nZMid = nCornerFixedX + nRightFixedZ >> 1;
           adwColors[3] = nCornerFixedY + nLeftFixedX >> 1;
-          adwColors[1] = ((((int)((adwColors[2] >> 0x18) + (adwColors[0] >> 0x18)) >> 1) * 0x100 + ((int)((adwColors[2] >> 0x10 & 0xff) + (adwColors[0] >> 0x10 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[2] >> 8 & 0xff) + (adwColors[0] >> 8 & 0xff)) >> 1)) * 0x100 + ((int)((adwColors[0] & 0xff) + (adwColors[2] & 0xff)) >> 1);
+          adwColors[1] = ((((int)((adwColors[2] >> 0x18) + (adwColors[0] >> 0x18)) >> 1) * 0x100 + ((int)((uint8_t)(adwColors[2] >> 0x10) + (uint8_t)(adwColors[0] >> 0x10)) >> 1)) * 0x100 + ((int)((adwColors[2] >> 8 & 0xff) + (adwColors[0] >> 8 & 0xff)) >> 1)) * 0x100 + ((int)((uint8_t)adwColors[0] + (uint8_t)adwColors[2]) >> 1);
           nYMid = nWorldYFixed + nLeftFixedY >> 1;
           fSubtileIndex = (float)adwColors[2];
           glBlocks::GLBLOCKS_LoadWallSubtileTexture(&pTile->pSubTiles[nSubtileCount]);
@@ -3087,8 +3087,8 @@ void __fastcall RENDERER_GLIDE_ApplyShadowLighting(D2GlideVertexStrc * pVertex, 
 }
 
 void __fastcall RENDERER_GLIDE_ApplyColorLighting(D2GlideVertexStrc * pVertex, uint32_t dwPackedColor) {
-    uint32_t uIntensityRow = dwPackedColor & 0xff;
-    pVertex->dwColor = ((gpGlideLightingTable[(dwPackedColor >> 8 & 0xff) + uIntensityRow * 0x100] | -256) << 8 | (uint32_t)gpGlideLightingTable[(dwPackedColor >> 0x10 & 0xff) + uIntensityRow * 0x100]) << 8 | (uint32_t)gpGlideLightingTable[(dwPackedColor >> 0x18) + uIntensityRow * 0x100];
+    uint32_t uIntensityRow = (uint8_t)dwPackedColor;
+    pVertex->dwColor = ((gpGlideLightingTable[(dwPackedColor >> 8 & 0xff) + uIntensityRow * 0x100] | -256) << 8 | (uint32_t)gpGlideLightingTable[(uint8_t)(dwPackedColor >> 0x10) + uIntensityRow * 0x100]) << 8 | (uint32_t)gpGlideLightingTable[(dwPackedColor >> 0x18) + uIntensityRow * 0x100];
 }
 
 // @sourcefile .\Src\glPerspective.cpp
@@ -3378,23 +3378,16 @@ static void __stdcall GLSMACK_DrawSmackerQuad(D2SmackerContextStrc * pSmackerDat
 
 // @sourcefile .\Src\glSmack.cpp
 void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, int32_t nVersion) {
-    // Frame slots -1812..-4 are ONE object: &byPalette0 is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      uint8_t byPalette0;
-      uint8_t abPalBuf[767];
-      uint8_t abImgBuf[1024];
-      uint32_t nImgBpp;
-      uint32_t nImgHeight;
-      uint32_t nImgWidth;
-      DWORD dwFileSize;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 1808, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
     void* nSmackHandle;
     int iVar1;
     uint8_t* pPalDst;
     int nRowIdx;
+    uint8_t abPalBuf[768];
+    uint8_t abImgBuf[1024];
+    uint32_t nImgBpp;
+    uint32_t nImgHeight;
+    uint32_t nImgWidth;
+    DWORD dwFileSize;
     if (!gpGlideSmackerTexBuf2) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8e);
       exit(-1);
@@ -3425,19 +3418,19 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
     } else {
       uint32_t bFileLoadOk;
       nVersion = 0;
-      __frame0.dwFileSize = 0;
-      bFileLoadOk = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &__frame0.dwFileSize, 0, 3, 0);
+      dwFileSize = 0;
+      bFileLoadOk = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &dwFileSize, 0, 3, 0);
       if (bFileLoadOk && nVersion) {
-        iVar1 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, __frame0.dwFileSize, __frame0.abImgBuf, *gpGlideSmackerTexBuf2, 0x6db0, &__frame0.nImgWidth, &__frame0.nImgHeight, &__frame0.nImgBpp);
+        iVar1 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, dwFileSize, abImgBuf, *gpGlideSmackerTexBuf2, 0x6db0, &nImgWidth, &nImgHeight, &nImgBpp);
         Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\glSmack.cpp", 0xdb, 0);
-        bFileLoadOk = __frame0.nImgWidth;
-        if (iVar1 && __frame0.nImgWidth == 0x1d4 && __frame0.nImgHeight == 0x3c && __frame0.nImgBpp == 8) {
+        bFileLoadOk = nImgWidth;
+        if (iVar1 && nImgWidth == 0x1d4 && nImgHeight == 0x3c && nImgBpp == 8) {
           iVar1 = 0;
-          pPalDst = __frame0.abPalBuf;
+          pPalDst = abPalBuf + 1;
           do {
-            pPalDst[-1] = __frame0.abImgBuf[iVar1 * 4];
-            *pPalDst = __frame0.abImgBuf[iVar1 * 4 + 1];
-            pPalDst[1] = __frame0.abImgBuf[iVar1 * 4 + 2];
+            pPalDst[-1] = abImgBuf[iVar1 * 4];
+            *pPalDst = abImgBuf[iVar1 * 4 + 1];
+            pPalDst[1] = abImgBuf[iVar1 * 4 + 2];
             iVar1++;
             pPalDst += 3;
           } while (iVar1 < 0x100);
@@ -3448,10 +3441,10 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
             memmove(*gpGlideSmackerTexBuf2 + iVar1, *gpGlideSmackerTexBuf2 + nRowIdx * bFileLoadOk, bFileLoadOk);
             iVar1 += -0x200;
             nRowIdx--;
-            bFileLoadOk = __frame0.nImgWidth;
+            bFileLoadOk = nImgWidth;
           } while (iVar1 > 0);
 
-          GLSMACK_ConvertPaletteToRGB565(&__frame0.byPalette0);
+          GLSMACK_ConvertPaletteToRGB565(abPalBuf);
           GLSMACK_UploadTextures();
           return;
         }

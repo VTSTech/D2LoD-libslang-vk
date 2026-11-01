@@ -193,7 +193,7 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, struct D2Unit
 void __stdcall QUEST_SendQuestUpdateToPlayer_HaltTail(int nLine);
 void __fastcall QUEST_SetStateAndBroadcast(struct D2QuestDataStrc * pQuestData, int nPrevStateFlag, struct D2UnitStrc * pUnit, ::fpExecuteOnUnitFunction fpFunction, bool bExecute);
 void __fastcall QUEST_SetStateFlag(struct D2QuestDataStrc * pQuestData, int32_t nState, char * szSourceFile, uint32_t nSourceLine);
-void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint32_t nGossipIndex);
+void __fastcall QUEST_OnNpcGossip(::SGAMEDATA * pGame, struct D2UnitStrc * pPlayer, uint32_t nNpcGUID, uint16_t nGossipIndex);
 int32_t __stdcall QUEST_GetQuestSpecificDataPtr(::SGAMEDATA * pGame);
 uint32_t __stdcall CheckIntroductionFlagByInternalQuestId(::SGAMEDATA * pGame, eD2QuestsInternal nQuestNoInternal);
 void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(::SGAMEDATA * pGame, struct D2ClientStrc * pClient);
@@ -203,7 +203,7 @@ uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, struct D2UnitStr
 // Sets a quest record state in the game quest tracking system. Validates quest control pointer and updates the quest state via the quest record interface.
 void __fastcall QUEST_SetQuestRecordState(::SGAMEDATA * pGame, eD2Quests eQuest, eD2QuestState eState);
 int __fastcall QUEST_GetQuestRecordState(::SGAMEDATA * pGame, eD2Quests eQuestId, int32_t nUnused);
-void __stdcall QUEST_DispatchMonsterDeathToQ12(int32_t nMonsterClassId, int32_t nBossType, int32_t nUnused);
+void __fastcall QUEST_DispatchMonsterDeathToQ12(::SGAMEDATA * pGame, struct D2RoomStrc * pRoom, int32_t nX, int32_t nY, int32_t nMonsterClassId);
 // Finds the QUESTINT_SistersToTheSlaughter entry in pGame's quest list (pPrev chain) and returns Q06_GetQuestSpecificFlag for it; halts (line 2140) when there is none.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 uint32_t __fastcall QUEST_GetSistersToTheSlaughterSpecificFlag(::SGAMEDATA * pGame);
@@ -295,7 +295,7 @@ void __fastcall Q12_Callback03_ChangedLevel(struct D2QuestDataStrc * pQuestData,
 void __fastcall Q12_InitData(struct D2QuestDataStrc * pQuestData);
 void __fastcall PlaceJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
 void __fastcall PlaceGuardInFrontOfJerhyn(struct D2QuestDataStrc * pQuestData, struct D2ObjectInitFnArg * pObjectInitArg);
-bool __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame);
+BYTE __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame);
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
 BOOL __fastcall QUEST_ShouldBlockJerhyn(::SGAMEDATA * pGame);
 // A2Q7 server AI logic for the Jerhyn NPC, gating his movement to the palace and the Duriel reveal. Out-params *pdwParam1/*pdwParam2 tell the caller the desired idle/move outcome. Bails (idle: 1,0) unless the Arcane Sanctuary quest is in progress and Seven Tombs is appropriately staged. When conditions hold it walks Jerhyn toward the recorded target coords (WalkToCoords), and once close locates the Duriel-tomb portal object, finds free neighbouring-room coordinates and relocates Jerhyn there (SUNIT_RelocateUnit), updating the A2Q4 quest-specific data flag bytes that track his progress.

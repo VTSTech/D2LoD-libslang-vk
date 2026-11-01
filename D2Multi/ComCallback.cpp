@@ -543,7 +543,6 @@ void __fastcall COMCALLBACK_FormatChatMessage(char * szText1, char * szText2, ch
     int32_t nCmpResult;
     int nUserCmp;
     uint32_t dwFlags;
-    int32_t nBufferOutputLength;
     D2QuestDataA5Q2Strc* pUserListNode;
     *szFormattedOutput = '\0';
     *szText2 = '\0';
@@ -589,9 +588,7 @@ void __fastcall COMCALLBACK_FormatChatMessage(char * szText1, char * szText2, ch
         if (pUserListNode) {
           dwFlags = D2Win::Src::D2Comp::D2COMP_GetFlags((D2CharSelCompStrc*)pUserListNode->aBarricadePos[2].x);
           if (gadwBitMasks[6] & dwFlags || gadwBitMasks[7] & dwFlags) {
-            nBufferOutputLength = 0x7fffffff;
-            pszAtPos = D2Win::Src::D2Comp::D2COMP_GetTitlePrefix((uint32_t)pUserListNode->abGroupAllFreed[0], (dwFlags >> 5 & 1) * 3 + (dwFlags >> 7 & 1) * 2 + (dwFlags >> 6 & 1), dwFlags >> 0xc & 1);
-            Storm::Source::SSTR::SStrCopy(szText2, pszAtPos, nBufferOutputLength);
+            Storm::Source::SSTR::SStrCopy(szText2, D2Win::Src::D2Comp::D2COMP_GetTitlePrefix((uint32_t)pUserListNode->abGroupAllFreed[0], (dwFlags >> 5 & 1) * 3 + (dwFlags >> 7 & 1) * 2 + (dwFlags >> 6 & 1), dwFlags >> 0xc & 1), 0x7fffffff);
           }
         }
 
@@ -821,11 +818,13 @@ void __stdcall COMCALLBACK_UpdateChannelUserList() {
     bool bVar1;
     bool bVar2;
     bool bVar3;
+    uint32_t nClassId;
+    uint32_t uVar4;
     uint8_t byTitleLevel;
+    uint8_t bVar5;
     D2ChannelUserStrc* pSortNode;
     D2ChannelUserStrc* pCurUser;
     uint32_t dwCompFlags;
-    uint32_t dwFlags;
     D2ChannelUserStrc* pScanNode;
     D2ChannelUserStrc* pNextScan;
     D2ChannelUserStrc* pPrevNode;
@@ -871,7 +870,7 @@ void __stdcall COMCALLBACK_UpdateChannelUserList() {
     nUserIndex = 0;
     pCurUser = gpChannelUserListHead;
     do {
-      uint32_t nClassId;
+      uint32_t dwFlags;
       if (!pCurUser) {
         return;
       }
@@ -921,32 +920,32 @@ void __stdcall COMCALLBACK_UpdateChannelUserList() {
           dwCompFlags &= gadwInvBitMasks[0xd];
         }
 
-        nClassId = pCurUser->nFlags >> 8 & 0x1f;
+        uVar4 = pCurUser->nFlags >> 8 & 0x1f;
         if (pCurUser->nFlags & 0x20) {
-          if (nClassId >= 0xf) {
-            byTitleLevel = 3;
+          if (uVar4 >= 0xf) {
+            bVar5 = 3;
             bInserted = true;
           } else {
-            if (nClassId < 10) {
-              bSignedGreaterOrEqual = (int32_t)nClassId >= 5;
-              byTitleLevel = bSignedGreaterOrEqual;
-              bInserted = (bool)byTitleLevel;
+            if (uVar4 < 10) {
+              bSignedGreaterOrEqual = (int32_t)uVar4 >= 5;
+              bVar5 = bSignedGreaterOrEqual;
+              bInserted = (bool)bVar5;
             } else {
-              byTitleLevel = 2;
+              bVar5 = 2;
               bInserted = false;
             }
           }
         } else {
-          if (nClassId >= 0xc) {
-            byTitleLevel = 3;
+          if (uVar4 >= 0xc) {
+            bVar5 = 3;
             bInserted = true;
           } else {
-            if (nClassId < 8) {
-              bSignedGreaterOrEqual = (int32_t)nClassId >= 4;
-              byTitleLevel = bSignedGreaterOrEqual;
-              bInserted = (bool)byTitleLevel;
+            if (uVar4 < 8) {
+              bSignedGreaterOrEqual = (int32_t)uVar4 >= 4;
+              bVar5 = bSignedGreaterOrEqual;
+              bInserted = (bool)bVar5;
             } else {
-              byTitleLevel = 2;
+              bVar5 = 2;
               bInserted = false;
             }
           }
@@ -956,7 +955,7 @@ void __stdcall COMCALLBACK_UpdateChannelUserList() {
         } else {
           dwCompFlags &= gadwInvBitMasks[6];
         }
-        if (byTitleLevel & 2) {
+        if (bVar5 & 2) {
           dwCompFlags |= gadwBitMasks[7];
         } else {
           dwCompFlags &= gadwInvBitMasks[7];
@@ -2237,7 +2236,7 @@ BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * p
       nHash += nHash * 2 ^ (char)nVal + nDelta;
     } while (nIdx < 0x10);
 
-    if ((nHash & 0xff) != nChecksum) {
+    if ((uint8_t)nHash != nChecksum) {
       return 0;
     }
 
@@ -2249,7 +2248,7 @@ BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * p
       nVal--;
       *pbScan = abKeyBuf[nHash];
       abKeyBuf[nHash] = byChar;
-    } while (-1 < nVal);
+    } while (nVal >= 0);
 
     nChecksum = 0x13ac9741;
     nVal = 0xf;
@@ -2265,7 +2264,7 @@ BOOL __fastcall COMCALLBACK_DetectCDKeyInMessage(char * szChatText, uint32_t * p
       }
 
       nVal--;
-    } while (-1 < nVal);
+    } while (nVal >= 0);
 
     Storm::Source::SSTR::SStrCopy((char*)&nChecksum, (char*)abKeyBuf, 3);
     Storm::Source::SSTR::SStrCopy(szKeyLoHex, (char*)(abKeyBuf + 2), 7);

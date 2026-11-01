@@ -164,8 +164,6 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
 }; D2_STATIC_GUARD(gaChampionModifierTitles, "D2Client::UNIT::MonUnique::DefineSuperMonster::gaChampionModifierTitles");
 
     D2SuperUniquesTxt* pSuperUniqueTxt;
-    uint16_t* pWVar2;
-    uint16_t* pFmtStr;
     uint16_t* wszFormat;
     uint16_t wNameId;
     int nClassId;
@@ -173,7 +171,6 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
     int nChampTitleIdx;
     int iVar3;
     D2MonStatsTxt* pMonStatsTxt;
-    uint32_t uVar4;
     uint16_t wszName[300];
     char szSpace[8];
     D2UnitDataMonsterStrc* pMonData;
@@ -249,11 +246,7 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
         pMonStatsTxt = sgptDataTable->pTxtMonStats + iVar3;
       }
 
-      uVar4 = 0;
-      pLocaleName = D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr);
-      pWVar2 = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gaChampionModifierTitles[nChampTitleIdx * 2 + 1]);
-      pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b40);
-      UI::Inv::wsprintf(wszName, pFmtStr, pWVar2, pLocaleName, uVar4);
+      UI::Inv::wsprintf(wszName, D2Lang::StrTable::strtable::GetLocaleString(0x2b40), D2Lang::StrTable::strtable::GetLocaleString((uint16_t)gaChampionModifierTitles[nChampTitleIdx * 2 + 1]), D2Lang::StrTable::strtable::GetLocaleString(pMonStatsTxt->NameStr), 0);
       D2Common::Monsters::MONSTERS::SetSuperUniqueName(pUnit, wszName);
       return;
     }
@@ -319,10 +312,10 @@ void __fastcall DefineSuperMonster(D2UnitStrc * pUnit, int32_t eModifier, int32_
       }
     }
 
-    uVar4 = 0;
+    uint32_t uVar4 = 0;
     pLocaleName = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniqueSuffix(pUnit);
-    pWVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniquePrefix(pUnit);
-    pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x6b9);
+    uint16_t* pWVar2 = D2Common::DATATBLS::MonsterTbls::MONSTER_GetRandomUniquePrefix(pUnit);
+    uint16_t* pFmtStr = D2Lang::StrTable::strtable::GetLocaleString(0x6b9);
     UI::Inv::wsprintf(wszName, pFmtStr, pWVar2, pLocaleName, uVar4);
     uint32_t nRandPct = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
     if ((int)nRandPct < 0x32) {
@@ -654,7 +647,6 @@ void __fastcall MakeMonsterCorpseExplodeAttack(D2UnitStrc * pUnit, int32_t nUMod
 
 void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifier, int32_t bApply) {
     int32_t nVelocity;
-    int nLevel;
     int32_t nTotalFrames;
     eD2Skills eSkill;
     if (!(bApply || eModifier != 0x12)) {
@@ -662,8 +654,7 @@ void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifie
     }
     if (eModifier == 0x2a && (!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       nVelocity = D2Common::DATATBLS::MissileTbls::MISSILETBLS_CalculateVelocity(0x5a, 0);
-      nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
-      SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Nova, ~MISSILE_Arrow, SKILL_Attack, nLevel, nVelocity);
+      SKILLS::Skills::SKILL_SpawnMissilesAtTarget(pUnit, pUnit, MISSILE_Nova, ~MISSILE_Arrow, SKILL_Attack, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nVelocity);
     }
 
     D2Common::Units::GetShiftedFrameMetrics(pUnit, &bApply, &nTotalFrames);
@@ -671,12 +662,10 @@ void __fastcall MONUNIQUE_SpawnDeathMissile(D2UnitStrc * pUnit, int32_t eModifie
       return;
     }
     if (eModifier == 10) {
-      int32_t nX;
+      int nLevel;
       nLevel = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
       eSkill = SKILL_Attack;
-      nVelocity = Units::GetYPosFromDynamicPathUnit(pUnit);
-      nX = Units::GetXPosFromDynamicPathUnit(pUnit);
-      Missile::MakeMissileAtXY(pUnit, MISSILE_Corpsepoisoncloud, nX, nVelocity, eSkill, nLevel);
+      Missile::MakeMissileAtXY(pUnit, MISSILE_Corpsepoisoncloud, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nLevel);
       return;
     }
     if (eModifier != 0x12) {

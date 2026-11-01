@@ -162,7 +162,7 @@ uint32_t __stdcall SStrCopy(char * szBufferOutput, char * szBufferInput, int32_t
 
           nOffset = nOffsetPrev + 4;
           *(uint32_t*)(pDstLast + nOffsetPrev - 3) = dwWord;
-          if (-1 < nOffset) {
+          if (nOffset >= 0) {
             goto copy_tail_bytes;
           }
 
@@ -196,7 +196,7 @@ uint32_t __stdcall SStrCopy(char * szBufferOutput, char * szBufferInput, int32_t
 
           nOffset += 4;
           guStringAlignmentTemp = dwMask2;
-          if (-1 < nOffset) {
+          if (nOffset >= 0) {
             break;
           }
 
@@ -365,7 +365,7 @@ uint32_t __stdcall SStrPack(LPSTR szText, char * szSource, uint32_t nBufferLengt
 
           nOffset = nOffsetPrev + 4;
           *(uint32_t*)(pDstLast + nOffsetPrev - 3) = dwWord;
-          if (-1 < nOffset) {
+          if (nOffset >= 0) {
             goto copy_tail_bytes;
           }
 
@@ -399,7 +399,7 @@ uint32_t __stdcall SStrPack(LPSTR szText, char * szSource, uint32_t nBufferLengt
 
           nOffset += 4;
           guStringAlignmentTemp = dwWord2;
-          if (-1 < nOffset) {
+          if (nOffset >= 0) {
             break;
           }
 
@@ -818,7 +818,7 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
         nAccum64 = UVar1 + qwSeed;
         *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
         UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
-        nAccum64 = _allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
+        nAccum64 = (int64_t)qwSeed * 0x21;
         qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
         nChar = (uint32_t)*pszText;
       }
@@ -835,7 +835,7 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
         nAccum64 = UVar1 + qwSeed;
         *(uint32_t*)((char*)&qwSeed + 4) = (int)(qwSeed >> 0x20);
         UVar1 = (uint64_t)((uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].nHashHigh - gaHashSeedTable[nChar & 0xf].nHashHigh - (uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow < gaHashSeedTable[nChar & 0xf].dwHashLow) ^ (uint32_t)((uint64_t)nAccum64 >> 0x20)) << 32 | (uint64_t)(uint32_t)(gaHashSeedTable[nChar >> 4].dwHashLow - gaHashSeedTable[nChar & 0xf].dwHashLow ^ (uint32_t)nAccum64));
-        nAccum64 = _allmul((uint32_t)qwSeed, *(uint32_t*)((char*)&qwSeed + 4), 0x21, 0);
+        nAccum64 = (int64_t)qwSeed * 0x21;
         qwSeed = nAccum64 + (uint64_t)nChar + UVar1 + 3;
         nChar = (uint32_t)*pszText;
       }
@@ -2004,7 +2004,7 @@ uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam) {
       nContinuationBytesNeeded = 2;
     } else {
       if ((bByte & 0xe0) != 0xc0) {
-        if (-1 >= (char)bByte) {
+        if ((char)bByte < 0) {
           return 0x80000000;
         }
 

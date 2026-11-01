@@ -123,8 +123,6 @@ BOOL __fastcall SKILLAMA_SrvStFn06_PowerStrike(::SGAMEDATA * pGame, D2UnitStrc *
 // Amazon skill helper that probabilistically consumes weapon quantity or durability on use. For stackable weapons: if the RNG roll (based on pUnit's seed vs. nParam1 threshold) triggers, removes one charge via RemoveQuanityOnUse. For non-stackable weapons with durability: on a trigger, decrements durability by nParam2 and sends stat update 0x3E to the client; if durability reaches zero, calls ITEMMODE_SendItemUpdate (item break). Returns non-zero if an action was taken.
 static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nCurrentDurability;
-    bool bSendStatUpdate;
-    int32_t nDurabilityStat;
     D2SeedStrc sNewSeed;
     uint32_t bIsWeapon = D2Common::ITEMS::Items::ITEMS_IsA(pUnit2, ITEMTYPE_Weapon);
     if (!bIsWeapon) {
@@ -143,7 +141,6 @@ static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nPara
         }
       }
     } else {
-      uint16_t wLayer;
       bIsWeapon = D2Common::ITEMS::Items::ITEM_CheckIfItemHasDurability(pUnit2);
       if (bIsWeapon) {
         sNewSeed = D2_SEED_NEXT(pUnit->sSeed);
@@ -151,12 +148,9 @@ static void __stdcall UseQuanityAndDurability(::SGAMEDATA * pGame, int32_t nPara
         if ((int)(sNewSeed.nSeedLow % 100) < nParam1) {
           nCurrentDurability = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_durability, 0);
           bIsWeapon = nCurrentDurability - nParam2;
-          if (-1 < (int)bIsWeapon && bIsWeapon) {
+          if ((int)bIsWeapon >= 0 && bIsWeapon) {
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_durability, bIsWeapon, 0);
-            wLayer = 0;
-            nDurabilityStat = 0x48;
-            bSendStatUpdate = true;
-            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillAma.cpp", 0x9b), pUnit2, bSendStatUpdate, nDurabilityStat, bIsWeapon, wLayer);
+            GAME::SCmd::NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillAma.cpp", 0x9b), pUnit2, true, 0x48, bIsWeapon, 0);
             return;
           }
 
@@ -918,16 +912,14 @@ BOOL __fastcall Skills_SrvDoFunc_013_MultiHitAttack(::SGAMEDATA * pGame, D2UnitS
 
     int32_t nMeleeSearchRange = SkillsServer::GetMeleeRangePlusFour(pUnit);
     uint32_t nPrevTargetGUID = D2Common::Skills::SKILL_GetParam3(pSkill);
-    uint32_t nHitResult = nPrevTargetGUID;
-    eD2UnitType eUnitType = D2Common::Skills::SKILL_GetParam2(pSkill);
-    D2UnitStrc* pNextTarget = UNIT::SUnit::FindUnitFromTable(pGame, eUnitType, nHitResult);
+    D2UnitStrc* pNextTarget = UNIT::SUnit::FindUnitFromTable(pGame, D2Common::Skills::SKILL_GetParam2(pSkill), nPrevTargetGUID);
     if (!(pNextTarget && (bInMeleeRange = D2Common::Units::IsInMeleeRange(pUnit, pNextTarget, 0) , bInMeleeRange != 0) || (pNextTarget = SkillsServer::SKILLS_FindNextUnitInAreaByGUID(pGame, pUnit, 0, 0, nMeleeSearchRange, 0x20003, nPrevTargetGUID, nullptr) , pNextTarget != 0))) {
       return 0;
     }
 
     memset(&sDamage, 0, 0x70);
     int32_t nHitsLeft = 0;
-    nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
+    uint32_t nHitResult = D2Common::Skills::SKILLS_CalcToHit(pUnit, eSkill, nSkillLvl);
     sDamage.wResultFlags = UNIT::SUnitDmg::DAMAGE_CalculateHitCheck(pGame, pUnit, pNextTarget, nHitResult, nHitsLeft);
     if (sDamage.wResultFlags & 1U) {
       sDamage.dwEnDmgPct = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->calc[1], eSkill, nSkillLvl);

@@ -162,11 +162,9 @@ void __stdcall UI_ToggleMiniPanel() {
     int _bRegistryRead;
     bool bRegistryRead;
     uint32_t bScrollActive;
-    HWND pHwnd;
     eD2UIvars eUI;
     int32_t nInteractGuid;
     int nMiniPanelRegVal;
-    int32_t nLine;
     _bRegistryRead = Storm::Source::SReg::SRegLoadValue("Diablo II", "Mini Panel", 1, &nMiniPanelRegVal);
     BOOL bWasMiniPanelOpen = GFX_bShowUIFlag.MiniPanel;
     if (_bRegistryRead && nMiniPanelRegVal) {
@@ -218,9 +216,7 @@ void __stdcall UI_ToggleMiniPanel() {
     }
     if (!bWasMiniPanelOpen) {
       if (GFX_bShowUIFlag.MiniPanel) {
-        nLine = 2;
-        pHwnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawUnknown, nLine);
+        _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitDrawUnknown, 2);
         ui::GetMouseX();
         ui::GetMouseY();
         return;
@@ -236,12 +232,10 @@ void __stdcall UI_ToggleMiniPanel() {
 void __stdcall InitializeUI() {
     D2UnitStrc* pPlayer;
     int bIsActive;
-    HWND pHwnd;
     BOOL bResult2;
     eD2UIvars eUI;
     char szPath[260];
     int32_t nInteractGuid;
-    int32_t nLine;
     Panel::LoadPanelImages();
     MiniPanel::MINIPANEL_Init();
     Text::TEXT_InitTextDisplaySettings();
@@ -315,7 +309,7 @@ void __stdcall InitializeUI() {
       bScrollActive = Text::TEXT_IsScrollingTextActive();
       if (!bScrollActive) {
         eUI = UI_GAME;
-        if (0 < gnUIFlagCount) {
+        if (gnUIFlagCount > 0) {
           do {
             if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
               switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0]) {
@@ -348,9 +342,7 @@ void __stdcall InitializeUI() {
           GFX_bShowUIFlag.Game = 1;
         }
         if (GFX_bShowUIFlag.Game) {
-          nLine = 4;
-          pHwnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, g_UIFlagInitDrawMouseDown, nLine);
+          _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitDrawMouseDown, 4);
         }
 
         ui::GetMouseX();
@@ -368,7 +360,7 @@ void __stdcall InitializeUI() {
         bScrollActive = Text::TEXT_IsScrollingTextActive();
         if (!bScrollActive) {
           eUI = UI_GAME;
-          if (0 < gnUIFlagCount) {
+          if (gnUIFlagCount > 0) {
             do {
               if ((&GFX_bShowUIFlag.Game)[eUI] == 1) {
                 switch (gUIFlagDismissModeTable[eUI]->anDismissMode[0x22]) {
@@ -397,14 +389,10 @@ void __stdcall InitializeUI() {
           }
           if (!bResult) {
             if (GFX_bShowUIFlag.HelpScreenRedButton) {
-              nLine = 2;
-              pHwnd = D2gfx::D2GFX::GetHwnd();
-              _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit1, nLine);
+              _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDrawFlagInit1, 2);
             }
           } else if (!GFX_bShowUIFlag.HelpScreenRedButton) {
-            nLine = 2;
-            pHwnd = D2gfx::D2GFX::GetHwnd();
-            _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit1, nLine);
+            _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDrawFlagInit1, 2);
           }
 
           ui::GetMouseX();
@@ -507,13 +495,11 @@ void __stdcall FreeDraw() {
 // All 38 UI panels: inventory, stats, skills, menus, tooltips, automap, chat.
 // GFX_bShowUIFlag controls visibility. UI drawn in screen space (not world).
 // EDI is not an argument: never read; the callee DRAW_UI_NPC_INTERACTION does not take it either.
-void DRAW_UI(D2GameViewStrc * pGameView) {
+void __fastcall DRAW_UI(D2GameViewStrc * pGameView) {
     uint32_t eBorderType;
     int bIsActive;
-    HWND pHwnd;
     eD2GSGameType eGameType;
     eD2UIvars eUIIndex;
-    int32_t iVar1;
     int32_t nInteractGuid;
     BOOL bWasHelpOpen;
     if (GFX_bShowUIFlag.StatusArea) {
@@ -670,7 +656,7 @@ void DRAW_UI(D2GameViewStrc * pGameView) {
         eBorderType = Text::TEXT_IsScrollingTextActive();
         if (!eBorderType) {
           eUIIndex = UI_GAME;
-          if (0 < gnUIFlagCount) {
+          if (gnUIFlagCount > 0) {
             do {
               if ((&GFX_bShowUIFlag.Game)[eUIIndex] == 1) {
                 switch (gUIFlagDismissModeTable[eUIIndex]->anDismissMode[0x21]) {
@@ -703,15 +689,11 @@ void DRAW_UI(D2GameViewStrc * pGameView) {
         }
         if (!bWasHelpOpen) {
           if (GFX_bShowUIFlag.HelpMenu) {
-            iVar1 = 5;
-            pHwnd = D2gfx::D2GFX::GetHwnd();
-            _Message::MESSAGE_RegisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, iVar1);
+            _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDrawFlagInit0, 5);
           }
         } else if (!GFX_bShowUIFlag.HelpMenu) {
           Help::HELP_HideMiniPanel();
-          iVar1 = 5;
-          pHwnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_UnregisterEventHandlerBatch(pHwnd, gsUIDrawFlagInit0, iVar1);
+          _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDrawFlagInit0, 5);
         }
 
         ui::GetMouseX();

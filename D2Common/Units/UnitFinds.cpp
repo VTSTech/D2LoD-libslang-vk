@@ -232,7 +232,7 @@ D2UnitStrc * __stdcall GetNearestTestedUnit(D2UnitStrc * pUnit, int32_t nX, int3
       }
 
       nRoomIdx = 0;
-      if (0 >= nRoomCount) {
+      if (nRoomCount <= 0) {
         return pBestUnit;
       }
 
@@ -443,7 +443,7 @@ int32_t __stdcall TestUnit(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg)
     }
 
     nSearchFlags = pArgs->nFlags;
-    if (!(-1 < (char)nSearchFlags || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0))) {
+    if (!((char)nSearchFlags >= 0 || (bAttackable = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_CANBEATTACKED) , bAttackable != 0))) {
       return 0;
     }
     if (!(!(nSearchFlags & 0x400) || (bValidTarget = D2Client::UNIT::CheckFlags(pTestUnit, UNITFLAG_ISVALIDTARGET) , bValidTarget != 0))) {

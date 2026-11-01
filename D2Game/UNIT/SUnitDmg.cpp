@@ -1025,10 +1025,10 @@ void __fastcall DAMAGE_CalculateOffensiveDamage(::SGAMEDATA * pGame, D2UnitStrc 
 
 // Computes the effective resistance value for one damage type given a resist-table entry and a damage context. Reads the defender's raw resistance stat, subtracts pierce from the attacker if applicable, applies the difficulty resistance penalty for players (hardcoded -20/-50 for classic, or DifficultyLevels.txt ResistPenalty for LoD). Clamps the result to [-100, maxResist] where maxResist is 75 (or stat-extended up to 95) for players. Special case: physical resistance (damageresist) against a Sanctuary-wielding attacker vs. undead defender is forced to 0. Returns the final clamped resist value.
 static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageContext * pCtx) {
+    int nDifficulty;
     eD2States eUnbreakableState;
     BOOL nIsUndeadCheck;
     int32_t nClampedResist;
-    uint8_t nDifficulty;
     int32_t nResistTotal = 0;
     if (pEntry->eResistStat != ~UNITSTAT_strength) {
       nResistTotal = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pCtx->pDefender, pEntry->eResistStat, 0);
@@ -1044,7 +1044,7 @@ static int32_t DAMAGE_CalculateResistance(D2ResistTableEntry * pEntry, D2DamageC
       if (pCtx->pGame->bExpansion) {
         nResistTotal += pCtx->pDiffLevels->ResistPenalty;
       } else {
-        nDifficulty = pCtx->pGame->nDifficulty;
+        nDifficulty = (int)pCtx->pGame->nDifficulty;
         switch (nDifficulty) {
           case 1:
             {
@@ -1268,13 +1268,13 @@ static void DAMAGE_ProcessFreezeAndPoisonImmunity(D2DamageContext * pCtx) {
         }
       }
     }
-    if (0 < pCtx->pDamage->dwPoisLength) {
+    if (pCtx->pDamage->dwPoisLength > 0) {
       eStateResult = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pCtx->pDefender, STATE_shrine_resist_poison);
       if (eStateResult != STATE_none) {
         pCtx->pDamage->dwPoisLength = 0;
       }
     }
-    if (0 >= pCtx->pDamage->dwBurnLen) {
+    if (pCtx->pDamage->dwBurnLen <= 0) {
       return;
     }
 
@@ -1792,7 +1792,7 @@ void __fastcall DAMAGE_ApplyDamageToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         if (!(pDamage->dwHitFlags & 0x20U)) {
           goto clamp_and_apply_damage;
         }
-        if (-1 < (char)pDamage->dwHitFlags) {
+        if ((char)pDamage->dwHitFlags >= 0) {
           SUnitEvent::UNITEVENT_DispatchEventsByType(pGame, 6, pUnit, pUnit_00, pDamage);
         }
 
@@ -1978,8 +1978,9 @@ BOOL __stdcall DAMAGE_CheckKnockbackThreshold(D2UnitStrc * pUnit, D2DamageStrc *
       case ELEMENTAL_POISON:
         nKbDivisor = 0x40;
       break;
-      default:
-        nKbDivisor = 0x10;
+      case 12:
+        default:
+          nKbDivisor = 0x10;
       break;
     }
 
@@ -2162,7 +2163,7 @@ static uint32_t DAMAGE_GetElementalDamageTypeFlags(uint32_t nParam, int32_t nPar
 
         break;
       }
-      if (0 < *(int*)(nParam2 + gaDamageTypeStatOffsets[uDmgTypeIdx * 2])) {
+      if (*(int*)(nParam2 + gaDamageTypeStatOffsets[uDmgTypeIdx * 2]) > 0) {
         uDmgTypeFlags = gaDamageTypeStatOffsets[uDmgTypeIdx * 2 + 1];
         if (uDmgTypeFlags) {
           break;
@@ -2960,7 +2961,7 @@ static int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
 
     int32_t iVar1 = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0x15c, aStatEntries, 0x20);
     int32_t nBestBonus = 0;
-    if (0 >= iVar1) {
+    if (iVar1 <= 0) {
       return nBestBonus;
     }
 
@@ -2982,7 +2983,6 @@ static int32_t DAMAGE_GetSkillDamageBonus(D2UnitStrc * pUnit) {
 static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int32_t nParryBonus;
     uint32_t nRandRoll;
-    ::SGAMEDATA* pSVar2;
     int nDodgeChance;
     uint32_t nEvadeRoll;
     int nAvoidChance;
@@ -3012,9 +3012,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
           nAvoidChance = DVar1.nSeedLow % 100;
           nSeedMod = "evades";
           nParryBonus = nParam;
-          nDodgeChance = nAvoidChance;
-          pSVar2 = SUnit::GetGamePointer(pUnit2);
-          nullsub_4Arg(pSVar2, pUnit2, pUnit, nParryBonus, nDodgeChance, (uint32_t)nSeedMod);
+          nullsub_4Arg(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nParryBonus, nAvoidChance, (uint32_t)nSeedMod);
           nRandRoll = 8;
           if (nAvoidChance < nParam) {
             return nRandRoll;
@@ -3033,8 +3031,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
             pDVar3 = pUnit;
             iVar4 = nParryBonus;
             nWeaponClass3 = nRandRoll;
-            pSVar2 = SUnit::GetGamePointer(pUnit2);
-            nullsub_4Arg(pSVar2, pUnit2, pDVar3, iVar4, nRandRoll, nDebugAddr);
+            nullsub_4Arg(SUnit::GetGamePointer(pUnit2), pUnit2, pDVar3, iVar4, nRandRoll, nDebugAddr);
             if ((int)nWeaponClass3 < nParryBonus) {
               return 0x10;
             }
@@ -3063,8 +3060,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
         pDVar3 = pUnit;
         iVar4 = nParryBonus;
         nWeaponClass2 = nRandRoll;
-        pSVar2 = SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pSVar2, pUnit2, pDVar3, iVar4, nRandRoll, (uint32_t)nSeedMod);
+        nullsub_4Arg(SUnit::GetGamePointer(pUnit2), pUnit2, pDVar3, iVar4, nRandRoll, (uint32_t)nSeedMod);
         if ((int)nWeaponClass2 < nParryBonus) {
           return 0x10;
         }
@@ -3077,10 +3073,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
       if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "dodges";
-        nAvoidChance = nDodgeChance;
-        nRandRoll = nEvadeRoll;
-        pSVar2 = SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pSVar2, pUnit2, pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        nullsub_4Arg(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nDodgeChance, nEvadeRoll, (uint32_t)nSeedMod);
         if ((int)nEvadeRoll < nDodgeChance) {
           return 4;
         }
@@ -3090,10 +3083,7 @@ static uint32_t __stdcall DAMAGE_CheckDefenseEvasion(int32_t nParam, D2UnitStrc 
       if (nDodgeChance > 0) {
         nEvadeRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
         nSeedMod = "avoids";
-        nAvoidChance = nDodgeChance;
-        nRandRoll = nEvadeRoll;
-        pSVar2 = SUnit::GetGamePointer(pUnit2);
-        nullsub_4Arg(pSVar2, pUnit2, pUnit, nAvoidChance, nRandRoll, (uint32_t)nSeedMod);
+        nullsub_4Arg(SUnit::GetGamePointer(pUnit2), pUnit2, pUnit, nDodgeChance, nEvadeRoll, (uint32_t)nSeedMod);
         if ((int)nEvadeRoll < nDodgeChance) {
           return 2;
         }
@@ -3607,11 +3597,10 @@ static void __stdcall SERVER_SEND_MercExperience(int32_t nExperience, D2UnitStrc
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit2, UNITSTAT_experience, nValue, 0);
-    uint16_t wPacketType = 0xd;
-    uint32_t nNewMercXp = nValue;
-    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd), pUnit2, wPacketType, nMercGUID_00, nNewMercXp);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(SUnit::SUNIT_GetClient(pUnit, ".\\UNIT\\SUnitDmg.cpp", 0xfbd), pUnit2, 0xd, nMercGUID_00, nValue);
     int32_t nLevel = nMercLevel;
     do {
+      uint32_t nNewMercXp;
       nOwnerLevel = nLevel + 1;
       nNewMercXp = D2Common::Merc::GetBaseExperience(nOwnerLevel, pHirelingTxt->expPerLvl);
       if (nNewMercXp > nValue) {

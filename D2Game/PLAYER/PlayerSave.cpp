@@ -118,7 +118,7 @@ static D2UnitStrc * PLRSAVE_CreateItemFromSaveData(::SGAMEDATA * pGame, D2Unknow
       pSrcField++;
     } while (cStrChar != '\0');
 
-    sItemGenCtx.bGrade = (bool)pItemRelated->bGrade;
+    sItemGenCtx.bGrade = pItemRelated->bGrade;
     sItemGenCtx.pGame = pGame;
     D2UnitStrc* pCreatedItem = ITEMS::Items::Drop::ITEM_CreateItemInstance(pGame, &sItemGenCtx, 0);
     if (!pCreatedItem) {
@@ -139,7 +139,6 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
     char byItemWidth;
     uint32_t nX;
     uint32_t nY;
-    D2InventoryStrc* pInventory;
     D2UnknownItemRelatedStruct* pSavedItemData;
     pSavedItemData = pItemUnknownStructure;
     if (pnParam) {
@@ -161,8 +160,7 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
       D2Common::Units::SetXForStaticUnit(pUnit_00, nX);
       D2Common::Units::SetYForStaticUnit(pUnit_00, nY);
       nItemGUID = pUnit_00->nUnitGUID;
-      pInventory = 0;
-      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0, 1, pInventory);
+      iVar1 = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0xea, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0, 1, 0);
       break;
       case eD2PlayerAnimMode_ns::Neutral:
         D2Common::Units::SetupUpdateFlag(pUnit_00, 4);
@@ -215,15 +213,10 @@ int __fastcall PLRSAVE_RestoreItemFromSaveData(::SGAMEDATA * pGame, D2UnitStrc *
 // @sourcefile .\PLAYER\PlrSave.cpp
 int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pSourceItem, int32_t eBodyLocation) {
     eD2ItemAnimMode eAnimMode;
-    int32_t nPosY;
-    int32_t _unknownMightBeX;
     int nPlaceResult;
     BOOL BVar1;
     DWORD dwContainerGUID;
-    int32_t bNoOverlap;
-    int32_t bSendUpdate;
     int32_t* pBodyLocParam;
-    D2InventoryStrc* pInventory;
     D2UnitStrc* pUnit_00 = pSourceItem;
     if (!pSourceItem) {
       eAnimMode = Container;
@@ -243,12 +236,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
         pSourceItem = (D2UnitStrc*)pUnit_00->nUnitGUID;
       }
 
-      pInventory = 0;
-      bSendUpdate = 1;
-      bNoOverlap = 0;
-      nPosY = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-      _unknownMightBeX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x13f, pGame, pUnit, (int32_t)pSourceItem, _unknownMightBeX, nPosY, bNoOverlap, bSendUpdate, pInventory);
+      nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x13f, pGame, pUnit, (int32_t)pSourceItem, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), 0, 1, 0);
       break;
       case Equipment:
         D2Common::Units::SetupUpdateFlag(pSourceItem, 4);
@@ -259,8 +247,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       }
 
       pBodyLocParam = &eBodyLocation;
-      nPosY = 1;
-      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, D2Common::ITEMS::Items::GetBodyLocation(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, (DWORD)pSourceItem, D2Common::ITEMS::Items::GetBodyLocation(pUnit_00), 1, (uint32_t*)pBodyLocParam);
       break;
       case Belt:
         D2Common::Units::SetupUpdateFlag(pSourceItem, 4);
@@ -271,8 +258,7 @@ int __fastcall PLRSAVE_RestoreItemToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit
       }
 
       pBodyLocParam = &eBodyLocation;
-      nPosY = 0;
-      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), nPosY, (uint32_t*)pBodyLocParam);
+      nPlaceResult = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, (DWORD)pSourceItem, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), 0, (uint32_t*)pBodyLocParam);
       break;
       case Ground:
 
@@ -322,7 +308,6 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
     D2InventoryStrc* pCurInventory;
     int nBodyLocSlot;
     int nEquipResult;
-    D2InventoryStrc* pInventory;
     D2UnitStrc* pItem;
     pItem = PLRSAVE_CreateItemFromSaveData(pGame, pItemUnknownStructure);
     if (!pItem) {
@@ -339,8 +324,7 @@ static int __stdcall PLRSAVE_RestoreEquippedItem(::SGAMEDATA * pGame, D2UnknownI
           D2Common::Units::SetXForStaticUnit(pItem, pItemUnknownStructure->nPosX);
           D2Common::Units::SetYForStaticUnit(pItem, nBodyLocId);
           nItemGUID = pItem->nUnitGUID;
-          pInventory = 0;
-          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), 0, 0, pInventory);
+          nPlaceResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrSave.cpp", 0x1c2, pGame, pUnit, nItemGUID, D2Client::Units::GetXPosFromDynamicPathUnit(pItem), D2Client::Units::GetYPosFromDynamicPathUnit(pItem), 0, 0, 0);
           break;
         }
       case Equipment:
@@ -899,7 +883,7 @@ BOOL __fastcall SaveToFileBnet(::SGAMEDATA * pGame, uint32_t nAccountId, D2UnitS
     PlayerSave2::MakeSaveFile(pGame, pUnit, __frame0.saveTempBuffer, &nSaveFileSize, 0x2000, nAccountFlags, nUnused2);
     int nSaveFileBytes;
     nSaveFileBytes = nSaveFileSize;
-    if (nSaveFileSize < 1) {
+    if (nSaveFileSize <= 0) {
       return 0;
     }
 
@@ -952,7 +936,7 @@ BOOL __fastcall SaveToFileBnet(::SGAMEDATA * pGame, uint32_t nAccountId, D2UnitS
         }
 
         nCompareByteIdx = 0;
-        if (0 < (int)nExistingSize) {
+        if ((int)nExistingSize > 0) {
           do {
             if ((__frame0.saveTempBuffer + nCompareByteIdx)[(int)pSaveBuffer - (int)__frame0.saveTempBuffer] != __frame0.saveTempBuffer[nCompareByteIdx]) {
               bSaveUnchanged = false;
@@ -1413,24 +1397,30 @@ int __fastcall _oldSaveGameLoadingPart2(D2UnitStrc * pUnit, int * pnParam, uint3
 }
 
 int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    uint8_t aWaypointBlock[80];
+    int nDiffIndex;
+    D2SaveFileWaypointsStrc aWaypointBlock;
     int16_t wWaypointVersion;
     *pnBytesConsumed = 0;
-    uint8_t* pCopyDst = aWaypointBlock;
-    memcpy(pCopyDst, pdwParam, 0x50);
+    D2SaveFileWaypointsStrc* pCopyDst = &aWaypointBlock;
+    for (nDiffIndex = 0x14; nDiffIndex; nDiffIndex--) {
+      *(uint32_t*)pCopyDst = *pdwParam;
+      pdwParam++;
+      pCopyDst = (D2SaveFileWaypointsStrc*)((uintptr_t)&pCopyDst->nVersion + 2);
+    }
+
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    if (*(uint16_t*)(char*)&aWaypointBlock != 0x5357) {
+    if (aWaypointBlock.szMagic != 0x5357) {
       return 3;
     }
 
-    int nDiffIndex = 0;
+    nDiffIndex = 0;
     D2WaypointStrc** ppWaypoint = pPlayerData->pWaypoint;
-    pCopyDst = aWaypointBlock + 8;
-    while ((wWaypointVersion = *(int16_t*)pCopyDst , wWaypointVersion == 0x102 || wWaypointVersion == 0x101) || !wWaypointVersion) {
-      D2Common::Waypoints::CopyWaypointBits(*ppWaypoint, pCopyDst);
+    D2SaveWaypointListStrc* pWaypointBits = &aWaypointBlock.pActWaypoints;
+    while ((wWaypointVersion = pWaypointBits->pWaypoints[0].pWaypoints.nSignature , wWaypointVersion == 0x102 || wWaypointVersion == 0x101) || !wWaypointVersion) {
+      D2Common::Waypoints::CopyWaypointBits(*ppWaypoint, (uint8_t*)pWaypointBits);
       nDiffIndex++;
       ppWaypoint++;
-      pCopyDst += 0x18;
+      pWaypointBits = (D2SaveWaypointListStrc*)(pWaypointBits->pWaypoints + 1);
       if (nDiffIndex >= 3) {
         *pnBytesConsumed = 0x50;
         return 0;
@@ -1441,24 +1431,33 @@ int __fastcall _oldSaveGameLoadingPart3(D2UnitStrc * pUnit, uint32_t * pdwParam,
 }
 
 int __fastcall _oldSaveGameLoadingPart4(D2UnitStrc * pUnit, uint32_t * pdwParam, uint32_t dwUnused, uint32_t * pnBytesConsumed) {
-    uint8_t aIntroBlock[52];
+    D2UnitDataPlayerStrc* pPlayerData;
+    int nIntroOffset;
+    D2SaveFileNpcStrc aIntroBlock;
     *pnBytesConsumed = 0;
-    uint8_t* pCopyDst = aIntroBlock;
-    memcpy(pCopyDst, pdwParam, 0x34);
-    if (*(uint16_t*)(char*)&aIntroBlock != 0x7701) {
+    D2SaveFileNpcStrc* pCopyDst = &aIntroBlock;
+    for (nIntroOffset = 0xd; nIntroOffset; nIntroOffset--) {
+      uint32_t uVar1;
+      uVar1 = *pdwParam;
+      pCopyDst->szMagic = (short int)uVar1;
+      pCopyDst->nSize = (short int)((uint32_t)uVar1 >> 0x10);
+      pdwParam++;
+      pCopyDst = (D2SaveFileNpcStrc*)pCopyDst->pActNpcData;
+    }
+
+    if (aIntroBlock.szMagic != 0x7701) {
       return 0xb;
     }
 
-    int nIntroOffset = 0x60;
-    uint32_t* pIntroBufPos = (uint32_t*)(aIntroBlock + 0x1c);
+    nIntroOffset = 0x60;
+    uint8_t (*pIntroBufPos)[8] = aIntroBlock.pActNpcBitInfo;
     do {
-      D2UnitDataPlayerStrc* pPlayerData;
       pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      PlayerIntro::PLAYERINTRO_CopyIntroData8Bytes(*(uint32_t**)(pPlayerData->szCharName + nIntroOffset), pIntroBufPos - 6);
+      PlayerIntro::PLAYERINTRO_CopyIntroData8Bytes(*(uint32_t**)(pPlayerData->szCharName + nIntroOffset), (uint32_t*)(pIntroBufPos - 3));
       pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-      PlayerIntro::PLAYERINTRO_CopyIntroDataIndirect(*(int32_t*)(pPlayerData->szCharName + nIntroOffset), pIntroBufPos);
+      PlayerIntro::PLAYERINTRO_CopyIntroDataIndirect(*(int32_t*)(pPlayerData->szCharName + nIntroOffset), (uint32_t*)pIntroBufPos);
       nIntroOffset += 4;
-      pIntroBufPos += 2;
+      pIntroBufPos++;
     } while (nIntroOffset < 0x6c);
 
     *pnBytesConsumed = 0x34;
@@ -1567,16 +1566,16 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
       nBits = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_COMPACT);
       if (nBits) {
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 10);
-        pItemUnknownStructure->wItemFormat = (uint16_t)dwReadValue & 0xff;
+        pItemUnknownStructure->wItemFormat = (uint8_t)(uint16_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
         pItemUnknownStructure->nEquipLoc = (char)dwReadValue;
         pItemUnknownStructure->nItemLevel = 1;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
         pItemUnknownStructure->Mode = (char)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-        pItemUnknownStructure->nPosX = dwReadValue & 0xff;
+        pItemUnknownStructure->nPosX = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-        pItemUnknownStructure->nPosY = dwReadValue & 0xff;
+        pItemUnknownStructure->nPosY = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
         pItemUnknownStructure->pageMaybe = (char)dwReadValue;
         dwReadValue = D2Common::ITEMS::Items::ITEMFLAG_CheckFlag(pItemUnknownStructure->neD2ItemFlag, ITEMFLAG_BODYPART);
@@ -1598,7 +1597,7 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
         }
       } else {
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 10);
-        pItemUnknownStructure->wItemFormat = (uint16_t)dwReadValue & 0xff;
+        pItemUnknownStructure->wItemFormat = (uint8_t)(uint16_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
         *(uint32_t*)pItemUnknownStructure->szCode = dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
@@ -1606,7 +1605,7 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
         pItemUnknownStructure->nStorageType = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
-        pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
+        pItemUnknownStructure->nItemLevel = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
         pItemUnknownStructure->Mode = (char)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 4);
@@ -1614,13 +1613,13 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
         nPrice = Fog::BitBuffer::ReadSigned(&bitBuffer, 0x14);
         pItemUnknownStructure->nPriceMaybe = nPrice;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-        pItemUnknownStructure->durability = dwReadValue & 0xff;
+        pItemUnknownStructure->durability = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-        pItemUnknownStructure->maxDurability = dwReadValue & 0xff;
+        pItemUnknownStructure->maxDurability = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-        pItemUnknownStructure->nPosX = dwReadValue & 0xff;
+        pItemUnknownStructure->nPosX = (uint8_t)dwReadValue;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-        pItemUnknownStructure->nPosY = dwReadValue & 0xff;
+        pItemUnknownStructure->nPosY = (uint8_t)dwReadValue;
         nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
         pItemUnknownStructure->dwFileIndex = nItemClassIdTmp;
         dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
@@ -1649,9 +1648,9 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
       pItemUnknownStructure->Mode = (char)dwReadValue;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-      pItemUnknownStructure->nPosX = dwReadValue & 0xff;
+      pItemUnknownStructure->nPosX = (uint8_t)dwReadValue;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-      pItemUnknownStructure->nPosY = dwReadValue & 0xff;
+      pItemUnknownStructure->nPosY = (uint8_t)dwReadValue;
       nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
       pItemUnknownStructure->dwFileIndex = nItemClassIdTmp;
       dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
@@ -1678,7 +1677,7 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
     pItemUnknownStructure->nStorageType = (uint8_t)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0xc);
-    pItemUnknownStructure->nItemLevel = dwReadValue & 0xff;
+    pItemUnknownStructure->nItemLevel = (uint8_t)dwReadValue;
     nItemClassIdTmp = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
     pItemUnknownStructure->Mode = (char)dwReadValue;
@@ -1687,13 +1686,13 @@ int32_t __fastcall PLAYERSAVE_ParseItemFromBuffer(D2UnknownItemRelatedStruct * p
     nItemFileIndex = Fog::BitBuffer::ReadSigned(&bitBuffer, 0x14);
     pItemUnknownStructure->nPriceMaybe = nItemFileIndex;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-    pItemUnknownStructure->durability = dwReadValue & 0xff;
+    pItemUnknownStructure->durability = (uint8_t)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 8);
-    pItemUnknownStructure->maxDurability = dwReadValue & 0xff;
+    pItemUnknownStructure->maxDurability = (uint8_t)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 5);
-    pItemUnknownStructure->nPosX = dwReadValue & 0xff;
+    pItemUnknownStructure->nPosX = (uint8_t)dwReadValue;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 3);
-    pItemUnknownStructure->nPosY = dwReadValue & 0xff;
+    pItemUnknownStructure->nPosY = (uint8_t)dwReadValue;
     nFileIndexSigned = Fog::BitBuffer::ReadSigned(&bitBuffer, 10);
     pItemUnknownStructure->dwFileIndex = nFileIndexSigned;
     dwReadValue = Fog::BitBuffer::ReadUnsigned(&bitBuffer, 0x20);
@@ -2180,7 +2179,6 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
     D2UnitStrc* pMercUnit;
     uint32_t nCurrentExp;
     int nLevel;
-    uint16_t nLayer;
     D2PetDataStrc sPetData;
     int nMercLevel;
     int32_t nErrorLine;
@@ -2243,7 +2241,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
             D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_experience, dwStatValue, 0);
           }
 
-          UNIT::SUnitMsg::UnitQueuePacket0x9E(pMercUnit, UNITSTAT_experience, dwStatValue);
+          UNIT::SUnitMsg::UnitQueuePacket0x9E(pMercUnit, 0xd, dwStatValue);
           pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)(uint16_t)puVar2[3], 1);
           while (true) {
             if (!pHirelingTxt) {
@@ -2284,8 +2282,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
 
           ITEMS::ItemMode::ITEMS_RecalcAndRefreshInventory(pGame, pMercUnit, 0, 0);
           ITEMS::ItemMode::ITEMMODE_ReturnZero3(pGame, pMercUnit, 0);
-          nLayer = 0;
-          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit), nLayer);
+          D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pMercUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::GetTxtMaxHp(pMercUnit), 0);
           Monster::MonsterAI::SendMercPackets(pGame, pUnit, 1);
           *pnParam2 = (uint32_t*)((int)pnParam - (int)puVar2 + (int)puVar1);
           nErrorLine = 0;
@@ -2358,7 +2355,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 8, "frame group __frame1_t must reproduce the Ghidra frame layout");
     __frame1_t __frame1;
-    bool bIsWeaponSwapped;
+    uint8_t bIsWeaponSwapped;
     int32_t iVar1;
     D2UnitDataPlayerStrc* pPlayerData;
     int32_t nLevel;
@@ -2495,7 +2492,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_nextexp, nNextExpRequired, 0);
     pClientForSwitch = __frame0.pClientOrig;
     bIsWeaponSwapped = GAME::Clients::HasWeaponSwapped(__frame0.pClientOrig);
-    if (bIsWeaponSwapped) {
+    if (bIsWeaponSwapped != '\0') {
       GAME::SCmd::NET_D2GS_SERVER_Send_0x97_WeaponSwitch(pClientForSwitch);
     }
 

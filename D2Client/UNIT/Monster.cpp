@@ -756,8 +756,6 @@ static void MONSTER_InitSpecialMonster(D2UnitStrc * pUnit, int32_t nClassId) {
     static uint32_t gnMonsterSpecialType; D2_STATIC_GUARD_BSS(gnMonsterSpecialType, "D2Client::UNIT::Monster::MONSTER_InitSpecialMonster::gnMonsterSpecialType");
 
     D2UnitStrc* pTargetUnit;
-    int32_t nPosY;
-    int32_t nPosX;
     eD2Skills eSkill;
     int32_t nMissileLevel;
     D2DynamicPathStrc* pDynamicPath;
@@ -810,9 +808,7 @@ static void MONSTER_InitSpecialMonster(D2UnitStrc * pUnit, int32_t nClassId) {
         case 0x19d:
           nMissileLevel = 1;
         eSkill = SKILL_Attack;
-        nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
-        nPosX = Units::GetXPosFromDynamicPathUnit(pUnit);
-        pTargetUnit = Missile::CastAttack(pUnit, MISSILE_BladeCreeper, nPosX, nPosY, eSkill, nMissileLevel);
+        pTargetUnit = Missile::CastAttack(pUnit, MISSILE_BladeCreeper, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nMissileLevel);
         if (pTargetUnit) {
           D2Common::Units::StoreOwner(pTargetUnit, pUnit);
           return;
@@ -822,9 +818,7 @@ static void MONSTER_InitSpecialMonster(D2UnitStrc * pUnit, int32_t nClassId) {
         case 0x23a:
           nMissileLevel = 1;
         eSkill = SKILL_Attack;
-        nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
-        nPosX = Units::GetXPosFromDynamicPathUnit(pUnit);
-        Missile::CastAttack(pUnit, MISSILE_Baalteleport, nPosX, nPosY, eSkill, nMissileLevel);
+        Missile::CastAttack(pUnit, MISSILE_Baalteleport, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eSkill, nMissileLevel);
       }
     }
 }
@@ -931,9 +925,9 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
 
     uint8_t bVar2;
     bVar2 = GAME::Game::GetDificulity();
-    eD2DifficultyDWORD nDifficulty;
-    nDifficulty = (eD2DifficultyDWORD)bVar2;
-    if (DIFFICULTY_HELL < nDifficulty) {
+    int nDifficulty;
+    nDifficulty = (int)bVar2;
+    if (2 < (uint32_t)nDifficulty) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1f0);
       exit(-1);
     }
@@ -951,9 +945,7 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_poisonresist, (int)pMonStatsTxt->aResPo[nDifficulty], 0);
     eD2Difficulty byDifficulty;
     byDifficulty = GAME::Game::GetDificulity();
-    BOOL bResult;
-    bResult = GAME::Game::CLIENT_CheckExpansion();
-    D2Common::Monsters::MONSTERS::MONSTER_ApplyDifficultyScaling(pUnit, bResult, byDifficulty);
+    D2Common::Monsters::MONSTERS::MONSTER_ApplyDifficultyScaling(pUnit, GAME::Game::CLIENT_CheckExpansion(), byDifficulty);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_maxhp, 0x6400, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_hitpoints, 0x6400, 0);
     D2Common::PATH::DynamicPath::AllocDynamicPath(nullptr, (D2RoomStrc*)nParam1, nOverrideMode, (int32_t)pSkillIdPtr, pUnit, 1);
@@ -966,6 +958,7 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
     }
 
     D2Common::Units::SetupUpdateFlag(pUnit, nParam2);
+    BOOL bResult;
     bResult = D2Common::Monsters::MONSTERS::CheckIfMonsterIsDead(pUnit);
     if (bResult && !(*((uint8_t*)pMonStats2 + 0x6) & (uint8_t)gadwBitMasks[3])) {
       D2Common::PATH::DynamicPath::PATH_RemoveUnitCollision(pUnit, 1);
@@ -2030,9 +2023,7 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
     int32_t nPosX;
     eCollisionFlags eAddCollisionFlag;
     eD2UnitType eUnitType;
-    int32_t nRemoveCollisionFlags;
     if (nParam == 0xc) {
-      D2RoomStrc* pRoom;
       if (pUnit) {
         pUnit->eUnitFlags &= ~(UNITFLAG_ISVALIDTARGET | UNITFLAG_CANBEATTACKED | UNITFLAG_TARGETABLE);
       }
@@ -2074,9 +2065,7 @@ static void MONSTER_HandleBurrowTransition(D2UnitStrc * pUnit, int32_t nParam) {
         nPosX = 0;
       }
 
-      nRemoveCollisionFlags = 0x100;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      D2Common::Collision::RemoveCollision(pRoom, nPosX, nPosY, nRemoveCollisionFlags);
+      D2Common::Collision::RemoveCollision(D2Common::Units::UNITS_GetRoom(pUnit), nPosX, nPosY, 0x100);
       D2Common::PATH::DynamicPath::SetUnitWidth(pUnit, 5);
       D2Common::PATH::DynamicPath::PATH_SetCollisionPattern(pUnit->pPath.pDynamicPath, 0);
       nPosY = Engine::Particle::PARTICLE_GetScreenZ(pUnit);
@@ -2663,9 +2652,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
             case 0x1ab:
               nMissileLevel = 1;
             eDeathSkill = SKILL_Attack;
-            nBaseId = Units::GetYPosFromDynamicPathUnit(pUnit);
-            nPosY = Units::GetXPosFromDynamicPathUnit(pUnit);
-            Missile::CastAttack(pUnit, MISSILE_VineBeastDeath, nPosY, nBaseId, eDeathSkill, nMissileLevel);
+            Missile::CastAttack(pUnit, MISSILE_VineBeastDeath, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eDeathSkill, nMissileLevel);
             UnitMode::UNITMODE_SetAnimMode(pUnit, Death);
             Sound::SOUND_PlaySound(SOUND_GOLEMFIRE_HIT_2, pUnit, 0, 0, 0);
             pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
@@ -2698,9 +2685,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
             case 0x23a:
               nMissileLevel = 1;
             eDeathSkill = SKILL_Attack;
-            nBaseId = Units::GetYPosFromDynamicPathUnit(pUnit);
-            nPosY = Units::GetXPosFromDynamicPathUnit(pUnit);
-            Missile::CastAttack(pUnit, MISSILE_Baalclonedeath, nPosY, nBaseId, eDeathSkill, nMissileLevel);
+            Missile::CastAttack(pUnit, MISSILE_Baalclonedeath, Units::GetXPosFromDynamicPathUnit(pUnit), Units::GetYPosFromDynamicPathUnit(pUnit), eDeathSkill, nMissileLevel);
             goto hide_as_dead;
           }
         }
@@ -3040,7 +3025,6 @@ uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicP
       return 0;
     }
     if (pDynamicPath->Coords.tFixed.x == 1) {
-      D2ServerMessageHandleStrc nMsgOwnerGUID;
       nClassId = pDynamicPath->Coords.tFixed.y;
       if (nClassId < 0) {
         return 0;
@@ -3056,13 +3040,7 @@ uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicP
         if (!nClassId) {
           nResult = D2Common::Units::IsAtEndOfFrameCycle((D2UnitStrc*)pDynamicPath);
           if (nResult) {
-            nMsgOwnerGUID.nSkillId = 0;
-            nMsgOwnerGUID.nItemId = 0;
-            nMsgOwnerGUID.nTargetUnitType = 0;
-            nMsgOwnerGUID.nTargetUnitId = 0;
-            nMsgOwnerGUID.nSkillLvl = 0;
-            nMsgOwnerGUID.nMaxDistance = 0;
-            nMsgOwnerGUID.nTargetX = 0;
+            D2ServerMessageHandleStrc nMsgOwnerGUID = {0};
             MonsterMessage(9, (D2UnitStrc*)pDynamicPath, &nMsgOwnerGUID);
           }
         }
@@ -3112,7 +3090,6 @@ void __fastcall CLIENT_UpdateUnitNameplate(D2UnitStrc * pDynamicPath) {
     BOOL bIsCritter;
     uint32_t nDistResult;
     int32_t nClassId;
-    int32_t nPosX;
     int32_t nTargetGUID;
     eD2UnitType eTargetUnitType;
     eD2UnitType eUnitType;
@@ -3192,10 +3169,7 @@ void __fastcall CLIENT_UpdateUnitNameplate(D2UnitStrc * pDynamicPath) {
               if ((int)nCheckResult < 10) {
                 pUnitDynamicPath = pDynamicPath->pPath.pDynamicPath;
                 if (pUnitDynamicPath) {
-                  nZero = 0;
-                  nClassId = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
-                  nPosX = Units::GetXPosFromDynamicPathUnit(pTargetUnit);
-                  D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnitDynamicPath, nPosX, nClassId, nZero);
+                  D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnitDynamicPath, Units::GetXPosFromDynamicPathUnit(pTargetUnit), Units::GetYPosFromDynamicPathUnit(pTargetUnit), 0);
                 }
               }
             }
@@ -3235,9 +3209,7 @@ void __fastcall CLIENT_UpdateUnitNameplate(D2UnitStrc * pDynamicPath) {
         pDynamicPath->eUnitFlags &= ~UNITFLAG_DOUPDATE;
         nZero = 0;
         eUnitType = UNIT_OBJECT;
-        nClassId = Units::GetYPosFromDynamicPathUnit(pDynamicPath);
-        nPosX = Units::GetXPosFromDynamicPathUnit(pDynamicPath);
-        CUnit::CreateMissileOrMonster(0x1de, nPosX, nClassId, eUnitType, nZero);
+        CUnit::CreateMissileOrMonster(0x1de, Units::GetXPosFromDynamicPathUnit(pDynamicPath), Units::GetYPosFromDynamicPathUnit(pDynamicPath), eUnitType, nZero);
       }
     }
 

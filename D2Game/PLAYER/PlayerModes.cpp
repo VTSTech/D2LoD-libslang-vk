@@ -687,7 +687,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
             iVar4 = (int)uVar1 >> 0x1f;
             if ((int)(uVar1 & -16) < 0x640) {
               lExpTimes75 = _allmul(uVar1, iVar4, 0x4b, 0);
-              lExpTimes75 = _alldiv((uint32_t)lExpTimes75, (uint32_t)((uint64_t)lExpTimes75 >> 0x20), 100, 0);
+              lExpTimes75 = lExpTimes75 / 100;
             } else {
               nExpQuotient = (int)uVar1 / 100 + iVar4;
               lExpTimes75 = (uint64_t)((uint64_t)(uint32_t)nExpQuotient << 32 | (uint64_t)(uint32_t)((nExpQuotient - iVar4) * 0x4b));
@@ -735,7 +735,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
               D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pSlotItem, INVPAGE_INVENTORY);
               pItemUnit = ITEMS::Items::Drop::ITEM_CloneFromSerializedData(pSavedGame, pItemUnit, pUnit, 1);
               if (nBodyLocIndex == -1) {
-                iVar5 = D2Common::Units::GetInventoryPage(pUnit_00, 0, pSavedGame->bExpansion);
+                iVar5 = D2Common::Units::GetInventoryPage(pUnit_00, '\0', pSavedGame->bExpansion);
                 pGridSlot = D2Common::INVENTORY::Inventory::INVENTORY_AutoPlaceItemInGrid(pCorpseInventory, pItemUnit, iVar5, 0, 0, ".\\PLAYER\\PlrModes.cpp", 0x349);
                 if (pGridSlot) {
                   BVar2 = D2Common::INVENTORY::Inventory::PutItemInInventory(pCorpseInventory, pItemUnit, 1);
@@ -1377,7 +1377,7 @@ static void PLRMODES_RecoverStamina(D2UnitStrc * pUnit) {
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, nRecoveryBonus, 0);
 }
 
-uint8_t PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
+uint8_t __fastcall PLRMODES_GetHpPercent128(D2UnitStrc * pUnit) {
     if (!pUnit) {
       return 0x80;
     }
@@ -1435,7 +1435,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
 
     nNewHpPct128 = 0x80;
     send_hp_pct_if_changed:
-    nHpRegen = (nLastSentHpPct & 0xff) - (nNewHpPct128 & 0xff);
+    nHpRegen = (nLastSentHpPct & 0xff) - (uint8_t)nNewHpPct128;
     if (nHpRegen < 0) {
       nHpRegen = -nHpRegen;
     }
@@ -1444,7 +1444,7 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
     }
 
     UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, (uint8_t)nNewHpPct128);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, nNewHpPct128 & 0xff, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint8_t)nNewHpPct128, 0);
     return 1;
 }
 

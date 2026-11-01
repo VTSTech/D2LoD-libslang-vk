@@ -683,7 +683,6 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
     uint32_t* pThreadArgs;
     HANDLE hThread;
     char optTcpNoDelay[4];
-    char optKeepAlive[8];
     sockaddr bindAddr;
     char* pszErrFmt;
     uint32_t nPortLocal = nPort;
@@ -705,16 +704,10 @@ SOCKET __fastcall StartListening(D2QServerStrc * pQServer, uint32_t nPort) {
     optTcpNoDelay[2] = '\0';
     optTcpNoDelay[3] = '\0';
     /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 6, 1, optTcpNoDelay, 4);
-    /* int optlen for setsockopt */ optKeepAlive[0] = '\x01';
-    optKeepAlive[1] = '\0';
-    optKeepAlive[2] = '\0';
-    optKeepAlive[3] = '\0';
-    /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 0xffff, 8, optKeepAlive, 4);
-    /* int optlen for setsockopt */ optKeepAlive[4] = '\x01';
-    optKeepAlive[5] = '\0';
-    optKeepAlive[6] = '\0';
-    optKeepAlive[7] = '\0';
-    /* char * optval for setsockopt */ /* int optname for setsockopt */ /* int level for setsockopt */ /* SOCKET s for setsockopt */ setsockopt(hListenSocket, 0xffff, 4, optKeepAlive + 4, 4);
+    int optKeepAlive = 1;
+    setsockopt(hListenSocket, 0xffff, 8, (char*)&optKeepAlive, 4);
+    int local_24 = 1;
+    setsockopt(hListenSocket, 0xffff, 4, (char*)&local_24, 4);
     u_long ulNonBlocking = 1;
     ioctlsocket(hListenSocket, -0x7ffb9982, &ulNonBlocking);
     memset(bindAddr.sa_data + 2, 0, 12 * sizeof(bindAddr.sa_data[0]));

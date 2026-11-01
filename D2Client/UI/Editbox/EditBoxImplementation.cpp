@@ -160,9 +160,7 @@ void __thiscall Draw(::EditBoxImplementation * pThis) {
           bShadow = 0;
           pThis->wszScratch[pThis->nCursorPos] = L'\0';
           nYOffset = pThis->nTextY;
-          nLinePixelWidth = 0;
-          nScrollCharOff = D2Win::Src::D2WinFont::DRAW_text0(pThis->wszScratch);
-          D2Win::Src::D2WinFont::DRAW_text(szCursorWchar, nScrollCharOff + pThis->nTextX, nYOffset, nLinePixelWidth, bShadow);
+          D2Win::Src::D2WinFont::DRAW_text(szCursorWchar, D2Win::Src::D2WinFont::DRAW_text0(pThis->wszScratch) + pThis->nTextX, nYOffset, 0, bShadow);
           return;
         }
 
@@ -549,14 +547,14 @@ int __thiscall OnLeftArrow(::EditBoxImplementation * pThis, D2UIMouseMsgStrc * p
     memset(wszZeroBuf, 0, 11 * sizeof(wszZeroBuf[0]));
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nFont);
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszZeroBuf, szZeroBuf, 0xb);
-    if (nWidth < 1) {
+    if (nWidth <= 0) {
       int32_t nTextWidth;
       nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszZeroBuf);
       pThis->nWidth = nTextWidth / 10 * (nMaxLength + 2);
     } else {
       pThis->nWidth = nWidth;
     }
-    if (nMaxLines < 1) {
+    if (nMaxLines <= 0) {
       pThis->nMaxLines = 1;
       pThis->bDrawFrame = 1;
     } else {

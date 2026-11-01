@@ -1858,8 +1858,7 @@ BOOL __fastcall SUNIT_RelocateUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ro
           }
         }
         if (!bFindFreeSpace) {
-          nCollisionMask = 0;
-          pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptTarget, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, nCollisionMask);
+          pRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &ptTarget, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, 0);
         }
         if (!pRoom) {
           return 0;
@@ -1930,7 +1929,6 @@ void __fastcall TakeStairs(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc *
     int bRelocOk;
     uint32_t nId;
     int nFinalX;
-    int32_t eCollisionFlag_00;
     D2SUnitStairs sD2SUnitStairs;
     eCollisionFlags eCollisionFlag;
     BOOL bAllowNeighboorRooms;
@@ -1967,10 +1965,7 @@ void __fastcall TakeStairs(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc *
       exit(-1);
     }
 
-    bAllowNeighboorRooms = 1;
-    eCollisionFlag_00 = 0x1c09;
-    iVar1 = D2Common::Units::GetUnitSizeX(pUnit);
-    pFreeRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pDestRoom, (POINT*)&sD2SUnitStairs, iVar1, eCollisionFlag_00, bAllowNeighboorRooms);
+    pFreeRoom = D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pDestRoom, (POINT*)&sD2SUnitStairs, D2Common::Units::GetUnitSizeX(pUnit), 0x1c09, 1);
     if (!pFreeRoom) {
       return;
     }
@@ -2491,7 +2486,7 @@ void __fastcall UNITS_FreeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pUnit
             eInvPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pCarriedItem);
             nInvLocY = (uint32_t)nInvLocPackedXY >> 8;
             nInvLocPackedXY = (uint32_t)((uint32_t)((uint32_t)((int32_t)((uint32_t)nInvLocY << 8) >> 8) & 0xffffffu) << 8 | (uint32_t)(uint8_t)eInvPage);
-            iVar1 = D2Common::Units::GetInventoryPage(pUnit, nInvLocPackedXY, pGame->bExpansion);
+            iVar1 = D2Common::Units::GetInventoryPage(pUnit, eInvPage, pGame->bExpansion);
             eItemUnitType = pCarriedItem->eUnitType;
             if (eItemUnitType == UNIT_OBJECT || (int)eItemUnitType > 3 && (int)eItemUnitType <= 5) {
               nItemPosY = pCarriedItem->pPath.pStaticPath->nPosY;

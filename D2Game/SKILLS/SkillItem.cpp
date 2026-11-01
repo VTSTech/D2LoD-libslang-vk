@@ -453,7 +453,7 @@ BOOL __fastcall SKILLITEM_ItemSpellInit_UseStackable(::SGAMEDATA * pGame, D2Unit
       return 1;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x40), pItem, nSpellIcon, 0, 1, (uint16_t)eSkill);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x40), pItem, (uint8_t)nSpellIcon, 0, 1, (uint16_t)eSkill);
     return 1;
 }
 
@@ -484,8 +484,6 @@ static D2InventoryStrc * SKILLITEM_FindItemInInventory(D2UnitStrc * pUnit, D2Uni
 static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
     D2UnitStrc* pUnitTmp;
     BOOL bHasCursorFlag;
-    int32_t nParam;
-    uint16_t nSkillId;
     if (!pUnit->pInventory) {
       return;
     }
@@ -496,10 +494,7 @@ static void SKILLITEM_ClearCursorFlagAndNotifyClient(D2UnitStrc * pUnit) {
       bHasCursorFlag = D2Common::ITEMS::Items::CheckItemFlag(pUnitTmp2, ITEMFLAG_CURSOR, 0x77, ".\\SKILLS\\SkillItem.cpp");
       if (bHasCursorFlag) {
         D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnitTmp2, ITEMFLAG_CURSOR, 0);
-        nSkillId = 0xffff;
-        nParam = 0;
-        bHasCursorFlag = 1;
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x7a), pUnitTmp2, 0xff, bHasCursorFlag, nParam, nSkillId);
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x3F_SETSPELLICON(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x7a), pUnitTmp2, 0xff, 1, 0, 0xffff);
       }
     }
 }
@@ -1283,7 +1278,6 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
     bool bIsBookOrScrollType;
     int* pBookTxt;
     bool bHasCursorFlag;
-    D2ClientStrc* pClient;
     uint8_t byItemUnitType;
     D2UnitStrc* pUnit_00;
     pUnit_00 = pItem;
@@ -1334,8 +1328,7 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
           SKILLITEM_ClearCursorFlagAndNotifyClient(pUnit);
           nSpellIdx = pUnit_00->nUnitGUID;
           byItemUnitType = (uint8_t)pUnit_00->eUnitType;
-          pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x46f);
-          GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0x7c, byItemUnitType, nSpellIdx);
+          GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x46f), 0x7c, byItemUnitType, nSpellIdx);
           return 0;
         }
       }
@@ -1349,8 +1342,7 @@ int32_t __fastcall SKILLITEM_DispatchItemSpell(::SGAMEDATA * pGame, D2UnitStrc *
         SKILLITEM_ClearCursorFlagAndNotifyClient(pUnit);
         nSpellIdx = pUnit_00->nUnitGUID;
         byItemUnitType = (uint8_t)pUnit_00->eUnitType;
-        pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x47f);
-        GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0x7c, byItemUnitType, nSpellIdx);
+        GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\SKILLS\\SkillItem.cpp", 0x47f), 0x7c, byItemUnitType, nSpellIdx);
         return _bHasCursorFlag;
       }
     }
@@ -1367,7 +1359,6 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
     void* pvVar5;
     int iVar6;
     int32_t iVar7;
-    int32_t iVar8;
     DWORD DVar9;
     int32_t bUseMerc;
     eD2Skills* bResult;
@@ -1412,9 +1403,7 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
 
                   bUseMerc = 0;
                   pDVar3 = (D2UnitStrc*)&eSkill;
-                  iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-                  iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-                  ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, iVar8, iVar7, pDVar3, bUseMerc);
+                  ITEMS::ItemMode::SERVER_UseItemAtCoords(pGame, pUnit, DVar9, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), pDVar3, bUseMerc);
                   return 1;
                 }
               case 1:
@@ -1426,9 +1415,7 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
                   }
 
                   bResult = &eSkill;
-                  iVar7 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00);
-                  iVar8 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00);
-                  ITEMS::ItemMode::SpecialItemsBonuses(pGame, pUnit, DVar9, iVar8, iVar7, (BOOL*)bResult);
+                  ITEMS::ItemMode::SpecialItemsBonuses(pGame, pUnit, DVar9, D2Client::Units::GetXPosFromDynamicPathUnit(pUnit_00), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit_00), (BOOL*)bResult);
                   return 1;
                 }
             }
@@ -2107,8 +2094,8 @@ BOOL __fastcall ITEMEVENT_CastOnAttack(::SGAMEDATA * pGame, uint32_t nUnitEvent,
       return 0;
     }
 
-    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
-    eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
+    uint32_t eSkillLevel = (uint16_t)(sgptDataTable->dwChargedSkillLevelMask & eSkill);
+    eD2Skills eProcSkill = (int)(uint16_t)eSkill >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
     if (!(!pDamage || pDamage->dwHitFlags & 0x20)) {
       return 0;
     }
@@ -2155,8 +2142,8 @@ BOOL __fastcall ITEMEVENT_CastOnStriking(::SGAMEDATA * pGame, uint32_t nUnitEven
       return 0;
     }
 
-    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
-    eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
+    uint32_t eSkillLevel = (uint16_t)(sgptDataTable->dwChargedSkillLevelMask & eSkill);
+    eD2Skills eProcSkill = (int)(uint16_t)eSkill >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
     if (!(pDamage && pDamage->wResultFlags & 4)) {
       return 0;
     }
@@ -2195,8 +2182,8 @@ BOOL __fastcall ITEMEVENT_CastOnDeath(::SGAMEDATA * pGame, uint32_t nUnitEvent, 
       return 0;
     }
 
-    eD2Skills eProcSkill = (int)(eSkill & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
-    uint32_t eSkillLevel = sgptDataTable->dwChargedSkillLevelMask & eSkill & 0xffff;
+    eD2Skills eProcSkill = (int)(uint16_t)eSkill >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
+    uint32_t eSkillLevel = (uint16_t)(sgptDataTable->dwChargedSkillLevelMask & eSkill);
     D2SeedStrc DVar1 = D2_SEED_NEXT(pUnit->sSeed);
     pUnit->sSeed = DVar1;
     if (!((int)(DVar1.nSeedLow % 100) < nProcChance && (int)eProcSkill >= 0 && (int)eProcSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eProcSkill)) {
@@ -2327,7 +2314,7 @@ BOOL __fastcall ITEMEVENT_ReviveMonster(::SGAMEDATA * pGame, uint32_t nUnitEvent
 
     do {
       if (pUnit->eUnitType == UNIT_PLAYER) {
-        UNIT::SUnitEvent::SUNITEVENT_Alloc(pGame, pTarget, 0xd, eSkill & 0xffff, pUnit->nUnitGUID, (D2ItemStatCostItemEventFunc)SKILL_ReviveMonsterFromCorpse, 0, pUnit->nUnitGUID);
+        UNIT::SUnitEvent::SUNITEVENT_Alloc(pGame, pTarget, 0xd, (uint16_t)eSkill, pUnit->nUnitGUID, (D2ItemStatCostItemEventFunc)SKILL_ReviveMonsterFromCorpse, 0, pUnit->nUnitGUID);
         return 1;
       }
 

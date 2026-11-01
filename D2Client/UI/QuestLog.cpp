@@ -83,14 +83,13 @@ static int32_t __fastcall QUESTLOG_FindQuestIndexById(int32_t nQuestId) {
 static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     BOOL bArcaneState;
     uint32_t nQuestStepIdx;
-    uint16_t* pLocaleStr;
     int32_t nStringId;
     uint16_t wQuestStep;
     bool bNextStep;
     char bQuestDone;
     uint16_t wszNumberBuffer[10];
     char szNumberString[8];
-    bool bJustCompleted;
+    BOOL bJustCompleted;
     int nQuestTableIndex;
     D2BitBufferStrc* pQuestRecord;
     size_t nDescLen;
@@ -150,9 +149,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
             bArcaneState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TheSevenTombs, QUESTSTATE_Step0x03);
             if (bArcaneState == 1) {
               pEntry->wTitleStringId = gaQuestDescData_SevenTombs[0];
-              nDescLen = 300;
-              pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xb]);
-              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xb]), 300);
               pEntry->wszDescription[299] = L'\0';
               byQuestState = '\x05';
               gQuestLog.abQuestUnknownArray2[nActIndex] = true;
@@ -166,18 +163,14 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
             }
 
             pEntry->wTitleStringId = gaQuestDescData_SevenTombs[0];
-            nDescLen = 300;
-            pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xd]);
-            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xd]), 300);
             pEntry->wszDescription[299] = L'\0';
             byQuestState = '\x06';
             gQuestLog.abQuestUnknownArray2[nActIndex] = true;
             wQuestStep = gaQuestDescData_SevenTombs[0xe];
           } else {
             pEntry->wTitleStringId = gaQuestDescData_SevenTombs[0];
-            nDescLen = 300;
-            pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xf]);
-            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(gaQuestDescData_SevenTombs[0xf]), 300);
             pEntry->wszDescription[299] = L'\0';
             byQuestState = '\a';
             gQuestLog.abQuestUnknownArray2[nActIndex] = true;
@@ -200,9 +193,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
           if (pQuestDataTbl != gaQuestDescData_FallenAngel) {
             bNextStep = (bool)((char)pQuestDataTbl[2] + '\x01');
             pEntry->wTitleStringId = *pQuestDataTbl;
-            nDescLen = 300;
-            pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(pQuestDataTbl[(uint32_t)bNextStep * 2 + 1]);
-            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(pQuestDataTbl[(uint32_t)bNextStep * 2 + 1]), 300);
             pEntry->wszDescription[299] = L'\0';
             pEntry->bStepAdvanced = bNextStep != gQuestLog.abQuestUnknownArray2[nActIndex];
             wQuestStep = pQuestDataTbl[(uint32_t)bNextStep * 2 + 2];
@@ -234,8 +225,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
           if (pQuestDataTbl) {
             nDescLen = 300;
             pEntry->wTitleStringId = *pQuestDataTbl;
-            pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wQuestStep);
-            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+            D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(wQuestStep), nDescLen);
             pEntry->wszDescription[299] = L'\0';
             pEntry->wDescStringId = pQuestDataTbl[1];
             gQuestLog.abQuestUnknownArray2[nActIndex] = (bool)bQuestActive;
@@ -272,9 +262,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
             nQuestStepIdx = (uint32_t)(uint8_t)bQuestDone;
             if (pQuestDataTbl[nQuestStepIdx * 2 + 1] != 0xe8d) {
               pEntry->wTitleStringId = *pQuestDataTbl;
-              nDescLen = 300;
-              pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(pQuestDataTbl[nQuestStepIdx * 2 + 1]);
-              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(pQuestDataTbl[nQuestStepIdx * 2 + 1]), 300);
               pEntry->wszDescription[299] = L'\0';
               pEntry->wDescStringId = pQuestDataTbl[nQuestStepIdx * 2 + 2];
               gQuestLog.abQuestUnknownArray2[nActIndex] = (bool)bQuestDone;
@@ -299,8 +287,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
                 wQuestStep = 0x3dd;
                 show_fixed_desc:
                 nDescLen = 300;
-                pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wQuestStep);
-                D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+                D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(wQuestStep), nDescLen);
                 pEntry->wszDescription[299] = L'\0';
                 pEntry->wDescStringId = 0xe8d;
                 pEntry->bHasDescription = '\x01';
@@ -317,9 +304,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
                 wQuestStep = 0xe91;
               }
 
-              nDescLen = 300;
-              pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wQuestStep);
-              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+              D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(wQuestStep), 300);
               pEntry->wszDescription[299] = L'\0';
               pEntry->wDescStringId = 0xe8d;
               pEntry->bHasDescription = '\x01';
@@ -364,18 +349,13 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
         }
       }
 
-      nDescLen = 300;
-      pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)*(uint32_t*)(char*)&szNumberString);
-      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+      D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString((uint16_t)*(uint32_t*)(char*)&szNumberString), 300);
       if (*pQuestDataTbl == 0x585e && *(uint16_t*)(char*)&szNumberString == 0x5860) {
         if (!gQuestLog.pQuestLogData) {
-          nDescLen = 300;
-          pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0xe91);
-          D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, pLocaleStr, nDescLen);
+          D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(0xe91), 300);
         } else {
           pExtraDescStr = gQuestLog.pQuestLogData;
-          pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x5860);
-          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, pEntry->wszDescription, pLocaleStr, pExtraDescStr);
+          D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(300, pEntry->wszDescription, D2Lang::StrTable::strtable::GetLocaleString(0x5860), pExtraDescStr);
         }
       }
 
@@ -399,6 +379,7 @@ static void QUESTLOG_PopulateQuestEntry(D2QuestLogEntryStrc * pEntry) {
     }
 
     nQuestStepIdx = (uint32_t)bQuestActive;
+    uint16_t* pLocaleStr;
     pLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(pQuestDataTbl[nQuestStepIdx * 2 + 1]);
     if (nQuestStepIdx == 3 || nQuestStepIdx == 4) {
       if (*pQuestDataTbl != 0xe82 || gQuestLog.MonstersleftInDenOfEvil <= 1) {
@@ -956,10 +937,7 @@ void __stdcall QUESTLOG_DrawQuestLogButton() {
       iVar1 += (ScreenSizeX - 0x280) / 2;
     }
 
-    bUIFlag = 0;
-    nImageWidth = 0;
-    pText = D2Lang::StrTable::strtable::GetLocaleString(0xf58);
-    D2Win::Src::D2WinFont::DRAW_text(pText, iVar1, nTextX, nImageWidth, bUIFlag);
+    D2Win::Src::D2WinFont::DRAW_text(D2Lang::StrTable::strtable::GetLocaleString(0xf58), iVar1, nTextX, 0, 0);
     nTextX = gaQuestLogPanelRects[nDrawPos].nLeft;
     iVar1 = gaQuestLogPanelRects[nDrawPos].nBottom - 0x1e0 + ScreenSizeY;
     nDrawPos = Path::DRAW_GetTypeOfBorder();
@@ -1582,8 +1560,7 @@ void __stdcall DRAW_UI_Quest() {
             case 4:
               eQuestState = QUESTSTATE_Completed;
             eQuest = QUEST_TerrorsEnd;
-            pQuestInfo = npcmenu::GetQuestInfo();
-            nDrawY = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuest, eQuestState);
+            nDrawY = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuest, eQuestState);
             bFlag = Fog::D2CheckExpansionGame();
             if (bFlag) {
               bFlag = GAME::Game::CLIENT_CheckExpansion();
@@ -1749,9 +1726,8 @@ void __stdcall DRAW_UI_Quest() {
               nParam = gQuestLog.aQuestLogEntries[nQuestSlot].wTitleStringId;
               if (nParam != 0xe8c) {
                 pwszText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
-                nDrawY = gQuestUIDescInitC - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
-                bFlag = 0;
-                D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - D2Win::Src::D2WinFont::DRAW_text0(pwszText) / 2 + 0xa0, nDrawY, 0, bFlag);
+                nDrawY = gQuestUIDescInitC - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
+                D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - D2Win::Src::D2WinFont::DRAW_text0(pwszText) / 2 + 0xa0, nDrawY, 0, 0);
               }
               if (gQuestLog.bQuestLogButtonDown == '\0' && gQuestLog.aQuestLogEntries[nQuestSlot].wszDescription[0] != L'\0') {
                 pWordWrapList = D2Win::Src::D2WinFont::D2WINFONT_WordWrapString(gQuestLog.aQuestLogEntries[nQuestSlot].wszDescription, aTabXOffsets + 5, 0x10e);

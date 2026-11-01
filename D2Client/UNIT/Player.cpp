@@ -347,7 +347,7 @@ void __fastcall CLIENT_OnStatChanged(uint32_t dwUnused, D2UnitStrc * pUnit, D2Un
 
       case UNITSTAT_item_singleskill:
         if (pUnit->eUnitType == UNIT_PLAYER) {
-          eSkill = dwStatIdAndSubIndex & 0xffff;
+          eSkill = (uint16_t)dwStatIdAndSubIndex;
           pSkill = D2Common::Skills::GetSkillByIdAndOwner(pUnit, eSkill, -1);
           if (!nValue) {
             if (pSkill) {
@@ -365,8 +365,8 @@ void __fastcall CLIENT_OnStatChanged(uint32_t dwUnused, D2UnitStrc * pUnit, D2Un
       break;
       case UNITSTAT_item_charged_skill:
         if (pUnit->eUnitType == UNIT_PLAYER) {
-          nSkillIdOrLevel = (int)(dwStatIdAndSubIndex & 0xffff) >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
-          nChargeMax = sgptDataTable->dwChargedSkillLevelMask & dwStatIdAndSubIndex & 0xffff;
+          nSkillIdOrLevel = (int)(uint16_t)dwStatIdAndSubIndex >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
+          nChargeMax = (uint16_t)(sgptDataTable->dwChargedSkillLevelMask & dwStatIdAndSubIndex);
           if (pItem) {
             nItemGUID = pItem->nUnitGUID;
             nChargeCount = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pItem, eUnitStat, (uint16_t)dwStatIdAndSubIndex);
@@ -527,10 +527,8 @@ static void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
     eD2PlayerAnimMode eAnimMode;
     D2RoomStrc* pRoom;
     int32_t nUnitWidth;
-    int32_t eCollisionFlag;
     int32_t iVar1;
     POINT sTilePos;
-    BOOL bAllowNeighboorRooms;
     eD2UnitType eUnitType;
     if (!pUnit) {
       eAnimMode = Death;
@@ -566,10 +564,7 @@ static void CLIENT_ResolvePlayerCollision(D2UnitStrc * pUnit) {
               nUnitWidth = D2Common::PATH::DynamicPath::GetUnitWidth(pUnit);
               eCollideResult = D2Common::Collision::CheckCollision_BlockAll_Type(pRoom, sTilePos.x, sTilePos.y, nUnitWidth, iVar1);
               if (eCollideResult != COLLIDE_NONE) {
-                bAllowNeighboorRooms = 1;
-                eCollisionFlag = 0xc01;
-                iVar1 = D2Common::Units::GetUnitSizeX(pUnit);
-                D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sTilePos, iVar1, eCollisionFlag, bAllowNeighboorRooms);
+                D2Common::Collision::GetFreeCoordinates_WithNeighboorRooms(pRoom, &sTilePos, D2Common::Units::GetUnitSizeX(pUnit), 0xc01, 1);
                 CUnit::CLIENT_TeleportUnitToPosition(pUnit, sTilePos.x, sTilePos.y, 0);
               }
             }
@@ -610,7 +605,7 @@ static void __stdcall CLIENT_PlayIndexedUnitSound(D2UnitStrc * pUnit, int32_t nS
     0x0,
     0x0
 }; D2_STATIC_GUARD(gwPlayerAnimationState, "D2Client::UNIT::Player::CLIENT_PlayIndexedUnitSound::gwPlayerAnimationState");
-    static uint32_t gaClientSoundUnitIndexArray = 0x9; D2_STATIC_GUARD(gaClientSoundUnitIndexArray, "D2Client::UNIT::Player::CLIENT_PlayIndexedUnitSound::gaClientSoundUnitIndexArray");
+    static int gaClientSoundUnitIndexArray = 0x9; D2_STATIC_GUARD(gaClientSoundUnitIndexArray, "D2Client::UNIT::Player::CLIENT_PlayIndexedUnitSound::gaClientSoundUnitIndexArray");
 
     if (gaClientSoundUnitIndexArray <= nSoundIndex) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2cb);
@@ -1280,8 +1275,7 @@ static void __stdcall PLAYER_InteractWithUnitByType(eD2UnitType eTargetUnitType,
         }
 
         nTargetY = Units::GetYPosFromDynamicPathUnit(pTargetUnit);
-        nTargetX = Units::GetXPosFromDynamicPathUnit(pUnderMouse->pTarget);
-        GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT_INT(0x59, nUnitType, nClassId, nTargetX, nTargetY);
+        GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT_INT_INT(0x59, nUnitType, nClassId, Units::GetXPosFromDynamicPathUnit(pUnderMouse->pTarget), nTargetY);
         pTargetUnit = pUnderMouse->pTarget;
         if (pTargetUnit && pTargetUnit->eUnitType == UNIT_MONSTER && pTargetUnit->pUnitData.pUnitDataPlayer) {
           puVar1 = &pTargetUnit->pUnitData.pUnitDataPlayer->unk0x28;
@@ -2069,7 +2063,6 @@ static BOOL INPUT_HandleRightClickWithPet(D2UnderMouseStrc * pUnderMouse) {
 // Client input dispatcher for map clicks. Converts raw screen coordinates to perspective-view world coords, builds a D2UnderMouseStrc with the player and currently selected unit, sets run/walk and force-move flags from mouseEventFlags, then dispatches to the appropriate handler based on clickType (0=left-down, 1=left-hold, 2=left-up, 3=right-down, 4=right-hold, 5=right-up). Guards against re-entrant calls and ESC-menu-open state.
 int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouseEventFlags) {
     uint32_t uVar1;
-    D2UnderMouseStrc mouse;
     int nXConverted = nX;
     BOOL bEscOpen = UI::ui::GetUIFlag(UI_ESCMENU);
     if (bEscOpen) {
@@ -2081,13 +2074,7 @@ int __fastcall ClickMap(int32_t clickType, int32_t nX, int32_t nY, uint8_t mouse
 
     bRecursionClick = 1;
     UI::Path::ConvertCoordToPerspectiveView(&nXConverted, &nY);
-    mouse.pPlayer = 0;
-    mouse.pTarget = 0;
-    mouse.nX = 0;
-    mouse.nY = 0;
-    mouse.nMoveActionType = 0;
-    mouse.nAttackActionType = 0;
-    mouse.pSkill = 0;
+    D2UnderMouseStrc mouse = {0};
     mouse.flags = 0;
     mouse.pPlayer = GetPlayerUnit_UI();
     mouse.pTarget = GAME::Select::GetSelectedUnit();

@@ -83,7 +83,7 @@ bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ bGotContext = GetThreadContext(hThread, pContext);
     /* HANDLE hThread for ResumeThread */ ResumeThread(hThread);
     /* HANDLE hObject for CloseHandle */ CloseHandle(hThread);
-    return bGotContext != 0;
+    return bGotContext;
 }
 
 static uint32_t DEBUG_GetPEImageType(short * nMagic) {
@@ -774,35 +774,35 @@ void __stdcall MISC_GetValueFromD2Ini(D2IniConfigStrc * pD2IniData) {
     UINT dwIniValue;
     char* pDestField;
     char szIniPath[260];
-    char cVar1;
+    uint8_t cVar1;
     Source::SFile::SFILE_GetExecutableDirectory(szIniPath, 0x104);
     Storm::Source::SSTR::SStrPack(szIniPath, "D2.ini", 0x104);
     uint32_t nEntryOffset = 0;
     do {
-      cVar1 = D2IniConfigValues[0].szCmdLineArg[nEntryOffset + 0x1b];
-      pDestField = pD2IniData->bD2ExpMpqExistsOrLanugageCode + *(int*)(D2IniConfigValues[0].szCmdLineArg + nEntryOffset + 0x1e);
+      cVar1 = (char)D2IniConfigValues[nEntryOffset].nType;
+      pDestField = pD2IniData->bD2ExpMpqExistsOrLanugageCode + D2IniConfigValues[nEntryOffset].nOffset;
       switch (cVar1) {
         case '\0':
           {
-            /* LPCSTR lpFileName for GetPrivateProfileIntA */ /* INT nDefault for GetPrivateProfileIntA */ /* LPCSTR lpKeyName for GetPrivateProfileIntA */ /* LPCSTR lpAppName for GetPrivateProfileIntA */ dwIniValue = GetPrivateProfileIntA(D2IniConfigValues[0].szAppName + nEntryOffset, D2IniConfigValues[0].szKeyName + nEntryOffset, *(INT*)(D2IniConfigValues[0].szCmdLineArg + nEntryOffset + 0x22), szIniPath);
+            /* LPCSTR lpFileName for GetPrivateProfileIntA */ /* INT nDefault for GetPrivateProfileIntA */ /* LPCSTR lpKeyName for GetPrivateProfileIntA */ /* LPCSTR lpAppName for GetPrivateProfileIntA */ dwIniValue = GetPrivateProfileIntA(D2IniConfigValues[nEntryOffset].szAppName, D2IniConfigValues[nEntryOffset].szKeyName, D2IniConfigValues[nEntryOffset].nDefaultValue, szIniPath);
             *pDestField = dwIniValue != 0;
             break;
           }
         case '\x01':
           {
-            /* LPCSTR lpFileName for GetPrivateProfileIntA */ /* INT nDefault for GetPrivateProfileIntA */ /* LPCSTR lpKeyName for GetPrivateProfileIntA */ /* LPCSTR lpAppName for GetPrivateProfileIntA */ dwIniValue = GetPrivateProfileIntA(D2IniConfigValues[0].szAppName + nEntryOffset, D2IniConfigValues[0].szKeyName + nEntryOffset, *(INT*)(D2IniConfigValues[0].szCmdLineArg + nEntryOffset + 0x22), szIniPath);
+            /* LPCSTR lpFileName for GetPrivateProfileIntA */ /* INT nDefault for GetPrivateProfileIntA */ /* LPCSTR lpKeyName for GetPrivateProfileIntA */ /* LPCSTR lpAppName for GetPrivateProfileIntA */ dwIniValue = GetPrivateProfileIntA(D2IniConfigValues[nEntryOffset].szAppName, D2IniConfigValues[nEntryOffset].szKeyName, D2IniConfigValues[nEntryOffset].nDefaultValue, szIniPath);
             *(UINT*)pDestField = dwIniValue;
             break;
           }
         case '\x02':
           {
-            /* LPCSTR lpFileName for GetPrivateProfileStringA */ /* DWORD nSize for GetPrivateProfileStringA */ /* LPSTR lpReturnedString for GetPrivateProfileStringA */ /* LPCSTR lpDefault for GetPrivateProfileStringA */ /* LPCSTR lpKeyName for GetPrivateProfileStringA */ /* LPCSTR lpAppName for GetPrivateProfileStringA */ GetPrivateProfileStringA(D2IniConfigValues[0].szAppName + nEntryOffset, D2IniConfigValues[0].szKeyName + nEntryOffset, "", pDestField, 0x1b, szIniPath);
+            /* LPCSTR lpFileName for GetPrivateProfileStringA */ /* DWORD nSize for GetPrivateProfileStringA */ /* LPSTR lpReturnedString for GetPrivateProfileStringA */ /* LPCSTR lpDefault for GetPrivateProfileStringA */ /* LPCSTR lpKeyName for GetPrivateProfileStringA */ /* LPCSTR lpAppName for GetPrivateProfileStringA */ GetPrivateProfileStringA(D2IniConfigValues[nEntryOffset].szAppName, D2IniConfigValues[nEntryOffset].szKeyName, "", pDestField, 0x1b, szIniPath);
             break;
           }
       }
 
-      nEntryOffset += 0x5c;
-    } while (nEntryOffset < 0x14d8);
+      nEntryOffset++;
+    } while (nEntryOffset < 58);
 }
 
 int32_t __stdcall INI_FindConfigValueIndex(uint8_t * pbArgName) {
@@ -1159,42 +1159,29 @@ BOOL __stdcall ReturnTrue() {
 }
 
 void __stdcall CreateRegedit() {
-    // Frame slots -1568..-1560 are ONE object: &dwValueNameLen is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwValueNameLen;
-      DWORD dwValueDataSize;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    // Frame slots -268..-8 are ONE object: &szInstallPath is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame1_t {
-      char szInstallPath;
-      uint8_t szInstallPathBuf[259];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame1_t) == 260, "frame group __frame1_t must reproduce the Ghidra frame layout");
-    __frame1_t __frame1;
-    DWORD dwIndex;
     LPDWORD dwValueInfo;
+    DWORD dwValueNameLen;
+    DWORD dwValueDataSize;
     HKEY hKeyDest;
     HKEY hKeySrc;
     uint8_t dataBuf[1024];
     char szValueName[260];
+    char szInstallPath[260];
     LSTATUS nRegStatus = RegOpenKeyA((HKEY)0x80000002, "SOFTWARE\\Blizzard Entertainment\\Diablo II Beta", &hKeySrc);
     if (!nRegStatus) {
+      DWORD dwIndex;
       /* PHKEY phkResult for RegCreateKeyA */ /* LPCSTR lpSubKey for RegCreateKeyA */ /* HKEY hKey for RegCreateKeyA */ RegCreateKeyA((HKEY)0x80000002, "SOFTWARE\\Blizzard Entertainment\\Diablo II", &hKeyDest);
       dwIndex = 0;
       do {
-        /* LPDWORD lpcbData for RegEnumValueA */ /* LPBYTE lpData for RegEnumValueA */ /* LPDWORD lpType for RegEnumValueA */ /* LPDWORD lpReserved for RegEnumValueA */ /* LPDWORD lpcchValueName for RegEnumValueA */ /* LPSTR lpValueName for RegEnumValueA */ /* DWORD dwIndex for RegEnumValueA */ /* HKEY hKey for RegEnumValueA */ __frame0.dwValueNameLen = 0x104;
-        __frame0.dwValueDataSize = 0x400;
-        nRegStatus = RegEnumValueA(hKeySrc, dwIndex, szValueName, &__frame0.dwValueNameLen, (LPDWORD)0x0, (LPDWORD)&dwValueInfo, dataBuf, &__frame0.dwValueDataSize);
+        /* LPDWORD lpcbData for RegEnumValueA */ /* LPBYTE lpData for RegEnumValueA */ /* LPDWORD lpType for RegEnumValueA */ /* LPDWORD lpReserved for RegEnumValueA */ /* LPDWORD lpcchValueName for RegEnumValueA */ /* LPSTR lpValueName for RegEnumValueA */ /* DWORD dwIndex for RegEnumValueA */ /* HKEY hKey for RegEnumValueA */ dwValueNameLen = 0x104;
+        dwValueDataSize = 0x400;
+        nRegStatus = RegEnumValueA(hKeySrc, dwIndex, szValueName, &dwValueNameLen, (LPDWORD)0x0, (LPDWORD)&dwValueInfo, dataBuf, &dwValueDataSize);
         dwIndex++;
         if (nRegStatus) {
           break;
         }
 
-        /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ nRegStatus = RegSetValueExA(hKeyDest, szValueName, 0, (DWORD)dwValueInfo, dataBuf, __frame0.dwValueDataSize);
+        /* DWORD cbData for RegSetValueExA */ /* BYTE * lpData for RegSetValueExA */ /* DWORD dwType for RegSetValueExA */ /* DWORD Reserved for RegSetValueExA */ /* LPCSTR lpValueName for RegSetValueExA */ /* HKEY hKey for RegSetValueExA */ nRegStatus = RegSetValueExA(hKeyDest, szValueName, 0, (DWORD)dwValueInfo, dataBuf, dwValueDataSize);
       } while (!nRegStatus);
 
       /* HKEY hKey for RegCloseKey */ RegCloseKey(hKeyDest);
@@ -1202,11 +1189,11 @@ void __stdcall CreateRegedit() {
       /* LPCSTR lpSubKey for RegDeleteKeyA */ /* HKEY hKey for RegDeleteKeyA */ RegDeleteKeyA((HKEY)0x80000002, "SOFTWARE\\Blizzard Entertainment\\Diablo II Beta");
     }
 
-    __frame1.szInstallPath = '\0';
-    memset(__frame1.szInstallPathBuf, 0, 0x103);
-    Source::SFile::SFILE_GetInstallPath(&__frame1.szInstallPath, 0x104);
+    szInstallPath[0] = '\0';
+    memset(szInstallPath + 1, 0, 0x103);
+    Source::SFile::SFILE_GetInstallPath(szInstallPath, 0x104);
     if (gnServiceRunning) {
-      /* LPCSTR lpPathName for SetCurrentDirectoryA */ SetCurrentDirectoryA(&__frame1.szInstallPath);
+      /* LPCSTR lpPathName for SetCurrentDirectoryA */ SetCurrentDirectoryA(szInstallPath);
     }
 }
 

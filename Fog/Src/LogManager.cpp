@@ -279,7 +279,7 @@ uint32_t __stdcall BenchmarkCpuSpeed() {
     /* LARGE_INTEGER * lpFrequency for QueryPerformanceFrequency */ QueryPerformanceFrequency(&qpcFreq);
     nMhz = _allmul((uint32_t)(nMhz - nTscStart), (int)((uint64_t)(nMhz - nTscStart) >> 0x20), qpcFreq.u.LowPart, qpcFreq.u.HighPart);
     nMhz = _alldiv((uint32_t)nMhz, (uint32_t)((uint64_t)nMhz >> 0x20), qpcEnd.u.LowPart - *(uint32_t*)(char*)&qpcStart, qpcEnd.u.HighPart - *(uint32_t*)((char*)&qpcStart + 4) - (uint32_t)(qpcEnd.u.LowPart < qpcStart.u.LowPart));
-    nMhz = _alldiv((uint32_t)nMhz, (uint32_t)((uint64_t)nMhz >> 0x20), 1000000, 0);
+    nMhz = nMhz / 1000000;
     return (uint32_t)nMhz;
 }
 
@@ -514,43 +514,29 @@ FILE * __fastcall OpenLogFileWithTimestamp(char * szFilePrefix, LPSYSTEMTIME pSy
 
 // Writes the header of a newly opened log file: a rule, the computer name and the date from pTime, and a closing rule.
 void __fastcall WriteLogFileHeader(FILE * pFile, SYSTEMTIME * pTime) {
-    // Frame slots -76..-8 are ONE object: &nNameSize is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD nNameSize;
-      char szComputerName[64];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 68, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nNameSize = 0x40;
-    BOOL bGotName = GetComputerNameA(__frame0.szComputerName, &__frame0.nNameSize);
+    char szComputerName[64];
+    DWORD nNameSize = 0x40;
+    BOOL bGotName = GetComputerNameA(szComputerName, &nNameSize);
     if (!bGotName) {
-      __frame0.szComputerName[0] = '\0';
+      szComputerName[0] = '\0';
     }
 
     fprintf(pFile, "---------------------------------------------------------------\n");
-    fprintf(pFile, "%s %04d-%02d-%02d\n", __frame0.szComputerName, (uint32_t)pTime->wYear, (uint32_t)pTime->wMonth, (uint32_t)pTime->wDay);
+    fprintf(pFile, "%s %04d-%02d-%02d\n", szComputerName, (uint32_t)pTime->wYear, (uint32_t)pTime->wMonth, (uint32_t)pTime->wDay);
     fprintf(pFile, "---------------------------------------------------------------\n");
 }
 
 // Writes the realm-startup banner to a log file: a rule, the computer name and the local time, and a closing rule.
 void __fastcall WriteRealmStartupHeader(FILE * pFile) {
-    // Frame slots -76..-8 are ONE object: &nNameSize is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD nNameSize;
-      char szComputerName[64];
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 68, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
-    __frame0.nNameSize = 0x40;
-    BOOL bGotName = GetComputerNameA(__frame0.szComputerName, &__frame0.nNameSize);
+    char szComputerName[64];
+    DWORD nNameSize = 0x40;
+    BOOL bGotName = GetComputerNameA(szComputerName, &nNameSize);
     if (!bGotName) {
-      __frame0.szComputerName[0] = '\0';
+      szComputerName[0] = '\0';
     }
 
     fprintf(pFile, "---------------------------------------------------------------\n");
-    fprintf(pFile, "%s Realm startup at %04d-%02d-%02d %02d:%02d:%02d.%03u\n", __frame0.szComputerName, (uint32_t)gLogRealmStartupLocalTime.wYear, (uint32_t)gLogRealmStartupLocalTime.wMonth, (uint32_t)gLogRealmStartupLocalTime.wDay, (uint32_t)gLogRealmStartupLocalTime.wHour, (uint32_t)gLogRealmStartupLocalTime.wMinute, (uint32_t)gLogRealmStartupLocalTime.wSecond, (uint32_t)gLogRealmStartupLocalTime.wMilliseconds);
+    fprintf(pFile, "%s Realm startup at %04d-%02d-%02d %02d:%02d:%02d.%03u\n", szComputerName, (uint32_t)gLogRealmStartupLocalTime.wYear, (uint32_t)gLogRealmStartupLocalTime.wMonth, (uint32_t)gLogRealmStartupLocalTime.wDay, (uint32_t)gLogRealmStartupLocalTime.wHour, (uint32_t)gLogRealmStartupLocalTime.wMinute, (uint32_t)gLogRealmStartupLocalTime.wSecond, (uint32_t)gLogRealmStartupLocalTime.wMilliseconds);
     fprintf(pFile, "---------------------------------------------------------------\n");
 }
 
@@ -835,6 +821,7 @@ void __fastcall WriteHexDumpLogEntry(int32_t pLogRecord) {
 }
 
 void __stdcall CloseStaleLogFileHandles() {
+    char byUnused[260];
     DWORD dwNow = GetTickCount();
     int nSlotOffset = 0;
     do {

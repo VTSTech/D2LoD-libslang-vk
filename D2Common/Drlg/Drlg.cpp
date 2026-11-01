@@ -482,7 +482,6 @@ void __fastcall DRLGLEVEL_AdjustRoomCoordinates(D2DrlgLevelStrc * pLevel) {
     int nMaxY;
     int nMinX;
     int nMaxX;
-    LONG* pWorldY;
     if (!pLevel) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2e3);
       exit(-1);
@@ -505,8 +504,7 @@ void __fastcall DRLGLEVEL_AdjustRoomCoordinates(D2DrlgLevelStrc * pLevel) {
 
           do {
             pRoomEx->sCoords.WorldPosition.x += pLevel->sCoordinatesAndSize.WorldPosition.x - nMinX;
-            pWorldY = &pRoomEx->sCoords.WorldPosition.y;
-            *pWorldY += pLevel->sCoordinatesAndSize.WorldPosition.y - nMinY;
+            pRoomEx->sCoords.WorldPosition.y += pLevel->sCoordinatesAndSize.WorldPosition.y - nMinY;
             pRoomEx = pRoomEx->pRoomExNext;
           } while (pRoomEx);
 
@@ -1227,7 +1225,7 @@ int __fastcall DRLG_FindHTile(D2RoomExStrc * pRoomEx, int nTileType, uint32_t nG
       nRaritySum = 0;
     }
 
-    uint32_t nTileMatchCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects(pRoomEx->apTiles, nTileType, (uint32_t)nMainIndex, nRaritySum & 0xff, aTileResults, 0x28);
+    uint32_t nTileMatchCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects(pRoomEx->apTiles, nTileType, (uint32_t)nMainIndex, (uint8_t)nRaritySum, aTileResults, 0x28);
     if (!nTileMatchCount) {
       nTileMatchCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects(pRoomEx->apTiles, 10, 0, 0, aTileResults, 0x28);
       if (!nTileMatchCount) {
@@ -1291,7 +1289,6 @@ int __fastcall DRLG_FindHTile(D2RoomExStrc * pRoomEx, int nTileType, uint32_t nG
 
 void __fastcall FreeRoomEx(D2RoomExStrc * pRoomEx, BOOL bServerSide) {
     D2DrlgRoomExRoomTileNodeStrc* pAnimTileGrid;
-    int* pnRoomDataFreeGen;
     D2DrlgStrc* pDrlg = pRoomEx->pLevel->pDrlg;
     if (!bServerSide && pRoomEx->pRoom) {
       DUNGEON::Dungeon::DRLGROOM_RemoveRoomFromAct(pDrlg->pAct, pRoomEx->pRoom);
@@ -1304,8 +1301,7 @@ void __fastcall FreeRoomEx(D2RoomExStrc * pRoomEx, BOOL bServerSide) {
     }
 
     pRoomEx->eRoomExFlags ^= 0x100000;
-    pnRoomDataFreeGen = &pDrlg->nRoomDataFreeGeneration;
-    (*pnRoomDataFreeGen)++;
+    pDrlg->nRoomDataFreeGeneration++;
     RoomTile::DRLGROOMTILE_FreeRoomTilesAll(pRoomEx);
     switch (pRoomEx->nPresetType) {
       case 1:
@@ -2972,6 +2968,7 @@ void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData, fpLeve
     D2DrlgActWarpsInfoStrc* pDrlgActWarpsInfoPrev;
     D2DrlgActWarpsInfoStrc* pWarpsInfoCurrent2;
     D2DrlgActWarpsInfoStrc* pWarpsInfoTmp;
+    int nDifficulty;
     int nSeedHi;
     int nNodeOffset;
     D2DrlgLevelPlacementStrc pLevelUnknown;
@@ -2981,7 +2978,6 @@ void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData, fpLeve
     D2DrlgLevelDataEntry* pCurLevelDataList;
     eD2DrlgType eDrlgType;
     D2DrlgLevelDataPresetArea* pOuterCloisterLevelData;
-    uint8_t byDifficulty;
     int64_t lSeedProductB;
     eD2LevelId eLevelIdCurrent;
     int64_t lSeedProductA;
@@ -3008,10 +3004,10 @@ void __stdcall DRLGLEVEL_ParseLevelData(D2DrlgLevelDataList * pLevelData, fpLeve
       nCoordsOffset = 0;
       do {
         pLevelDefs = DATATBLS::LvlTbls::TXT_LevelDefs_GetLine(nLevelId);
-        byDifficulty = pDrlg->nDifficulty;
-        *(int*)((uintptr_t)&pLevelUnknown.aCoordsAndSize[0].WorldSize.x + nCoordsOffset) = pLevelDefs->SizeX[byDifficulty];
+        nDifficulty = (int)pDrlg->nDifficulty;
+        *(int*)((uintptr_t)&pLevelUnknown.aCoordsAndSize[0].WorldSize.x + nCoordsOffset) = pLevelDefs->SizeX[nDifficulty];
         nNodeEntryOffset = nNodeOffset * 0x10;
-        *(int*)((uintptr_t)&pLevelUnknown.aCoordsAndSize[0].WorldSize.y + nCoordsOffset) = pLevelDefs->SizeY[byDifficulty];
+        *(int*)((uintptr_t)&pLevelUnknown.aCoordsAndSize[0].WorldSize.y + nCoordsOffset) = pLevelDefs->SizeY[nDifficulty];
         nLevelId = pLevelData->aEntry[nNodeOffset + 1].neD2LevelId;
         nNodeOffset++;
         nCoordsOffset = nNodeEntryOffset + 0x10;
@@ -4027,7 +4023,7 @@ void __stdcall DRLGOUTROOM_ComputeExitTargetPositions(D2DrlgLevelStrc * pLevel) 
               nExitCount = pDVar1->nGridCoordsWidth / 2;
               __frame0.nSumY = pDVar1->nGridCoordsHeight / 2;
             } else {
-              if (0 < nExitCount) {
+              if (nExitCount > 0) {
                 pExitPt4Iter = &pDVar1->aExitPoints1[0].nWorldY;
                 do {
                   nSumX += ((D2DrlgExitPointStrc*)(pExitPt4Iter - 1))->nWorldX - pLevel->sCoordinatesAndSize.WorldPosition.x;

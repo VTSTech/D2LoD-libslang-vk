@@ -73,19 +73,23 @@ static uint16_t * __stdcall STRTABLE_GetStringByIndex(D2StringTableTblFileStrc *
       pcEntry = (char*)((uintptr_t)&pStrTable[1].wCRC + nStringIdx * 0x11 + (uint32_t)pStrTable->wIndexCount * 2);
       if (pcEntry < (char*)((uintptr_t)&pStrTable->wCRC + pStrTable->dwFileSize)) {
         if (*pcEntry != '\x01') {
-          dwErrorCode = 0x107;
-        } else {
-          if (ppEntryTable[nStringIdx]) {
-            return ppEntryTable[nStringIdx];
-          }
-
-          dwErrorCode = 0x109;
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x107);
+          exit(-1);
         }
-      }
-    }
+        if (!ppEntryTable[nStringIdx]) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x109);
+          exit(-1);
+        }
 
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), dwErrorCode);
-    exit(-1);
+        return ppEntryTable[nStringIdx];
+      } else {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x106);
+        exit(-1);
+      }
+    } else {
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x102);
+      exit(-1);
+    }
 }
 
 // @sourcefile .\StrTable\strtable.cpp
@@ -478,14 +482,8 @@ uint32_t __stdcall STRTABLE_GetRegistryLanguage() {
     // Static local variables (originally global data)
     static char gszRegistryLanguage[256] = {}; D2_STATIC_GUARD(gszRegistryLanguage, "D2Lang::StrTable::strtable::STRTABLE_GetRegistryLanguage::gszRegistryLanguage");
 
-    // Frame slots -16..-8 are ONE object: &dwType is passed out and the callee reaches the rest by byte offset.
-    // Separate locals let the compiler reorder them, so the run is one struct.
-    struct __frame0_t {
-      DWORD dwType;
-      DWORD dwDataSize;
-    };
-    static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 8, "frame group __frame0_t must reproduce the Ghidra frame layout");
-    __frame0_t __frame0;
+    DWORD dwType;
+    DWORD dwDataSize;
     HKEY hKey;
     char cChar;
     LSTATUS lStatus = RegOpenKeyExA((HKEY)0x80000001, "Control Panel\\International", 0, 0x20019, &hKey);
@@ -493,7 +491,7 @@ uint32_t __stdcall STRTABLE_GetRegistryLanguage() {
       return 0;
     }
 
-    /* LPDWORD lpcbData for RegQueryValueExA */ /* LPBYTE lpData for RegQueryValueExA */ /* LPDWORD lpType for RegQueryValueExA */ /* LPDWORD lpReserved for RegQueryValueExA */ /* LPCSTR lpValueName for RegQueryValueExA */ /* HKEY hKey for RegQueryValueExA */ lStatus = RegQueryValueExA(hKey, "sLanguage", (LPDWORD)0x0, &__frame0.dwType, (LPBYTE)gszRegistryLanguage, &__frame0.dwDataSize);
+    /* LPDWORD lpcbData for RegQueryValueExA */ /* LPBYTE lpData for RegQueryValueExA */ /* LPDWORD lpType for RegQueryValueExA */ /* LPDWORD lpReserved for RegQueryValueExA */ /* LPCSTR lpValueName for RegQueryValueExA */ /* HKEY hKey for RegQueryValueExA */ lStatus = RegQueryValueExA(hKey, "sLanguage", (LPDWORD)0x0, &dwType, (LPBYTE)gszRegistryLanguage, &dwDataSize);
     if (lStatus) {
       return 0;
     }

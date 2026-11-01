@@ -345,7 +345,6 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
     char cGuildChar;
     eD2PlayerClassID ePlayerClass;
     int nTextArg0;
-    bool nTextArg4;
     int32_t nTextLine;
     uint16_t wCharFlags;
     D2CharSelStrc* pDVar1 = D2Client::CharScreen::D2CharSelStrcFirst;
@@ -404,11 +403,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
 
         D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)pDVar1->pCharSelCompStrc, nLanguageCode);
         if (pDVar1->nEntryType == 2) {
-          nTextArg0 = 0;
-          nTextArg4 = false;
-          nTextLine = 1;
-          pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b3b);
-          D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], pwszLocaleStr, nTextLine, nTextArg4, nTextArg0);
+          D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], D2Lang::StrTable::strtable::GetLocaleString(0x2b3b), 1, false, 0);
         } else if (!pDVar1->nEntryType) {
           ePlayerClass = pDVar1->ePlayerClassID;
           szNameBuf[0] = '\0';
@@ -450,18 +445,10 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
           D2Lang::Unicode::UNISYS::AppendToBuffer(wszLineBuf, wszClassName);
           D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], wszLineBuf, 0, false, 0);
           if (pDVar1->nCharacterFlags & 0x20) {
-            nTextArg0 = 0;
-            nTextArg4 = false;
-            nTextLine = 2;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x58cb);
-            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], pwszLocaleStr, nTextLine, nTextArg4, nTextArg0);
+            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], D2Lang::StrTable::strtable::GetLocaleString(0x58cb), 2, false, 0);
           }
           if (pDVar1->bAct) {
-            nTextArg0 = 0;
-            nTextArg4 = false;
-            nTextLine = 4;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2aaf);
-            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], pwszLocaleStr, nTextLine, nTextArg4, nTextArg0);
+            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], D2Lang::StrTable::strtable::GetLocaleString(0x2aaf), 4, false, 0);
           }
 
           dwCompFlags = pDVar1->dwRealmParam;
@@ -484,8 +471,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen() {
               }
             }
 
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wExpireStrIndex);
-            D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszLineBuf, pwszLocaleStr, nDaysUntilExpire);
+            D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, wszLineBuf, D2Lang::StrTable::strtable::GetLocaleString(wExpireStrIndex), nDaysUntilExpire);
             D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharacterIndex], wszLineBuf, nTextLine, false, 0);
           }
         }
@@ -510,7 +496,6 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
     char* pcCopySrc;
     D2CharSelStrc* pCharNameSrc;
     D2CharSelLineBufStrc* pDVar1;
-    bool bVar2;
     char szRetrievingMsg[256];
     D2CharSelLineBufStrc sLineBuf;
     uint16_t wszLevelStr[10];
@@ -570,27 +555,14 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
           byTextColor = 0;
           nHaltLine = 1;
           ppSlotTextBox = gaCharSelScreenSlotControls + nCharIndex;
-          pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1419);
-          D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, (bool)byTextColor, nLoopIdx);
+          D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1419), nHaltLine, (bool)byTextColor, nLoopIdx);
           if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET && gnCharSelLoadedCharCount) {
-            nCharIndex = 0;
-            bVar2 = false;
-            nHaltLine = 0;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1416);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
-            nCharIndex = 0;
-            bVar2 = false;
-            nHaltLine = 0;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1417);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1416), 0, false, 0);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1417), 0, false, 0);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
           } else {
-            nCharIndex = 0;
-            bVar2 = false;
-            nHaltLine = 0;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x1418);
-            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, pwszLocaleStr, nHaltLine, bVar2, nCharIndex);
+            D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x1418), 0, false, 0);
             D2Win::Src::D2WinTextBox::SetText(*ppSlotTextBox, (uint16_t*)pCharEntry->szCommandStringTable, 0, false, 0);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
@@ -610,11 +582,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
 
           D2Win::Src::D2Comp::D2COMP_SetFlags((D2CharSelStrc*)pCharEntry->pCharSelCompStrc, nLanguageCode);
           if (pCharEntry->nEntryType == 2) {
-            nLoopIdx = 0;
-            bVar2 = false;
-            nHaltLine = 1;
-            pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b3b);
-            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
+            D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], D2Lang::StrTable::strtable::GetLocaleString(0x2b3b), 1, false, 0);
             nSlotBoxY += 0x5d;
             nCharIndex = nNavigationIndex;
           } else {
@@ -708,18 +676,10 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
             D2Lang::Unicode::UNISYS::AppendToBuffer(sLineBuf.wszLineBuf, wszClassName);
             D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], sLineBuf.wszLineBuf, 0, false, 0);
             if (pCharEntry->nCharacterFlags & 0x20) {
-              nLoopIdx = 0;
-              bVar2 = false;
-              nHaltLine = 2;
-              pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b45);
-              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
+              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], D2Lang::StrTable::strtable::GetLocaleString(0x2b45), 2, false, 0);
             }
             if (pCharEntry->bAct) {
-              nLoopIdx = 0;
-              bVar2 = false;
-              nHaltLine = 4;
-              pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2aaf);
-              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], pwszLocaleStr, nHaltLine, bVar2, nLoopIdx);
+              D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], D2Lang::StrTable::strtable::GetLocaleString(0x2aaf), 4, false, 0);
             }
 
             nLanguageCode = CHARSEL_GetDaysUntilExpiry(pCharEntry->dwRealmParam);
@@ -736,8 +696,7 @@ void __stdcall DRAW_LocalCharsInSelectionScreen0() {
                 }
               }
 
-              pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wExpireStrIndex);
-              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, sLineBuf.wszLineBuf, pwszLocaleStr, nLanguageCode);
+              D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(100, sLineBuf.wszLineBuf, D2Lang::StrTable::strtable::GetLocaleString(wExpireStrIndex), nLanguageCode);
               D2Win::Src::D2WinTextBox::SetText(gaCharSelScreenSlotControls[nCharIndex], sLineBuf.wszLineBuf, nHaltLine, false, 0);
             }
 
@@ -1116,7 +1075,7 @@ BOOL __stdcall CHARSEL_UpdateSelectedCharDisplay() {
 
     int nSlotIndex;
     nSlotIndex = D2Client::CharScreen::nSelectedCharIndex - g_nCharSelNavigationIndex;
-    if (D2Client::CharScreen::TotalCurrentChars < 1 || D2Client::CharScreen::nSelectedCharIndex <= gnCharSelLoadMoreEntryIndex || D2Client::CharScreen::nSelectedCharIndex == gnCharSelLoadingEntryIndex) {
+    if (D2Client::CharScreen::TotalCurrentChars <= 0 || D2Client::CharScreen::nSelectedCharIndex <= gnCharSelLoadMoreEntryIndex || D2Client::CharScreen::nSelectedCharIndex == gnCharSelLoadingEntryIndex) {
       bControlState = 0;
     } else {
       bControlState = 1;
@@ -1286,11 +1245,7 @@ BOOL __stdcall CHARSEL_UpdateSelectedCharDisplay() {
       wLocaleStrId = 0x2b3b;
     }
 
-    nSlotIndex = 0;
-    uint8_t byTextColor = 0;
-    nClassicOrExpansionMode = 1;
-    pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(wLocaleStrId);
-    D2Win::Src::D2WinTextBox::SetText(gpaCharSelectDisplay, pwszLocaleStr, nClassicOrExpansionMode, (bool)byTextColor, nSlotIndex);
+    D2Win::Src::D2WinTextBox::SetText(gpaCharSelectDisplay, D2Lang::StrTable::strtable::GetLocaleString(wLocaleStrId), 1, (bool)0, 0);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCharSelDeleteButton);
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCharSelExpansionToggle);
     return 1;
@@ -1302,9 +1257,7 @@ void __fastcall UIMENU_SelectDifficultySinglePlayerOrTcpip(int32_t nCharLevel, i
     D2Win::Src::D2WinMain::FORMS_SetGlobalFormImage(pFormControl, 1);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
     ::D2WinTextBox* pDVar2 = (::D2WinTextBox*)MainMenus::FORMS_CreateAnyFormFromList(0xab);
-    int nTextArg2 = 0;
-    uint8_t byTextColor = 0;
-    D2Win::Src::D2WinTextBox::SetText(pDVar2, D2Lang::StrTable::strtable::GetLocaleString(0x2723), 7, (bool)byTextColor, nTextArg2);
+    D2Win::Src::D2WinTextBox::SetText(pDVar2, D2Lang::StrTable::strtable::GetLocaleString(0x2723), 7, (bool)0, 0);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pDVar2, 1);
     pFormControl = MainMenus::FORMS_CreateAnyFormFromList(0xa8);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
@@ -1326,8 +1279,6 @@ BOOL __stdcall SelectCharHandler(D2ControlMsg * pControlMsg) {
     uint32_t nDifficultyUnlocked;
     D2CharSelStrc* pSelectedChar;
     char szRealmName[256];
-    uint8_t byTextColor;
-    int32_t nTextArg1;
     uint16_t wCharFlags;
     int nSelectedIndex = D2Client::CharScreen::nSelectedCharIndex;
     if (gbCharSelectInProgress) {
@@ -1350,14 +1301,8 @@ BOOL __stdcall SelectCharHandler(D2ControlMsg * pControlMsg) {
       uint16_t* pwszLocaleStr;
       if (nSelectedIndex == gnCharSelLoadingEntryIndex) {
         D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gnCharSelScrollOffset);
-        nSelectedIndex = 0;
-        byTextColor = 0;
-        D2Win::Src::D2WinTextBox::SetText(gnCharSelScrollOffset, D2Lang::StrTable::strtable::GetLocaleString(0x2b3c), 0, (bool)byTextColor, nSelectedIndex);
-        nSelectedIndex = 0;
-        bIsCreateNewSlot = false;
-        nTextArg1 = 0;
-        pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x2b3d);
-        D2Win::Src::D2WinTextBox::SetText(gnCharSelScrollOffset, pwszLocaleStr, nTextArg1, bIsCreateNewSlot, nSelectedIndex);
+        D2Win::Src::D2WinTextBox::SetText(gnCharSelScrollOffset, D2Lang::StrTable::strtable::GetLocaleString(0x2b3c), 0, (bool)0, 0);
+        D2Win::Src::D2WinTextBox::SetText(gnCharSelScrollOffset, D2Lang::StrTable::strtable::GetLocaleString(0x2b3d), 0, false, 0);
         return 1;
       }
       if (nSelectedIndex != -1) {
@@ -1406,7 +1351,7 @@ BOOL __stdcall SelectCharHandler(D2ControlMsg * pControlMsg) {
             }
 
             D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szRealmName, (uint16_t*)pSelectedChar->szCommandStringTable, 0xff);
-            MainMenus::SelectedCharBnetSingleTcpIp(pSelectedChar, pSelectedChar->nCharacterFlags, (uint32_t)pSelectedChar->ePlayerClassID, szRealmName);
+            MainMenus::SelectedCharBnetSingleTcpIp(pSelectedChar, pSelectedChar->nCharacterFlags, pSelectedChar->ePlayerClassID, szRealmName);
           }
         }
       }
@@ -1442,7 +1387,7 @@ void __fastcall UIMENU_CALLBACK_SetDificultySingleplayerTcpIp(D2ControlMsg * pCo
     D2IniData_launcher->nDifficulty = (uint8_t)byDifficulty;
     MainMenus::FORMS_DestroyList();
     D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(szRealmName, (uint16_t*)pSelectedChar->szCommandStringTable, 0xff);
-    MainMenus::SelectedCharBnetSingleTcpIp(pSelectedChar, pSelectedChar->nCharacterFlags, (uint32_t)pSelectedChar->ePlayerClassID, szRealmName);
+    MainMenus::SelectedCharBnetSingleTcpIp(pSelectedChar, pSelectedChar->nCharacterFlags, pSelectedChar->ePlayerClassID, szRealmName);
 }
 
 BOOL __stdcall UIMENU_Callback_NormalButtonSingleplayerTcpIp(D2ControlMsg * pControlMsg) {
@@ -1476,15 +1421,9 @@ BOOL __stdcall MAINMENU_OnPressShowExpansionCreditsPage(D2ControlMsg * pControlM
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
     ::D2WinTextBox* pTextBox = (::D2WinTextBox*)MainMenus::FORMS_CreateAnyFormFromList(0xdd);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pTextBox, 1);
-    int nAlignment = 0;
-    bool bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58ce), 0, bIndent, nAlignment);
-    nAlignment = 0;
-    bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58cf), 0, bIndent, nAlignment);
-    nAlignment = 0;
-    bIndent = false;
-    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58d0), 0, bIndent, nAlignment);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58ce), 0, false, 0);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58cf), 0, false, 0);
+    D2Win::Src::D2WinTextBox::SetText(pTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x58d0), 0, false, 0);
     return 1;
 }
 
@@ -1509,9 +1448,7 @@ void __stdcall UIMENU_AreYouSureWouWantToDeleteThisCharacter() {
     D2Win::Src::D2WinMain::SetUnsetFlag0x08(pFormControl, 1);
     ::D2WinTextBox* pDVar2 = (::D2WinTextBox*)MainMenus::FORMS_CreateAnyFormFromList(0xd9);
     D2Win::Src::D2WinMain::SetUnsetFlag0x08((D2ControlStrc*)pDVar2, 1);
-    int nTextArg2 = 0;
-    uint8_t byTextColor = 0;
-    D2Win::Src::D2WinTextBox::SetText(pDVar2, D2Lang::StrTable::strtable::GetLocaleString(0x142b), 0, (bool)byTextColor, nTextArg2);
+    D2Win::Src::D2WinTextBox::SetText(pDVar2, D2Lang::StrTable::strtable::GetLocaleString(0x142b), 0, (bool)0, 0);
 }
 
 BOOL __stdcall CHARSEL_OnPressDestroyFormList(D2ControlMsg * pControlMsg) {
@@ -1792,9 +1729,7 @@ static void CHARSEL_SetStatusMessage(int32_t nStatusCode) {
     gbCharSelArrowsHidden = 1;
     gnCharSelBNetLoadState = 0;
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpCharSelStatusTextBox);
-    int nTextArg4 = 0;
-    bool uVar3 = false;
-    D2Win::Src::D2WinTextBox::SetText(gpCharSelStatusTextBox, D2Lang::StrTable::strtable::GetLocaleString(wLocaleStrId), 4, uVar3, nTextArg4);
+    D2Win::Src::D2WinTextBox::SetText(gpCharSelStatusTextBox, D2Lang::StrTable::strtable::GetLocaleString(wLocaleStrId), 4, false, 0);
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpControlCharSelArrows, 0);
     if (!gnCharSelSelectedIndex) {
       return;
@@ -1810,9 +1745,7 @@ void __stdcall CHARSEL_ShowWaitTimeout() {
       return;
     }
 
-    int nTextArg4 = 0;
-    bool uVar3 = false;
-    D2Win::Src::D2WinTextBox::SetText(gpCharSelStatusTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b39), 4, uVar3, nTextArg4);
+    D2Win::Src::D2WinTextBox::SetText(gpCharSelStatusTextBox, D2Lang::StrTable::strtable::GetLocaleString(0x2b39), 4, false, 0);
 }
 
 BOOL __stdcall CHARSEL_InitRealmSelection() {
@@ -1858,9 +1791,7 @@ BOOL __stdcall CHARSEL_InitRealmSelection() {
         }
 
         pBNetGateway = (D2BNetGatewayAccessStr*)gpBNetCallbacks->pfnBnetLoadAndReturn();
-        nRegResult = 0x7fffffff;
-        pszRealmName = Bnclient::BNGatewayAccess::Realm(pBNetGateway, pBNetGateway->nCurGatewayIdx);
-        Storm::Source::SSTR::SStrCopy(PreferredClosedRealm, pszRealmName, nRegResult);
+        Storm::Source::SSTR::SStrCopy(PreferredClosedRealm, Bnclient::BNGatewayAccess::Realm(pBNetGateway, pBNetGateway->nCurGatewayIdx), 0x7fffffff);
         Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Preferred Realm", 0, PreferredClosedRealm);
         nTextLine = CHARSEL_FindRealmByName(PreferredClosedRealm);
         if (nTextLine) {
@@ -2391,7 +2322,7 @@ void __stdcall CHARSEL_InitCharSelScreen() {
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpCharSelExitButton, 0);
     CHARSEL_LoadCharList(PreferredClosedRealm);
     uint32_t nExtraChars = D2Client::CharScreen::TotalCurrentChars - gnCharSelScreenSlotCount;
-    if (0 < (int)nExtraChars) {
+    if ((int)nExtraChars > 0) {
       uint32_t nOddRemainder;
       nOddRemainder = nExtraChars & 0x80000001;
       if ((int)nOddRemainder < 0) {
@@ -2507,9 +2438,7 @@ void __stdcall UIMENU_CharacterSelectAllGameTypes() {
       }
 
       pGatewayAccess = (D2BNetGatewayAccessStr*)gpBNetCallbacks->pfnBnetLoadAndReturn();
-      nRegResult = 0x7fffffff;
-      szRealmName = Bnclient::BNGatewayAccess::Realm(pGatewayAccess, pGatewayAccess->nCurGatewayIdx);
-      Storm::Source::SSTR::SStrCopy(PreferredClosedRealm, szRealmName, nRegResult);
+      Storm::Source::SSTR::SStrCopy(PreferredClosedRealm, Bnclient::BNGatewayAccess::Realm(pGatewayAccess, pGatewayAccess->nCurGatewayIdx), 0x7fffffff);
       Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Preferred Realm", 0, PreferredClosedRealm);
       nFoundRealmIndex = CHARSEL_FindRealmByName(PreferredClosedRealm);
       if (!nFoundRealmIndex) {

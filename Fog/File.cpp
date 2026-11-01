@@ -33,7 +33,7 @@ static char * STRING_CopyStringBounded(int32_t nDestSize, char * szDest, char * 
 void __stdcall CONTAINER_InitializeBuffer(void * pBuffer, int32_t nTypeSize, int32_t nBufferSize, CONTAINER_TypeInitialValue fpInitValueCallback) {
     while (true) {
       nBufferSize--;
-      if (-1 >= nBufferSize) {
+      if (nBufferSize < 0) {
         break;
       }
 
@@ -55,10 +55,10 @@ void __fastcall CRASH_DumpThreadContext(DWORD dwThreadId, void * pContext, fnCra
       memset(pFrameBufCursor + 3, 0, 4 * sizeof(pFrameBufCursor[0]));
       pFrameBufCursor += 9;
       nFrameCountClamped--;
-    } while (-1 < nFrameCountClamped);
+    } while (nFrameCountClamped >= 0);
 
     int32_t nFrameCount = Engine::Application::DEBUG_UnwindStackFrames((CONTEXT*)pContext, dwThreadId, aFrames, nMaxFrames);
-    if (0 >= nFrameCount) {
+    if (nFrameCount <= 0) {
       return;
     }
     if (nFrameCount > 0x80) {
@@ -236,14 +236,8 @@ void __fastcall CRASH_DumpRegisters(DWORD dwThreadId, fnCrashOutputLine pOutputC
 }
 
 void __fastcall CRASH_EnumerateThreads(fnCrashOutputLine pOutputCallback, ::Report * pReport, DWORD dwSkipThreadId) {
-    THREADENTRY32 threadEntry;
     uint32_t dwCurrentPid;
-    threadEntry.cntUsage = 0;
-    threadEntry.th32ThreadID = 0;
-    threadEntry.th32OwnerProcessID = 0;
-    threadEntry.tpBasePri = 0;
-    threadEntry.tpDeltaPri = 0;
-    threadEntry.dwFlags = 0;
+    THREADENTRY32 threadEntry = {0};
     threadEntry.dwSize = 0x1c;
     HANDLE hObject = (HANDLE)CreateToolhelp32Snapshot(4, 0);
     if (hObject == (HANDLE)-1) {
@@ -574,7 +568,6 @@ int STRING_FormatVarArgs(char * szFormat, char * szDest, int32_t nDestSize, ...)
 bool __fastcall FILETOOLS_StartApplicationWithCommandLine_UTF8(LPCSTR lpApplicationName, LPCSTR szCommandLine) {
     int nConverted;
     _STARTUPINFOW startupInfo;
-    _PROCESS_INFORMATION processInfo;
     uint16_t wszCommandLine[32768];
     uint16_t wszAppName[1024];
     if (szCommandLine) {
@@ -592,10 +585,7 @@ bool __fastcall FILETOOLS_StartApplicationWithCommandLine_UTF8(LPCSTR lpApplicat
 
     startupInfo.cb = 0x44;
     memset(&startupInfo.lpReserved, 0, 0x40);
-    processInfo.hProcess = (HANDLE)0x0;
-    processInfo.hThread = (HANDLE)0x0;
-    processInfo.dwProcessId = 0;
-    processInfo.dwThreadId = 0;
+    _PROCESS_INFORMATION processInfo = {0};
     BOOL bCreated = CreateProcessW((LPCWSTR)(lpApplicationName ? (uint32_t)wszAppName : 0), (LPWSTR)(szCommandLine ? (uint32_t)wszCommandLine : 0), (LPSECURITY_ATTRIBUTES)0x0, (LPSECURITY_ATTRIBUTES)0x0, 0, 0, (LPVOID)0x0, (LPCWSTR)0x0, &startupInfo, &processInfo);
     if (bCreated) {
       /* HANDLE hObject for CloseHandle */ CloseHandle(processInfo.hProcess);

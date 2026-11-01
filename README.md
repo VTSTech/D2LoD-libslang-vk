@@ -183,17 +183,27 @@ Two checks stand behind every release:
 [`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
 compares the machine code of each function with 1.14d. It is a check on the decompilation:
 where the code comes out identical, the decompiled function was read correctly.
-At this commit, generated from version 1783 of the Ghidra database:
+At this commit, generated from version 1792 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|5,729 of 14,812 (38.7%)|
-|Code|397,385 of 2,555,443 bytes (15.55%)|
+|Functions|5,870 of 14,642 (40.1%)|
+|Code|451,661 of 2,602,915 bytes (17.35%)|
+|Instructions|1,722,852 of 2,602,915 bytes (66.2%), counting identical instructions in functions that still differ|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
-rebuild links a runtime instead of reconstructing it. Over the whole binary, runtime
-included: 6,084 of 15,521 functions (39.2%), 448,380 of
-2,678,537 bytes (16.74%).
+rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
+exceptions is left out as well. Over the whole binary, runtime
+included: 6,427 of 15,711 functions (40.9%), 550,366 of
+2,748,975 bytes (20.02%).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
+  <img alt="The original's code split by how closely the rebuild matches it" src="asm_matching/msvc8/evidence/byte-match-light.svg">
+</picture>
+
+[BYTE-MATCHING.md](BYTE-MATCHING.md) explains what is compared, the kinds of match, and why
+whole matching functions are a strict measure next to identical instructions.
 
 A decompiler-reconstructed rebuild will keep yielding single-wrong-type crashes upstream
 hasn't hit yet. To attribute a crash correctly, collect **both** artifacts from one repro:

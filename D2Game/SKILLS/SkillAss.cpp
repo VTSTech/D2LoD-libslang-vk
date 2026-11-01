@@ -1574,7 +1574,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     nEnhDmgPctWork = pDamage->dwEnDmgPct;
     if ((int)nMinDmg > 0x100000) {
       if ((int)(nMinDmg & -16) < 0x640) {
-        nDivResult = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg) >> 0x20), 100, 0);
+        nDivResult = (int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg / 100;
         nDivResult = (uint64_t)((uint64_t)nDivResult & 0xffffffff00000000ull | (uint64_t)(uint32_t)(int)nDivResult);
       } else {
         *(uint32_t*)(char*)&nDivResult = (int)nMinDmg / 100 * nEnhDmgPctWork;
@@ -1582,7 +1582,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     } else {
       if ((int)nEnhDmgPctWork > 0x10000) {
         if ((int)(nEnhDmgPctWork & -16) < 0x640) {
-          nDivResult = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg) >> 0x20), 100, 0);
+          nDivResult = (int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMinDmg / 100;
           nDivResult = (uint64_t)((uint64_t)nDivResult & 0xffffffff00000000ull | (uint64_t)(uint32_t)(int)nDivResult);
         } else {
           *(uint32_t*)(char*)&nDivResult = (int)nEnhDmgPctWork / 100 * nMinDmg;
@@ -1593,7 +1593,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     }
     if ((int)nMaxDmg > 0x100000) {
       if ((int)(nMaxDmg & -16) < 0x640) {
-        lVar2 = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg) >> 0x20), 100, 0);
+        lVar2 = (int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg / 100;
         nEnhMaxDmg = (int)lVar2;
       } else {
         nEnhMaxDmg = (int)nMaxDmg / 100 * nEnhDmgPctWork;
@@ -1601,7 +1601,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     } else {
       if ((int)nEnhDmgPctWork > 0x10000) {
         if ((int)(nEnhDmgPctWork & -16) < 0x640) {
-          lVar2 = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg) >> 0x20), 100, 0);
+          lVar2 = (int64_t)(int)nEnhDmgPctWork * (int64_t)(int)nMaxDmg / 100;
           nEnhMaxDmg = (int)lVar2;
         } else {
           nEnhMaxDmg = (int)nEnhDmgPctWork / 100 * nMaxDmg;
@@ -1621,7 +1621,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     nEnhMaxDmg = nMaxDmgKick * 0x100;
     if (nMinDmgKick > 0x100000) {
       if (nMinDmgKick < 0x640) {
-        lVar2 = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick) >> 0x20), 100, 0);
+        lVar2 = (int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick / 100;
         nEnhKickDmg = (int)lVar2;
       } else {
         nEnhKickDmg = nMinDmgKick / 100 * nEnhDmgPct;
@@ -1629,7 +1629,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
     } else {
       if ((int)nEnhDmgPct > 0x10000) {
         if ((int)(nEnhDmgPct & -16) < 0x640) {
-          lVar2 = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick) >> 0x20), 100, 0);
+          lVar2 = (int64_t)(int)nEnhDmgPct * (int64_t)nMinDmgKick / 100;
           nEnhKickDmg = (int)lVar2;
         } else {
           nEnhKickDmg = (int)nEnhDmgPct / 100 * nMinDmgKick;
@@ -1656,7 +1656,7 @@ static void __stdcall SKILLBAR_ApplyWhirlwindDamage(::SGAMEDATA * pGame, D2Damag
       }
     }
 
-    lVar2 = _alldiv((uint32_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)nEnhMaxDmg), (uint32_t)((uint64_t)((int64_t)(int)nEnhDmgPctWork * (int64_t)nEnhMaxDmg) >> 0x20), 100, 0);
+    lVar2 = (int64_t)(int)nEnhDmgPctWork * (int64_t)nEnhMaxDmg / 100;
     nEnhKickDmg = (int)lVar2;
     roll_and_apply_damage:
     nMinDmgKick = nMinDmgKick + nMinDmg + (int)nDivResult;
@@ -1788,11 +1788,9 @@ BOOL __fastcall SKILLASS_SrvStFn24_DragonTalon(::SGAMEDATA * pGame, D2UnitStrc *
 
 // Server DoFunc for the Assassin Dragon Talon skill (skill srvdofunc 42). Validates the Skills.txt row, resolves the attack target, releases any charge-up attack and processes the combat queue. Decrements the skill's Param1 (remaining kick count); while kicks remain it keeps the SKSRVDOFUNC flag and re-arms the anim timer. On the final kick it rolls a knockback chance from skill calc[1..3] (selected by target being player/merc, boss, or a specific monster type) against the unit seed, then applies kick damage via D2CalcKickDamage and reprocesses the combat queue. Returns TRUE on success.
 BOOL __fastcall Skills_SrvDoFunc_042_DragonTalon(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    bool _bKnockback;
     int nLvlDiffClamped;
     uint32_t nRandRoll;
     int nSkillLvl_00;
-    bool bKnockback;
     int nKnockPct;
     if ((int)eSkill < 0) {
       return 0;
@@ -1832,7 +1830,8 @@ BOOL __fastcall Skills_SrvDoFunc_042_DragonTalon(::SGAMEDATA * pGame, D2UnitStrc
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, nParam1);
-    _bKnockback = 0;
+    BOOL bKnockback;
+    bKnockback = 0;
     if (nParam1 <= 0) {
       int nLvlDiff;
       nKnockPct = 100;
@@ -1874,12 +1873,12 @@ BOOL __fastcall Skills_SrvDoFunc_042_DragonTalon(::SGAMEDATA * pGame, D2UnitStrc
 
       nRandRoll = D2Client::Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 100);
       if ((int)nRandRoll < nKnockPct) {
-        _bKnockback = 1;
+        bKnockback = 1;
       }
     }
 
     deal_kick_damage:
-    D2CalcKickDamage(pGame, pUnit_00, pSkillTxt, nSkillLvl, _bKnockback, pUnit, eSkill);
+    D2CalcKickDamage(pGame, pUnit_00, pSkillTxt, nSkillLvl, bKnockback, pUnit, eSkill);
     UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pUnit_00, 0);
     if (nParam1 <= 0) {
       return 1;
@@ -2077,7 +2076,6 @@ D2UnitStrc * __fastcall SKILLASS_CreateSummon(::SGAMEDATA * pGame, D2UnitStrc * 
 BOOL __fastcall Skills_SrvDoFunc_044_SummonBladeSentinel(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
     BOOL _bHasTarget;
     bool bHasTarget;
-    D2AiCmdArgumentsStrc local_2c;
     int32_t nAnimMode;
     uint32_t nTargetY;
     uint32_t nTargetX;
@@ -2108,15 +2106,9 @@ BOOL __fastcall Skills_SrvDoFunc_044_SummonBladeSentinel(::SGAMEDATA * pGame, D2
       return 0;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_level, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit_00, UNITSTAT_level, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), 0);
     UNIT::SUnit::SUNIT_RelocateUnit(pGame, pUnit_00, D2Common::Units::UNITS_GetRoom(pUnit), D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), D2Client::Units::GetYPosFromDynamicPathUnit(pUnit), 0, 0);
-    local_2c.nUnused0 = 0;
-    local_2c.nUnused1 = 0;
-    local_2c.nCmdArg1 = 0;
-    local_2c.nCmdArg2 = 0;
-    local_2c.nCmdArg3 = 0;
-    local_2c.nCmdArg4 = 0;
+    D2AiCmdArgumentsStrc local_2c = {0};
     local_2c.nCmdId = 0;
     local_2c.nCmdArg1 = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     local_2c.nCmdArg2 = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
@@ -2525,7 +2517,7 @@ BOOL __fastcall SKILLASS_SrvStFn26_BladeFury(::SGAMEDATA * pGame, D2UnitStrc * p
 
     D2StatListExStrc* pStatList = D2Common::Stats::StatsEx::GetStatsByState(pUnit, STATE_inferno);
     if (!pStatList) {
-      if (0 < pSkillTxt->startmana) {
+      if (pSkillTxt->startmana > 0) {
         int32_t nCurMana;
         nCurMana = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mana, 0);
         if (nCurMana < pSkillTxt->startmana * 0x100) {
@@ -2775,9 +2767,7 @@ BOOL __fastcall Skills_SrvDoFunc_049_SummonShadowClone(::SGAMEDATA * pGame, D2Un
       return 0;
     }
 
-    uint16_t nLayer;
-    nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pSummon, UNITSTAT_level, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pSummon, UNITSTAT_level, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0), 0);
     SKILLASS_ApplyLevelScaledBuffs(pGame, (int32_t)pSkillTxtSaved, eSkill, nSkillLvl, pSummon);
     int32_t nLifetime;
     nLifetime = D2Client::SKILLS::GetSkillParam4(eSkill, nSkillLvl);
@@ -3240,7 +3230,6 @@ BOOL __fastcall Skills_SrvDoFunc_052_DragonFlight(::SGAMEDATA * pGame, D2UnitStr
 
 // SrvStFunc for charge-up state application (index 28). Validates the charge-up missile via SKILLASS_GetChargeUpMissile; if present, evaluates auralencalc for duration, refreshes the aura state via D2UpdateState, allocates a timed stat list via SetStateWithExpiryTime, populates it with aura stats + modifierlist_skill/level, and toggles the state GFX. Returns 1 on success.
 BOOL __fastcall SKILLASS_SrvStFn28_BladeShield(::SGAMEDATA * pGame, D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl) {
-    D2StateExArgStrc local_28;
     if (!((int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
@@ -3271,11 +3260,7 @@ BOOL __fastcall SKILLASS_SrvStFn28_BladeShield(::SGAMEDATA * pGame, D2UnitStrc *
     }
 
     SkillsServer::D2UpdateState(pUnit, (int)sAuraState, 0);
-    local_28.nDurationInFrames = 0;
-    local_28.eStat = UNITSTAT_strength;
-    local_28.nSkillCalc = 0;
-    local_28.eAuraState = STATE_none;
-    local_28.pFunction = 0;
+    D2StateExArgStrc local_28 = {0};
     local_28.eSkill = eSkill;
     local_28.nSkillLvl = nSkillLvl;
     local_28.pUnit = pUnit;

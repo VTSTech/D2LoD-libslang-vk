@@ -87,7 +87,13 @@ typedef struct _EXCEPTION_RECORD EXCEPTION_RECORD, *PEXCEPTION_RECORD;
 typedef struct _CONTEXT CONTEXT, *LPCONTEXT;
 typedef struct _EXCEPTION_POINTERS EXCEPTION_POINTERS, *PEXCEPTION_POINTERS;
 struct tagCANDIDATELIST { uint32_t dwStyle; };
-typedef struct tagRGBQUAD { uint8_t rgbBlue, rgbGreen, rgbRed, rgbReserved; } RGBQUAD;
+// RGBQUAD (1792 sync): upstream's regen now defines the struct body itself in
+// D2CMP/Draw.h under #ifndef _WIN32 (packed + typed), so the shim's own struct
+// definition collided (redefinition error in 3 of 4 TUs). globals.h still
+// declares `extern RGBQUAD nColor;` with the SDK's short typedef name, so the
+// shim provides ONLY the alias - forward-typedef, the struct completes later
+// in D2CMP/Draw.h. On Windows the real SDK typedef applies (same name).
+typedef struct tagRGBQUAD RGBQUAD;
 struct _SERVICE_STATUS { uint32_t dwServiceType; };
 typedef void* SERVICE_STATUS_HANDLE;
 struct _SYSTEM_INFO { uint32_t dwOemId; };

@@ -508,7 +508,6 @@ static void __stdcall CLIENT_PopulateVisibilityPacketBuffer(D2UnitProximityNodeS
     pClient->nPacketBuffer.nCount = 0;
     D2UnitProximityNodeStrc* ppnSlotCursor = pNodes;
     do {
-      uint32_t* puVar1;
       byUnitType = '\x06';
       if (ppnSlotCursor->pUnit) {
         byUnitType = (uint8_t)ppnSlotCursor->pUnit->eUnitType;
@@ -546,8 +545,7 @@ static void __stdcall CLIENT_PopulateVisibilityPacketBuffer(D2UnitProximityNodeS
       }
 
       *(uint16_t*)(pClient->nPad1AE + pClient->nPacketBuffer.nCount * 9 + 0x25) = nUnitTypeRaw;
-      puVar1 = &pClient->nPacketBuffer.nCount;
-      (*puVar1)++;
+      pClient->nPacketBuffer.nCount++;
       ppnSlotCursor = pNodes + ppnSlotCursor->nNext;
     } while (ppnSlotCursor->nNext);
 }
@@ -1105,7 +1103,6 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
     bool bCarry;
     uint64_t qwNewAvgPing;
     int64_t qwPingAccum;
-    int* pnSampleCount;
     ::SGAMEDATA* pGame = Server::NET_SERVER_FindGameByClientId(nClientId);
     if (!pGame) {
       if (!gQServerClientTablesInitialized) {
@@ -1126,16 +1123,15 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
         dwNowTick = GetTickCount();
         nSamplesToAvg = pClient->tQServerExt.nHeartbeatSampleCount;
         if (nSamplesToAvg < 10) {
-          qwPingAccum = _allmul(nSamplesToAvg, 0, (uint32_t)pClient->tQServerExt.qwAveragePingTicks, *(int*)((uintptr_t)&pClient->tQServerExt.qwAveragePingTicks + 4));
+          qwPingAccum = (int64_t)nSamplesToAvg * (int64_t)pClient->tQServerExt.qwAveragePingTicks;
           qwPingAccum += (int)(dwNowTick - dwSendTick - dwClientTick);
           pClient->tQServerExt.nHeartbeatSampleCount = nSamplesToAvg + 1;
-          qwNewAvgPing = _alldiv((uint32_t)qwPingAccum, (uint32_t)((uint64_t)qwPingAccum >> 0x20), nSamplesToAvg + 1, 0);
+          qwNewAvgPing = qwPingAccum / (nSamplesToAvg + 1);
           pClient->tQServerExt.qwAveragePingTicks = qwNewAvgPing;
         }
 
         SCmd::NET_D2GS_SERVER_Send_0x8F_HEARTBEAT_PING(pClient);
-        pnSampleCount = &pClient->tQServerExt.nHeartbeatSampleCount;
-        (*pnSampleCount)++;
+        pClient->tQServerExt.nHeartbeatSampleCount++;
         pClient->dwTimeOut = dwNowTick;
       }
 
@@ -1156,8 +1152,7 @@ void __fastcall SendPongByClientId(uint32_t nClientId, int32_t dwSendTick, int32
 
       dwNowTick = GetTickCount();
       pClient->tQServerExt.dwPingSamples[pClient->tQServerExt.nHeartbeatSampleCount & 0xf] = dwNowTick - dwSendTick - dwClientTick;
-      pnSampleCount = &pClient->tQServerExt.nHeartbeatSampleCount;
-      (*pnSampleCount)++;
+      pClient->tQServerExt.nHeartbeatSampleCount++;
       nSamplesToAvg = pClient->tQServerExt.nHeartbeatSampleCount;
       nSampleCount = 0;
       dwPingAccumHi = 0;
@@ -1512,12 +1507,12 @@ int32_t __fastcall GetExperience(D2ClientStrc * pClient) {
     return pClient->nExp;
 }
 
-bool __fastcall HasWeaponSwapped(D2ClientStrc * pClient) {
+BYTE __fastcall HasWeaponSwapped(D2ClientStrc * pClient) {
     return pClient->bWeaponSwap;
 }
 
 void __fastcall SetWeaponSwap(D2ClientStrc * pClient, uint8_t bWeaponSwapped) {
-    pClient->bWeaponSwap = (bool)bWeaponSwapped;
+    pClient->bWeaponSwap = bWeaponSwapped;
 }
 
 void __fastcall SERVER_PutPacketInQueueList(D2ClientStrc * pClient, D2PacketListStrc * pPacketList) {
@@ -1695,8 +1690,7 @@ void __fastcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pU
       }
 
       D2Common::DUNGEON::Dungeon::DRLGROOM_GetRoomCoordinates(pRoom, &sRoomCoords);
-      eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, eLevelId, (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
+      SCmd::NET_D2GS_SERVER_Send_0x07_MapReveal(pClient, D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom), (uint16_t)sRoomCoords.sTileRect.left, (uint16_t)sRoomCoords.sTileRect.top);
     } else {
       pDrlgActSpawn = pDrlgAct;
       pGame = pSpawnXY;
@@ -1760,7 +1754,6 @@ void __fastcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pU
 
 // Main client join handler: validates expansion/hardcore compatibility, loads or creates player unit, sends handshake packet (0x0B), portal flags (0x5F), stats, items, hotkeys, selected skills (left/right), life/mana/stamina. Computes A5Q3 resist bonuses if expansion. Returns error code on validation failure (kicks client). State 1→loading character data.
 int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, ::SGAMEDATA * pGame, int32_t bLoadFromSave, D2RoomStrc * pRoom, uint32_t nX, uint32_t nY) {
-    int32_t bLoadError;
     eD2ArenaFlags eArenaFlags;
     eD2ArenaFlags eArenaFlagsCheck;
     uint32_t uPortalFlags;
@@ -1769,8 +1762,6 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
     int nHotkeyIdx;
     uint32_t dwHotkeyUnused;
     D2ClientHotKeyStrc* pHotKey;
-    int32_t nErrorCode;
-    int32_t bLoadErrorSave;
     D2UnitStrc* pPlayerUnit_lcl;
     char* szErrorName;
     uint16_t wCharFlags;
@@ -1785,6 +1776,7 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
         D2BOOT_MarkFmt("join: LoadCharacter enter (clientid %u, fromSave %d)", (unsigned)pClient->nClientNo, (int)bLoadFromSave); // [d2boot]
       }
       char* szCharNameLog;
+      int32_t bLoadError;
       if (!pClient) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x242);
         exit(-1);
@@ -1793,9 +1785,7 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
       pClient->fClientFlags |= 1;
       if (!pGame->bExpansion && pClient->nClass >= 5) {
         szErrorName = "nError";
-        nErrorCode = 0x18;
-        szCharNameLog = GetCharName(pClient);
-        Fog::Src::LogManager::LOGMANAGER_TraceToModuleLog("", "[PLAYER CREATE]  ClientAddPlayerToGame()  Error Creating:%s  Error:%d=%s", szCharNameLog, nErrorCode, szErrorName);
+        Fog::Src::LogManager::LOGMANAGER_TraceToModuleLog("", "[PLAYER CREATE]  ClientAddPlayerToGame()  Error Creating:%s  Error:%d=%s", GetCharName(pClient), 0x18, szErrorName);
         pClient->pPlayer = 0;
         return 0x18;
       }
@@ -1803,9 +1793,7 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
       bLoadError = PLAYER::PlayerSave::CLIENT_LoadOrCreatePlayerUnit(pGame, pClient, (D2ClientStrc*)pClient->szCharName, bLoadFromSave, &pPlayerUnitOut, (uint32_t)pRoom, nX, nY);
       if (bLoadError) {
         szErrorName = "nError";
-        bLoadErrorSave = bLoadError;
-        szCharNameLog = GetCharName(pClient);
-        Fog::Src::LogManager::LOGMANAGER_TraceToModuleLog("", "[PLAYER LOAD]  ClientAddPlayerToGame()  Error Loading:%s  Error:%d=%s", szCharNameLog, bLoadErrorSave, szErrorName);
+        Fog::Src::LogManager::LOGMANAGER_TraceToModuleLog("", "[PLAYER LOAD]  ClientAddPlayerToGame()  Error Loading:%s  Error:%d=%s", GetCharName(pClient), bLoadError, szErrorName);
         pClient->pPlayer = 0;
         return bLoadError;
       }

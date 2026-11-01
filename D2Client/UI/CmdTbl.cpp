@@ -1368,7 +1368,7 @@ void __stdcall WindowsKeyPressedEvent(D2UIMouseMsgStrc * pMsg) {
       }
     }
 
-    /* int nVirtKey for GetKeyState */ if (!((g_KeyBindingsTable[nIndex].wKeyCode != 0x73 || (sKeyState = GetKeyState(0x12) , -1 < sKeyState)) && (gbKeyBindingsEnabled != 2 || gaCmdBindings[g_KeyBindingsTable[nIndex].nCmdIndex].nHasParam))) {
+    /* int nVirtKey for GetKeyState */ if (!((g_KeyBindingsTable[nIndex].wKeyCode != 0x73 || (sKeyState = GetKeyState(0x12) , sKeyState >= 0)) && (gbKeyBindingsEnabled != 2 || gaCmdBindings[g_KeyBindingsTable[nIndex].nCmdIndex].nHasParam))) {
       return;
     }
 
@@ -1420,7 +1420,6 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
 }; D2_STATIC_GUARD(gUIFlagCmdTableInit, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gUIFlagCmdTableInit");
     static unsigned int gbNormalUIHandlersRegistered; D2_STATIC_GUARD_BSS(gbNormalUIHandlersRegistered, "D2Client::UI::CmdTbl::CMD_ToggleKeyConfigMode::gbNormalUIHandlersRegistered");
 
-    int32_t nHandlerCount;
     gbKeyBindingsEnabled = nEnable;
     if (nEnable) {
       if (!gbKeyConfigModeActive) {
@@ -1434,16 +1433,13 @@ void __fastcall CMD_ToggleKeyConfigMode(int32_t nEnable, int32_t bUpdateUIHandle
         return;
       }
     } else {
-      HWND hWnd;
+      int32_t nHandlerCount;
       if (gbKeyConfigModeActive == 1) {
         nHandlerCount = 4;
         gbKeyConfigModeActive = 0;
-        hWnd = D2gfx::D2GFX::GetHwnd();
-        _Message::MESSAGE_UnregisterEventHandlerBatch(hWnd, gsUICmdTblFlagInit, nHandlerCount);
+        _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUICmdTblFlagInit, nHandlerCount);
         if (bUpdateUIHandlers && !gbNormalUIHandlersRegistered) {
-          nHandlerCount = 2;
-          hWnd = D2gfx::D2GFX::GetHwnd();
-          _Message::MESSAGE_RegisterEventHandlerBatch(hWnd, &gUIFlagCmdTableInit, nHandlerCount);
+          _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &gUIFlagCmdTableInit, 2);
           gbNormalUIHandlersRegistered = 1;
         }
       }

@@ -246,8 +246,7 @@ void __fastcall SendPlayerMoveOrObject(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 
         nPos = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
         wPosY = (uint16_t)nPos;
-        nPos = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-        GAME::SCmd::NET_D2GS_SERVER_Send_0x10_UNITCHANGE_IDPOS(pClient, '\x10', '\0', dwUnitGUID, (uint8_t)gaPlayerModeNetMsgTable[nModeIndex].nObjModeByte, (uint8_t)eUnitType, dwTargetGUID, (uint16_t)nPos, wPosY);
+        GAME::SCmd::NET_D2GS_SERVER_Send_0x10_UNITCHANGE_IDPOS(pClient, '\x10', '\0', dwUnitGUID, (uint8_t)gaPlayerModeNetMsgTable[nModeIndex].nObjModeByte, (uint8_t)eUnitType, dwTargetGUID, (uint16_t)D2Client::Units::GetXPosFromDynamicPathUnit(pUnit), wPosY);
         return;
       }
     }
@@ -493,6 +492,7 @@ static uint8_t GetMPRegen(D2UnitStrc * pUnit) {
 // @sourcefile .\PLAYER\PlrMsg.cpp
 BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t bForceUpdate) {
     uint32_t dwGold;
+    int lifeShort;
     if (!pUnit2 || !pUnit) {
       return 0;
     }
@@ -544,10 +544,10 @@ BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * 
     if (pDynamicPath) {
       char byPosY;
       dwGold = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
-      *(uint8_t*)(char*)&bForceUpdate = (char)(nUnitPosX & 0xffff);
+      *(uint8_t*)(char*)&bForceUpdate = (char)(uint16_t)nUnitPosX;
       byVelX = (char)bForceUpdate - (char)dwGold;
       dwGold = D2Common::PATH::DynamicPath::GetYSP1(pDynamicPath);
-      byPosY = (char)(nUnitPosY & 0xffff);
+      byPosY = (char)(uint16_t)nUnitPosY;
       byVelY = byPosY - (char)dwGold;
     }
 
@@ -580,12 +580,12 @@ BOOL __fastcall NET_D2GS_SERVER_Send_LifeManaStaminaLocationUpdate(D2UnitStrc * 
             goto send_gold_exp_and_cache_vitals;
           }
 
-          nHpDiff = (uint32_t)pBasics->x - (nUnitPosX & 0xffff);
+          nHpDiff = (uint32_t)pBasics->x - (uint16_t)nUnitPosX;
           if (nHpDiff < 0) {
             nHpDiff = -nHpDiff;
           }
           if (nHpDiff < 2) {
-            nHpDiff = (uint32_t)pBasics->y - (nUnitPosY & 0xffff);
+            nHpDiff = (uint32_t)pBasics->y - (uint16_t)nUnitPosY;
             if (nHpDiff < 0) {
               nHpDiff = -nHpDiff;
             }
@@ -692,7 +692,6 @@ eD2ServerIncomingStatus __fastcall SERVER_InteractOrPick(D2UnitStrc * pUnit, eD2
     BOOL bInRange;
     D2MonStatsTxt* pMonTxt;
     uint32_t nDistPlayer;
-    uint8_t byNpcInteractFlag;
     ::SGAMEDATA* pGameTmp = pGame;
     switch (eUnitType) {
       case UNIT_OBJECT:
@@ -791,8 +790,7 @@ eD2ServerIncomingStatus __fastcall SERVER_InteractOrPick(D2UnitStrc * pUnit, eD2
           }
 
           D2Common::PATH::DynamicPath::ZeroPathPointsSize(pUnit->pPath.pDynamicPath);
-          byNpcInteractFlag = 0;
-          Monster::MonsterAI::NPC_BeginInteractionFromUnit(pGameTmp, pUnit, pTargetUnit, UNIT::sunitproxy::GetMonsterAI(pTargetUnit), byNpcInteractFlag);
+          Monster::MonsterAI::NPC_BeginInteractionFromUnit(pGameTmp, pUnit, pTargetUnit, UNIT::sunitproxy::GetMonsterAI(pTargetUnit), 0);
           return SERVERSTATUS_OK;
         }
       }
@@ -1565,8 +1563,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x05_LeftSkillOnLocation(::SGAMEDATA * p
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     uint32_t nTargetY = nSize & 0xffff;
     uint32_t nTargetX = (uint32_t)pPacket & 0xffff;
     pLeftSkill = D2Common::Units::GetLeftSkill(pUnit);
@@ -1589,8 +1586,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x06_LeftSkillOnEntity(::SGAMEDATA * pGa
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     int32_t nPierceIdx = 1;
     D2GSPacketClt0x06_LeftSkillOnEntity* pRawUnitType = pPacket;
     uint32_t nTargetGUID = nSize;
@@ -1614,8 +1610,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x07_LeftSkillOnEntityEx(::SGAMEDATA * p
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     int32_t nPierceIdx = 0;
     D2GSPacketClt0x07_LeftSkillOnEntityEx* eUnitTypeParsed = pPacket;
     uint32_t nTargetGUID = nSize;
@@ -1709,8 +1704,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0C_RightSkillOnLocation(::SGAMEDATA * 
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     uint32_t nTargetY = nSize & 0xffff;
     uint32_t nTargetX = (uint32_t)pPacket & 0xffff;
     pRightSkill = D2Common::Units::GetRightSkill(pUnit);
@@ -1733,8 +1727,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0D_RightSkillOnEntity(::SGAMEDATA * pG
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     int32_t nPierceIdx = 1;
     D2GSPacketClt0x0D_RightSkillOnEntity* eUnitTypeParsed = pPacket;
     uint32_t nTargetGUID = nSize;
@@ -1758,8 +1751,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0E_RightSkillOnEntityEx(::SGAMEDATA * 
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    uint16_t nLayer = 0;
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, nLayer);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_pierce_idx, D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_pierce_idx, 0) + 1, 0);
     int32_t nPierceIdx = 0;
     D2GSPacketClt0x0E_RightSkillOnEntityEx* eUnitTypeParsed = pPacket;
     uint32_t nTargetGUID = nSize;
@@ -2123,7 +2115,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
 }
 
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
-void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint32_t dwParam) {
+void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint8_t dwParam) {
     int nGuardResult;
     D2GSPacketSrv0x26 aPacketBuf;
     aPacketBuf.nUnitGUID = 0;
@@ -2132,7 +2124,7 @@ void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint
     aPacketBuf.nPacketId = '&';
     aPacketBuf.nMessageType = '\x01';
     aPacketBuf.nMsgSubType = '\x02';
-    aPacketBuf.nMessageColor = (uint8_t)dwParam;
+    aPacketBuf.nMessageColor = dwParam;
     char* pMsgBufDst = aPacketBuf.szMessage;
     memcpy(pMsgBufDst, szMessage, 0x100);
     GAME::Server::ForEachClient(pGame, (fpForEachClientFn)NET_D2GS_SERVER_Send_0x26_Chat, &aPacketBuf);
@@ -3075,7 +3067,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x31_NpcGossip(::SGAMEDATA * pGame, D2Un
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    Quests::QUESTS::QUEST_OnNpcGossip(pGame, pUnit, pPacket->dwNpcGUID, (uint32_t)pPacket->nGossipId);
+    Quests::QUESTS::QUEST_OnNpcGossip(pGame, pUnit, pPacket->dwNpcGUID, pPacket->nGossipId);
     return SERVERSTATUS_OK;
 }
 
@@ -3422,7 +3414,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x41_Resurrect(::SGAMEDATA * pGame, D2Un
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrMsg.cpp", 0x11e3);
     uint32_t nStatVal = GAME::Clients::CLIENT_TestFileFlags(pClient, 4);
     if (nStatVal) {
-      GAME::Server::SERVER_DisconnectClient(pGame, pClient, 3);
+      GAME::Server::SERVER_DisconnectClient(pGame, pClient, '\x03');
       return SERVERSTATUS_OK;
     }
 
@@ -4474,7 +4466,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x63_ItemToBeltAuto(::SGAMEDATA * pGame,
 
               invPage = D2Common::ITEMS::Items::ITEM_GetContainingInventoryPage(pItem);
               nPrevInvPage = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nPrevInvPage + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)invPage);
-              nItemPosY = D2Common::Units::GetInventoryPage(pUnit, nPrevInvPage, pGame->bExpansion);
+              nItemPosY = D2Common::Units::GetInventoryPage(pUnit, invPage, pGame->bExpansion);
               invPage = (eInventoryPage)nItemPosY;
               nDbgParam = 0;
               nItemPosY = nPrevInvPage;

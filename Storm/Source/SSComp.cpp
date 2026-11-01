@@ -545,7 +545,7 @@ void __fastcall SCOMP_ArenaFree(D2ScompArenaStrc * pArenaState, void * pBlock) {
 static int __stdcall SCOMP_ZlibCompress(uint8_t * pSrc, uint32_t nSrcLen, uint32_t nLevel, uint32_t * pnOutLen) {
     z_stream zStream;
     D2ScompArenaStrc sArena;
-    uint8_t aArenaBuf[300004];
+    uint8_t aArenaBuf[300000];
     zStream.avail_out = *pnOutLen;
     zStream.next_out = pSrc;
     sArena.pCur = aArenaBuf;
@@ -1064,7 +1064,7 @@ int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     if (wWord <= 7) {
       wRefill = **pBitBuf;
       pBitBuf[2] = (uint16_t*)(wWord + 0x10);
-      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << (uint8_t)wWord);
       (*pBitBuf)++;
     }
 
@@ -1075,7 +1075,7 @@ int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
       nBitCount = pQuickEntry[1];
       if (nBitCount <= 7) {
         pBitBuf[2] = (uint16_t*)((int)pBitBuf[2] - nBitCount);
-        pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> ((uint8_t)nBitCount & 0x1f));
+        pBitBuf[1] = (uint16_t*)((uint32_t)puVar2 >> (uint8_t)nBitCount);
         return pQuickEntry[2];
       }
 
@@ -1123,7 +1123,7 @@ int32_t __thiscall HUFFMAN_DecodeSymbol(int32_t pThis, uint16_t * * pBitBuf) {
     }
 
     uint32_t nQuickIdx = 0xffffffffU >> (0x20 - (uint8_t)nBitCount & 0x1f) & (uint32_t)puVar2 & 0x7f;
-    nQuickStep = 1 << ((uint8_t)nBitCount & 0x1f);
+    nQuickStep = 1 << (uint8_t)nBitCount;
     uint32_t* pQuickFill = (uint32_t*)(pThis + 0x347c + nQuickIdx * 0xc);
     do {
       pQuickFill[-2] = *(uint32_t*)(pThis + 4);
@@ -3688,14 +3688,14 @@ void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
         pSortedNext->nWeight = nOffset;
         if (nOffset < nMaxWeight) {
           nLinkOff = pEncoder->pWeightedListHead;
-          if ((int)nLinkOff >= 1) {
+          if ((int)nLinkOff > 0) {
             do {
               if (nLinkOff->nWeight >= nOffset) {
                 break;
               }
 
               nLinkOff = nLinkOff->nPrevOffset;
-              if ((int)nLinkOff < 1) {
+              if ((int)nLinkOff <= 0) {
                 goto no_heavier_node;
               }
             } while (nLinkOff);
@@ -3847,14 +3847,14 @@ void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
       nOffset = pNewNode->nWeight;
       if (nOffset < nMaxWeight) {
         pSortedNext = nLinkOff->nPrevOffset;
-        if ((int)pSortedNext >= 1) {
+        if ((int)pSortedNext > 0) {
           do {
             if (pSortedNext->nWeight >= nOffset) {
               break;
             }
 
             pSortedNext = pSortedNext->nPrevOffset;
-            if ((int)pSortedNext < 1) {
+            if ((int)pSortedNext <= 0) {
               goto no_heavier_node_for_parent;
             }
           } while (pSortedNext);
@@ -3891,7 +3891,7 @@ void __thiscall COMPRESS_InitEncoderContext(D2CompressEncoderStrc * pEncoder, in
 
       nMaxWeight = nOffset;
       pSortedNext = nLinkOff->nPrevOffset;
-      if ((int)pSortedNext < 1) {
+      if ((int)pSortedNext <= 0) {
         pEncoder->nRootWeight = 1;
         return;
       }
@@ -4190,14 +4190,14 @@ int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, i
     if (wWord <= 8) {
       wRefill = **pBitBuf;
       pBitBuf[2] = (uint16_t*)(wWord + 0x10);
-      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << ((uint8_t)wWord & 0x1f));
+      pBitBuf[1] = (uint16_t*)((uint32_t)pBitBuf[1] | (uint32_t)wRefill << (uint8_t)wWord);
       (*pBitBuf)++;
     }
 
     uint16_t* puVar1 = pBitBuf[1];
     pBitBuf[2] += -4;
     pBitBuf[1] = (uint16_t*)((uint32_t)puVar1 >> 8);
-    COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pDecoderCtx, (int**)((uint32_t)puVar1 & 0xff));
+    COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pDecoderCtx, (int**)(uint8_t)(uint32_t)puVar1);
     pBitBuf = (uint16_t**)pDst;
     *pDecoderCtx = (uint32_t)((char)(uintptr_t)puVar1 == '\0');
     while (true) {
@@ -4213,7 +4213,7 @@ int __thiscall HUFFMAN_DecompressBlock(uint32_t * pDecoderCtx, uint8_t * pDst, i
         }
 
         pBitBufAlias[2] += -4;
-        nSymbol = (uint32_t)pBitBufAlias[1] & 0xff;
+        nSymbol = (uint8_t)(uint32_t)pBitBufAlias[1];
         pBitBufAlias[1] = (uint16_t*)((uint32_t)pBitBufAlias[1] >> 8);
         COMPRESS_EncodeSymbol((D2CompressEncoderStrc*)pDecoderCtx, (int*)nSymbol);
         if (!*pDecoderCtx) {
@@ -4245,7 +4245,7 @@ int __thiscall COMPRESS_EncodeBuffer(uint32_t * pHuffCtx, int32_t pBitStream, ui
     uint32_t nBitsAvail;
     COMPRESS_InitEncoderContext((D2CompressEncoderStrc*)pHuffCtx, nTableSel);
     *pHuffCtx = (uint32_t)((char)(uintptr_t)nTableSel == '\0');
-    BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, (uint32_t)nTableSel & 0xff, 8);
+    BITSTREAM_WriteBits((D2BitStreamWriterStrc*)pBitStream, (uint8_t)(uint32_t)nTableSel, 8);
     while (true) {
       uint32_t nSymbol;
       if (!nSrcLen) {
@@ -4990,7 +4990,7 @@ uint8_t PKWARE_explode(pfnPkwareRead pfnRead, pfnPkwareWrite pfnWrite, TDcmpStru
     *pBufByteCount = 3;
     uVar1 = pWorkBuf->dsize_bits;
     if (uVar1 >= 4 && uVar1 <= 6) {
-      pWorkBuf->dsize_mask = 0xffff >> (0x10U - (char)uVar1 & 0x1f);
+      pWorkBuf->dsize_mask = 0xffff >> 0x10U - (char)uVar1;
       if (pWorkBuf->ctype) {
         if (pWorkBuf->ctype != 1) {
           return 2;
@@ -5206,7 +5206,7 @@ void PKWARE_CompareItemValues(int nCount, uint8_t * pBitsTable, uint8_t * pBaseT
     while (true) {
       uint32_t nBaseIndex;
       nCount--;
-      if (-1 >= nCount) {
+      if (nCount < 0) {
         break;
       }
 
@@ -5494,7 +5494,7 @@ void PKWARE_IterateItemData(TDcmpStruct * pState) {
         nTableFillIndex = (uint32_t)*pHuffCodeWidthEntry;
         do {
           pState->offs2C34[nTableFillIndex] = bySymbolValue;
-          nTableFillIndex += 1 << (byBitLength & 0x1f);
+          nTableFillIndex += 1 << byBitLength;
         } while (nTableFillIndex < 0x100);
       } else if (*pHuffCodeWidthEntry & 0xff) {
         pState->offs2C34[*pHuffCodeWidthEntry & 0xff] = 0xff;

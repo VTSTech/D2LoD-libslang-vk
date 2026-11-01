@@ -41,9 +41,9 @@ int __fastcall GLFLOOR_Initialize(GlFloorCacheStrc * pCache, int nVramStart, int
     int nByteOffset = 0;
     int nEntryIndex = 0;
     int nVramAddr = nVramStart;
-    if (-1 < (int)(pCache->nMaxEntries - 1)) {
+    if ((int)(pCache->nMaxEntries - 1) >= 0) {
       do {
-        pNode = &pCache->pNodes[nEntryIndex].nIndex;
+        pNode = (int*)((uintptr_t)&pCache->pNodes->nIndex + nByteOffset);
         *pNode = nEntryIndex;
         if (nEntryIndex < (int)(pCache->nMaxEntries - 1)) {
           pNode[3] = (uintptr_t)&pCache->pNodes[1].nIndex + nByteOffset;

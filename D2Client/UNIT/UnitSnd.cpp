@@ -878,9 +878,7 @@ void __fastcall PlayUnitFootstepSound(D2UnitStrc * pUnit) {
 
     play_footstep:
     nRunCheck = 0;
-    iVar2 = 0;
-    nSoundChannelNext = 0;
-    nAnimSpeed = Sound::SOUND_PlaySound(UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev), pUnit, nSoundChannelNext, iVar2, nRunCheck);
+    nAnimSpeed = Sound::SOUND_PlaySound(UNITSND_GetFootstepSound(pUnit, nSoundChannelPrev), pUnit, 0, 0, nRunCheck);
     if (nAnimSpeed) {
       nFrameCount = 0xff;
       pLocalPlayer = Player::GetPlayerUnit_UI();
@@ -1639,7 +1637,7 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       return;
     }
 
-    switch (nSoundCmd & 0xffff) {
+    switch ((uint16_t)nSoundCmd) {
       case 0x5a:
         Sound::SOUND_PlaySound(0x111b, pMercUnit, 0, 0, 0);
       return;
@@ -1762,10 +1760,7 @@ void __fastcall UNITSND_PlaySoundForMercenary(int32_t nUnitGUID, uint8_t eUnitTy
       return;
       case 0x5b:
         nDelay = 0;
-      bStopChannels = 0;
-      nReserved = 0;
-      pMercUnit = Player::GetPlayerUnit_UI();
-      Sound::SOUND_PlaySound(SOUND_CURSOR_DURABILITY_BREAK, pMercUnit, nReserved, bStopChannels, nDelay);
+      Sound::SOUND_PlaySound(SOUND_CURSOR_DURABILITY_BREAK, Player::GetPlayerUnit_UI(), 0, 0, nDelay);
       return;
     }
 

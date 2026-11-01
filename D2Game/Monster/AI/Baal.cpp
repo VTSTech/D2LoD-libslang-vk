@@ -499,7 +499,7 @@ static int32_t __stdcall AI_BAAL_CloneChooseAction(::SGAMEDATA * pGame, D2UnitSt
     } while (nBaseWeight);
 
     uint32_t nRandRoll = 0;
-    if (0 < (int)nTotalWeight) {
+    if ((int)nTotalWeight > 0) {
       uint64_t nSeedHigh;
       nRandRoll = pUnit2->sSeed.nSeedLow;
       nSeedHigh = (uint64_t)pUnit2->sSeed.nSeedHigh;
@@ -596,7 +596,7 @@ static int32_t __stdcall AI_BAAL_ThroneRoomChooseAction(::SGAMEDATA * pGame, D2U
     } while (nBaseWeight);
 
     uint32_t nRandRoll = 0;
-    if (0 < (int)nTotalWeight) {
+    if ((int)nTotalWeight > 0) {
       uint32_t dwSeedMulHi;
       nRandRoll = pUnit2->sSeed.nSeedLow;
       if (nTotalWeight & nTotalWeight - 1) {
@@ -810,8 +810,7 @@ static int32_t __stdcall AI_BaalEvaluateCombatAction(D2UnitStrc * pUnit, ::SGAME
 
       eCollisionFlag = 0x40;
       nCollisionWidth = COLLISION_PATTERN_BIG_UNIT_PRESENCE;
-      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-      nAction = D2Common::Collision::CheckCollision_BlockPlayer_Type(pRoom, nDistToAnchorPt, nAction, nCollisionWidth, eCollisionFlag);
+      nAction = D2Common::Collision::CheckCollision_BlockPlayer_Type(D2Common::Units::UNITS_GetRoom(pUnit), nDistToAnchorPt, nAction, nCollisionWidth, eCollisionFlag);
       if (nAction) {
         return 4;
       }
@@ -893,7 +892,6 @@ static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2
     D2DynamicPathStrc* pDynamicPath;
     int32_t nOwnerGuid;
     eD2UnitType eOwnerType;
-    uint16_t uVar1;
     int nPosY;
     nPosY = 0;
     __frame1.nPowerfulSkillCount = 0;
@@ -997,12 +995,8 @@ static bool __stdcall AI_Baal_SpawnClone(::SGAMEDATA * pGame, int32_t nParam, D2
     }
 
     Ai::AiGeneral::AssignMinionOwner(pGame, pTargetUnit, nOwnerGuid, eOwnerType, 1, 0);
-    uVar1 = 0;
-    nOwnerGuid = D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pTargetUnit, UNITSTAT_maxhp, nOwnerGuid / 3, uVar1);
-    uVar1 = 0;
-    nPosY = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pTargetUnit, UNITSTAT_hitpoints, nPosY / 3, uVar1);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pTargetUnit, UNITSTAT_maxhp, D2Common::Stats::StatsEx::GetTxtMaxHp(pUnit) / 3, 0);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pTargetUnit, UNITSTAT_hitpoints, D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_hitpoints, 0) / 3, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pTargetUnit, UNITSTAT_hpregen, 0, 0);
     D2Common::Units::StoreOwner(pTargetUnit, pUnit);
     D2Common::Units::StoreOwner(pUnit, pTargetUnit);

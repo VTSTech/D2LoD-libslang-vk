@@ -297,8 +297,7 @@ void __stdcall INPUT_DialogMouseDown(D2UIMouseMsgStrc * pMsg) {
             return;
           }
 
-          dwBorderType = Path::DRAW_GetTypeOfBorder();
-          bMiniPanelFlag = ui::UI_IsMouseOnSkillButton(dwBorderType, nMouseY, nMouseX);
+          bMiniPanelFlag = ui::UI_IsMouseOnSkillButton(Path::DRAW_GetTypeOfBorder(), nMouseY, nMouseX);
           if (!bMiniPanelFlag) {
             return;
           }
@@ -844,8 +843,7 @@ D2DialogStrc * __fastcall AllocDialogStrc(int32_t nX, int32_t nY, fpDialogFunc f
     gnDialogStructAllocCount = 1;
     DIALOG_RegisterHandler();
     _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIDialogFlagInit, 0xe);
-    int32_t nCount = 1;
-    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, nCount);
+    _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitDialogMouseWheel, 1);
     gnDialogCounter++;
     if (gnDialogCounter_b != 1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x408);
@@ -943,7 +941,7 @@ void __fastcall DIALOG_DrawBackground(D2DialogStrc * pDialog) {
       nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
       nYAccum = 0;
       nStringIdx = 0;
-      if (0 < pDialog->nSubCounter) {
+      if (pDialog->nSubCounter > 0) {
         piStringData = &pDialog->aStringData[0].nFont;
         do {
           nFont = piStringData[1];

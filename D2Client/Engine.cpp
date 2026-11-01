@@ -86,12 +86,11 @@ void __stdcall DrawPopupOk(int32_t nParam) {
 }
 
 void __stdcall LOADER_CheckForInsertedDiscs() {
+    uint16_t* wszInsertMsg;
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int32_t nColor_lcl = 0;
-    uint16_t* wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(5168);
-    UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, wszInsertMsg, nColor_lcl);
+    /* Please Insert the Diablo II */ UI::ui::UI_DrawTextCentered(ScreenSizeX / 2 - 132, 190 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), gnPanelOffsetX + 452, D2Lang::StrTable::strtable::GetLocaleString(5168), 0); // VP: [resolution site-6]
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
-    nColor_lcl = 0;
+    int32_t nColor_lcl = 0;
     if (bIsExpansion) {
       /* Expansion Disc */ wszInsertMsg = D2Lang::StrTable::strtable::GetLocaleString(21880);
     } else {
@@ -401,7 +400,7 @@ uint32_t __stdcall fpGameLoopFunction(uint32_t dwUnused) {
     return (uint32_t)(gbCharScreenOkPressed != 0);
 }
 
-bool fpRequiredUserAction() {
+BOOL fpRequiredUserAction() {
     uint32_t dwActPalIdx;
     gbCharScreenOkPressed = 0;
     D2Win::Src::D2WinPalette::D2WINPALETTE_SetPaletteIndex(0);
@@ -415,7 +414,7 @@ bool fpRequiredUserAction() {
     _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsUIEngineFlagInit, 4);
     GAME::Game::GAMEDATA_SetDrawFunction(0);
     LOADER_FreePopupImages();
-    return true;
+    return 1;
 }
 
 // Sets draw function mode, registers event handlers, runs game loop with custom fpGameLoopFunction, then cleans up
