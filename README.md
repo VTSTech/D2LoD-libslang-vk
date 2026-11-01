@@ -1,5 +1,6 @@
-<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8bcf5198-8c29-463c-b68f-230cf5745206" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3e5f2205-691c-41aa-a943-1ffb003b6a2c" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58d145bd-ec8f-4eb2-9d89-52daca9cba22" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/be9cfe56-0532-4176-a7db-c719364be89d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9ea5078d-c8d5-469a-aa1b-de80071fa8e4" />
 
 # D2LoD Vanilla+
 
