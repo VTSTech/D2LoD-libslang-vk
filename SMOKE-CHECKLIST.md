@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R64** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R65** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
@@ -13,7 +13,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R64`. If it says R63 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R65`. If it says R64 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -66,7 +66,7 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 
 ---
 
-## H. Shared stash — 1 page ([SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) track N round 1, R64)
+## H. Shared stash — 1 page ([SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) track N round 1, R65)
 
 Owner spec: "Give us 1 page of retail-shaped shared stash to start. Accessible from Stash Panel. No hotkey. Gold and Items can be deposited. If that works we'll do 10 pages. Then 100." One character covering both sides of the round trip is enough for the first pass; `d2boot.log` carries the whole chain (`shared stash:` marks).
 

@@ -962,16 +962,26 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 
 // Tab geometry: the top-right corner of the stash panel, on the same text
 // row as the stash gold label the panel draws at (gnPanelOffsetX + 0x4e,
-// gnPanelOffsetY - (expansion ? 0x19f : 0xdb) + ScreenSizeY). The hit rect
-// is deliberately generous around the drawn word.
+// gnPanelOffsetY - (expansion ? 0x19f : 0xdb) + ScreenSizeY). The right-edge
+// anchor is 0x180: the stash panel's own retail content anchors stop at
+// +0x13b (gold label +0x4e, stash close-hit +0x49..+0x96, the gold
+// deposit/withdraw buttons +0x110..+0x13b) and the panel art ends at
+// +0x190, so 0x180 sits 16 px inside the true right edge. (Round 1 shipped
+// 0x1f8 - read off the 2x256-px background tiling as a 512-px panel - which
+// floats the word ~0x68 past the real edge, over the viewport: field-caught
+// on R64, the owner staring at the panel corner saw nothing.) The hit rect
+// is deliberately generous around the drawn word and has no Y overlap with
+// any retail hit (the gold buttons live at the panel's bottom).
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x180;
+
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
     return gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
 }
 
 static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
-    *pnLeft = gnPanelOffsetX + 0x188;
-    *pnRight = gnPanelOffsetX + 0x1f8;
+    *pnLeft = gnPanelOffsetX + 0x110;
+    *pnRight = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
     int nBaselineY = VPSHAREDUI_TabBaselineY();
     *pnTop = nBaselineY - 14;
     *pnBottom = nBaselineY + 5;
@@ -1008,7 +1018,7 @@ void __stdcall VPSHAREDUI_DrawTab() {
     uint16_t * pwszText = (uint16_t *)(gbVpSharedPageActive ? L"> Shared" : L"Shared");
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     int nWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
-    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + 0x1f8 - nWidth, VPSHAREDUI_TabBaselineY(),
+    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - nWidth, VPSHAREDUI_TabBaselineY(),
                                      gbVpSharedPageActive ? 2 : 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
