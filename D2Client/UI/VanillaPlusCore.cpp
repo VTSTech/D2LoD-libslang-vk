@@ -1028,7 +1028,7 @@ constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
-    return gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
+    return gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + ScreenSizeY;
 }
 
 // The word for the current client page (0 personal, 1/2 shared).
