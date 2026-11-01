@@ -978,9 +978,10 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
     gnVpSharedPage = 0;
 }
 
-// Tab geometry: on the stash panel's gold-label row (a row the owner sees),
-// pulled LEFT of the right-panel art's rectangle. Field archaeology across
-// three builds, each step field-caught:
+// Tab geometry: in the stash panel's top-right corner (R77: the empty band
+// between the panel's top edge and the retail gold display row), pulled LEFT
+// of the right-panel art's rectangle. Field archaeology across four builds,
+// each step field-caught:
 //   R64  right edge +0x1f8 - misread the 2x256-px stash tiling as a
 //        "512-px panel"; the word landed deep in the right panel.
 //   R65  right edge +0x180 - "16 px inside the +0x190 art edge"; STILL
@@ -1008,6 +1009,25 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 //        arrows are displaying on top of the gold amount slightly").
 //        Nudged +0x0c right: the '>' halo tip ends at +0x13d, 3 px inside
 //        the +0x140 art-seam rule.
+//   R77  the ROW moves - up 0x2d (45 px) into the empty band between the
+//        panel's top edge and the retail gold display row. Owner on the R76
+//        build: "Looks good horizontally, but still drawing on top of the
+//        last gold character a bit with the arrow. can we move the stash
+//        label up, closer to the top right corner ?" - the '<' halo and the
+//        gold text's last glyph still kissed on the shared row, so vertical
+//        separation is the end of it. New baseline (VPSHAREDUI_TabBaselineY):
+//        expansion 0x19f -> 0x1cc, classic 0xdb -> 0x108. The band's right
+//        side is EMPTY retail space: the coin + amount display (draw-Y
+//        -0x1b8/-0xf4) keeps to the row's left end (amount tail ~ +0xd5 at
+//        the 6-digit cap, a full 20 px below the new baseline), the gold-max
+//        text row is 0x2d below, and the top-band hit rects (the coin rect
+//        X +0x49..+0x5d, the gold-area button rect X +0x49..+0x96 -
+//        INV_IsMouseOverStashCloseBtn) are all far left of the composite's
+//        X span. Panel-top headroom is field-bounded (the R69 float word at
+//        -0x1ef rode the world strip; the NPC-store tab strip has text at
+//        -0x1e0), so the halo top (-0x1d9) stays >= 7 px inside the edge and
+//        the click band [-0x1dc..-0x1c6] never probes the playfield - the
+//        R69 down-walk class cannot re-open.
 // R75 composite: the label is one row-built strip, right-aligned at the
 // R66 anchor as R76 nudged it (the +0x140 art-seam rule is untouched) - on the
 // personal page  "Shared >"  (the > invites a step into shared page 1), on
@@ -1017,15 +1037,25 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 // always a way home from any shared page. Both element rects come from the
 // same per-frame layout the draw uses (widths measured in font 1), so the
 // click bands can never drift from the pixels. The bands keep 2 px of
-// margin around each element and keep the old band's Y extent; they still
-// have no Y overlap with any retail stash hit (close X at
+// margin around each element and keep the old band's Y extent (nY-16..nY+6,
+// the R66 field-proven hug). On the R77 row the band shares its Y span with
+// the retail gold display's own top-band hits (the coin rect and the
+// gold-area button rect) - but only in Y: both live at X +0x49..+0x96, left
+// of the composite's leftmost halo pixel, so no band can ever touch them.
+// The bottom-anchored hits (close X at
 // [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
-// gold buttons at INV_GetGoldButtonX/Y - both near the panel's bottom - and
-// the grid rows start below this row).
+// gold buttons at INV_GetGoldButtonX/Y) stay far below, and the grid rows
+// start below the gold-max row, one pitch under this one.
 constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x13c; // R66 0x130; R76 +0x0c off the gold amount text
 constexpr int VPSHAREDUI_PAGE_COUNT = 2;  // shared pages (the personal page is not one of them)
 constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 
+// The tab row: R66-R76 shared the retail "Gold Max" text row (-0x19f/-0xdb);
+// R77 lifts it 0x2d (45 px) into the empty band between the panel's top
+// edge and the retail gold display row (DRAW_UI_INVENTORY_Gold's stash row,
+// draw-Y -0x1b8/-0xf4) - the owner's "move the stash label up, closer to
+// the top right corner", which also ends the '<'-vs-gold-text kiss for
+// good (the gold-max text is now a full 0x2d below the baseline).
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
     return gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + ScreenSizeY;

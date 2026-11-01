@@ -10,7 +10,7 @@
 </a>
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-297%2F297-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-299%2F299-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -80,7 +80,7 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 - **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
   compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
   field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
-  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display.
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely.
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring**
     ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
@@ -157,7 +157,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **297 checks**, green at the current tip.
+  telemetry) with **299 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README and below.
