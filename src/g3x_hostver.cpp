@@ -56,6 +56,7 @@ const char* g3x_hostver_crc_name(uint32_t crc) {
         { 0x63375F3Bu, "Vanilla+0.0.6-R54" }, // d2vp.exe, 22765582 bytes (21 MiB)         
         { 0x9E24936Cu, "Vanilla+0.0.6-R57" }, // d2vp.exe, 22766094 bytes (21 MiB)         
         { 0x3F220EDDu, "Vanilla+0.0.6-R59" }, // d2vp.exe, 22766094 bytes (21 MiB)             
+        { 0x73105EAEu, "Vanilla+0.0.7-R67" }, // d2vp.exe, 22805518 bytes (21 MiB)    
     };
     for (const auto& e : kTable)
         if (e.crc == crc)
