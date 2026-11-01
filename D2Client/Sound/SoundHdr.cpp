@@ -91,16 +91,8 @@ eD2LevelId __stdcall SOUND_GetCurrentLevelId() {
 
 uint32_t __stdcall GetSoundEnv() {
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    if (!pUnit) {
-      return 0;
-    }
-
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (!pRoom) {
-      return 0;
-    }
-
-    eD2LevelId eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
+    D2RoomStrc* pRoom = pUnit ? D2Common::Units::UNITS_GetRoom(pUnit) : nullptr;
+    eD2LevelId eLevel = pRoom ? D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom) : LEVEL_None;
     if (eLevel == LEVEL_None) {
       return 0;
     }
@@ -375,11 +367,7 @@ void __fastcall SOUNDHDR_Init(uint32_t bBackgroundActive) {
 }
 
 void __fastcall SOUNDHDR_AdjustReferenceCount(int32_t nSoundId, int32_t nDelta) {
-    if (!(nSoundId && pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize)) {
-      return;
-    }
-
-    D2SoundsTxt* pSound = pTxtSounds + nSoundId;
+    D2SoundsTxt* pSound = nSoundId && pTxtSounds && nSoundId >= 0 && nSoundId < nTxtSoundsSize ? pTxtSounds + nSoundId : nullptr;
     if (!(pSound && (pSound->nRefCount || nDelta != -1))) {
       return;
     }
@@ -408,11 +396,7 @@ void __fastcall SOUNDHDR_AdjustReferenceCount(int32_t nSoundId, int32_t nDelta) 
 
 void __fastcall SOUNDHDR_ClearReferenceCounts(eD2Sounds eSound) {
     int nSoundsCount = nTxtSoundsSize;
-    if (!(eSound != SOUND_NONE && pTxtSounds && (int)eSound >= 0 && (int)eSound < nTxtSoundsSize)) {
-      return;
-    }
-
-    D2SoundsTxt* pSound = pTxtSounds + eSound;
+    D2SoundsTxt* pSound = eSound != SOUND_NONE && pTxtSounds && (int)eSound >= 0 && (int)eSound < nTxtSoundsSize ? pTxtSounds + eSound : nullptr;
     if (!pSound) {
       return;
     }

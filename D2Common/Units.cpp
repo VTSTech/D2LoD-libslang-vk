@@ -1664,7 +1664,7 @@ int32_t __stdcall GetCurrentLifePercentage(D2UnitStrc * pUnit) {
 }
 
 BOOL __stdcall IsSoftMonster(D2UnitStrc * pUnit) {
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -1894,11 +1894,11 @@ int32_t __stdcall GetOverlayHeight(D2UnitStrc * pUnit) {
           }
 
           pMonStats2Txt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nClassId);
-          if (pMonStats2Txt) {
-            return (uint8_t)pMonStats2Txt->overlayHeight - 1;
+          if (!pMonStats2Txt) {
+            break;
           }
 
-          break;
+          return (uint8_t)pMonStats2Txt->overlayHeight - 1;
         }
     }
 
@@ -1960,7 +1960,7 @@ int32_t __stdcall GetDefense(D2UnitStrc * pUnit) {
 }
 
 int32_t __stdcall GetAttackRate(D2UnitStrc * pUnit) {
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_PLAYER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x107f);
       exit(-1);
     }
@@ -2097,17 +2097,17 @@ int32_t __stdcall GetBlockRate(D2UnitStrc * pUnit, BOOL bExpansion) {
         }
     }
 
-    if (nToBlock >= 0x4b) {
-      return 0x4b;
+    if (nToBlock < 0x4b) {
+      return nToBlock;
     }
 
-    return nToBlock;
+    return 0x4b;
 }
 
 D2UnitStrc * __stdcall GetEquippedWeapon(D2UnitStrc * pUnit) {
     int32_t nBodyLoc;
     BOOL bSwitch;
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return nullptr;
     }
     if (!pUnit->pInventory) {
@@ -2131,12 +2131,12 @@ int32_t __stdcall GetMeleeRange(D2UnitStrc * pUnit) {
     }
     if (pUnit->eUnitType != UNIT_PLAYER) {
       if (pUnit->eUnitType == UNIT_MONSTER && (pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId) , pMonStats2 != 0)) {
-        if (pMonStats2->MeleeRng != 0xff) {
-          return (uint32_t)pMonStats2->MeleeRng;
+        if (pMonStats2->MeleeRng == 0xff) {
+          COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit_00, pUnit_00->pInventory, (uint32_t*)&pUnit, -1, 1);
+          return pUnit != (D2UnitStrc*)0x6 ? 0 : 0x2;
         }
 
-        COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit_00, pUnit_00->pInventory, (uint32_t*)&pUnit, -1, 1);
-        return pUnit != (D2UnitStrc*)0x6 ? 0 : 0x2;
+        return (uint32_t)pMonStats2->MeleeRng;
       }
     } else {
       uint8_t nRangeAdder;
@@ -2733,11 +2733,7 @@ uint32_t __stdcall GetStashGoldLimit(D2UnitStrc * pUnit) {
 }
 
 BOOL __fastcall CanSwitchAI(int32_t nMonsterId) {
-    if (!(nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize)) {
-      return 0;
-    }
-
-    D2MonStatsTxt* pMonStats = sgptDataTable->pTxtMonStats + nMonsterId;
+    D2MonStatsTxt* pMonStats = nMonsterId >= 0 && nMonsterId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonsterId : nullptr;
     if (!pMonStats) {
       return 0;
     }
@@ -2835,7 +2831,7 @@ BOOL __stdcall CanDualWield(D2UnitStrc * pUnit) {
 BOOL __stdcall IsCorpseUseable(D2UnitStrc * pUnit) {
     int _bHasPassiveState;
     bool bHasPassiveState;
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
     if (pUnit->eAnimMode.ePlayerMode != Kick) {
@@ -2864,7 +2860,7 @@ BOOL __stdcall IsObjectInInteractRange(D2UnitStrc * pUnit, D2UnitStrc * pObject)
     int nUnitY;
     int nUnitX;
     int nObjY = 0;
-    if ((pObject ? pObject->eUnitType : ~UNIT_OBJECT) != UNIT_OBJECT) {
+    if ((pObject ? pObject->eUnitType : UNIT_COUNT) != UNIT_OBJECT) {
       return 0;
     }
 
@@ -3816,14 +3812,16 @@ void __stdcall InitAnimMode(D2UnitStrc * pUnitArg) {
         }
 
         nAnimRate = (uint32_t)pMissileTxt->animrate;
-        if ((int)nAnimRate <= 0x10000) {
-          wAnimSpeed = (short int)((int)(nAnimRate * 0x100) / 1024);
-        } else if ((int)(nAnimRate & -16) < 0x4000) {
-          qwAnimCalc = (int64_t)(int)nAnimRate * 0x100;
-          lVar2 = (int64_t)qwAnimCalc / 0x400;
-          wAnimSpeed = (short int)lVar2;
+        if ((int)nAnimRate > 0x10000) {
+          if ((int)(nAnimRate & -16) < 0x4000) {
+            qwAnimCalc = (int64_t)(int)nAnimRate * 0x100;
+            lVar2 = (int64_t)qwAnimCalc / 0x400;
+            wAnimSpeed = (short int)lVar2;
+          } else {
+            wAnimSpeed = (short int)((int)nAnimRate / 1024 << 8);
+          }
         } else {
-          wAnimSpeed = (short int)((int)nAnimRate / 1024 << 8);
+          wAnimSpeed = (short int)((int)(nAnimRate * 0x100) / 1024);
         }
 
         pUnit_00->nAnimSpeed = wAnimSpeed;

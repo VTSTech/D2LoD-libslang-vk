@@ -2005,12 +2005,12 @@ BOOL __fastcall PORTAL_ActivateOrDeactivatePortalObject(::SGAMEDATA * * ppGame) 
     } else {
       D2Common::Units::SetupUpdateFlag((D2UnitStrc*)ppGame[1], 2);
     }
-    if (!ppGame[1]) {
-      return 1;
+    if (ppGame[1]) {
+      D2DrlgActStrc** ppActField;
+      ppActField = ppGame[1]->pAct + 2;
+      *ppActField = (D2DrlgActStrc*)((uint32_t)*ppActField & -3);
     }
 
-    D2DrlgActStrc** ppActField = ppGame[1]->pAct + 2;
-    *ppActField = (D2DrlgActStrc*)((uint32_t)*ppActField & -3);
     return 1;
 }
 
@@ -2200,7 +2200,7 @@ D2UnitStrc * __fastcall QUEST_SpawnSuperUniqueAtPoint(::SGAMEDATA * pGame, D2Uni
 }
 
 void __fastcall QUEST_DispatchPresetObjectLoad(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2MapAIStrc * pMapAI) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_OBJECT)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_OBJECT) {
       return;
     }
 
@@ -2841,7 +2841,7 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
     D2QuestArgStrc pQuestCallback;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    if (!(pMonster && pMonster->eUnitType == UNIT_MONSTER)) {
+    if ((pMonster ? pMonster->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -3008,7 +3008,7 @@ void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, D2UnitStr
         }
       }
     } else {
-      A3Q7::Q24_HandleKhalimsWillCompletion(pGame);
+      A3Q7::Q24_HandleKhalimsWillCompletion(pGame, nEventCode);
     }
 }
 

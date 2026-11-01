@@ -58,11 +58,11 @@ static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
       if (nMouseX < 0x50) {
         return 0;
       }
-      if (nMouseX >= 0xa0) {
-        return (nMouseX >= 0xf0) + 2;
+      if (nMouseX < 0xa0) {
+        return 1;
       }
 
-      return 1;
+      return (nMouseX >= 0xf0) + 2;
     }
     if (nMouseY > 0x1e) {
       return -1;
@@ -100,7 +100,6 @@ static int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMous
 
 void __stdcall DRAW_UI_WaypointGFXLoad() {
     char szPath[260];
-    char* pszFormat;
     if (!WaypointWayGateBackGround) {
       sprintf(szPath, "%s\\ui\\menu\\waygatebackground", "DATA\\GLOBAL");
       WaypointWayGateBackGround = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
@@ -109,12 +108,11 @@ void __stdcall DRAW_UI_WaypointGFXLoad() {
       BOOL bIsExpansion;
       bIsExpansion = Fog::D2CheckExpansionGame();
       if (!bIsExpansion || (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , !bIsExpansion)) {
-        pszFormat = "%s\\ui\\menu\\waygatetabs";
+        sprintf(szPath, "%s\\ui\\menu\\waygatetabs", "DATA\\GLOBAL");
       } else {
-        pszFormat = "%s\\ui\\menu\\expwaygatetabs";
+        sprintf(szPath, "%s\\ui\\menu\\expwaygatetabs", "DATA\\GLOBAL");
       }
 
-      sprintf(szPath, pszFormat, "DATA\\GLOBAL");
       WaypointWayGateTabs = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
     }
     if (WaypointWaygateIcons) {
@@ -373,12 +371,12 @@ void __stdcall WAYPOINT_PopulateList() {
         bFound = D2Common::Waypoints::FindLevelIdByWaypointId(nWaypointId, &nWaypointIdOut);
         if (bFound) {
           gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].eLevelId = nWaypointIdOut;
-          if (eCurrentLevel == nWaypointIdOut) {
-            gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\0';
-            MaximumAmountOfWaypointInSelectedAct++;
-          } else {
+          if (eCurrentLevel != nWaypointIdOut) {
             NoOtherWaypointAvailableBool++;
             gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\x01';
+            MaximumAmountOfWaypointInSelectedAct++;
+          } else {
+            gaWaypointListEntries[MaximumAmountOfWaypointInSelectedAct].bActivated = '\0';
             MaximumAmountOfWaypointInSelectedAct++;
           }
         }

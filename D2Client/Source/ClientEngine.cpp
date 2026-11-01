@@ -1119,11 +1119,7 @@ void __fastcall CLIENT_SpawnMonstersAroundUnit(D2UnitStrc * pUnit, int32_t nMons
     }
 
     int nSpawnX = (int)sgptDataTable->pTxtMonStats[nMonsterClassId].MonStatsEx;
-    if (!(nSpawnX >= 0 && nSpawnX < sgptDataTable->nTxtMonStatsExSize)) {
-      return;
-    }
-
-    D2MonStats2Txt* pMonStats2 = sgptDataTable->pTxtMonStatsEx + nSpawnX;
+    D2MonStats2Txt* pMonStats2 = nSpawnX >= 0 && nSpawnX < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nSpawnX : nullptr;
     if (!pMonStats2) {
       return;
     }
@@ -1617,7 +1613,7 @@ static void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
     __frame0_t __frame0;
     int32_t* pnAiDelay;
     D2SeedStrc nRng;
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
+    if ((pUnit ? pUnit->eAnimMode.ePlayerMode : Death) != eD2PlayerAnimMode_ns::Neutral) {
       return;
     }
 
@@ -1654,7 +1650,7 @@ static void MONSTER_FindAndChaseNearestEnemy(D2UnitStrc * pUnit) {
 }
 
 static void __stdcall CLIENT_MonsterAi_IdleWanderBehavior(D2UnitStrc * pTarget, uint32_t nTargetDistance, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
+    if ((pUnit ? pUnit->eAnimMode.ePlayerMode : Death) != eD2PlayerAnimMode_ns::Neutral) {
       return;
     }
     if (nTargetDistance < 5) {
@@ -1679,7 +1675,7 @@ static void CLIENT_MonsterIdleApproach(D2UnitStrc * pUnit) {
     int iVar4;
     int local_c;
     int local_8;
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
+    if ((pUnit ? pUnit->eAnimMode.ePlayerMode : Death) != eD2PlayerAnimMode_ns::Neutral) {
       return;
     }
 
@@ -1895,7 +1891,7 @@ static void __stdcall CLIENT_MonsterAi_BasicChaseBehavior(uint32_t nTargetDistan
       CLIENT_SendMonsterAttackMessage(pUnit);
       return;
     }
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
+    if ((pUnit ? pUnit->eAnimMode.ePlayerMode : Death) != eD2PlayerAnimMode_ns::Neutral) {
       return;
     }
     if (nTargetDistance < 2) {
@@ -1930,7 +1926,7 @@ static void CLIENT_MonsterSeekCorpse(D2UnitStrc * pUnit) {
     int nY;
     int nX;
     uint32_t nRng;
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral)) {
+    if ((pUnit ? pUnit->eAnimMode.ePlayerMode : Death) != eD2PlayerAnimMode_ns::Neutral) {
       return;
     }
 

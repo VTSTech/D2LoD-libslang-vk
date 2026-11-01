@@ -635,11 +635,10 @@ int __fastcall BNDOWNLOAD_ApplyPrepatch(uint32_t * pdwParam) {
     uint32_t* pResultLocal = pdwParam;
     BNDOWNLOAD_ProcessPrepatchList((uint32_t*)&pResultLocal);
     if (pResultLocal && pResultLocal != (uint32_t*)0x1) {
-      if (pResultLocal != (uint32_t*)0x2) {
-        return 0;
+      if (pResultLocal == (uint32_t*)0x2) {
+        *pdwParam = 1;
       }
 
-      *pdwParam = 1;
       return 0;
     }
 
@@ -799,6 +798,8 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               Fog::Src::Safesock::closeSocket(hSocketCopy);
               Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x331, 0);
               pcToken = "WARNING: Failed to save to disk.";
+              __frame0.pResponseBuf = 0;
+              Debug::DEBUG_UnusedDebugFunction("WARNING: Failed to save to disk.");
             } else {
               BVar1 = BnetDownloadFile(hSocketCopy, (char*)((int)pServerResp + 0x18), (FILETIME*)((int)pServerResp + 0x10), pDownloadCtxCopy->nConnMode, (uint8_t)pDownloadCtxCopy->nFileType, &__frame0.pFileData, *(uint32_t*)((int)pServerResp + 4));
               if (BVar1) {
@@ -815,10 +816,10 @@ uint32_t __stdcall BnetDownloadFile_II(void * lpThreadParam) {
               Fog::Src::Safesock::closeSocket(hSocketCopy);
               Storm::SMem::SMemFree(pServerResp, ".\\BnDownload.cpp", 0x34c, 0);
               pcToken = "ERROR: Failed to copy file.";
+              __frame0.pResponseBuf = 0;
+              Debug::DEBUG_UnusedDebugFunction("ERROR: Failed to copy file.");
             }
 
-            __frame0.pResponseBuf = 0;
-            Debug::DEBUG_UnusedDebugFunction(pcToken);
             goto retry_with_new_socket;
           }
         }

@@ -2125,7 +2125,7 @@ uint32_t __fastcall MONSTERAI_FindNearestAllyCallback(::SGAMEDATA * pGame, D2Uni
     uint32_t _bCanAttack;
     bool bIsDead;
     bool bCanAttack;
-    if (!(pUnit != pOther && pOther && pOther->eUnitType == UNIT_MONSTER)) {
+    if (!(pUnit != pOther && (pOther ? pOther->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -2155,7 +2155,7 @@ uint32_t __fastcall MONSTERAI_FindNearestAllyCallback(::SGAMEDATA * pGame, D2Uni
 }
 
 int32_t __fastcall AI_ForEachFn04_FindDyingMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pOther, uint32_t * test) {
-    if ((pOther ? pOther->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pOther ? pOther->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
     if (pOther->eAnimMode.ePlayerMode != Death) {
@@ -2170,20 +2170,21 @@ uint32_t __fastcall MONSTERAI_GetThreatLevel(D2UnitStrc * pUnit) {
     if (!pUnit) {
       return 0;
     }
-    if (pUnit->eUnitType == UNIT_PLAYER) {
-      return 0xe;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
-      return 0;
+    if (pUnit->eUnitType != UNIT_PLAYER) {
+      if (pUnit->eUnitType != UNIT_MONSTER) {
+        return 0;
+      }
+
+      int pAiGeneral = pUnit->nClassId;
+      D2MonStatsTxt* pMonStatsTxt = pAiGeneral >= 0 && pAiGeneral < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + pAiGeneral : nullptr;
+      if (!pMonStatsTxt) {
+        return 0;
+      }
+
+      return (uint32_t)pMonStatsTxt->threat;
     }
 
-    int pAiGeneral = pUnit->nClassId;
-    D2MonStatsTxt* pMonStatsTxt = pAiGeneral >= 0 && pAiGeneral < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + pAiGeneral : nullptr;
-    if (!pMonStatsTxt) {
-      return 0;
-    }
-
-    return (uint32_t)pMonStatsTxt->threat;
+    return 0xe;
 }
 
 // Validates that a monster (pUnit) may legally target pTarget. Checks: both are monsters/players, neither is dead, target's room is not a town room, target has UNITFLAG_CANBEATTACKED, and if target is invisible: player invis targets succeed only on melee range or a 50% seed roll; monster invis targets are blocked unless in melee range. Falls through to UNITS_CheckIfCanAttackTarget.
@@ -2440,7 +2441,7 @@ int __fastcall AI_ForEachFn09_FindOwnMinionCorpse(uint32_t dwParam, D2UnitStrc *
     int _bHasPassiveState;
     bool bHasPassiveState;
     D2UnitStrc* pDistAsUnit = (D2UnitStrc*)AI::GetDistance(pUnit, pOther);
-    if (!((int)pDistAsUnit <= (int)ppResults[3] && pOther && pOther->eUnitType == UNIT_MONSTER && pOther->eAnimMode.ePlayerMode == Kick && pOther->eUnitFlags >> 1 & 1)) {
+    if (!((int)pDistAsUnit <= (int)ppResults[3] && (pOther ? pOther->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pOther->eAnimMode.ePlayerMode == Kick && pOther->eUnitFlags >> 1 & 1)) {
       return 0;
     }
 
@@ -2463,7 +2464,7 @@ int __fastcall AI_ForEachFn09_FindOwnMinionCorpse(uint32_t dwParam, D2UnitStrc *
 uint32_t __fastcall AI_ForEachFn12_CountClassInRange(uint32_t dwParam, D2UnitStrc * pUnit, D2UnitStrc * pOther, int * pCountBuf) {
     BOOL _bIsDead;
     bool bIsDead;
-    if (!(pOther && pOther->eUnitType == UNIT_MONSTER && pOther->nClassId == *pCountBuf)) {
+    if (!((pOther ? pOther->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pOther->nClassId == *pCountBuf)) {
       return 0;
     }
 
@@ -2815,7 +2816,7 @@ BOOL __fastcall MONSTERAI_IsMonsterAttacking(D2UnitStrc * pUnit) {
 }
 
 BOOL __fastcall MONSTERAI_HasSkillInSlots(D2UnitStrc * pUnit, int32_t nSkillId) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -2841,7 +2842,7 @@ BOOL __fastcall MONSTERAI_HasSkillInSlots(D2UnitStrc * pUnit, int32_t nSkillId) 
 
 void __fastcall MONSTERAI_SetTargetUnit(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnitType) {
     D2AiGeneralStrc* pAiData;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
     if (pUnit->pUnitData.pUnitDataMonster) {
@@ -2917,13 +2918,7 @@ D2UnitStrc * __fastcall AI_FindUnitAtPositionByBaseId(uint32_t nUnused, D2RoomSt
 
 // Returns TRUE if eState can be applied to pUnit as a debuff. Guards: pUnit is a living monster, eState &lt; 0x14, unit is not already STATE_uninterruptable, CanSwitchAI is true, unit is attackable or alive, monster type != 10 (cold-immune-like flag), and AI_CanApplyColdState approves (unless eState is STATE_weaken). Used to gate AI debuff skill usage.
 BOOL __fastcall MONSTERAI_CanApplyDebuffState(D2UnitStrc * pUnit, eD2States eState) {
-    if (!pUnit) {
-      return 0;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
-      return 0;
-    }
-    if ((int)eState > 0x13) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && (int)eState <= 0x13)) {
       return 0;
     }
 
@@ -2955,16 +2950,22 @@ BOOL __fastcall MONSTERAI_CanApplyDebuffState(D2UnitStrc * pUnit, eD2States eSta
 
     D2MonStatsTxt* pMonStatsTxtRecord = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(pUnit->nClassId);
     nFlagResult = AI_CanApplyColdState(pUnit, pMonStatsTxtRecord, eState, 1);
-    if (nFlagResult) {
-      return 1;
+    if (!nFlagResult) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 // Validates and optionally replaces a candidate switch-target (*ppUnit). Returns 0 (keep candidate) if pUnit is a player or nParam1==0. If nParam2 &lt; 6, probes a path to the candidate; if unreachable (zero path points), runs a ForEach scan for an alternative unit within distance 0x13 and updates *ppUnit and *pDistance accordingly. Returns 1 to signal the caller should use the secondary (LOS) target instead.
 static BOOL __stdcall MONSTERAI_ValidateSwitchTarget(D2UnitStrc * * ppUnit, int * pDistance, int32_t nParam1, int32_t nParam2, D2UnitStrc * pUnit) {
+    uint32_t nPathSP1Y;
     D2MonsterAiParameterStruct sAiParams;
+    int32_t nSavedPathType;
+    uint32_t nPathSP1X;
+    int32_t nPathPoints;
+    D2MonsterAiParameterStruct* pAiParamsPtr;
+    D2DynamicPathStrc* pDynamicPath;
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {
       return 0;
     }
@@ -2976,41 +2977,39 @@ static BOOL __stdcall MONSTERAI_ValidateSwitchTarget(D2UnitStrc * * ppUnit, int 
     if (!pSwitchTarget) {
       return 1;
     }
-    if (nParam2 > 5) {
-      return 0;
+    if (nParam2 <= 5) {
+      D2UnitStrc* pPrevTarget;
+      pDynamicPath = pUnit->pPath.pDynamicPath;
+      nSavedPathType = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
+      pPrevTarget = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
+      nPathSP1X = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
+      nPathSP1Y = D2Common::PATH::DynamicPath::GetYSP1(pDynamicPath);
+      D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, pSwitchTarget);
+      D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 2);
+      D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
+      D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, pPrevTarget);
+      D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)nPathSP1X, (int16_t)nPathSP1Y);
+      D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, nSavedPathType);
+      pPrevTarget = (D2UnitStrc*)D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
+      if (!pPrevTarget) {
+        nPathPoints = 7;
+        pAiParamsPtr = &sAiParams;
+        sAiParams.pBestUnit = pPrevTarget;
+        sAiParams.nBestDistance = 0x7fffffff;
+        sAiParams.pLOSFlagOrSecondary = pSwitchTarget;
+        ForEach(UNIT::SUnit::GetGamePointer(pUnit), pUnit, pAiParamsPtr, (fpMonsterAiForEach)pPrevTarget, nPathPoints);
+        if (!sAiParams.pBestUnit) {
+          return 1;
+        }
+        if ((int)sAiParams.nBestDistance >= 0x14) {
+          return 1;
+        }
+
+        *ppUnit = sAiParams.pBestUnit;
+        *pDistance = sAiParams.nBestDistance;
+      }
     }
 
-    D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    int32_t nSavedPathType = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-    D2UnitStrc* pPrevTarget = D2Common::PATH::DynamicPath::GetTargetUnit(pDynamicPath);
-    uint32_t nPathSP1X = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
-    uint32_t nPathSP1Y = D2Common::PATH::DynamicPath::GetYSP1(pDynamicPath);
-    D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, pSwitchTarget);
-    D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 2);
-    D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);
-    D2Common::PATH::DynamicPath::SetTarget(pDynamicPath, pPrevTarget);
-    D2Common::PATH::DynamicPath::SetSP1(pDynamicPath, (int16_t)nPathSP1X, (int16_t)nPathSP1Y);
-    D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, nSavedPathType);
-    pPrevTarget = (D2UnitStrc*)D2Common::PATH::DynamicPath::GetPathPointsSize(pDynamicPath);
-    if (pPrevTarget) {
-      return 0;
-    }
-
-    int32_t nPathPoints = 7;
-    D2MonsterAiParameterStruct* pAiParamsPtr = &sAiParams;
-    sAiParams.pBestUnit = pPrevTarget;
-    sAiParams.nBestDistance = 0x7fffffff;
-    sAiParams.pLOSFlagOrSecondary = pSwitchTarget;
-    ForEach(UNIT::SUnit::GetGamePointer(pUnit), pUnit, pAiParamsPtr, (fpMonsterAiForEach)pPrevTarget, nPathPoints);
-    if (!sAiParams.pBestUnit) {
-      return 1;
-    }
-    if ((int)sAiParams.nBestDistance >= 0x14) {
-      return 1;
-    }
-
-    *ppUnit = sAiParams.pBestUnit;
-    *pDistance = sAiParams.nBestDistance;
     return 0;
 }
 
@@ -3026,10 +3025,7 @@ static BOOL __stdcall MONSTERAI_FindSwitchAiTarget(D2UnitStrc * pSwitchParam, in
     D2MonsterAiParameterStruct sAiParams;
     int32_t nSavedAlignment;
     eD2UnitType eTargetType;
-    if (!pUnit) {
-      return 0;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -3176,7 +3172,7 @@ D2UnitStrc * __fastcall MONSTERAI_FindBestTarget(::SGAMEDATA * pGame, D2UnitStrc
         bNeedLOS = 0;
       } else {
         bNeedLOS = (int32_t)!((uint8_t)pMonsterAiGeneral->nAiFlags >> 3 & 1);
-        if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+        if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER) {
           if (pUnit->pUnitData.pUnitDataPlayer) {
             pMonDataPtr = pUnit->pUnitData.pUnitDataPlayer->dwTradeState;
           } else {
@@ -3398,7 +3394,7 @@ D2UnitStrc * __fastcall FindTargetAndDistance(::SGAMEDATA * pGame, D2UnitStrc * 
 void __fastcall MONSTERAI_ApplyTerrorToMonster(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pTargetMonster, uint32_t nUnused, uint32_t nUnused2, int32_t nTerrorDurationFrames) {
     D2AiGeneralStrc* pMonsterAiGeneral;
     BOOL bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pTargetMonster);
-    if (!(!bIsDead && pTargetMonster && pTargetMonster->eUnitType == UNIT_MONSTER)) {
+    if (!(!bIsDead && (pTargetMonster ? pTargetMonster->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return;
     }
 
@@ -3465,7 +3461,7 @@ D2UnitStrc * __fastcall MONSTERAI_FindTargetInRange(::SGAMEDATA * pGame, D2UnitS
 D2UnitStrc * __fastcall MONSTERAI_FindNearestInteractNpc(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pPlayerCandidate, D2UnitStrc * * pSearchData) {
     uint32_t nDistance;
     int nClassId;
-    if ((pPlayerCandidate ? pPlayerCandidate->eUnitType : ~UNIT_PLAYER) != UNIT_PLAYER) {
+    if ((pPlayerCandidate ? pPlayerCandidate->eUnitType : UNIT_COUNT) != UNIT_PLAYER) {
       return nullptr;
     }
 
@@ -6336,7 +6332,7 @@ void __fastcall HirelingRandomMoveCheck(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 uint32_t __fastcall AI_Baal_FindMinionToHeal(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, int * pSearchParams) {
     uint32_t _bCanAttackTarget;
     bool bCanAttackTarget;
-    if (!(pUnit != pCandidate && pCandidate && pCandidate->eUnitType == UNIT_MONSTER)) {
+    if (!(pUnit != pCandidate && (pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -6503,7 +6499,7 @@ void __fastcall AI_Fn1_Overseer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiPar
 
 uint32_t __fastcall MONSTERAI_CountGolemReviveMonsters(uint32_t pGame, D2UnitStrc * pUnit, D2UnitStrc * pMonsterCandidate, int * pCounter) {
     int32_t nAlignment;
-    if (!(pUnit != pMonsterCandidate && pMonsterCandidate && pMonsterCandidate->eUnitType == UNIT_MONSTER)) {
+    if (!(pUnit != pMonsterCandidate && (pMonsterCandidate ? pMonsterCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -7494,11 +7490,11 @@ int32_t __fastcall AI_Pet_ExecuteMovementBehavior(::SGAMEDATA * pGame, D2UnitStr
       if (!bWalkStarted1) {
         ApplyCombatAndMonStats(pAdjacentUnit, 0, 0, '(');
         bWalkStarted1 = MONSTERAI_CommandWalkToCoords(pGame, pAdjacentUnit, nLoopIdx, pSpawnedRoom);
-        if (!bWalkStarted1) {
-          return 0;
+        if (bWalkStarted1) {
+          return 1;
         }
 
-        return 1;
+        return 0;
       }
 
       return 1;
@@ -7857,15 +7853,8 @@ void __fastcall AI_Hireling_SelectAndCastSkill(::SGAMEDATA * pGame, D2UnitStrc *
     eD2Skills eSkillId;
     short int nAuraStateTmp;
     uint64_t uNewMercSeed;
-    if (nMonStatIdx < 0) {
-      return;
-    }
-    if (nMonStatIdx >= sgptDataTable->nTxtMonStatsSize) {
-      return;
-    }
-
     D2MonStatsTxt* pMonStats;
-    pMonStats = sgptDataTable->pTxtMonStats + nMonStatIdx;
+    pMonStats = nMonStatIdx >= 0 && nMonStatIdx < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonStatIdx : nullptr;
     if (!pMonStats) {
       return;
     }
@@ -9059,10 +9048,7 @@ bool __fastcall _PlayerNpcInteraction(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
     ::SGAMEDATA* pGameLocal = pGame;
     D2UnitStrc* pPlayer = MONSTERAI_FindNearestUnit(pGame, pUnit, nNearestGuid);
     int32_t nDistToPlayer = AI::GetDistance(pUnit, pPlayer);
-    if (!pUnit) {
-      return false;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return false;
     }
     if (!pUnit->pUnitData.pUnitDataMonster) {
@@ -12168,14 +12154,7 @@ void __fastcall AITHINK_Fn1_DeathSentry(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // Checks whether a monster AI can summon a specific pet type identified by skill enum byPetTypeB. Validates skill entry in TxtSkills; returns false (0) if skill has no summon field. If the existing pet (byPetTypeA) already matches the summon class, returns false. Otherwise checks pettype field against the owner unit's active pet type count via GetOwnersPetType; returns false if the pet slot is already filled, true if summoning is allowed. Used by Shadow Master AI to gate skill mirroring.
 BOOL __fastcall MONSTERAI_CanSummonPetType(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, D2PetStrc * byPetTypeA, int32_t byPetTypeB) {
     uint32_t nExistingPetClass;
-    if (byPetTypeB < 0) {
-      return 0;
-    }
-    if (byPetTypeB >= sgptDataTable->nTxtSkillsCount) {
-      return 0;
-    }
-
-    D2SkillsTxt* pDVar1 = sgptDataTable->pTxtSkills + byPetTypeB;
+    D2SkillsTxt* pDVar1 = byPetTypeB >= 0 && byPetTypeB < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + byPetTypeB : nullptr;
     if (!pDVar1) {
       return 0;
     }
@@ -12214,11 +12193,7 @@ int __fastcall MONSTERAI_ValidateSkillConditions(::SGAMEDATA * pGame, D2UnitStrc
     int nCooldownOrSummonFlag;
     int nContextModeFlag = *(int*)(nParam + 0x18);
     D2UnitStrc* pAuraStatList = *(D2UnitStrc**)(nParam + 8);
-    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
-      return 0;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + nSkillId;
+    D2SkillsTxt* pSkillTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
     if (!pSkillTxt) {
       return 0;
     }
@@ -15921,7 +15896,6 @@ uint32_t __fastcall MONSTERAI_FindNearestEvilMonster(uint32_t dwUnused, D2UnitSt
 void __fastcall AITHINK_Fn1_SandRaider(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiParamStrc * pAiParam) {
     D2MonsterAiParameterStruct sNearestEvilParams;
     uint32_t nSeedHighScratch;
-    eD2States eState;
     uint32_t nOverlay;
     D2SeedStrc sNewSeed;
     D2MonStatsTxt* pMonStats = pAiParam->pMonStats;
@@ -15942,22 +15916,22 @@ void __fastcall AITHINK_Fn1_SandRaider(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     if (pMonsterAiGeneral->dwArg0 == nMulHighScratch) {
       if (pMonStats->aip[5][pGame->nDifficulty] != 1) {
         nOverlay = 0x2e;
+        D2Common::Units::SetOverlay(pUnitCopy, 0x2e, 0);
       } else {
         nOverlay = 0x96;
+        D2Common::Units::SetOverlay(pUnitCopy, 0x96, 0);
       }
 
-      D2Common::Units::SetOverlay(pUnitCopy, nOverlay, 0);
       PlanNextAiMove(pGame, pUnitCopy, pMonStats->aidel[pGame->nDifficulty] + 1);
       return;
     }
     if (nMulHighScratch < pMonsterAiGeneral->dwArg0) {
-      if (pMonStats->aip[5][pGame->nDifficulty] != 1) {
-        eState = STATE_red;
+      if (pMonStats->aip[5][pGame->nDifficulty] == 1) {
+        D2Common::DATATBLS::ItemStats::SetState(pUnitCopy, STATE_blue, 1);
       } else {
-        eState = STATE_blue;
+        D2Common::DATATBLS::ItemStats::SetState(pUnitCopy, STATE_red, 1);
       }
 
-      D2Common::DATATBLS::ItemStats::SetState(pUnitCopy, eState, 1);
       pMonsterAiGeneral->dwArg1 = 1;
     }
     if (pMonsterAiGeneral->dwArg2 < 7) {
@@ -16355,7 +16329,7 @@ void __fastcall AITHINK_Fn1_Goatman(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2A
 
 // Unit-iteration callback used to locate a dead Fallen corpse eligible for revival by a Fallen Shaman. Accepts pCandidate if: it is a different monster unit; its base MonStats ID is 0x13 (Fallen) or 0x3A (Carver); alignment is neutral (0) and the corpse-dead flag (eUnitFlags bit 1) is set; has no passive or light state active; is in death animation mode (Kick); and is within the search radius stored in pOutResult[3]. On match, stores candidate in pOutResult[0], distance in pOutResult[2], and increments count at pOutResult[1].
 uint32_t __fastcall MONSTERAI_FindFallenForRevival(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, D2MonsterAiParameterStruct * pOutResult) {
-    if (!(pUnit != pCandidate && pCandidate && pCandidate->eUnitType == UNIT_MONSTER)) {
+    if (!(pUnit != pCandidate && (pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -17061,7 +17035,7 @@ void __fastcall AITHINK_Fn1_Mummy(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiP
 // Unit-iterator callback used to find the best dead monster for a resurrection AI to raise. For each candidate: must be an allied UNIT_MONSTER, not pUnit itself, not alignment 2, flagged as dead (eUnitFlags bit 1 set), and have no passive state. Filters by undead type depending on whether pOutResult[5] is set. If within the range limit (pOutResult[4]), prefers monsters in Kick anim with no light state (written to *pOutResult), otherwise tracks partially-damaged non-Death candidates in pOutResult[1]. Always returns 0.
 uint32_t __fastcall MONSTERAI_FindMonsterToResurrect(uint32_t dwUnused, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, D2UnitStrc * * pOutResult) {
     uint32_t bIsUndeadType;
-    if (!(pCandidate && pCandidate->eUnitType == UNIT_MONSTER && pUnit != pCandidate)) {
+    if (!((pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit != pCandidate)) {
       return 0;
     }
 
@@ -17686,7 +17660,7 @@ void __fastcall AITHINK_Fn1_Mosquito(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2
 }
 
 uint32_t __fastcall MONSTERAI_IsSpecificMonsterAlive(D2UnitStrc * pUnit, D2UnitFindArgStrc * pUnitFindArg) {
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -18694,12 +18668,12 @@ void __fastcall AITHINK_Fn1_Fetish(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
         pMonsterAiGeneral->dwArg0 = 1;
         sSeedNext = D2_SEED_NEXT(pUnit->sSeed);
         pUnit->sSeed = sSeedNext;
-        if ((int)(sSeedNext.nSeedLow % 100) >= (int)pMonStats->aip[0][pGame->nDifficulty]) {
-          PlanNextAiMove(pGame, pUnit, (int)pMonStats->aip[1][pGame->nDifficulty]);
+        if (!((int)(sSeedNext.nSeedLow % 100) >= (int)pMonStats->aip[0][pGame->nDifficulty])) {
+          AI_ChangeModeAndTargetUnit(pGame, pUnit, 4, pTarget);
           return;
         }
 
-        AI_ChangeModeAndTargetUnit(pGame, pUnit, 4, pTarget);
+        PlanNextAiMove(pGame, pUnit, (int)pMonStats->aip[1][pGame->nDifficulty]);
         return;
       }
     }
@@ -19479,7 +19453,7 @@ void __fastcall AITHINK_Fn1_ZakarumZealot(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
 // ForEach callback that searches for a wounded allied Hydra or Golem (classId 0xEB or 0xEE). Skips self, dead units, non-monsters, non-allies, and alignment==2 units. Accepts candidates within the search radius (ppSearchParams[3]) whose current HP percentage is below 61 (0x3D). Tracks the lowest-HP candidate in ppSearchParams[0] and increments a match counter in ppSearchParams[1]. Always returns 0.
 uint32_t __fastcall MONSTERAI_FindWoundedHydraGolem(int dwParam, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, D2UnitStrc * * ppSearchParams) {
-    if (!(pUnit != pCandidate && pCandidate && pCandidate->eUnitType == UNIT_MONSTER)) {
+    if (!(pUnit != pCandidate && (pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -20929,7 +20903,7 @@ void __fastcall FetishShamanAi_ClearInfernoState(::SGAMEDATA * pGame, D2UnitStrc
 uint32_t __fastcall AI_Necromancer_FindOwnedSummonCallback(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCandidateUnit, D2UnitStrc * * ppSearchCtx) {
     D2UnitStrc* pOwnerOrDist;
     uint32_t bIsMonsterType;
-    if (!(pUnit != pCandidateUnit && pCandidateUnit && pCandidateUnit->eUnitType == UNIT_MONSTER && pCandidateUnit->eUnitFlags >> 1 & 1)) {
+    if (!(pUnit != pCandidateUnit && (pCandidateUnit ? pCandidateUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pCandidateUnit->eUnitFlags >> 1 & 1)) {
       return 0;
     }
 
@@ -21376,7 +21350,7 @@ void __fastcall AI_Fn1_FingerMage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiP
 }
 
 uint32_t __fastcall MONSTERAI_FindCorpseForRaising(int dwParam, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, D2UnitStrc * * ppSearchParams) {
-    if (!(pUnit != pCandidate && pCandidate && pCandidate->eUnitType == UNIT_MONSTER && !(pCandidate->eUnitFlags >> 9 & 1) && pCandidate->eUnitFlags >> 1 & 1)) {
+    if (!(pUnit != pCandidate && (pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER && !(pCandidate->eUnitFlags >> 9 & 1) && pCandidate->eUnitFlags >> 1 & 1)) {
       return 0;
     }
 
@@ -21662,7 +21636,7 @@ void __fastcall AI_Fn1_AbyssKnight(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2Ai
 
 // Unit-search callback for Blood Lord (classId 0x136) target selection. Accepts a candidate unit only if it is an alive allied monster with UNITFLAG_NOXP set, neutral alignment, within the search radius, and itself a Blood Lord. Tracks the nearest candidate in ppSearchParams[0/3] and the lowest-HP candidate (below 40% life) in ppSearchParams[1/4] for priority healing/resurrection targeting.
 uint32_t __fastcall MONSTERAI_FindBloodLordTarget(int32_t nCallbackResult, D2UnitStrc * pUnit, D2UnitStrc * pCandidate, D2UnitStrc * * ppSearchParams) {
-    if (!(pCandidate != pUnit && pCandidate && pCandidate->eUnitType == UNIT_MONSTER)) {
+    if (!(pCandidate != pUnit && (pCandidate ? pCandidate->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -21883,7 +21857,6 @@ void __fastcall AI_Fn1_EvilHole(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiPar
     eD2MonsterAnimMode eSpawnAnimMode;
     uint32_t nSpawnOffset;
     int32_t nDistToTarget;
-    int32_t nSpawnSkillId;
     D2AiGeneralStrc* pAiGeneral = pAiParam->pMonsterAiGeneral;
     D2AiParamStrc* pDVar1 = (D2AiParamStrc*)pAiParam->nDistanceToTarget;
     D2MonStatsTxt* pMonStats = pAiParam->pMonStats;
@@ -21904,7 +21877,7 @@ void __fastcall AI_Fn1_EvilHole(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiPar
         return;
       }
 
-      nSpawnSkillId = 10;
+      MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 10, 0, 0);
     } else {
       D2RoomStrc* pSpawnRoom;
       if (eAnimMode != eD2MonsterAnimMode_ns::Skill3) {
@@ -21936,10 +21909,9 @@ void __fastcall AI_Fn1_EvilHole(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2AiPar
         return;
       }
 
-      nSpawnSkillId = 0xb;
+      MONSTERAI_CommandSkillAtPosition(pGame, pUnit, 0xb, 0, 0);
     }
 
-    MONSTERAI_CommandSkillAtPosition(pGame, pUnit, nSpawnSkillId, 0, 0);
     RestartAiThink(pGame, pUnit, 0x14);
 }
 
@@ -22359,11 +22331,7 @@ uint32_t __fastcall MONSTERAI_SetSpecialAttackSkill(D2UnitStrc * pUnit, int32_t 
     }
 
     nClassId = (int)sgptDataTable->pTxtMonStats[nClassId].MonStatsEx;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsExSize)) {
-      return 1;
-    }
-
-    D2MonStats2Txt* pDVar1 = sgptDataTable->pTxtMonStatsEx + nClassId;
+    D2MonStats2Txt* pDVar1 = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nClassId : nullptr;
     if (!pDVar1) {
       return 1;
     }

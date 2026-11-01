@@ -295,7 +295,7 @@ void __stdcall PALSHIFT_InitPalShiftTable() {
 D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2UnitStrc * pUnit) {
     BOOL nBloodFlag;
     D2MonStats2Txt* pMonStats2;
-    if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return nullptr;
     }
 
@@ -319,13 +319,13 @@ D2GamePalShiftRandTransformStrc * * __fastcall PALSHIFT_GetMonsterTransform(D2Un
       break;
       default:
         if (gbPalShiftRandTransformLoaded) {
-          if (nPalShiftIndex - 8U > 0x1d) {
-            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
-            exit(-1);
+          if (nPalShiftIndex - 8U <= 0x1d) {
+            return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
+            return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
           }
 
-          return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
-          return (D2GamePalShiftRandTransformStrc**)(PalShift_RandTransform + (nPalShiftIndex - 8U) * 0x100);
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x160);
+          exit(-1);
         }
       case 2:
 

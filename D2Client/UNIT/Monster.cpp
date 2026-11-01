@@ -321,7 +321,7 @@ void __stdcall MONUNIQUE_DispatchModifierByIndex(D2UnitStrc * pUnit, D2UnitStrc 
 }; D2_STATIC_GUARD(gapMonUniqueModDispatchTable, "D2Client::UNIT::Monster::MONUNIQUE_DispatchModifierByIndex::gapMonUniqueModDispatchTable");
 
     uint32_t bIsChampion;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -441,7 +441,7 @@ void __fastcall MONSTER_BuildUniqueName(D2UnitStrc * pUnit, uint16_t * wszText, 
     int32_t nWordWidth;
     int nTotalWideLen = 0;
     *wszText = L'\0';
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataPlayer)) {
       return;
     }
 
@@ -598,17 +598,13 @@ static void MONSTER_ResetToNeutralFacingTarget(D2UnitStrc * pUnit) {
 void __fastcall MONSTER_InitLightMap(D2UnitStrc * pUnit) {
     uint32_t uVar1;
     uint8_t cAlign;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
     int nClassId = pUnit->nClassId;
-    if (!(nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize)) {
-      return;
-    }
-
-    D2MonStatsTxt* pMonStatsTxt = sgptDataTable->pTxtMonStats;
-    if (!(pMonStatsTxt + nClassId)) {
+    D2MonStatsTxt* pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
+    if (!pMonStatsTxt) {
       return;
     }
 
@@ -624,7 +620,7 @@ void __fastcall MONSTER_InitLightMap(D2UnitStrc * pUnit) {
 
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-    if (eLevelId == LEVEL_DenOfEvil && (uVar1 = GetQuestAvailabilityByIndex(0, 1) , uVar1 != 0) && (uVar1 = CheckFlags(pUnit, UNITFLAG_ISASYNC) , !uVar1 && (cAlign = pMonStatsTxt[nClassId].Align , cAlign != '\x01' && cAlign != '\x02'))) {
+    if (eLevelId == LEVEL_DenOfEvil && (uVar1 = GetQuestAvailabilityByIndex(0, 1) , uVar1 != 0) && (uVar1 = CheckFlags(pUnit, UNITFLAG_ISASYNC) , !uVar1 && (cAlign = pMonStatsTxt->Align , cAlign != '\x01' && cAlign != '\x02'))) {
       byFinalLightRadius = 3;
     } else if (!byFinalLightRadius) {
       return;
@@ -830,7 +826,7 @@ uint32_t __fastcall MONSTER_CheckCatapultFiringPosition(D2UnitStrc * pUnit, D2Un
     int nDimY;
     int nDimX;
     uint32_t uStack_b;
-    if ((pUnit2 ? pUnit2->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit2 ? pUnit2->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -895,30 +891,16 @@ void __fastcall MONSTER_InitMonsterUnit(D2UnitStrc * pUnit, uint32_t nParam1, in
     D2DifficultyLevelsTxt* pDiffLevels;
     int i;
     int32_t nErrLine;
-    if (nClassId < 0) {
-      return;
-    }
-    if (nClassId >= sgptDataTable->nTxtMonStatsSize) {
-      return;
-    }
-
     D2MonStatsTxt* pMonStatsTxt;
-    pMonStatsTxt = sgptDataTable->pTxtMonStats + nClassId;
+    pMonStatsTxt = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
     if (!pMonStatsTxt) {
       return;
     }
 
     int nMonStats2Idx;
     nMonStats2Idx = (int)pMonStatsTxt->MonStatsEx;
-    if (nMonStats2Idx < 0) {
-      return;
-    }
-    if (nMonStats2Idx >= sgptDataTable->nTxtMonStatsExSize) {
-      return;
-    }
-
     D2MonStats2Txt* pMonStats2;
-    pMonStats2 = sgptDataTable->pTxtMonStatsEx + nMonStats2Idx;
+    pMonStats2 = nMonStats2Idx >= 0 && nMonStats2Idx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStats2Idx : nullptr;
     if (!pMonStats2) {
       return;
     }
@@ -1103,30 +1085,16 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
     DWORD nPalShiftIdx;
     short int* pSkillIdPtr;
     D2UnitDataMonsterStrc* pMonData;
-    if (nClassId < 0) {
-      return;
-    }
-    if (nClassId >= sgptDataTable->nTxtMonStatsSize) {
-      return;
-    }
-
     D2MonStatsTxt* pMonStatsTxtNew;
-    pMonStatsTxtNew = sgptDataTable->pTxtMonStats + nClassId;
+    pMonStatsTxtNew = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nClassId : nullptr;
     if (!pMonStatsTxtNew) {
       return;
     }
 
     int nMonStats2Idx;
     nMonStats2Idx = (int)pMonStatsTxtNew->MonStatsEx;
-    if (nMonStats2Idx < 0) {
-      return;
-    }
-    if (nMonStats2Idx >= sgptDataTable->nTxtMonStatsExSize) {
-      return;
-    }
-
     D2MonStats2Txt* pMonStats2;
-    pMonStats2 = sgptDataTable->pTxtMonStatsEx + nMonStats2Idx;
+    pMonStats2 = nMonStats2Idx >= 0 && nMonStats2Idx < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nMonStats2Idx : nullptr;
     if (!pMonStats2) {
       return;
     }
@@ -1294,7 +1262,7 @@ void __fastcall MONSTER_TransformToClassId(D2UnitStrc * pUnit, int32_t nClassId)
 // Spawns a spread of missiles for Fetish monsters (BaseId 0x3f). Reads the difficulty-scaled count from MonStatsTxt TreasureClass, seeds an RNG from the unit GUID, and fires nMissileId missiles at alternating X/Y offsets (±5 tiles) around (nTargetX, nTargetY) via MakeMissile.
 void __stdcall MONSTER_SpawnFetishMissileSpread(D2UnitStrc * pUnit, eMissilesId nMissileId, int32_t nTargetX, int32_t nTargetY) {
     D2SeedStrc sSeed;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -1338,7 +1306,7 @@ void __stdcall MONSTER_SpawnFetishMissileSpread(D2UnitStrc * pUnit, eMissilesId 
 // Fires a missile from a monster toward its confirmed target (or waypoint if no target). Resolves the missile ID via MONSTER_GetMissileForAnimEvent. Dispatches to MISSILE_CreateFromUnitWithOffset for panther pots, MONSTER_ExplodeOwnerMissile+SpawnRandomAttachedMissile for catapult charged balls, or MakeMissile for all others. Always calls MONSTER_SpawnFetishMissileSpread after.
 static void MONSTER_CastMissileAtTarget(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -1591,7 +1559,7 @@ static void MONSTER_ProcessSkillAnimation(D2UnitStrc * pUnit) {
     eD2States eState;
     int nCurrentFrame;
     short int nSrvDoFunc;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -1601,11 +1569,7 @@ static void MONSTER_ProcessSkillAnimation(D2UnitStrc * pUnit) {
     }
 
     eD2Skills eSkillId = D2Common::Skills::GetSkillId(pSkill, ".\\UNIT\\Monster.cpp", 0x3b5);
-    if (!((int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount)) {
-      return;
-    }
-
-    D2SkillsTxt* pSkillTxt = sgptDataTable->pTxtSkills + eSkillId;
+    D2SkillsTxt* pSkillTxt = (int)eSkillId >= 0 && (int)eSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkillId : nullptr;
     if (!pSkillTxt) {
       return;
     }
@@ -1985,7 +1949,7 @@ static uint32_t MONSTER_IsModeMoveFlagSet(D2UnitStrc * pUnit, D2MonMsgAnimModeSt
 // Spawns death-effect missiles for a monster. Uber minions that are not frozen emit MISSILE_Suicidefireexplode + MISSILE_Suicidecorpseexplode. All other monsters emit a glacial spike missile (offset by MonStats2 Height into the missile table) plus MISSILE_Icebreaksmoke.
 static void MONSTER_SpawnDeathEffectMissiles(D2UnitStrc * pUnit) {
     D2SkillArgStrc sSkillArg;
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -2215,15 +2179,8 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
     }
 
     nClassId = (int)sgptDataTable->pTxtMonStats[nClassId].MonStatsEx;
-    if (nClassId < 0) {
-      return;
-    }
-    if (nClassId >= sgptDataTable->nTxtMonStatsExSize) {
-      return;
-    }
-
     D2MonStats2Txt* pMonStats2;
-    pMonStats2 = sgptDataTable->pTxtMonStatsEx + nClassId;
+    pMonStats2 = nClassId >= 0 && nClassId < sgptDataTable->nTxtMonStatsExSize ? sgptDataTable->pTxtMonStatsEx + nClassId : nullptr;
     if (!pMonStats2) {
       return;
     }
@@ -3063,11 +3020,11 @@ uint32_t __fastcall CLIENT_UpdateMonsterAnimByMode(D2DynamicPathStrc * pDynamicP
         nDeltaCheck = (int)((uint32_t)(uint16_t)pDynamicPath->nTargetX | (uint32_t)(uint16_t)pDynamicPath->nTargetY << 16);
         pDynamicPath->nUnitSize = pDynamicPath->nUnitWidth - 0x100;
         *(uint16_t*)&pDynamicPath->nCollisionFlag = 0;
-        if (nDeltaCheck) {
+        if (!nDeltaCheck) {
+          pDynamicPath->PathPoints[10] = (D2PathPointStrc)((uint32_t)d2_bits_of(pDynamicPath->PathPoints[10]) | 0x20);
           return 0;
         }
 
-        pDynamicPath->PathPoints[10] = (D2PathPointStrc)((uint32_t)d2_bits_of(pDynamicPath->PathPoints[10]) | 0x20);
         return 0;
       }
 

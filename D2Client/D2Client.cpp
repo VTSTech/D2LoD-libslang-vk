@@ -1074,7 +1074,6 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
     uint32_t szSoundPath[65];
     char szVideoPath[260];
     int bVideoLoaded;
-    void* pfFrame;
     char cChar;
     int32_t nErrorLine;
     int nCurrentCutsceneId;
@@ -1170,13 +1169,12 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
         UI::ui::SetUIFlag(UI_NODRAW, UI_SET, 0);
         dwResult = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
         if (dwResult) {
-          if (gbCutsceneActive != '\0') {
-            pfFrame = 0;
+          if (gbCutsceneActive == '\0') {
+            D2gfx::D2GFX::D2GFX_PlayCutScene((char*)szSoundPath, nPlayMode, (void*)GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING);
           } else {
-            pfFrame = (void*)GAME::Msg::NET_D2GS_CLIENT_Send_0x6D_PING;
+            D2gfx::D2GFX::D2GFX_PlayCutScene((char*)szSoundPath, nPlayMode, 0);
           }
 
-          D2gfx::D2GFX::D2GFX_PlayCutScene((char*)szSoundPath, nPlayMode, pfFrame);
           bCutscenePlayed = 1;
         }
         if (nCurrentCutsceneId != 5 || geCutsceneCurrentSoundId == '\0') {
@@ -1201,12 +1199,12 @@ void __fastcall ExitGamePlayCutScene(int32_t nCutsceneId) {
           nCurrentCutsceneId = 6;
           if (gbLoggerStateInactive != '\0') {
             pszSrcName = "640x292";
+            sprintf(szVideoPath, gdwSoundHeaderCacheIndex[6].pszVideoPath, "640x292");
           } else {
             pszSrcName = "640x146";
             nPlayMode = 2;
+            sprintf(szVideoPath, gdwSoundHeaderCacheIndex[6].pszVideoPath, "640x146");
           }
-
-          sprintf(szVideoPath, gdwSoundHeaderCacheIndex[6].pszVideoPath, pszSrcName);
           if (gdwSoundHeaderCacheIndex[6].bHasAltSoundPath) {
             Sound::SOUND_LocalizeSoundPath("%s\\video\\%s\\%s", szSoundPath, szVideoPath);
           } else {
@@ -3971,7 +3969,7 @@ void __fastcall SKILLSSOR_StatExpireCallback_ClearState(D2UnitStrc * pUnit, eD2S
 }
 
 int __fastcall SKILLSCLT_CheckSkillIsValid(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MISSILE) != UNIT_MISSILE) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MISSILE) {
       return 0;
     }
 
@@ -4084,11 +4082,13 @@ void __fastcall BINK_PlayVideoFile(char * szFileName, int32_t nParam, fnBinkFram
               if (msgPeek.message == 0x201) {
                 goto request_skip;
               }
-              if (msgPeek.message == 0x12) {
+              if (msgPeek.message != 0x12) {
+                if (msgPeek.message == 0x102) {
+                  goto request_skip;
+                }
+              } else {
                 g_bBinkDDrawVideoQuitRequested = 1;
                 gbBinkDDrawVideoExitRequested = 1;
-              } else if (msgPeek.message == 0x102) {
-                goto request_skip;
               }
             } else {
               if (!(msgPeek.message != 0x204 && msgPeek.message != 0x207)) {

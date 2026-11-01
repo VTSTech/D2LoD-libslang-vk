@@ -130,12 +130,8 @@ void __fastcall STATSLISTEX_FunctionCallback(::SGAMEDATA * pGame, D2UnitStrc * p
 
     eD2UnitStat eStat;
     eStat = eSkill >> 0x10;
-    if ((int)eStat >= sgptDataTable->nTxtItemStatCostSize) {
-      return;
-    }
-
     D2ItemStatCostTxt* pStatCostTxt;
-    pStatCostTxt = sgptDataTable->pTxtItemStatCost + eStat;
+    pStatCostTxt = (int)eStat < sgptDataTable->nTxtItemStatCostSize ? sgptDataTable->pTxtItemStatCost + eStat : nullptr;
     if (!pStatCostTxt) {
       return;
     }
@@ -1073,11 +1069,9 @@ static BOOL __stdcall ITEMMODE_CheckDuplicateQuestItem(D2UnitStrc * pUnit, D2Uni
         nCheckResult = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pUnit);
         if (nCheckResult >= 0) {
           nItemQuality = D2Common::ITEMS::Items::ITEM_GetItemData_nFileIndex(pUnit);
-          if (nItemQuality >= 0 && nItemQuality < sgptDataTable->nTxtUniqueItemsSize) {
-            pUniqueTxt = sgptDataTable->pTxtUniqueItems + nItemQuality;
-            if (pUniqueTxt && *((uint8_t*)pUniqueTxt + 0x2c) & (uint8_t)gadwBitMasks[2]) {
-              nUniqueIdx = (int)(short int)pUniqueTxt->wId;
-            }
+          pUniqueTxt = nItemQuality >= 0 && nItemQuality < sgptDataTable->nTxtUniqueItemsSize ? sgptDataTable->pTxtUniqueItems + nItemQuality : nullptr;
+          if (pUniqueTxt && *((uint8_t*)pUniqueTxt + 0x2c) & (uint8_t)gadwBitMasks[2]) {
+            nUniqueIdx = (int)(short int)pUniqueTxt->wId;
           }
         }
       }
@@ -2030,12 +2024,8 @@ int32_t __fastcall ITEMMODE_CheckItemRequirements(D2UnitStrc * pUnit, D2UnitStrc
         if (pEquippedItem == pUnit2) {
           pEquippedItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 5);
         }
-        if (!pEquippedItem) {
-          return 0;
-        }
 
-        eItemType = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2);
-        bIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pEquippedItem, eItemType);
+        bIsOfType = pEquippedItem ? (eItemType = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pUnit2), D2Common::ITEMS::Items::ITEMS_IsA(pEquippedItem, eItemType)) : 0;
         if (!bIsOfType) {
           return 0;
         }
@@ -2869,10 +2859,10 @@ BOOL __fastcall SERVER_BeltSwapItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, DWO
 
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d4);
           exit(-1);
+        } else {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d8);
+          exit(-1);
         }
-
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12d8);
-        exit(-1);
       }
     }
 }
@@ -3167,7 +3157,7 @@ uint32_t __fastcall ITEMMODE_ResolveEquipConflict(D2UnitStrc * pUnit, D2UnitStrc
     bool bIsWeaponType;
     eD2ItemTypes eCompatibleType;
     int32_t nShootsOrQuiverCheck;
-    if (!pUnit || !pUnit2 || pUnit2->eUnitType != UNIT_ITEM) {
+    if (!pUnit || (pUnit2 ? pUnit2->eUnitType : UNIT_COUNT) != UNIT_ITEM) {
       return 0;
     }
 
@@ -6937,7 +6927,7 @@ BOOL __fastcall Transmorgify(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc
     D2ItemsTxt* pTmogItemTxt;
     pItemTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
     if (pItemTxt) {
-      if (!pItemTxt->bTransmogrify) {
+      if (pItemTxt->bTransmogrify == '\0') {
         return 0;
       }
 

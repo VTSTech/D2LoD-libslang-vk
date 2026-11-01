@@ -109,17 +109,15 @@ D2MonLvlTxt * __fastcall GetMonLvlTxt(int32_t nMonLvlId) {
 }
 
 uint32_t __fastcall MONSTER_CheckMonTypeHasFlag(D2UnitStrc * pUnit, int32_t nMonTypeFlag) {
+    D2MonStatsTxt* pMonStatsTxt;
     if (!pUnit || pUnit->eUnitType != UNIT_MONSTER) {
       return 0;
     }
 
     int nMonStatId = pUnit->nClassId;
-    if (nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize) {
-      D2MonStatsTxt* pMonStatsTxt;
-      pMonStatsTxt = sgptDataTable->pTxtMonStats + nMonStatId;
-      if (pMonStatsTxt && pMonStatsTxt->MonType >= 0 && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize) {
-        return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
-      }
+    pMonStatsTxt = nMonStatId >= 0 && nMonStatId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nMonStatId : nullptr;
+    if (pMonStatsTxt && pMonStatsTxt->MonType >= 0 && (int)pMonStatsTxt->MonType < sgptDataTable->nTxtMonTypeSize && nMonTypeFlag >= 0 && nMonTypeFlag < sgptDataTable->nTxtMonTypeSize) {
+      return *(uint32_t*)((uint8_t*)sgptDataTable->pTxtMonTypeUnknown + (sgptDataTable->nMonTypeEquivRowDwords * nMonTypeFlag + ((int)pMonStatsTxt->MonType >> 5)) * 4) & gadwBitMasks[(int)pMonStatsTxt->MonType & 0x1f];
     }
 
     return 0;
@@ -209,7 +207,7 @@ int32_t __fastcall CountActiveUMods(uint8_t * pUModList) {
 }
 
 static void __stdcall MONSTER_AddEnchantmentToList(uint8_t byEnchantId, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -234,7 +232,7 @@ static void __stdcall MONSTER_AddEnchantmentToList(uint8_t byEnchantId, D2UnitSt
 }
 
 static void __stdcall SetUniqueMonsterType(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -261,19 +259,19 @@ uint32_t __fastcall CheckMonUModList(D2UnitStrc * pUnit) {
 }
 
 int32_t __fastcall MONSTER_GetBossNo(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
-      D2UnitDataMonsterStrc* pMonsterData;
-      pMonsterData = pUnit->pUnitData.pUnitDataMonster;
-      if (pMonsterData && pMonsterData->eMonsterType & 2) {
-        if (!(true ? pMonsterData : 0)) {
-          return -1;
-        }
-
-        return (int)pMonsterData->nBossNo;
-      }
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
+      return -1;
     }
 
-    return -1;
+    D2UnitDataMonsterStrc* pMonsterData = pUnit->pUnitData.pUnitDataMonster;
+    if (!(pMonsterData && pMonsterData->eMonsterType & 2)) {
+      return -1;
+    }
+    if (!(true ? pMonsterData : 0)) {
+      return -1;
+    }
+
+    return (int)pMonsterData->nBossNo;
 }
 
 // Checks whether a MonUMod.txt unique modifier entry is eligible to be applied to pUnit. Rejects if disabled or version &gt; 99 in non-expansion mode. Rejects if the monster has any excluded monster type (exclude1/exclude2). Respects the fpick field: 1=boss-only, 2=excludes melee/no-multishot monsters, 3=requires a different boss flag. Returns 1 if eligible, 0 otherwise.
@@ -1990,7 +1988,7 @@ void __fastcall UMOD_SetLevelAndAttackRating(::SGAMEDATA * pGame, D2UnitStrc * p
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_level, nMonLevel, 0);
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_tohit, nToHitRating, 0);
-    if ((pUnit ? pUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xc42);
       exit(-1);
     }
@@ -2542,7 +2540,7 @@ int * __fastcall MONSTER_SpawnWithUniqueModifiers(::SGAMEDATA * pGame, D2RoomStr
 }
 
 void __fastcall InitUmods(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nIndex, BOOL bInitType) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
+    if (!((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER && pUnit->pUnitData.pUnitDataMonster)) {
       return;
     }
 
@@ -2575,7 +2573,7 @@ void __fastcall InitUmods(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nInde
 }
 
 void __fastcall MONSTER_AddUniqueModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit, char uMod) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -2607,7 +2605,7 @@ void __fastcall MONSTER_AddUniqueModifier(::SGAMEDATA * pGame, D2UnitStrc * pUni
 }
 
 void __fastcall MONSTER_PromoteToUnique(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return;
     }
 
@@ -3107,7 +3105,7 @@ void __fastcall MONSTER_AttackTarget(D2UnitStrc * pUnit, ::SGAMEDATA * pGame) {
 }
 
 void __stdcall MONSTER_CheckSpecialDeathFlag(D2UnitStrc * pUnit, D2DamageStrc * pDamage) {
-    if (!(pDamage->wResultFlags & 4 && pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
+    if (!(pDamage->wResultFlags & 4 && (pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return;
     }
 
@@ -3140,11 +3138,7 @@ void __fastcall ApplyDamageCritical(int * pnParam, D2UnitStrc * pUnit, D2DamageS
     }
 
     int iVar1 = pnParam[1];
-    if (!(iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize)) {
-      return;
-    }
-
-    D2MonStatsTxt* pMonStats = sgptDataTable->pTxtMonStats + iVar1;
+    D2MonStatsTxt* pMonStats = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + iVar1 : nullptr;
     if (!(pMonStats && pMonStats->Crit != '\0')) {
       return;
     }

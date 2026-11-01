@@ -1843,11 +1843,11 @@ BOOL __fastcall Initialize(HINSTANCE hInstance) {
           if (!iVar2) {
             return 0;
           }
-          if (pnGuidSize == (uint32_t*)0x10) {
-            return 1;
+          if (pnGuidSize != (uint32_t*)0x10) {
+            return 0;
           }
 
-          return 0;
+          return 1;
         }
       }
       if (gpD3DDevice8) {
@@ -2563,22 +2563,22 @@ BOOL thunk_Release() {
 }
 
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
-    GUID* lpGUID;
+    DWORD DVar1;
     DDDEVICEIDENTIFIER2 ddDeviceIdentifier;
     IDirectDraw1* lpDD = 0;
     if (g_bD3DCoreInitialized) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x687);
       exit(-1);
     }
-    if (!(gnD3DTextureCapFlags & 1)) {
-      lpGUID = &gsD3DAdapterGuid;
+    if (!(gnD3DTextureCapFlags & gadwBitMasks[0])) {
+      pD2GFXRenderedDataStrc = pSettings;
+      D2GfxRendereInitFunctionsStrc = pHelpers;
+      DVar1 = DirectDrawCreate(&gsD3DAdapterGuid, &lpDD, nullptr);
     } else {
-      lpGUID = 0;
+      pD2GFXRenderedDataStrc = pSettings;
+      D2GfxRendereInitFunctionsStrc = pHelpers;
+      DVar1 = DirectDrawCreate(0, &lpDD, nullptr);
     }
-
-    pD2GFXRenderedDataStrc = pSettings;
-    D2GfxRendereInitFunctionsStrc = pHelpers;
-    DWORD DVar1 = DirectDrawCreate(lpGUID, &lpDD, nullptr);
     if (DVar1) {
       DIRECTD3D_LogError("DirectDrawCreate failed!", DVar1);
       return 0;
@@ -3066,10 +3066,10 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
           if (dwHResult) {
             DIRECTD3D_LogError("Failed to unlock memory surface", dwHResult);
           }
-          if (!(gnD3DTextureCapFlags & 0x400)) {
-            (*(dt_df2bbc22*)((char*)*(void**)(uintptr_t)*(int**)(iMipLevel + 0x14) + 20))(*(int**)(iMipLevel + 0x14), lpD3DTexture_00);
-          } else {
+          if (gnD3DTextureCapFlags & gadwBitMasks[10]) {
             RENDERER_D3D_CopySurfacePixels(*(IDirectDrawSurface7**)(iMipLevel + 0x10), pDestSurface_00, pTexInfo->nTexHeight);
+          } else {
+            (*(dt_df2bbc22*)((char*)*(void**)(uintptr_t)*(int**)(iMipLevel + 0x14) + 20))(*(int**)(iMipLevel + 0x14), lpD3DTexture_00);
           }
 
           dwHResult = g_pD3DDevice->lpVtbl->SetTexture(g_pD3DDevice, 0, *(void**)(iMipLevel + 0x14));
@@ -4512,31 +4512,31 @@ int __fastcall RENDERER_D3D_RenderShadowTileWithPerspective(D2TileLibraryEntrySt
 BOOL __fastcall DrawShadowTile(D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int nDrawMode, int nScreenPanels) {
     uint32_t nAlpha;
     BOOL BVar1 = D2CMP::SRC::SpriteCache::SPRITECACHE_AllocEntry(pTile, 1, 0);
-    if (!BVar1) {
-      return 0;
-    }
-
-    d2_store24((char*)&nAlpha + 1, (uint32_t)((uint32_t)pTile >> 8) & 0xffffffu);
-    nAlpha = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nAlpha + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0xff);
-    RENDERER_D3D_SetBlendMode(1);
-    BVar1 = RENDERER_D3D_IsShadowBlendingEnabled();
     if (BVar1) {
-      SetBlendMode(4);
-      nAlpha = (uint32_t)((uint32_t)((uint32_t)nAlpha >> 8 & 0xffffffu) << 8 | (uint32_t)(uint8_t)0xc0);
-    } else {
-      SetBlendMode(1);
+      d2_store24((char*)&nAlpha + 1, (uint32_t)((uint32_t)pTile >> 8) & 0xffffffu);
+      nAlpha = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nAlpha + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)0xff);
+      RENDERER_D3D_SetBlendMode(1);
+      BVar1 = RENDERER_D3D_IsShadowBlendingEnabled();
+      if (BVar1) {
+        SetBlendMode(4);
+        nAlpha = (uint32_t)((uint32_t)((uint32_t)nAlpha >> 8 & 0xffffffu) << 8 | (uint32_t)(uint8_t)0xc0);
+      } else {
+        SetBlendMode(1);
+      }
+
+      RENDERER_D3D_SetTextureFilterMode(1);
+      BVar1 = RENDERER_D3D_IsPerspectiveEnabled();
+      if (BVar1) {
+        int iVar2;
+        iVar2 = RENDERER_D3D_RenderShadowTileWithPerspective(pTile, nPosX, nPosY, (char)nDrawMode, nAlpha, nScreenPanels);
+        return iVar2;
+      }
+
+      int32_t iVar3 = RENDERER_D3D_BuildShadowTileVertices(pTile, nPosX, nPosY, (char)nDrawMode, nAlpha, nScreenPanels);
+      return iVar3;
     }
 
-    RENDERER_D3D_SetTextureFilterMode(1);
-    BVar1 = RENDERER_D3D_IsPerspectiveEnabled();
-    if (BVar1) {
-      int iVar2;
-      iVar2 = RENDERER_D3D_RenderShadowTileWithPerspective(pTile, nPosX, nPosY, (char)nDrawMode, nAlpha, nScreenPanels);
-      return iVar2;
-    }
-
-    int32_t iVar3 = RENDERER_D3D_BuildShadowTileVertices(pTile, nPosX, nPosY, (char)nDrawMode, nAlpha, nScreenPanels);
-    return iVar3;
+    return 0;
 }
 
 BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2TileLibraryEntryStrc * pTile, int nPosX, int nPosY, int pTexColorTable, uint8_t nParam4) {

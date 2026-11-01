@@ -252,10 +252,12 @@ void __fastcall WND_DetachAndClearChildren(D2StormListHead * pWindow) {
 }
 
 int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize, uint32_t dwFlags) {
-    int** ppRecord = (int**)SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
-    if (ppRecord) {
-      *ppRecord = 0;
-      ppRecord[1] = 0;
+    int** ppRecordNew = (int**)SMem::SMemAlloc(nSize + 0xc, s___AUWNDREC___00708850, -2, dwFlags | 8);
+    int** ppRecord;
+    if (ppRecordNew) {
+      *ppRecordNew = 0;
+      ppRecordNew[1] = 0;
+      ppRecord = ppRecordNew;
     } else {
       ppRecord = 0;
     }
@@ -467,11 +469,10 @@ BOOL __stdcall SMsgDispatchMessage(HWND handle, UINT uMsg, WPARAM nWParam, LPARA
         if (pbHandled) {
           *pbHandled = hMsgWnd.bHandled;
         }
-        if (!plResult) {
-          return 1;
+        if (plResult) {
+          *plResult = hMsgWnd.dwResult;
         }
 
-        *plResult = hMsgWnd.dwResult;
         return 1;
       }
 

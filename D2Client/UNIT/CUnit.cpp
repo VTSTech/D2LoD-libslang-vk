@@ -362,7 +362,7 @@ static uint32_t __stdcall SKILL_ExecuteSelectProc(D2UnitStrc * pUnit, eD2Skills 
 // pTargetUnit is the hovered unit (HitTestScreen sets ESI from it at 00466913) and must be a monster (dwUnitType == 1 at 00464316); pUnit is the player whose left then right skill's SelectProc is tried.
 // @sourcefile .\UNIT\CUnit.cpp
 static uint32_t SKILL_CheckActiveSkillSelectProc(D2UnitStrc * pUnit, D2UnitStrc * pTargetUnit) {
-    if ((pTargetUnit ? pTargetUnit->eUnitType : ~UNIT_MONSTER) != UNIT_MONSTER) {
+    if ((pTargetUnit ? pTargetUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
       return 0;
     }
 
@@ -678,18 +678,17 @@ void __fastcall SetDeadFlag(D2UnitStrc * pUnit) {
 }
 
 int __fastcall IsActive(D2UnitStrc * pUnit) {
-    if (pUnit->eUnitFlags & UNITFLAG_ISDEAD) {
-      return 1;
-    }
-
-    eD2PlayerAnimMode nAnimMode = pUnit->eAnimMode.ePlayerMode;
-    if (pUnit->eUnitType != UNIT_PLAYER) {
-      if (pUnit->eUnitType != UNIT_MONSTER || nAnimMode != Death && nAnimMode != Kick) {
-        return 0;
-      }
-    } else {
-      if (nAnimMode != Death && nAnimMode != eD2PlayerAnimMode_ns::Dead) {
-        return 0;
+    if (!(pUnit->eUnitFlags & UNITFLAG_ISDEAD)) {
+      eD2PlayerAnimMode nAnimMode;
+      nAnimMode = pUnit->eAnimMode.ePlayerMode;
+      if (pUnit->eUnitType != UNIT_PLAYER) {
+        if (pUnit->eUnitType != UNIT_MONSTER || nAnimMode != Death && nAnimMode != Kick) {
+          return 0;
+        }
+      } else {
+        if (nAnimMode != Death && nAnimMode != eD2PlayerAnimMode_ns::Dead) {
+          return 0;
+        }
       }
     }
 
@@ -960,23 +959,21 @@ void __fastcall SetLightRadius(D2UnitStrc * pUnit, int32_t nLightRadiusX) {
 }
 
 static uint32_t __stdcall CUNIT_IsItemInUnitInventory(D2UnitStrc * pExcludeUnit, D2UnitStrc * pUnit, D2UnitStrc * pContainerUnit) {
-    D2UnitStrc* pInvSlotItem;
+    D2UnitStrc* pCarriedItem;
     if (pExcludeUnit == pContainerUnit) {
       return 0;
     }
-    if (!pContainerUnit->pInventory) {
-      return 0;
-    }
-
-    for (pInvSlotItem = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pContainerUnit->pInventory); pInvSlotItem; pInvSlotItem = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pInvSlotItem)) {
-      D2UnitStrc* pCarriedItem;
-      pCarriedItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pInvSlotItem);
-      if (!pCarriedItem) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5b);
-        exit(-1);
-      }
-      if (pCarriedItem == pUnit) {
-        return 1;
+    if (pContainerUnit->pInventory) {
+      D2UnitStrc* pInvSlotItem;
+      for (pInvSlotItem = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pContainerUnit->pInventory); pInvSlotItem; pInvSlotItem = D2Common::INVENTORY::Inventory::INVENTORY_GetNextItem(pInvSlotItem)) {
+        pCarriedItem = D2Common::INVENTORY::Inventory::GetCarriedItem(pInvSlotItem);
+        if (!pCarriedItem) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa5b);
+          exit(-1);
+        }
+        if (pCarriedItem == pUnit) {
+          return 1;
+        }
       }
     }
 
@@ -1013,18 +1010,16 @@ static uint32_t __stdcall CUNIT_IsItemInAnyInventory(D2UnitStrc * pExcludeUnit, 
 // @basis behaviour-confirmed and caller-corroborated. The old name was wrong in both halves and was flagged by the preceding pass. Body: null-check, then GFX_AddOverlayToUnit(pUnit, eOverlay, type, 0, nDuration, 0,0,0) with type 1 when nDuration > 0 and type 2 (engine default duration) otherwise, plus a fixed sound for OVERLAY_steallife and OVERLAY_stealmana. Nothing counts, reports or reacts to a death, and the subject is a plain D2UnitStrc, not a monster - MonsterMessage passes non-monster units through five of the six call sites' shared path.
 // "UnitDoOverlay" is a descriptive name taken from the Blizzard packet verb SCMD_UNIT_DOOVERLAY, which names opcode 0x11, whose handler NET_D2GS_CLIENT_Incoming0x11_UnitDoOverlay (0045d11c) is one of this function's six callers.
 void __fastcall UnitDoOverlay(D2UnitStrc * pUnit, eOverlayId eOverlay, uint32_t nDuration) {
-    int32_t nOverlayType;
     if (!pUnit) {
       return;
     }
-    if ((int)nDuration > 0) {
-      nOverlayType = 1;
-    } else {
+    if ((int)nDuration <= 0) {
       nDuration = 0;
-      nOverlayType = 2;
+      Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay, 2, 0, nDuration, 0, 0, 0);
+    } else {
+      Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay, 1, 0, nDuration, 0, 0, 0);
     }
 
-    Engine::Gfx::GFX_AddOverlayToUnit(pUnit, eOverlay, nOverlayType, 0, nDuration, 0, 0, 0);
     switch (eOverlay) {
       case OVERLAY_steallife:
         {

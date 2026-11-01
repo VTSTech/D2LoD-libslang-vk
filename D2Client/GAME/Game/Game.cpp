@@ -202,7 +202,7 @@ void __stdcall UnderMouse_PrimaryClick(D2UIMouseMsgStrc * pMsg) {
 
     gQueuedPrimaryClick = 1;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    uint8_t mouseEventFlags = 0;
+    uint16_t mouseEventFlags = 0;
     if (gRunKeyDown) {
       mouseEventFlags = 8;
     }
@@ -236,7 +236,7 @@ void __stdcall ProcessQueuedPrimaryClick() {
     gnQueuedPrimaryClickX = 1;
     D2UnitStrc* pDVar1 = UNIT::Player::GetPlayerUnit_UI();
     uint32_t dwClickFlags = GetMouseClickFlags();
-    uint8_t mouseEventFlags = (uint8_t)dwClickFlags;
+    uint16_t mouseEventFlags = (uint16_t)dwClickFlags;
     if (!(pDVar1 && pDVar1->eUnitType == UNIT_PLAYER)) {
       return;
     }
@@ -260,7 +260,7 @@ void __stdcall ProcessPrimaryClickImmediate() {
       return;
     }
 
-    uint8_t mouseEventFlags = 0;
+    uint16_t mouseEventFlags = 0;
     if (gRunKeyDown) {
       mouseEventFlags = 8;
     }
@@ -312,7 +312,7 @@ void __stdcall INPUT_HandleRightClick(D2UIMouseMsgStrc * pMsg) {
       pDVar1 = UNIT::Player::GetPlayerUnit_UI();
       nBorderType = GetMouseClickFlags();
       if (pDVar1 && pDVar1->eUnitType == UNIT_PLAYER) {
-        gQueuedSecondaryClick = UNIT::Player::ClickMap(3, (uint32_t)pMsg->uLParam.sMousePos.nMouseX, (uint32_t)pMsg->uLParam.sMousePos.nMouseY, (uint8_t)nBorderType);
+        gQueuedSecondaryClick = UNIT::Player::ClickMap(3, (uint32_t)pMsg->uLParam.sMousePos.nMouseX, (uint32_t)pMsg->uLParam.sMousePos.nMouseY, (uint16_t)nBorderType);
       }
 
       pMsg->bHandled = 1;
@@ -335,7 +335,7 @@ void __stdcall ProcessQueuedSecondaryClick() {
 
     gnQueuedSecondaryClickX = 1;
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    uint8_t mouseEventFlags = 0;
+    uint16_t mouseEventFlags = 0;
     if (gRunKeyDown) {
       mouseEventFlags = 8;
     }
@@ -364,7 +364,7 @@ void __stdcall INPUT_HandleSecondaryClick(D2UIMouseMsgStrc * pMsg) {
 
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (pPlayer && pPlayer->eUnitType == UNIT_PLAYER) {
-      gQueuedSecondaryClick = UNIT::Player::ClickMap(5, (uint32_t)pMsg->uLParam.sMousePos.nMouseX, (uint32_t)pMsg->uLParam.sMousePos.nMouseY, (uint8_t)*(uint16_t*)&pMsg->nWParam);
+      gQueuedSecondaryClick = UNIT::Player::ClickMap(5, (uint32_t)pMsg->uLParam.sMousePos.nMouseX, (uint32_t)pMsg->uLParam.sMousePos.nMouseY, *(uint16_t*)&pMsg->nWParam);
     }
 
     pMsg->bHandled = 1;

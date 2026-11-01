@@ -1064,17 +1064,15 @@ BOOL thunk_Release() {
 
 // @sourcefile .\Src\ddCore.cpp
 BOOL __fastcall InitPerspective(D2GfxSettingsStrc * pSettings, ::D2GfxHelperStrc * pHelpers) {
-    GUID* pGlideConfig;
+    HRESULT nResult;
     pD2GFXRenderedDataStrc = pSettings;
     D2GfxRendereInitFunctionsStrc = pHelpers;
     D2ddDebugFont_Alloc();
-    if (gdwDDrawInitFlags & gadwBitMasks[0]) {
-      pGlideConfig = 0;
+    if (!(gdwDDrawInitFlags & gadwBitMasks[0])) {
+      nResult = DirectDrawCreate(&gGlideOpenWindowConfig, &pWindowHandleBuffer, nullptr);
     } else {
-      pGlideConfig = &gGlideOpenWindowConfig;
+      nResult = DirectDrawCreate(0, &pWindowHandleBuffer, nullptr);
     }
-
-    HRESULT nResult = DirectDrawCreate(pGlideConfig, &pWindowHandleBuffer, nullptr);
     if (nResult) {
       DirectDrawErrorHandler("DirectDrawCreate failed!", nResult);
       return 0;
@@ -1833,27 +1831,27 @@ void __fastcall DrawRect(RECT * pRect, BYTE nColor) {
       uint32_t nWidth;
       nMidX.y = pRect->bottom;
       nMidXSave.y = pRect->top;
-      if (nMidXSave.y <= nMidX.y) {
-        nWidth = pRect->right - nLeft.x;
-        if (!(nWidth && nMidX.y - nMidXSave.y)) {
-          return;
-        }
+      if (!(nMidXSave.y <= nMidX.y)) {
+        nLeft.y = nMidX.y;
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e);
+        exit(-1);
+      }
 
-        nRight.x = pRect->right;
-        nRight.y = pRect->top + ((uint32_t)(nMidX.y - nMidXSave.y) >> 1);
-        nMidXSave.x = (nWidth >> 1) + nLeft.x;
-        nMidX.x = nMidXSave.x;
-        nLeft.y = nRight.y;
-        RENDERER_DDRAW_DrawLine(&nRight, &nMidXSave, nColor);
-        RENDERER_DDRAW_DrawLine(&nMidX, &nRight, nColor);
-        RENDERER_DDRAW_DrawLine(&nLeft, &nMidX, nColor);
-        RENDERER_DDRAW_DrawLine(&nMidXSave, &nLeft, nColor);
+      nWidth = pRect->right - nLeft.x;
+      if (!(nWidth && nMidX.y - nMidXSave.y)) {
         return;
       }
 
-      nLeft.y = nMidX.y;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e);
-      exit(-1);
+      nRight.x = pRect->right;
+      nRight.y = pRect->top + ((uint32_t)(nMidX.y - nMidXSave.y) >> 1);
+      nMidXSave.x = (nWidth >> 1) + nLeft.x;
+      nMidX.x = nMidXSave.x;
+      nLeft.y = nRight.y;
+      RENDERER_DDRAW_DrawLine(&nRight, &nMidXSave, nColor);
+      RENDERER_DDRAW_DrawLine(&nMidX, &nRight, nColor);
+      RENDERER_DDRAW_DrawLine(&nLeft, &nMidX, nColor);
+      RENDERER_DDRAW_DrawLine(&nMidXSave, &nLeft, nColor);
+      return;
     }
 }
 

@@ -1238,19 +1238,18 @@ void __fastcall NET_D2GS_SERVER_Send_0x79_TRADEGOLD(D2ClientStrc * pClient, uint
 
 BOOL SCMD_DetectPositionDesync(int32_t pState, int32_t nNewPos) {
     int nDelta = nNewPos - *(int*)(pState + 4);
-    if (!nDelta) {
-      return 0;
-    }
-    if (nDelta < 0) {
-      nDelta = -nDelta;
-    }
-    if (!(nDelta > 8 || (*(char*)(pState + 0xc) += '\x01' , *(uint8_t*)(pState + 0xc) > 6))) {
-      return 0;
+    if (nDelta) {
+      if (nDelta < 0) {
+        nDelta = -nDelta;
+      }
+      if (nDelta > 8 || (*(char*)(pState + 0xc) += '\x01' , *(uint8_t*)(pState + 0xc) > 6)) {
+        *(uint8_t*)(pState + 0xc) = 0;
+        *(int32_t*)(pState + 4) = nNewPos;
+        return 1;
+      }
     }
 
-    *(uint8_t*)(pState + 0xc) = 0;
-    *(int32_t*)(pState + 4) = nNewPos;
-    return 1;
+    return 0;
 }
 
 // Detects position desync for an owned monster. Verifies pUnit2 is a monster owned by pUnit, then compares its stored position against nNewPos. If the delta exceeds 8 units, or if a consecutive-desync counter exceeds 6, resets the counter and snaps the stored position to nNewPos, returning 1. Returns 0 if in sync or guard conditions fail.
@@ -1551,12 +1550,13 @@ void __fastcall NET_D2GS_SERVER_Send_0x3E_UpdateItemStats(D2ClientStrc * pClient
     if (nStatLayerOrCount < 0x100) {
       Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 0, 1);
       nBitPos = 8;
+      Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nStatLayerOrCount, 8);
     } else {
       Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 1, 1);
       nBitPos = 0x10;
+      Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nStatLayerOrCount, 0x10);
     }
 
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nStatLayerOrCount, nBitPos);
     nBitPos = Fog::BitBuffer::GetNextPositon(&bitBuf);
     aPacket[1] = (char)nBitPos + 2;
     SCMD_QueuePacketForClient(aPacket, 0x22, pClient);
@@ -2345,7 +2345,7 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
     eD2UnitType eUnitType;
     BOOL BVar1;
     D2ClientStrc* pClientSaved = pClient;
-    if (!(!pUnit || pUnit->eUnitType != UNIT_MONSTER)) {
+    if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER) {
       int32_t nScratch;
       *(uint32_t*)((char*)&aPacket + 1) = pUnit->nUnitGUID;
       aPacket[0] = 0xac;
@@ -2468,13 +2468,14 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
       if (!(pUnit->eUnitFlagsEx >> 10 & 1) || pUnit->eOwnerType != UNIT_PLAYER) {
         nScratch = 1;
         nStatIndex = 0;
+        Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, 1);
       } else {
         Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, 1, 1);
         nScratch = 0x1f;
         nStatIndex = pUnit->nOwnerGUID & 0x8fffffff;
+        Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, 0x1f);
       }
 
-      Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, nScratch);
       bHasStats = 0;
       pStatListEx = D2Common::Stats::StatsEx::GetStatList(pUnit, STATE_none, 0x40);
       if (!pStatListEx) {
@@ -2492,23 +2493,21 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
             nStatIndex = (uint32_t)(uint16_t)aStatBuf[nIndex].wStatIndex;
             pComponentBytes = (char*)(uint32_t)(uint16_t)aStatBuf[nIndex].wSubIndex;
             nStatValue = aStatBuf[nIndex].nStatValue;
-            if ((int)nStatIndex < pDataTable->nTxtItemStatCostSize) {
-              pStatCostTxt = pDataTable->pTxtItemStatCost + nStatIndex;
-              if (pStatCostTxt && (char)pStatCostTxt->dwItemStatFlags & (uint8_t)gadwBitMasks[0] && pStatCostTxt->sendBits > '\0') {
-                if (!bHasStats) {
-                  bHasStats = 1;
-                  Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, 1, 1);
-                }
-
-                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, 9);
-                if (pStatCostTxt->sendParamBits) {
-                  Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pComponentBytes & 0xffff, (uint32_t)pStatCostTxt->sendParamBits);
-                }
-
-                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatValue, (uint32_t)pStatCostTxt->sendBits);
-                nScratch = nStatCount;
-                pDataTable = sgptDataTable;
+            pStatCostTxt = (int)nStatIndex < pDataTable->nTxtItemStatCostSize ? pDataTable->pTxtItemStatCost + nStatIndex : nullptr;
+            if (pStatCostTxt && (char)pStatCostTxt->dwItemStatFlags & (uint8_t)gadwBitMasks[0] && pStatCostTxt->sendBits > '\0') {
+              if (!bHasStats) {
+                bHasStats = 1;
+                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, 1, 1);
               }
+
+              Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatIndex, 9);
+              if (pStatCostTxt->sendParamBits) {
+                Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pComponentBytes & 0xffff, (uint32_t)pStatCostTxt->sendParamBits);
+              }
+
+              Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, nStatValue, (uint32_t)pStatCostTxt->sendBits);
+              nScratch = nStatCount;
+              pDataTable = sgptDataTable;
             }
 
             nIndex++;

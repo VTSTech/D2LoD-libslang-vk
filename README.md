@@ -167,19 +167,19 @@ Two checks stand behind every release:
 [`asm_matching/`](asm_matching/README.md) compiles the tree with Visual C++ 2005 SP1 and
 compares the machine code of each function with 1.14d. It is a check on the decompilation:
 where the code comes out identical, the decompiled function was read correctly.
-At this commit, generated from version 1792 of the Ghidra database:
+At this commit, generated from version 1794 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|5,870 of 14,642 (40.1%)|
-|Code|451,661 of 2,602,915 bytes (17.35%)|
-|Instructions|1,722,852 of 2,602,915 bytes (66.2%), counting identical instructions in functions that still differ|
+|Functions|5,988 of 14,642 (40.9%)|
+|Code|471,419 of 2,602,915 bytes (18.11%)|
+|Instructions|1,740,627 of 2,602,915 bytes (66.9%), counting identical instructions in functions that still differ|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
 exceptions is left out as well. Over the whole binary, runtime
-included: 6,427 of 15,711 functions (40.9%), 550,366 of
-2,748,975 bytes (20.02%).
+included: 6,545 of 15,711 functions (41.7%), 570,124 of
+2,748,975 bytes (20.74%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
@@ -239,6 +239,10 @@ checked against the databases, reviewed, and applied with you as the git author;
   [D2MOO](https://github.com/ThePhrozenKeep/D2MOO) supplied many of the structure
   layouts the work started from.
 - Vanilla+, the Glide3xVK wrapper and this fork: VTSTech.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Code under `thirdparty/` keeps its own license.
 
 Diablo and Blizzard Entertainment are trademarks of Blizzard Entertainment, Inc. This
 project is not affiliated with or endorsed by Blizzard.

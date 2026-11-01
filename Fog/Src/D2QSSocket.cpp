@@ -56,7 +56,7 @@ int __fastcall NET_MCP_CLIENT_SendPacketToSafesocket(D2NetDataStrc * pSafesocket
     return nBytesSent;
 }
 
-bool __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength) {
+BOOL __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuffer, uint16_t nLength) {
     uint16_t nBytesSentActual;
     D2NetDataStrc* pSafesock;
     if (pQSSocket) {
@@ -71,11 +71,11 @@ bool __stdcall QSSOCKET_SendWithTimeout(D2QSSocketStrc * pQSSocket, char * pBuff
         }
 
         Safesock::LeaveCriticalSection_Safesock(pQSSocket->pSafesock);
-        return nLength == nBytesSentActual;
+        return (uint32_t)(nLength == nBytesSentActual);
       }
     }
 
-    return false;
+    return 0;
 }
 
 int __stdcall ReadBytesFromSocket(D2QSSocketStrc * pMCPQSocket, char * pOutBuf, int nMaxBytes) {
@@ -350,12 +350,13 @@ D2QSSocketStrc * __stdcall STRUCT_D2QSSocket_Init(char * szIpAddress, int nPort,
       Storm::Source::SSTR::SStrCopy(pD2QSSocket->szIpAddress, szIpAddress, 0x104);
       if (szName) {
         dwErrorCode = 4;
+        Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, 4);
       } else {
         dwErrorCode = 0x40;
         szName = "UNKNOWN";
+        Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, 0x40);
       }
 
-      Storm::Source::SSTR::SStrCopy(pD2QSSocket->szName, szName, dwErrorCode);
       pD2QSSocket->nPort = nPort;
       D2QSQueue::D2QSQUEUE_Initialize(&pD2QSSocket->aQueue);
       pD2QSSocket->nHeaderSize = 2;

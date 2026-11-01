@@ -116,7 +116,7 @@ void __fastcall Q23_NotifyGuardianStateToPlayers(::SGAMEDATA * pGame, char cPara
 }
 
 // A3Q7 / slot QUESTINT_TheGuardian. Q24_HandleKhalimsWillCompletion(pGame): on the Guardian quest data, force Khalim's-Eye and Khalim's-Flail counts to 2 (mark Khalim's Will assembled), then if the orb unit exists flag it for client update (SetupUpdateFlag 1, and mode-2 update for the secondary orb ref). Cross-quest helper: pokes the Khalim's-Will item bookkeeping that gates the Mephisto fight. No quest-state transitions.
-void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame) {
+void __fastcall Q24_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, uint32_t nEventCode) {
     D2UnitStrc* pQuestData;
     D2QuestDataStrc* pOrbUnit = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheGuardian);
     if (!pOrbUnit) {
@@ -221,13 +221,13 @@ BOOL __fastcall Q24_GetDarkWandererSpawnCoords(::SGAMEDATA * pGame, D2UnitStrc *
             pnParam[1] = pA3Q7Data->nDarkWandererY;
             pnParam[1] += -8;
             bCollisionBlocked = D2Common::Units::TestCollisionByCoordinates(pUnit, nSavedX, pnParam[1], 0x3c01);
-            if (bCollisionBlocked) {
-              pnParam[1] += 5;
+            if (!bCollisionBlocked) {
               pA3Q7Data->nDarkWandererX = *pnParam;
               pA3Q7Data->nDarkWandererY = pnParam[1];
               return 1;
             }
 
+            pnParam[1] += 5;
             pA3Q7Data->nDarkWandererX = *pnParam;
             pA3Q7Data->nDarkWandererY = pnParam[1];
             return 1;

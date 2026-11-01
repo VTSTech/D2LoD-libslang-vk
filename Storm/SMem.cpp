@@ -150,19 +150,17 @@ static BOOL SMEM_CheckValidBlock(int32_t nSourceLine, int32_t bReportError, uint
       return 0;
     }
     if (*(short int*)((uintptr_t)&pBlock[-1].dwHeapSignature + 2) != 0x6f6d) {
-      if (!bReportError) {
-        return 0;
+      if (bReportError) {
+        SMEM_Warning(pnName, nSourceLine, 0x8510007c);
       }
 
-      SMEM_Warning(pnName, nSourceLine, 0x8510007c);
       return 0;
     }
     if (pBlock[-1].byFlags & 2) {
-      if (!bReportError) {
-        return 0;
+      if (bReportError) {
+        SMEM_Warning(pnName, nSourceLine, 0x8510007a);
       }
 
-      SMEM_Warning(pnName, nSourceLine, 0x8510007a);
       return 0;
     }
     if (!(pBlock[-1].byFlags & 1 && *(short int*)((uint32_t)pBlock[-1].wBlockSize - (uint32_t)pBlock[-1].byPadding - 10 + (int)pBlock) != 0x12b1 && bReportError)) {
@@ -1414,19 +1412,19 @@ void * __stdcall SMemAlloc(uint32_t nSize, char * szFile, uint32_t nLine, uint32
     return pMemory;
 }
 
-void __stdcall SMemDumpState(pfnSMemDumpCallback pfnCallback, uint32_t dwCallbackArg) {
+BOOL __stdcall SMemDumpState(pfnSMemDumpCallback pfnCallback, uint32_t dwCallbackArg) {
     SMemHeapDetailsStrc heapStats;
     char szLineBuffer[256];
     if (!g_SMemInitialized) {
       SMemInitialize();
       if (!g_SMemInitialized) {
         SMEM_Warning((uint32_t*)"SMemDumpState()", -1, 0x8510007d);
-        return;
+        return 0;
       }
     }
     if (!pfnCallback) {
       Source::SErr::SErrSetLastError(0x57);
-      return;
+      return 0;
     }
 
     heapStats.dwSize = 0x128;
@@ -1437,6 +1435,8 @@ void __stdcall SMemDumpState(pfnSMemDumpCallback pfnCallback, uint32_t dwCallbac
       (*pfnCallback)(dwCallbackArg, szLineBuffer);
       bHasNextHeap = SMemFindNextHeap(nHeapIndex, (int*)&nHeapIndex, &heapStats);
     }
+
+    return 1;
 }
 
 // @blizzard SMemHeapAlloc (SMEM.CPP)

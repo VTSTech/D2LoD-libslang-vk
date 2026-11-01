@@ -1143,13 +1143,7 @@ uint32_t __fastcall OBJECT_CanTargetMonster(D2UnitStrc * pUnit, D2UnitStrc * pUn
     BOOL _bIsAlly;
     bool bIsAlly;
     bool bIsDead;
-    if (pUnit == pUnit2) {
-      return 0;
-    }
-    if (!pUnit) {
-      return 0;
-    }
-    if (pUnit->eUnitType != UNIT_MONSTER) {
+    if (!(pUnit != pUnit2 && (pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER)) {
       return 0;
     }
 
@@ -2488,12 +2482,11 @@ BOOL __fastcall OBJOP_A2Q2_ArcaneGateLevelTransition(D2ObjectOperateFnArg * pOpe
         Quests::QUESTS::A2Q4::Q12_SetObjectOperateState(pOperation->sArg.pGame, 0x4a);
         return 0;
       }
-      if (eLevelId != LEVEL_PalaceCellarLevel3) {
-        return 0;
+      if (eLevelId == LEVEL_PalaceCellarLevel3) {
+        GAME::Level::InitLevel(pOperation->sArg.pGame, pOperation->pAttacker, LEVEL_ArcaneSanctuary, 0xb);
+        Quests::QUESTS::A2Q4::Q12_SetObjectOperateState(pOperation->sArg.pGame, 0x36);
       }
 
-      GAME::Level::InitLevel(pOperation->sArg.pGame, pOperation->pAttacker, LEVEL_ArcaneSanctuary, 0xb);
-      Quests::QUESTS::A2Q4::Q12_SetObjectOperateState(pOperation->sArg.pGame, 0x36);
       return 0;
     }
 
@@ -2692,10 +2685,10 @@ BOOL __fastcall Objects_OperateFn15_Portal(D2ObjectOperateFnArg * pOperation) {
         uVar1 = D2Client::UNIT::GetGUID(__frame0.pPortalOwnerObj);
         pUnit = __frame0.pPortalOwnerObj;
         if (nCollisionFlagsArg != uVar1) {
-          if (!pOperation->sArg.pGame->bExpansion) {
-            eQuestId = pTxtLevelDefs->QuestFlag;
-          } else {
+          if (pOperation->sArg.pGame->bExpansion) {
             eQuestId = pTxtLevelDefs->QuestFlagEx;
+          } else {
+            eQuestId = pTxtLevelDefs->QuestFlag;
           }
           if ((int)eQuestId > 0) {
             BVar2 = D2Common::QuestRecord::GetQuestState(__frame0.pQuestRecord, eQuestId, QUESTSTATE_Completed);
@@ -3314,7 +3307,7 @@ void __fastcall OBJMODE_HandleObjectDeactivation(::SGAMEDATA * pGame, D2UnitStrc
 
 // NOTE: Register param types inferred (medium confidence): pGameStrc (ECX): SGAMEDATA *, pUnit (EDX): D2UnitStrc *
 void __fastcall OBJMODE_OnWaypointFinish(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit) {
-    if (!pUnit || pUnit->nClassId != 0x151) {
+    if ((pUnit ? pUnit->nClassId : -1) != 0x151) {
       D2Common::Units::SetupUpdateFlag(pUnit, 0);
     } else {
       D2TimerArgStrc* pTimerArg;
@@ -3335,7 +3328,7 @@ void __fastcall OBJMODE_FinalizePortalLink(::SGAMEDATA * pGame, D2UnitStrc * pOw
     }
 
     D2UnitStrc* pBluePortal = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_OBJECT, dwBluePortalGUID);
-    if (!(pBluePortal && pBluePortal->nClassId == 0x3b)) {
+    if ((pBluePortal ? pBluePortal->nClassId : -1) != 0x3b) {
       return;
     }
 
@@ -3678,28 +3671,28 @@ void __fastcall KillUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
         {
           byHitCount = pUnit->pUnitData.pUnitDataMonster->Components[0] + 1;
           pUnit->pUnitData.pUnitDataMonster->Components[0] = byHitCount;
-          if (byHitCount <= 1) {
+          if (byHitCount > 1) {
+            sOperation.sArg.pGame = pGame;
+            sOperation.sArg.pVictim = pUnit;
+            sOperation.pAttacker = 0;
             pDVar1 = D2Common::Units::UNITS_GetRoom(pUnit);
-            ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
-            OBJMODE_TriggerProximityEffect(pGame, pUnit);
-            GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
-            return;
+            sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
+            sOperation.nObjectClassId = pUnit->nClassId;
+            ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
+            if (ppDropResult) {
+              D2Common::Units::SetupUpdateFlag(pUnit, 3);
+              GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
+              return;
+            }
+
+            break;
           }
 
-          sOperation.sArg.pGame = pGame;
-          sOperation.sArg.pVictim = pUnit;
-          sOperation.pAttacker = 0;
           pDVar1 = D2Common::Units::UNITS_GetRoom(pUnit);
-          sOperation.pSeed = ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
-          sOperation.nObjectClassId = pUnit->nClassId;
-          ppDropResult = RollChestDrops(&sOperation, ITEMTYPE_None1);
-          if (ppDropResult) {
-            D2Common::Units::SetupUpdateFlag(pUnit, 3);
-            GAME::Event::SetEvent(pGame, pUnit, 9, (pTxtObjects->FrameCnt[3] >> 8) + 1 + pGame->dwGameFrame, 0, 0);
-            return;
-          }
-
-          break;
+          ObjectsRgn::GetObjectControlSeed(pGame, pDVar1);
+          OBJMODE_TriggerProximityEffect(pGame, pUnit);
+          GAME::Event::SetEvent(pGame, pUnit, 9, pGame->dwGameFrame + 0x19, 0, 0);
+          return;
         }
       case Special1:
         {

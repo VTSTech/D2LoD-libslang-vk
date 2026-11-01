@@ -172,12 +172,12 @@ D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nMode
       switch (nModeIndex) {
         case 0:
           {
-            if (pTxtPlrTypeMode2 + nMode) {
-              return pTxtPlrTypeMode2 + nMode;
+            if (!(pTxtPlrTypeMode2 + nMode)) {
+              nLine = 0x113;
+              break;
             }
 
-            nLine = 0x113;
-            break;
+            return pTxtPlrTypeMode2 + nMode;
           }
         default:
           {
@@ -185,12 +185,12 @@ D2PlrTypeModeTxt * __stdcall TxtGetPlrTypeModeLine(uint32_t nMode, int32_t nMode
           }
         case 1:
           {
-            if (pTxtPlrTypeMode3 + nMode) {
-              return pTxtPlrTypeMode3 + nMode;
+            if (!(pTxtPlrTypeMode3 + nMode)) {
+              nLine = 0x116;
+              break;
             }
 
-            nLine = 0x116;
-            break;
+            return pTxtPlrTypeMode3 + nMode;
           }
       }
     }
@@ -208,12 +208,12 @@ D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
     switch (nModeIndex) {
       case 0:
         {
-          if (pTxtMonMode2 + nId) {
-            return pTxtMonMode2 + nId;
+          if (!(pTxtMonMode2 + nId)) {
+            nLine = 0x126;
+            break;
           }
 
-          nLine = 0x126;
-          break;
+          return pTxtMonMode2 + nId;
         }
       default:
         {
@@ -221,12 +221,12 @@ D2MonModeTxt * __stdcall TxtGetMonModeLine(uint32_t nId, int32_t nModeIndex) {
         }
       case 1:
         {
-          if (pTxtMonMode3 + nId) {
-            return pTxtMonMode3 + nId;
+          if (!(pTxtMonMode3 + nId)) {
+            nLine = 0x129;
+            break;
           }
 
-          nLine = 0x129;
-          break;
+          return pTxtMonMode3 + nId;
         }
     }
 
@@ -243,12 +243,12 @@ D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex)
     switch (nModeIndex) {
       case 0:
         {
-          if (pTxtObjType + nId) {
-            return pTxtObjType + nId;
+          if (!(pTxtObjType + nId)) {
+            nLine = 0x139;
+            break;
           }
 
-          nLine = 0x139;
-          break;
+          return pTxtObjType + nId;
         }
       default:
         {
@@ -256,12 +256,12 @@ D2ObjTypeTxt * __stdcall TxtGetObjTypeModeLine(uint32_t nId, int32_t nModeIndex)
         }
       case 1:
         {
-          if (pTxtObjMode + nId) {
-            return (D2ObjTypeTxt*)(pTxtObjMode + nId);
+          if (!(pTxtObjMode + nId)) {
+            nLine = 0x13c;
+            break;
           }
 
-          nLine = 0x13c;
-          break;
+          return (D2ObjTypeTxt*)(pTxtObjMode + nId);
         }
     }
 
@@ -400,19 +400,17 @@ void __stdcall GetInvDimensions(int32_t neInventoryPage, int32_t nScreenMode, D2
       exit(-1);
     } else {
       D2InventoryTxt* pTxtEntry;
-      if (nTxtIndex <= (uint32_t)nTxtInventorySize) {
-        pTxtEntry = pTxtInventory + nTxtIndex;
-        if (pTxtEntry) {
-          pOutput->nLeft = pTxtEntry->invLeft;
-          pOutput->nRight = pTxtEntry->invRight;
-          pOutput->nTop = pTxtEntry->nTop;
-          pOutput->nBottom = pTxtEntry->invBottom;
-          return;
-        }
+      pTxtEntry = nTxtIndex <= (uint32_t)nTxtInventorySize ? pTxtInventory + nTxtIndex : nullptr;
+      if (!pTxtEntry) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x8c);
-      exit(-1);
+      pOutput->nLeft = pTxtEntry->invLeft;
+      pOutput->nRight = pTxtEntry->invRight;
+      pOutput->nTop = pTxtEntry->nTop;
+      pOutput->nBottom = pTxtEntry->invBottom;
+      return;
     }
 }
 
@@ -426,29 +424,27 @@ void __stdcall GetGridDimensions(int32_t neInventoryPage, int32_t nScreenMode, D
       exit(-1);
     } else {
       short int sVar1;
-      if (nTxtIndex <= (uint32_t)nTxtInventorySize) {
-        pTxtEntry = pTxtInventory + nTxtIndex;
-        if (pTxtEntry) {
-          byGridRows = pTxtEntry->sGrid.nGridRows;
-          sVar1 = pTxtEntry->sGrid.pad_02;
-          pOutput->nGridCols = pTxtEntry->sGrid.nGridCols;
-          pOutput->nGridRows = byGridRows;
-          pOutput->pad_02 = sVar1;
-          pOutput->nPixelLeft = pTxtEntry->sGrid.nPixelLeft;
-          pOutput->nRight = pTxtEntry->sGrid.nRight;
-          pOutput->nTop = pTxtEntry->sGrid.nTop;
-          pOutput->nBottom = pTxtEntry->sGrid.nBottom;
-          byGridRows = pTxtEntry->sGrid.nCellHeight;
-          sVar1 = pTxtEntry->sGrid.pad_16;
-          pOutput->nCellWidth = pTxtEntry->sGrid.nCellWidth;
-          pOutput->nCellHeight = byGridRows;
-          pOutput->pad_16 = sVar1;
-          return;
-        }
+      pTxtEntry = nTxtIndex <= (uint32_t)nTxtInventorySize ? pTxtInventory + nTxtIndex : nullptr;
+      if (!pTxtEntry) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
+        exit(-1);
       }
 
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
-      exit(-1);
+      byGridRows = pTxtEntry->sGrid.nGridRows;
+      sVar1 = pTxtEntry->sGrid.pad_02;
+      pOutput->nGridCols = pTxtEntry->sGrid.nGridCols;
+      pOutput->nGridRows = byGridRows;
+      pOutput->pad_02 = sVar1;
+      pOutput->nPixelLeft = pTxtEntry->sGrid.nPixelLeft;
+      pOutput->nRight = pTxtEntry->sGrid.nRight;
+      pOutput->nTop = pTxtEntry->sGrid.nTop;
+      pOutput->nBottom = pTxtEntry->sGrid.nBottom;
+      byGridRows = pTxtEntry->sGrid.nCellHeight;
+      sVar1 = pTxtEntry->sGrid.pad_16;
+      pOutput->nCellWidth = pTxtEntry->sGrid.nCellWidth;
+      pOutput->nCellHeight = byGridRows;
+      pOutput->pad_16 = sVar1;
+      return;
     }
 }
 
