@@ -573,11 +573,13 @@ void __stdcall D2VP_SetFeatureToggle(const char* szKey, int nValue) {
 // Bust every gate's 2 s hot-read cache so the next poll re-reads d2vp.ini.
 // Called by D2VP_SetFeatureToggle after each write; exported for future
 // tooling (console commands, external reload hooks).
+static void VPSHAREDUI_FlushGateCache(); // defined in the shared-stash block below
 void __stdcall D2VP_ConfigReloaded() {
     dwAltToggleLastCheck = 0;     // next ALTTOGGLE_Active() re-reads alt_toggle
     dwAutoGoldLastCheck = 0;      // next AUTO_GOLD_Active() re-reads auto_gold
     dwGlobeTextPersistentLastCheck = 0; // next VANILLAPLUS_GlobeTextPersistent() re-reads globe_persistent
     dwItemIlvlLastCheck = 0;      // next ITEMILVL_Active() re-reads item_ilvl
+    VPSHAREDUI_FlushGateCache();  // next VPSHAREDUI_FeatureActive() re-reads shared_stash
     Fog::Source::SFile::PORTABLESAVE_FlushConfig(); // next save-path poll re-reads portable_save
 }
 
@@ -935,6 +937,16 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
 static DWORD dwVpSharedStashGateTick = 0;
 static int gbVpSharedPageActive = 0;  // client mirror of the page toggle
+
+// Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
+// next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
+// follows the in-game toggle the same frame. The server half (D2Game/PLAYER/
+// VanillaPlusStash.cpp) keeps its own 2 s poll: D2Game cannot import D2Client
+// helpers (module boundary), so its gate follows within <= 2 s - same as an
+// external ini edit, still far faster than walking to a stash.
+static void VPSHAREDUI_FlushGateCache() {
+    dwVpSharedStashGateTick = 0;
+}
 
 BOOL __stdcall VPSHAREDUI_FeatureActive() {
     DWORD dwNow = GetTickCount();

@@ -138,19 +138,24 @@ static const int VPPAGE_TEXT_BASELINE_INSET = 4;   // baseline above row bottom
 
 // [features] keys rendered by the page. Adding a slate feature = +1 entry
 // here and +1 template block in ALTTOGGLE_WriteIniTemplate - nothing else.
+// (shared_stash's template block shipped with the feature itself, R63/Rev 82.)
 struct VPPFeatureRow {
     const char* szKey;        // d2vp.ini [features] key
     const wchar_t* wszLabel;  // row label
 };
-static const VPPFeatureRow gaVanillaPlusRows[5] = {
+static const VPPFeatureRow gaVanillaPlusRows[6] = {
     { "alt_toggle", L"Show Items Toggle" },
     { "auto_gold", L"Auto Gold Pickup" },
     { "portable_save", L"Portable Saves" },
     { "globe_persistent", L"Persistent Globe Text" },
     { "item_ilvl", L"Item Level Tooltips" },
+    { "shared_stash", L"Shared Stash" },  // VP: [shared-stash] track N round 1 (R67: in-game Options row - the tab is no longer ini-only)
 };
-static const int VPP_ROW_COUNT = 5;
-static const int VPP_ROW_BACK = 5; // hit-test index of the Previous Menu row
+static const int VPP_ROW_COUNT = 6;
+static const int VPP_ROW_BACK = 6; // hit-test index of the Previous Menu row
+// Layout check (R67): row 5 spans boxTop+0x0f0..0x10a, the Previous Menu row
+// sits at boxTop+0x124 - no overlap inside the 0x171-high box, so the page
+// geometry constants stay untouched.
 
 // Input handlers (definitions below; the batch array references them).
 // Deliberately NO WM_MOUSEMOVE (0x200) entry - see the header comment block:

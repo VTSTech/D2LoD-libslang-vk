@@ -18,7 +18,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 ## A. Boot & menus (~3 min)
 
 - [ ] **1. Intro & title:** intro video plays *with sound* → title music plays → character select renders.
-- [ ] **2. Options page:** `Esc → Options → "Vanilla+ Options"` — page appears, toggles flip when clicked.
+- [ ] **2. Options page:** `Esc → Options → "Vanilla+ Options"` — page appears, toggles flip when clicked (six feature rows — Show Items Toggle / Auto Gold Pickup / Portable Saves / Persistent Globe Text / Item Level Tooltips / Shared Stash — plus Previous Menu).
 - [ ] **3. Video modes:** `640x480`, `800x600`, `1280x720` — at least fullscreen **and** windowed (`-w`) at 720p. No black screen / freeze on switch.
 
 ## B. In-game core (~5 min)
@@ -72,7 +72,7 @@ Owner spec: "Give us 1 page of retail-shaped shared stash to start. Accessible f
 
 Field status on the R66 build (2026-11-01): the tab is VISIBLE and the page works — owner: **"Great job. I see it. It works."** (item 21 confirmed). Earlier, on the R65 build (same day), the MECHANISM was field-proven end to end blind — the owner clicked the tab's rect while the word was still painted over, the shared page swapped, gold + an item deposited, character switched, **both came back** (covers 23/24's core flows). Still owed on a 0.0.7 build: item 25 (`.d2s` loads in unmodified retail) and item 27 (the checksum degrade drill); the 720p tab check follows the 800x600 pass (owner scope call).
 
-Setup: `d2vp.ini` → `[features] shared_stash=1` (hot-reloads within ~2 s; the tab only appears with the key on).
+Setup: `d2vp.ini` → `[features] shared_stash=1` (hot-reloads within ~2 s; the tab only appears with the key on) — or, easier, flip the **Shared Stash** row in the in-game `Esc → Options → Vanilla+ Options` page (R67): the tab follows that toggle the same frame client-side, and the server half picks it up within its 2 s poll, so give it a beat before clicking the tab. Toggling OFF while the shared page is ACTIVE: the tab disappears — if you were viewing the shared page, the grid keeps showing it until you re-enter a game (the save flush still parks the shared set and restores your personal page on save either way; nothing is lost).
 
 - [x] **21. Tab appears (gate on):** with the key on, open any stash in town — a **"Shared"** text tab sits on the **same row as the stash gold label**, right of center, roughly above the grid's rightmost columns (R66 moved it ~80 px left of the R65 spot: the old spot was inside the right-panel art's rectangle, which is blitted after the tab and covered the word). White = personal page visible, green `> Shared` = shared page. The grid below it is the untouched retail stash grid. No hotkey exists — the tab is the only affordance. — **CONFIRMED 2026-11-01 (R66 field run, owner: "Great job. I see it. It works."):** the tab is visible and toggles the shared page. Keep as a per-build regression check.
 - [ ] **22. Gate off = vanilla:** with `shared_stash=0`/missing (or before the 2 s poll), the tab is absent and the stash behaves exactly as retail. No `_d2vp_shared.sss` may exist in the save folder from this run.

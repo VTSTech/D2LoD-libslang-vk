@@ -602,6 +602,15 @@ gate "ilvl: header declares gate + suffix"    D2Client/UI/VanillaPlusCore.h     
 gate "ilvl: suffix call sites (id+unid+set)"  D2Client/UI/Inv.cpp               'ITEMILVL_AppendNameSuffix' 3
 gate "options page: ilvl row present"         D2Client/UI/VanillaPlusOptions.cpp '"item_ilvl"' 1
 
+# ---- [shared-stash options row] R67: track N's in-game Options toggle -------
+# The "Shared" tab is no longer ini-only: the Vanilla+ Options page gains a
+# sixth row ("Shared Stash") wired through the same D2VP_* bridge as the
+# other five. D2VP_ConfigReloaded also busts the client stash gate cache so
+# the tab follows the toggle the same frame; the server half keeps its own
+# 2 s poll (D2Game cannot import D2Client helpers - module boundary).
+gate "options page: stash row present"        D2Client/UI/VanillaPlusOptions.cpp '"shared_stash"' 1
+gate "stash: options gate flush (R67)"        D2Client/UI/VanillaPlusCore.cpp   'VPSHAREDUI_FlushGateCache' 3
+
 # ---- [save-reenter] R60: issue #19 (save a game, re-enter crashes) — instrumentation + hardening
 # Theory of record: the upstream heap corruptor (proven alive by the R54 field log's
 # two roster-heal 64-node cap marks during load, on regroup code that is provably
@@ -633,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R66"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R66' 1
+gate "res: self-id 0.0.7-R67"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R67' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
