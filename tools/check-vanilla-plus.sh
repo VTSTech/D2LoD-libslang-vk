@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R68"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R68' 1
+gate "res: self-id 0.0.7-R69"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R69' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -654,6 +654,20 @@ gate "stash: server TU header"                D2Game/PLAYER/VanillaPlusStash.h  
 gate "stash: sss io DWORD outparam"           D2Game/PLAYER/VanillaPlusStash.cpp 'DWORD dwGot' 1
 gate "stash: tab right edge anchor"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x130' 1
 gate "stash: tab out of right-art cover"      D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x1(4|[5-9a-f])[0-9a-f]' 0
+
+# ---- [shared-stash tab position] R69: the owner asked to move the label
+# "up and to the left, above the gold amount deposited display" after the
+# R68 Font24 bump made it overlap the retail "Gold Max: %ld" text on the
+# shared row. The word now FLOATS above the panel: right edge +0xdc, the
+# baseline 55 px above the gold amount box's own text row, with the R66
+# in-panel row kept as the 640x480 fallback - and the mouse-DOWN half is
+# swallowed in INPUT_StashLeftClick so the down can't walk the character
+# out from under the stash (the band sits on the playfield now).
+gate "stash: tab floating right edge (R69)"   D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE_FLOAT = 0xdc' 1
+gate "stash: tab floats above gold box (R69)" D2Client/UI/VanillaPlusCore.cpp    'nGoldBoxBaseline - VPSHAREDUI_TAB_FLOAT_GAP' 1
+gate "stash: tab headroom fallback (R69)"     D2Client/UI/VanillaPlusCore.cpp    'nFloatBaseline >= 0x18' 1
+gate "stash: tab hit-test helper (R69)"       D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TabHitTest' 3
+gate "stash: tab down swallow site (R69)"     D2Client/UI/Inv.cpp                'VPSHAREDUI_TabHitTest\(nX, nY\)' 1
 gate "stash: click-button intercept site"     D2Game/PLAYER/PlayerTrade.cpp      'VPSHARED_ShouldInterceptClickButton\(pGame, pUnit, nButtonId\)' 1
 gate "stash: click-button include"            D2Game/PLAYER/PlayerTrade.cpp      'PLAYER/VanillaPlusStash\.h' 1
 gate "stash: save flush site"                 D2Game/PLAYER/PlayerSave.cpp       'VPSHARED_FlushBeforeSave\(pGame, pUnit\)' 1

@@ -4,7 +4,7 @@
 # D2LoD Vanilla+
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-289%2F289-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-294%2F294-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -79,7 +79,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
   `.d2s` saves stay retail-pure by construction (field-proven end to end in the R63–R66
   rounds; owner: "Great job. I see it. It works."); an in-game **Shared Stash** row on
   the Vanilla+ Options page followed in R67; the tab label sits one size class up
-  since R68 (Font24, `d2vp.ini [ui] stash_tab_font` tunes it live).
+  since R68 (Font24, `d2vp.ini [ui] stash_tab_font` tunes it live) and floats above
+  the panel over the gold display since R69.
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring.** Re-root-caught + re-fixed in the R51 round:
     the R50 round corrected the roster pet-recolor polarity, but the spawn-time
