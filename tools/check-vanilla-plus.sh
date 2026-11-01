@@ -633,7 +633,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id R65"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R65' 1
+gate "res: self-id R66"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R66' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -643,7 +643,8 @@ gate "res: self-id R65"                       D2Client/Engine/Application.cpp   
 # compatible character saves, stash-panel access, no hotkey, gold + items.
 gate "stash: server TU header"                D2Game/PLAYER/VanillaPlusStash.h   'VPSHARED_BUTTON_TOGGLE = 0x7D' 1
 gate "stash: sss io DWORD outparam"           D2Game/PLAYER/VanillaPlusStash.cpp 'DWORD dwGot' 1
-gate "stash: tab right edge anchor"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x180' 1
+gate "stash: tab right edge anchor"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x130' 1
+gate "stash: tab out of right-art cover"      D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x1(4|[5-9a-f])[0-9a-f]' 0
 gate "stash: click-button intercept site"     D2Game/PLAYER/PlayerTrade.cpp      'VPSHARED_ShouldInterceptClickButton\(pGame, pUnit, nButtonId\)' 1
 gate "stash: click-button include"            D2Game/PLAYER/PlayerTrade.cpp      'PLAYER/VanillaPlusStash\.h' 1
 gate "stash: save flush site"                 D2Game/PLAYER/PlayerSave.cpp       'VPSHARED_FlushBeforeSave\(pGame, pUnit\)' 1

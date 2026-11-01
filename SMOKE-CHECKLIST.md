@@ -1,6 +1,6 @@
 # Vanilla+ Smoke Test — in-game checklist
 
-Build: **Vanilla+0.0.6-R65** (confirm via line 1 of `d2boot.log` before starting).
+Build: **Vanilla+0.0.6-R66** (confirm via line 1 of `d2boot.log` before starting).
 Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 **Last field pass — 2026-11-01 (first post-1783-sync build, self-ID R62):** owner verdict **"Good job. Builds. Runs. No obvious regressions."** — the Ghidra 1776-1783 regen absorption plus both sync fixes (Rev 76 `d2_boot.h` include restore, Rev 77 `DrawSolidRectEx` signature realignment) is field-proven end to end. **Follow-up, same day: the FULL checklist (items 0–20) ran green on the R62 build.** Every unchecked item below stays a standing regression check; the roster-heal corruptor watch stays ARMED — `roster heal:` marks in the log = send the log.
@@ -13,7 +13,7 @@ Core path takes ~15 min. Run top to bottom — the fast checks come first.
 
 ## Setup (once, ~1 min)
 
-- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R65`. If it says R64 or lower, wrong exe — don't test further.
+- [ ] **0.** Confirm the right exe: line 1 of `d2boot.log` must say `Vanilla+0.0.6-R66`. If it says R65 or lower, wrong exe — don't test further.
 
 ## A. Boot & menus (~3 min)
 
@@ -66,13 +66,15 @@ Every step writes to `d2boot.log`. One char that clears the Den and rejoins cove
 
 ---
 
-## H. Shared stash — 1 page ([SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) track N round 1, R65)
+## H. Shared stash — 1 page ([SHARED-STASH-PLAN.md](SHARED-STASH-PLAN.md) track N round 1, R66)
 
 Owner spec: "Give us 1 page of retail-shaped shared stash to start. Accessible from Stash Panel. No hotkey. Gold and Items can be deposited. If that works we'll do 10 pages. Then 100." One character covering both sides of the round trip is enough for the first pass; `d2boot.log` carries the whole chain (`shared stash:` marks).
 
+Field status on the R65 build (2026-11-01): the MECHANISM is field-proven end to end — owner clicked the tab's rect blind (word invisible, see item 21), the shared page swapped, gold + an item deposited, character switched, **both came back** (covers 23/24's core flows). What R66 fixes is only the word's visibility: it was drawn, then overpainted by the right-panel art (tab anchor moved left of that art's rectangle).
+
 Setup: `d2vp.ini` → `[features] shared_stash=1` (hot-reloads within ~2 s; the tab only appears with the key on).
 
-- [ ] **21. Tab appears (gate on):** with the key on, open any stash in town — a **"Shared"** text tab sits top-right on the same row as the stash gold label (white = personal page visible). The grid below it is the untouched retail stash grid. No hotkey exists — the tab is the only affordance.
+- [ ] **21. Tab appears (gate on):** with the key on, open any stash in town — a **"Shared"** text tab sits on the **same row as the stash gold label**, right of center, roughly above the grid's rightmost columns (R66 moved it ~80 px left of the R65 spot: the old spot was inside the right-panel art's rectangle, which is blitted after the tab and covered the word). White = personal page visible, green `> Shared` = shared page. The grid below it is the untouched retail stash grid. No hotkey exists — the tab is the only affordance.
 - [ ] **22. Gate off = vanilla:** with `shared_stash=0`/missing (or before the 2 s poll), the tab is absent and the stash behaves exactly as retail. No `_d2vp_shared.sss` may exist in the save folder from this run.
 - [ ] **23. Item deposit + cross-character round trip (the core test):** char A: put an item in the personal stash → click **Shared** (tab turns green `> Shared`) → the grid swaps to the shared page (empty first time; log: `shared stash: no file - starting empty` then `shared stash: shared page active`) → drop the item into the grid → click the tab again to go personal (log: `shared stash: saved`, `shared stash: personal page restored`) → Save & Exit. Char B (same PC): join, stash, **Shared** → **the same item is on the shared page** → pick it up into inventory → tab back → Save & Exit. Log must show char B's `shared stash: loaded N items` on first toggle.
 - [ ] **24. Gold deposit + withdraw:** with the shared page active, use the stash panel's normal gold buttons: **deposit** moves carried gold into the shared pool (the stash gold display reads the shared amount — it borrows the retail goldbank slot), **withdraw** takes shared gold back out. Tab back to personal: the display returns to the character's own banked gold (log: `shared stash: saved ... gold N` carrying the shared remainder). The character's personal banked gold must come back exactly what it was.

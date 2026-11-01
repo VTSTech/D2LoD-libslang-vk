@@ -5021,10 +5021,12 @@ void __stdcall INV_HandleStashLeftClick(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    // VP-BEGIN [vanilla-plus shared-stash] "Shared" tab (top-right of the
-    // stash panel, d2vp.ini [features] shared_stash=1, no hotkey): flips
-    // the visible stash page by sending the VP 0x4F/0x7D toggle to the
-    // server, which swaps the page-4 contents (VanillaPlusStash.cpp).
+    // VP-BEGIN [vanilla-plus shared-stash] "Shared" tab (on the stash
+    // panel's gold-label row, left of the right-panel art seam - the draw
+    // anchor is VPSHAREDUI_TAB_RIGHT_EDGE in VanillaPlusCore.cpp;
+    // d2vp.ini [features] shared_stash=1, no hotkey): flips the visible
+    // stash page by sending the VP 0x4F/0x7D toggle to the server, which
+    // swaps the page-4 contents (VanillaPlusStash.cpp).
     if (VPSHAREDUI_HandleStashClick((int)uMouseX, (int)uMouseY)) {
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;

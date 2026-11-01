@@ -960,19 +960,35 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
     gbVpSharedPageActive = 0;
 }
 
-// Tab geometry: the top-right corner of the stash panel, on the same text
-// row as the stash gold label the panel draws at (gnPanelOffsetX + 0x4e,
-// gnPanelOffsetY - (expansion ? 0x19f : 0xdb) + ScreenSizeY). The right-edge
-// anchor is 0x180: the stash panel's own retail content anchors stop at
-// +0x13b (gold label +0x4e, stash close-hit +0x49..+0x96, the gold
-// deposit/withdraw buttons +0x110..+0x13b) and the panel art ends at
-// +0x190, so 0x180 sits 16 px inside the true right edge. (Round 1 shipped
-// 0x1f8 - read off the 2x256-px background tiling as a 512-px panel - which
-// floats the word ~0x68 past the real edge, over the viewport: field-caught
-// on R64, the owner staring at the panel corner saw nothing.) The hit rect
-// is deliberately generous around the drawn word and has no Y overlap with
-// any retail hit (the gold buttons live at the panel's bottom).
-constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x180;
+// Tab geometry: on the stash panel's gold-label row (a row the owner sees),
+// pulled LEFT of the right-panel art's rectangle. Field archaeology across
+// three builds, each step field-caught:
+//   R64  right edge +0x1f8 - misread the 2x256-px stash tiling as a
+//        "512-px panel"; the word landed deep in the right panel.
+//   R65  right edge +0x180 - "16 px inside the +0x190 art edge"; STILL
+//        invisible: the RIGHT panel's DC6 (InvChar frames 4-7) draws at
+//        ScreenSizeX - gnPanelOffsetX - 0x140, so its rectangle starts at
+//        panel-relative +0x140 (abs x=400 at 800x600) and is blitted ~30
+//        lines AFTER the tab's draw site - its opaque pixels repaint the
+//        word. Field proof on the R65 build: the word stayed invisible
+//        while clicks in the same rect toggled the page (the hit test
+//        lives in the click handler, immune to draw order), and the whole
+//        shared-page round trip worked (owner: gold + an item deposited,
+//        character switched, both came back).
+//   R66  right edge +0x130 - 16 px left of the +0x140 rect. Nothing after
+//        the tab's draw site paints panel-relative x < 0x140 on that row
+//        (the right-panel art is at >= 0x140; DRAW_UI's tail is bottom
+//        HUD, orbs, corners and body slots), so the word survives at
+//        800x600, 640x480 and the wide modes alike - the same expressions
+//        put the word at gnPanelOffsetX + 0x130 while the art rect stays
+//        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
+//        rect 640).
+// The hit rect is a generous band around the drawn word ("Shared" is ~60 px
+// at font 1, "> Shared" ~75) and has no Y overlap with any retail stash hit
+// (close X at [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x
+// [gnPanelOffsetY-0x60..-0x40], gold buttons at INV_GetGoldButtonX/Y - both
+// near the panel's bottom - and the grid rows start below this row).
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;
 
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
@@ -980,7 +996,9 @@ static int VPSHAREDUI_TabBaselineY() {
 }
 
 static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
-    *pnLeft = gnPanelOffsetX + 0x110;
+    // Left edge covers both word variants right-aligned at TAB_RIGHT_EDGE
+    // ("Shared" ~60 px, "> Shared" ~75 px at font 1).
+    *pnLeft = gnPanelOffsetX + 0x0c8;
     *pnRight = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
     int nBaselineY = VPSHAREDUI_TabBaselineY();
     *pnTop = nBaselineY - 14;
