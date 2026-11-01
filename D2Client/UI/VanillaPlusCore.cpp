@@ -1001,8 +1001,15 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 //        put the word at gnPanelOffsetX + 0x130 while the art rect stays
 //        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
 //        rect 640).
-// R75 composite: the label is one row-built strip, still right-aligned at
-// the same R66 anchor (the +0x140 art-seam rule is untouched) - on the
+//   R76  right edge +0x13c - the R75 composite is wider than the R66 word
+//        and still grew LEFTWARD from the R66 anchor, so its leftmost
+//        element (the '<' tip) landed on the tail of the retail gold
+//        amount text drawn on this same row at +0x4e (owner: "the page
+//        arrows are displaying on top of the gold amount slightly").
+//        Nudged +0x0c right: the '>' halo tip ends at +0x13d, 3 px inside
+//        the +0x140 art-seam rule.
+// R75 composite: the label is one row-built strip, right-aligned at the
+// R66 anchor as R76 nudged it (the +0x140 art-seam rule is untouched) - on the
 // personal page  "Shared >"  (the > invites a step into shared page 1), on
 // the shared pages  "< Shared 1 >" / "< Shared 2"  (green, the active
 // color). The arrows step ONE page left/right; the word itself toggles
@@ -1015,7 +1022,7 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 // [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
 // gold buttons at INV_GetGoldButtonX/Y - both near the panel's bottom - and
 // the grid rows start below this row).
-constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x13c; // R66 0x130; R76 +0x0c off the gold amount text
 constexpr int VPSHAREDUI_PAGE_COUNT = 2;  // shared pages (the personal page is not one of them)
 constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 
@@ -1036,7 +1043,7 @@ static const uint16_t * VPSHAREDUI_PageWord() {
 // widths are per-font). Fills the word's draw x + width, the left/right
 // arrow draw x (valid only when the matching has-flag is set) and the
 // measured arrow width. Right edge of the composite = gnPanelOffsetX +
-// VPSHAREDUI_TAB_RIGHT_EDGE, exactly the R66 word anchor.
+// VPSHAREDUI_TAB_RIGHT_EDGE - the R66 word anchor as R76 nudged it.
 static void VPSHAREDUI_TabLayout(int * pnWordX, int * pnWordW,
                                  int * pnLeftX, int * pbHasLeft,
                                  int * pnRightX, int * pbHasRight, int * pnArrowW) {

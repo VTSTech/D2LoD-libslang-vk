@@ -75,7 +75,7 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 - **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
   compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
   field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
-  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1).
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display.
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring**
     ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
