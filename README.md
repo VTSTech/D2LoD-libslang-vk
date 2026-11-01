@@ -5,7 +5,7 @@
 # D2LoD Vanilla+
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-285%2F285-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-297%2F297-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -43,7 +43,7 @@ Options"**.
 | Auto Gold Pickup | `[features] auto_gold` | Gold piles inside pickup range are collected when you walk over them, via the game's own server-side pickup path. Gold only, never moves your character, never fires mid-attack. |
 | Persistent Globe Text | `[features] globe_persistent` | Retail's above-orb Life/Mana readout stays visible without hovering. Pure display; retail's own HP/MP-text options keep working. |
 | Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip — e.g. `Long Sword (12)` — so an item's level reads at a glance. |
-| Shared Stash | `[features] shared_stash` | A **"Shared" tab** on the stash panel over one retail-shaped page that every character on the PC shares: items and gold deposited there survive the character. Stored in its own `_d2vp_shared.sss` beside the saves — character `.d2s` files stay retail-compatible, with or without the key. The tab label floats above the panel over the gold display; `d2vp.ini [ui] stash_tab_font` tunes its size live. |
+| Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over two retail-shaped pages that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step between the pages (Shared 1, Shared 2); clicking the word returns to the personal page. Stored in its own `_d2vp_shared.sss` beside the saves (pre-R75 single-page files load as page 1) — character `.d2s` files stay retail-compatible, with or without the key. |
 
 No balance changes, no save-format changes: `.d2s`/`.d2x` layouts stay untouched, and
 every feature ships OFF. The wider candidate slate (D2R backports and owner suggestions)
@@ -72,9 +72,10 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
   field-proven end to end (owner: "Great job. I see it. It works."). Root causes and
   fixes for every linked issue live in the issues and in
   [`HISTORY.md`](HISTORY.md).
-- **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R70 text-backdrop pill behind the floating tab, then merge `6c552f9` + the R73/R74
+- **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
   compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
-  field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending.
+  field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1).
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring**
     ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
@@ -151,7 +152,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **285 checks**, green at the current tip.
+  telemetry) with **297 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README and below.

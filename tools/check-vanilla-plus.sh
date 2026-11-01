@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R74"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R74' 1
+gate "res: self-id 0.0.7-R75"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R75' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -666,9 +666,11 @@ gate "stash: client gate key"                 D2Client/UI/VanillaPlusCore.cpp   
 gate "stash: server gate key"                 D2Game/PLAYER/VanillaPlusStash.cpp '"features", "shared_stash", 0' 1
 gate "stash: sss file name"                   D2Game/PLAYER/VanillaPlusStash.cpp '_d2vp_shared\.sss' 2
 gate "stash: sss magic"                       D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '1'" 1
-gate "stash: load marks"                      D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (no file|bad header|checksum fail|item count)' 5
+# R75: two shared pages + pager arrows + outlined label. bad-header(size)
+# fires twice now (per-page ingest + the v2 page-1 extent pre-check).
+gate "stash: load marks"                      D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (no file|bad header|checksum fail|item count)' 6
 gate "stash: write marks"                     D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (write failed|saved)' 5
-gate "stash: toggle marks"                    D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (shared page active|personal page restored)' 2
+gate "stash: toggle marks"                    D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: (shared page|switched to page|personal page restored)' 3
 gate "stash: save flush mark"                 D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: flush before save' 1
 gate "stash: atomic write"                    D2Game/PLAYER/VanillaPlusStash.cpp 'MoveFileExA' 3
 gate "stash: .bak generation"                 D2Game/PLAYER/VanillaPlusStash.cpp 'CopyFileA' 1
@@ -678,6 +680,26 @@ gate "stash: retail item loader"              D2Game/PLAYER/VanillaPlusStash.cpp
 gate "stash: dematerialize via retail remove" D2Game/PLAYER/VanillaPlusStash.cpp 'ITEM_RemoveItemFromCurrentLocation' 2
 gate "stash: client resync 0x9C"              D2Game/PLAYER/VanillaPlusStash.cpp 'Send0x9CItemPutInContainer' 1
 gate "stash: scope guard SP-only"             D2Game/PLAYER/VanillaPlusStash.cpp 'SGAMETYPE_SINGLEPLAYER' 2
+
+# ---- [vanilla-plus shared-stash] R75: page 2 + pager arrows + outlined tab
+# Owner ask: "give the current stash tab label an outline" + "add a 2nd page
+# and buttons/arrows to navigate pages". Server: two shared pages as two 'JM'
+# blocks, .sss v2 (magic VPS2, per-page size/checksum pairs) with the v1
+# field files read back as page 1; the 0x4F/0x7D param word now carries the
+# ABSOLUTE desired page (0/1/2). Client: outlined composite (word + < >),
+# click bands from the same measured layout the draw uses.
+gate "stash: two-page state"                  D2Game/PLAYER/VanillaPlusStash.cpp 'apSharedBlock\[VPSTASH_PAGES\]' 1
+gate "stash: v2 file magic"                   D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '2'" 1
+gate "stash: v1 file read-back"               D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_FILE_VERSION_V1' 2
+gate "stash: per-page ingest helper"          D2Game/PLAYER/VanillaPlusStash.cpp 'VPSHARED_IngestPageBlock' 4
+gate "stash: page switch mark"                D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: switched to page' 1
+gate "stash: page param range mark"           D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: page %d out of range' 1
+gate "stash: pager page count"                D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PAGE_COUNT = 2' 1
+gate "stash: outlined label helper"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_DrawOutlinedText' 4
+gate "stash: outline shadow palette"          D2Client/UI/VanillaPlusCore.cpp    'aOffs\[4\]\[2\]' 1
+gate "stash: pager arrow glyphs"              D2Client/UI/VanillaPlusCore.cpp    'L"<"' 1
+gate "stash: page word variants"              D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PageWord' 3
+gate "stash: layout shared by draw+click"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TabLayout' 3
 
 # ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
 # [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line

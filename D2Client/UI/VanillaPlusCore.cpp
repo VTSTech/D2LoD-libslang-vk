@@ -915,18 +915,23 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 //   2. the "Shared" text tab on the stash panel (top-right, same text row
 //      as the stash gold label) - hit-tested in INV_HandleStashLeftClick via
 //      VPSHAREDUI_HandleStashClick, drawn by VPSHAREDUI_DrawTab right after
-//      the gold-button draw. No hotkey: the tab is the only affordance
-//      (owner decision 2026-11-01);
+//      the gold-button draw. Since R75 the label is an OUTLINED composite:
+//      a 1-px black halo under the glyphs (owner: "give the current stash
+//      tab label an outline") plus a two-page pager - < and > arrows step
+//      between the personal page and shared pages 1/2 (owner: "add a 2nd
+//      page and buttons/arrows to navigate pages"), the label reads
+//      Shared 1 / Shared 2 on the shared pages. No hotkey: the tab is the
+//      only affordance (owner decision 2026-11-01);
 //   3. a per-game reset so entering a game always starts on the personal
 //      page (the server starts every game on the personal page too).
 //
 // Clicking the tab sends the C->S 0x4F Click-Button packet with the
-// out-of-retail-range button id 0x7D and the desired page in the param word
-// (0 personal / 1 shared). Everything else - the grid, the item moves, the
-// gold buttons - is untouched retail; while the shared page is active the
-// server serves page 4 from the shared pool and the goldbank stat carries
-// shared gold, so the retail deposit/withdraw buttons and the gold display
-// just work.
+// out-of-retail-range button id 0x7D and the ABSOLUTE desired page in the
+// param word (0 personal / 1 shared-1 / 2 shared-2). Everything else - the
+// grid, the item moves, the gold buttons - is untouched retail; while a
+// shared page is active the server serves page 4 from that page's block and
+// the goldbank stat carries the shared gold, so the retail deposit/withdraw
+// buttons and the gold display just work.
 //
 // Client/server agreement: in SP every click is delivered, so the client
 // flag and the server page cannot drift (the server toggle is idempotent
@@ -936,7 +941,8 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 
 static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
 static DWORD dwVpSharedStashGateTick = 0;
-static int gbVpSharedPageActive = 0;  // client mirror of the page toggle
+static int gnVpSharedPage = 0;        // client mirror of the page toggle:
+                                      // 0 personal, 1/2 = shared pages 1/2
 
 // Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
 // next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
@@ -965,11 +971,11 @@ BOOL __stdcall VPSHAREDUI_FeatureActive() {
 }
 
 int __stdcall VPSHAREDUI_IsSharedPage() {
-    return gbVpSharedPageActive;
+    return gnVpSharedPage; // 0 = personal; 1/2 = the shared page on screen
 }
 
 void __stdcall VPSHAREDUI_ResetForNewGame() {
-    gbVpSharedPageActive = 0;
+    gnVpSharedPage = 0;
 }
 
 // Tab geometry: on the stash panel's gold-label row (a row the owner sees),
@@ -995,26 +1001,69 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 //        put the word at gnPanelOffsetX + 0x130 while the art rect stays
 //        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
 //        rect 640).
-// The hit rect is a generous band around the drawn word ("Shared" is ~60 px
-// at font 1, "> Shared" ~75) and has no Y overlap with any retail stash hit
-// (close X at [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x
-// [gnPanelOffsetY-0x60..-0x40], gold buttons at INV_GetGoldButtonX/Y - both
-// near the panel's bottom - and the grid rows start below this row).
+// R75 composite: the label is one row-built strip, still right-aligned at
+// the same R66 anchor (the +0x140 art-seam rule is untouched) - on the
+// personal page  "Shared >"  (the > invites a step into shared page 1), on
+// the shared pages  "< Shared 1 >" / "< Shared 2"  (green, the active
+// color). The arrows step ONE page left/right; the word itself toggles
+// personal<->shared-1 - the R63-R74 click-for-the-tab muscle memory, and
+// always a way home from any shared page. Both element rects come from the
+// same per-frame layout the draw uses (widths measured in font 1), so the
+// click bands can never drift from the pixels. The bands keep 2 px of
+// margin around each element and keep the old band's Y extent; they still
+// have no Y overlap with any retail stash hit (close X at
+// [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
+// gold buttons at INV_GetGoldButtonX/Y - both near the panel's bottom - and
+// the grid rows start below this row).
 constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;
+constexpr int VPSHAREDUI_PAGE_COUNT = 2;  // shared pages (the personal page is not one of them)
+constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
     return gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
 }
 
-static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
-    // Left edge covers both word variants right-aligned at TAB_RIGHT_EDGE
-    // ("Shared" ~60 px, "> Shared" ~75 px at font 1).
-    *pnLeft = gnPanelOffsetX + 0x0c8;
-    *pnRight = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
-    int nBaselineY = VPSHAREDUI_TabBaselineY();
-    *pnTop = nBaselineY - 14;
-    *pnBottom = nBaselineY + 5;
+// The word for the current client page (0 personal, 1/2 shared).
+static const uint16_t * VPSHAREDUI_PageWord() {
+    if (gnVpSharedPage >= 2) {
+        return (const uint16_t *)L"Shared 2";
+    }
+    return gnVpSharedPage == 1 ? (const uint16_t *)L"Shared 1" : (const uint16_t *)L"Shared";
+}
+
+// Layout of the composite on the tab row. Callers must have font 1 set (the
+// widths are per-font). Fills the word's draw x + width, the left/right
+// arrow draw x (valid only when the matching has-flag is set) and the
+// measured arrow width. Right edge of the composite = gnPanelOffsetX +
+// VPSHAREDUI_TAB_RIGHT_EDGE, exactly the R66 word anchor.
+static void VPSHAREDUI_TabLayout(int * pnWordX, int * pnWordW,
+                                 int * pnLeftX, int * pbHasLeft,
+                                 int * pnRightX, int * pbHasRight, int * pnArrowW) {
+    int nWordW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)VPSHAREDUI_PageWord());
+    int nArrowW = D2Win::Src::D2WinFont::DRAW_text0((uint16_t *)L">");
+    int nRightEdge = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
+    *pbHasRight = gnVpSharedPage < VPSHAREDUI_PAGE_COUNT; // '>' on personal + page 1
+    *pbHasLeft = gnVpSharedPage > 0;                      // '<' on shared pages
+    int nWordR = nRightEdge - (*pbHasRight ? nArrowW + VPSHAREDUI_TAB_GAP : 0);
+    *pnWordX = nWordR - nWordW;
+    *pnWordW = nWordW;
+    *pnLeftX = *pnWordX - VPSHAREDUI_TAB_GAP - nArrowW;   // drawn when *pbHasLeft
+    *pnRightX = nWordR + VPSHAREDUI_TAB_GAP;              // drawn when *pbHasRight
+    *pnArrowW = nArrowW;
+}
+
+// One outlined text element: a 1-px black halo under the color pass. The
+// retail shadow recipe (D2Comp title rows draw the same string once in the
+// shadow palette, then in the real color) extended to all four sides so the
+// glyphs read on any terrain. Palette 6 = light black, the tone retail's
+// own text shadows use.
+static void VPSHAREDUI_DrawOutlinedText(const uint16_t * pwszText, int nX, int nY, int nColor) {
+    static const int aOffs[4][2] = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+    for (int i = 0; i < 4; ++i) {
+        D2Win::Src::D2WinFont::DRAW_text((uint16_t *)pwszText, nX + aOffs[i][0], nY + aOffs[i][1], 6, 0);
+    }
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t *)pwszText, nX, nY, nColor, 0);
 }
 
 BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
@@ -1022,17 +1071,42 @@ BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
         return FALSE;
     }
 
-    int nLeft, nRight, nTop, nBottom;
-    VPSHAREDUI_TabHitRect(&nLeft, &nRight, &nTop, &nBottom);
-    if (nMouseX < nLeft || nMouseX > nRight || nMouseY < nTop || nMouseY > nBottom) {
+    // The exact layout the draw uses (font 1 set/restored around the
+    // measures) - the click bands hug the composite at every event, with
+    // no stored state to go stale between frames.
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    int nWordX, nWordW, nLeftX, nRightX, nArrowW;
+    int bHasLeft, bHasRight;
+    VPSHAREDUI_TabLayout(&nWordX, &nWordW, &nLeftX, &bHasLeft, &nRightX, &bHasRight, &nArrowW);
+    D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
+
+    int nY = VPSHAREDUI_TabBaselineY();
+    if (nMouseY < nY - 16 || nMouseY > nY + 6) {
         return FALSE;
     }
 
-    gbVpSharedPageActive = !gbVpSharedPageActive;
-    // C->S 0x4F Click Button, VP toggle id 0x7D. The send helper packs the
-    // param word as (arg2 << 16) | (uint16)arg3, so the desired page rides
-    // arg3 and the server reads dwParam = 0 (personal) / 1 (shared).
-    D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 0x7d, 0, (int16_t)gbVpSharedPageActive);
+    int nNewPage = -1;
+    if (nMouseX >= nWordX - 2 && nMouseX <= nWordX + nWordW + 2) {
+        // The word: personal <-> shared (enter shared page 1 from the
+        // personal page; return home from any shared page).
+        nNewPage = gnVpSharedPage ? 0 : 1;
+    } else if (bHasLeft && nMouseX >= nLeftX - 2 && nMouseX <= nLeftX + nArrowW + 2) {
+        nNewPage = gnVpSharedPage - 1; // '<': one page left (page 1 -> personal)
+    } else if (bHasRight && nMouseX >= nRightX - 2 && nMouseX <= nRightX + nArrowW + 2) {
+        nNewPage = gnVpSharedPage + 1; // '>': one page right
+    }
+
+    if (nNewPage < 0 || nNewPage > VPSHAREDUI_PAGE_COUNT || nNewPage == gnVpSharedPage) {
+        return FALSE; // Miss (or a no-op arrow) - let retail handle the click.
+    }
+
+    gnVpSharedPage = nNewPage;
+    // C->S 0x4F Click Button, VP toggle id 0x7D, the ABSOLUTE desired page
+    // in the param word (0 personal / 1 shared-1 / 2 shared-2). The send
+    // helper packs the param word as (arg2 << 16) | (uint16)arg3, so the
+    // page rides arg3 and the server activates exactly that page
+    // (VanillaPlusStash.cpp; idempotent when the page is already active).
+    D2Client::GAME::Msg::NET_D2GS_CLIENT_Send_SHORT_SHORT_SHORT(0x4f, 0x7d, 0, (int16_t)gnVpSharedPage);
     return TRUE;
 }
 
@@ -1041,14 +1115,22 @@ void __stdcall VPSHAREDUI_DrawTab() {
         return;
     }
 
-    // "Shared" in white when the personal page is visible, in the green
-    // active color when the shared page is visible (same color convention
-    // the options page uses for Off/On). Font 1 = the stash panel's own
-    // text font; saved/restored around the draw like every retail site.
-    uint16_t * pwszText = (uint16_t *)(gbVpSharedPageActive ? L"> Shared" : L"Shared");
+    // The composite, each element outlined: the word in white on the
+    // personal page / the green active color on shared pages (same color
+    // convention the options page uses for Off/On), the arrows in white.
+    // Font 1 = the stash panel's own text font; saved/restored around the
+    // draw like every retail site.
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int nWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
-    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - nWidth, VPSHAREDUI_TabBaselineY(),
-                                     gbVpSharedPageActive ? 2 : 0, 0);
+    int nWordX, nWordW, nLeftX, nRightX, nArrowW;
+    int bHasLeft, bHasRight;
+    VPSHAREDUI_TabLayout(&nWordX, &nWordW, &nLeftX, &bHasLeft, &nRightX, &bHasRight, &nArrowW);
+    int nY = VPSHAREDUI_TabBaselineY();
+    if (bHasLeft) {
+        VPSHAREDUI_DrawOutlinedText((const uint16_t *)L"<", nLeftX, nY, 0);
+    }
+    VPSHAREDUI_DrawOutlinedText(VPSHAREDUI_PageWord(), nWordX, nY, gnVpSharedPage ? 2 : 0);
+    if (bHasRight) {
+        VPSHAREDUI_DrawOutlinedText((const uint16_t *)L">", nRightX, nY, 0);
+    }
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }

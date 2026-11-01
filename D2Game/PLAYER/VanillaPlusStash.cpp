@@ -6,16 +6,19 @@
 // (PlayerTrade::ClickButton, PlayerSave::SaveGameAllGameTypes).
 //
 // ---------------------------------------------------------------------------
-// How the shared page works (round 1 - one page, retail-shaped):
+// How the shared page works (round 1 - one page, retail-shaped; TWO shared
+// pages since R75 - the toggle's param word carries the ABSOLUTE desired
+// page 0 personal / 1 shared-1 / 2 shared-2, and the two shared sets live
+// as two 'JM' blocks swapped into page 4 one at a time):
 //
-// While the shared page is ACTIVE, the player's INVPAGE_STASH (page 4)
-// inventory holds the shared set - real item units materialized from the
-// .sss file by the retail save-stream loader - and the personal set waits
+// While a shared page is ACTIVE, the player's INVPAGE_STASH (page 4)
+// inventory holds that page's shared set - real item units materialized from
+// the .sss file by the retail save-stream loader - and the personal set waits
 // in a memory snapshot. Every retail stash flow works on it unchanged:
 // grid draw, C->S 0x19 pick, C->S 0x18 place, swap 0x1F, gold buttons.
 // The fork adds no packets, no item fields, no container code.
 //
-// Toggling the page (client tab -> C->S 0x4F button 0x7D):
+// Switching pages (client tab/arrows -> C->S 0x4F button 0x7D):
 //   1. serialize the current page-4 set with the retail per-item encoder
 //      (D2Common::ITEMS::Items::SerializeItem) into a 'JM' block - the
 //      exact bytes the .d2s item block uses;
@@ -43,13 +46,20 @@
 // zero-op: no file IO, no marks, vanilla byte-for-byte.
 //
 // .sss format (<save dir>\_d2vp_shared.sss, own file, owner constraint 1):
-//   0   4   magic 'V','P','S','1'
-//   4   2   version (u16, 1)
-//   6   2   pageCount (u16, 1 - future 10/100 pages extend this, v2)
-//   8   4   shared gold (u32)
-//   12  4   blockSize (u32, bytes of the page-1 'JM' block that follows)
-//   16  4   checksum (u32, additive byte-sum of the block bytes)
-//   20  ..  page-1 item block: 'JM' + u16 count + retail item records
+//   v2 (written since R75 - "add a 2nd page and buttons/arrows to navigate"):
+//     0   4   magic 'V','P','S','2'
+//     4   2   version (u16, 2)
+//     6   2   pageCount (u16, 2 - the future 10/100 extension only widens this)
+//     8   4   shared gold (u32 - ONE pool across both pages)
+//     12  4   blockSize page-1 (u32, bytes of the page-1 'JM' block)
+//     16  4   checksum page-1 (u32, additive byte-sum of the block bytes)
+//     20  4   blockSize page-2 (u32)
+//     24  4   checksum page-2 (u32)
+//     28  ..  page-1 item block: 'JM' + u16 count + retail item records
+//     ..  ..  page-2 item block, same shape, right behind page 1
+//   v1 (pre-R75 field files, read back for compat): magic 'V','P','S','1',
+//     version 1, pageCount 1, gold + one size/checksum pair + one block -
+//     loaded as shared PAGE 1, page 2 starts empty; the next save writes v2.
 // Write is atomic (temp file + MoveFileExA replace) with a one-generation
 // .bak kept behind it. Every failure degrades to a d2boot mark, never
 // halts; a failed/degraded read never touches the file on disk.
@@ -108,10 +118,16 @@ constexpr int VPSTASH_PAGE_ITEM_CAP = 64;
 // 'JM' block buffer cap. The retail trade copy uses 0x2000; 0x4000 gives
 // 64 worst-case item records generous headroom.
 constexpr uint32_t VPSTASH_BLOCK_CAP = 0x4000;
-// .sss header size (see format sketch above).
-constexpr uint32_t VPSTASH_HEADER_SIZE = 20;
-constexpr uint16_t VPSTASH_FILE_VERSION = 1;
+// .sss header sizes (see format sketch above): v1 = one page, v2 = two.
+constexpr uint32_t VPSTASH_HEADER_SIZE_V1 = 20;
+constexpr uint32_t VPSTASH_HEADER_SIZE_V2 = 28;
+constexpr uint16_t VPSTASH_FILE_VERSION = 2;      // the shape this build writes
+constexpr uint16_t VPSTASH_FILE_VERSION_V1 = 1;   // pre-R75 field files (read back)
+constexpr uint16_t VPSTASH_PAGE_COUNT = 2;        // shared pages in a v2 file
 constexpr uint16_t VPSTASH_PAGE_COUNT_V1 = 1;
+// The two shared pages (internal indices 0/1; "page 1"/"page 2" in marks and
+// UI - the personal page is the retail page-4 set itself, not stored here).
+constexpr int VPSTASH_PAGES = 2;
 
 // ---------------------------------------------------------------------------
 // Per-game state. v1 is single-player: one game per process. Ownership is
@@ -121,14 +137,15 @@ constexpr uint16_t VPSTASH_PAGE_COUNT_V1 = 1;
 
 struct VPStashState {
     ::SGAMEDATA * pOwnerGame;   // owning game (ownership pin / lazy reset)
-    int gbSharedActive;         // 1 while page 4 holds the shared set
+    int gbSharedActive;         // 1 while page 4 holds a shared page's set
+    int gnActiveSharedPage;     // 0/1 - which shared page is materialized (while gbSharedActive)
     int gbSharedLoaded;         // 1 once the .sss was read this game (success or degrade)
-    uint32_t dwSharedGold;      // shared gold pool (mirrored in the .sss header)
+    uint32_t dwSharedGold;      // shared gold pool - ONE pool across both pages (.sss header)
     uint32_t dwPersonalGoldSnapshot; // goldbank value at toggle-to-shared
-    uint8_t * pPersonalBlock;   // 'JM' block of the personal set while shared is active
+    uint8_t * pPersonalBlock;   // 'JM' block of the personal set while a shared page is active
     uint32_t nPersonalSize;
-    uint8_t * pSharedBlock;     // 'JM' block of the shared set (loaded / last serialized)
-    uint32_t nSharedSize;
+    uint8_t * apSharedBlock[VPSTASH_PAGES]; // 'JM' block per shared page (loaded / last serialized)
+    uint32_t anSharedSize[VPSTASH_PAGES];
 };
 
 // Plain BSS static (zero-init by definition): no guard macro needed - the
@@ -190,8 +207,82 @@ static uint32_t VPSHADOW_BlockChecksum(const uint8_t * pBytes, uint32_t nSize) {
     return dwSum;
 }
 
-// Validate + ingest one file (path given). Returns 1 with s_VpStash shared
-// block/gold filled, 0 to start empty (file left untouched on disk).
+// Read + validate one 'JM' page block out of an open file at dwFileOffset.
+// dwBlockSize / dwChecksum come from the file header. On success the page's
+// block/size are stored (a < 4-byte record is a legitimately empty page and
+// stores null/0); on any failure the page starts empty and a mark says why -
+// the file on disk is never touched by a misread. Returns 1 when the page
+// ended stored-or-empty-by-design, 0 on real corruption (the caller uses a
+// page-1 failure to chase the .bak generation, v1 behavior).
+static int VPSHARED_IngestPageBlock(HANDLE hFile, int nPage, uint32_t dwBlockSize,
+                                    uint32_t dwChecksum, uint32_t dwFileOffset, uint32_t dwFileSize) {
+    if (s_VpStash.apSharedBlock[nPage]) {
+        D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, s_VpStash.apSharedBlock[nPage],
+                        ".\\PLAYER\\VanillaPlusStash.cpp", 0x101);
+        s_VpStash.apSharedBlock[nPage] = nullptr;
+    }
+    s_VpStash.anSharedSize[nPage] = 0;
+
+    if (dwFileOffset > dwFileSize || dwBlockSize > dwFileSize - dwFileOffset || dwBlockSize > VPSTASH_BLOCK_CAP) {
+        D2BOOT_Mark("shared stash: bad header (size) - starting empty"); // [d2boot]
+        return 0;
+    }
+    if (dwBlockSize < 4) {
+        // Below the 'JM'+count minimum: an empty page record - nothing to load.
+        return 1;
+    }
+
+    uint8_t * pBlock = (uint8_t *)D2_ALLOC_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, VPSTASH_BLOCK_CAP,
+                                                   ".\\PLAYER\\VanillaPlusStash.cpp", 0x101);
+    if (!pBlock) {
+        D2BOOT_Mark("shared stash: read failed - starting empty"); // [d2boot]
+        return 0;
+    }
+
+    LARGE_INTEGER liAt;
+    liAt.QuadPart = (int64_t)dwFileOffset;
+    DWORD dwGot = 0; // DWORD, not uint32_t: ReadFile's out-param is LPDWORD (win32 'long'), mingw32 rejects unsigned int*
+    if (!SetFilePointerEx(hFile, liAt, nullptr, FILE_BEGIN) ||
+        !ReadFile(hFile, pBlock, dwBlockSize, &dwGot, nullptr) || dwGot != dwBlockSize) {
+        D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x121);
+        D2BOOT_Mark("shared stash: read failed - starting empty"); // [d2boot]
+        return 0;
+    }
+    if (VPSHADOW_BlockChecksum(pBlock, dwBlockSize) != dwChecksum) {
+        D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x10b);
+        D2BOOT_Mark("shared stash: checksum fail - file - starting empty"); // [d2boot]
+        return 0;
+    }
+    if (pBlock[0] != 'J' || pBlock[1] != 'M') {
+        D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x10f);
+        D2BOOT_Mark("shared stash: bad item block header - starting empty"); // [d2boot]
+        return 0;
+    }
+
+    uint16_t nCount = (uint16_t)(pBlock[2] | (pBlock[3] << 8));
+    if (nCount > VPSTASH_PAGE_ITEM_CAP) {
+        // Clamp in memory only - the on-disk file stays verbatim.
+        D2BOOT_MarkFmt("shared stash: item count %d out of range - clamped", (int)nCount); // [d2boot]
+        pBlock[2] = (uint8_t)VPSTASH_PAGE_ITEM_CAP;
+        pBlock[3] = 0;
+    }
+    s_VpStash.apSharedBlock[nPage] = pBlock;
+    s_VpStash.anSharedSize[nPage] = dwBlockSize;
+    return 1;
+}
+
+// Items-on-page helper for the load marks (0 when the page is empty).
+static int VPSHARED_PageItemCount(int nPage) {
+    if (nPage < 0 || nPage >= VPSTASH_PAGES || !s_VpStash.apSharedBlock[nPage] || s_VpStash.anSharedSize[nPage] < 4) {
+        return 0;
+    }
+    return (int)(uint16_t)(s_VpStash.apSharedBlock[nPage][2] | (s_VpStash.apSharedBlock[nPage][3] << 8));
+}
+
+// Validate + ingest one file (path given). Returns 1 with the shared
+// blocks/gold filled - a v2 file fills both pages, a v1 file fills page 1
+// and leaves page 2 empty - or 0 to start empty (file left untouched on
+// disk; the caller then retries the .bak generation).
 static int VPSHARED_TryReadFile(const char * szPath) {
     HANDLE hFile = CreateFileA(szPath, GENERIC_READ, FILE_SHARE_READ, nullptr,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -200,67 +291,55 @@ static int VPSHARED_TryReadFile(const char * szPath) {
         return 0;
     }
 
-    uint8_t aHeader[VPSTASH_HEADER_SIZE];
+    uint8_t aHeader[VPSTASH_HEADER_SIZE_V2];
     DWORD dwRead = 0;
     int nOk = 0;
-    if (ReadFile(hFile, aHeader, VPSTASH_HEADER_SIZE, &dwRead, nullptr) && dwRead == VPSTASH_HEADER_SIZE) {
-        const uint8_t aMagic[4] = { 'V', 'P', 'S', '1' };
+    // Both shapes share the first 20 bytes; a v2 file carries 8 more
+    // (page-2 size/checksum), read after the shape check below.
+    if (ReadFile(hFile, aHeader, VPSTASH_HEADER_SIZE_V1, &dwRead, nullptr) && dwRead == VPSTASH_HEADER_SIZE_V1) {
+        const uint8_t aMagicV1[4] = { 'V', 'P', 'S', '1' };
+        const uint8_t aMagicV2[4] = { 'V', 'P', 'S', '2' };
         uint16_t nVersion = (uint16_t)(aHeader[4] | (aHeader[5] << 8));
         uint16_t nPages = (uint16_t)(aHeader[6] | (aHeader[7] << 8));
         uint32_t dwGold = *(uint32_t *)&aHeader[8];
-        uint32_t dwBlockSize = *(uint32_t *)&aHeader[12];
-        uint32_t dwChecksum = *(uint32_t *)&aHeader[16];
+        int nIsV1 = memcmp(aHeader, aMagicV1, 4) == 0 && nVersion == VPSTASH_FILE_VERSION_V1 && nPages == VPSTASH_PAGE_COUNT_V1;
+        int nIsV2 = memcmp(aHeader, aMagicV2, 4) == 0 && nVersion == VPSTASH_FILE_VERSION && nPages == VPSTASH_PAGE_COUNT;
         LARGE_INTEGER liSize;
-        if (memcmp(aHeader, aMagic, 4) != 0 || nVersion != VPSTASH_FILE_VERSION || nPages != VPSTASH_PAGE_COUNT_V1) {
+        uint32_t dwFileSize = (GetFileSizeEx(hFile, &liSize) && liSize.QuadPart >= 0 && liSize.QuadPart <= 0xffffffffll)
+                                  ? (uint32_t)liSize.QuadPart : 0xffffffffu;
+        if (!nIsV1 && !nIsV2) {
             D2BOOT_Mark("shared stash: bad header (magic/version) - starting empty"); // [d2boot]
-        } else if (!GetFileSizeEx(hFile, &liSize) ||
-                   VPSTASH_HEADER_SIZE + dwBlockSize > (uint32_t)liSize.QuadPart ||
-                   dwBlockSize > VPSTASH_BLOCK_CAP) {
-            D2BOOT_Mark("shared stash: bad header (size) - starting empty"); // [d2boot]
-        } else if (dwBlockSize < 4) {
-            // 'JM' + count alone: a legitimately empty page.
-            s_VpStash.dwSharedGold = dwGold;
-            s_VpStash.nSharedSize = dwBlockSize;
-            D2BOOT_Mark("shared stash: loaded 0 items (empty page)"); // [d2boot]
-            nOk = 1;
+        } else if (nIsV2 && !(ReadFile(hFile, aHeader + VPSTASH_HEADER_SIZE_V1,
+                                       VPSTASH_HEADER_SIZE_V2 - VPSTASH_HEADER_SIZE_V1, &dwRead, nullptr) &&
+                             dwRead == VPSTASH_HEADER_SIZE_V2 - VPSTASH_HEADER_SIZE_V1)) {
+            D2BOOT_Mark("shared stash: header read failed - starting empty"); // [d2boot]
         } else {
-            // Read the block straight into the pool buffer.
-            uint8_t * pBlock = (uint8_t *)D2_ALLOC_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, VPSTASH_BLOCK_CAP,
-                                                           ".\\PLAYER\\VanillaPlusStash.cpp", 0x101);
-            LARGE_INTEGER liAt;
-            liAt.QuadPart = VPSTASH_HEADER_SIZE;
-            DWORD dwGot = 0; // DWORD, not uint32_t: ReadFile's out-param is LPDWORD (win32 'long'), mingw32 rejects unsigned int*
-            if (pBlock && SetFilePointerEx(hFile, liAt, nullptr, FILE_BEGIN) &&
-                ReadFile(hFile, pBlock, dwBlockSize, &dwGot, nullptr) && dwGot == dwBlockSize) {
-                if (VPSHADOW_BlockChecksum(pBlock, dwBlockSize) != dwChecksum) {
-                    D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x10b);
-                    D2BOOT_Mark("shared stash: checksum fail - file - starting empty"); // [d2boot]
-                } else if (pBlock[0] != 'J' || pBlock[1] != 'M') {
-                    D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x10f);
-                    D2BOOT_Mark("shared stash: bad item block header - starting empty"); // [d2boot]
-                } else {
-                    uint16_t nCount = (uint16_t)(pBlock[2] | (pBlock[3] << 8));
-                    if (nCount > VPSTASH_PAGE_ITEM_CAP) {
-                        // Clamp in memory only - the on-disk file stays verbatim.
-                        D2BOOT_MarkFmt("shared stash: item count %d out of range - clamped", (int)nCount); // [d2boot]
-                        pBlock[2] = (uint8_t)VPSTASH_PAGE_ITEM_CAP;
-                        pBlock[3] = 0;
-                    }
-                    if (s_VpStash.pSharedBlock) {
-                        D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, s_VpStash.pSharedBlock,
-                                        ".\\PLAYER\\VanillaPlusStash.cpp", 0x118);
-                    }
-                    s_VpStash.pSharedBlock = pBlock;
-                    s_VpStash.nSharedSize = dwBlockSize;
-                    s_VpStash.dwSharedGold = dwGold;
-                    D2BOOT_MarkFmt("shared stash: loaded %d items (gold %d)", (int)nCount, (int)dwGold); // [d2boot]
-                    nOk = 1;
-                }
+            s_VpStash.dwSharedGold = dwGold;
+            if (nIsV1) {
+                // Pre-R75 file: its one page becomes shared PAGE 1.
+                nOk = VPSHARED_IngestPageBlock(hFile, 0, *(uint32_t *)&aHeader[12], *(uint32_t *)&aHeader[16],
+                                               VPSTASH_HEADER_SIZE_V1, dwFileSize);
+                D2BOOT_MarkFmt("shared stash: loaded %d+%d items (gold %d) (v1 file)",
+                               VPSHARED_PageItemCount(0), VPSHARED_PageItemCount(1), (int)dwGold); // [d2boot]
             } else {
-                if (pBlock) {
-                    D2_FREE_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, pBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x121);
+                uint32_t dwSize1 = *(uint32_t *)&aHeader[12];
+                uint32_t dwSize2 = *(uint32_t *)&aHeader[20];
+                if (VPSTASH_HEADER_SIZE_V2 > dwFileSize ||
+                    dwSize1 > dwFileSize - VPSTASH_HEADER_SIZE_V2) {
+                    // Validate page-1's extent HERE so page 2's offset below
+                    // cannot run past the file (IngestPageBlock re-checks).
+                    D2BOOT_Mark("shared stash: bad header (size) - starting empty"); // [d2boot]
+                } else {
+                    int nPage1Ok = VPSHARED_IngestPageBlock(hFile, 0, dwSize1, *(uint32_t *)&aHeader[16],
+                                                            VPSTASH_HEADER_SIZE_V2, dwFileSize);
+                    VPSHARED_IngestPageBlock(hFile, 1, dwSize2, *(uint32_t *)&aHeader[24],
+                                             VPSTASH_HEADER_SIZE_V2 + dwSize1, dwFileSize);
+                    // Page 1's verdict drives the .bak chase (v1 behavior);
+                    // a corrupt page 2 degrades to an empty page 2 only.
+                    nOk = nPage1Ok;
                 }
-                D2BOOT_Mark("shared stash: read failed - starting empty"); // [d2boot]
+                D2BOOT_MarkFmt("shared stash: loaded %d+%d items (gold %d)",
+                               VPSHARED_PageItemCount(0), VPSHARED_PageItemCount(1), (int)dwGold); // [d2boot]
             }
         }
     } else {
@@ -298,8 +377,13 @@ static void VPSHARED_WriteFileLocked() {
     char szPath[1100];
     VPSHARED_BuildFilePath(szPath, sizeof(szPath));
 
-    uint32_t dwBlockSize = s_VpStash.nSharedSize;
-    uint32_t dwTotal = VPSTASH_HEADER_SIZE + dwBlockSize;
+    uint32_t aSizes[VPSTASH_PAGES];
+    uint32_t dwTotal = VPSTASH_HEADER_SIZE_V2;
+    for (int i = 0; i < VPSTASH_PAGES; ++i) {
+        aSizes[i] = s_VpStash.anSharedSize[i];
+        dwTotal += aSizes[i];
+    }
+
     uint8_t * pOut = (uint8_t *)D2_ALLOC_POOL_AT(s_VpStash.pOwnerGame->pMemoryPool, dwTotal,
                                                  ".\\PLAYER\\VanillaPlusStash.cpp", 0x13b);
     if (!pOut) {
@@ -307,16 +391,20 @@ static void VPSHARED_WriteFileLocked() {
         return;
     }
 
-    pOut[0] = 'V'; pOut[1] = 'P'; pOut[2] = 'S'; pOut[3] = '1';
+    pOut[0] = 'V'; pOut[1] = 'P'; pOut[2] = 'S'; pOut[3] = '2';
     pOut[4] = (uint8_t)(VPSTASH_FILE_VERSION & 0xff);
     pOut[5] = (uint8_t)(VPSTASH_FILE_VERSION >> 8);
-    pOut[6] = (uint8_t)(VPSTASH_PAGE_COUNT_V1 & 0xff);
-    pOut[7] = (uint8_t)(VPSTASH_PAGE_COUNT_V1 >> 8);
+    pOut[6] = (uint8_t)(VPSTASH_PAGE_COUNT & 0xff);
+    pOut[7] = (uint8_t)(VPSTASH_PAGE_COUNT >> 8);
     *(uint32_t *)&pOut[8] = s_VpStash.dwSharedGold;
-    *(uint32_t *)&pOut[12] = dwBlockSize;
-    *(uint32_t *)&pOut[16] = dwBlockSize ? VPSHADOW_BlockChecksum(s_VpStash.pSharedBlock, dwBlockSize) : 0;
-    if (dwBlockSize) {
-        memcpy(pOut + VPSTASH_HEADER_SIZE, s_VpStash.pSharedBlock, dwBlockSize);
+    uint32_t dwAt = VPSTASH_HEADER_SIZE_V2;
+    for (int i = 0; i < VPSTASH_PAGES; ++i) {
+        *(uint32_t *)&pOut[12 + 8 * i] = aSizes[i];
+        *(uint32_t *)&pOut[16 + 8 * i] = aSizes[i] ? VPSHADOW_BlockChecksum(s_VpStash.apSharedBlock[i], aSizes[i]) : 0;
+        if (aSizes[i]) {
+            memcpy(pOut + dwAt, s_VpStash.apSharedBlock[i], aSizes[i]);
+        }
+        dwAt += aSizes[i];
     }
 
     char szTmp[1100];
@@ -485,54 +573,96 @@ static void VPSHARED_MaterializePage4(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
 }
 
 // ---------------------------------------------------------------------------
-// Page toggle (the whole feature)
+// Page activation (the whole feature)
 
-static void VPSHARED_ToggleToShared(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
-    if (s_VpStash.gbSharedActive) {
+// Activate shared page nPage (internal index 0/1 = the UI's "page 1"/"page 2";
+// the client sends the 1-based number in the 0x4F param word). Three cases:
+//   personal -> page nPage : snapshot the personal set, materialize page
+//                            nPage, borrow the goldbank (v1 toggle shape);
+//   page A   -> page B     : serialize page 4 into page A's block, page B's
+//                            block materializes - the goldbank borrow simply
+//                            continues (ONE pool across both pages) and the
+//                            .sss is written on the next restore-to-personal
+//                            (or save flush), as in v1;
+//   page nPage again       : idempotent no-op (the client may repeat).
+static void VPSHARED_ActivatePage(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int nPage) {
+    if (nPage < 0 || nPage >= VPSTASH_PAGES) {
+        return;
+    }
+    if (s_VpStash.gbSharedActive && s_VpStash.gnActiveSharedPage == nPage) {
         return; // Idempotent: the client may repeat the request.
     }
 
-    VPSHARED_EnsureLoaded();
+    if (!s_VpStash.gbSharedActive) {
+        VPSHARED_EnsureLoaded();
 
-    // 1. Snapshot the personal set FIRST - it is the only copy while the
-    //    shared page is active (it is NOT in the .d2s until the next save).
-    uint8_t * pPersonal = nullptr;
-    uint32_t nPersonal = 0;
-    if (!VPSHARED_SerializePage4(pGame, pUnit, &pPersonal, &nPersonal)) {
-        return; // Degrade: keep the personal page live and untouched.
+        // 1. Snapshot the personal set FIRST - it is the only copy while a
+        //    shared page is active (it is NOT in the .d2s until the next save).
+        uint8_t * pPersonal = nullptr;
+        uint32_t nPersonal = 0;
+        if (!VPSHARED_SerializePage4(pGame, pUnit, &pPersonal, &nPersonal)) {
+            return; // Degrade: keep the personal page live and untouched.
+        }
+
+        // 2. Park the personal set, then materialize the requested page.
+        VPSHARED_DematerializePage4(pGame, pUnit);
+        if (s_VpStash.pPersonalBlock) {
+            D2_FREE_POOL_AT(pGame->pMemoryPool, s_VpStash.pPersonalBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x1fe);
+        }
+        s_VpStash.pPersonalBlock = pPersonal;
+        s_VpStash.nPersonalSize = nPersonal;
+        VPSHARED_MaterializePage4(pGame, pUnit, s_VpStash.apSharedBlock[nPage], s_VpStash.anSharedSize[nPage]);
+
+        // 3. Goldbank borrow: park the personal bank, show the shared pool.
+        uint32_t dwBank = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_goldbank, 0);
+        s_VpStash.dwPersonalGoldSnapshot = dwBank;
+        int32_t nDelta = (int32_t)s_VpStash.dwSharedGold - (int32_t)dwBank;
+        if (nDelta) {
+            D2Game::UNIT::Party::ChangeGoldForPlayer(pUnit, UNITSTAT_goldbank, nDelta);
+        }
+
+        s_VpStash.gbSharedActive = 1;
+        s_VpStash.gnActiveSharedPage = nPage;
+        D2BOOT_MarkFmt("shared stash: shared page %d active (%d items, gold %d)",
+                       nPage + 1, VPSHARED_PageItemCount(nPage),
+                       (int)s_VpStash.dwSharedGold); // [d2boot]
+        return;
     }
 
-    // 2. Park the personal set, then materialize the shared set.
+    // Shared page A -> shared page B.
+    int nFrom = s_VpStash.gnActiveSharedPage;
+
+    // 1. Serialize the current page-4 set into page A's block - swap it in
+    //    only on success so a failed serialize can never poison the page.
+    uint8_t * pBlock = nullptr;
+    uint32_t nSize = 0;
+    if (!VPSHARED_SerializePage4(pGame, pUnit, &pBlock, &nSize)) {
+        return; // Degrade: keep the current shared page live and untouched.
+    }
+
+    // 2. Park page A, materialize page B.
     VPSHARED_DematerializePage4(pGame, pUnit);
-    if (s_VpStash.pPersonalBlock) {
-        D2_FREE_POOL_AT(pGame->pMemoryPool, s_VpStash.pPersonalBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x1fe);
+    if (s_VpStash.apSharedBlock[nFrom]) {
+        D2_FREE_POOL_AT(pGame->pMemoryPool, s_VpStash.apSharedBlock[nFrom], ".\\PLAYER\\VanillaPlusStash.cpp", 0x21d);
     }
-    s_VpStash.pPersonalBlock = pPersonal;
-    s_VpStash.nPersonalSize = nPersonal;
-    VPSHARED_MaterializePage4(pGame, pUnit, s_VpStash.pSharedBlock, s_VpStash.nSharedSize);
+    s_VpStash.apSharedBlock[nFrom] = pBlock;
+    s_VpStash.anSharedSize[nFrom] = nSize;
+    VPSHARED_MaterializePage4(pGame, pUnit, s_VpStash.apSharedBlock[nPage], s_VpStash.anSharedSize[nPage]);
 
-    // 3. Goldbank borrow: park the personal bank, show the shared pool.
-    uint32_t dwBank = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_goldbank, 0);
-    s_VpStash.dwPersonalGoldSnapshot = dwBank;
-    int32_t nDelta = (int32_t)s_VpStash.dwSharedGold - (int32_t)dwBank;
-    if (nDelta) {
-        D2Game::UNIT::Party::ChangeGoldForPlayer(pUnit, UNITSTAT_goldbank, nDelta);
-    }
-
-    s_VpStash.gbSharedActive = 1;
-    D2BOOT_MarkFmt("shared stash: shared page active (%d items, gold %d)",
-                   (int)(s_VpStash.pSharedBlock && s_VpStash.nSharedSize >= 4 ? (uint16_t)(s_VpStash.pSharedBlock[2] | (s_VpStash.pSharedBlock[3] << 8)) : 0),
-                   (int)s_VpStash.dwSharedGold); // [d2boot]
+    s_VpStash.gnActiveSharedPage = nPage;
+    D2BOOT_MarkFmt("shared stash: switched to page %d (%d items)",
+                   nPage + 1, VPSHARED_PageItemCount(nPage)); // [d2boot]
 }
 
 static void VPSHARED_ToggleToPersonal(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     if (!s_VpStash.gbSharedActive) {
         return;
     }
+    int nFrom = s_VpStash.gnActiveSharedPage;
 
-    // 1. Serialize the shared set AS IT STANDS NOW (session changes included)
-    //    into a scratch block; swap it in only on success so a failed write
-    //    can never poison the in-memory shared copy.
+    // 1. Serialize the active shared set AS IT STANDS NOW (session changes
+    //    included) into a scratch block; swap it in only on success so a
+    //    failed write can never poison the in-memory shared copy.
     uint8_t * pShared = nullptr;
     uint32_t nShared = 0;
     if (!VPSHARED_SerializePage4(pGame, pUnit, &pShared, &nShared)) {
@@ -541,11 +671,11 @@ static void VPSHARED_ToggleToPersonal(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
     // 2. Park the shared set, restore the personal set.
     VPSHARED_DematerializePage4(pGame, pUnit);
-    if (s_VpStash.pSharedBlock) {
-        D2_FREE_POOL_AT(pGame->pMemoryPool, s_VpStash.pSharedBlock, ".\\PLAYER\\VanillaPlusStash.cpp", 0x21d);
+    if (s_VpStash.apSharedBlock[nFrom]) {
+        D2_FREE_POOL_AT(pGame->pMemoryPool, s_VpStash.apSharedBlock[nFrom], ".\\PLAYER\\VanillaPlusStash.cpp", 0x21d);
     }
-    s_VpStash.pSharedBlock = pShared;
-    s_VpStash.nSharedSize = nShared;
+    s_VpStash.apSharedBlock[nFrom] = pShared;
+    s_VpStash.anSharedSize[nFrom] = nShared;
     VPSHARED_MaterializePage4(pGame, pUnit, s_VpStash.pPersonalBlock, s_VpStash.nPersonalSize);
 
     // 3. Un-borrow the goldbank: absorb what the retail gold buttons moved.
@@ -593,10 +723,15 @@ void __stdcall VPSHARED_OnClickButton(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
         return;
     }
     VPSHARED_EnsureOwner(pGame);
-    if (dwParam) {
-        VPSHARED_ToggleToShared(pGame, pUnit);
-    } else {
+    // dwParam = the ABSOLUTE desired page: 0 personal, 1 shared page 1,
+    // 2 shared page 2 (R75). Anything above the page count is ignored with
+    // a mark (never a halt).
+    if (dwParam == 0) {
         VPSHARED_ToggleToPersonal(pGame, pUnit);
+    } else if (dwParam <= (uint32_t)VPSTASH_PAGES) {
+        VPSHARED_ActivatePage(pGame, pUnit, (int)dwParam - 1);
+    } else {
+        D2BOOT_MarkFmt("shared stash: page %d out of range - ignored", (int)dwParam); // [d2boot]
     }
 }
 
