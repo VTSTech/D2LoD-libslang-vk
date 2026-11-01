@@ -633,7 +633,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id R61"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R61' 1
+gate "res: self-id R62"                       D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.6-R62' 1
 
 # ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
 # [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line
