@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R67"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R67' 1
+gate "res: self-id 0.0.7-R68"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R68' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -663,6 +663,17 @@ gate "stash: client tab click site"           D2Client/UI/Inv.cpp               
 gate "stash: client reset site"               D2Client/UI/Draw.cpp               'VPSHAREDUI_ResetForNewGame\(\);' 1
 gate "stash: ini template key"                D2Client/UI/VanillaPlusCore.cpp    'shared_stash=0' 1
 gate "stash: client gate key"                 D2Client/UI/VanillaPlusCore.cpp    '"features", "shared_stash", 0' 1
+
+# ---- [shared-stash tab label] R68: the owner asked for the word "a bit
+# bigger" than the stash panel's own Font16. Default 7 = Font24 (the smallest
+# in-tree step up, same ladder the Options label probes); d2vp.ini [ui]
+# stash_tab_font overrides live (hot-read on the same 2 s gate tick), and the
+# click band now hugs the word as actually measured each draw instead of the
+# hard Font16 band - the Font16 case reproduces the R66 band exactly.
+gate "stash: tab font tunable (R68)"          D2Client/UI/VanillaPlusCore.cpp    'static int gnVpTabFontId = 7' 1
+gate "stash: tab font ini key (R68)"          D2Client/UI/VanillaPlusCore.cpp    '"ui", "stash_tab_font", 7' 1
+gate "stash: tab band hugs the word (R68)"    D2Client/UI/VanillaPlusCore.cpp    'gnVpTabTextWidth \+ 0x10' 2
+gate "stash: tab font not hardcoded (R68)"    D2Client/UI/VanillaPlusCore.cpp    'SetAndReturnLastFont\(1\)' 0
 gate "stash: server gate key"                 D2Game/PLAYER/VanillaPlusStash.cpp '"features", "shared_stash", 0' 1
 gate "stash: sss file name"                   D2Game/PLAYER/VanillaPlusStash.cpp '_d2vp_shared\.sss' 2
 gate "stash: sss magic"                       D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '1'" 1

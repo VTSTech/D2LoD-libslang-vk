@@ -184,5 +184,7 @@ void __stdcall VPSHAREDUI_ResetForNewGame(); // entering a game starts personal
 // message (VP site in INV_HandleStashLeftClick).
 BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY);
 // Per-frame tab draw (VP site in Inv.cpp's stash draw branch, right after
-// the gold-button draw). Draws nothing when the gate is off.
+// the gold-button draw). Draws nothing when the gate is off. Label font =
+// the R68 tab font tunable (default Font24; d2vp.ini [ui] stash_tab_font
+// overrides, hot-read with the same 2 s gate).
 void __stdcall VPSHAREDUI_DrawTab();

@@ -938,6 +938,20 @@ static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
 static DWORD dwVpSharedStashGateTick = 0;
 static int gbVpSharedPageActive = 0;  // client mirror of the page toggle
 
+// Tab label font (R68): the owner asked for the word "a bit bigger" than the
+// stash panel's own Font16. Default 7 = Font24 - the smallest in-tree step up
+// (same probe ladder VanillaPlusOptions.cpp uses: 7 = Font24, 2 = Font30,
+// 3 = Font42). Escape hatch, no rebuild needed - add to d2vp.ini (the same
+// file the [features] gates live in):
+//   [ui]
+//   stash_tab_font = <aFontNames index>
+// 1 = Font16 (the old size), 2 = Font30, 3 = Font42; anything outside 0..13
+// falls back to the default. Hot-read with the same 2 s gate tick below, so
+// the label resizes live in an open stash (and follows D2VP_ConfigReloaded's
+// flush, like the feature gate itself).
+static int gnVpTabFontId = 7;     // Font24
+static int gnVpTabTextWidth = 0;  // last measured DRAW_text0 width (px)
+
 // Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
 // next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
 // follows the in-game toggle the same frame. The server half (D2Game/PLAYER/
@@ -957,6 +971,11 @@ BOOL __stdcall VPSHAREDUI_FeatureActive() {
             ALTTOGGLE_EnsureIni();
             // Missing file/section/key or a non-numeric value = 0 = vanilla.
             gbVpSharedStashMode = GetPrivateProfileIntA("features", "shared_stash", 0, szIniPath) ? 1 : 0;
+            // [ui] stash_tab_font rides the same 2 s refresh (R68 hatch).
+            gnVpTabFontId = GetPrivateProfileIntA("ui", "stash_tab_font", 7, szIniPath);
+            if (gnVpTabFontId < 0 || gnVpTabFontId >= 14) {
+                gnVpTabFontId = 7;
+            }
         } else {
             gbVpSharedStashMode = 0;
         }
@@ -995,12 +1014,28 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 //        put the word at gnPanelOffsetX + 0x130 while the art rect stays
 //        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
 //        rect 640).
-// The hit rect is a generous band around the drawn word ("Shared" is ~60 px
-// at font 1, "> Shared" ~75) and has no Y overlap with any retail stash hit
-// (close X at [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x
-// [gnPanelOffsetY-0x60..-0x40], gold buttons at INV_GetGoldButtonX/Y - both
-// near the panel's bottom - and the grid rows start below this row).
+// The hit rect is a generous band around the drawn word (at the R68 default
+// Font24, "Shared" measures ~90 px and "> Shared" ~115; the band hugs the
+// word as actually measured each frame - see VPSHAREDUI_TabHitRect - and
+// never gets narrower than the R66 Font16 field band) and has no Y overlap
+// with any retail stash hit (close X at
+// [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
+// gold buttons at INV_GetGoldButtonX/Y - both near the panel's bottom - and
+// the grid rows start below this row).
 constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;
+
+// Frame height of the tab font, for the hit band's Y extent (the aFontNames
+// ids the [ui] stash_tab_font hatch documents; anything unknown rides the
+// R68 default). The Font16 case reproduces the field-proven band exactly:
+// 16 * 7/8 = 14 up, +5 down.
+static int VPSHAREDUI_TabFontFrameHeight(int nFontId) {
+    switch (nFontId) {
+        case 1: return 16;   // Font16
+        case 2: return 30;   // Font30
+        case 3: return 42;   // Font42
+        default: return 24;  // Font24 (id 7, the R68 default)
+    }
+}
 
 static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
@@ -1008,12 +1043,22 @@ static int VPSHAREDUI_TabBaselineY() {
 }
 
 static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
-    // Left edge covers both word variants right-aligned at TAB_RIGHT_EDGE
-    // ("Shared" ~60 px, "> Shared" ~75 px at font 1).
-    *pnLeft = gnPanelOffsetX + 0x0c8;
+    // X: both word variants are right-aligned at TAB_RIGHT_EDGE and extend
+    // LEFT, so the band hugs the word as actually measured by the last draw
+    // (gnVpTabTextWidth + 0x10) but never gets narrower than the R66
+    // Font16 field band (0x68 = the old +0x0c8..+0x130) - the row has no
+    // other hit zones, so erring wide is free.
+    int nBandWidth = gnVpTabTextWidth + 0x10;
+    if (nBandWidth < 0x68) {
+        nBandWidth = 0x68;
+    }
+    *pnLeft = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - nBandWidth;
     *pnRight = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
+    // Y: the glyphs are bottom-anchored at the baseline (DC6 frames draw
+    // upward from y), so the band's top scales with the font; the bottom
+    // keeps the field-proven +5 ("Shared" has no descenders).
     int nBaselineY = VPSHAREDUI_TabBaselineY();
-    *pnTop = nBaselineY - 14;
+    *pnTop = nBaselineY - (VPSHAREDUI_TabFontFrameHeight(gnVpTabFontId) * 7) / 8;
     *pnBottom = nBaselineY + 5;
 }
 
@@ -1043,12 +1088,15 @@ void __stdcall VPSHAREDUI_DrawTab() {
 
     // "Shared" in white when the personal page is visible, in the green
     // active color when the shared page is visible (same color convention
-    // the options page uses for Off/On). Font 1 = the stash panel's own
-    // text font; saved/restored around the draw like every retail site.
+    // the options page uses for Off/On). Font: the R68 tab font tunable
+    // (default Font24 - the owner's "a bit bigger" ask over the panel's own
+    // Font16; [ui] stash_tab_font overrides live, see the tunables block);
+    // saved/restored around the draw like every retail site. The measured
+    // width feeds the hit band (VPSHAREDUI_TabHitRect reads it).
     uint16_t * pwszText = (uint16_t *)(gbVpSharedPageActive ? L"> Shared" : L"Shared");
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
-    int nWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
-    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - nWidth, VPSHAREDUI_TabBaselineY(),
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gnVpTabFontId);
+    gnVpTabTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
+    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - gnVpTabTextWidth, VPSHAREDUI_TabBaselineY(),
                                      gbVpSharedPageActive ? 2 : 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }

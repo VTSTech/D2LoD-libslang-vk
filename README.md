@@ -1,11 +1,10 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58d145bd-ec8f-4eb2-9d89-52daca9cba22" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/be9cfe56-0532-4176-a7db-c719364be89d" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9ea5078d-c8d5-469a-aa1b-de80071fa8e4" />
+<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/8bcf5198-8c29-463c-b68f-230cf5745206" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3e5f2205-691c-41aa-a943-1ffb003b6a2c" />
 
 # D2LoD Vanilla+
 
 [![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-283%2F283-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-289%2F289-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -50,7 +49,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
 
 - **Current release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)** — rebuilt `d2.exe` + Glide3xVK 0.4.6. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
-  exe can always be pinned to its source round.
+  exe can always be pinned to its source round. Release notes for R59→R66:
+  [`RELEASE-NOTES-0.0.7-R59-R66.md`](RELEASE-NOTES-0.0.7-R59-R66.md).
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
   mode; **Glide (`-3dfx`) through the glide3xvk wrapper** — fixed in the R46 round,
@@ -78,7 +78,8 @@ be fixed, replaced and released independently. The releases bundle both as one d
   single-player character on the PC, items + gold, own `_d2vp_shared.sss` pool file,
   `.d2s` saves stay retail-pure by construction (field-proven end to end in the R63–R66
   rounds; owner: "Great job. I see it. It works."); an in-game **Shared Stash** row on
-  the Vanilla+ Options page followed in R67.
+  the Vanilla+ Options page followed in R67; the tab label sits one size class up
+  since R68 (Font24, `d2vp.ini [ui] stash_tab_font` tunes it live).
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring.** Re-root-caught + re-fixed in the R51 round:
     the R50 round corrected the roster pet-recolor polarity, but the spawn-time
@@ -160,7 +161,10 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6) | The 720p release: native 1280x720 mode; loading-screen freeze fixed; sound constants repaired; Options page visible; inventory, skill flyouts and dialogs aligned at 720p. |
 | [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Notes: `RELEASE-NOTES-0.0.7-R59-R66.md` (R59→R66). |
 
-Between tags, work is tracked as revision rounds (`-Rxx`)
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped 0.0.7 build
+self-IDs `Vanilla+0.0.7-R66`, and round notes for the post-0.0.6 rounds live in
+`RELEASE-NOTES-0.0.6-R46-R52.md` / `RELEASE-NOTES-0.0.6-R52-R59.md` (0.0.6-era) and
+`RELEASE-NOTES-0.0.7-R59-R66.md` (this release).
 
 ## Verification
 
