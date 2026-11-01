@@ -183,21 +183,6 @@ void __stdcall VPSHAREDUI_ResetForNewGame(); // entering a game starts personal
 // flipped, the 0x4F/0x7D toggle is sent, and the caller must swallow the
 // message (VP site in INV_HandleStashLeftClick).
 BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY);
-// Gate + band check, no side effects (R69): the mouse-DOWN half of the tab.
-// The tab band floats ABOVE the stash panel now - a down in the band must be
-// swallowed (INPUT_StashLeftClick VP site) or it falls through to the
-// world-click path and walks the character out from under the stash before
-// the mouse-up toggle lands.
-BOOL __stdcall VPSHAREDUI_TabHitTest(int nMouseX, int nMouseY);
 // Per-frame tab draw (VP site in Inv.cpp's stash draw branch, right after
-// the gold-button draw). Draws nothing when the gate is off. Label font =
-// the R68 tab font tunable (default Font24; d2vp.ini [ui] stash_tab_font
-// overrides, hot-read with the same 2 s gate). Position = the R69 floating
-// anchor: above the stash panel, over the gold amount box (right edge
-// +0xdc, baseline 55 px above the box's text row; the R66 in-panel row
-// remains as the 640x480 fallback). R70: on float rows the word gets a
-// black DRAW_VERYTRANSPARENT backing pill (the retail UI_DrawPartyRoster
-// text-backdrop recipe) - un-outlined white washed out on bright terrain
-// in the field; the pill makes the glyphs terrain-independent. The 640x480
-// legacy row keeps its field-proven bare look.
+// the gold-button draw). Draws nothing when the gate is off.
 void __stdcall VPSHAREDUI_DrawTab();

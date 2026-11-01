@@ -912,17 +912,11 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 //   1. the config gate below (same charter as every feature: missing
 //      file/section/key or garbage = 0 = vanilla byte-for-byte, hot-re-read
 //      at most every 2 s);
-//   2. the "Shared" text tab floating ABOVE the stash panel, over the gold
-//      amount box (R69; was the gold-label row in-panel - owner: "move the
-//      Stash label ... up and to the left. Above the gold amount deposited
-//      display") - hit-tested via VPSHAREDUI_TabHitTest from BOTH click
-//      halves: the mouse-DOWN swallow in INPUT_StashLeftClick (the band now
-//      sits on the playfield above the panel - without the swallow the down
-//      would walk the character out from under the stash before the
-//      mouse-up toggle lands) and the mouse-up toggle in
-//      INV_HandleStashLeftClick via VPSHAREDUI_HandleStashClick. Drawn by
-//      VPSHAREDUI_DrawTab right after the gold-button draw. No hotkey: the
-//      tab is the only affordance (owner decision 2026-11-01);
+//   2. the "Shared" text tab on the stash panel (top-right, same text row
+//      as the stash gold label) - hit-tested in INV_HandleStashLeftClick via
+//      VPSHAREDUI_HandleStashClick, drawn by VPSHAREDUI_DrawTab right after
+//      the gold-button draw. No hotkey: the tab is the only affordance
+//      (owner decision 2026-11-01);
 //   3. a per-game reset so entering a game always starts on the personal
 //      page (the server starts every game on the personal page too).
 //
@@ -944,20 +938,6 @@ static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
 static DWORD dwVpSharedStashGateTick = 0;
 static int gbVpSharedPageActive = 0;  // client mirror of the page toggle
 
-// Tab label font (R68): the owner asked for the word "a bit bigger" than the
-// stash panel's own Font16. Default 7 = Font24 - the smallest in-tree step up
-// (same probe ladder VanillaPlusOptions.cpp uses: 7 = Font24, 2 = Font30,
-// 3 = Font42). Escape hatch, no rebuild needed - add to d2vp.ini (the same
-// file the [features] gates live in):
-//   [ui]
-//   stash_tab_font = <aFontNames index>
-// 1 = Font16 (the old size), 2 = Font30, 3 = Font42; anything outside 0..13
-// falls back to the default. Hot-read with the same 2 s gate tick below, so
-// the label resizes live in an open stash (and follows D2VP_ConfigReloaded's
-// flush, like the feature gate itself).
-static int gnVpTabFontId = 7;     // Font24
-static int gnVpTabTextWidth = 0;  // last measured DRAW_text0 width (px)
-
 // Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
 // next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
 // follows the in-game toggle the same frame. The server half (D2Game/PLAYER/
@@ -977,11 +957,6 @@ BOOL __stdcall VPSHAREDUI_FeatureActive() {
             ALTTOGGLE_EnsureIni();
             // Missing file/section/key or a non-numeric value = 0 = vanilla.
             gbVpSharedStashMode = GetPrivateProfileIntA("features", "shared_stash", 0, szIniPath) ? 1 : 0;
-            // [ui] stash_tab_font rides the same 2 s refresh (R68 hatch).
-            gnVpTabFontId = GetPrivateProfileIntA("ui", "stash_tab_font", 7, szIniPath);
-            if (gnVpTabFontId < 0 || gnVpTabFontId >= 14) {
-                gnVpTabFontId = 7;
-            }
         } else {
             gbVpSharedStashMode = 0;
         }
@@ -997,152 +972,59 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
     gbVpSharedPageActive = 0;
 }
 
-// Tab geometry (R69): the word FLOATS ABOVE the stash panel, over the gold
-// amount box - owner ask, verbatim: "Can we move the Stash label to where my
-// cursor is? Up and to the left. Above the gold amount deposited display"
-// (after the R68 Font24 bump made it overlap the retail "Gold Max: %ld"
-// text it shares its row with - that row is locale string 0xfd3 drawn at
-// Inv.cpp's stash block, gnPanelOffsetX + 0x4e, the SAME baseline the R66
-// anchor used). The R64->R66 in-panel story, for the record:
+// Tab geometry: on the stash panel's gold-label row (a row the owner sees),
+// pulled LEFT of the right-panel art's rectangle. Field archaeology across
+// three builds, each step field-caught:
 //   R64  right edge +0x1f8 - misread the 2x256-px stash tiling as a
 //        "512-px panel"; the word landed deep in the right panel.
-//   R65  right edge +0x180 - the RIGHT panel's DC6 (InvChar frames 4-7) is
-//        blitted ~30 lines AFTER the tab's draw site, its rectangle starting
-//        at panel-relative +0x140 - it repainted the word.
-//   R66  right edge +0x130 - 16 px left of the +0x140 rect; field-proven
-//        visible and working on the gold-label row.
-//   R68  Font24: the word grew leftward (~90/~115 px) and its left tail ran
-//        into the "Gold Max: 2500000" text ending at panel-rel ~+0xf3
-//        (abs 323 at 800x600) - the R69 move eliminates the shared row
-//        entirely.
-//   R69  floating: right edge +0xdc (abs 300 at 800x600 - the word centers
-//        over the gold amount box, panel-rel ~+0x46..+0xfa) and the baseline
-//        0x37 (55) px ABOVE the gold amount box's own text baseline
-//        (DRAW_UI_INVENTORY_Gold's stash row: gnPanelOffsetY - 0x1b8 +
-//        ScreenSizeY expansion / - 0xf4 classic). At 800x600 that puts the
-//        word at y 27..45 - fully above the panel art (top ornament starts
-//        ~y 60), on black playfield: maximum legibility, and nothing after
-//        the tab's draw site paints there (right-panel art at x >= +0x140
-//        = abs 400; mini-panel strip is BOTTOM-anchored at ScreenSizeY -
-//        0x2f; the automap draws under the UI). The 100 px right gap to the
-//        art rect also grows the R66 seam safety margin 16 -> 100.
-//        Where the panel has no headroom (640x480: the floating baseline
-//        computes negative), the tab keeps the R66 in-panel gold-label row
-//        - VPSHAREDUI_TabAnchor picks per frame.
-//   R70  field verdict on the R69 build: position + click CONFIRMED ("The
-//        Stash label is in the right place, clicking around switches the
-//        tab"), word INVISIBLE - the tab's SECOND invisibility, different
-//        mechanism than R85 (that one was draw-order overpaint; this one is
-//        contrast): the float rides the LIVE WORLD strip above the panel
-//        (frame order Draw.cpp: automap 571 and every overlay <= 588 draw
-//        BEFORE DRAW_UI_Inventory 593; everything after - HUD, level-up
-//        buttons, mini-panel, tooltips - is bottom/right/hover-anchored),
-//        and un-outlined white glyphs wash out on bright terrain (the R69
-//        handoff's flagged tradeoff; the R69 comment's "black playfield"
-//        only holds over fog/indoors). Fix = the retail text-backdrop
-//        recipe: UI_DrawPartyRoster draws a black DRAW_VERYTRANSPARENT rect
-//        under its DRAW_text (ui.cpp 1506); the tab does the same, drawn
-//        same-site right before the word, so the glyphs always read against
-//        a dark field (VPSHAREDUI_TAB_BACKING_* pads). Float rows only -
-//        the 640x480 legacy row sits on dark parchment and keeps its
-//        field-proven bare look. Position, anchor, hit band and the down
-//        swallow are UNCHANGED from R69.
-// The hit rect is a generous band around the drawn word (at the R68 default
-// Font24, "Shared" measures ~90 px and "> Shared" ~115; the band hugs the
-// word as actually measured each frame - see VPSHAREDUI_TabHitRect - and
-// never gets narrower than the R66 Font16 field band) and has no Y overlap
-// with any retail stash hit (close X at
-// [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
-// gold buttons at INV_GetGoldButtonX/Y - both near the panel's bottom - and
-// the grid rows start below the gold-label row).
-constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;       // legacy in-panel row (640x480)
-constexpr int VPSHAREDUI_TAB_RIGHT_EDGE_FLOAT = 0xdc;  // R69 floating row
-constexpr int VPSHAREDUI_TAB_FLOAT_GAP = 0x37;         // baseline gap above the amount box
+//   R65  right edge +0x180 - "16 px inside the +0x190 art edge"; STILL
+//        invisible: the RIGHT panel's DC6 (InvChar frames 4-7) draws at
+//        ScreenSizeX - gnPanelOffsetX - 0x140, so its rectangle starts at
+//        panel-relative +0x140 (abs x=400 at 800x600) and is blitted ~30
+//        lines AFTER the tab's draw site - its opaque pixels repaint the
+//        word. Field proof on the R65 build: the word stayed invisible
+//        while clicks in the same rect toggled the page (the hit test
+//        lives in the click handler, immune to draw order), and the whole
+//        shared-page round trip worked (owner: gold + an item deposited,
+//        character switched, both came back).
+//   R66  right edge +0x130 - 16 px left of the +0x140 rect. Nothing after
+//        the tab's draw site paints panel-relative x < 0x140 on that row
+//        (the right-panel art is at >= 0x140; DRAW_UI's tail is bottom
+//        HUD, orbs, corners and body slots), so the word survives at
+//        800x600, 640x480 and the wide modes alike - the same expressions
+//        put the word at gnPanelOffsetX + 0x130 while the art rect stays
+//        at ScreenSizeX - gnPanelOffsetX - 0x140 (1280x720: word 624,
+//        rect 640).
+// The hit rect is a generous band around the drawn word ("Shared" is ~60 px
+// at font 1, "> Shared" ~75) and has no Y overlap with any retail stash hit
+// (close X at [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x
+// [gnPanelOffsetY-0x60..-0x40], gold buttons at INV_GetGoldButtonX/Y - both
+// near the panel's bottom - and the grid rows start below this row).
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130;
 
-// R70 backing pill (float rows only): black DRAW_VERYTRANSPARENT rect under
-// the word - the same retail recipe UI_DrawPartyRoster uses under its roster
-// text - so the un-outlined glyphs read on any terrain. Pads are px around
-// the measured word box (font frames draw upward from the baseline, so the
-// frame height bounds the glyph top).
-constexpr int VPSHAREDUI_TAB_BACKING_PAD_X = 4;     // each side of the word
-constexpr int VPSHAREDUI_TAB_BACKING_PAD_UP = 2;    // above the font frame
-constexpr int VPSHAREDUI_TAB_BACKING_PAD_DOWN = 4;  // below the baseline
-
-// Frame height of the tab font, for the hit band's Y extent (the aFontNames
-// ids the [ui] stash_tab_font hatch documents; anything unknown rides the
-// R68 default). The Font16 case reproduces the field-proven band exactly:
-// 16 * 7/8 = 14 up, +5 down.
-static int VPSHAREDUI_TabFontFrameHeight(int nFontId) {
-    switch (nFontId) {
-        case 1: return 16;   // Font16
-        case 2: return 30;   // Font30
-        case 3: return 42;   // Font42
-        default: return 24;  // Font24 (id 7, the R68 default)
-    }
-}
-
-// One anchor for draw AND hit band, computed per frame (cheap flag reads):
-// floating (the R69 spot above the gold amount box) wherever the panel has
-// headroom, the R66 in-panel gold-label row otherwise (640x480 - the
-// floating baseline computes negative there). Both word variants stay
-// right-aligned at the returned edge and grow leftward. pbFloating
-// (optional, may be 0) reports which row was picked - the R70 backing pill
-// draws only on float rows.
-static void VPSHAREDUI_TabAnchor(int * pnRightEdge, int * pnBaselineY, BOOL * pbFloating) {
+static int VPSHAREDUI_TabBaselineY() {
     BOOL bIsExpansion = D2Client::GAME::Game::CLIENT_CheckExpansion();
-    // The gold amount box's own text baseline (DRAW_UI_INVENTORY_Gold's
-    // stash row) - the thing the owner pointed at: "above the gold amount
-    // deposited display".
-    int nGoldBoxBaseline = gnPanelOffsetY - (bIsExpansion ? 0x1b8 : 0xf4) + ScreenSizeY;
-    int nFloatBaseline = nGoldBoxBaseline - VPSHAREDUI_TAB_FLOAT_GAP;
-    if (nFloatBaseline >= 0x18) {
-        if (pbFloating) { *pbFloating = TRUE; }
-        *pnRightEdge = VPSHAREDUI_TAB_RIGHT_EDGE_FLOAT;
-        *pnBaselineY = nFloatBaseline;
-        return;
-    }
-    if (pbFloating) { *pbFloating = FALSE; }
-    *pnRightEdge = VPSHAREDUI_TAB_RIGHT_EDGE;
-    *pnBaselineY = gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
+    return gnPanelOffsetY - (bIsExpansion ? 0x19f : 0xdb) + ScreenSizeY;
 }
 
 static void VPSHAREDUI_TabHitRect(int * pnLeft, int * pnRight, int * pnTop, int * pnBottom) {
-    int nRightEdge = 0;
-    int nBaselineY = 0;
-    VPSHAREDUI_TabAnchor(&nRightEdge, &nBaselineY, 0); // hit band is row-agnostic
-    // X: both word variants are right-aligned at the anchor edge and extend
-    // LEFT, so the band hugs the word as actually measured by the last draw
-    // (gnVpTabTextWidth + 0x10) but never gets narrower than the R66
-    // Font16 field band (0x68) - the band has no retail hit neighbors in
-    // either layout, so erring wide is free.
-    int nBandWidth = gnVpTabTextWidth + 0x10;
-    if (nBandWidth < 0x68) {
-        nBandWidth = 0x68;
-    }
-    *pnLeft = gnPanelOffsetX + nRightEdge - nBandWidth;
-    *pnRight = gnPanelOffsetX + nRightEdge;
-    // Y: the glyphs are bottom-anchored at the baseline (DC6 frames draw
-    // upward from y), so the band's top scales with the font; the bottom
-    // keeps the field-proven +5 ("Shared" has no descenders).
-    *pnTop = nBaselineY - (VPSHAREDUI_TabFontFrameHeight(gnVpTabFontId) * 7) / 8;
+    // Left edge covers both word variants right-aligned at TAB_RIGHT_EDGE
+    // ("Shared" ~60 px, "> Shared" ~75 px at font 1).
+    *pnLeft = gnPanelOffsetX + 0x0c8;
+    *pnRight = gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE;
+    int nBaselineY = VPSHAREDUI_TabBaselineY();
+    *pnTop = nBaselineY - 14;
     *pnBottom = nBaselineY + 5;
 }
 
-// Gate + band check, no side effects. Shared by the mouse-DOWN swallow
-// (INPUT_StashLeftClick - keep the down from walking the character now that
-// the band sits on the playfield above the panel) and the mouse-up toggle
-// (VPSHAREDUI_HandleStashClick).
-BOOL __stdcall VPSHAREDUI_TabHitTest(int nMouseX, int nMouseY) {
+BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
     if (!VPSHAREDUI_FeatureActive()) {
         return FALSE;
     }
+
     int nLeft, nRight, nTop, nBottom;
     VPSHAREDUI_TabHitRect(&nLeft, &nRight, &nTop, &nBottom);
-    return nMouseX >= nLeft && nMouseX <= nRight && nMouseY >= nTop && nMouseY <= nBottom;
-}
-
-BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
-    if (!VPSHAREDUI_TabHitTest(nMouseX, nMouseY)) {
+    if (nMouseX < nLeft || nMouseX > nRight || nMouseY < nTop || nMouseY > nBottom) {
         return FALSE;
     }
 
@@ -1161,43 +1043,12 @@ void __stdcall VPSHAREDUI_DrawTab() {
 
     // "Shared" in white when the personal page is visible, in the green
     // active color when the shared page is visible (same color convention
-    // the options page uses for Off/On). Font: the R68 tab font tunable
-    // (default Font24 - the owner's "a bit bigger" ask over the panel's own
-    // Font16; [ui] stash_tab_font overrides live, see the tunables block);
-    // saved/restored around the draw like every retail site. Anchor: the
-    // R69 floating spot above the gold amount box (VPSHAREDUI_TabAnchor -
-    // the same anchor the hit band uses). The measured width feeds the hit
-    // band (VPSHAREDUI_TabHitRect reads it). R70: float rows back the word
-    // with a black DRAW_VERYTRANSPARENT pill (terrain-independent
-    // legibility; see the R70 note on the anchor constants).
+    // the options page uses for Off/On). Font 1 = the stash panel's own
+    // text font; saved/restored around the draw like every retail site.
     uint16_t * pwszText = (uint16_t *)(gbVpSharedPageActive ? L"> Shared" : L"Shared");
-    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gnVpTabFontId);
-    gnVpTabTextWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
-    int nRightEdge = 0;
-    int nBaselineY = 0;
-    BOOL bFloating = FALSE;
-    VPSHAREDUI_TabAnchor(&nRightEdge, &nBaselineY, &bFloating);
-    if (bFloating) {
-        // R70: the float rides the live world strip above the panel, where
-        // un-outlined white washed out on the owner's terrain ("invisible
-        // again"). Backing pill = the retail text-backdrop recipe
-        // (UI_DrawPartyRoster: black DRAW_VERYTRANSPARENT rect under
-        // DRAW_text) - 75% blend, same-site, so the word stays the last
-        // thing painted on its rect. The 640x480 legacy row sits on dark
-        // parchment and keeps its field-proven bare look (no pill).
-        int nFrameHeight = VPSHAREDUI_TabFontFrameHeight(gnVpTabFontId);
-        // Fully qualified: this TU is outside namespace D2Client (see the
-        // GetPlayerUnit_UI note above) - Engine/Gfx.h declares the call as
-        // D2Client::Engine::Gfx::..., and the short Engine::... form only
-        // resolves from TUs inside the D2Client namespace (VanillaPlusOptions).
-        D2Client::Engine::Gfx::D2GFX_DrawSolidRectExBySize(
-            gnPanelOffsetX + nRightEdge - gnVpTabTextWidth - VPSHAREDUI_TAB_BACKING_PAD_X,
-            nBaselineY - nFrameHeight - VPSHAREDUI_TAB_BACKING_PAD_UP,
-            gnVpTabTextWidth + 2 * VPSHAREDUI_TAB_BACKING_PAD_X,
-            nFrameHeight + VPSHAREDUI_TAB_BACKING_PAD_UP + VPSHAREDUI_TAB_BACKING_PAD_DOWN,
-            0, DRAW_VERYTRANSPARENT);
-    }
-    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + nRightEdge - gnVpTabTextWidth, nBaselineY,
+    int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
+    int nWidth = D2Win::Src::D2WinFont::DRAW_text0(pwszText);
+    D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX + VPSHAREDUI_TAB_RIGHT_EDGE - nWidth, VPSHAREDUI_TabBaselineY(),
                                      gbVpSharedPageActive ? 2 : 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }

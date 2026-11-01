@@ -5021,12 +5021,12 @@ void __stdcall INV_HandleStashLeftClick(D2UIMouseMsgStrc * pMsg) {
       return;
     }
 
-    // VP-BEGIN [vanilla-plus shared-stash] "Shared" tab (floating ABOVE the
-    // stash panel, over the gold amount box, since R69 - the draw anchor is
-    // VPSHAREDUI_TabAnchor in VanillaPlusCore.cpp; d2vp.ini [features]
-    // shared_stash=1, no hotkey): flips the visible stash page by sending
-    // the VP 0x4F/0x7D toggle to the server, which swaps the page-4 contents
-    // (VanillaPlusStash.cpp).
+    // VP-BEGIN [vanilla-plus shared-stash] "Shared" tab (on the stash
+    // panel's gold-label row, left of the right-panel art seam - the draw
+    // anchor is VPSHAREDUI_TAB_RIGHT_EDGE in VanillaPlusCore.cpp;
+    // d2vp.ini [features] shared_stash=1, no hotkey): flips the visible
+    // stash page by sending the VP 0x4F/0x7D toggle to the server, which
+    // swaps the page-4 contents (VanillaPlusStash.cpp).
     if (VPSHAREDUI_HandleStashClick((int)uMouseX, (int)uMouseY)) {
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
@@ -11240,19 +11240,6 @@ void __stdcall INPUT_StashLeftClick(D2UIMouseMsgStrc * pMsg) {
     int32_t nX = (int32_t)pMsg->uLParam.sMousePos.nMouseX;
     gnInvMouseX = nX;
     gpInvCursorItem = nY;
-    // VP-BEGIN [vanilla-plus shared-stash] R69 mouse-DOWN swallow: the tab
-    // band floats ABOVE the stash panel now (on the playfield), so a down in
-    // it would otherwise fall through to the world-click path below and walk
-    // the character out from under the stash before the mouse-up toggle
-    // (INV_HandleStashLeftClick's VP site) can land. Swallow the down; the
-    // up does the toggle.
-    if (VPSHAREDUI_TabHitTest(nX, nY)) {
-      pMsg->bHandled = 1;
-      pMsg->dwResult = 0;
-      Storm::SMsgBreakHandlerChain(pMsg);
-      return;
-    }
-    // VP-END [vanilla-plus shared-stash]
     uint32_t bBeltHover = Panel::PANEL_GetBeltSlotHoverFlag();
     if ((!bBeltHover || (bInRange = Panel::PANEL_CalculateBeltSlotIndex(pMsg) , !bInRange)) && nX >= ScreenSizeX - gnPanelOffsetX - 0x12e && nX <= ScreenSizeX - gnPanelOffsetX - 0x10e && nY >= gnPanelOffsetY - 0x60 + ScreenSizeY && nY <= gnPanelOffsetY - 0x40 + ScreenSizeY) {
       gbInvPanelButtonPressed = 1;
