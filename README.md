@@ -9,7 +9,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-D2LoD--Vanilla--Plus--0.0.7-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R77-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-299%2F299-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
@@ -56,11 +56,12 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`D2LoD-Vanilla-Plus-0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)** — one 7z with the Vanilla+ client
+- **Current release: [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77) ("Vanilla+ 0.0.7-R77")** — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
-  [`HISTORY.md`](HISTORY.md), the verbatim round journal.
+  [`HISTORY.md`](HISTORY.md), the R67→R77 record in [`handoff.md`](handoff.md) — the
+  round journals.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
   mode; **Glide (`-3dfx`) through the glide3xvk wrapper** — fixed in the R46 round,
@@ -144,12 +145,13 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`0.0.5`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5) | Per-class player sounds restored (77 values byte-matched from the retail exe); full-inventory pickup crash and walk-click mis-pickup fixed; Persistent Globe Text. |
 | [`0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6) | The 720p release: native 1280x720 mode; loading-screen freeze fixed; sound constants repaired; Options page visible; inventory, skill flyouts and dialogs aligned at 720p. |
 | [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Record: [`HISTORY.md`](HISTORY.md) round journal (R59→R66). |
+| [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77) | The shared-stash refresh (R67→R77), same 0.0.7 version line: the shared stash grows to **two pages** with `<`/`>` pager arrows and an outlined tab in the panel's top-right corner; **Shared Stash** toggle on the Options page; `_d2vp_shared.sss` v2 (v1 files auto-upgrade); upstream synced to Ghidra 1792. Record: [`handoff.md`](handoff.md) round journal. |
 
-Between tags, work is tracked as revision rounds (`-Rxx`); the shipped 0.0.7 build
-self-IDs `Vanilla+0.0.7-R66`. Every round's record lives in [`HISTORY.md`](HISTORY.md)
-(the verbatim archive; per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — post-release rounds R67+
-through the Ghidra-1792 sync at R74 — in [`handoff.md`](handoff.md).
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R77 build
+self-IDs `Vanilla+0.0.7-R77`. Rounds through R74 are archived verbatim in
+[`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R77,
+released at tag `R77` — in [`handoff.md`](handoff.md).
 
 ## Verification
 
