@@ -98,11 +98,10 @@ BOOL __fastcall Q03_SyncQuestProgress(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
       /* SetQuestState(Step0x02=2) — persist nStateFlag==2 (Charsi gave quest) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (!(nStateFlag == 3 || nStateFlag == 4)) {
-      return 0;
+    if (nStateFlag == 3 || nStateFlag == 4) {
+      /* SetQuestState(Step0x03=3) — persist nStateFlag 3/4 (Malus found/in hand) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Step0x03);
     }
 
-    /* SetQuestState(Step0x03=3) — persist nStateFlag 3/4 (Malus found/in hand) */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -413,10 +412,10 @@ void __fastcall Q03_Callback06_Unused(D2QuestDataStrc * pQuestData, D2QuestArgSt
       return;
     }
 
-    D2QuestDataA1Q3Strc* pDVar2 = pQuestData->pQuestSpecificData.pA1Q3;
-    int32_t* piVar1 = &pDVar2->nQuestItemCount;
-    (*piVar1)--;
-    if (!(!*piVar1 && pDVar2->nMalusMode == 2)) {
+    D2QuestDataA1Q3Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q3;
+    int32_t* pnQuestItemCount = &pDVar1->nQuestItemCount;
+    (*pnQuestItemCount)--;
+    if (!(!*pnQuestItemCount && pDVar1->nMalusMode == 2)) {
       return;
     }
 
@@ -425,22 +424,23 @@ void __fastcall Q03_Callback06_Unused(D2QuestDataStrc * pQuestData, D2QuestArgSt
 
 // Already documented.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
-BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOperation) {
+BOOL __fastcall OBJOP_A1Q3_UseMalus(D2ObjectOperateFnArg * pOperation) {
     eD2ObjectAnimMode ePlayerAnimMode;
     D2ObjectOperateFnArg* pOperationLocal;
+    D2QuestDataA1Q3Strc* pA1Q3Data;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_ToolsOfTheTrade);
     if (!pQuestData) {
       return 0;
     }
 
-    D2UnitStrc* pDVar2 = pOperation->sArg.pVictim;
-    if (!pDVar2) {
+    D2UnitStrc* pDVar1 = pOperation->sArg.pVictim;
+    if (!pDVar1) {
       ePlayerAnimMode = eD2ObjectAnimMode_ns::Neutral;
     } else {
-      ePlayerAnimMode = pDVar2->eAnimMode.ePlayerMode;
+      ePlayerAnimMode = pDVar1->eAnimMode.ePlayerMode;
     }
     if (pQuestData->bIsNotIntroduction == '\0') {
-      D2Common::Units::SetupUpdateFlag(pDVar2, 2);
+      D2Common::Units::SetupUpdateFlag(pDVar1, 2);
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
@@ -462,52 +462,52 @@ BOOL __fastcall OBJOP_A1Q3_DenOfEvil_CheckCompletion(D2ObjectOperateFnArg * pOpe
       return 0;
     }
 
-    int32_t iVar1 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pOperation->pAttacker, UNITSTAT_level, 0);
-    if (iVar1 < 8) {
+    int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pOperation->pAttacker, UNITSTAT_level, 0);
+    if (nPlayerLevel < 8) {
       UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pOperation->pAttacker, 0x13, pOperation->pAttacker);
       return 0;
     }
 
     pOperation->sArg.pVictim->dwDropItemCode = 0x206d6468;
-    pDVar2 = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 0);
-    if (!pDVar2) {
-      return 0;
+    pDVar1 = ITEMS::Items::Drop::ITEM_RewardItemToDrop(pOperation->sArg.pGame, pOperation->sArg.pVictim, ITEMTYPE_Shield, (int32_t*)&pOperationLocal, nullptr, -1, 0);
+    if (pDVar1) {
+      int32_t nUnitGUID;
+      D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
+      pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
+      pA1Q3Data->bMalusTaken = '\x01';
+      pA1Q3Data->nMalusMode = 2;
+      pDVar1 = pOperation->sArg.pVictim;
+      if (!pDVar1) {
+        nUnitGUID = -1;
+      } else {
+        nUnitGUID = pDVar1->nUnitGUID;
+      }
+
+      pA1Q3Data->nQuestItemCount++;
+      pA1Q3Data->nMalusGUID = nUnitGUID;
+      if (pQuestData->nStateFlag != 4) {
+        QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x2c2);
+        UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q03_SyncQuestProgress);
+      }
+      if (pQuestData->nStateFlagPrev != 1) {
+        pQuestData->nQuestPacketFlags = '\0';
+        QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, false);
+      }
     }
 
-    D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 2);
-    D2QuestDataA1Q3Strc* pA1Q3Data = pQuestData->pQuestSpecificData.pA1Q3;
-    pA1Q3Data->bMalusTaken = '\x01';
-    pA1Q3Data->nMalusMode = 2;
-    pDVar2 = pOperation->sArg.pVictim;
-    if (!pDVar2) {
-      iVar1 = -1;
-    } else {
-      iVar1 = pDVar2->nUnitGUID;
-    }
-
-    pA1Q3Data->nQuestItemCount++;
-    pA1Q3Data->nMalusGUID = iVar1;
-    if (pQuestData->nStateFlag != 4) {
-      QUEST_SetStateFlag(pQuestData, 4, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x2c2);
-      UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q03_SyncQuestProgress);
-    }
-    if (pQuestData->nStateFlagPrev == 1) {
-      return 0;
-    }
-
-    pQuestData->nQuestPacketFlags = '\0';
-    QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q03_NpcGossipHandler, false);
     return 0;
 }
 
 // Q03_ActiveFilter (A1Q3) — predicate: is the quest "active" (shows quest log / NPC has dialog) for this player+Charsi? Returns false if target isn't Charsi (0x9a) or quest is Completed. Returns true if quest started (nStateFlag!=0) and reward not yet awaiting. Otherwise true only if player is level >=8 AND carries the Horadric Malus ('hdm '). Read-only.
 bool __fastcall Q03_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    /* If target is Charsi */ if (nTargetClassId != 0x9a) {
-      return false;
-    }
-
-    BOOL BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
-    if (BVar1 != 1) {
+    int32_t nPlayerLevel;
+    D2UnitStrc* pMalusItem;
+    /* If target is Charsi */ if (nTargetClassId == 0x9a) {
+      BOOL BVar1;
+      /* GetQuestState(Completed=0) — inactive if done */ /* If quest is completed: inactive */ BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_Completed);
+      if (BVar1 == 1) {
+        return false;
+      }
       /* If quest has been given by NPC (status 1) and reward is not yet available:
                          active */ /* GetQuestState(RewardAwaits=1) — started & no reward pending => active */ if (pQuestData->nStateFlag == 1) {
         BVar1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
@@ -516,17 +516,13 @@ bool __fastcall Q03_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
         }
       }
 
-      int32_t nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
-      if (nPlayerLevel < 8) {
-        return false;
+      /* Check if the hero has the min required level (= 8) */ nPlayerLevel = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
+      if (nPlayerLevel >= 8) {
+        /* Horadric Hammer item code */ pMalusItem = ITEMS::Items::Drop::HasQuestItem(UNIT::SUnit::GetGamePointer(pUnit), pUnit, 0x206d6468);
+        /* If the player carries the Horadric Hammer: active */ if (pMalusItem) {
+          return true;
+        }
       }
-
-      D2UnitStrc* pMalusItem = ITEMS::Items::Drop::HasQuestItem(UNIT::SUnit::GetGamePointer(pUnit), pUnit, 0x206d6468);
-      /* If the player carries the Horadric Hammer: active */ if (pMalusItem) {
-        return true;
-      }
-
-      return false;
     }
 
     return false;
@@ -583,12 +579,12 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
         return true;
       }
     } else {
-      int iVar1;
+      int nRecordState;
       if (pQuestData->bIsNotIntroduction != '\0') {
         /* GetQuestState(JustCompleted=0xd) — just turned in self game */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_JustCompleted);
         if (bQuestState) {
           /* GetQuestState(RewardAwaits=1) — status 0x10a if reward pending else 0xd */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_ToolsOfTheTrade, QUESTSTATE_RewardAwaits);
-          *pbyStatusCode = bQuestState ? 0x10a : 0xd;
+          *pbyStatusCode = bQuestState ? 0xa : 0xd;
           return true;
         }
 
@@ -602,8 +598,8 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
           return true;
         }
 
-        iVar1 = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_ToolsOfTheTrade, 0xd);
-        if (iVar1) {
+        nRecordState = QUEST_GetQuestRecordState(pQuestData->pGame, QUEST_ToolsOfTheTrade, 0xd);
+        if (nRecordState) {
           nCompletionState = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pUnit, UNITSTAT_level, 0);
           *pbyStatusCode = nCompletionState >= 8 ? 12 : 4;
         }
@@ -616,22 +612,22 @@ bool __fastcall Q03_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 // Q03_SequenceFilter (A1Q3) — quest-sequence advance hook. If nStateFlag==0 and in-introduction: set nStateFlag to 1 (kick the quest into started state). If nStateFlag==5 (done) or not in-introduction: chain to the next quest in the sequence (nSequenceQuestId = A1Q4 Sisters to the Slaughter) by calling its fpSequenceFilter. No quest-record writes.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q3.cpp
 bool __fastcall Q03_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    bool bVar1;
+    bool bResult;
     D2QuestDataStrc* pQuestData_00;
-    BOOL BVar2;
+    BOOL BVar1;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
       QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q3.cpp", 0x35a);
     } else if (pQuestData->nStateFlag == 5 || pQuestData->bIsNotIntroduction == '\0') {
       pQuestData_00 = GetQuestDataByQuestNoInternal(pQuestData->pGame, pQuestData->nSequenceQuestId);
       if (pQuestData_00) {
-        /* FARPROC lpfn for IsBadCodePtr */ BVar2 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
-        if (BVar2) {
+        /* FARPROC lpfn for IsBadCodePtr */ BVar1 = IsBadCodePtr((FARPROC)pQuestData->fpSequenceFilter);
+        if (BVar1) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x362);
           exit(-1);
         }
 
-        bVar1 = pQuestData_00->fpSequenceFilter(pQuestData_00);
-        return bVar1;
+        bResult = pQuestData_00->fpSequenceFilter(pQuestData_00);
+        return bResult;
       }
 
       return false;

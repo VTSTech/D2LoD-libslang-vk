@@ -86,8 +86,8 @@ template<> ::SGAMEDATA * TSExplicitList<SGAMEDATA, -572662307>::Next(::SGAMEDATA
       return (::SGAMEDATA*)((int)*(uint32_t*)(pNode->szGameName + this->m_linkoffset - 0x26) <= 0 ? 0 : *(uint32_t*)(pNode->szGameName + this->m_linkoffset - 0x26));
     }
 
-    uint32_t uVar1 = this->m_terminator.m_next;
-    return (::SGAMEDATA*)((int)uVar1 <= 0 ? 0 : uVar1);
+    uint32_t dwNext = this->m_terminator.m_next;
+    return (::SGAMEDATA*)((int)dwNext <= 0 ? 0 : dwNext);
 }
 
 template<> void TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::Unlock(int32_t nLockedHandle) {
@@ -187,14 +187,14 @@ template<> ::SGAMEDATA * TSExportTableSync<SGAMEDATA, HSGAMEDATA__*, HSGAMEDATAL
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&this->tSync.m_critsect);
     *pLockedHandle = bForWriting != 0 ? 0x1U : 0xffffffff;
     ::SGAMEDATA* pGame = this->TSHashTable<::SGAMEDATA, HASHKEY_NONE>::Ptr(nHandle, &this->tKey);
-    if (pGame) {
-      return pGame;
-    }
-    if (*pLockedHandle) {
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+    if (!pGame) {
+      if (*pLockedHandle) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+      }
+
+      *pLockedHandle = 0;
     }
 
-    *pLockedHandle = 0;
     return pGame;
 }
 

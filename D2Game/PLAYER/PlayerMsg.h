@@ -553,15 +553,15 @@ struct __attribute__((packed)) D2GSPacketClt0x59_CommandNPC {
 
 struct __attribute__((packed)) D2GSPacketClt0x5D_CubeRecipeCheck {
     /* 0x00 */ uint8_t nCmd;
-    /* 0x01 */ uint8_t nParam0;
+    /* 0x01 */ uint8_t nActionIndex;
     /* 0x02 */ uint8_t nParam1;
-    /* 0x03 */ uint32_t dwParam2;
+    /* 0x03 */ uint32_t dwPlayerGUID;
 };
 
 struct __attribute__((packed)) D2GSPacketClt0x5E_CubeApply {
     /* 0x00 */ uint8_t nCmd;
-    /* 0x01 */ uint8_t nParam0;
-    /* 0x02 */ uint32_t dwParam1;
+    /* 0x01 */ uint8_t nActionIndex;
+    /* 0x02 */ uint32_t dwPlayerGUID;
 };
 
 struct D2GSPacketClt0x60_WeaponSwap {
@@ -629,7 +629,7 @@ void __fastcall SendUnitCast0x4d(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit,
 // Sends the appropriate movement packet to pClient for pUnit's current move-mode (index nModeIndex into gaPlayerModeNetMsgTable). If pUnit has a target entity visible to the client, sends 0x10 (CharToObj); otherwise sends 0x0F (PlayerMove) with the unit's current tile position and path sub-step target coordinates. Skips self-movement (pUnit == client's own player).
 void __fastcall SendPlayerMoveOrObject(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nModeIndex);
 void __fastcall SendPlayerMove(::SGAMEDATA * pGame, struct D2UnitStrc * pUnitRaw, struct D2ClientStrc * pClient, int32_t nModeIndex);
-void __fastcall SendPlayerStop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, eD2MonsterAnimMode param_1);
+void __fastcall SendPlayerStop(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, eD2MonsterAnimMode eAnimMode);
 void __fastcall PLRMSG_SendPlayerStopToOtherClient(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient, int32_t nModeIndex);
 // Reads pUnit->eAnimMode.ePlayerMode and indexes gaPlayerModeNetMsgTable @0x007319e8 (D2PlayerModeNetMsgStrc, stride 12, 20 entries - one per eD2PlayerAnimMode value), then calls that mode's pfnSend to push the matching network message to nearby clients when a player's animation state changes.
 void __fastcall DispatchPlayerModeNetMsg(::SGAMEDATA * pGameStrc, struct D2UnitStrc * pUnit, struct D2ClientStrc * pClient);
@@ -646,7 +646,7 @@ int32_t __stdcall PLAYERMSG_GetMessagePriority(uint32_t nParam);
 eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, struct D2UnitStrc * pUnit, uint32_t dwItemGUID);
 eD2ServerIncomingStatus __thiscall IsPlayerTheOwner(void * pThis, struct D2UnitStrc * pOwner, uint32_t nItemGid);
 eD2ServerIncomingStatus __thiscall ItemBelongsToUnit(void * pThis, struct D2UnitStrc * pOwner, uint32_t nItemGid);
-uint8_t __stdcall MONSTER_SetAlignmentCallback(struct D2UnitStrc * pUnit, int32_t nGridOffset);
+uint8_t __stdcall PLRMSG_CheckWeaponSlotEmpty(struct D2UnitStrc * pUnit, int32_t nBodyLoc);
 eD2ServerIncomingStatus __thiscall ItemBelongsToInventoryOf(void * pThis, struct D2UnitStrc * pPlayer, uint32_t nItemGid);
 int32_t __stdcall MONSTER_FindNearbyAllyUnit(::SGAMEDATA * pGame, int32_t bCheckRange, struct D2UnitStrc * * ppUnit, struct D2UnitStrc * pUnit, DWORD nUnitId);
 // C->S Packet 0x01 - Walk to XY (5 bytes)
@@ -746,7 +746,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, st
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
 void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint8_t dwParam);
 // Broadcasts a pre-built 0x26 chat packet (pointed to by pdwParam as uint32_t array) to all clients in the game. dwParam is packed into the packet color/locale byte. Wraps ForEachClient with NET_D2GS_SERVER_Send_0x26_Chat callback.
-void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwParam, uint32_t dwParam);
+void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwMessage, uint32_t dwParam);
 // Iterates all clients in pGame via ForEachClient, broadcasting a 0x5A EventMessages packet built from nParam (pointer to message data). First measures the embedded character name string (capped at 16 chars); skips broadcast if name exceeds that limit. Side-effect: sends to every player in the game session.
 void __fastcall BroadcastEventMessage(::SGAMEDATA * pGame, struct D2Packet0x5aEventStructure * pEventData);
 // C->S 0x13 Entity Interact (9 bytes)
@@ -884,8 +884,8 @@ eD2ServerIncomingStatus __fastcall SCMD_0x45_Unused(::SGAMEDATA * pGame, struct 
 eD2ServerIncomingStatus __fastcall SCMD_0x46_NpcInteractMerc(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x46_NpcInteractMerc * pPacket, uint32_t nSize);
 // C2S packet 0x47 handler (13 bytes): [opcode:1][mercGUID:u32][targetX:u16][pad:2][targetY:u16][pad:2]. Issues an AI command to the player's mercenary. Validates the unit is the player's hired merc (PETTYPE_hireable), player is within 50 units of target coords, then resets AI state and injects a new command with the target coordinates. Sent when player directs their merc to a location.
 eD2ServerIncomingStatus __fastcall SCMD_0x47_CommandMercenary(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x47_CommandMercenary * pPacket, uint32_t nSize);
-// C2S packet 0x48 handler (1 byte): [opcode:1]. Clears the dwTradeTick lock on D2UnitDataPlayerStrc+0x4C. Acts as a client acknowledgment that trade state has been processed. Validates dwTradeTick is non-zero before clearing. Prevents trade state corruption by requiring explicit client confirmation before unlocking player actions.
-eD2ServerIncomingStatus __fastcall SCMD_0x48_ConfirmTradeTick(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x48_TransmogrifyItem * pPacket, uint32_t nSize);
+// C2S 0x48 (1 byte), sent by the client's ExitGamePlayCutScene 0x00482ef0 when an act cutscene ends; clears the cutscene-pending flag at player data +0x4c that the server set before S2C 0x61.
+eD2ServerIncomingStatus __fastcall SCMD_0x48_CutsceneOver(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x48_TransmogrifyItem * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x49_TakeWaypoint(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x49_TakeWaypoint * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x4D_ResetNpcIntroFlag(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x4D_ResetNpcIntroFlag * pPacket, uint32_t nSize);
 eD2ServerIncomingStatus __fastcall SCMD_0x4B_ForceUnitUpdate(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, struct D2GSPacketClt0x4B_ForceUnitUpdate * pPacket, uint32_t nSize);

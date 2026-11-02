@@ -29,29 +29,26 @@ uint32_t __thiscall ARCHIVE_ComputeAddress(int * pNode, int32_t nBaseAddr) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if (nBaseAddr >= 0) {
-      return nOffset + nBaseAddr;
+    if (nBaseAddr < 0) {
+      nBaseAddr = (int)pNode - *(int*)(*pNode + 4);
     }
 
-    nBaseAddr = (int)pNode - *(int*)(*pNode + 4);
     return nOffset + nBaseAddr;
 }
 
 int32_t __thiscall ARCHIVE_GetNodeOrDefault(int32_t pThis, int32_t nNode) {
-    if (nNode) {
-      return nNode;
+    if (!nNode) {
+      nNode = pThis + 4;
     }
 
-    nNode = pThis + 4;
     return nNode;
 }
 
 uint32_t __thiscall ARCHIVE_GetNodeValue(int32_t pThis, int32_t nNode) {
-    if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
+    if (!nNode) {
+      nNode = pThis + 4;
     }
 
-    nNode = pThis + 4;
     return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
@@ -204,11 +201,10 @@ int * * __thiscall ARCHIVE_AllocNode(int * * ppList, int32_t nLinkMode, int32_t 
     } else {
       ppNode = 0;
     }
-    if (!nLinkMode) {
-      return ppNode;
+    if (nLinkMode) {
+      ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     }
 
-    ARCHIVE_LinkNode(ppList, ppNode, nLinkMode, nullptr);
     return ppNode;
 }
 
@@ -229,11 +225,10 @@ int * __thiscall ARCHIVE_FreeNode(int * pNode, uint8_t byFree) {
       *pNode = 0;
       pNode[1] = 0;
     }
-    if (!(byFree & 1)) {
-      return pNode;
+    if (byFree & 1) {
+      Storm::Source::SMem::SMemFree(pNode, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pNode, "delete", -1, 0);
     return pNode;
 }
 
@@ -316,7 +311,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
         ppWalk++;
       }
 
-      if ((int)__frame0.pListPrev <= 0 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwUnknown124)) {
+      if ((int)__frame0.pListPrev <= 0 || (ppWalk = (int****)__frame0.pListPrev , (uintptr_t)__frame0.pListPrev[0x4b] < sHeapDetails.dwAllocatedBytes)) {
         pNextNode = *pNewRec;
         if (pNextNode) {
           pNextLink = pNewRec[1];
@@ -354,7 +349,7 @@ void ARCHIVE_WriteMemoryCheckReport() {
           if ((int)ppWalk <= 0) {
             break;
           }
-        } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwUnknown124);
+        } while ((uintptr_t)ppWalk[0x4b] > sHeapDetails.dwAllocatedBytes);
 
         ARCHIVE_LinkNode(&__frame0.pListTail, (int**)pNewRec, 1, (int**)ppInsertAfter);
       }
@@ -464,22 +459,22 @@ void __fastcall ReadByteOrShort(D2BitBufferStrc * pBitBuffer) {
 }
 
 uint32_t __fastcall UNIT_GetModuloFromSeed(D2SeedStrc * pSeed, uint32_t nModulo) {
-    D2SeedStrc DVar2;
+    D2SeedStrc DVar1;
     if ((int)nModulo <= 0) {
       return 0;
     }
 
-    int64_t lVar1 = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
+    int64_t nSeedProduct = (uint64_t)pSeed->nSeedLow * 0x6ac690c5;
     if (nModulo & nModulo - 1) {
-      DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-      pSeed->nSeedHigh = DVar2.nSeedHigh;
-      pSeed->nSeedLow = DVar2.nSeedLow;
-      return (uint32_t)(DVar2.nSeedLow % nModulo);
+      DVar1 = (D2SeedStrc)(nSeedProduct + (uint64_t)pSeed->nSeedHigh);
+      pSeed->nSeedHigh = DVar1.nSeedHigh;
+      pSeed->nSeedLow = DVar1.nSeedLow;
+      return (uint32_t)(DVar1.nSeedLow % nModulo);
     }
 
-    DVar2 = (D2SeedStrc)(lVar1 + (uint64_t)pSeed->nSeedHigh);
-    *pSeed = DVar2;
-    return nModulo - 1 & DVar2.nSeedLow;
+    DVar1 = (D2SeedStrc)(nSeedProduct + (uint64_t)pSeed->nSeedHigh);
+    *pSeed = DVar1;
+    return nModulo - 1 & DVar1.nSeedLow;
 }
 
 uint32_t __fastcall RANDOM_RandomNumberSelector(D2SeedStrc * pSeed, uint32_t nModulo) {

@@ -93,11 +93,10 @@ template<> TSExplicitList<::CELLIST, -572662307>* TSExplicitList<CELLIST, -57266
       pTVar1->m_prevlink = 0;
       this->m_terminator.m_next = 0;
     }
-    if (!(dwFlags & 1 && this)) {
-      return this;
+    if (dwFlags & 1 && this) {
+      Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     return this;
 }
 
@@ -249,9 +248,9 @@ void __thiscall Destructor_Unreferenced(::CELLIST * pThis) {
 template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocData(uint32_t nAlloc) {
     TSExplicitList<::CELLIST, -572662307>* pBucketSlot;
     int* pBackLink;
-    uint32_t* puVar2;
-    TSLink<::CELLIST>* pTVar3;
+    TSLink<::CELLIST>* pTVar2;
     TSLink<::CELLIST>* nNext;
+    uint32_t* pNewTerminator;
     uint32_t uLinkOffset;
     uint32_t uNewSize;
     uint32_t nSavedNewCount = nAlloc;
@@ -259,25 +258,25 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocDat
     if (nAlloc < this->m_count) {
       pBucketSlot = pBlock + nAlloc;
       do {
-        pTVar3 = &pBucketSlot->m_terminator;
-        ((TSExplicitList<::CELLIST, -572662307>*)((int)(pTVar3 - 1) + 4))->UnlinkAll();
-        nNext = pTVar3->m_prevlink;
+        pTVar2 = &pBucketSlot->m_terminator;
+        ((TSExplicitList<::CELLIST, -572662307>*)((int)(pTVar2 - 1) + 4))->UnlinkAll();
+        nNext = pTVar2->m_prevlink;
         if (nNext) {
-          uLinkOffset = pTVar3->m_next;
+          uLinkOffset = pTVar2->m_next;
           if ((int)uLinkOffset < 0) {
             pBackLink = (int*)~uLinkOffset;
           } else {
-            pBackLink = (int*)((int)pTVar3 + (uLinkOffset - nNext->m_next));
+            pBackLink = (int*)((int)pTVar2 + (uLinkOffset - nNext->m_next));
           }
 
           *pBackLink = (int)nNext;
-          pTVar3->m_prevlink->m_next = pTVar3->m_next;
-          pTVar3->m_prevlink = 0;
-          pTVar3->m_next = 0;
+          pTVar2->m_prevlink->m_next = pTVar2->m_next;
+          pTVar2->m_prevlink = 0;
+          pTVar2->m_next = 0;
         }
 
         nAlloc++;
-        pBucketSlot = (TSExplicitList<::CELLIST, -572662307>*)(pTVar3 + 1);
+        pBucketSlot = (TSExplicitList<::CELLIST, -572662307>*)(pTVar2 + 1);
       } while (nAlloc < this->m_count);
     }
 
@@ -303,28 +302,28 @@ template<> void TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ReallocDat
       pBucketSlot = pBlock;
       do {
         nNext = &pBucketSlot->m_terminator;
-        puVar2 = (uint32_t*)(-4 - (int)pBlock + (int)nNext + (int)this->m_data);
-        if (puVar2) {
-          puVar1 = puVar2 + 1;
-          *puVar1 = 0;
-          puVar2[2] = 0;
+        puVar1 = (uint32_t*)(-4 - (int)pBlock + (int)nNext + (int)this->m_data);
+        if (puVar1) {
+          pNewTerminator = puVar1 + 1;
+          *pNewTerminator = 0;
+          puVar1[2] = 0;
           uNewSize = *(uint32_t*)((int)(nNext - 1) + 4);
-          *puVar1 = (uint32_t)(uintptr_t)puVar1;
-          *puVar2 = uNewSize;
-          puVar2[2] = ~(uint32_t)puVar1;
+          *pNewTerminator = (uint32_t)(uintptr_t)pNewTerminator;
+          *puVar1 = uNewSize;
+          puVar1[2] = ~(uint32_t)pNewTerminator;
         }
 
         ((TSExplicitList<::CELLIST, -572662307>*)((int)(nNext - 1) + 4))->UnlinkAll();
-        pTVar3 = nNext->m_prevlink;
-        if (pTVar3) {
+        pTVar2 = nNext->m_prevlink;
+        if (pTVar2) {
           uLinkOffset = nNext->m_next;
           if ((int)uLinkOffset < 0) {
             pBackLink = (int*)~uLinkOffset;
           } else {
-            pBackLink = (int*)((int)nNext + (uLinkOffset - pTVar3->m_next));
+            pBackLink = (int*)((int)nNext + (uLinkOffset - pTVar2->m_next));
           }
 
-          *pBackLink = (int)pTVar3;
+          *pBackLink = (int)pTVar2;
           nNext->m_prevlink->m_next = nNext->m_next;
           nNext->m_prevlink = 0;
           nNext->m_next = 0;
@@ -571,14 +570,14 @@ template<> ::CELLIST * TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&this->tSync.m_critsect);
     *pLockedHandle = bForWriting != 0 ? 0x1U : 0xffffffff;
     ::CELLIST* pFoundEntry = this->TSHashTable<::CELLIST, HASHKEY_NONE>::Ptr(nHandle, &this->tKey);
-    if (pFoundEntry) {
-      return pFoundEntry;
-    }
-    if (*pLockedHandle) {
-      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+    if (!pFoundEntry) {
+      if (*pLockedHandle) {
+        /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&this->tSync.m_critsect);
+      }
+
+      *pLockedHandle = 0;
     }
 
-    *pLockedHandle = 0;
     return pFoundEntry;
 }
 
@@ -628,11 +627,10 @@ template<> ::CELLIST * TSExplicitList<CELLIST, -572662307>::NewNode(uint32_t nLo
     } else {
       pNewEntry = 0;
     }
-    if (!nLocation) {
-      return pNewEntry;
+    if (nLocation) {
+      this->LinkNode(pNewEntry, nLocation, nullptr);
     }
 
-    this->LinkNode(pNewEntry, nLocation, nullptr);
     return pNewEntry;
 }
 
@@ -720,11 +718,10 @@ template<> void __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::InternalDelete(TS
 
 template<> TSGrowableArray<TSExplicitList<CELLIST, -572662307>> * TSGrowableArray<TSExplicitList<CELLIST, -572662307>>::ScalarDeletingDestructor(uint32_t dwFlags) {
     this->Destructor();
-    if (!(dwFlags & 1 && this)) {
-      return this;
+    if (dwFlags & 1 && this) {
+      Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     return this;
 }
 
@@ -749,11 +746,10 @@ template<> void __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::Destroy(TSHashTab
 // @blizzard TSHashTable<CELLIST,HASHKEY_NONE> scalar deleting destructor (STORM.H)
 template<> TSHashTable<::CELLIST, HASHKEY_NONE>* __thiscall TSHashTable<CELLIST, HASHKEY_NONE>::ScalarDeletingDestructor(TSHashTable<::CELLIST, HASHKEY_NONE>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
@@ -777,11 +773,10 @@ template<> TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* TSHashObjectChunk<CELLIST
     }
 
     ((TSGrowableArray<::CELLIST>*)this)->Destructor();
-    if (!(dwFlags & 1 && this)) {
-      return this;
+    if (dwFlags & 1 && this) {
+      Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(this, "delete", -1, 0);
     return this;
 }
 
@@ -993,11 +988,10 @@ template<> TSHashObjectChunk<::CELLIST, HASHKEY_NONE>* TSExplicitList<TSHashObje
     } else {
       pNewChunk = 0;
     }
-    if (!nLocation) {
-      return pNewChunk;
+    if (nLocation) {
+      this->LinkNode(pNewChunk, nLocation, nullptr);
     }
 
-    this->LinkNode(pNewChunk, nLocation, nullptr);
     return pNewChunk;
 }
 
@@ -1153,11 +1147,10 @@ template<> void __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::Destroy(T
 // @blizzard TSHashTableReuse<CELLIST,HASHKEY_NONE,0> scalar deleting destructor (STORM.H)
 template<> TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* __thiscall TSHashTableReuse<CELLIST, HASHKEY_NONE, 0>::ScalarDeletingDestructor(TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
@@ -1230,11 +1223,10 @@ template<> ::CELLIST * TSExportTableSimple<CELLIST, HCELLIST__*, 0>::New(uint32_
 // @blizzard TSExportTableSimple<CELLIST,HCELLIST__*,0> scalar deleting destructor (STORM.H)
 template<> TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* __thiscall TSExportTableSimple<CELLIST, HCELLIST__*, 0>::ScalarDeletingDestructor(TSExportTableSimple<::CELLIST, HCELLIST__*, 0>* pThis, uint32_t dwFlags) {
     pThis->Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
@@ -1247,9 +1239,9 @@ template<> void TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCrit
 template<> ::CELLIST * TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::NewLock(uint32_t * pHandle, int32_t * pLockedHandle) {
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&this->tSync.m_critsect);
     *pLockedHandle = 1;
-    uint32_t uVar1 = this->GenerateUniqueHandle();
-    *pHandle = uVar1;
-    ::CELLIST* pCVar1 = this->TSHashTable<::CELLIST, HASHKEY_NONE>::New(uVar1, &this->tKey, 0, 0);
+    uint32_t nHandle = this->GenerateUniqueHandle();
+    *pHandle = nHandle;
+    ::CELLIST* pCVar1 = this->TSHashTable<::CELLIST, HASHKEY_NONE>::New(nHandle, &this->tKey, 0, 0);
     return pCVar1;
 }
 
@@ -1257,10 +1249,9 @@ template<> ::CELLIST * TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*
 template<> TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* __thiscall TSExportTableSync<CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::ScalarDeletingDestructor(TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>* pThis, uint32_t dwFlags) {
     /* LPCRITICAL_SECTION lpCriticalSection for DeleteCriticalSection */ DeleteCriticalSection(&pThis->tSync.m_critsect);
     pThis->TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>::Destructor();
-    if (!(dwFlags & 1 && pThis)) {
-      return pThis;
+    if (dwFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }

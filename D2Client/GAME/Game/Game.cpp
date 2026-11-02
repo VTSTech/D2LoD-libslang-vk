@@ -68,6 +68,7 @@
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitInactive.h"
 #include "D2Game/UNIT/SUnitMsg.h"
+#include "D2Hell/D2Hell.h"
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -96,10 +97,10 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
 #include "D2Client/GAME/Server.h"
+#include "D2Client/UI/Inv.h"
 #include "D2Launch/MainMenus.h"
 #include "D2Multi/OOGUtilities.h"
 
@@ -142,8 +143,8 @@ void __fastcall GAMEDATA_SetByteInUshort(uint16_t * pWord, uint8_t byteValue) {
 }
 
 // Setter for gRunKeyDown (run modifier).
-void __fastcall SetRunKeyDown(BOOL dwParam) {
-    gRunKeyDown = dwParam;
+void __fastcall SetRunKeyDown(BOOL bRunKeyDown) {
+    gRunKeyDown = bRunKeyDown;
 }
 
 void __fastcall SetGlobalAlwaysRun(int32_t nValue) {
@@ -167,11 +168,10 @@ uint32_t __stdcall GetMouseClickFlags() {
     if (D2Game::GameData::gnAlwaysRun) {
       flags = 8;
     }
-    if (!gClickModifierDown) {
-      return flags;
+    if (gClickModifierDown) {
+      flags |= 4;
     }
 
-    flags |= 4;
     return flags;
 }
 
@@ -497,9 +497,9 @@ void __stdcall HandleMouseButtonEvent(D2UIMouseMsgStrc * pMouseEvent) {
 
     uint32_t vKey = UI::CmdTbl::CMD_IsCommandBound(0x22, 1);
     if (vKey) {
-      uint16_t uVar1;
-      uVar1 = UI::CmdTbl::CMD_GetKeyForCommand(0x22, 1);
-      /* int vKey for GetAsyncKeyState */ keyState = GetAsyncKeyState((uint32_t)uVar1);
+      uint16_t wVirtualKey;
+      wVirtualKey = UI::CmdTbl::CMD_GetKeyForCommand(0x22, 1);
+      /* int vKey for GetAsyncKeyState */ keyState = GetAsyncKeyState((uint32_t)wVirtualKey);
       if (keyState >= 0) {
         gRunKeyDown = 0;
       }
@@ -677,13 +677,12 @@ int __stdcall GAMEDATA_GetCurrentLevelBlankScreen() {
     }
 
     return pDVar1->BlankScreen;
-    return pDVar1->BlankScreen;
 }
 
 // Main render entry point. Called per-frame from CLIENT_GameLoopFrame.
 // Flow: BeginScene -> Draw world (floor/units/roofs) -> Draw UI -> EndScene -> Present.
 // Viewport centered on player, supports shake, perspective, isometric transform.
-void __fastcall InGameDraw(int32_t nParam) {
+void __fastcall InGameDraw(int32_t bSkipCursor) {
     // Static local variables (originally global data)
     static uint32_t gnLastCameraWorldY = -0x1; D2_STATIC_GUARD(gnLastCameraWorldY, "D2Client::GAME::Game::InGameDraw::gnLastCameraWorldY");
     static uint32_t gnLastCameraWorldX = -0x1; D2_STATIC_GUARD(gnLastCameraWorldX, "D2Client::GAME::Game::InGameDraw::gnLastCameraWorldX");
@@ -750,7 +749,7 @@ void __fastcall InGameDraw(int32_t nParam) {
     UI::Draw::DRAW_UI(D2GameView);
     D2Win::Src::D2WinMain::RENDERER_DrawOutOfGameScene();
     UI::ui::nullSub_CharonGameDraw();
-    if (!nParam) {
+    if (!bSkipCursor) {
       UI::ui::DrawCursor();
     }
 
@@ -879,11 +878,10 @@ uint32_t __thiscall ComputeFrameSkipLevel(int32_t nElapsedTicks, int32_t nFpsDra
     if (nElapsedTicks > 0x13) {
       nSkipLevel++;
     }
-    if (nElapsedTicks <= 0x1d) {
-      return nSkipLevel;
+    if (nElapsedTicks > 0x1d) {
+      nSkipLevel++;
     }
 
-    nSkipLevel++;
     return nSkipLevel;
 }
 
@@ -949,13 +947,13 @@ uint32_t __stdcall GAME_GetAveragePing() {
 
 // Update mouse modifier key state by reading keybind for command id 0x24; sets INT_007a0664 while pressed.
 void __stdcall UpdateMouseModifierKeyState() {
-    uint16_t uVar1;
+    uint16_t wVirtualKey;
     SHORT nKeyState;
     uint32_t keyCode = UI::CmdTbl::CMD_IsCommandBound(0x24, 1);
     /* int vKey for GetAsyncKeyState */ if (keyCode) {
-      uVar1 = UI::CmdTbl::CMD_GetKeyForCommand(0x24, 1);
-      if (uVar1 != 0xffff) {
-        nKeyState = GetAsyncKeyState((uint32_t)uVar1);
+      wVirtualKey = UI::CmdTbl::CMD_GetKeyForCommand(0x24, 1);
+      if (wVirtualKey != 0xffff) {
+        nKeyState = GetAsyncKeyState((uint32_t)wVirtualKey);
         if (nKeyState < 0) {
           gClickModifierDown = 1;
           return;
@@ -965,9 +963,9 @@ void __stdcall UpdateMouseModifierKeyState() {
 
     keyCode = UI::CmdTbl::CMD_IsCommandBound(0x24, 0);
     /* int vKey for GetAsyncKeyState */ if (keyCode) {
-      uVar1 = UI::CmdTbl::CMD_GetKeyForCommand(0x24, 0);
-      if (uVar1 != 0xffff) {
-        nKeyState = GetAsyncKeyState((uint32_t)uVar1);
+      wVirtualKey = UI::CmdTbl::CMD_GetKeyForCommand(0x24, 0);
+      if (wVirtualKey != 0xffff) {
+        nKeyState = GetAsyncKeyState((uint32_t)wVirtualKey);
         if (nKeyState < 0) {
           gClickModifierDown = 1;
           return;
@@ -983,11 +981,10 @@ eD2ClientAppMode __stdcall pfModes_Save() {
     // Static local variables (originally global data)
     static eD2ClientAppMode eD2ClientAppMode_0070ef18 = APPMODE_HOST; D2_STATIC_GUARD(eD2ClientAppMode_0070ef18, "D2Client::GAME::Game::pfModes_Save::eD2ClientAppMode_0070ef18");
 
-    if (eD2ClientAppMode_0070ef18 != APPMODE_HOST) {
-      return eD2ClientAppMode_0070ef18;
+    if (eD2ClientAppMode_0070ef18 == APPMODE_HOST) {
+      ClientModeInGame::ClientAppModeQueue(APPMODE_ENTERGAME);
     }
 
-    ClientModeInGame::ClientAppModeQueue(APPMODE_ENTERGAME);
     return eD2ClientAppMode_0070ef18;
 }
 
@@ -1134,7 +1131,7 @@ uint32_t __stdcall DrawBetaScreen(uint32_t dwUnused) {
     }
 
     int iScreen = 0;
-    if (gnBetaScreenCount > 0) {
+    if ((int32_t)gnBetaScreenCount > 0) {
       ppCachedImage = &gBetaScreenEntries[0].cachedImage;
       nScreenCount = gnBetaScreenCount;
       do {
@@ -1236,8 +1233,8 @@ void __stdcall D2CLIENT_SetExitVar3ToTrue() {
 }
 
 // Set pending exit cutscene id (quest/cutscene).
-void __fastcall SetPendingExitCutsceneId(int32_t nParam) {
-    gExitCutsceneState.pendingCutsceneId = nParam;
+void __fastcall SetPendingExitCutsceneId(int32_t nCutsceneId) {
+    gExitCutsceneState.pendingCutsceneId = nCutsceneId;
 }
 
 D2BNetClientCallbacksStrc * __stdcall GetGameVersionInfo() {
@@ -1266,20 +1263,20 @@ void __fastcall ClientInit_NoSaveFlag(D2IniConfigStrc * pIniConfig) {
 
 // Set starting act from config; validates and halts on invalid values.
 void __fastcall ClientInit_StartingAct(D2IniConfigStrc * pIniConfig) {
-    int iVar1 = pIniConfig->nACT;
-    if (!iVar1) {
+    int nAct = pIniConfig->nACT;
+    if (!nAct) {
       return;
     }
-    if (iVar1 >= 6) {
+    if (nAct >= 6) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd26);
       exit(-1);
     }
-    if (!(iVar1 > 0)) {
+    if (!(nAct > 0)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xd27);
       exit(-1);
     }
 
-    D2Game::GAME::Server::SetupStartingAct(iVar1 - 1);
+    D2Game::GAME::Server::SetupStartingAct(nAct - 1);
     return;
 }
 
@@ -1753,8 +1750,8 @@ void GAMEDATA_CheckColorTxtOverride() {
       return;
     }
 
-    D2FILE_ReadFile(nullptr, pFileHandle, &byColorByte, 1);
-    D2FILE_CloseFile(nullptr, pFileHandle);
+    D2Hell::D2FILE_ReadFile(nullptr, pFileHandle, &byColorByte, 1);
+    D2Hell::D2FILE_CloseFile(nullptr, pFileHandle);
     if (byColorByte != '1') {
       return;
     }
@@ -1780,11 +1777,10 @@ void __fastcall CLIENT_SetLadder(BOOL bLadder) {
 
 uint32_t __stdcall GAMEDATA_GetLadderOrGameType() {
     uint32_t bResult = gClientGameData.CLIENT_bLadder;
-    if (!((uint32_t)(eD2GSGameType_007a0610 - GAMETYPE_BNET_BETA) > 1)) {
-      return bResult;
+    if ((uint32_t)(eD2GSGameType_007a0610 - GAMETYPE_BNET_BETA) > 1) {
+      bResult = 1;
     }
 
-    bResult = 1;
     return bResult;
 }
 
@@ -1920,7 +1916,7 @@ void __stdcall GAME_InitClientSide() {
     gLevelLoadInProgress = 0;
     gClickModifierDown = 0;
     memset(&gClientGameData, 0, 0x80);
-    Fog::Memory::InitializePoolSystem(&gClientGameData.gpClientPoolManager, "Client Pool System", 0x40000);
+    Fog::Memory::InitializePoolSystem(&gClientGameData.gpClientPoolManager, "Client Pool System", 0x40000, 0x1000);
     UNIT::Player::HANDSHAKE_SetClientPlayerUnit(nullptr);
     GAMEDATA_CheckColorTxtOverride();
     if (!D2GameView) {
@@ -1934,7 +1930,7 @@ void __stdcall GAME_InitClientSide() {
       Msg::NET_D2GS_CLIENT_Send_0x6C(1);
     }
 
-    RegisterExitFunction((pfnFaultError)ExitFunction);
+    D2Hell::RegisterExitFunction((pfnFaultError)ExitFunction);
     PalShift::InitPal();
     D2CMP::Pallete::PALETTE_InitItemPalettes();
     UI::Draw::CLIENT_AdjustMemoryBudget(gClientGameData.gpClientPoolManager, 1);
@@ -1982,18 +1978,18 @@ void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
 
 // While load timer active, draw loading message; otherwise cleanup after loading act.
 uint32_t __stdcall LoadingScreen_TickOrCleanup(uint32_t dwArg1) {
-    int iVar2;
+    int nRemainingMs;
     if (gLoadTimerDurationMs.dwDurationMs) {
       DWORD DVar1;
       DVar1 = GetTickCount();
       if (!(DVar1 < gLoadTimerDurationMs.dwDurationMs + gLoadTimerDurationMs.dwStartTick)) {
         gLoadTimerDurationMs.dwStartTick = 0;
         gLoadTimerDurationMs.dwDurationMs = 0;
-        iVar2 = 0;
+        nRemainingMs = 0;
       } else {
-        iVar2 = gLoadTimerDurationMs.dwDurationMs - DVar1 + gLoadTimerDurationMs.dwStartTick;
+        nRemainingMs = gLoadTimerDurationMs.dwDurationMs - DVar1 + gLoadTimerDurationMs.dwStartTick;
       }
-      if (iVar2) {
+      if (nRemainingMs) {
         DrawLoadingMessage();
         return 0;
       }
@@ -2050,7 +2046,6 @@ void __stdcall Congratz_HandleOkButton(D2UIMouseMsgStrc * pMsg) {
 }
 
 void __stdcall GAMEDATA_DrawCharacterPortrait() {
-    char* pcVar1;
     int nTitleIndex;
     uint32_t nCopyWords;
     uint16_t* pwClearCursor;
@@ -2058,6 +2053,7 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     uint16_t awcName[100];
     D2CharPortraitTextStrc sText;
     char cChar;
+    char* pNextChar;
     D2IniConfigStrc* pIniData = ClientModeInGame::D2IniData_Getter();
     for (nTitleIndex = 0; nTitleIndex < 0x64; nTitleIndex++) {
       awcName[nTitleIndex] = L'\0';
@@ -2115,9 +2111,9 @@ void __stdcall GAMEDATA_DrawCharacterPortrait() {
     nHardcoreFlag = (int)pDstChar - (uintptr_t)&sText;
     pSrcChar = sText.szName + 99;
     do {
-      pcVar1 = pSrcChar + 1;
+      pNextChar = pSrcChar + 1;
       pSrcChar++;
-    } while (*pcVar1 != '\0');
+    } while (*pNextChar != '\0');
 
     pDstChar = &sText;
     for (nCopyWords = nHardcoreFlag >> 2; nCopyWords; nCopyWords--) {
@@ -2149,7 +2145,7 @@ uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
     static DC6 * gpCongratsBgDC6; D2_STATIC_GUARD_BSS(gpCongratsBgDC6, "D2Client::GAME::Game::DRAW_Congratz::gpCongratsBgDC6");
 
     int nFrameOffset;
-    char local_45c[260];
+    char szPalettePath[260];
     char szPathBg[260];
     char szPathPal[260];
     char szBaseName[260];
@@ -2173,8 +2169,8 @@ uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
         sprintf(szPathBg, "%s\\ui\\menu\\%s", "DATA\\GLOBAL", szBaseName);
         gpCongratsBgDC6 = Core::Archive::IMAGE_LoadDC6Ex(szPathBg, 0);
         sprintf(szPathPal, "%s\\Palette\\%s\\pal.dat", "DATA\\GLOBAL", szBaseName);
-        sprintf(local_45c, "%s\\Palette\\%s\\pal.pl2", "DATA\\GLOBAL", szBaseName);
-        D2Win::Src::D2WinPalette::LoadPalette(szPathPal, local_45c);
+        sprintf(szPalettePath, "%s\\Palette\\%s\\pal.pl2", "DATA\\GLOBAL", szBaseName);
+        D2Win::Src::D2WinPalette::LoadPalette(szPathPal, szPalettePath);
       }
       if (!gpCongratzOkButtonDC6) {
         sprintf(szPathPal, "%s\\ui\\menu\\endgameok", "DATA\\GLOBAL");
@@ -2507,15 +2503,14 @@ uint32_t __stdcall CLIENT_GameLoopFrame(uint32_t dwUnused) {
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
       D2Game::GAME::Server::QSERVER_ShutdownAllGames();
     }
-    if (!(eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_LAN_HOST)) {
-      return 1;
+    if (eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_LAN_HOST) {
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gHostGameStateCs);
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ ExitingGame = 1;
+      LeaveCriticalSection(&gHostGameStateCs);
+      /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(HostGameThread, 10000);
+      HostGameThread = (HANDLE)0x0;
     }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gHostGameStateCs);
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ ExitingGame = 1;
-    LeaveCriticalSection(&gHostGameStateCs);
-    /* DWORD dwMilliseconds for WaitForSingleObject */ /* HANDLE hHandle for WaitForSingleObject */ WaitForSingleObject(HostGameThread, 10000);
-    HostGameThread = (HANDLE)0x0;
     return 1;
 }
 
@@ -2830,11 +2825,10 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
         }
       }
     }
-    if (!((eD2GSGameType_007a0610 == GAMETYPE_BNET_BETA || eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_BNET || eD2GSGameType_007a0610 == GAMETYPE_OBNET_JOIN) && gpBNetClientCallbacks)) {
-      return APPMODE_RENDER;
+    if ((eD2GSGameType_007a0610 == GAMETYPE_BNET_BETA || eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_BNET || eD2GSGameType_007a0610 == GAMETYPE_OBNET_JOIN) && gpBNetClientCallbacks) {
+      gpBNetClientCallbacks->pfnSendLeaveGame();
     }
 
-    gpBNetClientCallbacks->pfnSendLeaveGame();
     return APPMODE_RENDER;
 }
 

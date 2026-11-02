@@ -21,16 +21,14 @@ namespace Storm::Source::SEVT {
 
 // Calculates the next power of 2 greater than or equal to a given value passed in ECX. Used for sizing hash tables and event handler arrays. Returns the smallest power of 2 that can contain the input value times 2 plus 2.
 uint32_t __fastcall SEVT_NextPowerOf2(int nValue) {
-    uint32_t uVar1 = 1;
-    if (nValue * 2 == -2) {
-      return uVar1;
+    uint32_t nPowerOf2 = 1;
+    if (nValue * 2 != -2) {
+      do {
+        nPowerOf2 *= 2;
+      } while (nPowerOf2 <= nValue * 2 + 2U);
     }
 
-    do {
-      uVar1 *= 2;
-    } while (uVar1 <= nValue * 2 + 2U);
-
-    return uVar1;
+    return nPowerOf2;
 }
 
 // @sourcefile .\SOURCE\SEVT.CPP
@@ -53,7 +51,7 @@ void __stdcall SEVT_CopyIdHashTable(uint32_t * * pDstTable, int * pSrcTable) {
       for (pSrcHandler = *(void**)(nBucket * 4 + *pSrcTable); pSrcHandler; pSrcHandler = *(void**)((int)pSrcHandler + 0xc)) {
         pNewHandler = SMem::SMemAlloc(0x10, ".\\SOURCE\\SEVT.CPP", 0x45, 0);
         *ppDstCursor = (uint32_t)pNewHandler;
-        SSystem::SMemCopy(pNewHandler, pSrcHandler, 0x10);
+        SMem::SMemCopy(pNewHandler, pSrcHandler, 0x10);
         ppDstCursor = (uint32_t*)(*ppDstCursor + 0xc);
       }
 
@@ -115,12 +113,12 @@ static uint32_t * SEVT_FindTypeHashEntry(uint32_t nSubId, uint32_t nEventId) {
 uint32_t SEvtDestroy() {
     void** pTable;
     EnterCriticalSection(&lpCriticalSection_0077930c);
-    void* pvVar1 = 0;
+    void* nBucketIndex = 0;
     void* pObject_00 = gpEventHashBuckets;
     if (gaEventRegistryHead) {
       void* pObject;
       do {
-        pObject = *(void**)((int)pObject_00 + (int)pvVar1 * 4);
+        pObject = *(void**)((int)pObject_00 + (int)nBucketIndex * 4);
         while (pObject) {
           pTable = *(void***)((int)pObject + 0xc);
           while (pTable) {
@@ -130,14 +128,14 @@ uint32_t SEvtDestroy() {
             pTable = *(void***)((int)pObject + 0xc);
           }
 
-          *(uint32_t*)((int)pObject_00 + (int)pvVar1 * 4) = *(uint32_t*)((int)pObject + 0x10);
+          *(uint32_t*)((int)pObject_00 + (int)nBucketIndex * 4) = *(uint32_t*)((int)pObject + 0x10);
           SMem::SMemFree(pObject, "delete", -1, 0);
           pObject_00 = gpEventHashBuckets;
-          pObject = *(void**)((int)gpEventHashBuckets + (int)pvVar1 * 4);
+          pObject = *(void**)((int)gpEventHashBuckets + (int)nBucketIndex * 4);
         }
 
-        pvVar1 = (void*)((int)pvVar1 + 1);
-      } while (pvVar1 < gaEventRegistryHead);
+        nBucketIndex = (void*)((int)nBucketIndex + 1);
+      } while (nBucketIndex < gaEventRegistryHead);
     }
     if (pObject_00) {
       SMem::SMemFree(pObject_00, "delete", -1, 0);
@@ -458,11 +456,10 @@ uint32_t __thiscall LINKEDLIST_GetNodeOffset(int * pListInfo, int * pNode) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if ((int)pNode >= 0) {
-      return nOffset + (int)pNode;
+    if ((int)pNode < 0) {
+      pNode = (int*)((int)pListInfo - *(int*)(*pListInfo + 4));
     }
 
-    pNode = (int*)((int)pListInfo - *(int*)(*pListInfo + 4));
     return nOffset + (int)pNode;
 }
 
@@ -523,11 +520,10 @@ uint32_t __fastcall LINKEDLIST_GetCount(int * pList) {
 
 // Returns the next node in the linked list, or the head node if the input is NULL. Used for iteration where NULL represents the start position. Adds 4-byte offset to get to the next link field.
 int32_t __thiscall LINKEDLIST_GetNextOrHead(int32_t pThis, int32_t nNode) {
-    if (nNode) {
-      return nNode;
+    if (!nNode) {
+      nNode = pThis + 4;
     }
 
-    nNode = pThis + 4;
     return nNode;
 }
 
@@ -602,11 +598,10 @@ void __thiscall LINKEDLIST_LinkNode(int * * pList, int * * ppNodeSlot, int32_t n
 
 // Retrieves the count field from a linked list node with bitwise masking. Returns count masked with sign-extend logic to handle special count encodings. Used for size queries on list structures.
 uint32_t __thiscall LINKEDLIST_GetCountMasked(int32_t pThis, int32_t nNode) {
-    if (nNode) {
-      return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
+    if (!nNode) {
+      nNode = pThis + 4;
     }
 
-    nNode = pThis + 4;
     return (int)*(uint32_t*)(nNode + 4) <= 0 ? 0 : *(uint32_t*)(nNode + 4);
 }
 
@@ -704,11 +699,10 @@ int * * __thiscall LINKEDLIST_AllocNode(int * * pListHead, int32_t pList, int32_
     } else {
       pNewNode = 0;
     }
-    if (!pList) {
-      return pNewNode;
+    if (pList) {
+      LINKEDLIST_LinkNode(pListHead, pNewNode, pList, nullptr);
     }
 
-    LINKEDLIST_LinkNode(pListHead, pNewNode, pList, nullptr);
     return pNewNode;
 }
 
@@ -730,11 +724,10 @@ int * __thiscall LINKEDLIST_UnlinkAndFree(int * pNode, uint8_t bFreeMemory) {
       *pNode = 0;
       pNode[1] = 0;
     }
-    if (!(bFreeMemory & 1)) {
-      return pNode;
+    if (bFreeMemory & 1) {
+      SMem::SMemFree(pNode, "delete", -1, 0);
     }
 
-    SMem::SMemFree(pNode, "delete", -1, 0);
     return pNode;
 }
 
@@ -903,21 +896,20 @@ BOOL __stdcall SEvtDispatch(uint32_t dwEventId, uint32_t dwSubId, uint32_t dwKey
     } while (pHandlerNode);
 
     /* LONG * lpAddend for InterlockedDecrement */ InterlockedDecrement((LONG*)&lpAddend_007792fc);
-    if (gpSevtBreakCmdListHead.pNext <= 0) {
-      return bResult;
-    }
-
-    /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
-    pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext <= 0 ? 0 : gpSevtBreakCmdListHead.pNext);
-    while ((int)pBreakCmd > 0) {
-      if ((void*)pBreakCmd[2] == pData) {
-        pBreakCmd = (int*)LINKEDLIST_UnlinkFreeAndGetCount(&gpSevtBreakCmdListHead, pBreakCmd);
-      } else {
-        pBreakCmd = (int*)LINKEDLIST_GetValueAtIndex(&gpSevtBreakCmdListHead, (int32_t)pBreakCmd);
+    if (gpSevtBreakCmdListHead.pNext > 0) {
+      /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&lpCriticalSection_0077930c);
+      pBreakCmd = (int*)(gpSevtBreakCmdListHead.pNext <= 0 ? 0 : gpSevtBreakCmdListHead.pNext);
+      while ((int)pBreakCmd > 0) {
+        if ((void*)pBreakCmd[2] == pData) {
+          pBreakCmd = (int*)LINKEDLIST_UnlinkFreeAndGetCount(&gpSevtBreakCmdListHead, pBreakCmd);
+        } else {
+          pBreakCmd = (int*)LINKEDLIST_GetValueAtIndex(&gpSevtBreakCmdListHead, (int32_t)pBreakCmd);
+        }
       }
+
+      /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0077930c);
     }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&lpCriticalSection_0077930c);
     return bResult;
 }
 
@@ -937,18 +929,18 @@ void StaticFini_CriticalSection_0077930c() {
 
 // Runs at exit: removes every element from the SEvt break command list, then unlinks the list head itself.
 void StaticFini_gSevtBreakCmdList() {
-    uint32_t* puVar1;
+    uint32_t* pBackLink;
     LINKEDLIST_GetTail(&gpSevtBreakCmdListHead);
     if (!gpSevtBreakCmdListHead.pPrevLink) {
       return;
     }
     if (gpSevtBreakCmdListHead.pNext < 0) {
-      puVar1 = (uint32_t*)~gpSevtBreakCmdListHead.pNext;
+      pBackLink = (uint32_t*)~gpSevtBreakCmdListHead.pNext;
     } else {
-      puVar1 = (uint32_t*)(gpSevtBreakCmdListHead.pNext + ((int)((char*)&gpSevtBreakCmdListHead + 4) - gpSevtBreakCmdListHead.pPrevLink->pNext));
+      pBackLink = (uint32_t*)(gpSevtBreakCmdListHead.pNext + ((int)((char*)&gpSevtBreakCmdListHead + 4) - gpSevtBreakCmdListHead.pPrevLink->pNext));
     }
 
-    *puVar1 = (uint32_t)(uintptr_t)gpSevtBreakCmdListHead.pPrevLink;
+    *pBackLink = (uint32_t)(uintptr_t)gpSevtBreakCmdListHead.pPrevLink;
     gpSevtBreakCmdListHead.pPrevLink->pNext = gpSevtBreakCmdListHead.pNext;
     gpSevtBreakCmdListHead.pPrevLink = 0;
     gpSevtBreakCmdListHead.pNext = 0;

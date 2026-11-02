@@ -164,64 +164,64 @@ void __fastcall NET_D2GS_SERVER_Send_0x01_NEWGAME(D2ClientStrc * pClient, uint8_
 void __fastcall NET_D2GS_SERVER_Send_0x03_NEWACT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nAct, uint32_t nMapSeed, uint32_t nAutomap, uint16_t nArea) {
     D2GSPacketSrv0x03 packet;
     packet.nAct = nAct;
+    packet.nPacketId = nPacketId;
     packet.nAutomap = nAutomap;
     packet.nMapSeed = nMapSeed;
     packet.nArea = nArea;
-    packet.nPacketId = nPacketId;
     SCMD_QueuePacketForClient(&packet.nPacketId, 0xc, pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_CMD_BYTE_INT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nArg1, int32_t nArg2) {
     D2GSPacketSrv_CMD_BYTE_INT aPacket;
     aPacket.nArg1 = nArg1;
-    aPacket.nArg2 = nArg2;
     aPacket.nPacketId = nPacketId;
+    aPacket.nArg2 = nArg2;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 6, pClient);
 }
 
 // Server-to-client portal flags notification. Opcode 0x5F, 5 bytes. Sends player's portal flags (GetPlayerPortalFlags) during character load sequence.
 void __fastcall NET_D2GS_SERVER_Send_0x5F_PortalFlags(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwPortalFlags) {
     D2GSPacketSrv0x5F byPacketId;
-    byPacketId.dwFlags = dwPortalFlags;
     byPacketId.nPacketId = nPacketId;
+    byPacketId.dwFlags = dwPortalFlags;
     SCMD_QueuePacketForClient(&byPacketId.nPacketId, 5, pClient);
 }
 
 // Server-to-client NPC health update. Opcode 0x0C, 9 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x0C_UNITCHANGE(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nNpcHitType, uint32_t nUnitGUID, uint8_t bParam1, uint8_t bParam2, uint8_t bParam3) {
+void __fastcall NET_D2GS_SERVER_Send_0x0C_UNITCHANGE(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t nUnitGUID, uint8_t nMessageType, uint8_t nHitClass, uint8_t nHpPercent) {
     D2GSPacketSrv0x0C aPacket;
-    aPacket.dwUnitGUID = nUnitGUID;
-    aPacket.nUnitType = nNpcHitType;
-    aPacket.nParam2 = bParam2;
-    aPacket.nParam1 = bParam1;
-    aPacket.nParam3 = bParam3;
     aPacket.nPacketId = nPacketId;
+    aPacket.dwUnitGUID = nUnitGUID;
+    aPacket.nUnitType = nUnitType;
+    aPacket.nHitClass = nHitClass;
+    aPacket.nMessageType = nMessageType;
+    aPacket.nHpPercent = nHpPercent;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 9, pClient);
 }
 
 // Server-to-client object state update. Opcode 0x0E, 12 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x0E_UNITCHANGE_ID(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nObjectType, uint32_t dwObjectState, uint8_t bParam1, uint8_t bParam2, uint32_t dwParam) {
+void __fastcall NET_D2GS_SERVER_Send_0x0E_UNITCHANGE_ID(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nObjectType, uint32_t dwUnitGUID, uint8_t nMessageType, uint8_t bParam2, uint32_t dwParam) {
     D2GSPacketSrv0x0E aPacket;
-    aPacket.dwUnitGUID = dwObjectState;
+    aPacket.nPacketId = nPacketId;
+    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nUnitType = nObjectType;
     aPacket.nParam2 = bParam2;
-    aPacket.nParam1 = bParam1;
+    aPacket.nMessageType = nMessageType;
     aPacket.dwParam = dwParam;
-    aPacket.nPacketId = nPacketId;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xc, pClient);
 }
 
 // Server-to-client player stop message. Opcode 0x0D, 13 bytes. Sent when player stops moving.
-void __fastcall NET_D2GS_SERVER_Send_0x0D_UNITCHANGE_XY(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t nUnitGUID, uint8_t bParam1, uint16_t wX, uint16_t wY, uint8_t bParam2, uint8_t nHpPercent) {
+void __fastcall NET_D2GS_SERVER_Send_0x0D_UNITCHANGE_XY(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t nUnitGUID, uint8_t nMessageType, uint16_t wX, uint16_t wY, uint8_t nHitClass, uint8_t nHpPercent) {
     D2GSPacketSrv0x0D aPacket;
+    aPacket.nPacketId = nPacketId;
     aPacket.dwUnitGUID = nUnitGUID;
-    aPacket.nParam1 = bParam1;
+    aPacket.nMessageType = nMessageType;
     aPacket.wX = wX;
     aPacket.wY = wY;
-    aPacket.nParam2 = bParam2;
+    aPacket.nHitClass = nHitClass;
     aPacket.nUnitType = nUnitType;
-    aPacket.nParam3 = nHpPercent;
-    aPacket.nPacketId = nPacketId;
+    aPacket.nHpPercent = nHpPercent;
     if (5 < nUnitType) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x136);
       exit(-1);
@@ -231,31 +231,31 @@ void __fastcall NET_D2GS_SERVER_Send_0x0D_UNITCHANGE_XY(D2ClientStrc * pClient, 
 }
 
 // Server-to-client character to object message. Opcode 0x10, 16 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x10_UNITCHANGE_IDPOS(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t bParam1, uint8_t nTargetType, uint32_t dwTargetGUID, uint16_t wX, uint16_t wY) {
+void __fastcall NET_D2GS_SERVER_Send_0x10_UNITCHANGE_IDPOS(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t nMessageType, uint8_t nTargetType, uint32_t dwTargetGUID, uint16_t wX, uint16_t wY) {
     D2GSPacketSrv0x10 aPacket;
+    aPacket.nPacketId = nPacketId;
     aPacket.dwUnitGUID = dwGUID;
     aPacket.nUnitType = nUnitType;
-    aPacket.nParam2 = nTargetType;
-    aPacket.nParam1 = bParam1;
+    aPacket.nTargetType = nTargetType;
+    aPacket.nMessageType = nMessageType;
     aPacket.wX = wX;
-    aPacket.dwParam = dwTargetGUID;
+    aPacket.dwTargetGUID = dwTargetGUID;
     aPacket.wY = wY;
-    aPacket.nPacketId = nPacketId;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0x10, pClient);
 }
 
 // Server-to-client player move message. Opcode 0x0F, 16 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x0F_UNITCHANGE_XYPOS(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t bParam1, uint16_t wX, uint16_t wY, uint8_t bParam2, uint16_t wX2, uint16_t wY2) {
+void __fastcall NET_D2GS_SERVER_Send_0x0F_UNITCHANGE_XYPOS(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t nMessageType, uint16_t wX, uint16_t wY, uint8_t nHitClass, uint16_t wX2, uint16_t wY2) {
     D2GSPacketSrv0x0F aPacket;
+    aPacket.nPacketId = nPacketId;
     aPacket.dwUnitGUID = dwGUID;
-    aPacket.nParam1 = bParam1;
+    aPacket.nMessageType = nMessageType;
     aPacket.wX = wX;
     aPacket.wY = wY;
-    aPacket.nParam2 = bParam2;
+    aPacket.nHitClass = nHitClass;
     aPacket.wX2 = wX2;
     aPacket.nUnitType = nUnitType;
     aPacket.wY2 = wY2;
-    aPacket.nPacketId = nPacketId;
     if (5 < nUnitType) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x166);
       exit(-1);
@@ -265,49 +265,49 @@ void __fastcall NET_D2GS_SERVER_Send_0x0F_UNITCHANGE_XYPOS(D2ClientStrc * pClien
 }
 
 // Server-to-client monster move to entity message. Opcode 0x68, 21 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nTargetType, uint8_t nTargetUnitType, uint32_t dwTargetGUID, uint8_t bParam2) {
+void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMode, uint8_t nTargetUnitType, uint32_t dwTargetGUID, uint8_t nStepNum) {
     int32_t nUnitCoord;
-    D2GSPacketSrv0x68 uStack_1c = {0};
-    uStack_1c.nMode = nTargetType;
-    uStack_1c.dwTargetGUID = dwTargetGUID;
-    d2_store24((char*)&uStack_1c.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
-    uStack_1c.nPacketId = nPacketId;
-    *(uint8_t*)((char*)&uStack_1c.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
-    uStack_1c.nTargetType = nTargetUnitType;
+    D2GSPacketSrv0x68 sPacket = {0};
+    sPacket.nMode = nMode;
+    sPacket.dwTargetGUID = dwTargetGUID;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
+    sPacket.nPacketId = nPacketId;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
+    sPacket.nTargetType = nTargetUnitType;
     ::SGAMEDATA* pGame = Clients::CLIENT_GetGame(pClient);
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, nMonsterGUID);
     eD2UnitType eUnitType = pUnit->eUnitType;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      uStack_1c.wX = (uint16_t)pDynamicPath->ScreenPos.y;
+      sPacket.wX = (uint16_t)pDynamicPath->ScreenPos.y;
     } else if (pDynamicPath) {
       nUnitCoord = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath);
-      uStack_1c.wX = (uint16_t)nUnitCoord;
+      sPacket.wX = (uint16_t)nUnitCoord;
     } else {
-      uStack_1c.wX = 0;
+      sPacket.wX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      uStack_1c.wY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
+      sPacket.wY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
     } else if (pUnit->pPath.pDynamicPath) {
       nUnitCoord = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      uStack_1c.wY = (uint16_t)nUnitCoord;
+      sPacket.wY = (uint16_t)nUnitCoord;
     } else {
-      uStack_1c.wY = 0;
+      sPacket.wY = 0;
     }
 
-    uStack_1c.nParam1 = bParam2;
+    sPacket.nParam1 = nStepNum;
     int nVelocityPct = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-    uint8_t bVar3 = (uint8_t)nVelocityPct;
-    uStack_1c.nParam2 = bVar3;
-    if (bVar3 >= 5) {
-      if (bVar3 > 6) {
-        if (bVar3 == 8) {
-          uStack_1c.nParam2 = '\v';
+    uint8_t byRawPathType = (uint8_t)nVelocityPct;
+    sPacket.nPathType = byRawPathType;
+    if (byRawPathType >= 5) {
+      if (byRawPathType > 6) {
+        if (byRawPathType == 8) {
+          sPacket.nPathType = '\v';
         }
       } else {
-        uStack_1c.nParam2 = '\x02';
+        sPacket.nPathType = '\x02';
       }
     }
 
@@ -320,20 +320,20 @@ void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH(D2ClientStrc 
       nVelocityPct = -0x8000;
     }
 
-    uStack_1c.wParam = (uint16_t)nVelocityPct;
-    uStack_1c.nParam3 = D2Common::PATH::DynamicPath::GetMaxDistance(pDynamicPath);
-    SCMD_QueuePacketForClient(&uStack_1c.nPacketId, 0x15, pClient);
+    sPacket.wVelocityPct = (uint16_t)nVelocityPct;
+    sPacket.nParam3 = D2Common::PATH::DynamicPath::GetMaxDistance(pDynamicPath);
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0x15, pClient);
 }
 
 // Server-to-client monster move message. Opcode 0x67, 16 bytes.
-void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMoveType, uint16_t wX, uint16_t wY, uint8_t bParam) {
-    D2GSPacketSrv0x67 uStack_14 = {0};
-    uStack_14.nMoveType = nMoveType;
-    uStack_14.wY = wY;
-    d2_store24((char*)&uStack_14.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
-    uStack_14.nPacketId = nPacketId;
-    *(uint8_t*)((char*)&uStack_14.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
-    uStack_14.wX = wX;
+void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMoveType, uint16_t wX, uint16_t wY, uint8_t nStepNum) {
+    D2GSPacketSrv0x67 sPacket = {0};
+    sPacket.nMoveType = nMoveType;
+    sPacket.wY = wY;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
+    sPacket.nPacketId = nPacketId;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
+    sPacket.wX = wX;
     ::SGAMEDATA* pGame = Clients::CLIENT_GetGame(pClient);
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, nMonsterGUID);
     if (!pUnit) {
@@ -341,50 +341,50 @@ void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH(D2ClientStrc 
     }
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    uStack_14.nParam1 = bParam;
-    int eVar2 = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-    uint8_t byPathType = (uint8_t)eVar2;
-    uStack_14.nParam3 = byPathType;
+    sPacket.nParam1 = nStepNum;
+    int ePathType = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
+    uint8_t byPathType = (uint8_t)ePathType;
+    sPacket.nPathType = byPathType;
     if (byPathType >= 5) {
       int32_t nPathPointCoord;
       if (byPathType > 6) {
         if (byPathType == 8) {
-          uStack_14.nParam3 = '\v';
+          sPacket.nPathType = '\v';
         }
       } else {
-        uStack_14.nParam3 = '\x01';
+        sPacket.nPathType = '\x01';
         nPathPointCoord = D2Common::PATH::DynamicPath::GetLastPathPointX(pDynamicPath);
-        uStack_14.wX = (uint16_t)nPathPointCoord;
+        sPacket.wX = (uint16_t)nPathPointCoord;
         nPathPointCoord = D2Common::PATH::DynamicPath::GetLastPathPointY(pDynamicPath);
-        uStack_14.wY = (uint16_t)nPathPointCoord;
+        sPacket.wY = (uint16_t)nPathPointCoord;
       }
     }
 
-    eVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
-    if (eVar2 > -0x8000) {
-      if (eVar2 >= 0x7fff) {
-        eVar2 = 0x7fff;
+    int nVelocityPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
+    if (nVelocityPct > -0x8000) {
+      if (nVelocityPct >= 0x7fff) {
+        nVelocityPct = 0x7fff;
       }
     } else {
-      eVar2 = -0x8000;
+      nVelocityPct = -0x8000;
     }
 
-    uStack_14.wParam = (uint16_t)eVar2;
+    sPacket.wVelocityPct = (uint16_t)nVelocityPct;
     byPathType = D2Common::PATH::DynamicPath::GetMaxDistance(pDynamicPath);
-    uStack_14.nParam4 = byPathType;
-    SCMD_QueuePacketForClient(&uStack_14.nPacketId, 0x10, pClient);
+    sPacket.nParam4 = byPathType;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0x10, pClient);
 }
 
 // Sends S→C packet 0x68 (NPC move-to-entity, extended form) to one client. Looks up the monster unit by GUID, reads its current X/Y position (dynamic path for monsters/players, static path for objects/missiles), reads path type (remapping 0x08→0x0B) and clamped velocity-percent stat. Packs all fields into a 0x15-byte stack buffer and delivers via NET_D2GS_SERVER_SendPacket_Helper. No-ops silently if the unit is not found.
-void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH_Ex(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nTargetType, uint8_t nTargetUnitType, uint32_t dwTargetGUID, uint8_t bParam2, uint8_t bParam3, uint8_t bParam) {
+void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH_Ex(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMode, uint8_t nTargetUnitType, uint32_t dwTargetGUID, uint8_t nDistance, uint8_t nHpPercent, uint8_t nHitClass) {
     int32_t nUnitCoord;
-    D2GSPacketSrv0x68 bStack_1c = {0};
-    bStack_1c.nMode = nTargetType;
-    bStack_1c.dwTargetGUID = dwTargetGUID;
-    d2_store24((char*)&bStack_1c.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
-    bStack_1c.nPacketId = nPacketId;
-    *(uint8_t*)((char*)&bStack_1c.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
-    bStack_1c.nTargetType = nTargetUnitType;
+    D2GSPacketSrv0x68 sPacket = {0};
+    sPacket.nMode = nMode;
+    sPacket.dwTargetGUID = dwTargetGUID;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (uint32_t)nMonsterGUID & 0xffffffu);
+    sPacket.nPacketId = nPacketId;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(nMonsterGUID >> 0x18);
+    sPacket.nTargetType = nTargetUnitType;
     ::SGAMEDATA* pGame = Clients::CLIENT_GetGame(pClient);
     D2UnitStrc* pUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, nMonsterGUID);
     if (!pUnit) {
@@ -394,34 +394,34 @@ void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH_Ex(D2ClientSt
     eD2UnitType eUnitType = pUnit->eUnitType;
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      bStack_1c.wX = (uint16_t)pDynamicPath->ScreenPos.y;
+      sPacket.wX = (uint16_t)pDynamicPath->ScreenPos.y;
     } else if (pDynamicPath) {
       nUnitCoord = D2Common::PATH::DynamicPath::GetXPos(pDynamicPath);
-      bStack_1c.wX = (uint16_t)nUnitCoord;
+      sPacket.wX = (uint16_t)nUnitCoord;
     } else {
-      bStack_1c.wX = 0;
+      sPacket.wX = 0;
     }
 
     eUnitType = pUnit->eUnitType;
     if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-      bStack_1c.wY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
+      sPacket.wY = (uint16_t)pUnit->pPath.pStaticPath->nPosY;
     } else if (pUnit->pPath.pDynamicPath) {
       nUnitCoord = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
-      bStack_1c.wY = (uint16_t)nUnitCoord;
+      sPacket.wY = (uint16_t)nUnitCoord;
     } else {
-      bStack_1c.wY = 0;
+      sPacket.wY = 0;
     }
 
-    bStack_1c.nParam1 = bParam2;
-    bStack_1c.nReserved = bParam;
+    sPacket.nParam1 = nDistance;
+    sPacket.nReserved = nHitClass;
     int nVelocityPct = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-    bStack_1c.nParam2 = (uint8_t)nVelocityPct;
+    sPacket.nPathType = (uint8_t)nVelocityPct;
     if ((uint8_t)nVelocityPct == '\b') {
-      bStack_1c.nParam2 = '\v';
+      sPacket.nPathType = '\v';
     }
 
-    bStack_1c.nReserved = bStack_1c.nReserved;
-    bStack_1c.nParam2 = bStack_1c.nParam2;
+    sPacket.nReserved = sPacket.nReserved;
+    sPacket.nPathType = sPacket.nPathType;
     nVelocityPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
     if (nVelocityPct > -0x8000) {
       if (nVelocityPct >= 0x7fff) {
@@ -431,13 +431,13 @@ void __fastcall NET_D2GS_SERVER_Send_0x68_UNITCHANGE_MONSTERIDPATH_Ex(D2ClientSt
       nVelocityPct = -0x8000;
     }
 
-    bStack_1c.wParam = (uint16_t)nVelocityPct;
-    bStack_1c.nParam3 = bParam3;
-    SCMD_QueuePacketForClient(&bStack_1c.nPacketId, 0x15, pClient);
+    sPacket.wVelocityPct = (uint16_t)nVelocityPct;
+    sPacket.nParam3 = nHpPercent;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0x15, pClient);
 }
 
 // Extended variant of 0x67 NPC move. Looks up the monster by GUID, reads its dynamic path type and velocity percent stat, then sends a 16-byte move packet to pClient. Unlike the basic variant, accepts three extra flag bytes (bParam1/2/3) packed into the destination-Y/flags field. Path types 5-6 are overridden to type 1 (walk-to-last-waypoint); type 8 becomes 0xB.
-void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH_Ex(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMoveType, uint16_t wDestXParam, uint16_t wDestY, uint8_t bParam1, uint8_t bParam2, uint8_t bParam3) {
+void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH_Ex(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t nMonsterGUID, uint8_t nMoveType, uint16_t wDestXParam, uint16_t wDestY, uint8_t nDistance, uint8_t nHpPercent, uint8_t nHitClass) {
     D2GSPacketSrv0x67 byPacketBuf = {0};
     byPacketBuf.nMoveType = nMoveType;
     byPacketBuf.wY = wDestY;
@@ -452,19 +452,19 @@ void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH_Ex(D2ClientSt
     }
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
-    byPacketBuf.nParam1 = bParam1;
-    byPacketBuf.nParam2 = bParam3;
-    int eVar2 = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
-    uint8_t byPathType = (uint8_t)eVar2;
-    byPacketBuf.nParam3 = byPathType;
+    byPacketBuf.nParam1 = nDistance;
+    byPacketBuf.nHitClass = nHitClass;
+    int ePathType = D2Common::PATH::DynamicPath::GetPathType(pDynamicPath);
+    uint8_t byPathType = (uint8_t)ePathType;
+    byPacketBuf.nPathType = byPathType;
     if (byPathType >= 5) {
       int32_t nPathPointCoord;
       if (byPathType > 6) {
         if (byPathType == 8) {
-          byPacketBuf.nParam3 = '\v';
+          byPacketBuf.nPathType = '\v';
         }
       } else {
-        byPacketBuf.nParam3 = '\x01';
+        byPacketBuf.nPathType = '\x01';
         nPathPointCoord = D2Common::PATH::DynamicPath::GetLastPathPointX(pDynamicPath);
         byPacketBuf.wX = (uint16_t)nPathPointCoord;
         nPathPointCoord = D2Common::PATH::DynamicPath::GetLastPathPointY(pDynamicPath);
@@ -472,35 +472,35 @@ void __fastcall NET_D2GS_SERVER_Send_0x67_UNITCHANGE_MONSTERXYPATH_Ex(D2ClientSt
       }
     }
 
-    eVar2 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
-    if (eVar2 > -0x8000) {
-      if (eVar2 >= 0x7fff) {
-        eVar2 = 0x7fff;
+    int nVelocityPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_velocitypercent, 0);
+    if (nVelocityPct > -0x8000) {
+      if (nVelocityPct >= 0x7fff) {
+        nVelocityPct = 0x7fff;
       }
     } else {
-      eVar2 = -0x8000;
+      nVelocityPct = -0x8000;
     }
 
-    byPacketBuf.wParam = (uint16_t)eVar2;
-    byPacketBuf.nParam4 = bParam2;
+    byPacketBuf.wVelocityPct = (uint16_t)nVelocityPct;
+    byPacketBuf.nParam4 = nHpPercent;
     SCMD_QueuePacketForClient(&byPacketBuf.nPacketId, 0x10, pClient);
 }
 
 // Builds and sends S2C packet 0x6A (12 bytes) when a monster/NPC performs a stationary action while targeting a specific entity. Part of the NPC update family: 0x67 NpcMove, 0x68 NpcMoveToEntity, 0x69 NpcState (no target), 0x6A NpcStateToEntity (this), 0x6B NpcAction (no target), 0x6C NpcAttack, 0x6D NpcStop. Sent by MONSTER_SendUpdateToClient when animMode is non-moving, non-attacking, and unit has a target (e.g., casting curse, roaring, channeling).
 void __fastcall NET_D2GS_SERVER_Send_0x6A_UNITCHANGE_MONSTERIDNOPATH(D2ClientStrc * pClient, uint8_t nAnimMode, uint32_t dwNpcGUID, uint8_t nExtraData, uint8_t nTargetUnitType, uint32_t dwTargetGUID, uint8_t nHpPercent) {
-    D2GSPacketSrv0x6A bStack_10;
-    bStack_10.nExtraData = nExtraData;
-    d2_store24((char*)&bStack_10.dwMonsterGUID, (uint32_t)dwNpcGUID & 0xffffffu);
-    bStack_10.nPacketId = nAnimMode;
-    *(uint8_t*)((char*)&bStack_10.dwMonsterGUID + 3) = (uint8_t)(dwNpcGUID >> 0x18);
-    bStack_10.dwTargetGUID = dwTargetGUID;
-    bStack_10.nTargetUnitType = nTargetUnitType;
-    bStack_10.nHpPercent = nHpPercent;
-    SCMD_QueuePacketForClient(&bStack_10.nPacketId, 0xc, pClient);
+    D2GSPacketSrv0x6A sPacket;
+    sPacket.nExtraData = nExtraData;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (uint32_t)dwNpcGUID & 0xffffffu);
+    sPacket.nPacketId = nAnimMode;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(dwNpcGUID >> 0x18);
+    sPacket.dwTargetGUID = dwTargetGUID;
+    sPacket.nTargetUnitType = nTargetUnitType;
+    sPacket.nHpPercent = nHpPercent;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0xc, pClient);
 }
 
 // Server-to-client monster state update. Opcode 0x69.
-void __fastcall NET_D2GS_SERVER_Send_0x69_UNITCHANGE_MONSTERXYNOPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwMonsterGUID, uint8_t nState, uint16_t wStateParam1, uint16_t wStateParam2, uint8_t bParam1, uint8_t bParam2) {
+void __fastcall NET_D2GS_SERVER_Send_0x69_UNITCHANGE_MONSTERXYNOPATH(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwMonsterGUID, uint8_t nState, uint16_t wStateParam1, uint16_t wStateParam2, uint8_t bParam1, uint8_t nHitClass) {
     D2GSPacketSrv0x69 aPacket;
     *(uint8_t*)((char*)&aPacket.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
     d2_store24((char*)&aPacket.dwMonsterGUID, (int32_t)((uint32_t)dwMonsterGUID << 8) >> 8);
@@ -509,51 +509,51 @@ void __fastcall NET_D2GS_SERVER_Send_0x69_UNITCHANGE_MONSTERXYNOPATH(D2ClientStr
     aPacket.nState = nState;
     aPacket.nParam1 = bParam1;
     aPacket.wY = wStateParam2;
-    aPacket.nParam2 = bParam2;
+    aPacket.nParam2 = nHitClass;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xc, pClient);
 }
 
 // Server-to-client monster attack message. Opcode 0x6C.
 void __fastcall NET_D2GS_SERVER_Send_0x6C_UNITCHANGE_MONSTERIDPOSITION(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwMonsterGUID, uint8_t nAttackType, uint8_t nTargetUnitType, uint32_t dwTarget, uint8_t bParam2, uint16_t wX, uint16_t wY) {
-    D2GSPacketSrv0x6C uStack_14;
-    uStack_14.nAttackType = nAttackType;
-    d2_store24((char*)&uStack_14.dwMonsterGUID, (uint32_t)dwMonsterGUID & 0xffffffu);
-    uStack_14.nPacketId = nPacketId;
-    *(uint8_t*)((char*)&uStack_14.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
-    uStack_14.dwTargetGUID = dwTarget;
-    uStack_14.nParam1 = nTargetUnitType;
-    uStack_14.nParam2 = bParam2;
-    uStack_14.wY = wY;
-    uStack_14.wX = wX;
-    SCMD_QueuePacketForClient(&uStack_14.nPacketId, 0x10, pClient);
+    D2GSPacketSrv0x6C sPacket;
+    sPacket.nAttackType = nAttackType;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (uint32_t)dwMonsterGUID & 0xffffffu);
+    sPacket.nPacketId = nPacketId;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
+    sPacket.dwTargetGUID = dwTarget;
+    sPacket.nParam1 = nTargetUnitType;
+    sPacket.nParam2 = bParam2;
+    sPacket.wY = wY;
+    sPacket.wX = wX;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0x10, pClient);
 }
 
 // Server-to-client monster action message. Opcode 0x6B.
-void __fastcall NET_D2GS_SERVER_Send_0x6B_UNITCHANGE_MONSTERXYPOSITION(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwMonsterGUID, uint8_t nAction, uint16_t wParam1, uint16_t wParam2, uint8_t bParam1, uint8_t bParam2, uint16_t wParam3, uint16_t wParam4) {
+void __fastcall NET_D2GS_SERVER_Send_0x6B_UNITCHANGE_MONSTERXYPOSITION(D2ClientStrc * pClient, uint8_t nPacketId, uint32_t dwMonsterGUID, uint8_t nAction, uint16_t wX, uint16_t wY, uint8_t bParam1, uint8_t nHitClass, uint16_t wX2, uint16_t wY2) {
     D2GSPacketSrv0x6B aPacket;
     *(uint8_t*)((char*)&aPacket.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
     d2_store24((char*)&aPacket.dwMonsterGUID, (int32_t)((uint32_t)dwMonsterGUID << 8) >> 8);
     aPacket.nPacketId = nPacketId;
-    aPacket.wX = wParam1;
+    aPacket.wX = wX;
     aPacket.nAction = nAction;
     aPacket.nParam1 = bParam1;
-    aPacket.wY = wParam2;
-    aPacket.nParam2 = bParam2;
-    aPacket.wY2 = wParam4;
-    aPacket.wX2 = wParam3;
+    aPacket.wY = wY;
+    aPacket.nParam2 = nHitClass;
+    aPacket.wY2 = wY2;
+    aPacket.wX2 = wX2;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0x10, pClient);
 }
 
 // Server-to-client monster stop message. Opcode 0x6D.
 void __fastcall NET_D2GS_SERVER_Send_0x6D_UNITCHANGE_MONSTERNEUTRAL(D2ClientStrc * pClient, uint32_t dwMonsterGUID, uint16_t nX, uint16_t nY, uint8_t nHpPercent128) {
-    D2GSPacketSrv0x6D cStack_10;
-    *(uint8_t*)((char*)&cStack_10.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
-    cStack_10.wX = nX;
-    d2_store24((char*)&cStack_10.dwMonsterGUID, (int32_t)((uint32_t)dwMonsterGUID << 8) >> 8);
-    cStack_10.wY = nY;
-    cStack_10.nPacketId = 'm';
-    cStack_10.nParam = nHpPercent128;
-    SCMD_QueuePacketForClient(&cStack_10.nPacketId, 10, pClient);
+    D2GSPacketSrv0x6D sPacket;
+    *(uint8_t*)((char*)&sPacket.dwMonsterGUID + 3) = (uint8_t)(dwMonsterGUID >> 0x18);
+    sPacket.wX = nX;
+    d2_store24((char*)&sPacket.dwMonsterGUID, (int32_t)((uint32_t)dwMonsterGUID << 8) >> 8);
+    sPacket.wY = nY;
+    sPacket.nPacketId = 'm';
+    sPacket.nHpPercent128 = nHpPercent128;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 10, pClient);
 }
 
 // Server-to-client unit warp to an X/Y. Opcode 0x15.
@@ -565,12 +565,12 @@ void __fastcall NET_D2GS_SERVER_Send_0x6D_UNITCHANGE_MONSTERNEUTRAL(D2ClientStrc
 // "Reassign" in their names; they warp a unit like the other two.
 void __fastcall NET_D2GS_SERVER_Send_0x15_WarpXY(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t nUnitGUID, uint16_t wX, uint16_t wY, uint8_t bWarpFade) {
     D2GSPacketSrv0x15 aPacket;
+    aPacket.nPacketId = nPacketId;
     aPacket.dwUnitGUID = nUnitGUID;
     aPacket.nUnitType = nUnitType;
     aPacket.wY = wY;
     aPacket.wX = wX;
-    aPacket.nParam = bWarpFade;
-    aPacket.nPacketId = nPacketId;
+    aPacket.bWarpFade = bWarpFade;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xb, pClient);
 }
 
@@ -595,19 +595,19 @@ void __fastcall NET_D2GS_SERVER_Send_0x08_REMOVEROOM(D2ClientStrc * pClient, int
 }
 
 // Server-to-client level warp assignment. Opcode 0x09.
-void __fastcall NET_D2GS_SERVER_Send_0x09_NEWUNIT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nLevelId, uint32_t dwGUID, uint8_t nClassId, uint16_t wX, uint16_t wY) {
+void __fastcall NET_D2GS_SERVER_Send_0x09_NEWUNIT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUnitType, uint32_t dwGUID, uint8_t nClassId, uint16_t wX, uint16_t wY) {
     D2GSPacketSrv0x09 aPacket;
-    aPacket.dwUnitGUID = dwGUID;
-    aPacket.nUnitType = nLevelId;
-    aPacket.wX = wX;
-    aPacket.nParam = nClassId;
-    aPacket.wY = wY;
     aPacket.nPacketId = nPacketId;
+    aPacket.dwUnitGUID = dwGUID;
+    aPacket.nUnitType = nUnitType;
+    aPacket.wX = wX;
+    aPacket.nClassId = nClassId;
+    aPacket.wY = wY;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xb, pClient);
 }
 
 // Server-to-client world object assignment. Opcode 0x51.
-void __fastcall NET_D2GS_SERVER_Send_0x51_NEWOBJECT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nObjectType, uint32_t dwObjectGUID, uint16_t wX, uint16_t wY, uint16_t wObjectState, uint8_t nState, uint8_t nInteraction) {
+void __fastcall NET_D2GS_SERVER_Send_0x51_NEWOBJECT(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nObjectType, uint32_t dwObjectGUID, uint16_t wClassId, uint16_t wX, uint16_t wY, uint8_t nState, uint8_t nInteraction) {
     D2GSPacketSrv0x51 aPacket;
     uint32_t dwFindGUID = dwObjectGUID;
     ::SGAMEDATA* pGame = Clients::CLIENT_GetGame(pClient);
@@ -619,12 +619,12 @@ void __fastcall NET_D2GS_SERVER_Send_0x51_NEWOBJECT(D2ClientStrc * pClient, uint
 
     aPacket.dwObjectGUID = dwObjectGUID;
     aPacket.nObjectType = nObjectType;
-    aPacket.wParam10 = wObjectState;
-    aPacket.wParam6 = wX;
-    aPacket.wParam8 = wY;
-    aPacket.nParam12 = nState;
-    aPacket.nParam13 = nInteraction;
+    aPacket.wY = wY;
+    aPacket.wClassId = wClassId;
+    aPacket.wX = wX;
     aPacket.nPacketId = nPacketId;
+    aPacket.nState = nState;
+    aPacket.nInteraction = nInteraction;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xe, pClient);
 }
 
@@ -634,9 +634,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x0A_REMOVEUNIT(D2ClientStrc * pClient, uin
       return;
     }
 
+    pktBuf.nPacketId = nPacketId;
     pktBuf.nUnitType = (uint8_t)eUnitType;
     pktBuf.dwUnitGUID = pUnitGUID;
-    pktBuf.nPacketId = nPacketId;
     SCMD_QueuePacketForClient(&pktBuf.nPacketId, 6, pClient);
 }
 
@@ -715,24 +715,28 @@ void __fastcall NET_D2GS_SERVER_Send_0x9E_0x9F_0xA0_MercAttribute(D2ClientStrc *
     }
     if (dwMercGUID < 0xffff) {
       aPacket.nPacketId = 0x9f;
+      uint32_t dwMercGUIDValue;
       if (!pUnit) {
-        aPacket.dwMercGUID = -1;
+        dwMercGUIDValue = -1;
       } else {
-        aPacket.dwMercGUID = pUnit->nUnitGUID;
+        dwMercGUIDValue = pUnit->nUnitGUID;
       }
 
+      aPacket.dwMercGUID = dwMercGUIDValue;
       aPacket.uValue.nValue16 = (uint16_t)dwMercGUID;
       SCMD_QueuePacketForClient(&aPacket.nPacketId, 8, pClient);
       return;
     }
 
     aPacket.nPacketId = 0xa0;
+    uint32_t dwMercGUIDValue2;
     if (!pUnit) {
-      aPacket.dwMercGUID = -1;
+      dwMercGUIDValue2 = -1;
     } else {
-      aPacket.dwMercGUID = pUnit->nUnitGUID;
+      dwMercGUIDValue2 = pUnit->nUnitGUID;
     }
 
+    aPacket.dwMercGUID = dwMercGUIDValue2;
     aPacket.uValue.nValue32 = dwMercGUID;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 10, pClient);
 }
@@ -763,12 +767,14 @@ void __fastcall NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(D2ClientStrc 
     }
     if (0xfffe < nExpDelta) {
       aPacket.nPacketId = 0xa0;
+      uint32_t dwMercGUIDValue;
       if (!pUnit) {
-        aPacket.dwMercGUID = -1;
+        dwMercGUIDValue = -1;
       } else {
-        aPacket.dwMercGUID = pUnit->nUnitGUID;
+        dwMercGUIDValue = pUnit->nUnitGUID;
       }
 
+      aPacket.dwMercGUID = dwMercGUIDValue;
       aPacket.uValue.nValue32 = nMercGUID;
       SCMD_QueuePacketForClient(&aPacket.nPacketId, 10, pClient);
       return;
@@ -787,14 +793,14 @@ void __fastcall NET_D2GS_SERVER_Send_0xA1_0xA2_0xA0_MercExperience(D2ClientStrc 
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 8, pClient);
 }
 
-// Server-to-client skill aura stat update. Opcode 0xA3.
-void __fastcall NET_D2GS_SERVER_Send_0xA3_PROGRESSIVE_SKILL(D2ClientStrc * pClient, uint8_t bParam1, uint16_t nSkillId, uint16_t nStatId, uint8_t nCasterType, uint32_t dwValue1, uint8_t nTargetType, uint32_t dwValue2, uint32_t dwValue3, uint32_t dwValue4) {
+// Server-to-client skill event: skill id, skill level, caster type+GUID, target type+GUID, two params. Opcode 0xA3.
+void __fastcall NET_D2GS_SERVER_Send_0xA3_PROGRESSIVE_SKILL(D2ClientStrc * pClient, uint8_t bParam1, uint16_t nSkillId, uint16_t nSkillLevel, uint8_t nCasterType, uint32_t dwValue1, uint8_t nTargetType, uint32_t dwValue2, uint32_t dwValue3, uint32_t dwValue4) {
     D2GSPacketSrv0xA3 byOpcode;
     byOpcode.wSkillId = nSkillId;
     byOpcode.nParam2 = bParam1;
-    byOpcode.nParam3 = nCasterType;
-    byOpcode.wStatId = nStatId;
-    byOpcode.nParam4 = nTargetType;
+    byOpcode.nCasterType = nCasterType;
+    byOpcode.wSkillLevel = nSkillLevel;
+    byOpcode.nTargetType = nTargetType;
     byOpcode.dwValue1 = dwValue1;
     byOpcode.dwValue3 = dwValue3;
     byOpcode.dwValue2 = dwValue2;
@@ -804,22 +810,22 @@ void __fastcall NET_D2GS_SERVER_Send_0xA3_PROGRESSIVE_SKILL(D2ClientStrc * pClie
 }
 
 // Server-to-client NPC heal message. Opcode 0xAB.
-void __fastcall NET_D2GS_SERVER_Send_0xAB_HEALTH_UPDATE(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t nHeal, uint8_t nType) {
+void __fastcall NET_D2GS_SERVER_Send_0xAB_HEALTH_UPDATE(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t dwUnitGUID, uint8_t nHpPercent128) {
     D2GSPacketSrv0xAB aPacket;
-    aPacket.dwUnitGUID = nHeal;
+    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nUnitType = nUnitType;
     aPacket.nPacketId = 0xab;
-    aPacket.nHpPercent = nType;
+    aPacket.nHpPercent128 = nHpPercent128;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 7, pClient);
 }
 
 // Server-to-client state skill move. Opcode 0xA5.
-void __fastcall NET_D2GS_SERVER_Send_0xA5_FORCESTOPSKILL(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t dwSkill, uint16_t nX) {
+void __fastcall NET_D2GS_SERVER_Send_0xA5_FORCESTOPSKILL(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t dwUnitGUID, uint16_t nSkillId) {
     D2GSPacketSrv0xA5 aPacket;
-    aPacket.dwUnitGUID = dwSkill;
+    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nUnitType = nUnitType;
     aPacket.nPacketId = 0xa5;
-    aPacket.wParam = nX;
+    aPacket.wSkillId = nSkillId;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 8, pClient);
 }
 
@@ -831,10 +837,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x20_STATCHANGE_PLAYER(D2ClientStrc * pClie
       exit(-1);
     }
 
+    aPacket.nPacketId = nPacketId;
     aPacket.dwUnitGUID = nUnitGUID;
     aPacket.nAttributeId = (uint8_t)nAttributeId;
     aPacket.dwValue = dwValue;
-    aPacket.nPacketId = nPacketId;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 10, pClient);
 }
 
@@ -858,31 +864,31 @@ void __fastcall NET_D2GS_SERVER_Send_0x18_PLAYERCOMMONSTATCHANGE_BIG(D2ClientStr
 }
 
 // Server-to-client life/mana update. Opcode 0x95.
-void __fastcall NET_D2GS_SERVER_Send_0x95_PLAYERCOMMONSTATCHANGE_MEDIUM(D2ClientStrc * pClient, uint16_t nLife, uint16_t nMana, uint16_t nMaxLife, uint16_t nMaxMana, uint16_t wParam5, uint8_t bManaPercent, uint8_t nDeltaY) {
+void __fastcall NET_D2GS_SERVER_Send_0x95_PLAYERCOMMONSTATCHANGE_MEDIUM(D2ClientStrc * pClient, uint16_t nLife, uint16_t nMana, uint16_t nStamina, uint16_t nX, uint16_t nY, uint8_t nDeltaX, uint8_t nDeltaY) {
     D2BitBufferStrc bitBuf;
     uint8_t pktBuf[16];
     Fog::BitBuffer::InitBitBuffer(&bitBuf, pktBuf, 0xd);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 0x95, 8);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nLife, 0xf);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nMana, 0xf);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nMaxLife, 0xf);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nMaxMana, 0x10);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)wParam5, 0x10);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)bManaPercent, 8);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nStamina, 0xf);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nX, 0x10);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nY, 0x10);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nDeltaX, 8);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nDeltaY, 8);
     size_t nSize = Fog::BitBuffer::GetNextPositon(&bitBuf);
     SCMD_QueuePacketForClient(pktBuf, nSize, pClient);
 }
 
 // Server-to-client walk verification. Opcode 0x96.
-void __fastcall NET_D2GS_SERVER_Send_0x96_PLAYERCOMMONSTATCHANGE_SMALL(D2ClientStrc * pClient, uint16_t nX, uint16_t nY, uint16_t nZone, uint8_t nDeltaX, uint8_t nDeltaY) {
+void __fastcall NET_D2GS_SERVER_Send_0x96_PLAYERCOMMONSTATCHANGE_SMALL(D2ClientStrc * pClient, uint16_t nStamina, uint16_t nX, uint16_t nY, uint8_t nDeltaX, uint8_t nDeltaY) {
     D2BitBufferStrc bitBuf;
     uint8_t pktBuf[12];
     Fog::BitBuffer::InitBitBuffer(&bitBuf, pktBuf, 9);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, 0x96, 8);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nX, 0xf);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nStamina, 0xf);
+    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nX, 0x10);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nY, 0x10);
-    Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nZone, 0x10);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nDeltaX, 8);
     Fog::BitBuffer::WriteValueToBitBuffer(&bitBuf, (uint32_t)nDeltaY, 8);
     size_t nSize = Fog::BitBuffer::GetNextPositon(&bitBuf);
@@ -949,14 +955,14 @@ void __fastcall NET_D2GS_SERVER_Send_0x22_UpdateItemSkill(D2ClientStrc * pClient
 }
 
 // Server-to-client set skill assignment. Opcode 0x23.
-void __fastcall NET_D2GS_SERVER_Send_0x23_SetSkill(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t dwSkillId, uint8_t nSkillSlot, uint16_t wSkill, uint32_t dwReserved) {
+void __fastcall NET_D2GS_SERVER_Send_0x23_SetSkill(D2ClientStrc * pClient, uint8_t nUnitType, uint32_t dwUnitGUID, uint8_t nSkillSlot, uint16_t wSkill, uint32_t dwReserved) {
     D2GSPacketSrv0x23 aPacket;
-    aPacket.nParam6 = nSkillSlot;
+    aPacket.nSkillSlot = nSkillSlot;
     aPacket.nUnitType = nUnitType;
-    aPacket.wParam7 = wSkill;
-    aPacket.dwUnitGUID = dwSkillId;
+    aPacket.wSkillId = wSkill;
+    aPacket.dwUnitGUID = dwUnitGUID;
     aPacket.nPacketId = '#';
-    aPacket.dwParam9 = dwReserved;
+    aPacket.dwSkillOwnerGUID = dwReserved;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0xd, pClient);
 }
 
@@ -1051,9 +1057,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x26_CHATSTART(D2ClientStrc * pClient, D2GS
     sPacket.nUnitGUID = pPacket->nUnitGUID;
     sPacket.nMessageColor = pPacket->nMessageColor;
     sPacket.nColor = pPacket->nColor;
-    uint32_t uVar1 = Storm::Source::SSTR::SStrCopy(sPacket.szName, pPacket->szName, 0x10);
-    uint32_t nMsgLen = Storm::Source::SSTR::SStrCopy(sPacket.szName + uVar1 + 1, pPacket->szMessage, 0x100);
-    SCMD_QueuePacketForClient(&sPacket.nPacketId, (size_t)(sPacket.szName + uVar1 + 1 + (nMsgLen + 1 - (uintptr_t)&sPacket)), pClient);
+    uint32_t nNameLen = Storm::Source::SSTR::SStrCopy(sPacket.szName, pPacket->szName, 0x10);
+    uint32_t nMsgLen = Storm::Source::SSTR::SStrCopy(sPacket.szName + nNameLen + 1, pPacket->szMessage, 0x100);
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, (size_t)(sPacket.szName + nNameLen + 1 + (nMsgLen + 1 - (uintptr_t)&sPacket)), pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x5A_SYSTEMMSG(D2ClientStrc * pClient, D2Packet0x5aEventStructure * pEventPacket) {
@@ -1066,11 +1072,11 @@ void __fastcall NET_D2GS_SERVER_Send_0x5A_SYSTEMMSG(D2ClientStrc * pClient, D2Pa
       exit(-1);
     }
 
-    uint8_t* puVar1 = pktBuf;
+    uint8_t* pbyDst = pktBuf;
     for (nCopyCount = 10; nCopyCount; nCopyCount--) {
-      *(uint32_t*)puVar1 = *(uint32_t*)pEventPacket;
+      *(uint32_t*)pbyDst = *(uint32_t*)pEventPacket;
       pEventPacket = (D2Packet0x5aEventStructure*)((uintptr_t)&pEventPacket->nArg + 1);
-      puVar1 += 4;
+      pbyDst += 4;
     }
 
     SCMD_QueuePacketForClient(pktBuf, 0x28, pClient);
@@ -1146,17 +1152,17 @@ void __fastcall NET_D2GS_SERVER_Send_0x5C_REMOVECLIENT(D2ClientStrc * pClient, u
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x77_TRADEREQUEST(D2ClientStrc * pClient, uint8_t byTradeAction) {
-    // Frame slots -8..-4 are ONE object: &cStack_8 is passed out and the callee reaches the rest by byte offset.
+    // Frame slots -8..-4 are ONE object: &wPacket is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
-      uint16_t cStack_8;
+      uint16_t wPacket;
       uint16_t wPktPadding;
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 4, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
     __frame0.wPktPadding = (uint16_t)((uint32_t)pClient >> 0x10);
-    __frame0.cStack_8 = (uint16_t)((uint16_t)(uint8_t)byTradeAction << 8 | (uint16_t)(uint8_t)0x77);
-    SCMD_QueuePacketForClient((uint8_t*)&__frame0.cStack_8, 2, pClient);
+    __frame0.wPacket = (uint16_t)((uint16_t)(uint8_t)byTradeAction << 8 | (uint16_t)(uint8_t)0x77);
+    SCMD_QueuePacketForClient((uint8_t*)&__frame0.wPacket, 2, pClient);
 }
 
 void __fastcall NET_D2GS_SERVER_Send_0x78_TRADENAME(D2ClientStrc * pClient, D2GSPacketSrv0x78 * pPacketData) {
@@ -1174,12 +1180,12 @@ void __fastcall NET_D2GS_SERVER_Send_0x78_TRADENAME(D2ClientStrc * pClient, D2GS
 }
 
 // Server-to-client summon log update. Opcode 0x7A.
-void __fastcall NET_D2GS_SERVER_Send_0x7A_UPDATEPET(D2ClientStrc * pClient, uint8_t nAction, uint8_t nUnitType, uint32_t dwGUID, uint32_t dwMercGUID, uint16_t wExperience) {
+void __fastcall NET_D2GS_SERVER_Send_0x7A_UPDATEPET(D2ClientStrc * pClient, uint8_t nAction, uint8_t nPetType, uint32_t dwGUID, uint32_t dwMercGUID, uint16_t wClassId) {
     D2GSPacketSrv0x7A aPacket;
-    aPacket.nSkillID = nUnitType;
+    aPacket.nPetType = nPetType;
     *(uint8_t*)((char*)&aPacket.nSummonGUID + 3) = (uint8_t)(dwGUID >> 0x18);
-    *(uint8_t*)(char*)&aPacket.nSummonType = (uint8_t)wExperience;
-    *(uint8_t*)((char*)&aPacket.nSummonType + 1) = (uint8_t)(wExperience >> 8);
+    *(uint8_t*)(char*)&aPacket.wClassId = (uint8_t)wClassId;
+    *(uint8_t*)((char*)&aPacket.wClassId + 1) = (uint8_t)(wClassId >> 8);
     aPacket.nPacketId = 0x7a;
     d2_store24((char*)&aPacket.nPlayerGUID, (uint32_t)dwMercGUID & 0xffffffu);
     *(uint8_t*)((char*)&aPacket.nPlayerGUID + 3) = (uint8_t)(dwMercGUID >> 0x18);
@@ -1190,15 +1196,15 @@ void __fastcall NET_D2GS_SERVER_Send_0x7A_UPDATEPET(D2ClientStrc * pClient, uint
 
 // DL bUnused: both callers set DL=1 (as for 0x7A); overwritten here before any read.
 void __fastcall NET_D2GS_SERVER_Send_0x81_UPDATEPETPARAMS(D2ClientStrc * pClient, uint8_t bUnused, uint8_t byAction, uint32_t dwPetGUID, uint32_t dwMercUnitGUID, uint16_t wMercType, uint32_t dwOwnerUnitGUID, uint32_t dwMercExperience) {
-    D2GSPacketSrv0x81 cStack_18;
-    cStack_18.nOwnerGUID = dwMercUnitGUID;
-    cStack_18.nMercGUID = dwPetGUID;
-    cStack_18.nSeed2 = dwOwnerUnitGUID;
-    cStack_18.nRosterType = wMercType;
-    cStack_18.nSkillId = byAction;
-    cStack_18.nPacketId = 0x81;
-    cStack_18.nInitSeed = dwMercExperience;
-    SCMD_QueuePacketForClient(&cStack_18.nPacketId, 0x14, pClient);
+    D2GSPacketSrv0x81 sPacket;
+    sPacket.nOwnerGUID = dwMercUnitGUID;
+    sPacket.nMercGUID = dwPetGUID;
+    sPacket.nSeed2 = dwOwnerUnitGUID;
+    sPacket.nRosterType = wMercType;
+    sPacket.nSkillId = byAction;
+    sPacket.nPacketId = 0x81;
+    sPacket.nInitSeed = dwMercExperience;
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0x14, pClient);
 }
 
 // Server-to-client gold amount in trade. Opcode 0x79.
@@ -1210,7 +1216,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x79_TRADEGOLD(D2ClientStrc * pClient, uint
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 6, pClient);
 }
 
-BOOL SCMD_DetectPositionDesync(int32_t pState, int32_t nNewPos) {
+static BOOL SCMD_DetectPositionDesync(int32_t pState, int32_t nNewPos) {
     int nDelta = nNewPos - *(int*)(pState + 4);
     if (nDelta) {
       if (nDelta < 0) {
@@ -1239,28 +1245,13 @@ static BOOL __stdcall SCMD_CheckMonsterPositionDesync(D2UnitStrc * pUnit, D2Unit
       return 0;
     }
 
-    D2UnitDataItemStrc* pMonsterData = pUnit2->pUnitData.pUnitDataItem;
-    if (!pMonsterData || pMonsterData == (D2UnitDataItemStrc*)-60) {
-      return 0;
-    }
-    if (*(int*)(pMonsterData->wMagicSuffix + 1) == nNewPos) {
+    D2UnitDataPlayerStrc* pDVar1 = pUnit2->pUnitData.pUnitDataPlayer;
+    if (!(pDVar1 && &pDVar1->nOwnerGUID && pDVar1->nNecroPet != nNewPos)) {
       return 0;
     }
 
-    int nDelta = nNewPos - *(int*)(pMonsterData->wMagicSuffix + 1);
-    if (!nDelta) {
-      return 0;
-    }
-    if (nDelta < 0) {
-      nDelta = -nDelta;
-    }
-    if (!(nDelta > 8 || (pMonsterData->nEarLevel++ , pMonsterData->nEarLevel > 6))) {
-      return 0;
-    }
-
-    pMonsterData->nEarLevel = 0;
-    *(int32_t*)(pMonsterData->wMagicSuffix + 1) = nNewPos;
-    return 1;
+    BOOL BVar2 = SCMD_DetectPositionDesync((uintptr_t)&pDVar1->nOwnerGUID, nNewPos);
+    return BVar2;
 }
 
 // Ensures a D2PartyDataStrc entry exists in pUnit2's player-data party list for the unit identified by pUnit, then checks whether the position/life snapshot has changed enough to warrant a network update. Both units must share the same party ID. Allocates a new node from the server memory pool if one is not found. Returns 1 if a state update should be broadcast (area changed, or life delta &gt;8 accumulated 6+ times), 0 otherwise.
@@ -1306,38 +1297,27 @@ static BOOL __stdcall PLAYERDATA_AllocPartyData(D2UnitStrc * pUnit, int32_t nUni
     }
 
     pPartyData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2PartyDataStrc, ".\\GAME\\SCmd.cpp", 0x6fa);
-    if (!pPartyData) {
-      return 0;
+    if (pPartyData) {
+      BOOL BVar1;
+      pPartyData->nUnitGUID = 0;
+      pPartyData->nLifePercent = 0;
+      pPartyData->eLevelId = LEVEL_None;
+      pPartyData->field3_0xc = 0;
+      pPartyData->pPrev = 0;
+      pPartyData->pPrev = pPlayerData->pPartyData;
+      pPlayerData->pPartyData = pPartyData;
+      pPartyData->nUnitGUID = nUnitGUID;
+      check_update_needed:
+      if (pPartyData->eLevelId != eLevel) {
+        pPartyData->nLifePercent = nUnitLife;
+        pPartyData->eLevelId = eLevel;
+        return 1;
+      }
+      BVar1 = SCMD_DetectPositionDesync((int32_t)pPartyData, nUnitLife);
+      return BVar1;
     }
 
-    pPartyData->nUnitGUID = 0;
-    pPartyData->nLifePercent = 0;
-    pPartyData->eLevelId = LEVEL_None;
-    pPartyData->field3_0xc = 0;
-    pPartyData->pPrev = 0;
-    pPartyData->pPrev = pPlayerData->pPartyData;
-    pPlayerData->pPartyData = pPartyData;
-    pPartyData->nUnitGUID = nUnitGUID;
-    check_update_needed:
-    if (pPartyData->eLevelId != eLevel) {
-      pPartyData->nLifePercent = nUnitLife;
-      pPartyData->eLevelId = eLevel;
-      return 1;
-    }
-    nUnitGUID = nUnitLife - pPartyData->nLifePercent;
-    if (!nUnitGUID) {
-      return 0;
-    }
-    if (nUnitGUID < 0) {
-      nUnitGUID = -nUnitGUID;
-    }
-    if (!(nUnitGUID > 8 || (*(char*)&pPartyData->field3_0xc += '\x01' , *(uint8_t*)&pPartyData->field3_0xc > 6))) {
-      return 0;
-    }
-
-    *(uint8_t*)&pPartyData->field3_0xc = 0;
-    pPartyData->nLifePercent = nUnitLife;
-    return 1;
+    return 0;
 }
 
 static BOOL __stdcall SCMD_DispatchUnitPartyData(D2UnitStrc * pUnit, int32_t nUnitLife, eD2LevelId eLevel, D2UnitStrc * pUnit2) {
@@ -1410,11 +1390,11 @@ void __fastcall NET_D2GS_SERVER_Send_0x7F_AllyPartyInfo_0x90_PartyAutoMapInfo(D2
     *(uint8_t*)((char*)&aPacket.p7F.nAreaID + 1) = 0;
     *(uint16_t*)((char*)&aPacket.p90.nPlayerY + 1) = 0;
     *(uint8_t*)((char*)&aPacket.p90.nPlayerY + 3) = 0;
-    uint32_t uVar1 = pUnit->nUnitGUID;
-    aPacket.p7F.nUnitGUID = uVar1 >> 0x18;
+    uint32_t dwUnitGUID = pUnit->nUnitGUID;
+    aPacket.p7F.nUnitGUID = dwUnitGUID >> 0x18;
     aPacket.p7F.nPacketId = 0x90;
-    aPacket.p7F.nUnitType = (uint8_t)uVar1;
-    aPacket.p7F.nUnitLife = (uint16_t)(uVar1 >> 8);
+    aPacket.p7F.nUnitType = (uint8_t)dwUnitGUID;
+    aPacket.p7F.nUnitLife = (uint16_t)(dwUnitGUID >> 8);
     nErrLineOrAddr = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
     d2_store24((char*)&aPacket.p7F.nUnitGUID + 1, (uint32_t)nErrLineOrAddr & 0xffffffu);
     *(uint8_t*)(char*)&aPacket.p7F.nAreaID = (uint8_t)((uint32_t)nErrLineOrAddr >> 0x18);
@@ -1432,12 +1412,14 @@ void __fastcall NET_D2GS_SERVER_Send_0x9D_ITEMUNITEX(D2ClientStrc * pClient, D2U
     sPacket.nPacketId = 0x9d;
     sPacket.nAction = byActionArg;
     sPacket.nComponent = D2Common::Units::GetItemComponent(pUnit, pItem);
+    int32_t nItemGUIDValue;
     if (!pItem) {
-      sPacket.nItemGUID = -1;
+      nItemGUIDValue = -1;
     } else {
-      sPacket.nItemGUID = pItem->nUnitGUID;
+      nItemGUIDValue = pItem->nUnitGUID;
     }
 
+    sPacket.nItemGUID = nItemGUIDValue;
     sPacket.nOwnerUnitType = '\x06';
     if (pUnit) {
       sPacket.nOwnerUnitType = (uint8_t)pUnit->eUnitType;
@@ -1616,40 +1598,42 @@ void __fastcall Send0x9DItemMoveToBodyLoc(D2ClientStrc * pClient, D2UnitStrc * p
 
 // S2C packet 0x47 (11 bytes): [opcode:1][unitType:1][unused:1][unitGUID:u32][pad:4]. Tells the client to recalculate all equipped item states for the specified unit. Checks item requirements (str/dex/level) against current stats — disables items that no longer qualify, re-enables items that now qualify. Triggers charm validation and set bonus recalculation. Sent on level-up and periodic unit updates.
 void __fastcall NET_D2GS_SERVER_Send_0x47_ITEMUPDATEMODIFIERS(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
-    D2GSPacketSrv0x47 local_10 = {0};
-    local_10.nPacketId = 0x47;
-    local_10.eUnitType = '\x06';
+    D2GSPacketSrv0x47 sPacket;
+    memset(&sPacket, 0, sizeof(sPacket));
+    sPacket.nPacketId = 0x47;
+    sPacket.eUnitType = '\x06';
     if (pUnit) {
-      local_10.eUnitType = (uint8_t)pUnit->eUnitType;
-      local_10.nUnitGUID = pUnit->nUnitGUID;
+      sPacket.eUnitType = (uint8_t)pUnit->eUnitType;
+      sPacket.nUnitGUID = pUnit->nUnitGUID;
     } else {
-      local_10.nUnitGUID = -1;
+      sPacket.nUnitGUID = -1;
     }
 
-    SCMD_QueuePacketForClient(&local_10.nPacketId, 0xb, pClient);
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0xb, pClient);
 }
 
 // S2C packet 0x48 (11 bytes): [opcode:1][unitType:1][actionByte:1][unitGUID:u32][pad:4]. Same as 0x47 — tells client to recalculate equipped item states. Extra actionByte at offset 2 (purpose TBD). Sent after server-side item state recalculation (ITEMS_RecalcEquippedItemStates) and periodic unit updates.
 void __fastcall NET_D2GS_SERVER_Send_0x48_ITEMUPDATEREQUIREMENTSMET(D2ClientStrc * pClient, D2UnitStrc * pUnit, uint8_t byActionByte) {
-    D2GSPacketSrv0x48 local_10 = {0};
-    local_10.byActionByte = byActionByte;
-    local_10.nPacketId = 0x48;
-    local_10.eUnitType = '\x06';
+    D2GSPacketSrv0x48 sPacket;
+    memset(&sPacket, 0, sizeof(sPacket));
+    sPacket.byActionByte = byActionByte;
+    sPacket.nPacketId = 0x48;
+    sPacket.eUnitType = '\x06';
     if (pUnit) {
-      local_10.eUnitType = (uint8_t)pUnit->eUnitType;
-      local_10.nUnitGUID = pUnit->nUnitGUID;
+      sPacket.eUnitType = (uint8_t)pUnit->eUnitType;
+      sPacket.nUnitGUID = pUnit->nUnitGUID;
     } else {
-      local_10.nUnitGUID = -1;
+      sPacket.nUnitGUID = -1;
     }
 
-    SCMD_QueuePacketForClient(&local_10.nPacketId, 0xb, pClient);
+    SCMD_QueuePacketForClient(&sPacket.nPacketId, 0xb, pClient);
 }
 
 void __fastcall SendUpdateItemPacket(D2ClientStrc * pClient, D2UnitStrc * pUnit, D2UnitStrc * pItem, eD2ItemFlag eItemFlag) {
     NET_D2GS_SERVER_Send_0x9D_ITEMUNITEX(pClient, pUnit, pItem, 0x15, eItemFlag, 0);
 }
 
-void __fastcall NET_D2GS_SERVER_Send_0x7D_SETITEMBROKEN(D2ClientStrc * pClient, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, uint32_t dwFlags, uint32_t dwParam) {
+void __fastcall NET_D2GS_SERVER_Send_0x7D_SETITEMBROKEN(D2ClientStrc * pClient, D2UnitStrc * pUnit, D2UnitStrc * pItemUnit, uint32_t dwFlags, uint32_t dwBrokenFlag) {
     uint32_t dwItemGUID;
     int nUnitGUID;
     D2GSPacketSrv0x7D aPacket;
@@ -1673,7 +1657,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x7D_SETITEMBROKEN(D2ClientStrc * pClient, 
     *(uint16_t*)(char*)&aPacket.dwItemGUID = (uint16_t)dwItemGUID;
     *(uint16_t*)((char*)&aPacket.dwItemGUID + 2) = (uint16_t)(dwItemGUID >> 0x10);
     aPacket.dwItemState = dwFlags;
-    aPacket.dwBrokenFlag = dwParam;
+    aPacket.dwBrokenFlag = dwBrokenFlag;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 0x12, pClient);
 }
 
@@ -1757,10 +1741,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x4C_UnitCastSkill_Target_0x4D_UnitCastSkil
 
 void __fastcall NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(D2ClientStrc * pClient, uint8_t nPacketId, uint8_t nUpdateType, uint32_t nUnitGUID, D2BitBufferStrc * pBitBuffer, uint8_t nActionType) {
     D2GSPacketSrv0x28 sPacket0x28;
+    sPacket0x28.nPacketId = nPacketId;
     sPacket0x28.nUnitGUID = nUnitGUID;
     sPacket0x28.nUpdateType = nUpdateType;
     sPacket0x28.nActionType = nActionType;
-    sPacket0x28.nPacketId = nPacketId;
     D2Common::QuestRecord::CopyQuestBitBuffer(pBitBuffer, sPacket0x28.szQuestBits, 0x60, 0);
     SCMD_QueuePacketForClient(&sPacket0x28.nPacketId, 0x67, pClient);
 }
@@ -1768,8 +1752,8 @@ void __fastcall NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(D2ClientStrc * pClient
 void __fastcall NET_D2GS_SERVER_Send_0x62_INTERACTION_STOP(D2ClientStrc * pClient, uint8_t nPacketId, char eUnitType, int32_t nMonsterGUID, uint32_t dwParam5) {
     D2GSPacketSrv0x62 aPacket;
     aPacket.nUnitType = eUnitType;
-    aPacket.dwUnitGUID = nMonsterGUID;
     aPacket.nPacketId = nPacketId;
+    aPacket.dwUnitGUID = nMonsterGUID;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 7, pClient);
 }
 
@@ -1849,7 +1833,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x11_UnitDoOverlay(D2ClientStrc * pClient, 
 void __fastcall NET_D2GS_SERVER_Send_0x57_CHANGEMONSTERUNIT(D2ClientStrc * pClient, uint32_t dwUnitGUID, uint8_t byNpcClassOrType, uint16_t wNpcCodeParam, uint16_t wParam1, uint16_t wParam2, uint16_t wParam3) {
     D2GSPacketSrv0x57 byOpcode;
     byOpcode.dwUnitGUID = dwUnitGUID;
-    byOpcode.wParam6 = wNpcCodeParam;
+    byOpcode.wNameSeed = wNpcCodeParam;
     byOpcode.nParam5 = byNpcClassOrType;
     byOpcode.wParam10 = wParam2;
     byOpcode.wParam8 = wParam1;
@@ -1869,7 +1853,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x58_ITEMACCEPT(D2ClientStrc * pClient, D2G
 void __fastcall NET_D2GS_SERVER_Send_0x60_SETWARPDEST(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
     D2GSPacketSrv0x60 aPacket;
     aPacket.nPacketId = '`';
-    aPacket.nParam1 = D2Common::Units::GetObjectPortalFlags(pUnit);
+    aPacket.nPortalFlags = D2Common::Units::GetObjectPortalFlags(pUnit);
     aPacket.dwUnitGUID = pUnit->nUnitGUID;
     aPacket.nParam2 = pUnit->pUnitData.pUnitDataMonster->Components[0];
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 7, pClient);
@@ -1926,17 +1910,22 @@ void __fastcall NET_D2GS_SERVER_Send_0x74_SYNCHDEADBODY(D2ClientStrc * pClient, 
     D2GSPacketSrv0x74 aPacket;
     aPacket.nPacketId = 't';
     aPacket.bAssign = byCorpseFlagArg;
+    uint32_t dwPlayerGUIDValue;
     if (!pOwnerUnit) {
-      aPacket.dwPlayerGUID = -1;
+      dwPlayerGUIDValue = -1;
     } else {
-      aPacket.dwPlayerGUID = pOwnerUnit->nUnitGUID;
-    }
-    if (!pCorpseUnit) {
-      aPacket.dwCorpseGUID = -1;
-    } else {
-      aPacket.dwCorpseGUID = pCorpseUnit->nUnitGUID;
+      dwPlayerGUIDValue = pOwnerUnit->nUnitGUID;
     }
 
+    aPacket.dwPlayerGUID = dwPlayerGUIDValue;
+    uint32_t dwCorpseGUIDValue;
+    if (!pCorpseUnit) {
+      dwCorpseGUIDValue = -1;
+    } else {
+      dwCorpseGUIDValue = pCorpseUnit->nUnitGUID;
+    }
+
+    aPacket.dwCorpseGUID = dwCorpseGUIDValue;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 10, pClient);
 }
 
@@ -1961,9 +1950,9 @@ void __fastcall NET_D2GS_SERVER_Send_0x75_UPDATEROSTER(D2UnitStrc * pUnit, D2Uni
     *(uint16_t*)((char*)&aPacket + 5) = UNIT::SUnit::GetPartyId(pTargetUnit);
     uint32_t dwFlags = UNIT::PlayerList::PLAYERLIST_GetFlags(pUnit, pTargetUnit);
     *(uint16_t*)((char*)&aPacket + 9) = (uint16_t)dwFlags;
-    uint16_t uVar1 = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTargetUnit);
-    aPacket[0xb] = (uint8_t)uVar1;
-    aPacket[0xc] = (uint8_t)(uVar1 >> 8);
+    uint16_t wIsPartied = UNIT::PlayerList::PLAYERLIST_IsPartied(pUnit, pTargetUnit);
+    aPacket[0xb] = (uint8_t)wIsPartied;
+    aPacket[0xc] = (uint8_t)(wIsPartied >> 8);
     SCMD_QueuePacketForClient(aPacket, 0xd, pClient);
 }
 
@@ -2009,10 +1998,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x83_Unused(D2ClientStrc * pClient, char * 
     D2GSPacketSrvTextData sPacket;
     char cChar;
     sPacket.nPacketId = 0x83;
-    int iVar1 = 1 - (int)szText;
+    int nDstDelta = 1 - (int)szText;
     do {
       cChar = *szText;
-      szText[(uintptr_t)&sPacket + iVar1] = cChar;
+      szText[(uintptr_t)&sPacket + nDstDelta] = cChar;
       szText++;
     } while (cChar != '\0');
 
@@ -2035,10 +2024,10 @@ void __fastcall NET_D2GS_SERVER_Send_0x88_Unused(D2ClientStrc * pClient, char * 
     D2GSPacketSrvTextData sPacket;
     char cChar;
     sPacket.nPacketId = 0x88;
-    int iVar1 = 1 - (int)szText;
+    int nDstDelta = 1 - (int)szText;
     do {
       cChar = *szText;
-      szText[(uintptr_t)&sPacket + iVar1] = cChar;
+      szText[(uintptr_t)&sPacket + nDstDelta] = cChar;
       szText++;
     } while (cChar != '\0');
 
@@ -2096,12 +2085,14 @@ void __fastcall NET_D2GS_SERVER_Send_0x8D_PLAYERPARTY_Argument(::SGAMEDATA * pGa
 void __fastcall NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2GSPacketSrv0x8D sPacket;
     sPacket.nPacketId = 0x8d;
+    int32_t nUnitGUIDValue;
     if (!pUnit) {
-      sPacket.nUnitGUID = -1;
+      nUnitGUIDValue = -1;
     } else {
-      sPacket.nUnitGUID = pUnit->nUnitGUID;
+      nUnitGUIDValue = pUnit->nUnitGUID;
     }
 
+    sPacket.nUnitGUID = nUnitGUIDValue;
     sPacket.nPartyId = UNIT::SUnit::GetPartyId(pUnit);
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)NET_D2GS_SERVER_Send_0x8D_PLAYERPARTY_Argument, &sPacket);
 }
@@ -2110,12 +2101,14 @@ void __fastcall NET_D2GS_SERVER_Send_0x8D_AssignPlayerToParty_Sender(::SGAMEDATA
 void __fastcall NET_D2GS_SERVER_Send_0x8D_PLAYERPARTY(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     D2GSPacketSrv0x8D aPacket;
     aPacket.nPacketId = 0x8d;
+    int32_t nUnitGUIDValue;
     if (!pUnit2) {
-      aPacket.nUnitGUID = -1;
+      nUnitGUIDValue = -1;
     } else {
-      aPacket.nUnitGUID = pUnit2->nUnitGUID;
+      nUnitGUIDValue = pUnit2->nUnitGUID;
     }
 
+    aPacket.nUnitGUID = nUnitGUIDValue;
     aPacket.nPartyId = UNIT::SUnit::GetPartyId(pUnit2);
     size_t nSize = 7;
     D2GSPacketSrv0x8D* pBytes = &aPacket;
@@ -2199,7 +2192,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x98_SETSPAWNERMONSTER(D2ClientStrc * pClie
 
 void __fastcall NET_D2GS_SERVER_Send_0x9B_MercReviveCost(D2ClientStrc * pClient, uint16_t wMercNameId, uint32_t dwReviveCost) {
     D2GSPacketSrv0x9B aPacket;
-    aPacket.wParam = wMercNameId;
+    aPacket.wMercNameId = wMercNameId;
     aPacket.nPacketId = 0x9b;
     aPacket.dwReviveCost = dwReviveCost;
     SCMD_QueuePacketForClient(&aPacket.nPacketId, 7, pClient);
@@ -2290,7 +2283,7 @@ void __thiscall SCMD_WriteBooleanToBitBuffer(void * pThis, int32_t nBoolValue) {
 void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
     bool bHasComponents;
     uint32_t nComponentData;
-    uint8_t* pbVar2;
+    uint8_t* pbyUModList;
     D2UnitStrc* pOwner;
     uint32_t nStatIndex;
     D2StatListExStrc* pStatListEx;
@@ -2403,15 +2396,15 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
           Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (int)Monsters::GetBossNo(pUnit), 0x10);
         }
 
-        pbVar2 = Monsters::GetMonUModList(pUnit);
-        if (pbVar2) {
+        pbyUModList = Monsters::GetMonUModList(pUnit);
+        if (pbyUModList) {
           nIndex = 0;
           do {
-            if (!pbVar2[nIndex]) {
+            if (!pbyUModList[nIndex]) {
               break;
             }
 
-            Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pbVar2[nIndex], 8);
+            Fog::BitBuffer::WriteValueToBitBuffer(&bitBuffer, (uint32_t)pbyUModList[nIndex], 8);
             nIndex++;
           } while (nIndex < 9);
         }
@@ -2503,12 +2496,12 @@ void __fastcall NET_D2GS_SERVER_Send_0xAC_AddMonster(D2ClientStrc * pClient, D2U
 // (29 functions in D2Client::Warden::WardenClient namespace), but server-side dispatch is stubbed
 // (SCMD_0x66_WardenStub @ 0x0054d740 returns PROCEED_NEXT without processing).
 // Likely disabled/removed in later patches after Warden was integrated into Battle.net realm.
-int __fastcall NET_D2GS_SERVER_Send_0xAE_WARDENDATA(D2ClientStrc * pClient, void * pParam, uint32_t nDataSize) {
+int __fastcall NET_D2GS_SERVER_Send_0xAE_WARDENDATA(D2ClientStrc * pClient, void * pData, uint32_t nDataSize) {
     if (nDataSize <= 0x1fd) {
       D2GSPacketSrv0xAE sPacket;
       sPacket.nPacketId = 0xae;
       sPacket.nDataSize = (uint16_t)nDataSize;
-      memcpy(sPacket.aData, pParam, nDataSize);
+      memcpy(sPacket.aData, pData, nDataSize);
       SCMD_QueuePacketForClient(&sPacket.nPacketId, nDataSize + 3, pClient);
       return 1;
     }
@@ -2549,7 +2542,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x59_AssignPlayer(D2ClientStrc * pClient, u
 void __fastcall NET_D2GS_SERVER_Send_0x19_STATCHANGE_CONTROL_GOLD_BYTE_DELTA(D2ClientStrc * pClient, uint32_t nNewValue, uint32_t nCurrentValue) {
     D2GSPacketSrv0x1F aPacket;
     int nGoldDelta = nNewValue - nCurrentValue;
-    if (nGoldDelta - 1U <= 0xfd) {
+    if (nGoldDelta >= 0x1 && nGoldDelta <= 0xfe) {
       *(uint16_t*)(char*)&nCurrentValue = (uint16_t)((uint16_t)(uint8_t)(char)nGoldDelta << 8 | (uint16_t)(uint8_t)0x19);
       SCMD_QueuePacketForClient((uint8_t*)&nCurrentValue, 2, pClient);
       return;
@@ -2609,12 +2602,14 @@ void __fastcall NET_D2GS_SERVER_Send_0x9C_ITEMEX(D2ClientStrc * pClient, D2UnitS
       eD2ItemFlag eSavedItemFlags;
       sPacket.nPacketId = 0x9c;
       sPacket.nAction = nItemAction;
+      int nItemGUIDValue;
       if (!pUnit) {
-        sPacket.nItemGUID = -1;
+        nItemGUIDValue = -1;
       } else {
-        sPacket.nItemGUID = pUnit->nUnitGUID;
+        nItemGUIDValue = pUnit->nUnitGUID;
       }
 
+      sPacket.nItemGUID = nItemGUIDValue;
       sPacket.nCategory = D2Common::Units::GetItemComponent(pPlayerUnit_lcl, pUnit);
       eSavedItemFlags = D2Common::ITEMS::Items::ITEM_GetItemData_eD2ItemFlag(pUnit);
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pUnit, eItemFlag, 1);

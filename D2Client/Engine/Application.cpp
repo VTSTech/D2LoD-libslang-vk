@@ -123,7 +123,7 @@ int __fastcall ApplicationMain(HINSTANCE hInstance, D2IniConfigStrc * pD2IniData
         D2BOOT_Fail("D2GFX_PreSetupBeforeCreatingWindow returned 0"); // [d2boot]
         return 0;
       }
-      if (pD2IniData->bPERSPECTIVE && RENDERED_DirectDraw < eD2ApplicationModeAndRenderer) {
+      if (pD2IniData->bPERSPECTIVE && (int32_t)RENDERED_DirectDraw < (int32_t)eD2ApplicationModeAndRenderer) {
         D2gfx::D2GFX::D2GFX_SetPerspective(1);
       }
 

@@ -60,7 +60,6 @@ int32_t __fastcall D2WINANIMIMAGE_GetCurrentState(::D2WinAnimImage * pAnimImage)
     }
 
     return pAnimImage->nAnimState;
-    return pAnimImage->nAnimState;
 }
 
 // Attempts to transition animation from state 3 (loaded) to state 4 (playing). Resets frame counter and updates tick timestamp. Returns 1 if transitioned, 0 if already playing or stopped.
@@ -186,13 +185,12 @@ static BOOL D2WINANIMIMAGE_UpdateFrame(::D2WinAnimImage * pAnimImage) {
     if (nAnimState != pAnimImage->nAnimState && (pFrameEntry = (uint32_t*)pAnimImage->pAnimFrames[pAnimImage->nAnimState].ppBaseImage , pFrameEntry != 0) && (pDC6Next = (DC6*)*pFrameEntry , pDC6Next != 0)) {
       D2CMP::SRC::CelCmp::IMAGE_GetFramesCount(pDC6Next);
     }
-    if (pAnimImage->nCurrentFrame <= nFrames) {
-      return 1;
+    if (pAnimImage->nCurrentFrame > nFrames) {
+      pAnimImage->nCurrentFrame = 0;
+      dwTick = GetTickCount();
+      pAnimImage->dwAnimStartTick = dwTick;
     }
 
-    pAnimImage->nCurrentFrame = 0;
-    dwTick = GetTickCount();
-    pAnimImage->dwAnimStartTick = dwTick;
     return 1;
 }
 
@@ -340,15 +338,15 @@ BOOL __stdcall D2WINANIMIMAGE_SetAnimate(::D2WinAnimImage * pAnimImage, BOOL bAn
 
 // @sourcefile .\D2WinAnimImage.cpp
 ::D2WinAnimImage * __fastcall D2WinAnimImage(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, int32_t nStaticFrameDelay, OnPress pfnOnPress, FORMS_AnimFrameStrc * pAnimFrames, DRAWMODE eDrawMode, fpD2WinAnimImageNotify pfnOnStateChange) {
-    uint32_t uVar1;
+    uint32_t dwState;
     DWORD dwTick;
     ::D2WinAnimImage* pNewAnimImage = D2_NEW_AT(::D2WinAnimImage, ".\\D2WinAnimImage.cpp", 0x1c);
     memset(pNewAnimImage, 0, 0x60);
     pNewAnimImage->sControl.neD2FormType = FORM_Image;
     pNewAnimImage->sControl.dwState |= gadwBitMasks[0];
-    uVar1 = pNewAnimImage->sControl.dwState | gadwBitMasks[2];
+    dwState = pNewAnimImage->sControl.dwState | gadwBitMasks[2];
     pNewAnimImage->sControl.pDC6 = pDC6;
-    pNewAnimImage->sControl.dwState = uVar1;
+    pNewAnimImage->sControl.dwState = dwState;
     pNewAnimImage->sControl.dwPosX = nPosX;
     pNewAnimImage->sControl.dwPosY = nPosY;
     pNewAnimImage->sControl.dwSizeX = nSizeX;

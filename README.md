@@ -147,19 +147,19 @@ Two checks stand behind every release:
   decompilation itself: where the code comes out identical, the decompiled function was
   read correctly. Current counts live in its README and below.
 
-At this commit, generated from version 1806 of the Ghidra database:
+At this commit, generated from version 1839 of the Ghidra database:
 
 |Measure|Identical machine code|
 |-|-|
-|Functions|6,029 of 14,642 (41.2%)|
-|Code|479,019 of 2,602,915 bytes (18.40%)|
-|Instructions|1,745,463 of 2,602,915 bytes (67.1%), counting identical instructions in functions that still differ|
+|Functions|6,232 of 14,642 (42.6%)|
+|Code|507,485 of 2,602,915 bytes (19.50%)|
+|Instructions|1,755,330 of 2,602,915 bytes (67.4%), counting identical instructions in functions that still differ|
 
 These leave out the C runtime that Visual C++ 2005 linked in statically (libcmt): the
 rebuild links a runtime instead of reconstructing it. Code the compiler generates for C++
 exceptions is left out as well. Over the whole binary, runtime
-included: 6,586 of 15,711 functions (41.9%), 577,724 of
-2,748,975 bytes (21.02%).
+included: 6,789 of 15,711 functions (43.2%), 606,190 of
+2,748,975 bytes (22.05%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="asm_matching/msvc8/evidence/byte-match-dark.svg">
@@ -224,6 +224,9 @@ checked against the databases, reviewed, and applied with you as the git author;
 ## License
 
 MIT, see [LICENSE](LICENSE). Code under `thirdparty/` keeps its own license.
+
+The `.cpp.map` files map every function and line back to its address in 1.14d `Game.exe`. They
+are part of this work under the same license: if you use them, credit Redivivus and link here.
 
 Diablo and Blizzard Entertainment are trademarks of Blizzard Entertainment, Inc. This
 project is not affiliated with or endorsed by Blizzard.

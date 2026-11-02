@@ -23,11 +23,10 @@
 
 
 template<> TSLink<::TCELENTRY>* TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Link(::TCELENTRY * ptr) {
-    if (ptr) {
-      return &ptr->m_link;
+    if (!ptr) {
+      ptr = (::TCELENTRY*)&this->m_terminator;
     }
 
-    ptr = (::TCELENTRY*)&this->m_terminator;
     return &ptr->m_link;
 }
 
@@ -95,8 +94,8 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::Next(::TCELENT
       ptr = (::TCELENTRY*)&this->m_terminator;
     }
 
-    uint32_t uVar1 = ptr->m_link.m_next;
-    return (::TCELENTRY*)((int)uVar1 <= 0 ? 0 : uVar1);
+    uint32_t dwNext = ptr->m_link.m_next;
+    return (::TCELENTRY*)((int)dwNext <= 0 ? 0 : dwNext);
 }
 
 template<> void TSList<TCELENTRY, TSGetLink<TCELENTRY>>::UnlinkNode(::TCELENTRY * ptr) {
@@ -202,10 +201,9 @@ template<> ::TCELENTRY * TSList<TCELENTRY, TSGetLink<TCELENTRY>>::NewNode(uint32
     } else {
       pNewEntry = 0;
     }
-    if (!nLinkType) {
-      return pNewEntry;
+    if (nLinkType) {
+      this->LinkNode(pNewEntry, nLinkType, nullptr);
     }
 
-    this->LinkNode(pNewEntry, nLinkType, nullptr);
     return pNewEntry;
 }

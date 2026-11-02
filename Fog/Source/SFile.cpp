@@ -24,7 +24,7 @@ namespace Fog::Source::SFile {
 static double gdFogJulianDaysPerYear = 365.25; D2_STATIC_GUARD(gdFogJulianDaysPerYear, "Fog::Source::SFile::gdFogJulianDaysPerYear");
 static double gdFogJulianDaysPerMonth = 30.6001000000000; D2_STATIC_GUARD(gdFogJulianDaysPerMonth, "Fog::Source::SFile::gdFogJulianDaysPerMonth");
 
-void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t bSeekOptimization) {
+void __fastcall SFILE_InitializeFileSystem(BOOL bResult, BOOL bSeekOptimization) {
     uint32_t dwSysOptionBuf[2];
     Storm::Source::SFile::SFileSetBasePath(".\\");
     Storm::Source::SFile::SFileEnableDirectAccess(bResult);
@@ -49,8 +49,8 @@ void __fastcall ERRORMANAGER_FCloseFile(D2MPQFileStrc * pMPQFile) {
 
 // NOTE: Register params: pFileHandle (ECX): D2MPQFileStrc *, pOutputBuffer (EDX): void *
 int __fastcall ERRORMANAGER_FReadFile(D2MPQFileStrc * pFileHandle, void * pOutputBuffer, uint32_t nBytesToRead, uint32_t * pBytesRead, LPOVERLAPPED lpOverlapped, D2StormAsyncCompletionStrc * pCompletion, int dwReadFlags) {
-    int iVar1 = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
-    return iVar1;
+    int nResult = Storm::Source::SFile::SFileReadFileEx2(pFileHandle, pOutputBuffer, nBytesToRead, pBytesRead, lpOverlapped, dwReadFlags, pCompletion);
+    return nResult;
 }
 
 // Thunk to Storm's SFILE_GetFileSize. PUSH EDX; PUSH ECX; CALL 00416370; RET - it tail-calls and returns that DWORD in EAX. Typed void, its callers dropped the result and tested an unassigned local, which fired the line-95 assert in the file-size path non-deterministically.
@@ -61,8 +61,8 @@ DWORD __fastcall ERRORMANAGER_FGetFileSize(D2MPQFileStrc * pFileHandle, LPDWORD 
 
 // @wasnamed SFILE_SeekFileWrapper
 // @basis internal. NOT an exported Storm symbol. Renamed only to follow its callee: a __fastcall thunk whose entire body forwards to SFileSetFilePointer (004165a0) and discards the result.
-DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnParam, uint32_t dwMoveMethod) {
-    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnParam, dwMoveMethod);
+DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnOffsetHigh, uint32_t dwMoveMethod) {
+    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnOffsetHigh, dwMoveMethod);
     return DVar1;
 }
 
@@ -161,17 +161,17 @@ int __fastcall SFILE_EnsurePathEndsWithBackslash(char * szText1, uint32_t nMaxLe
 
 int __fastcall SFILE_GetExecutableDirectory(char * szText, DWORD nSize) {
     DWORD dwLength = GetModuleFileNameA((HMODULE)0x0, szText, nSize);
-    if (!(dwLength && dwLength != nSize)) {
-      return 0;
-    }
+    if (dwLength && dwLength != nSize) {
+      char* pszLastSlash;
+      pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
+      if (pszLastSlash) {
+        pszLastSlash[1] = '\0';
+      }
 
-    char* pszLastSlash = Storm::Source::SSTR::SStrChrR(szText, '\\');
-    if (!pszLastSlash) {
       return 1;
     }
 
-    pszLastSlash[1] = '\0';
-    return 1;
+    return 0;
 }
 
 int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
@@ -208,16 +208,16 @@ int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
     if (!nSize) {
       return 0;
     }
-    uint32_t uVar1 = Storm::Source::SSTR::SStrLen(lpFilename);
-    if (!(!uVar1 || lpFilename[uVar1 - 1] != '\\')) {
+    uint32_t nLen = Storm::Source::SSTR::SStrLen(lpFilename);
+    if (!(nLen <= 0 || lpFilename[nLen - 1] != '\\')) {
       return 1;
     }
-    if (uVar1 + 1 == nSize) {
+    if (nLen + 1 == nSize) {
       return 0;
     }
 
-    lpFilename[uVar1] = '\\';
-    lpFilename[uVar1 + 1] = '\0';
+    lpFilename[nLen] = '\\';
+    lpFilename[nLen + 1] = '\0';
     return 1;
 }
 
@@ -257,7 +257,7 @@ BOOL __stdcall GetUseDirectCommand() {
 }
 
 static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
-    int iVar1;
+    int nResult;
     char szAppDataPath[260];
     char* pszSubPath;
     if (!nMaxLen) {
@@ -269,17 +269,17 @@ static bool SFILE_GetSaveGamePath(LPSTR szOutPath, uint32_t nMaxLen) {
     }
 
     uint32_t bKnownFolderOk = Engine::Application::PATH_GetKnownFolderPath(szOutPath, nMaxLen);
-    if ((char)bKnownFolderOk == '\0') {
-      iVar1 = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
-      if (iVar1) {
+    if ((char)bKnownFolderOk != '\0') {
+      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
+      pszSubPath = "Diablo II";
+    } else {
+      nResult = SHGetFolderPathA(0, 5, 0, 0, szAppDataPath);
+      if (nResult) {
         return false;
       }
 
       SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
       pszSubPath = "Diablo II\\Save";
-    } else {
-      SFILE_EnsurePathEndsWithBackslash(szOutPath, nMaxLen);
-      pszSubPath = "Diablo II";
     }
 
     Storm::Source::SSTR::SStrPack(szOutPath, pszSubPath, nMaxLen);
@@ -314,7 +314,7 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
       return dwAttributes != 2 ? 0x1U : 0x2U;
     }
     /* LPCSTR lpFileName for GetFileAttributesA */ if (dwAttributes & 0x10) {
-      uint32_t uVar1;
+      uint32_t nLen;
       dwAttributes = GetFileAttributesA(szDstRoot);
       if (dwAttributes & 0x10) {
         if (dwAttributes == -1) {
@@ -323,10 +323,10 @@ int __fastcall SFILE_MoveDirectoryRecursive(LPCSTR szSrcRoot, LPCSTR szDstRoot) 
             return 1;
           }
 
-          uVar1 = Storm::Source::SSTR::SStrLen(szDstDir);
-          if ((!uVar1 || szSrcPath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
-            szDstDir[uVar1] = '\\';
-            szDstDir[uVar1 + 1] = '\0';
+          nLen = Storm::Source::SSTR::SStrLen(szDstDir);
+          if ((nLen <= 0 || szSrcPath[nLen + 0x103] != '\\') && nLen != 0x103) {
+            szDstDir[nLen] = '\\';
+            szDstDir[nLen + 1] = '\0';
           }
 
           SafeCreateDirectoryTree(szDstDir);
@@ -468,7 +468,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
     DWORD dwAttributes;
     char* pcLen;
     int nMoveResult;
-    uint32_t uVar1;
+    uint32_t nLen;
     char szOldSavePath[260];
     char szNewSavePath[260];
     char cChar;
@@ -495,10 +495,10 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
               if (nMoveResult == 1) {
                 pcLen = szOldSavePath;
               } else {
-                uVar1 = Storm::Source::SSTR::SStrLen(szNewSavePath);
-                if ((!uVar1 || szOldSavePath[uVar1 + 0x103] != '\\') && uVar1 != 0x103) {
-                  szNewSavePath[uVar1] = '\\';
-                  szNewSavePath[uVar1 + 1] = '\0';
+                nLen = Storm::Source::SSTR::SStrLen(szNewSavePath);
+                if ((nLen <= 0 || szOldSavePath[nLen + 0x103] != '\\') && nLen != 0x103) {
+                  szNewSavePath[nLen] = '\\';
+                  szNewSavePath[nLen + 1] = '\0';
                 }
 
                 Storm::Source::SReg::SRegSaveString("Diablo II", "%s%s.d2s", 1, szNewSavePath);
@@ -518,10 +518,10 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       use_default_save_path:
       SFILE_GetSaveGamePath(pBuffer, nSize);
       if (nSize) {
-        uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-        if ((!uVar1 || pBuffer[uVar1 - 1] != '\\') && uVar1 + 1 != nSize) {
-          pBuffer[uVar1] = '\\';
-          pBuffer[uVar1 + 1] = '\0';
+        nLen = Storm::Source::SSTR::SStrLen(pBuffer);
+        if ((nLen <= 0 || pBuffer[nLen - 1] != '\\') && nLen + 1 != nSize) {
+          pBuffer[nLen] = '\\';
+          pBuffer[nLen + 1] = '\0';
         }
       }
 
@@ -530,14 +530,14 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
       goto use_default_save_path;
     }
     if (nSize) {
-      uVar1 = Storm::Source::SSTR::SStrLen(pBuffer);
-      if (!uVar1 || pBuffer[uVar1 - 1] != '\\') {
-        if (uVar1 + 1 == nSize) {
+      nLen = Storm::Source::SSTR::SStrLen(pBuffer);
+      if (nLen <= 0 || pBuffer[nLen - 1] != '\\') {
+        if (nLen + 1 == nSize) {
           return;
         }
 
-        pBuffer[uVar1] = '\\';
-        pBuffer[uVar1 + 1] = '\0';
+        pBuffer[nLen] = '\\';
+        pBuffer[nLen + 1] = '\0';
       }
 
       SafeCreateDirectoryTree(pBuffer);
@@ -592,12 +592,12 @@ int32_t __fastcall SFILE_JulianDayNumber(int32_t nYear, int32_t nMonth, int32_t 
     long double fMonthDays = CRT_Floor((double)nJulian * 30.6001);
     long double fYearDays = CRT_Floor((double)nYearAdj * 365.25);
     nJulian = (int)(fYearDays + (long double)(double)fMonthDays + (long double)nDay + (long double)1720995.0);
-    if (0x8fc1c >= (nMonth + nYear * 0xc) * 0x1f + nDay) {
-      return nJulian;
+    if ((nMonth + nYear * 0xc) * 0x1f + nDay >= 0x8fc1d) {
+      int nCentury;
+      nCentury = (int)((double)nYearAdj * 0.01);
+      nJulian += 2 - (int)((double)nCentury * -0.25) - nCentury;
     }
 
-    int nCentury = (int)((double)nYearAdj * 0.01);
-    nJulian += 2 - (int)((double)nCentury * -0.25) - nCentury;
     return nJulian;
 }
 

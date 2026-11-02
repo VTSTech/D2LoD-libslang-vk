@@ -141,14 +141,14 @@ void __fastcall Q02_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
       return;
     }
 
-    D2QuestDataA1Q2Strc* pvVar1 = pQuestData->pQuestSpecificData.pA1Q2;
-    if (pvVar1->bAcceptedQuest != '\x01') {
+    D2QuestDataA1Q2Strc* pA1Q2Data = pQuestData->pQuestSpecificData.pA1Q2;
+    if (pA1Q2Data->bAcceptedQuest != '\x01') {
       return;
     }
 
     pQuestData->nQuestPacketFlags = '\0';
     QUEST_SetStateAndBroadcast(pQuestData, 1, nullptr, (::fpExecuteOnUnitFunction)Q02_NotifyQuestStateToPlayer, true);
-    pvVar1->bAcceptedQuest = '\0';
+    pA1Q2Data->bAcceptedQuest = '\0';
     ::SGAMEDATA* pGame = pQuestData->pGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = (QUESTCALLBACKFN)0x0;
     UNIT::SUnit::IteratePlayerOrMonsterUnits(pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q02_SyncQuestStepToPlayer);
@@ -158,12 +158,12 @@ void __fastcall Q02_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
 void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2QuestArgStrc * pQuestArgs) {
     int32_t nLine;
-    short int sVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
+    short int nNpcNo = pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo;
     ::SGAMEDATA* pGame = pQuestArgs->pGame;
     uint16_t nQuestMsg = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    if (sVar1 != 0x96) {
+    if (nNpcNo != 0x96) {
       return;
     }
 
@@ -295,8 +295,14 @@ void __fastcall Q02_Callback10_PlayerLeavesGame(D2QuestDataStrc * pQuestData, D2
 // Looks up Blood Raven via nBloodRavenGUID stashed by Q02_Callback_08.
 // State ids: 0=Completed,1=RewardAwaits,2=JustCompleted.
 BOOL __fastcall Q02_SetRewardForNearbyPlayers(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
+    D2RoomStrc* pBloodRavenRoom;
+    uint32_t nRoomIdx;
+    D2UnitDataPlayerStrc* pPlayerData;
+    BOOL bQuestState;
     D2RoomStrc** pAdjacentRooms;
     uint32_t nAdjacentRoomCount;
+    int bIsNearBloodRaven;
+    D2BitBufferStrc* pBitBuffer;
     D2UnitStrc* pUnitLocal = pUnit;
     D2RoomStrc* pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_SistersBurialGrounds);
@@ -304,54 +310,47 @@ BOOL __fastcall Q02_SetRewardForNearbyPlayers(::SGAMEDATA * pGame, D2UnitStrc * 
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x133);
       exit(-1);
     }
-    if (!pQuestData->pQuestSpecificData.pA1Q2->bRewardGiven) {
-      return 0;
-    }
-
-    D2UnitStrc* pBloodRaven = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pQuestData->pQuestSpecificData.pA1Q2->nBloodRavenGUID);
-    D2RoomStrc* pBloodRavenRoom = D2Common::Units::UNITS_GetRoom(pBloodRaven);
-    if (!pUnitRoom) {
-      return 0;
-    }
-
-    int bIsNearBloodRaven = 0;
-    if (pUnitRoom == pBloodRavenRoom) {
-      bIsNearBloodRaven = 1;
-    } else {
-      uint32_t nRoomIdx;
-      pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnitLocal);
-      if (!pUnitRoom) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14e);
-        exit(-1);
-      }
-
-      D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pUnitRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
-      for (nRoomIdx = 0; nRoomIdx < nAdjacentRoomCount; nRoomIdx++) {
-        if (pAdjacentRooms[nRoomIdx] == pBloodRavenRoom) {
+    if (pQuestData->pQuestSpecificData.pA1Q2->bRewardGiven) {
+      D2UnitStrc* pBloodRaven;
+      pBloodRaven = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_MONSTER, pQuestData->pQuestSpecificData.pA1Q2->nBloodRavenGUID);
+      pBloodRavenRoom = D2Common::Units::UNITS_GetRoom(pBloodRaven);
+      if (pUnitRoom) {
+        bIsNearBloodRaven = 0;
+        if (pUnitRoom == pBloodRavenRoom) {
           bIsNearBloodRaven = 1;
-          break;
+        } else {
+          pUnitRoom = D2Common::Units::UNITS_GetRoom(pUnitLocal);
+          if (!pUnitRoom) {
+            Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x14e);
+            exit(-1);
+          }
+
+          D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pUnitRoom, &pAdjacentRooms, (int*)&nAdjacentRoomCount);
+          for (nRoomIdx = 0; nRoomIdx < nAdjacentRoomCount; nRoomIdx++) {
+            if (pAdjacentRooms[nRoomIdx] == pBloodRavenRoom) {
+              bIsNearBloodRaven = 1;
+              break;
+            }
+          }
+        }
+
+        pPlayerData = D2Common::Units::GetPlayerData(pUnitLocal);
+        pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
+        /* GetQuestState(QUESTSTATE_Completed=0): skip if already turned in */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_Completed);
+        /* GetQuestState(QUESTSTATE_RewardAwaits=1): skip if reward already pending */ if (!bQuestState) {
+          bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_RewardAwaits);
+          if (!bQuestState && bIsNearBloodRaven) {
+            /* SetQuestState(state id 2): player was near the Blood Raven kill. NOTE: id 2
+                         here is the same value the step-writer calls QUESTSTATE_Step0x02;
+                         JustCompleted (the C label) is actually id 0xd elsewhere. Together with
+                         RewardAwaits below self flags reward-claimable. */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_JustCompleted);
+            /* SetQuestState(QUESTSTATE_RewardAwaits=1): mark reward claimable from Kashya
+                          */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_RewardAwaits);
+          }
         }
       }
     }
 
-    D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnitLocal);
-    D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_Completed);
-    /* GetQuestState(QUESTSTATE_RewardAwaits=1): skip if reward already pending */ if (bQuestState) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_RewardAwaits);
-    if (!(!bQuestState && bIsNearBloodRaven)) {
-      return 0;
-    }
-
-    /* SetQuestState(state id 2): player was near the Blood Raven kill. NOTE: id 2
-                         here is the same value the step-writer calls QUESTSTATE_Step0x02;
-                         JustCompleted (the C label) is actually id 0xd elsewhere. Together with
-                         RewardAwaits below self flags reward-claimable. */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_JustCompleted);
-    /* SetQuestState(QUESTSTATE_RewardAwaits=1): mark reward claimable from Kashya
-                          */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_RewardAwaits);
     return 0;
 }
 
@@ -365,19 +364,16 @@ BOOL __fastcall Q02_SetCannotCompleteInGame(::SGAMEDATA * pGame, D2UnitStrc * pU
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    /* GetQuestState(QUESTSTATE_RewardAwaits=1): if either set, this player got
+    if (bQuestState != 1) {
+      /* GetQuestState(QUESTSTATE_RewardAwaits=1): if either set, this player got
                          credit -> skip */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
+      if (bQuestState != 1) {
+        /* SetQuestState(QUESTSTATE_CannotCompleteQuestInGame=0xe): player missed the
+                         kill, must redo */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_CannotCompleteQuestInGame);
+        QUEST_SendQuestStatePacket(pUnit, 2, 0);
+      }
     }
 
-    /* SetQuestState(QUESTSTATE_CannotCompleteQuestInGame=0xe): player missed the
-                         kill, must redo */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_SistersBurialGrounds, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 2, 0);
     return 0;
 }
 
@@ -388,11 +384,10 @@ BOOL __fastcall Q02_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     /* GetQuestState(QUESTSTATE_JustCompleted=0xd): play fanfare only for players
                          credited self session */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SistersBurialGrounds, QUESTSTATE_JustCompleted);
-    if (bQuestState != 1) {
-      return 0;
+    if (bQuestState == 1) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x22, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x22, pUnit);
     return 0;
 }
 
@@ -404,16 +399,14 @@ BOOL __fastcall Q02_PropagateRewardToParty(::SGAMEDATA * pGame, D2UnitStrc * pUn
     /* GetQuestState(QUESTSTATE_JustCompleted=0xd): only propagate from a player
                          credited self session */ D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_SistersBurialGrounds, QUESTSTATE_JustCompleted);
-    if (!BVar2) {
-      return 0;
+    if (BVar2) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)fpExecuteOnUnitFunction, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)fpExecuteOnUnitFunction, 0);
     return 0;
 }
 
@@ -521,12 +514,12 @@ void __fastcall Q02_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
 // is awaiting (RewardAwaits id 1) -> ready to turn in.
 // State ids: 0=Completed, 1=RewardAwaits.
 bool __fastcall Q02_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    /* If target is Kashya */ if (nTargetClassId != 0x96) {
-      return false;
-    }
-
-    BOOL bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
-    /* If  state 0 (Completed): inactive */ if (bIsQuestInState != 1) {
+    /* If target is Kashya */ if (nTargetClassId == 0x96) {
+      BOOL bIsQuestInState;
+      /* GetQuestState(QUESTSTATE_Completed=0): if done, quest is inactive */ bIsQuestInState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
+      /* If  state 0 (Completed): inactive */ if (bIsQuestInState == 1) {
+        return false;
+      }
       /* If quest has been given by NPC (status 1) and reward is not yet available:
                          active */ /* GetQuestState(QUESTSTATE_RewardAwaits=1): quest given & reward not yet
                          awaiting -> active */ if (pQuestData->nStateFlag == 1) {
@@ -541,8 +534,6 @@ bool __fastcall Q02_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
       if (bIsQuestInState == 1) {
         return true;
       }
-
-      return false;
     }
 
     return false;
@@ -556,7 +547,7 @@ bool __fastcall Q02_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // fpSequenceFilter.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a1q2.cpp
 bool __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    bool bVar1;
+    bool bResult;
     D2QuestDataStrc* pNextQuestData;
     BOOL bBadFnPtr;
     if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
@@ -570,8 +561,8 @@ bool __fastcall Q02_SequenceFilter(D2QuestDataStrc * pQuestData) {
           exit(-1);
         }
 
-        bVar1 = pNextQuestData->fpSequenceFilter(pNextQuestData);
-        return bVar1;
+        bResult = pNextQuestData->fpSequenceFilter(pNextQuestData);
+        return bResult;
       }
 
       return false;

@@ -93,25 +93,25 @@ void __fastcall Q26_NotifyIzualKilledToPlayers(::SGAMEDATA * pGame) {
 }
 
 // [A4Q1 Izual helper] Per-unit IterateAllUnits callback: if this unit is within collision-distance 5 of the tracked target (Izual), set the "near" flag in the iteration context.
-void __fastcall Q26_CheckIzualProximity(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam) {
-    int32_t nCollisionDist = D2Common::Collision::GetCollisionDistance(pUnit, *(D2UnitStrc**)(nParam + 0x14));
+void __fastcall Q26_CheckIzualProximity(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t pQuestSpecificData) {
+    int32_t nCollisionDist = D2Common::Collision::GetCollisionDistance(pUnit, *(D2UnitStrc**)(pQuestSpecificData + 0x14));
     if (nCollisionDist >= 5) {
       return;
     }
 
-    *(uint8_t*)(nParam + 0x18) = 1;
+    *(uint8_t*)(pQuestSpecificData + 0x18) = 1;
 }
 
 // [A4Q1 Izual helper] Returns true if NO player is near Izual: looks up The Fallen Angel quest data, then iterates all units via Q26_CheckIzualProximity to test proximity.
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
-BOOL __fastcall Q26_CheckIzualNearPlayer(::SGAMEDATA * pGame, int32_t nParam) {
+BOOL __fastcall Q26_CheckIzualNearPlayer(::SGAMEDATA * pGame, int32_t pTargetUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheFallenAngel);
     if (pQuestData) {
       D2QuestDataA3Q3Strc* pQuestSpecificData;
       pQuestSpecificData = pQuestData->pQuestSpecificData.pA3Q3;
       if (*(char*)((uintptr_t)&pQuestSpecificData->nSerpentSpawnY + 2) != '\0') {
         pQuestSpecificData->bSerpentLocationValid = false;
-        pQuestSpecificData->nSerpentObjectY = nParam;
+        pQuestSpecificData->nSerpentObjectY = pTargetUnit;
         UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)Q26_CheckIzualProximity, pQuestSpecificData);
         return (uint32_t)!pQuestSpecificData->bSerpentLocationValid;
       }
@@ -192,11 +192,10 @@ bool __fastcall Q27_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 // [A4Q3 Terror's End] SequenceFilter: when the quest log is first opened and quest not yet started (nStateFlag==0) but introduced, bump internal nStateFlag to 1 (quest now in-progress / step0x02 displayable).
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a4q2.cpp
 bool __fastcall Q27_SequenceFilter(D2QuestDataStrc * pQuestData) {
-    if (!(!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01')) {
-      return true;
+    if (!pQuestData->nStateFlag && pQuestData->bIsNotIntroduction == '\x01') {
+      QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x91);
     }
 
-    QUEST_SetStateFlag(pQuestData, 1, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x91);
     return true;
 }
 
@@ -436,13 +435,12 @@ BOOL __fastcall Q27_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
     D2UnitDataPlayerStrc* pDVar1 = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pDVar1->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
-    if (BVar2 == 1) {
-      return 0;
+    if (BVar2 != 1) {
+      /* SetQuestState(TerrorsEnd, CannotCompleteQuestInGame=0xe) — joined after
+                         Diablo died */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_CannotCompleteQuestInGame);
+      QUEST_SendQuestStatePacket(pUnit, 0x17, 0);
     }
 
-    /* SetQuestState(TerrorsEnd, CannotCompleteQuestInGame=0xe) — joined after
-                         Diablo died */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x17, 0);
     return 0;
 }
 
@@ -451,17 +449,18 @@ BOOL __fastcall Q27_PartyMember_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStr
 BOOL __fastcall Q27_PlayerCheckCompletionSendState(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      D2ClientStrc* pClient;
+      pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x1a4);
+      D2GSPacketSrv0x5D aQuestStatePacket;
+      memset(&aQuestStatePacket, 0, sizeof(aQuestStatePacket));
+      aQuestStatePacket.nPacketId = ']';
+      aQuestStatePacket.nQuestId = '\x17';
+      aQuestStatePacket.nAlertFlags = '\x02';
+      GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &aQuestStatePacket);
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x4b, pUnit);
     }
 
-    D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x1a4);
-    D2GSPacketSrv0x5D aQuestStatePacket = {0};
-    aQuestStatePacket.nPacketId = ']';
-    aQuestStatePacket.nQuestId = '\x17';
-    aQuestStatePacket.nAlertFlags = '\x02';
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, &aQuestStatePacket);
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x4b, pUnit);
     return 0;
 }
 
@@ -470,7 +469,8 @@ BOOL __fastcall Q27_PlayerCheckCompletionSendState(::SGAMEDATA * pGame, D2UnitSt
 void __fastcall Q27_InitPandemoniumAndSendState(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     GAME::Level::InitLevel(pGame, pUnit, LEVEL_ThePandemoniumFortress, 0);
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x1b8);
-    D2GSPacketSrv0x5D aQuestStatePacket = {0};
+    D2GSPacketSrv0x5D aQuestStatePacket;
+    memset(&aQuestStatePacket, 0, sizeof(aQuestStatePacket));
     aQuestStatePacket.nPacketId = ']';
     aQuestStatePacket.nQuestId = '\x17';
     aQuestStatePacket.nAlertFlags = '\x01';
@@ -484,7 +484,7 @@ BOOL __fastcall Q27_PlayerEnterGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
     D2GSPacketSrv0x50 sPacket50;
     PLAYER::Player::PLAYER_CancelInteraction(pGame, pUnit);
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
-    pPlayerData->dwTradeTick = 1;
+    pPlayerData->bCutscenePending = 1;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
     pQuestData->pQuestSpecificData.pA4Q2->pPlayerUnit = pUnit;
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);
@@ -492,7 +492,8 @@ BOOL __fastcall Q27_PlayerEnterGame(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
     if (bJustCompleted) {
       GAME::Level::InitLevel(pGame, pUnit, LEVEL_ThePandemoniumFortress, 0);
       pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q2.cpp", 0x1b8);
-      D2GSPacketSrv0x5D sPacket5D = {0};
+      D2GSPacketSrv0x5D sPacket5D;
+      memset(&sPacket5D, 0, sizeof(sPacket5D));
       sPacket5D.nPacketId = ']';
       sPacket5D.nQuestId = '\x17';
       sPacket5D.nAlertFlags = '\x01';
@@ -567,12 +568,11 @@ uint8_t __fastcall QuitGameAfterDia(::SGAMEDATA * pGame, D2QuestDataStrc * pQues
       dwNowTick = GetTickCount();
       if (pDVar1->sQuestGUID.aPlayerGUID[6] + 90000U >= dwNowTick) {
         dwNowTick = GetTickCount();
-        if (!(pDVar1->sQuestGUID.aPlayerGUID[6] + 75000U < dwNowTick && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 0x15) == '\0')) {
-          return '\0';
+        if (pDVar1->sQuestGUID.aPlayerGUID[6] + 75000U < dwNowTick && *(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 0x15) == '\0') {
+          *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 0x15) = 1;
+          GAME::Server::SendSaveFileToClient(pGame);
         }
 
-        *(uint8_t*)((int)pDVar1->sQuestGUID.aPlayerGUID + 0x15) = 1;
-        GAME::Server::SendSaveFileToClient(pGame);
         return '\0';
       }
       if (*(char*)((int)pDVar1->sQuestGUID.aPlayerGUID + 5) != '\0') {
@@ -640,16 +640,14 @@ void __fastcall Q27_PartyMember_SetCompleted(::SGAMEDATA * pGame, D2UnitStrc * p
 BOOL __fastcall Q27_PropagateCompletionToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL BVar2 = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_TerrorsEnd, QUESTSTATE_JustCompleted);
-    if (!BVar2) {
-      return 0;
+    if (BVar2) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q27_PartyMember_SetCompleted, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q27_PartyMember_SetCompleted, 0);
     return 0;
 }
 
@@ -817,51 +815,46 @@ void __fastcall Q27_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 
 // [A4Q3 Terror's End] Per-player: if QUEST_TerrorsEnd not Completed and the player's room is the room (or adjacent to the room) where Diablo died, and quest is not Completed/RewardAwaits, complete it via Q27_SetTerrorsEndCompleted. Credits the kill only to players near the corpse.
 BOOL __fastcall Q27_PlayerCheckNearDiablo(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
+    D2RoomStrc* pRoom;
+    D2QuestDataStrc* pDVar3;
+    uint32_t i;
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nAdjacentRoomCount;
+    int bIsNearDiablo;
     D2UnitDataPlayerStrc* pDVar2 = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pDVar2->pQuestRecord[pGame->nDifficulty];
     BOOL bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
-    if (bCompleted == 1) {
-      return 0;
-    }
+    if (bCompleted != 1) {
+      D2QuestDataA4Q2Strc* pDVar1;
+      pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
+      if (pRoom) {
+        pDVar3 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
+        if (pDVar3) {
+          pDVar1 = pDVar3->pQuestSpecificData.pA4Q2;
+          bIsNearDiablo = 0;
+          if (pRoom == (D2RoomStrc*)pDVar1->pDiabloRoom) {
+            bIsNearDiablo = 1;
+          } else {
+            D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
+            for (i = 0; i < nAdjacentRoomCount; i++) {
+              if (ppAdjacentRooms[i] == (D2RoomStrc*)pDVar1->pDiabloRoom) {
+                bIsNearDiablo = 1;
+                break;
+              }
+            }
+          }
 
-    D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
-    if (!pRoom) {
-      return 0;
-    }
-
-    D2QuestDataStrc* pDVar3 = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
-    if (!pDVar3) {
-      return 0;
-    }
-
-    D2QuestDataA4Q2Strc* pDVar1 = pDVar3->pQuestSpecificData.pA4Q2;
-    int bIsNearDiablo = 0;
-    if (pRoom == (D2RoomStrc*)pDVar1->pDiabloRoom) {
-      bIsNearDiablo = 1;
-    } else {
-      uint32_t i;
-      D2Common::DUNGEON::Dungeon::DRLGROOM_GetAdjacentRoomsList(pRoom, &ppAdjacentRooms, (int*)&nAdjacentRoomCount);
-      for (i = 0; i < nAdjacentRoomCount; i++) {
-        if (ppAdjacentRooms[i] == (D2RoomStrc*)pDVar1->pDiabloRoom) {
-          bIsNearDiablo = 1;
-          break;
+          bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
+          if (!bCompleted) {
+            bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_RewardAwaits);
+            if (!bCompleted && bIsNearDiablo) {
+              Q27_SetTerrorsEndCompleted(pBitBuffer, pGame, pUnit);
+            }
+          }
         }
       }
     }
 
-    bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_Completed);
-    if (bCompleted) {
-      return 0;
-    }
-
-    bCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_TerrorsEnd, QUESTSTATE_RewardAwaits);
-    if (!(!bCompleted && bIsNearDiablo)) {
-      return 0;
-    }
-
-    Q27_SetTerrorsEndCompleted(pBitBuffer, pGame, pUnit);
     return 0;
 }
 
@@ -1028,9 +1021,9 @@ void __fastcall Q27_InitData(D2QuestDataStrc * pQuestData) {
 }
 
 // [A4Q3 Terror's End] Object init-fn (seal object): records which seal/lever was touched into the A4Q2 struct; if all 5 seals + 3 bosses are accounted for, triggers Q27_ActivateAllSealsKillChaos and arms the spawn-Diablo timer (QuitGameAfterDia).
-void __fastcall Objects_InitFn55(D2ObjectInitFnArg * pdwParam) {
+void __fastcall Objects_InitFn55(D2ObjectInitFnArg * pInitArg) {
     int nSealObjectId;
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pdwParam->pGame, QUESTINT_TerrorsEnd);
+    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TerrorsEnd);
     if (!pQuestData) {
       return;
     }
@@ -1041,10 +1034,10 @@ void __fastcall Objects_InitFn55(D2ObjectInitFnArg * pdwParam) {
     }
 
     pQuestSpecificData->bWaitingForSealSpawn = 1;
-    if (!pdwParam->pObject) {
+    if (!pInitArg->pObject) {
       nSealObjectId = -1;
     } else {
-      nSealObjectId = pdwParam->pObject->nUnitGUID;
+      nSealObjectId = pInitArg->pObject->nUnitGUID;
     }
 
     pQuestSpecificData->nSealObjectGUID = nSealObjectId;
@@ -1061,7 +1054,7 @@ void __fastcall Objects_InitFn55(D2ObjectInitFnArg * pdwParam) {
       return;
     }
 
-    Q27_ActivateAllSealsKillChaos((int*)pQuestSpecificData, pdwParam->pGame);
+    Q27_ActivateAllSealsKillChaos((int*)pQuestSpecificData, pInitArg->pGame);
     if (pQuestSpecificData->bDiabloSpawnStarted) {
       return;
     }
@@ -1124,20 +1117,17 @@ BOOL __fastcall OBJOP_A4Q2_DiabloSealActivateKillChaos(D2ObjectOperateFnArg * pO
       nSealClassId++;
     } while (nSealClassId < 5);
 
-    if (pQuestSpecificData->nSealBossKillCount != 3) {
-      return 0;
+    if (pQuestSpecificData->nSealBossKillCount == 3) {
+      Q27_ActivateAllSealsKillChaos((int*)pQuestSpecificData, pOperation->sArg.pGame);
+      if (!pQuestSpecificData->bDiabloSpawnStarted) {
+        pQuestSpecificData->nDiabloKillTick = 0;
+        pQuestSpecificData->bWaitingForDiabloSpawn = 1;
+        pQuestSpecificData->bDiabloKilled = 0;
+        pQuestSpecificData->bDiabloSpawnStarted = 1;
+        AddQuestTimer(pQuestData, QuitGameAfterDia, 1);
+      }
     }
 
-    Q27_ActivateAllSealsKillChaos((int*)pQuestSpecificData, pOperation->sArg.pGame);
-    if (pQuestSpecificData->bDiabloSpawnStarted) {
-      return 0;
-    }
-
-    pQuestSpecificData->nDiabloKillTick = 0;
-    pQuestSpecificData->bWaitingForDiabloSpawn = 1;
-    pQuestSpecificData->bDiabloKilled = 0;
-    pQuestSpecificData->bDiabloSpawnStarted = 1;
-    AddQuestTimer(pQuestData, QuitGameAfterDia, 1);
     return 0;
 }
 

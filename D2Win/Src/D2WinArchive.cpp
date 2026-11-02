@@ -68,13 +68,13 @@ DC6 * __fastcall IMAGE_LoadDC6(char * szFilename, BOOL bUseDccExtension) {
 int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnSize, DC6 * pDC6) {
     uint32_t nCopyCount;
     char* pSrcRead;
-    char local_108[260];
+    char szFilePath[260];
     char cByte;
-    strcpy(local_108, szText);
+    strcpy(szFilePath, szText);
     char* szExtension = D2CMP::SRC::SpriteCache::IMAGE_ReturnImageExtension((int32_t)pDC6);
     char* szExtensionEnd = szExtension;
     szExtensionEnd = szExtensionEnd + strlen(szExtensionEnd) + 1;
-    char* pDstWrite = (char*)((uint8_t*)&local_108 - 1);
+    char* pDstWrite = (char*)((uint8_t*)&szFilePath - 1);
     do {
       pSrcRead = pDstWrite + 1;
       pDstWrite++;
@@ -93,7 +93,7 @@ int * __fastcall D2WINARCHIVE_LoadImageFromArchive(char * szText, uint32_t * pnS
       pDstWrite++;
     }
 
-    DC6* pRawArchiveData = (DC6*)Fog::Archive::D2FILE_AllocAndLoadD2File(nullptr, local_108, pnSize, ".\\Src\\D2WinArchive.cpp", 0x52);
+    DC6* pRawArchiveData = (DC6*)Fog::Archive::D2FILE_AllocAndLoadD2File(nullptr, szFilePath, pnSize, ".\\Src\\D2WinArchive.cpp", 0x52);
     D2CMP::SRC::CelCmp::CELCMP_FixupPointersAndPrepare(pRawArchiveData, &pDC6, ".\\Src\\D2WinArchive.cpp", 0x53, -1, nullptr);
     return &pDC6->nVersion;
 }
@@ -138,19 +138,17 @@ BOOL __stdcall MPQ_LoadAllDataMpqFiles() {
     if (bDirectMode) {
       return 1;
     }
-    if (!(MPQ_d2data && MPQ_d2sfx && MPQ_d2speech)) {
-      return 0;
+    if (MPQ_d2data && MPQ_d2sfx && MPQ_d2speech) {
+      bDirectMode = Fog::D2CheckExpansionGame();
+      if (!bDirectMode) {
+        return 1;
+      }
+      if (MPQ_d2exp) {
+        return 1;
+      }
     }
 
-    bDirectMode = Fog::D2CheckExpansionGame();
-    if (!bDirectMode) {
-      return 1;
-    }
-    if (!MPQ_d2exp) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 D2PoolManagerStrc * __stdcall ReturnZero() {

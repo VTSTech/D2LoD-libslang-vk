@@ -11,8 +11,8 @@
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -68,6 +68,7 @@ int __stdcall FOG_ParseBinField(short * pOutMapping, D2BinFieldExcelStrc * pBinF
     uint32_t nBoolRunLen;
     int nOutputCount;
     D2BinFieldHashNodeStrc* pDVar2;
+    D2BinFieldInputStrc** pHashNodeSlot;
     D2BinFieldHashNodeStrc aFieldHashNodes[280];
     D2BinFieldHashNodeStrc* aHashBuckets[256];
     D2BinFieldHashNodeStrc* pHashNode;
@@ -105,7 +106,7 @@ int __stdcall FOG_ParseBinField(short * pOutMapping, D2BinFieldExcelStrc * pBinF
       eFieldType = pBoolFieldPrev->eType;
     }
 
-    Storm::Source::SSystem::SMemZero(aHashBuckets, 0x400);
+    Storm::Source::SMem::SMemZero(aHashBuckets, 0x400);
     if (pBinFieldInput->eType != FIELDTYPE_END) {
       D2BinFieldHashNodeStrc* pDVar1;
       pDVar2 = aFieldHashNodes;
@@ -164,21 +165,19 @@ int __stdcall FOG_ParseBinField(short * pOutMapping, D2BinFieldExcelStrc * pBinF
         nOutputIndex = nErrorAddress;
       } while (nColumnIndex < (uint32_t)pBinFieldExcel->nColumnCount);
     }
-    if (nFieldCount <= 0) {
-      return nErrorAddress;
+    if (nFieldCount > 0) {
+      pHashNodeSlot = &aFieldHashNodes[0].pField;
+      do {
+        if (pHashNodeSlot[-1]) {
+          nOutputCount = (int)*pHashNodeSlot - (int)pBinFieldInput;
+          pOutMapping[nErrorAddress] = (short int)(nOutputCount / 0x14) + (short int)(nOutputCount >> 0x1f) - (short int)((int64_t)nOutputCount * 0x66666667 >> 0x3f);
+          nErrorAddress++;
+        }
+
+        pHashNodeSlot += 3;
+        nFieldCount--;
+      } while (nFieldCount);
     }
-
-    D2BinFieldInputStrc** pHashNodeSlot = &aFieldHashNodes[0].pField;
-    do {
-      if (pHashNodeSlot[-1]) {
-        nOutputCount = (int)*pHashNodeSlot - (int)pBinFieldInput;
-        pOutMapping[nErrorAddress] = (short int)(nOutputCount / 0x14) + (short int)(nOutputCount >> 0x1f) - (short int)((int64_t)nOutputCount * 0x66666667 >> 0x3f);
-        nErrorAddress++;
-      }
-
-      pHashNodeSlot += 3;
-      nFieldCount--;
-    } while (nFieldCount);
 
     return nErrorAddress;
 }
@@ -370,17 +369,17 @@ uint32_t __stdcall FillUpTxtLinkSub0x08(D2TxtLinkStrc * pTxtLink, char * nItemCo
     }
 }
 
-int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nParam) {
+int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nLinkIndex) {
     char* nSearchResult;
     char* nNotFoundSentinel = gnExcelRecordFieldNotFound;
     if (!pClientSideData) {
       return (int)gnExcelRecordFieldNotFound;
     }
-    if (pClientSideData->nLinkIndex == nParam) {
+    if (pClientSideData->nLinkIndex == nLinkIndex) {
       return (int)pClientSideData;
     }
     if (pClientSideData->pPrevious) {
-      nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pPrevious, nParam);
+      nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pPrevious, nLinkIndex);
       if (nSearchResult != nNotFoundSentinel) {
         return (int)nSearchResult;
       }
@@ -389,7 +388,7 @@ int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nPara
       return (int)nNotFoundSentinel;
     }
 
-    nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pNext, nParam);
+    nSearchResult = (char*)FOG_GetRecordField(pClientSideData->pNext, nLinkIndex);
     if (nSearchResult == nNotFoundSentinel) {
       return (int)nNotFoundSentinel;
     }
@@ -397,16 +396,16 @@ int __fastcall FOG_GetRecordField(D2TxtLinkNodeStrc * pClientSideData, int nPara
     return (int)nSearchResult;
 }
 
-int __stdcall FOG_ParseIntField(int * pnParam, int nParam1, int nParam2) {
-    char* pcVar1 = gnExcelRecordFieldNotFound;
-    if (pnParam && nParam1 >= 0 && nParam1 < *pnParam) {
-      pcVar1 = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pnParam[3], nParam1);
-      if ((!pcVar1 || pcVar1 == gnExcelRecordFieldNotFound) && nParam2) {
+int __stdcall FOG_ParseIntField(int * pTxtLink, int nLinkIndex, int nParam2) {
+    char* pRecord = gnExcelRecordFieldNotFound;
+    if (pTxtLink && nLinkIndex >= 0 && nLinkIndex < *pTxtLink) {
+      pRecord = (char*)FOG_GetRecordField((D2TxtLinkNodeStrc*)pTxtLink[3], nLinkIndex);
+      if ((!pRecord || pRecord == gnExcelRecordFieldNotFound) && nParam2) {
         return (int)gnExcelRecordFieldNotFound;
       }
     }
 
-    return (int)pcVar1;
+    return (int)pRecord;
 }
 
 int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uint32_t dwParam3) {
@@ -471,12 +470,12 @@ static uint8_t * __fastcall FOG_ValidateBytePtr(uint8_t * pbyte, uint8_t * pKey)
 
 // @sourcefile .\Src\Excel\Excel.cpp
 int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
-    uint8_t* pKey;
+    int nRecordIndex;
     if (!pTxtLink) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b2);
       exit(-1);
     } else {
-      int iVar1;
+      uint8_t* pKey;
       if (pTxtLink->pTxtLinkSub0x08) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4b6);
         exit(-1);
@@ -488,9 +487,9 @@ int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
       String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
       *(int*)(pKey + 0x20) = pTxtLink->nRecords;
       FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-      iVar1 = pTxtLink->nRecords;
-      pTxtLink->nRecords = iVar1 + 1;
-      return iVar1;
+      nRecordIndex = pTxtLink->nRecords;
+      pTxtLink->nRecords = nRecordIndex + 1;
+      return nRecordIndex;
     }
 }
 
@@ -500,26 +499,25 @@ int __fastcall FOG_ParseTxtLink(D2TxtLinkStrc * pTxtLink, char * szText) {
       ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4cc);
       exit(-1);
     } else {
-      int iVar1;
+      int nRecordIndex;
       if (pTxtLink->pTxtLinkSub0x08) {
         ErrorManager::ERROR_UnrecoverableInternalError_Halt("", ErrorManager::GetInstructionPointer(), 0x4d0);
         exit(-1);
       }
 
-      iVar1 = GetLinkNodeIndex(pTxtLink, szText, 0);
-      if (iVar1 >= 0) {
-        return iVar1;
+      nRecordIndex = GetLinkNodeIndex(pTxtLink, szText, 0);
+      if (nRecordIndex < 0) {
+        pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
+        memset(pKey, 0, 0x2c);
+        Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
+        String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
+        *(int*)(pKey + 0x20) = pTxtLink->nRecords;
+        FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
+        nRecordIndex = pTxtLink->nRecords;
+        pTxtLink->nRecords = nRecordIndex + 1;
       }
 
-      pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
-      memset(pKey, 0, 0x2c);
-      Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-      String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
-      *(int*)(pKey + 0x20) = pTxtLink->nRecords;
-      FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
-      iVar1 = pTxtLink->nRecords;
-      pTxtLink->nRecords = iVar1 + 1;
-      return iVar1;
+      return nRecordIndex;
     }
 }
 
@@ -558,7 +556,7 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
     cCurChar = *(char*)&pD2Archive->pPrevLink;
     *(char*)&pScanPos->pPrevLink = '\0';
     if (cCurChar == '\n') {
-      int32_t iVar1;
+      int32_t nCmp;
       pBinFieldExcel->nColumnCount++;
       pScanPos = (D2ArchiveStrc*)((uintptr_t)&pScanPos->pPrevLink + 2);
       if (pScanPos >= pCurPos) {
@@ -593,10 +591,10 @@ D2BinFieldExcelStrc * __stdcall STRUCT_CreateBinFieldExcelAndFillData(D2ArchiveS
             /* Count lines and add value */ pBinFieldExcel->nLinesCount++;
           }
 
-          iVar1 = Storm::Source::SSTR::SStrCmp((char*)pLineStart, "Expansion", 10);
-          if (!iVar1) {
+          nCmp = Storm::Source::SSTR::SStrCmp((char*)pLineStart, "Expansion", 10);
+          if (!nCmp) {
             pBinFieldExcel->nLinesCount--;
-            Storm::Source::SSystem::SMemCopy(pLineStart, pNextLineStart, (int)pCurPos - (int)pNextLineStart);
+            Storm::Source::SMem::SMemCopy(pLineStart, pNextLineStart, (int)pCurPos - (int)pNextLineStart);
             pCurPos = (D2ArchiveStrc*)((int)pCurPos + ((int)pLineStart - (int)pNextLineStart));
             pNextLineStart = pLineStart;
           }

@@ -52,14 +52,13 @@ static_assert(sizeof(void*) != 4 || sizeof(::D2UnitDataPlayerArenaStrc) == 0x8, 
 
 namespace D2Game::GAME::Arena {
 
-static inline bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t nParam) {
+static inline bool __stdcall ARENA_TestFlag(::SGAMEDATA * pGame, uint32_t dwFlagMask) {
     if (!pGame->pArenaCtrl) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x27);
       exit(-1);
     }
 
-    return (pGame->pArenaCtrl->eArenaFlags & nParam) != 0;
-    return (pGame->pArenaCtrl->eArenaFlags & nParam) != 0;
+    return (pGame->pArenaCtrl->eArenaFlags & dwFlagMask) != 0;
 }
 
 // @sourcefile .\GAME\Arena.cpp
@@ -120,7 +119,6 @@ eD2LevelId __fastcall GetTownLevelFromArenaCtrl(::SGAMEDATA * pGame) {
     }
 
     return pGame->pArenaCtrl->eLevelId;
-    return pGame->pArenaCtrl->eLevelId;
 }
 
 // pGame in EAX: returns pArenaCtrl->nArenaTxtRecord; halts (Arena.cpp line 108, ptArena) when there is no arena control.
@@ -132,11 +130,10 @@ static inline int __stdcall ARENA_GetArenaTxtRecord(::SGAMEDATA * pGame) {
     }
 
     return pGame->pArenaCtrl->nArenaTxtRecord;
-    return pGame->pArenaCtrl->nArenaTxtRecord;
 }
 
 // Adjusts an arena participant's score by the modifier indexed by nParam (0-6) from the arena's ArenaTxt record. Cases 0/1/3/4/6 add the flat column value; cases 2/5 add a percentage of the opposing unit's current score. Sets the score-dirty flag and links the unit to the update list. Halts with an internal error if pUnit2 is null, not a player, the game has no arena control, or nParam is out of range.
-void __stdcall ARENA_ApplyScoreModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nParam, DWORD dwParam) {
+void __stdcall ARENA_ApplyScoreModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int32_t nScoreType, DWORD dwParam) {
     D2ArenaTxt* pArenaTxt;
     D2UnitDataPlayerArenaStrc* pArenaData;
     eD2ArenaFlags* peArenaFlags;
@@ -148,8 +145,8 @@ void __stdcall ARENA_ApplyScoreModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
       pArenaData = pPlayerData->pArena;
       if (pArenaData && pGame->pArenaCtrl) {
         pArenaTxt = D2Common::DATATBLS::ArenaTbls::GetArenaTxtRecord(pGame->pArenaCtrl->nArenaTxtRecord);
-        if (nParam < 7) {
-          switch (nParam) {
+        if (nScoreType < 7) {
+          switch (nScoreType) {
             case 0:
 
             case 1:
@@ -159,7 +156,7 @@ void __stdcall ARENA_ApplyScoreModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
             case 4:
 
             case 6:
-              pArenaData->nScore += (&pArenaTxt->dwSuicide)[nParam];
+              pArenaData->nScore += (&pArenaTxt->dwSuicide)[nScoreType];
             break;
             case 2:
 
@@ -170,7 +167,7 @@ void __stdcall ARENA_ApplyScoreModifier(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
               exit(-1);
             }
 
-            pArenaData->nScore += (&pArenaTxt->dwSuicide)[nParam] * pPlayerData->pArena->nScore / 100;
+            pArenaData->nScore += (&pArenaTxt->dwSuicide)[nScoreType] * pPlayerData->pArena->nScore / 100;
           }
 
           pArenaData->bScoreDirty = 1;
@@ -417,7 +414,6 @@ static int ARENA_IsScoreDirty(D2UnitStrc * pUnit) {
     }
 
     return pPlayerData->pArena->bScoreDirty;
-    return pPlayerData->pArena->bScoreDirty;
 }
 
 static void __stdcall UpdatePlayerKillCount(D2ClientStrc * pClient, D2UnitStrc * pUnit) {
@@ -509,7 +505,6 @@ uint32_t __fastcall ARENA_GetClientUpdateFlag(::SGAMEDATA * pGame) {
     }
 
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 2 & 1;
-    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 2 & 1;
 }
 
 uint32_t __fastcall ARENA_IsArenaLevel(::SGAMEDATA * pGame) {
@@ -518,7 +513,6 @@ uint32_t __fastcall ARENA_IsArenaLevel(::SGAMEDATA * pGame) {
       exit(-1);
     }
 
-    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 1 & 1;
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 1 & 1;
 }
 
@@ -529,7 +523,6 @@ uint32_t __fastcall ARENA_IsNoCubeRecipes(::SGAMEDATA * pGame) {
     }
 
     return pGame->pArenaCtrl->eArenaFlags >> 0x10 & 1;
-    return pGame->pArenaCtrl->eArenaFlags >> 0x10 & 1;
 }
 
 eD2ArenaFlags __fastcall ARENA_GetFlags(::SGAMEDATA * pGame) {
@@ -538,7 +531,6 @@ eD2ArenaFlags __fastcall ARENA_GetFlags(::SGAMEDATA * pGame) {
       exit(-1);
     }
 
-    return pGame->pArenaCtrl->eArenaFlags;
     return pGame->pArenaCtrl->eArenaFlags;
 }
 
@@ -550,7 +542,6 @@ int __fastcall ARENA_TestFlags(::SGAMEDATA * pGame, eD2ArenaFlags eMask) {
       exit(-1);
     }
 
-    return pGame->pArenaCtrl->eArenaFlags & eMask;
     return pGame->pArenaCtrl->eArenaFlags & eMask;
 }
 
@@ -581,7 +572,6 @@ BOOL __fastcall ARENA_IsFlag0x40Set(::SGAMEDATA * pGame) {
     }
 
     return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 6 & 1;
-    return (uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 6 & 1;
 }
 
 // Returns bit 0x80 of pArenaCtrl->eArenaFlags (no enum name yet); halts (Arena.cpp line 39, ptArena) when there is no arena control.
@@ -592,7 +582,6 @@ BOOL __fastcall ARENA_IsFlag0x80Set(::SGAMEDATA * pGame) {
       exit(-1);
     }
 
-    return (uint32_t)((uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 7);
     return (uint32_t)((uint8_t)(char)pGame->pArenaCtrl->eArenaFlags >> 7);
 }
 
@@ -606,7 +595,6 @@ uint32_t __fastcall ARENA_GetTemplate(::SGAMEDATA * pGame) {
       exit(-1);
     }
 
-    return (uint32_t)(uint8_t)pGame->pArenaCtrl->nTemplateLevel;
     return (uint32_t)(uint8_t)pGame->pArenaCtrl->nTemplateLevel;
 }
 

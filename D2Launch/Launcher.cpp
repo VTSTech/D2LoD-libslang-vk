@@ -178,18 +178,17 @@ BOOL __stdcall LAUNCHER_StartGameWithSelectedCharacter(D2ControlMsg * pControlMs
 }
 
 int __fastcall LAUNCHER_InitNetworkLobbyQueue(D2IniConfigStrc * pIniConfig) {
-    if (pIniConfig->pBNetClientCallbacks) {
-      return 1;
+    if (!pIniConfig->pBNetClientCallbacks) {
+      gpBNetCallbacks = Bnclient::NET_InitAndGetLobbyChatQueue();
+      if (!gpBNetCallbacks) {
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
+        exit(-1);
+      }
+
+      pIniConfig->pBNetClientCallbacks = gpBNetCallbacks;
+      gpBNetCallbacks->pfnSetLoggingFlag((uint32_t)pIniConfig);
     }
 
-    gpBNetCallbacks = Bnclient::NET_InitAndGetLobbyChatQueue();
-    if (!gpBNetCallbacks) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x94);
-      exit(-1);
-    }
-
-    pIniConfig->pBNetClientCallbacks = gpBNetCallbacks;
-    gpBNetCallbacks->pfnSetLoggingFlag((uint32_t)pIniConfig);
     return 1;
 }
 
@@ -210,11 +209,11 @@ BOOL __stdcall LAUNCHER_IsBnetConnectInProgress() {
 }
 
 int __stdcall LAUNCHER_CheckRevisionAndShowDialog(int nFrameIndex) {
-    int iVar1 = gpBNetCallbacks->pfnGetDownloadProgress();
-    if (iVar1 != 0x65) {
-      BOOL BVar2;
-      BVar2 = MainMenus::LAUNCHER_GetPatchDownloadFlag();
-      if (!BVar2) {
+    int nDownloadProgress = gpBNetCallbacks->pfnGetDownloadProgress();
+    if (nDownloadProgress != 0x65) {
+      BOOL bPatchDownload;
+      bPatchDownload = MainMenus::LAUNCHER_GetPatchDownloadFlag();
+      if (!bPatchDownload) {
         MainMenus::MAINMENU_UpdateProgressBar();
         return 1;
       }
@@ -293,7 +292,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     uint16_t awszFooter[512];
     uint16_t awszTitle[512];
     uint16_t awszBody[512];
-    eOogErrorCode eVar1 = pErrorData->eErrorCode;
+    eOogErrorCode eErrorCode = pErrorData->eErrorCode;
     for (nTitleStrId = 0; nTitleStrId < 0x200; nTitleStrId++) {
       awszBody[nTitleStrId] = L'\0';
     }
@@ -311,7 +310,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     int nFooterStrId = -1;
     awszTitle[0] = L'\0';
     awszFooter[0] = L'\0';
-    switch (eVar1) {
+    switch (eErrorCode) {
       case OOG_ERROR_1:
         nTitleStrId = 0x147d;
       nBodyStrId = 0x1443;
@@ -327,7 +326,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
       case OOG_ERROR_7:
         nTitleStrId = 0x147f;
-      nBodyStrId = eVar1 != OOG_ERROR_3 ? 0x2aa0 : 0x1442;
+      nBodyStrId = eErrorCode != OOG_ERROR_3 ? 0x2aa0 : 0x1442;
       nFooterStrId = 0x144a;
       nPopupType = 2;
       break;
@@ -335,7 +334,7 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
 
       case OOG_ERROR_8:
         nTitleStrId = 0x147f;
-      nBodyStrId = eVar1 != OOG_ERROR_LOGIN_FAILED ? 0x2aa1 : 0x144f;
+      nBodyStrId = eErrorCode != OOG_ERROR_LOGIN_FAILED ? 0x2aa1 : 0x144f;
       nPopupType = 1;
       break;
       case OOG_ERROR_5:
@@ -503,12 +502,11 @@ int __fastcall ShowOogErrorDialog(D2OogErrorDataStrc * pErrorData) {
     } else {
       MainMenus::UIMENU_CreatePopupWithContentAndFooter(awszTitle, awszBody, awszFooter, pfnOnClose);
     }
-    if (!bDisconnectOnClose) {
-      return 0;
+    if (bDisconnectOnClose) {
+      D2MCPClient::McpConnect::FreeMCP();
+      gpBNetCallbacks->pfnDisconnect();
     }
 
-    D2MCPClient::McpConnect::FreeMCP();
-    gpBNetCallbacks->pfnDisconnect();
     return 0;
 }
 

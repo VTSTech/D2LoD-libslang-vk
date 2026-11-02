@@ -8,7 +8,7 @@
 #include "Fog/Src/String/FogString.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
-#include "Storm/_unnamespaced.h"
+#include "D2Hell/D2Hell.h"
 #include "support/d2_trace.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -42,36 +42,32 @@ void OutOfMemoryHandler(char * format, ...) {
     Src::LogManager::LOGMANAGER_TraceToModuleLog("", "");
 }
 
-static int32_t ComputeSizeClassIndex(int32_t nParam) {
-    if (nParam <= 0x10) {
+static int32_t ComputeSizeClassIndex(int32_t nSize) {
+    if (nSize <= 0x10) {
       return 0;
     }
-    if (nParam < 3) {
+    if (nSize < 3) {
       return -3;
     }
 
-    uint32_t nValue = nParam - 1;
+    uint32_t nValue = nSize - 1;
     if (!nValue) {
       return -4;
     }
 
     int nBitIndex = 0x1f;
-    if (!nValue) {
-      return nBitIndex - 3;
+    if (nValue) {
+      for (; !(nValue >> nBitIndex); nBitIndex--) {}
     }
-
-    for (; !(nValue >> nBitIndex); nBitIndex--) {}
 
     return nBitIndex - 3;
 }
 
 int32_t __fastcall FindFirstFreeBit(uint32_t dwBits) {
     int nBitIndex = 0;
-    if (!~dwBits) {
-      return nBitIndex;
+    if (~dwBits) {
+      for (; !(~dwBits >> nBitIndex & 1); nBitIndex++) {}
     }
-
-    for (; !(~dwBits >> nBitIndex & 1); nBitIndex++) {}
 
     return nBitIndex;
 }
@@ -170,12 +166,11 @@ static int32_t FindFreeSlotInBitmap(uint32_t * pnBitmap, uint32_t nTotalBits) {
 
       test_tail_word_or_advance:
       if (nWordCount <= 8) {
-        if (!(nTotalBits & 0x1f && pnBitmap[nWordCount] != gdwFogMemoryAllocFlags[nTotalBits & 0x1f])) {
-          return nFreeSlot;
+        if (nTotalBits & 0x1f && pnBitmap[nWordCount] != gdwFogMemoryAllocFlags[nTotalBits & 0x1f]) {
+          nFreeSlot = FindFirstFreeBit(pnBitmap[nWordCount]);
+          nFreeSlot = nWordCount * 0x20 + nFreeSlot + nBaseOffset;
         }
 
-        nFreeSlot = FindFirstFreeBit(pnBitmap[nWordCount]);
-        nFreeSlot = nWordCount * 0x20 + nFreeSlot + nBaseOffset;
         return nFreeSlot;
       }
       nWordCount += -8;
@@ -204,26 +199,26 @@ static void __stdcall InsertBlockIntoSortedArray(D2PoolBlockStrc * pBlock, D2Poo
     nManager->dwMemory = nManager->dwMemory + pBlock->pPool->nSize + 0x18 + ((int)(pBlock->pPool->nBlocks + 0x1f) >> 5) * 4;
     nHi = nManager->nBlocks;
     pSortedArray = nManager->pBlocks;
-    int iVar1 = 0;
+    int nLow = 0;
     if ((int)nHi > 0) {
       do {
-        nMidIdx = ((int)(nHi - iVar1) >> 1) + iVar1;
+        nMidIdx = ((int)(nHi - nLow) >> 1) + nLow;
         if (pBlock->pCommit > (unsigned char*)pSortedArray[nMidIdx].pCommit) {
-          iVar1 = nMidIdx + 1;
+          nLow = nMidIdx + 1;
           nMidIdx = nHi;
         }
 
         nHi = nMidIdx;
-      } while (iVar1 < (int)nMidIdx);
+      } while (nLow < (int)nMidIdx);
 
       nHi = nManager->nBlocks;
     }
-    if (iVar1 < (int)nHi) {
-      memmove(pSortedArray + iVar1 + 1, pSortedArray + iVar1, (nHi - iVar1) * 8);
+    if (nLow < (int)nHi) {
+      memmove(pSortedArray + nLow + 1, pSortedArray + nLow, (nHi - nLow) * 8);
     }
 
-    pSortedArray[iVar1].pBlock = pBlock;
-    pSortedArray[iVar1].pCommit = pBlock->pCommit;
+    pSortedArray[nLow].pBlock = pBlock;
+    pSortedArray[nLow].pCommit = pBlock->pCommit;
     nManager->nBlocks++;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&nManager->pSync);
 }
@@ -648,7 +643,7 @@ void FreeMemoryPool(D2PoolManagerStrc * pMemory) {
     DeleteCriticalSection(&pGlobalPoolSystem.pSync);
 }
 
-void __stdcall InitializePoolSystem(D2PoolManagerStrc * * pPoolManager, char * szName, int32_t nParam) {
+void InitializePoolSystem(D2PoolManagerStrc * * pPoolManager, char * szName, int32_t nMaxBlockSize, int nUnused) {
     int nSizeClass;
     size_t nBlocksPerRegion;
     uint32_t nRegionSize;
@@ -691,13 +686,13 @@ void __stdcall InitializePoolSystem(D2PoolManagerStrc * * pPoolManager, char * s
       Storm::Source::SSTR::SStrCopy(pGlobalPoolSystem.pManagers[nManagerIndex].szName, szName, 0x20);
       pGlobalPoolSystem.pManagers[nManagerIndex].szName[0x1f] = '\0';
     }
-    if (nParam <= 0x10) {
+    if (nMaxBlockSize <= 0x10) {
       nSizeClass = 0;
     } else {
-      if (nParam < 3) {
+      if (nMaxBlockSize < 3) {
         nSizeClass = 1;
       } else {
-        nRegionSize = nParam - 1;
+        nRegionSize = nMaxBlockSize - 1;
         if (!nRegionSize) {
           nSizeClass = 0;
         } else {
@@ -786,7 +781,7 @@ void * __fastcall Alloc(D2PoolManagerStrc * pMemory, size_t MemSize, char * szFi
       pMemory = pGlobalPoolSystem.pManagers;
     }
     if (!pGlobalPoolSystem.bInit) {
-      InitializePoolSystem(nullptr, "Global Pool System", 0x40000);
+      InitializePoolSystem(nullptr, "Global Pool System", 0x40000, 0x8000);
     }
     if (pMemory->nPoolId) {
       pOverflowResult = POOL_AllocOverflowBlock(pMemory, MemSize, szFile, Line);
@@ -923,11 +918,10 @@ void * __fastcall ReAlloc(D2PoolManagerStrc * pMemory, void * pMemoryToRealloc, 
 
 void * __fastcall AllocClientMemory(size_t nAllocSize, char * szFile, int32_t nLine, int32_t nNull) {
     void* pMemory = Memory::Alloc(nullptr, nAllocSize, szFile, nLine);
-    if (pMemory) {
-      return pMemory;
+    if (!pMemory) {
+      Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     }
 
-    Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     return pMemory;
 }
 
@@ -939,22 +933,20 @@ BOOL __fastcall FreeClientMemory(void * pMemoryToFree, char * szFile, int32_t nL
 
 void * __fastcall ReAllocClientMemory(void * pMemory, size_t nSize, char * szFile, size_t nLine, uint32_t nUnused) {
     void* pNewMemory = ReAlloc(nullptr, pMemory, nSize, szFile, nLine);
-    if (pNewMemory) {
-      return pNewMemory;
+    if (!pNewMemory) {
+      Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     }
 
-    Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     return pNewMemory;
 }
 
 // Allocates server-side memory from the pool manager. Returns void* to allocated memory. Calls FOG_ErrorHandler on allocation failure.
 void * __fastcall AllocServerMemory(D2PoolManagerStrc * pPoolManagerStrc, size_t nSize, char * szFile, int32_t nLine, int32_t nNull) {
     void* pMemory = Memory::Alloc(gpServerMemHeap ? (D2PoolManagerStrc*)pPoolManagerStrc : nullptr, nSize, szFile, nLine);
-    if (pMemory) {
-      return pMemory;
+    if (!pMemory) {
+      Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     }
 
-    Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     return pMemory;
 }
 
@@ -967,11 +959,10 @@ BOOL __fastcall FreeServerMemory(D2PoolManagerStrc * pPoolManagerStrc, void * pM
 // Reallocates server-side memory to a new size. Returns void* to reallocated memory block. Calls FOG_ErrorHandler on reallocation failure.
 void * __fastcall ReAllocServerMemory(D2PoolManagerStrc * pPoolManagerStrc, void * pMemory, size_t nNewSize, char * szFile, int nLine, int nUnused) {
     void* pResult = ReAlloc(gpServerMemHeap ? (D2PoolManagerStrc*)pPoolManagerStrc : nullptr, pMemory, nNewSize, szFile, nLine);
-    if (pResult) {
-      return pResult;
+    if (!pResult) {
+      Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     }
 
-    Src::ErrorManager::FOG_ErrorHandler(ERROR_OutOfMemoryError, szFile, nLine, "");
     return pResult;
 }
 

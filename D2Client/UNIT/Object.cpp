@@ -175,10 +175,10 @@ void __fastcall OBJECT_AddVisualOverlay(D2UnitStrc * pUnit) {
       return;
     }
 
-    uint32_t uVar1 = pUnit->nClassId;
-    if (uVar1 <= 0x18d) {
-      if (uVar1 != 0x18d) {
-        switch (uVar1) {
+    uint32_t nObjectClassId = pUnit->nClassId;
+    if (nObjectClassId <= 0x18d) {
+      if (nObjectClassId != 0x18d) {
+        switch (nObjectClassId) {
           case 0x98:
             Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_horadric_light, 3, 0, 0, 0, 0, 0);
           return;
@@ -199,10 +199,10 @@ void __fastcall OBJECT_AddVisualOverlay(D2UnitStrc * pUnit) {
         }
       }
     } else {
-      if (uVar1 < 0x195) {
+      if (nObjectClassId < 0x195) {
         return;
       }
-      if (uVar1 > 0x197 && uVar1 != 0x1c7) {
+      if (nObjectClassId > 0x197 && nObjectClassId != 0x1c7) {
         return;
       }
     }
@@ -291,7 +291,7 @@ static void OBJECT_AnimateDoorTransition(D2UnitStrc * pUnit) {
 
 // Advances the animation frame of an object unit for one game tick, driven by the object's D2ObjectsTxt data. Handles cyclic vs. non-cyclic animations, door-transition objects, special objects (classId 0xC reverse-playing, 0xBD torch state-machine walk→neutral), spawn-monster triggers on anim end (Neutral→Walk transition), selectable/collision/light-RGB updates, and overlay removal on specific shrine/chest IDs.
 static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
-    int32_t nSpawnMonsterId;
+    int nClassId;
     int* pGfxFrame;
     D2ObjectsTxt* pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
     eD2ObjectAnimMode eAnimMode = pUnit->eAnimMode.ePlayerMode;
@@ -302,7 +302,7 @@ static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
 
     bool bCycleAnim = pTxtLine->CycleAnim[eAnimMode];
     if (!bCycleAnim) {
-      int iVar1;
+      int32_t nSpawnMonsterId;
       if (pTxtLine->IsDoor) {
         OBJECT_AnimateDoorTransition(pUnit);
         return;
@@ -335,7 +335,7 @@ static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
         pUnit->nGfxCurrentFrame = (uint32_t)pTxtLine->Start[2] << 8;
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         D2Common::Units::InitAnimMode(pUnit);
-        if (pTxtLine->Overlay && ((iVar1 = pUnit->nClassId , iVar1 == 0x162 || iVar1 == 0x163) || iVar1 == 0x18d || iVar1 == 0x195 || iVar1 == 0x197 || iVar1 == 0x196 || iVar1 == 0x164)) {
+        if (pTxtLine->Overlay && ((nClassId = pUnit->nClassId , nClassId == 0x162 || nClassId == 0x163) || nClassId == 0x18d || nClassId == 0x195 || nClassId == 0x197 || nClassId == 0x196 || nClassId == 0x164)) {
           Engine::Gfx::GFX_RemoveOverlayById(pUnit, 0, 0x47);
         }
 
@@ -386,7 +386,7 @@ static void OBJECT_UpdateAnimation(D2UnitStrc * pUnit) {
 static void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewAnimMode, D2UnitStrc * pUnit) {
     eD2ObjectAnimMode eCurAnimMode;
     uint8_t byStartFrame;
-    int32_t iVar5;
+    int32_t nPosY;
     D2ObjectsTxt* pTxtLine;
     pTxtLine = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
     if (nNewAnimMode >= 8) {
@@ -399,8 +399,8 @@ static void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewA
         D2Common::Units::SetupUpdateFlag(pUnit, 3);
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
         pUnit->eUnitFlags &= ~UNITFLAG_TARGETABLE;
-        iVar5 = Units::GetYPosFromDynamicPathUnit(pUnit);
-        D2Common::Units::BlockCollisionPath(pUnit, D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), iVar5);
+        nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
+        D2Common::Units::BlockCollisionPath(pUnit, D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), nPosY);
         goto update_shadow;
       }
 
@@ -417,8 +417,8 @@ static void __stdcall OBJECT_HandlePortalOpen(int32_t bTargetable, int32_t nNewA
             D2Common::Units::RemoveCollision_Vector(pUnit);
           }
         } else if (!nNewAnimMode && eCurAnimMode != eD2ObjectAnimMode_ns::Neutral) {
-          iVar5 = Units::GetYPosFromDynamicPathUnit(pUnit);
-          D2Common::Units::BlockCollisionPath(pUnit, D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), iVar5);
+          nPosY = Units::GetYPosFromDynamicPathUnit(pUnit);
+          D2Common::Units::BlockCollisionPath(pUnit, D2Common::Units::UNITS_GetRoom(pUnit), Units::GetXPosFromDynamicPathUnit(pUnit), nPosY);
         }
 
         D2Common::Units::SetupUpdateFlag(pUnit, nNewAnimMode);
@@ -483,7 +483,7 @@ static void OBJECT_UpdateModeAndProperties(D2UnitStrc * pUnit, D2ServerMessageHa
 }
 
 // Gloaming shrine (nCode=16) server callback: reverses the activating player's character name string as an Easter egg effect
-void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t dwParam) {
+void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t pShrinesTxt) {
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pPlayer);
     if (!pPlayerData) {
       return;
@@ -495,7 +495,7 @@ void __fastcall OBJECT_ShrineGloaming_ReversePlayerName(D2UnitStrc * pUnit, D2Un
 }
 
 // Spawns a 5×5 grid of Fireball missiles (MISSILE_Fireball) centred on pUnit's position, toggling X/Y offsets from ±5 to ±20 in steps of 5. Missile level is clamped to 1–8 based on pPlayer's level/5. Called server-side for trap objects (e.g. fire towers).
-void __fastcall OBJECT_SpawnFireballGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t dwParam) {
+void __fastcall OBJECT_SpawnFireballGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t pShrinesTxt) {
     int nLevel;
     D2SkillArgStrc sSkillArg;
     int nYNeg;
@@ -513,22 +513,27 @@ void __fastcall OBJECT_SpawnFireballGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlaye
         memset(&sSkillArg, 0, 0x5c);
         eUnitType = pUnit->eUnitType;
         sSkillArg.nFlags = 3;
+        int nXValue;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-          sSkillArg.nX = pUnit->pPath.pStaticPath->nPosX;
+          nXValue = pUnit->pPath.pStaticPath->nPosX;
         } else if (pUnit->pPath.pDynamicPath) {
-          sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+          nXValue = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
         } else {
-          sSkillArg.nX = 0;
+          nXValue = 0;
         }
 
+        sSkillArg.nX = nXValue;
         eUnitType = pUnit->eUnitType;
+        int nYValue;
         if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-          sSkillArg.nY = pUnit->pPath.pStaticPath->nPosY;
+          nYValue = pUnit->pPath.pStaticPath->nPosY;
         } else if (pUnit->pPath.pDynamicPath) {
-          sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+          nYValue = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
         } else {
-          sSkillArg.nY = 0;
+          nYValue = 0;
         }
+
+        sSkillArg.nY = nYValue;
         if (bToggleX) {
           sSkillArg.nUnitX = nXPos;
         } else {
@@ -563,7 +568,7 @@ void __fastcall OBJECT_SpawnFireballGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlaye
 }
 
 // Spawns a 6-missile ring of MISSILE_Explosivepotion around pUnit's position in a fixed ±6-tile grid pattern. pPlayer is the owner; skill level (nToHit) is clamped to [1,8] from pPlayer's level/5. Called when an explosive potion object triggers.
-void __fastcall OBJECT_SpawnExplosivePotionGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t dwParam) {
+void __fastcall OBJECT_SpawnExplosivePotionGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t pShrinesTxt) {
     D2SkillArgStrc sSkillArg;
     int anYOffsets[12];
     eD2UnitType eUnitType;
@@ -585,23 +590,27 @@ void __fastcall OBJECT_SpawnExplosivePotionGrid(D2UnitStrc * pUnit, D2UnitStrc *
       memset(&sSkillArg, 0, 0x5c);
       eUnitType = pUnit->eUnitType;
       sSkillArg.nFlags = 0x520;
+      int nXValue;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        sSkillArg.nX = pUnit->pPath.pStaticPath->nPosX;
+        nXValue = pUnit->pPath.pStaticPath->nPosX;
       } else if (pUnit->pPath.pDynamicPath) {
-        sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+        nXValue = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
       } else {
-        sSkillArg.nX = 0;
+        nXValue = 0;
       }
 
+      sSkillArg.nX = nXValue;
       eUnitType = pUnit->eUnitType;
+      int nYValue;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        sSkillArg.nY = pUnit->pPath.pStaticPath->nPosY;
+        nYValue = pUnit->pPath.pStaticPath->nPosY;
       } else if (pUnit->pPath.pDynamicPath) {
-        sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+        nYValue = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
       } else {
-        sSkillArg.nY = 0;
+        nYValue = 0;
       }
 
+      sSkillArg.nY = nYValue;
       sSkillArg.nUnitX = anYOffsets[nByteIdx] + sSkillArg.nX;
       sSkillArg.nUnitY = anYOffsets[nByteIdx + 6] + sSkillArg.nY;
       sSkillArg.pOwner = pPlayer;
@@ -622,7 +631,7 @@ void __fastcall OBJECT_SpawnExplosivePotionGrid(D2UnitStrc * pUnit, D2UnitStrc *
 }
 
 // Identical structure to OBJECT_SpawnExplosivePotionGrid but fires MISSILE_Chokinggaspoition. Spawns 6 choking-gas missiles in a ±6-tile ring around pUnit; pPlayer owns them with level-scaled nToHit [1,8]. Called when a choking-gas potion object triggers.
-void __fastcall OBJECT_SpawnChokingGasGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t dwParam) {
+void __fastcall OBJECT_SpawnChokingGasGrid(D2UnitStrc * pUnit, D2UnitStrc * pPlayer, uint32_t pShrinesTxt) {
     D2SkillArgStrc sSkillArg;
     int anYOffsets[12];
     eD2UnitType eUnitType;
@@ -644,23 +653,27 @@ void __fastcall OBJECT_SpawnChokingGasGrid(D2UnitStrc * pUnit, D2UnitStrc * pPla
       memset(&sSkillArg, 0, 0x5c);
       eUnitType = pUnit->eUnitType;
       sSkillArg.nFlags = 0x520;
+      int nXValue;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        sSkillArg.nX = pUnit->pPath.pStaticPath->nPosX;
+        nXValue = pUnit->pPath.pStaticPath->nPosX;
       } else if (pUnit->pPath.pDynamicPath) {
-        sSkillArg.nX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
+        nXValue = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
       } else {
-        sSkillArg.nX = 0;
+        nXValue = 0;
       }
 
+      sSkillArg.nX = nXValue;
       eUnitType = pUnit->eUnitType;
+      int nYValue;
       if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
-        sSkillArg.nY = pUnit->pPath.pStaticPath->nPosY;
+        nYValue = pUnit->pPath.pStaticPath->nPosY;
       } else if (pUnit->pPath.pDynamicPath) {
-        sSkillArg.nY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
+        nYValue = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
       } else {
-        sSkillArg.nY = 0;
+        nYValue = 0;
       }
 
+      sSkillArg.nY = nYValue;
       sSkillArg.nUnitX = anYOffsets[nByteIdx] + sSkillArg.nX;
       sSkillArg.nUnitY = anYOffsets[nByteIdx + 6] + sSkillArg.nY;
       sSkillArg.pOwner = pPlayer;
@@ -724,7 +737,7 @@ static void __stdcall OBJECT_PlayShrineSound(D2UnitStrc * pUnit, D2UnitStrc * pS
 }
 
 // Server-side shrine/well activation dispatch: looks up D2ShrinesTxt.nCode or D2ObjectsTxt.ShrineFunction, finds the activating player, calls fpServerActivate callback, then plays activation sound
-static void __stdcall OBJECT_DispatchShrineServerActivate(int * pnParam, D2UnitStrc * pUnit) {
+static void __stdcall OBJECT_DispatchShrineServerActivate(int * pMessage, D2UnitStrc * pUnit) {
     D2ObjectsTxt* pObjectsTxt;
     uint8_t byShrineCode;
     D2ShrinesTxt* pShrinesTxt = 0;
@@ -739,7 +752,7 @@ static void __stdcall OBJECT_DispatchShrineServerActivate(int * pnParam, D2UnitS
     }
 
     uint32_t nShrineCode = (uint32_t)byShrineCode;
-    D2UnitStrc* pPlayer = Player::UNITS_FindClientSideUnit(*pnParam, UNIT_PLAYER);
+    D2UnitStrc* pPlayer = Player::UNITS_FindClientSideUnit(*pMessage, UNIT_PLAYER);
     if (!pPlayer) {
       return;
     }
@@ -811,15 +824,14 @@ bool __fastcall OBJECT_ClientFn_PeriodicOperate(D2UnitStrc * pUnit) {
     }
 
     pUnit->dwTickCount++;
-    if (pUnit->eAnimMode.ePlayerMode != Walk) {
-      return true;
+    if (pUnit->eAnimMode.ePlayerMode == Walk) {
+      DVar1 = D2_SEED_NEXT(pUnit->sSeed);
+      pUnit->sSeed = DVar1;
+      pUnit->dwTickCount += DVar1.nSeedLow & 0x3f;
+      pUnit->eAnimMode.ePlayerMode = Death;
+      D2Common::Units::InitAnimMode(pUnit);
     }
 
-    DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = DVar1;
-    pUnit->dwTickCount += DVar1.nSeedLow & 0x3f;
-    pUnit->eAnimMode.ePlayerMode = Death;
-    D2Common::Units::InitAnimMode(pUnit);
     return true;
 }
 
@@ -854,11 +866,11 @@ bool __fastcall OBJECT_ClientFn_PeriodicOperateWithSound(D2UnitStrc * pUnit) {
 // ClientFn 0x4 handler, slot 4 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). Every 7..12 s (SEED_RollRange) plays mode S1 from Start[5]; back to NU once the frame reaches FrameCnt[3]-0x100; then UpdateUnitSfxOnModeChange. Returns FALSE.
 // Provenance: 1.14d asm 004bd860.
 bool __fastcall OBJECT_ClientFn_TimedSpecial1_7to12s(D2UnitStrc * pUnit) {
-    int32_t iVar3;
+    int32_t nDelayMs;
     DWORD DVar2 = GetTickCount();
     if (pUnit->dwTickCount < DVar2) {
-      iVar3 = SEED_RollRange(&pUnit->sSeed, 7000, 12000);
-      pUnit->dwTickCount = iVar3 + DVar2;
+      nDelayMs = SEED_RollRange(&pUnit->sSeed, 7000, 12000);
+      pUnit->dwTickCount = nDelayMs + DVar2;
       pUnit->nGfxCurrentFrame = (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[5];
       D2Common::Units::SetupUpdateFlag(pUnit, 3);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
@@ -880,34 +892,34 @@ bool __fastcall OBJECT_ClientFn_TimedSpecial1_7to12s(D2UnitStrc * pUnit) {
 // ClientFn 0x5 handler, slot 5 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). Every 23..33 s plays S1 or S2 (seed parity); back to NU at the end of that mode's frames; then UpdateUnitSfxOnModeChange. Returns FALSE.
 // Provenance: 1.14d asm 004bd900.
 bool __fastcall OBJECT_ClientFn_TimedSpecial1Or2_23to33s(D2UnitStrc * pUnit) {
-    D2ObjectsTxt* pDVar2;
-    D2SeedStrc DVar3;
-    int32_t iVar5;
-    DWORD DVar4 = GetTickCount();
-    if (pUnit->dwTickCount < DVar4) {
+    D2ObjectsTxt* pDVar1;
+    D2SeedStrc DVar2;
+    int32_t iVar4;
+    DWORD DVar3 = GetTickCount();
+    if (pUnit->dwTickCount < DVar3) {
       D2SeedStrc* pSeed;
       pSeed = &pUnit->sSeed;
-      iVar5 = SEED_RollRange(pSeed, 23000, 33000);
-      pUnit->dwTickCount = iVar5 + DVar4;
+      iVar4 = SEED_RollRange(pSeed, 23000, 33000);
+      pUnit->dwTickCount = iVar4 + DVar3;
       pUnit->nGfxCurrentFrame = (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[5];
-      DVar3 = D2_SEED_NEXT(*pSeed);
-      pSeed->nSeedHigh = DVar3.nSeedHigh;
-      pSeed->nSeedLow = DVar3.nSeedLow;
-      if (DVar3.nSeedLow & 1) {
-        iVar5 = 3;
+      DVar2 = D2_SEED_NEXT(*pSeed);
+      pSeed->nSeedHigh = DVar2.nSeedHigh;
+      pSeed->nSeedLow = DVar2.nSeedLow;
+      if (DVar2.nSeedLow & 1) {
+        iVar4 = 3;
       } else {
-        iVar5 = 4;
+        iVar4 = 4;
       }
 
-      D2Common::Units::SetupUpdateFlag(pUnit, iVar5);
+      D2Common::Units::SetupUpdateFlag(pUnit, iVar4);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     }
 
-    eD2PlayerAnimMode eVar1 = pUnit->eAnimMode.ePlayerMode;
-    if (eVar1 == eD2PlayerAnimMode_ns::Run || eVar1 == eD2PlayerAnimMode_ns::GetHit) {
-      pDVar2 = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
-      if (pUnit->nGfxCurrentFrame >= (int)(pDVar2->FrameCnt[eVar1] - 0x100)) {
-        pUnit->nGfxCurrentFrame = (uint32_t)pDVar2->Start[0];
+    eD2PlayerAnimMode eAnimMode = pUnit->eAnimMode.ePlayerMode;
+    if (eAnimMode == eD2PlayerAnimMode_ns::Run || eAnimMode == eD2PlayerAnimMode_ns::GetHit) {
+      pDVar1 = pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine;
+      if (pUnit->nGfxCurrentFrame >= (int)(pDVar1->FrameCnt[eAnimMode] - 0x100)) {
+        pUnit->nGfxCurrentFrame = (uint32_t)pDVar1->Start[0];
         D2Common::Units::SetupUpdateFlag(pUnit, 0);
         Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       }
@@ -920,11 +932,11 @@ bool __fastcall OBJECT_ClientFn_TimedSpecial1Or2_23to33s(D2UnitStrc * pUnit) {
 // ClientFn 0x6 handler, slot 6 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). Every 20..30 s plays mode S1; back to NU when the frame equals the end of the current mode (>= S1); then UpdateUnitSfxOnModeChange. Returns FALSE.
 // Provenance: 1.14d asm 004bd9c0.
 bool __fastcall OBJECT_ClientFn_TimedSpecial1_20to30s(D2UnitStrc * pUnit) {
-    int32_t iVar3;
+    int32_t nDelayMs;
     DWORD DVar2 = GetTickCount();
     if (pUnit->dwTickCount < DVar2) {
-      iVar3 = SEED_RollRange(&pUnit->sSeed, 20000, 30000);
-      pUnit->dwTickCount = iVar3 + DVar2;
+      nDelayMs = SEED_RollRange(&pUnit->sSeed, 20000, 30000);
+      pUnit->dwTickCount = nDelayMs + DVar2;
       pUnit->nGfxCurrentFrame = (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[5];
       D2Common::Units::SetupUpdateFlag(pUnit, 3);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
@@ -946,7 +958,7 @@ bool __fastcall OBJECT_ClientFn_TimedSpecial1_20to30s(D2UnitStrc * pUnit) {
 // ClientFn 0x7 handler, slot 7 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). From NU: enters OP for 10 s; from OP/ON: back to NU after 4.5..7.5 s (SEED_RollRange).
 // Provenance: 1.14d asm 004bda60.
 bool __fastcall OBJECT_ClientFn_OperateCycle_10s(D2UnitStrc * pUnit) {
-    int32_t iVar2;
+    int32_t nDelayMs;
     DWORD DVar1 = GetTickCount();
     if (pUnit->eAnimMode.ePlayerMode == Death) {
       if (pUnit->dwTickCount < DVar1) {
@@ -957,8 +969,8 @@ bool __fastcall OBJECT_ClientFn_OperateCycle_10s(D2UnitStrc * pUnit) {
         return true;
       }
     } else if (pUnit->eAnimMode.ePlayerMode != Death && pUnit->dwTickCount < DVar1) {
-      iVar2 = SEED_RollRange(&pUnit->sSeed, 0x1194, 0x1d4c);
-      pUnit->dwTickCount = iVar2 + DVar1;
+      nDelayMs = SEED_RollRange(&pUnit->sSeed, 0x1194, 0x1d4c);
+      pUnit->dwTickCount = nDelayMs + DVar1;
       D2Common::Units::SetupUpdateFlag(pUnit, 0);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     }
@@ -975,7 +987,7 @@ bool __fastcall OBJECT_ClientFn_Nop_0B(D2UnitStrc * pUnit) {
 // ClientFn 0xa handler, slot 10 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). From NU: enters OP for 3 s; from OP/ON: back to NU after 2.5..7.5 s (SEED_RollRange).
 // Provenance: 1.14d asm 004bdb00.
 bool __fastcall OBJECT_ClientFn_OperateCycle_3s(D2UnitStrc * pUnit) {
-    int32_t iVar2;
+    int32_t nDelayMs;
     DWORD DVar1 = GetTickCount();
     if (pUnit->eAnimMode.ePlayerMode == Death) {
       if (pUnit->dwTickCount < DVar1) {
@@ -986,8 +998,8 @@ bool __fastcall OBJECT_ClientFn_OperateCycle_3s(D2UnitStrc * pUnit) {
         return true;
       }
     } else if (pUnit->eAnimMode.ePlayerMode != Death && pUnit->dwTickCount < DVar1) {
-      iVar2 = SEED_RollRange(&pUnit->sSeed, 0x9c4, 0x1d4c);
-      pUnit->dwTickCount = iVar2 + DVar1;
+      nDelayMs = SEED_RollRange(&pUnit->sSeed, 0x9c4, 0x1d4c);
+      pUnit->dwTickCount = nDelayMs + DVar1;
       D2Common::Units::SetupUpdateFlag(pUnit, 0);
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     }
@@ -1004,7 +1016,7 @@ bool __fastcall OBJECT_ClientFn_Nop_01(D2UnitStrc * pUnit) {
 // ClientFn 0x9 handler, slot 9 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). Once a second, removes the object from the client hash table when the player is more than 25 (GetCollisionDistance) away; returns FALSE when removed.
 // Provenance: 1.14d asm 004bdba0.
 bool __fastcall OBJECT_ClientFn_RemoveWhenPlayerFar(D2UnitStrc * pUnit) {
-    int32_t iVar2;
+    int32_t nDistance;
     DWORD DVar1 = GetTickCount();
     if (pUnit->dwTickCount) {
       D2UnitStrc* pTarget;
@@ -1013,8 +1025,8 @@ bool __fastcall OBJECT_ClientFn_RemoveWhenPlayerFar(D2UnitStrc * pUnit) {
       }
 
       pTarget = Player::GetPlayerUnit_UI();
-      iVar2 = D2Common::Collision::GetCollisionDistance(pUnit, pTarget);
-      if (iVar2 > 0x19) {
+      nDistance = D2Common::Collision::GetCollisionDistance(pUnit, pTarget);
+      if (nDistance > 0x19) {
         CUnit::UNITS_RemoveFromClientHashTable(pUnit->nUnitGUID, 2);
         return false;
       }
@@ -1027,63 +1039,60 @@ bool __fastcall OBJECT_ClientFn_RemoveWhenPlayerFar(D2UnitStrc * pUnit) {
 // ClientFn 0xc handler, slot 12 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). If the unit is not in mode NU, calls QUESTLOG_PlayActBossCinematic.
 // Provenance: 1.14d asm 004bdbf0.
 bool __fastcall OBJECT_ClientFn_PlayActBossCinematic(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode != Death)) {
-      return true;
+    if (pUnit && pUnit->eAnimMode.ePlayerMode != Death) {
+      UI::QuestLog::QUESTLOG_PlayActBossCinematic();
     }
 
-    UI::QuestLog::QUESTLOG_PlayActBossCinematic();
     return true;
 }
 
 // ClientFn 0xd handler, slot 13 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). Rite of Passage (quest record 0x27): once the quest is started and flag 4 is clear, with the player within 25, stops the player's path and sends UNITMODE_ExecuteSkillAction(0x13, player, 2, guid), then sets mode ON.
 // Provenance: 1.14d asm 004bdc10.
 bool __fastcall OBJECT_ClientFn_RiteOfPassageAncients(D2UnitStrc * pUnit) {
+    D2UnitStrc* pTarget;
+    int32_t nDistance;
+    eD2Quests eQuestId;
+    eD2QuestState eQuestState;
     if (pUnit && pUnit->eAnimMode.ePlayerMode != Death) {
       return true;
     }
 
     D2UnitStrc* pUnit_00 = Player::GetPlayerUnit_UI();
-    if (!pUnit_00) {
-      return true;
+    if (pUnit_00) {
+      BOOL bQuestState;
+      eQuestState = QUESTSTATE_Completed;
+      eQuestId = QUEST_RiteOfPassage;
+      bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
+      if (bQuestState) {
+        eQuestState = QUESTSTATE_Step0x04;
+        eQuestId = QUEST_RiteOfPassage;
+        bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
+        if (!bQuestState) {
+          pTarget = Player::GetPlayerUnit_UI();
+          nDistance = D2Common::Collision::GetCollisionDistance(pUnit, pTarget);
+          if (nDistance < 0x19) {
+            if (pUnit_00->pPath.pDynamicPath) {
+              D2Common::PATH::DynamicPath::ZeroPathPointsSize(pUnit_00->pPath.pDynamicPath);
+            }
+
+            UnitMode::UNITMODE_ExecuteSkillAction(UNITMODEACTION_ITEM_INTERACT, pUnit_00, 2, pUnit->nUnitGUID, 0);
+            D2Common::Units::SetupUpdateFlag(pUnit, 2);
+            Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
+          }
+        }
+      }
     }
 
-    eD2QuestState eQuestState = QUESTSTATE_Completed;
-    eD2Quests eQuestId = QUEST_RiteOfPassage;
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
-    if (!bQuestState) {
-      return true;
-    }
-
-    eQuestState = QUESTSTATE_Step0x04;
-    eQuestId = QUEST_RiteOfPassage;
-    bQuestState = D2Common::QuestRecord::GetQuestState(UI::npcmenu::GetQuestInfo(), eQuestId, eQuestState);
-    if (bQuestState) {
-      return true;
-    }
-
-    D2UnitStrc* pTarget = Player::GetPlayerUnit_UI();
-    int32_t nDistance = D2Common::Collision::GetCollisionDistance(pUnit, pTarget);
-    if (nDistance >= 0x19) {
-      return true;
-    }
-    if (pUnit_00->pPath.pDynamicPath) {
-      D2Common::PATH::DynamicPath::ZeroPathPointsSize(pUnit_00->pPath.pDynamicPath);
-    }
-
-    UnitMode::UNITMODE_ExecuteSkillAction(UNITMODEACTION_ITEM_INTERACT, pUnit_00, 2, pUnit->nUnitGUID, 0);
-    D2Common::Units::SetupUpdateFlag(pUnit, 2);
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
     return true;
 }
 
 // ClientFn 0x8 handler, slot 8 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). If the unit is not in mode NU, calls QUESTLOG_PlayLevelUpCinematic.
 // Provenance: 1.14d asm 004bdca0.
 bool __fastcall OBJECT_ClientFn_PlayLevelUpCinematic(D2UnitStrc * pUnit) {
-    if (!(pUnit && pUnit->eAnimMode.ePlayerMode != Death)) {
-      return true;
+    if (pUnit && pUnit->eAnimMode.ePlayerMode != Death) {
+      UI::QuestLog::QUESTLOG_PlayLevelUpCinematic();
     }
 
-    UI::QuestLog::QUESTLOG_PlayLevelUpCinematic();
     return true;
 }
 
@@ -1091,13 +1100,12 @@ bool __fastcall OBJECT_ClientFn_PlayLevelUpCinematic(D2UnitStrc * pUnit) {
 // Provenance: 1.14d asm 004bdcc0.
 bool __fastcall OBJECT_ClientFn_AutoLightPulse(D2UnitStrc * pUnit) {
     DWORD DVar1 = GetTickCount();
-    if (DVar1 <= pUnit->dwTickCount) {
-      return true;
+    if (DVar1 > pUnit->dwTickCount) {
+      OBJECT_CheckAutoLight(pUnit, 0);
+      DVar1 = GetTickCount();
+      pUnit->dwTickCount = DVar1 + 500;
     }
 
-    OBJECT_CheckAutoLight(pUnit, 0);
-    DVar1 = GetTickCount();
-    pUnit->dwTickCount = DVar1 + 500;
     return true;
 }
 
@@ -1123,52 +1131,51 @@ bool __fastcall OBJECT_ClientFn_NeutralModeOverlay(D2UnitStrc * pUnit) {
 
 bool __fastcall OBJECT_ClientFn_ZooKeeper(D2UnitStrc * pUnit) {
     DWORD DVar2 = GetTickCount();
-    if (DVar2 <= pUnit->dwTickCount) {
-      return true;
+    if (DVar2 > pUnit->dwTickCount) {
+      D2SeedStrc DVar1;
+      DVar1 = D2_SEED_NEXT(pUnit->sSeed);
+      pUnit->sSeed = DVar1;
+      if (DVar1.nSeedLow % 100 < 10) {
+        Sound::SOUND_PlaySound(SOUND_PALADIN_CANTCARRY_2, pUnit, 0, 0, 0);
+      }
+
+      DVar1 = D2_SEED_NEXT(pUnit->sSeed);
+      pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
+      pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
+      DVar2 = GetTickCount();
+      pUnit->dwTickCount = DVar2 + DVar1.nSeedLow % 0x3c * 1000;
     }
 
-    D2SeedStrc DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed = DVar1;
-    if (DVar1.nSeedLow % 100 < 10) {
-      Sound::SOUND_PlaySound(SOUND_PALADIN_CANTCARRY_2, pUnit, 0, 0, 0);
-    }
-
-    DVar1 = D2_SEED_NEXT(pUnit->sSeed);
-    pUnit->sSeed.nSeedHigh = DVar1.nSeedHigh;
-    pUnit->sSeed.nSeedLow = DVar1.nSeedLow;
-    DVar2 = GetTickCount();
-    pUnit->dwTickCount = DVar2 + DVar1.nSeedLow % 0x3c * 1000;
     return true;
 }
 
 // ClientFn 0x10 handler, slot 16 of gpObjectClientFunctionDispatchTable (called by OBJECT_ExecuteClientFunction). In mode OP at frame Start[1]<<8, switches to mode ON at frame 0 (GFX_LoadUnitModeCof, InitAnimMode).
 // Provenance: 1.14d asm 004bde00.
 bool __fastcall OBJECT_ClientFn_OperateToOpened(D2UnitStrc * pUnit) {
-    if (!(pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral && pUnit->nGfxCurrentFrame == (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[1] * 0x100)) {
-      return true;
+    if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Neutral && pUnit->nGfxCurrentFrame == (uint32_t)pUnit->pUnitData.pUnitDataObject->pTxtObjectsLine->Start[1] * 0x100) {
+      pUnit->eAnimMode.ePlayerMode = Walk;
+      pUnit->nGfxCurrentFrame = 0;
+      Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
+      D2Common::Units::InitAnimMode(pUnit);
     }
 
-    pUnit->eAnimMode.ePlayerMode = Walk;
-    pUnit->nGfxCurrentFrame = 0;
-    Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
-    D2Common::Units::InitAnimMode(pUnit);
     return true;
 }
 
 bool __fastcall OBJECT_ClientFn_Zoo(D2UnitStrc * pUnit) {
     int nSpawnY;
-    uint8_t uVar2 = UI::QuestLog::QUESTLOG_GetZooSpawnFlag();
-    if (uVar2 == '\0') {
+    uint8_t byZooSpawnFlag = UI::QuestLog::QUESTLOG_GetZooSpawnFlag();
+    if (byZooSpawnFlag == '\0') {
       return true;
     }
 
-    bool bVar3 = UI::QuestLog::QUESTLOG_FindZooDummyMonster();
-    if (bVar3) {
+    bool bFoundZooDummy = UI::QuestLog::QUESTLOG_FindZooDummyMonster();
+    if (bFoundZooDummy) {
       return true;
     }
 
-    eD2UnitType eVar1 = pUnit->eUnitType;
-    if (eVar1 == UNIT_OBJECT || (int)eVar1 > 3 && (int)eVar1 <= 5) {
+    eD2UnitType eUnitType = pUnit->eUnitType;
+    if (eUnitType == UNIT_OBJECT || (int)eUnitType > 3 && (int)eUnitType <= 5) {
       nSpawnY = pUnit->pPath.pStaticPath->nPosY;
     } else if (pUnit->pPath.pDynamicPath) {
       nSpawnY = D2Common::PATH::DynamicPath::GetYPos(pUnit->pPath.pDynamicPath);
@@ -1176,8 +1183,8 @@ bool __fastcall OBJECT_ClientFn_Zoo(D2UnitStrc * pUnit) {
       nSpawnY = 0;
     }
 
-    eVar1 = pUnit->eUnitType;
-    if (eVar1 != UNIT_OBJECT && ((int)eVar1 <= 3 || (int)eVar1 > 5)) {
+    eUnitType = pUnit->eUnitType;
+    if (eUnitType != UNIT_OBJECT && ((int)eUnitType <= 3 || (int)eUnitType > 5)) {
       int32_t nSpawnX;
       if (pUnit->pPath.pDynamicPath) {
         nSpawnX = D2Common::PATH::DynamicPath::GetXPos(pUnit->pPath.pDynamicPath);
@@ -1203,9 +1210,9 @@ bool __fastcall OBJECT_ExecuteClientFunction(D2UnitStrc * pUnit) {
       exit(-1);
     }
     if (byClientFn != OBJCLIENTFN_NONE) {
-      bool bVar1;
-      bVar1 = (*gpObjectClientFunctionDispatchTable[byClientFn])(pUnit);
-      return bVar1;
+      bool bResult;
+      bResult = (*gpObjectClientFunctionDispatchTable[byClientFn])(pUnit);
+      return bResult;
     }
 
     return true;

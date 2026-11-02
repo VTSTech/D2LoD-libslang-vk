@@ -818,7 +818,7 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, D2UnitStrc * 
     void* nRetVal;
     BOOL bBadPtr;
     uint32_t nMonstersLeft;
-    int32_t iVar1;
+    int32_t nRemaining;
     if (!pGame->pQuestControl) {
       return;
     }
@@ -851,7 +851,8 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, D2UnitStrc * 
       return;
     }
 
-    D2GSPacketSrv0x5D sPacket = {0};
+    D2GSPacketSrv0x5D sPacket;
+    memset(&sPacket, 0, sizeof(sPacket));
     sPacket.nQuestId = (uint8_t)nInternalQuestNo;
     sPacket.nPacketId = ']';
     sPacket.nAlertFlags = pQuestData->nQuestPacketFlags;
@@ -876,8 +877,8 @@ void __fastcall QUEST_SendQuestUpdateToPlayer(::SGAMEDATA * pGame, D2UnitStrc * 
       nMonstersLeft = A1Q1::GetDenMonstersLeftToKillCount(pQuestData);
       sPacket.nExtra = (uint16_t)nMonstersLeft;
     } else if (pQuestData->nQuestIdReal == QUEST_RescueOnMountArreat) {
-      iVar1 = A5Q2::Q32_GetRemainingPrisonersCount(pQuestData);
-      sPacket.nExtra = (uint16_t)iVar1;
+      nRemaining = A5Q2::Q32_GetRemainingPrisonersCount(pQuestData);
+      sPacket.nExtra = (uint16_t)nRemaining;
     }
 
     // [d2boot][R53] what the server pushes for the Den quest (issue #13):
@@ -1015,7 +1016,7 @@ void __fastcall NET_D2GS_SERVER_Send_0x29_GAMEQUESTRECORD_Prepare(::SGAMEDATA * 
 // @sourcefile .\QUESTS\QUESTS.CPP
 uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * nNpcClassId) {
     D2QuestDataStrc* pQuestData;
-    uint8_t bVar1;
+    uint8_t nClientAct;
     bool bQuestActive;
     D2ClientStrc* pClient;
     BOOL bBadPtr;
@@ -1033,13 +1034,13 @@ uint32_t __fastcall QUEST_NpcWantsInteract(::SGAMEDATA * pGame, D2UnitStrc * pUn
       pQuestControl = pGame->pQuestControl;
       if (pQuestControl->bPickedSet) {
         pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0x7f6);
-        bVar1 = GAME::Clients::GetAct(pClient);
+        nClientAct = GAME::Clients::GetAct(pClient);
         pQuestData = pQuestControl->pQuestData;
         do {
           if (!pQuestData) {
             return 0;
           }
-          if (bVar1 == pQuestData->nAct) {
+          if (nClientAct == pQuestData->nAct) {
             if (!pQuestData->fpActiveFilter) {
               Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x813);
               exit(-1);
@@ -1122,13 +1123,13 @@ void __fastcall QUEST_DispatchMonsterDeathToQ12(::SGAMEDATA * pGame, D2RoomStrc 
 // Finds the QUESTINT_SistersToTheSlaughter entry in pGame's quest list (pPrev chain) and returns Q06_GetQuestSpecificFlag for it; halts (line 2140) when there is none.
 // Unreferenced in 1.14d (entry: aligned start after padding); was undefined code hidden by a CALL_RETURN override on its halt call. Lines from docs/data/win-assert-oracle.tsv.
 uint32_t __fastcall QUEST_GetSistersToTheSlaughterSpecificFlag(::SGAMEDATA * pGame) {
-    uint32_t uVar1;
+    uint32_t dwSpecificFlag;
     if (pGame->pQuestControl) {
       D2QuestDataStrc* pQuestData;
       for (pQuestData = pGame->pQuestControl->pQuestData; pQuestData; pQuestData = pQuestData->pPrev) {
         if (pQuestData->nQuestNoInternal == QUESTINT_SistersToTheSlaughter) {
-          uVar1 = A1Q6::Q06_GetQuestSpecificFlag(pQuestData);
-          return uVar1;
+          dwSpecificFlag = A1Q6::Q06_GetQuestSpecificFlag(pQuestData);
+          return dwSpecificFlag;
         }
       }
     }
@@ -1602,21 +1603,19 @@ static BOOL __stdcall INTRONPC_FillInPacketWithIntroNpcIds(D2UnitDataPlayerInter
     pD2GSPacketSrv0x91->nNpcID[9] = 0xffff;
     pD2GSPacketSrv0x91->nNpcID[10] = 0xffff;
     pD2GSPacketSrv0x91->nNpcID[0xb] = 0xffff;
-    if (nListSize <= 0) {
-      return bNeedSend;
-    }
-
-    do {
+    if (nListSize > 0) {
       BOOL bResult;
-      bResult = PLAYER::PlayerIntro::INTRONPC_CheckIfSpokenWithNPC_Intro2(pInteractedNPCs, aNpcList[nIndex]);
-      if (bResult) {
-        *pNpcIdSlot = *(uint16_t*)(aNpcList + nIndex);
-        pNpcIdSlot++;
-        bNeedSend = 1;
-      }
+      do {
+        bResult = PLAYER::PlayerIntro::INTRONPC_CheckIfSpokenWithNPC_Intro2(pInteractedNPCs, aNpcList[nIndex]);
+        if (bResult) {
+          *pNpcIdSlot = *(uint16_t*)(aNpcList + nIndex);
+          pNpcIdSlot++;
+          bNeedSend = 1;
+        }
 
-      nIndex++;
-    } while (nIndex < nListSize);
+        nIndex++;
+      } while (nIndex < nListSize);
+    }
 
     return bNeedSend;
 }
@@ -1916,12 +1915,14 @@ void __fastcall QUEST_SendNpcInfoPacket(D2UnitStrc * pUnit, D2UnitStrc * pNpcUni
     D2GSPacketSrv0x27 packet;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xcca);
     packet.nId = 0x27;
+    int nUnitGUIDValue;
     if (!pNpcUnit) {
-      packet.nUnitGUID = -1;
+      nUnitGUIDValue = -1;
     } else {
-      packet.nUnitGUID = pNpcUnit->nUnitGUID;
+      nUnitGUIDValue = pNpcUnit->nUnitGUID;
     }
 
+    packet.nUnitGUID = nUnitGUIDValue;
     packet.aMessages[0].nMessage = wNpcClassId;
     packet.eUnitType = 2;
     packet.aMessages[0].bShow = '\0';
@@ -2009,7 +2010,8 @@ BOOL __fastcall PORTAL_ActivateOrDeactivatePortalObject(::SGAMEDATA * * ppGame) 
 
 // @sourcefile .\QUESTS\QUESTS.CPP
 void __fastcall SendQuestState(D2UnitStrc * pUnit, int32_t nQuestId) {
-    D2GSPacketSrv0x5D sPacket = {0};
+    D2GSPacketSrv0x5D sPacket;
+    memset(&sPacket, 0, sizeof(sPacket));
     sPacket.nQuestId = (uint8_t)nQuestId;
     sPacket.nExtra = 0;
     sPacket.nPacketId = ']';
@@ -2036,7 +2038,8 @@ void __fastcall QUEST_SendQuestStatePacket(D2UnitStrc * pUnit, int bQuestId, uin
       }
     }
 
-    D2GSPacketSrv0x5D aPacketBuf = {0};
+    D2GSPacketSrv0x5D aPacketBuf;
+    memset(&aPacketBuf, 0, sizeof(aPacketBuf));
     aPacketBuf.nQuestId = (uint8_t)bQuestId;
     aPacketBuf.nPacketId = ']';
     aPacketBuf.nFilterStatus = '\f';
@@ -2242,10 +2245,10 @@ void __fastcall AttachToUnit(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2RoomStrc
     PLAYER::PlayerMsg::PrepareClientMessage(pGame, "Error attaching to unit", '\x04');
 }
 
-void __stdcall QUEST_InitializeQuestDataStruct(uint32_t dwParam1, uint32_t dwParam2, bool bIsNotIntroduction, D2QuestDataStrc * pQuestData) {
+void __stdcall QUEST_InitializeQuestDataStruct(uint32_t pGame, uint32_t nQuestNoInternal, bool bIsNotIntroduction, D2QuestDataStrc * pQuestData) {
     memset(pQuestData, 0, 0xf8);
-    pQuestData->nQuestNoInternal = dwParam2;
-    pQuestData->pGame = (::SGAMEDATA*)dwParam1;
+    pQuestData->nQuestNoInternal = nQuestNoInternal;
+    pQuestData->pGame = (::SGAMEDATA*)pGame;
     pQuestData->bIsActive = '\0';
     pQuestData->nStateFlagPrev = 0;
     pQuestData->bIsNotIntroduction = '\x01';
@@ -2793,11 +2796,10 @@ D2UnitStrc * __fastcall ITEM_RewardItemInInventory(::SGAMEDATA * pGame, D2UnitSt
     if (_bInventoryPlaced) {
       BOOL bIsIdentified;
       bIsIdentified = D2Common::ITEMS::Items::CheckItemFlag(pRewardItem, ITEMFLAG_IDENTIFIED, 0x9d2, ".\\QUESTS\\QUESTS.CPP");
-      if (bIsIdentified) {
-        return pRewardItem;
+      if (!bIsIdentified) {
+        ITEMS::ItemMode::ITEMMODE_ProcessItemSell(pGame, pUnit, pRewardItem);
       }
 
-      ITEMS::ItemMode::ITEMMODE_ProcessItemSell(pGame, pUnit, pRewardItem);
       return pRewardItem;
     }
     if (bMustDrop) {
@@ -2806,7 +2808,7 @@ D2UnitStrc * __fastcall ITEM_RewardItemInInventory(::SGAMEDATA * pGame, D2UnitSt
       nFindRadius = 5;
       pRoomsNear = (D2RoomStrc**)&nRewardLevel;
       FindSpawnableLocation(D2Common::Units::UNITS_GetRoom(pUnit), &sDropCoords, 1, 0x3e01, pRoomsNear, nFindRadius, nSearchIterations);
-      ITEMS::Items::Drop::DropItem(pGame, 0, pRewardItem, (D2RoomStrc*)nRewardLevel, sDropCoords.x, sDropCoords.y);
+      ITEMS::Items::Drop::DropItem(pGame, nullptr, pRewardItem, (D2RoomStrc*)nRewardLevel, sDropCoords.x, sDropCoords.y);
       return pRewardItem;
     }
 
@@ -2847,8 +2849,8 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
             D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_AbleGoToAct2, QUESTSTATE_JustCompleted);
             QUEST_SendQuestInfoToUnit(pGame, pUnit);
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xad3);
-            if (__frame0.pPlayerDataSaved->dwTradeTick != 1) {
-              __frame0.pPlayerDataSaved->dwTradeTick = 1;
+            if (__frame0.pPlayerDataSaved->bCutscenePending != 1) {
+              __frame0.pPlayerDataSaved->bCutscenePending = 1;
               GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pClient, 2);
             }
 
@@ -2910,8 +2912,8 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
             QUEST_GrantActTransitionReward(ACT_II, pGame, pUnit);
             QUEST_SendQuestInfoToUnit(pGame, pUnit);
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xb0f);
-            if (__frame0.pPlayerDataSaved->dwTradeTick != 1) {
-              __frame0.pPlayerDataSaved->dwTradeTick = 1;
+            if (__frame0.pPlayerDataSaved->bCutscenePending != 1) {
+              __frame0.pPlayerDataSaved->bCutscenePending = 1;
               GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pClient, 3);
               return;
             }
@@ -2928,8 +2930,8 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
             QUEST_GrantActTransitionReward(ACT_II, pGame, pUnit);
             QUEST_SendQuestInfoToUnit(pGame, pUnit);
             pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xb1f);
-            if (__frame0.pPlayerDataSaved->dwTradeTick != 1) {
-              __frame0.pPlayerDataSaved->dwTradeTick = 1;
+            if (__frame0.pPlayerDataSaved->bCutscenePending != 1) {
+              __frame0.pPlayerDataSaved->bCutscenePending = 1;
               __frame0.wPacketPad = 0;
               __frame0.pPlayerDataSaved = (D2UnitDataPlayerStrc*)0x2175d;
               GAME::SCmd::NET_D2GS_SERVER_Send_0x5D_QuestState(pClient, (D2GSPacketSrv0x5D*)&__frame0.pPlayerDataSaved);
@@ -2945,13 +2947,13 @@ void __fastcall QUEST_ProcessActTransition(::SGAMEDATA * pGame, D2UnitStrc * pUn
 
 // Handles the two completion paths for A3Q7 Khalim's Will. For event code 0x66 (player assembled the flail): if not already allowed into Act 4, marks QUEST_KhalimsWill Completed+JustCompleted, removes all five Khalim's-body-part quest items from inventory, grants the Act 3 transition reward, and sends a 0x28 quest-info packet plus a 0x61 CanGoToAct(4) packet to the client. For any other code delegates to Q24_HandleKhalimsWillCompletion (game-wide broadcast path).
 // @sourcefile .\QUESTS\QUESTS.CPP
-void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t param_1, uint32_t nEventCode) {
+void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nLevelId, uint32_t nEventCode) {
     D2UnitStrc* pQuestItem;
     D2ClientStrc* pClient;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2UnitDataPlayerStrc* pPlayerData2 = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData2->pQuestRecord[pGame->nDifficulty];
-    if (param_1 == 0x66) {
+    if (nLevelId == 0x66) {
       BOOL bQuestState;
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_AbleGoToAct4, QUESTSTATE_Completed);
       if (!bQuestState) {
@@ -2992,8 +2994,8 @@ void __fastcall QUEST_HandleKhalimsWillCompletion(::SGAMEDATA * pGame, D2UnitStr
         pBitBuffer = pPlayerData2->pQuestRecord[pGame->nDifficulty];
         GAME::SCmd::NET_D2GS_SERVER_Send_0x28_PlayerQuestInfo(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xca7), 0x28, '\x06', 0, pBitBuffer, 0);
         pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\QUESTS\\QUESTS.CPP", 0xb56);
-        if (pPlayerData->dwTradeTick != 1) {
-          pPlayerData->dwTradeTick = 1;
+        if (pPlayerData->bCutscenePending != 1) {
+          pPlayerData->bCutscenePending = 1;
           GAME::SCmd::NET_D2GS_SERVER_Send_0x61_CanGoToAct(pClient, 4);
           return;
         }
@@ -3114,10 +3116,10 @@ void __fastcall Q12_Callback03_ChangedLevel(D2QuestDataStrc * pQuestData, D2Ques
     POINT ptPos;
     ::SGAMEDATA* pGame;
     ptPos.y = (LONG)pQuestArgs->sQuestArgs.sNpcActivate.pTextControl;
-    int iVar1 = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
-    if (iVar1 != 0x4a) {
+    int nLevelId = pQuestArgs->sQuestArgs.sNpcActivate.nIndex;
+    if (nLevelId != 0x4a) {
       D2BitBufferStrc* pBitBuffer;
-      if (iVar1 == 0x32) {
+      if (nLevelId == 0x32) {
         pGame = pQuestData->pGame;
         pJerhynUnit = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
         /* SetQuestState Step0x08 - journal sub-state (index 0x32 path) */ D2Common::QuestRecord::SetQuestState(pJerhynUnit->pQuestRecord[pGame->nDifficulty], QUEST_TheArcaneSanctuary, QUESTSTATE_Step0x08);
@@ -3296,19 +3298,17 @@ void __fastcall PlaceGuardInFrontOfJerhyn(D2QuestDataStrc * pQuestData, D2Object
 }
 
 BYTE __fastcall QUEST_CheckJerhynShouldBlock(::SGAMEDATA * pGame) {
+    D2QuestDataStrc* pRadamentsLairQuest;
     D2QuestDataStrc* pArcaneSanctuaryQuest = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
-    if (!(pArcaneSanctuaryQuest && pArcaneSanctuaryQuest->pQuestSpecificData.pA2Q4->bShouldSpawnJerhyn != '\0')) {
-      return '\x01';
-    }
-
-    D2QuestDataStrc* pRadamentsLairQuest = GetQuestDataByQuestNoInternal(pArcaneSanctuaryQuest->pGame, QUESTINT_RadamentsLair);
-    if (!(pRadamentsLairQuest && pRadamentsLairQuest->bIsNotIntroduction != '\0' && pRadamentsLairQuest->nStateFlag != 5)) {
-      return '\x01';
-    }
-
-    bool bVar1 = A2Q7::Q14_IsSevenTombsLessThanState4(pArcaneSanctuaryQuest->pGame);
-    if (!bVar1 && pArcaneSanctuaryQuest->bIsNotIntroduction == '\x01' && pArcaneSanctuaryQuest->nStateFlag < 2) {
-      return '\0';
+    if (pArcaneSanctuaryQuest && pArcaneSanctuaryQuest->pQuestSpecificData.pA2Q4->bShouldSpawnJerhyn != '\0') {
+      bool bSevenTombsBelow4;
+      pRadamentsLairQuest = GetQuestDataByQuestNoInternal(pArcaneSanctuaryQuest->pGame, QUESTINT_RadamentsLair);
+      if (pRadamentsLairQuest && pRadamentsLairQuest->bIsNotIntroduction != '\0' && pRadamentsLairQuest->nStateFlag != 5) {
+        bSevenTombsBelow4 = A2Q7::Q14_IsSevenTombsLessThanState4(pArcaneSanctuaryQuest->pGame);
+        if (!bSevenTombsBelow4 && pArcaneSanctuaryQuest->bIsNotIntroduction == '\x01' && pArcaneSanctuaryQuest->nStateFlag < 2) {
+          return '\0';
+        }
+      }
     }
 
     return '\x01';
@@ -3321,7 +3321,7 @@ BOOL __fastcall QUEST_ShouldBlockJerhyn(::SGAMEDATA * pGame) {
 }
 
 // A2Q7 server AI logic for the Jerhyn NPC, gating his movement to the palace and the Duriel reveal. Out-params *pdwParam1/*pdwParam2 tell the caller the desired idle/move outcome. Bails (idle: 1,0) unless the Arcane Sanctuary quest is in progress and Seven Tombs is appropriately staged. When conditions hold it walks Jerhyn toward the recorded target coords (WalkToCoords), and once close locates the Duriel-tomb portal object, finds free neighbouring-room coordinates and relocates Jerhyn there (SUNIT_RelocateUnit), updating the A2Q4 quest-specific data flag bytes that track his progress.
-void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t * pdwParam1, uint32_t * pdwParam2) {
+void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t * pbRunDefaultAi, uint32_t * pbDelayNextMove) {
     uint8_t uVar1;
     D2UnitStrc* pDurielPortalUnit;
     D2RoomStrc* pRoom;
@@ -3331,57 +3331,57 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     D2UnitStrc* pJerhynUnit = pUnit;
     D2QuestDataStrc* pArcaneSanctuaryQuest = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TheArcaneSanctuary);
     if (!pArcaneSanctuaryQuest || pArcaneSanctuaryQuest->bIsNotIntroduction == '\0') {
-      *pdwParam1 = 1;
-      *pdwParam2 = 0;
+      *pbRunDefaultAi = 1;
+      *pbDelayNextMove = 0;
       return;
     }
 
     D2QuestDataA2Q4Strc* pA2Q4Data = pArcaneSanctuaryQuest->pQuestSpecificData.pA2Q4;
     if (pA2Q4Data->bShouldSpawnJerhyn == '\0') {
-      *pdwParam1 = 1;
-      *pdwParam2 = 0;
+      *pbRunDefaultAi = 1;
+      *pbDelayNextMove = 0;
       return;
     }
 
     int nRelocResult = QUEST_GetQuestRecordState(pGame, QUEST_TheArcaneSanctuary, 0xd);
     if (nRelocResult || (nRelocResult = QUEST_GetQuestRecordState(pGame, QUEST_TheSevenTombs, 0xd) , nRelocResult != 0) || (uVar1 = A2Q7::Q14_IsSevenTombsNotStarted(pGame) , uVar1 != '\0')) {
-      *pdwParam1 = 1;
-      *pdwParam2 = 0;
+      *pbRunDefaultAi = 1;
+      *pbDelayNextMove = 0;
       return;
     }
-    if (!pA2Q4Data->field_0x14) {
+    if (!pA2Q4Data->bJerhynRelocated) {
       uint32_t bSevenTombsCheck;
       uVar1 = A2Q7::Q14_IsSevenTombsAtState1(pGame);
       pDurielPortalUnit = pJerhynUnit;
       if (uVar1 != '\0') {
-        pA2Q4Data->field_0x12 = 1;
+        pA2Q4Data->bJerhynWalkPending = 1;
       }
-      if (pA2Q4Data->field_0x12 == 1) {
-        if (!pA2Q4Data->field_0x13 || pA2Q4Data->bJerhynInitial != '\0') {
+      if (pA2Q4Data->bJerhynWalkPending == 1) {
+        if (!pA2Q4Data->bJerhynWalkIssued || pA2Q4Data->bJerhynInitial != '\0') {
           pA2Q4Data->bDurielProximity = 0;
           pA2Q4Data->nDurielProximityPlayerGUID = 0;
           UNIT::SUnit::IteratePlayerOrMonsterUnits(pArcaneSanctuaryQuest->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)A2Q4::Q14_CheckDurielProximity);
           if (pA2Q4Data->bDurielProximity) {
-            Monster::AI::WalkToCoords(pGame, pJerhynUnit, pA2Q4Data->field_0x20, pA2Q4Data->nHaremBlockerY);
-            pA2Q4Data->field_0x13 = 1;
-            pA2Q4Data->field_0x12 = 0;
-            *pdwParam1 = 0;
-            *pdwParam2 = 0;
+            Monster::AI::WalkToCoords(pGame, pJerhynUnit, pA2Q4Data->nHaremBlockerX, pA2Q4Data->nHaremBlockerY);
+            pA2Q4Data->bJerhynWalkIssued = 1;
+            pA2Q4Data->bJerhynWalkPending = 0;
+            *pbRunDefaultAi = 0;
+            *pbDelayNextMove = 0;
             return;
           }
 
-          *pdwParam1 = 0;
-          *pdwParam2 = 1;
+          *pbRunDefaultAi = 0;
+          *pbDelayNextMove = 1;
           return;
         }
 
-        *pdwParam1 = 0;
-        *pdwParam2 = 1;
+        *pbRunDefaultAi = 0;
+        *pbDelayNextMove = 1;
         if (pA2Q4Data->bPortalJerhynSpawned != '\x01') {
           return;
         }
 
-        bSevenTombsCheck = Monster::AI::MONSTERAI_GetDistanceToCoords(pJerhynUnit, pA2Q4Data->field_0x20, pA2Q4Data->nHaremBlockerY);
+        bSevenTombsCheck = Monster::AI::MONSTERAI_GetDistanceToCoords(pJerhynUnit, pA2Q4Data->nHaremBlockerX, pA2Q4Data->nHaremBlockerY);
         if (bSevenTombsCheck <= 2) {
           pDurielPortalUnit = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_OBJECT, pA2Q4Data->nJerhynObjectGUID);
           if (pDurielPortalUnit) {
@@ -3393,31 +3393,31 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
               BVar2 = UNIT::SUnit::SUNIT_RelocateUnit(pGame, pJerhynUnit, pRoom, nDurielPosX.x, nDurielPosX.y, 0, 0);
               if (BVar2) {
                 pA2Q4Data->bJerhynInitial = '\x01';
-                pA2Q4Data->field_0x14 = 1;
+                pA2Q4Data->bJerhynRelocated = 1;
                 return;
               }
 
-              *pdwParam1 = 0;
-              *pdwParam2 = 1;
+              *pbRunDefaultAi = 0;
+              *pbDelayNextMove = 1;
               return;
             }
           }
 
-          *pdwParam1 = 0;
-          *pdwParam2 = 1;
+          *pbRunDefaultAi = 0;
+          *pbDelayNextMove = 1;
           return;
         }
 
         pA2Q4Data->bSummonerCoordsFallback = true;
         pA2Q4Data->bSummonerKilled = false;
-        Monster::AI::WalkToCoords(pGame, pDurielPortalUnit, pA2Q4Data->field_0x20, pA2Q4Data->nHaremBlockerY);
-        *pdwParam2 = 0;
+        Monster::AI::WalkToCoords(pGame, pDurielPortalUnit, pA2Q4Data->nHaremBlockerX, pA2Q4Data->nHaremBlockerY);
+        *pbDelayNextMove = 0;
         return;
       }
     }
 
-    *pdwParam1 = 1;
-    *pdwParam2 = 0;
+    *pbRunDefaultAi = 1;
+    *pbDelayNextMove = 0;
 }
 
 static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nParam) {
@@ -3451,62 +3451,62 @@ static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, i
 }
 
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow1(D2ObjectOperateFnArg * pOperation) {
+    D2QuestDataA4Q2Strc* pA4Q2Data;
+    POINT* pGlowCoord;
     D2UnitStrc* pVictim = pOperation->sArg.pVictim;
-    if (!(!pVictim || pVictim->eAnimMode.ePlayerMode == Death)) {
-      return 0;
+    if (!pVictim || pVictim->eAnimMode.ePlayerMode == Death) {
+      D2QuestDataStrc* pQuestData;
+      pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
+      if (pQuestData) {
+        pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
+        pGlowCoord = &pA4Q2Data->sInfectorCoords;
+        D2Common::Units::GetCoords(pOperation->sArg.pVictim, pGlowCoord);
+        pA4Q2Data->sInfectorCoords.y += -0x34;
+        pGlowCoord->x += -0xc;
+        CreateSealGlow(pOperation, pGlowCoord, 1);
+      }
     }
 
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
-    if (!pQuestData) {
-      return 0;
-    }
-
-    D2QuestDataA4Q2Strc* pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
-    POINT* pGlowCoord = &pA4Q2Data->sInfectorCoords;
-    D2Common::Units::GetCoords(pOperation->sArg.pVictim, pGlowCoord);
-    pA4Q2Data->sInfectorCoords.y += -0x34;
-    pGlowCoord->x += -0xc;
-    CreateSealGlow(pOperation, pGlowCoord, 1);
     return 0;
 }
 
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow2(D2ObjectOperateFnArg * pOperation) {
+    D2QuestDataA4Q2Strc* pA4Q2Data;
+    POINT* pCoord;
     D2UnitStrc* pVictim = pOperation->sArg.pVictim;
-    if (!(!pVictim || pVictim->eAnimMode.ePlayerMode == Death)) {
-      return 0;
+    if (!pVictim || pVictim->eAnimMode.ePlayerMode == Death) {
+      D2QuestDataStrc* pQuestData;
+      pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
+      if (pQuestData) {
+        pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
+        pCoord = &pA4Q2Data->sSeisCoords;
+        D2Common::Units::GetCoords(pOperation->sArg.pVictim, pCoord);
+        pA4Q2Data->sSeisCoords.y += 0x21;
+        pCoord->x += -0x27;
+        CreateSealGlow(pOperation, pCoord, 3);
+      }
     }
 
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
-    if (!pQuestData) {
-      return 0;
-    }
-
-    D2QuestDataA4Q2Strc* pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
-    POINT* pCoord = &pA4Q2Data->sSeisCoords;
-    D2Common::Units::GetCoords(pOperation->sArg.pVictim, pCoord);
-    pA4Q2Data->sSeisCoords.y += 0x21;
-    pCoord->x += -0x27;
-    CreateSealGlow(pOperation, pCoord, 3);
     return 0;
 }
 
 BOOL __fastcall OBJOP_A4Q2_DiabloSealCreateGlow3(D2ObjectOperateFnArg * pOperation) {
+    D2QuestDataA4Q2Strc* pA4Q2Data;
+    POINT* pCoord;
     D2UnitStrc* pVictim = pOperation->sArg.pVictim;
-    if (!(!pVictim || pVictim->eAnimMode.ePlayerMode == Death)) {
-      return 0;
+    if (!pVictim || pVictim->eAnimMode.ePlayerMode == Death) {
+      D2QuestDataStrc* pQuestData;
+      pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
+      if (pQuestData) {
+        pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
+        pCoord = &pA4Q2Data->sVisierCoords;
+        D2Common::Units::GetCoords(pOperation->sArg.pVictim, pCoord);
+        pA4Q2Data->sVisierCoords.y += 0x10;
+        pCoord->x += 0x20;
+        CreateSealGlow(pOperation, pCoord, 5);
+      }
     }
 
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pOperation->sArg.pGame, QUESTINT_TerrorsEnd);
-    if (!pQuestData) {
-      return 0;
-    }
-
-    D2QuestDataA4Q2Strc* pA4Q2Data = pQuestData->pQuestSpecificData.pA4Q2;
-    POINT* pCoord = &pA4Q2Data->sVisierCoords;
-    D2Common::Units::GetCoords(pOperation->sArg.pVictim, pCoord);
-    pA4Q2Data->sVisierCoords.y += 0x10;
-    pCoord->x += 0x20;
-    CreateSealGlow(pOperation, pCoord, 5);
     return 0;
 }
 

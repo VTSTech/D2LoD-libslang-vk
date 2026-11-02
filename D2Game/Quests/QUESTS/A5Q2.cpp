@@ -138,11 +138,10 @@ BOOL __fastcall Q32_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
       D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pQuestData->nStateFlag != 3) {
-      return 0;
+    if (pQuestData->nStateFlag == 3) {
+      D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x03);
     }
 
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -158,7 +157,6 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     // Static local variables (originally global data)
     static uint32_t aQ32RewardItemCodes[3] = { 0x20373072, 0x20383072, 0x20393072 }; D2_STATIC_GUARD(aQ32RewardItemCodes, "D2Game::Quests::QUESTS::A5Q2::Q32_Callback11_ScrollMessage::aQ32RewardItemCodes");
 
-    uint32_t pBitBuffer_00;
     BOOL bQuestState;
     D2UnitStrc* pRewardItem;
     D2ClientStrc* pClient;
@@ -167,9 +165,10 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2QuestDataA5Q2Strc* pA5Q2DataRaw;
     int nRewardCount;
     bool bRewardGranted;
+    bool bAnyRewardGiven;
     int32_t nErrorLine;
-    uint16_t uVar1 = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
-    D2QuestDataA1Q1Strc* pDVar2 = pQuestData->pQuestSpecificData.pA1Q1;
+    uint16_t nMsgIndex = pQuestArgs->sQuestArgs.sNpcMessage.nMessageIndex;
+    D2QuestDataA1Q1Strc* pDVar1 = pQuestData->pQuestSpecificData.pA1Q1;
     if (pQuestArgs->sQuestArgs.sNpcMessage.nNPCNo != 0x203) {
       return;
     }
@@ -178,13 +177,13 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pQuestArgs->pPlayer);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     *(uint32_t*)(char*)&pBitBuffer2 = (uint32_t)(uintptr_t)pBitBuffer;
-    if (uVar1 == 0x4e80) {
-      pDVar2->bQuestCompleted = true;
+    if (nMsgIndex == 0x4e80) {
+      pDVar1->bQuestCompleted = true;
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q2.cpp", 0x100);
       UNIT::SUnit::IteratePlayerOrMonsterUnits(pQuestData->pGame, 0, nullptr, (::fpExecuteOnUnitFunction)Q32_UpdateQuestStep);
     } else {
-      bool bVar3;
-      if (uVar1 != 0x4e8e) {
+      uint32_t pBitBuffer_00;
+      if (nMsgIndex != 0x4e8e) {
         return;
       }
 
@@ -193,7 +192,7 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
         return;
       }
 
-      bVar3 = false;
+      bAnyRewardGiven = false;
       /* GetQuestState(JustCompleted=0xd): just-rescued self game -> run sequence
                          filter, broadcast 0xd, detach handler[2] once */ bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_JustCompleted);
       if (bQuestState) {
@@ -231,13 +230,13 @@ void __fastcall Q32_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
           pRewardItem = ITEM_RewardItemInInventory(pQuestArgs->pGame, pQuestArgs->pPlayer, aQ32RewardItemCodes[iRewardIdx], 0, QUALITY_NORMAL, 1);
           pBitBuffer_00 = *(uint32_t*)(char*)&pBitBuffer2;
           if (pRewardItem) {
-            bVar3 = true;
+            bAnyRewardGiven = true;
           }
 
           iRewardIdx++;
         } while (iRewardIdx < nRewardCount);
 
-        if (bVar3) {
+        if (bAnyRewardGiven) {
           /* SetQuestState(Completed=0): reward taken -> quest finished */ D2Common::QuestRecord::SetQuestState((D2BitBufferStrc*)*(uint32_t*)(char*)&pBitBuffer2, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
           /* UnsetQuestState(RewardAwaits=1): clear pending-reward flag now that reward
                          was granted */ D2Common::QuestRecord::UnsetQuestState((D2BitBufferStrc*)pBitBuffer_00, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
@@ -443,22 +442,17 @@ BOOL __fastcall Q32_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
+        if (bQuestState != 1) {
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_CannotCompleteQuestInGame);
+          QUEST_SendQuestStatePacket(pUnit, 0x20, 0);
+        }
+      }
     }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_RescueOnMountArreat, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x20, 0);
     return 0;
 }
 
@@ -697,11 +691,10 @@ bool __fastcall Q32_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetCl
 bool __fastcall Q32_SequenceFilter(D2QuestDataStrc * pQuestData) {
     bool bBadPtr;
     if (pQuestData->nStateFlag != 5 && pQuestData->bIsNotIntroduction != '\0') {
-      if (pQuestData->nStateFlag) {
-        return true;
+      if (!pQuestData->nStateFlag) {
+        pQuestData->nStateFlag = 1;
       }
 
-      pQuestData->nStateFlag = 1;
       return true;
     }
 
@@ -891,16 +884,14 @@ void __fastcall Objects_InitFn62(D2ObjectInitFnArg * pInitArg) {
 BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q32_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q32_SetCompleteForPartyMember, 0);
     return 0;
 }
 
@@ -910,11 +901,10 @@ BOOL __fastcall Q32_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * p
 BOOL __fastcall Q32_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_RescueOnMountArreat, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x51, pUnit);
     }
 
-    UNIT::SUnit::SetupUpdateEvent_AttachEventSound(pUnit, 0x51, pUnit);
     return 0;
 }
 
@@ -924,13 +914,12 @@ BOOL __fastcall Q32_PlayCompletionSound(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // detect a botched ("wussie") group. Quest must be in log (bIsNotIntroduction).
 BOOL __fastcall Q32_CheckWussieBarricade(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_RescueOnMountArreat);
-    if (!(pQuestData && pQuestData->bIsNotIntroduction != '\0')) {
-      return 0;
-    }
-
-    int32_t nBarricadeGroup = Q32_FindBarricadeGroup(pQuestData, pUnit);
-    if (nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18]) {
-      return 1;
+    if (pQuestData && pQuestData->bIsNotIntroduction != '\0') {
+      int32_t nBarricadeGroup;
+      nBarricadeGroup = Q32_FindBarricadeGroup(pQuestData, pUnit);
+      if (nBarricadeGroup >= 0 && pQuestData->pQuestSpecificData.pA1Q4->sQuestGUID1.aPlayerGUID[nBarricadeGroup + 0x18]) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1151,11 +1140,10 @@ int32_t __fastcall Q32_GetRemainingPrisonersCount(D2QuestDataStrc * pQuestData) 
     }
 
     int32_t nRemainingTotal = nCount + (pSpecificData->nTotalPrisonersToFree - pSpecificData->nPrisonersFreed - pSpecificData->nPrisonersKilledByMonsters);
-    if (nRemainingTotal >= 0) {
-      return nRemainingTotal;
+    if (nRemainingTotal < 0) {
+      nRemainingTotal = 0;
     }
 
-    nRemainingTotal = 0;
     return nRemainingTotal;
 }
 

@@ -150,7 +150,6 @@ D2RosterStrc * __stdcall GetPlayerRoster() {
     }
 
     return pRoster;
-    return pRoster;
 }
 
 // Searches the global gpRosterPlayers linked list for a roster entry matching either nRosterGUID or szPlayerName. For each node, first checks the GUID (fast path); if it differs, performs a two-bytes-at-a-time strcmp on szRosterName. Returns the matching D2RosterStrc* on success, or null if the list is exhausted.
@@ -389,7 +388,6 @@ char * __fastcall GetRosterName(D2RosterStrc * pRoster) {
     }
 
     return pRoster->pRosterName;
-    return pRoster->pRosterName;
 }
 
 // Insertion-sorts a singly-linked D2RosterStrc list ascending by szRosterName (lexicographic). Builds a new sorted list by walking the original and inserting each node at its comparison position. Returns the sorted head, or NULL on NULL input.
@@ -503,7 +501,7 @@ static D2RosterStrc * ROSTER_SortByLevel(D2RosterStrc * pRoster) {
 }
 
 // @sourcefile .\GAME\Roster.cpp
-void AllocRosterPartyList(int16_t nPartyId) {
+void AllocRosterPartyList(uint16_t nPartyId) {
     D2RosterPartyListStrc* pNewParty;
     D2RosterPartyListStrc* pPartyIter = pRosterPartyList;
     while (true) {
@@ -613,7 +611,7 @@ void __stdcall ROSTER_SortPartyListsByPartyId() {
             break;
           }
           pScanNode = pScan;
-          if ((uint16_t)pRosterPartyList->nPartyId < (uint16_t)pScanNode->nPartyId) {
+          if (pRosterPartyList->nPartyId < pScanNode->nPartyId) {
             break;
           }
 
@@ -636,7 +634,7 @@ void __stdcall ROSTER_SortPartyListsByPartyId() {
 }
 
 // Promotes the party entry matching nPartyId to the front of pRosterPartyList, then within that party's pOwner chain promotes the roster node matching nRosterGUID to the front. Used to prioritize a specific player in the party display order. No-ops if nPartyId is -1 or the entries are not found.
-static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(int16_t nPartyId, int32_t nRosterGUID) {
+static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(uint16_t nPartyId, int32_t nRosterGUID) {
     D2RosterStrc* pCurrent;
     D2RosterStrc* pPrevious;
     D2RosterStrc* pNext;
@@ -644,7 +642,7 @@ static void __stdcall ROSTER_MoveRosterPlayerToFrontOfParty(int16_t nPartyId, in
     D2RosterPartyListStrc* pPrevParty = 0;
     int nPartyGuard = 0; // [d2boot-fix rev36]
     int nOwnerGuard = 0; // [d2boot-fix rev36]
-    if (nPartyId == -1) {
+    if (nPartyId == 0xffff) {
       return;
     }
 
@@ -904,10 +902,10 @@ D2RosterStrc * __fastcall GetRosterByGUID(int32_t nRosterGUID) {
     return pRoster;
 }
 
-int16_t __fastcall GetRosterPartyId(D2RosterStrc * pRoster) {
+uint16_t __fastcall GetRosterPartyId(D2RosterStrc * pRoster) {
     int nMemberCount = 0;
     if (!(pRoster && gpRosterPlayers)) {
-      return -1;
+      return 0xffff;
     }
 
     D2RosterStrc* pCurrent = gpRosterPlayers;
@@ -920,7 +918,7 @@ int16_t __fastcall GetRosterPartyId(D2RosterStrc * pRoster) {
     } while (pCurrent);
 
     if (nMemberCount <= 1) {
-      return -1;
+      return 0xffff;
     }
 
     return pRoster->nPartyId;
@@ -989,20 +987,20 @@ uint32_t __fastcall ROSTER_GetMuteFlag(D2RosterStrc * pRoster) {
 
 int __fastcall ROSTER_GetHostileFlag(D2RosterStrc * pRoster) {
     int nUnitGUID;
-    if (!pRoster) {
-      return 0;
-    }
+    uint32_t bFlag;
+    if (pRoster) {
+      D2UnitStrc* pPlayer;
+      pPlayer = UNIT::Player::GetPlayerUnit_UI();
+      if (!pPlayer) {
+        nUnitGUID = -1;
+      } else {
+        nUnitGUID = pPlayer->nUnitGUID;
+      }
 
-    D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
-    if (!pPlayer) {
-      nUnitGUID = -1;
-    } else {
-      nUnitGUID = pPlayer->nUnitGUID;
-    }
-
-    uint32_t bFlag = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
-    if (bFlag) {
-      return 1;
+      bFlag = UNIT::PlayerList::GetFlag(nUnitGUID, pRoster->nRosterGUID, 8);
+      if (bFlag) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1107,7 +1105,6 @@ void __fastcall ROSTER_ToggleMuteAndSend(D2RosterStrc * pRoster) {
 
 // Handles a UI party-button click for a roster entry. Transitions bInParty state: 0→4 sends invite (NET 0x5E action 6), 4→0 cancels invite (action 7), 2/3 send accept/decline actions (8/9). State 1 (pending) is an internal error that halts. Always calls ROSTER_RebuildPlayerParty and ResetPartyUi after any state change.
 void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
-    int32_t nLine;
     int nActionType;
     nActionType = 0;
     if (!pRoster) {
@@ -1122,8 +1119,7 @@ void __fastcall ClickParty_i(D2RosterStrc * pRoster) {
       UI::Party::ResetPartyUi();
       return;
       case 1:
-        nLine = 0x4c7;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x4c7);
       exit(-1);
       case 2:
         nActionType = 8;
@@ -1253,14 +1249,14 @@ void __fastcall SetRosterPosition(int32_t nRosterGUID, int32_t nX, int32_t nY) {
 }
 
 uint32_t __fastcall ROSTER_CheckPlayerInSameParty(int32_t pRoster) {
-    if (!(pRoster && *(short int*)(pRoster + 0x22) != -1)) {
-      return 0;
-    }
-
-    D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_UI();
-    int16_t nPlayerPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
-    if (nPlayerPartyId == *(short int*)(pRoster + 0x22)) {
-      return 1;
+    D2UnitStrc* pUnit;
+    if (pRoster && *(short int*)(pRoster + 0x22) != -1) {
+      int16_t nPlayerPartyId;
+      pUnit = UNIT::Player::GetPlayerUnit_UI();
+      nPlayerPartyId = UNIT::CUnit::GetPlayerUnitPartyId(pUnit);
+      if (nPlayerPartyId == *(short int*)(pRoster + 0x22)) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1605,13 +1601,12 @@ BOOL __stdcall ROSTER_CheckAnyPlayerHostileToMe() {
 
 BOOL __fastcall ROSTER_HasIncomingHostile(D2RosterStrc * pRoster) {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!(pRoster && pPlayerUnit_lcl)) {
-      return 0;
-    }
-
-    uint32_t bHostile = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 8);
-    if (bHostile) {
-      return 1;
+    if (pRoster && pPlayerUnit_lcl) {
+      uint32_t bHostile;
+      bHostile = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 8);
+      if (bHostile) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1619,13 +1614,12 @@ BOOL __fastcall ROSTER_HasIncomingHostile(D2RosterStrc * pRoster) {
 
 BOOL __fastcall ROSTER_HasOutgoingHostile(D2RosterStrc * pRoster) {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!(pRoster && pPlayerUnit_lcl)) {
-      return 0;
-    }
-
-    uint32_t bHostile = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 8);
-    if (bHostile) {
-      return 1;
+    if (pRoster && pPlayerUnit_lcl) {
+      uint32_t bHostile;
+      bHostile = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 8);
+      if (bHostile) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1633,13 +1627,12 @@ BOOL __fastcall ROSTER_HasOutgoingHostile(D2RosterStrc * pRoster) {
 
 BOOL __fastcall ROSTER_HasIncomingLoot(D2RosterStrc * pRoster) {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!(pRoster && pPlayerUnit_lcl)) {
-      return 0;
-    }
-
-    uint32_t bHasLoot = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 1);
-    if (bHasLoot) {
-      return 1;
+    if (pRoster && pPlayerUnit_lcl) {
+      uint32_t bHasLoot;
+      bHasLoot = UNIT::PlayerList::GetFlag(pRoster->nRosterGUID, pPlayerUnit_lcl->nUnitGUID, 1);
+      if (bHasLoot) {
+        return 1;
+      }
     }
 
     return 0;
@@ -1647,13 +1640,12 @@ BOOL __fastcall ROSTER_HasIncomingLoot(D2RosterStrc * pRoster) {
 
 BOOL __fastcall ROSTER_HasOutgoingLoot(D2RosterStrc * pRoster) {
     D2UnitStrc* pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-    if (!(pRoster && pPlayerUnit_lcl)) {
-      return 0;
-    }
-
-    uint32_t bHasLoot = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 1);
-    if (bHasLoot) {
-      return 1;
+    if (pRoster && pPlayerUnit_lcl) {
+      uint32_t bHasLoot;
+      bHasLoot = UNIT::PlayerList::GetFlag(pPlayerUnit_lcl->nUnitGUID, pRoster->nRosterGUID, 1);
+      if (bHasLoot) {
+        return 1;
+      }
     }
 
     return 0;

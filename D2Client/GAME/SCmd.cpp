@@ -394,10 +394,10 @@ int __stdcall CLIENT_GetCurrentRoomAct() {
     eD2LevelId eLevel;
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
     if (pRoom) {
-      eAct eVar1;
+      eAct eActNo;
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-      return (uint32_t)eVar1;
+      eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+      return (uint32_t)eActNo;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x527);
@@ -410,10 +410,10 @@ int __fastcall CLIENT_GetUnitAct(D2UnitStrc * pUnit) {
     eD2LevelId eLevel;
     D2RoomStrc* pRoom = D2Common::Units::UNITS_GetRoom(pUnit);
     if (pRoom) {
-      eAct eVar1;
+      eAct eActNo;
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-      return (uint32_t)eVar1;
+      eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+      return (uint32_t)eActNo;
     }
 
     Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x538);
@@ -432,10 +432,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x04_STARTACT(char * pBytes) {
     gLevelLoadInProgress = 0;
     D2RoomStrc* pRoom = UNIT::CUnit::GetCurrentRoom();
     if (pRoom) {
-      eAct eVar1;
+      eAct eActNo;
       eLevel = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pRoom);
-      eVar1 = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
-      /* timing */ Engine::Gfx::GFX_UpdateGfxThrottled((uint32_t)eVar1);
+      eActNo = D2Common::Drlg::GetActNoFromLevelNumber(eLevel);
+      /* timing */ Engine::Gfx::GFX_UpdateGfxThrottled((uint32_t)eActNo);
       pUnit = UNIT::Player::GetPlayerUnit_UI();
       if (!(pUnit && pUnit->eUnitType == UNIT_PLAYER && pUnit->pUnitData.pUnitDataPlayer)) {
         return;
@@ -1171,10 +1171,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x18_PLAYERCOMMONSTATCHANGE_BIG(char * p
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_manarecovery, (uint32_t)sDecoded.nMPRegen, 0);
     uint32_t nDeltaX = (uint32_t)sDecoded.dX;
     uint32_t nDeltaY = (uint32_t)sDecoded.dY;
-    if (0x80 < nDeltaX) {
+    if (0x80 < (int32_t)nDeltaX) {
       nDeltaX -= 0x100;
     }
-    if (0x80 < nDeltaY) {
+    if (0x80 < (int32_t)nDeltaY) {
       nDeltaY -= 0x100;
     }
 
@@ -1222,10 +1222,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x95_PLAYERCOMMONSTATCHANGE_MEDIUM(char 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, (uint32_t)sDecoded.nStamina << 8, 0);
     uint32_t nDeltaX = (uint32_t)sDecoded.dX;
     uint32_t nDeltaY = (uint32_t)sDecoded.dY;
-    if (0x80 < nDeltaX) {
+    if (0x80 < (int32_t)nDeltaX) {
       nDeltaX -= 0x100;
     }
-    if (0x80 < nDeltaY) {
+    if (0x80 < (int32_t)nDeltaY) {
       nDeltaY -= 0x100;
     }
 
@@ -1256,7 +1256,7 @@ static void __stdcall DecodeIncoming0x96(D2GSPacket0x96Decoded * pDest, char * p
     pDest->dY = (uint8_t)nField;
 }
 
-void __fastcall NET_D2GS_CLIENT_Incoming0x96_PlayerLeave(char * pBytes) {
+void __fastcall NET_D2GS_CLIENT_Incoming0x96_UpdateStaminaAndPosition(char * pBytes) {
     D2GSPacket0x96Decoded sDecoded;
     DecodeIncoming0x96(&sDecoded, pBytes);
     D2UnitStrc* pUnit = UNIT::Player::GetPlayerUnit_Net();
@@ -1267,10 +1267,10 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x96_PlayerLeave(char * pBytes) {
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_stamina, (uint32_t)sDecoded.nStamina << 8, 0);
     uint32_t nDeltaX = (uint32_t)sDecoded.dX;
     uint32_t nDeltaY = (uint32_t)sDecoded.dY;
-    if (0x80 < nDeltaX) {
+    if (0x80 < (int32_t)nDeltaX) {
       nDeltaX -= 0x100;
     }
-    if (0x80 < nDeltaY) {
+    if (0x80 < (int32_t)nDeltaY) {
       nDeltaY -= 0x100;
     }
 
@@ -1293,7 +1293,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x21_SETSKILLLEVEL(char * pBytes) {
 // Client handler for S2C packet 0x93 (8 bytes). Reads player GUID, signed bonus delta, element type filter, and skill page filter. Finds the player unit client-side, then calls SKILLS_CltUpdateSkillList to walk all skills and adjust bonuses matching the element/page criteria. Removes skills whose level drops to 0. Dead code in 1.14d — server never sends this packet.
 void __fastcall NET_D2GS_CLIENT_RecvSkillTabBonusDelta(char * pBytes) {
     uint32_t nBonusDelta = (uint32_t)(uint8_t)pBytes[5];
-    if (0x80 < nBonusDelta) {
+    if (0x80 < (int32_t)nBonusDelta) {
       nBonusDelta -= 0x100;
     }
 
@@ -1796,8 +1796,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x63(char * pBytes) {
     UI::Waypoint::WAYPOINT_Init((uint8_t*)&sPayload);
 }
 
-void __fastcall NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE(int32_t nParam) {
-    Roster::ROSTER_SetArenaScore(*(int32_t*)(nParam + 1), *(uint16_t*)(nParam + 5));
+void __fastcall NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE(D2GSPacketSrv0x65 * pPacket) {
+    Roster::ROSTER_SetArenaScore(pPacket->dwUnitGUID, pPacket->wKillCount);
 }
 
 void __fastcall SCMD_Rcv0x66_Ignore(char * pBytes) {
@@ -1882,7 +1882,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x79_TRADEGOLD(char * pBytes) {
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7A_UPDATEPET(D2GSPacketSrv0x7A * pBytes) {
     if (pBytes->nAction) {
-      RosterPets::AddRosterPet(pBytes->nSummonGUID, pBytes->nPlayerGUID, (uint32_t)pBytes->nSkillID, (uint32_t)(uint16_t)pBytes->nSummonType);
+      RosterPets::AddRosterPet(pBytes->nSummonGUID, pBytes->nPlayerGUID, (uint32_t)pBytes->nPetType, (uint32_t)(uint16_t)pBytes->wClassId);
       return;
     }
 
@@ -1890,11 +1890,11 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x7A_UPDATEPET(D2GSPacketSrv0x7A * pByte
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x81(D2GSPacketSrv0x81 * pBytes) {
-    D2RosterMercArg local_10;
-    local_10.nSeed = pBytes->nSeed2;
-    local_10.nInitSeed = pBytes->nInitSeed;
-    local_10.nZero = 0;
-    RosterPets::AddRosterPetMerc(pBytes->nMercGUID, pBytes->nOwnerGUID, (uint32_t)pBytes->nSkillId, (uint32_t)(uint16_t)pBytes->nRosterType, &local_10);
+    D2RosterMercArg sMercArg;
+    sMercArg.nSeed = pBytes->nSeed2;
+    sMercArg.nInitSeed = pBytes->nInitSeed;
+    sMercArg.nZero = 0;
+    RosterPets::AddRosterPetMerc(pBytes->nMercGUID, pBytes->nOwnerGUID, (uint32_t)pBytes->nSkillId, (uint32_t)(uint16_t)pBytes->nRosterType, &sMercArg);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x7B_SYNCHOTKEYS(char * pBytes) {
@@ -1985,8 +1985,8 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x8C_PLAYERFLAGS(char * pBytes) {
     Roster::ROSTER_SetPlayerHostileFlag(*(int32_t*)(pBytes + 1), *(int32_t*)(pBytes + 5), *(uint16_t*)(pBytes + 9));
 }
 
-void __fastcall NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY(int32_t nParam) {
-    Roster::SetRosterPartyId(*(int32_t*)(nParam + 1), *(uint16_t*)(nParam + 5));
+void __fastcall NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY(D2GSPacketSrv0x8D * pPacket) {
+    Roster::SetRosterPartyId(pPacket->nUnitGUID, pPacket->nPartyId);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x8E_LINKDEADBODY(D2GSPacketSrv0x8E * pBytes) {
@@ -2021,7 +2021,6 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x8F(char * pBytes) {
 void __fastcall NET_D2GS_CLIENT_Incoming0x9C_ITEMEX(uint8_t * pBytes) {
     int nRemaining;
     uint8_t pBytesCopy[252];
-    int32_t nLine;
     uint8_t* pWriteCursor = pBytesCopy;
     memcpy(pWriteCursor, pBytes, 0xfc);
     switch (pBytesCopy[1]) {
@@ -2046,8 +2045,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x9C_ITEMEX(uint8_t * pBytes) {
       case 0x16:
 
       case 0x17:
-        nLine = 0xf6d;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xf6d);
       exit(-1);
       case 0:
         UNIT::HandleItemAddToGround(pBytesCopy);
@@ -2094,7 +2092,6 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x9C_ITEMEX(uint8_t * pBytes) {
 void __fastcall NET_D2GS_CLIENT_Incoming0x9D(uint8_t * pBytes) {
     int nWordsRemaining;
     uint8_t pBytesCopy[257];
-    int32_t nLine;
     uint8_t* pWriteCursor = pBytesCopy;
     for (nWordsRemaining = 0x40; nWordsRemaining; nWordsRemaining--) {
       *(uint32_t*)pWriteCursor = *(uint32_t*)pBytes;
@@ -2129,8 +2126,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x9D(uint8_t * pBytes) {
       case 0x10:
 
       case 0x12:
-        nLine = 0xfb7;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nLine);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfb7);
       exit(-1);
       case 5:
         UNIT::HandleItemRemoveFromContainer(pBytesCopy);
@@ -2403,7 +2399,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0xAC(char * pPacketData) {
       nComponentIdx = 0;
       do {
         nBitVal = (uint32_t)pMonStats2Txt[i].aComponents[nComponentIdx];
-        if (nBitVal < 3) {
+        if ((int32_t)nBitVal < 3) {
           nSignedBits = 1;
         } else {
           nNameId = nBitVal - 1;

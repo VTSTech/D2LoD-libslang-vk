@@ -149,11 +149,10 @@ uint32_t __stdcall TASK_GetTimestamp() {
 D2TaskQueueSlotStrc * __stdcall TASK_EnterQueueCriticalSection(uint32_t nSlotToken) {
     EnterCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     D2TaskQueueSlotStrc* pDVar1 = gaTaskQueueHeadArray[nSlotToken & 0x1f];
-    if (pDVar1) {
-      return pDVar1;
+    if (!pDVar1) {
+      LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     }
 
-    LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
     return pDVar1;
 }
 
@@ -535,28 +534,28 @@ int32_t __fastcall TASK_DequeueReadyTask(uint32_t nSlotToken, D2TaskNodeStrc * *
     int32_t nResult = 100;
     *ppTaskOut = 0;
     EnterCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
-    D2TaskQueueSlotStrc* pDVar1 = gaTaskQueueHeadArray[nSlotToken & 0x1f];
-    if (!pDVar1) {
+    D2TaskQueueSlotStrc* pQueueSlot = gaTaskQueueHeadArray[nSlotToken & 0x1f];
+    if (!pQueueSlot) {
       /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + (nSlotToken & 0x1f));
       return 100;
     }
 
-    PD2TaskNodeLink pReadyTask = pDVar1->sTaskList.pPrev;
-    if (pReadyTask != &pDVar1->sTaskList && pReadyTask) {
-      uint32_t uVar2;
-      uVar2 = TASK_GetTimestamp();
-      nResult = ((D2TaskNodeStrc*)((char*)pReadyTask - 0xc))->dwTimestamp - uVar2;
+    PD2TaskNodeLink pReadyTask = pQueueSlot->sTaskList.pPrev;
+    if (pReadyTask != &pQueueSlot->sTaskList && pReadyTask) {
+      uint32_t uVar1;
+      uVar1 = TASK_GetTimestamp();
+      nResult = ((D2TaskNodeStrc*)((char*)pReadyTask - 0xc))->dwTimestamp - uVar1;
       if (nResult <= 0) {
         TASK_UnlinkTaskFromList(pReadyTask);
         *ppTaskOut = (D2TaskNodeStrc*)((char*)pReadyTask - 0xc);
       }
     }
-    if (pDVar1->nSlotIndex >= 0x20) {
+    if (pQueueSlot->nSlotIndex >= 0x20) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x97);
       exit(-1);
     }
 
-    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pDVar1->nSlotIndex);
+    /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(aTaskQueueCriticalSections + pQueueSlot->nSlotIndex);
     return nResult;
 }
 

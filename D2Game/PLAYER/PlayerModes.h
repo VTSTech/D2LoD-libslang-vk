@@ -26,7 +26,7 @@ int32_t __fastcall PLRMODES_HasAnimEventLastOrComing5Frames(::SGAMEDATA * pGame,
 BOOL PLRMODES_CanInterruptCurrentMode(struct D2UnitStrc * pUnit, ::SGAMEDATA * pGame, uint32_t nNewMode);
 // Attempts to cancel current player mode and initiate movement to a target location. Validates unit state, checks for blocking modes, and dispatches path-finding for the move.
 // @sourcefile .\PLAYER\PlrModes.cpp
-int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int nX, int nY, struct D2SkillStrc * pSkill);
+int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int nModeIndex, int bCheckInterrupt, struct D2SkillStrc * pSkill);
 void __fastcall PLRMODES_SetIdleMode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nMode, int32_t nX, int32_t nY);
 int32_t __fastcall PLRMODES_ModeCallback_DeathDead(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 int32_t __fastcall PLRMODES_ModeCallback_Neutral(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
@@ -45,8 +45,6 @@ int32_t __fastcall PLRMODES_ModeCallback_GetHitCast(::SGAMEDATA * pGame, struct 
 void __fastcall PLRMODES_ChangeAnimModeAndResetSkill(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, int32_t dwParam1, int32_t dwParam2);
 void __fastcall PLRMODES_StartCastAtPosition(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, int32_t nPosX, int32_t nPosY);
 void __fastcall PLRMODES_StartCastAtEntity(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, DWORD nAnimMode, struct D2UnitStrc * pTargetUnit);
-// @sourcefile .\PLAYER\PlrModes.cpp
-void PLRMODES_CheckSwapWeaponSkill(eD2Skills * peSkillId, struct D2UnitStrc * pUnit);
 // End-of-attack maintenance check. Snapshots the current left/right skill assignments, then calls PLRMODES_HandleDepletedAmmoOrThrowable for both the right-arm and left-arm weapon slots to unequip exhausted quivers or thrown weapons. Finally calls PLRMODES_RestoreSwappedSkill with the saved skill snapshot to re-select the appropriate skills after any weapon removal.
 void __fastcall PLRMODES_CheckWeaponQuantityAndDurability(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit);
 // Iterates a player's inventory looking for equipped weapons (eInvGridType==3) with zero durability that are not already broken. For each such weapon, sets the ITEMFLAG_BROKEN flag via ITEMMODE_SendItemUpdate and broadcasts the item state change. Sets a unit update flag on the first break found. No-op if pUnit is null or not a player.
@@ -76,6 +74,6 @@ void __fastcall PLRMODES_OnModeComplete(::SGAMEDATA * pGame, struct D2UnitStrc *
 // Per-tick dispatcher for the player's current animation mode. Reads pUnit->eAnimMode, looks up the corresponding callback in gaPlayerModeCallbacks[], invokes it with (nArg1, nArg2), and calls PLRMODES_OnModeComplete if the callback returns 2 (mode finished).
 void __fastcall PLRMODES_ProcessPlayerMode(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2);
 void __fastcall PLAYEREVENT_DefaultCallback(::SGAMEDATA * pGame, struct D2UnitStrc * pUnit, eD2TimerTypeDWORD eTimerType, int32_t nArg1, int32_t nArg2);
-// 15 internal functions (defined in .cpp)
+// 16 internal functions (defined in .cpp)
 
 } // namespace D2Game::PLAYER::PlayerModes

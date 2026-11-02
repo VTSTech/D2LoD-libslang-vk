@@ -5,7 +5,6 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/UI/VanillaPlusCore.h"
 #include "D2Client/UI/VanillaPlusOptions.h" // self-check pins the row wiring
-#include "Storm/_unnamespaced.h" // self-check pins the Resolution row init callback
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/SpriteCache.h"
 #include "D2Client/ClientModeInGame.h"

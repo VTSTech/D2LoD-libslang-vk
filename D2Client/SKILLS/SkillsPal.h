@@ -15,7 +15,7 @@ typedef uint32_t eD2Skills;
 namespace D2Client::SKILLS::SkillsPal {
 
 // Function declarations
-int32_t __fastcall SKILLS_GetManaCostMultiplier(int32_t nParam);
+int32_t __fastcall SKILLS_GetManaCostMultiplier(int32_t nSkillId);
 // Client DoFunc for Paladin Zeal directional offset missile. Determines the firing direction quadrant from the unit's movement direction (or a random quadrant if stationary), applies a random ±1 offset from gnPaladinSkillIndexTable/gnPaladinSkillOffsetTable, then spawns a missile of the skill's cltmissilea type (offset by a calc-driven random variant) at the computed position. Returns 1 on success, 0 if skill/missile data is invalid or no confirmed target.
 BOOL __fastcall Skills_CltDoFunc_Pal_Zeal_DirOffsetMissile(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Client DoFunc for Paladin Charge skill. Sets UNITFLAG_SKSRVDOFUNC on the caster, resolves target coordinates, spawns a missile, then sets the missile path type to 0xE (charge path) and recalculates its path. Returns TRUE if the missile was created and has a valid dynamic path.
@@ -23,8 +23,8 @@ BOOL __fastcall Skills_CltDoFunc_Pal_ChargePathMissile(struct D2UnitStrc * pUnit
 BOOL __fastcall Skills_CltDoFunc_Pal_FistOfHeavens(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Client-side do-function for Paladin aura skills that scatter missiles in a random radius field (e.g. Holy Fire/Freeze). Computes missile count scaled by aura radius squared, then for each missile picks a random (x,y) within the radius circle, spawns the aura's CltSubMissile there, and assigns a random direction. Returns 0 in town or if skill/missile data is invalid.
 BOOL __fastcall Skills_CltDoFunc_Pal_RandomRadiusMissileField(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
-// Client-side particle FX: draws a fading trail of charge particles behind a moving unit (e.g. Charge/Leap). Gets the unit's current skill and screen velocity via PATH_GetScreenVelocity; bails if velocity Y sign doesn't match nDirectionFlag (selects above- vs below-ground trail half). Normalizes velocity to a length-15 step, walks SKILL_GetParam3 frames backward through the unit's animation frames, and at each step calls DRAW_WORLD_Unit_1 to render nParticleType at an interpolated offset (perspective-corrected when D2GFX perspective is active). Restores the unit's original gfx frame before returning.
-void __fastcall SKILL_DrawChargeTrail(struct D2UnitStrc * pUnit, uint32_t nParticleType, int32_t nDirectionFlag);
+// Client-side particle FX: draws a fading trail of charge particles behind a moving unit (e.g. Charge/Leap). Gets the unit's current skill and screen velocity via PATH_GetScreenVelocity; bails if velocity Y sign doesn't match nDirectionFlag (selects above- vs below-ground trail half). Normalizes velocity to a length-15 step, walks SKILL_GetParam3 frames backward through the unit's animation frames, and at each step calls DRAW_WORLD_Unit_1 to redraw the unit at an interpolated offset, passing nGamma through as its EDX gamma/brightness byte (perspective-corrected when D2GFX perspective is active). Restores the unit's original gfx frame before returning.
+void __fastcall SKILL_DrawChargeTrail(struct D2UnitStrc * pUnit, uint32_t nGamma, int32_t nDirectionFlag);
 // Client-side skill start-function (StFunc) for the Paladin Charge-type movement skill. Validates the unit's current skill matches eSkill and (for the local player) that the skill is flagged active and has a dynamic path. If a target is already in melee range, hands off to CLIENT_HandleUnitMessage0x16 and returns. Otherwise plays the skill's start sound (player dosounda, or a monster charge variant), sets skill Param1/Param2 to the target's type+GUID (or 6/0 if target is uninterruptable/none), Param4=7 (or 0xF for class 0xD3), computes charge velocity from char/monstats Run velocity scaled by velocitypercent and the skill mana-cost multiplier, applies it to the path, calculates the path, faces the target, sets skill flags 0x1001, and creates the active-skill stat list. Returns TRUE on setup.
 BOOL __fastcall Skills_CltStFunc_SetupHolyChargeMovement(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 int32_t __fastcall SKILL_GetSequenceEventFrame(struct D2UnitStrc * pUnit);
@@ -33,8 +33,8 @@ BOOL __fastcall Skills_CltDoFunc_Pal_HolyBolt_Melee(struct D2UnitStrc * pUnit, e
 void __fastcall SKILL_StopAndClearUninterruptable(struct D2UnitStrc * pUnit, eD2Skills eSkill);
 BOOL __fastcall Skills_CltDoFunc_Pal_RateThrottledBloodParticles(struct D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl);
 // Executes a skill cast triggered by an item (e.g. charged item, wand). Saves and restores the unit's current target/SP1 and SKSRVDOFUNC flag around the cast. Handles corpse-state suppression for corpse-targeting skills, plays the item cast sound and overlay, then calls SKILL_ExecuteClientDoFunc. Returns the client do-func result.
-void __fastcall SKILL_ExecuteItemCast(struct D2UnitStrc * pUnit, eD2Skills eSkill, short * pDoFuncData, struct D2UnitStrc * pTargetUnit, int16_t nParam1, int16_t nParam2, uint16_t nParam);
-void __fastcall SKILL_ExecuteItemCastOnUnit(struct D2UnitStrc * pUnit, eD2Skills eSkill, short * pSkillLevelData, struct D2UnitStrc * pTargetUnit, uint16_t nParam);
+void __fastcall SKILL_ExecuteItemCast(struct D2UnitStrc * pUnit, eD2Skills eSkill, short * pDoFuncData, struct D2UnitStrc * pTargetUnit, int16_t nTargetX, int16_t nTargetY, uint16_t bHasTarget);
+void __fastcall SKILL_ExecuteItemCastOnUnit(struct D2UnitStrc * pUnit, eD2Skills eSkill, short * pSkillLevelData, struct D2UnitStrc * pTargetUnit, uint16_t bHasTarget);
 void __fastcall SKILL_ExecuteItemCastAtCoords(struct D2UnitStrc * pUnit, eD2Skills eSkill, short * pSkillLevelData, int32_t nTargetX, int32_t nTargetY, uint16_t nItemParam);
 // 1 internal function (defined in .cpp)
 

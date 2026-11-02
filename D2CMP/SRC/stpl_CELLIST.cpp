@@ -32,11 +32,10 @@ template<> TSLink<::CELLIST>* TSLink<CELLIST>::NextLink(int32_t nLinkOffset) {
     if ((int)nOffsetOrRef < 0) {
       return (TSLink<::CELLIST>*)~nOffsetOrRef;
     }
-    if (nLinkOffset >= 0) {
-      return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
+    if (nLinkOffset < 0) {
+      nLinkOffset = (int)this - this->m_prevlink->m_next;
     }
 
-    nLinkOffset = (int)this - this->m_prevlink->m_next;
     return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
 }
 
@@ -46,11 +45,10 @@ TSLink<::CELLIST>* __thiscall NextLink_Unreferenced(TSLink<::CELLIST>* pThis, in
     if ((int)nOffsetOrRef < 0) {
       return (TSLink<::CELLIST>*)~nOffsetOrRef;
     }
-    if (nLinkOffset >= 0) {
-      return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
+    if (nLinkOffset < 0) {
+      nLinkOffset = (int)pThis - pThis->m_prevlink->m_next;
     }
 
-    nLinkOffset = (int)pThis - pThis->m_prevlink->m_next;
     return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
 }
 
@@ -72,11 +70,10 @@ TSLink<::CELLIST>* __thiscall NextLink_Unreferenced2(TSLink<::CELLIST>* pThis, i
     if ((int)nOffsetOrRef < 0) {
       return (TSLink<::CELLIST>*)~nOffsetOrRef;
     }
-    if (nLinkOffset >= 0) {
-      return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
+    if (nLinkOffset < 0) {
+      nLinkOffset = (int)pThis - pThis->m_prevlink->m_next;
     }
 
-    nLinkOffset = (int)pThis - pThis->m_prevlink->m_next;
     return (TSLink<::CELLIST>*)(nOffsetOrRef + nLinkOffset);
 }
 
@@ -478,9 +475,9 @@ template<> void TSExportTableSimple<CELLIST, HCELLIST__*, 0>::Delete(::CELLIST *
 template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalClear(int32_t bUnlinkOnly) {
     TSExplicitList<::CELLIST, -572662307>* pTVar1;
     ::CELLIST* ptr;
-    int iVar2;
     int* pNode;
     int* pBackLink;
+    int nLinkOffset;
     int nNext;
     uint32_t uLinkOffset;
     this->nFullnessIndicator = 0;
@@ -498,9 +495,9 @@ template<> void TSHashTable<CELLIST, HASHKEY_NONE>::InternalClear(int32_t bUnlin
           break;
         }
         if (bUnlinkOnly) {
-          iVar2 = pTVar1[nBucketIdx].m_linkoffset;
-          nNext = *(int*)((uintptr_t)&ptr->m_hashval + iVar2);
-          pNode = (int*)((uintptr_t)&ptr->m_hashval + iVar2);
+          nLinkOffset = pTVar1[nBucketIdx].m_linkoffset;
+          nNext = *(int*)((uintptr_t)&ptr->m_hashval + nLinkOffset);
+          pNode = (int*)((uintptr_t)&ptr->m_hashval + nLinkOffset);
           if (nNext) {
             uLinkOffset = pNode[1];
             if ((int)uLinkOffset < 0) {
@@ -802,15 +799,14 @@ template<> TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>* TSHashTableReuse<CELLIS
     this->tChunkList.m_linkoffset = 0x10;
     this->tChunkList.m_terminator.m_next = ~(uint32_t)pTVar2;
     this->nChunkSize = 0x10;
-    if (this_00->m_linkoffset == 4) {
-      return this;
+    if (this_00->m_linkoffset != 4) {
+      this_00->UnlinkAll();
+      pTVar1 = &this->tReuseList.m_terminator;
+      pTVar1->m_prevlink = pTVar1;
+      this_00->m_linkoffset = 4;
+      this->tReuseList.m_terminator.m_next = ~(uint32_t)pTVar1;
     }
 
-    this_00->UnlinkAll();
-    pTVar1 = &this->tReuseList.m_terminator;
-    pTVar1->m_prevlink = pTVar1;
-    this_00->m_linkoffset = 4;
-    this->tReuseList.m_terminator.m_next = ~(uint32_t)pTVar1;
     return this;
 }
 

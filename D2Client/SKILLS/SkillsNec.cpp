@@ -62,11 +62,10 @@ BOOL __fastcall Skills_CltStFunc_SpawnCltMissileC(D2UnitStrc * pUnit, eD2Skills 
     }
 
     eMissilesId eCltMissileC = (eMissilesId)pSkillsTxt->cltmissile[3];
-    if (!((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize)) {
-      return 1;
+    if ((int)eCltMissileC >= 0 && (int)eCltMissileC < sgptDataTable->nTxtMissilesSize) {
+      Skills::MakeMissileAtSkillTarget(pUnit, eCltMissileC, eSkill, nSkillLvl);
     }
 
-    Skills::MakeMissileAtSkillTarget(pUnit, eCltMissileC, eSkill, nSkillLvl);
     return 1;
 }
 
@@ -81,7 +80,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_CurseCenter_StreamMissile(D2UnitStrc * pUni
       return 0;
     }
 
-    short int nStreamMissile = pSkillTxt->cltmissile[1];
+    int32_t nStreamMissile = pSkillTxt->cltmissile[1];
     if (!(nStreamMissile >= 0 && (int)nStreamMissile < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
@@ -128,7 +127,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_CurseCenter_StreamMissile(D2UnitStrc * pUni
 }
 
 // Client-side: spawns a single Bone Wall/Prison missile segment at the correct orientation. Gets target coords via GetCooordinates, computes delta from caster to target and distance, calculates a normalized direction for the wall segment. Fills D2SkillArgStrc with the given eMissileId, eSkill, nParam (as nToHit), nFlags=3, and perpendicular velocity components. After MakeMissile, sets the missile's facing via PATH_SetNewDirection to point toward the target. Returns 1 on success, 0 if coords unavailable or missile allocation failed.
-static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t nParam, eMissilesId eMissileId, D2UnitStrc * pUnit) {
+static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t nSkillLevel, eMissilesId eMissileId, D2UnitStrc * pUnit) {
     int nDeltaX;
     int nNormDeltaX;
     int nDeltaY;
@@ -188,7 +187,7 @@ static uint32_t __stdcall SKILLSNEC_CltSetBoneWallGfx(eD2Skills eSkill, int32_t 
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nMissileTxtNo = eMissileId;
-    sSkillArg.nSkillLevel = nParam;
+    sSkillArg.nSkillLevel = nSkillLevel;
     sSkillArg.nFlags = 3;
     sSkillArg.pOwner = pUnit;
     sSkillArg.nX = nDirection + nDeltaY;
@@ -248,8 +247,8 @@ BOOL __fastcall Skills_CltDoFunc_Nec_TargetedMissileAtParam(D2UnitStrc * pUnit, 
       return 0;
     }
 
-    eMissilesId eVar1 = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
-    if (!((int)eVar1 >= 0 && (int)eVar1 < sgptDataTable->nTxtMissilesSize)) {
+    eMissilesId eMissileId = SkillsAss::SKILLSASS_GetCltMissileByAuraLevel(pUnit, eSkill);
+    if (!((int)eMissileId >= 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
 
@@ -261,7 +260,7 @@ BOOL __fastcall Skills_CltDoFunc_Nec_TargetedMissileAtParam(D2UnitStrc * pUnit, 
       sSkillArg.pOwner = pUnit;
       sSkillArg.eSkillNo = eSkill;
       sSkillArg.nSkillLevel = nSkillLvl;
-      sSkillArg.nMissileTxtNo = eVar1;
+      sSkillArg.nMissileTxtNo = eMissileId;
       sSkillArg.nX = D2Common::Skills::SKILL_GetParam1(pSkill);
       sSkillArg.nY = D2Common::Skills::SKILL_GetParam2(pSkill);
       UNIT::Missile::MakeMissile(&sSkillArg);
@@ -319,7 +318,7 @@ BOOL __fastcall Skills_CltStFunc_CheckSelectableCorpseSetParams(D2UnitStrc * pUn
 }
 
 // Client-side missile creation for the Necromancer Teeth skill. Validates the skill and its cltmissilea against the missiles table and the target coords/monster (TXT_MonStats2 of nParam2), sets the unit's SKSRVDOFUNC flag, and builds a D2SkillArgStrc with seed-jittered spawn position. Emits a scatter of teeth missiles sized by the target's body size (isSmall/large), optionally swapping to the missile's SubMissile1/2 for larger targets, then fires the skill's cltmissileb/cltmissilec follow-up missiles and plays the skill target sound. Returns 1 on success, 0 if validation fails.
-int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl, int32_t nTargetX, int32_t nParam1, int32_t nParam2) {
+int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl, int32_t nTargetX, int32_t nTargetY, int32_t nTargetClassId) {
     D2SkillArgStrc sSkillArg;
     int32_t nScatterMax;
     int32_t nScatterMin;
@@ -332,12 +331,12 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
 
     eMissilesId eCltMissileId;
     eCltMissileId = (eMissilesId)pSkillsTxt->cltmissile[1];
-    if ((int)eCltMissileId < 0 || (int)eCltMissileId >= sgptDataTable->nTxtMissilesSize || !nTargetX || !nParam1) {
+    if ((int)eCltMissileId < 0 || (int)eCltMissileId >= sgptDataTable->nTxtMissilesSize || !nTargetX || !nTargetY) {
       return 0;
     }
 
     D2MonStats2Txt* pMonStats2;
-    pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nParam2);
+    pMonStats2 = DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(nTargetClassId);
     if (!pMonStats2) {
       return 0;
     }
@@ -353,9 +352,9 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
     nSeedMod = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
     sSkillArg.nUnitX = nSeedMod - 1 + nTargetX;
     nSeedMod = Archive::UNIT_GetModuloFromSeed(&pUnit->sSeed, 3);
-    sSkillArg.nUnitY = nSeedMod - 1 + nParam1;
+    sSkillArg.nUnitY = nSeedMod - 1 + nTargetY;
     sSkillArg.nX = nTargetX;
-    sSkillArg.nY = nParam1;
+    sSkillArg.nY = nTargetY;
     sSkillArg.eSkillNo = eSkill;
     sSkillArg.nSkillLevel = nSkillLvl;
     sSkillArg.nMissileTxtNo = eCltMissileId;
@@ -391,7 +390,7 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
 
     Skills::SKILLS_CreateMissileScatter(pUnit, &sSkillArg, nScatterMin, nScatterMax);
     spawn_target_missiles:
-    sSkillArg.nY = nParam1;
+    sSkillArg.nY = nTargetY;
     sSkillArg.nX = nTargetX;
     eCltMissileId = (eMissilesId)pSkillsTxt->cltmissile[2];
     D2UnitStrc* pTargetUnit = 0;
@@ -408,11 +407,10 @@ int __fastcall SKILLSNEC_CltCreateTeethMissiles(D2UnitStrc * pUnit, eD2Skills eS
     }
 
     D2UnitStrc* pConfirmedTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-    if (!(!pConfirmedTarget && pTargetUnit && pSkillsTxt->tgtsound > 0)) {
-      return 1;
+    if (!pConfirmedTarget && pTargetUnit && pSkillsTxt->tgtsound > 0) {
+      Sound::SOUND_PlaySound((int)pSkillsTxt->tgtsound, pTargetUnit, 0, 0, 0);
     }
 
-    Sound::SOUND_PlaySound((int)pSkillsTxt->tgtsound, pTargetUnit, 0, 0, 0);
     return 1;
 }
 
@@ -422,15 +420,15 @@ BOOL __fastcall Skills_CltDoFunc_Nec_Teeth(D2UnitStrc * pUnit, eD2Skills eSkill,
       return 0;
     }
 
-    int32_t nParam1 = D2Common::Skills::SKILL_GetParam1(pSkill);
-    int32_t nParam2 = D2Common::Skills::SKILL_GetParam2(pSkill);
-    int32_t nParam3 = D2Common::Skills::SKILL_GetParam3(pSkill);
-    int bResult = SKILLSNEC_CltCreateTeethMissiles(pUnit, eSkill, nSkillLvl, nParam1, nParam2, nParam3);
+    int32_t nTargetX = D2Common::Skills::SKILL_GetParam1(pSkill);
+    int32_t nTargetY = D2Common::Skills::SKILL_GetParam2(pSkill);
+    int32_t nTargetClassId = D2Common::Skills::SKILL_GetParam3(pSkill);
+    int bResult = SKILLSNEC_CltCreateTeethMissiles(pUnit, eSkill, nSkillLvl, nTargetX, nTargetY, nTargetClassId);
     return bResult;
 }
 
 // Client helper that spawns the Bone Spear/Spirit missile on the caster side. Validates skill, primary missile (cltmissilea), and target monster class. Sets UNITFLAG_SKSRVDOFUNC, fires the primary missile, optionally fires a secondary cast-effect missile (cltmissilec), creates a radial burst (cltmissileb) on impact, and plays tgtsound if no confirmed target. Returns 1 on success.
-int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl, int32_t nTargetX, int32_t nParam1, int32_t nParam2) {
+int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLvl, int32_t nTargetX, int32_t nTargetY, int32_t nTargetClassId) {
     D2UnitStrc* pConfirmedTarget;
     D2SkillArgStrc sSkillArg;
     D2SkillsTxt* pSkillTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
@@ -445,16 +443,16 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
     if (!((int)eMissileId < sgptDataTable->nTxtMissilesSize)) {
       return 0;
     }
-    if (nParam2 < 0) {
+    if (nTargetClassId < 0) {
       return 0;
     }
-    if (!(nParam2 < sgptDataTable->nTxtMonStatsSize)) {
+    if (!(nTargetClassId < sgptDataTable->nTxtMonStatsSize)) {
       return 0;
     }
-    if (!(sgptDataTable->pTxtMonStats + nParam2)) {
+    if (!(sgptDataTable->pTxtMonStats + nTargetClassId)) {
       return 0;
     }
-    if (nTargetX && nParam1) {
+    if (nTargetX && nTargetY) {
       D2UnitStrc* pMissileUnit;
       if (pUnit) {
         pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
@@ -465,7 +463,7 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
       sSkillArg.nMissileTxtNo = eMissileId;
       sSkillArg.nFlags = 0x2001;
       sSkillArg.nX = nTargetX;
-      sSkillArg.nY = nParam1;
+      sSkillArg.nY = nTargetY;
       sSkillArg.eSkillNo = eSkill;
       sSkillArg.nSkillLevel = nSkillLvl;
       pMissileUnit = UNIT::Missile::MakeMissile(&sSkillArg);
@@ -477,19 +475,17 @@ int __fastcall SKILLSNEC_CltCreateBoneSpearMissile(D2UnitStrc * pUnit, eD2Skills
       }
 
       eMissileId = (eMissilesId)pSkillTxt->cltmissile[2];
-      if (!pMissileUnit) {
-        return 1;
-      }
-      if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
-        UNIT::Missile::MISSILE_CreateRadialBurst(pMissileUnit, eMissileId, 0, 2, 0);
+      if (pMissileUnit) {
+        if ((int)eMissileId > 0 && (int)eMissileId < sgptDataTable->nTxtMissilesSize) {
+          UNIT::Missile::MISSILE_CreateRadialBurst(pMissileUnit, eMissileId, 0, 2, 0);
+        }
+
+        pConfirmedTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
+        if (!pConfirmedTarget && pSkillTxt->tgtsound > 0) {
+          Sound::SOUND_PlaySound((int)pSkillTxt->tgtsound, pMissileUnit, 0, 0, 0);
+        }
       }
 
-      pConfirmedTarget = UNIT::CUnit::GetConfirmedTargetUnit(pUnit);
-      if (!(!pConfirmedTarget && pSkillTxt->tgtsound > 0)) {
-        return 1;
-      }
-
-      Sound::SOUND_PlaySound((int)pSkillTxt->tgtsound, pMissileUnit, 0, 0, 0);
       return 1;
     }
 
@@ -502,10 +498,10 @@ BOOL __fastcall Skills_CltDoFunc_Nec_BoneSpear(D2UnitStrc * pUnit, eD2Skills eSk
       return 0;
     }
 
-    int32_t nParam1 = D2Common::Skills::SKILL_GetParam1(pSkill);
-    int32_t nParam2 = D2Common::Skills::SKILL_GetParam2(pSkill);
-    int32_t nParam3 = D2Common::Skills::SKILL_GetParam3(pSkill);
-    int bResult = SKILLSNEC_CltCreateBoneSpearMissile(pUnit, eSkill, nSkillLvl, nParam1, nParam2, nParam3);
+    int32_t nTargetX = D2Common::Skills::SKILL_GetParam1(pSkill);
+    int32_t nTargetY = D2Common::Skills::SKILL_GetParam2(pSkill);
+    int32_t nTargetClassId = D2Common::Skills::SKILL_GetParam3(pSkill);
+    int bResult = SKILLSNEC_CltCreateBoneSpearMissile(pUnit, eSkill, nSkillLvl, nTargetX, nTargetY, nTargetClassId);
     return bResult;
 }
 

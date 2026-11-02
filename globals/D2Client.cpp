@@ -47,6 +47,7 @@
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Party.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Spinner/SpinnerImplementation.h"
@@ -69,7 +70,6 @@
 #include "D2Gdi/Renderer/Windowed.h"
 #include "D2Launch/CharSel.h"
 #include "Storm/Source/SCMD.h"
-#include "Storm/_unnamespaced.h"
 
 
 // =============================================================================
@@ -2133,7 +2133,7 @@ D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x96_PlayerLeave,
+        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x96_UpdateStaminaAndPosition,
         /* .nExpectedSize = */ 0x9,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
@@ -44684,6 +44684,8 @@ int gbSpellSelSkillTreeNodeHovered[128] = {}; D2_GLOBAL_GUARD(gbSpellSelSkillTre
 
 int gaSpellSelSkillTreeState[128] = {}; D2_GLOBAL_GUARD(gaSpellSelSkillTreeState, "gaSpellSelSkillTreeState");
 
+uint16_t gnMonsterUniqueNameBuffer[2] = {}; D2_GLOBAL_GUARD(gnMonsterUniqueNameBuffer, "gnMonsterUniqueNameBuffer");
+
 D2GSPacketSrv0x2A D2GSPacketSrv0x2A_007c0d87 = {}; D2_GLOBAL_GUARD(D2GSPacketSrv0x2A_007c0d87, "D2GSPacketSrv0x2A_007c0d87");
 
 short gaNpcMenuHandledMessageIds[9] = {}; D2_GLOBAL_GUARD(gaNpcMenuHandledMessageIds, "gaNpcMenuHandledMessageIds");
@@ -44729,6 +44731,8 @@ int gnMercenaryHealthBarScreenY = -0x1; D2_GLOBAL_GUARD(gnMercenaryHealthBarScre
 int gnUIFlagCount = 0x27; D2_GLOBAL_GUARD(gnUIFlagCount, "gnUIFlagCount"); // VP: vanilla-plus 0x26 -> 0x27 (UI_VANILLAPLUS)
 uint32_t gbCursorAnimationPending = 0x1; D2_GLOBAL_GUARD(gbCursorAnimationPending, "gbCursorAnimationPending");
 int nAutoMapZoomDivisor = 0xa; D2_GLOBAL_GUARD(nAutoMapZoomDivisor, "nAutoMapZoomDivisor");
+int ScreenSizeX = 0x280; D2_GLOBAL_GUARD(ScreenSizeX, "ScreenSizeX");
+int ScreenSizeY = 0x1e0; D2_GLOBAL_GUARD(ScreenSizeY, "ScreenSizeY");
 uint32_t nNextGUID = 0x1; D2_GLOBAL_GUARD(nNextGUID, "nNextGUID");
 uint32_t gnSelectConstant13_X = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_X, "gnSelectConstant13_X");
 uint32_t gnSelectConstant13_Y = 0x13; D2_GLOBAL_GUARD(gnSelectConstant13_Y, "gnSelectConstant13_Y");
@@ -44827,7 +44831,7 @@ HMODULE ghLngLibrary = 0; D2_GLOBAL_GUARD(ghLngLibrary, "ghLngLibrary");
 uint32_t gdwQuestResurrectDismissThrottle = 0; D2_GLOBAL_GUARD(gdwQuestResurrectDismissThrottle, "gdwQuestResurrectDismissThrottle");
 DC6 * DC6_EnteredAreaName = 0; D2_GLOBAL_GUARD(DC6_EnteredAreaName, "DC6_EnteredAreaName");
 DC6 * pDC6_Frame = 0; D2_GLOBAL_GUARD(pDC6_Frame, "pDC6_Frame");
-uint32_t gnGoldDialogTransactionType = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionType, "gnGoldDialogTransactionType");
+int gnGoldDialogTransactionType = 0; D2_GLOBAL_GUARD(gnGoldDialogTransactionType, "gnGoldDialogTransactionType");
 SpinnerWrapper * gpCurrentDialog = 0; D2_GLOBAL_GUARD(gpCurrentDialog, "gpCurrentDialog");
 EditBoxWrapper * gpDialogDefaultActionCallback = 0; D2_GLOBAL_GUARD(gpDialogDefaultActionCallback, "gpDialogDefaultActionCallback");
 ButtonWrapper * gpUiGoldTransactionDialog = 0; D2_GLOBAL_GUARD(gpUiGoldTransactionDialog, "gpUiGoldTransactionDialog");
@@ -44870,6 +44874,8 @@ uint32_t MouseXOffset = 0; D2_GLOBAL_GUARD(MouseXOffset, "MouseXOffset");
 uint32_t gnBorderType = 0; D2_GLOBAL_GUARD(gnBorderType, "gnBorderType");
 uint32_t MouseYRelatedB = 0; D2_GLOBAL_GUARD(MouseYRelatedB, "MouseYRelatedB");
 uint32_t nScreenMode = 0; D2_GLOBAL_GUARD(nScreenMode, "nScreenMode");
+int WindowSizeY = 0; D2_GLOBAL_GUARD(WindowSizeY, "WindowSizeY");
+int WindowSizeX = 0; D2_GLOBAL_GUARD(WindowSizeX, "WindowSizeX");
 size_t nD2PacketsClientBufferSize = 0; D2_GLOBAL_GUARD(nD2PacketsClientBufferSize, "nD2PacketsClientBufferSize");
 uint32_t gbConnectionLost = 0; D2_GLOBAL_GUARD(gbConnectionLost, "gbConnectionLost");
 D2ArchiveStrc * IMG_popupok_DiscPrompt = 0; D2_GLOBAL_GUARD(IMG_popupok_DiscPrompt, "IMG_popupok_DiscPrompt");
@@ -45011,7 +45017,7 @@ unsigned int gdwInvLastActionTickCount = {}; D2_GLOBAL_GUARD(gdwInvLastActionTic
 int gnInvMouseX = 0; D2_GLOBAL_GUARD(gnInvMouseX, "gnInvMouseX");
 BOOL gbInvOverlayFlag = 0; D2_GLOBAL_GUARD(gbInvOverlayFlag, "gbInvOverlayFlag");
 DC6 * gpInvShopTabImage = 0; D2_GLOBAL_GUARD(gpInvShopTabImage, "gpInvShopTabImage");
-uint32_t gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
+int gpInvCursorItem = 0; D2_GLOBAL_GUARD(gpInvCursorItem, "gpInvCursorItem");
 int gbInvNpcScreenCoordsInitialized = 0; D2_GLOBAL_GUARD(gbInvNpcScreenCoordsInitialized, "gbInvNpcScreenCoordsInitialized");
 uint32_t gpInvItemUnderCursor = 0; D2_GLOBAL_GUARD(gpInvItemUnderCursor, "gpInvItemUnderCursor");
 uint32_t gbInvBodySlotUnderCursorExists = 0; D2_GLOBAL_GUARD(gbInvBodySlotUnderCursorExists, "gbInvBodySlotUnderCursorExists");

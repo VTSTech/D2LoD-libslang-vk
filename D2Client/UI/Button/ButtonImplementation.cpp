@@ -43,9 +43,9 @@ void __thiscall Destructor(::ButtonImplementation * pThis) {
 }
 
 BOOL __thiscall IsMouseInBounds(::ButtonImplementation * pThis, D2UIMouseMsgStrc * pMsg) {
-    uint32_t uVar1 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
-    uint32_t uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
-    if ((int)uVar1 >= pThis->nPosX && (int)uVar1 <= pThis->nWidth + pThis->nPosX && (int)uVar2 >= pThis->nPosY - pThis->nHeight && (int)uVar2 <= pThis->nPosY) {
+    uint32_t nMouseX = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
+    uint32_t nMouseY = (uint32_t)pMsg->uLParam.sMousePos.nMouseY;
+    if ((int)nMouseX >= pThis->nPosX && (int)nMouseX <= pThis->nWidth + pThis->nPosX && (int)nMouseY >= pThis->nPosY - pThis->nHeight && (int)nMouseY <= pThis->nPosY) {
       return 1;
     }
 
@@ -158,11 +158,10 @@ int __thiscall OnMouseWheel(::ButtonImplementation * pThis, D2UIMouseMsgStrc * p
 ::ButtonImplementation * __thiscall ScalarDeletingDestructor(::ButtonImplementation * pThis, uint32_t nFlags) {
     pThis->pVtable = (ButtonImplementationVtable*)(void*)ButtonImplementation::vftable;
     UI::Destructor((::UIWidget*)pThis);
-    if (!(nFlags & 1)) {
-      return pThis;
+    if (nFlags & 1) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 

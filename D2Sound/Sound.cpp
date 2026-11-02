@@ -166,7 +166,8 @@ void __stdcall SOUND_InitDirectSound() {
       return;
     }
 
-    WAVEFORMATEX tPrimaryFormat = {0};
+    WAVEFORMATEX tPrimaryFormat;
+    memset(&tPrimaryFormat, 0, sizeof(tPrimaryFormat));
     tPrimaryFormat.wFormatTag = 1;
     tPrimaryFormat.nChannels = 2;
     tPrimaryFormat.nSamplesPerSec = 0x5622;
@@ -333,11 +334,10 @@ int * SOUND_GetAmbientSoundEntry(int32_t nIndex) {
     }
 
     pAmbientEntry = gaAmbientSoundEntryTable + nIndex * 2;
-    if (gnAmbientSoundLanguageCode) {
-      return pAmbientEntry;
+    if (!gnAmbientSoundLanguageCode) {
+      pAmbientEntry = gAmbientSoundTable + nIndex * 2;
     }
 
-    pAmbientEntry = gAmbientSoundTable + nIndex * 2;
     return pAmbientEntry;
 }
 

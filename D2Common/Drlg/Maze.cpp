@@ -427,14 +427,14 @@ static D2RoomExStrc * __stdcall DRLGMAZE_AllocRoomExAndPickPreset(eDrlgDirection
 // the absolute and rel32 forms); only its sibling 00670de0 is called.
 D2RoomExStrc * __stdcall DRLGMAZE_AllocRoomAndPickPreset(eDrlgDirection eDirection, D2RoomExStrc * pSourceRoom, int bPickPresets) {
     D2RoomExStrc* pNewRoom = AllocateRoomEx(pSourceRoom, eDirection, bPickPresets);
-    if (!pNewRoom) {
-      return pNewRoom;
-    }
-    if (bPickPresets) {
-      DRLGMAZE_PickRoomPreset(pSourceRoom, 1);
+    if (pNewRoom) {
+      if (bPickPresets) {
+        DRLGMAZE_PickRoomPreset(pSourceRoom, 1);
+      }
+
+      DRLGMAZE_PickRoomPreset(pNewRoom, 1);
     }
 
-    DRLGMAZE_PickRoomPreset(pNewRoom, 1);
     return pNewRoom;
 }
 
@@ -749,7 +749,7 @@ static void SetupBaalChamber(D2DrlgLevelStrc * pLevel) {
     D2SeedStrc sNewSeed = D2_SEED_NEXT(pSourceRoom->sSeed);
     uint32_t nDirection = sNewSeed.nSeedLow & 3;
     pSourceRoom->sSeed = sNewSeed;
-    if (6 < nDirection * 2) {
+    if (6 < (int32_t)(nDirection * 2)) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2ab);
       exit(-1);
     }
@@ -760,15 +760,15 @@ static void SetupBaalChamber(D2DrlgLevelStrc * pLevel) {
 }
 
 // DRLG maze generator for an Act 1 Catacombs level: subdivides the level's initial room into preset sub-rooms. With the stack flag bIsCatacombsLevel4 set it always carves 4 sub-rooms (final layout tag 0x122); otherwise it advances the level seed and uses its parity to pick a 2-room layout variant (tag 0x121 or 0x120). For each new room it allocates a D2RoomExStrc, copies SizeX/SizeY from pDrlgLevelData, calls ReplaceRoomWithNewRoom, and on success allocates shared nodes, picks room presets, and adds the room to the level (freeing it on failure). Marks the start room's RoomExData with the chosen layout tag and flags. Takes pLevel in ECX.
-void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t dwParam2) {
+void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t bIsCatacombsLevel1) {
     D2DrlgPresetRoomStrc* pDVar1;
     D2RoomExStrc* pNewRoom;
-    int iVar2;
+    int bReplaced;
     D2DrlgPresetRoomStrc* pRoomData;
     D2LvlMazeTxt* pLvlMazeTxt;
     D2LvlMazeTxt* pRoomSizeData;
     D2RoomExStrc* pStartRoom = pLevel->pRoomExFirst;
-    if (dwParam2) {
+    if (bIsCatacombsLevel1) {
       int fReplaceResult;
       pNewRoom = DrlgRoom::DRLGROOMEX_AllocRoomEx(pStartRoom->pLevel, 2);
       pLvlMazeTxt = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
@@ -789,8 +789,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(2, pNewRoom, pStartRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(2, pNewRoom, pStartRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pStartRoom, pNewRoom, 2);
@@ -804,8 +804,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(3, pNewRoom, pStartRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(3, pNewRoom, pStartRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pStartRoom, pNewRoom, 3);
@@ -819,8 +819,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(0, pNewRoom, pStartRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(0, pNewRoom, pStartRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
         pDVar1 = pStartRoom->pRoomExData.pRoomExDataPreset;
         pDVar1->nLevelPrest = 0x122;
@@ -849,8 +849,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(1, pNewRoom, pStartRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(1, pNewRoom, pStartRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pStartRoom, pNewRoom, 1);
@@ -864,8 +864,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
       pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(3, pNewRoom, pStartRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(3, pNewRoom, pStartRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pStartRoom, pNewRoom, 3);
@@ -886,8 +886,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
     pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
     pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
     pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-    iVar2 = ReplaceRoomWithNewRoom(0, pNewRoom, pStartRoom);
-    if (!iVar2) {
+    bReplaced = ReplaceRoomWithNewRoom(0, pNewRoom, pStartRoom);
+    if (!bReplaced) {
       DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
     } else {
       DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pStartRoom, pNewRoom, 0);
@@ -901,8 +901,8 @@ void __thiscall DRLGMAZE_ExpandCatacombsLevel(D2DrlgLevelStrc * pLevel, int32_t 
     pRoomSizeData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
     pNewRoom->sCoords.WorldSize.x = pRoomSizeData->SizeX;
     pNewRoom->sCoords.WorldSize.y = pRoomSizeData->SizeY;
-    iVar2 = ReplaceRoomWithNewRoom(2, pNewRoom, pStartRoom);
-    if (!iVar2) {
+    bReplaced = ReplaceRoomWithNewRoom(2, pNewRoom, pStartRoom);
+    if (!bReplaced) {
       DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
       pDVar1 = pStartRoom->pRoomExData.pRoomExDataPreset;
       pDVar1->nLevelPrest = 0x120;
@@ -992,7 +992,7 @@ void __stdcall GenerateWolrdstoneAndTombs(D2DrlgLevelStrc * pLevel) {
 // DRLG maze generator for the Act 2 Arcane Sanctuary: builds the four-armed cross/spoke layout. Advances the level's LCG seed to pick an initial direction, then for each of 4 arms allocates a chain of 15 RoomEx rooms (DRLGROOMEX_AllocRoomEx), sizing each from its DrlgLevelData and attaching it to the previous room via ReplaceRoomWithNewRoom + AllocNodesForBothRoomEx, picking presets per room; failed placements are freed. Finally writes each placed room's facing direction (pRoomExData+4) wrapped mod 4 from the rolled base direction, and tags the start room with direction 4. Operates in-place on pLevel.
 void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
     int fReplaceRoomResult;
-    int iVar2;
+    int bReplaced;
     uint32_t nDirection_00;
     D2RoomExStrc* pAllocRoom;
     uint32_t nDirWrapped;
@@ -1003,7 +1003,7 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
     D2LvlMazeTxt* pLvlMazeTxtArm;
     D2RoomExStrc* pRoomExStrc = pLevel->pRoomExFirst;
     D2SeedStrc seedRoll = D2_SEED_NEXT(pLevel->sSeed);
-    uint32_t uVar1 = seedRoll.nSeedLow & 3;
+    uint32_t nBaseDir = seedRoll.nSeedLow & 3;
     pLevel->sSeed = seedRoll;
     memset(nRoomPtrs, 0, 0xf0);
     D2RoomExStrc** ppRoomPtrs = nRoomPtrs;
@@ -1033,8 +1033,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1052,8 +1052,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirWrapped, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirWrapped, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1070,8 +1070,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1088,8 +1088,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1106,8 +1106,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1124,8 +1124,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1143,8 +1143,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection_00, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection_00, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1161,8 +1161,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pNewRoom, pAllocRoom, nDirection);
@@ -1177,8 +1177,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection_00, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection_00, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1196,8 +1196,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1214,8 +1214,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1232,8 +1232,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirWrapped, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirWrapped, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pNewRoom, pAllocRoom, nDirWrapped);
@@ -1248,8 +1248,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1266,8 +1266,8 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
       pLvlMazeTxtArm = pAllocRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pAllocRoom->sCoords.WorldSize.x = pLvlMazeTxtArm->SizeX;
       pAllocRoom->sCoords.WorldSize.y = pLvlMazeTxtArm->SizeY;
-      iVar2 = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
-      if (!iVar2) {
+      bReplaced = ReplaceRoomWithNewRoom(nDirection, pAllocRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pAllocRoom);
         pAllocRoom = 0;
       } else {
@@ -1289,27 +1289,27 @@ void __fastcall RollArcaneTypePath(D2DrlgLevelStrc * pLevel) {
     int pRoomTmp = 10;
     do {
       if (ppArmRooms[-1]) {
-        nDirWrapped = (nDirection - 2) / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = (nDirection - 2) / 0xf + nBaseDir & 0x80000003;
         ppArmRooms[-1]->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
       if (*ppArmRooms) {
-        nDirWrapped = (nDirection - 1) / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = (nDirection - 1) / 0xf + nBaseDir & 0x80000003;
         (*ppArmRooms)->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
       if (ppArmRooms[1]) {
-        nDirWrapped = nDirection / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = nDirection / 0xf + nBaseDir & 0x80000003;
         ppArmRooms[1]->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
       if (ppArmRooms[2]) {
-        nDirWrapped = (nDirection + 1) / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = (nDirection + 1) / 0xf + nBaseDir & 0x80000003;
         ppArmRooms[2]->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
       if (ppArmRooms[3]) {
-        nDirWrapped = (nDirection + 2) / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = (nDirection + 2) / 0xf + nBaseDir & 0x80000003;
         ppArmRooms[3]->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
       if (ppArmRooms[4]) {
-        nDirWrapped = (nDirection + 3) / 0xf + uVar1 & 0x80000003;
+        nDirWrapped = (nDirection + 3) / 0xf + nBaseDir & 0x80000003;
         ppArmRooms[4]->pRoomExData.pRoomExDataPreset->nPickedFile = nDirWrapped;
       }
 
@@ -1345,11 +1345,10 @@ static BOOL DRLGMAZE_CanPlaceRoomInDirection(eDrlgDirection param_eax, int * pRo
           DrlgRoom::AddRoomExToLevel((D2DrlgLevelStrc*)pRoomEx[0x16], pTestRoom);
           DRLGMAZE_PickRoomPreset(pTestRoom, 1);
         }
-        if (!pTestRoom) {
-          return (uint32_t)(pTestRoom != 0);
+        if (pTestRoom) {
+          DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pTestRoom);
         }
 
-        DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pTestRoom);
         return (uint32_t)(pTestRoom != 0);
       }
       if (*(eDrlgDirection*)(bReplaced + 4) == param_eax) {
@@ -1432,6 +1431,7 @@ D2RoomExStrc * __fastcall DRLGMAZE_FindBottomMostRoom(D2DrlgLevelStrc * pLevel) 
 
 // Finds the room in pLevel whose pRoomExData preset ID matches pDrlgReplaceRoom->nSourceLevelPrestId and replaces it in-place with the destination preset/file IDs from pDrlgReplaceRoom. If no matching room exists, falls back to ReplaceRoomWith to allocate a new adjacent room. Increments *pRoll (wrapping at 4) after any successful replacement.
 uint32_t * __stdcall ReplaceRoom(D2DrlgReplaceRoomStrc * pDrlgReplaceRoom, D2DrlgLevelStrc * pLevel, uint32_t * pRoll) {
+    uint32_t nNextRoll;
     D2RoomExStrc* pRoomEx = pLevel->pRoomExFirst;
     int32_t nDestPresetId = pDrlgReplaceRoom->nDestLevelPrestId;
     int32_t nDestPickedFile = pDrlgReplaceRoom->nDestPickedFile;
@@ -1453,12 +1453,11 @@ uint32_t * __stdcall ReplaceRoom(D2DrlgReplaceRoomStrc * pDrlgReplaceRoom, D2Drl
       pRoomEx = pRoomEx->pRoomExNext;
     } while (true);
 
-    if (!pRoll) {
-      return pRoll;
+    if (pRoll) {
+      nNextRoll = (int)(*pRoll + 1) % 4;
+      *pRoll = nNextRoll;
     }
 
-    uint32_t nNextRoll = (int)(*pRoll + 1) % 4;
-    *pRoll = nNextRoll;
     return pRoll;
 }
 
@@ -2102,7 +2101,7 @@ static void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
 
     D2RoomExStrc* pNewRoom;
     int fReplaceResult;
-    int iVar1;
+    int bReplaced;
     D2RoomExStrc* pRoomEx;
     D2RoomExStrc* pTempRoom;
     D2LvlMazeTxt* pLvlMazeTxt;
@@ -2136,8 +2135,8 @@ static void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
       pLvlData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pLvlData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pLvlData->SizeY;
-      iVar1 = ReplaceRoomWithNewRoom(1, pNewRoom, pTempRoom);
-      if (!iVar1) {
+      bReplaced = ReplaceRoomWithNewRoom(1, pNewRoom, pTempRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
         pNewRoom = 0;
       } else {
@@ -2154,8 +2153,8 @@ static void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
       pLvlData = pTempRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pTempRoom->sCoords.WorldSize.x = pLvlData->SizeX;
       pTempRoom->sCoords.WorldSize.y = pLvlData->SizeY;
-      iVar1 = ReplaceRoomWithNewRoom(2, pTempRoom, pNewRoom);
-      if (!iVar1) {
+      bReplaced = ReplaceRoomWithNewRoom(2, pTempRoom, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pTempRoom);
         pTempRoom = 0;
       } else {
@@ -2170,8 +2169,8 @@ static void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
       pLvlData = pNewRoom->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pNewRoom->sCoords.WorldSize.x = pLvlData->SizeX;
       pNewRoom->sCoords.WorldSize.y = pLvlData->SizeY;
-      iVar1 = ReplaceRoomWithNewRoom(2, pNewRoom, pTempRoom);
-      if (!iVar1) {
+      bReplaced = ReplaceRoomWithNewRoom(2, pNewRoom, pTempRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pNewRoom);
         pNewRoom = 0;
       } else {
@@ -2187,8 +2186,8 @@ static void DRLGMAZE_GenerateSewerLevel(D2DrlgLevelStrc * pDrlgLevelStrc) {
       pLvlData = pRoomEx->pLevel->pDrlgLevelData.pTxtLvlMaze;
       pRoomEx->sCoords.WorldSize.x = pLvlData->SizeX;
       pRoomEx->sCoords.WorldSize.y = pLvlData->SizeY;
-      iVar1 = ReplaceRoomWithNewRoom(eDir, pRoomEx, pNewRoom);
-      if (!iVar1) {
+      bReplaced = ReplaceRoomWithNewRoom(eDir, pRoomEx, pNewRoom);
+      if (!bReplaced) {
         DrlgRoom::DRLGROOMEX_FreeDrlgRoomEx(pRoomEx);
       } else {
         DrlgRoom::DRLGROOMEX_AllocNodesForBothRoomEx(pNewRoom, pRoomEx, eDir);
@@ -2426,7 +2425,6 @@ static void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
 }; D2_STATIC_GUARD(gaDrlgReplaceAreas_G, "D2Common::Drlg::Maze::ReplaceAreas::gaDrlgReplaceAreas_G");
 
     uint32_t nRoll;
-    int32_t nErrorLine;
     D2RoomExStrc* pRoomEx = pLevel->pRoomExFirst;
     D2DrlgPresetRoomStrc* pRoomData = 0;
     while (true) {
@@ -2456,8 +2454,7 @@ static void ReplaceAreas(D2DrlgLevelStrc * pLevel) {
         nRoll = 3;
       break;
       default:
-        nErrorLine = 0x519;
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x519);
       exit(-1);
     }
 

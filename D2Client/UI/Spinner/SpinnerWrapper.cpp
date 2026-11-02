@@ -47,32 +47,31 @@ void __thiscall Destructor(::SpinnerWrapper * pThis) {
 
 ::SpinnerWrapper * __thiscall ScalarDeletingDestructor(::SpinnerWrapper * pThis, uint32_t nFlags) {
     SpinnerWrapper::Destructor(pThis);
-    if (!(nFlags & 1 && pThis)) {
-      return pThis;
+    if (nFlags & 1 && pThis) {
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
-    Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     return pThis;
 }
 
 int __thiscall OnMouseWheel(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseWheel(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseDown(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseDown(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseUp(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseUp(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnMouseMove(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnMouseMove(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 void __thiscall Draw(::SpinnerWrapper * pThis) {
@@ -80,38 +79,38 @@ void __thiscall Draw(::SpinnerWrapper * pThis) {
 }
 
 int __thiscall OnChar(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnChar(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnDownArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnDownArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnUpArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnUpArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnRightArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnRightArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall OnLeftArrow(::SpinnerWrapper * pThis, D2UIMouseMsgStrc * pMsg) {
-    int iVar1 = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
-    return iVar1;
+    int nResult = pThis->pImplementation->pVtable->OnLeftArrow(pThis->pImplementation, pMsg);
+    return nResult;
 }
 
 int __thiscall GetValue(::SpinnerWrapper * pThis) {
-    int iVar1 = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
-    return iVar1;
+    int nSpinnerValue = pThis->pImplementation->pVtable->GetValue(pThis->pImplementation);
+    return nSpinnerValue;
 }
 
 int __thiscall GetRepeatDelta(::SpinnerWrapper * pThis, int nUnused) {
-    int iVar1 = pThis->pImplementation->pVtable->GetRepeatDelta(pThis->pImplementation);
-    return iVar1;
+    int nRepeatDelta = pThis->pImplementation->pVtable->GetRepeatDelta(pThis->pImplementation);
+    return nRepeatDelta;
 }
 
 ::SpinnerWrapper * __thiscall Constructor(::SpinnerWrapper * pThis, int nPosX, int nPosY, BOOL bHorizontal, fpSpinnerRepeatAction pfnRepeatAction) {

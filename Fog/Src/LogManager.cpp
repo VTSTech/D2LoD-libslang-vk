@@ -292,21 +292,20 @@ uint32_t __stdcall GetCpuBrandId() {
     uint64_t nVersionInfo = GetCpuVersionInfo();
     uint32_t nFamily = (uint32_t)nVersionInfo >> 8 & 0xf;
     int nVendor = DetectCpuVendor();
-    if (!(nVendor == 1 && (nFamily >= 7 || nFamily == 6 && ((uint32_t)nVersionInfo & 0xf0) >= 0x80))) {
-      return nBrandId;
+    if (nVendor == 1 && (nFamily >= 7 || nFamily == 6 && ((uint32_t)nVersionInfo & 0xf0) >= 0x80)) {
+      nVendor = D2_Cpuid(1);
+      nBrandId = *(uint32_t*)(nVendor + 4);
     }
 
-    nVendor = D2_Cpuid(1);
-    nBrandId = *(uint32_t*)(nVendor + 4);
     return nBrandId;
 }
 
-uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
+uint32_t __fastcall DispatchCpuidCall(int32_t nLeaf) {
     int pCpuidResult;
-    if (!nParam) {
+    if (!nLeaf) {
       pCpuidResult = D2_Cpuid(0);
     } else {
-      switch (nParam) {
+      switch (nLeaf) {
         case 1:
           {
             pCpuidResult = D2_Cpuid(1);
@@ -323,7 +322,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
             break;
           }
         default:
-          switch (nParam) {
+          switch (nLeaf) {
             case 4:
               {
                 pCpuidResult = D2_Cpuid(4);
@@ -340,7 +339,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
                 break;
               }
             default:
-              switch (nParam) {
+              switch (nLeaf) {
                 case 7:
                   {
                     pCpuidResult = D2_Cpuid(7);
@@ -357,7 +356,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
                     break;
                   }
                 default:
-                  switch (nParam) {
+                  switch (nLeaf) {
                     case 0xb:
                       {
                         pCpuidResult = D2_Cpuid(0xb);
@@ -374,7 +373,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
                         break;
                       }
                     default:
-                      switch (nParam) {
+                      switch (nLeaf) {
                         case -0x7ffffffe:
                           {
                             pCpuidResult = D2_Cpuid(0x80000002);
@@ -392,7 +391,7 @@ uint32_t __fastcall DispatchCpuidCall(int32_t nParam) {
                           }
                         default:
                           {
-                            pCpuidResult = D2_Cpuid(nParam);
+                            pCpuidResult = D2_Cpuid(nLeaf);
                           }
                       }
                   }
@@ -657,14 +656,13 @@ FILE * __fastcall FindOrOpenLogFileSlot(uint8_t * szFileName, uint32_t * pnSlotI
     }
 
     pOpenedFile = globalOpenFileHandleArray[nSlot];
-    if (!pOpenedFile) {
-      return pOpenedFile;
+    if (pOpenedFile) {
+      report_slot:
+      if (pnSlotIndexOut) {
+        *pnSlotIndexOut = nSlot;
+      }
     }
 
-    report_slot:
-    if (pnSlotIndexOut) {
-      *pnSlotIndexOut = nSlot;
-    }
     return pOpenedFile;
 }
 
@@ -892,11 +890,10 @@ uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if ((int)pBase >= 0) {
-      return nOffset + (int)pBase;
+    if ((int)pBase < 0) {
+      pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     }
 
-    pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     return nOffset + (int)pBase;
 }
 
@@ -990,11 +987,10 @@ void __fastcall UnlinkListNode(int * pNode) {
 }
 
 int32_t __thiscall NormalizeListNodePointer(int32_t pThis, int32_t pNodePtr) {
-    if (pNodePtr) {
-      return pNodePtr;
+    if (!pNodePtr) {
+      pNodePtr = pThis + 4;
     }
 
-    pNodePtr = pThis + 4;
     return pNodePtr;
 }
 
@@ -1377,15 +1373,15 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, size_t nDat
     pNode[4] = (int*)0x1;
     GetLocalTime((LPSYSTEMTIME)(pNode + 5));
     nLen1 = Storm::Source::SSTR::SStrCopy((char*)(pNode + 9), szText1, 0x7fffffff);
-    char* pcVar1 = (char*)(nLen1 + 1 + (int)(pNode + 9));
-    *(size_t*)(pcVar1 + 4) = nDataLen;
-    *(void**)pcVar1 = (void*)pData;
-    *(void**)(pcVar1 + 8) = (void*)pCategory;
-    *(BOOL*)(pcVar1 + 0xc) = bSkipData;
-    *(uint32_t*)(pcVar1 + 0x10) = (uint32_t)!nVerbose;
-    nLen1 = Storm::Source::SSTR::SStrCopy(pcVar1 + 0x14, szText2, 0x7fffffff);
+    char* pMessageFields = (char*)(nLen1 + 1 + (int)(pNode + 9));
+    *(size_t*)(pMessageFields + 4) = nDataLen;
+    *(void**)pMessageFields = (void*)pData;
+    *(void**)(pMessageFields + 8) = (void*)pCategory;
+    *(BOOL*)(pMessageFields + 0xc) = bSkipData;
+    *(uint32_t*)(pMessageFields + 0x10) = (uint32_t)!nVerbose;
+    nLen1 = Storm::Source::SSTR::SStrCopy(pMessageFields + 0x14, szText2, 0x7fffffff);
     if (!bSkipData) {
-      memcpy(pcVar1 + nLen1 + 0x15, pData, nDataLen);
+      memcpy(pMessageFields + nLen1 + 0x15, pData, nDataLen);
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogMessageQueueCS);
@@ -1716,7 +1712,7 @@ void __stdcall GetFreeDiskSpaceForSavePath() {
     ULONGLONG uTotalFreeBytes;
     ULONGLONG uTotalBytes;
     ULONGLONG uFreeBytesAvailable;
-    DWORD local_414[3];
+    DWORD adwDiskFreeSpaceInfo[3];
     char szSavePath[1024];
     Source::SFile::GetAndCreateSavePath(szSavePath, 0x400);
     HMODULE hModule = LoadLibraryA("kernel32.dll");
@@ -1742,11 +1738,11 @@ void __stdcall GetFreeDiskSpaceForSavePath() {
       nCharIndex++;
     } while (nCharIndex < 0x400);
 
-    /* LPDWORD lpTotalNumberOfClusters for GetDiskFreeSpaceA */ /* LPDWORD lpNumberOfFreeClusters for GetDiskFreeSpaceA */ /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ local_414[2] = 0;
-    local_414[0] = 0;
-    local_414[1] = 0;
+    /* LPDWORD lpTotalNumberOfClusters for GetDiskFreeSpaceA */ /* LPDWORD lpNumberOfFreeClusters for GetDiskFreeSpaceA */ /* LPDWORD lpBytesPerSector for GetDiskFreeSpaceA */ /* LPDWORD lpSectorsPerCluster for GetDiskFreeSpaceA */ /* LPCSTR lpRootPathName for GetDiskFreeSpaceA */ adwDiskFreeSpaceInfo[2] = 0;
+    adwDiskFreeSpaceInfo[0] = 0;
+    adwDiskFreeSpaceInfo[1] = 0;
     DWORD dwBytesPerSector = 0;
-    GetDiskFreeSpaceA(szSavePath, local_414 + 2, local_414, local_414 + 1, &dwBytesPerSector);
+    GetDiskFreeSpaceA(szSavePath, adwDiskFreeSpaceInfo + 2, adwDiskFreeSpaceInfo, adwDiskFreeSpaceInfo + 1, &dwBytesPerSector);
 }
 
 void GetGlobalMemoryStatus(LPMEMORYSTATUS pMemoryStatus) {
@@ -1794,24 +1790,25 @@ void InitHighResTimer() {
 
 // Returns the current wall-clock second count in EAX (base seconds + elapsed ticks/1000). Takes no arguments: the former EBX parameter was a phantom propagated from AtomicExchange64's don't-care comparand.
 uint32_t LOGMGR_GetHighResolutionTime() {
+    int nPriority;
     D2HighResTimestampStrc tRefresh;
     D2HighResTimestampStrc tBase;
     DWORD dwNowTick = GetTickCount();
     Atomic64Load((int64_t*)&tBase, (int64_t*)&gHighResTimerInitTimestamp);
-    if (!(dwNowTick - tBase.dwTick > 30000)) {
-      return (dwNowTick - tBase.dwTick) / 1000 + tBase.nSeconds;
+    if (dwNowTick - tBase.dwTick > 30000) {
+      HANDLE hThread;
+      hThread = GetCurrentThread();
+      /* HANDLE hThread for GetThreadPriority */ nPriority = GetThreadPriority(hThread);
+      if (nPriority != 0x7fffffff) {
+        /* int nPriority for SetThreadPriority */ hThread = GetCurrentThread();
+        /* HANDLE hThread for SetThreadPriority */ SetThreadPriority(hThread, nPriority);
+      }
+
+      tRefresh.nSeconds = _time32(nullptr);
+      tRefresh.dwTick = GetTickCount();
+      Atomic64Store((int64_t*)&gHighResTimerInitTimestamp, (int64_t*)&tRefresh);
     }
 
-    HANDLE hThread = GetCurrentThread();
-    int nPriority = GetThreadPriority(hThread);
-    if (nPriority != 0x7fffffff) {
-      /* int nPriority for SetThreadPriority */ hThread = GetCurrentThread();
-      /* HANDLE hThread for SetThreadPriority */ SetThreadPriority(hThread, nPriority);
-    }
-
-    tRefresh.nSeconds = _time32(nullptr);
-    tRefresh.dwTick = GetTickCount();
-    Atomic64Store((int64_t*)&gHighResTimerInitTimestamp, (int64_t*)&tRefresh);
     return (dwNowTick - tBase.dwTick) / 1000 + tBase.nSeconds;
 }
 

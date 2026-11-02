@@ -103,11 +103,10 @@ D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, 
       if (pTileGrid->pRoomEx == pRoomEx) {
         *ppOrth = pTileGrid->pLvlWarpTxt->Id;
         *ppRoomEx = pTileGrid->pLvlWarpTxt;
-        if (pDestRoomEx->pRoom) {
-          return pDestRoomEx->pRoom;
+        if (!pDestRoomEx->pRoom) {
+          DUNGEON::Dungeon::InitRoomEx(pDestRoomEx);
         }
 
-        DUNGEON::Dungeon::InitRoomEx(pDestRoomEx);
         return pDestRoomEx->pRoom;
       }
 
@@ -1010,8 +1009,8 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
       return 0;
     }
 
-    int iVar1 = pRoomCoords->WorldSize.x;
-    if (!(nWorldX < nRoomPosScaled + iVar1 * 4 + iVar1)) {
+    int nExtent = pRoomCoords->WorldSize.x;
+    if (!(nWorldX < nRoomPosScaled + nExtent * 4 + nExtent)) {
       return 0;
     }
 
@@ -1020,8 +1019,8 @@ uint32_t __fastcall DRLGROOMEX_CheckWorldCoordsInRoomBounds(D2DrlgCoordsStrc * p
       return 0;
     }
 
-    iVar1 = pRoomCoords->WorldSize.y;
-    return (uint32_t)(nWorldY < nRoomPosScaled + iVar1 * 4 + iVar1);
+    nExtent = pRoomCoords->WorldSize.y;
+    return (uint32_t)(nWorldY < nRoomPosScaled + nExtent * 4 + nExtent);
 }
 
 uint32_t __fastcall CheckLOSDraw(D2RoomExStrc * pRoomEx) {
@@ -1109,7 +1108,6 @@ BOOL __fastcall HasWaypoint(D2RoomExStrc * pRoomEx) {
       exit(-1);
     }
 
-    return (uint32_t)((pRoomEx->eRoomExFlags & 0x30000U) != 0);
     return (uint32_t)((pRoomEx->eRoomExFlags & 0x30000U) != 0);
 }
 

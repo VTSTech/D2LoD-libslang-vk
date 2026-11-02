@@ -84,19 +84,19 @@ void __fastcall Q17_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 }
 
 // A3Q0 status filter — stub, always returns false (SpokeToHratli is never gated by the status-filter path).
-bool __fastcall Q17_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q17_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     return false;
 }
 
 // A3Q0 active filter — decides whether Hratli (0xfd) is "interactable" for the SpokeToHratli interaction. Returns true (active) only while this player has NOT completed SpokeToHratli; once spoken, returns false.
 bool __fastcall Q17_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0xfd) {
-      return false;
-    }
-
-    BOOL bIsQuestCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToHratli, QUESTSTATE_Completed);
-    if (!bIsQuestCompleted) {
-      return true;
+    if (nTargetClassId == 0xfd) {
+      BOOL bIsQuestCompleted;
+      /* GetQuestState(QUEST_SpokeToHratli, QUESTSTATE_Completed) — active only if
+                         not yet spoken */ bIsQuestCompleted = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_SpokeToHratli, QUESTSTATE_Completed);
+      if (!bIsQuestCompleted) {
+        return true;
+      }
     }
 
     return false;

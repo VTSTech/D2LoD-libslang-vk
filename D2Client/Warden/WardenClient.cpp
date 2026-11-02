@@ -14,7 +14,6 @@
 #include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSignature.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -55,7 +54,7 @@ uint32_t __stdcall WARDEN_CheckSignatureMagic(int32_t nDataLen, uint32_t nTotalL
     int nSigOffset = nTotalLen - nDataLen - 4;
     *pnSigOffset = nSigOffset;
     if (nTotalLen >= nDataLen + 4U) {
-      Storm::Source::SSystem::SMemCopy(&pBuffer, (void*)(nSigOffset + pBuffer), 4);
+      Storm::Source::SMem::SMemCopy(&pBuffer, (void*)(nSigOffset + pBuffer), 4);
       return (uint32_t)(pBuffer == 0x5349474e);
     }
 
@@ -103,18 +102,18 @@ static BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szMod
       return 0;
     }
 
-    Storm::Source::SSystem::SMemCopy(&__frame0.pExpectedHash, pData + nSigOffset, 4);
+    Storm::Source::SMem::SMemCopy(&__frame0.pExpectedHash, pData + nSigOffset, 4);
     if (__frame0.pExpectedHash != (uint8_t*)0x5349474e) {
       return 0;
     }
 
     uint8_t* pHashBuf = (uint8_t*)Storm::Source::SMem::SMemAlloc(nKeySize, ".\\WARDEN\\WardenClient.cpp", 0xab, 0);
     __frame0.pExpectedHash = pHashBuf;
-    Storm::Source::SSystem::SMemFill(pHashBuf, nKeySize, 0xbb);
+    Storm::Source::SMem::SMemFill(pHashBuf, nKeySize, 0xbb);
     pHashBuf[nKeySize - 1] = '\v';
     WARDEN_ComputeModuleHash(szModuleName, pHashBuf, nSigDataLen, nSigOffset, pData);
     uint8_t* pDecryptedSig = (uint8_t*)Storm::Source::SMem::SMemAlloc(nKeySize, ".\\WARDEN\\WardenClient.cpp", 0xb5, 0);
-    Storm::Source::SSystem::SMemCopy(pDecryptedSig, pData + nSigOffset + 4, nKeySize);
+    Storm::Source::SMem::SMemCopy(pDecryptedSig, pData + nSigOffset + 4, nKeySize);
     Storm::Source::SBig::SBigNew(&__frame0.pBnResult);
     Storm::Source::SBig::SBigNew(&__frame0.pBnSig);
     Storm::Source::SBig::SBigNew(&__frame0.pBnExponent);
@@ -125,7 +124,7 @@ static BOOL __stdcall WARDEN_VerifyModuleSignature(size_t nKeySize, char * szMod
     Storm::Source::SBig::SBigPowMod(__frame0.pBnResult, __frame0.pBnSig, __frame0.pBnExponent, __frame0.pBnModulus);
     Storm::Source::SBig::SBigToBinaryBuffer(__frame0.pBnResult, pDecryptedSig, nKeySize, nullptr);
     pHashBuf = __frame0.pExpectedHash;
-    int nCmpResult = Storm::Source::SSystem::SSYSTEM_MemCompare(pDecryptedSig, __frame0.pExpectedHash, nKeySize);
+    int nCmpResult = Storm::Source::SMem::SMemCmp(pDecryptedSig, __frame0.pExpectedHash, nKeySize);
     Storm::Source::SMem::SMemFree(pHashBuf, ".\\WARDEN\\WardenClient.cpp", 0xcc, 0);
     Storm::Source::SMem::SMemFree(pDecryptedSig, ".\\WARDEN\\WardenClient.cpp", 0xcd, 0);
     Storm::Source::SBig::SBigDel(__frame0.pBnResult);
@@ -141,18 +140,17 @@ void __fastcall WARDEN_CbAllocModuleStruct(uint32_t nSize) {
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
-void __fastcall WARDEN_CbFreeModuleStruct(void * pParam) {
-    Storm::Source::SMem::SMemFree(pParam, ".\\WARDEN\\WardenClient.cpp", 0x117, 0);
+void __fastcall WARDEN_CbFreeModuleStruct(void * pModuleStruct) {
+    Storm::Source::SMem::SMemFree(pModuleStruct, ".\\WARDEN\\WardenClient.cpp", 0x117, 0);
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
 LPVOID * __thiscall WARDEN_DestroyModuleObject(LPVOID * ppModule, uint8_t bFreeStruct) {
     WARDEN_FreeModuleLibraries(ppModule);
-    if (!(bFreeStruct & 1)) {
-      return ppModule;
+    if (bFreeStruct & 1) {
+      Storm::Source::SMem::SMemFree(ppModule, ".\\WARDEN\\WardenClient.cpp", 0x117, 0);
     }
 
-    Storm::Source::SMem::SMemFree(ppModule, ".\\WARDEN\\WardenClient.cpp", 0x117, 0);
     return ppModule;
 }
 
@@ -455,7 +453,7 @@ static BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Ke
     }
 
     uint32_t* pDecrypted = (uint32_t*)Storm::Source::SMem::SMemAlloc(nSize, ".\\WARDEN\\WardenClient.cpp", 0x16e, 0);
-    Storm::Source::SSystem::SMemCopy(pDecrypted, pSrcData, nSize);
+    Storm::Source::SMem::SMemCopy(pDecrypted, pSrcData, nSize);
     if (!pDecrypted) {
       return 0;
     }
@@ -487,8 +485,8 @@ static BOOL __stdcall WARDEN_DecryptAndLoadModule(void * pSrcData, void * pRc4Ke
     ppModule = (D2WardenModuleStrc*)Storm::Source::SMem::SMemAlloc(0x14, ".\\WARDEN\\WardenClient.cpp", 0x10d, 0);
     if (ppModule) {
       ppModule->pLibrary = 0;
-      ppModule->field_0x4 = 0;
-      ppModule->field_0x8 = 0;
+      ppModule->nImageSize = 0;
+      ppModule->nLoadedLibraryCount = 0;
       ppModule->pModuleObject = 0;
       ppModule->pfnCreateInterface = 0;
       bDecryptOk = WARDEN_DecryptModule((uint32_t**)&ppModule->pLibrary, dwUnusedEDX, pDecompressed, nDecompressedSize);
@@ -726,7 +724,7 @@ static BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pMod
     char szModuleHashHex[32];
     void* pFileData;
     uint32_t nFileSize;
-    int nCmpResult = Storm::Source::SSystem::SSYSTEM_MemCompare(pModuleHash, gabWardenEmbeddedModuleHash, 0x10);
+    int nCmpResult = Storm::Source::SMem::SMemCmp(pModuleHash, gabWardenEmbeddedModuleHash, 0x10);
     if (!nCmpResult) {
       bCacheReadSuccess = WARDEN_DecryptAndLoadModule(gaWardenModuleLoadData, gabWardenModuleRc4Key, 0x12b2);
       return bCacheReadSuccess;
@@ -751,14 +749,14 @@ static BOOL __stdcall WARDEN_ResolveAndLoadModule(void * pRc4Key, uint8_t * pMod
     return bCacheReadSuccess;
 }
 
-uint32_t __stdcall WARDEN_DownloadModule(char * szKey, void * pData, uint32_t pModuleRequest) {
+uint32_t __stdcall WARDEN_DownloadModule(char * szKey, void * pData, uint32_t nSize) {
     _FILETIME fileTime;
     if (!sgpUnknownSequence) {
       return 0;
     }
 
     /* LPFILETIME lpSystemTimeAsFileTime for GetSystemTimeAsFileTime */ GetSystemTimeAsFileTime(&fileTime);
-    BOOL bResult = sgpUnknownSequence->pfnCacheWriteData(szKey, pData, pModuleRequest, (int*)&fileTime, -1, -1);
+    BOOL bResult = sgpUnknownSequence->pfnCacheWriteData(szKey, pData, nSize, (int*)&fileTime, -1, -1);
     return bResult;
 }
 
@@ -793,8 +791,8 @@ void __thiscall LoadModule(::WardenClient * pThis, uint8_t * pModuleHash, void *
 
 // @sourcefile .\WARDEN\WardenClient.cpp
 void * __thiscall AllocateMemory(::WardenClient * pThis, uint32_t nSize) {
-    void* pvVar1 = Storm::Source::SMem::SMemAlloc(nSize, ".\\WARDEN\\WardenClient.cpp", 0x274, 0);
-    return pvVar1;
+    void* pMemory = Storm::Source::SMem::SMemAlloc(nSize, ".\\WARDEN\\WardenClient.cpp", 0x274, 0);
+    return pMemory;
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
@@ -810,7 +808,7 @@ void __thiscall SetRC4Data(::WardenClient * pThis, void * pData, uint32_t nSize)
 
     gpWardenResponseData = Storm::Source::SMem::SMemAlloc(nSize, ".\\WARDEN\\WardenClient.cpp", 0x284, 0);
     gnWardenResponseSize = nSize;
-    Storm::Source::SSystem::SMemCopy(gpWardenResponseData, pData, nSize);
+    Storm::Source::SMem::SMemCopy(gpWardenResponseData, pData, nSize);
 }
 
 // @sourcefile .\WARDEN\WardenClient.cpp
@@ -826,7 +824,7 @@ bool __thiscall GetRC4Data(::WardenClient * pThis, void * pDest, uint32_t * pnSi
     }
 
     *pnSize = nCopySize;
-    Storm::Source::SSystem::SMemCopy(pDest, pSrc, nCopySize);
+    Storm::Source::SMem::SMemCopy(pDest, pSrc, nCopySize);
     Storm::Source::SMem::SMemFree(gpWardenResponseData, ".\\WARDEN\\WardenClient.cpp", 0x292, 0);
     gpWardenResponseData = 0;
     gnWardenResponseSize = 0;

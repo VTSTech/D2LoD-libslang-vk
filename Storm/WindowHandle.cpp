@@ -76,8 +76,8 @@ uint32_t __stdcall SMsgPushRegisterState(uint32_t nSubId) {
     return 1;
 }
 
-uint32_t __stdcall WND_SetActiveWindow(uint32_t dwParam) {
-    gpActiveWindow = dwParam;
+uint32_t __stdcall WND_SetActiveWindow(uint32_t pWindow) {
+    gpActiveWindow = pWindow;
     return 1;
 }
 
@@ -86,20 +86,18 @@ uint32_t __thiscall WND_ResolveListOffset(int * pNode, int * pBase) {
     if ((int)nOffset < 0) {
       return ~nOffset;
     }
-    if ((int)pBase >= 0) {
-      return nOffset + (int)pBase;
+    if ((int)pBase < 0) {
+      pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     }
 
-    pBase = (int*)((int)pNode - *(int*)(*pNode + 4));
     return nOffset + (int)pBase;
 }
 
 int32_t __thiscall WND_GetNodeOrDefault(int32_t pThis, int32_t pNode) {
-    if (pNode) {
-      return pNode;
+    if (!pNode) {
+      pNode = pThis + 4;
     }
 
-    pNode = pThis + 4;
     return pNode;
 }
 
@@ -161,11 +159,10 @@ void __thiscall WND_InsertListNode(int * * ppList, int * * pNode, int32_t nMode,
 }
 
 uint32_t __thiscall WND_GetNodeMaskedOffset(int32_t pThis, int32_t pNode) {
-    if (pNode) {
-      return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
+    if (!pNode) {
+      pNode = pThis + 4;
     }
 
-    pNode = pThis + 4;
     return (int)*(uint32_t*)(pNode + 4) <= 0 ? 0 : *(uint32_t*)(pNode + 4);
 }
 
@@ -261,11 +258,10 @@ int * * __thiscall WND_AllocRecord(int * * ppList, int32_t nMode, int32_t nSize,
     } else {
       ppRecord = 0;
     }
-    if (!nMode) {
-      return ppRecord;
+    if (nMode) {
+      WND_InsertListNode(ppList, ppRecord, nMode, nullptr);
     }
 
-    WND_InsertListNode(ppList, ppRecord, nMode, nullptr);
     return ppRecord;
 }
 
@@ -286,11 +282,10 @@ int * __thiscall WND_UnlinkAndFreeRecord(int * pRecord, uint8_t byFreeFlags) {
       *pRecord = 0;
       pRecord[1] = 0;
     }
-    if (!(byFreeFlags & 1)) {
-      return pRecord;
+    if (byFreeFlags & 1) {
+      Source::SMem::SMemFree(pRecord, "delete", -1, 0);
     }
 
-    Source::SMem::SMemFree(pRecord, "delete", -1, 0);
     return pRecord;
 }
 
@@ -520,7 +515,9 @@ void __stdcall SMsgUnregisterMessage(uint32_t hWnd, char * szText1, char * szTex
     SMSG_InternalUnregister(0x534d5347, szText1, szText2, (HWND)hWnd);
 }
 
-LRESULT __stdcall WndProcC(HWND hWnd, uint32_t nMsg, uint32_t nWParam, LPARAM lParam) {
+// Storm's registered window procedure; dispatches through SMsgDispatchMessage.
+// Name from the PowerPC 1.13c Storm traceback table (GenericWndProc @10026f30).
+LRESULT __stdcall GenericWndProc(HWND hWnd, uint32_t nMsg, uint32_t nWParam, LPARAM lParam) {
     BOOL bHandled = 0;
     int32_t lOutResult = 0;
     BOOL bDispatched = SMsgDispatchMessage(hWnd, nMsg, nWParam, lParam, &bHandled, (LRESULT*)&lOutResult);
@@ -538,7 +535,7 @@ uint8_t * __stdcall WND_GetWndProc(int32_t nResourceId) {
       return nullptr;
     }
 
-    return (uint8_t*)WndProcC;
+    return (uint8_t*)GenericWndProc;
 }
 
 uint32_t __thiscall WND_ByteBuffer_HasRoom(int32_t pThis, int32_t nAddBytes) {
@@ -577,18 +574,18 @@ void StaticInit_6ca8e0() {
 
 // Runs at exit: removes every element from the tracked window list, then unlinks the list head itself.
 void StaticFini_gWndTrackingList() {
-    uint32_t* puVar1;
+    uint32_t* pNextLink;
     WND_RemoveAllChildren(&gpWndTrackingListHead);
     if (!gpWndTrackingListHead.pPrevLink) {
       return;
     }
     if (gpWndTrackingListHead.pNext < 0) {
-      puVar1 = (uint32_t*)~gpWndTrackingListHead.pNext;
+      pNextLink = (uint32_t*)~gpWndTrackingListHead.pNext;
     } else {
-      puVar1 = (uint32_t*)(gpWndTrackingListHead.pNext + ((int)((char*)&gpWndTrackingListHead + 4) - gpWndTrackingListHead.pPrevLink->pNext));
+      pNextLink = (uint32_t*)(gpWndTrackingListHead.pNext + ((int)((char*)&gpWndTrackingListHead + 4) - gpWndTrackingListHead.pPrevLink->pNext));
     }
 
-    *puVar1 = (uint32_t)(uintptr_t)gpWndTrackingListHead.pPrevLink;
+    *pNextLink = (uint32_t)(uintptr_t)gpWndTrackingListHead.pPrevLink;
     gpWndTrackingListHead.pPrevLink->pNext = gpWndTrackingListHead.pNext;
     gpWndTrackingListHead.pPrevLink = 0;
     gpWndTrackingListHead.pNext = 0;

@@ -15,14 +15,14 @@ namespace Bnclient::SHA {
 
 // Function declarations
 void __fastcall SHA1_Init(uint32_t * pState);
-void __fastcall SHA1_Update(uint32_t * pnParam, void * pParam, uint32_t nByteLen);
+void __fastcall SHA1_Update(uint32_t * pShaCtx, void * pData, uint32_t nByteLen);
 void __fastcall SHA1_Final(uint8_t * pHashOut, uint32_t * pShaCtx);
 // Register params: pHashOut (ECX): uint8_t *, pWideStr (EDX): char *
 // @sourcefile .\SHA.cpp
 int32_t __fastcall SHA1_HashWideString(uint8_t * pHashOut, char * pWideStr, int32_t nLength);
 struct BigData * __fastcall SHA1_BigIntFromUnsigned(uint32_t nValue);
 struct BigData * __fastcall SHA1_FromBigIntBytes(void * pData, uint32_t nByteCount);
-uint32_t __fastcall SHA1_ToBigIntBytes(struct BigData * pBigNum, void * pOutBuf, uint32_t nBufSize);
+uint32_t __fastcall SHA1_ToBigIntBytes(struct BigData * pBigNum, uint8_t * pOutBuf, uint32_t nBufSize);
 int32_t __fastcall SHA1_CompareBigInt(struct BigData * pBigA, struct BigData * pBigB);
 // Compares pBigInt with the unsigned dwValue: builds a temporary BigData from dwValue (SBigNew + SBigFromUnsigned), returns SBIG_CompareBigBuffers_ForSha1(pBigInt, tmp) and frees the temporary.
 // Provenance: 1.14d asm 0052a2f0.

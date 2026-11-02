@@ -122,16 +122,15 @@ void __fastcall Q35_SpawnAncientsWave(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
 
 // A4Q3 Hell's Forge — Q27_IsClassicGameCompleted: returns 1 only in a CLASSIC (non-expansion) game once Terror's End (Diablo killed) is done, i.e. the game's victory condition for classic D2. Reads TerrorsEnd quest data field_0x14 (Diablo-killed flag). No quest-state writes; pure predicate.
 BOOL __fastcall Q27_IsClassicGameCompleted(::SGAMEDATA * pGame) {
-    if (pGame->bExpansion) {
-      return 0;
+    if (!pGame->bExpansion) {
+      D2QuestDataStrc* pQuestData;
+      pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
+      if (!pQuestData || pQuestData->pQuestSpecificData.pA4Q2->bDiabloKilledBroadcast) {
+        return 1;
+      }
     }
 
-    D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_TerrorsEnd);
-    if (!(!pQuestData || pQuestData->pQuestSpecificData.pA4Q2->bDiabloKilledBroadcast)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // A4Q3 Hell's Forge — Objects_InitFn78: object init for an Act4 quest object keyed off TerrorsEnd (Diablo) quest data. First touch sets the object's per-quest marker to 2 and update-flag 1 (un-touched/active visual); subsequent touches set update-flag 2 (completed/depleted visual). State stored in pA4Q3 quest-specific GUID scratch, not in the QuestRecord bitfield.
@@ -194,8 +193,9 @@ BOOL __fastcall OBJOP_A4Q2_PandemoniumFortressGate(D2ObjectOperateFnArg * pOpera
         nTradeTick = PLAYER::Player::GetPlayerTradeTickOrBusy(pOperation->pAttacker);
         if (!nTradeTick) {
           UNIT::SUnit::ClearInteractInfo(pOperation->pAttacker);
-          pPlayerData->dwTradeTick = 1;
-          D2GSPacketSrv0x5D aQuestStatePacket = {0};
+          pPlayerData->bCutscenePending = 1;
+          D2GSPacketSrv0x5D aQuestStatePacket;
+          memset(&aQuestStatePacket, 0, sizeof(aQuestStatePacket));
           aQuestStatePacket.nPacketId = ']';
           aQuestStatePacket.nQuestId = '\x17';
           aQuestStatePacket.nAlertFlags = '\x02';
@@ -236,14 +236,14 @@ BOOL __fastcall Q28_PlayerNotifyCompletedForge(::SGAMEDATA * pGame, D2UnitStrc *
 
 // A4Q3 Hell's Forge — Objects_InitFn48: init for the Hellforge object. No quest data / not yet introduced -> update-flag 3 (default/unstarted visual). Otherwise sets update-flag from cached pA4Q3 state word; if the prior state flag is not one of {0xd,2,3} (i.e. not already in/after the smash sequence) it resets eFlags and broadcasts state 2 (forge-active) via QUEST_SetStateAndBroadcast + Q28_PlayerNotifyCompletedForge.
 void __fastcall Objects_InitFn48(D2ObjectInitFnArg * pInitArg) {
-    uint8_t nUpdateFlag;
+    uint16_t wForgeState;
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_HellsForge);
     if (!pQuestData || pQuestData->bIsNotIntroduction == '\0') {
       D2Common::Units::SetupUpdateFlag(pInitArg->pObject, 3);
     } else {
-      uint16_t uVar1;
-      uVar1 = (uint16_t)((uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q3->nForgeStage | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q3->field_0x01 << 8);
-      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, (uint32_t)uVar1);
+      uint8_t nUpdateFlag;
+      wForgeState = (uint16_t)((uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q3->nForgeStage | (uint32_t)(uint8_t)pQuestData->pQuestSpecificData.pA4Q3->byForgeStageHigh << 8);
+      D2Common::Units::SetupUpdateFlag(pInitArg->pObject, (uint32_t)wForgeState);
       nUpdateFlag = pQuestData->nStateFlagPrev;
       if (nUpdateFlag != 0xd && nUpdateFlag != 2 && nUpdateFlag != 3) {
         pQuestData->nQuestPacketFlags = '\0';
@@ -373,7 +373,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
                 pGame = pOperation->sArg.pGame;
                 GAME::Event::SetEvent(pGame, pOperation->sArg.pVictim, 1, (pObjectsTxt->FrameCnt[1] >> 8) + pGame->dwGameFrame, 0, 0);
                 pA4Q3Data->nForgeStage = 2;
-                pA4Q3Data->field_0x01 = 0;
+                pA4Q3Data->byForgeStageHigh = 0;
                 pForgeQuestData->nQuestPacketFlags = '\0';
                 QUEST_SetStateAndBroadcast(pForgeQuestData, 3, nullptr, (::fpExecuteOnUnitFunction)Q28_PlayerNotifyCompletedForge, true);
                 QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x2073736d);
@@ -416,7 +416,7 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
 
                     D2Common::Units::SetupUpdateFlag(pOperation->sArg.pVictim, 3);
                     pA4Q3Data->nForgeStage = 3;
-                    pA4Q3Data->field_0x01 = 0;
+                    pA4Q3Data->byForgeStageHigh = 0;
                     QUEST_RemoveQuestItemFromPlayer(pOperation->sArg.pGame, pOperation->pAttacker, 0x20686668);
                     pQuestBitBuffer = GetQuestBitBuffer(pOperation->sArg.pGame, pOperation->pAttacker);
                     /* SetQuestState(QUEST_HellsForge=0x1b, JustCompleted=0xd): the SMASH succeeded
@@ -458,18 +458,15 @@ BOOL __fastcall OBJOP_A4Q3_HellforgeSmash(D2ObjectOperateFnArg * pOperation) {
 
 // A4Q3 Hell's Forge — Q28_ActiveFilter (fpActiveFilter): predicate deciding if the quest is "active" for a target. True only for Deckard Cain (monstats 0xf6) when Hell's Forge is not Completed/RewardAwaits, the quest is introduced, the internal stateFlag is set, and the player hasn't yet received the hammer (bGotHammer==0). Gates Cain's give-the-hammer gossip. No state writes.
 bool __fastcall Q28_ActiveFilter(D2QuestDataStrc * pQuestData, int32_t nTargetClassId, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2UnitStrc * pUnitEx) {
-    if (nTargetClassId != 0xf6) {
-      return false;
-    }
-
-    BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
-    if (bQuestState) {
-      return false;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
-    if (!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
-      return true;
+    if (nTargetClassId == 0xf6) {
+      BOOL bQuestState;
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Completed);
+      if (!bQuestState) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_RewardAwaits);
+        if (!bQuestState && pQuestData->bIsNotIntroduction != '\0' && pQuestData->nStateFlag == 1 && !pQuestData->pQuestSpecificData.pA4Q3->bGotHammer) {
+          return true;
+        }
+      }
     }
 
     return false;
@@ -532,12 +529,11 @@ BOOL __fastcall Q28_PlayerUpdateForgeState(::SGAMEDATA * pGame, D2UnitStrc * pUn
                          yet -> "talk to Cain / get hammer" step bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pForgeQuestData->nStateFlag != 3) {
-      return 0;
+    if (pForgeQuestData->nStateFlag == 3) {
+      /* SetQuestState(QUEST_HellsForge=0x1b, Step0x03=3): internal flag 3 ->
+                         "soulstone on anvil, smash it" step bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Step0x03);
     }
 
-    /* SetQuestState(QUEST_HellsForge=0x1b, Step0x03=3): internal flag 3 ->
-                         "soulstone on anvil, smash it" step bit */ D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_HellsForge, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -876,7 +872,7 @@ void __fastcall Q28_InitData(D2QuestDataStrc * pQuestData) {
     D2QuestDataA4Q3Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA4Q3Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a4q3.cpp", 0x358);
     pQuestData->pQuestSpecificData.pA4Q3 = pQuestSpecificData;
     pQuestSpecificData->nForgeStage = 0;
-    pQuestSpecificData->field_0x01 = 0;
+    pQuestSpecificData->byForgeStageHigh = 0;
     pQuestSpecificData->bForgeQuestAccepted = 0;
     pQuestSpecificData->bDropActive = 0;
     pQuestSpecificData->bSetupUpdateFlag = 0;

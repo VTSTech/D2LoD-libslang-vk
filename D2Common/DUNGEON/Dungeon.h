@@ -9,6 +9,7 @@
 #include "d2_platform.h"
 
 // Forward declarations
+struct D2ClientStrc;
 struct D2CoordStrc;
 struct D2DrlgActStrc;
 struct D2DrlgCoordsStrc;
@@ -133,9 +134,9 @@ int32_t __stdcall DRLGROOM_IsUnitInactiveProcessed(struct D2RoomStrc * pRoom);
 void __stdcall DRLGROOM_SetUnitInactiveProcessed(struct D2RoomStrc * pRoom, BOOL bSet);
 // Adds nClientId to the room's pClients array. Grows the array by 4 slots via ReAllocServerMemory when at capacity (nClientsMax). Appends the client ID, increments nClientsCount, then re-sorts the client list. Validates the room and client ID are non-null/non-zero before proceeding; halts on assertion failure. Called when a client enters a room's visibility range.
 // @sourcefile .\DUNGEON\Dungeon.cpp
-void __stdcall DRLGROOM_AddClientToRoom(struct D2RoomStrc * pRoom, int32_t nClientId);
+void __stdcall DRLGROOM_AddClientToRoom(struct D2RoomStrc * pRoom, struct D2ClientStrc * nClientId);
 // Removes nClientId from the room's pClients array by linear search. Fills the vacated slot with the last element, decrements nClientsCount, then re-sorts the client list. Halts if the room pointer is null, the client ID is zero, the client is not found (assertion 0x490), or validation fails. Each halt pushes its __LINE__ and enters the shared tail DRLGROOM_RemoveClientFromRoom_HaltTail.
-void __stdcall DRLGROOM_RemoveClientFromRoom(struct D2RoomStrc * pRoom, int32_t nClientId);
+void __stdcall DRLGROOM_RemoveClientFromRoom(struct D2RoomStrc * pRoom, struct D2ClientStrc * nClientId);
 void __stdcall DRLGROOM_RemoveClientFromRoom_HaltTail(int nLine);
 int32_t __stdcall DRLGROOM_GetIdleTicks(struct D2RoomStrc * pRoom);
 // Checks whether room2's client list contains any client ID not present in room1's list. Returns 1 if a unique client is found, 0 otherwise.
@@ -187,7 +188,7 @@ void __stdcall SetActCallbackFunc(struct D2DrlgActStrc * pDrlgAct, ::ACTCALLBACK
 void __stdcall SaveKilledUnitGUID(struct D2RoomStrc * pRoom, int32_t nUnitGUID);
 // @sourcefile .\DUNGEON\Dungeon.cpp
 void __stdcall FreeAct(struct D2DrlgActStrc * pDrlgAct);
-struct D2RoomStrc * __stdcall SpawnUnit(struct D2DrlgActStrc * pDrlgAct, eD2LevelId eLevel, int32_t nParam, int * pnParam1, int * pnParam2, uint32_t nParam2);
+struct D2RoomStrc * __stdcall SpawnUnit(struct D2DrlgActStrc * pDrlgAct, eD2LevelId eLevel, int32_t nSpawnTypeOrMode, int * pnSpawnX, int * pnSpawnY, uint32_t nUnitSize);
 int32_t __stdcall GetGridIndex(struct D2RoomStrc * pRoom, int32_t nX, int32_t nY);
 // Sets RoomEx activation priority to 0 (highest). Wrapper for DRLGROOMEX_MoveToActivationList(pRoomEx, 0).
 void DRLGROOMEX_SetPriority0(struct D2RoomExStrc * pRoomEx);

@@ -138,11 +138,10 @@ BOOL __fastcall Q33_UpdateQuestStep(::SGAMEDATA * pGame, D2UnitStrc * pUnit, voi
       D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Step0x02);
       return 0;
     }
-    if (pQuestData->nStateFlag != 3) {
-      return 0;
+    if (pQuestData->nStateFlag == 3) {
+      D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Step0x03);
     }
 
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Step0x03);
     return 0;
 }
 
@@ -173,7 +172,8 @@ void __fastcall Q33_Callback02_NpcDeactivate(D2QuestDataStrc * pQuestData, D2Que
 // Used as the AI-sub clear callback when the frozen-Anya monster (0x20f) is killed.
 // @sourcefile d:\diablo2\Diablo2\Source\D2Game/Quests/a5q3.cpp
 void __fastcall Q33_SendQuestStatePacket(D2UnitStrc * pUnit) {
-    D2GSPacketSrv0x5D aPacketBuf = {0};
+    D2GSPacketSrv0x5D aPacketBuf;
+    memset(&aPacketBuf, 0, sizeof(aPacketBuf));
     aPacketBuf.nPacketId = ']';
     aPacketBuf.nQuestId = '!';
     aPacketBuf.nAlertFlags = ' ';
@@ -205,11 +205,10 @@ BOOL __fastcall Q33_OnFrozenAnyaKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     Monster::MonsterMode::SetCurrentSkill(pUnit, eD2MonsterAnimMode_ns::Dead, &sKillInfo);
     Monster::MonsterMode::MONSTERAI_ExecuteLifecycleTransition(pGame, &sKillInfo, 1);
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pGame, QUESTINT_PrisonOfIce);
-    if (!pQuestData) {
-      return 1;
+    if (pQuestData) {
+      pQuestData->pQuestSpecificData.pA5Q3->bFrozenAnyaDespawned = 1;
     }
 
-    pQuestData->pQuestSpecificData.pA5Q3->bFrozenAnyaDespawned = 1;
     return 1;
 }
 
@@ -218,11 +217,10 @@ BOOL __fastcall Q33_OnFrozenAnyaKilled(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
 // (Betrayal of Harrogath) get re-evaluated. Halts on IsBadCodePtr of the chained fn ptr.
 bool __fastcall Q33_SequenceFilter(D2QuestDataStrc * pQuestData) {
     if (pQuestData->nStateFlag < 5 && pQuestData->bIsNotIntroduction != '\0') {
-      if (pQuestData->nStateFlag) {
-        return true;
+      if (!pQuestData->nStateFlag) {
+        pQuestData->nStateFlag = 1;
       }
 
-      pQuestData->nStateFlag = 1;
       return true;
     }
 
@@ -746,16 +744,14 @@ void __fastcall Q33_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 BOOL __fastcall Q33_PropagateCompleteToParty(::SGAMEDATA * pGame, D2UnitStrc * pUnit, void * pArg) {
     D2BitBufferStrc* pQuestRecord = D2Common::Units::GetPlayerData(pUnit)->pQuestRecord[pGame->nDifficulty];
     BOOL bJustCompleted = D2Common::QuestRecord::GetQuestState(pQuestRecord, QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
-    if (!bJustCompleted) {
-      return 0;
+    if (bJustCompleted) {
+      uint16_t nPartyId;
+      nPartyId = UNIT::SUnit::GetPartyId(pUnit);
+      if (nPartyId != 0xffff) {
+        UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q33_SetCompleteForPartyMember, 0);
+      }
     }
 
-    uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
-    if (nPartyId == 0xffff) {
-      return 0;
-    }
-
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(pGame, nPartyId, (::fpExecuteOnUnitFunction)Q33_SetCompleteForPartyMember, 0);
     return 0;
 }
 
@@ -766,22 +762,17 @@ BOOL __fastcall Q33_SetCannotComplete(::SGAMEDATA * pGame, D2UnitStrc * pUnit, v
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_Completed);
-    if (bQuestState == 1) {
-      return 0;
+    if (bQuestState != 1) {
+      bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_RewardAwaits);
+      if (bQuestState != 1) {
+        bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
+        if (bQuestState != 1) {
+          D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_CannotCompleteQuestInGame);
+          QUEST_SendQuestStatePacket(pUnit, 0x21, 0);
+        }
+      }
     }
 
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_RewardAwaits);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_JustCompleted);
-    if (bQuestState == 1) {
-      return 0;
-    }
-
-    D2Common::QuestRecord::SetQuestState(pBitBuffer, QUEST_PrisonOfIce, QUESTSTATE_CannotCompleteQuestInGame);
-    QUEST_SendQuestStatePacket(pUnit, 0x21, 0);
     return 0;
 }
 
@@ -1241,27 +1232,27 @@ void __fastcall Q33_CheckPlayerHasScrollOfResistance(::SGAMEDATA * pGame, D2Unit
 
 // Q33_CheckPartyHasScrollOfResistance (PrisonOfIce): returns 1 if this player holds the "ice " scroll, else scans the
 // whole party via Q33_CheckPlayerHasScrollOfResistance and returns whether anyone holds it (field_0xE2).
-static uint32_t Q33_CheckPartyHasScrollOfResistance(int32_t nParam, D2UnitStrc * pUnit) {
-    D2UnitStrc* pScrollItem = ITEMS::Items::Drop::HasQuestItem(*(::SGAMEDATA**)(nParam + 4), pUnit, 0x20656369);
+static uint32_t Q33_CheckPartyHasScrollOfResistance(int32_t pQuestData, D2UnitStrc * pUnit) {
+    D2UnitStrc* pScrollItem = ITEMS::Items::Drop::HasQuestItem(*(::SGAMEDATA**)(pQuestData + 4), pUnit, 0x20656369);
     if (pScrollItem) {
       return 1;
     }
 
-    int32_t pnQuestSpecificData = *(int32_t*)(nParam + 0x18);
+    int32_t pnQuestSpecificData = *(int32_t*)(pQuestData + 0x18);
     uint16_t nPartyId = UNIT::SUnit::GetPartyId(pUnit);
     if (nPartyId == 0xffff) {
       return 0;
     }
 
     *(uint8_t*)(pnQuestSpecificData + 0xe2) = 0;
-    UNIT::Party::ExecuteFunctionForEveryPartyMember(*(::SGAMEDATA**)(nParam + 4), nPartyId, (::fpExecuteOnUnitFunction)Q33_CheckPlayerHasScrollOfResistance, 0);
+    UNIT::Party::ExecuteFunctionForEveryPartyMember(*(::SGAMEDATA**)(pQuestData + 4), nPartyId, (::fpExecuteOnUnitFunction)Q33_CheckPlayerHasScrollOfResistance, 0);
     return (uint32_t)(*(char*)(pnQuestSpecificData + 0xe2) != '\0');
 }
 
 // A5Q3 (Prison of Ice) fpStatusFilter callback. Writes a quest-log display sub-state byte into *nUnknown based on the player's per-difficulty bit-buffer. If Completed: returns true with *nUnknown=0. If RewardAwaits/JustCompleted: maps Step0x08/Step0x09 flags to values 5/6/0xd. Otherwise: checks party for Scroll of Resistance (4), CannotComplete (0xc), or falls back to nStateFlagPrev. Always returns true.
-bool __fastcall Q33_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * nUnknown) {
+bool __fastcall Q33_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, D2BitBufferStrc * pBitBufferEx, BYTE * pbyStatusCode) {
     bool bQuestStateResult;
-    *nUnknown = '\0';
+    *pbyStatusCode = '\0';
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_PrisonOfIce, QUESTSTATE_Completed);
     if (bQuestState) {
       return true;
@@ -1278,20 +1269,20 @@ bool __fastcall Q33_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
 
         bPartyHasScroll = Q33_CheckPartyHasScrollOfResistance((int32_t)pQuestData, pUnit);
         if (bPartyHasScroll) {
-          *nUnknown = '\x04';
+          *pbyStatusCode = '\x04';
           return true;
         }
 
         bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, QUEST_PrisonOfIce, QUESTSTATE_CannotCompleteQuestInGame);
         if (bQuestState) {
-          *nUnknown = '\f';
+          *pbyStatusCode = '\f';
           return true;
         }
         if (pQuestData->nStateFlag >= 5) {
           return true;
         }
 
-        *nUnknown = pQuestData->nStateFlagPrev;
+        *pbyStatusCode = pQuestData->nStateFlagPrev;
         return true;
       }
     }
@@ -1300,18 +1291,18 @@ bool __fastcall Q33_StatusFilter(D2QuestDataStrc * pQuestData, D2UnitStrc * pUni
     if (bQuestState) {
       bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, pQuestData->nQuestIdReal, QUESTSTATE_Step0x09);
       if (!bQuestState) {
-        *nUnknown = '\x06';
+        *pbyStatusCode = '\x06';
         return true;
       }
     }
 
     bQuestState = D2Common::QuestRecord::GetQuestState(pBitBufferEx, pQuestData->nQuestIdReal, QUESTSTATE_Step0x08);
     if (!bQuestState) {
-      *nUnknown = '\x05';
+      *pbyStatusCode = '\x05';
       return true;
     }
 
-    *nUnknown = '\r';
+    *pbyStatusCode = '\r';
     return true;
 }
 

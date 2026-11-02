@@ -198,7 +198,7 @@ BOOL PLRMODES_CanInterruptCurrentMode(D2UnitStrc * pUnit, ::SGAMEDATA * pGame, u
 
 // Attempts to cancel current player mode and initiate movement to a target location. Validates unit state, checks for blocking modes, and dispatches path-finding for the move.
 // @sourcefile .\PLAYER\PlrModes.cpp
-int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int nX, int nY, D2SkillStrc * pSkill) {
+int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int nModeIndex, int bCheckInterrupt, D2SkillStrc * pSkill) {
     int32_t nConcPct;
     uint32_t nConcRandRoll;
     int32_t iVar1;
@@ -215,7 +215,7 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
     if (pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Dead) {
       return 0;
     }
-    if (!nX || !nY) {
+    if (!nModeIndex || !bCheckInterrupt) {
       return 1;
     }
 
@@ -261,7 +261,7 @@ int __fastcall PLRMODES_TryCancelModeAndMoveToLocation(::SGAMEDATA * pGame, D2Un
       }
     } else {
       if (pUnit->eAnimMode.ePlayerMode != eD2PlayerAnimMode_ns::Neutral) {
-        switch (nX) {
+        switch (nModeIndex) {
           case 7:
 
           case 8:
@@ -577,7 +577,7 @@ static void __stdcall PLRMODES_DropAllEquipmentAndGold(::SGAMEDATA * pGame, D2Un
         pSpawnPos = &ptBestSpot;
         pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
         pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pSpawnRoom, &ptUnitPos, pSpawnPos, nGoldAmount, bAllowOnGround);
-        ITEMS::Items::Drop::DropItem(pGame, (int32_t)pUnit, pBodyLocItem, pSpawnRoom, ptBestSpot.x, ptBestSpot.y);
+        ITEMS::Items::Drop::DropItem(pGame, pUnit, pBodyLocItem, pSpawnRoom, ptBestSpot.x, ptBestSpot.y);
         nBodyLoc_00 = nBodyLoc;
       }
 
@@ -785,7 +785,7 @@ D2UnitStrc * __fastcall PLRMODES_CreateDeadBody(::SGAMEDATA * pGame, D2UnitStrc 
               pNewPosition = &sDropCoords;
               pSpawnRoom = D2Common::Units::UNITS_GetRoom(pUnit);
               pSpawnRoom = ITEMS::Items::Drop::FindBestSpotToSpawnItem(pSpawnRoom, &sUnitCoords, pNewPosition, uVar2, nMaxSearchRadius);
-              ITEMS::Items::Drop::DropItem(pSavedGame, (int32_t)pUnit, pItemUnit, pSpawnRoom, sDropCoords.x, sDropCoords.y);
+              ITEMS::Items::Drop::DropItem(pSavedGame, pUnit, pItemUnit, pSpawnRoom, sDropCoords.x, sDropCoords.y);
               iVar4 = nBodyLocIndex;
             }
 
@@ -1120,7 +1120,7 @@ static void __stdcall PLRMODES_HandleDepletedAmmoOrThrowable(::SGAMEDATA * pGame
 }
 
 // @sourcefile .\PLAYER\PlrModes.cpp
-void PLRMODES_CheckSwapWeaponSkill(eD2Skills * peSkillId, D2UnitStrc * pUnit) {
+static void PLRMODES_CheckSwapWeaponSkill(eD2Skills * peSkillId, D2UnitStrc * pUnit) {
     eD2Skills eSkillId;
     D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
     if (pSkill) {
@@ -1211,24 +1211,7 @@ void __fastcall PLRMODES_CheckWeaponQuantityAndDurability(::SGAMEDATA * pGame, D
       return;
     }
 
-    D2SkillStrc* pSkill = D2Common::Units::GetLeftSkill(pUnit);
-    if (pSkill) {
-      aSwappedSkillState[3] = D2Common::Skills::GetOwnerGUID(pSkill);
-      aSwappedSkillState[1] = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x56e);
-    } else {
-      aSwappedSkillState[3] = -1;
-      aSwappedSkillState[1] = 0;
-    }
-
-    pSkill = D2Common::Units::GetRightSkill(pUnit);
-    if (pSkill) {
-      aSwappedSkillState[2] = D2Common::Skills::GetOwnerGUID(pSkill);
-      aSwappedSkillState[0] = D2Common::Skills::GetSkillId(pSkill, ".\\PLAYER\\PlrModes.cpp", 0x57a);
-    } else {
-      aSwappedSkillState[2] = -1;
-      aSwappedSkillState[0] = 0;
-    }
-
+    PLRMODES_CheckSwapWeaponSkill((eD2Skills*)aSwappedSkillState, pUnit);
     D2UnitStrc* pWeaponItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, 4);
     if (pWeaponItem) {
       PLRMODES_HandleDepletedAmmoOrThrowable(pGame, pWeaponItem, pUnit);
@@ -1438,12 +1421,11 @@ static BOOL PLRMODES_RegenHp(D2UnitStrc * pUnit) {
     if (nHpRegen < 0) {
       nHpRegen = -nHpRegen;
     }
-    if (nHpRegen <= 4) {
-      return 1;
+    if (nHpRegen > 4) {
+      UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, (uint8_t)nNewHpPct128);
+      D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint8_t)nNewHpPct128, 0);
     }
 
-    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, (uint8_t)nNewHpPct128);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint8_t)nNewHpPct128, 0);
     return 1;
 }
 
@@ -1697,13 +1679,13 @@ void __fastcall PLRMODES_BroadcastAllyAndPartyInfo(::SGAMEDATA * pGame, D2UnitSt
 
 // Per-frame server mode tick for a player in Walk/Run mode. Refreshes target, runs Blaze trail if STATE_blaze is set, drains stamina (downgrading Run->Walk on empty), and advances movement via UNITS_ProcessUnitMovement. Maintains the anti-teleport-hack trail: every ~25ms it records the player's path coords into a ring of 20 slots and, if movement exceeded a distance threshold, advances the slot. When movement completes (mode==2) it resolves any pending interact/queued skill: with no queued skill -> idle + SERVER_InteractOrPick on the target unit; with a queued skill -> GetSkill/GetSkillMode then PLRMODES_StartModeID to begin the skill. Clears bHasPendingInteract. Returns the resulting mode code.
 int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nArg1, int32_t nArg2) {
-    BOOL nStaminaDrained;
     int nPosY;
     int32_t nDistance;
     eD2UnitType eTargetUnitType;
     uint32_t uuid;
     int32_t nPosX;
     uint8_t byPrevSlot;
+    uint8_t byHistoryIndex;
     UNIT::SUnit::GetTarget(pGame, pUnit);
     eD2States eState;
     eState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_blaze);
@@ -1711,6 +1693,7 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
       SKILLS::SkillSor::BlazePath(pGame, pUnit);
     }
     if (pUnit && pUnit->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::Run) {
+      BOOL nStaminaDrained;
       nStaminaDrained = PLRMODES_DrainStamina(pUnit);
       if (!nStaminaDrained) {
         PLRMODES_StartPathAndChangeMode(pGame, Walk, pUnit);
@@ -1724,12 +1707,11 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
     D2UnitDataPlayerStrc* pPlayerData;
     pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (dwTickCount > pPlayerData->dwPosHistoryTick + 0x19) {
-      uint8_t bVar1;
-      bVar1 = pPlayerData->nPosHistoryIndex;
-      if (!bVar1) {
+      byHistoryIndex = pPlayerData->nPosHistoryIndex;
+      if (!byHistoryIndex) {
         byPrevSlot = 0x13;
       } else {
-        byPrevSlot = bVar1 - 1;
+        byPrevSlot = byHistoryIndex - 1;
       }
 
       eTargetUnitType = pUnit->eUnitType;
@@ -1752,8 +1734,8 @@ int32_t __fastcall PLRMODES_ModeCallback_WalkRunBlock(::SGAMEDATA * pGame, D2Uni
 
       nDistance = D2Common::PATH::DynamicPath::GetDistanceSquaredXY(nPosX, nPosY, pPlayerData->aPosHistory[byPrevSlot].nX, pPlayerData->aPosHistory[byPrevSlot].nY);
       if (nDistance > 0x2d) {
-        pPlayerData->aPosHistory[bVar1].nX = nPosX;
-        pPlayerData->aPosHistory[bVar1].nY = nPosY;
+        pPlayerData->aPosHistory[byHistoryIndex].nX = nPosX;
+        pPlayerData->aPosHistory[byHistoryIndex].nY = nPosY;
         pPlayerData->nPosHistoryIndex += '\x01';
         pPlayerData->dwPosHistoryTick = dwTickCount;
         if (pPlayerData->nPosHistoryIndex >= 0x14) {

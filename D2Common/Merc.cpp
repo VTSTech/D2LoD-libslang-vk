@@ -138,6 +138,7 @@ static D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUni
 }; D2_STATIC_GUARD(apFixedSequenceTable, "D2Common::Merc::GetMonsterSequenceTable::apFixedSequenceTable");
 
     int32_t nWeaponClass;
+    D2MonStatsTxt* pMonStatsTxt;
     D2MonSeqMonsterTbls* pFixedSeqTable;
     D2SkillStrc* pCurSkill = Units::GetCurrentSkill(pUnit);
     if (!pCurSkill) {
@@ -164,23 +165,20 @@ static D2MonSeqMonsterTbls * __stdcall GetMonsterSequenceTable(D2UnitStrc * pUni
       }
 
       return pFixedSeqTable + nWeaponClass;
-      return pFixedSeqTable + nWeaponClass;
     }
-    if (eUnitType != UNIT_MONSTER) {
-      return pSeqTable;
-    }
-    if (!pUnit) {
-      nWeaponClass = -1;
-    } else {
-      nWeaponClass = pUnit->nClassId;
+    if (eUnitType == UNIT_MONSTER) {
+      if (!pUnit) {
+        nWeaponClass = -1;
+      } else {
+        nWeaponClass = pUnit->nClassId;
+      }
+
+      pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nWeaponClass);
+      if (pMonStatsTxt) {
+        pSeqTable = DATATBLS::MonsterTbls::GetMonsterSequenceTableByIndex(nSequenceId);
+      }
     }
 
-    D2MonStatsTxt* pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nWeaponClass);
-    if (!pMonStatsTxt) {
-      return pSeqTable;
-    }
-
-    pSeqTable = DATATBLS::MonsterTbls::GetMonsterSequenceTableByIndex(nSequenceId);
     return pSeqTable;
 }
 
@@ -215,26 +213,26 @@ int32_t __stdcall GetCounter2(D2UnitStrc * pUnit) {
 }
 
 // 2022.01.09 - dzik
-void __stdcall ANIM_GetSequenceFrameInfo(D2MonSeqTxt * pSeqData, int32_t nStartFrame, int32_t nEndFrame, uint32_t * pnParam1, uint32_t * pnParam2, uint32_t * pnParam3, uint32_t * pnParam4) {
+void __stdcall ANIM_GetSequenceFrameInfo(D2MonSeqTxt * pSeqData, int32_t nStartFrame, int32_t nEndFrame, uint32_t * pnMode, uint32_t * pnFrame, uint32_t * pnDirection, uint32_t * pnEvent) {
     if (!pSeqData) {
-      *pnParam1 = 0;
-      *pnParam2 = 0;
-      *pnParam3 = 0;
-      *pnParam4 = 0;
+      *pnMode = 0;
+      *pnFrame = 0;
+      *pnDirection = 0;
+      *pnEvent = 0;
       return;
     }
 
     int nStartSeqIdx = nStartFrame >> 8;
-    *pnParam1 = (uint32_t)pSeqData[nStartSeqIdx].mode;
-    *pnParam2 = (uint32_t)pSeqData[nStartSeqIdx].frame;
-    *pnParam3 = (uint32_t)pSeqData[nStartSeqIdx].dir;
+    *pnMode = (uint32_t)pSeqData[nStartSeqIdx].mode;
+    *pnFrame = (uint32_t)pSeqData[nStartSeqIdx].frame;
+    *pnDirection = (uint32_t)pSeqData[nStartSeqIdx].dir;
     if (nStartFrame == nEndFrame) {
-      *pnParam4 = (uint32_t)pSeqData[nStartSeqIdx].event;
+      *pnEvent = (uint32_t)pSeqData[nStartSeqIdx].event;
       return;
     }
 
     int nEndSeqIdx = (nEndFrame >> 8) + 1;
-    *pnParam4 = 0;
+    *pnEvent = 0;
     if (nEndSeqIdx > nStartSeqIdx) {
       return;
     }
@@ -243,7 +241,7 @@ void __stdcall ANIM_GetSequenceFrameInfo(D2MonSeqTxt * pSeqData, int32_t nStartF
     nStartSeqIdx = nStartSeqIdx - nEndSeqIdx + 1;
     do {
       if (*pFrameFlags) {
-        *pnParam4 = (uint32_t)*pFrameFlags;
+        *pnEvent = (uint32_t)*pFrameFlags;
       }
 
       pFrameFlags += 6;
@@ -252,13 +250,13 @@ void __stdcall ANIM_GetSequenceFrameInfo(D2MonSeqTxt * pSeqData, int32_t nStartF
 }
 
 // 2022.01.09 - dzik
-void __stdcall ANIM_GetEventFrame(D2MonSeqTxt * pSeqData, int32_t nFrameIdx, uint32_t * pnParam) {
+void __stdcall ANIM_GetEventFrame(D2MonSeqTxt * pSeqData, int32_t nFrameIdx, uint32_t * pnEvent) {
     if (!pSeqData) {
-      *pnParam = 0;
+      *pnEvent = 0;
       return;
     }
 
-    *pnParam = (uint32_t)pSeqData[nFrameIdx >> 8].event;
+    *pnEvent = (uint32_t)pSeqData[nFrameIdx >> 8].event;
 }
 
 // Deterministically rolls a hireling's combat stats from a seed. Inputs: nSeed (per-merc rng seed), pMercStats (in/out; nMercClass 0-3 selects merc type: Rogue/DesertMerc/IronWolf/Barbarian), nDifficulty (0-2). Seeds a D2SeedStrc and runs five RANDOM_RandomNumberSelector rolls indexing the merc data tables (secondary/tertiary/quaternary/quinary) to populate attack rating, defense, damage/armor bonuses, state(s) (nStateA for class<3 else nStateB), and quinary ability/secondary (sets nAbilityActiveFlag for ability ids 9-11). Finally applies the per-difficulty modifier table. Returns 1 on success, 0 if seed/ptr null, difficulty>=3, or merc class>=4.
@@ -587,18 +585,17 @@ uint32_t __fastcall MERC_GenerateStatsFromSeed(int32_t nSeed, D2MercRolledStatsS
 
       pMercStats->nDefense += gaMercQuinaryTable[nTableIdx].nArmorBonus;
       pMercStats->nAttackRating += gaMercQuinaryTable[nTableIdx].nHealthBonus;
-      if (!nDifficulty) {
-        return 1;
+      if (nDifficulty) {
+        nMercClass = (uint32_t)nDifficulty;
+        pMercStats->nSecArmor += gaMercDifficultyTable[nMercClass].nExpModifier;
+        pMercStats->nTerDefense += gaMercDifficultyTable[nMercClass].nArmorModifier;
+        pMercStats->nDefense += gaMercDifficultyTable[nMercClass].nDamageModifier;
+        pMercStats->nQuatDamageBonus = gaMercDifficultyTable[nMercClass].nResistMult * pMercStats->nQuatDamageBonus;
+        pMercStats->nQuatArmorBonus = gaMercDifficultyTable[nMercClass].nHealthMult * pMercStats->nQuatArmorBonus;
+        pMercStats->nQuinSecondary += gaMercDifficultyTable[nMercClass].nLifeModifier;
+        pMercStats->nAttackRating = gaMercDifficultyTable[nMercClass].nDamageFinalMult * pMercStats->nAttackRating;
       }
 
-      nMercClass = (uint32_t)nDifficulty;
-      pMercStats->nSecArmor += gaMercDifficultyTable[nMercClass].nExpModifier;
-      pMercStats->nTerDefense += gaMercDifficultyTable[nMercClass].nArmorModifier;
-      pMercStats->nDefense += gaMercDifficultyTable[nMercClass].nDamageModifier;
-      pMercStats->nQuatDamageBonus = gaMercDifficultyTable[nMercClass].nResistMult * pMercStats->nQuatDamageBonus;
-      pMercStats->nQuatArmorBonus = gaMercDifficultyTable[nMercClass].nHealthMult * pMercStats->nQuatArmorBonus;
-      pMercStats->nQuinSecondary += gaMercDifficultyTable[nMercClass].nLifeModifier;
-      pMercStats->nAttackRating = gaMercDifficultyTable[nMercClass].nDamageFinalMult * pMercStats->nAttackRating;
       return 1;
     }
 
@@ -653,11 +650,10 @@ int32_t __stdcall GetBaseExperience(int32_t nLevel, int32_t nExpPerLevel) {
 uint32_t __stdcall GetReviveCost(D2UnitStrc * pUnit) {
     int nLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     uint32_t nCost = nLevel * nLevel / 2 * 0xf;
-    if (nCost <= 50000) {
-      return nCost;
+    if (nCost > 50000) {
+      nCost = 50000;
     }
 
-    nCost = 50000;
     return nCost;
 }
 

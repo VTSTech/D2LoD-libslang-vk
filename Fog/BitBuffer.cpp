@@ -20,9 +20,9 @@ BOOL __stdcall CheckBitAtOffset(char * pBuffer, int32_t nOffset) {
 
 // NOTE: Return type changed void→uint8_t (1 callers, MEDIUM confidence)
 uint8_t __stdcall UnsetBitAtOffset(char * pBuffer, int32_t nOffset) {
-    uint32_t dVar1 = gadwInvBitMasks[nOffset & 7];
-    pBuffer[nOffset >> 3] &= (uint8_t)dVar1;
-    return (uint8_t)dVar1;
+    uint32_t dwInvMask = gadwInvBitMasks[nOffset & 7];
+    pBuffer[nOffset >> 3] &= (uint8_t)dwInvMask;
+    return (uint8_t)dwInvMask;
 }
 
 void __stdcall XorBitAtOffset(char * pBuffer, int32_t nOffset) {
@@ -216,11 +216,10 @@ void __stdcall InitBitBuffer(D2BitBufferStrc * pBitBuffer, uint8_t * pBytes, siz
 
 int32_t __stdcall GetNextPositon(D2BitBufferStrc * pBitBuffer) {
     size_t nNextPos = pBitBuffer->nCurrentPos;
-    if (!pBitBuffer->nBitsAtPos) {
-      return nNextPos;
+    if (pBitBuffer->nBitsAtPos) {
+      nNextPos++;
     }
 
-    nNextPos++;
     return nNextPos;
 }
 
@@ -322,11 +321,10 @@ uint32_t __stdcall ReadUnsigned(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
 
 int32_t __stdcall ReadSigned(D2BitBufferStrc * pBitBuffer, int32_t nSize) {
     uint32_t dwValue = Read(pBitBuffer, nSize);
-    if (!(nSize < 0x20 && dwValue & 1 << ((uint8_t)nSize - 1 & 0x1f))) {
-      return dwValue;
+    if (nSize < 0x20 && dwValue & 1 << ((uint8_t)nSize - 1 & 0x1f)) {
+      dwValue |= ~((1 << ((uint8_t)nSize & 0x1f)) - 1U);
     }
 
-    dwValue |= ~((1 << ((uint8_t)nSize & 0x1f)) - 1U);
     return dwValue;
 }
 

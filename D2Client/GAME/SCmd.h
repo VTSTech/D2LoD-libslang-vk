@@ -22,6 +22,7 @@ struct D2GSPacketSrv0x7F;
 struct D2GSPacketSrv0x81;
 struct D2GSPacketSrv0x82;
 struct D2GSPacketSrv0x8B;
+struct D2GSPacketSrv0x8D;
 struct D2GSPacketSrv0x8E;
 struct D2GSPacketSrv0x90;
 struct D2ItemStatCostTxt;
@@ -65,6 +66,12 @@ struct __attribute__((packed)) D2GSPacketSrv0x40 {
     /* 0x01 */ uint32_t dwItemGUID;
     /* 0x05 */ eD2ItemFlag eItemFlag;
     /* 0x09 */ BOOL bSet;
+};
+
+struct __attribute__((packed)) D2GSPacketSrv0x65 {
+    /* 0x00 */ uint8_t nPacketId;
+    /* 0x01 */ uint32_t dwUnitGUID;
+    /* 0x05 */ uint16_t wKillCount;
 };
 
 struct __attribute__((packed)) D2GSPacketSrv0x74 {
@@ -245,7 +252,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x20(char * pBytes);
 void __stdcall SCMD_DecodeRelativeCoordinates(uint16_t nByteY, int16_t nBaseX, int16_t nBaseY, short * pOutX, short * pOutY, uint16_t nByteX);
 void __fastcall NET_D2GS_CLIENT_Incoming0x18_PLAYERCOMMONSTATCHANGE_BIG(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x95_PLAYERCOMMONSTATCHANGE_MEDIUM(char * pBytes);
-void __fastcall NET_D2GS_CLIENT_Incoming0x96_PlayerLeave(char * pBytes);
+void __fastcall NET_D2GS_CLIENT_Incoming0x96_UpdateStaminaAndPosition(char * pBytes);
 // @sourcefile .\GAME\SCmd.cpp
 void __fastcall NET_D2GS_CLIENT_Incoming0x21_SETSKILLLEVEL(char * pBytes);
 // Client handler for S2C packet 0x93 (8 bytes). Reads player GUID, signed bonus delta, element type filter, and skill page filter. Finds the player unit client-side, then calls SKILLS_CltUpdateSkillList to walk all skills and adjust bonuses matching the element/page criteria. Removes skills whose level drops to 0. Dead code in 1.14d — server never sends this packet.
@@ -293,7 +300,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x5F_PORTALFLAGS(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x60_SETWARPDEST(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x61(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x63(char * pBytes);
-void __fastcall NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE(int32_t nParam);
+void __fastcall NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE(struct D2GSPacketSrv0x65 * pPacket);
 void __fastcall SCMD_Rcv0x66_Ignore(char * pBytes);
 // Server-to-client SCMD 0x73 handler: spawns a missile on the client from a D2GSPacketSrv0x73 descriptor. Reads missile class, owner GUID/type, spawn coords, target coords, skill level, pierce index, and current frame. Builds a D2SkillArgStrc (flags 0x40000001; adds 0x20 if target coords are non-zero), calls MakeMissile, stores owner info, sets pierce-idx stat if present, sets the current frame, then randomises nGfxCurrentFrame within the frame count.
 // Blizzard packet name SCMD_CREATEMISSILE. The body memsets a D2SkillArgStrc, fills
@@ -319,7 +326,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x89(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8A(char * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8B_PLAYERBUTTON(struct D2GSPacketSrv0x8B * pBytes);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8C_PLAYERFLAGS(char * pBytes);
-void __fastcall NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY(int32_t nParam);
+void __fastcall NET_D2GS_CLIENT_Incoming0x8D_PLAYERPARTY(struct D2GSPacketSrv0x8D * pPacket);
 void __fastcall NET_D2GS_CLIENT_Incoming0x8E_LINKDEADBODY(struct D2GSPacketSrv0x8E * pBytes);
 // Packet 0x9B: hands the unsigned words at +1 and +3 to SetPlayersMercInfo.
 void __fastcall NET_D2GS_CLIENT_Incoming0x9B_DEAD_HIRELING(char * pBytes);

@@ -246,7 +246,9 @@ gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp
 gate "resolution: draw callback wired (row)" globals/globals.cpp         'UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: draw fn defined"           D2Client/UI/EscMenu.cpp     '__fastcall UI_SLIDER_DrawResolutionValue' 1
 # Both resolution callbacks (Apply + LoadAndApply) live in EscMenu.cpp on the
-# 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp.
+# 1775+ layout; main carried LoadAndApply in Storm/_unnamespaced.cpp until the
+# 1839 merge, where upstream moved that file to root _unnamespaced.cpp and a
+# new D2Hell module (the old UI include pin on it retired with the move).
 gate "resolution: apply maps mode 4"         D2Client/UI/EscMenu.cpp     'RequestedScreenModeMaybe = 4' 2
 gate "resolution: decl in EscMenu.h"         D2Client/UI/EscMenu.h       'UI_SLIDER_DrawResolutionValue' 1
 gate "resolution: init attach"                  D2Client/UI/EscMenu.cpp     'VPRES_BuildBlankPlaceholder|nSubImageCount = 3' 2
@@ -261,7 +263,10 @@ gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI
 gate "resolution: label right-align (#23)"   D2Client/UI/EscMenu.cpp     'ScreenSizeX / 2 \+ 0xe6 - nLabelWidth' 1
 gate "resolution: label descender comp (#23)" D2Client/UI/EscMenu.cpp    'RESLABEL_DESCENDER_COMP' 2
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
-gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
+# 1839 merge: D2FILE_CreateProcess moved to the new D2Hell module; the
+# [d2boot] CreateProcess marks re-planted there (merge-tripwire against a
+# future regen dropping them again).
+gate "d2boot: D2Hell CreateProcess marks"    D2Hell/D2Hell.cpp           'D2BOOT_MarkFmt\("CreateProcess' 2
 
 # ---- resolution site-5: wide-layout classification + centered 800-px UI ----
 # Wide modes (3=1344x700 dormant, 4=1280x720) join the retail 800x600 UI
@@ -765,8 +770,8 @@ gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'supp
 # lands here too). Fix passes the same values the sibling range branches pass
 # (extra varargs are harmless in cdecl). Five VP-marked sites, one per branch.
 gate "itemdesc: zero-fix VP marks (R84)"      D2Client/UI/SkillDesc.cpp          'item-tooltip-zero-fix R84' 5
-gate "itemdesc: elemental single-value varargs (R84)" D2Client/UI/SkillDesc.cpp  'wszFmtTemplate, pStatDescResult, psVar1\);' 8
-gate "itemdesc: poison single-value varargs (R84)" D2Client/UI/SkillDesc.cpp      'pStatDescResult, psVar1, iVar2\);' 2
+gate "itemdesc: elemental single-value varargs (R84)" D2Client/UI/SkillDesc.cpp  'wszFmtTemplate, pStatDescResult, (psVar1|pMaxDamage)\);' 8
+gate "itemdesc: poison single-value varargs (R84)" D2Client/UI/SkillDesc.cpp      'pStatDescResult, (psVar1|pMaxDamage), (iVar2|nPoisonSeconds)\);' 2
 
 # ---- [vanilla-plus nointro] R86: the -nointro command-line switch ----------
 # The two logo .biks (New_BLIZ/BlizNorth) play on EVERY launch, and the title

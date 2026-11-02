@@ -94,17 +94,17 @@ int32_t __fastcall GetSkilParam3(eD2Skills eSkill) {
     return pSkillsTxt->Param[3];
 }
 
-int32_t __fastcall GetSkillParam4(int32_t nParam1, int32_t nParam2) {
-    if (!(nParam1 >= 0 && nParam1 < sgptDataTable->nTxtSkillsCount)) {
+int32_t __fastcall GetSkillParam4(int32_t nSkillId, int32_t nSkillLevel) {
+    if (!(nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount)) {
       return 0;
     }
 
-    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nParam1;
-    if (!(pSkillsTxt && nParam2 > 0)) {
+    D2SkillsTxt* pSkillsTxt = sgptDataTable->pTxtSkills + nSkillId;
+    if (!(pSkillsTxt && nSkillLevel > 0)) {
       return 0;
     }
 
-    return (nParam2 - 1) * pSkillsTxt->Param[5] + pSkillsTxt->Param[4];
+    return (nSkillLevel - 1) * pSkillsTxt->Param[5] + pSkillsTxt->Param[4];
 }
 
 // Client-side skill handler for Baal's Corpse Explosion (skill 0x11D). Finds all units within the explosion radius centred on pUnit using UnitFinds, then casts MISSILE_Baalcorpseexplodedelay at each corpse position. Randomises the missile start frame using the unit seed to stagger the visual burst. Returns TRUE always.
@@ -113,7 +113,7 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
     D2UnitStrc* pCorpse;
     int nExplosionRadius;
     D2UnitFindArgStrc sUnitFindArg;
-    D2UnitFindDataStrc local_3c;
+    D2UnitFindDataStrc sUnitFindData;
     int32_t nCorpseMissileFrames;
     int32_t nCorpseIdx;
     D2SkillsTxt* pSkillTxt;
@@ -154,13 +154,13 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
     sUnitFindArg.pAttacker = pUnit;
     sUnitFindArg.nY = nPosY;
     sUnitFindArg.nDistance = nExplosionRadius;
-    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &local_3c, D2Common::Units::UNITS_GetRoom(pUnit), nCorpsePosY, nPosY, nExplosionRadius, fpUnitTest, pUnitFindArg);
-    local_3c.nFlags = sUnitFindArg.nFlags;
-    D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&local_3c);
-    for (nCorpseIdx = 0; nCorpseIdx < local_3c.nCountedUnits; nCorpseIdx = nPosY + 1) {
+    D2Common::Units::UnitFinds::InitializeUnitFindData(nullptr, &sUnitFindData, D2Common::Units::UNITS_GetRoom(pUnit), nCorpsePosY, nPosY, nExplosionRadius, fpUnitTest, pUnitFindArg);
+    sUnitFindData.nFlags = sUnitFindArg.nFlags;
+    D2Common::Units::UnitFinds::UNITFINDS_FindCullRange(&sUnitFindData);
+    for (nCorpseIdx = 0; nCorpseIdx < sUnitFindData.nCountedUnits; nCorpseIdx = nPosY + 1) {
       int32_t nCorpsePosX;
       nPosY = nCorpseIdx;
-      pCorpse = local_3c.pUnitsArray->aFoundUnitsList[nCorpseIdx];
+      pCorpse = sUnitFindData.pUnitsArray->aFoundUnitsList[nCorpseIdx];
       eUnitTypeTmp = pCorpse->eUnitType;
       if (eUnitTypeTmp == UNIT_OBJECT || (int)eUnitTypeTmp > 3 && (int)eUnitTypeTmp <= 5) {
         nCorpsePosY = pCorpse->pPath.pStaticPath->nPosY;
@@ -170,7 +170,7 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
         nCorpsePosY = 0;
       }
 
-      pCorpse = local_3c.pUnitsArray->aFoundUnitsList[nPosY];
+      pCorpse = sUnitFindData.pUnitsArray->aFoundUnitsList[nPosY];
       eUnitTypeTmp = pCorpse->eUnitType;
       if (eUnitTypeTmp == UNIT_OBJECT || (int)eUnitTypeTmp > 3 && (int)eUnitTypeTmp <= 5) {
         nCorpsePosX = pCorpse->pPath.pStaticPath->nPosX;
@@ -192,12 +192,12 @@ BOOL __fastcall Skills_CltDoFunc_BaalCorpseExplosion(D2UnitStrc * pUnit, eD2Skil
       }
     }
 
-    D2Common::Units::UnitFinds::FreeUnitFindData(&local_3c);
+    D2Common::Units::UnitFinds::FreeUnitFindData(&sUnitFindData);
     return 1;
 }
 
 // Spawns a single directed missile as part of a multi-missile/spread skill effect. Advances the owner unit's RNG seed to pick one of 8 directional offsets (gnSkillBaseTableIndex/Offset), derives the spawn X/Y from the owner's static or dynamic path position, and selects a missile id from a 3-entry table at nParam1+0xEA/0xEC/0xEE (seed-randomized choice). Builds a zeroed D2SkillArgStrc, calls MakeMissile, then sets a seed-derived Z position (via D2GetSkillCalc + UNIT_GetModuloFromSeed) and the missile target X/Y to the owner's current position. No return value; nParam1 points to the skill/missile parameter record.
-static void __stdcall SKILLSCLT_CreateMultiMissileDirected(D2SkillsTxt * pSkillsTxt, eD2Skills eSkill, int32_t nParam2, D2UnitStrc * pUnit) {
+static void __stdcall SKILLSCLT_CreateMultiMissileDirected(D2SkillsTxt * pSkillsTxt, eD2Skills eSkill, int32_t nSkillLevel, D2UnitStrc * pUnit) {
     // Static local variables (originally global data)
     static int gnSkillBaseTableOffset[8] = { 0x7, 0x5, 0x0, -0x5, -0x7, -0x5, 0x0, 0x5 }; D2_STATIC_GUARD(gnSkillBaseTableOffset, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableOffset");
     static int gnSkillBaseTableIndex[8] = { 0x0, 0x5, 0x7, 0x5, 0x0, -0x5, -0x7, -0x5 }; D2_STATIC_GUARD(gnSkillBaseTableIndex, "D2Client::SKILLS::SKILLSCLT_CreateMultiMissileDirected::gnSkillBaseTableIndex");
@@ -281,7 +281,7 @@ static void __stdcall SKILLSCLT_CreateMultiMissileDirected(D2SkillsTxt * pSkills
     sSkillArg.nMissileTxtNo = eMissileSelected;
     sSkillArg.nUnitY = -nDirOffsetX;
     sSkillArg.nFlags = 3;
-    sSkillArg.nSkillLevel = nParam2;
+    sSkillArg.nSkillLevel = nSkillLevel;
     sSkillArg.pOwner = pUnit;
     sSkillArg.nX = nMissileSpawnX;
     sSkillArg.nY = nUnitY + nDirOffsetY;
@@ -291,7 +291,7 @@ static void __stdcall SKILLSCLT_CreateMultiMissileDirected(D2SkillsTxt * pSkills
       return;
     }
 
-    uint32_t nRandZOffset = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[1], eSkill, nParam2);
+    uint32_t nRandZOffset = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->cltcalc[1], eSkill, nSkillLevel);
     nRandZOffset = Archive::UNIT_GetModuloFromSeed(pSeed, nRandZOffset);
     Engine::Particle::SetPosVectorShifted(pMissile, 0, 0, nRandZOffset);
     eD2UnitType eUnitTypeC = pUnit->eUnitType;
@@ -359,16 +359,14 @@ BOOL __fastcall Skills_CltDoFunc_MultiMissileDirected(D2UnitStrc * pUnit, eD2Ski
 
     spawn_missile_rounds:
     nSkillLvl = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillTxt->cltcalc[0], eSkill, nSkillLvl);
-    if (nSkillLvl <= 0) {
-      return 1;
+    if (nSkillLvl > 0) {
+      do {
+        SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
+        SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
+        SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
+        nSkillLvl--;
+      } while (nSkillLvl);
     }
-
-    do {
-      SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
-      SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
-      SKILLSCLT_CreateMultiMissileDirected(pSkillTxt, eSkill, nRepeatCount, pUnit);
-      nSkillLvl--;
-    } while (nSkillLvl);
 
     return 1;
 }
@@ -430,18 +428,15 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileWithZ(D2UnitStrc * pUnit, eD2Skills 
         Engine::Particle::SetOffsetVector(pMissile, -nAuraRange, 0, -nCalcB, 1);
       }
     }
-    if (pSkillTxt->cltmissile[2] < 0) {
-      return 1;
+    if (pSkillTxt->cltmissile[2] >= 0) {
+      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
+      pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
+      if (pMissile) {
+        Engine::Particle::SetPosVectorShifted(pMissile, nCalcA, 0, nOffsetX);
+        Engine::Particle::SetOffsetVector(pMissile, -nAuraRange, 0, -nCalcC, 1);
+      }
     }
 
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
-    pMissile = UNIT::Missile::MakeMissile(&sSkillArg);
-    if (!pMissile) {
-      return 1;
-    }
-
-    Engine::Particle::SetPosVectorShifted(pMissile, nCalcA, 0, nOffsetX);
-    Engine::Particle::SetOffsetVector(pMissile, -nAuraRange, 0, -nCalcC, 1);
     return 1;
 }
 
@@ -473,21 +468,17 @@ BOOL __fastcall Skills_CltDoFunc_DualMissileAtCoords(D2UnitStrc * pUnit, eD2Skil
         UNIT::Missile::MakeMissile(&sSkillArg);
       }
     }
-    if (pSkillTxt->cltmissile[2] < 0) {
-      return 1;
+    if (pSkillTxt->cltmissile[2] >= 0) {
+      D2UnitStrc* pUnit_00;
+      sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
+      if ((int)sSkillArg.nMissileTxtNo < sgptDataTable->nTxtMissilesSize) {
+        pUnit_00 = UNIT::Missile::MakeMissile(&sSkillArg);
+        if (pUnit_00) {
+          D2Common::Units::Missile::SetTargetX(pUnit_00, pUnit->nInitSeed);
+        }
+      }
     }
 
-    sSkillArg.nMissileTxtNo = (eMissilesId)pSkillTxt->cltmissile[2];
-    if ((int)sSkillArg.nMissileTxtNo >= sgptDataTable->nTxtMissilesSize) {
-      return 1;
-    }
-
-    D2UnitStrc* pUnit_00 = UNIT::Missile::MakeMissile(&sSkillArg);
-    if (!pUnit_00) {
-      return 1;
-    }
-
-    D2Common::Units::Missile::SetTargetX(pUnit_00, pUnit->nInitSeed);
     return 1;
 }
 
@@ -512,7 +503,7 @@ void __fastcall SKILLSCLT_CreateMissileWithGfx(D2UnitStrc * pUnit, uint32_t nSee
     D2Common::Seed::InitSeed_Param_666(&ullSeedPair, nSeed);
     int nDeltaY = nCount * nCount;
     uint32_t ullSeedInner = nCount * 2;
-    int local_8 = nDeltaY;
+    int nMaxDistSq = nDeltaY;
     memset(&sSkillArg, 0, 0x5c);
     sSkillArg.nFlags = 1;
     sSkillArg.pOwner = pUnit;
@@ -554,7 +545,7 @@ void __fastcall SKILLSCLT_CreateMissileWithGfx(D2UnitStrc * pUnit, uint32_t nSee
       }
 
       nDeltaX = nCount - nRandOffsetX;
-      if (nDeltaX * nDeltaX + nDeltaY * nDeltaY <= local_8) {
+      if (nDeltaX * nDeltaX + nDeltaY * nDeltaY <= nMaxDistSq) {
         sSkillArg.nX = nCenterX + nDeltaY;
         sSkillArg.nY = nDeltaX + nCenterY;
         pNearbyRoom = UNIT::Player::DRLGROOM_FindBetterNearbyRoom(pRoom, sSkillArg.nX, sSkillArg.nY);
@@ -850,11 +841,11 @@ void __fastcall SKILLSCLT_SetMissilePathExtended(D2UnitStrc * pUnit, int32_t nIn
     *pSeed = sSeedNext;
     nSerpentineAmp = sSeedNext.nSeedLow % 3 + gnSkillDescLayoutPos_0072d990;
     for (nPathFrameIdx = 0; nPathFrameIdx < nTotalFrames; nPathFrameIdx++) {
-      uint8_t bVar1;
+      uint8_t byDirIndex;
       nCurDir += nSerpentineAmp * nSerpentineSign;
-      bVar1 = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nCurDir & 0x3f);
-      nCurX += gnSkillSynergiesTableIndex[bVar1];
-      nCurY += gnSkillSynergiesTableOffset[bVar1];
+      byDirIndex = D2Common::Monsters::MONSTERS::MONSTERS_GetGfxOffsetTable2((uint8_t)nCurDir & 0x3f);
+      nCurX += gnSkillSynergiesTableIndex[byDirIndex];
+      nCurY += gnSkillSynergiesTableOffset[byDirIndex];
       pPathPoints[nPathFrameIdx].nX = (uint16_t)nCurX;
       pPathPoints[nPathFrameIdx].nY = (uint16_t)nCurY;
       if (!(nPathFrameIdx % gnSkillDescLayoutPos_0072d98c)) {
@@ -1284,25 +1275,21 @@ BOOL __fastcall Skills_CltDoFunc_AuraLevel_ProjectileMissile(D2UnitStrc * pUnit,
 }
 
 uint32_t __fastcall SKILLSCLT_ValidateSkillAndMissile(D2UnitStrc * pUnit, int32_t nMonId, uint32_t nMissileId, uint32_t dwUnused) {
-    if (!(pUnit && pUnit->eUnitType == UNIT_MONSTER)) {
-      return nMissileId;
+    if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
+      int nBaseId;
+      nBaseId = pUnit->nClassId;
+      if (nBaseId >= 0) {
+        D2MonStatsTxt* pMonStatsTxt = nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
+        if (pMonStatsTxt) {
+          nBaseId = (int)pMonStatsTxt->BaseId;
+        }
+        if (nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize && nBaseId == 0x10b && nMonId == 0xa7) {
+          Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_brraiseback, 2, 0, 0, 0, 0, 0);
+          nMissileId = 0x54;
+        }
+      }
     }
 
-    int nBaseId = pUnit->nClassId;
-    if (nBaseId < 0) {
-      return nMissileId;
-    }
-
-    D2MonStatsTxt* pMonStatsTxt = nBaseId < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + nBaseId : nullptr;
-    if (pMonStatsTxt) {
-      nBaseId = (int)pMonStatsTxt->BaseId;
-    }
-    if (!(nBaseId >= 0 && nBaseId < sgptDataTable->nTxtMonStatsSize && nBaseId == 0x10b && nMonId == 0xa7)) {
-      return nMissileId;
-    }
-
-    Engine::Gfx::GFX_AddOverlayToUnit(pUnit, OVERLAY_brraiseback, 2, 0, 0, 0, 0, 0);
-    nMissileId = 0x54;
     return nMissileId;
 }
 

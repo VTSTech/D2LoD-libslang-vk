@@ -5,13 +5,13 @@
 #include "D2CMP/SRC/CelCmp.h"
 #include "D2CMP/SRC/LRUCache.h"
 #include "D2CMP/SRC/SpriteCache.h"
+#include "D2CMP/SRC/SubTile.h"
 #include "D2Client/ButtonWrapper.h"
 #include "D2Client/Core/Archive.h"
 #include "D2Client/D2Client.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GameViewStrc.h"
 #include "D2Client/D2GfxDataStrc.h"
-#include "D2Client/D2GfxHelperStrc.h"
 #include "D2Client/Engine/Gfx.h"
 #include "D2Client/GAME/Game/Game.h"
 #include "D2Client/GAME/Msg.h"
@@ -70,6 +70,11 @@
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
 
+#ifndef RECON_FPTD_fnUnitIterCallback
+#define RECON_FPTD_fnUnitIterCallback
+typedef void (__fastcall *fnUnitIterCallback)(void * pUnit);
+#endif
+
 namespace D2Client::UI::Draw {
 
 void __stdcall LoadingsScreen() {
@@ -77,10 +82,10 @@ void __stdcall LoadingsScreen() {
     ui::CleanupAfterLoadingAct();
     ui::PALETTE_LoadLoadingScreenPalette();
     uint32_t nLangCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
-    if (!nLangCode) {
-      sprintf(szPath, "%s\\UI\\Loading\\Loadingscreen", "DATA\\GLOBAL");
-    } else {
+    if (nLangCode) {
       sprintf(szPath, "%s\\UI\\LoadingScreen", "DATA\\LOCAL");
+    } else {
+      sprintf(szPath, "%s\\UI\\Loading\\Loadingscreen", "DATA\\GLOBAL");
     }
 
     gnLoadedActIndex = Core::Archive::IMAGE_LoadDC6Ex(szPath, 0);
@@ -713,7 +718,7 @@ void __fastcall DRAW_UI(D2GameViewStrc * pGameView) {
         ShowItems::DRAW_AltItems();
         eGameType = GAME::Game::CLIENT_GetD2GSGameType();
         if (eGameType != GAMETYPE_SINGLEPLAYER) {
-          UNIT::CUnit::CUNIT_IterateServerUnitsWithCallback((int32_t)(uintptr_t)ui::UI_DrawPlayerNameOverhead);
+          UNIT::CUnit::CUNIT_IterateServerUnitsWithCallback((fnUnitIterCallback)ui::UI_DrawPlayerNameOverhead);
         }
       }
     }

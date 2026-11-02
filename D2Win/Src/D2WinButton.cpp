@@ -154,33 +154,30 @@ void __fastcall D2WINBUTTON_SetImageIndex(::D2WinButton * pButton, int32_t nImag
 
 // Handles mouse wheel input for scrollable buttons. Checks scroll up/down flags (bits 3-4 of field 0x10), invokes wheel callback (field 0xd) if delta is non-zero. Uses global recursion counter.
 BOOL __fastcall D2WINBUTTON_HandleMouseWheel(::D2WinButton * pButton, int32_t nWheelDelta) {
-    D2ControlMsg sMsg;
+    uint32_t dwControlState;
     if (pButton->sControl.neD2FormType != FORM_Button) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xe2);
       exit(-1);
     }
 
-    uint32_t uVar1;
-    uVar1 = pButton->sControl.dwState;
-    if (!(gadwBitMasks[0] & uVar1 && gadwBitMasks[2] & uVar1 && !pButton->bPressed && !pButton->bPressedInside && (nWheelDelta > 0 && pButton->nButtonFlags & 8 || nWheelDelta < 0 && pButton->nButtonFlags & 0x10))) {
-      return 0;
+    D2ControlMsg sMsg;
+    dwControlState = pButton->sControl.dwState;
+    if (gadwBitMasks[0] & dwControlState && gadwBitMasks[2] & dwControlState && !pButton->bPressed && !pButton->bPressedInside && (nWheelDelta > 0 && pButton->nButtonFlags & 8 || nWheelDelta < 0 && pButton->nButtonFlags & 0x10)) {
+      sMsg.uMsg = 0;
+      sMsg.wParam = 0;
+      sMsg.uLParam.nLParam = 0;
+      sMsg.nCmdCode = 0;
+      sMsg.dwReserved = 0;
+      sMsg.bHandled = 0;
+      sMsg.dwResult = 0;
+      if (pButton->sControl.fpOnPress) {
+        gnFormControlCount++;
+        sMsg.pControl = &pButton->sControl;
+        pButton->sControl.fpOnPress(&sMsg);
+        gnFormControlCount--;
+      }
     }
 
-    sMsg.uMsg = 0;
-    sMsg.wParam = 0;
-    sMsg.uLParam.nLParam = 0;
-    sMsg.nCmdCode = 0;
-    sMsg.dwReserved = 0;
-    sMsg.bHandled = 0;
-    sMsg.dwResult = 0;
-    if (!pButton->sControl.fpOnPress) {
-      return 0;
-    }
-
-    gnFormControlCount++;
-    sMsg.pControl = &pButton->sControl;
-    pButton->sControl.fpOnPress(&sMsg);
-    gnFormControlCount--;
     return 0;
 }
 
@@ -389,30 +386,29 @@ BOOL __fastcall Draw(::D2WinButton * pButton) {
     } else if (nFrameOffset) {
       pButton->nClickAnimState = nFrameOffset + 1;
     }
-    if (!pButton->fpHoverCallback) {
-      return 1;
-    }
-
-    pActiveFormImage = D2WinMain::D2WINMAIN_GetFormImage();
-    if (pActiveFormImage) {
-      pButton->bMouseOver = 0;
-    } else {
-      nFrameOffset = pButton->sControl.dwPosX;
-      nPosY = pButton->sControl.dwPosY;
-      if (D2Client::Mouse::nPosX < nFrameOffset || D2Client::Mouse::nPosY < nPosY - pButton->sControl.dwSizeY || D2Client::Mouse::nPosX >= pButton->sControl.dwSizeX + nFrameOffset || D2Client::Mouse::nPosY >= nPosY) {
-        nFrameOffset = 0;
+    if (pButton->fpHoverCallback) {
+      pActiveFormImage = D2WinMain::D2WINMAIN_GetFormImage();
+      if (pActiveFormImage) {
+        pButton->bMouseOver = 0;
       } else {
-        nFrameOffset = 1;
+        nFrameOffset = pButton->sControl.dwPosX;
+        nPosY = pButton->sControl.dwPosY;
+        if (D2Client::Mouse::nPosX < nFrameOffset || D2Client::Mouse::nPosY < nPosY - pButton->sControl.dwSizeY || D2Client::Mouse::nPosX >= pButton->sControl.dwSizeX + nFrameOffset || D2Client::Mouse::nPosY >= nPosY) {
+          nFrameOffset = 0;
+        } else {
+          nFrameOffset = 1;
+        }
+
+        pButton->bMouseOver = nFrameOffset;
       }
 
-      pButton->bMouseOver = nFrameOffset;
+      sHoverMsg.uLParam = d2_bits_as<D2UIMsgLParamUnion>(pButton->bMouseOver);
+      gnFormControlCount++;
+      sHoverMsg.pControl = &pButton->sControl;
+      pButton->fpHoverCallback(&sHoverMsg);
+      gnFormControlCount--;
     }
 
-    sHoverMsg.uLParam = d2_bits_as<D2UIMsgLParamUnion>(pButton->bMouseOver);
-    gnFormControlCount++;
-    sHoverMsg.pControl = &pButton->sControl;
-    pButton->fpHoverCallback(&sHoverMsg);
-    gnFormControlCount--;
     return 1;
 }
 
@@ -423,8 +419,8 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
       exit(-1);
     }
 
-    uint32_t uVar1 = pButton->sControl.dwState;
-    if (!(gadwBitMasks[2] & uVar1) || !(gadwBitMasks[0] & uVar1)) {
+    uint32_t dwState = pButton->sControl.dwState;
+    if (!(gadwBitMasks[2] & dwState) || !(gadwBitMasks[0] & dwState)) {
       return 0;
     }
     if (pButton->nButtonFlags & 2U) {
@@ -441,60 +437,59 @@ BOOL __stdcall Push(D2ControlMsg * pControlMsg) {
     if (!(pButton->nButtonFlags & 4U)) {
       D2Sound::Src::D2SoundFast::SOUND_PlaySoundEffect((uint8_t*)"data\\global\\sfx\\cursor\\button.wav");
     }
-    if (!(pButton->nButtonFlags & 3)) {
-      return 1;
+    if (pButton->nButtonFlags & 3) {
+      OnPress pfnOnPress;
+      pfnOnPress = pButton->sControl.fpOnPress;
+      if (pfnOnPress) {
+        if (gnFormControlCount <= 0) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x221);
+          exit(-1);
+        }
+
+        (*pfnOnPress)(pControlMsg);
+      }
     }
 
-    OnPress pOVar2 = pButton->sControl.fpOnPress;
-    if (!pOVar2) {
-      return 1;
-    }
-    if (gnFormControlCount <= 0) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x221);
-      exit(-1);
-    }
-
-    (*pOVar2)(pControlMsg);
     return 1;
 }
 
 BOOL __stdcall Mouse(D2ControlMsg * pControlMsg) {
-    uint32_t uVar2;
     BOOL bCallbackResult;
+    uint32_t dwControlState;
     ::D2WinButton* pButton = (::D2WinButton*)pControlMsg->pControl;
     if (pButton->sControl.neD2FormType != FORM_Button) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x232);
       exit(-1);
     }
 
-    int* piVar1 = &pButton->sControl.dwState;
-    *piVar1 |= gadwBitMasks[1];
-    uVar2 = pButton->sControl.dwState;
+    int* pdwState = &pButton->sControl.dwState;
+    *pdwState |= gadwBitMasks[1];
+    dwControlState = pButton->sControl.dwState;
     bCallbackResult = 0;
-    if (!(gadwBitMasks[2] & uVar2) || !(gadwBitMasks[0] & uVar2)) {
-      pButton->sControl.dwState = uVar2 & gadwInvBitMasks[1];
+    if (!(gadwBitMasks[2] & dwControlState) || !(gadwBitMasks[0] & dwControlState)) {
+      pButton->sControl.dwState = dwControlState & gadwInvBitMasks[1];
       return 0;
     }
     if (!(pButton->nButtonFlags & 3)) {
-      OnPress pOVar3;
+      OnPress pfnOnPress;
       pButton->bPressed = 0;
       if (pButton->bPressedInside) {
-        pOVar3 = pButton->sControl.fpOnPress;
-        if (pOVar3) {
+        pfnOnPress = pButton->sControl.fpOnPress;
+        if (pfnOnPress) {
           if (gnFormControlCount <= 0) {
             Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x243);
             exit(-1);
           }
 
-          bCallbackResult = (*pOVar3)(pControlMsg);
+          bCallbackResult = (*pfnOnPress)(pControlMsg);
         }
       }
 
       pButton->bPressedInside = 0;
     }
 
-    piVar1 = &pButton->sControl.dwState;
-    *piVar1 &= gadwInvBitMasks[1];
+    pdwState = &pButton->sControl.dwState;
+    *pdwState &= gadwInvBitMasks[1];
     return bCallbackResult;
 }
 
@@ -509,44 +504,40 @@ BOOL __stdcall D2WINBUTTON_HandleHotkey(D2ControlMsg * pControlMsg) {
     }
 
     BOOL bResult = 0;
-    if (!(pControlMsg->uMsg != 0x102 && pButton->nHotkeyVK == pControlMsg->wParam)) {
-      return bResult;
+    if (pControlMsg->uMsg != 0x102 && pButton->nHotkeyVK == pControlMsg->wParam) {
+      ::Push pPVar1;
+      pPVar1 = pButton->sControl.fpPush;
+      if (pPVar1) {
+        pButton->nClickAnimState = 1;
+        if (gnFormControlCount <= 0) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x263);
+          exit(-1);
+        }
+
+        bResult = (*pPVar1)(pControlMsg);
+        if (pButton->sControl.fpMouse) {
+          sClickMsg.pControl = pControlMsg->pControl;
+          gnFormControlCount++;
+          pButton->sControl.fpMouse(&sClickMsg);
+          gnFormControlCount--;
+        }
+      }
     }
 
-    ::Push pPVar1 = pButton->sControl.fpPush;
-    if (!pPVar1) {
-      return bResult;
-    }
-
-    pButton->nClickAnimState = 1;
-    if (gnFormControlCount <= 0) {
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x263);
-      exit(-1);
-    }
-
-    bResult = (*pPVar1)(pControlMsg);
-    if (!pButton->sControl.fpMouse) {
-      return bResult;
-    }
-
-    sClickMsg.pControl = pControlMsg->pControl;
-    gnFormControlCount++;
-    pButton->sControl.fpMouse(&sClickMsg);
-    gnFormControlCount--;
     return bResult;
 }
 
 // @sourcefile .\Src\D2WinButton.cpp
 ::D2WinButton * __fastcall D2WinButton(int32_t nPosX, int32_t nPosY, int32_t nSizeX, int32_t nSizeY, DC6 * pDC6, OnPress pfnOnPress, int32_t nHotkeyVK, int32_t nInitialImageIndex, int32_t nButtonFlags, int32_t wLabelStringId, ::Mouse pMouse) {
-    uint32_t uVar1;
+    uint32_t dwState;
     int nTileFrames;
     ::D2WinButton* pNewButton = D2_NEW_AT(::D2WinButton, ".\\Src\\D2WinButton.cpp", 0x24);
     memset(pNewButton, 0, 0x274);
     pNewButton->sControl.neD2FormType = FORM_Button;
     pNewButton->sControl.dwState |= gadwBitMasks[0];
-    uVar1 = pNewButton->sControl.dwState | gadwBitMasks[2];
+    dwState = pNewButton->sControl.dwState | gadwBitMasks[2];
     pNewButton->sControl.pDC6 = pDC6;
-    pNewButton->sControl.dwState = uVar1;
+    pNewButton->sControl.dwState = dwState;
     pNewButton->sControl.dwPosY = nPosY;
     pNewButton->sControl.fpKey = nHotkeyVK ? (::Key)D2WINBUTTON_HandleHotkey : nullptr;
     pNewButton->sControl.dwSizeY = nSizeY;

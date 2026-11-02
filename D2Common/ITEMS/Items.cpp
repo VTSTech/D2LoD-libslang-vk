@@ -61,8 +61,8 @@
 #include "Fog/Skills.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/UI/Automap.h"
+#include "D2Client/UI/Inv.h"
 #include "D2Common/D2UnitDataItemStrc.h"
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/Monster/AI/AI.h"
@@ -386,11 +386,10 @@ int32_t __stdcall ITEM_GetItemData_nItemLevel(D2UnitStrc * pUnit) {
       D2UnitDataItemStrc* temp_5f060235c5;
       temp_5f060235c5 = pUnit->pUnitData.pUnitDataItem;
       if (temp_5f060235c5) {
-        if (temp_5f060235c5->nItemLevel >= 1) {
-          return temp_5f060235c5->nItemLevel;
+        if (temp_5f060235c5->nItemLevel < 1) {
+          temp_5f060235c5->nItemLevel = 1;
         }
 
-        temp_5f060235c5->nItemLevel = 1;
         return temp_5f060235c5->nItemLevel;
       }
     }
@@ -658,7 +657,6 @@ eD2ItemTypes __stdcall TXT_Items_GetType(uint32_t nItemClassId) {
     }
 
     return (int)pItemsTxt->wType;
-    return (int)pItemsTxt->wType;
 }
 
 uint8_t __stdcall ITEM_GetItemsTxt_nLevel(D2UnitStrc * pUnit) {
@@ -718,20 +716,13 @@ int32_t __stdcall IITEM_GetItemsTxt_dwNormCode(D2UnitStrc * pUnit) {
 }
 
 static int __stdcall ITEMS_nullsub(int nMaxLvlReq, D2MagicAffixTxt * pAffixTxt, D2UnitStrc * pPlayer) {
-    uint8_t bVar1;
-    if (!pAffixTxt) {
-      return nMaxLvlReq;
-    }
-    if (pAffixTxt->class_ == 0xff || !pPlayer || (uint32_t)pAffixTxt->class_ != pPlayer->nClassId) {
-      bVar1 = pAffixTxt->levelreq;
-    } else {
-      bVar1 = pAffixTxt->classlevelreq;
-    }
-    if (nMaxLvlReq > (int)(uint32_t)bVar1) {
-      return nMaxLvlReq;
+    if (pAffixTxt) {
+      uint8_t byLevelReq = pAffixTxt->class_ == 0xff || !pPlayer || (uint32_t)pAffixTxt->class_ != pPlayer->nClassId ? pAffixTxt->levelreq : pAffixTxt->classlevelreq;
+      if (nMaxLvlReq <= (int)(uint32_t)byLevelReq) {
+        nMaxLvlReq = (uint32_t)byLevelReq;
+      }
     }
 
-    nMaxLvlReq = (uint32_t)bVar1;
     return nMaxLvlReq;
 }
 
@@ -774,7 +765,6 @@ BOOL __stdcall TXT_Items_ConfirmWClass(uint32_t nClassId, int32_t dwWClass) {
     }
 
     return (uint32_t)(pItemsTxt->dwWClass == dwWClass);
-    return (uint32_t)(pItemsTxt->dwWClass == dwWClass);
 }
 
 BOOL __stdcall HasWeaponClass(D2UnitStrc * pUnit, int32_t dwWClass) {
@@ -795,7 +785,6 @@ BOOL __stdcall TXT_Items_Getb2Handed(uint32_t nClassId) {
       exit(-1);
     }
 
-    return (uint32_t)pItemsTxt->b2Handed;
     return (uint32_t)pItemsTxt->b2Handed;
 }
 
@@ -822,7 +811,6 @@ BOOL __stdcall IsStackable(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      return (uint32_t)pItemsTxt->bStackable;
       return (uint32_t)pItemsTxt->bStackable;
     }
 
@@ -911,13 +899,11 @@ BOOL __stdcall INVENTORY_CheckIfItemCanBeAutoBelted(D2InventoryStrc * pInventory
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x9a9);
         exit(-1);
       }
-      if (pItemsTxt->bAutoBelt != '\0') {
-        return 1;
-      }
-
-      BVar1 = INVENTORY::Inventory::INVENTORY_CanAutoBeltItem(pInventory, pUnit);
-      if (BVar1 == -1) {
-        return 0;
+      if (pItemsTxt->bAutoBelt == '\0') {
+        BVar1 = INVENTORY::Inventory::INVENTORY_CanAutoBeltItem(pInventory, pUnit);
+        if (BVar1 == -1) {
+          return 0;
+        }
       }
 
       return 1;
@@ -935,7 +921,6 @@ int32_t __stdcall IsUseable(D2UnitStrc * pUnit) {
         exit(-1);
       }
 
-      return (uint32_t)pItemsTxt->bUseable;
       return (uint32_t)pItemsTxt->bUseable;
     }
 
@@ -987,18 +972,18 @@ int32_t __fastcall ITEMS_CalcChargedSkillPriceModifier(D2UnitStrc * pUnit, int32
     D2SkillsTxt* pSkillsTxt;
     int nCostTmp;
     int nMaxCharges;
-    uint32_t uVar2;
+    uint32_t uVar1;
     D2StatStrc aStatValues[64];
-    int32_t iVar1 = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0xcc, aStatValues, 0x40);
+    int32_t nNumStats = Stats::StatsEx::STATLIST_GetItemStatBonusValues(pUnit, 0xcc, aStatValues, 0x40);
     int nStatIdx = 0;
     int nTotalModifier = 0;
-    if (iVar1 > 0) {
+    if (nNumStats > 0) {
       do {
         int nSkillLevel;
         nSkillLevel = (int)(uint32_t)(uint16_t)aStatValues[nStatIdx].wSubIndex >> ((uint8_t)sgptDataTable->nChargedSkillLevelBits & 0x1f);
-        uVar2 = aStatValues[nStatIdx].nStatValue & 0xff;
+        uVar1 = aStatValues[nStatIdx].nStatValue & 0xff;
         nMaxCharges = aStatValues[nStatIdx].nStatValue >> 8;
-        pSkillsTxt = (int)uVar2 < nMaxCharges && nSkillLevel >= 0 && nSkillLevel < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillLevel : nullptr;
+        pSkillsTxt = (int)uVar1 < nMaxCharges && nSkillLevel >= 0 && nSkillLevel < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillLevel : nullptr;
         if (pSkillsTxt) {
           nSkillLevel = (sgptDataTable->dwChargedSkillLevelMask & (uint32_t)(uint16_t)aStatValues[nStatIdx].wSubIndex) + 2 + (int)pSkillsTxt->reqlevel / 6 * 2;
           nCostTmp = nSkillLevel * nMultiplier;
@@ -1009,11 +994,11 @@ int32_t __fastcall ITEMS_CalcChargedSkillPriceModifier(D2UnitStrc * pUnit, int32
             nSkillLevel = ((int)((nCostTmp >> 0x1f & 0x3ffU) + nCostTmp) >> 10) * pSkillsTxt->costmult;
           }
 
-          nTotalModifier += (int)((nMaxCharges - uVar2) * (nSkillLevel + pSkillsTxt->costadd)) / nMaxCharges;
+          nTotalModifier += (int)((nMaxCharges - uVar1) * (nSkillLevel + pSkillsTxt->costadd)) / nMaxCharges;
         }
 
         nStatIdx++;
-      } while (nStatIdx < iVar1);
+      } while (nStatIdx < nNumStats);
 
       return nTotalModifier;
     }
@@ -1277,7 +1262,6 @@ int32_t __stdcall TXT_Items_GetMaxStack(uint32_t nItemClassId) {
     }
 
     return pItemsTxt->dwMaxStack;
-    return pItemsTxt->dwMaxStack;
 }
 
 // Returns max stack size (base from ItemsTxt + stat bonus), capped at 511. Halts if unit is null or not an item.
@@ -1296,11 +1280,10 @@ int __stdcall ITEM_GetMaxStack(D2UnitStrc * pUnit) {
       nLine = TXT_Items_GetMaxStack(pUnit->nClassId);
       nMaxStack = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_extra_stack, 0);
       nMaxStack = nLine + nMaxStack;
-      if (nMaxStack < 0x1ff) {
-        return nMaxStack;
+      if (nMaxStack >= 0x1ff) {
+        nMaxStack = 0x1ff;
       }
 
-      nMaxStack = 0x1ff;
       return nMaxStack;
     }
 }
@@ -1312,7 +1295,6 @@ int32_t __stdcall TXT_Items_GetSpawnStack(uint32_t nItemClassId) {
       exit(-1);
     }
 
-    return pItemsTxt->dwSpawnStack;
     return pItemsTxt->dwSpawnStack;
 }
 
@@ -1342,7 +1324,6 @@ int32_t __stdcall TXT_Items_GetMinStack(uint32_t nItemClassId) {
       exit(-1);
     }
 
-    return pItemsTxt->dwMinStack;
     return pItemsTxt->dwMinStack;
 }
 
@@ -1530,7 +1511,6 @@ uint32_t __stdcall TXT_Items_GetGemApplyType(uint32_t nItemClassId) {
     }
 
     return (uint32_t)pItemsTxt->bGemApplyType;
-    return (uint32_t)pItemsTxt->bGemApplyType;
 }
 
 // Returns the full 32-bit gem/rune apply type: 00629a79 tail-calls 00629a00 and returns its EAX unchanged. Typed bool, the decompiler split EAX into a byte plus a phantom upper-24-bit local, and callers composed the index from an unassigned value.
@@ -1623,7 +1603,6 @@ uint32_t __stdcall TXT_Items_GetBitFieldAnd0x01(uint32_t nItemClassId) {
     }
 
     return pItemsTxt->dwBitfield1 & 1;
-    return pItemsTxt->dwBitfield1 & 1;
 }
 
 uint32_t __stdcall TXT_Items_GetBitFieldAnd0x02(uint32_t nItemClassId) {
@@ -1634,7 +1613,6 @@ uint32_t __stdcall TXT_Items_GetBitFieldAnd0x02(uint32_t nItemClassId) {
     }
 
     return pItemsTxt->dwBitfield1 & 2;
-    return pItemsTxt->dwBitfield1 & 2;
 }
 
 uint32_t __stdcall TXT_Items_GetBitFieldAnd0x04(uint32_t nItemClassId) {
@@ -1644,7 +1622,6 @@ uint32_t __stdcall TXT_Items_GetBitFieldAnd0x04(uint32_t nItemClassId) {
       exit(-1);
     }
 
-    return pItemsTxt->dwBitfield1 & 4;
     return pItemsTxt->dwBitfield1 & 4;
 }
 
@@ -1850,7 +1827,6 @@ BOOL __stdcall TXT_Items_CheckTransmogrify(uint32_t nItemClassId) {
     }
 
     return (uint32_t)(pItemsTxt->bTransmogrify != '\0');
-    return (uint32_t)(pItemsTxt->bTransmogrify != '\0');
 }
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
@@ -1937,17 +1913,15 @@ int32_t __stdcall BARBARIAN_CheckItemData_b1or2Handed_isTrue(D2UnitStrc * pUnit,
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x119d);
         exit(-1);
       }
-      if (!(pUnit->eUnitType == UNIT_PLAYER && pUnit->nClassId == 4)) {
-        return 0;
-      }
-
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
-      if (!pItemsTxt) {
-        Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11a5);
-        exit(-1);
-      }
-      if (pItemsTxt->b1or2Handed) {
-        return 1;
+      if (pUnit->eUnitType == UNIT_PLAYER && pUnit->nClassId == 4) {
+        pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
+        if (!pItemsTxt) {
+          Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11a5);
+          exit(-1);
+        }
+        if (pItemsTxt->b1or2Handed) {
+          return 1;
+        }
       }
 
       return 0;
@@ -1955,7 +1929,7 @@ int32_t __stdcall BARBARIAN_CheckItemData_b1or2Handed_isTrue(D2UnitStrc * pUnit,
 }
 
 static char ITEMS_ValidateItemQualityCode(uint32_t nQuality, int32_t nCode) {
-    if (nCode - 1U <= 7 && nQuality <= 0x14) {
+    if (nCode >= 0x1 && nCode <= 0x8 && nQuality <= 0x14) {
       return (char)nCode * ' ' + ((uint8_t)nQuality & 0x1f);
     }
 
@@ -1983,14 +1957,19 @@ static BOOL ITEMS_HasSocketedItems(D2UnitStrc * pItem) {
 }
 
 static BOOL ITEMS_GetCompactSaveFlag(D2UnitStrc * pItem) {
-    uint32_t nItemClassId = !pItem ? -1 : pItem->nClassId;
+    uint32_t nItemClassId;
+    if (!pItem) {
+      nItemClassId = -1;
+    } else {
+      nItemClassId = pItem->nClassId;
+    }
+
     D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nItemClassId);
     if (!pItemsTxt) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x12e0);
       exit(-1);
     }
 
-    return (uint32_t)pItemsTxt->bCompactSave;
     return (uint32_t)pItemsTxt->bCompactSave;
 }
 
@@ -2031,7 +2010,7 @@ BOOL __stdcall ReturnFalse(D2UnitStrc * dwParam1, D2UnitStrc * dwParam2) {
 
 // Returns a bitmask of which set-item slots (by setIndex) the player has equipped from the same set as pItem. Iterates all equipped/body-loc items; for each set-quality, non-disabled, non-broken item from the same set, sets bit (1 &lt;&lt; setIndex). Returns 0 if pItem is not a set item or unit has no inventory.
 // @sourcefile .\ITEMS\Items.cpp
-uint32_t __stdcall ITEMS_GetEquippedSetItemsMask(D2UnitStrc * pUnit, D2UnitStrc * pItem, int32_t nParam) {
+uint32_t __stdcall ITEMS_GetEquippedSetItemsMask(D2UnitStrc * pUnit, D2UnitStrc * pItem, int32_t bIncludeItem) {
     D2UnitStrc* pCurItem;
     D2UnitStrc* pCarriedItem;
     BOOL bItemNotDisabledOrBroken;
@@ -2062,7 +2041,7 @@ uint32_t __stdcall ITEMS_GetEquippedSetItemsMask(D2UnitStrc * pUnit, D2UnitStrc 
       iVar1 = INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pCurItem);
       if (iVar1 == 3) {
         pCarriedItem = INVENTORY::Inventory::GetCarriedItem(pCurItem);
-        if (pCarriedItem && pCarriedItem->eUnitType == UNIT_ITEM && (nParam || pCarriedItem != pItem)) {
+        if (pCarriedItem && pCarriedItem->eUnitType == UNIT_ITEM && (bIncludeItem || pCarriedItem != pItem)) {
           nFileIndex = GetItemQuality(pCarriedItem);
           if (nFileIndex == 5) {
             bItemNotDisabledOrBroken = CheckItemFlag(pCarriedItem, ITEMFLAG_DISABLED, 0x144e, ".\\ITEMS\\Items.cpp");
@@ -2112,39 +2091,37 @@ int32_t __stdcall PLAYER_GetUnidentifiedItemsCount(D2UnitStrc * pUnit) {
     int32_t nCount = 0;
     D2InventoryStrc* pInventory = pUnit->pInventory;
     D2UnitStrc* pCurItem = INVENTORY::Inventory::INVENTORY_GetFirstItem(pInventory);
-    if (!pCurItem) {
-      return nCount;
-    }
-
-    nCount = 0;
-    do {
+    if (pCurItem) {
       D2UnitStrc* pCarriedItem;
-      pCarriedItem = INVENTORY::Inventory::GetCarriedItem(pCurItem);
-      if (!pCarriedItem || pCarriedItem->eUnitType != UNIT_ITEM || !pCarriedItem->pUnitData.pUnitDataMissile || (pCarriedItem->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_IDENTIFIED) == UNIT_PLAYER) {
-        iVar1 = INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pCurItem);
-        if (iVar1 == INVENTORY_GRID_TYPE_INVENTORY) {
-          if ((pCarriedItem ? pCarriedItem->eUnitType : UNIT_COUNT) == UNIT_ITEM) {
-            if (pCarriedItem->pUnitData.pUnitDataItem && pCarriedItem->pUnitData.pUnitDataItem->ePage == INVPAGE_INVENTORY) {
-              nCount++;
-            } else {
-              if (true && pCarriedItem->pUnitData.pUnitDataItem) {
-                bOnValidPage = pCarriedItem->pUnitData.pUnitDataItem->ePage == INVPAGE_CUBE;
-                if (bOnValidPage) {
-                  nCount++;
+      nCount = 0;
+      do {
+        pCarriedItem = INVENTORY::Inventory::GetCarriedItem(pCurItem);
+        if (!pCarriedItem || pCarriedItem->eUnitType != UNIT_ITEM || !pCarriedItem->pUnitData.pUnitDataMissile || (pCarriedItem->pUnitData.pUnitDataMissile->eOwnerType & ITEMFLAG_IDENTIFIED) == UNIT_PLAYER) {
+          iVar1 = INVENTORY::Inventory::ITEM_GetItemData_eD2InventoryGridType(pCurItem);
+          if (iVar1 == INVENTORY_GRID_TYPE_INVENTORY) {
+            if ((pCarriedItem ? pCarriedItem->eUnitType : UNIT_COUNT) == UNIT_ITEM) {
+              if (pCarriedItem->pUnitData.pUnitDataItem && pCarriedItem->pUnitData.pUnitDataItem->ePage == INVPAGE_INVENTORY) {
+                nCount++;
+              } else {
+                if (true && pCarriedItem->pUnitData.pUnitDataItem) {
+                  bOnValidPage = pCarriedItem->pUnitData.pUnitDataItem->ePage == INVPAGE_CUBE;
+                  if (bOnValidPage) {
+                    nCount++;
+                  }
                 }
               }
             }
-          }
-        } else {
-          bOnValidPage = iVar1 == INVENTORY_GRID_TYPE_BODYLOC;
-          if (bOnValidPage) {
-            nCount++;
+          } else {
+            bOnValidPage = iVar1 == INVENTORY_GRID_TYPE_BODYLOC;
+            if (bOnValidPage) {
+              nCount++;
+            }
           }
         }
-      }
 
-      pCurItem = INVENTORY::Inventory::INVENTORY_GetNextItem(pCurItem);
-    } while (pCurItem);
+        pCurItem = INVENTORY::Inventory::INVENTORY_GetNextItem(pCurItem);
+      } while (pCurItem);
+    }
 
     return nCount;
 }
@@ -2244,9 +2221,9 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
     __frame0_t __frame0;
     uint32_t _bIsWeapon;
     bool bIsWeapon;
-    int32_t iVar1;
-    int iVar2;
-    int iVar3;
+    int32_t nFasterAttackRate;
+    int iVar1;
+    int nSpeed;
     uint32_t nTrigger;
     if (!pItem || pItem->eUnitType != UNIT_ITEM) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x151d);
@@ -2275,11 +2252,11 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
           exit(-1);
         }
 
-        iVar1 = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pItem, UNITSTAT_item_fasterattackrate, 0);
-        iVar2 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_attackrate, 0);
-        iVar3 = (iVar1 + 100 + iVar2) * __frame0.nAnimSpeed;
-        iVar2 = __frame0.nFrames << 8;
-        return iVar2 / (iVar3 / 100);
+        nFasterAttackRate = Stats::StatsEx::ITEM_GetMinimalStatValueShifted(pItem, UNITSTAT_item_fasterattackrate, 0);
+        iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_attackrate, 0);
+        nSpeed = (nFasterAttackRate + 100 + iVar1) * __frame0.nAnimSpeed;
+        iVar1 = __frame0.nFrames << 8;
+        return iVar1 / (nSpeed / 100);
       }
     }
 }
@@ -2509,17 +2486,15 @@ static int __stdcall ITEMS_DeserializeItemHeader(int32_t bIsOnGround, uint32_t n
 
     pItem->nInitSeed = 0;
     Seed::InitSeed_Param_666(&pItem->sSeed, 0);
-    if (pItem->eUnitType != UNIT_ITEM) {
-      return 1;
-    }
-    if (pItem->pUnitData.pUnitDataPlayer) {
-      pItem->pUnitData.pUnitDataPlayer->nPortalFlags = 1;
-    }
-    if (!(pItem->eUnitType == UNIT_ITEM && pItem->pUnitData.pUnitDataMissile)) {
-      return 1;
+    if (pItem->eUnitType == UNIT_ITEM) {
+      if (pItem->pUnitData.pUnitDataPlayer) {
+        pItem->pUnitData.pUnitDataPlayer->nPortalFlags = 1;
+      }
+      if (pItem->eUnitType == UNIT_ITEM && pItem->pUnitData.pUnitDataMissile) {
+        pItem->pUnitData.pUnitDataMissile->unk0x00 = 2;
+      }
     }
 
-    pItem->pUnitData.pUnitDataMissile->unk0x00 = 2;
     return 1;
 }
 
@@ -2996,7 +2971,7 @@ uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78c);
       exit(-1);
     } else {
-      uint32_t uVar1;
+      uint32_t bIsUpgradeable;
       if (pUnit->eUnitType != UNIT_ITEM) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x78d);
         exit(-1);
@@ -3004,8 +2979,8 @@ uint32_t __stdcall ITEM_ValidateAndGetClass(D2UnitStrc * pUnit) {
 
       {
         int nClassId = pUnit->nClassId;
-        uVar1 = ITEMS_CheckIfUpgradeable(nClassId);
-        return uVar1;
+        bIsUpgradeable = ITEMS_CheckIfUpgradeable(nClassId);
+        return bIsUpgradeable;
       }
     }
 }
@@ -3280,8 +3255,8 @@ uint32_t __fastcall ITEM_CalcRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUni
 }
 
 uint32_t __stdcall ITEM_GetRequiredLevel(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
-    uint32_t uVar1 = ITEM_CalcRequiredLevel(pUnit, pUnit2);
-    return uVar1;
+    uint32_t nRequiredLevel = ITEM_CalcRequiredLevel(pUnit, pUnit2);
+    return nRequiredLevel;
 }
 
 // Returns a full 32-bit value: every return path writes all of EAX (MOV EAX,imm32 / XOR EAX,EAX / MOVZX EAX,<narrow>).
@@ -3371,7 +3346,7 @@ int32_t __stdcall ITEM_GetTxtItemTypes_staffmods(D2UnitStrc * pUnit) {
 }
 
 uint8_t __stdcall ITEM_GetMaxSockCount(D2UnitStrc * pUnit) {
-    uint8_t bVar1;
+    uint8_t byMaxSockets;
     int nLvlMaxSock;
     uint32_t nAbsMaxSockets;
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
@@ -3384,11 +3359,11 @@ uint8_t __stdcall ITEM_GetMaxSockCount(D2UnitStrc * pUnit) {
       return 0;
     }
 
-    D2ItemsTxt* pDVar2 = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
-    if (!pDVar2) {
-      bVar1 = 0;
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
+    if (!pItemsTxt) {
+      byMaxSockets = 0;
     } else {
-      bVar1 = pDVar2->bGemSockets;
+      byMaxSockets = pItemsTxt->bGemSockets;
     }
 
     int32_t nLevel = ITEM_GetItemData_nItemLevel(pUnit);
@@ -3399,12 +3374,11 @@ uint8_t __stdcall ITEM_GetMaxSockCount(D2UnitStrc * pUnit) {
     } else {
       nLvlMaxSock = (int)(uint8_t)pItemTypesTxt->maxsock40;
     }
-    if ((uint32_t)nLvlMaxSock > (uint32_t)bVar1) {
-      return bVar1;
+    if ((uint32_t)nLvlMaxSock <= (uint32_t)byMaxSockets) {
+      byMaxSockets = (uint8_t)nLvlMaxSock;
     }
 
-    bVar1 = (uint8_t)nLvlMaxSock;
-    return bVar1;
+    return byMaxSockets;
 }
 
 // Determines and assigns the socket count for an item unit during socketing. Computes the maximum allowed sockets from the item's grid area (width*height, capped at 6), then clamps further by item quality (magic=4, rare=2, crafted/tampered=3, set/unique use existing stat or force 1). Calls ITEM_GetMaxSockCount for a hard cap, rolls the final count, sets ITEMFLAG_SOCKETED, and writes UNITSTAT_item_numsockets via STATLIST_SetUnitStat.
@@ -3425,7 +3399,7 @@ void __stdcall ITEM_RollSocketCount(D2UnitStrc * pUnit, uint32_t nMaxSocksRandom
 
     uint32_t nSocketArea = (nUnit >> 0x18) * (uint32_t)bDim;
     uint32_t nMaxAllowed = 6;
-    if (nSocketArea < 7) {
+    if ((int32_t)nSocketArea < 7) {
       nMaxAllowed = nSocketArea;
     }
     if (!nSocketArea) {
@@ -3452,19 +3426,19 @@ void __stdcall ITEM_RollSocketCount(D2UnitStrc * pUnit, uint32_t nMaxSocksRandom
 
       break;
       case QUALITY_RARE:
-        if (1 < nMaxAllowed) {
+        if (1 < (int32_t)nMaxAllowed) {
           nMaxAllowed = 2;
         }
       break;
       case QUALITY_MAGIC:
-        if (3 < nMaxAllowed) {
+        if (3 < (int32_t)nMaxAllowed) {
           nMaxAllowed = 4;
         }
       break;
       case QUALITY_CRAFTED:
 
       case QUALITY_TAMPERED:
-        if (2 < nMaxAllowed) {
+        if (2 < (int32_t)nMaxAllowed) {
           nMaxAllowed = 3;
         }
     }
@@ -3510,7 +3484,7 @@ void __stdcall ITEM_SetSocketCount(D2UnitStrc * pUnit, uint32_t nSockCount) {
 
     uint32_t nSocketArea = (nUnit >> 0x18) * (uint32_t)bDim;
     uint32_t nMaxAllowed = 6;
-    if (!(6 < nSocketArea || (nMaxAllowed = nSocketArea , nSocketArea != 0))) {
+    if (!(6 < (int32_t)nSocketArea || (nMaxAllowed = nSocketArea , nSocketArea != 0))) {
       return;
     }
 
@@ -3698,12 +3672,12 @@ eD2PlayerClassIDDWORD __stdcall TXT_ItemTypes_GetClass(D2UnitStrc * pUnit) {
       return CLASS_COUNT;
     }
 
-    uint8_t bVar1 = pItemTypesTxt->_class;
-    if (bVar1 >= 7) {
+    uint8_t byClass = pItemTypesTxt->_class;
+    if (byClass >= 7) {
       return CLASS_COUNT;
     }
 
-    return (uint32_t)bVar1;
+    return (uint32_t)byClass;
 }
 
 // Resolves the display/transform color (palette index) of an item and writes the raw transform-color code to *pColor. Priority order: (1) owner-unit states whose itemtype matches the item (states.txt itemtrans) override the color; otherwise by quality: magic/rare scan the item's prefix/suffix and automagic affixes for the first MagicAffix with a valid transformcolor; set uses SetItems.txt chrtransform/invtransform; unique uses UniqueItems.txt chrtransform/invtransform; normal socketed items derive color from the first socketed gem (Gems.txt). nTransType selects char (0) vs inventory (nonzero) palette via PALETTE_GetItemPalette, combining the item's bTransform/bInvTrans base. Returns the palette pointer/index, or 0 if no color applies. __stdcall.
@@ -3929,7 +3903,10 @@ uint8_t * __stdcall GetItemColor(D2UnitStrc * pUnit, D2UnitStrc * pItem, char * 
 // @sourcefile .\ITEMS\Items.cpp
 BOOL __stdcall IsValidImbumeItem(D2UnitStrc * pUnit) {
     eD2ItemTypes eItemType;
-    uint32_t uVar1;
+    D2ItemsTxt* pItemsTxt;
+    uint32_t dwItemCode;
+    BOOL bSocketFlagged;
+    int nQuality;
     int32_t nErrLine;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
@@ -3947,40 +3924,35 @@ BOOL __stdcall IsValidImbumeItem(D2UnitStrc * pUnit) {
 
     uint32_t nClassId = pUnit->nClassId;
     uint32_t bEquippable = TXT_Items_GetBitFieldAnd0x01(nClassId);
-    if (!bEquippable) {
-      return 0;
-    }
-    if (!(pUnit->eUnitFlagsEx >> 0x19 & 1)) {
-      nErrLine = ITEM_GetTxtItemTypes_throwable(pUnit);
-      if (nErrLine) {
-        return 0;
+    if (bEquippable) {
+      if (!(pUnit->eUnitFlagsEx >> 0x19 & 1)) {
+        nErrLine = ITEM_GetTxtItemTypes_throwable(pUnit);
+        if (nErrLine) {
+          return 0;
+        }
+      }
+
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
+      if (pItemsTxt->bQuest != '\0') {
+        dwItemCode = ITEM_GetItemsTxt_szCode(pUnit);
+        if (dwItemCode != 0x2067656c) {
+          return 0;
+        }
+      }
+
+      bSocketFlagged = ITEMS_HasSocketedItems(pUnit);
+      if (!bSocketFlagged) {
+        bSocketFlagged = CheckItemFlag(pUnit, ITEMFLAG_SOCKETED, 0x12c7, ".\\ITEMS\\Items.cpp");
+        if (!bSocketFlagged) {
+          nQuality = GetItemQuality(pUnit);
+          if (nQuality != 5 && nQuality != 4 && nQuality != 6 && nQuality != 8 && nQuality != 7 && nQuality != 9) {
+            return 1;
+          }
+        }
       }
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(nClassId);
-    if (pItemsTxt->bQuest != '\0') {
-      uVar1 = ITEM_GetItemsTxt_szCode(pUnit);
-      if (uVar1 != 0x2067656c) {
-        return 0;
-      }
-    }
-
-    BOOL bSocketFlagged = ITEMS_HasSocketedItems(pUnit);
-    if (bSocketFlagged) {
-      return 0;
-    }
-
-    bSocketFlagged = CheckItemFlag(pUnit, ITEMFLAG_SOCKETED, 0x12c7, ".\\ITEMS\\Items.cpp");
-    if (bSocketFlagged) {
-      return 0;
-    }
-
-    int nQuality = GetItemQuality(pUnit);
-    if (!(nQuality != 5 && nQuality != 4 && nQuality != 6 && nQuality != 8 && nQuality != 7 && nQuality != 9)) {
-      return 0;
-    }
-
-    return 1;
+    return 0;
 }
 
 // Returns true if the item is eligible to receive a custom player name. Rejects gold, body-parts, quivers, broken items, items already named (ITEMFLAG_PLAYERNAME set), compact-save items, and items whose Items.txt bNameable flag is false.
@@ -4039,7 +4011,7 @@ BOOL __stdcall ITEM_CheckIfItemCanBeNamed(D2UnitStrc * pUnit) {
 // @sourcefile .\ITEMS\Items.cpp
 BOOL __stdcall ITEM_CheckIfItemCanHaveSockets(D2UnitStrc * pUnit) {
     eD2ItemTypes eItemType;
-    uint32_t uVar1;
+    uint32_t dwItemCode;
     int32_t nErrOrSocketCount;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x67d);
@@ -4057,8 +4029,8 @@ BOOL __stdcall ITEM_CheckIfItemCanHaveSockets(D2UnitStrc * pUnit) {
 
     D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(pUnit->nClassId);
     if (pItemsTxt->bQuest != '\0') {
-      uVar1 = ITEM_GetItemsTxt_szCode(pUnit);
-      if (uVar1 != 0x2067656c) {
+      dwItemCode = ITEM_GetItemsTxt_szCode(pUnit);
+      if (dwItemCode != 0x2067656c) {
         return 0;
       }
     }
@@ -4089,6 +4061,10 @@ BOOL __stdcall ITEM_CheckIfItemCanHaveSockets(D2UnitStrc * pUnit) {
 BOOL __stdcall IsItemSocketable(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
     int nClassId2;
     D2UnitDataItemStrc* pItemData2;
+    uint32_t bEthereal;
+    uint32_t bIsEthereal2;
+    eD2ItemQuality eQuality;
+    int32_t nSockets;
     int nClassId;
     D2UnitDataItemStrc* pItemData;
     uint32_t bIsEthereal;
@@ -4121,77 +4097,54 @@ BOOL __stdcall IsItemSocketable(D2UnitStrc * pUnit, D2UnitStrc * pUnit2) {
 
     nClassId = ITEM_GetItemData_nFileIndex(pUnit);
     nClassId2 = ITEM_GetItemData_nFileIndex(pUnit2);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    BOOL bIsStackable = IsStackable(pUnit);
-    if (!bIsStackable) {
-      return 0;
-    }
-
-    uint32_t uVar1 = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pUnit);
-    uint32_t bIsEthereal2 = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pUnit2);
-    if (uVar1 != bIsEthereal2) {
-      return 0;
-    }
-
-    eD2ItemQuality eQuality = GetItemQuality(pUnit);
-    bIsStackable = QualityCanHaveSockets(eQuality);
-    if (!bIsStackable) {
-      return 0;
-    }
-
-    eQuality = GetItemQuality(pUnit2);
-    bIsStackable = QualityCanHaveSockets(eQuality);
-    if (!bIsStackable) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mindamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_mindamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_maxdamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_mindamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_secondary_mindamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_secondary_maxdamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_throw_mindamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_item_throw_mindamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_throw_maxdamage, 0);
-    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_item_throw_maxdamage, 0);
-    if (nClassId != nClassId2) {
-      return 0;
-    }
-
-    int32_t nSockets = ITEM_GetSocketsCount(pUnit);
-    if ((uint8_t)(char)nSockets > '\0') {
-      return 0;
-    }
-
-    nSockets = ITEM_GetSocketsCount(pUnit2);
-    if ((uint8_t)(char)nSockets <= '\0') {
-      return 1;
+    if (nClassId == nClassId2) {
+      BOOL bIsStackable;
+      bIsStackable = IsStackable(pUnit);
+      if (bIsStackable) {
+        bEthereal = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pUnit);
+        bIsEthereal2 = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pUnit2);
+        if (bEthereal == bIsEthereal2) {
+          eQuality = GetItemQuality(pUnit);
+          bIsStackable = QualityCanHaveSockets(eQuality);
+          if (bIsStackable) {
+            eQuality = GetItemQuality(pUnit2);
+            bIsStackable = QualityCanHaveSockets(eQuality);
+            if (bIsStackable) {
+              nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_mindamage, 0);
+              nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_mindamage, 0);
+              if (nClassId == nClassId2) {
+                nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_maxdamage, 0);
+                nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_maxdamage, 0);
+                if (nClassId == nClassId2) {
+                  nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_mindamage, 0);
+                  nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_secondary_mindamage, 0);
+                  if (nClassId == nClassId2) {
+                    nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_secondary_maxdamage, 0);
+                    nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_secondary_maxdamage, 0);
+                    if (nClassId == nClassId2) {
+                      nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_throw_mindamage, 0);
+                      nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_item_throw_mindamage, 0);
+                      if (nClassId == nClassId2) {
+                        nClassId = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_item_throw_maxdamage, 0);
+                        nClassId2 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit2, UNITSTAT_item_throw_maxdamage, 0);
+                        if (nClassId == nClassId2) {
+                          nSockets = ITEM_GetSocketsCount(pUnit);
+                          if ((uint8_t)(char)nSockets <= '\0') {
+                            nSockets = ITEM_GetSocketsCount(pUnit2);
+                            if ((uint8_t)(char)nSockets <= '\0') {
+                              return 1;
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
 
     return 0;
@@ -4311,7 +4264,7 @@ static void __stdcall ITEM_ResolvePercentStatToBaseValue(eD2UnitStat nRecipeType
 }
 
 // Canonical D2 item bit-stream reader: deserializes one item from a D2BitBufferStrc into pUnit's item data + stat list (inverse of SerializeComplexItem). Reads version(10b), location code (ground=X/Y 16b each; else bodyloc+cell+inv page), item code (resolved to ClassId), flags, quality (switch over eD2ItemQuality decoding magic/set/rare/unique/crafted affix IDs, automod, charm), GUID/level/personalized char name, runeword and ear/bodypart data, then base stats (gold, defense, weapon min/max dmg with ethereal*3/2 and low-quality*3/4 scaling, durability) and a property/stat-list loop (9-bit stat IDs, grouped set/charge/on-hit-skill/skill-tab stats) via STATLIST_SetUnitStat. Field bit widths gated by item save/wire version (nParam2: <0x5d/<0x60 compact). __stdcall; returns 1 on success, -1 on parse error.
-int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, uint32_t nParam1, D2ItemStatCostTxt * pItemStatCostTxt, uint32_t * pnParam, uint32_t nParam2) {
+int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferStrc * pBitBuffer, uint32_t nParam1, D2ItemStatCostTxt * pItemStatCostTxt, uint32_t * pnSocketedItemCount, uint32_t nFileVersion) {
     int16_t wAffixAdj;
     uint32_t nCoord;
     eD2ItemFlag eItemFlags;
@@ -4329,7 +4282,6 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     D2SetItemsTxt** ppSetItems;
     char* szCharName;
     eD2UnitStat eStatId2;
-    uint16_t uVar1;
     uint32_t nChargeSkillId;
     uint32_t nChargeSkillLevel;
     uint16_t nChargeBuf[2];
@@ -4351,6 +4303,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     eD2ItemQuality eQualityType;
     bool bExtended;
     eD2UnitStat eStatId;
+    uint16_t nLayer;
     int bError;
     bError = 0;
     uint32_t nBitsRead;
@@ -4388,23 +4341,21 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
       pUnit->nClassId = nClassId;
     }
     if (pItemStatCostTxt) {
-      if (!(pUnit && pUnit->eUnitType == UNIT_ITEM)) {
-        return 1;
-      }
-      if (pUnit->pUnitData.pUnitDataItem) {
-        pUnit->pUnitData.pUnitDataItem->nItemLevel = 1;
-      }
-      if (!(pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMissile)) {
-        return 1;
+      if (pUnit && pUnit->eUnitType == UNIT_ITEM) {
+        if (pUnit->pUnitData.pUnitDataItem) {
+          pUnit->pUnitData.pUnitDataItem->nItemLevel = 1;
+        }
+        if (pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataMissile) {
+          pUnit->pUnitData.pUnitDataMissile->unk0x00 = 1;
+        }
       }
 
-      pUnit->pUnitData.pUnitDataMissile->unk0x00 = 1;
       return 1;
     }
 
     nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 3);
-    if (pnParam) {
-      *pnParam = nBitVal;
+    if (pnSocketedItemCount) {
+      *pnSocketedItemCount = nBitVal;
     }
     if (nParam1) {
       nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
@@ -4443,7 +4394,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     *(uint16_t*)(char*)&pItemStatCostTxt = (short int)(((int)pAffixTable->pPrefixStart - (int)pAffixTable->pTable) / 0x90);
     short int wAffixIdx;
     wAffixIdx = (short int)(((int)pAffixTable->pAutoMagicStart - (int)pAffixTable->pTable) / 0x90);
-    switch (nParam2) {
+    switch (nFileVersion) {
       case 0x48:
 
       case 0x49:
@@ -4480,10 +4431,10 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
       short int wAutoMagicIdx;
       nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
       wAutoMagicIdx = (short int)nBitVal;
-      if (nParam2 <= 0x58) {
+      if (nFileVersion <= 0x58) {
         wAutoMagicIdx = 0;
       } else {
-        if (nParam2 <= 0x59) {
+        if (nFileVersion <= 0x59) {
           wAutoMagicIdx++;
         }
         if ((uint16_t)wAutoMagicIdx > 0) {
@@ -4574,7 +4525,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         if (nBitVal) {
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
           wAffixIdx = (short int)nBitVal;
-          if (nParam2 <= 0x59) {
+          if (nFileVersion <= 0x59) {
             wAffixIdx++;
           }
           if ((uint16_t)wAffixIdx > 0) {
@@ -4593,7 +4544,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         if (nBitVal) {
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xb);
           wAffixIdx = (short int)nBitVal;
-          if (nParam2 <= 0x59) {
+          if (nFileVersion <= 0x59) {
             wAffixIdx++;
           }
           if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
@@ -4648,7 +4599,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
       case QUALITY_SET:
         if (nParam1 || (eItemFlags = ITEM_GetItemData_eD2ItemFlag(pUnit) , (eItemFlags & ITEMFLAG_IDENTIFIED) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD))) {
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xc);
-          if (nParam2 <= 0x5c) {
+          if (nFileVersion <= 0x5c) {
             pSetsTxt = D2Client::DataTbls::GetSetsLine(nBitVal);
             if (!pSetsTxt) {
               set_error:
@@ -4753,12 +4704,12 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         } while ((char)nBitVal != '\0');
       }
     }
-    if (nParam1 && nParam2 > 0x56) {
+    if (nParam1 && nFileVersion > 0x56) {
       nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 1);
       if (nBitVal) {
         nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
         nCoord = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
-        if (nParam2 > 0x5d) {
+        if (nFileVersion > 0x5d) {
           Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x20);
         }
 
@@ -4767,7 +4718,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     }
 
     uint32_t nStatIndex;
-    nStatIndex = (uint32_t)(nParam2 < 0x5d);
+    nStatIndex = (uint32_t)(nFileVersion < 0x5d);
     nBitVal = ITEMS_IsA(pUnit, ITEMTYPE_AnyArmor);
     if (!nBitVal) {
       nBitVal = ITEMS_IsA(pUnit, ITEMTYPE_Weapon);
@@ -4789,7 +4740,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         if (nStatVal == 1) {
           if (pItemsTxt->nMaxDam) {
             nTmpVal2 = (int)((uint32_t)pItemsTxt->nMaxDam * 3) >> 2;
-            if (nTmpVal2 < 2) {
+            if ((int32_t)nTmpVal2 < 2) {
               nTmpVal2 = 2;
             }
 
@@ -4805,7 +4756,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           }
           if (pItemsTxt->n2HandMaxDam) {
             nTmpVal2 = (int)((uint32_t)pItemsTxt->n2HandMaxDam * 3) >> 2;
-            if (nTmpVal2 < 2) {
+            if ((int32_t)nTmpVal2 < 2) {
               nTmpVal2 = 2;
             }
 
@@ -4827,7 +4778,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
 
             Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_item_throw_mindamage, nClassId, 0);
             nTmpVal2 = (int)((uint32_t)(uint8_t)pItemsTxt->nMaxMisDam * 3) >> 2;
-            if (nTmpVal2 < 2) {
+            if ((int32_t)nTmpVal2 < 2) {
               nTmpVal2 = 2;
             }
 
@@ -4871,13 +4822,13 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
           }
 
           nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-          if (nParam2 <= 0x5f) {
+          if (nFileVersion <= 0x5f) {
             nTmpVal2 = 8;
           }
 
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nTmpVal2);
           nBitVal -= pStatCostTxt->saveAdd[nStatIndex];
-          uVar1 = 0;
+          nLayer = 0;
           eStatId = UNITSTAT_durability;
           goto store_gold_or_durability;
         }
@@ -4885,7 +4836,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         nBitVal = ITEMS_IsA(pUnit, ITEMTYPE_Gold);
         if (nBitVal) {
           nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 1);
-          uVar1 = 0;
+          nLayer = 0;
           if (nBitVal) {
             nClassId = 0x20;
           } else {
@@ -4937,24 +4888,24 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         }
 
         nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-        if (nParam2 <= 0x5f) {
+        if (nFileVersion <= 0x5f) {
           nTmpVal2 = 8;
         }
 
         nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, nTmpVal2);
         nBitVal -= pStatCostTxt->saveAdd[nStatIndex];
-        uVar1 = 0;
+        nLayer = 0;
         eStatId = UNITSTAT_durability;
         store_gold_or_durability:
-        Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eStatId, nBitVal, uVar1);
+        Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eStatId, nBitVal, nLayer);
       }
     }
 
     BOOL bIsStackable;
     bIsStackable = IsStackable(pUnit);
     if (bIsStackable) {
-      uVar1 = 0;
-      if (nParam2 <= 0x50) {
+      nLayer = 0;
+      if (nFileVersion <= 0x50) {
         nClassId = 8;
         nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 8);
       } else {
@@ -4962,7 +4913,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 9);
       }
 
-      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_quantity, nBitVal, uVar1);
+      Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_quantity, nBitVal, nLayer);
     }
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM || !pUnit->pUnitData.pUnitDataItem) {
       eItemFlags = ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD);
@@ -4995,7 +4946,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
     nStatListCount = 0;
     uint32_t nSetBitMask;
     nSetBitMask = 0;
-    if (nParam2 > 0x54 && pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem && pUnit->pUnitData.pUnitDataItem->eQuality == QUALITY_SET) {
+    if (nFileVersion > 0x54 && pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem && pUnit->pUnitData.pUnitDataItem->eQuality == QUALITY_SET) {
       nStatVal = 5;
       nStatListCount = 5;
       nSetBitMask = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 5);
@@ -5043,7 +4994,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_vitality:
                 nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_vitality, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
-              if (nParam2 <= 0x55) {
+              if (nFileVersion <= 0x55) {
                 if (sgptDataTable->nTxtItemStatCostSize > 7) {
                   pStatCostTxt = sgptDataTable->pTxtItemStatCost + 7;
                 } else {
@@ -5058,7 +5009,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_energy:
                 nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, (uint32_t)pStatCostTxt->saveBits[nStatIndex]);
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_energy, nBitVal - pStatCostTxt->saveAdd[nStatIndex], 0);
-              if (nParam2 <= 0x55) {
+              if (nFileVersion <= 0x55) {
                 if (sgptDataTable->nTxtItemStatCostSize > 9) {
                   pStatCostTxt = sgptDataTable->pTxtItemStatCost + 9;
                 } else {
@@ -5086,7 +5037,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               break;
               case UNITSTAT_firemindam:
                 nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 6;
               }
 
@@ -5099,7 +5050,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 7;
               }
 
@@ -5116,7 +5067,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 7;
               }
 
@@ -5145,7 +5096,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 7;
               }
 
@@ -5162,7 +5113,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               break;
               case UNITSTAT_poisonmindam:
                 nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 7;
               }
 
@@ -5175,7 +5126,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               }
 
               nTmpVal2 = (uint32_t)pStatCostTxt->saveBits[nStatIndex];
-              if (nParam2 <= 0x51) {
+              if (nFileVersion <= 0x51) {
                 nTmpVal2 = 8;
               }
 
@@ -5192,7 +5143,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_poison_count, 1, 0);
               break;
               case UNITSTAT_item_freeze:
-                if (nParam2 > 0x59) {
+                if (nFileVersion > 0x59) {
                   eStatId = UNITSTAT_item_freeze;
                   goto read_generic_stat;
                 }
@@ -5200,7 +5151,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_freeze, 1, 0);
               break;
               case UNITSTAT_item_addclassskills:
-                if (nParam2 <= 0x5c) {
+                if (nFileVersion <= 0x5c) {
                   nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 3);
                   Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 0);
                   break;
@@ -5208,7 +5159,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               eStatId = UNITSTAT_item_addclassskills;
               goto read_generic_stat;
               case UNITSTAT_unsentparam1:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_unsentparam1;
                   goto read_generic_stat;
                 }
@@ -5216,7 +5167,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 3);
               break;
               case UNITSTAT_item_addexperience:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_item_addexperience;
                   goto read_generic_stat;
                 }
@@ -5224,7 +5175,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 2);
               break;
               case UNITSTAT_item_healafterkill:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_item_healafterkill;
                   goto read_generic_stat;
                 }
@@ -5232,7 +5183,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 1);
               break;
               case UNITSTAT_item_reducedprices:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_item_reducedprices;
                   goto read_generic_stat;
                 }
@@ -5240,7 +5191,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 4);
               break;
               case UNITSTAT_attack_vs_montype:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_attack_vs_montype;
                   goto read_generic_stat;
                 }
@@ -5248,7 +5199,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addclassskills, nBitVal, 5);
               break;
               case UNITSTAT_damage_vs_montype:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_damage_vs_montype;
                   goto read_generic_stat;
                 }
@@ -5266,7 +5217,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_unused192:
 
               case UNITSTAT_unused193:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto read_generic_stat;
                 }
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 10);
@@ -5278,7 +5229,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               Stats::StatsEx::STATLIST_SetStatValue(pStatsEx, UNITSTAT_item_addskill_tab, nSkillTabCount, (short int)nSkillTabIdx + (short int)nSkillTabGroup * 8);
               break;
               case UNITSTAT_item_elemskill:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   eStatId = UNITSTAT_item_elemskill;
                   goto read_generic_stat;
                 }
@@ -5304,7 +5255,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_unused186:
 
               case UNITSTAT_unused187:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto deserialize_single_stat;
                 }
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0xe);
@@ -5328,7 +5279,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_item_skillonkill:
 
               case UNITSTAT_item_skillondeath:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto read_generic_stat;
                 }
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x15);
@@ -5340,7 +5291,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_item_skillonlevelup:
 
               case UNITSTAT_unused200:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto read_generic_stat;
                 }
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x15);
@@ -5352,7 +5303,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_unused202:
 
               case UNITSTAT_unused203:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto read_generic_stat;
                 }
               nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x15);
@@ -5378,10 +5329,10 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               case UNITSTAT_unused211:
 
               case UNITSTAT_unused212:
-                if (nParam2 > 0x5c) {
+                if (nFileVersion > 0x5c) {
                   goto read_generic_stat;
                 }
-              if (nParam2 <= 0x49) {
+              if (nFileVersion <= 0x49) {
                 nClassId = 0x1d;
                 nBitVal = Fog::BitBuffer::ReadUnsigned(pBitBuffer, 0x1d);
               } else {
@@ -5395,7 +5346,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
               default:
                 deserialize_single_stat:
                 read_generic_stat:
-                ITEMS_DeserializeSingleStat(nParam2, eStatId, pBitBuffer, pStatsEx, (int32_t)pStatCostTxt, nStatIndex);
+                ITEMS_DeserializeSingleStat(nFileVersion, eStatId, pBitBuffer, pStatsEx, (int32_t)pStatCostTxt, nStatIndex);
               break;
             }
 
@@ -5410,7 +5361,7 @@ int32_t __stdcall ITEM_DeserializeFromBitBuffer(D2UnitStrc * pUnit, D2BitBufferS
         }
 
         fold_addclassskills:
-        if (nParam2 <= 0x5c && (nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 0) , nStatVal > 0) && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 1) , nStatVal == nSkillClassVal && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 2) , nStatVal == nSkillClassVal && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 3) , nStatVal == nSkillClassVal))) && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 4) , nStatVal == nSkillClassVal)) {
+        if (nFileVersion <= 0x5c && (nStatVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 0) , nStatVal > 0) && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 1) , nStatVal == nSkillClassVal && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 2) , nStatVal == nSkillClassVal && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 3) , nStatVal == nSkillClassVal))) && (nSkillClassVal = Stats::StatsEx::STATLIST_GetBaseStatValue(pStatsEx, UNITSTAT_item_addclassskills, 4) , nStatVal == nSkillClassVal)) {
           nBitVal = 0;
           do {
             Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_addclassskills, 0, nBitVal);
@@ -5444,12 +5395,12 @@ void __stdcall ExtractItemDetails(uint8_t * pBytesAfterId, size_t size, BOOL isS
 }
 
 // Deserialises an item unit from a binary save-data bit buffer into pUnit. Validates the 0x4D4A ("JM") magic header when nParam1 is set, reads the 32-bit item flags word, strips invalid flags, resets all affix/prefix/suffix fields on the unit to clean state, then delegates to ITEM_DeserializeFromBitBuffer (full items) or ITEMS_DeserializeItemHeader (compact items). Returns the number of bits consumed.
-int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, size_t nSize, uint32_t nParam1, uint32_t * pnParam, uint32_t nParam2, int * pUnitDataItemDetails) {
+int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pSaveData, size_t nSize, uint32_t bCheckHeader, uint32_t * pnSocketedItemCount, uint32_t nVersion, int * pUnitDataItemDetails) {
     int32_t nBitsConsumed;
     int32_t nDeserializeResult;
     D2BitBufferStrc sBitBuffer;
-    Fog::BitBuffer::InitBitBuffer(&sBitBuffer, pbParam, nSize);
-    if (nParam1) {
+    Fog::BitBuffer::InitBitBuffer(&sBitBuffer, pSaveData, nSize);
+    if (bCheckHeader) {
       nBitsConsumed = Fog::BitBuffer::ReadSigned(&sBitBuffer, 0x10);
       if (nBitsConsumed != 0x4d4a) {
         *pUnitDataItemDetails = 1;
@@ -5525,12 +5476,12 @@ int32_t __stdcall ITEM_LoadFromSaveData(D2UnitStrc * pUnit, uint8_t * pbParam, s
       }
     }
     if ((eItemFlags & ITEMFLAG_COMPACT) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD)) {
-      nDeserializeResult = ITEMS_DeserializeItemHeader(nParam1, nParam2, pUnit, &sBitBuffer);
-      if (pnParam) {
-        *pnParam = 0;
+      nDeserializeResult = ITEMS_DeserializeItemHeader(bCheckHeader, nVersion, pUnit, &sBitBuffer);
+      if (pnSocketedItemCount) {
+        *pnSocketedItemCount = 0;
       }
     } else {
-      nDeserializeResult = ITEM_DeserializeFromBitBuffer(pUnit, &sBitBuffer, nParam1, (D2ItemStatCostTxt*)(uint32_t)bIsExtended, pnParam, nParam2);
+      nDeserializeResult = ITEM_DeserializeFromBitBuffer(pUnit, &sBitBuffer, bCheckHeader, (D2ItemStatCostTxt*)(uint32_t)bIsExtended, pnSocketedItemCount, nVersion);
     }
     if (nDeserializeResult < 1) {
       *pUnitDataItemDetails = 1;
@@ -5722,7 +5673,7 @@ uint8_t __stdcall ITEM_GetTxtItemTypes_varinvgfx(D2UnitStrc * pUnit) {
     return 0;
 }
 
-D2Row_char_32 * __stdcall ITEM_GetTxtItemTypes_invgfx(D2UnitStrc * pUnit, uint32_t nParam) {
+D2Row_char_32 * __stdcall ITEM_GetTxtItemTypes_invgfx(D2UnitStrc * pUnit, uint32_t nGfxIndex) {
     // Static local variables (originally global data)
     static char * gpszItemNoInvGfx = (char *)&lpDefault_006cc837; D2_STATIC_GUARD(gpszItemNoInvGfx, "D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_invgfx::gpszItemNoInvGfx");
 
@@ -5737,12 +5688,11 @@ D2Row_char_32 * __stdcall ITEM_GetTxtItemTypes_invgfx(D2UnitStrc * pUnit, uint32
     if (pItemTypesTxt) {
       uint32_t nMaxGfxIdx;
       nMaxGfxIdx = (uint8_t)pItemTypesTxt->varinvgfx - 1;
-      nClampedGfxIdx = (int)nParam <= 0 ? 0 : nParam;
-      if ((int)nClampedGfxIdx >= (int)nMaxGfxIdx) {
-        return pItemTypesTxt->invgfx + nMaxGfxIdx;
+      nClampedGfxIdx = (int)nGfxIndex <= 0 ? 0 : nGfxIndex;
+      if ((int)nClampedGfxIdx < (int)nMaxGfxIdx) {
+        nMaxGfxIdx = nClampedGfxIdx;
       }
 
-      nMaxGfxIdx = nClampedGfxIdx;
       return pItemTypesTxt->invgfx + nMaxGfxIdx;
     }
 
@@ -5938,17 +5888,16 @@ int32_t __stdcall ITEMS_CheckBodyLocationFit(D2UnitStrc * pItem, uint32_t eBodyL
     pItem = (D2UnitStrc*)((uint32_t)pItem & 0xffffff);
     uint32_t dwBodyLoc2Scratch = (uint32_t)0;
     ITEM_GetTxtItemTypes_BodyLoc1andBodyLoc2(pItemSaved, (eD2BodyLoc*)((uintptr_t)&pItem + 3), (eD2BodyLoc*)((uintptr_t)&dwBodyLoc2Scratch + 3));
-    if (!(*(uint8_t*)((char*)&pItem + 3) != eBodyLoc && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != eBodyLoc)) {
-      return 1;
-    }
-    if (eBodyLoc != 0xb && eBodyLoc != 0xc) {
-      return 0;
-    }
-    if (!(*(uint8_t*)((char*)&pItem + 3) != 4 && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != 4 && *(uint8_t*)((char*)&pItem + 3) != 5 && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != 5)) {
-      return 1;
+    if (*(uint8_t*)((char*)&pItem + 3) != eBodyLoc && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != eBodyLoc) {
+      if (eBodyLoc != 0xb && eBodyLoc != 0xc) {
+        return 0;
+      }
+      if (*(uint8_t*)((char*)&pItem + 3) != 4 && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != 4 && *(uint8_t*)((char*)&pItem + 3) != 5 && *(uint8_t*)((char*)&dwBodyLoc2Scratch + 3) != 5) {
+        return 0;
+      }
     }
 
-    return 0;
+    return 1;
 }
 
 // Adjusts buy/sell/repair prices in-place for items whose type has a staffmods class restriction. Iterates the item's skill-bonus stat list (stat 0x6b), and for each qualifying skill entry scales the price deltas using the skill's costmult/costadd fields and the skill level (2*lvl-1). The accumulated deltas are divided by nDivisor before being added to *pBuy, *pSell, and *pRepair. No-ops if pItem is null, not an item unit, or the item type has no staffmods class.
@@ -6015,9 +5964,10 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     };
     static_assert(sizeof(void*) != 4 || sizeof(__frame0_t) == 16, "frame group __frame0_t must reproduce the Ghidra frame layout");
     __frame0_t __frame0;
+    uint8_t nEarLevel;
     uint16_t nItemVersion;
-    uint32_t uVar2;
-    int32_t iVar3;
+    uint32_t dwResult;
+    int32_t nResult;
     int32_t nErrorAddress;
     D2MagicAffixTxt* pMagicAffixTxt;
     D2MonStatsTxt* pMonStatsTxt;
@@ -6027,24 +5977,27 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     int nAffixBuyDelta;
     int nAffixRepairDelta;
     D2UniqueItemsTxt* pUniqueItemsTxt;
-    int iVar4;
     D2SetItemsTxt* pSetItemsTxt;
     BOOL bIsStackable;
-    uint32_t uVar5;
-    int iVar6;
+    uint32_t uVar2;
+    int iVar3;
     int* pQuestMultEntry;
-    int iVar7;
+    int iVar4;
     int nQuestMultIter;
     int nAffixIter;
+    int nCostFactor;
+    int nMonStatsId;
+    int nRepairScaled;
+    int nPrice;
     if (!pUnit || (pItem ? pItem->eUnitType : UNIT_COUNT) != UNIT_ITEM) {
       return 0x7fffffff;
     }
 
-    int iVar1;
-    iVar1 = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
+    int nPlayerLevel;
+    nPlayerLevel = Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_level, 0);
     if (nTransactionType == 3) {
-      uVar2 = ITEM_CanBeRepaired(pItem);
-      if (!uVar2) {
+      dwResult = ITEM_CanBeRepaired(pItem);
+      if (!dwResult) {
         return 0;
       }
     }
@@ -6068,18 +6021,18 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     if (nTransactionType == 2) {
       nItemVersion = ITEM_GetItemData_wItemVersion(pItem);
       if (nItemVersion >= 1) {
-        iVar3 = ITEMS_CalculateGamblePrice(iVar1, pItem);
+        nResult = ITEMS_CalculateGamblePrice(nPlayerLevel, pItem);
         if (nReducedPrices) {
-          nErrorAddress = D2Client::Stats::D2ApplyPercent(iVar3, nReducedPrices, 100);
-          return iVar3 - nErrorAddress;
+          nErrorAddress = D2Client::Stats::D2ApplyPercent(nResult, nReducedPrices, 100);
+          return nResult - nErrorAddress;
         }
 
-        return iVar3;
+        return nResult;
       }
 
-      uVar2 = IITEM_GetItemsTxt_dwNormCode(pItem);
-      uVar2 = DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(uVar2);
-      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(uVar2);
+      dwResult = IITEM_GetItemsTxt_dwNormCode(pItem);
+      dwResult = DATATBLS::ItemTbls::TXT_Items_ConvertItemCodeToItemClassId(dwResult);
+      pItemsTxt = DATATBLS::ItemTbls::TXT_Items_GetLine(dwResult);
       return pItemsTxt->dwGambleCost;
     }
 
@@ -6089,57 +6042,56 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     eD2ItemFlag eItemFlags;
     eItemFlags = ITEM_GetItemData_eD2ItemFlag(pItem);
     if ((eItemFlags & ITEMFLAG_BODYPART) != ~(ITEMFLAG_TAGGED | ITEMFLAG_DROW | ITEMFLAG_CURSED | ITEMFLAG_STAFFMODS | ITEMFLAG_MAGICAL | ITEMFLAG_RUNEWORD | ITEMFLAG_CRUDE | ITEMFLAG_PLAYERNAME | ITEMFLAG_SAVED | ITEMFLAG_ETHEREAL | ITEMFLAG_COMPACT | ITEMFLAG_100000 | ITEMFLAG_SERVER | ITEMFLAG_RESTRICT | ITEMFLAG_BEGINNER | ITEMFLAG_BODYPART | ITEMFLAG_HARDCORE | ITEMFLAG_DISABLED | ITEMFLAG_NEW | ITEMFLAG_MONSTER | ITEMFLAG_SOCKETED | ITEMFLAG_SORTED | ITEMFLAG_RESTORED | ITEMFLAG_BROKEN | ITEMFLAG_TAKEN | ITEMFLAG_ADDED | ITEMFLAG_REMOVED | ITEMFLAG_IDENTIFIED | ITEMFLAG_IGNORE | ITEMFLAG_CURSOR | ITEMFLAG_BOUGHT | ITEMFLAG_RELOAD)) {
-      uint8_t nEarLevel;
       nEarLevel = ITEM_GetItemData_nEarLevel(pItem);
-      iVar1 = (uint32_t)nEarLevel * pItemsTxt->dwCost;
-      __frame0.nSellPrice = iVar1;
-      __frame0.nBuyPrice = iVar1;
+      nPrice = (uint32_t)nEarLevel * pItemsTxt->dwCost;
+      __frame0.nSellPrice = nPrice;
+      __frame0.nBuyPrice = nPrice;
     } else {
-      uVar2 = ITEMS_IsA(pItem, ITEMTYPE_BodyPart);
-      if (uVar2) {
-        iVar1 = ITEM_GetItemData_nFileIndex(pItem);
-        pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(iVar1);
+      dwResult = ITEMS_IsA(pItem, ITEMTYPE_BodyPart);
+      if (dwResult) {
+        nMonStatsId = ITEM_GetItemData_nFileIndex(pItem);
+        pMonStatsTxt = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetLine(nMonStatsId);
         if (pMonStatsTxt) {
-          iVar1 = pItemsTxt->dwCost + pMonStatsTxt->aLevel[nDifficulty] * 8;
-          __frame0.nSellPrice = iVar1;
-          __frame0.nBuyPrice = iVar1;
+          nPrice = pItemsTxt->dwCost + pMonStatsTxt->aLevel[nDifficulty] * 8;
+          __frame0.nSellPrice = nPrice;
+          __frame0.nBuyPrice = nPrice;
         } else {
-          iVar1 = pItemsTxt->dwCost;
-          __frame0.nSellPrice = iVar1;
-          __frame0.nBuyPrice = iVar1;
+          nPrice = pItemsTxt->dwCost;
+          __frame0.nSellPrice = nPrice;
+          __frame0.nBuyPrice = nPrice;
         }
       } else {
-        uVar2 = ITEMS_IsA(pItem, ITEMTYPE_Book);
-        if (uVar2) {
+        dwResult = ITEMS_IsA(pItem, ITEMTYPE_Book);
+        if (dwResult) {
           nItemVersion = GetMagicSuffix(pItem, 0);
           pBooksTxt = DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)nItemVersion);
           if (!pBooksTxt) {
-            iVar3 = 0xbba;
+            nResult = 0xbba;
             goto HaltInternalError;
           }
 
-          iVar1 = pBooksTxt->costpercharge * nQuantity + pItemsTxt->dwCost;
-          __frame0.nSellPrice = iVar1;
-          __frame0.nBuyPrice = iVar1;
+          nPrice = pBooksTxt->costpercharge * nQuantity + pItemsTxt->dwCost;
+          __frame0.nSellPrice = nPrice;
+          __frame0.nBuyPrice = nPrice;
         } else {
-          iVar3 = ITEM_GetTxtItemTypes_quiver(pItem);
-          if (iVar3) {
-            iVar1 = pItemsTxt->dwCost * nQuantity;
-            iVar1 = iVar1 / 1024;
-            __frame0.nSellPrice = iVar1;
-            __frame0.nBuyPrice = iVar1;
-            iVar6 = ITEM_GetMaxStack(pItem);
-            iVar6 *= pItemsTxt->dwCost;
-            __frame0.nRepairPrice = iVar6 / 1024;
+          nResult = ITEM_GetTxtItemTypes_quiver(pItem);
+          if (nResult) {
+            iVar3 = pItemsTxt->dwCost * nQuantity;
+            nPrice = iVar3 / 1024;
+            __frame0.nSellPrice = nPrice;
+            __frame0.nBuyPrice = nPrice;
+            iVar3 = ITEM_GetMaxStack(pItem);
+            iVar3 *= pItemsTxt->dwCost;
+            __frame0.nRepairPrice = iVar3 / 1024;
           } else {
             bIsStackable = IsStackable(pItem);
-            iVar1 = pItemsTxt->dwCost;
-            __frame0.nSellPrice = iVar1;
-            __frame0.nRepairPrice = iVar1;
-            __frame0.nBuyPrice = iVar1;
+            nPrice = pItemsTxt->dwCost;
+            __frame0.nSellPrice = nPrice;
+            __frame0.nRepairPrice = nPrice;
+            __frame0.nBuyPrice = nPrice;
             if (bIsStackable) {
-              iVar6 = ITEM_GetMaxStack(pItem);
-              if (iVar6 > 1) {
+              iVar3 = ITEM_GetMaxStack(pItem);
+              if (iVar3 > 1) {
                 nMaxStack = ITEM_GetMaxStack(pItem);
               } else {
                 nMaxStack = 1;
@@ -6151,44 +6103,45 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     }
 
     /* ITEMS_IsA(pItem, ITEMTYPE_AnyArmor): 0x32 is ITEMTYPE_AnyArmor in
-                         eD2ItemTypes */ uVar2 = ITEMS_IsA(pItem, ITEMTYPE_AnyArmor);
-    if (uVar2) {
-      iVar3 = Stats::StatsEx::SERVER_GetUnitStat(pItem, UNITSTAT_armorclass, 0);
+                         eD2ItemTypes */ dwResult = ITEMS_IsA(pItem, ITEMTYPE_AnyArmor);
+    if (dwResult) {
+      nResult = Stats::StatsEx::SERVER_GetUnitStat(pItem, UNITSTAT_armorclass, 0);
       if (pItemsTxt->dwMaxAc - pItemsTxt->dwMinAc != -1 && pItemsTxt->dwMaxAc) {
-        iVar1 = pItemsTxt->dwCost * iVar3 / pItemsTxt->dwMaxAc;
-        __frame0.nSellPrice = iVar1;
-        __frame0.nRepairPrice = iVar1;
-        __frame0.nBuyPrice = iVar1;
+        nPrice = pItemsTxt->dwCost * nResult / pItemsTxt->dwMaxAc;
+        __frame0.nSellPrice = nPrice;
+        __frame0.nRepairPrice = nPrice;
+        __frame0.nBuyPrice = nPrice;
       }
     }
 
     bIsStackable = CheckItemFlag(pItem, ITEMFLAG_IDENTIFIED, 0xbe4, ".\\ITEMS\\Items.cpp");
-    iVar3 = ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pItem);
+    nResult = ITEM_CheckItemData_ItemQualityIsMagicOrBetter(pItem);
     eD2ItemQuality eItemQuality;
     eItemQuality = GetItemQuality(pItem);
-    if (!iVar3) {
+    if (!nResult) {
       ITEMS_CalcStaffModsPriceModifier(&__frame0.nSellPrice, &__frame0.nBuyPrice, &__frame0.nRepairPrice, nMaxStack, pItem);
-      iVar1 = __frame0.nSellPrice;
+      nPrice = __frame0.nSellPrice;
     }
     if (bIsStackable) {
-      iVar6 = 0;
-      iVar7 = 0;
+      int iVar1;
+      iVar3 = 0;
+      iVar4 = 0;
       __frame0.nQualityMod = 0;
       nItemVersion = GetAutoMagic(pItem);
       pMagicAffixTxt = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)nItemVersion);
-      uVar5 = iVar1 >> 0x1f;
+      uVar2 = nPrice >> 0x1f;
       if (pMagicAffixTxt) {
-        if (iVar1 <= 0xffff || !pMagicAffixTxt->multiply) {
+        if (nPrice <= 0xffff || !pMagicAffixTxt->multiply) {
           __frame0.nQualityMod = pMagicAffixTxt->add;
           nAffixRepairDelta = pMagicAffixTxt->multiply;
-          iVar7 = nAffixRepairDelta * iVar1 / 1024 + __frame0.nQualityMod;
-          iVar6 = nAffixRepairDelta * __frame0.nBuyPrice / 1024 + __frame0.nQualityMod;
+          iVar4 = nAffixRepairDelta * nPrice / 1024 + __frame0.nQualityMod;
+          iVar3 = nAffixRepairDelta * __frame0.nBuyPrice / 1024 + __frame0.nQualityMod;
           __frame0.nQualityMod = nAffixRepairDelta * __frame0.nRepairPrice / 1024 + __frame0.nQualityMod;
         } else {
           __frame0.nQualityMod = pMagicAffixTxt->add;
           nAffixRepairDelta = pMagicAffixTxt->multiply;
-          iVar7 = ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * nAffixRepairDelta + __frame0.nQualityMod;
-          iVar6 = __frame0.nBuyPrice / 1024 * nAffixRepairDelta + __frame0.nQualityMod;
+          iVar4 = ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * nAffixRepairDelta + __frame0.nQualityMod;
+          iVar3 = __frame0.nBuyPrice / 1024 * nAffixRepairDelta + __frame0.nQualityMod;
           __frame0.nQualityMod = __frame0.nRepairPrice / 1024 * nAffixRepairDelta + __frame0.nQualityMod;
         }
       }
@@ -6202,44 +6155,44 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             nItemVersion = GetMagicPrefix(pItem, nAffixIter);
             pMagicAffixTxt = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)nItemVersion);
             if (pMagicAffixTxt) {
-              if (iVar1 <= 0xffff || !pMagicAffixTxt->multiply) {
-                iVar4 = pMagicAffixTxt->multiply;
+              if (nPrice <= 0xffff || !pMagicAffixTxt->multiply) {
+                iVar1 = pMagicAffixTxt->multiply;
                 nAffixRepairDelta = pMagicAffixTxt->add;
-                nAffixSellDelta = iVar4 * iVar1 / 1024 + nAffixRepairDelta;
-                nAffixBuyDelta = iVar4 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
-                nAffixRepairDelta = iVar4 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
+                nAffixSellDelta = iVar1 * nPrice / 1024 + nAffixRepairDelta;
+                nAffixBuyDelta = iVar1 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
+                nAffixRepairDelta = iVar1 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
               } else {
-                iVar4 = pMagicAffixTxt->multiply;
+                nCostFactor = pMagicAffixTxt->multiply;
                 nAffixRepairDelta = pMagicAffixTxt->add;
-                nAffixSellDelta = ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-                nAffixBuyDelta = __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-                nAffixRepairDelta = __frame0.nRepairPrice / 1024 * iVar4 + nAffixRepairDelta;
+                nAffixSellDelta = ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * nCostFactor + nAffixRepairDelta;
+                nAffixBuyDelta = __frame0.nBuyPrice / 1024 * nCostFactor + nAffixRepairDelta;
+                nAffixRepairDelta = __frame0.nRepairPrice / 1024 * nCostFactor + nAffixRepairDelta;
               }
 
-              iVar7 += nAffixSellDelta;
-              iVar6 += nAffixBuyDelta;
+              iVar4 += nAffixSellDelta;
+              iVar3 += nAffixBuyDelta;
               __frame0.nQualityMod += nAffixRepairDelta;
             }
 
             nItemVersion = GetMagicSuffix(pItem, nAffixIter);
             pMagicAffixTxt = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)nItemVersion);
             if (pMagicAffixTxt) {
-              if (iVar1 <= 0xffff || !pMagicAffixTxt->multiply) {
-                iVar4 = pMagicAffixTxt->multiply;
+              if (nPrice <= 0xffff || !pMagicAffixTxt->multiply) {
+                iVar1 = pMagicAffixTxt->multiply;
                 nAffixRepairDelta = pMagicAffixTxt->add;
-                nAffixSellDelta = iVar4 * iVar1 / 1024 + nAffixRepairDelta;
-                nAffixBuyDelta = iVar4 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
-                nAffixRepairDelta = iVar4 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
+                nAffixSellDelta = iVar1 * nPrice / 1024 + nAffixRepairDelta;
+                nAffixBuyDelta = iVar1 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
+                nAffixRepairDelta = iVar1 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
               } else {
-                iVar4 = pMagicAffixTxt->multiply;
+                iVar1 = pMagicAffixTxt->multiply;
                 nAffixRepairDelta = pMagicAffixTxt->add;
-                nAffixSellDelta = ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-                nAffixBuyDelta = __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-                nAffixRepairDelta = __frame0.nRepairPrice / 1024 * iVar4 + nAffixRepairDelta;
+                nAffixSellDelta = ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * iVar1 + nAffixRepairDelta;
+                nAffixBuyDelta = __frame0.nBuyPrice / 1024 * iVar1 + nAffixRepairDelta;
+                nAffixRepairDelta = __frame0.nRepairPrice / 1024 * iVar1 + nAffixRepairDelta;
               }
 
-              iVar7 += nAffixSellDelta;
-              iVar6 += nAffixBuyDelta;
+              iVar4 += nAffixSellDelta;
+              iVar3 += nAffixBuyDelta;
               __frame0.nQualityMod += nAffixRepairDelta;
             }
 
@@ -6253,18 +6206,18 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             nAffixRepairDelta = ITEM_GetItemData_nFileIndex(pItem);
             pUniqueItemsTxt = D2Client::DataTbls::INV_GetUniqueItemsTxtLine(nAffixRepairDelta);
             if (pUniqueItemsTxt) {
-              if (iVar1 <= 0xffff || !pUniqueItemsTxt->costMult) {
+              if (nPrice <= 0xffff || !pUniqueItemsTxt->costMult) {
                 nAffixRepairDelta = pUniqueItemsTxt->costMult;
-                iVar4 = pUniqueItemsTxt->costAdd;
-                iVar7 = iVar7 + nAffixRepairDelta * iVar1 / 1024 + iVar4;
-                iVar6 = iVar6 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar4;
-                __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar4;
+                iVar1 = pUniqueItemsTxt->costAdd;
+                iVar4 = iVar4 + nAffixRepairDelta * nPrice / 1024 + iVar1;
+                iVar3 = iVar3 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar1;
+                __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar1;
               } else {
                 nAffixRepairDelta = pUniqueItemsTxt->costAdd;
-                iVar4 = pUniqueItemsTxt->costMult;
-                iVar7 = iVar7 + ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-                iVar6 = iVar6 + __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-                __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar4 + nAffixRepairDelta;
+                iVar1 = pUniqueItemsTxt->costMult;
+                iVar4 = iVar4 + ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * iVar1 + nAffixRepairDelta;
+                iVar3 = iVar3 + __frame0.nBuyPrice / 1024 * iVar1 + nAffixRepairDelta;
+                __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar1 + nAffixRepairDelta;
               }
 
               break;
@@ -6275,45 +6228,45 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             nItemVersion = GetMagicPrefix(pItem, 0);
           pMagicAffixTxt = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)nItemVersion);
           if (pMagicAffixTxt) {
-            if (iVar1 <= 0xffff || !pMagicAffixTxt->multiply) {
-              iVar4 = pMagicAffixTxt->multiply;
+            if (nPrice <= 0xffff || !pMagicAffixTxt->multiply) {
+              iVar1 = pMagicAffixTxt->multiply;
               nAffixRepairDelta = pMagicAffixTxt->add;
-              nAffixBuyDelta = iVar4 * iVar1 / 1024 + nAffixRepairDelta;
-              nAffixSellDelta = iVar4 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
-              nAffixRepairDelta = iVar4 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
+              nAffixBuyDelta = iVar1 * nPrice / 1024 + nAffixRepairDelta;
+              nAffixSellDelta = iVar1 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
+              nAffixRepairDelta = iVar1 * __frame0.nRepairPrice / 1024 + nAffixRepairDelta;
             } else {
-              iVar4 = pMagicAffixTxt->multiply;
+              iVar1 = pMagicAffixTxt->multiply;
               nAffixRepairDelta = pMagicAffixTxt->add;
-              nAffixBuyDelta = ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-              nAffixSellDelta = __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-              nAffixRepairDelta = __frame0.nRepairPrice / 1024 * iVar4 + nAffixRepairDelta;
+              nAffixBuyDelta = ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * iVar1 + nAffixRepairDelta;
+              nAffixSellDelta = __frame0.nBuyPrice / 1024 * iVar1 + nAffixRepairDelta;
+              nAffixRepairDelta = __frame0.nRepairPrice / 1024 * iVar1 + nAffixRepairDelta;
             }
 
-            iVar7 += nAffixBuyDelta;
-            iVar6 += nAffixSellDelta;
+            iVar4 += nAffixBuyDelta;
+            iVar3 += nAffixSellDelta;
             __frame0.nQualityMod += nAffixRepairDelta;
           }
 
           nItemVersion = GetMagicSuffix(pItem, 0);
           pMagicAffixTxt = DATATBLS::ItemTbls::TXT_magicaffixes_GetLine((uint32_t)nItemVersion);
           if (pMagicAffixTxt) {
-            if (iVar1 <= 0xffff || !pMagicAffixTxt->multiply) {
-              iVar4 = pMagicAffixTxt->multiply;
+            if (nPrice <= 0xffff || !pMagicAffixTxt->multiply) {
+              iVar1 = pMagicAffixTxt->multiply;
               nAffixRepairDelta = pMagicAffixTxt->add;
-              iVar1 = iVar4 * iVar1 / 1024 + nAffixRepairDelta;
-              nAffixSellDelta = iVar4 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
-              iVar4 = iVar4 * __frame0.nRepairPrice / 1024;
+              nAffixSellDelta = iVar1 * nPrice / 1024 + nAffixRepairDelta;
+              nAffixBuyDelta = iVar1 * __frame0.nBuyPrice / 1024 + nAffixRepairDelta;
+              nRepairScaled = iVar1 * __frame0.nRepairPrice / 1024;
             } else {
               nAffixRepairDelta = pMagicAffixTxt->add;
-              iVar4 = pMagicAffixTxt->multiply;
-              iVar1 = ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-              nAffixSellDelta = __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-              iVar4 = __frame0.nRepairPrice / 1024 * iVar4;
+              iVar1 = pMagicAffixTxt->multiply;
+              nAffixSellDelta = ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * iVar1 + nAffixRepairDelta;
+              nAffixBuyDelta = __frame0.nBuyPrice / 1024 * iVar1 + nAffixRepairDelta;
+              nRepairScaled = __frame0.nRepairPrice / 1024 * iVar1;
             }
 
-            iVar7 += iVar1;
-            iVar6 += nAffixSellDelta;
-            __frame0.nQualityMod = __frame0.nQualityMod + iVar4 + nAffixRepairDelta;
+            iVar4 += nAffixSellDelta;
+            iVar3 += nAffixBuyDelta;
+            __frame0.nQualityMod = __frame0.nQualityMod + nRepairScaled + nAffixRepairDelta;
           }
 
           goto add_stat_costs;
@@ -6321,25 +6274,25 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             nAffixRepairDelta = ITEM_GetItemData_nFileIndex(pItem);
           pSetItemsTxt = D2Client::DataTbls::GetSetItemsLine(nAffixRepairDelta);
           if (pSetItemsTxt) {
-            if (iVar1 <= 0xffff || !pSetItemsTxt->costMult) {
+            if (nPrice <= 0xffff || !pSetItemsTxt->costMult) {
               nAffixRepairDelta = pSetItemsTxt->costMult;
-              iVar4 = pSetItemsTxt->costAdd;
-              iVar7 = iVar7 + nAffixRepairDelta * iVar1 / 1024 + iVar4;
-              iVar6 = iVar6 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar4;
-              __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar4;
+              iVar1 = pSetItemsTxt->costAdd;
+              iVar4 = iVar4 + nAffixRepairDelta * nPrice / 1024 + iVar1;
+              iVar3 = iVar3 + nAffixRepairDelta * __frame0.nBuyPrice / 1024 + iVar1;
+              __frame0.nQualityMod = __frame0.nQualityMod + nAffixRepairDelta * __frame0.nRepairPrice / 1024 + iVar1;
             } else {
               nAffixRepairDelta = pSetItemsTxt->costAdd;
-              iVar4 = pSetItemsTxt->costMult;
-              iVar7 = iVar7 + ((int)(iVar1 + (uVar5 & 0x3ff)) >> 10) * iVar4 + nAffixRepairDelta;
-              iVar6 = iVar6 + __frame0.nBuyPrice / 1024 * iVar4 + nAffixRepairDelta;
-              __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar4 + nAffixRepairDelta;
+              iVar1 = pSetItemsTxt->costMult;
+              iVar4 = iVar4 + ((int)(nPrice + (uVar2 & 0x3ff)) >> 10) * iVar1 + nAffixRepairDelta;
+              iVar3 = iVar3 + __frame0.nBuyPrice / 1024 * iVar1 + nAffixRepairDelta;
+              __frame0.nQualityMod = __frame0.nQualityMod + __frame0.nRepairPrice / 1024 * iVar1 + nAffixRepairDelta;
             }
           }
 
           break;
           case QUALITY_LOW:
-            iVar7 = -(iVar1 / 2);
-          iVar6 = -(__frame0.nBuyPrice / 2);
+            iVar4 = -(nPrice / 2);
+          iVar3 = -(__frame0.nBuyPrice / 2);
           __frame0.nQualityMod = -(__frame0.nRepairPrice / 2);
           break;
           case QUALITY_SUPERIOR:
@@ -6350,10 +6303,10 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
       }
 
       apply_price_mods:
-      __frame0.nSellPrice = iVar1 + iVar7 / (int)nMaxStack;
-      __frame0.nBuyPrice += iVar6 / (int)nMaxStack;
+      __frame0.nSellPrice = nPrice + iVar4 / (int)nMaxStack;
+      __frame0.nBuyPrice += iVar3 / (int)nMaxStack;
       __frame0.nRepairPrice += __frame0.nQualityMod / (int)nMaxStack;
-      if (iVar3) {
+      if (nResult) {
         ITEMS_CalcStaffModsPriceModifier(&__frame0.nSellPrice, &__frame0.nBuyPrice, &__frame0.nRepairPrice, nMaxStack, pItem);
       }
     }
@@ -6364,42 +6317,42 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
       __frame0.nBuyPrice = __frame0.nBuyPrice / 4;
     }
 
-    iVar1 = __frame0.nBuyPrice;
-    iVar3 = TXT_ItemTypes_CheckClass(pItem);
-    if (iVar3) {
-      iVar1 = iVar1 / 4;
-      __frame0.nBuyPrice = iVar1;
+    iVar3 = __frame0.nBuyPrice;
+    nResult = TXT_ItemTypes_CheckClass(pItem);
+    if (nResult) {
+      iVar3 = iVar3 / 4;
+      __frame0.nBuyPrice = iVar3;
     }
     if (nTransactionType != 1) {
-      if (nTransactionType == 3 && (iVar3 = ITEM_GetTxtItemTypes_quiver(pItem) , !iVar3) && (iVar3 = ITEM_GetTxtItemTypes_throwable(pItem) , !iVar3) && (uVar2 = ITEM_CheckIfItemHasDurability(pItem) , uVar2 != 0)) {
-        iVar6 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
-        iVar3 = Stats::StatsEx::GetTxtMaxDurability(pItem);
-        if (!iVar3 || iVar6 >= iVar3) {
+      if (nTransactionType == 3 && (nResult = ITEM_GetTxtItemTypes_quiver(pItem) , !nResult) && (nResult = ITEM_GetTxtItemTypes_throwable(pItem) , !nResult) && (dwResult = ITEM_CheckIfItemHasDurability(pItem) , dwResult != 0)) {
+        iVar4 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
+        nResult = Stats::StatsEx::GetTxtMaxDurability(pItem);
+        if (!nResult || iVar4 >= nResult) {
           __frame0.nRepairPrice = 0;
-          iVar1 = __frame0.nBuyPrice;
+          iVar3 = __frame0.nBuyPrice;
         } else {
-          iVar7 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_item_replenish_durability, 0);
-          iVar1 = __frame0.nBuyPrice;
-          if (iVar7) {
-            if (!(iVar6 < iVar3 - 1)) {
+          nAffixRepairDelta = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_item_replenish_durability, 0);
+          iVar3 = __frame0.nBuyPrice;
+          if (nAffixRepairDelta) {
+            if (!(iVar4 < nResult - 1)) {
               __frame0.nRepairPrice = 0;
             } else {
-              __frame0.nRepairPrice = (iVar3 - 1) * __frame0.nRepairPrice / iVar3;
+              __frame0.nRepairPrice = (nResult - 1) * __frame0.nRepairPrice / nResult;
             }
           } else {
-            __frame0.nRepairPrice = (iVar3 - iVar6) * __frame0.nRepairPrice / iVar3;
+            __frame0.nRepairPrice = (nResult - iVar4) * __frame0.nRepairPrice / nResult;
           }
         }
       }
     } else {
-      uVar2 = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pItem);
-      if (uVar2) {
-        uVar2 = ITEM_CheckIfItemHasDurability(pItem);
-        if (uVar2) {
-          iVar3 = Stats::StatsEx::GetTxtMaxDurability(pItem);
-          iVar6 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
-          if (iVar3 && iVar6 <= 0) {
-            iVar1 = 0;
+      dwResult = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pItem);
+      if (dwResult) {
+        dwResult = ITEM_CheckIfItemHasDurability(pItem);
+        if (dwResult) {
+          nResult = Stats::StatsEx::GetTxtMaxDurability(pItem);
+          iVar4 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
+          if (nResult && iVar4 <= 0) {
+            iVar3 = 0;
           }
         }
       }
@@ -6408,23 +6361,23 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     D2NpcTxt* pNpcTxt;
     pNpcTxt = DATATBLS::MonsterTbls::TXT_npc_GetLine(nNpcId);
     if (pNpcTxt) {
-      if (__frame0.nSellPrice <= 0xffff || (iVar6 = pNpcTxt->sellMult , !iVar6)) {
-        iVar6 = pNpcTxt->sellMult;
-        __frame0.nSellPrice = iVar6 * __frame0.nSellPrice / 1024;
+      if (__frame0.nSellPrice <= 0xffff || (iVar4 = pNpcTxt->sellMult , !iVar4)) {
+        iVar4 = pNpcTxt->sellMult;
+        __frame0.nSellPrice = iVar4 * __frame0.nSellPrice / 1024;
       } else {
-        __frame0.nSellPrice = __frame0.nSellPrice / 1024 * iVar6;
+        __frame0.nSellPrice = __frame0.nSellPrice / 1024 * iVar4;
       }
-      if (iVar1 <= 0xffff || !iVar6) {
-        iVar1 = pNpcTxt->buyMult * iVar1;
-        __frame0.nBuyPrice = iVar1 / 1024;
+      if (iVar3 <= 0xffff || !iVar4) {
+        iVar3 = pNpcTxt->buyMult * iVar3;
+        __frame0.nBuyPrice = iVar3 / 1024;
       } else {
-        __frame0.nBuyPrice = iVar1 / 1024 * pNpcTxt->buyMult;
+        __frame0.nBuyPrice = iVar3 / 1024 * pNpcTxt->buyMult;
       }
       if (__frame0.nRepairPrice <= 0xffff || !pNpcTxt->repMult) {
-        iVar1 = pNpcTxt->repMult * __frame0.nRepairPrice;
-        iVar1 = iVar1 / 1024;
+        iVar3 = pNpcTxt->repMult * __frame0.nRepairPrice;
+        iVar3 = iVar3 / 1024;
       } else {
-        iVar1 = __frame0.nRepairPrice / 1024 * pNpcTxt->repMult;
+        iVar3 = __frame0.nRepairPrice / 1024 * pNpcTxt->repMult;
       }
 
       pQuestMultEntry = &pNpcTxt->questsellmultA;
@@ -6443,10 +6396,10 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             } else {
               __frame0.nBuyPrice = __frame0.nBuyPrice / 1024 * pQuestMultEntry[3];
             }
-            if (iVar1 <= 0xffff || !pQuestMultEntry[6]) {
-              iVar1 = pQuestMultEntry[6] * iVar1 / 1024;
+            if (iVar3 <= 0xffff || !pQuestMultEntry[6]) {
+              iVar3 = pQuestMultEntry[6] * iVar3 / 1024;
             } else {
-              iVar1 = iVar1 / 1024 * pQuestMultEntry[6];
+              iVar3 = iVar3 / 1024 * pQuestMultEntry[6];
             }
           }
         }
@@ -6455,46 +6408,46 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
         nQuestMultIter--;
       } while (nQuestMultIter);
 
-      uVar2 = ITEMS_IsA(pItem, ITEMTYPE_Book);
-      if (!uVar2) {
-        iVar3 = ITEM_GetTxtItemTypes_quiver(pItem);
-        if (!iVar3) {
+      dwResult = ITEMS_IsA(pItem, ITEMTYPE_Book);
+      if (!dwResult) {
+        nResult = ITEM_GetTxtItemTypes_quiver(pItem);
+        if (!nResult) {
           __frame0.nSellPrice *= nQuantity;
           bIsStackable = IsStackable(pItem);
-          if (!bIsStackable || (uVar2 = ITEM_CanBeRepaired(pItem) , !uVar2)) {
+          if (!bIsStackable || (dwResult = ITEM_CanBeRepaired(pItem) , !dwResult)) {
             __frame0.nBuyPrice *= nQuantity;
           } else {
-            iVar6 = ITEM_GetMaxStack(pItem);
-            if (nQuantity < iVar6 && (iVar7 = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_item_replenish_quantity, 0) , !iVar7)) {
-              iVar1 *= iVar6 - nQuantity;
-              __frame0.nBuyPrice = iVar6 * __frame0.nBuyPrice - iVar1;
+            iVar4 = ITEM_GetMaxStack(pItem);
+            if (nQuantity < iVar4 && (nAffixRepairDelta = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_item_replenish_quantity, 0) , !nAffixRepairDelta)) {
+              iVar3 *= iVar4 - nQuantity;
+              __frame0.nBuyPrice = iVar4 * __frame0.nBuyPrice - iVar3;
             } else {
-              __frame0.nBuyPrice = iVar6 * __frame0.nBuyPrice;
-              iVar1 = 0;
+              __frame0.nBuyPrice = iVar4 * __frame0.nBuyPrice;
+              iVar3 = 0;
             }
           }
         }
       }
       if (nTransactionType == 3) {
-        uVar2 = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pItem);
-        if (!uVar2) {
-          iVar3 = ITEMS_CalcChargedSkillPriceModifier(pItem, 10000);
-          iVar1 += iVar3;
+        dwResult = ITEM_GetItemData_eD2ItemFlag_IsEthereal(pItem);
+        if (!dwResult) {
+          nResult = ITEMS_CalcChargedSkillPriceModifier(pItem, 10000);
+          iVar3 += nResult;
         }
       }
 
-      iVar6 = __frame0.nSellPrice;
-      iVar7 = __frame0.nBuyPrice;
+      iVar4 = __frame0.nSellPrice;
+      nAffixRepairDelta = __frame0.nBuyPrice;
       if (__frame0.nBuyPrice > pNpcTxt->maxBuy[nDifficulty]) {
-        iVar7 = pNpcTxt->maxBuy[nDifficulty];
+        nAffixRepairDelta = pNpcTxt->maxBuy[nDifficulty];
       }
 
       switch (nTransactionType) {
         case 1:
           {
             __frame0.nSellPrice = 1;
-            if (iVar7 >= 1) {
-              return iVar7;
+            if (nAffixRepairDelta >= 1) {
+              return nAffixRepairDelta;
             }
 
             break;
@@ -6502,13 +6455,13 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
         case 3:
           {
             if (nReducedPrices) {
-              iVar3 = D2Client::Stats::D2ApplyPercent(iVar1, nReducedPrices, 100);
-              iVar1 -= iVar3;
+              nResult = D2Client::Stats::D2ApplyPercent(iVar3, nReducedPrices, 100);
+              iVar3 -= nResult;
             }
 
             __frame0.nSellPrice = 1;
-            if (iVar1 >= 1) {
-              return iVar1;
+            if (iVar3 >= 1) {
+              return iVar3;
             }
 
             break;
@@ -6516,8 +6469,8 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
         default:
           {
             if (nReducedPrices) {
-              iVar3 = D2Client::Stats::D2ApplyPercent(__frame0.nSellPrice, nReducedPrices, 100);
-              __frame0.nSellPrice = iVar6 - iVar3;
+              nResult = D2Client::Stats::D2ApplyPercent(__frame0.nSellPrice, nReducedPrices, 100);
+              __frame0.nSellPrice = iVar4 - nResult;
             }
             if (__frame0.nSellPrice < 1) {
               return 1;
@@ -6528,23 +6481,23 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
       return __frame0.nSellPrice;
     }
 
-    iVar3 = 3292;
+    nResult = 3292;
     HaltInternalError:
     /* Shared assert-halt tail (GetInstructionPointer +
                          ERROR_UnrecoverableInternalError_Halt + _exit): the 0xbba site falls through
                          from 0062f283 and the 0xcdc site jumps here from 0062faa7. */ nAddress = Fog::Src::ErrorManager::GetInstructionPointer();
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", nAddress, iVar3);
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", nAddress, nResult);
     exit(-1);
     add_stat_costs:
     add_stat_costs_args_pushed:
     ITEM_AddStatCostsToPrices(pItem, &__frame0.nSellPrice, &__frame0.nBuyPrice, &__frame0.nRepairPrice, nMaxStack);
-    iVar1 = __frame0.nSellPrice;
+    nPrice = __frame0.nSellPrice;
     goto apply_price_mods;
 }
 
 int32_t __stdcall CalculateTransactionCost_Thunk(D2UnitStrc * pUnit, D2UnitStrc * pItem, int32_t nDifficulty, D2BitBufferStrc * pQuestBitBuffer, int32_t nNpcId, int32_t nTransactionType) {
-    int32_t iVar1 = ITEMS_CalcTransactionCost(pUnit, pItem, nDifficulty, pQuestBitBuffer, nNpcId, nTransactionType);
-    return iVar1;
+    int32_t nCost = ITEMS_CalcTransactionCost(pUnit, pItem, nDifficulty, pQuestBitBuffer, nNpcId, nTransactionType);
+    return nCost;
 }
 
 // Takes only pItem. The prologue's PUSH ECX reserves the 4-byte slot for the second body location byte ([EBP-1]); ECX is not an argument.
@@ -6572,13 +6525,13 @@ uint32_t __stdcall ITEMS_GetRequiredBodyType(D2UnitStrc * pItem) {
 
 // Computes the total gold cost to repair (and restock replenishable/charged items in) all 13 equipped slots of a player. For each slot item that needs repair, restocking, or recharging, calls CalculateTransactionCost with mode 3 and accumulates the sum. Invokes an optional pfnCallback after pricing each item. Returns total cost, or 0 if the player or inventory is null.
 int32_t __stdcall ITEMS_CalculateRepairAllCost(::SGAMEDATA * unk, D2UnitStrc * pPlayer, int32_t nNpcId, int32_t nDifficulty, D2BitBufferStrc * pBitBuffer, pfnItemTransactionCb pfnCallback) {
-    bool bVar1;
     uint32_t bCanRepair;
     int32_t nRepairCost;
     int nMaxStack;
-    BOOL BVar2;
+    BOOL BVar1;
     int nCurStack;
     int nChargedCount;
+    bool bRepairNeeded;
     if (!pPlayer) {
       return 0;
     }
@@ -6594,7 +6547,7 @@ int32_t __stdcall ITEMS_CalculateRepairAllCost(::SGAMEDATA * unk, D2UnitStrc * p
       D2UnitStrc* pItem;
       pItem = INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pInventory, nGridOffset);
       if (pItem) {
-        bVar1 = false;
+        bRepairNeeded = false;
         bCanRepair = ITEM_CanBeRepaired(pItem);
         if (bCanRepair) {
           bCanRepair = ITEM_CheckIfItemHasDurability(pItem);
@@ -6602,23 +6555,23 @@ int32_t __stdcall ITEMS_CalculateRepairAllCost(::SGAMEDATA * unk, D2UnitStrc * p
             nRepairCost = Stats::StatsEx::GetTxtMaxDurability(pItem);
             nMaxStack = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_durability, 0);
             if (nRepairCost && nMaxStack != nRepairCost) {
-              bVar1 = true;
+              bRepairNeeded = true;
             }
           }
         }
 
-        BVar2 = ITEM_IsReplenishable(pItem);
-        if (BVar2) {
+        BVar1 = ITEM_IsReplenishable(pItem);
+        if (BVar1) {
           nMaxStack = ITEM_GetMaxStack(pItem);
           nCurStack = Stats::StatsEx::STATSEX_GetCurrentStat(pItem, UNITSTAT_quantity, 0);
           if (nCurStack < nMaxStack) {
-            bVar1 = true;
+            bRepairNeeded = true;
           }
         }
 
         nChargedCount = 0;
-        BVar2 = ITEMS_CheckChargedSkillFullyCharged(pItem, (bool*)&nChargedCount);
-        if (BVar2 && !nChargedCount || bVar1) {
+        BVar1 = ITEMS_CheckChargedSkillFullyCharged(pItem, (bool*)&nChargedCount);
+        if (BVar1 && !nChargedCount || bRepairNeeded) {
           nRepairCost = ITEMS_CalcTransactionCost(pPlayer, pItem, nDifficulty, pBitBuffer, nNpcId, 3);
           nTotalCost += nRepairCost;
           if (pfnCallback) {
@@ -7507,7 +7460,7 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
               }
 
               Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, eStatIdClamped, 9);
-              if (eUnitStat < UNITSTAT_firemaxdam) {
+              if ((int32_t)eUnitStat < (int32_t)UNITSTAT_firemaxdam) {
                 if (eUnitStat != UNITSTAT_firemindam) {
                   if (eUnitStat != UNITSTAT_item_maxdamage_percent) {
                     goto write_generic_stat;
@@ -7566,7 +7519,7 @@ void __stdcall SerializeComplexItem(D2UnitStrc * pItemUnit, D2BitBufferStrc * pB
 
                 Fog::BitBuffer::WriteValueToBitBuffer(pBitBuffer, nSaveValue, nBitValue);
               } else {
-                if (UNITSTAT_poison_count < eUnitStat) {
+                if ((int32_t)UNITSTAT_poison_count < (int32_t)eUnitStat) {
                   goto write_generic_stat;
                 }
                 if (eUnitStat == UNITSTAT_poison_count) {

@@ -30,12 +30,11 @@
 namespace D2Client::UI::Help {
 
 int32_t __stdcall GetSeenHelpMenuValue() {
-    if (bSeenHelpMenu != -1) {
-      return bSeenHelpMenu;
+    if (bSeenHelpMenu == -1) {
+      bSeenHelpMenu = 0;
+      Storm::Source::SReg::SRegLoadValue("Diablo II", "Help Menu", 1, &bSeenHelpMenu);
     }
 
-    bSeenHelpMenu = 0;
-    Storm::Source::SReg::SRegLoadValue("Diablo II", "Help Menu", 1, &bSeenHelpMenu);
     return bSeenHelpMenu;
 }
 
@@ -272,7 +271,7 @@ void __stdcall INPUT_HelpCloseButtonDown(D2UIMouseMsgStrc * pMsg) {
     } else {
       nRelX -= 0x20d;
     }
-    if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
+    if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
       gpHelpCloseButton = 1;
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
@@ -1023,7 +1022,7 @@ void __stdcall INPUT_HelpCloseButtonUp(D2UIMouseMsgStrc * pMsg) {
       } else {
         nRelX -= 0x20d;
       }
-      if (nRelX < 0x21 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
+      if (nRelX <= 0x20 && (uint32_t)(nMouseY - 0x18 - VPRES_GetWideUiOffsetY()) < 0x21) { // VP: [resolution site-6]
         ui::SetUIFlag(UI_HELPSCREEN, UI_TOGGLE, 0);
         HELP_HideMiniPanel();
         goto consume_click;

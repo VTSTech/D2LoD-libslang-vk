@@ -114,19 +114,18 @@ eD2ClientAppMode __stdcall CLIENTMODE_GetCurrentAppMode() {
 // If first time and user != "rseis", show MessageBox with available command-line options text.
 BOOL __stdcall CmdLine_ShowHelpIfNotDeveloper(CMDPARAMS * pParams, char * szCmdLine) {
     char szUserName[16];
-    if (gnClientAppModeQueueState) {
-      return 0;
+    DWORD dwUserNameSize;
+    if (!gnClientAppModeQueueState) {
+      int32_t nCmpResult;
+      /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
+      dwUserNameSize = 0xf;
+      GetUserNameA(szUserName, &dwUserNameSize);
+      nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
+      if (nCmpResult) {
+        /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
+      }
     }
 
-    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
-    DWORD dwUserNameSize = 0xf;
-    GetUserNameA(szUserName, &dwUserNameSize);
-    int32_t nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
-    if (!nCmpResult) {
-      return 0;
-    }
-
-    /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
     return 0;
 }
 
@@ -156,8 +155,8 @@ void __stdcall CLIENTMODEIN_CmdLineCallback_ShowHelp(uint32_t * pnErrorCode) {
 // "-set" command-line callback: saves the option's string value with SRegSaveString("Diablo II", "Default Command Line") and returns its result.
 // @provenance 1.14d asm 0044b5e0; the help text in CmdLine_SetAppMode lists -set as "Set new default command line string".
 BOOL __stdcall CmdLine_SaveDefaultCommandLine(CMDPARAMS * pParams, char * szCmdLine) {
-    int32_t iVar1 = Storm::Source::SReg::SRegSaveString("Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
-    return iVar1;
+    int32_t bSaved = Storm::Source::SReg::SRegSaveString("Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
+    return bSaved;
 }
 
 // App-mode command-line callback: matches the option's string value case-insensitively against gaClientModeHandlerTable and sets gdwAppMode on a hit (returns TRUE). Otherwise, once, shows the command-line help box (skipped for user name "rseis") and returns FALSE.
@@ -168,9 +167,9 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
 
     int nNameCmp;
     char szUserName[16];
+    CMDPARAMS* pEntry = pParams;
     eD2ClientAppMode eAppMode = 0;
     do {
-      CMDPARAMS* pEntry = pParams;
       if ((char*)gaClientModeHandlerTable[eAppMode]) {
         nNameCmp = _stricmp((char*)gaClientModeHandlerTable[eAppMode], pEntry->uValue.szStringValue);
         if (!nNameCmp) {
@@ -182,19 +181,17 @@ BOOL __stdcall CmdLine_SetAppMode(CMDPARAMS * pParams, char * szCmdLine) {
       eAppMode += APPMODE_CONTINUE;
     } while (eAppMode < eD2ClientAppMode_ns::APPMODE_COUNT);
 
-    if (gnClientAppModeQueueState) {
-      return 0;
+    if (!gnClientAppModeQueueState) {
+      int32_t nCmpResult;
+      /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
+      pParams = (CMDPARAMS*)0xf;
+      GetUserNameA(szUserName, (LPDWORD)&pParams);
+      nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
+      if (nCmpResult) {
+        /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
+      }
     }
 
-    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ gnClientAppModeQueueState = 1;
-    pParams = (CMDPARAMS*)0xf;
-    GetUserNameA(szUserName, (LPDWORD)&pParams);
-    int32_t nCmpResult = Storm::Source::SSTR::SStrCmp(szUserName, "rseis", 0x7fffffff);
-    if (!nCmpResult) {
-      return 0;
-    }
-
-    /* UINT uType for MessageBoxA */ /* LPCSTR lpCaption for MessageBoxA */ /* LPCSTR lpText for MessageBoxA */ /* HWND hWnd for MessageBoxA */ MessageBoxA((HWND)0x0, "Available command line options:\n  -set[default command line]\t\tSet new default command line string\n  -lng[lngfile]\t\t\tUse \"lngfile\" for language resources\n", gpszCmdLineCaptionStr, 0);
     return 0;
 }
 
@@ -227,16 +224,13 @@ BOOL __stdcall LoadDataForGameAndSetupServer(D2IniConfigStrc * D2IniData) {
     }
 
     D2IniData = (D2IniConfigStrc*)0xf;
-    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ if (D2Game::Save::szSaveCharacterName[0] != '\0') {
-      return 1;
+    /* LPDWORD pcbBuffer for GetUserNameA */ /* LPSTR lpBuffer for GetUserNameA */ if (D2Game::Save::szSaveCharacterName[0] == '\0') {
+      gotUserName = GetUserNameA(D2Game::Save::szSaveCharacterName, (LPDWORD)&D2IniData);
+      if (!gotUserName) {
+        /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(D2Game::Save::szSaveCharacterName, "%s", "noname");
+      }
     }
 
-    gotUserName = GetUserNameA(D2Game::Save::szSaveCharacterName, (LPDWORD)&D2IniData);
-    if (gotUserName) {
-      return 1;
-    }
-
-    /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(D2Game::Save::szSaveCharacterName, "%s", "noname");
     return 1;
 }
 

@@ -3,7 +3,6 @@
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SMem.h"
-#include "Storm/Source/SSystem.h"
 #include "globals/globals.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -511,11 +510,10 @@ uint32_t __stdcall SStrToInt(char * szText) {
     } else {
       nValue = 0;
     }
-    if (cSign != '-') {
-      return nValue;
+    if (cSign == '-') {
+      nValue = -nValue;
     }
 
-    nValue = -nValue;
     return nValue;
 }
 
@@ -706,7 +704,7 @@ uint32_t __stdcall SStrHash(char * pszText, uint8_t bCaseSensitive, uint32_t nSe
     } else {
       while (nChar) {
         pszText++;
-        if (nChar - 0x61 <= 0x19) {
+        if (nChar >= 0x61 && nChar <= 0x7a) {
           nChar -= 0x20;
         }
         if (nChar == 0x2f) {
@@ -718,11 +716,10 @@ uint32_t __stdcall SStrHash(char * pszText, uint8_t bCaseSensitive, uint32_t nSe
         nChar = (uint32_t)(uint8_t)*pszText;
       }
     }
-    if (nSeed) {
-      return nSeed;
+    if (!nSeed) {
+      nSeed = 1;
     }
 
-    nSeed = 1;
     return nSeed;
 }
 
@@ -825,7 +822,7 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
     } else {
       while (nChar) {
         pszText++;
-        if (nChar - 0x61 <= 0x19) {
+        if (nChar >= 0x61 && nChar <= 0x7a) {
           nChar -= 0x20;
         }
         if (nChar == 0x2f) {
@@ -840,15 +837,16 @@ ULONGLONG __stdcall SSTR_HashString64(uint8_t * pszText, uint8_t bCaseSensitive,
         nChar = (uint32_t)*pszText;
       }
     }
-    if (UVar1) {
-      return UVar1;
+    if (!UVar1) {
+      UVar1 = 1;
     }
 
-    UVar1 = 1;
     return UVar1;
 }
 
-uint32_t __fastcall SSTR_JenkinsHash(int * pData, uint32_t nLength, uint32_t nInitVal) {
+// Bob Jenkins hash over a byte buffer.
+// Name from the PowerPC 1.13c Storm traceback table (bjhash @10047b40).
+uint32_t __fastcall SSTR_bjhash(int * pData, uint32_t nLength, uint32_t nInitVal) {
     uint32_t nA;
     uint32_t nTmp;
     uint32_t nB = 0x9e3779b9;
@@ -928,7 +926,7 @@ int __stdcall SStrHashHT(uint8_t * pszText) {
     uint8_t bChar = *pszText;
     uint8_t* pWrite = szUpper;
     for (nLen = 0; nChar = (uint32_t)bChar , nChar && (pszText++ , nLen < 0x3ff); nLen++) {
-      if (nChar - 0x61 <= 0x19) {
+      if (nChar >= 0x61 && nChar <= 0x7a) {
         bChar -= 0x20;
       } else if (nChar == 0x2f) {
         bChar = 0x5c;
@@ -940,8 +938,8 @@ int __stdcall SStrHashHT(uint8_t * pszText) {
     }
 
     *pWrite = 0;
-    uint32_t uVar1 = SSTR_JenkinsHash((int*)szUpper, nLen, 0);
-    return uVar1;
+    uint32_t dwHash = SSTR_bjhash((int*)szUpper, nLen, 0);
+    return dwHash;
 }
 
 // @renamed-from thunk___strupr (2026-08-28, Storm PowerPC oracle pass 4)
@@ -958,16 +956,16 @@ void __stdcall SStrLower(char * szText) {
     _strlwr(szText);
 }
 
-double __fastcall SSTR_Pow10Helper(uint32_t nValue, double param_1) {
+double __fastcall SSTR_Pow10Helper(uint32_t nValue, double dBase) {
     uint32_t nBits = nValue;
     if ((int)nValue < 0) {
       nBits = -nValue;
     }
 
-    double dVar1 = 1.0;
+    double dResult = 1.0;
     while (true) {
       if (nBits & 1) {
-        dVar1 *= param_1;
+        dResult *= dBase;
       }
 
       nBits >>= 1;
@@ -975,14 +973,14 @@ double __fastcall SSTR_Pow10Helper(uint32_t nValue, double param_1) {
         break;
       }
 
-      param_1 *= param_1;
+      dBase *= dBase;
     }
 
     if ((int)nValue < 0) {
-      return 1.0 / dVar1;
+      return 1.0 / dResult;
     }
 
-    return dVar1;
+    return dResult;
 }
 
 // Scales dBase by a power of ten. Returns a double in ST(0), not through a hidden return pointer, so dBase sits at Stack[0x4] and nExp at Stack[0xc]. An 80-bit x87 return type would make Ghidra add a __return_storage_ptr__ at Stack[0x4] and shift every argument by four bytes.
@@ -992,10 +990,10 @@ double SSTR_PowDoubleInt(double dBase, int nExp) {
       nAbsExp = -nExp;
     }
 
-    double dVar1 = 1.0;
+    double dResult = 1.0;
     while (true) {
       if (nAbsExp & 1) {
-        dVar1 *= dBase;
+        dResult *= dBase;
       }
 
       nAbsExp >>= 1;
@@ -1007,10 +1005,10 @@ double SSTR_PowDoubleInt(double dBase, int nExp) {
     }
 
     if (nExp < 0) {
-      return 1.0 / dVar1;
+      return 1.0 / dResult;
     }
 
-    return dVar1;
+    return dResult;
 }
 
 void __stdcall SSTR_InitPow10Table() {
@@ -1073,7 +1071,7 @@ char * __stdcall SStrDup(char * szText) {
 
     uint32_t nLen = SStrLen(szText);
     char* pCopy = (char*)SMem::SMemAlloc(nLen + 1, ".\\SOURCE\\SSTR.CPP", 0x1f2, 0);
-    SSystem::SMemCopy(pCopy, szText, nLen + 1);
+    SMem::SMemCopy(pCopy, szText, nLen + 1);
     return pCopy;
 }
 
@@ -1101,16 +1099,16 @@ void __stdcall SSTR_InitConversionTables() {
 // @caveat PPC SStrToInt64 @10048440 is a 36-byte delegation to an MSL routine whereas 1.14d hand-rolls
 // the parse; the implementations diverge even though the contract does not.
 int64_t __stdcall SStrToInt64(char * pStr) {
-    uint64_t uVar1;
     uint32_t nDigit;
     char* pCursor;
     long double fBase;
-    long double fVar2;
-    long double fVar3;
-    long double fVar4;
-    long double fVar5;
-    double dVar6;
+    long double fRoundBias;
+    long double fScale;
+    long double fSquare;
+    long double fOne;
+    double dVar1;
     int nAccumHi;
+    uint64_t nResult;
     if (!pStr) {
       SErr::SErrSetLastError(0x57);
       return 0;
@@ -1132,8 +1130,8 @@ int64_t __stdcall SStrToInt64(char * pStr) {
       nTmp = (int)pStr[1] - 0x30;
       if (nTmp < 10) {
         fBase = (long double)10.0;
-        fVar5 = (long double)1;
-        fVar2 = (long double)0.5;
+        fOne = (long double)1;
+        fRoundBias = (long double)0.5;
         do {
           nAccumHi = (int)((uint64_t)nAccum64 >> 0x20);
           nAccum = nTmp + nAccum * 10;
@@ -1141,29 +1139,29 @@ int64_t __stdcall SStrToInt64(char * pStr) {
           if (nAccum >= 0x19999999) {
             nDigit = (int)pCursor - (int)pStr;
             nTmp = nDigit;
-            fVar3 = fVar5;
-            fVar4 = fBase;
+            fScale = fOne;
+            fSquare = fBase;
             if ((int)nDigit < 0) {
               nTmp = -nDigit;
             }
 
             while (true) {
               if (nTmp & 1) {
-                fVar3 *= fVar4;
+                fScale *= fSquare;
               }
               if (!(nTmp >> 1)) {
                 break;
               }
 
               nTmp >>= 1;
-              fVar4 *= fVar4;
+              fSquare *= fSquare;
             }
 
             if ((int)nDigit < 0) {
-              fVar3 = fVar5 / fVar3;
+              fScale = fOne / fScale;
             }
 
-            nAccum64 = _allmul((uint32_t)(int64_t)(fVar3 + fVar2), (int)((uint64_t)(int64_t)(fVar3 + fVar2) >> 0x20), (uint32_t)nAccum64, nAccumHi);
+            nAccum64 = _allmul((uint32_t)(int64_t)(fScale + fRoundBias), (int)((uint64_t)(int64_t)(fScale + fRoundBias) >> 0x20), (uint32_t)nAccum64, nAccumHi);
             nAccum64 += (uint64_t)nAccum;
             nAccum = 0;
             pStr = pCursor;
@@ -1174,9 +1172,9 @@ int64_t __stdcall SStrToInt64(char * pStr) {
         } while (nTmp < 10);
 
         if (nAccum64) {
-          dVar6 = SSTR_PowDoubleInt((double)fBase, (int)pCursor - (int)pStr);
-          nAccum64 = _allmul((uint32_t)(int64_t)(dVar6 + 0.5), (int)((uint64_t)(int64_t)(dVar6 + 0.5) >> 0x20), (uint32_t)nAccum64, nAccumHi);
-          uVar1 = nAccum64 + (uint64_t)nAccum;
+          dVar1 = SSTR_PowDoubleInt((double)fBase, (int)pCursor - (int)pStr);
+          nAccum64 = _allmul((uint32_t)(int64_t)(dVar1 + 0.5), (int)((uint64_t)(int64_t)(dVar1 + 0.5) >> 0x20), (uint32_t)nAccum64, nAccumHi);
+          nResult = nAccum64 + (uint64_t)nAccum;
           goto apply_sign;
         }
       }
@@ -1184,12 +1182,12 @@ int64_t __stdcall SStrToInt64(char * pStr) {
       nAccum = 0;
     }
 
-    uVar1 = (uint64_t)nAccum;
+    nResult = (uint64_t)nAccum;
     apply_sign:
     if (cSign == '-') {
-      uVar1 = (uint64_t)((uint64_t)(uint32_t)-((int)(uVar1 >> 0x20) + (uint32_t)((int)uVar1 != 0)) << 32 | (uint64_t)(uint32_t)-(int)uVar1);
+      nResult = (uint64_t)((uint64_t)(uint32_t)-((int)(nResult >> 0x20) + (uint32_t)((int)nResult != 0)) << 32 | (uint64_t)(uint32_t)-(int)nResult);
     }
-    return uVar1;
+    return nResult;
 }
 
 // Converts a decimal string to a double. Handles a negative sign, overflow via double
@@ -1385,11 +1383,10 @@ double __stdcall SStrToDouble(char * pStr) {
 
       dAccumSlot = dAccum * dAccumSlot;
     }
-    if (cChar != '-') {
-      return dAccumSlot;
+    if (cChar == '-') {
+      dAccumSlot = -dAccumSlot;
     }
 
-    dAccumSlot = -dAccumSlot;
     return dAccumSlot;
 }
 
@@ -1596,14 +1593,14 @@ float __stdcall SStrToFloat(char * pStr) {
     return (float)fParsedValue;
 }
 
-int __stdcall UTF16_CalculateUTF8Length(uint16_t * pszUTF16, int nMaxChars, int * pnParam) {
+int __stdcall UTF16_CalculateUTF8Length(uint16_t * pszUTF16, int nMaxChars, int * pnCharsRead) {
     int nUTF8Len;
     uint16_t* pEnd;
     uint16_t* pNext;
     uint16_t* pCur;
     if (!nMaxChars || !pszUTF16) {
-      if (pnParam) {
-        *pnParam = 0;
+      if (pnCharsRead) {
+        *pnCharsRead = 0;
       }
 
       nUTF8Len = -1;
@@ -1626,7 +1623,7 @@ int __stdcall UTF16_CalculateUTF8Length(uint16_t * pszUTF16, int nMaxChars, int 
 
         uCodepoint = (uint32_t)*pCur;
         pEnd = pCur + 1;
-        if (uCodepoint - 0xd800 <= 0x3ff) {
+        if (uCodepoint >= 0xd800 && uCodepoint <= 0xdbff) {
           if (pEnd >= pNext) {
             nUTF8Len = -1;
             break;
@@ -1668,8 +1665,8 @@ int __stdcall UTF16_CalculateUTF8Length(uint16_t * pszUTF16, int nMaxChars, int 
         }
       }
 
-      if (pnParam) {
-        *pnParam = (int)pEnd - (int)pszUTF16 >> 1;
+      if (pnCharsRead) {
+        *pnCharsRead = (int)pEnd - (int)pszUTF16 >> 1;
         return nUTF8Len;
       }
     }
@@ -1699,13 +1696,13 @@ int __stdcall UTF16_ToUTF8(uint8_t * pbUTF8, int nOutMaxChars, uint16_t * pszUTF
     while (pInCur < pOutEnd) {
       uCodepoint = (uint32_t)*pInCur;
       nPszUTF16Out = (int)(uint16_t*)0x1;
-      if (uCodepoint - 0xd800 <= 0x3ff) {
+      if (uCodepoint >= 0xd800 && uCodepoint <= 0xdbff) {
         if (pInCur + 1 >= pOutEnd) {
           break;
         }
 
         uSurrPair = (uint32_t)pInCur[1];
-        if (uSurrPair - 0xdc00 <= 0x3ff) {
+        if (uSurrPair >= 0xdc00 && uSurrPair <= 0xdfff) {
           uCodepoint = (uCodepoint - 0xd7f7) * 0x400 + uSurrPair;
           nPszUTF16Out = (int)(uint16_t*)0x2;
         }
@@ -1778,25 +1775,23 @@ int __stdcall UTF16_ToUTF8(uint8_t * pbUTF8, int nOutMaxChars, uint16_t * pszUTF
     if (pnBytesRead) {
       *pnBytesRead = (int)pInCur - (int)pInEnd >> 1;
     }
-    if (!pnCharsWritten) {
-      return iResult;
+    if (pnCharsWritten) {
+      *pnCharsWritten = (int)pInStart - (int)pbUTF8;
     }
 
-    *pnCharsWritten = (int)pInStart - (int)pbUTF8;
     return iResult;
 }
 
-int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnParam) {
+int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnBytesRead) {
     char* pCur;
     uint32_t uByteCount;
     uint32_t uCodepoint;
     char cByte;
     if (!nMaxBytes || !szText) {
-      if (!pnParam) {
-        return -1;
+      if (pnBytesRead) {
+        *pnBytesRead = 0;
       }
 
-      *pnParam = 0;
       return -1;
     }
     if (nMaxBytes == 0x7fffffff) {
@@ -1860,11 +1855,10 @@ int __stdcall UTF8_CalculateUTF16Length(char * szText, int nMaxBytes, int * pnPa
       }
     }
 
-    if (!pnParam) {
-      return nUTF16Len;
+    if (pnBytesRead) {
+      *pnBytesRead = (int)pEndInner - (int)szText;
     }
 
-    *pnParam = (int)pEndInner - (int)szText;
     return nUTF16Len;
 }
 
@@ -1961,30 +1955,29 @@ int __stdcall UTF8_ToUTF16(short * pszUTF16Out, int nOutMaxChars, uint8_t * pbUT
     if (pnBytesRead) {
       *pnBytesRead = (int)pOutStart - (int)pInEnd;
     }
-    if (!pnCharsWritten) {
-      return iAccum;
+    if (pnCharsWritten) {
+      *pnCharsWritten = (int)pInStart - (int)pszUTF16Out >> 1;
     }
 
-    *pnCharsWritten = (int)pInStart - (int)pszUTF16Out >> 1;
     return iAccum;
 }
 
-uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam) {
+uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbText, int * pnBytesRead) {
     int nContinuationBytesNeeded;
-    if (pnParam) {
-      *pnParam = 0;
+    if (pnBytesRead) {
+      *pnBytesRead = 0;
     }
-    if (!pbParam) {
+    if (!pbText) {
       return -1;
     }
 
-    uint8_t bByte = *pbParam;
+    uint8_t bByte = *pbText;
     uint32_t dwCodepoint = (uint32_t)bByte;
     if (!dwCodepoint) {
       return -1;
     }
-    if (pnParam) {
-      (*pnParam)++;
+    if (pnBytesRead) {
+      (*pnBytesRead)++;
     }
     if ((bByte & 0xfe) == 0xfc) {
       dwCodepoint &= 1;
@@ -2017,13 +2010,13 @@ uint32_t __stdcall UTF8_DecodeNextChar(uint8_t * pbParam, int * pnParam) {
     }
 
     while (true) {
-      pbParam++;
-      bByte = *pbParam;
+      pbText++;
+      bByte = *pbText;
       if (!bByte) {
         return -1;
       }
-      if (pnParam) {
-        (*pnParam)++;
+      if (pnBytesRead) {
+        (*pnBytesRead)++;
       }
       if ((bByte & 0xc0) != 0x80) {
         break;
@@ -2093,8 +2086,10 @@ void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut) {
     *pbOut = 0;
 }
 
-static void __fastcall UTF8_AdvanceToCharBoundary(uint8_t * pszBase, int nPosition, int nDirection) {
+static int __fastcall UTF8_AdvanceToCharBoundary(uint8_t * pszBase, int nPosition, int nDirection) {
     for (; nPosition > 0 && pszBase[nPosition] && (pszBase[nPosition] & 0xc0) == 0x80; nPosition += nDirection) {}
+
+    return nPosition;
 }
 
 // ECX is not an argument: neither this body nor UTF8_AdvanceToCharBoundary reads it.
@@ -2166,12 +2161,11 @@ static int __thiscall TRANSTBL_UnicodeToSingleByte(void * pThis, uint16_t * pXla
       uCodepoint = *pSearchEntry;
     }
 
-    if (!nCount) {
-      return (int)pOutCur - (int)pbOut;
+    if (nCount) {
+      *pOutCur = 0;
+      pOutCur++;
     }
 
-    *pOutCur = 0;
-    pOutCur++;
     return (int)pOutCur - (int)pbOut;
 }
 
@@ -2194,12 +2188,11 @@ static int __fastcall TRANSTBL_SingleByteToUnicode(uint8_t * pbSrc, int nCount, 
       byCur = *pbSrc;
     }
 
-    if (!nCount) {
-      return (int)puVar1 - (int)pDest >> 1;
+    if (nCount) {
+      *puVar1 = 0;
+      puVar1++;
     }
 
-    *puVar1 = 0;
-    puVar1++;
     return (int)puVar1 - (int)pDest >> 1;
 }
 
@@ -2216,8 +2209,8 @@ void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int n
 }
 
 int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count) {
-    int iVar1 = TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeLatin1_1);
-    return iVar1;
+    int nCharsWritten = TRANSTBL_SingleByteToUnicode(src, count, dest, gszUnicodeLatin1_1);
+    return nCharsWritten;
 }
 
 // ECX is not an argument: neither this body nor TRANSTBL_SingleByteToUnicode reads it.

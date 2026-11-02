@@ -20,7 +20,6 @@
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Cursor.h"
 #include "D2Client/D2BNetGatewayAccessStr.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GfxMemoryStrc.h"
 #include "D2Client/D2GfxSettingsStrc.h"
@@ -44,6 +43,7 @@
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/QuestLog.h"
+#include "D2Client/UI/ShowItems.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/SpellSel.h"
 #include "D2Client/UI/Text.h"
@@ -119,7 +119,6 @@
 #include "Storm/Source/SErr.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
-#include "Storm/_unnamespaced.h"
 #include "Storm/H/stpl.h"
 
 // Forward declarations
@@ -411,6 +410,7 @@ struct D2SpriteCache;
 struct D2SpriteCacheEntryStrc;
 struct D2Srp;
 struct D2SrpCredentialsStrc;
+struct D2SrpSaltVerifierStrc;
 struct D2StatDescRowStrc;
 struct D2StatScreenButtonStrc;
 struct D2StatesDataTbls;
@@ -1011,11 +1011,6 @@ struct D2SocketOffsetStrc {
     /* 0x04 */ int nY;
 };
 
-struct D2SrpSaltVerifierStrc {
-    /* 0x00 */ uint8_t aSalt[32]; // new-password SRP salt s
-    /* 0x20 */ uint8_t aVerifier[32]; // new-password SRP verifier v
-};
-
 struct __attribute__((packed)) D2StatDescRowStrc {
     /* 0x00 */ int nX1;
     /* 0x04 */ int nY;
@@ -1244,8 +1239,6 @@ extern char s_English_006cc81c[8];
 extern char gszHeapTagOperatorNew[4];
 // lpDefault parameter of GetPrivateProfileStringA
 extern char lpDefault_006cc837[1];
-// lpCaption parameter of MessageBoxA
-extern LPCSTR lpCaption_006cc848;
 extern uint8_t gbChatDlgUpdateMarker;
 extern char gbCompressionDecoderMarker[2];
 extern char s_Dec_006ccb00[4];
@@ -1668,7 +1661,7 @@ extern uint32_t gnChatRoomListSelectedBase;
 extern uint32_t gbLadderFilterPending;
 extern uint32_t gbLadderExpansionEnabled;
 extern uint32_t gnChatTabCompletionIndex;
-extern uint32_t gnLadderBoardSelectedRank;
+extern int gnLadderBoardSelectedRank;
 extern uint32_t gnLadderRequestedCharIndex;
 extern int32_t gaMultiFormFontParamsFont4[2];
 extern int32_t gaMultiFormFontParamsFont3[2];
@@ -2692,7 +2685,7 @@ extern char gszLadderCharNameFilter[16];
 extern D2ControlStrc * gpCtlLobbyChat[2];
 extern D2LobbyControlsStrc gpLobbyForm0;
 extern D2BNetClientCallbacksStrc * pNetworkUnknown;
-extern uint32_t gnLadderScrollPageSize;
+extern int gnLadderScrollPageSize;
 extern uint32_t ghBannerAdProcess;
 extern char * gapszProfileReadBuffers[3];
 extern char gszOogReplyCommandBuffer[256];
@@ -2995,7 +2988,7 @@ extern D2GameRecordFileHeaderStrc lpBuffer_007a2768;
 extern uint32_t gdwQuestResurrectDismissThrottle;
 extern DC6 * DC6_EnteredAreaName;
 extern DC6 * pDC6_Frame;
-extern uint32_t gnGoldDialogTransactionType;
+extern int gnGoldDialogTransactionType;
 extern SpinnerWrapper * gpCurrentDialog;
 extern EditBoxWrapper * gpDialogDefaultActionCallback;
 extern ButtonWrapper * gpUiGoldTransactionDialog;
@@ -3258,7 +3251,7 @@ extern unsigned int gdwInvLastActionTickCount;
 extern int gnInvMouseX;
 extern BOOL gbInvOverlayFlag;
 extern DC6 * gpInvShopTabImage;
-extern uint32_t gpInvCursorItem;
+extern int gpInvCursorItem;
 extern int gbInvNpcScreenCoordsInitialized;
 extern uint32_t gpInvItemUnderCursor;
 extern uint32_t gbInvBodySlotUnderCursorExists;
