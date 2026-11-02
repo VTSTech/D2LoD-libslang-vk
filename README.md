@@ -1,6 +1,6 @@
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dedbe5a2-7079-40d4-af2d-4eb948e975b2" />
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/422cb8e0-05e3-4cf9-bfed-4c68ec3ace1f" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58d145bd-ec8f-4eb2-9d89-52daca9cba22" />
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/be9cfe56-0532-4176-a7db-c719364be89d" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9ea5078d-c8d5-469a-aa1b-de80071fa8e4" />
 
 # D2LoD Vanilla+
 
@@ -56,7 +56,7 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) ("Vanilla+ 0.0.7-R83")** — one 7z with the Vanilla+ client
+- **Current release: [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) ("Vanilla+ 0.0.7-R83")** — next round **R84** ("Vanilla+ 0.0.7-R84", the item-tooltip zero fix, [#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)) is built and pending field verify/tag — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
@@ -152,11 +152,12 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) | The waypoint icon fix ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)): at 720p the waypoint-list button icons drew at their retail 800×600 Y while the panel, texts and click zones rode the widescreen layout down 120 px — the icons rendered ~120 px above their rows. The two `waygateicons` draws predate the site-6 retrofit and never carried the wide-Y term; two one-term replants. Retail 800×600 unchanged byte-for-byte. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) | The shared-stash capacity round (R81→R82): the shared stash grows from two to **ten pages** — the `.sss` v2 header widening its format always planned (same `VPS2` magic + version, `pageCount` 10, header 28 → 92 bytes; pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty, the next save rewrites ten). Pager labels `Shared 1`…`Shared 10` from a literal table, arrows still step one page, one shared gold pool across all ten, `.d2s` saves still retail-pure. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) | The video-options label alignment fix ([#23](https://github.com/VTSTech/D2LoD-libslang-vk/issues/23)): the visible **1280x720** stop's text label left-anchored at the value-column X — a full label width right of where the retail value images end — and floated ~4 px above their ink line (the glyph cell bottom-anchors at the DRAW_text y while the value DC6s bake ~4 px of padding). Right-aligned via the rendered advance width (`DRAW_text0`), draw y moved to row bottom + 2; geometry is resolution-independent, so 800×600 picks up the same corrected placement. Two new gates pin the anchor. Record: [`handoff.md`](handoff.md) round journal. |
+| R84 (pending tag) | The item-tooltip zero fix ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)): items could drop with a mod line reading **"0 poison damage over 0 seconds"**, and 'of Frost' gear could show **"+0 Cold Damage"**. Display-side root cause: the item-stat tooltip formatter's single-value branches (fire/lightning/magic/cold/poison) called the wide-string formatter **without the numeric varargs**, so any roll whose range collapses to min==max printed stack residue instead of the value ('of Frost' weapons roll `cold-max` 1..2 with `cold-min` fixed at 1 — every drop that rolls a 1 collapsed; poison collapses through the length rounding). The fix passes the same values the range branches pass; item stats were never wrong — tooltip-only. Three new gates. Record: [`handoff.md`](handoff.md) round journal. |
 
 Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R83 build
-self-IDs `Vanilla+0.0.7-R83`. Rounds through R74 are archived verbatim in
+self-IDs `Vanilla+0.0.7-R83` (the pending R84 build self-IDs `Vanilla+0.0.7-R84`). Rounds through R74 are archived verbatim in
 [`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R83 — in
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R84 — in
 [`handoff.md`](handoff.md).
 
 ## Verification

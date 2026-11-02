@@ -648,7 +648,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R83"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R83' 1
+gate "res: self-id 0.0.7-R84"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R84' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -734,6 +734,20 @@ gate "stash: page word table (R82)"           D2Client/UI/VanillaPlusCore.cpp   
 # WHOLE class (every D2BOOT_* user TU must see the declaration) - run it
 # alongside rev47/rev48 after any merge (docs/merge-upstream.md step 4).
 gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'support/d2_boot\.h' 1
+
+# ---- [vanilla-plus item-tooltip] R84: single-value elemental/poison varargs -
+# Issue #16: items dropped with "0 poison damage over 0 seconds" and 'of Frost'
+# items with "+0 cold damage". Root cause: SKILLDESC_BuildStatDescription's
+# single-value branches (fire 0xe1c, lightning 0xe20, magic 0xe22, cold 0xe1e,
+# poison 0xe24) called UNICODE_FormatWideString with NO varargs, so any
+# min==max roll printed the stack residue instead of the number. 'of Frost'
+# (weap) rolls cold-max 1..2 with cold-min fixed 1 -> half the drops collapse;
+# poison ranges collapse through the len_disp rounding (and length-0 content
+# lands here too). Fix passes the same values the sibling range branches pass
+# (extra varargs are harmless in cdecl). Five VP-marked sites, one per branch.
+gate "itemdesc: zero-fix VP marks (R84)"      D2Client/UI/SkillDesc.cpp          'item-tooltip-zero-fix R84' 5
+gate "itemdesc: elemental single-value varargs (R84)" D2Client/UI/SkillDesc.cpp  'wszFmtTemplate, pStatDescResult, psVar1\);' 8
+gate "itemdesc: poison single-value varargs (R84)" D2Client/UI/SkillDesc.cpp      'pStatDescResult, psVar1, iVar2\);' 2
 
 echo
 if [ "$FAIL" -eq 0 ]; then

@@ -1572,7 +1572,11 @@ static short * __stdcall SKILLDESC_BuildStatDescription(eD2UnitStat eUnitStat, u
       psVar1 = apnStatValues[0x19];
       if (!((int)pStatDescResult < (int)psVar1)) {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe1c);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate);
+        // VP [item-tooltip-zero-fix R84] issue #16: the single-value branch called the
+        // formatter with NO varargs, so a min==max elemental roll printed the stack
+        // residue (zeros in our builds) instead of the value. Pass min/max exactly
+        // like the range branch below; unused varargs are harmless in cdecl.
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
       } else {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe1d);
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
@@ -1589,7 +1593,8 @@ static short * __stdcall SKILLDESC_BuildStatDescription(eD2UnitStat eUnitStat, u
       psVar1 = apnStatValues[0x13];
       if (!((int)pStatDescResult < (int)psVar1)) {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe20);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate);
+        // VP [item-tooltip-zero-fix R84] issue #16: same missing-varargs family as fire.
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
       } else {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe21);
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
@@ -1606,7 +1611,8 @@ static short * __stdcall SKILLDESC_BuildStatDescription(eD2UnitStat eUnitStat, u
       psVar1 = apnStatValues[0x25];
       if (!((int)pStatDescResult < (int)psVar1)) {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe22);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate);
+        // VP [item-tooltip-zero-fix R84] issue #16: same missing-varargs family as fire.
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
       } else {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe23);
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
@@ -1623,7 +1629,11 @@ static short * __stdcall SKILLDESC_BuildStatDescription(eD2UnitStat eUnitStat, u
       psVar1 = apnStatValues[0xd];
       if (!((int)pStatDescResult < (int)psVar1)) {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe1e);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate);
+        // VP [item-tooltip-zero-fix R84] issue #16: THE reported case - 'of Frost'
+        // (MagicSuffix, weap) rolls cold-max 1..2 while cold-min is fixed 1, so on a
+        // roll of 1 the pair collapses to min==max and this branch printed the stack
+        // residue as "+0 Cold Damage". Pass min/max like the range branch.
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
       } else {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe1f);
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1);
@@ -1649,7 +1659,12 @@ static short * __stdcall SKILLDESC_BuildStatDescription(eD2UnitStat eUnitStat, u
       apnStatValues[0x1f] = psVar1;
       if (!((int)pStatDescResult < (int)psVar1)) {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe24);
-        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate);
+        // VP [item-tooltip-zero-fix R84] issue #16: the poison single-value branch had
+        // the same missing-varargs defect - a poison mod whose computed range collapses
+        // to min==max (rounding via len_disp, or poisonlength==0 content) printed the
+        // stack residue as "0 Poison Damage over 0 Seconds". Pass value+seconds like
+        // the range branch (pStatDescResult=min==max, iVar2=(len_disp/25) seconds).
+        D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1, iVar2);
       } else {
         wszFmtTemplate = D2Lang::StrTable::strtable::GetLocaleString(0xe25);
         D2Lang::Unicode::UNISYS::UNICODE_FormatWideString(0x100, wszTooltipLine, wszFmtTemplate, pStatDescResult, psVar1, iVar2);
