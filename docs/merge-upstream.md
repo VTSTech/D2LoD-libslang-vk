@@ -266,3 +266,17 @@ PR) so acceptance is frictionless.
   structure wins whole; the offset-carrying-variable half (Panel.cpp 1794,
   Glide.cpp's clamped `nContrastWeight` this round) is for deltas that MEAN
   something.
+
+- **The 1806 shim-name handoff (f427f962):** `globals.h` gained
+  `#include "Fog/Engine/Application.h"`, whose non-Windows path declares
+  `struct IMAGE_DATA_DIRECTORY` / `struct IMAGE_OPTIONAL_HEADER32` — names the
+  host shim had typedef'd since its first cut. The collision is the
+  typedef-name/struct-keyword kind, so coexistence is impossible; the
+  reconciliation renames the shim's layout-identical copies to
+  `IMAGE_DATA_DIRECTORY_SHIM` / `IMAGE_OPTIONAL_HEADER_SHIM` (d2_crash.cpp's PE
+  walk reads members, never those type names; the real winnt.h still wins under
+  `_WIN32`). Rule: when upstream's tree starts DECLARING an SDK form the shim
+  carried, the shim yields the canonical name and keeps its copy under an alias
+  — never the reverse. Also the lightest round yet: 8 unmerged paths of 46
+  two-sided files, and QuestLog.cpp's site-5 hunk was a zero-edit replant — the
+  fork line was already spelled in upstream's new variable shape.
