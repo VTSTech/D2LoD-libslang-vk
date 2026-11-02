@@ -658,7 +658,7 @@ gate "res: self-id 0.0.7-R84"                 D2Client/Engine/Application.cpp   
 # compatible character saves, stash-panel access, no hotkey, gold + items.
 gate "stash: server TU header"                D2Game/PLAYER/VanillaPlusStash.h   'VPSHARED_BUTTON_TOGGLE = 0x7D' 1
 gate "stash: sss io DWORD outparam"           D2Game/PLAYER/VanillaPlusStash.cpp 'DWORD dwGot' 1
-gate "stash: tab right edge anchor (R76)"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x13c' 1
+gate "stash: tab right edge anchor (R83)"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x130' 1
 gate "stash: tab out of right-art cover"      D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TAB_RIGHT_EDGE = 0x1(4|[5-9a-f])[0-9a-f]' 0
 gate "stash: tab row above the gold rows (R77)" D2Client/UI/VanillaPlusCore.cpp  'bIsExpansion \? 0x1cc : 0x108' 1
 gate "stash: old gold-max row retired (R77)"  D2Client/UI/VanillaPlusCore.cpp    'bIsExpansion \? 0x19f : 0xdb' 0

@@ -1188,3 +1188,76 @@ Closed rows 1/2/4/5/6/7/8/9/10 (tracks B, C-uniques, D, F, G, H, I, J, M) → ro
 - Field log 2026-10-31 (R60 build) READ: exit probe all-NULL (candidate 3 dead), join probe all-NULL, two `roster heal:` cap marks on session 1's load (corruptor watch), session 2 `HALT line=1281 (0x501)` 47 ms after the first server tick - symbolized via the owner's d2exe.map to ESCMENU_LoadLocalizedImages_HaltTail (empty sub-image path) <- ESCMENU_Initialize <- InitializeUI. ROOT CAUSE = the VP Resolution row's runtime table mutation (see Rev 72); merc candidate (#2) never fired; stale-roster candidate (#3) closed by the probes. R61 = the fix.
 - Next discriminator: the ONE field run per SMOKE §G items 18-19 (two game entries in one process; the fix is proven by NOT crashing + the one escmenu mark + the Resolution row intact).
 - Owner verdict (2026-11-01, R61 build): **"R61 Confirmed fixes #19"** — the §G fix-proof run passed: the second entry loaded and played; no `halt report:`, no `d2crash-*.txt`. Track M CLOSED; paste-ready close record = `ISSUE-19-BODY.md` (status header FIELD-CONFIRMED). HISTORY.md archive ritual on owner call (the track I/J pattern). The R60 probes stay shipped; the roster-heal corruptor watch stays ARMED (§6).
+
+## H32. README.md — first offload: the Status detail bullets and the Releases table (verbatim)
+
+*Verbatim from README.md, moved at rev 111 (2026-11-02) on owner directive ("trim the README.md of anything that is already in the CHANGELOG.md, handoff.md or HISTORY.md"). The per-release content lives on in **CHANGELOG.md** (created rev 110), the field-status detail in handoff.md §2; copied here so the pre-trim front page stays reconstructable. Split point: tip `6aa7f17d` (`Vanilla+0.0.7-R84`) + this commit. The same round also merged README §Verification's duplicated asm_matching prose, dropped the Features-table Shared-Stash row's round parentheticals ((R82) / the pre-R82+pre-R75 file-compat note — CHANGELOG holds both), synced the gates badge 308→311, added CHANGELOG.md to the README project-documents list, and synced the stale R76 gate "stash: tab right edge anchor" to the owner's e0dd97ce value (0x13c → 0x130, as field-proven in R83) — the suite reads 311/311 again. Heading levels demoted so the copies embed under this record.*
+
+### README.md §Status (as of rev 110 / commit 14f7aa67)
+
+#### Status
+
+- **Current release: [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) ("Vanilla+ 0.0.7-R83")** — next round **R84** ("Vanilla+ 0.0.7-R84", the item-tooltip zero fix, [#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)) is built and pending field verify/tag — one 7z with the Vanilla+ client
+  **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
+  first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
+  exe can always be pinned to its source round. The R59→R66 release record lives in
+  [`HISTORY.md`](HISTORY.md), the R67→R83 record in [`handoff.md`](handoff.md) — the
+  round journals.
+- Works, field-verified: boot → intro → title → character select → in game; Direct3D
+  fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
+  mode; **Glide (`-3dfx`) through the glide3xvk wrapper** — fixed in the R46 round,
+  root cause + fix in [#11](https://github.com/VTSTech/D2LoD-libslang-vk/issues/11);
+  sound end to end (intro video, title music, UI, in-game SFX); 720p UI alignment —
+  inventory, skill flyouts, dialogs and the stash gold deposit/withdraw dialogs, restored
+  in the R48 round ([#12](https://github.com/VTSTech/D2LoD-libslang-vk/issues/12));
+  **Auto Gold Pickup** restored in the R47 round
+  ([#10](https://github.com/VTSTech/D2LoD-libslang-vk/issues/10)); **unique monster
+  colors** restored in the R49 round
+  ([#9](https://github.com/VTSTech/D2LoD-libslang-vk/issues/9)); **the save-and-re-enter
+  crash** root-caught + fixed in the R61 round
+  ([#19](https://github.com/VTSTech/D2LoD-libslang-vk/issues/19)); the **shared stash**
+  field-proven end to end (owner: "Great job. I see it. It works."). Root causes and
+  fixes for every linked issue live in the issues and in
+  [`HISTORY.md`](HISTORY.md).
+- **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
+  compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
+  field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely; **R82** grew the stash to **ten shared pages** — the `.sss` v2 header widening its format always planned (same magic + version, `pageCount` 10; pre-R82 files read back with the missing pages empty); **R83** right-aligned the video options' visible **1280x720** label to the value column and dropped it onto the neighbor images' ink line ([#23](https://github.com/VTSTech/D2LoD-libslang-vk/issues/23) — it floated a label-width right and ~4 px high).
+- Not finished. One known issue remains:
+  - **Necro minion skeleton coloring**
+    ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
+    write carried an inverted hostility flag, and the roster recolor (event-driven,
+    roster-update packets only) never rewrites SP summons — every own raised skeleton
+    spawned straight into the yellow hostile palette. Re-fixed in the R51 round (the raw
+    hostility flag is written at spawn too); field verification pending.
+- A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
+  executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
+  [Crash reports](#crash-reports).
+
+### README.md §Releases (as of rev 110 / commit 14f7aa67)
+
+#### Releases
+
+| Tag | Highlights |
+| --- | --- |
+| [`0.0.1`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.1) | First public release. Glide-renderer defect series closed (fixes 1–13), drops fixed, sound fixed. |
+| [`0.0.2`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.2) | First opt-in feature: the alt-key item-label toggle, with `d2vp.ini` auto-creation. |
+| [`0.0.3`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.3) | Portable saves, alt-toggle click-through fix, quiet diagnostics. |
+| [`0.0.4`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.4) | Auto Gold Pickup; globe hover values. |
+| [`0.0.5`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.5) | Per-class player sounds restored (77 values byte-matched from the retail exe); full-inventory pickup crash and walk-click mis-pickup fixed; Persistent Globe Text. |
+| [`0.0.6`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.6) | The 720p release: native 1280x720 mode; loading-screen freeze fixed; sound constants repaired; Options page visible; inventory, skill flyouts and dialogs aligned at 720p. |
+| [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Record: [`HISTORY.md`](HISTORY.md) round journal (R59→R66). |
+| [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77) | The shared-stash refresh (R67→R77), same 0.0.7 version line: the shared stash grows to **two pages** with `<`/`>` pager arrows and an outlined tab in the panel's top-right corner; **Shared Stash** toggle on the Options page; `_d2vp_shared.sss` v2 (v1 files auto-upgrade); upstream synced to Ghidra 1792. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R78`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R78) | The upstream sync (R77→R78), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1794 (1793/1794 regen waves + generator rounds, 5,988 of 14,642 functions byte-matching); all six toggles unchanged, every Vanilla+ anchor re-planted on the regenerated shapes. Upstream added its MIT `LICENSE` this round. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R79`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R79) | The upstream sync (R78→R79), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1801 (the 1795–1801 retyping waves — widths/signedness/BOOL fields, pointer and parameter types, param names checked against live packet captures, the Storm file layout; 5,990 of 14,642 functions byte-matching, 471,891 of 2,602,915 code bytes, 18.13%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R80`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R80) | The upstream sync (R79→R80), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1806 (the 1802–1806 waves — MONSTERAI flag-out BOOL, DRLG level/room/unit pointers, DT1/DC6/path types + flag-word returns + character buffers, monster-spawn/skills/item-stats/UI parameter names, then the generator round; 6,029 of 14,642 functions byte-matching, 479,019 of 2,602,915 code bytes, 18.40%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) | The waypoint icon fix ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)): at 720p the waypoint-list button icons drew at their retail 800×600 Y while the panel, texts and click zones rode the widescreen layout down 120 px — the icons rendered ~120 px above their rows. The two `waygateicons` draws predate the site-6 retrofit and never carried the wide-Y term; two one-term replants. Retail 800×600 unchanged byte-for-byte. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) | The shared-stash capacity round (R81→R82): the shared stash grows from two to **ten pages** — the `.sss` v2 header widening its format always planned (same `VPS2` magic + version, `pageCount` 10, header 28 → 92 bytes; pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty, the next save rewrites ten). Pager labels `Shared 1`…`Shared 10` from a literal table, arrows still step one page, one shared gold pool across all ten, `.d2s` saves still retail-pure. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) | The video-options label alignment fix ([#23](https://github.com/VTSTech/D2LoD-libslang-vk/issues/23)): the visible **1280x720** stop's text label left-anchored at the value-column X — a full label width right of where the retail value images end — and floated ~4 px above their ink line (the glyph cell bottom-anchors at the DRAW_text y while the value DC6s bake ~4 px of padding). Right-aligned via the rendered advance width (`DRAW_text0`), draw y moved to row bottom + 2; geometry is resolution-independent, so 800×600 picks up the same corrected placement. Two new gates pin the anchor. Record: [`handoff.md`](handoff.md) round journal. |
+| R84 (pending tag) | The item-tooltip zero fix ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)): items could drop with a mod line reading **"0 poison damage over 0 seconds"**, and 'of Frost' gear could show **"+0 Cold Damage"**. Display-side root cause: the item-stat tooltip formatter's single-value branches (fire/lightning/magic/cold/poison) called the wide-string formatter **without the numeric varargs**, so any roll whose range collapses to min==max printed stack residue instead of the value ('of Frost' weapons roll `cold-max` 1..2 with `cold-min` fixed at 1 — every drop that rolls a 1 collapsed; poison collapses through the length rounding). The fix passes the same values the range branches pass; item stats were never wrong — tooltip-only. Three new gates. Record: [`handoff.md`](handoff.md) round journal. |
+
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R83 build
+self-IDs `Vanilla+0.0.7-R83` (the pending R84 build self-IDs `Vanilla+0.0.7-R84`). Rounds through R74 are archived verbatim in
+[`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R84 — in
+[`handoff.md`](handoff.md).

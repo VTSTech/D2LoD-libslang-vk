@@ -4,12 +4,13 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H31); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H32); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
 Started at handoff rev 110 (2026-11-02); the 0.0.1–0.0.6 entries are distilled from the
-release table in [`README.md`](README.md) and the H-records.
+GitHub releases page and the H-records (the README release table this superseded was
+retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H32).
 
 ## [Unreleased]
 
