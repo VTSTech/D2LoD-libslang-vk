@@ -131,3 +131,31 @@ to the glide DLL (grSstWinOpen receives 1280x720) per the interface
 contract with the glide branch.
 
 Tripwires: `tools/check-vanilla-plus.sh` "resfix:" gates (5).
+
+## Video-options label anchor (issue #23, R83)
+
+The Route-B visible `1280x720` label (`EscMenu.cpp UI_SLIDER_DrawResolutionValue`,
+the text stand-in for the stop-2 slot no MPQ asset exists for) sat wrong at
+every resolution once it drew: it LEFT-anchored at the value-column X
+(`ScreenSizeX/2 + 0xe6`) where `DRAW_EscMenu` draws the row's value images
+with alignment 2 - cell RIGHT edge on that anchor - so the text ran a full
+label width (~100 px) past the `HIGH`/`ON` column, and it drew at
+`row bottom - 2`, which put its ink ~4 px above the neighbors' (screenshot-
+measured at 720p, issue #23). Two engine conventions explain both halves:
+
+- `IMAGE_DrawDC6ImageOnScreen` alignment 2 = right edge anchor (the function
+  subtracts the summed frame width); the value DC6s bake ~4 px of transparent
+  padding under their ink, so their glyphs end at `row bottom - 4`.
+- `D2WinFont::DRAW_text`'s y anchors the glyph CELL bottom (DC6 frames draw
+  upward from y - the convention `VANILLAPLUS_DrawRowLabel` documents); the
+  picked font's digit ink sits ~6 px above that anchor.
+
+Fix: right-align the text by subtracting the rendered advance width
+(`DRAW_text0`, same metric the renderer advances by) and draw at
+`row bottom + 2` (`RESLABEL_DESCENDER_COMP`) so the ink lands at
+`row bottom - 4`, on the neighbors' baseline. The band math itself was
+already correct (it reproduced the retail row geometry exactly - the
+misanchor was purely in the text call). Resolution-independent: 800x600
+picks up the same corrected placement with the same relative geometry.
+Gates: "resolution: label right-align (#23)" + "resolution: label descender
+comp (#23)".

@@ -286,7 +286,8 @@ void __fastcall UI_SLIDER_ApplyResolution(D2EscMenuItemStrc * pItem, D2UIMouseMs
 // draw; the blank drawn after is fully transparent, so the text survives.
 // The row band is recomputed with DRAW_EscMenu's per-item formula
 // (nYPosition is still zero at callback time) - same approach as
-// VANILLAPLUS_DrawRowLabel.
+// VANILLAPLUS_DrawRowLabel. The label right-aligns to the value-column
+// anchor and rides the neighbor images' ink line (issue #23).
 void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMouseMsgStrc * pMsg) {
     (void)pMsg;
     if (!pItem || pItem->nImageIndex != 2) {
@@ -321,16 +322,30 @@ void __fastcall UI_SLIDER_DrawResolutionValue(D2EscMenuItemStrc * pItem, D2UIMou
         + (nMenuCenterY / 2 - gaEscMenuHeaderDeleteChar.nVerticalSpacing * gaEscMenuHeaderDeleteChar.nItemCount / 2);
     const int nRowBottom = nRowTop + gaEscMenuHeaderDeleteChar.nRowHeight;
 
-    // Baseline inset above the band bottom: the retail value images
-    // bottom-anchor exactly at the row bottom and carry 1-2 px of bake
-    // padding under the glyphs (tunable).
-    static const int RESLABEL_BASELINE_INSET = 2;
-
     // Font: match the retail "800x600" value image of this same row (slot 1).
     static const wchar_t gwszLabel[] = L"1280x720";
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(
         VPRES_PickFontMatchingDC6(pItem->pDC6SubImages[1]));
-    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6, nRowBottom - RESLABEL_BASELINE_INSET, 0, 0);
+
+    // X: DRAW_EscMenu draws this row's value images with alignment 2 - their
+    // cell RIGHT edge anchors at ScreenSizeX/2 + 0xe6 (IMAGE_DrawDC6ImageOnScreen
+    // subtracts the frame width). Left-anchoring the text at that x pushed it
+    // a full label width past the value column (issue #23): right-align by
+    // subtracting the rendered advance width instead (DRAW_text0 measures with
+    // the font selected above, the same metric the renderer advances by).
+    const int nLabelWidth = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)gwszLabel);
+
+    // Y: DRAW_text anchors the glyph CELL bottom (DC6 frames draw upward from
+    // y - the convention VANILLAPLUS_DrawRowLabel documents). The picked
+    // font's digit ink sits ~6 px above that anchor, while the retail value
+    // DC6s bottom-anchor at the row bottom with ~4 px of baked padding under
+    // their ink - so drawing at (or above) the row bottom floated the text
+    // ~4 px above the neighbors' ink line (issue #23, screenshot-measured at
+    // 720p). Row bottom + 2 puts the ink at row bottom - 4, on the
+    // "HIGH"/"ON" baseline; resolution-independent, same relative geometry
+    // at 800x600.
+    static const int RESLABEL_DESCENDER_COMP = 2;
+    D2Win::Src::D2WinFont::DRAW_text((uint16_t*)gwszLabel, ScreenSizeX / 2 + 0xe6 - nLabelWidth, nRowBottom + RESLABEL_DESCENDER_COMP, 0, 0);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
 
