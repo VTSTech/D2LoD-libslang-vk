@@ -876,7 +876,7 @@ void __fastcall D2WINFONT_DrawTextWithOffsetBackground(uint16_t * wszText, int32
     D2WINFONT_DrawWideString(wszText, nTextHeight, nYEnd - 2, 0, eGlobalPalette, 0);
 }
 
-void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nPoxY, int32_t nParam, DRAWMODE eDrawMode, GLOBALPALLETE nGlobalPaletteShift) {
+void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nPoxY, int32_t nAlignment, DRAWMODE eDrawMode, GLOBALPALLETE nGlobalPaletteShift) {
     int32_t nFrameWidthPx;
     uint32_t nFrameIdx;
     D2GfxDataStrc sGfxData;
@@ -886,7 +886,7 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = pDC6;
     sGfxData.nDirection = 0;
-    if (nParam == 1 || (nDrawX = nPosX , nParam == 2)) {
+    if (nAlignment == 1 || (nDrawX = nPosX , nAlignment == 2)) {
       DC6Block* pBlock;
       nFrameIdx = 0;
       if (nFrameCount > 0) {
@@ -898,7 +898,7 @@ void __fastcall IMAGE_DrawDC6ImageOnScreen(DC6 * pDC6, int32_t nPosX, int32_t nP
           nTotalWidth += nFrameWidthPx;
         } while (nFrameIdx < nFrameCount);
       }
-      if (nParam == 1) {
+      if (nAlignment == 1) {
         nDrawX = nPosX + (-1 - (nTotalWidth >> 1));
       } else {
         nDrawX = nPosX - nTotalWidth;
@@ -1062,21 +1062,16 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
     nSegStart = 0;
     while (true) {
       nFitPixelWidth = 0;
-      nSegEnd = nStrLen;
-      if (nStrLen > nSegStart) {
-        do {
-          nFitPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-          if (nFitPixelWidth <= nMaxWidth) {
-            if (nSegEnd > nSegStart) {
-              nBreakPos = nSegEnd - nSegStart + 1;
-              goto find_break_position;
-            }
-
-            break;
+      for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+        nFitPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+        if (nFitPixelWidth <= nMaxWidth) {
+          if (nSegEnd > nSegStart) {
+            nBreakPos = nSegEnd - nSegStart + 1;
+            goto find_break_position;
           }
 
-          nSegEnd--;
-        } while (nSegEnd > nSegStart);
+          break;
+        }
       }
 
       goto choose_line_break;
@@ -1099,16 +1094,11 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
       }
       choose_line_break:
       if (nSegEnd == nSegStart) {
-        nSegEnd = nStrLen;
-        if (nStrLen > nSegStart) {
-          do {
-            nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-            if (nSegPixelWidth <= nMaxWidth) {
-              break;
-            }
-
-            nSegEnd--;
-          } while (nSegEnd > nSegStart);
+        for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+          nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+          if (nSegPixelWidth <= nMaxWidth) {
+            break;
+          }
         }
 
         pNode = D2_NEW_AT(D2TextLineStrc, ".\\Src\\D2WinFont.cpp", 0x588);
@@ -1140,21 +1130,16 @@ D2TextLineStrc * __fastcall D2WINFONT_WordWrapString(uint16_t * wszText, int * p
         goto next_segment;
       }
       if (nFitPixelWidth > nMaxWidth) {
-        nSegEnd = nStrLen;
-        if (nStrLen > nSegStart) {
-          do {
-            nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
-            if (nSegPixelWidth <= nMaxWidth) {
-              if (nSegEnd > nSegStart) {
-                nBreakPos = nSegEnd - nSegStart + 1;
-                goto check_break_position;
-              }
-
-              break;
+        for (nSegEnd = nStrLen; nSegEnd > nSegStart; nSegEnd--) {
+          nSegPixelWidth = D2WINFONT_GetStringPixelWidthN((uint16_t*)(wszText + nSegStart), 1 - nSegStart + nSegEnd);
+          if (nSegPixelWidth <= nMaxWidth) {
+            if (nSegEnd > nSegStart) {
+              nBreakPos = nSegEnd - nSegStart + 1;
+              goto check_break_position;
             }
 
-            nSegEnd--;
-          } while (nSegEnd > nSegStart);
+            break;
+          }
         }
 
         goto fall_back_to_fit_width;

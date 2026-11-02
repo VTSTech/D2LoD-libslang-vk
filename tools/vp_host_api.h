@@ -118,10 +118,15 @@ typedef struct _IMAGE_FILE_HEADER {  /* 0x14 */
     WORD  Characteristics;      /* 0x12 */
 } IMAGE_FILE_HEADER;
 
+// 1806 merge: the SDK-faithful IMAGE_DATA_DIRECTORY / IMAGE_OPTIONAL_HEADER32
+// now live in Fog/Engine/Application.h (globals.h includes it; the real
+// winnt.h wins under _WIN32). The shim keeps its layout-identical copies
+// under _SHIM aliases - d2_crash.cpp's PE walk only reads members, never
+// those type names - so no typedef name collides with the tree's.
 typedef struct _IMAGE_DATA_DIRECTORY { /* 0x08 */
     DWORD VirtualAddress;
     DWORD Size;
-} IMAGE_DATA_DIRECTORY;
+} IMAGE_DATA_DIRECTORY_SHIM;
 
 typedef struct _IMAGE_OPTIONAL_HEADER { /* 0xE0 = 224 */
     WORD  Magic;                 /* 0x00 */
@@ -143,13 +148,13 @@ typedef struct _IMAGE_OPTIONAL_HEADER { /* 0xE0 = 224 */
     DWORD SizeOfStackReserve, SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit;
     DWORD LoaderFlags;           /* 0x58 */
     DWORD NumberOfRvaAndSizes;   /* 0x5C */
-    IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; /* 0x60 */
-} IMAGE_OPTIONAL_HEADER32;
+    IMAGE_DATA_DIRECTORY_SHIM DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES]; /* 0x60 */
+} IMAGE_OPTIONAL_HEADER_SHIM;
 
 typedef struct _IMAGE_NT_HEADERS {
     DWORD Signature;                    /* 0x00 */
     IMAGE_FILE_HEADER FileHeader;       /* 0x04 */
-    IMAGE_OPTIONAL_HEADER32 OptionalHeader; /* 0x18 */
+    IMAGE_OPTIONAL_HEADER_SHIM OptionalHeader; /* 0x18 */
 } IMAGE_NT_HEADERS;
 typedef IMAGE_NT_HEADERS* PIMAGE_NT_HEADERS;
 

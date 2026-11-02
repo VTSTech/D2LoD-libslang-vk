@@ -2853,14 +2853,14 @@ static int32_t __thiscall RENDERER_DIRECT3D_UploadTextureToCache(D2D3DSpriteInfo
     int iMipLevel;
     int32_t nErrorLine;
     void* pMemPool;
-    DC6Block* nParam = pTexInfo->pSprite->pDC6Block;
-    if (!nParam) {
+    DC6Block* pDC6Block = pTexInfo->pSprite->pDC6Block;
+    if (!pDC6Block) {
             RENDERER_D3D_UploadHaltDump("nullblock", pTexInfo, nMode, nMode, -1, 0, nullptr); // [vanilla-plus fix 22]
-      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), nErrorLine);
+      Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x11e);
       exit(-1);
     }
 
-    int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData((int32_t)nParam);
+    int pbSrcPixel = D2CMP::SRC::CelCmp::CELCMP_GetDC6BlockPixelData(pDC6Block);
     // [vanilla-plus fix 26 diag C captured nPal26DFrameKey here for the bake
     // stamp; the probe is retired in 0.0.3, nothing else consumed the key.]
     // [vanilla-plus fix 27] Drop transpose-baked nodes when the LUT family

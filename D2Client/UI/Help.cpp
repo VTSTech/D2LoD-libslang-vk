@@ -230,7 +230,7 @@ void __stdcall DrawSellBtn() {
     memset(&sGfxData, 0, 0x48);
     sGfxData.pDC6 = ui::GetBuySellBtnDC6();
     sGfxData.nDirection = 0;
-    sGfxData.nFrameNumber = (gpHelpCloseButton != 0) + 10;
+    sGfxData.nFrameNumber = gpHelpCloseButton != 0 ? 11 : 10;
     DWORD eResMode = D2gfx::D2GFX::D2GFX_GetResolutionMode();
     // VP: [resolution site-5] wide modes ride the re-centered help screen
     if (VPRES_IsWideLayoutMode(eResMode)) {

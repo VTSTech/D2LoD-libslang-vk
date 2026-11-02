@@ -6,6 +6,7 @@
 #include "D2CMP/SRC/Codec.h"
 #include "D2CMP/SRC/GfxHash.h"
 #include "D2CMP/SRC/LRUCache.h"
+#include "D2CMP/SRC/TileProjects.h"
 #include "D2CMP/SRC/Tilecmp.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxHelperStrc.h"
@@ -29,7 +30,6 @@
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2CMP/D2CMP.h"
-#include "D2CMP/SRC/TileProjects.h"
 #include "D2Game/Monster/AI/AI.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -170,27 +170,26 @@ void __stdcall SPRITECACHE_Unlock() {
     LRUCache::LRUCACHE_FreeAll(&gSpriteCacheLru);
 }
 
-void __fastcall SPRITECACHE_TouchEntry(int32_t nParam) {
-    D2LRUCacheNodeStrc* pMemory;
-    int nOffset = 0;
+void __fastcall SPRITECACHE_TouchEntry(D2TileLibraryHeaderStrc * pTileLibrary) {
+    uint8_t* pBVar1;
     int nEntryIdx = 0;
-    if (*(int*)(nParam + 0x10c) <= 0) {
+    if (pTileLibrary->nTiles <= 0) {
       return;
     }
 
     do {
-      int nEntryBase;
-      pMemory = *(D2LRUCacheNodeStrc**)(*(int*)(nParam + 0x110) + 0x5c + nOffset);
-      nEntryBase = *(int*)(nParam + 0x110) + nOffset;
-      if (pMemory) {
-        LRUCache::LRUCACHE_FreeEntry(&gSpriteCacheLru, pMemory);
-        *(uint32_t*)(nEntryBase + 0x54) = 0;
-        *(uint32_t*)(nEntryBase + 0x5c) = 0;
+      D2TileLibraryEntryStrc* pDVar2;
+      pDVar2 = pTileLibrary->pTiles;
+      if (pDVar2[nEntryIdx].pLruNode) {
+        LRUCache::LRUCACHE_FreeEntry(&gSpriteCacheLru, pDVar2[nEntryIdx].pLruNode);
+        pBVar1 = (uint8_t*)(unsigned char*)&pDVar2[nEntryIdx].pSubTiles;
+        memset(pBVar1, 0, 4 * sizeof(pBVar1[0]));
+        pBVar1 = (uint8_t*)(unsigned char*)&pDVar2[nEntryIdx].pLruNode;
+        memset(pBVar1, 0, 4 * sizeof(pBVar1[0]));
       }
 
       nEntryIdx++;
-      nOffset += 0x60;
-    } while (nEntryIdx < *(int*)(nParam + 0x10c));
+    } while (nEntryIdx < pTileLibrary->nTiles);
 }
 
 void __stdcall GFX_InitLRUCache(D2PoolManagerStrc * pMemory, D2PoolManagerStrc * pPoolManager) {
@@ -1471,7 +1470,6 @@ static void __stdcall SPRITECACHE_LoadCelFileAndCache(char * szCelPath, D2CelFil
     size_t nReadSize;
     D2AsyncData_Line0x128* pAsyncData;
     uint32_t nEndFrame;
-    D2SpriteDecodeRequestStrc tDecodeRequest;
     uint32_t* pOffsetIter;
     int32_t* pFrameOffsetSlot;
     char local_210[260];
@@ -1536,9 +1534,8 @@ static void __stdcall SPRITECACHE_LoadCelFileAndCache(char * szCelPath, D2CelFil
         }
         if (pCelEntry->dwCacheFlags & 2) {
           pCacheEntry->tDecode.nFlags |= 4;
+          D2SpriteDecodeRequestStrc tDecodeRequest = {0};
           tDecodeRequest.nStartFrame = nDirection * nFrameCount;
-          tDecodeRequest.pDecodedFrames = 0;
-          tDecodeRequest.nDecodedSize = 0;
           tDecodeRequest.pDecodeState = &pCacheEntry->tDecode;
           tDecodeRequest.pfnComplete = SPRITECACHE_DecodeFrameByIndex;
           tDecodeRequest.nFrameCount = nFrameCount;
@@ -1563,7 +1560,6 @@ static void __stdcall SPRITECACHE_LoadCelFileAndCache(char * szCelPath, D2CelFil
 // Load sprite data from archive into bit buffer with decompression
 // @sourcefile .\SRC\SpriteCache.cpp
 static uint32_t __stdcall SPRITECACHE_LoadFromArchive(D2GfxDataStrc * pGfxData, int nFrameStep, D2CelCacheBlockStrc * pCacheEntry, D2CelFileCacheEntryStrc * pCelEntry, int nFrameGroupIndex, char * szFileName) {
-    D2SpriteDecodeRequestStrc tDecodeRequest;
     int32_t* pEntryOffsetSlot;
     uint32_t* pOffsetIter;
     D2SpriteDecodeRequestStrc* pDecodeRequest;
@@ -1637,11 +1633,10 @@ static uint32_t __stdcall SPRITECACHE_LoadFromArchive(D2GfxDataStrc * pGfxData, 
       }
       if (pCelEntry->dwCacheFlags & 2) {
         nLine = 0x3da;
+        D2SpriteDecodeRequestStrc tDecodeRequest = {0};
         tDecodeRequest.pCelHeader = (uint8_t*)pCelEntry;
         tDecodeRequest.nStartFrame = nFrameGroupIndex * nFrameStep;
         pCacheEntry->tDecode.nFlags |= 4;
-        tDecodeRequest.pDecodedFrames = 0;
-        tDecodeRequest.nDecodedSize = 0;
         tDecodeRequest.pDecodeState = &pCacheEntry->tDecode;
         pDecodeRequest = &tDecodeRequest;
         hArchiveHandle = *pOffsetTable;

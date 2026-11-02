@@ -1303,7 +1303,7 @@ int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, D2Unit
     if (!(nSkillFlags & 1)) {
       if (pUnit && pUnit->eUnitFlags >> 6 & 1 || nModeArg != 1 && nModeArg != 2) {
         bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
-        return (bIsDead != 0) + 1;
+        return bIsDead != 0 ? 2 : 1;
       }
     } else {
       int32_t nMoveResult;
@@ -1312,7 +1312,7 @@ int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, D2Unit
       if (nMoveResult != 2) {
         if (pUnit && pUnit->eUnitFlags >> 6 & 1 || nModeArg != 1 && nModeArg != 2) {
           bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
-          return (bIsDead != 0) + 1;
+          return bIsDead != 0 ? 2 : 1;
         }
       } else {
         D2Common::Skills::SKILL_SetFlags(pSkill, nSkillFlags | 2);
@@ -1321,7 +1321,7 @@ int32_t __fastcall PLRMODES_ModeCallback_AttackSkill(::SGAMEDATA * pGame, D2Unit
 
     SKILLS::SkillsServer::SKILLS_PeriodicSkillSpawnAndTimer(pGame, pUnit);
     bIsDead = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
-    return (bIsDead != 0) + 1;
+    return bIsDead != 0 ? 2 : 1;
 }
 
 // Ticks stamina recovery for a player unit each game loop. Reads current stamina and UNITSTAT_staminarecoverybonus; recovery shift is 8 (standing/town-walk) or 9 (walking). Applies bonus percentage, clamps to max stamina, then writes back via STATLIST_SetUnitStat. Returns early if already at max or if in a non-recovery anim mode (e.g. attacking).
@@ -1593,7 +1593,7 @@ void __fastcall PacketUpdateForClient(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D
 }
 
 // Server-side player movement dispatcher. Checks whether the player's current mode can be interrupted (PLRMODES_CanInterruptCurrentMode); if so, optionally cancels it (PLRMODES_TryCancelModeAndMoveToLocation), sets the active skill, then invokes the mode-specific move function from gaPlayerModeMoveFuncs[nIndex*2]. Halts on null game or invalid function pointer.
-void __fastcall PLRMODES_MoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, int32_t nIndex, int32_t nX, int32_t nY, int32_t nParam) {
+void __fastcall PLRMODES_MoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, int32_t nIndex, int32_t nX, int32_t nY, int32_t bSkipCancelAttempt) {
     BOOL _bCanInterrupt;
     bool bCanInterrupt;
     if (!pGame) {
@@ -1605,7 +1605,7 @@ void __fastcall PLRMODES_MoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
     if (!_bCanInterrupt) {
       return;
     }
-    if (!nParam) {
+    if (!bSkipCancelAttempt) {
       int nCancelResult;
       nCancelResult = PLRMODES_TryCancelModeAndMoveToLocation(pGame, pUnit, nIndex, 1, pSkill);
       if (!nCancelResult) {
@@ -1627,7 +1627,7 @@ void __fastcall PLRMODES_MoveToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 
 // Initiates a targeted player animation/action mode by mode index. Looks up the target unit by (eUnitType, nUid), checks PLRMODES_CanInterruptCurrentMode, cancels the current mode if interruptible or nParam!=0, clears queued skill and pending interact flags, then dispatches via gaPlayerModeMoveFuncs[nModeIndex*2+1]. Halts with an internal error if pGame is null or the mode function pointer is bad.
 // @sourcefile .\PLAYER\PlrModes.cpp
-void __fastcall PLRMODES_StartModeID(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, int32_t nModeIndex, eD2UnitType eUnitType, DWORD nUid, int32_t nParam) {
+void __fastcall PLRMODES_StartModeID(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2SkillStrc * pSkill, int32_t nModeIndex, eD2UnitType eUnitType, DWORD nUid, int32_t bSkipCancelAttempt) {
     BOOL _bCanInterrupt;
     bool bCanInterrupt;
     int nCancelResult;
@@ -1643,7 +1643,7 @@ void __fastcall PLRMODES_StartModeID(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2
     }
 
     _bCanInterrupt = PLRMODES_CanInterruptCurrentMode(pUnit, pGame, nModeIndex);
-    if (!(_bCanInterrupt && (nParam || (nCancelResult = PLRMODES_TryCancelModeAndMoveToLocation(pGame, pUnit, nModeIndex, 1, pSkill) , nCancelResult != 0)))) {
+    if (!(_bCanInterrupt && (bSkipCancelAttempt || (nCancelResult = PLRMODES_TryCancelModeAndMoveToLocation(pGame, pUnit, nModeIndex, 1, pSkill) , nCancelResult != 0)))) {
       return;
     }
     if (pUnit && pUnit->eUnitType == UNIT_PLAYER) {

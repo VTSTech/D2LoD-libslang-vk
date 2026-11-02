@@ -490,7 +490,7 @@ void __fastcall PLAYER_SendStateListToClient(D2UnitStrc * pUnit, D2ClientStrc * 
 
 // Send stat changes (buffs/debuffs) to client. Iterates state flags, checks which are new/ending, encodes changed stats into bit buffer with ItemStatCost config, sends via 0xA7/0xA8/0xA9 opcodes.
 void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc * pClient) {
-    void* _Src;
+    int* _Src;
     int nFlagDwordCountTmp;
     uint32_t nSetBitIdx;
     eD2States eCurState;
@@ -524,7 +524,7 @@ void __fastcall PLAYER_SendStateDeltaToClient(D2UnitStrc * pUnit, D2ClientStrc *
     D2ClientStrc* pClientSaved = pClient;
     if (pUnit && pClient) {
       eD2States eState_00;
-      _Src = (void*)D2Common::DATATBLS::ItemStats::STATES_AssertGetGfxFlags(pUnit);
+      _Src = D2Common::DATATBLS::ItemStats::STATES_AssertGetGfxFlags(pUnit);
       nFlagDwordCountTmp = sgptDataTable->nTxtStatesSize + 0x1f;
       nFlagDwordCount = nFlagDwordCountTmp / 32;
       nStateFlagDwordCount = nFlagDwordCount;
@@ -696,7 +696,7 @@ void __fastcall PLAYER_SendHoverTextToClient(D2UnitStrc * pUnit, D2ClientStrc * 
           sPacket.nMessageType = '\x05';
           sPacket.nLanguage = D2Common::Chat::GetLanguageCode(pHoverText);
           memset(sPacket.szMessage, 0, 0x100);
-          D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, (int32_t)sPacket.szMessage);
+          D2Common::Chat::TEXT_CopyHoverMessageString(pHoverText, sPacket.szMessage);
           GAME::SCmd::NET_D2GS_SERVER_Send_0x26_CHATSTART(pClient, &sPacket);
           return;
         }

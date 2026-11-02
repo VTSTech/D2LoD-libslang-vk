@@ -62,7 +62,7 @@ static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
         return 1;
       }
 
-      return (nMouseX >= 0xf0) + 2;
+      return nMouseX >= 0xf0 ? 3 : 2;
     }
     if (nMouseY > 0x1e) {
       return -1;
@@ -80,7 +80,7 @@ static int32_t WAYPOINT_GetActIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
       return 2;
     }
 
-    return (nMouseX >= 0x100) + 3;
+    return nMouseX >= 0x100 ? 4 : 3;
 }
 
 static int32_t WAYPOINT_GetWaypointIndexFromMouse(int32_t nMouseX, int32_t nMouseY) {
@@ -188,7 +188,6 @@ void __stdcall WAYPOINT_Shutdown() {
 }
 
 static void Waypoint_SetWaypointArea(int32_t nAct) {
-    D2BitBufferStrc* pQuestInfo;
     BOOL bQuestComplete;
     eD2Quests eQuestId;
     eD2QuestState eQuestState;
@@ -204,8 +203,7 @@ static void Waypoint_SetWaypointArea(int32_t nAct) {
       case 4:
         eQuestState = QUESTSTATE_Completed;
       eQuestId = QUEST_AbleGoToAct5;
-      pQuestInfo = npcmenu::GetQuestInfo();
-      bQuestComplete = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuestId, eQuestState);
+      bQuestComplete = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestId, eQuestState);
       if (!bQuestComplete) {
         nAct = 3;
       }
@@ -213,8 +211,7 @@ static void Waypoint_SetWaypointArea(int32_t nAct) {
       case 3:
         eQuestState = QUESTSTATE_Completed;
       eQuestId = QUEST_AbleGoToAct4;
-      pQuestInfo = npcmenu::GetQuestInfo();
-      bQuestComplete = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuestId, eQuestState);
+      bQuestComplete = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestId, eQuestState);
       if (!bQuestComplete) {
         nAct = 2;
       }
@@ -227,8 +224,7 @@ static void Waypoint_SetWaypointArea(int32_t nAct) {
 
     eQuestState = QUESTSTATE_Completed;
     eQuestId = QUEST_AbleGoToAct3;
-    pQuestInfo = npcmenu::GetQuestInfo();
-    bQuestComplete = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuestId, eQuestState);
+    bQuestComplete = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestId, eQuestState);
     if (!bQuestComplete) {
       nAct = 1;
     }
@@ -236,8 +232,7 @@ static void Waypoint_SetWaypointArea(int32_t nAct) {
     check_act2_access:
     eQuestState = QUESTSTATE_Completed;
     eQuestId = QUEST_AbleGoToAct2;
-    pQuestInfo = npcmenu::GetQuestInfo();
-    bQuestComplete = D2Common::QuestRecord::GetQuestState(pQuestInfo, eQuestId, eQuestState);
+    bQuestComplete = D2Common::QuestRecord::GetQuestState(npcmenu::GetQuestInfo(), eQuestId, eQuestState);
     if (bQuestComplete) {
       WaypointCurrentSelectedAct = nAct;
       return;
@@ -525,7 +520,7 @@ void __stdcall DRAW_UI_Waypoint() {
     }
 
     sDrawImageArgs.pDC6 = ui::GetBuySellBtnDC6();
-    sDrawImageArgs.nFrameNumber = (gbWaypointButtonPressed != '\0') + 10;
+    sDrawImageArgs.nFrameNumber = gbWaypointButtonPressed != '\0' ? 11 : 10;
     D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, gnPanelOffsetX + 0x111, 0x1a1 - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr);
     pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
     pRoom = D2Common::Units::UNITS_GetRoom(pPlayerUnit_lcl);
@@ -540,7 +535,7 @@ void __stdcall DRAW_UI_Waypoint() {
           if (gaWaypointListEntries[nWaypointIndex].eLevelId == eCurrentLevel) {
             sDrawImageArgs.nFrameNumber = (int)(ClickingDownOnWaypointEntry == nWaypointIndex);
           } else {
-            sDrawImageArgs.nFrameNumber = (ClickingDownOnWaypointEntry == nWaypointIndex) + 3;
+            sDrawImageArgs.nFrameNumber = ClickingDownOnWaypointEntry == nWaypointIndex ? 4 : 3;
           }
 
           D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);

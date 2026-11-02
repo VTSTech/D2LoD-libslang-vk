@@ -648,7 +648,7 @@ static BOOL __stdcall INVENTORY_PlaceItemInGrid(int32_t nnX, int32_t nnY, int32_
     switch (nParam1) {
       case 0:
         {
-          *(char*)((int)ppItemDataPtr + 0xd) = (nnX >= 11) + '\x03';
+          *(char*)((int)ppItemDataPtr + 0xd) = nnX >= 11 ? 4 : 3;
           return 1;
         }
       case 1:
@@ -2004,14 +2004,14 @@ int __stdcall INVENTORY_PlacePotionInBelt(D2InventoryStrc * pInventory, D2UnitSt
     return 0;
 }
 
-D2UnitStrc * __stdcall INVENTORY_GetItemInBeltSlot(D2InventoryStrc * pInventory, uint32_t nParam) {
+D2UnitStrc * __stdcall INVENTORY_GetItemInBeltSlot(D2InventoryStrc * pInventory, uint32_t nBeltSlot) {
     if (!(pInventory && pInventory->nSignatureMagic == 0x1020304)) {
       return nullptr;
     }
 
     D2InventoryGridInfoStrc* pGridInfo = ReinitializeInventoryGrid(pInventory, &g_InventorySizesDefaultConfig, 1);
-    if (pGridInfo && nParam <= 0xf) {
-      return pGridInfo->pGridCells[nParam];
+    if (pGridInfo && nBeltSlot <= 0xf) {
+      return pGridInfo->pGridCells[nBeltSlot];
     }
 
     return nullptr;
@@ -4275,15 +4275,10 @@ void __stdcall INVENTORY_InitializeItemTypeTable() {
           bIsEquippable = false;
         }
 
-        nTableSlot = 0;
-        if (nTableCount > 0) {
-          do {
-            if (gaItemTypeBaseIdTable[nTableSlot * 2] == nBaseTypeId) {
-              goto next_item;
-            }
-
-            nTableSlot++;
-          } while (nTableSlot < nTableCount);
+        for (nTableSlot = 0; nTableSlot < nTableCount; nTableSlot++) {
+          if (gaItemTypeBaseIdTable[nTableSlot * 2] == nBaseTypeId) {
+            goto next_item;
+          }
         }
 
         nTableSlot = nTableCount;
@@ -4442,7 +4437,7 @@ static void __stdcall INVENTORY_SetEquippedItemAppearance(D2UnitStrc * pUnit, ch
 
 uint8_t __stdcall INVENTORY_CalculateSwapActionCode(int32_t nParam1, int32_t nParam2) {
     if (nParam1) {
-      return (nParam2 != 0) * '\x04' + 1;
+      return nParam2 != 0 ? 5 : 1;
     }
 
     return nParam2 ? 3 : 0;
@@ -4591,7 +4586,7 @@ static uint32_t __stdcall INVENTORY_GetEquipSwapAction(D2UnitStrc * pUnit, D2Uni
       }
       if (pUnit) {
         bIsSocketable = INVENTORY_CanDualWieldItems(pUnit, pNewItem, pUnit1);
-        return 2 - (bIsSocketable != 0);
+        return bIsSocketable != 0 ? 1 : 2;
       }
 
       return 1;
@@ -4612,7 +4607,7 @@ static uint32_t __stdcall INVENTORY_GetEquipSwapAction(D2UnitStrc * pUnit, D2Uni
 }
 
 // Returns the equip action code for placing pItem into body slot nParam on pUnit. First validates body location fit and equipment requirements. For arm slots (R_ARM/L_ARM and their swap pairs), retrieves both the current and paired slot items and delegates to INVENTORY_GetEquipSwapAction. For other slots, returns 1 (replace) if the slot is occupied or 1 if placing a new item; returns 3 (move to stash) if clearing an occupied slot. Returns 0 on null unit/inventory or failed fit/req check.
-int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2BodyLocDWORD nBodyLoc, D2UnitStrc * pItem, int nParam2) {
+int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2BodyLocDWORD nBodyLoc, D2UnitStrc * pItem, int bSkipRequirementsCheck) {
     BOOL nReqCheckResult;
     uint32_t nPairedBodyLoc;
     D2UnitStrc* pPairedSlotItem;
@@ -4630,7 +4625,7 @@ int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2Bod
     if (pItem) {
       int32_t nFitOrReqCheck;
       nFitOrReqCheck = ITEMS::Items::ITEMS_CheckBodyLocationFit(pItem, nBodyLoc);
-      if (!nFitOrReqCheck || !nParam2 && (nReqCheckResult = ITEMS::Items::ITEM_CheckEquipRequirements(pItem, pUnit, 1, nullptr, nullptr, nullptr) , !nReqCheckResult)) {
+      if (!nFitOrReqCheck || !bSkipRequirementsCheck && (nReqCheckResult = ITEMS::Items::ITEM_CheckEquipRequirements(pItem, pUnit, 1, nullptr, nullptr, nullptr) , !nReqCheckResult)) {
         return 0;
       }
     }
@@ -4641,7 +4636,7 @@ int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2Bod
       case BODYLOC_R_ARM:
 
       case BODYLOC_L_ARM:
-        uVar1 = (nBodyLoc != BODYLOC_L_ARM) + 4;
+        uVar1 = nBodyLoc != BODYLOC_L_ARM ? 5 : 4;
       pCurrentSlotItem = INVENTORY_GetItemByGridOffset(pInventory, nBodyLoc);
       pPairedSlotItem = INVENTORY_GetItemByGridOffset(pInventory, uVar1);
       uVar1 = INVENTORY_GetEquipSwapAction(pPairedSlotItem, pItem, pUnit, uVar1, pCurrentSlotItem);
@@ -4649,7 +4644,7 @@ int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2Bod
       case BODYLOC_SWAPPED_R_ARM:
 
       case BODYLOC_SWAPPED_L_ARM:
-        nPairedBodyLoc = (nBodyLoc != BODYLOC_SWAPPED_L_ARM) + 0xb;
+        nPairedBodyLoc = nBodyLoc != BODYLOC_SWAPPED_L_ARM ? 0xc : 0xb;
       pCurrentSlotItem = INVENTORY_GetItemByGridOffset(pInventory, nBodyLoc);
       pPairedSlotItem = INVENTORY_GetItemByGridOffset(pInventory, nPairedBodyLoc);
       uVar1 = INVENTORY_GetEquipSwapAction(pPairedSlotItem, pItem, pUnit, nPairedBodyLoc, pCurrentSlotItem);
@@ -4658,7 +4653,7 @@ int32_t __stdcall INVENTORY_GetEquipActionForBodySlot(D2UnitStrc * pUnit, eD2Bod
 
     pCurrentSlotItem = INVENTORY_GetItemByGridOffset(pInventory, nBodyLoc);
     if (pItem) {
-      return (uint32_t)(pCurrentSlotItem != 0) * 4 + 1;
+      return pCurrentSlotItem != 0 ? 0x5U : 0x1U;
     }
 
     return pCurrentSlotItem ? 3 : 0;
@@ -4816,12 +4811,7 @@ static BOOL __stdcall INVENTORY_ReserveGridCells(D2InventoryStrc * pInventory, D
       int pnColEnd;
       nColIter = (uint32_t)*(uint8_t*)((char*)&pUnit + 3) + pnColStart;
       if (nColIter <= (int)(uint32_t)pInvGridInfo->bWidth && (int)pUnit2 >= 0 && (int)(pUnit2->unk0x19 + (byItemHeight - 0x19)) <= (int)(uint32_t)pInvGridInfo->bHeight) {
-        pRowIter = pUnit2;
-        if ((int)pUnit2 >= (int)(pUnit2->unk0x19 + (byItemHeight - 0x19))) {
-          return 1;
-        }
-
-        do {
+        for (pRowIter = pUnit2; (int)pRowIter < (int)(pUnit2->unk0x19 + (byItemHeight - 0x19)); pRowIter = (D2UnitStrc*)((uintptr_t)&pRowIter->eUnitType + 1)) {
           pnColEnd = pnColStart;
           if (pnColStart < nColIter) {
             do {
@@ -4830,9 +4820,7 @@ static BOOL __stdcall INVENTORY_ReserveGridCells(D2InventoryStrc * pInventory, D
               nColIter = (uint32_t)*(uint8_t*)((char*)&pUnit + 3) + pnColStart;
             } while (pnColEnd < nColIter);
           }
-
-          pRowIter = (D2UnitStrc*)((uintptr_t)&pRowIter->eUnitType + 1);
-        } while ((int)pRowIter < (int)(pUnit2->unk0x19 + (byItemHeight - 0x19)));
+        }
 
         return 1;
       }
@@ -4885,7 +4873,7 @@ static BOOL __stdcall INVENTORY_CanTransferMercItems(D2UnitStrc * pUnit, D2Inven
 
 // Determines whether two units can complete a merc-item trade by making temporary inventory copies. Allocates two scratch inventories from pMemory, copies each unit's inventory into them, then calls INVENTORY_CanTransferMercItems in both directions to find which unit is the buyer. Sets *pbMercIsBuyer accordingly (false = pUnit2 buys, true = pUnit buys). Frees both scratch inventories before returning. Returns 1 if a valid transfer direction was found, 0 otherwise.
 // @sourcefile .\INVENTORY\Inventory.cpp
-BOOL __stdcall CreateCopyOfInventoryForTrading(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, bool * pbMercIsBuyer) {
+BOOL __stdcall CreateCopyOfInventoryForTrading(D2PoolManagerStrc * pMemory, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, BOOL * pbMercIsBuyer) {
     bool _bSuccess;
     bool bSuccess;
     D2InventoryStrc* pInventory2;
@@ -4920,19 +4908,13 @@ BOOL __stdcall CreateCopyOfInventoryForTrading(D2PoolManagerStrc * pMemory, D2Un
           bOpResult = INVENTORY_CanTransferMercItems(pUnit2, pInventory, pUnit);
           if (!bOpResult) {
             if (pbMercIsBuyer) {
-              pbMercIsBuyer[0] = false;
-              pbMercIsBuyer[1] = false;
-              pbMercIsBuyer[2] = false;
-              pbMercIsBuyer[3] = false;
+              *pbMercIsBuyer = 0;
             }
           } else {
             bOpResult = INVENTORY_CanTransferMercItems(pUnit, pInventory2, pUnit2);
             if (!bOpResult) {
               if (pbMercIsBuyer) {
-                pbMercIsBuyer[0] = true;
-                pbMercIsBuyer[1] = false;
-                pbMercIsBuyer[2] = false;
-                pbMercIsBuyer[3] = false;
+                *pbMercIsBuyer = 1;
               }
             } else {
               _bSuccess = 1;

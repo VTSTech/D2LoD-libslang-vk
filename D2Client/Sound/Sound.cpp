@@ -64,12 +64,12 @@ uint32_t __fastcall SOUND_FileExists(char * szFileName) {
     return 1;
 }
 
-void SOUND_LocalizeSoundPath(char * szFormat, uint32_t * pszOutPath, char * pTmp) {
+void SOUND_LocalizeSoundPath(char * szFormat, char * pszOutPath, char * pTmp) {
     D2MPQFileStrc* pFile;
     char szLangAbbrev[4];
     D2Lang::StrTable::strtable::TABLES_GetLangAbbreviation(szLangAbbrev, 0);
-    sprintf((char*)pszOutPath, szFormat, "DATA\\LOCAL", szLangAbbrev, pTmp);
-    int bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, (char*)pszOutPath, 0, (void**)&pFile);
+    sprintf(pszOutPath, szFormat, "DATA\\LOCAL", szLangAbbrev, pTmp);
+    int bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, pszOutPath, 0, (void**)&pFile);
     if (bOpened) {
       Storm::Source::SFile::SFileCloseFile(pFile);
       return;
@@ -77,15 +77,15 @@ void SOUND_LocalizeSoundPath(char * szFormat, uint32_t * pszOutPath, char * pTmp
 
     uint32_t dwLanguageCode = D2Lang::StrTable::strtable::MISC_GetLanguageCode();
     if (dwLanguageCode) {
-      sprintf((char*)pszOutPath, szFormat, "DATA\\LOCAL", "ENG", pTmp);
-      bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, (char*)pszOutPath, 0, (void**)&pFile);
+      sprintf(pszOutPath, szFormat, "DATA\\LOCAL", "ENG", pTmp);
+      bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, pszOutPath, 0, (void**)&pFile);
       if (bOpened) {
         Storm::Source::SFile::SFileCloseFile(pFile);
         return;
       }
     } else {
-      sprintf((char*)pszOutPath, szFormat, "DATA\\LOCAL", "CHI", pTmp);
-      bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, (char*)pszOutPath, 0, (void**)&pFile);
+      sprintf(pszOutPath, szFormat, "DATA\\LOCAL", "CHI", pTmp);
+      bOpened = Storm::Source::SFile::SFileOpenFileEx(nullptr, pszOutPath, 0, (void**)&pFile);
       if (bOpened) {
         Storm::Source::SFile::SFileCloseFile(pFile);
       }
@@ -1497,7 +1497,7 @@ void __fastcall SOUND_CycleSoundMixerMode(D2EscMenuItemStrc * pItem, D2UIMouseMs
     /* LONG * lpAddend for InterlockedIncrement */ InterlockedIncrement((LONG*)&lpAddend_007c8a74);
     int nParam = D2Sound::Src::D2SoundFast::SOUND_GetSoundMixer();
     D2Sound::Src::D2SoundSmp::CleanupSoundBuffer(0xb4);
-    BOOL BVar1 = GAME::Sound::SOUND_SetSoundMixer((nParam != 2) + 1);
+    BOOL BVar1 = GAME::Sound::SOUND_SetSoundMixer(nParam != 2 ? 2 : 1);
     if (!BVar1) {
       GAME::Sound::SOUND_SetSoundMixer(nParam);
     }
