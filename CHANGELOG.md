@@ -14,22 +14,28 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 ## [Unreleased]
 
-### 0.0.7 line — R84 (built 2026-11-02, pending field verify + tag)
+## [R84] — 2026-11-02 ([`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84) @ `63e020a3`, self-ID `Vanilla+0.0.7-R84`)
 
-- **Fixed**: item tooltips printed "+0 cold damage" / "0 poison damage over 0 seconds"
+The item-tooltip zero fix ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)),
+built and field-verified by the owner the same day; SMOKE §J items 37–38 field-proven
+at tag.
+
+### Fixed
+
+- Item tooltips printed "+0 cold damage" / "0 poison damage over 0 seconds"
   whenever a roll's range collapsed to a single value
   ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)) — the single-value
   elemental/poison branches of `SKILLDESC_BuildStatDescription` called
   `UNICODE_FormatWideString` with no varargs (a latent retail-1.14d bug the fork's build
   layout makes visible). Tooltip-only: item stats and generation untouched. Gates
-  308 → 311; SMOKE gains §J (items 37–38).
+  308 → 311; SMOKE §J items 37–38 field-proven on the owner's R84 verify pass.
 
 ## [0.0.7] — 2026-11-01/02
 
 The first 0.0.7 build is the R66 content state (tag `R67`, self-ID `Vanilla+0.0.7-R66`,
 release notes covering R59→R66); the R67→R77 block shipped as tag
 [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77)
-("Vanilla+ 0.0.7 (R77)", 2026-11-01); further 0.0.7-line tags `R78`–`R83` mark the
+("Vanilla+ 0.0.7 (R77)", 2026-11-01); further 0.0.7-line tags `R78`–`R84` mark the
 upstream-sync and fix rounds. Gate suite 204 (0.0.6) → 283 (first 0.0.7 build) →
 311 (R84).
 

@@ -9,7 +9,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R83-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R84-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-311%2F311-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
@@ -60,10 +60,10 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83)
-  ("Vanilla+ 0.0.7-R83")** — **R84** (the item-tooltip zero fix,
-  [#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)) is built and pending
-  field verify + tag.
+- **Shipped: [`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84)
+  ("Vanilla+ 0.0.7-R84")** — the item-tooltip zero fix
+  ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)), field-verified and
+  tagged 2026-11-02.
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
