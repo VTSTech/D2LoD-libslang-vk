@@ -254,6 +254,12 @@ gate "resolution: minipanel clamp + mode 4"  D2Client/UI/MiniPanel.cpp   'nResol
 gate "resolution: core blank builder"        D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_BuildBlankPlaceholder' 1
 gate "resolution: core font pick"            D2Client/UI/VanillaPlusCore.cpp '__stdcall VPRES_PickFontMatchingDC6' 1
 gate "resolution: self-check wiring"         D2Client/UI/VanillaPlusCore.cpp 'UI_SLIDER_DrawResolutionValue' 1
+# Issue #23: the visible 1280x720 label must sit where the retail value
+# images sit - right-aligned to the value-column anchor (alignment 2) and on
+# their ink line (glyph-cell descent compensated: DRAW_text anchors the cell
+# bottom, the value DC6s bake ~4 px of padding under their ink).
+gate "resolution: label right-align (#23)"   D2Client/UI/EscMenu.cpp     'ScreenSizeX / 2 \+ 0xe6 - nLabelWidth' 1
+gate "resolution: label descender comp (#23)" D2Client/UI/EscMenu.cpp    'RESLABEL_DESCENDER_COMP' 2
 gate "fork-api include in EscMenu.cpp"       D2Client/UI/EscMenu.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 gate "fork-api include in _unnamespaced.cpp" Storm/_unnamespaced.cpp     'include "D2Client/UI/VanillaPlusCore\.h"' 1
 
@@ -642,7 +648,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R82"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R82' 1
+gate "res: self-id 0.0.7-R83"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R83' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

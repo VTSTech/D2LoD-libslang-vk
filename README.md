@@ -9,8 +9,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R82-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-306%2F306-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.7--R83-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-308%2F308-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -56,11 +56,11 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) ("Vanilla+ 0.0.7-R82")** — one 7z with the Vanilla+ client
+- **Current release: [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) ("Vanilla+ 0.0.7-R83")** — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
-  [`HISTORY.md`](HISTORY.md), the R67→R82 record in [`handoff.md`](handoff.md) — the
+  [`HISTORY.md`](HISTORY.md), the R67→R83 record in [`handoff.md`](handoff.md) — the
   round journals.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
@@ -81,7 +81,7 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 - **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
   compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
   field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
-  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely; **R82** grew the stash to **ten shared pages** — the `.sss` v2 header widening its format always planned (same magic + version, `pageCount` 10; pre-R82 files read back with the missing pages empty).
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely; **R82** grew the stash to **ten shared pages** — the `.sss` v2 header widening its format always planned (same magic + version, `pageCount` 10; pre-R82 files read back with the missing pages empty); **R83** right-aligned the video options' visible **1280x720** label to the value column and dropped it onto the neighbor images' ink line ([#23](https://github.com/VTSTech/D2LoD-libslang-vk/issues/23) — it floated a label-width right and ~4 px high).
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring**
     ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
@@ -151,11 +151,12 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`R80`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R80) | The upstream sync (R79→R80), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1806 (the 1802–1806 waves — MONSTERAI flag-out BOOL, DRLG level/room/unit pointers, DT1/DC6/path types + flag-word returns + character buffers, monster-spawn/skills/item-stats/UI parameter names, then the generator round; 6,029 of 14,642 functions byte-matching, 479,019 of 2,602,915 code bytes, 18.40%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) | The waypoint icon fix ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)): at 720p the waypoint-list button icons drew at their retail 800×600 Y while the panel, texts and click zones rode the widescreen layout down 120 px — the icons rendered ~120 px above their rows. The two `waygateicons` draws predate the site-6 retrofit and never carried the wide-Y term; two one-term replants. Retail 800×600 unchanged byte-for-byte. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) | The shared-stash capacity round (R81→R82): the shared stash grows from two to **ten pages** — the `.sss` v2 header widening its format always planned (same `VPS2` magic + version, `pageCount` 10, header 28 → 92 bytes; pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty, the next save rewrites ten). Pager labels `Shared 1`…`Shared 10` from a literal table, arrows still step one page, one shared gold pool across all ten, `.d2s` saves still retail-pure. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R83`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R83) | The video-options label alignment fix ([#23](https://github.com/VTSTech/D2LoD-libslang-vk/issues/23)): the visible **1280x720** stop's text label left-anchored at the value-column X — a full label width right of where the retail value images end — and floated ~4 px above their ink line (the glyph cell bottom-anchors at the DRAW_text y while the value DC6s bake ~4 px of padding). Right-aligned via the rendered advance width (`DRAW_text0`), draw y moved to row bottom + 2; geometry is resolution-independent, so 800×600 picks up the same corrected placement. Two new gates pin the anchor. Record: [`handoff.md`](handoff.md) round journal. |
 
-Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R82 build
-self-IDs `Vanilla+0.0.7-R82`. Rounds through R74 are archived verbatim in
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R83 build
+self-IDs `Vanilla+0.0.7-R83`. Rounds through R74 are archived verbatim in
 [`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R82 — in
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R83 — in
 [`handoff.md`](handoff.md).
 
 ## Verification
@@ -164,7 +165,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **306 checks**, green at the current tip.
+  telemetry) with **308 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README and below.
