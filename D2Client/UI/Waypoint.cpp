@@ -538,7 +538,7 @@ void __stdcall DRAW_UI_Waypoint() {
             sDrawImageArgs.nFrameNumber = ClickingDownOnWaypointEntry == nWaypointIndex ? 4 : 3;
           }
 
-          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
           dwColor = 0;
         } else {
           /* Gray = we dont have the waypoint */ dwColor = 5;
@@ -550,7 +550,7 @@ void __stdcall DRAW_UI_Waypoint() {
         if (gaWaypointListEntries[nWaypointIndex].eLevelId == eCurrentLevel) {
           dwColor = 3;
           sDrawImageArgs.nFrameNumber = 0;
-          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY, -1, DRAW_SOLID, nullptr);
+          D2gfx::D2GFX::D2GFX_DrawImage(&sDrawImageArgs, *pDrawOffsets + gnPanelOffsetX, pDrawOffsets[1] - gnPanelOffsetY + VPRES_GetWideUiOffsetY(), -1, DRAW_SOLID, nullptr); // VP: [resolution site-6]
         }
 
         nY = pDrawOffsets[3] - gnPanelOffsetY + VPRES_GetWideUiOffsetY();
