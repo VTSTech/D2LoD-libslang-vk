@@ -68,9 +68,13 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
   ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)).
-- **One open defect**: Necro minion skeleton coloring
-  ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fixed in code,
-  field verification pending.
+- **Open issues (5)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
+  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code,
+  field verify pending; A1Q2 Bloodraven turn-in
+  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)); intermittent
+  attribute-point crash ([#18](https://github.com/VTSTech/D2LoD-libslang-vk/issues/18));
+  Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2LoD-libslang-vk/issues/25));
+  720p single-panel black triangles ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)).
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).
