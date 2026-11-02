@@ -37,7 +37,7 @@ namespace D2Sound::Src::D2SoundSmp {
 
 static int gnSoundFrequency_22kHz = 0x40000000; D2_STATIC_GUARD(gnSoundFrequency_22kHz, "D2Sound::Src::D2SoundSmp::gnSoundFrequency_22kHz");
 static long long gnSoundQuality_Low = 0x42c80000; D2_STATIC_GUARD(gnSoundQuality_Low, "D2Sound::Src::D2SoundSmp::gnSoundQuality_Low");
-static long long gnSoundAttenuation_Max = 0x3f1a36e2e0000000; D2_STATIC_GUARD(gnSoundAttenuation_Max, "D2Sound::Src::D2SoundSmp::gnSoundAttenuation_Max");
+static double gnSoundAttenuation_Max = 0.0000999999974737875; D2_STATIC_GUARD(gnSoundAttenuation_Max, "D2Sound::Src::D2SoundSmp::gnSoundAttenuation_Max");
 
 // @sourcefile .\Src\D2SoundSmp.cpp
 D2SoundSmpStrc * __fastcall CallSounds(uint32_t nSoundFlags, uint32_t dwSampleParam) {
@@ -238,13 +238,13 @@ uint32_t __fastcall SOUNDSMP_GetStreamProgress(D2SoundSmpStrc * pSound) {
     return 0;
 }
 
-void __fastcall SOUNDSMP_SetFrequency(int32_t pSound, uint32_t dwParam) {
+void __fastcall SOUNDSMP_SetFrequency(int32_t pSound, uint32_t bLoop) {
     if (!pSound) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x32f);
       exit(-1);
     }
 
-    *(uint32_t*)(pSound + 0x40) = dwParam;
+    *(uint32_t*)(pSound + 0x40) = bLoop;
 }
 
 void __fastcall SOUNDSMP_SetMinDistance(D2SoundSmpStrc * pSound, uint32_t dwParam) {
@@ -763,18 +763,19 @@ float SOUNDSMP_LinearToLogNoParam(float fValue, float fValue2) {
 
 // No register arguments: EAX is first written by FNSTSW AX at 00516607 and only carries the x87 status word (1.14d asm).
 float __stdcall SOUNDSMP_ClampVolume(float fValue, float fMax, float fInput) {
-    // NOTE: the hex literals below and in ClampAttenuation are IEEE-754 bit patterns
-    // copied out of Ghidra pseudocode, not integers: 0x3f1a36e2e0000000 is the double
-    // 0.0001. Pasted verbatim they evaluate to an astronomically large integer, so the
-    // min-clamp returned -10000 (DSBVOLUME_MIN) for EVERY input and every DDA buffer sat
-    // pinned silent; decode them to their true double values (0.0001, -10000.0, 2000.0).
+    // NOTE (R87-merge): Ghidra pseudocode emitted these constants as IEEE-754 hex bit
+    // patterns, not integers — 0x3f1a36e2e0000000 is the double 0.0001 (the float32
+    // promotion upstream now spells 9.999999747378752e-05). Pasted verbatim they
+    // evaluate to an astronomically large integer, so the min-clamp returned -10000
+    // (DSBVOLUME_MIN) for EVERY input and every DDA buffer sat pinned silent. All
+    // constants here and in ClampAttenuation are now decoded decimals (R87 merge).
     long double fVar1 = (long double)fInput;
-    if (fVar1 <= (long double)fValue + (long double)0.0001) {
+    if (fVar1 <= (long double)fValue + (long double)9.999999747378752e-05) {
       return -10000.0;
     }
 
     long double fUpper = (long double)fMax;
-    long double fThreshold = fUpper - (long double)0.0001;
+    long double fThreshold = fUpper - (long double)9.999999747378752e-05;
     if (fThreshold < fVar1 != (fThreshold == fVar1)) {
       return 0.0;
     }
@@ -785,26 +786,27 @@ float __stdcall SOUNDSMP_ClampVolume(float fValue, float fMax, float fInput) {
     }
 
     fVar1 = CRT_CILog10((fUpper + (long double)fValue) / fDivisor);
+    // [vanilla-plus fix 10; R87-merge note: upstream adopted the -2000.0 scale]
     // -0x3f60c00000000000 (-0.00341796875) cannot be right: the exact inverse of this
     // curve, ClampAttenuation below, divides by 2000.0. With -0.00342 every nonzero
     // volume collapses to (int)-0.001 = 0 (FULL) and only 0 maps to -10000 -- the whole
     // curve degenerates to binary full/silent. Restore the -2000.0 scale so 20*log10
     // amplitude-dB semantics hold, matching retail 1.14d FUN_005165f0:
     // 255->0 dB, 110->-730, 0->-10000.
-    return (float)(fVar1 * -2000.0);
+    return (float)(fVar1 * (long double)-2000.0);
 }
 
 float __stdcall SOUNDSMP_ClampAttenuation(float fMillibels) {
     long double fVar1 = (long double)fMillibels;
-    if ((long double)0.0 < fVar1 + (long double)0.0001) {
+    if ((long double)0.0 < fVar1 + (long double)9.999999747378752e-05) {
       return 1.0;
     }
-    if (fVar1 - (long double)0.0001 < (long double)-10000.0) {
+    if (fVar1 - (long double)9.999999747378752e-05 < (long double)-10000.0) {
       return 0.0;
     }
 
-    fVar1 = CRT_CIPow((long double)10.0, fVar1 / (long double)2000.0);
-    return (float)fVar1;
+    long double fLinearGain = CRT_CIPow((long double)10.0, fVar1 / (long double)2000.0);
+    return (float)fLinearGain;
 }
 
 static int * __stdcall SOUNDSMP_FindWavChunk(uint32_t * pRemainingSize, uint32_t * pChunkSize, int32_t nChunkId, int * pChunkHeader) {

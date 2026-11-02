@@ -849,7 +849,7 @@ void __fastcall Q36_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q36_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q36_Callback13_PlayerStartedGame;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xe] = Q36_Callback14_PlayerJoinedGame;
-    pQuestData->pNpcMessages = &A5Q6::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q6::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q6Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q6Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q6.cpp", 0x329);
@@ -893,7 +893,7 @@ BOOL __fastcall Q36_IsBaalAlive(::SGAMEDATA * pGame) {
 }
 
 // A5Q6 Eve of Destruction. Object init fn 75: tags the object with the quest's barricade-coord field then sets that field to 2 (one-time init flag). Worldstone-area quest object setup.
-void __fastcall Objects_InitFn75(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn75_BaalsPortal(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pA5Q6SpecificData = pQuestData->pQuestSpecificData.pA5Q6;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pA5Q6SpecificData->nField_0x94);
@@ -926,7 +926,7 @@ BOOL __fastcall OBJOP_A5Q6_WorldstoneLevelTransition(D2ObjectOperateFnArg * pOpe
 }
 
 // A5Q6 Eve of Destruction. Object init fn 77: tags the object with the quest's item-count field then sets it to 2 (marks Tyrael's red end-portal as spawned/active). Pairs with OBJOP_A5Q6_TyraelPortalToEnd which only operates when count==2.
-void __fastcall Objects_InitFn77(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn77_LastPortal(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q3 = pQuestData->pQuestSpecificData.pA5Q6;
     D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pQuestSpecificA1Q3->nField_0x9C);
@@ -971,7 +971,7 @@ BOOL __fastcall OBJOP_A5Q6_TyraelPortalToEnd(D2ObjectOperateFnArg * pOperation) 
 }
 
 // A5Q6 Eve of Destruction object-init fn 79. One-time (guarded by init flag): rolls up to 10 times for a random MonStats id with zoo!=0 and stores it in the quest-specific struct as the quest's random monster seed; on failure falls back to id 0. After latching the init flag, broadcasts the quest-special packet to all players via Q36_SendQuestSpecialPacketCallback.
-void __fastcall Objects_InitFn79(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn79_Zoo(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_EveOfDestruction);
     D2QuestDataA5Q6Strc* pQuestSpecificA1Q4 = pQuestData->pQuestSpecificData.pA5Q6;
     if (pQuestSpecificA1Q4->field_0xA0 != '\0') {

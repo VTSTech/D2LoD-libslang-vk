@@ -58,7 +58,7 @@ void __fastcall FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder(char * szGame
 // Writes a log record whose body is a hex dump to its log file, one formatted line at a time.
 void __fastcall WriteHexDumpLogEntry(int32_t pLogRecord);
 void __stdcall CloseStaleLogFileHandles();
-void __fastcall DeleteOldLogFile(int32_t pRefFileTime, char * szFileName);
+void __fastcall DeleteOldLogFile(FILETIME * pRefFileTime, char * szFileName);
 void __fastcall CloseLogFileByName(uint8_t * szFileName);
 uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase);
 void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix);
@@ -120,8 +120,8 @@ _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9dc8(struct EHExceptionRecord * pEx
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9e11(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9e38(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
 int SehHandler_6c9e6a(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
-void StaticInit_6ca700();
-void StaticInit_6ca720();
+void StaticInit_gLogMessageQueueCS();
+void StaticInit_gLogFileCS();
 void __stdcall LOGMGR_InitMessageQueue();
 void StaticFini_gLogMessageQueueCS();
 void StaticFini_gLogFileCS();

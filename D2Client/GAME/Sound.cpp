@@ -12,6 +12,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Environment.h"
+#include "D2Direct3D/Renderer/Direct3D.h"
 #include "D2Game/GAME/Event.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
@@ -399,6 +400,8 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     uint32_t nBytesRemaining;
     uint8_t* pByteA;
     uint8_t* pByteB;
+    D2FloatIntUnion uFalloffMaxPan;
+    D2FloatIntUnion uFalloffMinVolume;
     int nSoundDescOffset;
     nSoundDescOffset = pSoundChannel[2];
     int* pChannelEntry;
@@ -412,10 +415,8 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
 
     D2SoundsTxt* pSoundsTxtLine;
     pSoundsTxtLine = D2Client::Sound::SoundHdr::TXT_sounds_GetLineBySoundId(*(int32_t*)(nSoundDescOffset + 4));
-    float fFalloffMin;
-    fFalloffMin = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMin(*(int32_t*)(nSoundDescOffset + 4));
-    float fFalloffMax;
-    fFalloffMax = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMax(*(int32_t*)(nSoundDescOffset + 4));
+    uFalloffMinVolume.fValue = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMin(*(int32_t*)(nSoundDescOffset + 4));
+    uFalloffMaxPan.fValue = D2Client::Sound::SoundHdr::SOUNDHDR_GetFalloffMax(*(int32_t*)(nSoundDescOffset + 4));
     int nTmpCalc;
     nTmpCalc = *(int*)(nSoundDescOffset + 0x1c);
     if (pSoundsTxtLine->Music_Vol) {
@@ -508,10 +509,10 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
 
     float fVar1 = _Utils::CalculateHypotenuse(*(float*)(nSoundDescSaved + 0xc), *(float*)(nSoundDescSaved + 0x10));
     nSoundDescOffset = (int)fVolume;
-    if (fFalloffMin < fVar1) {
-      fVar1 = fFalloffMax - fVar1;
-      fFalloffMax -= fFalloffMin;
-      nSoundDescOffset = (int)(fVar1 * (float)(int)fEaxObstruction / fFalloffMax);
+    if (uFalloffMinVolume.fValue < fVar1) {
+      fVar1 = uFalloffMaxPan.fValue - fVar1;
+      uFalloffMaxPan.fValue -= uFalloffMinVolume.fValue;
+      nSoundDescOffset = (int)(fVar1 * (float)(int)fEaxObstruction / uFalloffMaxPan.fValue);
     }
 
     nSoundDescOffset = (int)((uint32_t)pSoundsTxtLine->Volume * nSoundDescOffset) / 0xff;
@@ -519,21 +520,16 @@ int __fastcall SOUND_UpdateChannelParams(int * pSoundChannel) {
     pChannelEntry = (int*)d2_bits_of(*(float*)(nSoundDescSaved + 0x10) * 0.003125);
     pSoundsTxtLine = (D2SoundsTxt*)d2_bits_of(*(float*)(nSoundDescSaved + 0x14) * 0.003125);
     if (!pSoundChannel[1]) {
-      // [vanilla-plus fix 16] Defect 13 root cause (SFX silent, music OK). SOUNDSMP_CalculateVolumeAndPan
-      // writes its OUT params as 32-bit INTEGERS (volume 0..255, pan 0..255), but this block received
-      // them through (uint32_t*)&fFalloffMin / &fFalloffMax - the storage of two float locals - and then
-      // read the results back AS FLOATS: (int32_t)fFalloffMax for SetPan, and (int)fFalloffMin for the
-      // volume multiply below. Any CalcVol in 0..255 has IEEE bits 0x00000000-0x000000FF, which
-      // reinterpret as a subnormal float (~1e-43); the float->int conversion truncates that to 0, so
-      // nSoundDescOffset became 0 for EVERY sound that runs this block -> SOUNDSMP_SetVolume(0) ->
-      // att=-10000 -> silent buffer. Music-flagged channels (pSoundChannel[1] != 0) skip this block
-      // entirely, which is why music survived (R8 log: sid=4673 landed att=-1348 while sid=4325 landed
-      // att=-10000 through the identical open path). Retail reads these out params as plain integers.
-      uint32_t nCalcVolume = 0;
-      uint32_t nCalcPan = 0;
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan(&nCalcVolume, &nCalcPan, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
-      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, (int32_t)nCalcPan);
-      nSoundDescOffset = (int)nCalcVolume * nSoundDescOffset / 0xff;
+      // [vanilla-plus fix 16, superseded R87-merge] Defect 13 (SFX silent, music OK) root cause:
+      // SOUNDSMP_CalculateVolumeAndPan writes its OUT params as 32-bit INTEGERS (volume 0..255, pan
+      // 0..255), but retail called it with the storage of two FLOAT locals and read the results back
+      // AS FLOATS — subnormal ~1e-43 truncating to 0 -> SOUNDSMP_SetVolume(0) -> att=-10000 -> silent
+      // buffer (music-flagged channels skip this block, which is why music survived). Upstream now
+      // models retail exactly with the D2FloatIntUnion below: .fValue storage, integer .nValue read
+      // back — same fix through retail-faithful code, so the explicit uint32 locals are gone.
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_CalculateVolumeAndPan((uint32_t*)&uFalloffMinVolume.nValue, (uint32_t*)&uFalloffMaxPan.nValue, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
+      D2Sound::Src::D2SoundSmp::SOUNDSMP_SetPan((D2SoundSmpStrc*)*pSoundChannel, uFalloffMaxPan.nValue);
+      nSoundDescOffset = uFalloffMinVolume.nValue * nSoundDescOffset / 0xff;
     }
     if (*(uint8_t*)(pSoundChannel + 1) & 2) {
       D2Sound::Src::D2SoundSmp::SOUNDSMP_Set3DPosition((D2SoundSmpStrc*)*pSoundChannel, fEaxObstruction, (float)d2_bits_to_float(pChannelEntry), (float)d2_bits_to_float(pSoundsTxtLine));
@@ -1050,7 +1046,6 @@ static D2NpcGreetingSoundsStrc gaNpcGreetingSounds[29] = {
 // Returns a greeting sound id from pUnit's class-id greeting set, or 0 when the class has none. nMode 2 returns nReturnSoundId directly; otherwise picks nGreetingSoundId, or nInactiveSoundId 1 in 2 when nMode is 0, or the time-of-day id (+0/+1/+2 by DRLGENV_GetCycleIndexFromAct), retrying up to 20 times to avoid repeating nLastSoundId, and records the pick.
 // Provenance: 1.14d asm 004e0590; callers pass nMode 1 (004b510e greeting, 004cc04d mercenary) or the greeting mode (004b691b).
 int32_t __fastcall SOUND_SelectNpcGreetingSound(D2UnitStrc * pUnit, int32_t nMode) {
-    uint32_t nRoll;
     int32_t nCycleIdx;
     D2NpcGreetingSoundsStrc* pGreetingSounds = SOUND_GetNpcGreetingSounds(pUnit);
     if (!pGreetingSounds) {
@@ -1065,12 +1060,12 @@ int32_t __fastcall SOUND_SelectNpcGreetingSound(D2UnitStrc * pUnit, int32_t nMod
       int nSoundId;
       nSoundId = pGreetingSounds->nGreetingSoundId;
       if (!nMode && pGreetingSounds->nInactiveSoundId) {
-        nRoll = _Utils::RollRandomNumerUpToArgument(2);
-        if (!nRoll) {
+        nCycleIdx = _Utils::RollRandomNumerUpToArgument(2);
+        if (!nCycleIdx) {
           nSoundId = pGreetingSounds->nInactiveSoundId;
         }
       }
-      if (pGreetingSounds->nTimeOfDaySoundId && (!nSoundId || (nRoll = _Utils::RollRandomNumerUpToArgument(3) , !nRoll))) {
+      if (pGreetingSounds->nTimeOfDaySoundId && (!nSoundId || (nCycleIdx = _Utils::RollRandomNumerUpToArgument(3) , !nCycleIdx))) {
         nCycleIdx = D2Common::Environment::DRLGENV_GetCycleIndexFromAct(sgpDrlgAct);
         nSoundId = pGreetingSounds->nTimeOfDaySoundId;
         if (nCycleIdx != 1) {

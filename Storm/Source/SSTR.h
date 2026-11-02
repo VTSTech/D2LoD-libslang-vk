@@ -86,7 +86,7 @@ uint32_t SStrVPrintf(char * szOutput, size_t nSize, char * szFormatString, va_li
 // Signed conversion. Its neighbour has no sign handling at all and is SStrToUnsigned.
 // @sourcefile-storm .\SOURCE\SSTR.CPP  (first-party: SStrDup's own SMemAlloc call site names it)
 // @wasnamed SSTR_AtoiSigned
-uint32_t __stdcall SStrToInt(char * szText);
+int32_t __stdcall SStrToInt(char * szText);
 // @oracle PPC Mac Storm 1.10b export table (337 named TVector symbols), the authoritative Storm API.
 // @oracle-signature SStrToUnsigned(const char *)
 // @oracle-basis One parameter. Identical digit loop to SStrToInt with the sign handling absent, so it cannot produce
@@ -128,7 +128,7 @@ void __stdcall SStrUpper(char * szText);
 // @oracle Mac PPC 1.10b Storm -- PPC export vector SStrLower__FPc -> 100479c0 is a 28-byte thunk whose only bl is ._strlwr. 1.14d 00414200 is the same 19-byte bare thunk to __strlwr.
 // @oracle-note Real Storm export name, present in the 337-name TVector export table at 100cbc34-100ce064.
 void __stdcall SStrLower(char * szText);
-double __fastcall SSTR_Pow10Helper(uint32_t nValue, double dBase);
+double __fastcall _Pow_int(uint32_t nValue, double dBase);
 // Scales dBase by a power of ten. Returns a double in ST(0), not through a hidden return pointer, so dBase sits at Stack[0x4] and nExp at Stack[0xc]. An 80-bit x87 return type would make Ghidra add a __return_storage_ptr__ at Stack[0x4] and shift every argument by four bytes.
 double SSTR_PowDoubleInt(double dBase, int nExp);
 void __stdcall SSTR_InitPow10Table();
@@ -192,9 +192,9 @@ void __stdcall UTF8_EncodeChar(uint32_t uCodepoint, uint8_t * pbOut);
 void __stdcall UTF8_StepBackOneChar(uint8_t * str_base, int position);
 // ECX is not an argument: neither this body nor UTF8_AdvanceToCharBoundary reads it.
 void __stdcall UTF8_StepForwardOneChar(uint8_t * str_base, int position);
-void __stdcall TRANSTBL_UnicodeToLatin1(uint8_t * pbOut, void * pSrcUTF16, int nCount);
-void __stdcall TRANSTBL_UnicodeToLatin2(uint8_t * pbOut, void * pSrcUTF16, int nCount);
-void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, void * pSrcUTF16, int nCount);
+void __stdcall TRANSTBL_UnicodeToLatin1(uint8_t * pbOut, uint16_t * pSrcUTF16, int nCount);
+void __stdcall TRANSTBL_UnicodeToLatin2(uint8_t * pbOut, uint16_t * pSrcUTF16, int nCount);
+void __stdcall TRANSTBL_UnicodeToKorean(uint8_t * pbOut, uint16_t * pSrcUTF16, int nCount);
 int __stdcall TRANSTBL_Latin1ToUnicode(uint16_t * dest, uint8_t * src, int count);
 // ECX is not an argument: neither this body nor TRANSTBL_SingleByteToUnicode reads it.
 void __stdcall TRANSTBL_Latin2ToUnicode(uint16_t * dest, uint8_t * src, int count);

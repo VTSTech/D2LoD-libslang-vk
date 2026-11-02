@@ -596,7 +596,7 @@ void __fastcall Q31_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q31_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xb] = Q31_Callback11_ScrollMessage;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q31_Callback13_PlayerStartedGame;
-    pQuestData->pNpcMessages = &A5Q1::aNpcGossipData;
+    pQuestData->pNpcMessages = A5Q1::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->nStateFlag = 0;
     D2QuestDataA5Q1Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA5Q1Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a5q1.cpp", 0x2d3);
@@ -648,7 +648,7 @@ void __fastcall Objects_InitFn70(D2ObjectInitFnArg * pInitArg) {
 }
 
 // A5Q1 object init fn 71: spawns Shenk the Overseer (monstats 0x1ff) once per quest at a valid location in the room, records his unit GUID + spawn-guard flags, and copies the preset DRLG map file for his AI. Guards via per-quest "already spawned" byte. No quest-record bit changes.
-void __fastcall Objects_InitFn71(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn71_LarzukStandard(D2ObjectInitFnArg * pInitArg) {
     D2MapAIStrc** pMonsterMapAi;
     POINT sSpawnPos;
     D2RoomStrc* pSpawnRoom;

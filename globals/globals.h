@@ -1660,7 +1660,7 @@ extern uint8_t gnLadderCurrentFilterMode;
 extern uint32_t gnChatRoomListSelectedBase;
 extern uint32_t gbLadderFilterPending;
 extern uint32_t gbLadderExpansionEnabled;
-extern uint32_t gnChatTabCompletionIndex;
+extern int gnChatTabCompletionIndex;
 extern int gnLadderBoardSelectedRank;
 extern uint32_t gnLadderRequestedCharIndex;
 extern int32_t gaMultiFormFontParamsFont4[2];
@@ -2182,7 +2182,7 @@ extern char gaQ33_Hell_PaladinScepterCodes[5][4];
 extern char gaQ33_Hell_BarbarianAxeCodes[5][4];
 extern char gaQ33_Hell_DruidHelmCodes[5][4];
 extern char gaQ33_Hell_AssassinClawCodes[7][4];
-extern uint8_t gbQuestA5Q2Unknown;
+extern D2NPCMessageTableStrc gbQuestA5Q2Unknown[6];
 extern D2MonsterUModHandlerRowStrc g_MonsterUModHandlerTable[43];
 extern char * gaLanguageNames_0073c6e0[15];
 extern D2MissileSrvDoFuncData gaMissileSrvDoFuncTable[9];
@@ -2775,7 +2775,7 @@ extern DC6 * gpDC6PlayerProfileBckg2;
 extern DC6 * gpDC6HelpBckg;
 extern DC6 * gpDC6D2LogoBlackBnet;
 extern DC6 * gpDC6D2LogoBnet;
-extern uint32_t gnChatHistoryEntryCount;
+extern int gnChatHistoryEntryCount;
 extern uint32_t gnNotifyEnabled;
 extern uint32_t gbIsChannelScreen;
 extern uint32_t gdwLadderRankRequestTimeout;
@@ -2871,7 +2871,7 @@ extern D2ControlStrc * gpChatCommandsOKButton;
 extern D2ControlStrc * gpChatCommandsBackground;
 extern uint32_t gnGameListFilterState;
 extern uint32_t gnMCPCreateGamePendingFlag;
-extern uint32_t gnFilteredGameListCount;
+extern int gnFilteredGameListCount;
 extern int nGameListDifficultyFilter;
 extern uint32_t CreateGameDifflevel;
 extern char gszProfileCharacterName[16];
@@ -2882,7 +2882,7 @@ extern D2ChannelUserStrc * gpChannelUserListHead;
 extern void * gpChannelUserLinkedListHead;
 extern int gnChannelUserTotalCount;
 extern int gnChannelUserCount;
-extern uint32_t gnChannelUserListScrollOffset;
+extern int gnChannelUserListScrollOffset;
 extern void * gpCurrentChatRoomContext;
 extern uint32_t gdwLastChatSendTick;
 extern uint32_t g_nMCPGameDifficulty;
@@ -3323,7 +3323,7 @@ extern uint32_t gnInvMercBodySlot2;
 extern uint32_t gbInvRecipeScrollOpen;
 extern uint8_t gpInvRecipeScrollImage[8192];
 extern uint32_t gnHireDisplayMode;
-extern uint32_t gpHireHoverUnit;
+extern int gpHireHoverUnit;
 extern uint32_t gnHireIconDrawX;
 extern uint32_t gnHireIconHoverX;
 extern uint32_t gnHireIconHoverY;
@@ -3410,13 +3410,13 @@ extern int gQuestLogSelectedQuestByAct[5];
 extern D2QuestLogStrc gQuestLog;
 extern int gnUICtrlConfigTotalRows;
 extern int gnUICtrlConfigScrollMaxLines;
-extern uint32_t gnUICtrlConfigColumnWidth;
+extern int gnUICtrlConfigColumnWidth;
 extern uint32_t gnUICtrlConfigMouseButtonState;
 extern uint32_t gnUICtrlConfigButton3State;
 // int[7] - one mouse-capture flag per control-config UI region. UI_UpdateConfigControlsState (004a4ad0) and UI_ConfigHandleMouseClick contain seven inlined copies of the same scan: for (p = &gaControlConfigRegionMouseState[0]; p < &gaControlConfigRegionMouseState[7]; p++) if (*p && p != &self) goto skip; i.e. "claim the mouse only if no OTHER region already holds it". Both the do-while bound (base+28, 0x007c02a4) and the last loop's exit test (0x007c02a3 < p) prove the extent: 7 dwords, 0x007c0288..0x007c02a3.
 // Indices: [0] list area  [1] up arrow  [2] down arrow  [3] scroll bar  [4] scroll thumb  [5] below thumb  [6] tab/button row.
 extern int gaControlConfigRegionMouseState[7];
-extern uint32_t gnUICtrlConfigScrollOffset;
+extern int gnUICtrlConfigScrollOffset;
 extern int g_ControlConfigUIState;
 extern int gnUICtrlConfigActiveButton;
 extern BOOL gbUICtrlConfigKeyBindMode;
@@ -4073,7 +4073,7 @@ extern int gbQServerSendPlayerPos;
 extern D2BattleNetEventCallbackTable * BattleNetServerService;
 extern BOOL IsBattleNetServer;
 extern uint32_t Frames_TimeBetweenFrames;
-extern uint32_t PlayerCountOverride;
+extern int32_t PlayerCountOverride;
 // 17 records of 16 bytes, one per NPC vendor store index. The count is pinned two ways: SUNITPROXY_FreeAllNpcItemTables walks from &record[0].pQuestItems to that address + 272, and 00883d78 + 17*16 lands exactly on gbaNpcItemTableBuilt at 00883e88. Ghidra had typed the four fields of record 0 as four separate globals (gpaNpcTradeItemTable, ganNpcTradeItemCounts, gpaNpcQuestItemTable, ganNpcTradeQuestItemCounts), so only vendor 0 had real storage and every other vendor's item pointers and counts were read from and written to unrelated .data - the shop never produced a valid item list.
 extern D2NpcItemTablesStrc gaNpcItemTables[17];
 // One byte per vendor store index, 17 of them - the 'item table already built' guard. Two stray interior labels at +1 and +8 had truncated it to a single byte.
@@ -4790,13 +4790,13 @@ extern DC6 * gpDC6CursorIcon;
 
 namespace D2Game::Quests::QUESTS::Quest40 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[4];
 
 } // namespace D2Game::Quests::QUESTS::Quest40
 
 namespace D2Game::Quests::QUESTS::A5Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A5Q1
 
@@ -4814,7 +4814,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[10];
 
 namespace D2Game::Quests::QUESTS::A5Q4 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A5Q4
 
@@ -4826,37 +4826,37 @@ extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 namespace D2Game::Quests::QUESTS::A5Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 } // namespace D2Game::Quests::QUESTS::A5Q6
 
 namespace D2Game::Quests::QUESTS::Quest37 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest37
 
 namespace D2Game::Quests::QUESTS::A1Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A1Q0
 
 namespace D2Game::Quests::QUESTS::A1Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A1Q1: 5-slot gossip table (was singular 1-slot)
+extern D2NPCMessageTableStrc aNpcGossipData[8]; // [R54->R87] issue #13 A1Q1: retail-exact 8-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A1Q1
 
 namespace D2Game::Quests::QUESTS::A1Q2 {
 
-extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R85] issue #22 A1Q2: 5-slot gossip table (was singular 1-slot)
+extern D2NPCMessageTableStrc aNpcGossipData[6]; // [R85->R87] issue #22 A1Q2: retail-exact 6-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
 
 namespace D2Game::Quests::QUESTS::A1Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q3
 
@@ -4868,37 +4868,37 @@ extern D2NPCMessageTableStrc aNpcGossipData[11];
 
 namespace D2Game::Quests::QUESTS::A1Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5];
 
 } // namespace D2Game::Quests::QUESTS::A1Q5
 
 namespace D2Game::Quests::QUESTS::A1Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q6
 
 namespace D2Game::Quests::QUESTS::A1Q7 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A1Q7
 
 namespace D2Game::Quests::QUESTS::Quest38 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest38
 
 namespace D2Game::Quests::QUESTS::A2Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A2Q0
 
 namespace D2Game::Quests::QUESTS::A2Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A2Q1: 5-slot gossip table (was singular 1-slot)
+extern D2NPCMessageTableStrc aNpcGossipData[9]; // [R54->R87] issue #13 A2Q1: retail-exact 9-slot table (was singular 1-slot; fork's 5-slot superseded by upstream bc47c6bc)
 
 } // namespace D2Game::Quests::QUESTS::A2Q1
 
@@ -4910,7 +4910,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[11];
 
 namespace D2Game::Quests::QUESTS::A2Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A2Q3
 
@@ -4922,25 +4922,25 @@ extern D2NPCMessageTableStrc aNpcGossipData[12];
 
 namespace D2Game::Quests::QUESTS::A2Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[4];
 
 } // namespace D2Game::Quests::QUESTS::A2Q5
 
 namespace D2Game::Quests::QUESTS::A2Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A2Q6
 
 namespace D2Game::Quests::QUESTS::A2Q7 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A2Q7
 
 namespace D2Game::Quests::QUESTS::A2Q8 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[2];
 
 } // namespace D2Game::Quests::QUESTS::A2Q8
 
@@ -4952,49 +4952,49 @@ extern fpUmodInit aUmodInitTable[43];
 
 namespace D2Game::Quests::QUESTS::A4Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[2];
 
 } // namespace D2Game::Quests::QUESTS::A4Q0
 
 namespace D2Game::Quests::QUESTS::A4Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A4Q1
 
 namespace D2Game::Quests::QUESTS::A4Q2 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[7];
 
 } // namespace D2Game::Quests::QUESTS::A4Q2
 
 namespace D2Game::Quests::QUESTS::A4Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5];
 
 } // namespace D2Game::Quests::QUESTS::A4Q3
 
 namespace D2Game::Quests::QUESTS::A4Q4 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A4Q4
 
 namespace D2Game::Quests::QUESTS::Quest39 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::Quest39
 
 namespace D2Game::Quests::QUESTS::A3Q0 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[3];
 
 } // namespace D2Game::Quests::QUESTS::A3Q0
 
 namespace D2Game::Quests::QUESTS::A3Q1 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[6];
 
 } // namespace D2Game::Quests::QUESTS::A3Q1
 
@@ -5006,7 +5006,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[13];
 
 namespace D2Game::Quests::QUESTS::A3Q3 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q3
 
@@ -5018,13 +5018,13 @@ extern D2NPCMessageTableStrc aNpcGossipData[9];
 
 namespace D2Game::Quests::QUESTS::A3Q5 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q5
 
 namespace D2Game::Quests::QUESTS::A3Q6 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[8];
 
 } // namespace D2Game::Quests::QUESTS::A3Q6
 

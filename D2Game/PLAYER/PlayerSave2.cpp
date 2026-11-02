@@ -864,6 +864,7 @@ int __fastcall MakeSaveFile(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint8_t * p
 }
 
 // Computes the character-title/flag index (0–0x1a) used when saving or loading a character's title progress. Checks expansion/classic match between the character status bits and the game's bExpansion flag (returns 8 or 9 on mismatch). On BattleNet servers, validates file-time freshness and game type (returns 0x19/0x1a). Then checks hardcore arena flag and character status bit 2 to return the hardcore-normal title codes (0xb/0xc/10). Finally maps difficulty + title-progress bits to the levelled codes (0xd/0xe), returning 0 when fully progressed.
+// The file-time check calls BattleNetServerService->fpGetDatabaseFileTime with ECX = &ftDatabase (00569dcd), a __fastcall out-parameter, then compares it with the client's stored time.
 int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus, D2ClientStrc * pClient) {
     eD2ArenaFlags eArenaFlags;
     FILETIME ftDatabase;
@@ -878,7 +879,7 @@ int __fastcall CalculateGetFlags(::SGAMEDATA * pGame, uint16_t dwCharacterStatus
     }
     if (IsBattleNetServer) {
       LONG nFiletimeCmpResult;
-      BattleNetServerService->fpGetDatabaseFileTime();
+      BattleNetServerService->fpGetDatabaseFileTime(&ftDatabase);
       if (dwCharacterStatus & 0x40) {
         /* FILETIME * lpFileTime2 for CompareFileTime */ /* FILETIME * lpFileTime1 for CompareFileTime */ nFiletimeCmpResult = CompareFileTime(&pClient->ftFileTime, &ftDatabase);
         if (nFiletimeCmpResult > 0) {
@@ -1187,7 +1188,7 @@ int __fastcall LoadPlayerIntro(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, shor
 }
 
 // Deserializes the long-form stat bitstream from a character save buffer into a unit's stat list. Expects a 0x6667 magic header at *ppReadPos. Reads 9-bit stat IDs followed by optional sub-index (csvparam bits) and value (csvbits wide, signed or unsigned per ITEMSTATCOSTFLAG_CSVSIGNED) until stat ID >= 0x1FE (terminator). Applies each stat via STATLIST_SetUnitStat. Advances *ppReadPos past the stream on success; returns 0 on success, 0x12 on bad header or invalid stat.
-static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam) {
+static int __fastcall ReadStatsLong(D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t nFileVersion) {
     int32_t nSubIndexRaw;
     int32_t nBitStreamLen;
     uint32_t nStatSubIndex;
@@ -1303,7 +1304,7 @@ void __fastcall PLRSAVE_SetSkillIfNonZero(uint32_t dwParam, D2UnitStrc * pUnit, 
 
 // Deserialises hard skill allocations (magic 0x6669) from the save buffer and applies them to the unit via SetSkill for each non-zero entry. After loading, sends the 0x94 skills-list packet to the client and recomputes all passive and pet bonuses. Returns 0x13 on header mismatch or missing client.
 // @sourcefile .\PLAYER\PlrSave2.cpp
-int __fastcall LoadHardSkills(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwParam, uint32_t nSkillCount) {
+int __fastcall LoadHardSkills(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short * * ppReadPos, short * pEndBuf, uint32_t dwFileVersion, uint32_t nSkillCount) {
     int32_t nTotalClassSkills;
     int32_t iSkill;
     short int* pSkillLevels = *ppReadPos + 1;

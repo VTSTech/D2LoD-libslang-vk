@@ -142,7 +142,7 @@ namespace Storm::Source::SComp {
 void __thiscall LINKEDLIST_Unlink(int * pList, uint32_t * pNode);
 uint32_t __thiscall BITBUFFER_PeekBits(uint16_t * * pBitBuffer, uint16_t * nBitCount, uint32_t nMask);
 void __thiscall LINKEDLIST_Clear(int32_t pBitBuffer, int32_t nBits);
-void __thiscall LINKEDLIST_InsertAfter(struct D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode);
+struct D2BitStreamWriterStrc * __thiscall LINKEDLIST_InsertAfter(struct D2BitStreamWriterStrc * pList, uint8_t * pNode, int32_t pNewNode);
 int32_t __fastcall BITBUFFER_GetRemainingBits(int * pBitStream);
 void __thiscall BITSTREAM_WriteBits(struct D2BitStreamWriterStrc * pBitStream, int32_t nBitsValue, int32_t nBitCount);
 void __fastcall BITSTREAM_Flush(struct D2BitStreamWriterStrc * pBitStream);
@@ -236,7 +236,7 @@ void PKWARE_CopyMemoryValue(uint32_t * pDst, uint32_t * pSrc, uint32_t nSize);
 void PKWARE_SetByteValue(uint32_t * pDst, uint8_t byFill, uint32_t nSize);
 void PKWARE_ProcessBuffer(struct TCmpStruct * pCmp);
 void PKWARE_CopyBufferData(struct TCmpStruct * pCmp, uint8_t * pbStart, uint8_t * pbEnd);
-void StaticInit_6ca8c0();
+void StaticInit_CriticalSection_00779214();
 void StaticFini_CriticalSection_00779214();
 // 7 internal functions (defined in .cpp)
 

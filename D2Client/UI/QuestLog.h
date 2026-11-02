@@ -108,7 +108,7 @@ void __fastcall QUESTLOG_SelectQuestByIndex(int32_t nQuestId);
 void __fastcall QUESTLOG_ClearMissileFlagCb_Missile146(void * pUnit);
 void __fastcall QUESTLOG_ClearMissileFlagCb_Missile527(void * pUnit);
 // QuestLog.cpp - Client handler for 0x5D quest state packets, plays sounds and updates UI
-void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwParam, struct D2GSPacketClt0x5D * pPacket);
+void __fastcall QUESTLOG_HandleQuestStatePacket(uint32_t dwUnused, struct D2GSPacketClt0x5D * pPacket);
 void __stdcall QUESTLOG_ResetNpcDialogState();
 void __stdcall QUESTLOG_ResetQuestFilterArrays();
 void __stdcall QUESTLOG_ResetQuestSelections();
@@ -124,6 +124,7 @@ void __stdcall GameOverWtf();
 // Draws quest log UI. Uses gQuestIconsPerActTable to map act to quest icon ranges, draws quest list with completion status, highlights selected quest. Main rendering loop for quest UI panel.
 void __stdcall DRAW_UI_Quest();
 // QuestLog.cpp - Main mouse down handler for quest screen: act tabs, quest icons, buttons
+// QUESTLOG_HitTestCloseButton returns a bool; only AL is tested after the call (004a3f9d).
 void __stdcall QUESTLOG_OnMouseDown(struct D2UIMouseMsgStrc * pMsg);
 void __fastcall QUESTLOG_ToggleQuestScreen(DWORD bAdjustMouse);
 void __fastcall NET_D2GS_CLIENT_Incoming0x52_QUESTSTATUS(char * pBytes);
@@ -131,8 +132,8 @@ void __stdcall QUESTLOG_OnButtonMouseUp(struct D2UIMouseMsgStrc * pMsg);
 // Checks quest availability by index. Scans gQuestIconsPerActTable to map index to quest ID, validates quest state (not just completed, reward awaits, can complete). Returns 1 if quest is available for interaction.
 BOOL __fastcall QUESTLOG_IsQuestAvailableForInteraction(int32_t nQuestIconIndex);
 void __stdcall QUESTLOG_OnMouseUp(struct D2UIMouseMsgStrc * pMsg);
-void StaticInit_6cac30();
-void StaticInit_6cacd0();
+void StaticInit_gaQuestLogPanelRects();
+void StaticInit_gQuestLog();
 // 9 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::QuestLog

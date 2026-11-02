@@ -268,7 +268,7 @@ void __fastcall ParsePresetsOfDrlgFile(D2DrlgFileStrc * pFile, D2PoolManagerStrc
                     switch (byPresetType) {
                       case 0:
                         {
-                          nClassId = DATATBLS::MonsterTbls::MONSTERTBLS_ReturnZero();
+                          nClassId = DATATBLS::MonsterTbls::MONSTERTBLS_GetSuperUniquesTxtCount();
                           pBuffer = pBuffer + sgptDataTable->nTxtMonStatsSize + nClassId;
                           break;
                         }
@@ -1169,8 +1169,9 @@ static void __stdcall DRLGPRESET_InitDrlgMapPopLocations(int32_t nPopCount, D2Dr
     } while (nPopIndex < nPopCount);
 }
 
-void __fastcall DRLGPRESET_SetPickedFileInDrlgMap(D2DrlgMapStrc * pDrlgMap, int32_t nPickedFile) {
+int32_t __fastcall DRLGPRESET_SetPickedFileInDrlgMap(D2DrlgMapStrc * pDrlgMap, int32_t nPickedFile) {
     pDrlgMap->nRandomMapFileSelector = nPickedFile;
+    return nPickedFile;
 }
 
 // Allocates and initializes D2DrlgMapStrc from LvlPrest. Chooses random map file selector (power-of-two fast path), sets size/offset from coord or LvlPrest defaults, links into level map list.
@@ -1596,10 +1597,10 @@ void __fastcall DRLGPRESET_AddPresetUnitToDrlgMap(D2PoolManagerStrc * pMemory, D
             }
           }
         } else {
-          nMonExtraBase = DATATBLS::MonsterTbls::MONSTERTBLS_ReturnZero();
+          nMonExtraBase = DATATBLS::MonsterTbls::MONSTERTBLS_GetSuperUniquesTxtCount();
           if (pPresetUnit->nClassId - nTableSize >= nMonExtraBase) {
             nTableSize = sgptDataTable->nTxtMonStatsSize;
-            nMonExtraBase = DATATBLS::MonsterTbls::MONSTERTBLS_ReturnZero();
+            nMonExtraBase = DATATBLS::MonsterTbls::MONSTERTBLS_GetSuperUniquesTxtCount();
             nTableSize = pPresetUnit->nClassId - nTableSize - nMonExtraBase;
             if (nTableSize == 0x21) {
               goto roll_quarter_skip;
@@ -2181,7 +2182,7 @@ int32_t __stdcall DRLGPRESET_FindPresetTypeIndex(int32_t nLevelType, uint32_t nO
     } while (true);
 }
 
-void StaticInit_6cb010() {
+void StaticInit_CriticalSection_0096d610() {
     InitializeCriticalSection(&lpCriticalSection_0096d610);
     atexit(StaticFini_CriticalSection_0096d610);
 }

@@ -127,7 +127,7 @@ void __stdcall SPRITECACHE_CancelPendingLoads();
 // @sourcefile .\SRC\SpriteCache.cpp
 struct D2SpriteCacheEntryStrc * __fastcall SPRITECACHE_EvictEntry(struct D2GfxMemoryStrc * pGfxMemory, struct D2SpriteCacheEntryStrc * pCandidate, uint32_t bPreferOld);
 void __fastcall SPRITECACHE_AllocateMemory(void * pCache, int32_t pEntry);
-void __fastcall SPRITECACHE_FreeMemory(struct D2GfxMemoryStrc * pGfxMemory, void * pCacheEntry, int32_t nFreedSize, uint32_t bEvictPriority);
+void __fastcall SPRITECACHE_FreeMemory(struct D2GfxMemoryStrc * pGfxMemory, struct D2SpriteCacheEntryStrc * pCacheEntry, int32_t nFreedSize, uint32_t bEvictPriority);
 uint32_t __stdcall SPRITECACHE_DecodeFrameByIndex(uint32_t * pReadBuffer, size_t nReadSize, struct D2SpriteDecodeRequestStrc * pRequest);
 // @sourcefile .\SRC\SpriteCache.cpp
 void __fastcall SPRITECACHE_ReleaseMemory(struct D2GfxMemoryStrc * pGfxMemory);
@@ -136,7 +136,7 @@ void * * __fastcall SPRITECACHE_AllocEntry2(struct D2GfxMemoryStrc * pGfxMemory,
 // Initialises the sprite/CEL data cache. All four parameters are stack scalars, none a pointer: dwCacheBytes (0x800000) and dwUnitCacheBytes (0x7d000) are byte counts, the latter forwarded as a size to 00609020. dwAvailMemOverride, when 0, makes the function query system memory and apply SUB EAX,0xb00000 / CMP EAX,0x4000000. Typed as pointers, the 0x800000 byte count was emitted as a pointer into whatever object happened to contain that address.
 void __stdcall GFX_InitCelDataCache(uint32_t nFlags, uint32_t dwCacheBytes, uint32_t dwUnitCacheBytes, uint32_t dwAvailMemOverride);
 void __stdcall SPRITECACHE_Shutdown(int32_t bReleaseMemory);
-int __stdcall SPRITECACHE_GetOrLoadSprite(struct D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t nParam2);
+int __stdcall SPRITECACHE_GetOrLoadSprite(struct D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t bLoadAsCel);
 // Server sprite precache sync. GuardStack tail confirms BOOL return: GuardStack(1) on two early-out success paths, GuardStack(nLoadResult) on the cache-and-load path, GuardStack(0) on failure.
 BOOL __stdcall SPRITECACHE_PrecacheSpriteSync(struct D2GfxDataStrc * pGfxData);
 // 15 internal functions (defined in .cpp)

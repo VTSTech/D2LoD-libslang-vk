@@ -1978,7 +1978,7 @@ D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x77,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x77,
         /* .nExpectedSize = */ 0x2,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
@@ -2173,27 +2173,27 @@ D2NET_CLIENT_D2GS_ServerToClient NET_D2GS_CLIENT_INCOMING[175] = {
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
         /* .nExpectedSize = */ 0x7,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
         /* .nExpectedSize = */ 0x8,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
         /* .nExpectedSize = */ 0xa,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
         /* .nExpectedSize = */ 0x7,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
     {
-        /* .fpIncomingHandler = */ &D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
+        /* .fpIncomingHandler = */ (D2NET_CLIENT_D2GStoCLT)&D2Client::GAME::SCmd::NET_D2GS_CLIENT_Incoming0x9Eto0xA2,
         /* .nExpectedSize = */ 0x8,
         /* .fpIncomingHandlerUnit = */ nullptr
     },
@@ -45079,7 +45079,7 @@ uint32_t gShopTradeUIState = 0; D2_GLOBAL_GUARD(gShopTradeUIState, "gShopTradeUI
 uint32_t gnInvMercBodySlot2 = 0; D2_GLOBAL_GUARD(gnInvMercBodySlot2, "gnInvMercBodySlot2");
 uint32_t gbInvRecipeScrollOpen = 0; D2_GLOBAL_GUARD(gbInvRecipeScrollOpen, "gbInvRecipeScrollOpen");
 uint32_t gnHireDisplayMode = 0; D2_GLOBAL_GUARD(gnHireDisplayMode, "gnHireDisplayMode");
-uint32_t gpHireHoverUnit = 0; D2_GLOBAL_GUARD(gpHireHoverUnit, "gpHireHoverUnit");
+int gpHireHoverUnit = 0; D2_GLOBAL_GUARD(gpHireHoverUnit, "gpHireHoverUnit");
 uint32_t gnHireIconDrawX = 0; D2_GLOBAL_GUARD(gnHireIconDrawX, "gnHireIconDrawX");
 uint32_t gnHireIconHoverX = 0; D2_GLOBAL_GUARD(gnHireIconHoverX, "gnHireIconHoverX");
 uint32_t gnHireIconHoverY = 0; D2_GLOBAL_GUARD(gnHireIconHoverY, "gnHireIconHoverY");
@@ -45148,10 +45148,10 @@ uint32_t gnTextBoxExclusionX = 0; D2_GLOBAL_GUARD(gnTextBoxExclusionX, "gnTextBo
 uint32_t gbTextEventHandlersRegistered = 0; D2_GLOBAL_GUARD(gbTextEventHandlersRegistered, "gbTextEventHandlersRegistered");
 int gnUICtrlConfigTotalRows = 0; D2_GLOBAL_GUARD(gnUICtrlConfigTotalRows, "gnUICtrlConfigTotalRows");
 int gnUICtrlConfigScrollMaxLines = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollMaxLines, "gnUICtrlConfigScrollMaxLines");
-uint32_t gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
+int gnUICtrlConfigColumnWidth = 0; D2_GLOBAL_GUARD(gnUICtrlConfigColumnWidth, "gnUICtrlConfigColumnWidth");
 uint32_t gnUICtrlConfigMouseButtonState = 0; D2_GLOBAL_GUARD(gnUICtrlConfigMouseButtonState, "gnUICtrlConfigMouseButtonState");
 uint32_t gnUICtrlConfigButton3State = 0; D2_GLOBAL_GUARD(gnUICtrlConfigButton3State, "gnUICtrlConfigButton3State");
-uint32_t gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
+int gnUICtrlConfigScrollOffset = 0; D2_GLOBAL_GUARD(gnUICtrlConfigScrollOffset, "gnUICtrlConfigScrollOffset");
 int g_ControlConfigUIState = 0; D2_GLOBAL_GUARD(g_ControlConfigUIState, "g_ControlConfigUIState");
 int gnUICtrlConfigActiveButton = 0; D2_GLOBAL_GUARD(gnUICtrlConfigActiveButton, "gnUICtrlConfigActiveButton");
 BOOL gbUICtrlConfigKeyBindMode = 0; D2_GLOBAL_GUARD(gbUICtrlConfigKeyBindMode, "gbUICtrlConfigKeyBindMode");

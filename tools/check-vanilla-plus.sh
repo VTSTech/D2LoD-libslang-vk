@@ -233,8 +233,11 @@ gate "bUnitSoundTableInit phantom gone (h)"   globals/globals.h   'uint8_t bUnit
 # so ClampVolume pinned EVERY engine volume to DSBVOLUME_MIN (-10000) — the
 # "sound only on the intro video" field signature. These gates hold the
 # decoded state so no future merge can lose it again.
-gate "sound: ClampVolume/Attenuation epsilon decoded" D2Sound/Src/D2SoundSmp.cpp '\(long double\)0\.0001'    4
-gate "sound: -2000 centibel scale restored"           D2Sound/Src/D2SoundSmp.cpp 'fVar1 \* -2000\.0'        1
+# R87 merge: upstream spelled the same decoded doubles exactly (9.999999747378752e-05
+# IS (long double)0.0001 as the compiler sees it — float32 0.0001 promoted; and the
+# -2000.0 scale now rides an explicit (long double) cast). Same state, retail spelling.
+gate "sound: ClampVolume/Attenuation epsilon decoded (R87 retail-exact)" D2Sound/Src/D2SoundSmp.cpp '\(long double\)9\.999999747378752e-05'    4
+gate "sound: -2000 centibel scale restored (R87 retail-exact)"           D2Sound/Src/D2SoundSmp.cpp 'fVar1 \* \(long double\)-2000\.0'        1
 gate "sound: ClampAttenuation bound decoded"          D2Sound/Src/D2SoundSmp.cpp '\(long double\)-10000\.0' 1
 gate "sound: ClampAttenuation divisor decoded"        D2Sound/Src/D2SoundSmp.cpp '\(long double\)2000\.0'   1
 gate "sound: no raw IEEE-754 volume literals left"    D2Sound/Src/D2SoundSmp.cpp '\(double\)(0x3f1a36e2e0000000|-0x3f3c780000000000|0x409f400000000000|-0x3f60c00000000000)' 0
@@ -576,11 +579,14 @@ gate "quest: gossip add marks (R54)"          D2Game/Quests/QUESTS.cpp        'q
 gate "quest: npc interact 0x27 mark (R54)"    D2Game/Monster/MonsterAI.cpp    'quest: npc interact 0x27 send' 1
 gate "s2c 0x27 overhead marks (R54)"          D2Client/UI/Text.cpp            's2c 0x27 overhead' 2
 gate "npc menu branch marks (R54)"            D2Client/UI/ui.cpp              'npc menu:' 6
-gate "gossip: A1Q1 5-slot table (R54)"        globals/D2Game.cpp              'A1Q1 gossip table 5 slots' 1
-gate "gossip: A2Q1 5-slot table (R54)"        globals/D2Game.cpp              'A2Q1 gossip table 5 slots' 1
+# R87 merge: upstream bc47c6bc recovered the retail gossip tables verbatim (sizes and
+# flavor string ids the fork could not invent); the R54/R85 hand-built 5-slot tables are
+# superseded. Gates now pin the retail-exact sizes via the VP history notes.
+gate "gossip: A1Q1 retail table 8 slots (R87)"  globals/D2Game.cpp              'A1Q1 table: retail-exact 8 slots' 1
+gate "gossip: A2Q1 retail table 9 slots (R87)"  globals/D2Game.cpp              'A2Q1 table: retail-exact 9 slots' 1
 gate "gossip: Den turn-in entry present (R54)" globals/D2Game.cpp             '/\* .nStringIndex = \*/ 0x4c' 1
-gate "gossip: A1Q1 extern 5-slot (R54)"       globals/globals.h               'A1Q1: 5-slot gossip table' 1
-gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A2Q1: 5-slot gossip table' 1
+gate "gossip: A1Q1 extern 8-slot (R87)"       globals/globals.h               'A1Q1: retail-exact 8-slot table' 1
+gate "gossip: A2Q1 extern 9-slot (R87)"       globals/globals.h               'A2Q1: retail-exact 9-slot table' 1
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
@@ -593,9 +599,12 @@ gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'p
 # Fixed to a 5-slot array (slot 0 accept 0x51 preserved + slot 3 turn-in 0x5c
 # pinned by A1Q2's own gate; flavor slots 1/2/4 left empty), plus the Kashya
 # chain marks mirroring the R53 A1Q1 set.
-gate "gossip: A1Q2 5-slot table (R85)"        globals/D2Game.cpp              'A1Q2 gossip table 5 slots' 1
-gate "gossip: Bloodraven turn-in entry (R85)" globals/D2Game.cpp              '/\* .nStringIndex = \*/ 0x5c' 1
-gate "gossip: A1Q2 extern 5-slot (R85)"       globals/globals.h               'A1Q2: 5-slot gossip table' 1
+gate "gossip: A1Q2 retail table 6 slots (R87)" globals/D2Game.cpp              'A1Q2 table: retail-exact 6 slots' 1
+# R87 merge: retail has TWO 0x5c entries in A1Q2's table (bMenu 0 and bMenu 2 variants
+# of the Bloodraven turn-in line, monstats 0x96 both times) — the fork's hand-built
+# table only had the one, so the old expectation of 1 was an artifact, not a regression.
+gate "gossip: Bloodraven turn-in entries (retail x2)" globals/D2Game.cpp        '/\* .nStringIndex = \*/ 0x5c' 2
+gate "gossip: A1Q2 extern 6-slot (R87)"       globals/globals.h               'A1Q2: retail-exact 6-slot table' 1
 gate "gossip: A1Q2 decay assignment (R85)"    D2Game/Quests/QUESTS/A1Q2.cpp   'pNpcMessages = A1Q2::aNpcGossipData' 1
 gate "quest: kashya activate marks (R85)"     D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya activate' 4
 gate "quest: kashya gossip echo mark (R85)"   D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya gossip msg=' 1
@@ -672,7 +681,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R86"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R86' 1
+gate "res: self-id 0.0.7-R87"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R87' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

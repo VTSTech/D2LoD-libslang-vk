@@ -739,7 +739,7 @@ void __fastcall Q23_TimerCallback_MephistoApproach(D2QuestDataStrc * pQuestData,
 // Durance bridge / portal object). Records its GUID into the A3Q6 quest-specific struct, sets its update
 // flag, and schedules an event (id 7) if not in final state. No quest-state record writes. (Field names
 // bSunDarkened/nViperAmuletUpdateFlag are union-alias artifacts; this is the Mephisto-quest object.)
-void __fastcall Objects_InitFn45(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn45_MephistoBridge(D2ObjectInitFnArg * pInitArg) {
     int32_t nObjectGUID;
     D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TheGuardian);
     if (!pDVar2) {
@@ -766,7 +766,7 @@ void __fastcall Objects_InitFn45(D2ObjectInitFnArg * pInitArg) {
 // [The Guardian (Q23)] Object init fn (InitFn44): second scripted object for the Mephisto quest. If on
 // Outer Steppes just sets update flag 2; otherwise records the object GUID into the A3Q6 quest struct and
 // sets its update flag. No quest-state record writes. (bMalusTaken/nMalusGUID are union-alias artifacts.)
-void __fastcall Objects_InitFn44(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn44_HellGatePortal(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pDVar2 = GetQuestDataByQuestNoInternal(pInitArg->pGame, QUESTINT_TheGuardian);
     eD2LevelId eLevelId = D2Common::DUNGEON::Dungeon::DRLGROOM_GetLevelIdFromRoom(pInitArg->pRoom);
     if (eLevelId == LEVEL_OuterSteppes) {
@@ -893,7 +893,7 @@ void __fastcall Q23_Callback13_PlayerStartedGame(D2QuestDataStrc * pQuestData, D
 void __fastcall Q23_InitData(D2QuestDataStrc * pQuestData) {
     memset(&pQuestData->sStateFunctions, 0, 0x3c);
     ::SGAMEDATA* pGame = pQuestData->pGame;
-    pQuestData->pNpcMessages = &A3Q6::aNpcGossipData;
+    pQuestData->pNpcMessages = A3Q6::aNpcGossipData;
     pQuestData->bIsActive = '\x01';
     pQuestData->sStateFunctions.fpQuestStateHandler[8] = Q23_Callback08_MonsterKilled;
     pQuestData->sStateFunctions.fpQuestStateHandler[0] = Q23_Callback00_NpcActivate;

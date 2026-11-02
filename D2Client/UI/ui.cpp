@@ -1167,7 +1167,7 @@ void __stdcall UI_SetButtonKeyBinding(int32_t pButtonContainer, uint16_t nDefaul
 }
 
 static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndices) {
-    uint16_t uVar1;
+    uint16_t wKeyCode;
     uint32_t nBoundKey;
     BOOL bExpansion;
     int nHandlerIdx;
@@ -1175,9 +1175,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x16, 1);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x16, 1);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x16, 1);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd26_slot1;
         }
       }
@@ -1190,9 +1190,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x26, 1);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x26, 1);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x26, 1);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd29_slot1;
         }
       }
@@ -1205,9 +1205,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x29, 1);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x29, 1);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x29, 1);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd2c_slot1;
         }
       }
@@ -1222,9 +1222,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
       if (nHandlerIdx != -1) {
         nBoundKey = CmdTbl::CMD_IsCommandBound(0x2c, 1);
         if (nBoundKey) {
-          uVar1 = CmdTbl::CMD_GetKeyForCommand(0x2c, 1);
-          if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-            pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+          wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x2c, 1);
+          if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+            pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
             goto bind_cmd16_slot0;
           }
         }
@@ -1238,9 +1238,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x16, 0);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x16, 0);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x16, 0);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd26_slot0;
         }
       }
@@ -1253,9 +1253,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x26, 0);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x26, 0);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x26, 0);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd29_slot0;
         }
       }
@@ -1268,9 +1268,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
     if (nHandlerIdx != -1) {
       nBoundKey = CmdTbl::CMD_IsCommandBound(0x29, 0);
       if (nBoundKey) {
-        uVar1 = CmdTbl::CMD_GetKeyForCommand(0x29, 0);
-        if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+        wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x29, 0);
+        if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+          pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
           goto bind_cmd2c_slot0;
         }
       }
@@ -1291,9 +1291,9 @@ static void UI_SetMultipleButtonKeyBindings(D2UIKeyBindingSetStrc * pnButtonIndi
 
     nBoundKey = CmdTbl::CMD_IsCommandBound(0x2c, 0);
     if (nBoundKey) {
-      uVar1 = CmdTbl::CMD_GetKeyForCommand(0x2c, 0);
-      if (uVar1 != 0xffff && uVar1 <= 0xdf) {
-        pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)uVar1;
+      wKeyCode = CmdTbl::CMD_GetKeyForCommand(0x2c, 0);
+      if (wKeyCode != 0xffff && wKeyCode <= 0xdf) {
+        pnButtonIndices->pHandlers[nHandlerIdx].nMessageOrKeyCode = (uint32_t)wKeyCode;
         return;
       }
     }
@@ -4979,9 +4979,9 @@ void __stdcall CONTROLCONFIG_Cleanup() {
     gpUICtrlConfigScrollbarDC6 = 0;
 }
 
-void __fastcall CONTROLCONFIG_OnToggleUI(int32_t nParam) {
+void __fastcall CONTROLCONFIG_OnToggleUI(int32_t bClose) {
     UI_InitializeStatDescriptionPointers();
-    if (nParam) {
+    if (bClose) {
       if (!gbUICtrlConfigKeyBindMode) {
         CmdTbl::CMD_AcceptKeyBindings();
         CmdTbl::CMD_ToggleKeyConfigMode(0, 0);
@@ -6891,7 +6891,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
     uint16_t* pWszLine;
     uint32_t nDisplayVal;
     uint32_t* pBtnEntry;
-    int iVar3;
+    int iVar2;
     uint16_t wszStatDescBuf[100];
     uint16_t wszTextBuf[128];
     char szValueAscii[128];
@@ -6923,14 +6923,14 @@ void __stdcall DRAW_UI_StatWindow_I() {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, gnPanelOffsetX + 0x100, gnPanelOffsetY - 0x30 + ScreenSizeY, -1, DRAW_SOLID, nullptr);
     int nMouseXCast;
     nMouseXCast = GetMouseX();
-    int iVar2;
-    iVar2 = GetMouseY();
-    if (nMouseXCast >= gnPanelOffsetX + 0x80 && nMouseXCast <= gnPanelOffsetX + 0xa0 && iVar2 >= gnPanelOffsetY - 0x5c + ScreenSizeY && iVar2 <= gnPanelOffsetY - 0x3c + ScreenSizeY) {
+    int nTmp;
+    nTmp = GetMouseY();
+    if (nMouseXCast >= gnPanelOffsetX + 0x80 && nMouseXCast <= gnPanelOffsetX + 0xa0 && nTmp >= gnPanelOffsetY - 0x5c + ScreenSizeY && nTmp <= gnPanelOffsetY - 0x3c + ScreenSizeY) {
       nDrawX = 1;
-      iVar3 = gnPanelOffsetY - 0x5f + ScreenSizeY;
+      iVar2 = gnPanelOffsetY - 0x5f + ScreenSizeY;
       iVar8 = 0;
       nDrawY = gnPanelOffsetX + 0x8f;
-      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1030), nDrawY, iVar3, iVar8, nDrawX);
+      D2Win::Src::D2WinFont::TEXT_TooltipSetAttributes(D2Lang::StrTable::strtable::GetLocaleString(0x1030), nDrawY, iVar2, iVar8, nDrawX);
     }
 
     iVar8 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, UNITSTAT_statpts, 0);
@@ -6941,7 +6941,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
       memset(wszStatPts, 0, 10 * sizeof(wszStatPts[0]));
       D2Win::Src::D2WinFont::SetAndReturnLastFont(6);
       nStatPts2 = D2Lang::StrTable::strtable::GetLocaleString(0xfeb);
-      iVar3 = gnPanelOffsetY - 0x7d + ScreenSizeY;
+      iVar2 = gnPanelOffsetY - 0x7d + ScreenSizeY;
       nDrawY = gnPanelOffsetX + 0xb;
       nWidth = gnPanelOffsetX - nDrawY + 0x59;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(nStatPts2);
@@ -6949,9 +6949,9 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nDrawY += nWidth - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(nStatPts2, nDrawY, iVar3, 1, 0);
+      D2Win::Src::D2WinFont::DRAW_text(nStatPts2, nDrawY, iVar2, 1, 0);
       nStatPts2 = D2Lang::StrTable::strtable::GetLocaleString(0xfec);
-      iVar3 = gnPanelOffsetY - 0x75 + ScreenSizeY;
+      iVar2 = gnPanelOffsetY - 0x75 + ScreenSizeY;
       nDrawY = gnPanelOffsetX + 0xb;
       nWidth = gnPanelOffsetX - nDrawY + 0x59;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(nStatPts2);
@@ -6959,12 +6959,12 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nDrawY += nWidth - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(nStatPts2, nDrawY, iVar3, 1, 0);
+      D2Win::Src::D2WinFont::DRAW_text(nStatPts2, nDrawY, iVar2, 1, 0);
       iVar8 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, UNITSTAT_statpts, 0);
       /* LPCSTR param_2 for wsprintfA */ /* LPSTR param_1 for wsprintfA */ wsprintfA(szStatPtsAscii, "%i", iVar8);
       D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize((uint16_t*)wszStatPts, szStatPtsAscii, 9);
-      iVar3 = gnPanelOffsetY - 0x78 + ScreenSizeY;
+      iVar2 = gnPanelOffsetY - 0x78 + ScreenSizeY;
       nDrawY = gnPanelOffsetX + 0x5c;
       nWidth = gnPanelOffsetX - nDrawY + 0x80;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0((uint16_t*)wszStatPts);
@@ -6972,21 +6972,21 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nDrawY += nWidth - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszStatPts, nDrawY, iVar3, 0, 0);
+      D2Win::Src::D2WinFont::DRAW_text((uint16_t*)wszStatPts, nDrawY, iVar2, 0, 0);
     }
 
     iVar8 = D2Common::Stats::StatsEx::SERVER_GetUnitStat(pPlayer, UNITSTAT_statpts, 0);
     if (iVar8) {
       pBtnEntry = (uint32_t*)&gaStatScreenButtons[0].nY;
       do {
-        iVar3 = pBtnEntry[-1] + gnPanelOffsetX;
+        iVar2 = pBtnEntry[-1] + gnPanelOffsetX;
         nDrawY = *pBtnEntry + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
         sGfxData.pDC6 = gpUIStatLevelUpButtonImages;
         sGfxData.nFrameNumber = 0;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar3 + 5, nDrawY + 5, -1, DRAW_SOLID, nullptr);
+        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar2 + 5, nDrawY + 5, -1, DRAW_SOLID, nullptr);
         sGfxData.nFrameNumber = (int)(pBtnEntry[1] != 0);
         sGfxData.pDC6 = gpUIStatLevelUpPanelImages;
-        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar3 + 8, nDrawY + 1, -1, DRAW_SOLID, nullptr);
+        D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar2 + 8, nDrawY + 1, -1, DRAW_SOLID, nullptr);
         pBtnEntry = (uint32_t*)((int)pBtnEntry + 0xe);
       } while ((int)pBtnEntry < (intptr_t)((char*)&gaStatScreenButtons + sizeof(gaStatScreenButtons) + 4));
     }
@@ -7006,21 +7006,21 @@ void __stdcall DRAW_UI_StatWindow_I() {
       nStatPts2 = wszStatDescBuf;
       wszStatDescBuf[99] = L'\0';
       iVar8 = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(nStatPts2);
-      iVar3 = 0;
+      iVar2 = 0;
       wCurChar = wszStatDescBuf[0];
       while (wCurChar != L'\0') {
         if (wCurChar == L'\n') {
-          wszStatDescBuf[iVar3] = L'\0';
-          if (iVar3 < iVar8) {
+          wszStatDescBuf[iVar2] = L'\0';
+          if (iVar2 < iVar8) {
             pWszLine = nStatPts2 + 1;
             nWidth = nWidth - nDrawX + 1;
             iVar8 = D2Win::Src::D2WinFont::DRAW_text0(wszStatDescBuf);
-            iVar3 = nDrawX;
+            iVar2 = nDrawX;
             if (iVar8 < nWidth) {
-              iVar3 = (nWidth - iVar8 >> 1) + nDrawX;
+              iVar2 = (nWidth - iVar8 >> 1) + nDrawX;
             }
 
-            D2Win::Src::D2WinFont::DRAW_text(wszStatDescBuf, iVar3, nDrawY - 4, 0, 0);
+            D2Win::Src::D2WinFont::DRAW_text(wszStatDescBuf, iVar2, nDrawY - 4, 0, 0);
             iVar8 = D2Win::Src::D2WinFont::DRAW_text0(pWszLine);
             if (iVar8 < nWidth) {
               nDrawX = (nWidth - iVar8 >> 1) + nDrawX;
@@ -7035,14 +7035,14 @@ void __stdcall DRAW_UI_StatWindow_I() {
 
         pWszNext = nStatPts2 + 1;
         nStatPts2++;
-        iVar3++;
+        iVar2++;
         wCurChar = *pWszNext;
       }
 
-      iVar3 = nWidth - nDrawX + 1;
+      iVar2 = nWidth - nDrawX + 1;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(wszStatDescBuf);
-      if (iVar8 < iVar3) {
-        nDrawX = (iVar3 - iVar8 >> 1) + nDrawX;
+      if (iVar8 < iVar2) {
+        nDrawX = (iVar2 - iVar8 >> 1) + nDrawX;
       }
 
       pWszLine = wszStatDescBuf;
@@ -7060,8 +7060,8 @@ void __stdcall DRAW_UI_StatWindow_I() {
     nDrawX = UI_GetStatValueForDisplay(bExpansion);
     int32_t pExpTxtNextLevel;
     pExpTxtNextLevel = UI_BuildStatWindowDescriptions();
-    DRAW_UI_StatWindow_II(iVar8, nDrawX, nMouseXCast, iVar2);
-    DRAW_UI_StatWindow_III(nMouseXCast, iVar2, pExpTxtNextLevel);
+    DRAW_UI_StatWindow_II(iVar8, nDrawX, nMouseXCast, nTmp);
+    DRAW_UI_StatWindow_III(nMouseXCast, nTmp, pExpTxtNextLevel);
     D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     sGfxData.pDC6 = GetBuySellBtnDC6();
     sGfxData.nFrameNumber = gbUIStatScreenMouseDown != 0 ? 11 : 10;
@@ -7079,7 +7079,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         pCharStatsTxtOrFont = sgptDataTable->pTxtCharStats + nMouseXCast;
       }
 
-      iVar2 = gnPanelOffsetY - 0x1c7 + ScreenSizeY;
+      nTmp = gnPanelOffsetY - 0x1c7 + ScreenSizeY;
       nMouseXCast = gnPanelOffsetX + 0xc1;
       nDrawY = gnPanelOffsetX - nMouseXCast + 0x137;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(pCharStatsTxtOrFont->wszClass);
@@ -7087,7 +7087,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nMouseXCast += nDrawY - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(pCharStatsTxtOrFont->wszClass, nMouseXCast, iVar2, 0, 0);
+      D2Win::Src::D2WinFont::DRAW_text(pCharStatsTxtOrFont->wszClass, nMouseXCast, nTmp, 0, 0);
       pRosterName = GAME::Roster::GetPlayerRosterName(pPlayer);
       int nLen = (int)strlen(pRosterName);
       iVar8 = D2Lang::UTF8_GetStringLength(pRosterName, nLen);
@@ -7102,7 +7102,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
       }
 
       D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszTextBuf, pRosterName, 0x80);
-      iVar2 = gnPanelOffsetY - 0x1c7 + ScreenSizeY;
+      nTmp = gnPanelOffsetY - 0x1c7 + ScreenSizeY;
       nMouseXCast = gnPanelOffsetX + 0xd;
       nDrawY = gnPanelOffsetX - nMouseXCast + 0xa1;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(wszTextBuf);
@@ -7110,7 +7110,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nMouseXCast += nDrawY - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, nMouseXCast, iVar2, 0, 0);
+      D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, nMouseXCast, nTmp, 0, 0);
       D2Win::Src::D2WinFont::SetAndReturnLastFont(1);
     }
 
@@ -7328,7 +7328,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
           }
 
           D2Lang::StrTable::strtable::STRTABLE_FormatNumber(wszTextBuf, nStatVal, 0x80);
-          iVar2 = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
+          nTmp = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
           iVar8 = gaStatPanelRows[nStatEntryIdx].nX1 + gnPanelOffsetX;
           nMouseXCast = gaStatPanelRows[nStatEntryIdx].nX2 - iVar8 + 1 + gnPanelOffsetX;
           draw_exp_number:
@@ -7337,11 +7337,11 @@ void __stdcall DRAW_UI_StatWindow_I() {
             iVar8 += nMouseXCast - nDrawX >> 1;
           }
 
-          D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, iVar8, iVar2, 0, 0);
+          D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, iVar8, nTmp, 0, 0);
           continue;
           case 0xd:
             D2Lang::StrTable::strtable::STRTABLE_FormatNumber(wszTextBuf, nStatVal, 0x80);
-          iVar2 = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
+          nTmp = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
           iVar8 = gaStatPanelRows[nStatEntryIdx].nX1 + gnPanelOffsetX;
           nMouseXCast = gaStatPanelRows[nStatEntryIdx].nX2 - iVar8 + 1 + gnPanelOffsetX;
           goto draw_exp_number;
@@ -7364,7 +7364,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         pCharStatsTxtOrFont = (D2CharStatsTxt*)D2Win::Src::D2WinFont::SetAndReturnLastFont(0);
       }
 
-      iVar2 = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
+      nTmp = gaStatPanelRows[nStatEntryIdx].nY + gnPanelOffsetY - 0x1e0 + ScreenSizeY;
       nDrawX = gaStatPanelRows[nStatEntryIdx].nX1 + gnPanelOffsetX;
       nMouseXCast = gaStatPanelRows[nStatEntryIdx].nX2 - nDrawX + 1 + gnPanelOffsetX;
       iVar8 = D2Win::Src::D2WinFont::DRAW_text0(wszTextBuf);
@@ -7372,7 +7372,7 @@ void __stdcall DRAW_UI_StatWindow_I() {
         nDrawX += nMouseXCast - iVar8 >> 1;
       }
 
-      D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, nDrawX, iVar2, nColorIdx, 0);
+      D2Win::Src::D2WinFont::DRAW_text(wszTextBuf, nDrawX, nTmp, nColorIdx, 0);
       if (pCharStatsTxtOrFont != (D2CharStatsTxt*)0xe) {
         D2Win::Src::D2WinFont::SetAndReturnLastFont((int32_t)pCharStatsTxtOrFont);
       }
@@ -8045,7 +8045,7 @@ void StaticInit_6caa10() {
     }
 }
 
-void StaticInit_6caa30() {
+void StaticInit_gU16ImmunityStringBuffer1() {
     int nWordsRemaining;
     uint16_t* pImmunityBuf1;
     for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
@@ -8053,7 +8053,7 @@ void StaticInit_6caa30() {
     }
 }
 
-void StaticInit_6caa50() {
+void StaticInit_gU16ImmunityStringBuffer2() {
     int nWordsRemaining;
     uint16_t* pImmunityBuf2;
     for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
@@ -8061,7 +8061,7 @@ void StaticInit_6caa50() {
     }
 }
 
-void StaticInit_6caa70() {
+void StaticInit_gnMonsterHealthBarValue() {
     int nWordsRemaining;
     uint16_t* pHealthBarBuf;
     for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
@@ -8069,15 +8069,15 @@ void StaticInit_6caa70() {
     }
 }
 
-void StaticInit_6caa90() {
+void StaticInit_WindowSizeX() {
     WindowSizeX = ScreenSizeX;
 }
 
-void StaticInit_6caaa0() {
+void StaticInit_WindowSizeY() {
     WindowSizeY = ScreenSizeY - 0x28;
 }
 
-void StaticInit_6cace0() {
+void StaticInit_gnUICtrlConfigScrollPosition() {
     gnUICtrlConfigScrollPosition = (WindowSizeY - 0x1a4) / 2 + 0x2f;
 }
 

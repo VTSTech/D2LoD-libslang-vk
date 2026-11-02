@@ -1021,8 +1021,8 @@ void __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 0);
 }
 
-void __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t nParam) {
-    if (*(int*)(nParam + 0xc)) {
+void __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData) {
+    if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 1);
       return;
     }
@@ -3089,7 +3089,7 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
 }
 
 // Edit-box change callback installed via D2WINEDITBOX_SetInputMode @004fdb00 into D2WinEditBox+0x26c (fpChangeCallback, fpD2WinEditBoxChange). Signature proven by RET 0x4 (1 stack arg, callee cleans) and MOV EAX,1.
-int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnknown) {
+int __stdcall EDITBOX_Cb_MAINMENU_ValidateCharacterNameCallback(void * pUnused) {
     MAINMENU_ValidateCharacterNameCallback();
     return 1;
 }
@@ -3406,7 +3406,7 @@ BOOL fpInsertExpansionCd() {
     return ::fpInsertPlayCd;
 }
 
-BOOL __stdcall MAINMENU_Unused1(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayIntroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3419,7 +3419,7 @@ BOOL __stdcall MAINMENU_Unused1(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused2(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct2StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3432,7 +3432,7 @@ BOOL __stdcall MAINMENU_Unused2(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused3(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct3StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3445,7 +3445,7 @@ BOOL __stdcall MAINMENU_Unused3(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused4(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct4StartCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3458,7 +3458,7 @@ BOOL __stdcall MAINMENU_Unused4(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused5(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayAct4EndCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadVideoMpqFiles((::fpRequiredUserAction)(bool (*)())MainMenus::fpRequiredUserAction, 0, 0);
     if (!bVideoMpqLoaded) {
@@ -3471,7 +3471,7 @@ BOOL __stdcall MAINMENU_Unused5(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused6(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayExpansionIntroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)fpInsertPlayCd, (::fpRequiredUserAction)fpInsertExpansionCd, 0, D2IniData_launcher);
     if (!bVideoMpqLoaded) {
@@ -3482,7 +3482,7 @@ BOOL __stdcall MAINMENU_Unused6(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused7(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressPlayExpansionOutroCinematic(D2ControlMsg * pControlMsg) {
     D2Win::Src::D2WinArchive::MPQ_UnloadAllMediaMpqFiles();
     BOOL bVideoMpqLoaded = D2Win::Src::D2WinArchive::MPQ_LoadAllMediaMpqFiles((::fpRequiredUserAction)fpInsertPlayCd, (::fpRequiredUserAction)fpInsertExpansionCd, 0, D2IniData_launcher);
     if (!bVideoMpqLoaded) {
@@ -3505,7 +3505,7 @@ BOOL __stdcall MAINMENU_OnPressReloadMediaMpqAndReturnToMainMenu(D2ControlMsg * 
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused8(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressShowGatewaySelect(D2ControlMsg * pControlMsg) {
     Launcher::UIMENU_MainMenuWithoutMenuButWithDiabloLogo();
     FORMS_CreateAnyFormFromListExEx(0x47);
     uint16_t* pszLocaleMsg = D2Lang::StrTable::strtable::GetLocaleString(0x2b2f);
@@ -4392,7 +4392,7 @@ int32_t __fastcall fAPPMODE_launcher_ReturnAppMode_Caller(D2IniConfigStrc * pD2I
     return gnSelectedCharGameState;
 }
 
-BOOL __stdcall MAINMENU_Unused9(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSinglePlayer(D2ControlMsg * pControlMsg) {
     OogCurrentCharSelectionMode = CHAR_SELECTION_SP;
     BOOL bHasSaveFiles = SAVEFILE_FindAllSaveFiles();
     if (bHasSaveFiles == 1) {
@@ -4412,13 +4412,13 @@ BOOL __stdcall MAINMENU_Unused10(D2ControlMsg * pControlMsg) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused11(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSelectBattleNet(D2ControlMsg * pControlMsg) {
     OogCurrentCharSelectionMode = CHAR_SELECTION_BNET;
     UIMENU_MainMenuAgain();
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused12(D2ControlMsg * pMsg) {
+BOOL __stdcall MAINMENU_OnPressRealmList(D2ControlMsg * pMsg) {
     uint32_t bDoubleClick = MAINMENU_DetectDoubleClick(pMsg);
     if (bDoubleClick) {
       BOOL nResult;
@@ -4773,7 +4773,7 @@ void __stdcall UIMENU_ConfirmCreateCharacter() {
 }
 
 // BNet account creation handler. Validates username/password from gbPasswordChangeInProgress inputs (2-15 chars, matching confirmation), shows please-read dialog on success or error popup on validation failure.
-BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * pControl) {
+BOOL __stdcall MAINMENU_OnSubmitCreateBattleNetAccount(D2ControlStrc * pControl) {
     uint16_t wErrorStringId;
     if (!pControl) {
       UIMENU_MainMenuAgain();
@@ -4813,7 +4813,7 @@ BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * pControl) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused16(D2ControlStrc * pControl) {
+BOOL __stdcall MAINMENU_OnPressCreateCharacterOk(D2ControlStrc * pControl) {
     char szSavePath[1024];
     BOOL bIsVisible = D2Win::Src::D2WinMain::D2WINMAIN_GetControlVisible(bCharacterCreationInProgress);
     if (!bIsVisible) {
@@ -4893,7 +4893,7 @@ void __stdcall MAINMENU_BnetConnectionProgress() {
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gbBnetConnectionTimerActive, szDots);
 }
 
-static BOOL MAINMENU_Unused17(char * szText) {
+static BOOL MAINMENU_IsValidEmailAddress(char * szText) {
     bool _bIsValidEmail;
     uint32_t nTextLen;
     bool bIsValidEmail;
@@ -4921,7 +4921,7 @@ BOOL __stdcall MAINMENU_OnPressConfirmSkipEmailPopup(D2ControlMsg * pControlMsg)
     int32_t bSingleButtonEscape = 1;
     int32_t bEnableHotkeys = 0;
     OnPress pfnOnPress2 = (OnPress)MAINMENU_DismissPopup;
-    OnPress pfnOnPress1 = (OnPress)MAINMENU_Unused18;
+    OnPress pfnOnPress1 = (OnPress)MAINMENU_OnPressSkipEmailAddress;
     MAINMENU_CreateMessageBox(nullptr, D2Lang::StrTable::strtable::GetLocaleString(0x2b5e), 0x2b61, 0x13ef, pfnOnPress1, pfnOnPress2, bEnableHotkeys, bSingleButtonEscape);
     return 1;
 }
@@ -4990,7 +4990,7 @@ void __stdcall MAINMENU_ShowDisconnectMessage() {
       char szPassword[256];
       pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectDialog->sControl);
       D2Lang::WideCharToUTF8(szPassword, pwszText, 0x100);
-      bEnableOk = MAINMENU_Unused17(szPassword);
+      bEnableOk = MAINMENU_IsValidEmailAddress(szPassword);
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlVisible(gpCtlBnetPasswordOkButton, bEnableOk);
@@ -5090,17 +5090,17 @@ void __stdcall MAINMENU_ShowDisconnectMessage2() {
       char szField2[256];
       pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage1->sControl);
       D2Lang::WideCharToUTF8(szField1, pwszText, 0x100);
-      _bFieldValid = MAINMENU_Unused17(szField1);
+      _bFieldValid = MAINMENU_IsValidEmailAddress(szField1);
       bVisible = 0;
       if (_bFieldValid) {
         pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage3->sControl);
         D2Lang::WideCharToUTF8(szField3, pwszText, 0x100);
-        _bFieldValid = MAINMENU_Unused17(szField3);
+        _bFieldValid = MAINMENU_IsValidEmailAddress(szField3);
         bVisible = 0;
         if (_bFieldValid) {
           pwszText = D2Win::Src::D2WinEditBox::FORMS_TextInput_GetValue(&gpCtlDisconnectMessage2->sControl);
           D2Lang::WideCharToUTF8(szField2, pwszText, 0x100);
-          bVisible = MAINMENU_Unused17(szField2);
+          bVisible = MAINMENU_IsValidEmailAddress(szField2);
         }
       }
     }
@@ -5225,7 +5225,7 @@ void __stdcall UIMENU_ConnectinToBattleNetWitProgressDots() {
 // so the slot has one and only one stored value and that value is an OnPress. Without a
 // declared variable the slot surfaces as an untyped pointer and renders as code *, which no
 // OnPress parameter will accept. Do not delete it to silence the warning.
-BOOL __stdcall MAINMENU_Unused19(D2ControlMsg * pControlMsg) {
+BOOL __stdcall MAINMENU_OnPressSubmitEmailAddress(D2ControlMsg * pControlMsg) {
     char szEmail[256];
     OnPress pfnOnPress1;
     int32_t nMsgBoxArg5;
@@ -5240,7 +5240,7 @@ BOOL __stdcall MAINMENU_Unused19(D2ControlMsg * pControlMsg) {
     uint32_t nEmailCmp = D2Lang::Unicode::UNISYS::STRING_CompareWideStrings(pwszEmail1, pwszEmail2);
     if (!nEmailCmp) {
       D2Lang::WideCharToUTF8(szEmail, pwszEmail1, 0x100);
-      pAccountResult = (OnPress)MAINMENU_Unused17(szEmail);
+      pAccountResult = (OnPress)MAINMENU_IsValidEmailAddress(szEmail);
       if (!pAccountResult) {
         OnPress pfnBtn1Press;
         nMsgBoxArg5 = 1;
@@ -5277,7 +5277,7 @@ BOOL __stdcall thunk_UIMENU_YouWereDisconnectedFromBattleNet3(D2ControlMsg * pCo
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused20(int32_t bSubmit) {
+BOOL __stdcall MAINMENU_HandleEmailChange(int32_t bSubmit) {
     uint16_t* pwszOldEmail;
     uint16_t* pwszNewEmail1;
     uint16_t* pwszNewEmail2;
@@ -5348,7 +5348,7 @@ BOOL __stdcall MAINMENU_Unused20(int32_t bSubmit) {
     return 1;
 }
 
-BOOL __stdcall MAINMENU_Unused21(int32_t bSubmit) {
+BOOL __stdcall MAINMENU_OnSubmitResetPassword(int32_t bSubmit) {
     uint16_t* pwszPassword;
     BOOL bResult;
     char szAccount[256];

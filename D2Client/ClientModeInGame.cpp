@@ -422,7 +422,7 @@ void __fastcall CLIENT_SetScreenResolution(DWORD RequestedScreenModeMaybe) {
     UI::ui::DRAW_RefreshNpcDialog();
 }
 
-uint32_t __stdcall CLIENTMODE_Unused3(uint32_t dwUnused) {
+uint32_t __stdcall CLIENTMODE_WaitForQServerConnection(uint32_t dwUnused) {
     int32_t nState;
     uint8_t packetBuffer[512];
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
@@ -535,13 +535,13 @@ eD2ClientAppMode __stdcall NET_QServer_StartServer() {
     wait_for_connection:
     gdwQServerStartTime = GetTickCount();
     gnClientModeInitValue = 0;
-    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_Unused3);
+    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_WaitForQServerConnection);
     D2BOOT_MarkFmt("enter-world: connect wait done (connected=%d)", (int)D2GS_Connected); // [d2boot] connected=0 = the 10 s refused path, not a hang
     eD2ClientAppMode eAppMode = CLIENTMODE_GetCurrentAppMode();
     return eAppMode;
 }
 
-uint32_t __stdcall CLIENTMODE_Unused4(uint32_t dwUnused) {
+uint32_t __stdcall CLIENTMODE_WaitForServerShutdown(uint32_t dwUnused) {
     uint8_t packetBuffer[512];
     D2gfx::D2GFX::D2GFX_EndCutSceneReturnSceneState();
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED) {
@@ -561,7 +561,7 @@ uint32_t __stdcall CLIENTMODE_Unused4(uint32_t dwUnused) {
 // pfModes_ShutdownServer: run MessageGameLoop while shutting down, free QServer, send 0xB0 to clients.
 eD2ClientAppMode __stdcall NET_QServer_ShutdownServer() {
     gdwLastPacketActivityTick = GetTickCount();
-    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_Unused4);
+    _Message::MessageGameLoop((::fpGameLoopFunction)CLIENTMODE_WaitForServerShutdown);
     D2Net::SRC::Client::NET_CLIENT_ShutdownConnection();
     if (eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER || eD2GSGameType_007a0610 == GAMETYPE_SINGLEPLAYER_UNCAPPED || eD2GSGameType_007a0610 == GAMETYPE_OBNET_HOST || eD2GSGameType_007a0610 == GAMETYPE_LAN_HOST) {
       D2Net::Game::Server::NET_QServer_FreeAndSend0xB0ToEveryone();
@@ -571,14 +571,14 @@ eD2ClientAppMode __stdcall NET_QServer_ShutdownServer() {
     return eAppMode;
 }
 
-void StaticInit_6ca9a0() {
+void StaticInit_gpszCmdLineCaptionStr() {
     gpszCmdLineCaptionStr = gpszDiabloIICaption;
 }
 
-void StaticInit_6ca9b0() {
+void StaticInit_gpszDiabloIICaptionCopy() {
     // Static local variables (originally global data)
     // also labelled: gbCmdLineCaptionPadding
-static LPCSTR gpszDiabloIICaptionCopy; D2_STATIC_GUARD_BSS(gpszDiabloIICaptionCopy, "D2Client::ClientModeInGame::StaticInit_6ca9b0::gpszDiabloIICaptionCopy");
+static LPCSTR gpszDiabloIICaptionCopy; D2_STATIC_GUARD_BSS(gpszDiabloIICaptionCopy, "D2Client::ClientModeInGame::StaticInit_gpszDiabloIICaptionCopy::gpszDiabloIICaptionCopy");
 
     gpszDiabloIICaptionCopy = gpszDiabloIICaption;
 }

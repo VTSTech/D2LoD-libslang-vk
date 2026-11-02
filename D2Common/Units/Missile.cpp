@@ -111,12 +111,12 @@ void __stdcall SetFlags(D2UnitStrc * pUnit, int32_t dwFlags) {
     pUnit->pUnitData.pUnitDataObject->unk0x14 = dwFlags;
 }
 
-void __stdcall SetLevel(D2UnitStrc * pUnit, int16_t nLevel) {
+void __stdcall SetLevel(D2UnitStrc * pUnit, int nLevel) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataMissile)) {
       return;
     }
 
-    pUnit->pUnitData.pUnitDataMissile->nSkillLevel = nLevel;
+    pUnit->pUnitData.pUnitDataMissile->nSkillLevel = (int16_t)nLevel;
 }
 
 int32_t __stdcall GetLevel(D2UnitStrc * pUnit) {
@@ -263,12 +263,12 @@ BOOL __stdcall CheckUnitIfOwner(D2UnitStrc * pMissile, D2UnitStrc * pUnit) {
     return 0;
 }
 
-void __stdcall SetStreamMissile(D2UnitStrc * pUnit, int16_t nStreamMissile) {
+void __stdcall SetStreamMissile(D2UnitStrc * pUnit, int nStreamMissile) {
     if (!(pUnit && pUnit->eUnitType == UNIT_MISSILE && pUnit->pUnitData.pUnitDataPlayer)) {
       return;
     }
 
-    *(int16_t*)(pUnit->pUnitData.pUnitDataPlayer->szCharName + 4) = nStreamMissile;
+    *(uint16_t*)(pUnit->pUnitData.pUnitDataPlayer->szCharName + 4) = (uint16_t)nStreamMissile;
 }
 
 int32_t __stdcall GetStreamMissile(D2UnitStrc * pUnit) {
@@ -686,7 +686,6 @@ void __stdcall SetDamageStats(D2UnitStrc * pUnit, D2UnitStrc * pMissile, D2Missi
 
 // Returns the minimum physical damage for a missile at a given level. Resolves nMissileId and nLevel from the pUnit missile if not provided. Looks up D2MissilesTxt base MinDamage + level breakpoint bonus (MinLevDam1), optionally scales by DmgSymPerCalc calc expression, then shifts result left by HitShift. Returns 0 for non-missile units or invalid missile IDs.
 int32_t __stdcall GetMinDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int32_t nMissileId, int32_t nLevel) {
-    D2UnitDataMissileStrc* pUnitDataMissile;
     if (pUnit && pUnit->eUnitType != UNIT_MISSILE) {
       return 0;
     }
@@ -694,6 +693,7 @@ int32_t __stdcall GetMinDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int32_t 
       nMissileId = pUnit->nClassId;
     }
     if (nLevel <= 0 && pUnit) {
+      D2UnitDataMissileStrc* pUnitDataMissile;
       if (pUnit->eUnitType == UNIT_MISSILE && (pUnitDataMissile = pUnit->pUnitData.pUnitDataMissile , pUnitDataMissile != 0)) {
         nLevel = (int32_t)pUnitDataMissile->nSkillLevel;
       } else {
@@ -709,10 +709,9 @@ int32_t __stdcall GetMinDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int32_t 
     int32_t nLevDamBonus = Skills::SKILLS_GetValueByLevelBreakpoints(nLevel, &pMissileTxt->MinLevDam1);
     int nValue = nLevDamBonus + pMissileTxt->MinDamage;
     if (pMissileTxt->DmgSymPerCalc != -1) {
-      uint32_t nPercent;
-      nPercent = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->DmgSymPerCalc, nMissileId, nLevel);
-      if (nPercent) {
-        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nPercent, 100);
+      nLevDamBonus = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->DmgSymPerCalc, nMissileId, nLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nLevDamBonus, 100);
         nValue += nLevDamBonus;
       }
     }
@@ -744,10 +743,9 @@ int32_t __stdcall GetMaxDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int32_t 
     int32_t nLevDamBonus = Skills::SKILLS_GetValueByLevelBreakpoints(nLevel, &pMissileTxt->MaxLevDam1);
     int nValue = nLevDamBonus + pMissileTxt->MaxDamage;
     if (pMissileTxt->DmgSymPerCalc != -1) {
-      uint32_t nPercent;
-      nPercent = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->DmgSymPerCalc, nMissileId, nLevel);
-      if (nPercent) {
-        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nPercent, 100);
+      nLevDamBonus = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->DmgSymPerCalc, nMissileId, nLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nLevDamBonus, 100);
         nValue += nLevDamBonus;
       }
     }
@@ -788,10 +786,9 @@ int32_t __stdcall GetMinElemDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int3
     int32_t nLevDamBonus = Skills::SKILLS_GetValueByLevelBreakpoints(nLevel, &pMissileTxt->MinELev1);
     int nValue = nLevDamBonus + pMissileTxt->EMin;
     if (pMissileTxt->EDmgSymPerCalc != -1) {
-      uint32_t nPercent;
-      nPercent = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->EDmgSymPerCalc, nMissileId, nLevel);
-      if (nPercent) {
-        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nPercent, 100);
+      nLevDamBonus = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->EDmgSymPerCalc, nMissileId, nLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nLevDamBonus, 100);
         nValue += nLevDamBonus;
       }
     }
@@ -823,10 +820,9 @@ int32_t __stdcall GetMaxElemDamage(D2UnitStrc * pUnit, D2UnitStrc * pOwner, int3
     int32_t nLevDamBonus = Skills::SKILLS_GetValueByLevelBreakpoints(nLevel, &pMissileTxt->MaxELev1);
     int nValue = nLevDamBonus + pMissileTxt->EMax;
     if (pMissileTxt->EDmgSymPerCalc != -1) {
-      uint32_t nPercent;
-      nPercent = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->EDmgSymPerCalc, nMissileId, nLevel);
-      if (nPercent) {
-        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nPercent, 100);
+      nLevDamBonus = MISSILE_EvalMissileCalc(pUnit, pOwner, pMissileTxt->EDmgSymPerCalc, nMissileId, nLevel);
+      if (nLevDamBonus) {
+        nLevDamBonus = D2Client::Stats::D2ApplyPercent(nValue, nLevDamBonus, 100);
         nValue += nLevDamBonus;
       }
     }
@@ -1023,7 +1019,7 @@ int32_t __fastcall GetSpecialParamValueForSkillMissile(eD2Skills eSkill, uint8_t
 }
 
 // Evaluates missile calc expression using missile/owner context and resolved missile id/level; dispatches into the calc VM callback path.
-uint32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * pOwner, uint32_t nCalcExpression, int32_t nMissileId, int32_t nMissileLevel) {
+int32_t __stdcall MISSILE_EvalMissileCalc(D2UnitStrc * pMissile, D2UnitStrc * pOwner, uint32_t nCalcExpression, int32_t nMissileId, int32_t nMissileLevel) {
     // Static local variables (originally global data)
     static D2ItemsEventMethodStrc gaMissileCalcMethods[4] = {
     {

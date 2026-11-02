@@ -1166,7 +1166,7 @@ void __fastcall QUEST_HandleClientQuestMessage(::SGAMEDATA * pGame, D2UnitStrc *
     A2Q7::Q14_SendTombLevelInfo(pGame, pUnit);
 }
 
-void __fastcall Objects_InitFn18(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn18_JerhynPosition(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData;
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (!pQuestCtrl) {
@@ -1181,7 +1181,7 @@ void __fastcall Objects_InitFn18(D2ObjectInitFnArg * pInitArg) {
     }
 }
 
-void __fastcall Objects_InitFn19(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn19_JerhynPosition(D2ObjectInitFnArg * pInitArg) {
     D2QuestDataStrc* pQuestData;
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (!pQuestCtrl) {
@@ -1196,7 +1196,7 @@ void __fastcall Objects_InitFn19(D2ObjectInitFnArg * pInitArg) {
     }
 }
 
-void __fastcall Objects_InitFn20(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn20_TaintedSunAltar(D2ObjectInitFnArg * pInitArg) {
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (pQuestCtrl) {
       D2QuestDataStrc* pQuestData;
@@ -1216,7 +1216,7 @@ void __fastcall Objects_InitFn20(D2ObjectInitFnArg * pInitArg) {
     D2Common::Units::SetupUpdateFlag(pUnit, 2);
 }
 
-void __fastcall Objects_InitFn15(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn15_Malus(D2ObjectInitFnArg * pInitArg) {
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (pQuestCtrl) {
       D2QuestDataStrc* pQuestData;
@@ -1236,7 +1236,7 @@ void __fastcall Objects_InitFn15(D2ObjectInitFnArg * pInitArg) {
     D2Common::Units::SetupUpdateFlag(pUnit, 2);
 }
 
-void __fastcall Objects_InitFn07(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn07_CainGibbet(D2ObjectInitFnArg * pInitArg) {
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (pQuestCtrl) {
       D2QuestDataStrc* pQuestData;
@@ -1459,7 +1459,7 @@ void __fastcall SetTimerByMonsterId(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
     }
 }
 
-void __fastcall Objects_InitFn23(D2ObjectInitFnArg * pInitArg) {
+void __fastcall Objects_InitFn23_LamEsenTome(D2ObjectInitFnArg * pInitArg) {
     D2QuestControlStrc* pQuestCtrl = pInitArg->pGame->pQuestControl;
     if (pQuestCtrl) {
       D2QuestDataStrc* pQuestData;
@@ -3420,7 +3420,7 @@ void __fastcall QUEST_JerhynNpcAILogic(::SGAMEDATA * pGame, D2UnitStrc * pUnit, 
     *pbDelayNextMove = 0;
 }
 
-static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nParam) {
+static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, int32_t nSealIndex) {
     int32_t nCollisionMask;
     LONG nY = pPoint->y;
     D2RoomStrc* pVictimRoom = D2Common::Units::UNITS_GetRoom(pOperateArg->sArg.pVictim);
@@ -3430,10 +3430,10 @@ static void CreateSealGlow(D2ObjectOperateFnArg * pOperateArg, POINT * pPoint, i
     }
 
     D2RoomStrc* pSpawnRoom = 0;
-    if (nParam == 1) {
+    if (nSealIndex == 1) {
       nCollisionMask = 0xd;
     } else {
-      nCollisionMask = nParam != 3 ? 0xf : 0xe;
+      nCollisionMask = nSealIndex != 3 ? 0xf : 0xe;
     }
 
     FindSpawnableLocation(pVictimRoom, pPoint, 3, 0x3f11, &pSpawnRoom, nCollisionMask, 100);

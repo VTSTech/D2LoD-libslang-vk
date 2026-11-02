@@ -827,7 +827,7 @@ void __stdcall CloseStaleLogFileHandles() {
     } while (nSlotOffset < 20);
 }
 
-void __fastcall DeleteOldLogFile(int32_t pRefFileTime, char * szFileName) {
+void __fastcall DeleteOldLogFile(FILETIME * pRefFileTime, char * szFileName) {
     _FILETIME fileTime;
     uint16_t nDay[2];
     WORD nMonth[2];
@@ -848,7 +848,7 @@ void __fastcall DeleteOldLogFile(int32_t pRefFileTime, char * szFileName) {
     sysTimeHead.wMonth = nMonth[0];
     /* LPFILETIME lpFileTime for SystemTimeToFileTime */ /* SYSTEMTIME * lpSystemTime for SystemTimeToFileTime */ *(uint32_t*)((char*)&sysTimeHead + 4) = (uint32_t)nDay[0] << 0x10;
     SystemTimeToFileTime(&sysTimeHead, &fileTime);
-    if (!(*(uint32_t*)(pRefFileTime + 4) >= fileTime.dwHighDateTime && *(uint32_t*)(pRefFileTime + 4) - fileTime.dwHighDateTime >= 0x4b7)) {
+    if (!(pRefFileTime->dwHighDateTime >= fileTime.dwHighDateTime && pRefFileTime->dwHighDateTime - fileTime.dwHighDateTime >= 0x4b7)) {
       return;
     }
 
@@ -1062,7 +1062,7 @@ void __stdcall DeleteOldLogFiles() {
       if (hFindFile != (HANDLE)-1) {
         do {
           Storm::Source::SSTR::SStrPrintf(szFilePath, 0x104, "%s%s", szLogsFolder, findData.cFileName);
-          DeleteOldLogFile((uintptr_t)&ftCurrentTime, szFilePath);
+          DeleteOldLogFile(&ftCurrentTime, szFilePath);
           /* LPWIN32_FIND_DATAA lpFindFileData for FindNextFileA */ /* HANDLE hFindFile for FindNextFileA */ bFound = FindNextFileA(hFindFile, &findData);
         } while (bFound);
 
@@ -1847,12 +1847,12 @@ int SehHandler_6c9e6a(EHExceptionRecord * pExceptionRecord, EHRegistrationNode *
     return ExceptionContinueSearch;
 }
 
-void StaticInit_6ca700() {
+void StaticInit_gLogMessageQueueCS() {
     InitializeCriticalSection(&gLogMessageQueueCS);
     atexit(StaticFini_gLogMessageQueueCS);
 }
 
-void StaticInit_6ca720() {
+void StaticInit_gLogFileCS() {
     InitializeCriticalSection(&gLogFileCS);
     atexit(StaticFini_gLogFileCS);
 }

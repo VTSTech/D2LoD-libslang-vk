@@ -6,3 +6,4 @@ sites2.tsv
 /build/
 *.bak
 build*/
+a.out

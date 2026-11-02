@@ -1407,15 +1407,15 @@ void __fastcall SPRITECACHE_AllocateMemory(void * pCache, int32_t pEntry) {
     LeaveCriticalSection((LPCRITICAL_SECTION)((int)pCache + 0x30));
 }
 
-void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pCacheEntry, int32_t nFreedSize, uint32_t bEvictPriority) {
+void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, D2SpriteCacheEntryStrc * pCacheEntry, int32_t nFreedSize, uint32_t bEvictPriority) {
     uint32_t uVar1;
     CRITICAL_SECTION* lpCriticalSection = &pGfxMemory->lpCriticalSection;
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
-    int nSize = *(int*)((int)pCacheEntry + 4);
+    uint32_t nSize = pCacheEntry->nSize;
     pGfxMemory->nUsedMemory -= nSize;
-    *(uint32_t*)((int)pCacheEntry + 0xc) |= 2;
+    pCacheEntry->dwFlags |= 2;
     nSize = nFreedSize + nSize;
-    *(int*)((int)pCacheEntry + 4) = nSize;
+    pCacheEntry->nSize = nSize;
     pGfxMemory->nUsedMemory += nSize;
     uVar1 = pGfxMemory->nUsedMemory;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
@@ -1425,7 +1425,7 @@ void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pCac
       if (!pUsedMemory) {
         break;
       }
-      if ((void*)pUsedMemory == pCacheEntry) {
+      if (pUsedMemory == pCacheEntry) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa47);
         exit(-1);
       }
@@ -1436,7 +1436,7 @@ void __fastcall SPRITECACHE_FreeMemory(D2GfxMemoryStrc * pGfxMemory, void * pCac
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(lpCriticalSection);
-    *(uint32_t*)((int)pCacheEntry + 0xc) &= -3;
+    pCacheEntry->dwFlags &= -3;
     /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(lpCriticalSection);
 }
 
@@ -1881,7 +1881,7 @@ static BOOL __stdcall SPRITECACHE_LoadCelAndCache(D2CelFileCacheEntryStrc * pCel
     return 0;
 }
 
-static void __stdcall SPRITECACHE_LoadSpriteWithConversion(D2CelFileCacheEntryStrc * pCelEntry, D2GfxDataStrc * pGfxData, int32_t nFrameGroupIndex, uint32_t nFrameStep, char * szText, int32_t nParam2, LPSTR szText2) {
+static void __stdcall SPRITECACHE_LoadSpriteWithConversion(D2CelFileCacheEntryStrc * pCelEntry, D2GfxDataStrc * pGfxData, int32_t nFrameGroupIndex, uint32_t nFrameStep, char * szText, int32_t bLoadAsCel, LPSTR szText2) {
     uint32_t nPaletteShiftRatio;
     if (!(pCelEntry && pGfxData)) {
       return;
@@ -1927,7 +1927,7 @@ static void __stdcall SPRITECACHE_LoadSpriteWithConversion(D2CelFileCacheEntrySt
         return;
       }
     }
-    if (nParam2) {
+    if (bLoadAsCel) {
       SPRITECACHE_LoadCelAndCache(pCelEntry, nFrameGroupIndex, nFrameStep, szText2, pGfxData);
       return;
     }
@@ -1936,7 +1936,7 @@ static void __stdcall SPRITECACHE_LoadSpriteWithConversion(D2CelFileCacheEntrySt
     return;
 }
 
-int __stdcall SPRITECACHE_GetOrLoadSprite(D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t nParam2) {
+int __stdcall SPRITECACHE_GetOrLoadSprite(D2GfxDataStrc * pGfxData, int32_t bCheckOnly, int32_t bLoadAsCel) {
     // Static local variables (originally global data)
     static uint32_t gbSpriteCachePaletteReloadNeeded; D2_STATIC_GUARD_BSS(gbSpriteCachePaletteReloadNeeded, "D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite::gbSpriteCachePaletteReloadNeeded");
 
@@ -2040,7 +2040,7 @@ int __stdcall SPRITECACHE_GetOrLoadSprite(D2GfxDataStrc * pGfxData, int32_t bChe
         }
       }
     }
-    SPRITECACHE_LoadSpriteWithConversion(pCodecHeader, pGfxData, nDirections, nFrames, szCelName, nParam2, szSpritePath);
+    SPRITECACHE_LoadSpriteWithConversion(pCodecHeader, pGfxData, nDirections, nFrames, szCelName, bLoadAsCel, szSpritePath);
     return bLoadSuccess;
 }
 
