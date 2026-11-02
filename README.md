@@ -60,23 +60,25 @@ The short form — per-area records: [`handoff.md`](handoff.md) §2 (field-statu
 per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 [`handoff.md`](handoff.md) (live) and [`HISTORY.md`](HISTORY.md) (verbatim archive).
 
-- **Shipped: [`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84)
-  ("Vanilla+ 0.0.7-R84")** — the item-tooltip zero fix
+- **Shipped: [`R85`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R85)
+  ("Vanilla+ 0.0.7-R85")** — the A1Q2 Bloodraven turn-in fix
+  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)), field-proven — the
+  owner closed the issue 2026-11-02; [`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84)
+  ("Vanilla+ 0.0.7-R84"), the item-tooltip zero fix
   ([#16](https://github.com/VTSTech/D2LoD-libslang-vk/issues/16)), field-verified and
-  tagged 2026-11-02.
+  tagged earlier the same day.
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
   ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)).
-- **Open issues (5)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
-  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code,
-  field verify pending; A1Q2 Bloodraven turn-in
-  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)) — the same truncated
-  gossip-table defect as [#13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13),
-  fix in code (R85), field verify pending; intermittent
+- **Open issues (4)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
+  colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code
+  (R51), field verify pending; intermittent
   attribute-point crash ([#18](https://github.com/VTSTech/D2LoD-libslang-vk/issues/18));
   Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2LoD-libslang-vk/issues/25));
   720p single-panel black triangles ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)).
+  A1Q2 Bloodraven turn-in ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22))
+  CLOSED 2026-11-02 — the R85 fix field-proven.
 - A crash writes a symbolised report (`d2crash-<date>-<time>.txt`) next to the
   executable; a 12 s hangwatch dumps one if the main loop ever stops beating. See
   [Crash reports](#crash-reports).

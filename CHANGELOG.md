@@ -4,7 +4,7 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H35); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H36); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
@@ -26,8 +26,8 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
   the reward gate was never asked. Table widened to 5 slots (slot 3 = turn-in
   line 0x5c, pinned by the quest's own gate; flavor slots left empty rather
   than invented), Kashya chain marks added. Gates 311 → 320; self-ID
-  `Vanilla+0.0.7-R85`; field verify pending (owner build). Track record:
-  HISTORY.md H35.
+  `Vanilla+0.0.7-R85`; **field-proven — the owner closed the issue 2026-11-02**
+  (state completed, same day). Track record: HISTORY.md H35–H36.
 
 ## [R84] — 2026-11-02 ([`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84) @ `63e020a3`, self-ID `Vanilla+0.0.7-R84`)
 
