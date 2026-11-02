@@ -14,7 +14,6 @@
 #include "D2Lang/Unicode/UNISYS.h"
 #include "D2Launch/CharSel.h"
 #include "D2Launch/Launcher.h"
-#include "D2Launch/Source/SBig.h"
 #include "D2MCPClient/McpConnect.h"
 #include "D2Multi/McpConnect.h"
 #include "D2Multi/OOGUtilities.h"
@@ -94,6 +93,32 @@ namespace D2Launch::MainMenus {
 
 static char dwIntroFrameRate_24_36[8] = { "640x146" }; D2_STATIC_GUARD(dwIntroFrameRate_24_36, "D2Launch::MainMenus::dwIntroFrameRate_24_36");
 static char dwIntroFrameRate_29_32[8] = { "640x292" }; D2_STATIC_GUARD(dwIntroFrameRate_29_32, "D2Launch::MainMenus::dwIntroFrameRate_29_32");
+
+void __fastcall CRYPTO_ByteSwap16Array(uint16_t * pArray, uint32_t nCount) {
+    uint32_t nIndex = 0;
+    if (nCount <= 0) {
+      return;
+    }
+
+    do {
+      pArray[nIndex] = pArray[nIndex] << 8 | (uint16_t)pArray[nIndex] >> 8;
+      nIndex++;
+    } while (nIndex < nCount);
+}
+
+void __thiscall CRYPTO_ByteSwap32Array(uint16_t * pwOut, uint16_t wValue) {
+    *pwOut = wValue;
+}
+
+void __thiscall CRYPTO_ByteSwap64Array(uint16_t * pwIn, uint16_t * pwOut) {
+    uint16_t wValue = *pwIn;
+    if (wValue < 0x100) {
+      *pwOut = D2Client::UI::ui::CharacterLookupTable[wValue];
+      return;
+    }
+
+    *pwOut = wValue;
+}
 
 void __fastcall MAINMENU_SetGlobalValue1(pfnUIMenuInstance pfnMenuInstance) {
     gpCurrentUIMenuInstance = pfnMenuInstance;
@@ -452,13 +477,13 @@ void __stdcall FORMS_DestroyList() {
     FORMS_nListCount = 0;
 }
 
-D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nParam) {
+D2ControlStrc * __fastcall FORMS_CreateAnyFormFromListExEx(int32_t nFormIndex) {
     if (FORMS_nListExExCount >= 0x40) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x627);
       exit(-1);
     }
 
-    D2ControlStrc* pForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms + nParam);
+    D2ControlStrc* pForm = D2Win::Src::D2WinMain::FORMS_CreateAnyForm(gaPredefinedForms + nFormIndex);
     FORMS_pListExEx[FORMS_nListExExCount] = pForm;
     FORMS_nListExExCount++;
     return pForm;
@@ -713,7 +738,7 @@ BOOL __stdcall MAINMENU_ReadBattleNetRegistry() {
     }
 
     sprintf(szBuffer, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, 0x22);
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szBuffer);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szBuffer);
     return 0;
 }
 
@@ -1572,7 +1597,7 @@ uint16_t * __stdcall MAINMENU_LoadCreditsFile(uint32_t * pnCharCount) {
         *pnCharCount = nCharCount;
         pwText = (uint16_t*)D2_ALLOC_AT(nCharCount * 2, ".\\Src\\MainMenus.cpp", 0x13bf);
         memcpy(pwText, pFileBuf + 1, *pnCharCount * 2);
-        Source::SBig::CRYPTO_ByteSwap16Array(pwText, *pnCharCount);
+        CRYPTO_ByteSwap16Array(pwText, *pnCharCount);
       } else {
         *pnCharCount = nFileSize;
         pwText = (uint16_t*)D2_ALLOC_AT(nFileSize * 2 + 1, ".\\Src\\MainMenus.cpp", 0x13c8);
@@ -1741,7 +1766,7 @@ BOOL __stdcall MAINMENU_InitCreditsScreen(D2ControlMsg * pControlMsg) {
     // Static local variables (originally global data)
     static D2ControlStrc * gpMainMenuCreditTimerControl; D2_STATIC_GUARD_BSS(gpMainMenuCreditTimerControl, "D2Launch::MainMenus::MAINMENU_InitCreditsScreen::gpMainMenuCreditTimerControl");
 
-    int32_t nParam;
+    int32_t nFormIndex;
     FORMS_DestroyLists();
     D2GFX_SetPaletteForDraw("palette\\sky\\pal.dat", "palette\\sky\\pal.pl2");
     FORMS_CreateAnyFormFromListExEx(0x29);
@@ -1750,14 +1775,14 @@ BOOL __stdcall MAINMENU_InitCreditsScreen(D2ControlMsg * pControlMsg) {
     if (!BVar1) {
       gpMainMenuCreditsPairLeftTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2b);
       gpMainMenuCreditsPairRightTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2c);
-      nParam = 0x2d;
+      nFormIndex = 0x2d;
     } else {
       gpMainMenuCreditsPairLeftTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x2f);
       gpMainMenuCreditsPairRightTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(0x30);
-      nParam = 0x31;
+      nFormIndex = 0x31;
     }
 
-    gpMainMenuCreditsLineTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(nParam);
+    gpMainMenuCreditsLineTextBox = (::D2WinTextBox*)FORMS_CreateAnyFormFromListExEx(nFormIndex);
     gpMainMenuCreditTimerControl = FORMS_CreateAnyFormFromListExEx(0x2e);
     D2Win::Src::D2WinTimer::D2WINTIMER_Start((int*)gpMainMenuCreditTimerControl);
     D2Win::Src::D2WinEditBox::D2WINEDITBOX_Destroy((int*)gpMainMenuCreditTimerControl);
@@ -1873,7 +1898,7 @@ BOOL __stdcall MAINMENU_ShowCinematicsMenu(D2ControlMsg * pControlMsg) {
     } else {
       byCineLevel = 1;
       sprintf(szRegVersion, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, 0x22);
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szRegVersion);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szRegVersion);
     }
 
     BOOL bIsExpansion = Fog::D2CheckExpansionGame();
@@ -2861,7 +2886,7 @@ void __stdcall MAINMENU_PlayExpansionIntro() {
 
     nVerD |= 0x80;
     sprintf(szRegValue, "%d.%d.%d.%ld", 0xd8, 0x94, 0xf6, nVerD);
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szRegValue);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szRegValue);
 }
 
 void __stdcall MAINMENU_PlayD2Intro() {
@@ -2998,7 +3023,7 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
       } else if (*pFileBuffer == L'\xfffe') {
         pwszText = pFileBuffer + 1;
         nCharCount = nAllocSize - 2 >> 1;
-        Source::SBig::CRYPTO_ByteSwap16Array(pwszText, nCharCount);
+        CRYPTO_ByteSwap16Array(pwszText, nCharCount);
       } else {
         pwszText = (uint16_t*)D2_ALLOC_AT(nAllocSize * 2 + 1, ".\\Src\\MainMenus.cpp", 0xc6b);
         D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(pwszText, (char*)pFileBufferSrc, nAllocSize);
@@ -3563,7 +3588,7 @@ BOOL __stdcall StorePreferedRealmAgain(D2ControlMsg * pControlMsg) {
       char* pszRealmName;
       Bnclient::BNGatewayAccess::SetCurGateway((int32_t)pGatewayAccess, nSelectedLine + 1);
       pszRealmName = Bnclient::BNGatewayAccess::Realm(pGatewayAccess, nSelectedLine + 1);
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Preferred Realm", 0, pszRealmName);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Preferred Realm", 0, pszRealmName);
     }
 
     FORMS_DestroyLists();
@@ -3598,7 +3623,7 @@ BOOL __stdcall UIMENU_ConnectToServerCallback(D2ControlStrc * pUnusedArg) {
 
     strncpy(gszLastTcpIpAddress, acStack_414, 0xff);
     gszLastTcpIpAddress[0xff] = '\0';
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "LastTcpIp", 0, gszLastTcpIpAddress);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "LastTcpIp", 0, gszLastTcpIpAddress);
     int nParsed = sscanf(acStack_414, "%d.%d.%d.%d", &nOctet1, &nOctet2, &nOctet3, &nOctet4);
     if (nParsed != 4) {
       pszResolvedIp = Fog::Src::Safesock::inet_nameToIp(acStack_414);
@@ -3965,10 +3990,10 @@ BOOL __stdcall MAINMENUS_OnPressReturnToMainMenu_ForCreditsAndMainMenuAgain(D2Co
 }
 
 // Password change confirmation handler. Reads text inputs, compares new password fields, validates length (2-20 chars). Checks gbPasswordChangeInProgress state, calls launcher EnterEmailMessagePumper on success.
-BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * nParam) {
+BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * pControl) {
     int iVar1;
     uint16_t wErrorStringId;
-    if (!nParam) {
+    if (!pControl) {
       UIMENU_YouWereDisconnectedFromBattleNet2();
       return 1;
     }
@@ -4002,7 +4027,7 @@ BOOL __stdcall MAINMENU_HandlePasswordChange(D2ControlStrc * nParam) {
                 return 1;
               }
             } else {
-              Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+              Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
               FORMS_DestroyList();
               MAINMENU_CloseAndLaunchCharSelect();
             }
@@ -4562,8 +4587,8 @@ void __stdcall NET_MCP_CLIENT_HandleCharCreation() {
 }
 
 // BNet login submit handler. Reads account/password from gbPasswordChangeInProgress-related inputs, calls launcher authentication. On success, transitions to char select or creates hero.
-BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * nParam) {
-    if (!nParam) {
+BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * pControl) {
+    if (!pControl) {
       UIMENU_MainMenu();
       return 1;
     }
@@ -4576,7 +4601,7 @@ BOOL __stdcall MAINMENU_Unused13(D2ControlStrc * nParam) {
     MAINMENU_SaveAccountAndPasswordToINI(&gpBnetAccountEditBox->sControl, &gpBnetPasswordEditBox->sControl);
     int nAuthResult = Launcher::EnterEmailMessagePumper(D2IniData_launcher, 0, 0);
     if (nAuthResult) {
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
       if (OogCurrentCharSelectionMode == CHAR_SELECTION_BNET) {
         D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
         FORMS_DestroyLists();
@@ -4611,7 +4636,7 @@ BOOL __stdcall MAINMENU_Unused14(D2ControlMsg * pControlMsg) {
       }
     } else {
       BOOL BVar2;
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "Last BNet", 0, D2IniData_launcher->szLastBnetAccount);
       BVar2 = SAVEFILE_FindAllSaveFiles();
       if (BVar2) {
         D2Sound::Src::D2SoundFast::SOUND_FadeOutAllSoundEffects();
@@ -4793,9 +4818,9 @@ void __stdcall UIMENU_ConfirmCreateCharacter() {
 }
 
 // BNet account creation handler. Validates username/password from gbPasswordChangeInProgress inputs (2-15 chars, matching confirmation), shows please-read dialog on success or error popup on validation failure.
-BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * nParam) {
+BOOL __stdcall MAINMENU_Unused15(D2ControlStrc * pControl) {
     uint16_t wErrorStringId;
-    if (!nParam) {
+    if (!pControl) {
       UIMENU_MainMenuAgain();
       return 1;
     }

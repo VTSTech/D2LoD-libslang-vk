@@ -19,7 +19,6 @@
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/Message.h"
 #include "D2Client/Renderer/Renderer.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Sound/SoundHdr.h"
 #include "D2Client/Source/ClientEngine.h"
@@ -62,6 +61,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Units.h"
@@ -143,10 +143,7 @@ BOOL __stdcall WINMAIN_TestMemoryAccess(CMDPARAMS * pParams, char * szCmdLine) {
 
 // Triggers end-game congrats flow: set gShowEndGameCongrats, reset beta index, send exit packet, set ExitVar3.
 void TriggerEndGameCongratsExit() {
-    gEndGameUiState.showCongrats = true;
-    gEndGameUiState._pad0[0] = '\0';
-    gEndGameUiState._pad0[1] = '\0';
-    gEndGameUiState._pad0[2] = '\0';
+    gEndGameUiState.showCongrats = 1;
     gBetaScreenIndex = 0;
     GAME::Msg::NET_D2GS_CLIENT_Send_0x69();
     D2CLIENT_ExitVar3 = 1;
@@ -1328,7 +1325,7 @@ void __fastcall MONUNIQUE_DispatchDeathEffect(D2UnitStrc * pUnit, int32_t nUMod,
           break;
           case 0xf3:
             if (pUnit->eAnimMode.ePlayerMode == Death) {
-              Source::ClientEngine::CLIENT_StoreUnitGuidForQuestTracking((int32_t)pUnit);
+              Source::ClientEngine::CLIENT_StoreUnitGuidForQuestTracking(pUnit);
               return;
             }
         }
@@ -1518,17 +1515,17 @@ void __fastcall NET_D2GS_CLIENT_Handle0x50_QuestSpecial(D2GSPacketSrv0x50 * pPac
         UI::npcmenu::Merc::NPCMENU_SetSelectedMercIndex(pPacket->aPayload[0]);
       return;
       case 1:
-        UI::QuestLog::QUESTLOG_HandleSpecialPacket((int32_t)pPacket);
+        UI::QuestLog::QUESTLOG_HandleSpecialPacket(pPacket);
       return;
       case 3:
 
       case 6:
-        UI::npcmenu::NPCMENU_SetTransactionMode((int32_t)pPacket);
+        UI::npcmenu::NPCMENU_SetTransactionMode(pPacket);
       return;
       case 4:
 
       case 0xd:
-        UI::Text::TEXT_HandleScrollLinePacket(&pPacket->nPacketId);
+        UI::Text::TEXT_HandleScrollLinePacket(pPacket);
       return;
       case 0x17:
         GAME::Msg::NET_D2GS_CLIENT_Send_0x69();

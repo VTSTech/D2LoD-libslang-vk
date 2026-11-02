@@ -11,6 +11,7 @@
 // Forward declarations
 struct D2BitBufferStrc;
 struct D2GSPacketSrv0x2A;
+struct D2GSPacketSrv0x50;
 struct D2GSPacketSrv0x91;
 struct D2UnitStrc;
 struct EHExceptionRecord;
@@ -111,7 +112,7 @@ void __fastcall SubmitItem(DWORD dwItemId);
 void __fastcall NPCMENU_ValidateNpcForShop(struct D2UnitStrc * pUnit);
 void __stdcall NPCMENU_Initialize();
 void __stdcall NPCMENU_Cleanup();
-void __fastcall NPCMENU_SetTransactionMode(int32_t pMsg);
+void __fastcall NPCMENU_SetTransactionMode(struct D2GSPacketSrv0x50 * pMsg);
 void __fastcall QuestHandeling(char * szText);
 void __stdcall thunk_SetInventoryNeedsRefresh();
 void __stdcall NPCMENU_ExecuteShopTransaction(int32_t nParam, uint8_t bParam);
@@ -159,8 +160,8 @@ int __stdcall NPCMENU_EnableAnyaPersonalizeOption();
 void __fastcall NPCMENU_ClearHireListAndStopNpcSound(int32_t nNpcGuid);
 int __fastcall ShopAction(struct D2UnitStrc * pUnit, struct D2UnitStrc * pItem, DWORD dwSell, DWORD unk, DWORD dwItemCost, DWORD dwMode, DWORD _2, DWORD _3);
 void __fastcall NPCMENU_OnItemEquip(int32_t nParam);
-void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam);
-void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nParam);
+void __fastcall NPCMENU_CloseNpcInteraction(int32_t nNpcGUID);
+void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nNpcGUID);
 int __stdcall NPCMENU_OpenNpcShop();
 void __stdcall NPCMENU_CloseAndResetAll();
 void __fastcall NPCMENU_HandlePlayerInteractionEnd(struct D2UnitStrc * pUnit);
@@ -254,7 +255,7 @@ int __stdcall NPCMENU_EnableTyraelTravelToHarrogathOption();
 void __stdcall NPCMENU_HandleMenuSelection(int32_t nParam, struct D2UnitStrc * pUnit);
 void __fastcall SetPlayersMercInfo(uint16_t nParam, int32_t nParam2);
 void __stdcall NPCMENU_RefreshMenuDialog();
-int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t nScrollState);
+int __fastcall NPCMENU_OnScrollComplete(void * pUserParam, int32_t nParam, int32_t nScrollState);
 // "talk" (3381 TalkMenu) option callback: slot 0 of every NPC menu row that has a talk option; also used by NPCMENU_OpenInteractionDialog.
 // If the player is interacting with an NPC that still exists: frees the interaction dialog, sets the NPC UI state to 1, picks the NPC's D2NPCSpeech entry (CheckSpeachVersusInteractedUnit), stores it in g_nNpcTradeMenuState and opens the talk dialog (NPCMENU_ShowTalkDialog(3381, speech index)). Returns 1.
 // Otherwise closes the interaction and returns 0. Sends no packet.
@@ -266,6 +267,7 @@ int __stdcall NPCMENU_AkaraRespecOptionCallback();
 // NPC quest table entry 4: quest 1, state flag 0 (Den of Evil).
 int __stdcall NPCMENU_EnableAkaraRespecOption();
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca09b(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+void StaticInit_6cad10();
 // 6 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::npcmenu

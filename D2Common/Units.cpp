@@ -9,7 +9,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -690,7 +689,7 @@ eD2UnitType __stdcall GetTargetTypeFromDynamicUnit(D2UnitStrc * pUnit) {
     }
 }
 
-int * __stdcall GetTargetGUIDFromDynamicUnit(D2UnitStrc * pUnit) {
+int32_t __stdcall GetTargetGUIDFromDynamicUnit(D2UnitStrc * pUnit) {
     eD2UnitType eOwnUnitType;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", (void*)(int32_t)Fog::Src::ErrorManager::GetInstructionPointer(), 0x8ca);
@@ -704,7 +703,7 @@ int * __stdcall GetTargetGUIDFromDynamicUnit(D2UnitStrc * pUnit) {
       }
 
       PATH::DynamicPath::GetTargetTypeAndGUID(pUnit->pPath.pDynamicPath, &eUnitType, (int*)&pUnit);
-      return (int*)pUnit;
+      return (int32_t)pUnit;
     }
 }
 
@@ -968,7 +967,7 @@ static int32_t __stdcall UpdateSequenceMode(D2UnitStrc * pUnit, uint32_t nSeqMod
     uint8_t byActionFrame[4];
     uint32_t nStartFrame;
     uint32_t nPrevSeqMode = pUnit->nSeqMode;
-    Merc::ANIM_GetSequenceFrameInfo((uint8_t*)pUnit->pAnimSeq, pUnit->nSeqFrame, nSeqMode, &nSeqMode, &nStartFrame, &nFrameCount, (uint32_t*)byActionFrame);
+    Merc::ANIM_GetSequenceFrameInfo((D2MonSeqTxt*)pUnit->pAnimSeq, pUnit->nSeqFrame, nSeqMode, &nSeqMode, &nStartFrame, &nFrameCount, (uint32_t*)byActionFrame);
     pUnit->nGfxCurrentFrame = nStartFrame << 8;
     pUnit->nSeqMode = nSeqMode;
     pUnit->nActionFrame = byActionFrame[0];
@@ -1380,7 +1379,7 @@ int32_t __stdcall GetEventFrameInfo(D2UnitStrc * pUnit, int32_t nFrame) {
     }
 
     D2MonSeqTxt* pSeqTxt = Merc::MERC_GetSequenceTxt(pUnit);
-    Merc::ANIM_GetSequenceFrameInfo((uint8_t*)pSeqTxt, nLine << 8, nLine << 8, &nSeqCurrentFrame, &nSeqFrameCount, (uint32_t*)&nFrame, (uint32_t*)&pUnit);
+    Merc::ANIM_GetSequenceFrameInfo(pSeqTxt, nLine << 8, nLine << 8, &nSeqCurrentFrame, &nSeqFrameCount, (uint32_t*)&nFrame, (uint32_t*)&pUnit);
     return (int32_t)pUnit;
 }
 
@@ -2011,14 +2010,14 @@ BOOL __fastcall HasShield(D2UnitStrc * pUnit) {
       byComponent = pUnit->pUnitData.pUnitDataMonster->Components[7];
     }
 
-    D2UnitStrc* pOverlayCode = DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, 7, (uint32_t)byComponent);
+    uint32_t pOverlayCode = DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, 7, (uint32_t)byComponent);
     if (!pOverlayCode) {
       return 0;
     }
     if (UINT_00744584 > 0) {
       uint32_t nComponentIdx = 0;
       do {
-        if (pOverlayCode == (D2UnitStrc*)gaHasShieldItemCodes[nComponentIdx]) {
+        if (pOverlayCode == gaHasShieldItemCodes[nComponentIdx]) {
           return 0;
         }
 
@@ -2026,7 +2025,7 @@ BOOL __fastcall HasShield(D2UnitStrc * pUnit) {
       } while (nComponentIdx < UINT_00744584);
     }
 
-    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine((uint32_t)pOverlayCode, (int*)&pShieldItem);
+    D2ItemsTxt* pItemsTxt = DATATBLS::ItemTbls::ConvertItemCodeToClassIdAndGetItemsTxtLine(pOverlayCode, (int*)&pShieldItem);
     if (!pItemsTxt) {
       return 0;
     }

@@ -5,7 +5,6 @@
 #include "D2Client/D2BattleNetEventCallbackTable.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -30,6 +29,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -1702,9 +1702,9 @@ void __fastcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pU
     pRoom = (D2RoomStrc*)D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory);
     while (pRoom) {
       dwCorpseGUID = D2Common::INVENTORY::Inventory::ROOMCORPSE_GetGUID((D2CorpseStrc*)pRoom);
-      pCorpsePlayerData = D2Common::INVENTORY::Inventory::CORPSE_GetData(pRoom);
+      pCorpsePlayerData = D2Common::INVENTORY::Inventory::CORPSE_GetData((D2CorpseStrc*)pRoom);
       if (!pCorpsePlayerData) {
-        nErrorLine = D2Common::INVENTORY::Inventory::CORPSE_GetMercClassId((int32_t)pRoom);
+        nErrorLine = D2Common::INVENTORY::Inventory::CORPSE_GetMercClassId((D2CorpseStrc*)pRoom);
         pRoom = (D2RoomStrc*)D2Common::INVENTORY::Inventory::INVENTORY_GetNextCorpse((D2CorpseStrc*)pRoom);
         D2Common::INVENTORY::Inventory::INVENTORY_RemoveCorpse(pUnit->pInventory, dwCorpseGUID, 0);
         if (dwCorpseGUID && (uint16_t)nErrorLine) {
@@ -2263,7 +2263,7 @@ void __fastcall CleanUpClient(::SGAMEDATA * pGame, uint32_t nClientId, int32_t b
         }
       }
       if (pRemovedClient->pRoom) {
-        CLIENT_RemoveFromAdjacentRooms(pRemovedClient->pRoom, (int32_t)pRemovedClient);
+        CLIENT_RemoveFromAdjacentRooms(pRemovedClient->pRoom, pRemovedClient);
       }
       if (pRemovedClient->pSaveGame) {
         D2_FREE_POOL_AT(pRemovedClient->pGame->pMemoryPool, pRemovedClient->pSaveGame, ".\\GAME\\Clients.cpp", 0x5f5);
@@ -2705,7 +2705,7 @@ void __fastcall CLIENT_BroadcastMovementToAdjacentRooms(::SGAMEDATA * pGame, D2R
     }
 }
 
-void __fastcall CLIENT_RemoveFromAdjacentRooms(D2RoomStrc * pRoom, int32_t nClientId) {
+void __fastcall CLIENT_RemoveFromAdjacentRooms(D2RoomStrc * pRoom, D2ClientStrc * nClientId) {
     D2RoomStrc** ppAdjacentRooms;
     uint32_t nRoomCount;
     if (!pRoom) {
@@ -2720,7 +2720,7 @@ void __fastcall CLIENT_RemoveFromAdjacentRooms(D2RoomStrc * pRoom, int32_t nClie
     }
 
     do {
-      D2Common::DUNGEON::Dungeon::DRLGROOM_RemoveClientFromRoom(ppAdjacentRooms[nRoomIdx], nClientId);
+      D2Common::DUNGEON::Dungeon::DRLGROOM_RemoveClientFromRoom(ppAdjacentRooms[nRoomIdx], (int32_t)nClientId);
       nRoomIdx++;
     } while (nRoomIdx < nRoomCount);
 }

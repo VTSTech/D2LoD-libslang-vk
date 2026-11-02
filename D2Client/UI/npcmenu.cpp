@@ -4,6 +4,7 @@
 #include "D2Client/Archive.h"
 #include "D2Client/ClientModeInGame.h"
 #include "D2Client/Core/Archive.h"
+#include "D2Client/D2Client.h"
 #include "D2Client/D2DialogStrc.h"
 #include "D2Client/D2GSPacketSrv0x2A.h"
 #include "D2Client/D2GSPacketSrv0x91.h"
@@ -14,7 +15,6 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/Sound.h"
 #include "D2Client/GAME/View.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Hireables.h"
@@ -64,9 +64,8 @@
 #include "Fog/Fog.h"
 #include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
-#include "D2Client/D2Client.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/MiniPanel.h"
@@ -883,7 +882,7 @@ void __stdcall NPCMENU_Cleanup() {
     Dialog::gpNpcActionConfirmDialog = 0;
 }
 
-void __fastcall NPCMENU_SetTransactionMode(int32_t pMsg) {
+void __fastcall NPCMENU_SetTransactionMode(D2GSPacketSrv0x50 * pMsg) {
     // Static local variables (originally global data)
     static BOOL gbNpcMenuTransactionMode1; D2_STATIC_GUARD_BSS(gbNpcMenuTransactionMode1, "D2Client::UI::npcmenu::NPCMENU_SetTransactionMode::gbNpcMenuTransactionMode1");
     static short gbNpcMenuTransactionMode2; D2_STATIC_GUARD_BSS(gbNpcMenuTransactionMode2, "D2Client::UI::npcmenu::NPCMENU_SetTransactionMode::gbNpcMenuTransactionMode2");
@@ -892,7 +891,7 @@ void __fastcall NPCMENU_SetTransactionMode(int32_t pMsg) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xfc6);
       exit(-1);
     }
-    if (!(*(short int*)(pMsg + 1) == 3 && _Interaction::bInteractingWithNpc)) {
+    if (!(pMsg->nMessageType == 3 && _Interaction::bInteractingWithNpc)) {
       return;
     }
 
@@ -902,7 +901,7 @@ void __fastcall NPCMENU_SetTransactionMode(int32_t pMsg) {
     }
 
     gbNpcMenuTransactionMode1 = 1;
-    gbNpcMenuTransactionMode2 = *(short int*)(pMsg + 1);
+    gbNpcMenuTransactionMode2 = pMsg->nMessageType;
 }
 
 void __fastcall QuestHandeling(char * szText) {
@@ -1891,7 +1890,7 @@ void __fastcall NPCMENU_OnItemEquip(int32_t nParam) {
     NPCMENU_HandleTransactionComplete();
 }
 
-void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam) {
+void __fastcall NPCMENU_CloseNpcInteraction(int32_t nNpcGUID) {
     D2UnitStrc* pPlayer = UNIT::Player::GetPlayerUnit_UI();
     if (pPlayer) {
       pPlayer = UNIT::Player::GetPlayerUnit_UI();
@@ -1903,7 +1902,7 @@ void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam) {
       }
     }
 
-    pPlayer = UNIT::Player::UNITS_FindClientSideUnit(nParam, UNIT_MONSTER);
+    pPlayer = UNIT::Player::UNITS_FindClientSideUnit(nNpcGUID, UNIT_MONSTER);
     if (pPlayer) {
       Merc::MERC_ClearHireInventory(pPlayer);
     }
@@ -1913,12 +1912,12 @@ void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam) {
 
     gnNpcMenuNpcSoundIndex = 0;
     gnNpcMenuNpcClassId = 0;
-    pPlayer = UNIT::Player::UNITS_FindClientSideUnit(nParam, UNIT_MONSTER);
+    pPlayer = UNIT::Player::UNITS_FindClientSideUnit(nNpcGUID, UNIT_MONSTER);
     if (pPlayer) {
       pPlayer->eUnitFlags |= UNITFLAG_TARGETABLE;
     }
 
-    GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x30, 1, nParam);
+    GAME::Msg::NET_D2GS_CLIENT_Send_INT_INT(0x30, 1, nNpcGUID);
     Text::TEXT_CloseNpcDialog();
     _Interaction::bInteractingWithNpc = 0;
     ui::SetUIFlag(UI_NPCMENU, UI_RESET, 0);
@@ -1934,9 +1933,9 @@ void __fastcall NPCMENU_CloseNpcInteraction(int32_t nParam) {
     UNIT::UnitMode::UNITMODE_SetAnimMode(pPlayer, eD2PlayerAnimMode_ns::Neutral);
 }
 
-void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nParam) {
-    NPCMENU_CloseNpcInteraction(nParam);
-    D2UnitStrc* pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(nParam, UNIT_MONSTER);
+void __fastcall NPCMENU_CloseScrollAndInteraction(int32_t nNpcGUID) {
+    NPCMENU_CloseNpcInteraction(nNpcGUID);
+    D2UnitStrc* pNpcUnit = UNIT::Player::UNITS_FindClientSideUnit(nNpcGUID, UNIT_MONSTER);
     if (!pNpcUnit) {
       return;
     }
@@ -3392,7 +3391,7 @@ int __stdcall NPCMENU_BuildMercHireMenu() {
     int32_t nMercSeed = 1;
     fpDialogFunc pfnCloseCallback = NPCMENU_MercListDrawCallback;
     Dialog::AddStringData(Dialog::gpNpcMercListDialog, D2Lang::StrTable::strtable::GetLocaleString(0xd48), 0x13b, 0, 0, 1, pfnCloseCallback, nMercSeed);
-    ::ListBoxWrapper* ppListBox = (::ListBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+    ::ListBoxWrapper* ppListBox = (::ListBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
     nEHState = 0;
     if (ppListBox) {
       gpNpcMenuMercListBox = ListBox::ListBoxWrapper::Constructor(ppListBox, (ScreenSizeX - 0x1ea) / 2, WindowSizeY / 2 - 0xa0, 0x1ea, 0x118, 6, 0, 1, (fpListBoxItemActivated)Merc::NPCMENU_ShowMercResurrectDialog, false);
@@ -4003,7 +4002,7 @@ void __stdcall NPCMENU_RefreshMenuDialog() {
     NPCMENU_OpenInteractionDialog();
 }
 
-int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t nScrollState) {
+int __fastcall NPCMENU_OnScrollComplete(void * pUserParam, int32_t nParam, int32_t nScrollState) {
     int32_t nMenuIndex;
     bool bIsInteractableSideNpc;
     gnNpcMenuTradeActionGold = NPCMENU_FindNextUnhandledMessage(gnNpcMenuRepairCostGold);
@@ -4080,7 +4079,7 @@ int __fastcall NPCMENU_OnScrollComplete(void * dwParam, int32_t nParam, int32_t 
     }
 
     gnNpcMenuActiveMode = 0;
-    Text::TEXT_SetScrollCompleteCallback(nullptr, dwParam);
+    Text::TEXT_SetScrollCompleteCallback(nullptr, pUserParam);
     gnNpcMenuRepairCostGold = 0xffff;
     NPCMENU_ShowMainMenuDialog();
     return 0;
@@ -4153,6 +4152,12 @@ int __stdcall NPCMENU_EnableAkaraRespecOption() {
 // compiler-generated C++ EH handler; its frame is never registered with the OS
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca09b(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
     return ExceptionContinueSearch;
+}
+
+void StaticInit_6cad10() {
+    for (int iFill = 0; iFill < 40; iFill++) {
+      gNpcMenuConfirmDialogStrings[iFill] = L'\0';
+    }
 }
 
 } // namespace D2Client::UI::npcmenu

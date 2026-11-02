@@ -6,7 +6,6 @@
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/CUnit.h"
@@ -26,6 +25,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Units.h"
@@ -138,12 +138,12 @@ BOOL __fastcall Skills_CltDoFunc_Ass_Blade_DecrementCharge(D2UnitStrc * pUnit, e
     }
 
     D2Common::Skills::SKILL_SetParam1(pSkill, nChargeCount - 1);
-    Skills::SKILLS_ApplyDamageReduction((int32_t)pUnit, 100);
+    Skills::SKILLS_ApplyDamageReduction(pUnit, 100);
     return 1;
 }
 
-int32_t __fastcall SKILLSASS_GetCltMissileByAuraLevel(D2UnitStrc * pUnit, int32_t nParam) {
-    D2SkillsTxt* pSkillTxt = nParam >= 0 && nParam < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nParam : nullptr;
+int32_t __fastcall SKILLSASS_GetCltMissileByAuraLevel(D2UnitStrc * pUnit, int32_t nSkillId) {
+    D2SkillsTxt* pSkillTxt = nSkillId >= 0 && nSkillId < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + nSkillId : nullptr;
     if (!pSkillTxt) {
       return -1;
     }

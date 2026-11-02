@@ -1420,9 +1420,9 @@ void * __fastcall DRLGPATH_BuildCircularPathPoints(D2DynamicPathStrc * pStaticPa
 }
 
 // Builds a set of randomized path waypoints using a seed-based random direction offset. Computes direction triplets and applies random perturbations to create organic-looking movement paths.
-void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, D2DynamicPathStrc * pDynamicPath) {
+void __fastcall DRLGPATH_BuildRandomizedPathPoints(D2DynamicPathStrc * pPathStrc, D2SeedStrc * pDynamicPath) {
     uint32_t nChosenDir;
-    uint32_t* pWaypointOut;
+    D2PathPointStrc* pWaypointOut;
     int aDirTriplet[3];
     int aDirDeltaTable[32];
     int nDirOffsetTmp;
@@ -1437,7 +1437,7 @@ void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, D2DynamicP
     aDirDeltaTable[0x18] = -1;
     aDirDeltaTable[0x1b] = -1;
     aDirDeltaTable[0x1e] = -1;
-    uint32_t nStepsRemain = (uint32_t)(*(uint8_t*)(pPathStrc + 0x91) >> 1);
+    uint32_t nStepsRemain = (uint32_t)(pPathStrc->nDistMax >> 1);
     aDirDeltaTable[1] = 0;
     aDirDeltaTable[4] = 0;
     aDirDeltaTable[7] = 0;
@@ -1449,7 +1449,8 @@ void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, D2DynamicP
     aDirDeltaTable[0x19] = 0;
     aDirDeltaTable[0x1c] = 0;
     uint32_t nTotalSteps = 0;
-    uint32_t nPackedPos = (uint32_t)((uint32_t)(uint16_t)*(uint16_t*)(pPathStrc + 6) << 16 | (uint32_t)(uint16_t)*(uint16_t*)(pPathStrc + 2));
+    uint32_t nPackedDst = (uint32_t)((uint32_t)(uint16_t)pPathStrc->nTargetX | (uint32_t)(uint16_t)pPathStrc->nTargetY << 16);
+    uint32_t nPackedPos = (uint32_t)((uint32_t)(uint16_t)pPathStrc->Coords.tSubtile.nPosY << 16 | (uint32_t)(uint16_t)pPathStrc->Coords.tSubtile.nPosX);
     aDirDeltaTable[2] = 1;
     aDirDeltaTable[5] = 1;
     aDirDeltaTable[8] = 1;
@@ -1461,27 +1462,29 @@ void __fastcall DRLGPATH_BuildRandomizedPathPoints(int32_t pPathStrc, D2DynamicP
     aDirDeltaTable[0x1a] = 1;
     aDirDeltaTable[0x1d] = 1;
     aDirDeltaTable[0x1f] = 1;
-    int32_t pPathStrcSave = pPathStrc;
-    DRLGPATH_GetPathDirectionTripletPacked(aDirTriplet, nPackedPos, *(uint32_t*)(pPathStrc + 0x10));
+    int32_t pPathStrcSave = (int32_t)pPathStrc;
+    DRLGPATH_GetPathDirectionTripletPacked(aDirTriplet, nPackedPos, nPackedDst);
     if ((int)nStepsRemain > 0) {
-      POINT PVar1;
-      pWaypointOut = (uint32_t*)(pPathStrc + 0x9c);
+      D2SeedStrc DVar1;
+      pWaypointOut = pPathStrc->PathPoints;
       nTotalSteps = nStepsRemain;
       do {
-        PVar1 = d2_bits_as<POINT>((uint64_t)(uint32_t)pDynamicPath->Coords.tFixed.x * 0x6ac690c5 + (uint64_t)(uint32_t)pDynamicPath->Coords.tFixed.y);
-        nDirOffsetTmp = aDirDeltaTable[PVar1.x & 0x1f];
-        pDynamicPath->Coords.tFixed = PVar1;
+        DVar1 = D2_SEED_NEXT(*pDynamicPath);
+        nDirOffsetTmp = aDirDeltaTable[DVar1.nSeedLow & 0x1f];
+        *pDynamicPath = DVar1;
         nChosenDir = nDirOffsetTmp + aDirTriplet[0] & 7;
-        *pWaypointOut = nPackedPos;
+        pWaypointOut->nX = (short int)nPackedPos;
+        pWaypointOut->nY = (uint16_t)((uint32_t)nPackedPos >> 16);
         nPackedPos = (uint32_t)((uint32_t)(uint16_t)((uint16_t)((uint32_t)nPackedPos >> 16) + (short int)gPathDirectionOffsetsX[nChosenDir * 2 + 1] * 2) << 16 | (uint32_t)(uint16_t)((short int)nPackedPos + (short int)gPathDirectionOffsetsX[nChosenDir * 2] * 2));
         pWaypointOut++;
         nStepsRemain--;
-        pPathStrc = pPathStrcSave;
+        pPathStrc = (D2DynamicPathStrc*)pPathStrcSave;
       } while (nStepsRemain);
     }
 
-    *(uint32_t*)(pPathStrc + 0x9c + nTotalSteps * 4) = nPackedPos;
-    *(uint32_t*)(pPathStrc + 0x28) = nTotalSteps + 1;
+    pPathStrc->PathPoints[nTotalSteps].nX = (short int)nPackedPos;
+    pPathStrc->PathPoints[nTotalSteps].nY = (uint16_t)((uint32_t)nPackedPos >> 16);
+    pPathStrc->dwPathPoints = nTotalSteps + 1;
 }
 
 // Scales a direction vector by a velocity factor (fixed-point). Computes a normalized velocity direction and validates the resulting magnitude does not exceed 0x200000.
@@ -2090,11 +2093,11 @@ short * __stdcall DRLGPATH_FindNodeInClosedList(int32_t nOpenListBase, uint32_t 
 }
 
 // Inserts a node into the open list hash table and the sorted priority linked list. Nodes are sorted by their f-cost (ascending) for efficient best-first retrieval.
-static void DRLGPATH_InsertNodeSorted(int32_t nParam, D2DrlgPathNodeStrc * pNode) {
-    D2DrlgPathNodeStrc* pNextSortedNode = *(D2DrlgPathNodeStrc**)(nParam + 0x400);
+static void DRLGPATH_InsertNodeSorted(D2DrlgPathSearchCtxStrc * nParam, D2DrlgPathNodeStrc * pNode) {
+    D2DrlgPathNodeStrc* pNextSortedNode = (D2DrlgPathNodeStrc*)nParam->pSortedHead;
     uint32_t nHashIdx = gnPathNodeMax[(uint8_t)pNode->nY & 0x7f] + gnPathSearchMax[(uint8_t)pNode->nX & 0x7f] & 0x7f;
-    pNode->pHashNext = *(D2DrlgPathNodeStrc**)(nParam + nHashIdx * 4);
-    *(D2DrlgPathNodeStrc**)(nParam + nHashIdx * 4) = (D2DrlgPathNodeStrc*)pNode;
+    pNode->pHashNext = *(D2DrlgPathNodeStrc**)(nParam->abyOpenBuckets + nHashIdx * 4);
+    *(D2DrlgPathNodeStrc**)(nParam->abyOpenBuckets + nHashIdx * 4) = (D2DrlgPathNodeStrc*)pNode;
     D2DrlgPathNodeStrc* pPrevSortedNode = 0;
     if (pNextSortedNode) {
       D2DrlgPathNodeStrc* pSortedNode;
@@ -2116,28 +2119,28 @@ static void DRLGPATH_InsertNodeSorted(int32_t nParam, D2DrlgPathNodeStrc * pNode
       }
     }
 
-    pNode->pSortedNext = *(D2DrlgPathNodeStrc**)(nParam + 0x400);
-    *(D2DrlgPathNodeStrc**)(nParam + 0x400) = (D2DrlgPathNodeStrc*)pNode;
+    pNode->pSortedNext = (D2DrlgPathNodeStrc*)nParam->pSortedHead;
+    nParam->pSortedHead = pNode;
 }
 
 // Removes the best (lowest f-cost) node from the open priority list and moves it to the closed list hash table. This is the standard A* open list pop operation.
-static int32_t * DRLGPATH_PopBestNodeFromOpenList(int32_t nOpenListBase) {
+static int32_t * DRLGPATH_PopBestNodeFromOpenList(D2DrlgPathSearchCtxStrc * nOpenListBase) {
     uint8_t* pbVar1;
-    pbVar1 = *(uint8_t**)(nOpenListBase + 0x400);
+    pbVar1 = (uint8_t*)nOpenListBase->pSortedHead;
     if (!pbVar1) {
       return (int32_t*)pbVar1;
     }
 
-    *(uint32_t*)(nOpenListBase + 0x400) = *(uint32_t*)(pbVar1 + 0x34);
+    nOpenListBase->pSortedHead = *(void**)(pbVar1 + 0x34);
     uint32_t nHashIdx;
     nHashIdx = gnPathNodeMax[pbVar1[2] & 0x7f] + gnPathSearchMax[*pbVar1 & 0x7f] & 0x7f;
-    uint8_t* pHashChainHead;
-    pHashChainHead = *(uint8_t**)(nOpenListBase + nHashIdx * 4);
-    if (pHashChainHead != pbVar1) {
+    uint8_t* pbVar2;
+    pbVar2 = *(uint8_t**)(nOpenListBase->abyOpenBuckets + nHashIdx * 4);
+    if (*(uint8_t**)(nOpenListBase->abyOpenBuckets + nHashIdx * 4) != pbVar1) {
       uint8_t* pHashWalker;
       do {
-        pHashWalker = pHashChainHead;
-        pHashChainHead = *(uint8_t**)(pHashWalker + 0x30);
+        pHashWalker = pbVar2;
+        pbVar2 = *(uint8_t**)(pHashWalker + 0x30);
       } while (*(uint8_t**)(pHashWalker + 0x30) != pbVar1);
 
       if (pHashWalker) {
@@ -2146,15 +2149,15 @@ static int32_t * DRLGPATH_PopBestNodeFromOpenList(int32_t nOpenListBase) {
       }
     }
 
-    *(uint32_t*)(nOpenListBase + nHashIdx * 4) = *(uint32_t*)(pbVar1 + 0x30);
+    *(uint32_t*)(nOpenListBase->abyOpenBuckets + nHashIdx * 4) = *(uint32_t*)(pbVar1 + 0x30);
     push_to_closed_list:
     pbVar1[0x30] = 0;
     pbVar1[0x31] = 0;
     pbVar1[0x32] = 0;
     pbVar1[0x33] = 0;
     nHashIdx = gnPathNodeMax[pbVar1[2] & 0x7f] + gnPathSearchMax[*pbVar1 & 0x7f] & 0x7f;
-    *(uint32_t*)(pbVar1 + 0x30) = *(uint32_t*)(nOpenListBase + 0x200 + nHashIdx * 4);
-    *(uint8_t**)(nOpenListBase + 0x200 + nHashIdx * 4) = (uint8_t*)pbVar1;
+    *(uint32_t*)(pbVar1 + 0x30) = *(uint32_t*)(nOpenListBase->abyClosedBuckets + nHashIdx * 4);
+    *(uint8_t**)(nOpenListBase->abyClosedBuckets + nHashIdx * 4) = (uint8_t*)pbVar1;
     return (int32_t*)pbVar1;
 }
 
@@ -2257,16 +2260,15 @@ static void DRLGPATH_PropagateNodeCosts(D2DrlgPathNodeStrc * pStartNode, int32_t
 }
 
 // Allocates a new path node from the pre-allocated node pool (max 200 nodes). Returns NULL if the pool is exhausted. Each node is 0x38 bytes and is zero-initialized.
-void * __fastcall DRLGPATH_AllocPathNode(int32_t nPathCtx) {
-    int nPoolCount = *(int*)(nPathCtx + 0x2fc4);
-    if (nPoolCount == 200) {
+D2DrlgPathNodeStrc * __fastcall DRLGPATH_AllocPathNode(D2DrlgPathSearchCtxStrc * nPathCtx) {
+    int iVar1 = nPathCtx->nPoolCount;
+    if (iVar1 == 200) {
       return nullptr;
     }
 
-    void* pNewNode = (void*)(nPathCtx + 0x404 + nPoolCount * 0x38);
-    *(int*)(nPathCtx + 0x2fc4) = nPoolCount + 1;
-    memset(pNewNode, 0, 0x38);
-    return pNewNode;
+    nPathCtx->nPoolCount = iVar1 + 1;
+    memset(nPathCtx->aNodePool + iVar1, 0, 0x38);
+    return nPathCtx->aNodePool + iVar1;
 }
 
 // Attempts to expand a neighbor node in the A* search. Checks if the node exists in open or closed lists, creates new nodes as needed, and updates costs if a better path is found. Links the node as a child of the parent (up to 8 children).
@@ -2333,7 +2335,7 @@ static BOOL __stdcall DRLGPATH_TryExpandNeighborNode(int32_t nOpenList, uint32_t
           return 1;
         }
       } else {
-        pNewNode = (D2DrlgPathNodeStrc*)DRLGPATH_AllocPathNode(nOpenList);
+        pNewNode = DRLGPATH_AllocPathNode((D2DrlgPathSearchCtxStrc*)nOpenList);
         if (!pNewNode) {
           return 0;
         }
@@ -2345,7 +2347,7 @@ static BOOL __stdcall DRLGPATH_TryExpandNeighborNode(int32_t nOpenList, uint32_t
         pNewNode->nX = (uint16_t)nPackedNeighbor;
         pNewNode->nY = *(uint16_t*)((char*)&nPackedNeighbor + 2);
         pNewNode->nFCost = (short int)nHCost + nEdgeCost;
-        DRLGPATH_InsertNodeSorted(nOpenList, pNewNode);
+        DRLGPATH_InsertNodeSorted((D2DrlgPathSearchCtxStrc*)nOpenList, pNewNode);
         if (!pParentNode->pChildren[0]) {
           pParentNode->pChildren[0] = pNewNode;
           return 1;
@@ -2610,9 +2612,9 @@ int32_t __fastcall PATH_FindPathAStarLocalPool(D2PathTypeArg * pPathTypeArg) {
     pNewNode->nY = (uint16_t)((uint32_t)nPackedSrc >> 16);
     pNewNode->nHCost = nHeuristic;
     pNewNode->nFCost = nHeuristic;
-    DRLGPATH_InsertNodeSorted((uintptr_t)&abyOpenList, pNewNode);
+    DRLGPATH_InsertNodeSorted(&abyOpenList, pNewNode);
     void** pClosestNode = 0;
-    void** pBestNodeOut = (void**)DRLGPATH_PopBestNodeFromOpenList((uintptr_t)&abyOpenList);
+    void** pBestNodeOut = (void**)DRLGPATH_PopBestNodeFromOpenList(&abyOpenList);
     if (pBestNodeOut) {
       BOOL bExpandedAny;
       do {
@@ -2628,7 +2630,7 @@ int32_t __fastcall PATH_FindPathAStarLocalPool(D2PathTypeArg * pPathTypeArg) {
           break;
         }
 
-        pBestNodeOut = (void**)DRLGPATH_PopBestNodeFromOpenList((uintptr_t)&abyOpenList);
+        pBestNodeOut = (void**)DRLGPATH_PopBestNodeFromOpenList(&abyOpenList);
       } while (pBestNodeOut);
 
       if (pClosestNode) {

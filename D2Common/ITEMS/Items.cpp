@@ -7,7 +7,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
@@ -36,6 +35,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/ItemMods.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Seed.h"
@@ -315,7 +315,7 @@ void __stdcall SetRareSuffix(D2UnitStrc * pUnit, int16_t wRareSuffix) {
     pUnit->pUnitData.pUnitDataItem->wRareSuffix = wRareSuffix;
 }
 
-BOOL __stdcall CheckItemFlag(D2UnitStrc * pUnit, eD2ItemFlag neD2ItemFlag, int32_t nParam, char * szText) {
+BOOL __stdcall CheckItemFlag(D2UnitStrc * pUnit, eD2ItemFlag neD2ItemFlag, int32_t nLine, char * szText) {
     if (pUnit && pUnit->eUnitType == UNIT_ITEM && pUnit->pUnitData.pUnitDataItem) {
       return pUnit->pUnitData.pUnitDataItem->dwItemFlags & neD2ItemFlag;
     }
@@ -2282,7 +2282,7 @@ int __stdcall ITEM_CalcWeaponAttackSpeed(D2UnitStrc * pUnit, D2UnitStrc * pItem)
         nTrigger = 0;
         __frame0.nWClass = ITEM_GetItemsTxt_dwWClass(pItem);
         COMPOSIT::Composit::COMPOSIT_BuildCofPath(pUnit, pUnit->nClassId, 7, pUnit->eUnitType, pUnit->pInventory, __frame0.szCofPath, &__frame0.nWClass, 0, 0);
-        nAttackSpeedResult = DATATBLS::AnimTbls::ANIMDATA_GetFramesSpeedAndTrigger((int*)__frame0.szCofPath, &__frame0.nFrames, &__frame0.nAnimSpeed, &nTrigger);
+        nAttackSpeedResult = DATATBLS::AnimTbls::ANIMDATA_GetFramesSpeedAndTrigger(__frame0.szCofPath, &__frame0.nFrames, &__frame0.nAnimSpeed, &nTrigger);
         if (!nAttackSpeedResult) {
           return 0x2d;
         }
@@ -3341,9 +3341,9 @@ int32_t __stdcall ITEM_GetTxtItemTypes_beltable(D2UnitStrc * pUnit) {
 
 // Returns the spell-icon index for a scroll or book item (used for skill-icon display). For scrolls/books reads the icon byte from the Books.txt entry indexed by wMagicSuffix[0]; for other item types returns bSpellIcon from Items.txt. Returns -1 when TXT_Books_GetLine fails (0062bbb3). Halts on null or non-item unit.
 int __stdcall ITEM_GetSpellIcon(D2UnitStrc * pUnit) {
-    void* nBooksTxtLine;
     D2ItemsTxt* pItemsTxt;
     uint32_t nBookTxtIdx;
+    D2BooksTxt* pDVar1;
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xdac);
       exit(-1);
@@ -3373,12 +3373,12 @@ int __stdcall ITEM_GetSpellIcon(D2UnitStrc * pUnit) {
         nBookTxtIdx = 0;
       }
 
-      nBooksTxtLine = DATATBLS::ItemTbls::TXT_Books_GetLine(nBookTxtIdx);
-      if (!nBooksTxtLine) {
+      pDVar1 = DATATBLS::ItemTbls::TXT_Books_GetLine(nBookTxtIdx);
+      if (!pDVar1) {
         return -1;
       }
 
-      return (uint32_t)*(uint8_t*)((int)nBooksTxtLine + 2);
+      return (uint32_t)(uint8_t)pDVar1->spellicon;
     }
 }
 
@@ -6053,7 +6053,8 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     int32_t nErrorAddress;
     D2MagicAffixTxt* pMagicAffixTxt;
     D2MonStatsTxt* pMonStatsTxt;
-    void* pBooksTxt;
+    D2BooksTxt* pBooksTxt;
+    void* nAddress;
     int nAffixSellDelta;
     int nAffixBuyDelta;
     int nAffixRepairDelta;
@@ -6149,7 +6150,7 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
             goto HaltInternalError;
           }
 
-          iVar1 = *(int*)((int)pBooksTxt + 0x14) * nQuantity + pItemsTxt->dwCost;
+          iVar1 = pBooksTxt->costpercharge * nQuantity + pItemsTxt->dwCost;
           __frame0.nSellPrice = iVar1;
           __frame0.nBuyPrice = iVar1;
         } else {
@@ -6563,8 +6564,8 @@ int32_t __fastcall ITEMS_CalcTransactionCost(D2UnitStrc * pUnit, D2UnitStrc * pI
     HaltInternalError:
     /* Shared assert-halt tail (GetInstructionPointer +
                          ERROR_UnrecoverableInternalError_Halt + _exit): the 0xbba site falls through
-                         from 0062f283 and the 0xcdc site jumps here from 0062faa7. */ pBooksTxt = Fog::Src::ErrorManager::GetInstructionPointer();
-    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", pBooksTxt, iVar3);
+                         from 0062f283 and the 0xcdc site jumps here from 0062faa7. */ nAddress = Fog::Src::ErrorManager::GetInstructionPointer();
+    Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", nAddress, iVar3);
     exit(-1);
     add_stat_costs:
     add_stat_costs_args_pushed:

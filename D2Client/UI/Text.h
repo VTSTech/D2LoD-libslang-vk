@@ -11,9 +11,11 @@
 // Forward declarations
 struct D2GSPacketSrv0x27;
 struct D2GSPacketSrv0x27_TextStrc;
+struct D2GSPacketSrv0x50;
 struct D2GSPacketSrv0x76;
 struct D2GameViewStrc;
 struct D2HoverTextStrc;
+struct D2ItemsTxt;
 struct D2Packet0x5aEventStructure;
 struct D2UIMouseMsgStrc;
 struct D2UnitStrc;
@@ -106,8 +108,8 @@ void __stdcall TEXT_OnEscCloseQuestScroll(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall TEXT_OnClickCloseQuestScroll(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall TEXT_OnPanelUnregister_NoOp();
 void __stdcall TEXT_DrawQuestScrollUI();
-void __fastcall TEXT_HandleScrollLinePacket(uint8_t * pPacket);
-void __fastcall TEXT_OpenQuestScroll(int32_t pUnit, int32_t pTextBlock);
+void __fastcall TEXT_HandleScrollLinePacket(struct D2GSPacketSrv0x50 * pPacket);
+void __fastcall TEXT_OpenQuestScroll(struct D2UnitStrc * pUnit, struct D2ItemsTxt * pTextBlock);
 uint32_t __stdcall TEXT_IsScrollingTextActive();
 void __stdcall TEXT_FreeChatAndLogMessages();
 int __stdcall TEXT_CloseMessageLogDialog();
@@ -135,6 +137,7 @@ void __stdcall INPUT_TextClickHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_TextKeyHandler(struct D2UIMouseMsgStrc * pMsg);
 void __stdcall INPUT_TextKeyFilter(struct D2UIMouseMsgStrc * pMsg);
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca07b(struct EHExceptionRecord * pExceptionRecord, struct EHRegistrationNode * pRegistrationNode, struct _CONTEXT * pContext, void * pDispatcherContext);
+void StaticInit_6cac10();
 // 11 internal functions (defined in .cpp)
 
 } // namespace D2Client::UI::Text

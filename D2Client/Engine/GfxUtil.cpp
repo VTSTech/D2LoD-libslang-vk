@@ -9,7 +9,6 @@
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine/Gfx.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -33,6 +32,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -759,17 +759,17 @@ uint8_t __fastcall GFXUTIL_GetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nPara
     return pGfxInfo->nComponentFlags[nParam * 2];
 }
 
-void __fastcall GFXUTIL_SetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nParam, uint8_t byComponentVal) {
+void __fastcall GFXUTIL_SetGfxInfoComponent(D2UnitStrc * pUnit, int32_t nComponentIndex, uint8_t byComponentVal) {
     D2GfxInfoStrc* pGfxInfo = UNIT::CUnit::GetGfxInfo(pUnit);
     if (!pGfxInfo) {
       return;
     }
 
-    pGfxInfo->nComponentFlags[nParam * 2] = byComponentVal;
+    pGfxInfo->nComponentFlags[nComponentIndex * 2] = byComponentVal;
 }
 
 // @sourcefile .\ENGINE\GfxUtil.cpp
-static void __stdcall GFXUTIL_UpdateDirectionForMode(uint8_t bParam, int32_t nAnimMode, int32_t nPrevDirection, D2UnitStrc * pUnit, int32_t nNewDirection) {
+static void __stdcall GFXUTIL_UpdateDirectionForMode(uint8_t nDirection, int32_t nAnimMode, int32_t nPrevDirection, D2UnitStrc * pUnit, int32_t nNewDirection) {
     int nClassId;
     if (!nAnimMode) {
       return;
@@ -787,12 +787,12 @@ static void __stdcall GFXUTIL_UpdateDirectionForMode(uint8_t bParam, int32_t nAn
     D2Common::Skills::SKILLS_GetStateTransformGfx(pUnit, &eType, &nClassId, &nAnimMode, ".\\ENGINE\\GfxUtil.cpp", 0x53c);
     if (eType != UNIT_PLAYER) {
       if (eType == UNIT_MONSTER && (!nAnimMode || nAnimMode == 0xc) && nPrevDirection != nNewDirection) {
-        D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pUnit->pPath.pDynamicPath, bParam);
+        D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pUnit->pPath.pDynamicPath, nDirection);
         return;
       }
     } else {
       if ((!nAnimMode || nAnimMode == 0x11) && nPrevDirection != nNewDirection) {
-        D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pUnit->pPath.pDynamicPath, bParam);
+        D2Common::PATH::DynamicPath::SetDirectionAndNewDirection(pUnit->pPath.pDynamicPath, nDirection);
       }
     }
 }
@@ -1037,7 +1037,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
       __frame0.nScreenY = nBais - nWorldOffset;
     }
 
-    D2GfxInfoUnkStrc* pGfxInfo = Gfx::GFX_IsUnitOnScreen(pUnit, __frame0.nScreenX, __frame0.nScreenY, 0, 0);
+    D2GfxInfoUnkStrc* pGfxInfo = (D2GfxInfoUnkStrc*)Gfx::GFX_IsUnitOnScreen(pUnit, __frame0.nScreenX, __frame0.nScreenY, 0, 0);
     if (!pGfxInfo) {
       return 0;
     }
@@ -1069,6 +1069,7 @@ uint32_t __fastcall GFXUTIL_GetUnitCofDirectionOnScreen(D2UnitStrc * pUnit, uint
 // Build COF parameters from unit animation/equipment - determines graphics file, weapon, armor appearance
 // @sourcefile .\ENGINE\GfxUtil.cpp
 static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit, D2UnitStrc * pEquipContext, int * pOutItemClassId) {
+    D2UnitStrc* pDVar1;
     int32_t nComponentIdx;
     D2GfxInfoUnkStrc* pGfxInfo;
     D2GfxInfoUnkStrc* pGfxInfoFallback;
@@ -1078,7 +1079,6 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
     int32_t fUnitToken;
     D2UnitStrc* pOverlay;
     bool bCompositeDeath;
-    D2UnitStrc* pDVar2;
     D2UnitStrc* pPlayerUnit_lcl;
     uint32_t nArmTypeIndex;
     D2ItemsTxt* pItemsTxt;
@@ -1098,7 +1098,7 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
     int nEffectiveClassId;
     uint8_t byPaletteIdx;
     uint8_t byComponentType;
-    BOOL BVar1;
+    BOOL BVar2;
     eD2UnitType eEffectiveUnitType;
     eEffectiveUnitType = UNIT_COUNT;
     if (pUnit) {
@@ -1157,13 +1157,13 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
                       nPaletteIdx = GFXUTIL_GetCompositePaletteIndex(pUnit, byComponentType);
                       byPaletteIdx = nPaletteIdx;
                       if (!iVar3 || iVar3 == 0xc) {
-                        BVar1 = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pGfxData->nClassId, compositeDeath);
-                        if (BVar1) {
-                          pDVar2 = D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)byPaletteIdx);
-                          pGfxData->nArmorToken = (int)pDVar2;
+                        BVar2 = UNIT::Player::TXT_MonStats_MonStats2_GetFlagsByBitOffset(pGfxData->nClassId, compositeDeath);
+                        if (BVar2) {
+                          nArmTypeIndex = D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)byPaletteIdx);
+                          pGfxData->nArmorToken = nArmTypeIndex;
                         }
                       } else {
-                        pOverlay = D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)nPaletteIdx);
+                        pOverlay = (D2UnitStrc*)D2Common::DATATBLS::OverlayTbls::MONSTER_GetComponentOverlay(pUnit, (uint32_t)byComponentType, (uint32_t)nPaletteIdx);
                         pGfxData->nArmorToken = (int)pOverlay;
                       }
                     }
@@ -1172,7 +1172,7 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
                   }
 
                   pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
-                  pDVar2 = pEffectiveMode;
+                  pDVar1 = pEffectiveMode;
                   if (pUnit == pPlayerUnit_lcl) {
                     pGfxData->dwFlags |= 8;
                   }
@@ -1183,9 +1183,9 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
 
                   pGfxData->nModeToken = gPlrModeTokens[pGfxData->nMode];
                   GFXUTIL_GetArmorAppearanceFromTorso(pUnit, (D2InventoryStrc*)pEffectiveMode, eEffectiveUnitType, (uint32_t*)aArmorTokens);
-                  pEffectiveMode = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType((D2InventoryStrc*)pDVar2, (uint32_t)pGfxData->nComponentType);
-                  BVar1 = D2Common::COMPOSIT::Composit::DoesBodyHaveAppearanceColors((uint32_t)pGfxData->nComponentType);
-                  if (BVar1) {
+                  pEffectiveMode = D2Common::INVENTORY::Inventory::INVENTORY_FindWornItemByType((D2InventoryStrc*)pDVar1, (uint32_t)pGfxData->nComponentType);
+                  BVar2 = D2Common::COMPOSIT::Composit::DoesBodyHaveAppearanceColors((uint32_t)pGfxData->nComponentType);
+                  if (BVar2) {
                     if (pGfxData->nMode == 0x11 || !pGfxData->nMode) {
                       pGfxData->nArmorToken = 0x2074696c;
                     } else {
@@ -1194,16 +1194,16 @@ static BOOL __stdcall GFXUTIL_BuildCofParams(D2GfxDataStrc * pGfxData, D2UnitStr
                     }
                   } else {
                     fUnitToken = GFXUTIL_GetBodyLocWeaponToken((uint32_t)pGfxData->nComponentType, pUnit);
-                    pDVar2 = pEffectiveMode;
+                    pDVar1 = pEffectiveMode;
                     pGfxData->nArmorToken = fUnitToken;
-                    if (!pEffectiveMode || fUnitToken || (BVar1 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEffectiveMode) , !BVar1)) {
+                    if (!pEffectiveMode || fUnitToken || (BVar2 = D2Common::ITEMS::Items::ITEM_CheckIfItemIsNotBrokenAndNotDisabled(pEffectiveMode) , !BVar2)) {
                       if (pGfxData->nArmorToken) {
                         goto finalize_gfx_tokens;
                       }
 
                       pGfxData->nArmorToken = 0x2074696c;
                     } else {
-                      fUnitToken = D2Common::ITEMS::Items::ITEM_GetItemsTxt_dwAlternateGfxIfExists(pDVar2);
+                      fUnitToken = D2Common::ITEMS::Items::ITEM_GetItemsTxt_dwAlternateGfxIfExists(pDVar1);
                       pGfxData->nArmorToken = fUnitToken;
                     }
                   }
@@ -1286,12 +1286,13 @@ int32_t __fastcall DC6_AssignParams(D2GfxDataStrc * pGfxData, D2UnitStrc * pUnit
 static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAnimMode, short * pComponentTable, void * pMonStatsTxt, int32_t nComponentRow, int32_t nWeaponClass, D2GfxDataStrc * pGfxData) {
     BOOL _bCompositeDeath;
     bool bCompositeDeath;
-    int nOverlay;
+    uint32_t nOverlay;
     uint32_t nComponentIdx;
     uint32_t nVariantIdx;
     uint8_t* pCofEntry;
     uint8_t byColorIdx;
     uint8_t byColorVariant;
+    int nCompositeToken;
     uint8_t* pCofDataBase;
     uint32_t nComponentTable;
     int nMonStatsTxt;
@@ -1309,9 +1310,9 @@ static BOOL __stdcall GFXUTIL_BuildMonsterCofParams(void * pCofFile, int32_t nAn
     pGfxData->nMode = nAnimMode;
     byColorIdx = pGfxData->nComponentType;
     pGfxData->eUnitType = UNIT_MONSTER;
-    nOverlay = gTxtCompositTokens[byColorIdx];
+    nCompositeToken = gTxtCompositTokens[byColorIdx];
     pGfxData->nWeaponClass = nWeaponClass;
-    pGfxData->nCompositToken = nOverlay;
+    pGfxData->nCompositToken = nCompositeToken;
     pGfxData->nArmorToken = 0x2074696c;
     pGfxData->nUnitToken = *(int*)((int)pMonStatsTxt + 0x10);
     pCofDataBase = *(uint8_t**)((int)pCofFile + 0x14);
@@ -1395,7 +1396,7 @@ int32_t __fastcall GFXUTIL_InitAndBuildMonsterCofParams(D2GfxDataStrc * pGfxData
     return BVar1;
 }
 
-int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbParam, int32_t pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam) {
+int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbParam, uint8_t * pLayerArray, int * pOutMaxY, int32_t nPaletteShift, uint32_t nParam) {
     int nSpriteLoaded;
     int32_t nOffsetY;
     int32_t nDrawWorldOffsetY;
@@ -1414,7 +1415,7 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pbP
     do {
       int nBuilt;
       iVar1 = nLayerIdx;
-      byLayerIdCheck = *(uint8_t*)(nLayerIdx + pLayerArray);
+      byLayerIdCheck = pLayerArray[nLayerIdx];
       if (0xf < byLayerIdCheck) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x59d);
         exit(-1);
@@ -1503,7 +1504,7 @@ uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nPa
     int nScreenX = nParam - nWorldOffsetX;
     int32_t nWorldOffsetY = UI::Path::DRAW_GetWorldOffsetY();
     int nOriginY = nWorldY - nWorldOffsetY;
-    D2GfxInfoUnkStrc* pGfxInfo = Gfx::GFX_IsUnitOnScreen(pUnit, nParam - nWorldOffsetX, nOriginY, 0, 0);
+    BOOL pGfxInfo = Gfx::GFX_IsUnitOnScreen(pUnit, nParam - nWorldOffsetX, nOriginY, 0, 0);
     if (!pGfxInfo) {
       return 0;
     }
@@ -1515,8 +1516,8 @@ uint32_t __fastcall GFXUTIL_IsUnitSpriteOnScreen(D2UnitStrc * pUnit, int32_t nPa
     sGfxData.pDC6 = 0;
     sGfxData.nFrameNumber = nFrameMetrics;
     sGfxData.nComponentType = '\x01';
-    BOOL BVar1 = GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nWorldY);
-    if (!BVar1) {
+    pGfxInfo = GFXUTIL_BuildCofParams(&sGfxData, pUnit, (D2UnitStrc*)-1, &nWorldY);
+    if (!pGfxInfo) {
       return 0;
     }
 

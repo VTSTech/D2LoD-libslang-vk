@@ -17,9 +17,10 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/H/stpl.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
+#include "Storm/H/CCritSect.h"
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -1484,7 +1485,7 @@ void __stdcall CELCMP_FreeCelFileMemory(void * pCelFile) {
     D2_FREE_AT(pCelFile, ".\\SRC\\CelCmp.cpp", 0x40e);
 }
 
-void __stdcall CELCMP_InvokeFormatSpecificCleanup(int32_t nParam, BYTE * dwParam) {
+void __stdcall CELCMP_InvokeFormatSpecificCleanup(int32_t nParam, BYTE * pPaletteRemap) {
     // Static local variables (originally global data)
     static fpCelRemapFrameByFormat gapfnCelRemapFrameByFormat[2] = { &D2CMP::SRC::FastCmp::FASTCMP_RemapFramePaletteIndices, nullptr }; D2_STATIC_GUARD(gapfnCelRemapFrameByFormat, "D2CMP::SRC::CelCmp::CELCMP_InvokeFormatSpecificCleanup::gapfnCelRemapFrameByFormat");
 
@@ -1503,7 +1504,7 @@ void __stdcall CELCMP_InvokeFormatSpecificCleanup(int32_t nParam, BYTE * dwParam
 
       puVar1 = (uint32_t*)(nParam + 0x18);
       do {
-        (*gapfnCelRemapFrameByFormat[*(int*)(nParam + 8)])((DC6Block*)*puVar1, dwParam);
+        (*gapfnCelRemapFrameByFormat[*(int*)(nParam + 8)])((DC6Block*)*puVar1, pPaletteRemap);
         iFrame++;
         puVar1++;
       } while (iFrame < (uint32_t)(*(int*)(nParam + 0x10) * *(int*)(nParam + 0x14)));
@@ -1905,7 +1906,7 @@ void __stdcall CELCMP_AddCelFrameToCache(uint32_t nParam1, uint32_t * pdwParam, 
         bCriticalLocked = 0;
       }
 
-      pNewFrame = (::TCELENTRY*)Storm::SMem::SMemAlloc(0x24, s___AUTCELENTRY___00741f14, -2, 8);
+      pNewFrame = (::TCELENTRY*)Storm::Source::SMem::SMemAlloc(0x24, s___AUTCELENTRY___00741f14, -2, 8);
       if (pNewFrame) {
         pNewFrame->m_link.m_prevlink = 0;
         pNewFrame->m_link.m_next = 0;
@@ -2102,6 +2103,15 @@ void __fastcall CELCMP_ApplyColorKeyToAllPixels(void * pFrameData, pfnTilecmpPix
 // compiler-generated C++ EH handler; its frame is never registered with the OS
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca286(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
     return ExceptionContinueSearch;
+}
+
+void StaticInit_6cafc0() {
+    gCelCmpCacheHandler.TSHashTableReuse<::CELLIST, HASHKEY_NONE, 0>::Constructor();
+    gCelCmpCacheHandler.nSequence = 0xf71733f;
+    gCelCmpCacheHandler.bWrapped = 0;
+    gCelCmpCacheHandler.pVtable = (TSHashTable<::CELLIST, HASHKEY_NONE>::Vtable*)(void*)TSExportTableSync<::CELLIST, HCELLIST__*, HLOCKEDCELLIST__*, CCritSect, 0>::vftable;
+    InitializeCriticalSection(&gCelCmpCacheHandler.tSync.m_critsect);
+    atexit(StaticFini_gCelCmpCacheHandler);
 }
 
 void StaticFini_gCelCmpCacheHandler() {

@@ -7,11 +7,10 @@
 #include "Fog/SMem.h"
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
 #include "Storm/Storm.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Launch/CharSel.h"
 
@@ -909,10 +908,10 @@ uint32_t __thiscall ComputeAbsoluteFromRelative(int * pNode, int * pBase) {
     return nOffset + (int)pBase;
 }
 
-void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix) {
+void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix) {
     char szLogsFolder[260];
     FILETOOLS_GetUserMyDocumentsDiabloIIGameLogsFolder(szLogsFolder, 0x104);
-    Storm::Source::SSTR::SStrPrintf(gszLogFilePath, 0x104, "%s%s", szLogsFolder, (char*)szSuffix);
+    Storm::Source::SSTR::SStrPrintf(gszLogFilePath, 0x104, "%s%s", szLogsFolder, szSuffix);
 }
 
 long __fastcall GetLogFileSize(uint8_t * szFileName) {
@@ -1292,7 +1291,7 @@ void * __thiscall DestroyListNodeAndFree(void * pThis, uint8_t bFreeMemory) {
     uint32_t dwSEHTryLevel = -1;
     UnlinkListNodeDouble((int*)pThis);
     if (bFreeMemory & 1 && pThis) {
-      Storm::SMem::SMemFree(pThis, "delete", -1, 0);
+      Storm::Source::SMem::SMemFree(pThis, "delete", -1, 0);
     }
 
     ExceptionList = pPrevExceptionList;
@@ -1313,7 +1312,7 @@ void __fastcall DestroyAllListNodes(void * pListHead) {
 
       dwSEHTryLevel = -1;
       UnlinkListNodeDouble(pObject);
-      Storm::SMem::SMemFree(pObject, s___AUMessage_LogManager___00708124, -2, 0);
+      Storm::Source::SMem::SMemFree(pObject, s___AUMessage_LogManager___00708124, -2, 0);
     }
 
     ExceptionList = pPrevExceptionList;
@@ -1324,7 +1323,7 @@ int * * __thiscall AllocateAndInsertMessageNode(int * * ppListHead, int32_t nIns
     pfnEHHandlerRoutine pfnSEHHandler = __GSHandlerCheck_EH_6c9e11;
     void* pPrevExceptionList = ExceptionList;
     ExceptionList = &pPrevExceptionList;
-    int** pNodeNew = (int**)Storm::SMem::SMemAlloc(nPayloadSize + 0x24, s___AUMessage_LogManager___00708124, -2, dwAllocFlags | 8);
+    int** pNodeNew = (int**)Storm::Source::SMem::SMemAlloc(nPayloadSize + 0x24, s___AUMessage_LogManager___00708124, -2, dwAllocFlags | 8);
     int** pNode;
     if (pNodeNew) {
       *pNodeNew = 0;
@@ -1358,14 +1357,14 @@ void __stdcall StopLogWriterThread() {
     LeaveCriticalSection(&gLogMessageQueueCS);
 }
 
-void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDataLen, void * pCategory, BOOL bSkipData, int32_t nVerbose) {
+void EnqueueLogMessage(char * szText1, char * szText2, void * pData, size_t nDataLen, void * pCategory, BOOL bSkipData, int32_t nVerbose) {
     int* pPrevLink;
     if (!(!gLogWriterThreadStopFlag && gLogManagerInitialized)) {
       return;
     }
     if (!bSkipData) {
       BOOL bIsBadPtr;
-      /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pData, (UINT_PTR)nDataLen);
+      /* UINT_PTR ucb for IsBadReadPtr */ /* void * lp for IsBadReadPtr */ bIsBadPtr = IsBadReadPtr(pData, nDataLen);
       if (bIsBadPtr) {
         bSkipData = 1;
       }
@@ -1375,7 +1374,7 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDat
     uint32_t pWrite = Storm::Source::SSTR::SStrLen(szText2);
     int nPayloadSize = nLen1 + 0x16 + pWrite;
     if (!bSkipData) {
-      nPayloadSize += (int)nDataLen;
+      nPayloadSize += nDataLen;
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogMessageQueueCS);
@@ -1387,14 +1386,14 @@ void EnqueueLogMessage(char * szText1, char * szText2, void * pData, void * nDat
     GetLocalTime((LPSYSTEMTIME)(pNode + 5));
     nLen1 = Storm::Source::SSTR::SStrCopy((char*)(pNode + 9), szText1, 0x7fffffff);
     char* pcVar1 = (char*)(nLen1 + 1 + (int)(pNode + 9));
-    *(void**)(pcVar1 + 4) = (void*)nDataLen;
+    *(size_t*)(pcVar1 + 4) = nDataLen;
     *(void**)pcVar1 = (void*)pData;
     *(void**)(pcVar1 + 8) = (void*)pCategory;
     *(BOOL*)(pcVar1 + 0xc) = bSkipData;
     *(uint32_t*)(pcVar1 + 0x10) = (uint32_t)!nVerbose;
     nLen1 = Storm::Source::SSTR::SStrCopy(pcVar1 + 0x14, szText2, 0x7fffffff);
     if (!bSkipData) {
-      memcpy(pcVar1 + nLen1 + 0x15, pData, (size_t)nDataLen);
+      memcpy(pcVar1 + nLen1 + 0x15, pData, nDataLen);
     }
 
     /* LPCRITICAL_SECTION lpCriticalSection for EnterCriticalSection */ EnterCriticalSection(&gLogMessageQueueCS);
@@ -1496,7 +1495,7 @@ DWORD __stdcall LOGMANAGER_LogWriterThreadProc(void * lpThreadParam) {
         /* LPCRITICAL_SECTION lpCriticalSection for LeaveCriticalSection */ LeaveCriticalSection(&gLogFileCS);
         dwSEHTryLevel = -1;
         UnlinkListNodeDouble(pNode);
-        Storm::SMem::SMemFree(pNode, "delete", -1, 0);
+        Storm::Source::SMem::SMemFree(pNode, "delete", -1, 0);
       }
       if (!gLogWriterThreadStopFlag) {
         /* DWORD dwMilliseconds for Sleep */ Sleep(dwSleepMs);
@@ -1857,6 +1856,16 @@ _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6c9e38(EHExceptionRecord * pException
 // compiler-generated C++ EH handler; its frame is never registered with the OS
 int SehHandler_6c9e6a(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
     return ExceptionContinueSearch;
+}
+
+void StaticInit_6ca700() {
+    InitializeCriticalSection(&gLogMessageQueueCS);
+    atexit(StaticFini_gLogMessageQueueCS);
+}
+
+void StaticInit_6ca720() {
+    InitializeCriticalSection(&gLogFileCS);
+    atexit(StaticFini_gLogFileCS);
 }
 
 void __stdcall LOGMGR_InitMessageQueue() {

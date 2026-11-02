@@ -6,7 +6,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Item.h"
@@ -1344,11 +1343,11 @@ int __fastcall LoadHardSkills(::SGAMEDATA * pGameStrc, D2UnitStrc * pUnit, short
     return 0;
 }
 
-int __fastcall PLRSAVE_LoadItemsFromBuffer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * * ppItemList, int32_t nItemMode, uint32_t nParam, uint32_t dwParam, int * pnParam) {
+int __fastcall PLRSAVE_LoadItemsFromBuffer(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * * ppItemList, int32_t nItemMode, uint32_t nFormat, uint32_t dwParam, int * pnParam) {
     D2UnitStrc** ppReadPos = ppItemList;
     D2UnitStrc* pBufStart = *ppItemList;
     ppItemList = 0;
-    int32_t nLoadResult = PlayerSave::PLRSAVE_DispatchItemLoadByFormat(pGame, pUnit, (uint8_t*)pBufStart, nParam, nItemMode - (int)pBufStart, 0, (short int**)&ppItemList);
+    int32_t nLoadResult = PlayerSave::PLRSAVE_DispatchItemLoadByFormat(pGame, pUnit, (uint8_t*)pBufStart, nFormat, nItemMode - (int)pBufStart, 0, (short int**)&ppItemList);
     if (nLoadResult) {
       if (!pnParam) {
         return 0x14;
@@ -1695,7 +1694,7 @@ BOOL __fastcall CreateItemIronGolemItem(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 
 // Restores an Iron Golem from save (expansion-only, magic 0x666b). Reads the sacrificed item from the buffer via CreateItemIronGolemItem, equips it as the current skill, marks the golem for update, and registers its GUID on the client. If the golem byte is 0 (no golem), skips creation silently. Returns 0x17 on failure.
 // @sourcefile .\PLAYER\PlrSave2.cpp
-int __fastcall LoadGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * * ppReadPos, D2UnitStrc * pEndBuf, uint32_t nParam) {
+int __fastcall LoadGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * * ppReadPos, D2UnitStrc * pEndBuf, uint32_t nVersion) {
     BOOL bCreated;
     D2ClientStrc* pClient;
     int32_t nGolemGUID;
@@ -1721,7 +1720,7 @@ int __fastcall LoadGolem(::SGAMEDATA * pGame, D2UnitStrc * pUnit, short * * ppRe
       }
 
       D2Common::Units::SetCurrentSkill(pUnit, pSkill);
-      bCreated = CreateItemIronGolemItem(pGame, pUnit, &pEndBuf, &pItemReadPtr, (int32_t)pGolem, nParam);
+      bCreated = CreateItemIronGolemItem(pGame, pUnit, &pEndBuf, &pItemReadPtr, (int32_t)pGolem, nVersion);
       pGolem = pEndBuf;
       if (!bCreated) {
         return 0x17;

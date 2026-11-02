@@ -6,7 +6,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
@@ -126,7 +125,7 @@ BOOL __fastcall Skills_SrvDoFunc_083_MonsterMeleeAttack(::SGAMEDATA * pGame, D2U
     }
 
     UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pTarget, 0);
-    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, (int*)pUnit, (int*)pTarget);
+    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, pUnit, pTarget);
     BOOL bResult = SkillsServer::SKILLS_SrvStartSkill(pGame, pUnit, eSkill, nSkillLvl, 0);
     return bResult;
 }
@@ -824,7 +823,7 @@ BOOL __fastcall SKILLMONST_SrvDoFunc092_MeleeHitThenMissile(::SGAMEDATA * pGame,
     }
 
     UNIT::SUnitDmg::DAMAGE_ProcessCombatQueueEntry(pGame, pUnit, pVictim, 0);
-    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, (int*)pUnit, (int*)pVictim);
+    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, pUnit, pVictim);
     eMissilesId nSrvMissle = (eMissilesId)pDVar1->srvmissile[1];
     if ((int)nSrvMissle < 0) {
       if (pUnit && pUnit->eUnitType == UNIT_MONSTER) {
@@ -2181,7 +2180,7 @@ uint32_t __fastcall SKILLPAL_GetHolyBoltTargetCount(D2UnitStrc * pUnit) {
       if (nFrameIdx < nTotalSeqFrames >> 8) {
         nCurFrameShifted <<= 8;
         do {
-          D2Common::Merc::ANIM_GetEventFrame((int32_t)pUnit->pAnimSeq, nCurFrameShifted, &nEventFrame);
+          D2Common::Merc::ANIM_GetEventFrame((D2MonSeqTxt*)pUnit->pAnimSeq, nCurFrameShifted, &nEventFrame);
           if (nEventFrame) {
             return nEventFrame;
           }
@@ -2270,7 +2269,7 @@ BOOL __fastcall Skills_SrvDoFunc_109_MonsterFrenzyAttack(::SGAMEDATA * pGame, D2
       return 0;
     }
 
-    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, (int*)pUnit, (int*)pTarget);
+    UNIT::SUnitDmg::DAMAGE_RemoveDamageListEntry(pGame, pUnit, pTarget);
     if (pUnit) {
       pUnit->eUnitFlags |= UNITFLAG_SKSRVDOFUNC;
     }
@@ -2598,7 +2597,7 @@ BOOL __fastcall Skills_SrvDoFunc_111_ApplyFetishAura(::SGAMEDATA * pGame, D2Unit
       pSkillsTxt = sgptDataTable->pTxtSkills + eSkill;
     }
 
-    D2UnitFindDataStrc* pFindData = SkillsServer::SKILLS_FindUnitsInRange((int32_t)pGame, pUnit, pSkillsTxt->Param[3] + nSkillLvl * 2, nTargetY, nTargetX);
+    D2UnitFindDataStrc* pFindData = SkillsServer::SKILLS_FindUnitsInRange(pGame, pUnit, pSkillsTxt->Param[3] + nSkillLvl * 2, nTargetY, nTargetX);
     int nUnitIdx = 0;
     if (pFindData->nCountedUnits > 0) {
       uint32_t bCanAttack;
@@ -2620,7 +2619,7 @@ BOOL __fastcall Skills_SrvDoFunc_111_ApplyFetishAura(::SGAMEDATA * pGame, D2Unit
       } while (nUnitIdx < pFindData->nCountedUnits);
     }
 
-    SkillsServer::SKILLS_FreeUnitFindData((int32_t)pGame, pFindData);
+    SkillsServer::SKILLS_FreeUnitFindData(pGame, pFindData);
     return 1;
 }
 

@@ -35,6 +35,7 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Fog/Src/Safesock.h"
+#include "Fog/Src/String/FogString.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
@@ -438,12 +439,12 @@ int __stdcall JoinOrCreateGame(DWORD dwParam) {
                   OOGMENU_RefreshGameListDisplay();
                   D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
                 } else {
-                  OOGMENU_AddGameToCache((int32_t)pMcpCharBuf);
+                  OOGMENU_AddGameToCache(pMcpCharBuf);
                   D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
                 }
               } else {
                 if (nGSRequestId == gwLastGameInfoRequestId) {
-                  OOGMENU_DisplayGameDetails((int32_t)pMcpCharBuf);
+                  OOGMENU_DisplayGameDetails(pMcpCharBuf);
                 }
 
                 D2MCPClient::McpConnect::MCPCONNECT_ClearCharSelectBuffer();
@@ -1100,7 +1101,7 @@ void __fastcall OOGUTIL_HandleChatCommands(char * szText) {
           nCmdMatch = ChatDlg::someStrCompare(szText, "/homechannel ");
           if (!nCmdMatch || (nCmdMatch = ChatDlg::someStrCompare(szText, "/defaultchannel ") , !nCmdMatch) || (nCmdMatch = ChatDlg::someStrCompare(szText, "/home ") , !nCmdMatch)) {
             ChatDlg::CHATDLG_ParseCommandArgument(0x20, szText, szChannelName);
-            Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Default Channel", 0, szChannelName);
+            Storm::Source::SReg::SRegSaveString("Diablo II", "Default Channel", 0, szChannelName);
             return;
           }
 
@@ -1301,14 +1302,14 @@ uint32_t __fastcall OOGUTIL_CheckCharacterLevel(uint8_t * pszLevelChars) {
 // display cache (stride 0x3b per entry, count=nGameListDifficultyFilter). Dedups on (u16)pGameInfo[+8]=gameid.
 // Copies: +8 gameid -> gwGameListCacheEntryPort; +0x14 -> gwOOGLobbyScreenState; +0x1c -> gszLanGameListEntryName;
 // +0x2c -> gszLanGameListEntryDescription. Called once per incoming MCP 0x05 game packet from JoinOrCreateGame.
-void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
+void __fastcall OOGMENU_AddGameToCache(D2McpGameInfoStrc * pGameInfo) {
     char cChar;
     int nIndex = 0;
     if (nGameListDifficultyFilter > 0) {
       uint16_t* pwCachePort;
       pwCachePort = &gbLanGameListEntryNamePadding2[0].nJoinId;
       do {
-        if (*pwCachePort == *(uint16_t*)(pGameInfo + 8)) {
+        if (*pwCachePort == (uint16_t)pGameInfo->dwGameId) {
           return;
         }
 
@@ -1317,10 +1318,10 @@ void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
       } while (nIndex < nGameListDifficultyFilter);
     }
 
-    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].nJoinId = *(uint16_t*)(pGameInfo + 8);
+    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].nJoinId = (uint16_t)pGameInfo->dwGameId;
     gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].dwIpAddr = 0;
-    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].wDisplayedCount = *(uint16_t*)(pGameInfo + 0x14);
-    char* pszSrc = (char*)(pGameInfo + 0x1c);
+    gbLanGameListEntryNamePadding2[nGameListDifficultyFilter].wDisplayedCount = (uint16_t)pGameInfo->nPlayerCount;
+    char* pszSrc = pGameInfo->szGameName;
     nIndex = nGameListDifficultyFilter * 0x3b + (intptr_t)&gbLanGameListEntryNamePadding2[0].szName - (int)pszSrc;
     do {
       cChar = *pszSrc;
@@ -1328,7 +1329,7 @@ void __fastcall OOGMENU_AddGameToCache(int32_t pGameInfo) {
       pszSrc++;
     } while (cChar != '\0');
 
-    pszSrc = (char*)(pGameInfo + 0x2c);
+    pszSrc = pGameInfo->szGameDescription;
     nIndex = nGameListDifficultyFilter * 0x3b + (intptr_t)&gbLanGameListEntryNamePadding2[0].szDescription - (int)pszSrc;
     do {
       cChar = *pszSrc;
@@ -1446,49 +1447,49 @@ static void OOGUTIL_Unused2(int32_t nEntryIndex) {
 }
 
 // Displays game details in the lobby textbox. Shows game description, elapsed time (HH:MM:SS), level restrictions (single level or range), max players, and iterates through all players to display their names and levels with class-specific formatting (Amazon/Sorceress/Necromancer/Paladin/Barbarian/Druid/Assassin). All formatted strings are written to a 256-byte buffer before being added to the display.
-void __fastcall OOGMENU_DisplayGameDetails(int32_t pGameInfo) {
+void __fastcall OOGMENU_DisplayGameDetails(D2McpGameInfoStrc * pGameInfo) {
     uint16_t* pwCurPlayerLevel;
+    char (*szText)[16];
     char szFormatBuffer[256];
-    char* _Format;
     char cChar;
     if (!gpOogGameListDetailsPanelControl) {
       return;
     }
 
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ClearAllLines(gpOogGameListDetailsPanelControl);
-    char* pszCurPlayerName = (char*)(pGameInfo + 0x2c);
+    char* pszCurPlayerName = pGameInfo->szGameDescription;
     pszCurPlayerName = pszCurPlayerName + strlen(pszCurPlayerName) + 1;
-    if (pszCurPlayerName != (char*)(pGameInfo + 0x2d)) {
-      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, (char*)(pGameInfo + 0x2c));
+    if (pszCurPlayerName != pGameInfo->szGameDescription + 1) {
+      D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, pGameInfo->szGameDescription);
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, "");
     }
 
-    uint32_t nFmtLevel = *(uint32_t*)(pGameInfo + 0xc);
+    uint32_t nFmtLevel = pGameInfo->dwElapsedSeconds;
     sprintf(szFormatBuffer, "Elapsed Time: %d:%02d:%02d", nFmtLevel / 0xe10, (int)(nFmtLevel % 0xe10 / 0x3c), nFmtLevel % 0x3c);
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
-    uint8_t byLevelMax = *(uint8_t*)(pGameInfo + 0x11);
+    uint8_t byLevelMax = pGameInfo->nLevelRange;
     if (byLevelMax < 100) {
       int nLevelRangeLow;
       if (byLevelMax) {
-        nLevelRangeLow = (uint32_t)*(uint8_t*)(pGameInfo + 0x10) - (uint32_t)byLevelMax;
+        nLevelRangeLow = (uint32_t)pGameInfo->nLevelMin - (uint32_t)byLevelMax;
         if (nLevelRangeLow <= 1) {
           nLevelRangeLow = 1;
         }
 
-        nFmtLevel = (uint32_t)byLevelMax + (uint32_t)*(uint8_t*)(pGameInfo + 0x10);
+        nFmtLevel = (uint32_t)byLevelMax + (uint32_t)pGameInfo->nLevelMin;
         if (0x62 < nFmtLevel) {
           nFmtLevel = 99;
         }
 
         sprintf(szFormatBuffer, "Level %d to %d", nLevelRangeLow, nFmtLevel);
       } else {
-        sprintf(szFormatBuffer, "Level %d", (uint32_t)*(uint8_t*)(pGameInfo + 0x10));
+        sprintf(szFormatBuffer, "Level %d", (uint32_t)pGameInfo->nLevelMin);
       }
 
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
     }
 
-    byLevelMax = *(uint8_t*)(pGameInfo + 0x12);
+    byLevelMax = pGameInfo->nMaxPlayers;
     if (byLevelMax > 0 && byLevelMax < 8) {
       sprintf(szFormatBuffer, "Up to %d Players", (uint32_t)byLevelMax);
       D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, szFormatBuffer);
@@ -1496,54 +1497,54 @@ void __fastcall OOGMENU_DisplayGameDetails(int32_t pGameInfo) {
 
     D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, "");
     int nPlayerIndex = 0;
-    if (*(int*)(pGameInfo + 0x14) > 0) {
-      pwCurPlayerLevel = (uint16_t*)(pGameInfo + 0x6c);
-      pszCurPlayerName = (char*)(pGameInfo + 0x8c);
+    if (pGameInfo->nPlayerCount > 0) {
+      pwCurPlayerLevel = pGameInfo->awPlayerLevel;
+      szText = pGameInfo->aszPlayerName;
       do {
-        if (*pszCurPlayerName != '\0') {
-          D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, pszCurPlayerName);
+        if ((*szText)[0] != '\0') {
+          D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsiSimple(gpOogGameListDetailsPanelControl, *szText);
           switch (pwCurPlayerLevel[-0x10]) {
             case 0:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Amazon";
+            pszCurPlayerName = "Level %d Amazon";
             break;
             case 1:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Sorceress";
+            pszCurPlayerName = "Level %d Sorceress";
             break;
             case 2:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Necromancer";
+            pszCurPlayerName = "Level %d Necromancer";
             break;
             case 3:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Paladin";
+            pszCurPlayerName = "Level %d Paladin";
             break;
             case 4:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Barbarian";
+            pszCurPlayerName = "Level %d Barbarian";
             break;
             case 5:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Druid";
+            pszCurPlayerName = "Level %d Druid";
             break;
             case 6:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d Assassin";
+            pszCurPlayerName = "Level %d Assassin";
             break;
             default:
               nFmtLevel = (uint32_t)*pwCurPlayerLevel;
-            _Format = "Level %d";
+            pszCurPlayerName = "Level %d";
           }
 
-          sprintf(szFormatBuffer, _Format, nFmtLevel);
+          sprintf(szFormatBuffer, pszCurPlayerName, nFmtLevel);
           D2Win::Src::D2WinImage::D2WINTEXTBOX_SetTextFromAnsi(gpOogGameListDetailsPanelControl, szFormatBuffer, 5);
         }
 
         nPlayerIndex++;
         pwCurPlayerLevel++;
-        pszCurPlayerName += 0x10;
-      } while (nPlayerIndex < *(int*)(pGameInfo + 0x14));
+        szText++;
+      } while (nPlayerIndex < pGameInfo->nPlayerCount);
     }
 
     D2Win::Src::D2WinTextBox::D2WINTEXTBOX_ScrollToLine(gpOogGameListDetailsPanelControl, 0);
@@ -1960,8 +1961,8 @@ int32_t __fastcall OOGUTIL_HandleGameListEntry(char * szText1, char * szText2, i
 
 int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     char* pbEntryName;
-    mcp0x03data aGameName[3];
-    mcp0x03data aPassword[3];
+    char aGameName[256];
+    uint8_t aPassword[256];
     D2LanGameEntryStrc sGameEntry;
     BOOL bStatusVisible = D2Win::Src::D2WinMain::D2WINMAIN_GetControlVisible(gpCtlGameListStatus);
     if (!bStatusVisible) {
@@ -1974,13 +1975,13 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
       return 0;
     }
 
-    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(aPassword[0].szGameName, (uint16_t*)pwszLocaleStr, 0x100);
-    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(aGameName[0].szGameName, (uint16_t*)pwszGameName, 0x100);
-    Fog::SMem::SMEM_TitleCaseString(aPassword);
-    Fog::SMem::SMEM_TitleCaseString(aGameName);
+    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte((char*)aPassword, (uint16_t*)pwszLocaleStr, 0x100);
+    D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(aGameName, (uint16_t*)pwszGameName, 0x100);
+    Fog::Src::String::FogString::SMEM_TitleCaseString((char*)aPassword);
+    Fog::Src::String::FogString::SMEM_TitleCaseString(aGameName);
     int32_t bHasPeerName = D2MCPClient::McpConnect::HasPeerName();
     if (bHasPeerName) {
-      ChatDlg::OOGMENU_JoinGame(0, aPassword[0].szGameName, aGameName[0].szGameName, nullptr);
+      ChatDlg::OOGMENU_JoinGame(0, (char*)aPassword, aGameName, nullptr);
       UIMENU_DestroyLobbyAndJoinGameForms();
       pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
       ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
@@ -1991,10 +1992,10 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
     if (nGameListDifficultyFilter > 0) {
       int nCmp;
       do {
-        nCmp = strcmp(gbLanGameListEntryNamePadding[nEntryIdx].szName, aPassword->szGameName);
+        nCmp = strcmp(gbLanGameListEntryNamePadding[nEntryIdx].szName, (char*)aPassword);
         if (!nCmp) {
           pbEntryName = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly(gbLanGameListEntryNamePadding[nEntryIdx].dwIpAddr);
-          ChatDlg::OOGMENU_JoinGame(gbLanGameListEntryNamePadding[nEntryIdx].nJoinId, aPassword[0].szGameName, aGameName[0].szGameName, pbEntryName);
+          ChatDlg::OOGMENU_JoinGame(gbLanGameListEntryNamePadding[nEntryIdx].nJoinId, (char*)aPassword, aGameName, pbEntryName);
           UIMENU_DestroyLobbyAndJoinGameForms();
           pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
           ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
@@ -2005,12 +2006,12 @@ int __stdcall OOGUTIL_ProcessGameListEntry(D2ControlStrc * dwParam) {
       } while (nEntryIdx < nGameListDifficultyFilter);
     }
 
-    bHasPeerName = OOGUTIL_HandleGameListEntry(aPassword[0].szGameName, aGameName[0].szGameName, (uintptr_t)&sGameEntry);
+    bHasPeerName = OOGUTIL_HandleGameListEntry((char*)aPassword, aGameName, (uintptr_t)&sGameEntry);
     if (bHasPeerName) {
-      nEntryIdx = strcmp(sGameEntry.szGameName, aPassword->szGameName);
+      nEntryIdx = strcmp(sGameEntry.szGameName, (char*)aPassword);
       if (!nEntryIdx) {
         pbEntryName = Fog::Src::Safesock::NET_MakeIPV4AddressHumanFriendly(sGameEntry.dwIpAddress);
-        ChatDlg::OOGMENU_JoinGame(sGameEntry.nPort, aPassword[0].szGameName, aGameName[0].szGameName, pbEntryName);
+        ChatDlg::OOGMENU_JoinGame(sGameEntry.nPort, (char*)aPassword, aGameName, pbEntryName);
         UIMENU_DestroyLobbyAndJoinGameForms();
         pwszLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(0x147b);
         ChatDlg::UIMENU_PrintSmallTitleOnCenterScreen(pwszLocaleStr, nullptr);
@@ -3070,8 +3071,8 @@ BOOL __stdcall NET_MCP_CLIENT_PrepareGameCreatePacket(D2ControlStrc * pControl) 
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(sGameCreatePacket.szGamePassword, (uint16_t*)pwszPassword, 0x10);
       D2Lang::Unicode::UNISYS::UNICODE_WideToMultiByte(sGameCreatePacket.szGameDescription, (uint16_t*)pwszDescription, 0x20);
       sGameCreatePacket.nGameFlags = 0;
-      Fog::SMem::SMEM_TitleCaseString(&sGameCreatePacket);
-      Fog::SMem::SMEM_TitleCaseString((mcp0x03data*)sGameCreatePacket.szGamePassword);
+      Fog::Src::String::FogString::SMEM_TitleCaseString(sGameCreatePacket.szGameName);
+      Fog::Src::String::FogString::SMEM_TitleCaseString(sGameCreatePacket.szGamePassword);
       pPacketScan = &sGameCreatePacket;
       sGameCreatePacket.nGameFlags = sGameCreatePacket.nGameFlags & 0b11111111111111111000111111111111U | CreateGameDifflevel << 0xc;
       do {

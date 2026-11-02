@@ -6,7 +6,6 @@
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -39,6 +38,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
@@ -1930,7 +1930,7 @@ void __fastcall MONSTER_SelfResurrect(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
 }
 
 // MonUMod handler, only reached through g_MonsterUModHandlerTable row 35. On death (or no unit) sets STATE_shatter.
-void __fastcall MONSTER_ShatterOnDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam1, int32_t nParam2) {
+void __fastcall MONSTER_ShatterOnDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t nUModId, int32_t nParam2) {
     if (!(!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       return;
     }
@@ -2268,7 +2268,7 @@ void __fastcall MONSTER_SuicideExplosion(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 // MonUMod handler, only reached through g_MonsterUModHandlerTable row 40. On death (or no unit) spawns monster 0x227 and sets STATE_corpse_nodraw.
-void __fastcall MONSTER_SpawnWormOnDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam1, int32_t nParam2) {
+void __fastcall MONSTER_SpawnWormOnDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t nUModId, int32_t nParam2) {
     if (!(!pUnit || pUnit->eAnimMode.ePlayerMode == Death)) {
       return;
     }
@@ -2278,7 +2278,7 @@ void __fastcall MONSTER_SpawnWormOnDeath(::SGAMEDATA * pGame, D2UnitStrc * pUnit
 }
 
 // MonUMod handler, only reached through g_MonsterUModHandlerTable row 41. While alive: MONSTERAI_TriggerMageThink, then event 7 in 75 frames.
-void __fastcall MONSTER_PeriodicMageThink(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwParam1, int32_t nParam2) {
+void __fastcall MONSTER_PeriodicMageThink(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t nUModId, int32_t nParam2) {
     BOOL BVar1 = UNIT::SUnit::CheckForModeZeroDeath(pUnit);
     if (BVar1) {
       return;
@@ -2810,12 +2810,12 @@ D2UnitStrc * __fastcall SPAWN_UniqueMonster(::SGAMEDATA * pGame, D2RoomStrc * pR
     return pUnit;
 }
 
-int32_t __fastcall MONSTER_IsMonsterUnit(int * pnParam) {
-    if (pnParam && *pnParam == 1) {
-      return 1;
+int32_t __fastcall MONSTER_IsMonsterUnit(D2UnitStrc * pnParam) {
+    if ((pnParam ? pnParam->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
+      return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 void __fastcall SERVER_AwardKillExperience(D2UnitStrc * pUnit, D2UnitStrc * pVictim, ::SGAMEDATA * pGame) {
@@ -2826,7 +2826,7 @@ void __fastcall SERVER_AwardKillExperience(D2UnitStrc * pUnit, D2UnitStrc * pVic
     UNIT::SUnitDmg::SERVER_KillExperience(pGame, pUnit, pVictim);
 }
 
-int32_t __fastcall MONSTER_CalculateCorpseBombDamage(int32_t nParam1, int32_t nParam2) {
+int32_t __fastcall MONSTER_CalculateCorpseBombDamage(::SGAMEDATA * pGame, int32_t nPlayerCount) {
     // Static local variables (originally global data)
     static int gnCorpseBombDamageScaleByDifficulty[9] = {
     0x0,
@@ -2840,17 +2840,17 @@ int32_t __fastcall MONSTER_CalculateCorpseBombDamage(int32_t nParam1, int32_t nP
     0x38
 }; D2_STATIC_GUARD(gnCorpseBombDamageScaleByDifficulty, "D2Game::Monsters::MONSTER_CalculateCorpseBombDamage::gnCorpseBombDamageScaleByDifficulty");
 
-    if (!((uint8_t)*(char*)(nParam1 + 0x6d) > '\0')) {
+    if (pGame->nDifficulty <= 0) {
       return 0;
     }
-    if (nParam2 < 2) {
+    if (nPlayerCount < 2) {
       return 0;
     }
-    if (nParam2 < 9) {
-      return gnCorpseBombDamageScaleByDifficulty[nParam2];
+    if (nPlayerCount < 9) {
+      return gnCorpseBombDamageScaleByDifficulty[nPlayerCount];
     }
 
-    return nParam2 * 8 - 0x10;
+    return nPlayerCount * 8 - 0x10;
 }
 
 // Recomputes a monster unit's combat damage/to-hit stats and elemental on-hit damage from monstats.txt, scaling by monster level, difficulty, multiplayer player-count, and a scaling-mode selector (5/normal vs 6-8 vs default difficulty bands). Adds pet-skill damage bonuses, applies the classic (non-expansion) difficulty damage/to-hit penalty divisors, and an expansion corpse-bomb/playercount damage multiplier. Writes mindamage/maxdamage/tohit into the unit's flag-1 stat list, then iterates the three elemental damage slots (El1/El2/El3 mode/type/chance) rolling chance from the unit seed and adding the matching elemental min/max/length stats (fire, lightning, magic, cold, poison, drains, stun, burning). Server/common monster setup; no-op for non-monster units.
@@ -2931,7 +2931,7 @@ void __fastcall MONSTER_RecalculateCombatStats(D2UnitStrc * pUnit, uint32_t nDif
         nClassId = 1;
       }
 
-      __frame0.nExpansionMod = MONSTER_CalculateCorpseBombDamage((int32_t)pGameFromUnit, nClassId);
+      __frame0.nExpansionMod = MONSTER_CalculateCorpseBombDamage(pGameFromUnit, nClassId);
     }
     if (__frame0.nScalingMode != 5) {
       if ((int)__frame0.nScalingMode > 6 && (int)__frame0.nScalingMode <= 8) {
@@ -3131,20 +3131,20 @@ void __stdcall MONSTER_CheckSpecialDeathFlag(D2UnitStrc * pUnit, D2DamageStrc * 
 }
 
 // Rolls a critical-hit check for a monster attack using the monster's MonStats Crit percentage. If pnParam[0]==1, the class id in pnParam[1] is valid, and the RNG roll (stored in pnParam[8/9]) is below the Crit threshold, all damage fields in pEvent are doubled and the critical-hit overlay (0x36) is shown on pUnit.
-void __fastcall ApplyDamageCritical(int * pnParam, D2UnitStrc * pUnit, D2DamageStrc * pEvent) {
+void __fastcall ApplyDamageCritical(D2UnitStrc * pnParam, D2UnitStrc * pUnit, D2DamageStrc * pEvent) {
     BOOL nClassId;
-    if (!(pnParam && *pnParam == 1)) {
+    if (!(pnParam && pnParam->eUnitType == UNIT_MONSTER)) {
       return;
     }
 
-    int iVar1 = pnParam[1];
+    int iVar1 = pnParam->nClassId;
     D2MonStatsTxt* pMonStats = iVar1 >= 0 && iVar1 < sgptDataTable->nTxtMonStatsSize ? sgptDataTable->pTxtMonStats + iVar1 : nullptr;
     if (!(pMonStats && pMonStats->Crit != '\0')) {
       return;
     }
 
-    uint64_t nRandState = (uint64_t)(uint32_t)pnParam[8] * 0x6ac690c5 + (uint64_t)(uint32_t)pnParam[9];
-    *(uint64_t*)(pnParam + 8) = nRandState;
+    uint64_t nRandState = (uint64_t)pnParam->sSeed.nSeedLow * 0x6ac690c5 + (uint64_t)pnParam->sSeed.nSeedHigh;
+    pnParam->sSeed = (D2SeedStrc)nRandState;
     if ((uint8_t)((char)nRandState + (char)((nRandState & 0xffffffff) / 100) * -100) >= (uint8_t)pMonStats->Crit) {
       return;
     }

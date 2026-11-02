@@ -3,7 +3,6 @@
 #include "D2Common/DATATBLS/OverlayTbls.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -21,6 +20,7 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Units.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
 #include "D2Game/GAME/Event.h"
@@ -145,8 +145,8 @@ uint32_t __stdcall OVERLAYTBLS_GetLightRadiusAndRGB(int32_t nOverlayId, int * pn
     return 1;
 }
 
-int32_t __stdcall OVERLAYTBLS_Get1ofN(int32_t nParam) {
-    D2OverlayTxt* pOverlayTxt = nParam >= 0 && nParam < sgptDataTable->nTxtOverlaySize ? sgptDataTable->pTxtOverlay + nParam : nullptr;
+int32_t __stdcall OVERLAYTBLS_Get1ofN(int32_t nOverlayId) {
+    D2OverlayTxt* pOverlayTxt = nOverlayId >= 0 && nOverlayId < sgptDataTable->nTxtOverlaySize ? sgptDataTable->pTxtOverlay + nOverlayId : nullptr;
     if (!pOverlayTxt) {
       return 0;
     }
@@ -183,7 +183,7 @@ uint32_t __stdcall GetComponentsData(D2UnitStrc * pUnit, uint32_t nIndex) {
 }
 
 // Resolves the graphic-component (DCC/COF token) for one of a monster's render components by index and variant. Validates the unit is a monster, reads its MonStats2 component table, bounds-checks the variant, and looks up the base comp-code via DATATBLS_GetCompCodeByIndex. For Act II monsters it may override the component from the gnOverlayTblsCount / gnOverlayTblsMaxId tables depending on the monster's validated base class id (special-cases base id 0xaa). Returns the resolved component token (cast as D2UnitStrc*), or NULL for non-monsters / out-of-range component or variant.
-D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t nComponentIdx, uint32_t nVariantIdx) {
+uint32_t __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t nComponentIdx, uint32_t nVariantIdx) {
     // Static local variables (originally global data)
     static uint32_t * gnOverlayTblsCount[16] = {
     gaOverlayVariantCodes,
@@ -225,18 +225,18 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
     eD2LevelId eLevelId;
     int32_t nBaseClassId;
     if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) != UNIT_MONSTER) {
-      return nullptr;
+      return 0;
     }
     if (nComponentIdx >= 0x10) {
-      return nullptr;
+      return 0;
     }
 
     D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pUnit->nClassId);
     if (!pMonStats2) {
-      return nullptr;
+      return 0;
     }
     if (pMonStats2->aComponents[nComponentIdx] <= nVariantIdx) {
-      return nullptr;
+      return 0;
     }
 
     D2UnitStrc* pCompCodeStr = (D2UnitStrc*)DataTbls::DATATBLS_GetCompCodeByIndex((uint32_t)pMonStats2->aCompCodes[nVariantIdx + nComponentIdx * 0xc]);
@@ -250,7 +250,7 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
         nBaseClassId = D2Client::UNIT::Player::ValidateClassId(nBaseClassId);
         if (nBaseClassId) {
           if (nBaseClassId == 0xaa && gnOverlayTblsMaxId[nComponentIdx]) {
-            return (D2UnitStrc*)gnOverlayTblsMaxId[nComponentIdx][nVariantIdx];
+            return gnOverlayTblsMaxId[nComponentIdx][nVariantIdx];
           }
         } else {
           if (gnOverlayTblsCount[nComponentIdx]) {
@@ -260,8 +260,8 @@ D2UnitStrc * __stdcall MONSTER_GetComponentOverlay(D2UnitStrc * pUnit, uint32_t 
       }
     }
 
-    pUnit = pCompCodeStr;
-    return pUnit;
+    uint32_t nUnit = (uint32_t)pCompCodeStr;
+    return nUnit;
 }
 
 // 2022.01.09 - dzik
@@ -280,7 +280,7 @@ uint32_t __stdcall OVERLAYTBLS_GetMonsterComponentOverlay(int32_t nMonStatId, ui
     }
 
     void* pCompCodeResult = (void*)DataTbls::DATATBLS_GetCompCodeByIndex((uint32_t)pMonStats2->aCompCodes[nVariantIdx + nComponentIdx * 0xc]);
-    return (uint32_t)(uintptr_t)pCompCodeResult;
+    return (uint32_t)pCompCodeResult;
 }
 
 } // namespace D2Common::DATATBLS::OverlayTbls

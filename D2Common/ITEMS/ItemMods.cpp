@@ -6,7 +6,6 @@
 #include "D2Client/DataTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -512,7 +512,7 @@ static int32_t __stdcall ITEMMOD_ApplyRandomStatValue(D2UnitStrc * pUnit, int32_
 }
 
 // Core property-to-stat conversion. Applies stat value to unit, optionally maximizing enhanced stats and handling value removal.
-static int32_t __stdcall PropertyFunc_SimpleStat(int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5, D2UnitStrc * pUnit2, eD2UnitStat eUnitStat, uint32_t nParam) {
+static int32_t __stdcall PropertyFunc_SimpleStat(int32_t nParam1, D2UnitStrc * pUnit, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nState, D2UnitStrc * pUnit2, eD2UnitStat eUnitStat, uint32_t nParam) {
     int nBaseValue;
     if (nParam4 || nParam1 == 1) {
       ITEMMOD_MaximizeStatForEnhanced(eUnitStat, pUnit2);
@@ -522,7 +522,7 @@ static int32_t __stdcall PropertyFunc_SimpleStat(int32_t nParam1, D2UnitStrc * p
     }
 
     ITEMMOD_ScaleValueForStatType(&nParam2, eUnitStat);
-    D2StatListExStrc* pStatsEx = ITEMMOD_GetOrCreateStatList(pUnit2, nParam5, nParam, pUnit);
+    D2StatListExStrc* pStatsEx = ITEMMOD_GetOrCreateStatList(pUnit2, nState, nParam, pUnit);
     if (!pStatsEx) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x2c5);
       exit(-1);
@@ -1790,26 +1790,26 @@ void __stdcall ITEMMOD_RollGemRuneType(D2UnitStrc * pUnit) {
 }
 
 // Rolls a random integer in [nMin, nParam] using the item's seed (via GetItemSeed for UNIT_ITEM, pUnit->sSeed otherwise). If min==max returns min with no RNG call. Returns the rolled value in EAX.
-int32_t __fastcall ITEMMOD_RollRandomValue(D2UnitStrc * pUnit, int32_t nMin, int32_t nParam) {
+int32_t __fastcall ITEMMOD_RollRandomValue(D2UnitStrc * pUnit, int32_t nMin, int32_t nMax) {
     uint32_t nRolled;
     int32_t nLow = nMin;
-    if (nParam == nMin) {
+    if (nMax == nMin) {
       return nLow;
     }
-    if (nParam < nMin) {
-      nLow = nParam;
-      nParam = nMin;
+    if (nMax < nMin) {
+      nLow = nMax;
+      nMax = nMin;
     }
     if (!pUnit || pUnit->eUnitType != UNIT_ITEM) {
-      if (nLow < nParam) {
-        nRolled = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nParam - nLow + 1);
+      if (nLow < nMax) {
+        nRolled = D2Client::Archive::RANDOM_RandomNumberSelector(&pUnit->sSeed, nMax - nLow + 1);
         return nRolled + nLow;
       }
     } else {
       D2SeedStrc* pSeed;
       pSeed = Items::GetItemSeed(pUnit);
-      if (nLow < nParam) {
-        nRolled = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nParam - nLow + 1);
+      if (nLow < nMax) {
+        nRolled = D2Client::Archive::RANDOM_RandomNumberSelector(pSeed, nMax - nLow + 1);
         return nRolled + nLow;
       }
     }
@@ -2216,43 +2216,43 @@ uint32_t __fastcall ITEMPROP_AddClassSkillBonus(uint32_t dwParam1, D2UnitStrc * 
 }
 
 // Applies a charged-skill item property to pUnit: resolves the skill level from the property record (nParam1) — computing it from item level vs. required level when the stored level is 0 or negative — clamps to max skill level, then calls ITEMMOD_AddStatToItem with the encoded skill+level+max-charge value.
-uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int * nParam1, int32_t nParam, int32_t nParam2, uint32_t dwParam2, uint32_t dwParam3, int32_t nParam3, uint32_t nParam4, uint32_t dwParam4) {
+uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int * pProperty, int32_t nParam, int32_t nParam2, uint32_t dwParam2, uint32_t dwParam3, int32_t nParam3, uint32_t nParam4, uint32_t dwParam4) {
     int32_t nReqLevel;
     int32_t nItemLevel;
     uint32_t nPropPtr;
     int32_t nComputedLevel;
     bool bSignedLessOrEqual;
-    int nParam12;
-    int* nParam1_00 = nParam1;
-    if (!nParam1) {
+    int nProperty;
+    int* nParam1 = pProperty;
+    if (!pProperty) {
       return 0;
     }
 
-    eD2Skills eSkill = nParam1[1];
+    eD2Skills eSkill = pProperty[1];
     if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
 
-    int32_t nMaxCharges = nParam1[2];
+    int32_t nMaxCharges = pProperty[2];
     if (nMaxCharges <= 0) {
       nMaxCharges = 5;
     }
 
-    int32_t nSkillLevel = nParam1[3];
+    int32_t nSkillLevel = pProperty[3];
     if (!nSkillLevel) {
       nReqLevel = Skills::TXT_Skills_GetReqLevel(eSkill);
       nItemLevel = Items::ITEM_GetItemData_nItemLevel(pUnit2);
       nComputedLevel = (nItemLevel - nReqLevel) / 4;
       nSkillLevel = nComputedLevel + 1;
-      nParam12 = nSkillLevel;
+      nProperty = nSkillLevel;
       if (nSkillLevel <= 1) {
-        nParam12 = 0x1;
+        nProperty = 0x1;
       }
 
       nReqLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
-      if (nParam12 >= nReqLevel) {
+      if (nProperty >= nReqLevel) {
         nSkillLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
         return nPropPtr;
       }
 
@@ -2260,7 +2260,7 @@ uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUn
     } else {
       int nScaleDivisor;
       if (-1 < nSkillLevel) {
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
         return nPropPtr;
       }
 
@@ -2283,18 +2283,18 @@ uint32_t __fastcall ITEMPROP_AddSkillCharges(uint32_t dwParam1, D2UnitStrc * pUn
       nSkillLevel = 1;
     }
 
-    nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1_00, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
+    nPropPtr = ITEMMOD_AddStatToItem(pUnit2, nParam4, pUnit, (int32_t)nParam1, nParam, (int16_t)nParam2, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nParam3);
     return nPropPtr;
 }
 
 // Item-property applier for "skill charges" / charged-skill modifiers (the prop pointed to by nParam1 holds skill id at +4, charge spec at +8, level spec at +0xc). Validates pUnit2 is an item and the skill id is valid. Resolves the granted skill level: explicit value, or derived from (item level - skill req level)/4 +1 (clamped to 1..skill max level), or a negative spec meaning a per-level scaling. Resolves the max charge count (explicit, default 5, or per-skill-level computed), clamped to 1..0xff. Rolls a random initial current-charge count from the item seed (RANDOM_RandomNumberSelector). Then adds the charges stat onto the item's stat list (ITEMMOD_GetOrCreateStatList + D2AddStatToStatsListEx), packing current/max charges and the skill id+level into the stat value/param using the itemstatcost shift fields. Returns the max charge count (0 on validation failure).
-uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int * nParam1, uint32_t dwParam2, int32_t nParam, uint32_t dwParam3, uint32_t dwParam4, int32_t nParam2, uint32_t nParam3, uint32_t dwParam5) {
+uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t dwParam1, D2UnitStrc * pUnit, D2UnitStrc * pUnit2, int * pProperty, uint32_t dwParam2, int32_t nParam, uint32_t dwParam3, uint32_t dwParam4, int32_t nParam2, uint32_t nParam3, uint32_t dwParam5) {
     int32_t nReqLevel;
     int32_t nItemLevel;
     int nSkillLvlClamped;
     int nSkillLevel;
     bool bSignedLessOrEqual;
-    if (!nParam1) {
+    if (!pProperty) {
       return 0;
     }
     if (!pUnit2 || pUnit2->eUnitType != UNIT_ITEM) {
@@ -2302,7 +2302,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t dwParam1, D2UnitStrc * pUn
     }
 
     eD2Skills eSkill;
-    eSkill = nParam1[1];
+    eSkill = pProperty[1];
     if ((int)eSkill < 0 || (int)eSkill >= sgptDataTable->nTxtSkillsCount) {
       return 0;
     }
@@ -2314,7 +2314,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t dwParam1, D2UnitStrc * pUn
     }
 
     int nComputedSkillLevel;
-    nComputedSkillLevel = nParam1[3];
+    nComputedSkillLevel = pProperty[3];
     if (!nComputedSkillLevel) {
       nReqLevel = Skills::TXT_Skills_GetReqLevel(eSkill);
       nItemLevel = Items::ITEM_GetItemData_nItemLevel(pUnit2);
@@ -2356,7 +2356,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t dwParam1, D2UnitStrc * pUn
     }
 
     uint32_t nMaxChargeCount;
-    nMaxChargeCount = nParam1[2];
+    nMaxChargeCount = pProperty[2];
     if (!nMaxChargeCount) {
       nMaxChargeCount = 5;
       goto add_charged_skill_stat;

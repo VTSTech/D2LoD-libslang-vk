@@ -35,7 +35,6 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/View.h"
 #include "D2Client/Message.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/Chat.h"
@@ -93,6 +92,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
@@ -123,8 +123,8 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Storm.h"
@@ -377,8 +377,8 @@ void __fastcall UI_StoreGlobalTooltipText(uint16_t * wszText, int32_t nScreenX, 
     gnTooltipHpBarValue = nHpBarValue;
 }
 
-void __fastcall UI_SetTooltipAttributesWithCustomField(uint16_t * wszText, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5) {
-    D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(wszText, nParam1, nParam2, nParam3, nParam4, nParam5);
+void __fastcall UI_SetTooltipAttributesWithCustomField(uint16_t * wszText, int32_t nFontId, int32_t nX, int32_t nY, int32_t nAlignment, int32_t nCustomField) {
+    D2Win::Src::D2WinFont::D2WINFONT_SetTooltipAttributesWithCustomField(wszText, nFontId, nX, nY, nAlignment, nCustomField);
 }
 
 void __fastcall UI_StoreGlobalUIText(uint16_t * wszText, DWORD dwTextColor) {
@@ -758,14 +758,14 @@ static void __stdcall UI_ShowMonsterNameBar(int32_t bStoreMode, D2UnitStrc * pUn
     }
 }
 
-static uint32_t __stdcall UI_GetRosterPlayerInfoForDisplay(uint16_t * wszText, int * pnHpBarValue, int32_t * pbIsPartied, int32_t pPetEntry) {
+static uint32_t __stdcall UI_GetRosterPlayerInfoForDisplay(uint16_t * wszText, int * pnHpBarValue, int32_t * pbIsPartied, D2UnitStrc * pPetEntry) {
     int nRoster1GUID;
-    D2RosterStrc* nOwnerGUID = !pPetEntry ? (D2RosterStrc*)-1 : *(D2RosterStrc**)(pPetEntry + 0xc);
-    DWORD nRosterGUID = GAME::RosterPets::GetRosterOwnerGUID((DWORD)nOwnerGUID);
+    DWORD nOwnerGUID = !pPetEntry ? -1 : pPetEntry->nUnitGUID;
+    DWORD nRosterGUID = GAME::RosterPets::GetRosterOwnerGUID(nOwnerGUID);
     if (nRosterGUID == -1) {
       return 0;
     }
-    if (!(pPetEntry && *(int*)(pPetEntry + 0x10) && *(int*)(pPetEntry + 0x10) != 0xc)) {
+    if (!(pPetEntry && pPetEntry->eAnimMode.ePlayerMode != Death && pPetEntry->eAnimMode.ePlayerMode != Kick)) {
       return 1;
     }
 
@@ -1862,7 +1862,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
             nTransactionType = (int32_t)pAllocCtx;
           }
 
-          pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+          pAllocCtx = (::EditBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 0;
           if (pAllocCtx) {
             // R48: the VP rider belongs in the alloc-SUCCESS branch. The d6affdd
@@ -1876,7 +1876,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
 
           nCleanupStage = -1;
           Dialog::AllocDialogSub(Dialog::gpDialog, gpCurrentDialog, 0, 0);
-          pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+          pAllocCtx = (::EditBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 1;
           if (pAllocCtx) {
             gpDialogDefaultActionCallback = Editbox::EditBoxWrapper::Constructor(pAllocCtx, 0x102 + VPRES_GetWideUiOffsetX(), 0xe4 + VPRES_GetWideUiOffsetY(), 100, 1, pnCurrentGold, 10, UI_GoldInputCallback_ReturnZero, 1); // VP: [resolution site-6]
@@ -1890,7 +1890,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
             gpDialogDefaultActionCallback->pVtable->SetKeyRepeat(gpDialogDefaultActionCallback, 1);
           }
 
-          pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+          pAllocCtx = (::EditBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 2;
           if (pAllocCtx) {
             gpUiGoldTransactionDialog = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0xfa + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 0, UI_GoldDialogConfirmCallback); // VP: [resolution site-6]
@@ -1901,7 +1901,7 @@ void __fastcall UI_ShowGoldTransactionDialog(int32_t nTransactionType) {
           nCleanupStage = -1;
           Dialog::AllocDialogSub(Dialog::gpDialog, gpUiGoldTransactionDialog, 0, 0);
           gpUiGoldTransactionDialog->pVtable->SetAccelerator(gpUiGoldTransactionDialog, 1);
-          pAllocCtx = (::EditBoxWrapper*)Storm::SMem::SMemAlloc(0xc, "new", -1, 0);
+          pAllocCtx = (::EditBoxWrapper*)Storm::Source::SMem::SMemAlloc(0xc, "new", -1, 0);
           nCleanupStage = 3;
           if (pAllocCtx) {
             gpUiGoldDialogCancelButton = Button::ButtonWrapper::Constructor((::ButtonWrapper*)pAllocCtx, 0x163 + VPRES_GetWideUiOffsetX(), 0x11f + VPRES_GetWideUiOffsetY(), 1, UI_ButtonCallback_CloseDialog); // VP: [resolution site-6]
@@ -2464,7 +2464,7 @@ void __fastcall DRAW_UnitUnderMouse(D2UnitStrc * pUnit) {
             __frame0.nScreenX = 3;
             Fog::File::CONTAINER_InitializeBuffer(__frame0.wszNameBuf, 2, 0x80, D2Launch::MainMenus::STRING_ZeroOneWCHAR);
             __frame0.pLevelTxtResult = 0;
-            nResult = UI_GetRosterPlayerInfoForDisplay(__frame0.wszNameBuf, (int*)&__frame0.pLevelTxtResult, &__frame0.nScreenX, (int32_t)pUnit);
+            nResult = UI_GetRosterPlayerInfoForDisplay(__frame0.wszNameBuf, (int*)&__frame0.pLevelTxtResult, &__frame0.nScreenX, pUnit);
             if (nResult) {
               if (__frame0.nScreenX == 3) {
                 return;
@@ -3505,24 +3505,24 @@ static int32_t UI_GetCursorMaxFrames(int32_t nCursorIndex) {
     return CursorData[nCursorIndex].nMaxFrames << 8;
 }
 
-void __stdcall UI_HandleCursorMouseDown(int32_t pMsg) {
+void __stdcall UI_HandleCursorMouseDown(D2UIMouseMsgStrc * pMsg) {
     gnCursorInitialized = 0;
-    if (*(int*)(pMsg + 8) == 2) {
+    if (pMsg->nWParam == 2) {
       D2gfx::D2GFX::UpdateOSCursorVisibilty(0);
     }
 
-    *(uint32_t*)(pMsg + 0x1c) = 0;
-    *(uint32_t*)(pMsg + 0x18) = 0;
+    pMsg->dwResult = 0;
+    pMsg->bHandled = 0;
 }
 
-void __stdcall UI_HandleCursorMouseMove(uint8_t * pMsgEvent) {
-    MouseX = (int)*(uint16_t*)(pMsgEvent + 0xc);
-    MouseY = (int)*(uint16_t*)(pMsgEvent + 0xe);
+void __stdcall UI_HandleCursorMouseMove(D2UIMouseMsgStrc * pMsgEvent) {
+    MouseX = (int)pMsgEvent->uLParam.sMousePos.nMouseX;
+    MouseY = (int)pMsgEvent->uLParam.sMousePos.nMouseY;
     gnCursorAnimStartTick = GetTickCount();
     if (ItemTypeOnHand != 5) {
       int nKeyPressCount;
       nKeyPressCount = CursorData[Cursor::nCursorDataIndex].bKeyPressSwitch;
-      *(uint32_t*)(pMsgEvent + 0x18) = 0;
+      pMsgEvent->bHandled = 0;
       if (nKeyPressCount) {
         ItemTypeOnHand = 5;
         Cursor::nCursorDataIndex = 4;
@@ -3530,7 +3530,7 @@ void __stdcall UI_HandleCursorMouseMove(uint8_t * pMsgEvent) {
         return;
       }
     } else {
-      *(uint32_t*)(pMsgEvent + 0x18) = 0;
+      pMsgEvent->bHandled = 0;
     }
 }
 
@@ -4383,14 +4383,14 @@ int64_t __stdcall UI_GetControlConfigRowCount() {
     return (uint64_t)((uint64_t)(uint32_t)nScrollExtra << 32 | (uint64_t)(uint32_t)nRows);
 }
 
-void __fastcall UI_ScrollConfigListVertical(int32_t nParam) {
+void __fastcall UI_ScrollConfigListVertical(int32_t nSteps) {
     int nNewOffset;
-    if (nParam < -1) {
-      if (nParam >= 0) {
+    if (nSteps < -1) {
+      if (nSteps >= 0) {
         return;
       }
 
-      nNewOffset = -nParam;
+      nNewOffset = -nSteps;
       do {
         UI_ScrollConfigListVertical(-1);
         nNewOffset--;
@@ -4398,15 +4398,15 @@ void __fastcall UI_ScrollConfigListVertical(int32_t nParam) {
 
       return;
     }
-    if (nParam > 1) {
-      if (nParam <= 0) {
+    if (nSteps > 1) {
+      if (nSteps <= 0) {
         return;
       }
 
       do {
         UI_ScrollConfigListVertical(1);
-        nParam--;
-      } while (nParam);
+        nSteps--;
+      } while (nSteps);
 
       return;
     }
@@ -4414,7 +4414,7 @@ void __fastcall UI_ScrollConfigListVertical(int32_t nParam) {
     int64_t lRowCount = UI_GetControlConfigRowCount();
     int iVar1 = (int)lRowCount;
     nNewOffset = gnUICtrlConfigScrollOffset;
-    if (nParam < 0) {
+    if (nSteps < 0) {
       if (gnUICtrlConfigScrollOffset > 0) {
         nNewOffset = gnUICtrlConfigScrollOffset - 1;
       }
@@ -4423,7 +4423,7 @@ void __fastcall UI_ScrollConfigListVertical(int32_t nParam) {
         return;
       }
     } else {
-      if (nParam < 1) {
+      if (nSteps < 1) {
         gnUICtrlConfigScrollPosition = (gnUICtrlConfigScrollMaxLines * -0xc + 0xf6) * gnUICtrlConfigScrollOffset / iVar1 + 0x2f + (WindowSizeY - 0x1a4) / 2;
         return;
       }
@@ -4440,20 +4440,20 @@ void __fastcall UI_ScrollConfigListVertical(int32_t nParam) {
     gnUICtrlConfigScrollPosition = (gnUICtrlConfigScrollMaxLines * -0xc + 0xf6) * gnUICtrlConfigScrollOffset / iVar1 + 0x2f + (WindowSizeY - 0x1a4) / 2;
 }
 
-void __fastcall UI_ScrollConfigListHorizontal(int32_t nParam) {
+void __fastcall UI_ScrollConfigListHorizontal(int32_t nSteps) {
     int nNewSelectedRow;
     int64_t lRowCount;
     int nCount;
     nCount = gnUICtrlConfigTotalRows;
-    if (!nParam) {
+    if (!nSteps) {
       return;
     }
-    if (nParam < -1) {
-      if (nParam >= 0) {
+    if (nSteps < -1) {
+      if (nSteps >= 0) {
         return;
       }
 
-      nCount = -nParam;
+      nCount = -nSteps;
       do {
         UI_ScrollConfigListHorizontal(-1);
         nCount--;
@@ -4461,19 +4461,19 @@ void __fastcall UI_ScrollConfigListHorizontal(int32_t nParam) {
 
       return;
     }
-    if (nParam > 1) {
-      if (nParam <= 0) {
+    if (nSteps > 1) {
+      if (nSteps <= 0) {
         return;
       }
 
       do {
         UI_ScrollConfigListHorizontal(1);
-        nParam--;
-      } while (nParam);
+        nSteps--;
+      } while (nSteps);
 
       return;
     }
-    if (nParam < 0) {
+    if (nSteps < 0) {
       nNewSelectedRow = g_ControlConfigUIState;
       if (g_ControlConfigUIState > 0) {
         nNewSelectedRow = g_ControlConfigUIState - 1;
@@ -4481,7 +4481,7 @@ void __fastcall UI_ScrollConfigListHorizontal(int32_t nParam) {
       if (nNewSelectedRow < 0) {
         goto scroll_to_selection;
       }
-    } else if (nParam < 1 || g_ControlConfigUIState >= gnUICtrlConfigTotalRows || (nNewSelectedRow = g_ControlConfigUIState + 1 , nNewSelectedRow >= gnUICtrlConfigTotalRows)) {
+    } else if (nSteps < 1 || g_ControlConfigUIState >= gnUICtrlConfigTotalRows || (nNewSelectedRow = g_ControlConfigUIState + 1 , nNewSelectedRow >= gnUICtrlConfigTotalRows)) {
       goto scroll_to_selection;
     }
 
@@ -5801,7 +5801,7 @@ void __stdcall INPUT_StatScreenButtonDown(D2UIMouseMsgStrc * pMsg) {
     if (bOnButton) {
       gbUIStatButtonHovered = 1;
       Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
-      UI_HandleCursorMouseMove((uint8_t*)pMsg);
+      UI_HandleCursorMouseMove(pMsg);
       if (eBorderType != 2 || (bOnButton = npcmenu::NPCMENU_IsNpcMenuStateActive() , !bOnButton)) {
         pMsg->bHandled = 1;
         pMsg->dwResult = 0;
@@ -5834,7 +5834,7 @@ void __stdcall INPUT_SkillTreeButtonDown(D2UIMouseMsgStrc * pMsg) {
     if (bOnButton) {
       gbUISkillButtonHovered = 1;
       Sound::SOUND_PlaySound(SOUND_CURSOR_BUTTON_CLICK, nullptr, 0, 0, 0);
-      UI_HandleCursorMouseMove((uint8_t*)pMsg);
+      UI_HandleCursorMouseMove(pMsg);
       if (eBorderType != 1 || (bOnButton = npcmenu::NPCMENU_IsNpcMenuStateActive() , !bOnButton)) {
         pMsg->bHandled = 1;
         pMsg->dwResult = 0;
@@ -6235,17 +6235,17 @@ void __stdcall Draw_UI_NewStatPoints() {
     D2gfx::D2GFX::D2GFX_DrawImage(&sGfxData, iVar2 - 0x46, ScreenSizeY - 0x6d, -1, DRAW_SOLID, nullptr);
 }
 
-void __fastcall UI_DrawTextCentered(int32_t nPositionXStart, int32_t nParam1, int32_t nPositionXEnd, uint16_t * wszMessage, int32_t nParam2) {
+void __fastcall UI_DrawTextCentered(int32_t nPositionXStart, int32_t nPositionY, int32_t nPositionXEnd, uint16_t * wszMessage, int32_t dwColor) {
     int nRegionWidth = nPositionXEnd - nPositionXStart + 1;
     int32_t nTextWidth = D2Win::Src::D2WinFont::DRAW_text0(wszMessage);
     if (nTextWidth < nRegionWidth) {
       nPositionXStart += nRegionWidth - nTextWidth >> 1;
     }
 
-    D2Win::Src::D2WinFont::DRAW_text(wszMessage, nPositionXStart, nParam1, nParam2, 0);
+    D2Win::Src::D2WinFont::DRAW_text(wszMessage, nPositionXStart, nPositionY, dwColor, 0);
 }
 
-static int32_t UI_GetStatDescriptionStringId(int32_t nUnit) {
+static int32_t UI_GetStatDescriptionStringId(D2UnitStrc * nUnit) {
     eD2ItemTypes eItemType;
     D2StatStrc aBonusStringIds[32];
     int nCandidateStringId;
@@ -6254,7 +6254,7 @@ static int32_t UI_GetStatDescriptionStringId(int32_t nUnit) {
       return 0;
     }
 
-    D2InventoryStrc* pPlayerInventory = *(D2InventoryStrc**)(nUnit + 0x60);
+    D2InventoryStrc* pPlayerInventory = nUnit->pInventory;
     D2UnitStrc* pRightHandItem = 0;
     D2UnitStrc* pLeftHandItem = 0;
     if (pPlayerInventory) {
@@ -6262,7 +6262,7 @@ static int32_t UI_GetStatDescriptionStringId(int32_t nUnit) {
       pLeftHandItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pPlayerInventory, 5);
     }
 
-    int32_t iVar1 = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues((D2UnitStrc*)nUnit, 0x15c, aBonusStringIds, 0x20);
+    int32_t iVar1 = D2Common::Stats::StatsEx::STATLIST_GetItemStatBonusValues(nUnit, 0x15c, aBonusStringIds, 0x20);
     int nBestStringId = 0;
     if (iVar1 <= 0) {
       return nBestStringId;
@@ -6306,7 +6306,7 @@ static void __fastcall DRAW_UI_StatWindow_III(int32_t nX, int32_t nY, int32_t nV
     BOOL bExpansion = GAME::Game::CLIENT_CheckExpansion();
     int32_t nBlockRateOrDescStrId = D2Common::Units::GetBlockRate(pUnit, bExpansion);
     if (nBlockRateOrDescStrId <= 0) {
-      nBlockRateOrDescStrId = UI_GetStatDescriptionStringId((int32_t)pUnit);
+      nBlockRateOrDescStrId = UI_GetStatDescriptionStringId(pUnit);
       if (nBlockRateOrDescStrId > 0) {
         D2Common::COMPOSIT::Composit::COMPOSIT_GetWeaponClassWithTransform(pUnit, pUnit->pInventory, (uint32_t*)&nWeaponClass, -1, 1);
         if (nWeaponClass != 0xd) {
@@ -6589,7 +6589,7 @@ void __stdcall INPUT_StatScreenMouseDown(D2UIMouseMsgStrc * pMsg) {
           nBtnY = ScreenSizeY + pBtnEntry[1] + gnPanelOffsetY;
           if (nMouseY > nBtnY - 0x1f6 && nMouseY < nBtnY - 0x1e0 && nMouseX > (int)(*pBtnEntry + gnPanelOffsetX) && nMouseX < (int)(*pBtnEntry + gnPanelOffsetX + 0x28)) {
             gaStatScreenButtons[(int)pMsg].bHitTest = 1;
-            UI_HandleCursorMouseMove((uint8_t*)pBtnIdx);
+            UI_HandleCursorMouseMove(pBtnIdx);
             pBtnIdx->bHandled = 1;
             pBtnIdx->dwResult = 0;
             Sound::SOUND_PlaySound(SOUND_CURSOR_POINT_DROP, nullptr, 0, 0, 0);
@@ -7940,16 +7940,16 @@ void __stdcall INPUT_GambleRepairClick(D2UIMouseMsgStrc * pMsg) {
     }
 }
 
-void __fastcall UI_HandleHoradricCubePacket(int32_t pPacket) {
+void __fastcall UI_HandleHoradricCubePacket(uint8_t * pPacket) {
     D2UnitStrc* pPlayerUnit_lcl;
     eD2Sounds nSoundId;
-    switch (*(uint8_t*)(pPacket + 5)) {
-      case 0:
+    switch (pPacket[5]) {
+      case '\0':
         gnNpcShopActiveTab = *(uint32_t*)(pPacket + 1);
       nHoradricCubeUIState = 0;
       UI_ShowHoradricCubeTransmuteDialog();
       return;
-      case 4:
+      case '\x04':
         gnPlayerCashDisplay = 2;
       if (Dialog::gpHoradricCubeDialog) {
         Dialog::FreeDialogStrc(Dialog::gpHoradricCubeDialog);
@@ -7957,21 +7957,21 @@ void __fastcall UI_HandleHoradricCubePacket(int32_t pPacket) {
       }
 
       return;
-      case 5:
+      case '\x05':
         pPlayerUnit_lcl = UNIT::Player::GetPlayerUnit_UI();
       D2Common::INVENTORY::Inventory::CopyInventoryOfPlayerOrFree(pPlayerUnit_lcl->pInventory, nullptr);
       nSoundId = SOUND_CURSOR_POINT_DROP;
-      if (*(char*)(pPacket + 6) == '\0') {
+      if (pPacket[6] == '\0') {
         nSoundId = SOUND_CURSOR_ERROR;
       }
 
       Sound::SOUND_PlaySound(nSoundId, nullptr, 0, 0, 0);
-      case 1:
+      case '\x01':
         UseItem::UI_CloseHoradricCubeWindow();
       return;
-      case 6:
+      case '\x06':
 
-      case 7:
+      case '\a':
         UseItem::UI_CloseHoradricCubeWindow();
       npcmenu::NPCMENU_CloseCubeUI();
       return;
@@ -8072,6 +8072,42 @@ BOOL __fastcall UI_DrawGroundItemTooltip(int * pnX, int * pnY, int * pnRight, in
 // compiler-generated C++ EH handler; its frame is never registered with the OS
 _EXCEPTION_DISPOSITION __GSHandlerCheck_EH_6ca05c(EHExceptionRecord * pExceptionRecord, EHRegistrationNode * pRegistrationNode, _CONTEXT * pContext, void * pDispatcherContext) {
     return ExceptionContinueSearch;
+}
+
+void StaticInit_6caa10() {
+    int iVar1;
+    uint16_t* pWVar2;
+    for (iVar1 = 0; iVar1 < 0x50; iVar1++) {
+      UNICODE_007a2c80[iVar1] = L'\0';
+    }
+}
+
+void StaticInit_6caa30() {
+    int nWordsRemaining;
+    uint16_t* pImmunityBuf1;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gU16ImmunityStringBuffer1[nWordsRemaining] = 0;
+    }
+}
+
+void StaticInit_6caa50() {
+    int nWordsRemaining;
+    uint16_t* pImmunityBuf2;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gU16ImmunityStringBuffer2[nWordsRemaining] = 0;
+    }
+}
+
+void StaticInit_6caa70() {
+    int nWordsRemaining;
+    uint16_t* pHealthBarBuf;
+    for (nWordsRemaining = 0; nWordsRemaining < 0x100; nWordsRemaining++) {
+      gnMonsterHealthBarValue[nWordsRemaining] = 0;
+    }
+}
+
+void StaticInit_6cace0() {
+    gnUICtrlConfigScrollPosition = (WindowSizeY - 0x1a4) / 2 + 0x2f;
 }
 
 } // namespace D2Client::UI::ui

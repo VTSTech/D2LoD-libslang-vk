@@ -23,6 +23,7 @@
 #include "D2Win/Src/D2WinArchive.h"
 #include "D2Win/Src/D2WinMain.h"
 #include "D2gfx/D2GFX.h"
+#include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/D2PoolManagerStrc.h"
 #include "Fog/Fog.h"
 #include "Fog/Memory.h"
@@ -33,7 +34,10 @@
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
 #include "D2Client/Engine.h"
+#include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "Fog/D2QServerStrc.h"
+#include "Storm/H/CCritSect.h"
+#include "Storm/H/stpl.h"
 #include "support/d2_boot.h" // [vanilla-plus] enter-world stage marks
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
@@ -152,7 +156,7 @@ void __stdcall CLIENTMODEIN_CmdLineCallback_ShowHelp(uint32_t * pnErrorCode) {
 // "-set" command-line callback: saves the option's string value with SRegSaveString("Diablo II", "Default Command Line") and returns its result.
 // @provenance 1.14d asm 0044b5e0; the help text in CmdLine_SetAppMode lists -set as "Set new default command line string".
 BOOL __stdcall CmdLine_SaveDefaultCommandLine(CMDPARAMS * pParams, char * szCmdLine) {
-    int32_t iVar1 = Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
+    int32_t iVar1 = Storm::Source::SReg::SRegSaveString("Diablo II", "Default Command Line", 0, pParams->uValue.szStringValue);
     return iVar1;
 }
 
@@ -572,6 +576,32 @@ eD2ClientAppMode __stdcall NET_QServer_ShutdownServer() {
 
     eD2ClientAppMode eAppMode = CLIENTMODE_GetCurrentAppMode();
     return eAppMode;
+}
+
+void StaticInit_6ca9a0() {
+    gpszCmdLineCaptionStr = gpszDiabloIICaption;
+}
+
+void StaticInit_6ca9b0() {
+    // Static local variables (originally global data)
+    // also labelled: gbCmdLineCaptionPadding
+static LPCSTR gpszDiabloIICaptionCopy; D2_STATIC_GUARD_BSS(gpszDiabloIICaptionCopy, "D2Client::ClientModeInGame::StaticInit_6ca9b0::gpszDiabloIICaptionCopy");
+
+    gpszDiabloIICaptionCopy = gpszDiabloIICaption;
+}
+
+void __stdcall QSERVER_InitGlobalGameState() {
+    gQServerGameState.TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>::Constructor();
+    /* LPCRITICAL_SECTION lpCriticalSection for InitializeCriticalSection */ gQServerGameState.nSequence = 0xf85f96f;
+    gQServerGameState.bWrapped = 0;
+    gQServerGameState.pVtable = (TSHashTable<::SGAMEDATA, HASHKEY_NONE>::Vtable*)(void*)TSExportTableSync<::SGAMEDATA, HSGAMEDATA__*, HSGAMEDATALOCK__*, CCritSect, 0>::vftable;
+    InitializeCriticalSection(&gQServerGameState.tSync.m_critsect);
+    atexit(QSERVER_DestroyGlobalGameState);
+}
+
+void QSERVER_DestroyGlobalGameState() {
+    DeleteCriticalSection(&gQServerGameState.tSync.m_critsect);
+    gQServerGameState.TSHashTableReuse<::SGAMEDATA, HASHKEY_NONE, 0>::Destructor();
 }
 
 } // namespace D2Client::ClientModeInGame

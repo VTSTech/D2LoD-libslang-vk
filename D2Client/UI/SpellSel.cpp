@@ -12,7 +12,6 @@
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/EscMenu.h"
@@ -35,6 +34,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Units.h"
@@ -1745,7 +1745,7 @@ void __stdcall INPUT_SkillTreeLeftClick(D2UIMouseMsgStrc * pMsg) {
               if ((int)nClickX > nTmpResult && (int)nClickX < nTmpResult + 0x30 && !gaSpellSelSkillTreeState[nPrevActiveTab]) {
                 gaSpellSelSkillTreeState[nPrevActiveTab] = 1;
                 gbSpellSelSkillTreeNodeHovered[nPrevActiveTab] = 3;
-                ui::UI_HandleCursorMouseMove((uint8_t*)pMsg);
+                ui::UI_HandleCursorMouseMove(pMsg);
                 pMsg->bHandled = 1;
                 pMsg->dwResult = 0;
                 Sound::SOUND_PlaySound(SOUND_CURSOR_POINT_DROP, nullptr, 0, 0, 0);

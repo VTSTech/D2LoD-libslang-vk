@@ -24,12 +24,12 @@ namespace Fog::Source::SFile {
 static double gdFogJulianDaysPerYear = 365.25; D2_STATIC_GUARD(gdFogJulianDaysPerYear, "Fog::Source::SFile::gdFogJulianDaysPerYear");
 static double gdFogJulianDaysPerMonth = 30.6001000000000; D2_STATIC_GUARD(gdFogJulianDaysPerMonth, "Fog::Source::SFile::gdFogJulianDaysPerMonth");
 
-void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t dwParam) {
+void __fastcall SFILE_InitializeFileSystem(BOOL bResult, uint32_t bSeekOptimization) {
     uint32_t dwSysOptionBuf[2];
     Storm::Source::SFile::SFileSetBasePath(".\\");
     Storm::Source::SFile::SFileEnableDirectAccess(bResult);
     Storm::Source::SFile::SFileSetIoErrorMode(0, nullptr);
-    Storm::Source::SFile::SFileEnableSeekOptimization(dwParam);
+    Storm::Source::SFile::SFileEnableSeekOptimization(bSeekOptimization);
     dwSysOptionBuf[0] = 0x8000;
     D2Ini_bUseDirect = bResult;
     Storm::Source::SSystem::SSYSTEM_SetSystemOption(2, dwSysOptionBuf, 4);
@@ -61,8 +61,8 @@ DWORD __fastcall ERRORMANAGER_FGetFileSize(D2MPQFileStrc * pFileHandle, LPDWORD 
 
 // @wasnamed SFILE_SeekFileWrapper
 // @basis internal. NOT an exported Storm symbol. Renamed only to follow its callee: a __fastcall thunk whose entire body forwards to SFileSetFilePointer (004165a0) and discards the result.
-DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnParam, uint32_t nParam) {
-    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnParam, nParam);
+DWORD __fastcall SFILE_SetFilePointerThunk(D2MPQFileStrc * pFileHandle, int32_t nOffset, int * pnParam, uint32_t dwMoveMethod) {
+    DWORD DVar1 = Storm::Source::SFile::SFileSetFilePointer(pFileHandle, nOffset, pnParam, dwMoveMethod);
     return DVar1;
 }
 
@@ -203,7 +203,7 @@ int __fastcall SFILE_GetInstallPath(LPSTR lpFilename, DWORD nSize) {
       pszSlashOrEnd[1] = '\0';
     }
 
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "InstallPath", 0, lpFilename);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "InstallPath", 0, lpFilename);
     ensure_trailing_backslash:
     if (!nSize) {
       return 0;
@@ -501,7 +501,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
                   szNewSavePath[uVar1 + 1] = '\0';
                 }
 
-                Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, szNewSavePath);
+                Storm::Source::SReg::SRegSaveString("Diablo II", "%s%s.d2s", 1, szNewSavePath);
                 pcLen = szNewSavePath;
               }
 
@@ -525,7 +525,7 @@ void __fastcall GetAndCreateSavePath(char * pBuffer, size_t nSize) {
         }
       }
 
-      Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "%s%s.d2s", 1, pBuffer);
+      Storm::Source::SReg::SRegSaveString("Diablo II", "%s%s.d2s", 1, pBuffer);
     } else if (*pBuffer == '\0') {
       goto use_default_save_path;
     }
@@ -734,7 +734,7 @@ void __stdcall LOGFILE_StoreGameStartupInfo() {
 }
 
 // JMP thunk
-void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(FILE * szSuffix) {
+void __fastcall FILETOOLS_SetLogFilePathWithoutDateAndExtension2(char * szSuffix) {
     ::Fog::Src::LogManager::FILETOOLS_SetLogFilePathWithoutDateAndExtension2(szSuffix);
 }
 

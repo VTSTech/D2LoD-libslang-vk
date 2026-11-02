@@ -69,22 +69,22 @@ struct SID_C2S_ClickAd {
     /* 0x04 */ uint32_t dwRequestType; // EDX!=0
 };
 
-struct __attribute__((packed)) SID_C2S_ClientId2 {
+struct SID_C2S_ClientId2 {
     /* 0x00 */ uint32_t dwServerVersion;
     /* 0x04 */ uint32_t dwRegVersion;
     /* 0x08 */ uint32_t dwRegAuthority;
     /* 0x0C */ uint32_t dwClientId;
     /* 0x10 */ uint32_t dwClientToken;
     /* 0x14 */ char szComputerName[1];
-    /* 0x15 */ char szUserName[1];
+    /* 0x15 */ char szUserName[1023];
 };
 
-struct __attribute__((packed)) SID_C2S_DisplayAd {
+struct SID_C2S_DisplayAd {
     /* 0x00 */ uint32_t dwPlatformId;
     /* 0x04 */ uint32_t dwProductId;
     /* 0x08 */ uint32_t dwAdId;
     /* 0x0C */ char szFilename[1];
-    /* 0x0D */ char szUrl[1];
+    /* 0x0D */ char szUrl[1279];
 };
 
 struct SID_C2S_GetFileTime {
@@ -205,7 +205,7 @@ BOOL __stdcall D2CheckExpansionGame();
 DWORD __stdcall GetDnsResults(void * lpThreadParam);
 void __fastcall GetDnsRecordSync(char * * ppszDnsOutput, int nDnsThreadParam2);
 struct D2BNetGatewayAccessStr * __stdcall BnetLoadAndReturn();
-void __fastcall GetBnetIp(char * szText, int32_t nParam);
+void __fastcall GetBnetIp(char * szText, int32_t nBufferOutputLength);
 // Returns current Battle.net connection state into output parameter. Validates param is non-null.
 void __fastcall BNSEND_GetConnectionState(uint32_t * pdwOutState);
 int __fastcall BNCLIENT_SendLogonRequest(char * szUsername, char * szPassword);
@@ -274,6 +274,7 @@ void __fastcall BNSEND_HashCDKeyByType(struct D2CDKeyHashStrc * pOutHash, uint32
 int __fastcall BNSEND_SendRawBytes(void * pBytes, size_t nSize);
 int __fastcall BNSEND_SendString(char * szString);
 void __fastcall NET_SID_CLIENT_Send_0x33_GetFileTime(char * szText, uint32_t dwRequestId);
+void StaticInit_6caec0();
 void StaticFini_gpBNetNewsCache();
 // 2 internal functions (defined in .cpp)
 

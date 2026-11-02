@@ -205,4 +205,14 @@ BOOL SetThreadStackGuarantee(ULONG* SizeInBytes);
 #define EXCEPTION_CONTINUE_SEARCH 0
 #define WAIT_OBJECT_0 0u
 
+// --- critical sections (winnt.h struct tag) - globals.h 1801 ----------------
+// The Ghidra 1801 globals declare their lpCriticalSection_* globals with the
+// SDK's struct-tag form `_RTL_CRITICAL_SECTION` (winnt.h provides the tag on
+// the real build; d2_platform.h's non-Windows path only carries the
+// CRITICAL_SECTION typedef). Definition matches d2_platform.h's
+// CRITICAL_SECTION layout; under _WIN32 the real winnt.h wins.
+struct _RTL_CRITICAL_SECTION { void* DebugInfo; long LockCount; long RecursionCount; void* OwningThread; void* LockSemaphore; unsigned long SpinCount; };
+typedef struct _RTL_CRITICAL_SECTION RTL_CRITICAL_SECTION;
+typedef struct _RTL_CRITICAL_SECTION* PRTL_CRITICAL_SECTION;
+
 #endif // !defined(_WIN32)

@@ -41,6 +41,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -372,15 +373,15 @@ D2LightMapStrc * __stdcall SwapLightMap(D2UnitStrc * pUnit, D2LightMapStrc * pLi
     return pOldLight;
 }
 
-uint32_t __stdcall SKILLS_GetUnitField0xa8_0x14(D2UnitStrc * pUnit) {
+D2LightMapStrc * __stdcall SKILLS_GetUnitField0xa8_0x14(D2UnitStrc * pUnit) {
     if (!pUnit) {
-      return 0;
+      return nullptr;
     }
     if (!pUnit->pSkillsList) {
-      return 0;
+      return nullptr;
     }
 
-    return (uint32_t)(uintptr_t)pUnit->pSkillsList->pLight;
+    return pUnit->pSkillsList->pLight;
 }
 
 // Frees the entire skill list on a unit. Iterates through pFirstSkill linked list, freeing each D2SkillStrc, then frees the D2SkillListStrc itself. Sets pUnit->pSkillsList to NULL. Called by FreeUnit.
@@ -751,7 +752,7 @@ static BOOL __stdcall SKILLS_CheckWeaponRequirements(D2UnitStrc * pUnit, D2Skill
 }
 
 // Checks whether a skill's use-restriction condition is satisfied for the caster. Reads the restrict field from the skill record: 0 = requires no active poison state (returns true if not poisoned); 1 = always allowed; 2 = requires a poison state AND at least one of the skill's three state[] entries active on the unit. Returns 1 if the restriction passes, 0 otherwise. Returns 0 immediately if unit or skill pointer is null.
-static int SKILLS_CheckRestriction(int * pSkillTxt, D2UnitStrc * pUnitStrc) {
+static int SKILLS_CheckRestriction(D2SkillStrc * pSkillTxt, D2UnitStrc * pUnitStrc) {
     eD2States eActiveState;
     int32_t nHasPoisonState2;
     int32_t nStateIdx;
@@ -761,7 +762,7 @@ static int SKILLS_CheckRestriction(int * pSkillTxt, D2UnitStrc * pUnitStrc) {
       return 0;
     }
 
-    D2SkillsTxt* pSkillRecord = (D2SkillsTxt*)*pSkillTxt;
+    D2SkillsTxt* pSkillRecord = pSkillTxt->pRecord;
     if (pSkillRecord) {
       int32_t nHasPoisonState;
       cRestrictionType = pSkillRecord->restrict;
@@ -1727,15 +1728,15 @@ void __stdcall SKILLS_GetStateTransformGfx(D2UnitStrc * pUnit, eD2UnitType * pUn
 }
 
 // Initialises or advances a skill sequence entry for a unit. Searches the unit's sequence list for the entry matching nSeqId that has not yet been committed (pSeqEntry[0xd] == -1). Derives a position seed from the unit's dynamic path sub-positions (or player-specific fields). If the seed matches the stored seed, advances the sequence frame by 7; otherwise resets both seed and frame to the new value. Writes the resulting frame and constant 0x29A into the unit param array. Halts fatally if no matching sequence entry is found.
-void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, int32_t nSeqId) {
+void __stdcall SKILLS_InitSkillSequence(D2UnitStrc * pnParam, int32_t bIsPlayerUnit, int32_t nSeqId) {
     uint32_t uXSP1;
     uint32_t uYSP1;
+    int nInitSeed;
     int nPosSeed;
-    uint32_t* pSeqEntry;
-    int nPrevSeqFrame;
-    if (pnParam[0x2a]) {
-      for (pSeqEntry = *(uint32_t**)(pnParam[0x2a] + 4); pSeqEntry; pSeqEntry = (uint32_t*)pSeqEntry[1]) {
-        if (*(short int*)*pSeqEntry == nSeqId && pSeqEntry[0xd] == -1) {
+    D2SkillStrc* pSeqEntry;
+    if (pnParam->pSkillsList) {
+      for (pSeqEntry = pnParam->pSkillsList->pFirstSkill; pSeqEntry; pSeqEntry = pSeqEntry->pNext) {
+        if (pSeqEntry->pRecord->skill == nSeqId && pSeqEntry->nOwnerGUID == -1) {
           goto update_seq_entry;
         }
       }
@@ -1744,29 +1745,29 @@ void __stdcall SKILLS_InitSkillSequence(int * pnParam, int32_t bIsPlayerUnit, in
     pSeqEntry = 0;
     update_seq_entry:
     if (!bIsPlayerUnit) {
-      uXSP1 = PATH::DynamicPath::GetXSP1((D2DynamicPathStrc*)pnParam[0xb]);
-      uYSP1 = PATH::DynamicPath::GetYSP1((D2DynamicPathStrc*)pnParam[0xb]);
+      uXSP1 = PATH::DynamicPath::GetXSP1(pnParam->pPath.pDynamicPath);
+      uYSP1 = PATH::DynamicPath::GetYSP1(pnParam->pPath.pDynamicPath);
       nPosSeed = uXSP1 + uYSP1 * 2;
     } else {
-      uYSP1 = pnParam[3];
-      nPosSeed = *pnParam << 0x10;
+      uYSP1 = pnParam->nUnitGUID;
+      nPosSeed = pnParam->eUnitType << 0x10;
     }
     nPosSeed += uYSP1;
     if (!pSeqEntry) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa52);
       exit(-1);
     }
-    if (pSeqEntry[6] == nPosSeed) {
-      nPrevSeqFrame = pSeqEntry[7];
-      pSeqEntry[6] = nPosSeed;
-      pSeqEntry[7] = nPrevSeqFrame + 7;
-      Seed::InitSeed_Param_666((D2SeedStrc*)(pnParam + 8), nPrevSeqFrame + 7);
+    if (pSeqEntry->nPar1 == nPosSeed) {
+      nInitSeed = pSeqEntry->nPar2 + 7;
+      pSeqEntry->nPar1 = nPosSeed;
+      pSeqEntry->nPar2 = nInitSeed;
+      Seed::InitSeed_Param_666(&pnParam->sSeed, nInitSeed);
       return;
     }
 
-    pSeqEntry[7] = nPosSeed;
-    pSeqEntry[6] = nPosSeed;
-    Seed::InitSeed_Param_666((D2SeedStrc*)(pnParam + 8), pSeqEntry[7]);
+    pSeqEntry->nPar2 = nPosSeed;
+    pSeqEntry->nPar1 = nPosSeed;
+    Seed::InitSeed_Param_666(&pnParam->sSeed, pSeqEntry->nPar2);
 }
 
 int32_t __stdcall SKILLS_GetSkillWeaponClass(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
@@ -3252,7 +3253,7 @@ D2SkillStrc * __stdcall AllocSkill(D2UnitStrc * pUnit, eD2Skills eSkill) {
     return pNewSkill;
 }
 
-void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t nParam, char * szFile, int32_t nLine) {
+void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLevel, int32_t bRemoveAtZero, char * szFile, int32_t nLine) {
     D2SkillStrc* pSkill;
     if (nSkillLevel) {
       pSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
@@ -3263,7 +3264,7 @@ void __stdcall AddSkill(D2UnitStrc * pUnit, eD2Skills eSkill, int32_t nSkillLeve
       SKILLS_UpdatePassiveSkillStats(pUnit, eSkill);
       return;
     }
-    if (!nParam) {
+    if (!bRemoveAtZero) {
       D2SkillStrc* pZeroedSkill;
       pZeroedSkill = GetSkillByIdAndOwner(pUnit, eSkill, -1);
       if (!pZeroedSkill) {
@@ -3401,8 +3402,8 @@ void __stdcall SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nOwnerGUI
     pUnit->nClassId = (int)pNewSkill;
 }
 
-void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, int32_t nParam3, int32_t nParam4, int32_t nParam5) {
-    SKILLS_AddOrRemoveItemSkill(pUnit, nParam1, nParam2, nParam3, nParam4, nParam5);
+void __stdcall thunk_SKILLS_AddOrRemoveItemSkill(D2UnitStrc * pUnit, int32_t nOwnerGUID, int32_t eSkill, int32_t nLevel, int32_t nCharges, int32_t bRemove) {
+    SKILLS_AddOrRemoveItemSkill(pUnit, nOwnerGUID, eSkill, nLevel, nCharges, bRemove);
 }
 
 // Returns nonzero if pUnit has sufficient mana (or HP under Blood Mana state) to cast pSkillStrc. Computes effective skill level, applies lvlmana+mana formula with manashift, checks STATE_blood_mana; special-cases charged skills (nCharges) and Berserk (stat cost flag 0x200 bit 3). Returns 0 or 1.
@@ -3677,7 +3678,7 @@ int32_t __stdcall SKILLS_CanUseSkill(D2UnitStrc * pUnit, D2SkillStrc * pSkill) {
       return 1;
     }
 
-    int iVar2 = SKILLS_CheckRestriction((int*)pSkill, pUnit);
+    int iVar2 = SKILLS_CheckRestriction(pSkill, pUnit);
     if (!iVar2) {
       return 4;
     }

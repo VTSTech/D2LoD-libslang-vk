@@ -21,6 +21,7 @@
 #include "D2Common/Text.h"
 #include "D2Common/Unit.h"
 #include "D2Common/Units.h"
+#include "D2Game/D2ObjectInitFnArg.h"
 #include "D2Game/D2ObjectOperateFnArg.h"
 #include "D2Game/D2QuestDataStrc.h"
 #include "D2Game/GAME/Clients.h"
@@ -28,6 +29,7 @@
 #include "D2Game/GAME/SCmd.h"
 #include "D2Game/GAME/Targets.h"
 #include "D2Game/ITEMS/Items/Drop.h"
+#include "D2Game/Objects/Objects.h"
 #include "D2Game/Objects/ObjectsMode.h"
 #include "D2Game/PLAYER/Player.h"
 #include "D2Game/PLAYER/PlayerTrade.h"
@@ -318,14 +320,14 @@ void __stdcall Q11_EndTaintedSun(int pQuestData, ::SGAMEDATA * pGame) {
 // GUID, and if the intro is done and stateFlag<2 kicks off Q11_BeginTaintedSun (darkening); sets pending vs
 // darkened flags by its result and advances stateFlag to 3. If no prior stateFlag, broadcasts display state 2
 // (via QUEST_SetStateAndBroadcast). Finally flags the unit for client update.
-void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2UnitStrc * * nParam) {
+void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2ObjectInitFnArg * pInitArg) {
     int32_t nViperAmuletGUID;
     D2QuestDataA2Q3Strc* pA2Q3Data = pQuestData->pQuestSpecificData.pA2Q3;
     pA2Q3Data->bViperAmuletInitialized = true;
-    if (!nParam[1]) {
+    if (!pInitArg->pObject) {
       nViperAmuletGUID = -1;
     } else {
-      nViperAmuletGUID = nParam[1]->nUnitGUID;
+      nViperAmuletGUID = pInitArg->pObject->nUnitGUID;
     }
 
     pA2Q3Data->nViperAmuletUnitGUID = nViperAmuletGUID;
@@ -348,7 +350,7 @@ void __fastcall Q11_OnViperAmuletInit(D2QuestDataStrc * pQuestData, D2UnitStrc *
       }
     }
 
-    D2Common::Units::SetupUpdateFlag(nParam[1], pA2Q3Data->nViperAmuletUpdateFlag);
+    D2Common::Units::SetupUpdateFlag(pInitArg->pObject, pA2Q3Data->nViperAmuletUpdateFlag);
 }
 
 // A2Q3 - fpSequenceFilter (Q11_SequenceFilter): chains to the next quest in the sequence. When this quest's

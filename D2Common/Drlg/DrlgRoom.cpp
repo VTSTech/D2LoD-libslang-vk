@@ -21,6 +21,7 @@
 #include "D2Common/Drlg/D2DrlgActWarpsInfoStrc.h"
 #include "D2Common/Drlg/D2DrlgCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
+#include "D2Common/Drlg/D2DrlgGridStrc.h"
 #include "D2Common/Drlg/D2DrlgLevelStrc.h"
 #include "D2Common/Drlg/D2DrlgMapStrc.h"
 #include "D2Common/Drlg/D2DrlgOrthStrc.h"
@@ -119,10 +120,10 @@ D2RoomStrc * __fastcall DRLGWARP_GetWarpDestinationRoom(D2RoomExStrc * pRoomEx, 
 // Iterates all warp tiles in a room (linked list at offset 0x4c)
 // and sets each tile's select value (offset 0x8) to nSelectValue.
 // Called by DRLGROOM_SetWarpTileSelect.
-void __fastcall DRLGWARP_SetAllWarpTilesSelectValue(int32_t pRoomEx, uint32_t nSelectValue) {
-    int pWarpTile;
-    for (pWarpTile = *(int*)(pRoomEx + 0x4c); pWarpTile; pWarpTile = *(int*)(pWarpTile + 4)) {
-      *(uint32_t*)(pWarpTile + 8) = nSelectValue;
+void __fastcall DRLGWARP_SetAllWarpTilesSelectValue(D2RoomExStrc * pRoomEx, BOOL nSelectValue) {
+    D2DrlgRoomExRoomTileNodeStrc* pWarpTile;
+    for (pWarpTile = pRoomEx->pRoomTileNodes; pWarpTile; pWarpTile = pWarpTile->pRoomTileNext) {
+      pWarpTile->bEnabled = nSelectValue;
     }
 }
 

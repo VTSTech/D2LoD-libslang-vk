@@ -32,7 +32,6 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "D2Multi/OOG/ChatDlg.h"
 #include "D2Win/D2WinEditBox.h"
@@ -311,21 +310,21 @@ void __stdcall CHATDLG_EnqueueClearMessage() {
     LeaveCriticalSection(&lpCriticalSection_0077ae28);
 }
 
-int __fastcall CHATDLG_AppendTextToTextBox(uint16_t * wszText, int32_t nParam) {
+int __fastcall CHATDLG_AppendTextToTextBox(uint16_t * wszText, int32_t nLineStyle) {
     if (!gpChatMessagesTextBox) {
       return 1;
     }
 
-    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszText, nParam, false, 1);
+    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszText, nLineStyle, false, 1);
     return 1;
 }
 
-uint32_t __fastcall CHATDLG_AppendTextToTextBox_ForComCallback(uint16_t * wszText, int32_t nParam) {
+uint32_t __fastcall CHATDLG_AppendTextToTextBox_ForComCallback(uint16_t * wszText, int32_t nLineStyle) {
     if (!gpChatMessagesTextBox) {
       return 1;
     }
 
-    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszText, nParam, false, 1);
+    D2Win::Src::D2WinTextBox::SetText(gpChatMessagesTextBox, wszText, nLineStyle, false, 1);
     return 1;
 }
 
@@ -1107,7 +1106,7 @@ void __stdcall CHATDLG_ParseCommandArgument(int32_t nMaxLen, char * szSource, ch
 }
 
 void __stdcall SafeDefaultChannel(char * pszChannel) {
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Default Channel", 0, pszChannel);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Default Channel", 0, pszChannel);
 }
 
 void __stdcall CHATDLG_DestroyAllForms() {

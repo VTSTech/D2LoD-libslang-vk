@@ -274,7 +274,7 @@ void __fastcall SKILLPAL_OnAuraExpire(D2UnitStrc * pUnit, eD2States eState, int3
 }
 
 // Paladin skill helper: reduces the remaining duration of active poison and curse states on pUnit by nParam percent (via D2ApplyPercent). Iterates all states flagged as curse states (pAllStatesDataTblFlag0x0B) and adjusts each statlist timeout; reschedules the expiry event for each shortened state. Returns non-zero if at least one state was shortened.
-BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nParam) {
+BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2UnitStrc * pUnit, int32_t nPercent) {
     D2StatListExStrc* pStatList;
     int32_t nGameFrame2;
     uint32_t bIsCurseState;
@@ -291,7 +291,7 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
       if (pStatList) {
         nGameFrame = pGame->dwGameFrame;
         nPoisonExpire = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
-        nGameFrame2 = D2Client::Stats::D2ApplyPercent(nPoisonExpire - nGameFrame, nParam, 100);
+        nGameFrame2 = D2Client::Stats::D2ApplyPercent(nPoisonExpire - nGameFrame, nPercent, 100);
         nNewPoisonExpire = nGameFrame2 + nGameFrame;
         D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nNewPoisonExpire);
         GAME::Event::SetEvent(pGame, pUnit, 0xc, nNewPoisonExpire, 0, 0);
@@ -314,7 +314,7 @@ BOOL __stdcall SKILLPAL_ReducePoisonAndCurseDuration(::SGAMEDATA * pGame, D2Unit
           if (bIsCurseState) {
             nGameFrame = pGame->dwGameFrame;
             nCurseExpire = D2Common::Stats::StatsEx::STATLIST_GetFullListPtr(pStatList);
-            nGameFrame2 = D2Client::Stats::D2ApplyPercent(nCurseExpire - nGameFrame, nParam, 100);
+            nGameFrame2 = D2Client::Stats::D2ApplyPercent(nCurseExpire - nGameFrame, nPercent, 100);
             nNewCurseExpire = nGameFrame2 + nGameFrame;
             D2Common::Stats::StatsEx::STATSEX_SetStatListTimeout(pStatList, nNewCurseExpire);
             GAME::Event::SetEvent(pGame, pUnit, 0xc, nNewCurseExpire, 0, 0);
@@ -1238,7 +1238,7 @@ void __fastcall SKILLPAL_OnConversionExpire(D2UnitStrc * pUnit, eD2States eState
 }
 
 // Checks whether pUnit2 can be converted by the Paladin's Holy Bolt/Convert skill (eSkill). Returns 0 if pUnit2 is a merc, non-monster, already-aligned, or a consumed corpse. Otherwise rolls a random chance against skills.txt calc[0]; returns 1 if the roll succeeds (or nParam2==0 for guaranteed convert).
-static BOOL __stdcall SKILLPAL_CanConvertTarget(D2UnitStrc * pUnit, int32_t nParam1, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
+static BOOL __stdcall SKILLPAL_CanConvertTarget(D2UnitStrc * pUnit, int32_t nSkillLvl, int32_t nParam2, eD2Skills eSkill, D2UnitStrc * pUnit2) {
     D2SkillsTxt* pSkillsTxt = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!pSkillsTxt) {
       return 0;
@@ -1262,7 +1262,7 @@ static BOOL __stdcall SKILLPAL_CanConvertTarget(D2UnitStrc * pUnit, int32_t nPar
       return 0;
     }
 
-    nAlignmentVal = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nParam1);
+    nAlignmentVal = D2Common::Skills::D2GetSkillCalc(pUnit, pSkillsTxt->calc[0], eSkill, nSkillLvl);
     if (!nParam2) {
       return 1;
     }
@@ -1637,7 +1637,7 @@ BOOL __fastcall Skills_SrvDoFunc_081_HolyFreeze(::SGAMEDATA * pGame, D2UnitStrc 
 }
 
 // Redemption skill server callback (misnamed Blizzard). Checks pCorpse is a selectable corpse, optionally rolls a chance check against calc[0], then heals pUnit by calc[1] life and calc[2] mana (both capped to txt max), sets STATE_redeemed on the corpse, and clears its CANBEATTACKED/TARGETABLE flags. Returns 1 if redemption was applied.
-BOOL __fastcall SKILLSOR_GetBlizzardSubMissileCount(uint32_t dwParam, D2UnitStrc * pUnit, D2UnitStrc * pCorpse, eD2Skills eSkill, int32_t nParam1, int32_t nParam2) {
+BOOL __fastcall SKILLSOR_GetBlizzardSubMissileCount(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pCorpse, eD2Skills eSkill, int32_t nParam1, int32_t nParam2) {
     int32_t nCalcVal;
     D2SkillsTxt* pSkillRecord = (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount ? sgptDataTable->pTxtSkills + eSkill : nullptr;
     if (!(pSkillRecord && pCorpse)) {

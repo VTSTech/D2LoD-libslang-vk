@@ -17,6 +17,7 @@
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Client/UI/Path.h"
+#include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UI/Text.h"
 #include "D2Client/UI/npcmenu.h"
 #include "D2Client/UI/npcmenu/Merc.h"
@@ -676,7 +677,7 @@ static int32_t QUESTLOG_HitTestOpenButton(int32_t nParam1, int32_t nParam2) {
     return (uint32_t)dwHitResult << 8;
 }
 
-int __stdcall CloseQuestLogWeird(DWORD dwParam) {
+int __stdcall CloseQuestLogWeird(DWORD bAdjustMouse) {
     if (gQuestLog.bQuestLogOpen == 2) {
       gQuestLog.bQuestLogOpen = 0;
       gQuestLog.bQuestLogWindowOpen = 0;
@@ -684,7 +685,7 @@ int __stdcall CloseQuestLogWeird(DWORD dwParam) {
     }
 
     FreeQuestImages();
-    ui::SetUIFlag(UI_QUESTSCREEN, UI_RESET, dwParam);
+    ui::SetUIFlag(UI_QUESTSCREEN, UI_RESET, bAdjustMouse);
     return 1;
 }
 
@@ -797,14 +798,14 @@ void __stdcall QUESTLOG_OnCloseClick(D2UIMouseMsgStrc * pMsg) {
     gQuestLog.bQuestLogScreenOpen = GetTickCount();
 }
 
-void __fastcall QUESTLOG_HandleSpecialPacket(int32_t nParam) {
-    if (*(short int*)(nParam + 1) != 1) {
+void __fastcall QUESTLOG_HandleSpecialPacket(D2GSPacketSrv0x50 * pPacket) {
+    if (pPacket->nMessageType != 1) {
       return;
     }
 
-    gQuestLog.MonstersleftInDenOfEvil = (int)*(uint16_t*)(nParam + 3);
-    gQuestLog.nQuestLogSpecialState = (int32_t)*(uint16_t*)(nParam + 5);
-    gQuestLog.pQuestLogData = (uint32_t)*(uint16_t*)(nParam + 7);
+    gQuestLog.MonstersleftInDenOfEvil = (int)pPacket->aPayload[0];
+    gQuestLog.nQuestLogSpecialState = (int32_t)pPacket->aPayload[1];
+    gQuestLog.pQuestLogData = (uint32_t)pPacket->aPayload[2];
 }
 
 void __stdcall QUESTLOG_CloseAndFreeImages() {
@@ -1715,16 +1716,16 @@ void __stdcall DRAW_UI_Quest() {
 
     D2Win::Src::D2WinFont::SetAndReturnLastFont(8);
     if (gQuestLog.nQuestLogActiveAct != -1 && (int)gQuestLog.nQuestLogActiveAct < 6 && (int)gQuestLog.nQuestLogActiveAct < gQuestLog.nQuestLogQuestCount) {
-      uint16_t nParam;
+      uint16_t nStringIndex;
       nActIndex = 0;
       if (gQuestLog.nQuestLogQuestCount > 0) {
         pQuestEntry = &gQuestLog.aQuestLogEntries[0].nQuestTableIndex;
         do {
           if (*pQuestEntry == gQuestLog.nQuestLogActiveAct) {
             if (nActIndex != -1 && gQuestLog.aQuestLogEntries[nActIndex].bVisible != '\0') {
-              nParam = gQuestLog.aQuestLogEntries[nActIndex].wTitleStringId;
-              if (nParam != 0xe8c) {
-                pwszText = D2Lang::StrTable::strtable::GetLocaleString(nParam);
+              nStringIndex = gQuestLog.aQuestLogEntries[nActIndex].wTitleStringId;
+              if (nStringIndex != 0xe8c) {
+                pwszText = D2Lang::StrTable::strtable::GetLocaleString(nStringIndex);
                 nQuestSlot = gQuestUIDescInitC - gnPanelOffsetY + VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
                 D2Win::Src::D2WinFont::DRAW_text(pwszText, gnPanelOffsetX - D2Win::Src::D2WinFont::DRAW_text0(pwszText) / 2 + 0xa0, nQuestSlot, 0, 0);
               }
@@ -2080,6 +2081,29 @@ void __stdcall QUESTLOG_OnMouseUp(D2UIMouseMsgStrc * pMsg) {
     pMsg->bHandled = 1;
     pMsg->dwResult = 0;
     Storm::SMsgBreakHandlerChain(pMsg);
+}
+
+void StaticInit_6cac30() {
+    gaQuestLogPanelRects[0].nBottom = ScreenSizeY - 0x69;
+    gaQuestLogPanelRects[1].nBottom = ScreenSizeY - 0x69;
+    gaQuestLogPanelRects[0].nTop = ScreenSizeY - 0x8c;
+    gaQuestLogPanelRects[1].nTop = ScreenSizeY - 0x8c;
+    gaQuestLogPanelRects[1].nLeft = ScreenSizeX / 2 + 0x28;
+    gaQuestLogPanelRects[2].nBottom = ScreenSizeY - 0xa0;
+    gaQuestLogPanelRects[3].nBottom = ScreenSizeY - 0xa0;
+    gaQuestLogPanelRects[1].nRight = ScreenSizeX / 2 + 0x4b;
+    gaQuestLogPanelRects[2].nTop = ScreenSizeY - 0xc3;
+    gaQuestLogPanelRects[3].nTop = ScreenSizeY - 0xc3;
+    gaQuestLogPanelRects[0].nTextY = ScreenSizeY - 0x8f;
+    gaQuestLogPanelRects[1].nTextY = ScreenSizeY - 0x8f;
+    gaQuestLogPanelRects[2].nTextY = ScreenSizeY - 0xc6;
+    gaQuestLogPanelRects[3].nLeft = gaQuestLogPanelRects[1].nLeft;
+    gaQuestLogPanelRects[3].nRight = gaQuestLogPanelRects[1].nRight;
+    gaQuestLogPanelRects[3].nTextY = ScreenSizeY - 0xc6;
+}
+
+void StaticInit_6cacd0() {
+    SkillDesc::SKILLDESC_InitMissileBuffers(&gQuestLog);
 }
 
 } // namespace D2Client::UI::QuestLog

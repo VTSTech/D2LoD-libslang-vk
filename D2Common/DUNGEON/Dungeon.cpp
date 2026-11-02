@@ -6,7 +6,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/View.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -39,6 +38,7 @@
 #include "D2Common/Drlg/RoomTile.h"
 #include "D2Common/Drlg/Transform.h"
 #include "D2Common/Environment.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Unit.h"
@@ -137,7 +137,7 @@ void __stdcall DRLGROOM_SetWarpTileSelect(D2RoomStrc * pRoom, BOOL bSelect) {
       exit(-1);
     }
 
-    Drlg::DrlgRoom::DRLGWARP_SetAllWarpTilesSelectValue((int32_t)pRoom->pRoomEx, bSelect);
+    Drlg::DrlgRoom::DRLGWARP_SetAllWarpTilesSelectValue(pRoom->pRoomEx, bSelect);
 }
 
 // The unit-list search loop leaves its found (or NULL) D2UnitStrc* result in EAX at the fallthrough return, unused by the body itself; caller evidence names the read pStaircaseUnit.
@@ -398,12 +398,12 @@ int32_t __stdcall DRLGROOM_GetRoomShape(D2RoomStrc * pRoom, int32_t nMode) {
     return (nTop != nTopPlusHeight) + 3;
 }
 
-int32_t __stdcall FindRoomByTileCoordinates(D2DrlgActStrc * pDrlgAct, int32_t nX, int32_t nY) {
+D2RoomStrc * __stdcall FindRoomByTileCoordinates(D2DrlgActStrc * pDrlgAct, int32_t nX, int32_t nY) {
     D2RoomStrc* pCurRoom = pDrlgAct->pRoom;
     while (true) {
       int nRoomEdge;
       if (!pCurRoom) {
-        return 0;
+        return nullptr;
       }
 
       nRoomEdge = pCurRoom->sCoords.sTileRect.left;
@@ -417,10 +417,10 @@ int32_t __stdcall FindRoomByTileCoordinates(D2DrlgActStrc * pDrlgAct, int32_t nX
       pCurRoom = pCurRoom->pDrlgRoomNext;
     }
 
-    return (int32_t)pCurRoom;
+    return pCurRoom;
 }
 
-int32_t __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, int32_t nY) {
+D2RoomStrc * __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, int32_t nY) {
     D2RoomStrc* pAdjacentRoom;
     if (!pRoom) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1af);
@@ -429,7 +429,7 @@ int32_t __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, i
 
     uint32_t nRoomIdx = 0;
     if (pRoom->nRoomListCount <= 0) {
-      return 0;
+      return nullptr;
     }
 
     do {
@@ -442,13 +442,13 @@ int32_t __stdcall GetAdjacentRoomByCoordinates(D2RoomStrc * pRoom, int32_t nX, i
 
       bInsideRoom = AreTileCoordinatesInsideRoom(pAdjacentRoom, nX, nY);
       if (bInsideRoom) {
-        return (int32_t)pAdjacentRoom;
+        return pAdjacentRoom;
       }
 
       nRoomIdx++;
     } while (nRoomIdx < pRoom->nRoomListCount);
 
-    return 0;
+    return nullptr;
 }
 
 void __stdcall CallRoomCallback(D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallback, void * pArgs) {
@@ -483,25 +483,25 @@ void __stdcall CallRoomCallback(D2RoomStrc * pRoom, ROOMCALLBACKFN pfnRoomCallba
 }
 
 // NOTE: Callee-saved register params inferred (medium confidence): param_ebx (EBX): DWORD
-int32_t * __stdcall DRLGROOM_GetMinimapRect(uint32_t nLine, D2RoomStrc * dwParam2, int32_t * dwParam3) {
-    int* pParam3;
-    int32_t* pX = dwParam3;
-    D2RoomStrc* pTopLeft = dwParam2;
-    if (dwParam2) {
+int32_t * __stdcall DRLGROOM_GetMinimapRect(uint32_t nLine, D2RoomStrc * pRoom, int32_t * pRect) {
+    int* pRect2;
+    int32_t* pX = pRect;
+    D2RoomStrc* pTopLeft = pRoom;
+    if (pRoom) {
       int32_t* pY;
-      pY = dwParam3 + 1;
-      Drlg::Transform::SizeMiniMapToScreen(dwParam2->sCoords.sTileRect.left, dwParam2->sCoords.sTileRect.top, (int32_t*)&dwParam2, pY);
-      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top + pTopLeft->sCoords.sTileRect.bottom, pX, (int32_t*)&dwParam2);
-      pParam3 = pX + 2;
-      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top, (int32_t*)pParam3, (int32_t*)&dwParam2);
-      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top + pTopLeft->sCoords.sTileRect.bottom, (int32_t*)&dwParam2, pX + 3);
+      pY = pRect + 1;
+      Drlg::Transform::SizeMiniMapToScreen(pRoom->sCoords.sTileRect.left, pRoom->sCoords.sTileRect.top, (int32_t*)&pRoom, pY);
+      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top + pTopLeft->sCoords.sTileRect.bottom, pX, (int32_t*)&pRoom);
+      pRect2 = pX + 2;
+      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top, (int32_t*)pRect2, (int32_t*)&pRoom);
+      Drlg::Transform::SizeMiniMapToScreen(pTopLeft->sCoords.sTileRect.right + pTopLeft->sCoords.sTileRect.left, pTopLeft->sCoords.sTileRect.top + pTopLeft->sCoords.sTileRect.bottom, (int32_t*)&pRoom, pX + 3);
       if (*pY <= pX[3]) {
-        if (!(*pX <= *(int32_t*)pParam3)) {
+        if (!(*pX <= *(int32_t*)pRect2)) {
           Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1db);
           exit(-1);
         }
 
-        return (int32_t*)pParam3;
+        return (int32_t*)pRect2;
       } else {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x1da);
         exit(-1);

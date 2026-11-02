@@ -7,7 +7,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/RosterPets.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Monster.h"
 #include "D2Client/UNIT/Player.h"
@@ -36,6 +35,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
 #include "D2Common/Skills.h"
@@ -141,7 +141,7 @@ void __fastcall UpgradeLifeAndHitClass(D2UnitStrc * pUnit, D2ClientStrc * pClien
     GAME::SCmd::NET_D2GS_SERVER_Send_0x0D_UNITCHANGE_XY(pClient, '\r', '\0', pUnit->nUnitGUID, '\x13', wPosX, wPosY, (uint8_t)dwLastHitClass, (uint8_t)nPlayerLife);
 }
 
-void __fastcall SendReassignPlayer(D2UnitStrc * pUnitStrc, D2ClientStrc * pClient, uint8_t bParam) {
+void __fastcall SendReassignPlayer(D2UnitStrc * pUnitStrc, D2ClientStrc * pClient, uint8_t bWarpFade) {
     uint16_t wPosY;
     uint16_t wPosX;
     int32_t nPos;
@@ -165,7 +165,7 @@ void __fastcall SendReassignPlayer(D2UnitStrc * pUnitStrc, D2ClientStrc * pClien
       wPosX = 0;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', (uint8_t)pUnitStrc->eUnitType, pUnitStrc->nUnitGUID, wPosX, wPosY, bParam);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', (uint8_t)pUnitStrc->eUnitType, pUnitStrc->nUnitGUID, wPosX, wPosY, bWarpFade);
 }
 
 // Broadcasts the player's current skill cast to nearby clients. If the skill has a valid target unit visible to the client, sends packet 0x4C (target-entity cast). Otherwise sends packet 0x4D (XY cast) using the caster's SP1 path coordinates. Skips if the skill has flag bit 2 set and the caster is the client's own player unit.
@@ -929,13 +929,13 @@ static eD2ServerIncomingStatus __stdcall CloseEnoughToInteract(::SGAMEDATA * pGa
     return eVar1;
 }
 
-eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, D2UnitStrc * pUnit, uint32_t dwParam) {
+eD2ServerIncomingStatus __thiscall SERVER_IsItemOnCursor(void * pThis, D2UnitStrc * pUnit, uint32_t dwItemGUID) {
     if (!pThis) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x463);
       exit(-1);
     }
 
-    D2UnitStrc* pItem = UNIT::SUnit::FindUnitFromTable((::SGAMEDATA*)pThis, UNIT_ITEM, dwParam);
+    D2UnitStrc* pItem = UNIT::SUnit::FindUnitFromTable((::SGAMEDATA*)pThis, UNIT_ITEM, dwItemGUID);
     if (!(pItem && pItem->eAnimMode.ePlayerMode == eD2PlayerAnimMode_ns::GetHit)) {
       return SERVERSTATUS_BAD_TARGET;
     }
@@ -1005,12 +1005,12 @@ static eD2ServerIncomingStatus __stdcall ItemIsOfPlayerAndNotOnCursor(uint32_t n
     return (uint32_t)(pCursorItem_lcl != pItem);
 }
 
-uint8_t __stdcall MONSTER_SetAlignmentCallback(int32_t nParam1, int32_t nParam2) {
-    if (nParam2 != 4 && nParam2 != 5) {
+uint8_t __stdcall MONSTER_SetAlignmentCallback(D2UnitStrc * pUnit, int32_t nGridOffset) {
+    if (nGridOffset != 4 && nGridOffset != 5) {
       return 3;
     }
 
-    D2UnitStrc* pBodyItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(*(D2InventoryStrc**)(nParam1 + 0x60), nParam2);
+    D2UnitStrc* pBodyItem = D2Common::INVENTORY::Inventory::INVENTORY_GetItemByGridOffset(pUnit->pInventory, nGridOffset);
     return !pBodyItem;
 }
 
@@ -2225,8 +2225,8 @@ eD2ServerIncomingStatus __fastcall SCMD_0x17_DropItem(::SGAMEDATA * pGame, D2Uni
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    DWORD dwItemGUID = pPacket->dwItemGUID;
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2240,7 +2240,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x17_DropItem(::SGAMEDATA * pGame, D2Uni
       }
     }
 
-    ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, dwParam);
+    ITEMS::ItemMode::SERVER_DropItemFromPlayer(pGame, pUnit, dwItemGUID);
     eVar1 = SERVERSTATUS_OK;
     return (eD2ServerIncomingStatus)eVar1;
 }
@@ -2260,24 +2260,24 @@ eD2ServerIncomingStatus __fastcall SCMD_0x18_ItemToInventory(::SGAMEDATA * pGame
 
     int32_t nDestX;
     nDestX = pPacket->nX;
-    uint32_t dwParam;
-    dwParam = pPacket->dwItemGUID;
+    uint32_t dwItemGUID;
+    dwItemGUID = pPacket->dwItemGUID;
     uint32_t bufferId;
     bufferId = pPacket->nBufferId;
     int32_t nDestY;
     nDestY = pPacket->nY;
     eD2ServerIncomingStatus eVar1;
-    eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
     if (!pUnit || pUnit->eUnitType != UNIT_PLAYER) {
       if (bufferId < 5) {
         place_item:
-        pItem = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwParam);
+        pItem = UNIT::SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwItemGUID);
         if (pItem) {
           D2Common::ITEMS::Items::ITEM_SetItemData_ePage(pItem, (eInventoryPage)bufferId);
-          nResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrMsg.cpp", 0xbf6, pGame, pUnit, dwParam, nDestX, nDestY, 0, 1, nullptr);
+          nResult = ITEMS::ItemMode::SERVER_ItemToInventory(".\\PLAYER\\PlrMsg.cpp", 0xbf6, pGame, pUnit, dwItemGUID, nDestX, nDestY, 0, 1, nullptr);
           return (nResult ? 0xfdU : 0) + SERVERSTATUS_BAD_PARAMS;
         }
       }
@@ -2375,9 +2375,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1A_EquipItem(::SGAMEDATA * pGame, D2Un
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     nBodyLoc = (uint32_t)((uint32_t)((uint32_t)d2_load24((char*)&nBodyLoc + 1) & 0xffffffu) << 8 | (uint32_t)(uint8_t)(char)pPacket->dwBodyLoc);
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2386,9 +2386,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1A_EquipItem(::SGAMEDATA * pGame, D2Un
     }
 
     int nEquipResult = 0;
-    BOOL nEquipOk = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, dwParam, (eD2BodyLoc)nBodyLoc, 0, (uint32_t*)&nEquipResult);
+    BOOL nEquipOk = ITEMS::ItemMode::SERVER_EquipItemToBodyLoc(pGame, pUnit, dwItemGUID, (eD2BodyLoc)nBodyLoc, 0, (uint32_t*)&nEquipResult);
     if (!nEquipOk && nEquipResult) {
-      UNIT::SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwParam);
+      UNIT::SUnit::FindUnitFromTable(pGame, UNIT_ITEM, dwItemGUID);
       return SERVERSTATUS_BAD_PARAMS;
     }
 
@@ -2404,9 +2404,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1B_EquipToSwapSlot(::SGAMEDATA * pGame
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     nSize = (uint32_t)(uint8_t)pPacket->dwBodyLoc;
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2415,7 +2415,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1B_EquipToSwapSlot(::SGAMEDATA * pGame
     }
 
     pPacket = 0;
-    BOOL nSwapOk = ITEMS::ItemMode::ITEMMODE_EquipItemToSwapBodyLoc(pGame, pUnit, dwParam, (eD2BodyLoc)nSize, 0, (uint32_t*)&pPacket);
+    BOOL nSwapOk = ITEMS::ItemMode::ITEMMODE_EquipItemToSwapBodyLoc(pGame, pUnit, dwItemGUID, (eD2BodyLoc)nSize, 0, (uint32_t*)&pPacket);
     if (!nSwapOk && pPacket) {
       return SERVERSTATUS_BAD_PARAMS;
     }
@@ -2462,9 +2462,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1D_SwapBodyItem(::SGAMEDATA * pGame, D
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     nSize = (uint32_t)(uint8_t)pPacket->dwBodyLoc;
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2484,7 +2484,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1D_SwapBodyItem(::SGAMEDATA * pGame, D
       nMovePermission = Player::CheckItemMovePermission(pGame, pUnit, pItem);
       if (nMovePermission) {
         pPacket = 0;
-        nSwapResult = ITEMS::ItemMode::SERVER_Swap2HandItem(pGame, pUnit, dwParam, (eD2BodyLoc)nSize, 0, (uint32_t*)&pPacket);
+        nSwapResult = ITEMS::ItemMode::SERVER_Swap2HandItem(pGame, pUnit, dwItemGUID, (eD2BodyLoc)nSize, 0, (uint32_t*)&pPacket);
         if (!nSwapResult && pPacket) {
           return SERVERSTATUS_BAD_PARAMS;
         }
@@ -2503,10 +2503,10 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1E_EquipToWeaponSwap(::SGAMEDATA * pGa
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     eD2BodyLoc eTargetBodyLoc = (eD2BodyLoc)pPacket->dwBeltSlot;
     int pSwappedOutItem = (int)pGame;
-    eD2ServerIncomingStatus eStatus = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eStatus = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eStatus != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eStatus;
     }
@@ -2529,7 +2529,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x1E_EquipToWeaponSwap(::SGAMEDATA * pGa
     uint32_t bCanMoveItem = Player::CheckItemMovePermission(pGame, pUnit, pItem);
     if (bCanMoveItem) {
       BOOL nResult;
-      nResult = ITEMS::ItemMode::ITEMMODE_EquipItemToBodyLoc(pGame, pUnit, dwParam, eTargetBodyLoc, &pSwappedOutItem);
+      nResult = ITEMS::ItemMode::ITEMMODE_EquipItemToBodyLoc(pGame, pUnit, dwItemGUID, eTargetBodyLoc, &pSwappedOutItem);
       if (!nResult && pSwappedOutItem) {
         return SERVERSTATUS_BAD_PARAMS;
       }
@@ -2712,14 +2712,14 @@ eD2ServerIncomingStatus __fastcall SCMD_0x23_ItemToBelt(::SGAMEDATA * pGame, D2U
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     uint32_t nBeltSlotOrIndex = pPacket->nBeltSlotOrIndex;
-    nSize = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    nSize = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (nSize != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)nSize;
     }
 
-    BOOL bPlacedInBelt = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, dwParam, nBeltSlotOrIndex, 0, &nSize);
+    BOOL bPlacedInBelt = ITEMS::ItemMode::ITEM_TryPlaceInBelt(pGame, pUnit, dwItemGUID, nBeltSlotOrIndex, 0, &nSize);
     if (!bPlacedInBelt && nSize) {
       return SERVERSTATUS_BAD_PARAMS;
     }
@@ -2766,9 +2766,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x25_SwapBeltItem(::SGAMEDATA * pGame, D
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwItemGUID;
+    DWORD dwItemGUID = pPacket->dwItemGUID;
     uint32_t nItemGid = pPacket->dwTargetGUID;
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2779,7 +2779,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x25_SwapBeltItem(::SGAMEDATA * pGame, D
     }
 
     nSize = eVar1;
-    BOOL nResult = ITEMS::ItemMode::SERVER_BeltSwapItem(pGame, pUnit, dwParam, nItemGid, &nSize);
+    BOOL nResult = ITEMS::ItemMode::SERVER_BeltSwapItem(pGame, pUnit, dwItemGUID, nItemGid, &nSize);
     if (!nResult && nSize) {
       return SERVERSTATUS_BAD_PARAMS;
     }
@@ -2847,9 +2847,9 @@ eD2ServerIncomingStatus __fastcall SCMD_0x28_SocketItem(::SGAMEDATA * pGame, D2U
       return SERVERSTATUS_BAD_PARAMS;
     }
 
-    DWORD dwParam = pPacket->dwGemGUID;
+    DWORD dwItemGUID = pPacket->dwGemGUID;
     uint32_t nItemGid = pPacket->dwSocketableGUID;
-    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwParam);
+    eD2ServerIncomingStatus eVar1 = SERVER_IsItemOnCursor(pGame, pUnit, dwItemGUID);
     if (eVar1 != SERVERSTATUS_OK) {
       return (eD2ServerIncomingStatus)eVar1;
     }
@@ -2862,7 +2862,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x28_SocketItem(::SGAMEDATA * pGame, D2U
     BOOL bHasInteract = UNIT::SUnit::GetInteractInfo(pUnit, &eInteractUnitType, (uint32_t*)&pPacket);
     if (!bHasInteract || (pInteractUnit = UNIT::SUnit::FindUnitFromTable(pGame, eInteractUnitType, (uint32_t)pPacket) , !pInteractUnit || pInteractUnit->eUnitType != UNIT_PLAYER)) {
       nSize = 0;
-      bHasInteract = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, dwParam, nItemGid, (int32_t*)&nSize, 1, 1, 1, 1);
+      bHasInteract = ITEMS::ItemMode::PutItemInItem(pGame, pUnit, dwItemGUID, nItemGid, (int32_t*)&nSize, 1, 1, 1, 1);
       if (!bHasInteract && nSize) {
         return SERVERSTATUS_BAD_PARAMS;
       }

@@ -18,7 +18,7 @@
 #include "Fog/File.h"
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "globals/globals.h"
 #include "D2Client/UI/EscMenu.h"
 #include "D2Win/D2WinEditBox.h"
@@ -1130,7 +1130,7 @@ int __fastcall D2WINTEXTBOX_GetScrollbarMaxValue(::D2WinTextBox * pTextBox) {
     }
 }
 
-void __fastcall D2WINTEXTBOX_SetScrollbarMaxRange(::D2WinTextBox * pnParam, uint32_t nParam) {
+void __fastcall D2WINTEXTBOX_SetScrollbarMaxRange(::D2WinTextBox * pnParam, uint32_t nMaxValue) {
     if (!pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x582);
       exit(-1);
@@ -1140,7 +1140,7 @@ void __fastcall D2WINTEXTBOX_SetScrollbarMaxRange(::D2WinTextBox * pnParam, uint
         exit(-1);
       }
 
-      D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, nParam);
+      D2WinScrollbar::D2WINSCROLLBAR_SetMaxValue(pnParam->pScrollbar, nMaxValue);
       return;
     }
 }
@@ -1161,7 +1161,7 @@ int __fastcall D2WINTEXTBOX_RefreshScrollbar(::D2WinTextBox * pnParam) {
     }
 }
 
-void __fastcall D2WINTEXTBOX_SetScrollbarPosition(::D2WinTextBox * pnParam, int32_t nParam) {
+void __fastcall D2WINTEXTBOX_SetScrollbarPosition(::D2WinTextBox * pnParam, int32_t nPosition) {
     if (!pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x596);
       exit(-1);
@@ -1171,7 +1171,7 @@ void __fastcall D2WINTEXTBOX_SetScrollbarPosition(::D2WinTextBox * pnParam, int3
         exit(-1);
       }
 
-      D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nParam);
+      D2WinScrollbar::D2WINSCROLLBAR_SetPosition(pnParam->pScrollbar, nPosition);
       return;
     }
 }
@@ -1208,7 +1208,7 @@ void __fastcall D2WINTEXTBOX_SetScrollbarCallbackB(::D2WinTextBox * pTextBox, fp
     }
 }
 
-void __fastcall D2WINTEXTBOX_SetScrollbarStyle(::D2WinTextBox * pnParam, int32_t nParam) {
+void __fastcall D2WINTEXTBOX_SetScrollbarStyle(::D2WinTextBox * pnParam, int32_t nStyle) {
     if (!pnParam) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x5b4);
       exit(-1);
@@ -1218,7 +1218,7 @@ void __fastcall D2WINTEXTBOX_SetScrollbarStyle(::D2WinTextBox * pnParam, int32_t
         exit(-1);
       }
 
-      D2WinScrollbar::D2WINSCROLLBAR_SetStyle(pnParam->pScrollbar, nParam);
+      D2WinScrollbar::D2WINSCROLLBAR_SetStyle(pnParam->pScrollbar, nStyle);
       return;
     }
 }
@@ -1541,8 +1541,8 @@ void __fastcall D2WINTEXTBOX_SetLineCellTextA(::D2WinTextBox * pnParam, char * s
     D2WINTEXTBOX_SetLineCellTextW(pnParam, wszWorkBuf, nRowIndex, nColIndex);
 }
 
-void __fastcall D2WINTEXTBOX_SetLineCellTextWDirect(::D2WinTextBox * pnParam, uint16_t * wszText, int32_t nParam1, int32_t nParam2) {
-    D2WINTEXTBOX_SetLineCellTextW(pnParam, wszText, nParam1, nParam2);
+void __fastcall D2WINTEXTBOX_SetLineCellTextWDirect(::D2WinTextBox * pnParam, uint16_t * wszText, int32_t nRow, int32_t nCol) {
+    D2WINTEXTBOX_SetLineCellTextW(pnParam, wszText, nRow, nCol);
 }
 
 // @sourcefile .\Src\D2WinTextBox.cpp
@@ -1579,7 +1579,7 @@ BOOL __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint1
         nMaxPixelWidth = nAvailWidth - nLine;
       }
 
-      pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x497, 0);
+      pFirstLine = (uint16_t*)Storm::Source::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x497, 0);
       pWorkBuf = pFirstLine;
       D2Lang::Unicode::UNISYS::STRING_CopyWideString(pFirstLine, wszText);
       nTotalLen = D2Lang::Unicode::UNISYS::STRING_GetWideStringLength(pFirstLine);
@@ -1610,22 +1610,22 @@ BOOL __fastcall D2WINTEXTBOX_WordWrapAndSetText(::D2WinTextBox * pTextBox, uint1
         } while ((int)nWrapCharCount < nTotalLen);
       }
 
-      pFirstLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b7, 0);
-      pSecondLine = (uint16_t*)Storm::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b8, 0);
+      pFirstLine = (uint16_t*)Storm::Source::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b7, 0);
+      pSecondLine = (uint16_t*)Storm::Source::SMem::SMemAlloc(0x800, ".\\Src\\D2WinTextBox.cpp", 0x4b8, 0);
       D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pFirstLine, pWorkBuf, nWrapCharCount);
       pszCurScan = (uint16_t*)(nTotalLen - nWrapCharCount);
       pFirstLine[nWrapCharCount] = L'\0';
       D2Lang::Unicode::UNISYS::WSTRING_PutWideCharIntoBuffer(pSecondLine, pCharCursor, (size_t)pszCurScan);
       pSecondLine[(int)pszCurScan] = L'\0';
-      Storm::SMem::SMemFree(pWorkBuf, ".\\Src\\D2WinTextBox.cpp", 0x4bf, 0);
+      Storm::Source::SMem::SMemFree(pWorkBuf, ".\\Src\\D2WinTextBox.cpp", 0x4bf, 0);
       D2WinTextBox::SetText(pTextBoxSaved, pFirstLine, nLineStyle, true, nAlignment);
       if (nAlignment == 1) {
         nAlignment = 2;
       }
 
       D2WinTextBox::SetText(pTextBoxSaved, pSecondLine, nLineStyle, false, nAlignment);
-      Storm::SMem::SMemFree(pFirstLine, ".\\Src\\D2WinTextBox.cpp", 0x4c4, 0);
-      Storm::SMem::SMemFree(pSecondLine, ".\\Src\\D2WinTextBox.cpp", 0x4c5, 0);
+      Storm::Source::SMem::SMemFree(pFirstLine, ".\\Src\\D2WinTextBox.cpp", 0x4c4, 0);
+      Storm::Source::SMem::SMemFree(pSecondLine, ".\\Src\\D2WinTextBox.cpp", 0x4c5, 0);
       return 1;
     }
 }

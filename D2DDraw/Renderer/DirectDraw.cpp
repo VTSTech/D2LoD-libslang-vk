@@ -27,9 +27,9 @@
 #include "Fog/Src/DataArrays.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "globals/globals.h"
 
@@ -2227,10 +2227,10 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       memset((void*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0, 0x6db0);
       nVersion = 0;
       nFileSize = 0;
-      uVar2 = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
+      uVar2 = Storm::Source::SFile::SFileLoadFileEx(nullptr, szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
       if (uVar2 && nVersion) {
         iVar3 = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRgb, (uint8_t*)*(uint32_t*)((char*)&gaSmackerPaletteRemap + 256), 0x6db0, &nImageHeight, &nImageWidth, &nBitDepth);
-        Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\ddSmack.cpp", 0x78, 0);
+        Storm::Source::SMem::SMemFree((void*)nVersion, ".\\Src\\ddSmack.cpp", 0x78, 0);
         if (iVar3 && nImageHeight == 0x1d4 && nImageWidth == 0x3c && nBitDepth == 8) {
           iVar3 = 0;
           do {

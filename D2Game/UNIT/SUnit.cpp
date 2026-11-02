@@ -4,7 +4,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
 #include "D2Client/UNIT/Monster.h"
@@ -793,8 +792,8 @@ void __fastcall UNITS_SetupAnimTimerEvents(::SGAMEDATA * pGame, D2UnitStrc * pUn
       nFrameIndex = nAnimSpeedAccum >> 8;
       nNextEventFrame++;
       for (; iVar1 <= nFrameIndex && iVar1 < 0x90; iVar1++) {
-        if (pUnit->pAnimSeq) {
-          D2Common::Merc::ANIM_GetEventFrame((int32_t)pUnit->pAnimSeq, iVar1 << 8, &nEventType);
+        if ((D2MonSeqTxt*)pUnit->pAnimSeq) {
+          D2Common::Merc::ANIM_GetEventFrame((D2MonSeqTxt*)pUnit->pAnimSeq, iVar1 << 8, &nEventType);
         } else {
           nEventType = (uint32_t)pAnimData->pFrameFlags[iVar1];
         }
@@ -859,8 +858,8 @@ void __fastcall UNITS_SetupAnimTimerEventsFromPercent(::SGAMEDATA * pGame, D2Uni
       nFrameOffset += nAnimSpeed;
       nAnimSpeedAccum += nAnimSpeed;
       for (; pCurEventFrame = nNextEventFrame , nFrameIdx <= nFrameOffset >> 8; nFrameIdx++) {
-        if (pUnit->pAnimSeq) {
-          D2Common::Merc::ANIM_GetEventFrame((int32_t)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
+        if ((D2MonSeqTxt*)pUnit->pAnimSeq) {
+          D2Common::Merc::ANIM_GetEventFrame((D2MonSeqTxt*)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
         } else {
           nEventType = (uint32_t)pAnimData->pFrameFlags[nFrameIdx];
         }
@@ -918,8 +917,8 @@ void __fastcall UNITS_SetupAnimTimerEventsWithDelay(::SGAMEDATA * pGame, D2UnitS
       nAnimSpeedAccum += nAnimSpeed;
       nFrameIndexShifted = nFrameOffsetAccum >> 8;
       for (; pCurEventFrame = nNextEventFrame , nFrameIdx <= nFrameIndexShifted; nFrameIdx++) {
-        if (pUnit->pAnimSeq) {
-          D2Common::Merc::ANIM_GetEventFrame((int32_t)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
+        if ((D2MonSeqTxt*)pUnit->pAnimSeq) {
+          D2Common::Merc::ANIM_GetEventFrame((D2MonSeqTxt*)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
         } else {
           nEventType = (uint32_t)pAnimData->pFrameFlags[nFrameIdx];
         }
@@ -971,8 +970,8 @@ void __fastcall UNITS_SetupAnimTimerEventsFromFrame(::SGAMEDATA * pGame, D2UnitS
       nAnimSpeedAccum += nAnimSpeed;
       nFrameIndexShifted = nFrameOffsetAccum >> 8;
       for (; pCurEventFrame = nNextEventFrame , nFrameIdx <= nFrameIndexShifted; nFrameIdx++) {
-        if (pUnit->pAnimSeq) {
-          D2Common::Merc::ANIM_GetEventFrame((int32_t)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
+        if ((D2MonSeqTxt*)pUnit->pAnimSeq) {
+          D2Common::Merc::ANIM_GetEventFrame((D2MonSeqTxt*)pUnit->pAnimSeq, nFrameIdx << 8, &nEventType);
         } else {
           nEventType = (uint32_t)pAnimData->pFrameFlags[nFrameIdx];
         }
@@ -1214,13 +1213,13 @@ uint32_t __fastcall UNITS_CheckIfCanAttackTarget(::SGAMEDATA * pGame, D2UnitStrc
     return (uint32_t)!bIsAlly;
 }
 
-BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, int * pnParam, D2UnitStrc * pTarget, eD2Skills eSkill) {
-    if (!(pnParam && pTarget && (!*pnParam || pTarget->eUnitType == UNIT_MONSTER) && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkill] + 0x7) & (uint8_t)gadwBitMasks[1])) {
+BOOL __fastcall UNITS_CheckSkillTargetAlignment(::SGAMEDATA * pGameStrc, D2UnitStrc * pnParam, D2UnitStrc * pTarget, eD2Skills eSkill) {
+    if (!(pnParam && pTarget && (pnParam->eUnitType == UNIT_PLAYER || pTarget->eUnitType == UNIT_MONSTER) && (int)eSkill >= 0 && (int)eSkill < sgptDataTable->nTxtSkillsCount && sgptDataTable->pTxtSkills + eSkill && *((uint8_t*)&sgptDataTable->pTxtSkills[eSkill] + 0x7) & (uint8_t)gadwBitMasks[1])) {
       return 0;
     }
 
     Ai::AiGeneral::GetMonsterNameAndAi(pTarget, &eSkill, (int*)&pTarget);
-    if (!pTarget && eSkill == pnParam[3]) {
+    if (!pTarget && eSkill == pnParam->nUnitGUID) {
       return 1;
     }
 
@@ -1302,11 +1301,11 @@ void __fastcall SetAlignment(D2UnitStrc * pUnit, uint8_t nAlignment, int32_t nOl
 }
 
 // Applies or removes STATE_uninterruptable on pUnit (nParam=1 to set, 0 to clear). When clearing: if STATE_death_delay is active, it removes that state and immediately kills the unit (via SERVER_KillMonster if no killer, or SERVER_GetHitCalculation with the KILL result flag if a killer exists). Additionally triggers AITHINK for monster units to resume AI after the uninterruptable window closes.
-void __fastcall SetUninterruptableState(D2UnitStrc * pUnit, int32_t nParam) {
+void __fastcall SetUninterruptableState(D2UnitStrc * pUnit, int32_t bSet) {
     eD2States eDeathDelayState;
     D2UnitStrc* pKillerUnit;
     D2DamageStrc sDamage;
-    D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_uninterruptable, nParam);
+    D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_uninterruptable, bSet);
     if (!pUnit) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0xa29);
       exit(-1);
@@ -1316,7 +1315,7 @@ void __fastcall SetUninterruptableState(D2UnitStrc * pUnit, int32_t nParam) {
     if (!pGame) {
       return;
     }
-    if (!nParam) {
+    if (!bSet) {
       eDeathDelayState = D2Common::DATATBLS::ItemStats::UNIT_GetUnitState(pUnit, STATE_death_delay);
       if (eDeathDelayState != STATE_none) {
         D2Common::DATATBLS::ItemStats::SetState(pUnit, STATE_death_delay, 0);
@@ -2528,6 +2527,10 @@ void __fastcall UNITS_FreeInventoryItems(::SGAMEDATA * pGame, D2UnitStrc * pUnit
     }
 
     FreeServerUnit(pGame, pCurItem);
+}
+
+void StaticInit_6caf60() {
+    gnSeedCounter = GetTickCount();
 }
 
 } // namespace D2Game::UNIT::SUnit

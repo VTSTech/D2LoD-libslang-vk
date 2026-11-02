@@ -473,10 +473,10 @@ void __stdcall INPUT_HandlePassthrough(D2UIMouseMsgStrc * pMsg) {
 }
 
 // Handle mouse button event: clear selection/UI, update run key, and normalize queued click state.
-void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
+void __stdcall HandleMouseButtonEvent(D2UIMouseMsgStrc * pMouseEvent) {
     SHORT keyState;
-    gnLastMouseButtonEventType = *(uint32_t*)(pMouseEvent + 8);
-    if (*(int*)(pMouseEvent + 8)) {
+    gnLastMouseButtonEventType = pMouseEvent->nWParam;
+    if (pMouseEvent->nWParam) {
       // [vanilla-plus alt-toggle] This non-zero-event branch (message code
       // 0x1c registration) fires on clicks AND app-activation. Vanilla uses
       // it to clear Alt labels on click-while-holding. In toggle mode the
@@ -491,7 +491,7 @@ void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
       gClickModifierDown = 0;
       Select::ClearSelectedUnit();
       D2Win::Src::D2WinPalette::D2WINPALETTE_SetPaletteIndex(0);
-      *(uint32_t*)(pMouseEvent + 0x18) = 0;
+      pMouseEvent->bHandled = 0;
       return;
     }
 
@@ -515,7 +515,7 @@ void __stdcall HandleMouseButtonEvent(int32_t pMouseEvent) {
       Select::SetCanBeSelectedToFalse();
     }
 
-    *(uint32_t*)(pMouseEvent + 0x18) = 0;
+    pMouseEvent->bHandled = 0;
 }
 
 void __stdcall GAMEDATA_CheckAutomapCenterOnLoad() {
@@ -1167,10 +1167,7 @@ BOOL __stdcall GAMEDATA_IsMouseInRect(int32_t width, int32_t height, int32_t bot
 // Set gCongratzOkClicked when congratz screen is clicked.
 void __stdcall Congratz_SetOkClicked(D2UIMouseMsgStrc * pMsg) {
     if (!(pMsg->uLParam.nLParam & 0x40000000U)) {
-      gEndGameUiState.congratzOkClicked = true;
-      gEndGameUiState._pad2[0] = '\0';
-      gEndGameUiState._pad2[1] = '\0';
-      gEndGameUiState._pad2[2] = '\0';
+      gEndGameUiState.congratzOkClicked = 1;
     }
 
     pMsg->bHandled = 1;
@@ -1231,10 +1228,7 @@ void __stdcall GAMEDATA_DrawLoadingScreenText() {
 
 // Set gExitCutscenePlayed flag.
 void __stdcall SetExitCutscenePlayed() {
-    gExitCutsceneState.cutscenePlayed = true;
-    gExitCutsceneState._pad0[0] = '\0';
-    gExitCutsceneState._pad0[1] = '\0';
-    gExitCutsceneState._pad0[2] = '\0';
+    gExitCutsceneState.cutscenePlayed = 1;
 }
 
 void __stdcall D2CLIENT_SetExitVar3ToTrue() {
@@ -1920,15 +1914,9 @@ void __fastcall CLIENT_AllocAct(uint8_t nActNo, int32_t nMapSeed, int32_t nAutom
 void __stdcall GAME_InitClientSide() {
     gLoadTimerDurationMs.dwStartTick = 0;
     gLoadTimerDurationMs.dwDurationMs = 0;
-    gExitCutsceneState.cutscenePlayed = false;
-    gExitCutsceneState._pad0[0] = '\0';
-    gExitCutsceneState._pad0[1] = '\0';
-    gExitCutsceneState._pad0[2] = '\0';
+    gExitCutsceneState.cutscenePlayed = 0;
     gExitCutsceneState.pendingCutsceneId = 0;
-    gEndGameUiState.congratzOkClicked = false;
-    gEndGameUiState._pad2[0] = '\0';
-    gEndGameUiState._pad2[1] = '\0';
-    gEndGameUiState._pad2[2] = '\0';
+    gEndGameUiState.congratzOkClicked = 0;
     gLevelLoadInProgress = 0;
     gClickModifierDown = 0;
     memset(&gClientGameData, 0, 0x80);
@@ -1974,7 +1962,7 @@ void __stdcall GAME_InitClientSide() {
 
 void __fastcall CLIENT_ConnectionRefused(int32_t nReason) {
     uint32_t bLoadTimerActive = Timer_IsActiveAndUpdate(&gLoadTimerDurationMs);
-    if (!(!bLoadTimerActive && !*(uint32_t*)((char*)&gEndGameUiState + 4) && !*(uint32_t*)((char*)&gExitCutsceneState + 4))) {
+    if (!(!bLoadTimerActive && !gEndGameUiState.showCutscene && !gExitCutsceneState.cutscenePlayed)) {
       return;
     }
 
@@ -2045,10 +2033,7 @@ void __stdcall Congratz_HandleOkButton(D2UIMouseMsgStrc * pMsg) {
     int nMouseX = UI::ui::GetMouseX();
     int nMouseY = UI::ui::GetMouseY();
     if (nMouseX >= nCenterX - 0x30 && nMouseX <= nCenterX + 0x30 && nMouseY >= dwScreenY - 0x70 && nMouseY <= nBottomY) {
-      gEndGameUiState.congratzOkClicked = true;
-      gEndGameUiState._pad2[0] = '\0';
-      gEndGameUiState._pad2[1] = '\0';
-      gEndGameUiState._pad2[2] = '\0';
+      gEndGameUiState.congratzOkClicked = 1;
       pMsg->bHandled = 1;
       pMsg->dwResult = 0;
       Storm::SMsgBreakHandlerChain(pMsg);
@@ -2274,7 +2259,7 @@ uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
       UI::ui::DrawCursor();
       D2gfx::D2GFX::D2GFX_EndScene();
     }
-    if (!*(uint32_t*)((char*)&gEndGameUiState + 8)) {
+    if (!gEndGameUiState.congratzOkClicked) {
       return 0;
     }
     if (gpCongratsBgDC6) {
@@ -2291,10 +2276,7 @@ uint32_t __stdcall DRAW_Congratz(uint32_t dwUnused) {
 }
 
 void __stdcall GAMEDATA_ShowEndGameCutscene() {
-    gEndGameUiState.showCutscene = true;
-    gEndGameUiState._pad1[0] = '\0';
-    gEndGameUiState._pad1[1] = '\0';
-    gEndGameUiState._pad1[2] = '\0';
+    gEndGameUiState.showCutscene = 1;
     D2IniData_client->eCTEMP_eD2PlayerStatus = (CLIENT_nDifficulty + 1) * 0x400 | D2IniData_client->eCTEMP_eD2PlayerStatus & 0xe0ff;
 }
 
@@ -2596,7 +2578,7 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x1c,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::GAME::Game::HandleMouseButtonEvent
+        /* .pfHandler = */ &D2Client::GAME::Game::HandleMouseButtonEvent
     }
 }; D2_STATIC_GUARD(gsGameDataFlagInit, "D2Client::GAME::Game::pfModes_EnterGame::gsGameDataFlagInit");
     static D2UIFlagInitStrc gsGameDataUIFlagInit[7] = {
@@ -2618,7 +2600,7 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x1c,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::GAME::Game::HandleMouseButtonEvent
+        /* .pfHandler = */ &D2Client::GAME::Game::HandleMouseButtonEvent
     },
     {
         /* .eEventType = */ 0x3,
@@ -2665,7 +2647,7 @@ eD2ClientAppMode __stdcall pfModes_EnterGame() {
     {
         /* .eEventType = */ 0x0,
         /* .nMessageOrKeyCode = */ 0x1c,
-        /* .pfHandler = */ (fnD2InitUIFlagFunction)&D2Client::GAME::Game::HandleMouseButtonEvent
+        /* .pfHandler = */ &D2Client::GAME::Game::HandleMouseButtonEvent
     },
     {
         /* .eEventType = */ 0x3,
@@ -2774,7 +2756,7 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
     D2Sound::Src::D2SoundSmp::CleanupSoundBuffer(0xb4);
     D2Client::Sound::SoundHdr::Cleanup();
     uint32_t bLoadTimerActive = Timer_IsActiveAndUpdate(&gLoadTimerDurationMs);
-    if (bLoadTimerActive && !*(uint32_t*)((char*)&gEndGameUiState + 4) && !*(uint32_t*)((char*)&gExitCutsceneState + 4)) {
+    if (bLoadTimerActive && !gEndGameUiState.showCutscene && !gExitCutsceneState.cutscenePlayed) {
       _Message::MessageGameLoop((::fpGameLoopFunction)LoadingScreen_TickOrCleanup);
     }
 
@@ -2782,7 +2764,7 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
     if (bResult) {
       Record::SaveGameRecordToFile();
     }
-    if (*(uint32_t*)(char*)&gEndGameUiState) {
+    if (gEndGameUiState.showCongrats) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataFlagInit, 10);
       _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), &g_UIFlagInitGameDataPanel1, 1);
       _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitGameDataPanel2, 2);
@@ -2790,7 +2772,7 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
       _Message::MESSAGE_RegisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataUIFlagInit, 7);
       _Message::MessageGameLoop((::fpGameLoopFunction)DrawBetaScreen);
     } else {
-      if (*(uint32_t*)((char*)&gEndGameUiState + 4)) {
+      if (gEndGameUiState.showCutscene) {
         ExitGamePlayCutScene(5);
         _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataFlagInit, 10);
         ClearInGameUIFlags();
@@ -2800,16 +2782,13 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
       } else {
         if (gExitCutsceneState.pendingCutsceneId) {
           ExitGamePlayCutScene(7);
-          gExitCutsceneState.cutscenePlayed = true;
-          gExitCutsceneState._pad0[0] = '\0';
-          gExitCutsceneState._pad0[1] = '\0';
-          gExitCutsceneState._pad0[2] = '\0';
+          gExitCutsceneState.cutscenePlayed = 1;
         }
       }
     }
 
     bool bPlayCongrats = true;
-    if (*(uint32_t*)((char*)&gExitCutsceneState + 4)) {
+    if (gExitCutsceneState.cutscenePlayed) {
       byPlayerStatus = *(uint8_t*)((uintptr_t)&D2IniData_client->eCTEMP_eD2PlayerStatus + 1) & 0x1f;
       if (CLIENT_nDifficulty) {
         if (CLIENT_nDifficulty == 1 && byPlayerStatus == 0xc) {
@@ -2841,26 +2820,17 @@ static uint32_t gdwHostGameThreadId; D2_STATIC_GUARD_BSS(gdwHostGameThreadId, "D
     UI::ui::UI_FreeCursor();
     D2Win::D2GFX::thunk_D2GFX_ClearCaches();
     ClientModeInGame::ClientAppModeQueue(APPMODE_EXITGAME);
-    if (*(uint32_t*)(char*)&gEndGameUiState) {
+    if (gEndGameUiState.showCongrats) {
       _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataUIFlagInit, 7);
-      gEndGameUiState.showCongrats = false;
-      gEndGameUiState._pad0[0] = '\0';
-      gEndGameUiState._pad0[1] = '\0';
-      gEndGameUiState._pad0[2] = '\0';
+      gEndGameUiState.showCongrats = 0;
     } else {
-      if (*(uint32_t*)((char*)&gEndGameUiState + 4)) {
+      if (gEndGameUiState.showCutscene) {
         _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitGameDataPanel4, 9);
-        gEndGameUiState.showCutscene = false;
-        gEndGameUiState._pad1[0] = '\0';
-        gEndGameUiState._pad1[1] = '\0';
-        gEndGameUiState._pad1[2] = '\0';
+        gEndGameUiState.showCutscene = 0;
       } else {
-        if (bPlayCongrats && *(uint32_t*)((char*)&gExitCutsceneState + 4)) {
+        if (bPlayCongrats && gExitCutsceneState.cutscenePlayed) {
           _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), g_UIFlagInitGameDataPanel4, 9);
-          gExitCutsceneState.cutscenePlayed = false;
-          gExitCutsceneState._pad0[0] = '\0';
-          gExitCutsceneState._pad0[1] = '\0';
-          gExitCutsceneState._pad0[2] = '\0';
+          gExitCutsceneState.cutscenePlayed = 0;
         } else {
           _Message::MESSAGE_UnregisterEventHandlerBatch(D2gfx::D2GFX::GetHwnd(), gsGameDataFlagInit, 10);
           ClearInGameUIFlags();

@@ -17,7 +17,6 @@
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/GAME/Roster.h"
 #include "D2Client/GAME/RosterPets.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/SkillHelpers.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Stats.h"
@@ -62,6 +61,7 @@
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/QuestRecord.h"
@@ -1038,11 +1038,11 @@ void __stdcall INV_DrawSocketedItems(D2UnitStrc * pUnit, D2GridScreenCoordinates
     } while (nSocketIndex < (uint8_t)nSocketCount);
 }
 
-static BOOL INV_IsQuestItemConsumable(int32_t pUnit) {
+static BOOL INV_IsQuestItemConsumable(D2ItemsTxt * pUnit) {
     BOOL bQuestState;
     eD2Quests eQuest;
     eD2QuestState eQuestState;
-    int nItemCode = *(int*)(pUnit + 0x80);
+    int nItemCode = pUnit->dwCode;
     if (nItemCode == 0x20737361) {
       eQuest = QUEST_RadamentsLair;
       eQuestState = QUESTSTATE_Step0x05;
@@ -1211,7 +1211,7 @@ void __stdcall DRAW_UI_InventoryContent(D2UnitStrc * pUnit) {
                   pItemsTxt = D2Common::DATATBLS::ItemTbls::TXT_Items_GetLine(pItem->nClassId);
                   iVar1 = 2;
                   if (pItemsTxt->bQuest != '\0') {
-                    bEquipReqMet = INV_IsQuestItemConsumable((int32_t)pItemsTxt);
+                    bEquipReqMet = INV_IsQuestItemConsumable(pItemsTxt);
                     if (bEquipReqMet) {
                       iVar1 = 0;
                     }
@@ -1669,7 +1669,7 @@ static BOOL __stdcall INV_FormatPlayerNameWithBase(uint16_t * wszText1, uint16_t
     return 0;
 }
 
-static void __stdcall INV_FormatQuantityText(int32_t pQualityRecord, uint16_t * wszText, D2UnitStrc * pUnit) {
+static void __stdcall INV_FormatQuantityText(D2ItemsTxt * pQualityRecord, uint16_t * wszText, D2UnitStrc * pUnit) {
     uint16_t wszNumBuffer[10];
     char szNumBuffer[12];
     memset(wszNumBuffer, 0, 10 * sizeof(wszNumBuffer[0]));
@@ -1688,7 +1688,7 @@ static void __stdcall INV_FormatQuantityText(int32_t pQualityRecord, uint16_t * 
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwColorPrefix);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, wszNumBuffer);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwColorSuffix);
-    pwLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(*(uint16_t*)(pQualityRecord + 0xf4));
+    pwLocaleStr = D2Lang::StrTable::strtable::GetLocaleString(pQualityRecord->wNameStr);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwLocaleStr);
 }
 
@@ -2148,7 +2148,7 @@ static void __stdcall INV_FormatBlockChanceText(uint16_t * wszText, D2ItemsTxt *
 }
 
 // Formats defense range text for shields and boots, displaying min-max defense values. For shields, checks if Holy Shield skill is active and adds its defense bonus to both min and max values before formatting the output string.
-static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, uint32_t pStatRecord, uint16_t * wszText) {
+static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, D2ItemsTxt * pStatRecord, uint16_t * wszText) {
     D2SkillStrc* pSkill;
     eD2States iStateCheck;
     int nSkillLevel;
@@ -2158,10 +2158,10 @@ static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, uint32_t pS
     memset(wszTempConversionBuffer, 0, 10 * sizeof(wszTempConversionBuffer[0]));
     uint16_t* pwSeparator = D2Lang::StrTable::strtable::GetLocaleString(0xf9b);
     uint16_t* pwColorSuffix = D2Lang::StrTable::strtable::GetLocaleString(0xf9e);
-    uint32_t nMinDefense = (uint32_t)*(uint8_t*)(pStatRecord + 0xfe);
-    uint32_t nMaxDefense = (uint32_t)*(uint8_t*)(pStatRecord + 0xff);
+    D2ItemsTxt* nMinDefense = (D2ItemsTxt*)(uint32_t)pStatRecord->nMinDam;
+    uint32_t nMaxDefense = (uint32_t)pStatRecord->nMaxDam;
     uint32_t nTypeCheck = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, ITEMTYPE_AnyShield);
-    pStatRecord = nMinDefense;
+    int nStatRecord = (int)nMinDefense;
     if (nTypeCheck) {
       D2UnitStrc* pPlayerUnit_lcl;
       *(uint16_t*)(char*)&pUnit = 0xd8c;
@@ -2172,7 +2172,7 @@ static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, uint32_t pS
         if (iStateCheck != STATE_none) {
           nSkillLevel = D2Common::Skills::GetSkillLevel(pPlayerUnit_lcl, pSkill, 1);
           nSkillDmgCalc = D2Common::Skills::SKILL_CalcMinDamage(pPlayerUnit_lcl, 0x75, nSkillLevel, 1);
-          pStatRecord = nMinDefense + (nSkillDmgCalc >> 8);
+          nStatRecord = (int)(nMinDefense->szFlippyFile + (nSkillDmgCalc >> 8));
           nSkillDmgCalc = D2Common::Skills::SKILL_CalcMaxDamage(pPlayerUnit_lcl, 0x75, nSkillLevel, 1);
           nMaxDefense += nSkillDmgCalc >> 8;
         }
@@ -2188,7 +2188,7 @@ static void __stdcall INV_FormatDefenseRangeText(D2UnitStrc * pUnit, uint32_t pS
 
     uint16_t* pwString = D2Lang::StrTable::strtable::GetLocaleString((uint16_t)(uintptr_t)pUnit);
     D2Lang::Unicode::UNISYS::STRING_CopyWideString(wszText, pwString);
-    Storm::Source::SSTR::SStrPrintf(szPrintfBuffer, 10, "%i", pStatRecord);
+    Storm::Source::SSTR::SStrPrintf(szPrintfBuffer, 10, "%i", nStatRecord);
     D2Lang::Unicode::UNISYS::STRING_CopyCharToWCharWithSetMaxSize(wszTempConversionBuffer, szPrintfBuffer, 9);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwSeparator);
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, wszTempConversionBuffer);
@@ -2659,13 +2659,13 @@ static void INV_FormatSocketFillerDesc(uint16_t * wszText) {
     D2Lang::Unicode::UNISYS::AppendToBuffer(wszText, pwszNewline);
 }
 
-static void __stdcall INV_FormatRunewordName(uint16_t * wszText, int32_t pItem) {
+static void __stdcall INV_FormatRunewordName(uint16_t * wszText, D2UnitStrc * pItem) {
     uint32_t bIsRune;
     D2ItemsTxt* pItemsTxt;
     D2GemsTxt* pGemsTxt;
     uint16_t* pwszLabel;
     uint16_t wszRuneLetter[6];
-    D2InventoryStrc* pInventory = *(D2InventoryStrc**)(pItem + 0x60);
+    D2InventoryStrc* pInventory = pItem->pInventory;
     if (!pInventory) {
       return;
     }
@@ -3006,8 +3006,8 @@ static BOOL INV_IsMouseOverGoldButton(int32_t nX, int32_t nY) {
     return 0;
 }
 
-BOOL __fastcall INV_IsMouseOverCloseButton(int32_t nParam1, int32_t nParam2) {
-    if (nParam1 >= ScreenSizeX - gnPanelOffsetX - 0x12e && nParam1 <= ScreenSizeX - gnPanelOffsetX - 0x10e && nParam2 >= gnPanelOffsetY - 0x60 + ScreenSizeY && nParam2 <= gnPanelOffsetY - 0x40 + ScreenSizeY) {
+BOOL __fastcall INV_IsMouseOverCloseButton(int32_t nMouseX, int32_t nMouseY) {
+    if (nMouseX >= ScreenSizeX - gnPanelOffsetX - 0x12e && nMouseX <= ScreenSizeX - gnPanelOffsetX - 0x10e && nMouseY >= gnPanelOffsetY - 0x60 + ScreenSizeY && nMouseY <= gnPanelOffsetY - 0x40 + ScreenSizeY) {
       return 1;
     }
 
@@ -3501,7 +3501,7 @@ int32_t __stdcall ClickItemRight(D2UnitStrc * pItem, D2InventoryStrc * pGridCoor
           return 1;
         }
 
-        Text::TEXT_OpenQuestScroll((int32_t)pItemAtCell, (int32_t)pItemsTxt);
+        Text::TEXT_OpenQuestScroll(pItemAtCell, pItemsTxt);
         return 1;
       }
     }
@@ -3637,16 +3637,16 @@ void __stdcall INV_SetMercInventoryMode() {
     g_nCurrentInventoryPage = 0x13;
 }
 
-void __stdcall INV_HandleShopAction(DWORD nAction, int32_t pTarget, D2UnitStrc * pUnit, DWORD dwParam1, DWORD dwParam2, DWORD dwParam3, DWORD dwParam4) {
+void __stdcall INV_HandleShopAction(DWORD nAction, D2UnitStrc * pTarget, D2UnitStrc * pUnit, DWORD dwSell, DWORD dwParam2, DWORD bSkipConfirm, DWORD dwMode) {
     if (!pTarget) {
       return;
     }
 
-    int nShopResult = npcmenu::ShopAction(pUnit, (D2UnitStrc*)pTarget, dwParam1, dwParam2, nAction, dwParam4, dwParam3, 0);
+    int nShopResult = npcmenu::ShopAction(pUnit, pTarget, dwSell, dwParam2, nAction, dwMode, bSkipConfirm, 0);
     if (!nShopResult) {
       return;
     }
-    if (!dwParam3) {
+    if (!bSkipConfirm) {
       g_nCurrentInventoryPage = 5;
     }
 
@@ -6736,6 +6736,10 @@ void __stdcall INV_HandleRecipeScrollClick(D2UIMouseMsgStrc * pMsg) {
     Storm::SMsgBreakHandlerChain(pMsg);
 }
 
+void __stdcall INV_PanelKeyNoOp(D2UIMouseMsgStrc * pMsg) {
+
+}
+
 void __fastcall INV_ExtractTextBetweenBrackets(uint16_t * wszText, short * wszDelimStart) {
     int nZeroCount;
     uint16_t wszExtracted[100];
@@ -7783,7 +7787,7 @@ void __fastcall ITEM_BuildSetItemTooltip(D2UnitStrc * pUnit) {
       if (pOwnerUnit && pOwnerUnit->eUnitType == UNIT_PLAYER && pOwnerUnit->nClassId == 3) {
         nAdjReqStr = D2Common::ITEMS::Items::TXT_ItemTypes_CheckClass(pItemToDescribe);
         if (!nAdjReqStr || (eVar1 = D2Common::ITEMS::Items::TXT_ItemTypes_GetClass(pItemToDescribe) , eVar1 == CLASS_PALADIN)) {
-          INV_FormatDefenseRangeText(pItemToDescribe, (uint32_t)pItemsTxt, wszDefenseRange);
+          INV_FormatDefenseRangeText(pItemToDescribe, pItemsTxt, wszDefenseRange);
           ui::AppendAsWideChar(wszDefenseRange, 0);
           D2Lang::Unicode::UNISYS::AppendToBuffer(wszStatsBlock, wszDefenseRange);
         }
@@ -8326,7 +8330,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
 
       nTmpResult = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_quiver(pItemToDescribe);
       if (nTmpResult) {
-        INV_FormatQuantityText((int32_t)pItemsTxt, wszWorkBuf, pItemToDescribe);
+        INV_FormatQuantityText(pItemsTxt, wszWorkBuf, pItemToDescribe);
       } else {
         INV_FormatDurabilityText(wszDurability, pItemToDescribe);
       }
@@ -8352,7 +8356,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
 
       nTmpResult = D2Common::ITEMS::Items::ITEM_GetItemsTxt_bHasInv(pItemToDescribe);
       if (nTmpResult) {
-        INV_FormatRunewordName(wszRunewordName, (int32_t)pItemToDescribe);
+        INV_FormatRunewordName(wszRunewordName, pItemToDescribe);
       }
 
       nTmp2 = D2Common::ITEMS::Items::ITEMS_IsA(pItemToDescribe, ITEMTYPE_Charm);
@@ -8412,7 +8416,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
           if (pOwnerUnit && pOwnerUnit->nClassId == 3) {
             nTmpResult = D2Common::ITEMS::Items::TXT_ItemTypes_CheckClass(pItemToDescribe);
             if (!nTmpResult || (eVar1 = D2Common::ITEMS::Items::TXT_ItemTypes_GetClass(pItemToDescribe) , eVar1 == CLASS_PALADIN)) {
-              INV_FormatDefenseRangeText(pItemToDescribe, (uint32_t)pItemsTxt, wszDefenseRange);
+              INV_FormatDefenseRangeText(pItemToDescribe, pItemsTxt, wszDefenseRange);
             }
           }
 
@@ -8420,7 +8424,7 @@ void __stdcall LoadItemDesc(D2UnitStrc * pUnit, int32_t bUsePlayer) {
         } else {
           nTmp2 = D2Common::ITEMS::Items::ITEMS_IsA(pItemToDescribe, ITEMTYPE_Boots);
           if (nTmp2 && pOwnerUnit && pOwnerUnit->nClassId == 6) {
-            INV_FormatDefenseRangeText(pItemToDescribe, (uint32_t)pItemsTxt, wszDefenseRange);
+            INV_FormatDefenseRangeText(pItemToDescribe, pItemsTxt, wszDefenseRange);
           }
         }
 
@@ -9389,7 +9393,7 @@ BOOL __stdcall ClickItemLeft(D2UnitStrc * pUnit, D2InventoryStrc * pInventory, D
           nItemType = GAME::Game::CLIENT_CheckExpansion();
           pTargetItem = pUnit;
           nTxCost = D2Common::Units::GetInventoryPage(pUnit, '\x03', nItemType);
-          nCallResult = D2Common::INVENTORY::Inventory::INVENTORY_FindItemGridPosition(pInvWork, pCursorItem_lcl, nTxCost, (int**)&y, (int*)&pInventory, 3);
+          nCallResult = D2Common::INVENTORY::Inventory::INVENTORY_FindItemGridPosition(pInvWork, pCursorItem_lcl, nTxCost, (int*)&y, (int*)&pInventory, 3);
           if (nCallResult) {
             if (!targetItem) {
               nTxCost = -1;
@@ -11404,6 +11408,14 @@ void __stdcall DrawMercInventory() {
     INV_DrawHirelingEquippedItems(pMercUnit);
     INV_DrawHirelingCursorHighlight(pMercUnit);
     LoadItemDesc(pMercUnit, 0);
+}
+
+void StaticInit_6cabf0() {
+    int nDwordsRemaining;
+    uint8_t* pInvRecipeBuf;
+    for (nDwordsRemaining = 0; nDwordsRemaining < 0x2000; nDwordsRemaining++) {
+      gpInvRecipeScrollImage[nDwordsRemaining] = 0;
+    }
 }
 
 } // namespace D2Client::UI::Inv

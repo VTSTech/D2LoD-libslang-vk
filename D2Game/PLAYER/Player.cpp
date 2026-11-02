@@ -4,7 +4,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/D2LightMapStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -29,6 +28,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
@@ -319,13 +319,13 @@ uint32_t __stdcall PLAYER_PlaceItemInBelt(::SGAMEDATA * pGame, int32_t nParam, D
     }
 }
 
-static D2UnitStrc * __stdcall PLAYER_CreateRewardItemFromTemplate(int32_t nGamePtr, int32_t bNoSkill, int32_t nItemClassId, int32_t pTemplateTxt, D2UnitStrc * pUnit) {
+static D2UnitStrc * __stdcall PLAYER_CreateRewardItemFromTemplate(::SGAMEDATA * nGamePtr, int32_t bNoSkill, int32_t nItemClassId, int32_t pTemplateTxt, D2UnitStrc * pUnit) {
     if (!pUnit) {
       return nullptr;
     }
 
     int32_t nItemLevel = ITEMS::Items::Drop::GetLevel(pUnit, LEVEL_None);
-    D2UnitStrc* pCreatedItem = ITEMS::Items::Drop::ITEM_CreateFromTemplate(pUnit, nItemClassId, (::SGAMEDATA*)nGamePtr, 4, QUALITY_NORMAL, 1, 1, nItemLevel, 0, 0, 0);
+    D2UnitStrc* pCreatedItem = ITEMS::Items::Drop::ITEM_CreateFromTemplate(pUnit, nItemClassId, nGamePtr, 4, QUALITY_NORMAL, 1, 1, nItemLevel, 0, 0, 0);
     if (!pCreatedItem) {
       return pCreatedItem;
     }
@@ -389,7 +389,7 @@ void __fastcall PLAYER_CreateStarterItems(::SGAMEDATA * pGame, D2UnitStrc * pUni
 
     do {
       __frame0.pGameSaved = pGame;
-      pNewItem = PLAYER_CreateRewardItemFromTemplate((int32_t)__frame0.pGameSaved, nDifficulty, __frame0.nItemTxtLine, eClassId, pUnit);
+      pNewItem = PLAYER_CreateRewardItemFromTemplate(__frame0.pGameSaved, nDifficulty, __frame0.nItemTxtLine, eClassId, pUnit);
       D2Common::ITEMS::Items::ITEM_EditItemData_eItemFlag(pNewItem, ITEMFLAG_BEGINNER, 1);
       D2Common::ITEMS::Items::SetBodyLoc(pNewItem, *(eD2BodyLoc*)(pnParam + 1));
       nLine = D2Common::ITEMS::Items::ITEM_GetTxtItemTypes_beltable(pNewItem);
@@ -650,7 +650,7 @@ void __fastcall PLAYER_PlaceCorpse(::SGAMEDATA * pGame, D2RoomStrc * pRoom, DWOR
       return;
     }
 
-    D2Common::PATH::Path::PATH_GetCollisionTypeAt((uint32_t*)pUnit->pPath.pStaticPath, pUnit, pRoom, pPoint->x, pPoint->y);
+    D2Common::PATH::Path::PATH_GetCollisionTypeAt(pUnit->pPath.pDynamicPath, pUnit, pRoom, pPoint->x, pPoint->y);
     pUnit->eUnitFlags |= UNITFLAG_TARGETABLE;
     D2Common::Units::SetupUpdateFlag(pUnit, 0x11);
     pUnit->eUnitFlags &= ~UNITFLAG_ISVALIDTARGET;
@@ -820,7 +820,7 @@ uint32_t __fastcall CheckItemMovePermission(::SGAMEDATA * pGame, D2UnitStrc * pU
             }
           case UNIT_MONSTER:
             {
-              bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, (int32_t)pUnit);
+              bCanMove = Monster::MonsterAI::NpcStateIsntZero(pInteractUnit, pUnit);
               return bCanMove;
             }
         }
@@ -1219,11 +1219,11 @@ D2UnitStrc * __fastcall PLAYER_GetActiveWeaponForSkill(D2UnitStrc * pUnit) {
 }
 
 // Recalculates active stat-list flags for dual-wield weapon slots on pUnit. If nParam is non-zero, deactivates stat lists for currently equipped and primary weapons (cleanup pass). Then, if the unit can dual-wield, activates the correct weapon's stat list based on the active-weapon-for-skill selection: primary-only, swap-only, or the dual-wield split. Uses STATLIST_SetItemStatActive(1=active, 0=inactive).
-void __fastcall EQUIPMENT_RecalcDualWieldWeaponStats(D2UnitStrc * pUnit, int32_t nParam) {
+void __fastcall EQUIPMENT_RecalcDualWieldWeaponStats(D2UnitStrc * pUnit, int32_t bResetWeaponStats) {
     D2UnitStrc* pEquippedWeapon;
     D2UnitStrc* pPrimaryWeapon;
     D2UnitStrc* pOwner;
-    if (nParam) {
+    if (bResetWeaponStats) {
       pEquippedWeapon = D2Common::INVENTORY::Inventory::GetEquipedWeapon(pUnit->pInventory);
       if (pEquippedWeapon) {
         pPrimaryWeapon = D2Common::Stats::StatsEx::SEVER_ITEM_GetOwner(pEquippedWeapon, nullptr);
@@ -1283,8 +1283,8 @@ void __fastcall EQUIPMENT_RecalcDualWieldWeaponStats(D2UnitStrc * pUnit, int32_t
     }
 }
 
-void __fastcall WEAPON_ApplyEquippedWeaponStats(D2UnitStrc * pUnit, int32_t nParam) {
-    if (!nParam) {
+void __fastcall WEAPON_ApplyEquippedWeaponStats(D2UnitStrc * pUnit, int32_t bResetWeaponStats) {
+    if (!bResetWeaponStats) {
       return;
     }
 

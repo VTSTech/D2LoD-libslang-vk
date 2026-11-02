@@ -58,18 +58,18 @@ namespace D2Client::Sound::SoundHdr {
 
 static float FLOAT_006d9108 = 400; D2_STATIC_GUARD(FLOAT_006d9108, "D2Client::Sound::SoundHdr::FLOAT_006d9108");
 
-static void SOUNDHDR_CompleteAsyncLoad(int32_t pSoundHdr) {
+static void SOUNDHDR_CompleteAsyncLoad(D2SoundsTxt * pSoundHdr) {
     void* nAddress;
-    if (*(int*)(pSoundHdr + 0x86) != 1) {
+    if (pSoundHdr->nLoadState != 1) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x40);
       exit(-1);
     }
 
-    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(void**)(pSoundHdr + 0x6c) = (void*)nAddress;
-    size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize(*(D2AsyncData_Line0x128**)(pSoundHdr + 0x82));
-    *(size_t*)(pSoundHdr + 0x70) = nReadSize;
-    *(uint32_t*)(pSoundHdr + 0x86) = 2;
+    nAddress = Fog::Src::AsyncData::ASYNCDATA_GetResult((D2AsyncData_Line0x128*)pSoundHdr->pAsyncData);
+    pSoundHdr->pSoundDataBuffer = nAddress;
+    size_t nReadSize = Fog::Src::AsyncData::ASYNCDATA_GetReadSize((D2AsyncData_Line0x128*)pSoundHdr->pAsyncData);
+    pSoundHdr->nSoundDataBytes = nReadSize;
+    pSoundHdr->nLoadState = 2;
     GAME::Sound::SOUND_ParseStreamWavHeader(pSoundHdr);
     gnSoundAsyncLoadCount--;
 }
@@ -431,7 +431,7 @@ void __fastcall SOUNDHDR_FreeSoundBuffer(int32_t nSoundId) {
       return;
     }
 
-    int* pPlaying = GAME::Sound::SOUND_FindPlayingByIdSafe(nSoundId);
+    D2ClientSoundChannelStrc* pPlaying = GAME::Sound::SOUND_FindPlayingByIdSafe(nSoundId);
     if (pPlaying) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x259);
       exit(-1);
@@ -456,7 +456,7 @@ void __fastcall SOUNDHDR_FreeSoundBuffer(int32_t nSoundId) {
 BOOL __stdcall SOUNDHDR_EvictLeastRecentlyUsed(int32_t nBytesNeeded, int32_t bMultiPass, int32_t bRespectRecency) {
     int nId;
     D2SoundsTxt* pSound;
-    int* pPlaying;
+    D2ClientSoundChannelStrc* pPlaying;
     bool bFreedAny;
     int* pLRUNode;
     int nNowVolume = gnCurrentGameAudioVolume;
@@ -747,7 +747,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
         return;
       }
       if (true && bForceSync) {
-        SOUNDHDR_CompleteAsyncLoad((int32_t)pSound);
+        SOUNDHDR_CompleteAsyncLoad(pSound);
         return;
       }
     }
@@ -784,7 +784,7 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
           gnSoundBufferBytesLoaded += nLoadStateOrBytes;
           SOUNDHDR_UpdateLRUTimestamp(nSoundId);
           pSound->nLoadState = 2;
-          GAME::Sound::SOUND_ParseStreamWavHeader((int32_t)pSound);
+          GAME::Sound::SOUND_ParseStreamWavHeader(pSound);
           return;
         }
       }
@@ -810,29 +810,29 @@ void __fastcall SOUNDHDR_LoadSoundFile(int32_t nSoundId, int32_t bForceSync, int
 void __fastcall SOUNDHDR_ProcessAsyncLoads(int32_t dwTick) {
     int nRowIndex;
     int nRowOffset;
-    char* pSoundRow;
+    D2SoundsTxt* pSoundRow;
     uint32_t dwTickToStore = gdwLastSoundAsyncLoadTick;
     if (pTxtSounds && (!dwTick || dwTick - gdwLastSoundAsyncLoadTick >= 0x19)) {
       uint32_t bAsyncComplete;
       nRowIndex = 1;
       nRowOffset = 0x8e;
       do {
-        pSoundRow = pTxtSounds->Filename + nRowOffset;
-        if (!*(int*)((int)pTxtSounds->field_0x74 + nRowOffset + 0x12) && (*(int*)(pSoundRow + 0x8a) || pSoundRow[0x4c])) {
+        pSoundRow = (D2SoundsTxt*)(pTxtSounds->Filename + nRowOffset);
+        if (!*(int*)((int)pTxtSounds->field_0x74 + nRowOffset + 0x12) && (pSoundRow->nRefCount || pSoundRow->Cache)) {
           if (!dwTick || gnSoundAsyncLoadCount < 0xf && (uint32_t)(dwTick - gnSoundEvictedAudioVolume) >= 0xfa) {
             SOUNDHDR_LoadSoundFile(nRowIndex, (uint32_t)!dwTick, 1);
-            if (*(int*)(pSoundRow + 0x86) == 1) {
-              bAsyncComplete = Fog::Src::AsyncData::ASYNCDATA_IsComplete(*(D2AsyncData_Line0x128**)(pSoundRow + 0x82));
+            if (pSoundRow->nLoadState == 1) {
+              bAsyncComplete = Fog::Src::AsyncData::ASYNCDATA_IsComplete((D2AsyncData_Line0x128*)pSoundRow->pAsyncData);
               if (bAsyncComplete) {
-                SOUNDHDR_CompleteAsyncLoad((int32_t)pSoundRow);
+                SOUNDHDR_CompleteAsyncLoad(pSoundRow);
               }
             }
           }
         } else {
-          if (*(int*)(pSoundRow + 0x86) == 1) {
-            bAsyncComplete = Fog::Src::AsyncData::ASYNCDATA_IsComplete(*(D2AsyncData_Line0x128**)(pSoundRow + 0x82));
+          if (pSoundRow->nLoadState == 1) {
+            bAsyncComplete = Fog::Src::AsyncData::ASYNCDATA_IsComplete((D2AsyncData_Line0x128*)pSoundRow->pAsyncData);
             if (bAsyncComplete) {
-              SOUNDHDR_CompleteAsyncLoad((int32_t)pSoundRow);
+              SOUNDHDR_CompleteAsyncLoad(pSoundRow);
             }
           }
         }
@@ -944,7 +944,7 @@ void __fastcall SOUNDHDR_UpdateRegistryVersion(int32_t nSoundHeaderIndex) {
     }
 
     sprintf(szVersionString, "%d.%d.%d.%d", 0xd8, 0x94, 0xf6, dwVersionBuild);
-    Storm::Source::SReg::SRegSaveString((uint32_t*)"Diablo II", "Aux Battle.net", 0, szVersionString);
+    Storm::Source::SReg::SRegSaveString("Diablo II", "Aux Battle.net", 0, szVersionString);
 }
 
 } // namespace D2Client::Sound::SoundHdr

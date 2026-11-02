@@ -6,7 +6,6 @@
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/Engine/Particle.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -35,6 +34,7 @@
 #include "D2Common/Drlg/D2DrlgDeleteStrc.h"
 #include "D2Common/Drlg/Drlg.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/PATH/Path.h"
@@ -124,11 +124,11 @@ BOOL __fastcall Skills_CltStFunc_MonInitAndSpawnCltMissile(D2UnitStrc * pUnit, e
     if (!pRoom) {
       return 0;
     }
-    if (!pUnit->pPath.pStaticPath) {
+    if (!pUnit->pPath.pDynamicPath) {
       return 0;
     }
 
-    nCollisionType = D2Common::PATH::Path::PATH_GetCollisionTypeAt((uint32_t*)pUnit->pPath.pStaticPath, pUnit, pRoom, ptSpawnPos.x, ptSpawnPos.y);
+    nCollisionType = D2Common::PATH::Path::PATH_GetCollisionTypeAt(pUnit->pPath.pDynamicPath, pUnit, pRoom, ptSpawnPos.x, ptSpawnPos.y);
     if (!nCollisionType) {
       return 0;
     }
@@ -922,7 +922,7 @@ BOOL __fastcall Skills_CltStFunc_SetParam1FromCltCalc(D2UnitStrc * pUnit, eD2Ski
     return 1;
 }
 
-void __fastcall SKILLSMON_SetMonsterDeathFrame(int32_t nParam, D2UnitStrc * pUnit) {
+void __fastcall SKILLSMON_SetMonsterDeathFrame(D2SkillsTxt * pSkillsTxt, D2UnitStrc * pUnit) {
     D2MonStats2Txt* pMonStats2Txt;
     if ((pUnit ? pUnit->eUnitType : UNIT_COUNT) == UNIT_MONSTER) {
       int nMonStatsEx;
@@ -936,7 +936,7 @@ void __fastcall SKILLSMON_SetMonsterDeathFrame(int32_t nParam, D2UnitStrc * pUni
       if (!pMonStats2Txt) {
         return;
       }
-      if (*(char*)(nParam + 0x11) == '\x0e') {
+      if (pSkillsTxt->monanim == '\x0e') {
         D2Common::Units::SetSequenceFrame(pUnit, (uint8_t)pMonStats2Txt->byInfernoAnim - 1);
         pUnit->nFrameCount = ((uint8_t)pMonStats2Txt->byInfernoAnim + 1) * 0x100;
         return;
@@ -1004,7 +1004,7 @@ BOOL __fastcall Skills_CltDoFunc_Mon_PeriodicMissile(D2UnitStrc * pUnit, eD2Skil
       if (bGotCoords) {
         D2Common::PATH::DynamicPath::PATH_SetDirectionToTarget(pUnit->pPath.pDynamicPath, nTargetX, nTargetY, 0);
         SKILLSMON_CreateMissileWithSeed((int32_t*)gnMercenaryMaxHireCount, nTargetX, nTargetY, eSkill, nSkillLvl, pUnit, nMissileId);
-        SKILLSMON_SetMonsterDeathFrame((int32_t)pSkillTxt, pUnit);
+        SKILLSMON_SetMonsterDeathFrame(pSkillTxt, pUnit);
         return 1;
       }
     }
@@ -2030,7 +2030,7 @@ D2UnitStrc * __fastcall SKILLSMON_CltCreateSpiderLay(D2UnitStrc * pUnit) {
     return nullptr;
 }
 
-void __fastcall SKILLSMON_SetMissilePathLinear(D2UnitStrc * pUnit, int32_t nParam) {
+void __fastcall SKILLSMON_SetMissilePathLinear(D2UnitStrc * pUnit, int32_t nSeedOffset) {
     if (!pUnit) {
       return;
     }
@@ -2044,7 +2044,7 @@ void __fastcall SKILLSMON_SetMissilePathLinear(D2UnitStrc * pUnit, int32_t nPara
 
     D2DynamicPathStrc* pDynamicPath = pUnit->pPath.pDynamicPath;
     uint32_t nXSP1 = D2Common::PATH::DynamicPath::GetXSP1(pDynamicPath);
-    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nXSP1 + nParam);
+    D2Common::Seed::InitSeed_Param_666(&pUnit->sSeed, nXSP1 + nSeedOffset);
     D2Common::PATH::DynamicPath::PATH_SetPathType(pDynamicPath, 10);
     D2Common::PATH::DynamicPath::OverwriteDistanceAndMaxDistance(pDynamicPath, (uint8_t)nTotalFrames);
     D2Common::PATH::DynamicPath::PATH_CalculatePath(pDynamicPath, pUnit, 0);

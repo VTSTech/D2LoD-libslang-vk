@@ -16,7 +16,6 @@
 #include "D2Client/GAME/Select.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Automap.h"
@@ -1913,7 +1912,7 @@ static void MONSTER_PreloadSequenceAnimations(D2UnitStrc * pUnit) {
 
     do {
       uD2UnitMode nAnimMode;
-      D2Common::Merc::ANIM_GetSequenceFrameInfo((uint8_t*)pSeqTxt, i << 8, i << 8, &nAnimMode.ePlayerMode, &nFrameSpeed, &nFrameEnd, &nFrameStart);
+      D2Common::Merc::ANIM_GetSequenceFrameInfo(pSeqTxt, i << 8, i << 8, &nAnimMode.ePlayerMode, &nFrameSpeed, &nFrameEnd, &nFrameStart);
       pUnit->eAnimMode = nAnimMode;
       Engine::Gfx::GFX_LoadUnitModeCof(pUnit, 0);
       i++;
@@ -2370,7 +2369,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
             MONSTER_SpawnBloodParticles(pUnit, (D2MonStats2Txt*)0x1, 0);
           }
 
-          CUnit::CUNIT_SetUnitFlag3((int32_t)pUnit);
+          CUnit::CUNIT_SetUnitFlag3(pUnit);
           MONUNIQUE_DispatchModDeath(pUnit);
         }
       break;
@@ -2390,7 +2389,7 @@ void __fastcall MonsterMessage(int32_t nParam, D2UnitStrc * pUnit, D2ServerMessa
 
       pUnit->dwLastHitClass = pMessage->nSkillId;
       MONSTER_SpawnBloodParticles(pUnit, (D2MonStats2Txt*)0x1, 1);
-      CUnit::CUNIT_SetUnitFlag3((int32_t)pUnit);
+      CUnit::CUNIT_SetUnitFlag3(pUnit);
       UnitMode::UNITMODE_ShowElementalHitOverlay(pUnit, 0xd);
       UnitSnd::UNITSND_DispatchModeChangeSound(pUnit, 0xd, 1);
       MONUNIQUE_DispatchModDeath(pUnit);

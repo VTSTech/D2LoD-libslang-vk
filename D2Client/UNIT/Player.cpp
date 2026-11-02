@@ -17,7 +17,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Select.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Source/ClientEngine.h"
 #include "D2Client/UI/Path.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -56,6 +55,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/PATH/Path.h"
 #include "D2Common/Skills.h"
@@ -2694,12 +2694,12 @@ void __fastcall PLAYER_ProcessPlayerModeSimulation(D2UnitStrc * pUnit) {
     CLIENT_ResolvePlayerCollision(pUnit);
 }
 
-uint32_t __fastcall CheckFlagWithMask(D2UnitStrc * pUnit, uint32_t nParam) {
+uint32_t __fastcall CheckFlagWithMask(D2UnitStrc * pUnit, uint32_t dwMask) {
     if (!pUnit) {
       return 0;
     }
 
-    return (uint32_t)((pUnit->eUnitFlagsEx & nParam) != 0);
+    return (uint32_t)((pUnit->eUnitFlagsEx & dwMask) != 0);
 }
 
 D2RoomStrc * __fastcall DRLGROOM_FindBetterNearbyRoom(D2RoomStrc * pRoom, int32_t nX, int32_t nY) {
@@ -2935,13 +2935,13 @@ void CLIENT_SendIdlePlayerMessage(D2UnitStrc * pUnit) {
     PlayerMessage(7, pUnit, nullptr, 1);
 }
 
-void __stdcall PLAYER_PlaceUnitInRoom(int32_t nParam1, D2RoomStrc * pRoom, D2UnitStrc * pUnit, int32_t nParam2) {
+void __stdcall PLAYER_PlaceUnitInRoom(int32_t nX, D2RoomStrc * pRoom, D2UnitStrc * pUnit, int32_t nY) {
     if (pUnit) {
       pUnit->eUnitFlags |= UNITFLAG_DRAWSHADOW | UNITFLAG_TARGETABLE;
     }
 
-    D2Common::Units::InitializeStaticPath(pUnit, pRoom, nParam1, nParam2);
-    D2Common::Units::BlockCollisionPath(pUnit, pRoom, nParam1, nParam2);
+    D2Common::Units::InitializeStaticPath(pUnit, pRoom, nX, nY);
+    D2Common::Units::BlockCollisionPath(pUnit, pRoom, nX, nY);
     D2Common::Unit::DRLGROOM_AddUnitToRoom(pUnit, pRoom);
 }
 

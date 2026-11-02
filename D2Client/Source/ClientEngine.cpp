@@ -10,7 +10,6 @@
 #include "D2Client/GAME/SCmd.h"
 #include "D2Client/GAME/Wall2.h"
 #include "D2Client/SKILLS/Skills.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Sound/Sound.h"
 #include "D2Client/UI/CmdTbl.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -38,6 +37,7 @@
 #include "D2Common/Drlg/D2DrlgRoomCoordsStrc.h"
 #include "D2Common/Drlg/D2DrlgStrc.h"
 #include "D2Common/Drlg/Preset.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
@@ -799,13 +799,13 @@ void __fastcall CLIENT_BossDeath_Izual(D2UnitStrc * pUnit) {
     UNIT::Missile::MakeMissile(&sSkillArg);
 }
 
-void __fastcall CLIENT_StoreUnitGuidForQuestTracking(int32_t pUnit) {
+void __fastcall CLIENT_StoreUnitGuidForQuestTracking(D2UnitStrc * pUnit) {
     if (!pUnit) {
       gnQuestMonsterUnitId = -1;
       return;
     }
 
-    gnQuestMonsterUnitId = *(uint32_t*)(pUnit + 0xc);
+    gnQuestMonsterUnitId = pUnit->nUnitGUID;
 }
 
 void __stdcall CLIENT_BossDeath_Baal() {

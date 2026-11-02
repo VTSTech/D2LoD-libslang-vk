@@ -17,7 +17,7 @@
 #include "Fog/Source/SFile.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Storm/Engine/Application.h"
-#include "Storm/SMem.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_trace.h"
@@ -57,8 +57,8 @@ typedef HRESULT (__stdcall *pfnSHGetKnownFolderPath)(GUID * rfid, DWORD dwFlags,
 
 namespace Fog::Engine::Application {
 
-static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo);
-static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo);
+static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, D2FogDebugModuleEntryStrc * pModuleInfo);
+static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, D2FogDebugModuleEntryStrc * pModuleInfo);
 
 bool DEBUG_CaptureThreadContext(uint32_t dwThreadId, LPCONTEXT pContext) {
     pContext->ContextFlags = 0x1003f;
@@ -142,7 +142,7 @@ bool __stdcall DEBUG_IsValidDebugDirectorySize(uint32_t nDirSize) {
     return nDirSize >= 0x1c;
 }
 
-uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t * pDebugData, int pModuleInfoOut) {
+uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t * pDebugData, D2FogDebugModuleEntryStrc * pModuleInfoOut) {
     uint32_t nParseResult;
     uint32_t extraout_var;
     if (nDataSize < 4) {
@@ -168,7 +168,7 @@ uint32_t __fastcall DEBUG_ParseDebugInfoFromMemory(uint32_t nDataSize, uint32_t 
     return nDataSize & -256;
 }
 
-static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, int32_t pOutput) {
+static uint32_t __stdcall DEBUG_ParseDebugDataDirectory(uint32_t nCount, int32_t nBaseAddress, int32_t pDirEntries, D2FogDebugModuleEntryStrc * pOutput) {
     uint8_t bVar1;
     BOOL bIsBadPtr;
     uint32_t nParseResult;
@@ -267,7 +267,7 @@ static uint8_t __stdcall DEBUG_ParseModuleHeaders(short * * ppModuleBase, short 
       return 1;
     }
 
-    DEBUG_ParseDebugDataDirectory(nCount, (int32_t)pModuleBase, (int32_t)pDebugDir, (int32_t)ppModuleBase);
+    DEBUG_ParseDebugDataDirectory(nCount, (int32_t)pModuleBase, (int32_t)pDebugDir, (D2FogDebugModuleEntryStrc*)ppModuleBase);
     return 1;
 }
 
@@ -515,7 +515,7 @@ void __stdcall DEBUG_ExtractDebugDirectory32(uint32_t dwParam, uint32_t * pnRVA,
     *pnSize = nSize;
 }
 
-static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
+static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, D2FogDebugModuleEntryStrc * pModuleInfo) {
     uint32_t bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x14);
     if (bIsBadPtr) {
       return bIsBadPtr & -256;
@@ -526,17 +526,17 @@ static uint32_t DEBUG_ParseNB01DebugInfo(void * pDebugRecord, int32_t pModuleInf
       return bIsBadPtr & -256;
     }
 
-    strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x10), -1);
-    *(uint32_t*)(pModuleInfo + 0x21c) = *(uint32_t*)((int)pDebugRecord + 0xc);
-    *(uint32_t*)(pModuleInfo + 0x208) = *(uint32_t*)((int)pDebugRecord + 8);
-    *(uint32_t*)(pModuleInfo + 0x20c) = 0;
-    *(uint32_t*)(pModuleInfo + 0x210) = 0;
-    *(uint32_t*)(pModuleInfo + 0x214) = 0;
-    *(uint32_t*)(pModuleInfo + 0x218) = 0;
+    strncpy_s(pModuleInfo->szImagePath, 0x100, (LPCSTR)((int)pDebugRecord + 0x10), -1);
+    pModuleInfo->dwUnknown21c = *(uint32_t*)((int)pDebugRecord + 0xc);
+    pModuleInfo->dwUnknown208 = *(uint32_t*)((int)pDebugRecord + 8);
+    pModuleInfo->guidPdb.Data1 = 0;
+    pModuleInfo->guidPdb.Data2 = 0;
+    pModuleInfo->guidPdb.Data3 = 0;
+    memset(pModuleInfo->guidPdb.Data4, 0, 8 * sizeof(pModuleInfo->guidPdb.Data4[0]));
     return 1;
 }
 
-static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo) {
+static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, D2FogDebugModuleEntryStrc * pModuleInfo) {
     BOOL bIsBadPtr = IsBadReadPtr(pDebugRecord, 0x1c);
     if (bIsBadPtr) {
       return 0;
@@ -547,12 +547,14 @@ static uint8_t DEBUG_ParseRSDSDebugInfo(void * pDebugRecord, int32_t pModuleInfo
       return 0;
     }
 
-    strncpy_s((char*)(pModuleInfo + 0x108), 0x100, (LPCSTR)((int)pDebugRecord + 0x18), -1);
-    *(uint32_t*)(pModuleInfo + 0x21c) = *(uint32_t*)((int)pDebugRecord + 0x14);
-    *(uint32_t*)(pModuleInfo + 0x20c) = *(uint32_t*)((int)pDebugRecord + 4);
-    *(uint32_t*)(pModuleInfo + 0x210) = *(uint32_t*)((int)pDebugRecord + 8);
-    *(uint32_t*)(pModuleInfo + 0x214) = *(uint32_t*)((int)pDebugRecord + 0xc);
-    *(uint32_t*)(pModuleInfo + 0x218) = *(uint32_t*)((int)pDebugRecord + 0x10);
+    strncpy_s(pModuleInfo->szImagePath, 0x100, (LPCSTR)((int)pDebugRecord + 0x18), -1);
+    pModuleInfo->dwUnknown21c = *(uint32_t*)((int)pDebugRecord + 0x14);
+    pModuleInfo->guidPdb.Data1 = *(uint32_t*)((int)pDebugRecord + 4);
+    uint32_t uVar1 = *(uint32_t*)((int)pDebugRecord + 8);
+    pModuleInfo->guidPdb.Data2 = (short int)uVar1;
+    pModuleInfo->guidPdb.Data3 = (short int)((uint32_t)uVar1 >> 0x10);
+    *(uint32_t*)pModuleInfo->guidPdb.Data4 = *(uint32_t*)((int)pDebugRecord + 0xc);
+    *(uint32_t*)(pModuleInfo->guidPdb.Data4 + 4) = *(uint32_t*)((int)pDebugRecord + 0x10);
     return 1;
 }
 
@@ -762,11 +764,11 @@ void MISC_OperatorDeleteShim(void * p) {
       return;
     }
 
-    Storm::SMem::SMemFree(p, "delete", -1, 0);
+    Storm::Source::SMem::SMemFree(p, "delete", -1, 0);
 }
 
 void * MISC_OperatorNewShim(uint32_t nSize) {
-    void* pvVar1 = Storm::SMem::SMemAlloc(nSize, "new", -1, 0);
+    void* pvVar1 = Storm::Source::SMem::SMemAlloc(nSize, "new", -1, 0);
     return pvVar1;
 }
 
@@ -902,7 +904,7 @@ static void INI_StripDelimiters(char * szText) {
     szText[nWriteIdx] = '\0';
 }
 
-int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, int32_t pOutValue) {
+int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, char * pOutValue) {
     char szArgNameBuf[256];
     char cChar;
     int nDstOffset;
@@ -970,12 +972,12 @@ int __fastcall INI_ParseCommandLineArg(uint8_t * pbArgName, char * szCmdLine, in
     nCmdLen = 0;
     while (szArgNameBuf[0] != '\0') {
       szArgNameBuf[0] = szArgNameBuf[nCmdLen + 1];
-      *(uint8_t*)(pOutValue + nCmdLen) = pbArgName[(int)(szArgNameBuf + (nCmdLen - (int)pbScan))];
+      pOutValue[nCmdLen] = pbArgName[(int)(szArgNameBuf + (nCmdLen - (int)pbScan))];
       nCmdLen++;
     }
 
-    *(uint8_t*)(pOutValue + nCmdLen) = 0;
-    INI_StripDelimiters((char*)pOutValue);
+    pOutValue[nCmdLen] = '\0';
+    INI_StripDelimiters(pOutValue);
     return nConfigIdx;
 }
 
@@ -1000,7 +1002,7 @@ void __thiscall MISC_ParseCommandLineAndPutIntoD2IniData(char * szText, D2IniCon
         if (szText[nPos] == '-') {
           nPos++;
           if (nPos < iVar1) {
-            nDstOffset = INI_ParseCommandLineArg(szArgName, szText + nPos, (int32_t)szArgValue);
+            nDstOffset = INI_ParseCommandLineArg(szArgName, szText + nPos, szArgValue);
             if (nDstOffset != -1) {
               bVar2 = D2IniConfigValues[nDstOffset].nType;
               pCmdEnd = pD2IniData->bD2ExpMpqExistsOrLanugageCode + D2IniConfigValues[nDstOffset].nOffset;
@@ -1281,7 +1283,7 @@ void __fastcall PreInitApplication(int32_t argc, char * * argv) {
     D2TRACE("PreInitApplication enter");
     Storm::Source::SSTR::SStrPrintf(szVersionString, 0x104, "v%d.%02d", 1, 0xe);
     D2TRACE("SetLogFilePath");
-    Source::SFile::FILETOOLS_SetLogFilePathWithoutDateAndExtension2((FILE*)"D2");
+    Source::SFile::FILETOOLS_SetLogFilePathWithoutDateAndExtension2("D2");
     D2TRACE("ERRORMANAGER_InitErrorManager");
     Src::ErrorManager::ERRORMANAGER_InitErrorManager("Diablo II", szVersionString, 1);
     HANDLE hDiabloOkEvent = OpenEventA(2, 1, "DIABLO_II_OK");

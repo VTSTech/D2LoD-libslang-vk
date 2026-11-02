@@ -83,6 +83,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
@@ -107,9 +108,11 @@
 #include "Storm/MessageStrc.h"
 #include "Storm/Source/SSTR.h"
 #include "globals/globals.h"
+#include "D2Client/UI/Automap.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Common/DATATBLS/ItemStats.h"
 #include "D2Common/ITEMS/ItemMods.h"
+#include "D2Common/Unit.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/Monster/AI/AI.h"
 #include "D2Game/SKILLS/SkillAss.h"
@@ -139,16 +142,16 @@ typedef void (__fastcall *D2NET_CLIENT_D2GStoCLT_Unit)(D2UnitStrc * pUnit, char 
 
 namespace D2Client::GAME::SCmd {
 
-void __fastcall SCMD_SetOrClearBitFlag(int32_t pUnit, uint32_t dwFlagMask, int32_t bSet) {
+void __fastcall SCMD_SetOrClearBitFlag(D2UnitStrc * pUnit, uint32_t dwFlagMask, int32_t bSet) {
     if (!pUnit) {
       return;
     }
     if (bSet) {
-      *(uint32_t*)(pUnit + 200) |= dwFlagMask;
+      pUnit->eUnitFlagsEx |= dwFlagMask;
       return;
     }
 
-    *(uint32_t*)(pUnit + 200) &= ~dwFlagMask;
+    pUnit->eUnitFlagsEx &= ~dwFlagMask;
 }
 
 int32_t __stdcall GetTxtMonStatsSize() {
@@ -1660,7 +1663,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x58(char * pBytes) {
     sPayload.dwData0 = *(uint32_t*)pBytes;
     sPayload.wData4 = *(uint16_t*)(pBytes + 4);
     sPayload.nData6 = pBytes[6];
-    UI::ui::UI_HandleHoradricCubePacket((uintptr_t)&sPayload);
+    UI::ui::UI_HandleHoradricCubePacket((uint8_t*)&sPayload);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x59_NEWPLAYERUNIT(char * pBytes) {
@@ -1779,7 +1782,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x60_SETWARPDEST(char * pBytes) {
       exit(-1);
     }
 
-    UNIT::Object::WAYPOINT_HandleActivation((uintptr_t)&sPayload);
+    UNIT::Object::WAYPOINT_HandleActivation((uint8_t*)&sPayload);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x61(char * pBytes) {
@@ -1795,7 +1798,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x63(char * pBytes) {
     sPayload.aData[3] = *(uint32_t*)(pBytes + 0xc);
     sPayload.aData[4] = *(uint32_t*)(pBytes + 0x10);
     sPayload.nData14 = pBytes[0x14];
-    UI::Waypoint::WAYPOINT_Init((uintptr_t)&sPayload);
+    UI::Waypoint::WAYPOINT_Init((uint8_t*)&sPayload);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x65_SCORE_UPDATE(int32_t nParam) {
@@ -1976,7 +1979,7 @@ void __fastcall NET_D2GS_CLIENT_Incoming0x8A(char * pBytes) {
     D2SCmdPayload_u32_u16 sPayload;
     sPayload.dwData0 = *(uint32_t*)pBytes;
     sPayload.wData4 = *(uint16_t*)(pBytes + 4);
-    UI::npcmenu::Merc::NPCMENU_HandleMercListPacket((uintptr_t)&sPayload);
+    UI::npcmenu::Merc::NPCMENU_HandleMercListPacket((D2GSPacketSrv0x8A*)&sPayload);
 }
 
 void __fastcall NET_D2GS_CLIENT_Incoming0x8B_PLAYERBUTTON(D2GSPacketSrv0x8B * pBytes) {

@@ -28,9 +28,9 @@
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
 #include "Fog/d3dFloorCache.h"
-#include "Storm/SMem.h"
 #include "Storm/Source/SBMP.h"
 #include "Storm/Source/SFile.h"
+#include "Storm/Source/SMem.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/_unnamespaced.h"
 #include "support/d2_boot.h"
@@ -2519,7 +2519,7 @@ BOOL __fastcall ResizeWindow(HWND hWnd, BOOL bForceResize) {
     return 1;
 }
 
-BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pdwParam, void * * dwParam, DWORD nWidth, DWORD nHeight) {
+BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pdwParam, void * * ppTexture, DWORD nWidth, DWORD nHeight) {
     int iLoop;
     DDSURFACEDESC2 ddsdSize;
     ddsdSize.dwSize = 0x7c;
@@ -2547,14 +2547,14 @@ BOOL __fastcall RENDERER_D3D_CreateSurfaceWithTexture(IDirectDrawSurface7 * * pd
       return 0;
     }
 
-    dwHResult = (*pdwParam)->lpVtbl->QueryInterface(*pdwParam, (GUID*)&gIID_IDirect3DSurface, dwParam);
-    if (!dwHResult) {
-      return 1;
+    dwHResult = (*pdwParam)->lpVtbl->QueryInterface(*pdwParam, (GUID*)&gIID_IDirect3DSurface, ppTexture);
+    if (dwHResult) {
+      RENDERER_DIRECT3D_ErrorLog("Failed to get texture interface for device surface", dwHResult);
+      (*pdwParam)->lpVtbl->Release(*pdwParam);
+      return 0;
     }
 
-    RENDERER_DIRECT3D_ErrorLog("Failed to get texture interface for device surface", dwHResult);
-    (*pdwParam)->lpVtbl->Release(*pdwParam);
-    return 0;
+    return 1;
 }
 
 // JMP thunk
@@ -5428,10 +5428,10 @@ void __fastcall DecodeSmacker(char * szSmacker, D2SmackerContextStrc * pBuffer, 
       uint32_t bFileLoaded;
       nVersion = 0;
       nFileSize = 0;
-      bFileLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, (uint32_t*)szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
+      bFileLoaded = Storm::Source::SFile::SFileLoadFileEx(nullptr, szSmacker, (void**)&nVersion, &nFileSize, 0, 3, 0);
       if (bFileLoaded && nVersion) {
         nPixelCol = Storm::Source::SBMP::SBmpDecodeImage(2, (void*)nVersion, nFileSize, aPaletteRGBA, &aPixelData, 0x6db0, &nImgWidth, &nImgBpp, &nImgHeight);
-        Storm::SMem::SMemFree((void*)nVersion, ".\\Src\\d3dSmack.cpp", 0xda, 0);
+        Storm::Source::SMem::SMemFree((void*)nVersion, ".\\Src\\d3dSmack.cpp", 0xda, 0);
         if (nPixelCol && nImgWidth == 0x1d4 && nImgBpp == 0x3c && nImgHeight == 8) {
           pOutputPixel = aImagePixelData;
           pCurOutputRow = (uint16_t*)pSmackerDecodeBuffer;

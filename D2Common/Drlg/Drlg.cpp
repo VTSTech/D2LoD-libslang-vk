@@ -708,7 +708,7 @@ BOOL __fastcall DRLGACTMISC_CheckFlag0x1(D2DrlgStrc * pDrlg) {
 void __fastcall InitCache(D2DrlgStrc * pDrlg, D2DrlgTileDataStrc * pDrlgActSub18) {
     uint32_t nTileCount;
     int32_t nTileSubType;
-    int32_t nParam3;
+    int32_t nTileSubType_00;
     int nTileIndices[40];
     uint8_t byActNo;
     if (!pDrlg) {
@@ -720,7 +720,7 @@ void __fastcall InitCache(D2DrlgStrc * pDrlg, D2DrlgTileDataStrc * pDrlgActSub18
     } else {
       memset(pDrlgActSub18, 0, 0x30);
       byActNo = pDrlg->nActNo;
-      nParam3 = 0;
+      nTileSubType_00 = 0;
       nTileSubType = 0;
       if (byActNo) {
         switch (byActNo) {
@@ -735,14 +735,14 @@ void __fastcall InitCache(D2DrlgStrc * pDrlg, D2DrlgTileDataStrc * pDrlgActSub18
             }
           case 2:
             {
-              nParam3 = 0x1d;
+              nTileSubType_00 = 0x1d;
               nTileSubType = 0xc;
               break;
             }
         }
       }
 
-      nTileCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects((void**)pDrlg->apTileProjects, 0, nParam3, nTileSubType, nTileIndices, 0x28);
+      nTileCount = D2CMP::DUNGEON::Dungeon::TILEPROJECT_LookupTilesInAllProjects((void**)pDrlg->apTileProjects, 0, nTileSubType_00, nTileSubType, nTileIndices, 0x28);
       if (!nTileCount) {
         Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x44c);
         exit(-1);
@@ -1392,7 +1392,7 @@ void __stdcall DRLGOUTDOOR_ApplySubstitutionGroup(D2UnkOutdoorStrc * pUnkOutdoor
 
     do {
       BOOL bPlaced;
-      bPlaced = Outdoors::DRLGOUTDOOR_PlaceRandomBorderSubTiles(pUnkOutdoor, (int32_t)pLvlSub, (int*)(pFile->pSubstGroups + (int)(nRandStartGroup + nGroupIter) % (int)nModulo));
+      bPlaced = Outdoors::DRLGOUTDOOR_PlaceRandomBorderSubTiles(pUnkOutdoor, pLvlSub, (int*)(pFile->pSubstGroups + (int)(nRandStartGroup + nGroupIter) % (int)nModulo));
       if (bPlaced && !pLvlSub->BordType) {
         return;
       }

@@ -2,7 +2,6 @@
 
 #include "D2Common/DATATBLS/DataTbls.h"
 #include "support/d2_trace.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT/Item.h"
 #include "D2Client/UNIT/Monster.h"
@@ -27,6 +26,7 @@
 #include "D2Common/Drlg/D2DrlgActStrc.h"
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Txt/Cube.h"
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "D2Game/D2ParsedTreasureClassStrc.h"
@@ -2126,7 +2126,7 @@ void __stdcall FreeTables() {
       Fog::Memory::FreeServerMemory(nullptr, pMemoryToFree_01, ".\\DATATBLS\\DataTbls.cpp", nLineNum, 0);
     }
 
-    AnimTbls::ANIMDATA_FreeAnimDataRecord((void**)&sgtDataTable.pAnimTbls->pRecords);
+    AnimTbls::ANIMDATA_FreeAnimDataRecord(sgtDataTable.pAnimTbls);
     MonsterTbls::MONSTERTBLS_FreeMonUModTxt();
     LvlTbls::LVLTBLS_FreeLevelsTxt();
     LvlTbls::LVLTBLS_FreeLevelDefsTxt();

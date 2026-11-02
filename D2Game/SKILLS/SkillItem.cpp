@@ -7,7 +7,6 @@
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
 #include "D2Client/GAME/SCmd.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Seed.h"
 #include "D2Client/Stats.h"
 #include "D2Client/UI/SkillDesc.h"
@@ -38,6 +37,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/INVENTORY/Inventory.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Monsters/MONSTERS.h"
 #include "D2Common/PATH/DynamicPath.h"
 #include "D2Common/Skills.h"
@@ -82,6 +82,7 @@
 #include "globals/globals.h"
 #include "D2Client/UNIT/Missile.h"
 #include "D2Common/ITEMS/ItemMods.h"
+#include "D2Game/SKILLS/Items.h"
 #include "D2Game/SKILLS/SkillAss.h"
 #include "Fog/Src/Safesock.h"
 
@@ -743,8 +744,8 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
     }
 
     uint32_t nPrevHpPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_last_sent_hp_pct, 0);
-    uint8_t bParam = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
-    nStatScaled = (nPrevHpPct & 0xff) - (uint32_t)bParam;
+    uint8_t nHpPercent128 = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
+    nStatScaled = (nPrevHpPct & 0xff) - (uint32_t)nHpPercent128;
     if (nStatScaled < 0) {
       nStatScaled = -nStatScaled;
     }
@@ -752,8 +753,8 @@ BOOL __fastcall ITEM_ApplyConsumableEffects(::SGAMEDATA * pGame, D2UnitStrc * pU
       return bApplied;
     }
 
-    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, bParam);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)bParam, 0);
+    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, nHpPercent128);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)nHpPercent128, 0);
     return bApplied;
 }
 
@@ -882,8 +883,8 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
     }
 
     uint32_t nPrevHpPct = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit, UNITSTAT_last_sent_hp_pct, 0);
-    uint8_t bParam = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
-    nCurStatVal = (nPrevHpPct & 0xff) - (uint32_t)bParam;
+    uint8_t nHpPercent128 = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
+    nCurStatVal = (nPrevHpPct & 0xff) - (uint32_t)nHpPercent128;
     if (nCurStatVal < 0) {
       nCurStatVal = -nCurStatVal;
     }
@@ -891,8 +892,8 @@ BOOL __fastcall ITEM_ApplyConsumableEffectsSimple(::SGAMEDATA * pGame, D2UnitStr
       return bApplied;
     }
 
-    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, bParam);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)bParam, 0);
+    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, nHpPercent128);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)nHpPercent128, 0);
     return bApplied;
 }
 
@@ -1013,9 +1014,9 @@ BOOL __fastcall ITEM_ApplyPercentRestoration(::SGAMEDATA * pGame, D2UnitStrc * p
       return bApplied;
     }
 
-    uint8_t bParam = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
-    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, bParam);
-    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)bParam, 0);
+    uint8_t nHpPercent128 = PLAYER::PlayerModes::PLRMODES_GetHpPercent128(pUnit);
+    UNIT::SUnitMsg::UnitQueuePacket0xAB(pUnit, nHpPercent128);
+    D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, UNITSTAT_last_sent_hp_pct, (uint32_t)nHpPercent128, 0);
     return bApplied;
 }
 
@@ -1352,7 +1353,7 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
     uint16_t uVar2;
     D2UnitStrc* pUnit_00;
     uint32_t uVar4;
-    void* pvVar5;
+    D2BooksTxt* pDVar5;
     int iVar6;
     int32_t iVar7;
     DWORD DVar9;
@@ -1375,8 +1376,8 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
       uVar4 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Book);
       if (uVar4) {
         uVar2 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
-        pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
-        if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 0xc) == eVar1) {
+        pDVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
+        if (pDVar5 && pDVar5->bookskill == eVar1) {
           iVar6 = D2Common::Stats::StatsEx::STATSEX_GetCurrentStat(pUnit_00, UNITSTAT_quantity, 0);
           if (iVar6 > 0) {
             LAB_005bf43c:
@@ -1421,8 +1422,8 @@ BOOL __fastcall Skills_SrvDoFunc_113_UseScrollOrBook(::SGAMEDATA * pGame, D2Unit
         uVar4 = D2Common::ITEMS::Items::ITEMS_IsA(pUnit_00, ITEMTYPE_Scroll);
         if (uVar4) {
           uVar2 = D2Common::ITEMS::Items::GetMagicSuffix(pUnit_00, 0);
-          pvVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
-          if (pvVar5 && *(eD2Skills*)((int)pvVar5 + 8) == eVar1) {
+          pDVar5 = D2Common::DATATBLS::ItemTbls::TXT_Books_GetLine((uint32_t)uVar2);
+          if (pDVar5 && pDVar5->scrollskill == eVar1) {
             goto LAB_005bf43c;
           }
         }

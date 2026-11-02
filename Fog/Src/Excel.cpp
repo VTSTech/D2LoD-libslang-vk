@@ -6,8 +6,8 @@
 #include "D2Common/Txt/D2TxtLinkNodeStrc.h"
 #include "Fog/BitBuffer.h"
 #include "Fog/Memory.h"
-#include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
+#include "Fog/Src/String/FogString.h"
 #include "Storm/D2ArchiveStrc.h"
 #include "Storm/D2MPQFileStrc.h"
 #include "Storm/Source/SFile.h"
@@ -61,7 +61,7 @@ size_t __stdcall TXT_GetLinesCountFromBinFieldExcel(D2BinFieldExcelStrc * pBinFi
     return pBinFieldExcel->nLinesCount;
 }
 
-int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinFieldExcel, D2BinFieldInputStrc * pBinFieldInput) {
+int __stdcall FOG_ParseBinField(short * pOutMapping, D2BinFieldExcelStrc * pBinFieldExcel, D2BinFieldInputStrc * pBinFieldInput) {
     D2BinFieldInputStrc* pBoolFieldPrev;
     uint32_t nHashKey;
     int32_t nFieldByteOffset;
@@ -144,13 +144,13 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
             if (!nFieldByteOffset) {
               pHashNode->nHash = 0;
               nErrorAddress = (int)pHashNode->pField - (int)pBinFieldInput;
-              *(short int*)(pOutMapping + nOutputIndex * 2) = (short int)(nErrorAddress / 0x14) + (short int)(nErrorAddress >> 0x1f) - (short int)((int64_t)nErrorAddress * 0x66666667 >> 0x3f);
+              pOutMapping[nOutputIndex] = (short int)(nErrorAddress / 0x14) + (short int)(nErrorAddress >> 0x1f) - (short int)((int64_t)nErrorAddress * 0x66666667 >> 0x3f);
               goto next_column;
             }
           }
         }
 
-        *(uint16_t*)(pOutMapping + nOutputIndex * 2) = 0x7fff;
+        pOutMapping[nOutputIndex] = 0x7fff;
         next_column:
         nErrorAddress = nOutputIndex + 1;
         cCurChar = *pColNameIter;
@@ -172,7 +172,7 @@ int __stdcall FOG_ParseBinField(int pOutMapping, D2BinFieldExcelStrc * pBinField
     do {
       if (pHashNodeSlot[-1]) {
         nOutputCount = (int)*pHashNodeSlot - (int)pBinFieldInput;
-        *(short int*)(pOutMapping + nErrorAddress * 2) = (short int)(nOutputCount / 0x14) + (short int)(nOutputCount >> 0x1f) - (short int)((int64_t)nOutputCount * 0x66666667 >> 0x3f);
+        pOutMapping[nErrorAddress] = (short int)(nOutputCount / 0x14) + (short int)(nOutputCount >> 0x1f) - (short int)((int64_t)nOutputCount * 0x66666667 >> 0x3f);
         nErrorAddress++;
       }
 
@@ -414,7 +414,7 @@ int32_t __stdcall GetLinkNodeIndex(D2TxtLinkStrc * pLink, char * szItemCode, uin
     int32_t iVar1;
     uint8_t szUpperItemCode[32];
     Storm::Source::SSTR::SStrCopy((char*)szUpperItemCode, szItemCode, 0x20);
-    SMem::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
+    String::FogString::SMemStringToUppercase((char*)szUpperItemCode, 0x20);
     D2TxtLinkNodeStrc* pCurNode = pLink->pTxtLinkNode;
     if (pLink->nRecords) {
       if (!pCurNode) {
@@ -485,7 +485,7 @@ int __stdcall FOG_ParseStringField(D2TxtLinkStrc * pTxtLink, char * szText) {
       pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4b9);
       memset(pKey, 0, 0x2c);
       Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-      SMem::SMemStringToUppercase((char*)pKey, 0x20);
+      String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
       *(int*)(pKey + 0x20) = pTxtLink->nRecords;
       FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
       iVar1 = pTxtLink->nRecords;
@@ -514,7 +514,7 @@ int __fastcall FOG_ParseTxtLink(D2TxtLinkStrc * pTxtLink, char * szText) {
       pKey = (uint8_t*)D2_ALLOC_POOL_AT(nullptr, 0x2c, ".\\Src\\Excel\\Excel.cpp", 0x4d9);
       memset(pKey, 0, 0x2c);
       Storm::Source::SSTR::SStrCopy((char*)pKey, szText, 0x20);
-      SMem::SMemStringToUppercase((char*)pKey, 0x20);
+      String::FogString::SMemStringToUppercase((char*)pKey, 0x20);
       *(int*)(pKey + 0x20) = pTxtLink->nRecords;
       FOG_ValidateBytePtr((uint8_t*)&pTxtLink->pTxtLinkNode, pKey);
       iVar1 = pTxtLink->nRecords;
@@ -665,7 +665,7 @@ void __stdcall TXT_ParseDataAndPutIntoStructure(D2BinFieldExcelStrc * pBinFieldE
       exit(-1);
     } else {
       if ((uint32_t)nEndOffset > 0) {
-        nMappedFieldCount = FOG_ParseBinField((int)aColumnFieldMap, pBinFieldExcel, pBinFieldInput);
+        nMappedFieldCount = FOG_ParseBinField((short int*)aColumnFieldMap, pBinFieldExcel, pBinFieldInput);
         nColumnCount = pBinFieldExcel->nColumnCount;
         bHasLinkFields = false;
         nScanColIndex = 0;

@@ -9,13 +9,12 @@
 #include "Fog/3rdparty/crashy/Report.h"
 #include "Fog/Engine/Application.h"
 #include "Fog/Memory.h"
-#include "Fog/SMem.h"
 #include "Fog/Src/ErrorManager.h"
 #include "Fog/Src/LogManager.h"
+#include "Fog/Src/String/FogString.h"
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Game/Objects/ObjectsRgn.h"
@@ -1050,9 +1049,9 @@ void __fastcall DumpThreadContext(HANDLE hHandle) {
     /* LPCONTEXT lpContext for GetThreadContext */ /* HANDLE hThread for GetThreadContext */ sContext.ContextFlags = 0x10007;
     GetThreadContext(hHandle, &sContext);
     Src::LogManager::LogWithCategoryVarArgs("", "Stack bytes:\n");
-    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Esp, (void*)0x1000, nullptr, 1, 0);
+    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Esp, 0x1000, nullptr, 1, 0);
     Src::LogManager::LogWithCategoryVarArgs("", "Code bytes:\n");
-    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Eip, (void*)0x20, nullptr, 1, 0);
+    Src::LogManager::EnqueueLogMessage("ERR", "", (void*)sContext.Eip, 0x20, nullptr, 1, 0);
 }
 
 static BOOL __stdcall GetSourceLineWithRetry(HANDLE hProcess, DWORD nAddress, void * pdwDisplacement, void * pLine) {
@@ -1520,7 +1519,7 @@ void __fastcall DumpAnnotatedStackMemory(HANDLE hSymHandle, CONTEXT * pContext, 
 
         iVar2 = _stricmp(__frame1.pBytesToDump, "`string\'");
         if (!iVar2 && !__frame0.nSymDisplacement) {
-          pEscapedStr = SMem::SMemEscapeString(__frame1.aEscapedString, pAsciiOut, 0x50, 0);
+          pEscapedStr = Src::String::FogString::SMemEscapeString(__frame1.aEscapedString, pAsciiOut, 0x50, 0);
           pBytesRemaining = "\n                           // 0x%08X - %s - %s=\'%s\'\n\n";
         } else {
           pBytesRemaining = "\n                           // 0x%08X - %s - %s+%04X\n\n";

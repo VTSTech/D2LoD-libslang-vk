@@ -23,6 +23,7 @@
 #include "D2Common/QuestRecord.h"
 #include "D2Game/GAME/Arena.h"
 #include "D2Game/GAME/Event.h"
+#include "D2Game/GAME/SCmd.h"
 #include "D2Game/UNIT/SUnit.h"
 #include "D2Game/UNIT/SUnitMsg.h"
 #include "D2Win/DC6.h"
@@ -91,9 +92,9 @@ void __fastcall NPCMENU_MercItemFoundCb(void * pUnit) {
     gnNpcMenuMercListCount = 1;
 }
 
-void __fastcall NPCMENU_HandleMercListPacket(int32_t nParam) {
+void __fastcall NPCMENU_HandleMercListPacket(D2GSPacketSrv0x8A * pPacket) {
     D2UnitStrc* pInteractedNpc;
-    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(*(int32_t*)(nParam + 2), (eD2UnitType)*(uint8_t*)(nParam + 1));
+    D2UnitStrc* pUnit = UNIT::Player::UNITS_FindClientSideUnit(pPacket->nUnitGUID, (eD2UnitType)pPacket->nUnitType);
     if (!pUnit) {
       return;
     }

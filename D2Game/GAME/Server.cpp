@@ -4,7 +4,6 @@
 #include "D2Client/D2BattleNetEventCallbackTable.h"
 #include "D2Client/D2ClientStrc.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/UI/Automap.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
@@ -29,6 +28,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/Environment.h"
 #include "D2Common/INVENTORY/Inventory.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Stats/StatsEx.h"
 #include "D2Common/Units.h"
@@ -72,7 +72,6 @@
 #include "Storm/Source/SReg.h"
 #include "Storm/Source/SSTR.h"
 #include "Storm/Source/SSystem.h"
-#include "Storm/_unnamespaced.h"
 #include "globals/globals.h"
 #include "Bnclient/BNGatewayAccess.h"
 #include "D2Common/ITEMS/ItemMods.h"
@@ -739,8 +738,8 @@ void __fastcall GAME_DestroyGame(int32_t nGameToken, ::SGAMEDATA * pGame) {
     D2_FREE_POOL_AT(nullptr, lpCriticalSection, ".\\GAME\\Game.cpp", 0x8da);
 }
 
-uint32_t __fastcall NET_IsClientAllowedToLeave(uint32_t nParam) {
-    uint32_t bIsAllowed = Clients::QSERVER_IsClientAllowedToJoin(nParam, 4);
+uint32_t __fastcall NET_IsClientAllowedToLeave(uint32_t nClientId) {
+    uint32_t bIsAllowed = Clients::QSERVER_IsClientAllowedToJoin(nClientId, 4);
     return (uint32_t)(bIsAllowed != 0);
 }
 
@@ -871,15 +870,15 @@ void __fastcall SERVER_DisconnectClient(::SGAMEDATA * pGame, D2ClientStrc * pCli
     }
 }
 
-BOOL __fastcall FindMe_6E_Handler(int32_t nParam) {
+BOOL __fastcall FindMe_6E_Handler(int32_t nClientId) {
     char szPlayerName[16];
-    BOOL bGotName = Clients::NET_D2GS_SERVER_GetPlayerNameByClientId(nParam, szPlayerName);
+    BOOL bGotName = Clients::NET_D2GS_SERVER_GetPlayerNameByClientId(nClientId, szPlayerName);
     return (uint32_t)(bGotName != 0);
 }
 
-void __fastcall KillConnection(int32_t nParam) {
-    ServerCmd::NET_D2GS_SERVER_Send_0xB0_ConnectionTerminated(nParam);
-    D2Net::Game::Server::QSERVER_KillConnection(nParam);
+void __fastcall KillConnection(int32_t nClientId) {
+    ServerCmd::NET_D2GS_SERVER_Send_0xB0_ConnectionTerminated(nClientId);
+    D2Net::Game::Server::QSERVER_KillConnection(nClientId);
 }
 
 // SYSTEM PACKET HANDLER - Server (Mode 2)
@@ -3214,7 +3213,7 @@ void __fastcall NET_D2GS_SERVER_SrvJoinAct(int32_t nClientId) {
     SRVLog(6, "[JOIN]  SrvJoinAct: No game found for client(%d)", nClientId);
 }
 
-void __fastcall QServer_AlternativeDisconnect(uint32_t nClientId, uint32_t dwParam) {
+void __fastcall QServer_AlternativeDisconnect(uint32_t nClientId, uint32_t nDisconnectReason) {
     if (!nClientId) {
       return;
     }
@@ -3229,7 +3228,7 @@ void __fastcall QServer_AlternativeDisconnect(uint32_t nClientId, uint32_t dwPar
     if (bIsInGame) {
       D2ClientStrc* pClient;
       pClient = Clients::SERVER_GetClientFromGmeByClientId(pGame, nClientId);
-      SERVER_DisconnectClient(pGame, pClient, (uint8_t)dwParam);
+      SERVER_DisconnectClient(pGame, pClient, (uint8_t)nDisconnectReason);
       Server::Unlock(pGame);
       return;
     }
@@ -3647,6 +3646,10 @@ void __fastcall SetStat(D2UnitStrc * pUnit, eD2UnitStat eUnitStat, int32_t nValu
     }
 
     D2Common::Stats::StatsEx::STATLIST_SetUnitStat(pUnit, eUnitStat, nValue, 0);
+}
+
+void StaticInit_6caf10() {
+    Frames_TimeBetweenFrames = (int)(1000 / (int64_t)Frames_PerSecond);
 }
 
 } // namespace D2Game::GAME::Server

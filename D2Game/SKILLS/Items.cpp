@@ -3,7 +3,6 @@
 #include "D2Game/SKILLS/Items.h"
 #include "D2Client/Archive.h"
 #include "D2Client/GAME/Game/SGAMEDATA.h"
-#include "D2Client/SKILLS/SkillsPal.h"
 #include "D2Client/Seed.h"
 #include "D2Client/UI/SkillDesc.h"
 #include "D2Client/UNIT.h"
@@ -23,6 +22,7 @@
 #include "D2Common/Drlg/Preset.h"
 #include "D2Common/ITEMS/ItemMods.h"
 #include "D2Common/ITEMS/Items.h"
+#include "D2Common/Merc.h"
 #include "D2Common/Seed.h"
 #include "D2Common/Skills.h"
 #include "D2Common/Stats/StatsEx.h"
@@ -197,7 +197,7 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
     int32_t dwUnitGUID;
     D2PoolManagerStrc* pMemory;
     int32_t nSkillLevel;
-    uint32_t nParam;
+    uint32_t nLayer;
     uint32_t anSkillIds[4];
     int nRetryCount;
     eD2UnitType eUnitType;
@@ -281,9 +281,9 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
         sNewSeed = D2_SEED_NEXT(*pItemSeed);
         nSkillLevel = 1;
         *pItemSeed = sNewSeed;
-        nParam = sNewSeed.nSeedLow + (nSkillId - (int)(sNewSeed.nSeedLow / 5) - 1) * 5 + nSkillBaseOffset;
-        if (((int)nParam < 0 || (int)nParam >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + nParam) || (wITypeA1 = sgptDataTable->pTxtSkills[nParam].itypea1 , wITypeA1 <= 0 || (bIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, (int)wITypeA1) , bIsOfType != 0))) && nParam != anSkillIds[0] && nParam != anSkillIds[1] && nParam != anSkillIds[2]) {
-          anSkillIds[iSkillSlot] = nParam;
+        nLayer = sNewSeed.nSeedLow + (nSkillId - (int)(sNewSeed.nSeedLow / 5) - 1) * 5 + nSkillBaseOffset;
+        if (((int)nLayer < 0 || (int)nLayer >= sgptDataTable->nTxtSkillsCount || !(sgptDataTable->pTxtSkills + nLayer) || (wITypeA1 = sgptDataTable->pTxtSkills[nLayer].itypea1 , wITypeA1 <= 0 || (bIsOfType = D2Common::ITEMS::Items::ITEMS_IsA(pUnit, (int)wITypeA1) , bIsOfType != 0))) && nLayer != anSkillIds[0] && nLayer != anSkillIds[1] && nLayer != anSkillIds[2]) {
+          anSkillIds[iSkillSlot] = nLayer;
           break;
         }
 
@@ -316,10 +316,10 @@ void __stdcall STAFFMOD_RollStaffModSkills(D2UnitStrc * pUnit, int32_t nSkillId,
         pStatsEx = (D2StatListExStrc*)D2Common::Stats::StatsEx::AllocStatList(pMemory, nStatListFlags, nExpireFrame, eUnitType, dwUnitGUID);
         D2Common::Stats::StatsEx::STATLIST_AttachStatListToUnit(pUnit, pStatsEx, 1);
         if (pStatsEx) {
-          D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nParam);
+          D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nLayer);
         }
       } else {
-        D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nParam);
+        D2Common::Stats::StatsEx::D2AddStatToStatsListEx(pStatsEx, UNITSTAT_item_singleskill, nSkillLevel, nLayer);
       }
 
       iSkillSlot++;
@@ -354,7 +354,7 @@ void __fastcall StaffMod(D2UnitStrc * pUnit, D2ItemGenContextStrc * pItemData) {
 }
 
 // Magic affix selection (prefix or suffix). Version-aware dispatch: wItemVersion 0-99 = classic (ITEMMOD_RollMagicAffixClassic), 100+ = expansion (ITEMMOD_RollMagicAffixVersioned). Returns affix index or 0 on failure.
-uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix, int bExclude, int32_t bApplyStats, int nParam4, int nForcedAffix) {
+uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix, int bExclude, int32_t bApplyStats, int bIsPrefix, int nForcedAffix) {
     BOOL BVar2;
     D2MagicAffixTxt* pAffixEntry;
     int nAffixIdx;
@@ -367,7 +367,7 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     if (!pTableInfo) {
       return nTotalAffixes & -65536;
     }
-    if (nParam4) {
+    if (bIsPrefix) {
       pAffixTable = pTableInfo->pPrefixStart;
       pAffixEntry = pTableInfo->pAutoMagicStart;
     } else {
@@ -404,12 +404,12 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     uint32_t pCurAffix;
     pCurAffix = nItemLvl + 2;
     if ((int)pCurAffix > 1) {
-      nParam4 = pCurAffix;
+      bIsPrefix = pCurAffix;
       if ((int)pCurAffix >= 0x63) {
-        nParam4 = 99;
+        bIsPrefix = 99;
       }
     } else {
-      nParam4 = 1;
+      bIsPrefix = 1;
     }
 
     bExclude = 0;
@@ -421,7 +421,7 @@ uint32_t __stdcall ITEMMOD_RollMagicAffix(D2UnitStrc * pUnit, int32_t bIsSuffix,
     uint32_t nCandidatesFound;
     nCandidatesFound = nCandidateCount;
     do {
-      if ((!bIsSuffix || *(bool*)((int)pAffixTable + 0x32)) && (*(uint16_t*)pAffixTable < 100 || (uint16_t)nItemVersion >= 100) && *(int*)((int)pAffixTable + 0x36) <= nParam4) {
+      if ((!bIsSuffix || *(bool*)((int)pAffixTable + 0x32)) && (*(uint16_t*)pAffixTable < 100 || (uint16_t)nItemVersion >= 100) && *(int*)((int)pAffixTable + 0x36) <= bIsPrefix) {
         pAffixEntry = (D2MagicAffixTxt*)((int)pAffixTable - 0x22);
         BVar2 = D2Common::ITEMS::ItemMods::ITEMMOD_CanApplyAutomod(pUnit, (int32_t)pAffixEntry);
         if (BVar2 && (int)nCandidatesFound < 0x1ff) {
@@ -731,28 +731,28 @@ int32_t __stdcall ITEMMOD_RollMagicAffixClassic(D2UnitStrc * pItem, int32_t bIsS
 }
 
 // Expansion magic affix selection using uniform random. Counts valid candidates, rolls RNG % count, walks list to nth valid affix. Max 252 retries for group exclusion.
-int16_t __fastcall ITEMMOD_RollMagicAffixVersioned(D2UnitStrc * pUnit, int32_t nParam, int bExclude, int32_t param_1, int nParam4, int nForcedAffix) {
+int16_t __fastcall ITEMMOD_RollMagicAffixVersioned(D2UnitStrc * pUnit, int32_t bSpawnableOnly, int bExclude, int32_t param_1, int bIsPrefix, int nForcedAffix) {
     uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion >= 1) {
       int32_t nClassicAffixResult;
-      nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix, 0);
+      nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, bSpawnableOnly, bExclude, param_1, bIsPrefix, nForcedAffix, 0);
       return (int16_t)nClassicAffixResult;
     }
 
-    uint32_t nAffixResult = ITEMMOD_RollMagicAffix(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix);
+    uint32_t nAffixResult = ITEMMOD_RollMagicAffix(pUnit, bSpawnableOnly, bExclude, param_1, bIsPrefix, nForcedAffix);
     return (int16_t)nAffixResult;
 }
 
 // Version dispatcher: tail-calls ITEMMOD_RollMagicAffixClassic (char*, "affix index+1") or ITEMMOD_RollMagicAffix (uint32_t, "affix index") as a bare statement, dropping the result both branches compute.
-int __fastcall ITEMMOD_RollMagicAffixVersionedEx(D2UnitStrc * pUnit, int32_t nParam, int bExclude, int32_t param_1, int nParam4, int nForcedAffix, int nParam6) {
+int __fastcall ITEMMOD_RollMagicAffixVersionedEx(D2UnitStrc * pUnit, int32_t bSpawnableOnly, int bExclude, int32_t param_1, int bIsPrefix, int nForcedAffix, int nAutoMagicGroup) {
     uint16_t wItemVersion = D2Common::ITEMS::Items::ITEM_GetItemData_wItemVersion(pUnit);
     if (wItemVersion >= 1) {
       int32_t nClassicAffixResult;
-      nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix, nParam6);
+      nClassicAffixResult = ITEMMOD_RollMagicAffixClassic(pUnit, bSpawnableOnly, bExclude, param_1, bIsPrefix, nForcedAffix, nAutoMagicGroup);
       return nClassicAffixResult;
     }
 
-    uint32_t nAffixResult = ITEMMOD_RollMagicAffix(pUnit, nParam, bExclude, param_1, nParam4, nForcedAffix);
+    uint32_t nAffixResult = ITEMMOD_RollMagicAffix(pUnit, bSpawnableOnly, bExclude, param_1, bIsPrefix, nForcedAffix);
     return nAffixResult;
 }
 
