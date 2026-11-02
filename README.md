@@ -9,7 +9,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R78-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R79-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-299%2F299-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
@@ -56,11 +56,11 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`R78`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R78) ("Vanilla+ 0.0.7-R78")** — one 7z with the Vanilla+ client
+- **Current release: [`R79`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R79) ("Vanilla+ 0.0.7-R79")** — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
-  [`HISTORY.md`](HISTORY.md), the R67→R78 record in [`handoff.md`](handoff.md) — the
+  [`HISTORY.md`](HISTORY.md), the R67→R79 record in [`handoff.md`](handoff.md) — the
   round journals.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
@@ -147,11 +147,12 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`0.0.7`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/D2LoD-Vanilla-Plus-0.0.7) | The shared-stash release (cut at R66): the 1-page shared stash (`_d2vp_shared.sss`, stash-panel tab, items + gold, `.d2s` retail-pure); save-and-re-enter crash fixed (#19); upstream synced to Ghidra 1783. Record: [`HISTORY.md`](HISTORY.md) round journal (R59→R66). |
 | [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77) | The shared-stash refresh (R67→R77), same 0.0.7 version line: the shared stash grows to **two pages** with `<`/`>` pager arrows and an outlined tab in the panel's top-right corner; **Shared Stash** toggle on the Options page; `_d2vp_shared.sss` v2 (v1 files auto-upgrade); upstream synced to Ghidra 1792. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R78`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R78) | The upstream sync (R77→R78), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1794 (1793/1794 regen waves + generator rounds, 5,988 of 14,642 functions byte-matching); all six toggles unchanged, every Vanilla+ anchor re-planted on the regenerated shapes. Upstream added its MIT `LICENSE` this round. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R79`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R79) | The upstream sync (R78→R79), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1801 (the 1795–1801 retyping waves — widths/signedness/BOOL fields, pointer and parameter types, param names checked against live packet captures, the Storm file layout; 5,990 of 14,642 functions byte-matching, 471,891 of 2,602,915 code bytes, 18.13%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
 
-Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R78 build
-self-IDs `Vanilla+0.0.7-R78`. Rounds through R74 are archived verbatim in
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R79 build
+self-IDs `Vanilla+0.0.7-R79`. Rounds through R74 are archived verbatim in
 [`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R78 — in
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R79 — in
 [`handoff.md`](handoff.md).
 
 ## Verification

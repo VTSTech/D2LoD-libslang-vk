@@ -253,3 +253,16 @@ PR) so acceptance is frictionless.
   variable-role swap, Direct3D.cpp's `gadwBitMasks[]` regen) with only the VP
   terms re-planted cut the conflict surface 39 -> 10 and needed zero
   compile-fix rounds.
+- **The 1801 convergence repeat (f518fda0):** the same class fired again, in
+  the opposite direction - upstream independently restructured
+  `RENDERER_D3D_CreateSurfaceWithTexture`'s QueryInterface branch (inverted
+  guard, typed `ppTexture` out-param, `ErrorLog`) into the shape the fork's
+  fix already produced semantically (success -> 1, failure -> log + release +
+  0). Here the fork's branch was a stylistic inversion of the same behavior,
+  not an offset carrier, so the resolution was upstream verbatim with nothing
+  re-planted - and the merged signature already required upstream's `ppTexture`
+  (the fork's `dwParam` no longer existed as a parameter). Validates the rule's
+  second half: when the fork delta carries no feature content, upstream's
+  structure wins whole; the offset-carrying-variable half (Panel.cpp 1794,
+  Glide.cpp's clamped `nContrastWeight` this round) is for deltas that MEAN
+  something.
