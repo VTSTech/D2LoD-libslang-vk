@@ -6,10 +6,10 @@
 // (PlayerTrade::ClickButton, PlayerSave::SaveGameAllGameTypes).
 //
 // ---------------------------------------------------------------------------
-// How the shared page works (round 1 - one page, retail-shaped; TWO shared
-// pages since R75 - the toggle's param word carries the ABSOLUTE desired
-// page 0 personal / 1 shared-1 / 2 shared-2, and the two shared sets live
-// as two 'JM' blocks swapped into page 4 one at a time):
+// How the shared page works (round 1 - one page, retail-shaped; two shared
+// pages since R75, TEN since R82 - the toggle's param word carries the
+// ABSOLUTE desired page 0 personal / 1..10 shared-N, and the shared sets
+// live as per-page 'JM' blocks swapped into page 4 one at a time):
 //
 // While a shared page is ACTIVE, the player's INVPAGE_STASH (page 4)
 // inventory holds that page's shared set - real item units materialized from
@@ -46,20 +46,27 @@
 // zero-op: no file IO, no marks, vanilla byte-for-byte.
 //
 // .sss format (<save dir>\_d2vp_shared.sss, own file, owner constraint 1):
-//   v2 (written since R75 - "add a 2nd page and buttons/arrows to navigate"):
+//   v2 (written since R75 - "add a 2nd page and buttons/arrows to navigate";
+//   widened to ten pages by R82 - "increase the shared stash pages to 10" -
+//   the exact extension the header reserved room for: SAME magic + version,
+//   only the page count and the pair table grow):
 //     0   4   magic 'V','P','S','2'
 //     4   2   version (u16, 2)
-//     6   2   pageCount (u16, 2 - the future 10/100 extension only widens this)
-//     8   4   shared gold (u32 - ONE pool across both pages)
-//     12  4   blockSize page-1 (u32, bytes of the page-1 'JM' block)
-//     16  4   checksum page-1 (u32, additive byte-sum of the block bytes)
-//     20  4   blockSize page-2 (u32)
-//     24  4   checksum page-2 (u32)
-//     28  ..  page-1 item block: 'JM' + u16 count + retail item records
-//     ..  ..  page-2 item block, same shape, right behind page 1
+//     6   2   pageCount (u16, 10 since R82; pre-R82 files carry 2 and read
+//             back with pages 3..10 empty - the next save rewrites ten)
+//     8   4   shared gold (u32 - ONE pool across all pages)
+//     12  8*N page records, N = pageCount: blockSize page-i (u32) at
+//             12+8*i, checksum page-i (u32, additive byte-sum) at 16+8*i
+//             (header is 12 + 8*N bytes: 28 at two pages, 92 at ten)
+//     ..      page-1 item block: 'JM' + u16 count + retail item records
+//     ..  ..  page-2..N item blocks, same shape, each right behind the last
 //   v1 (pre-R75 field files, read back for compat): magic 'V','P','S','1',
 //     version 1, pageCount 1, gold + one size/checksum pair + one block -
-//     loaded as shared PAGE 1, page 2 starts empty; the next save writes v2.
+//     loaded as shared PAGE 1, pages 2..10 start empty; the next save
+//     writes v2.
+//   A v2 file carrying MORE pages than this build holds (a wider build
+//   wrote it) is rejected whole - it needs a newer binary; the file on disk
+//   is never touched by the failed read.
 // Write is atomic (temp file + MoveFileExA replace) with a one-generation
 // .bak kept behind it. Every failure degrades to a d2boot mark, never
 // halts; a failed/degraded read never touches the file on disk.
@@ -118,16 +125,20 @@ constexpr int VPSTASH_PAGE_ITEM_CAP = 64;
 // 'JM' block buffer cap. The retail trade copy uses 0x2000; 0x4000 gives
 // 64 worst-case item records generous headroom.
 constexpr uint32_t VPSTASH_BLOCK_CAP = 0x4000;
-// .sss header sizes (see format sketch above): v1 = one page, v2 = two.
+// .sss header sizes (see format sketch above): v1 = one page (20 bytes);
+// v2 = 12 bytes of common fields + one size/checksum pair per page.
 constexpr uint32_t VPSTASH_HEADER_SIZE_V1 = 20;
-constexpr uint32_t VPSTASH_HEADER_SIZE_V2 = 28;
+// Shared pages this build writes (R82: ten - the owner's "If that works
+// we'll do 10 pages. Then 100." roadmap; pre-R82 builds wrote two).
+constexpr uint16_t VPSTASH_PAGE_COUNT = 10;
+constexpr uint32_t VPSTASH_HEADER_SIZE_V2 = 12 + 8 * VPSTASH_PAGE_COUNT;
 constexpr uint16_t VPSTASH_FILE_VERSION = 2;      // the shape this build writes
 constexpr uint16_t VPSTASH_FILE_VERSION_V1 = 1;   // pre-R75 field files (read back)
-constexpr uint16_t VPSTASH_PAGE_COUNT = 2;        // shared pages in a v2 file
 constexpr uint16_t VPSTASH_PAGE_COUNT_V1 = 1;
-// The two shared pages (internal indices 0/1; "page 1"/"page 2" in marks and
-// UI - the personal page is the retail page-4 set itself, not stored here).
-constexpr int VPSTASH_PAGES = 2;
+// The shared pages (internal indices 0..9 = the UI's "page 1".."page 10" in
+// marks and UI - the personal page is the retail page-4 set itself, not
+// stored here).
+constexpr int VPSTASH_PAGES = 10;
 
 // ---------------------------------------------------------------------------
 // Per-game state. v1 is single-player: one game per process. Ownership is
@@ -138,9 +149,9 @@ constexpr int VPSTASH_PAGES = 2;
 struct VPStashState {
     ::SGAMEDATA * pOwnerGame;   // owning game (ownership pin / lazy reset)
     int gbSharedActive;         // 1 while page 4 holds a shared page's set
-    int gnActiveSharedPage;     // 0/1 - which shared page is materialized (while gbSharedActive)
+    int gnActiveSharedPage;     // 0..VPSTASH_PAGES-1 - which shared page is materialized (while gbSharedActive)
     int gbSharedLoaded;         // 1 once the .sss was read this game (success or degrade)
-    uint32_t dwSharedGold;      // shared gold pool - ONE pool across both pages (.sss header)
+    uint32_t dwSharedGold;      // shared gold pool - ONE pool across all pages (.sss header)
     uint32_t dwPersonalGoldSnapshot; // goldbank value at toggle-to-shared
     uint8_t * pPersonalBlock;   // 'JM' block of the personal set while a shared page is active
     uint32_t nPersonalSize;
@@ -280,9 +291,10 @@ static int VPSHARED_PageItemCount(int nPage) {
 }
 
 // Validate + ingest one file (path given). Returns 1 with the shared
-// blocks/gold filled - a v2 file fills both pages, a v1 file fills page 1
-// and leaves page 2 empty - or 0 to start empty (file left untouched on
-// disk; the caller then retries the .bak generation).
+// blocks/gold filled - a v2 file fills the pages it carries (a pre-R82 file:
+// pages 1-2; pages 3..10 stay empty), a v1 file fills page 1 - or 0 to start
+// empty (file left untouched on disk; the caller then retries the .bak
+// generation).
 static int VPSHARED_TryReadFile(const char * szPath) {
     HANDLE hFile = CreateFileA(szPath, GENERIC_READ, FILE_SHARE_READ, nullptr,
                                OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -294,52 +306,76 @@ static int VPSHARED_TryReadFile(const char * szPath) {
     uint8_t aHeader[VPSTASH_HEADER_SIZE_V2];
     DWORD dwRead = 0;
     int nOk = 0;
-    // Both shapes share the first 20 bytes; a v2 file carries 8 more
-    // (page-2 size/checksum), read after the shape check below.
+    // Every shape shares the first 20 bytes; a v2 file carries one more
+    // size/checksum pair per page beyond the first, read after the shape
+    // check below.
     if (ReadFile(hFile, aHeader, VPSTASH_HEADER_SIZE_V1, &dwRead, nullptr) && dwRead == VPSTASH_HEADER_SIZE_V1) {
         const uint8_t aMagicV1[4] = { 'V', 'P', 'S', '1' };
         const uint8_t aMagicV2[4] = { 'V', 'P', 'S', '2' };
         uint16_t nVersion = (uint16_t)(aHeader[4] | (aHeader[5] << 8));
         uint16_t nPages = (uint16_t)(aHeader[6] | (aHeader[7] << 8));
         uint32_t dwGold = *(uint32_t *)&aHeader[8];
+        // v2 kept its magic + version across the R82 ten-page widening: the
+        // page count is accepted at any width this build can hold (1..10),
+        // so pre-R82 files (2 pages) load and the pages they don't carry
+        // start empty (BSS zero). A file written by a WIDER build
+        // (pageCount > 10) is rejected whole - it needs a newer binary.
         int nIsV1 = memcmp(aHeader, aMagicV1, 4) == 0 && nVersion == VPSTASH_FILE_VERSION_V1 && nPages == VPSTASH_PAGE_COUNT_V1;
-        int nIsV2 = memcmp(aHeader, aMagicV2, 4) == 0 && nVersion == VPSTASH_FILE_VERSION && nPages == VPSTASH_PAGE_COUNT;
+        int nIsV2 = memcmp(aHeader, aMagicV2, 4) == 0 && nVersion == VPSTASH_FILE_VERSION
+                    && nPages >= 1 && nPages <= VPSTASH_PAGE_COUNT;
+        uint32_t dwHeaderSize = 12 + 8 * (uint32_t)nPages; // v1's 1 page -> the 20-byte header
         LARGE_INTEGER liSize;
         uint32_t dwFileSize = (GetFileSizeEx(hFile, &liSize) && liSize.QuadPart >= 0 && liSize.QuadPart <= 0xffffffffll)
                                   ? (uint32_t)liSize.QuadPart : 0xffffffffu;
         if (!nIsV1 && !nIsV2) {
             D2BOOT_Mark("shared stash: bad header (magic/version) - starting empty"); // [d2boot]
         } else if (nIsV2 && !(ReadFile(hFile, aHeader + VPSTASH_HEADER_SIZE_V1,
-                                       VPSTASH_HEADER_SIZE_V2 - VPSTASH_HEADER_SIZE_V1, &dwRead, nullptr) &&
-                             dwRead == VPSTASH_HEADER_SIZE_V2 - VPSTASH_HEADER_SIZE_V1)) {
+                                       dwHeaderSize - VPSTASH_HEADER_SIZE_V1, &dwRead, nullptr) &&
+                             dwRead == dwHeaderSize - VPSTASH_HEADER_SIZE_V1)) {
             D2BOOT_Mark("shared stash: header read failed - starting empty"); // [d2boot]
         } else {
             s_VpStash.dwSharedGold = dwGold;
-            if (nIsV1) {
-                // Pre-R75 file: its one page becomes shared PAGE 1.
-                nOk = VPSHARED_IngestPageBlock(hFile, 0, *(uint32_t *)&aHeader[12], *(uint32_t *)&aHeader[16],
-                                               VPSTASH_HEADER_SIZE_V1, dwFileSize);
-                D2BOOT_MarkFmt("shared stash: loaded %d+%d items (gold %d) (v1 file)",
-                               VPSHARED_PageItemCount(0), VPSHARED_PageItemCount(1), (int)dwGold); // [d2boot]
+            // One ingest pass serves every shape: page i's size/checksum
+            // record lives at header[12+8i]/[16+8i] and its block right
+            // behind the previous page's. v1 is literally the 1-page shape
+            // (page 0 at offset 20); a v2 file's pages chain from its own
+            // header size.
+            uint32_t dwSize0 = *(uint32_t *)&aHeader[12];
+            if (dwHeaderSize > dwFileSize || dwSize0 > dwFileSize - dwHeaderSize) {
+                // Validate page-1's extent HERE so a later page's offset
+                // below cannot run past the file (IngestPageBlock re-checks
+                // every page against the same bounds).
+                D2BOOT_Mark("shared stash: bad header (size) - starting empty"); // [d2boot]
             } else {
-                uint32_t dwSize1 = *(uint32_t *)&aHeader[12];
-                uint32_t dwSize2 = *(uint32_t *)&aHeader[20];
-                if (VPSTASH_HEADER_SIZE_V2 > dwFileSize ||
-                    dwSize1 > dwFileSize - VPSTASH_HEADER_SIZE_V2) {
-                    // Validate page-1's extent HERE so page 2's offset below
-                    // cannot run past the file (IngestPageBlock re-checks).
-                    D2BOOT_Mark("shared stash: bad header (size) - starting empty"); // [d2boot]
-                } else {
-                    int nPage1Ok = VPSHARED_IngestPageBlock(hFile, 0, dwSize1, *(uint32_t *)&aHeader[16],
-                                                            VPSTASH_HEADER_SIZE_V2, dwFileSize);
-                    VPSHARED_IngestPageBlock(hFile, 1, dwSize2, *(uint32_t *)&aHeader[24],
-                                             VPSTASH_HEADER_SIZE_V2 + dwSize1, dwFileSize);
-                    // Page 1's verdict drives the .bak chase (v1 behavior);
-                    // a corrupt page 2 degrades to an empty page 2 only.
-                    nOk = nPage1Ok;
+                int nPage0Ok = 1;
+                uint32_t dwOff = dwHeaderSize;
+                for (int i = 0; i < (int)nPages; ++i) {
+                    int nOkI = VPSHARED_IngestPageBlock(hFile, i, *(uint32_t *)&aHeader[12 + 8 * i],
+                                                        *(uint32_t *)&aHeader[16 + 8 * i], dwOff, dwFileSize);
+                    if (i == 0) {
+                        // Page 1's verdict drives the .bak chase (v1
+                        // behavior); a corrupt later page degrades to an
+                        // empty page only.
+                        nPage0Ok = nOkI;
+                    }
+                    dwOff += *(uint32_t *)&aHeader[12 + 8 * i];
                 }
-                D2BOOT_MarkFmt("shared stash: loaded %d+%d items (gold %d)",
-                               VPSHARED_PageItemCount(0), VPSHARED_PageItemCount(1), (int)dwGold); // [d2boot]
+                nOk = nPage0Ok;
+            }
+            int nTotalItems = 0;
+            for (int i = 0; i < (int)nPages; ++i) {
+                nTotalItems += VPSHARED_PageItemCount(i);
+            }
+            if (nIsV1) {
+                D2BOOT_MarkFmt("shared stash: loaded %d items (gold %d) (v1 file)",
+                               nTotalItems, (int)dwGold); // [d2boot]
+            } else {
+                if (nPages < VPSTASH_PAGE_COUNT) {
+                    D2BOOT_MarkFmt("shared stash: v2 file has %d pages - pages %d..%d start empty (pre-R82 file)",
+                                   (int)nPages, (int)nPages + 1, (int)VPSTASH_PAGE_COUNT); // [d2boot]
+                }
+                D2BOOT_MarkFmt("shared stash: loaded %d items in %d pages (gold %d)",
+                               nTotalItems, (int)nPages, (int)dwGold); // [d2boot]
             }
         }
     } else {
@@ -575,13 +611,14 @@ static void VPSHARED_MaterializePage4(::SGAMEDATA * pGame, D2UnitStrc * pUnit, u
 // ---------------------------------------------------------------------------
 // Page activation (the whole feature)
 
-// Activate shared page nPage (internal index 0/1 = the UI's "page 1"/"page 2";
-// the client sends the 1-based number in the 0x4F param word). Three cases:
+// Activate shared page nPage (internal index 0..VPSTASH_PAGES-1 = the UI's
+// "page 1".."page 10"; the client sends the 1-based number in the 0x4F param
+// word). Three cases:
 //   personal -> page nPage : snapshot the personal set, materialize page
 //                            nPage, borrow the goldbank (v1 toggle shape);
 //   page A   -> page B     : serialize page 4 into page A's block, page B's
 //                            block materializes - the goldbank borrow simply
-//                            continues (ONE pool across both pages) and the
+//                            continues (ONE pool across all pages) and the
 //                            .sss is written on the next restore-to-personal
 //                            (or save flush), as in v1;
 //   page nPage again       : idempotent no-op (the client may repeat).
@@ -723,9 +760,10 @@ void __stdcall VPSHARED_OnClickButton(::SGAMEDATA * pGame, D2UnitStrc * pUnit, i
         return;
     }
     VPSHARED_EnsureOwner(pGame);
-    // dwParam = the ABSOLUTE desired page: 0 personal, 1 shared page 1,
-    // 2 shared page 2 (R75). Anything above the page count is ignored with
-    // a mark (never a halt).
+    // dwParam = the ABSOLUTE desired page: 0 personal, 1..10 shared pages
+    // 1..10 (ten since R82 - the param word is wide enough for the planned
+    // 100 too). Anything above the page count is ignored with a mark (never
+    // a halt).
     if (dwParam == 0) {
         VPSHARED_ToggleToPersonal(pGame, pUnit);
     } else if (dwParam <= (uint32_t)VPSTASH_PAGES) {

@@ -14,7 +14,8 @@
 //      entry point below parks the shared set into the .sss and restores
 //      the personal set before MakeSaveFile runs.
 //
-// Design (round 1 - one page, retail-shaped; two shared pages since R75):
+// Design (round 1 - one page, retail-shaped; two shared pages since R75,
+// ten since R82):
 //   While the shared page is active, the player's INVPAGE_STASH (page 4)
 //   inventory holds the SHARED set - materialized from the .sss file - and
 //   the personal set waits in a memory snapshot. Every retail stash flow
@@ -39,8 +40,8 @@ struct D2UnitStrc;
 // client sends via C->S 0x4F (Click Button) to toggle the shared page.
 // Retail ClickButton routes unknown ids to the trade-path rejection with an
 // interact-object target, so a retail server silently ignores it; our VP
-// site intercepts it first. Param word = desired page (0 personal, 1 shared
-// page 1, 2 shared page 2).
+// site intercepts it first. Param word = desired page (0 personal, 1..10
+// shared pages 1..10 - ten since R82).
 constexpr uint16_t VPSHARED_BUTTON_TOGGLE = 0x7D;
 
 // TRUE when the VP site in PlayerTrade::ClickButton must divert this button
@@ -50,15 +51,15 @@ constexpr uint16_t VPSHARED_BUTTON_TOGGLE = 0x7D;
 BOOL __stdcall VPSHARED_ShouldInterceptClickButton(struct SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int16_t nButtonId);
 
 // Toggle handler for the VP button. dwParam = the ABSOLUTE desired page
-// (0 personal, 1 shared page 1, 2 shared page 2 - R75; anything above the
-// page count is ignored with a d2boot mark). Idempotent: requesting the
+// (0 personal, 1..10 shared pages 1..10 - two since R75, ten since R82;
+// anything above the page count is ignored with a d2boot mark). Idempotent: requesting the
 // already-active page is a no-op. Refuses while the player is dead or
 // trading. Does the full swap: snapshot + dematerialize the current page-4
 // set, materialize the other set, resync the client (the removal packets
 // ride ITEM_RemoveItemFromCurrentLocation; the additions are pushed with
 // Send0x9CItemPutInContainer), swap the goldbank borrow on
 // personal<->shared edges, and on shared->personal also writes the .sss
-// file (both pages, v2 format).
+// file (all ten pages, v2 format).
 void __stdcall VPSHARED_OnClickButton(struct SGAMEDATA * pGame, struct D2UnitStrc * pUnit, int16_t nButtonId, uint32_t dwParam);
 
 // Park the shared page before any .d2s is built (I1). Called from the thin

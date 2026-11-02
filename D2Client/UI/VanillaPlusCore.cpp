@@ -225,11 +225,12 @@ static void ALTTOGGLE_WriteIniTemplate(const char* pszPath) {
         "\r\n"
         "; Shared stash (single-player):\r\n"
         ";   0 = off                                        (vanilla behavior)\r\n"
-        ";   1 = add a \"Shared\" tab to the stash panel. The shared page is a\r\n"
-        ";       second stash page every character on this PC shares: items\r\n"
-        ";       and gold deposited there survive the character. Stored in its\r\n"
-        ";       own file (_d2vp_shared.sss) next to the saves - character\r\n"
-        ";       .d2s files stay retail-compatible, with or without the key.\r\n"
+        ";   1 = add a \"Shared\" tab to the stash panel. The shared stash is\r\n"
+        ";       ten extra stash pages (since R82) every character on this PC\r\n"
+        ";       shares: items and gold deposited there survive the\r\n"
+        ";       character. Stored in its own file (_d2vp_shared.sss) next to\r\n"
+        ";       the saves - character .d2s files stay retail-compatible, with\r\n"
+        ";       or without the key.\r\n"
         "shared_stash=0\r\n";
     HANDLE hFile = CreateFileA(pszPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -917,17 +918,18 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 //      VPSHAREDUI_HandleStashClick, drawn by VPSHAREDUI_DrawTab right after
 //      the gold-button draw. Since R75 the label is an OUTLINED composite:
 //      a 1-px black halo under the glyphs (owner: "give the current stash
-//      tab label an outline") plus a two-page pager - < and > arrows step
-//      between the personal page and shared pages 1/2 (owner: "add a 2nd
-//      page and buttons/arrows to navigate pages"), the label reads
-//      Shared 1 / Shared 2 on the shared pages. No hotkey: the tab is the
-//      only affordance (owner decision 2026-11-01);
+//      tab label an outline") plus a pager - < and > arrows step one page at
+//      a time between the personal page and the shared pages (two since R75
+//      - owner: "add a 2nd page and buttons/arrows to navigate pages" - ten
+//      since R82 - owner: "increase the shared stash pages to 10"), the
+//      label reads Shared 1 .. Shared 10 on the shared pages. No hotkey:
+//      the tab is the only affordance (owner decision 2026-11-01);
 //   3. a per-game reset so entering a game always starts on the personal
 //      page (the server starts every game on the personal page too).
 //
 // Clicking the tab sends the C->S 0x4F Click-Button packet with the
 // out-of-retail-range button id 0x7D and the ABSOLUTE desired page in the
-// param word (0 personal / 1 shared-1 / 2 shared-2). Everything else - the
+// param word (0 personal / 1..10 shared-N). Everything else - the
 // grid, the item moves, the gold buttons - is untouched retail; while a
 // shared page is active the server serves page 4 from that page's block and
 // the goldbank stat carries the shared gold, so the retail deposit/withdraw
@@ -942,7 +944,7 @@ int __stdcall VPRES_GetWideUiOffsetY() {
 static int gbVpSharedStashMode = 0;   // 2 s ini gate cache
 static DWORD dwVpSharedStashGateTick = 0;
 static int gnVpSharedPage = 0;        // client mirror of the page toggle:
-                                      // 0 personal, 1/2 = shared pages 1/2
+                                      // 0 personal, 1..10 = shared pages 1..10
 
 // Options-page hook (D2VP_ConfigReloaded, R67): zero the gate tick so the
 // next VPSHAREDUI_FeatureActive() re-reads shared_stash - the "Shared" tab
@@ -971,7 +973,7 @@ BOOL __stdcall VPSHAREDUI_FeatureActive() {
 }
 
 int __stdcall VPSHAREDUI_IsSharedPage() {
-    return gnVpSharedPage; // 0 = personal; 1/2 = the shared page on screen
+    return gnVpSharedPage; // 0 = personal; 1..10 = the shared page on screen
 }
 
 void __stdcall VPSHAREDUI_ResetForNewGame() {
@@ -1028,11 +1030,12 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 //        -0x1e0), so the halo top (-0x1d9) stays >= 7 px inside the edge and
 //        the click band [-0x1dc..-0x1c6] never probes the playfield - the
 //        R69 down-walk class cannot re-open.
-// R75 composite: the label is one row-built strip, right-aligned at the
-// R66 anchor as R76 nudged it (the +0x140 art-seam rule is untouched) - on the
-// personal page  "Shared >"  (the > invites a step into shared page 1), on
-// the shared pages  "< Shared 1 >" / "< Shared 2"  (green, the active
-// color). The arrows step ONE page left/right; the word itself toggles
+// R75 composite (R82: ten pages, same shape): the label is one row-built
+// strip, right-aligned at the R66 anchor as R76 nudged it (the +0x140
+// art-seam rule is untouched) - on the personal page  "Shared >"  (the >
+// invites a step into shared page 1), on the shared pages  "< Shared N >"
+// (green, the active color; N = 1..10, and the last page drops the '>').
+// The arrows step ONE page left/right; the word itself toggles
 // personal<->shared-1 - the R63-R74 click-for-the-tab muscle memory, and
 // always a way home from any shared page. Both element rects come from the
 // same per-frame layout the draw uses (widths measured in font 1), so the
@@ -1047,7 +1050,14 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 // gold buttons at INV_GetGoldButtonX/Y) stay far below, and the grid rows
 // start below the gold-max row, one pitch under this one.
 constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x13c; // R66 0x130; R76 +0x0c off the gold amount text
-constexpr int VPSHAREDUI_PAGE_COUNT = 2;  // shared pages (the personal page is not one of them)
+// Shared pages the pager steps through (the personal page is not one of
+// them): two since R75, TEN since R82 - the owner's "If that works we'll do
+// 10 pages. Then 100." roadmap. The composite stays right-anchored at
+// VPSHAREDUI_TAB_RIGHT_EDGE and grows leftward, so a wider word list costs
+// only leftward room on the R77 band (the gold display sits a full 0x2d
+// below the row; see the R76/R77 notes above) - "Shared 10" never outgrows
+// the R76-approved "< Shared 1 >" composite.
+constexpr int VPSHAREDUI_PAGE_COUNT = 10;
 constexpr int VPSHAREDUI_TAB_GAP = 5;     // word <-> arrow gap
 
 // The tab row: R66-R76 shared the retail "Gold Max" text row (-0x19f/-0xdb);
@@ -1061,12 +1071,24 @@ static int VPSHAREDUI_TabBaselineY() {
     return gnPanelOffsetY - (bIsExpansion ? 0x1cc : 0x108) + ScreenSizeY;
 }
 
-// The word for the current client page (0 personal, 1/2 shared).
+// The word for the current client page (0 personal, 1..10 shared). A
+// literal table - no runtime formatting - so the D2Win text measure/draw
+// sees plain static wide strings like every other call site; the bounds
+// guard only exists to keep a bad mirror from indexing past the table.
 static const uint16_t * VPSHAREDUI_PageWord() {
-    if (gnVpSharedPage >= 2) {
-        return (const uint16_t *)L"Shared 2";
+    static const uint16_t * const apWords[VPSHAREDUI_PAGE_COUNT + 1] = {
+        (const uint16_t *)L"Shared",   (const uint16_t *)L"Shared 1", (const uint16_t *)L"Shared 2",
+        (const uint16_t *)L"Shared 3", (const uint16_t *)L"Shared 4", (const uint16_t *)L"Shared 5",
+        (const uint16_t *)L"Shared 6", (const uint16_t *)L"Shared 7", (const uint16_t *)L"Shared 8",
+        (const uint16_t *)L"Shared 9", (const uint16_t *)L"Shared 10",
+    };
+    int nPage = gnVpSharedPage;
+    if (nPage < 0) {
+        nPage = 0;
+    } else if (nPage > VPSHAREDUI_PAGE_COUNT) {
+        nPage = VPSHAREDUI_PAGE_COUNT;
     }
-    return gnVpSharedPage == 1 ? (const uint16_t *)L"Shared 1" : (const uint16_t *)L"Shared";
+    return apWords[nPage];
 }
 
 // Layout of the composite on the tab row. Callers must have font 1 set (the
@@ -1139,7 +1161,7 @@ BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY) {
 
     gnVpSharedPage = nNewPage;
     // C->S 0x4F Click Button, VP toggle id 0x7D, the ABSOLUTE desired page
-    // in the param word (0 personal / 1 shared-1 / 2 shared-2). The send
+    // in the param word (0 personal / 1..10 shared-N). The send
     // helper packs the param word as (arg2 << 16) | (uint16)arg3, so the
     // page rides arg3 and the server activates exactly that page
     // (VanillaPlusStash.cpp; idempotent when the page is already active).
