@@ -9,7 +9,7 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R80-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Release](https://img.shields.io/badge/release-0.0.7--R81-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
 [![Gates](https://img.shields.io/badge/vanilla%2B%20gates-299%2F299-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
@@ -56,11 +56,11 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`R80`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R80) ("Vanilla+ 0.0.7-R80")** — one 7z with the Vanilla+ client
+- **Current release: [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) ("Vanilla+ 0.0.7-R81")** — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
-  [`HISTORY.md`](HISTORY.md), the R67→R80 record in [`handoff.md`](handoff.md) — the
+  [`HISTORY.md`](HISTORY.md), the R67→R81 record in [`handoff.md`](handoff.md) — the
   round journals.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
@@ -149,11 +149,12 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`R78`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R78) | The upstream sync (R77→R78), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1794 (1793/1794 regen waves + generator rounds, 5,988 of 14,642 functions byte-matching); all six toggles unchanged, every Vanilla+ anchor re-planted on the regenerated shapes. Upstream added its MIT `LICENSE` this round. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R79`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R79) | The upstream sync (R78→R79), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1801 (the 1795–1801 retyping waves — widths/signedness/BOOL fields, pointer and parameter types, param names checked against live packet captures, the Storm file layout; 5,990 of 14,642 functions byte-matching, 471,891 of 2,602,915 code bytes, 18.13%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R80`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R80) | The upstream sync (R79→R80), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1806 (the 1802–1806 waves — MONSTERAI flag-out BOOL, DRLG level/room/unit pointers, DT1/DC6/path types + flag-word returns + character buffers, monster-spawn/skills/item-stats/UI parameter names, then the generator round; 6,029 of 14,642 functions byte-matching, 479,019 of 2,602,915 code bytes, 18.40%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) | The waypoint icon fix ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)): at 720p the waypoint-list button icons drew at their retail 800×600 Y while the panel, texts and click zones rode the widescreen layout down 120 px — the icons rendered ~120 px above their rows. The two `waygateicons` draws predate the site-6 retrofit and never carried the wide-Y term; two one-term replants. Retail 800×600 unchanged byte-for-byte. Record: [`handoff.md`](handoff.md) round journal. |
 
-Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R80 build
-self-IDs `Vanilla+0.0.7-R80`. Rounds through R74 are archived verbatim in
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R81 build
+self-IDs `Vanilla+0.0.7-R81`. Rounds through R74 are archived verbatim in
 [`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R80 — in
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R81 — in
 [`handoff.md`](handoff.md).
 
 ## Verification

@@ -341,7 +341,7 @@ gate "site-6: belt hover Y virtualization (R52)" D2Client/UI/Panel.cpp          
 gate "site-6: belt tooltip Y anchor (R52)"        D2Client/UI/Panel.cpp           'gnBeltTooltipY = aInvRect\[2\] \+ VPRES_GetWideUiOffsetY' 1
 gate "site-6: inv table + text Y shifts"   D2Client/UI/Inv.cpp             'VPRES_GetWideUiOffsetY' 15
 gate "site-6: party panel Y shifts"        D2Client/UI/Party.cpp           'VPRES_GetWideUiOffsetY' 54
-gate "site-6: waypoint Y shifts"           D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 10
+gate "site-6: waypoint Y shifts (R81)"      D2Client/UI/Waypoint.cpp        'VPRES_GetWideUiOffsetY' 12
 gate "site-6: waypoint input inverse"      D2Client/UI/Waypoint.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
 gate "site-6: questlog Y shifts"           D2Client/UI/QuestLog.cpp        'VPRES_GetWideUiOffsetY' 10
 gate "site-6: questlog input inverse"      D2Client/UI/QuestLog.cpp        'gnPanelOffsetY - VPRES_GetWideUiOffsetY' 3
@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R80"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R80' 1
+gate "res: self-id 0.0.7-R81"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R81' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
