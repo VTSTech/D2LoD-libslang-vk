@@ -235,3 +235,21 @@ PR) so acceptance is frictionless.
   conflict resolution touches BOTH parents' shapes must be diffed against
   BOTH parents, not one; and an audit's output cap is part of its blind
   spot - truncation is how a clean sweep lies.
+- **The 1794 convergence conflict (ea0b84d4):** upstream independently implemented
+  a feature the fork already carried - the 1794 regen added the health-orb
+  `DrawVerticalCropImage` calls while the fork's resfix already drew the same
+  fill with the wide-X offset baked into `nValue`. Two different spellings of
+  the same behavior collided in one conflict hunk; resolving EITHER side alone
+  silently loses the other's contribution (the fork's offset, or upstream's new
+  in-arm call site), and every instrument stays green on the wrong pick:
+  markers present, gate counts unchanged, sweep clean. Resolution: upstream's
+  structure, fork's variable - the calls keep upstream's in-arm placement and
+  take `nValue` (the offset-carrying local) as the argument, mirroring what the
+  auto-merge produced for the mana orb 40 lines below. Rule: when both parents
+  changed the same lines with different intent, ask what each delta MEANT
+  before picking a side - this class is invisible to presence, placement,
+  branch and syntax audits by construction. The same round validated the
+  verbatim-upstream policy: upstream shapes taken whole (QuestLog.cpp's
+  variable-role swap, Direct3D.cpp's `gadwBitMasks[]` regen) with only the VP
+  terms re-planted cut the conflict surface 39 -> 10 and needed zero
+  compile-fix rounds.
