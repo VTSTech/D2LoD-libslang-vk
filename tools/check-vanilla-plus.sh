@@ -642,7 +642,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R81"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R81' 1
+gate "res: self-id 0.0.7-R82"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R82' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -693,15 +693,32 @@ gate "stash: scope guard SP-only"             D2Game/PLAYER/VanillaPlusStash.cpp
 gate "stash: two-page state"                  D2Game/PLAYER/VanillaPlusStash.cpp 'apSharedBlock\[VPSTASH_PAGES\]' 1
 gate "stash: v2 file magic"                   D2Game/PLAYER/VanillaPlusStash.cpp "'V', 'P', 'S', '2'" 1
 gate "stash: v1 file read-back"               D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_FILE_VERSION_V1' 2
-gate "stash: per-page ingest helper"          D2Game/PLAYER/VanillaPlusStash.cpp 'VPSHARED_IngestPageBlock' 4
+gate "stash: per-page ingest helper"          D2Game/PLAYER/VanillaPlusStash.cpp 'VPSHARED_IngestPageBlock' 2  # R82: one call site inside the per-page ingest loop
 gate "stash: page switch mark"                D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: switched to page' 1
 gate "stash: page param range mark"           D2Game/PLAYER/VanillaPlusStash.cpp 'shared stash: page %d out of range' 1
-gate "stash: pager page count"                D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PAGE_COUNT = 2' 1
+gate "stash: pager page count"                D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PAGE_COUNT = 10' 1  # R82 (was 2 at R75)
 gate "stash: outlined label helper"           D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_DrawOutlinedText' 4
 gate "stash: outline shadow palette"          D2Client/UI/VanillaPlusCore.cpp    'aOffs\[4\]\[2\]' 1
 gate "stash: pager arrow glyphs"              D2Client/UI/VanillaPlusCore.cpp    'L"<"' 1
 gate "stash: page word variants"              D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_PageWord' 3
 gate "stash: layout shared by draw+click"     D2Client/UI/VanillaPlusCore.cpp    'VPSHAREDUI_TabLayout' 3
+
+# ---- [vanilla-plus shared-stash] R82: ten shared pages ---------------------
+# Owner ask: "increase the shared stash pages to 10" - the widening the v2
+# header reserved room for (SHARED-STASH-PLAN.md: "10 pages. Then 100.").
+# Same VPS2 magic + version, pageCount 2 -> 10 (header 28 -> 92 bytes), the
+# two fixed ingest calls became a per-page loop, and the reader accepts any
+# pageCount this build can hold so pre-R82 two-page files read back with
+# pages 3..10 empty (the next save rewrites ten). Client pager labels come
+# from a literal word table (Shared 1 .. Shared 10); arrows still step ONE
+# page; ONE shared gold pool across all ten.
+gate "stash: ten-page server constant (R82)"  D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_PAGE_COUNT = 10' 1
+gate "stash: ten-page pager constant (R82)"   D2Game/PLAYER/VanillaPlusStash.cpp 'constexpr int VPSTASH_PAGES = 10' 1
+gate "stash: v2 header sized by page count"   D2Game/PLAYER/VanillaPlusStash.cpp 'VPSTASH_HEADER_SIZE_V2 = 12 \+ 8 \* VPSTASH_PAGE_COUNT' 1
+gate "stash: reader accepts pre-R82 widths"   D2Game/PLAYER/VanillaPlusStash.cpp 'nPages >= 1 && nPages <= VPSTASH_PAGE_COUNT' 1
+gate "stash: header tail sized by pageCount"  D2Game/PLAYER/VanillaPlusStash.cpp 'uint32_t dwHeaderSize = 12 \+ 8 \* \(uint32_t\)nPages' 1
+gate "stash: pre-R82 readback mark (R82)"     D2Game/PLAYER/VanillaPlusStash.cpp 'start empty \(pre-R82 file\)' 1
+gate "stash: page word table (R82)"           D2Client/UI/VanillaPlusCore.cpp    'L"Shared 10"' 1
 
 # ---- [sync] Rev 76: the 1781 merge re-planted SCmd.cpp's srv state-cmd
 # [d2boot] mark but dropped the fork's include of support/d2_boot.h (last line

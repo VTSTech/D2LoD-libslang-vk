@@ -9,8 +9,8 @@
        width="88" height="31" alt="Made Openly: Mostly AI">
 </a>
 
-[![Release](https://img.shields.io/badge/release-0.0.7--R81-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-299%2F299-2ea043)](tools/check-vanilla-plus.sh)
+[![Release](https://img.shields.io/badge/release-0.0.7--R82-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-306%2F306-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -48,7 +48,7 @@ Options"**.
 | Auto Gold Pickup | `[features] auto_gold` | Gold piles inside pickup range are collected when you walk over them, via the game's own server-side pickup path. Gold only, never moves your character, never fires mid-attack. |
 | Persistent Globe Text | `[features] globe_persistent` | Retail's above-orb Life/Mana readout stays visible without hovering. Pure display; retail's own HP/MP-text options keep working. |
 | Item Level Tooltips | `[features] item_ilvl` | Appends ` (N)` to the item name on every item tooltip — e.g. `Long Sword (12)` — so an item's level reads at a glance. |
-| Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over two retail-shaped pages that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step between the pages (Shared 1, Shared 2); clicking the word returns to the personal page. Stored in its own `_d2vp_shared.sss` beside the saves (pre-R75 single-page files load as page 1) — character `.d2s` files stay retail-compatible, with or without the key. |
+| Shared Stash | `[features] shared_stash` | An **outlined "Shared" tab** on the stash panel over **ten** retail-shaped pages (R82) that every character on the PC shares: items and gold deposited there survive the character. `‹` / `›` arrows beside the label step one page at a time (Shared 1 … Shared 10); clicking the word returns to the personal page; one gold pool across all ten. Stored in its own `_d2vp_shared.sss` beside the saves (pre-R82 two-page and pre-R75 one-page files load with the missing pages empty) — character `.d2s` files stay retail-compatible, with or without the key. |
 
 No balance changes, no save-format changes: `.d2s`/`.d2x` layouts stay untouched, and
 every feature ships OFF. The wider candidate slate (D2R backports and owner suggestions)
@@ -56,11 +56,11 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 
 ## Status
 
-- **Current release: [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) ("Vanilla+ 0.0.7-R81")** — one 7z with the Vanilla+ client
+- **Current release: [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) ("Vanilla+ 0.0.7-R82")** — one 7z with the Vanilla+ client
   **`d2vp.exe`**, the Glide3xVK 0.4.6 wrapper (`glide3x.dll`) and launcher/debug scripts. The
   first `d2boot.log` line self-identifies the build (`Vanilla+0.0.7-RXX`), so a shipped
   exe can always be pinned to its source round. The R59→R66 release record lives in
-  [`HISTORY.md`](HISTORY.md), the R67→R81 record in [`handoff.md`](handoff.md) — the
+  [`HISTORY.md`](HISTORY.md), the R67→R82 record in [`handoff.md`](handoff.md) — the
   round journals.
 - Works, field-verified: boot → intro → title → character select → in game; Direct3D
   fullscreen and windowed at 640x480, 800x600 and the native **1280x720** widescreen
@@ -81,7 +81,7 @@ is scoped in [FEATURES.md](FEATURES.md); nothing lands without a config gate.
 - **Upstream synced to Ghidra 1792** (post-0.0.7 rounds: the R67–R71 tab polish — rolled back by owner decision to the R66 tab — then merge `6c552f9` + the R73/R74
   compile-fix rounds — the merge-site syntax sweep, `scripts/merge_site_syntax_sweep.sh`, now guards the merge surface); the first post-1792 build
   field-run green (boots, renders, in game at 720p, stash tab visible + working), full smoke pass pending; **R75** gave the stash tab its black outline and a
-  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely.
+  **second shared page** with `‹`/`›` pager arrows (`.sss` v2, v1 files read as page 1); **R76** nudged the tab 12 px right so the arrows clear the gold amount display; **R77** lifted the tab row 45 px into the panel's top-right corner — the empty band above the gold display row — so the arrows clear the gold text entirely; **R82** grew the stash to **ten shared pages** — the `.sss` v2 header widening its format always planned (same magic + version, `pageCount` 10; pre-R82 files read back with the missing pages empty).
 - Not finished. One known issue remains:
   - **Necro minion skeleton coloring**
     ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)). The spawn-time palette
@@ -150,11 +150,12 @@ only the DWARF. Linking is fully static — no runtime DLLs needed beside it.
 | [`R79`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R79) | The upstream sync (R78→R79), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1801 (the 1795–1801 retyping waves — widths/signedness/BOOL fields, pointer and parameter types, param names checked against live packet captures, the Storm file layout; 5,990 of 14,642 functions byte-matching, 471,891 of 2,602,915 code bytes, 18.13%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R80`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R80) | The upstream sync (R79→R80), same 0.0.7 version line, **zero feature changes**: upstream synced to Ghidra 1806 (the 1802–1806 waves — MONSTERAI flag-out BOOL, DRLG level/room/unit pointers, DT1/DC6/path types + flag-word returns + character buffers, monster-spawn/skills/item-stats/UI parameter names, then the generator round; 6,029 of 14,642 functions byte-matching, 479,019 of 2,602,915 code bytes, 18.40%); all six toggles unchanged, every Vanilla+ anchor re-planted on the retyped shapes. Record: [`handoff.md`](handoff.md) round journal. |
 | [`R81`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R81) | The waypoint icon fix ([#21](https://github.com/VTSTech/D2LoD-libslang-vk/issues/21)): at 720p the waypoint-list button icons drew at their retail 800×600 Y while the panel, texts and click zones rode the widescreen layout down 120 px — the icons rendered ~120 px above their rows. The two `waygateicons` draws predate the site-6 retrofit and never carried the wide-Y term; two one-term replants. Retail 800×600 unchanged byte-for-byte. Record: [`handoff.md`](handoff.md) round journal. |
+| [`R82`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R82) | The shared-stash capacity round (R81→R82): the shared stash grows from two to **ten pages** — the `.sss` v2 header widening its format always planned (same `VPS2` magic + version, `pageCount` 10, header 28 → 92 bytes; pre-R82 two-page and pre-R75 one-page files read back with the missing pages empty, the next save rewrites ten). Pager labels `Shared 1`…`Shared 10` from a literal table, arrows still step one page, one shared gold pool across all ten, `.d2s` saves still retail-pure. Record: [`handoff.md`](handoff.md) round journal. |
 
-Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R81 build
-self-IDs `Vanilla+0.0.7-R81`. Rounds through R74 are archived verbatim in
+Between tags, work is tracked as revision rounds (`-Rxx`); the shipped R82 build
+self-IDs `Vanilla+0.0.7-R82`. Rounds through R74 are archived verbatim in
 [`HISTORY.md`](HISTORY.md) (per-release summaries for the 0.0.6-era rounds also on the
-[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R81 — in
+[GitHub releases](https://github.com/VTSTech/D2LoD-libslang-vk/releases) page), and the live journal — rounds R67→R82 — in
 [`handoff.md`](handoff.md).
 
 ## Verification
@@ -163,7 +164,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **299 checks**, green at the current tip.
+  telemetry) with **306 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — the check on
   the decompilation itself. Current counts live in its README and below.
