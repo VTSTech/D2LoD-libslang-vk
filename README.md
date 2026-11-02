@@ -90,6 +90,9 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
    into your Diablo II: LoD 1.14d folder (next to `Game.exe`).
 2. Run `d2vp.exe -w`. That's the Vanilla+ client; `glide3x.dll` sits beside it for the
    wrapper route (`-3dfx`), launcher/debug scripts included.
+3. Optional: `d2vp.exe -nointro` skips the two intro videos (the Blizzard / Blizzard
+   North logo clips) and the auto-played title cinematics — boot goes straight to the
+   title screen. In-game cutscenes are unaffected.
 
 Upgrading: extract over the previous install — saves, realm logins and `d2vp.ini` carry
 over.

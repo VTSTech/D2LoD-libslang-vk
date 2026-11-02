@@ -1193,3 +1193,52 @@ void __stdcall VPSHAREDUI_DrawTab() {
     }
     D2Win::Src::D2WinFont::SetAndReturnLastFont(nPrevFont);
 }
+
+// ---- [vanilla-plus nointro] R86 --------------------------------------------
+// The -nointro switch: parse GetCommandLineA() once, cache, mark d2boot.log
+// on the first (detected) query. See VanillaPlusCore.h for the contract and
+// the two consumer sites in D2Launch/MainMenus.cpp.
+BOOL __stdcall VPNOINTRO_IsRequested() {
+    static int nParsed = -1; // -1 = not parsed yet, else the flag (0/1)
+    if (nParsed >= 0) {
+        return nParsed;
+    }
+    nParsed = 0;
+    const char* szCmdLine = GetCommandLineA();
+    if (szCmdLine) {
+        char szToken[32];
+        const char* pScan = szCmdLine;
+        while (*pScan) {
+            while (*pScan == ' ' || *pScan == '\t') {
+                pScan++;
+            }
+            if (!*pScan) {
+                break;
+            }
+            const char* pTokenStart = pScan;
+            while (*pScan && *pScan != ' ' && *pScan != '\t') {
+                pScan++;
+            }
+            size_t nTokenLen = (size_t)(pScan - pTokenStart);
+            if (nTokenLen < sizeof(szToken)) {
+                memcpy(szToken, pTokenStart, nTokenLen);
+                szToken[nTokenLen] = '\0';
+                // Windows launchers may quote an argument; compare inside a
+                // wrapping quote pair so "-nointro" matches too.
+                char* szCompare = szToken;
+                if (nTokenLen >= 2 && szCompare[0] == '"' && szCompare[nTokenLen - 1] == '"') {
+                    szCompare[nTokenLen - 1] = '\0';
+                    szCompare++;
+                }
+                if (!_stricmp(szCompare, "-nointro")) {
+                    nParsed = 1;
+                    break;
+                }
+            }
+        }
+    }
+    if (nParsed) {
+        D2BOOT_Mark("[vp] cmdline -nointro: boot intro videos disabled"); // [d2boot]
+    }
+    return nParsed;
+}

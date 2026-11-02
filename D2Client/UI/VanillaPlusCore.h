@@ -195,3 +195,21 @@ BOOL __stdcall VPSHAREDUI_HandleStashClick(int nMouseX, int nMouseY);
 // the gold-button draw). Draws the outlined word + pager arrows; draws
 // nothing when the gate is off.
 void __stdcall VPSHAREDUI_DrawTab();
+
+// [vanilla-plus nointro] R86: the -nointro command-line switch. Opt-out by
+// launcher argument (not d2vp.ini - it only means something when the user
+// passes it), parsed ONCE per process from GetCommandLineA(): a
+// whitespace-separated token exactly "-nointro" (case-insensitive; tokens
+// of 32+ bytes can never match) sets the flag, anything else leaves the
+// vanilla boot untouched. First query writes one [d2boot] mark so the field
+// log pins the switch. Consumers: the two boot/title cutscene entries in
+// D2Launch/MainMenus.cpp (PlaysBlizzardNorthCutScene and
+// UIMENU_PlayIntroAndReturnToMainScreen) read this and, when it is set,
+// never enter BeginCutSceneAtResolutionMode0 - the retail begin-failed
+// fallthrough each site already has (no cutscene, straight to the next
+// screen) becomes the boot path, which skips the Blizzard + Blizzard North
+// logo .biks, the first-run D2/LoD intro .bik and the title-screen
+// (click/timer) d2intro .bik. In-game quest cutscenes use a different call
+// path and are NOT affected. Returns 0 without the switch: vanilla
+// byte-for-byte.
+BOOL __stdcall VPNOINTRO_IsRequested();

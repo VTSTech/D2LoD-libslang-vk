@@ -108,6 +108,13 @@ Items could drop with a mod line reading **"0 poison damage over 0 seconds"** or
 - [ ] **37. Cold tooltip:** hover any cold-damage magic weapon — prefer an **'of Frost'** one (low level, common drop): the cold line shows real numbers — `Adds 1-2 Cold Damage` (or any higher family's range), or a single value `Adds 1 Cold Damage` when the roll collapsed to min==max — **never `Adds 0 Cold Damage` / `+0`**. Also eyeball fire/lightning/magic damage lines while you're at it (same fix family).
 - [ ] **38. Poison tooltip:** hover any poison-damage item (an 'of Blight'/'of Venom' weapon, a poison charm, or a poison unique): the line shows real values over real seconds — `Adds N-M Poison Damage over T Seconds` (or the single-value shape `Adds N Poison Damage over T Seconds`) — **never `0 Poison Damage over 0 Seconds`**. If a zero/zero line ever still appears, screenshot the item — that would be a genuinely length-0 poison mod (generation-side data, a different follow-up), not the tooltip bug.
 
+## K. `-nointro` boot switch (R86)
+
+New command-line switch: `d2vp.exe -nointro`. The two Blizzard / Blizzard North logo .biks play on EVERY launch (`PlaysBlizzardNorthCutScene`), and the title screen auto-fires the `d2intro` .bik from its timer form (same handler as the click). With the switch, both boot/title cutscene entries never enter cutscene mode — each takes the retail begin-failed path straight to the next screen — so boot runs logo-free to the title/menu. First detected query writes `[vp] cmdline -nointro: boot intro videos disabled` to `d2boot.log`. In-game quest cutscenes are NOT affected (different call path); boot WITHOUT the switch is byte-for-byte vanilla.
+
+- [ ] **39. Boot with the switch:** `d2vp.exe -nointro` (alone, and once combined e.g. `-w`): no Blizzard/Blizzard North logo videos, no auto `d2intro` — straight to the title screen, click lands on the main menu with no video. `d2boot.log` line 1 = `Vanilla+0.0.7-R86` and carries the `[vp] cmdline -nointro` mark.
+- [ ] **40. Regression (no switch):** one boot WITHOUT `-nointro` — the two logo videos still play with sound (§A item 1 unchanged) and the `[vp] cmdline -nointro` mark is absent.
+
 ---
 
 ## Evidence to keep if anything breaks

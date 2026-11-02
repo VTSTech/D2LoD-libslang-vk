@@ -14,6 +14,16 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 ## [Unreleased]
 
+### Added
+
+- `-nointro` command-line switch: skips the boot intro videos — the Blizzard and
+  Blizzard North logo .biks that play on every launch plus the auto-played
+  title/first-run cinematics — by never entering cutscene mode (both boot/title
+  entries take the retail begin-failed path straight to the next screen). The
+  parse writes a `[vp] cmdline -nointro` mark to `d2boot.log`; in-game quest
+  cutscenes are unaffected and boot without the switch is unchanged. Gates
+  320 → 325; self-ID `Vanilla+0.0.7-R86`.
+
 ### Fixed
 
 - A1Q2 "Sisters' Burial Grounds" turn-in: Blood Raven killed but the Kashya

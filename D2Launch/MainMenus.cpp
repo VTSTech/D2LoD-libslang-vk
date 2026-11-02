@@ -9,6 +9,7 @@
 #include "D2Client/D2IniConfigStrc.h"
 #include "D2Client/Message.h"
 #include "D2Client/Sound/Sound.h"
+#include "D2Client/UI/VanillaPlusCore.h" // VP: [nointro] boot cutscene gates
 #include "D2Lang/D2Lang.h"
 #include "D2Lang/StrTable/strtable.h"
 #include "D2Lang/Unicode/UNISYS.h"
@@ -3833,7 +3834,12 @@ int __fastcall SelectedCharBnetSingleTcpIp(D2CharSelStrc * charName, eD2PlayerSt
 }
 
 BOOL __stdcall UIMENU_PlayIntroAndReturnToMainScreen(D2ControlMsg * pControlMsg) {
-    DWORD bCutSceneStarted = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-BEGIN [nointro] R86: with -nointro the boot/title cutscene is never
+    // entered, so bCutSceneStarted reads 0 and the retail begin-failed
+    // fallthrough below (no videos, straight to the next screen) runs - the
+    // exact state path retail takes when BeginCutScene itself fails.
+    DWORD bCutSceneStarted = VPNOINTRO_IsRequested() ? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-END [nointro]
     if (bCutSceneStarted) {
       MAINMENU_PlayD2Intro();
     }
@@ -4041,7 +4047,12 @@ void __stdcall PlaysBlizzardNorthCutScene() {
     D2Win::Src::D2WinMain::D2WINMAIN_SetCursorVisible(0);
     FORMS_DestroyLists();
     GetAndDispatchAllPossible();
-    DWORD bCutSceneStarted = D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-BEGIN [nointro] R86: with -nointro the boot/title cutscene is never
+    // entered, so bCutSceneStarted reads 0 and the retail begin-failed
+    // fallthrough below (no videos, straight to the next screen) runs - the
+    // exact state path retail takes when BeginCutScene itself fails.
+    DWORD bCutSceneStarted = VPNOINTRO_IsRequested() ? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0();
+    // VP-END [nointro]
     if (bCutSceneStarted) {
       bIsExpansion = Fog::Src::LogManager::GetLoggerState_Stub();
       if (!bIsExpansion) {

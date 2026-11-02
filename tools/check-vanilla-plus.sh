@@ -667,7 +667,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R85"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R85' 1
+gate "res: self-id 0.0.7-R86"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R86' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared
@@ -767,6 +767,23 @@ gate "d2boot: SCmd.cpp include (merge-drop tripwire)" D2Game/GAME/SCmd.cpp 'supp
 gate "itemdesc: zero-fix VP marks (R84)"      D2Client/UI/SkillDesc.cpp          'item-tooltip-zero-fix R84' 5
 gate "itemdesc: elemental single-value varargs (R84)" D2Client/UI/SkillDesc.cpp  'wszFmtTemplate, pStatDescResult, psVar1\);' 8
 gate "itemdesc: poison single-value varargs (R84)" D2Client/UI/SkillDesc.cpp      'pStatDescResult, psVar1, iVar2\);' 2
+
+# ---- [vanilla-plus nointro] R86: the -nointro command-line switch ----------
+# The two logo .biks (New_BLIZ/BlizNorth) play on EVERY launch, and the title
+# screen auto-fires the d2intro .bik from its timer form
+# (gaPredefinedForms[1] -> UIMENU_PlayIntroAndReturnToMainScreen). Both
+# boot/title cutscene entries now consult VPNOINTRO_IsRequested (fork-owned
+# one-shot parse of GetCommandLineA in VanillaPlusCore.cpp) and, with the
+# switch present, never enter BeginCutSceneAtResolutionMode0 - each site's
+# retail begin-failed fallthrough (no cutscene, straight to the next screen)
+# becomes the boot path. In-game quest cutscenes ride a different call path
+# and stay vanilla. Without the switch the flag reads 0: boot is untouched.
+gate "nointro: parse + d2boot mark (R86)"  D2Client/UI/VanillaPlusCore.cpp 'cmdline -nointro: boot intro videos disabled' 1
+gate "nointro: token compare (R86)"        D2Client/UI/VanillaPlusCore.cpp '_stricmp\(szCompare, "-nointro"\)' 1
+gate "nointro: header entry point (R86)"   D2Client/UI/VanillaPlusCore.h   'VPNOINTRO_IsRequested' 1
+gate "nointro: MainMenus include (R86)"    D2Launch/MainMenus.cpp          'include "D2Client/UI/VanillaPlusCore\.h"' 1
+gate "nointro: cutscene gates (R86)"       D2Launch/MainMenus.cpp          'VPNOINTRO_IsRequested\(\) \? 0 : D2Win::D2GFX::BeginCutSceneAtResolutionMode0' 2
+gate "nointro: host decl (R86)"            d2_platform.h                   'LPSTR GetCommandLineA\(\);' 1
 
 echo
 if [ "$FAIL" -eq 0 ]; then

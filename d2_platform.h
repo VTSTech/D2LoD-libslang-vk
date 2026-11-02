@@ -356,6 +356,7 @@ typedef CONTEXT* LPCONTEXT;
 // Common Win32 API function stubs
 extern "C" {
 DWORD GetTickCount();
+LPSTR GetCommandLineA(); // [vanilla-plus nointro R86] host-side decl only; real builds get it from <windows.h>
 void Sleep(DWORD dwMilliseconds);
 BOOL QueryPerformanceCounter(LARGE_INTEGER* lpPerformanceCount);
 BOOL QueryPerformanceFrequency(LARGE_INTEGER* lpFrequency);
