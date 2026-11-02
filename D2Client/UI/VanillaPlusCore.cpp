@@ -1049,7 +1049,7 @@ void __stdcall VPSHAREDUI_ResetForNewGame() {
 // [ScreenSizeX-gnPanelOffsetX-0x12e..-0x10e] x [gnPanelOffsetY-0x60..-0x40],
 // gold buttons at INV_GetGoldButtonX/Y) stay far below, and the grid rows
 // start below the gold-max row, one pitch under this one.
-constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x13c; // R66 0x130; R76 +0x0c off the gold amount text
+constexpr int VPSHAREDUI_TAB_RIGHT_EDGE = 0x130; // R66 0x130; R76 +0x0c off the gold amount text
 // Shared pages the pager steps through (the personal page is not one of
 // them): two since R75, TEN since R82 - the owner's "If that works we'll do
 // 10 pages. Then 100." roadmap. The composite stays right-anchored at
