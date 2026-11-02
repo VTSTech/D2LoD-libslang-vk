@@ -34,6 +34,7 @@
 #include "Fog/Memory.h"
 #include "Fog/Src/ErrorManager.h"
 #include "globals/globals.h"
+#include "support/d2_boot.h" // [d2boot] quest turn-in diagnostics [R85] (issue #22)
 
 #define DEFAULT_SECURITY_COOKIE 0xBB40E64E
 
@@ -165,6 +166,11 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     if (sVar1 != 0x96) {
       return;
     }
+
+    // [d2boot][R85] the gossip msg the client echoed back (0x5c = Blood Raven
+    // turn-in, issue #22); any other id here silently skips the reward.
+    D2BOOT_MarkFmt("quest: kashya gossip msg=0x%04x", (unsigned)nQuestMsg);
+
     if (nQuestMsg == 0x51) {
       pQuestData->pQuestSpecificData.pA1Q2->bAcceptedQuest = '\x01';
       QUEST_SetStateFlag(pQuestData, 2, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0xc0);
@@ -178,6 +184,7 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
 
     BOOL bQuestState = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
     if (!bQuestState) {
+      D2BOOT_MarkFmt("quest: turn-in gate REJECTED msg=0x%04x rewardAwaits=0 (server record)", (unsigned)nQuestMsg); // [d2boot][R85]
       return;
     }
 
@@ -209,6 +216,7 @@ void __fastcall Q02_Callback11_ScrollMessage(D2QuestDataStrc * pQuestData, D2Que
     QUESTGUID_AddPlayerToList(&pQuestData->sQuestGUID, nLine);
     /* HireMercFromNpc(npc 0x96=Kashya): grant the rogue mercenary -- the A1Q2
                          reward */ UNIT::SUNITNPC::HireMercFromNpc(pQuestData->pGame, pQuestArgs->pPlayer, 0x96);
+    D2BOOT_Mark("quest: bloodraven reward GRANTED (rogue merc)"); // [d2boot][R85]
     QUEST_SendNpcGossipPacket(pQuestArgs->pGame, pQuestArgs->pPlayer, pQuestArgs->pTarget);
 }
 
@@ -230,7 +238,11 @@ void __fastcall Q02_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
     D2BitBufferStrc* pBitBuffer = pPlayerData->pQuestRecord[pGame->nDifficulty];
     BOOL bQuestState0 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_Completed);
     BOOL bQuestState1 = D2Common::QuestRecord::GetQuestState(pBitBuffer, pQuestData->nQuestIdReal, QUESTSTATE_RewardAwaits);
+    // [d2boot][R85] server-side quest record at Kashya activate (issue #22):
+    // rewardAwaits=1 here is what picks gossip slot 3 ("return for reward").
+    D2BOOT_MarkFmt("quest: kashya activate classId=0x%04x rewardAwaits=%d completed=%d stateFlag=%u", (unsigned)iTargetId & 0xffff, (int)bQuestState1, (int)bQuestState0, (unsigned)pQuestData->nStateFlag);
     if (bQuestState1) {
+      D2BOOT_Mark("quest: kashya activate -> gossip line 3 (reward)"); // [d2boot][R85]
       AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetId, 3);
       return;
     }
@@ -242,6 +254,7 @@ void __fastcall Q02_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
 
     bQuestState1 = QUEST_HasPlayerParticipated(pQuestData, nPlayerId);
     if (bQuestState1 == 1) {
+      D2BOOT_Mark("quest: kashya activate -> participant line 4"); // [d2boot][R85]
       AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetId, 4);
       return;
     }
@@ -256,6 +269,8 @@ void __fastcall Q02_Callback00_NpcActivate(D2QuestDataStrc * pQuestData, D2Quest
       return;
     }
 
+    // [d2boot][R85] the gossip line the server picked (3 = "return for reward")
+    D2BOOT_MarkFmt("quest: kashya activate -> gossip line %u", (unsigned)nMessageIndex);
     AddGossipMessageOnMonster(pQuestData, pQuestArgs->sQuestArgs.sNpcActivate.pTextControl, iTargetId, nMessageIndex);
 }
 
@@ -626,7 +641,7 @@ void __fastcall Q02_InitData(D2QuestDataStrc * pQuestData) {
     pQuestData->sStateFunctions.fpQuestStateHandler[2] = Q02_Callback02_NpcDeactivate;
     pQuestData->sStateFunctions.fpQuestStateHandler[0xd] = Q02_Callback13_PlayerStartedGame;
     pQuestData->fpSequenceFilter = Q02_SequenceFilter;
-    pQuestData->pNpcMessages = &A1Q2::aNpcGossipData;
+    pQuestData->pNpcMessages = A1Q2::aNpcGossipData; // [R85] array decays (table is now a 5-slot array, issue #22)
     pQuestData->nQuestIdReal = QUEST_SistersBurialGrounds;
     pQuestData->bIsActive = '\x01';
     D2QuestDataA1Q2Strc* pQuestSpecificData = D2_NEW_POOL_AT(pGame->pMemoryPool, D2QuestDataA1Q2Strc, "d:\\diablo2\\Diablo2\\Source\\D2Game/Quests/a1q2.cpp", 0x27f);

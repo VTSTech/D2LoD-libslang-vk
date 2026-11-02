@@ -4,7 +4,7 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H32); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H35); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
@@ -13,6 +13,21 @@ GitHub releases page and the H-records (the README release table this superseded
 retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H32).
 
 ## [Unreleased]
+
+### Fixed
+
+- A1Q2 "Sisters' Burial Grounds" turn-in: Blood Raven killed but the Kashya
+  reward (rogue mercenary) could not be claimed
+  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)) — the same
+  truncated-gossip-table regen defect as
+  [#13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13): the A1Q2
+  gossip table was emitted singular (accept line only) while the handler reads
+  slot 3 whenever RewardAwaits is set, so the turn-in line never existed and
+  the reward gate was never asked. Table widened to 5 slots (slot 3 = turn-in
+  line 0x5c, pinned by the quest's own gate; flavor slots left empty rather
+  than invented), Kashya chain marks added. Gates 311 → 320; self-ID
+  `Vanilla+0.0.7-R85`; field verify pending (owner build). Track record:
+  HISTORY.md H35.
 
 ## [R84] — 2026-11-02 ([`R84`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R84) @ `63e020a3`, self-ID `Vanilla+0.0.7-R84`)
 

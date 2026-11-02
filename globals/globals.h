@@ -4857,7 +4857,7 @@ extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R54] issue #13 A1Q1: 5-slot 
 
 namespace D2Game::Quests::QUESTS::A1Q2 {
 
-extern D2NPCMessageTableStrc aNpcGossipData;
+extern D2NPCMessageTableStrc aNpcGossipData[5]; // [R85] issue #22 A1Q2: 5-slot gossip table (was singular 1-slot)
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
 

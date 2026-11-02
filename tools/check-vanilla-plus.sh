@@ -579,6 +579,25 @@ gate "gossip: A2Q1 extern 5-slot (R54)"       globals/globals.h               'A
 gate "gossip: A1Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A1Q1.cpp   'pNpcMessages = A1Q1::aNpcGossipData' 1
 gate "gossip: A2Q1 decay assignment (R54)"    D2Game/Quests/QUESTS/A2Q1.cpp   'pNpcMessages = A2Q1::aNpcGossipData' 1
 
+# ---- [gossip] R85: issue #22 (track P) A1Q2 Bloodraven turn-in — the track-J root-cause family ----
+# Same regen truncation as issue #13 (R54): A1Q2's gossip table was SINGULAR
+# (accept entry only) while Q02_Callback00_NpcActivate picks slot 3 on
+# RewardAwaits — the Blood Raven reward line never existed, so Kashya's
+# turn-in never echoed c2s 0x31 with msg 0x5c and
+# Q02_Callback11_ScrollMessage's HireMercFromNpc gate was never asked.
+# Fixed to a 5-slot array (slot 0 accept 0x51 preserved + slot 3 turn-in 0x5c
+# pinned by A1Q2's own gate; flavor slots 1/2/4 left empty), plus the Kashya
+# chain marks mirroring the R53 A1Q1 set.
+gate "gossip: A1Q2 5-slot table (R85)"        globals/D2Game.cpp              'A1Q2 gossip table 5 slots' 1
+gate "gossip: Bloodraven turn-in entry (R85)" globals/D2Game.cpp              '/\* .nStringIndex = \*/ 0x5c' 1
+gate "gossip: A1Q2 extern 5-slot (R85)"       globals/globals.h               'A1Q2: 5-slot gossip table' 1
+gate "gossip: A1Q2 decay assignment (R85)"    D2Game/Quests/QUESTS/A1Q2.cpp   'pNpcMessages = A1Q2::aNpcGossipData' 1
+gate "quest: kashya activate marks (R85)"     D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya activate' 4
+gate "quest: kashya gossip echo mark (R85)"   D2Game/Quests/QUESTS/A1Q2.cpp   'quest: kashya gossip msg=' 1
+gate "quest: turn-in gate mark A1Q2 (R85)"    D2Game/Quests/QUESTS/A1Q2.cpp   'quest: turn-in gate REJECTED' 1
+gate "quest: bloodraven grant mark (R85)"     D2Game/Quests/QUESTS/A1Q2.cpp   'quest: bloodraven reward GRANTED' 1
+gate "d2boot include in A1Q2 (R85)"           D2Game/Quests/QUESTS/A1Q2.cpp   'support/d2_boot\.h' 1
+
 # ---- [item-ilvl] R57+R59: optional " (N)" suffix on the tooltip name (d2vp.ini item_ilvl)
 # D2R "Advanced Tooltips" parity (the ilvl readout half), R56 presentation
 # (owner: "append the item name with (ilvl) in the tooltip instead" of the R55
@@ -648,7 +667,7 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-gate "res: self-id 0.0.7-R84"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R84' 1
+gate "res: self-id 0.0.7-R85"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R85' 1
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

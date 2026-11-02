@@ -71,7 +71,9 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 - **Open issues (5)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
   colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code,
   field verify pending; A1Q2 Bloodraven turn-in
-  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)); intermittent
+  ([#22](https://github.com/VTSTech/D2LoD-libslang-vk/issues/22)) — the same truncated
+  gossip-table defect as [#13](https://github.com/VTSTech/D2LoD-libslang-vk/issues/13),
+  fix in code (R85), field verify pending; intermittent
   attribute-point crash ([#18](https://github.com/VTSTech/D2LoD-libslang-vk/issues/18));
   Refilling Shrine XP buff ([#25](https://github.com/VTSTech/D2LoD-libslang-vk/issues/25));
   720p single-panel black triangles ([#26](https://github.com/VTSTech/D2LoD-libslang-vk/issues/26)).

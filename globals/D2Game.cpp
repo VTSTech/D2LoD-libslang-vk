@@ -3904,31 +3904,51 @@ namespace D2Game::Quests::QUESTS::A1Q2 {
 // Initialized data (arrays, structs, tables)
 // =============================================================================
 
-D2NPCMessageTableStrc aNpcGossipData = {
-    /* .pMessages = */ {
-        {
-            /* .nMonStatsId = */ 0x96,
-            /* .nStringIndex = */ 0x51,
-            /* .nPad = */ 0x0,
-            /* .bMenu = */ 0x1
+// VP-BEGIN [gossip-table-fix]: issue #22 (track P) — the track-J root-cause
+// family (issue #13 / R54). The regen emitted this table SINGULAR (1 slot)
+// while Q02_Callback00_NpcActivate indexes pNpcMessages[slot] 0..4
+// (AddGossipMessageOnMonster reads pNpcMsgTable[slot] unchecked) — slot 3 (the
+// reward line, picked whenever RewardAwaits is set) read past the object, so
+// Kashya never delivered a Blood Raven turn-in line, the client never echoed
+// c2s 0x31 with msg 0x5c, and Q02_Callback11_ScrollMessage's reward gate
+// (HireMercFromNpc) was never asked — the silent turn-in failure the owner
+// reported. 5 slots now: slot 0 = accept line 0x51 (was the only slot
+// present), slot 3 = turn-in line 0x5c — pinned by
+// Q02_Callback11_ScrollMessage's own gate (0x51 accept / 0x5c reward; bMenu 0
+// mirrors the R54 A1Q1 turn-in entry, and bMenu 1 would be converted to 0 at
+// add time anyway). Slots 1/2/4 are vanilla flavor lines (state 2/3 progress +
+// participant) whose string ids are NOT in the tree — left empty (count=0 ->
+// AddGossipMessageOnMonster early-outs, the R54 marks make it visible) rather
+// than invented. [R85] A1Q2 gossip table 5 slots.
+// VP-END [gossip-table-fix]
+D2NPCMessageTableStrc aNpcGossipData[5] = {
+    { /* slot 0: accept (msg 0x51) */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x51,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x1
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
         },
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {},
-        {}
+        /* .nMessagesCount = */ 0x1
     },
-    /* .nMessagesCount = */ 0x1
+    {}, // slot 1: vanilla flavor (state 2 in-progress) — string id not in tree [R85]
+    {}, // slot 2: vanilla flavor (state 3 in-progress) — string id not in tree [R85]
+    { /* slot 3: turn-in (msg 0x5c) — the Blood Raven reward line */
+        /* .pMessages = */ {
+            {
+                /* .nMonStatsId = */ 0x96,
+                /* .nStringIndex = */ 0x5c,
+                /* .nPad = */ 0x0,
+                /* .bMenu = */ 0x0
+            },
+            {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}
+        },
+        /* .nMessagesCount = */ 0x1
+    },
+    {}  // slot 4: vanilla flavor (participant) — string id not in tree [R85]
 }; D2_GLOBAL_GUARD(aNpcGossipData, "D2Game::Quests::QUESTS::A1Q2::aNpcGossipData");
 
 } // namespace D2Game::Quests::QUESTS::A1Q2
