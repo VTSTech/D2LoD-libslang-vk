@@ -4,7 +4,7 @@ All notable changes to the Vanilla+ client and the Glide3xVK wrapper, per shippe
 release. Working rounds between releases carry build self-IDs `Vanilla+0.0.x-Ryy` — the
 first `d2boot.log` line pins any shipped exe to its source round. The engineering-level
 round journal lives in [`handoff.md`](handoff.md) (current) and
-[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H36); per-round summaries for the
+[`HISTORY.md`](HISTORY.md) (verbatim archive, H1–H38); per-round summaries for the
 0.0.6-era releases are also on the
 [GitHub releases page](https://github.com/VTSTech/D2LoD-libslang-vk/releases).
 
@@ -22,7 +22,9 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
   entries take the retail begin-failed path straight to the next screen). The
   parse writes a `[vp] cmdline -nointro` mark to `d2boot.log`; in-game quest
   cutscenes are unaffected and boot without the switch is unchanged. Gates
-  320 → 325; self-ID `Vanilla+0.0.7-R86`.
+  320 → 326; self-ID `Vanilla+0.0.7-R86`. **Field-verified — the owner tested
+  in-game 2026-11-02** ("R86 verified, -nointro works"; SMOKE §K items 39–40
+  proven) and shipped it as commit `3ca2da40` the same day.
 
 ### Fixed
 
@@ -62,7 +64,7 @@ release notes covering R59→R66); the R67→R77 block shipped as tag
 [`R77`](https://github.com/VTSTech/D2LoD-libslang-vk/releases/tag/R77)
 ("Vanilla+ 0.0.7 (R77)", 2026-11-01); further 0.0.7-line tags `R78`–`R84` mark the
 upstream-sync and fix rounds. Gate suite 204 (0.0.6) → 283 (first 0.0.7 build) →
-311 (R84).
+311 (R84) → 326 (R86).
 
 ### Added
 

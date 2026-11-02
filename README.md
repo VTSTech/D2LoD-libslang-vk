@@ -10,7 +10,7 @@
 </a>
 
 [![Release](https://img.shields.io/badge/release-0.0.7--R84-8f2b2b)](https://github.com/VTSTech/D2LoD-libslang-vk/releases/latest)
-[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-311%2F311-2ea043)](tools/check-vanilla-plus.sh)
+[![Gates](https://img.shields.io/badge/vanilla%2B%20gates-326%2F326-2ea043)](tools/check-vanilla-plus.sh)
 [![Fork of](https://img.shields.io/badge/fork%20of-jaenster%2Fredivivus-2b5797)](https://github.com/jaenster/redivivus)
 
 Diablo II: Lord of Destruction 1.14d, reverse-engineered into C++ that builds and runs —
@@ -70,7 +70,8 @@ per-release history: [`CHANGELOG.md`](CHANGELOG.md); round journals:
 - **Field-verified**: boot → intro → title → character select → in game; Direct3D and
   Glide (`-3dfx`) rendering, incl. the native 1280x720 widescreen mode; sound end to
   end; the full SMOKE belt passed on the R83 build
-  ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)).
+  ([#24](https://github.com/VTSTech/D2LoD-libslang-vk/issues/24)); the `-nointro`
+  boot switch (R86) verified in-game 2026-11-02 — "R86 verified, -nointro works".
 - **Open issues (4)**, triaged in [handoff.md](handoff.md) §9: Necro minion skeleton
   colors ([#8](https://github.com/VTSTech/D2LoD-libslang-vk/issues/8)) — fix in code
   (R51), field verify pending; intermittent
@@ -140,7 +141,7 @@ Two checks stand behind every release:
 
 - **The Vanilla+ gate suite** — [`tools/check-vanilla-plus.sh`](tools/check-vanilla-plus.sh)
   pins the whole Vanilla+ surface (feature gates, 720p anchors, sound constants, boot
-  telemetry) with **311 checks**, green at the current tip.
+  telemetry) with **326 checks**, green at the current tip.
 - **[`asm_matching/`](asm_matching/README.md)** (upstream) compiles the tree with Visual
   C++ 2005 SP1 and byte-compares each function against the 1.14d binary — a check on the
   decompilation itself: where the code comes out identical, the decompiled function was
