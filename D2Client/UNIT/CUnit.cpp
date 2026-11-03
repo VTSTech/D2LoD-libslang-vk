@@ -2242,6 +2242,12 @@ D2UnitStrc * __fastcall UNIT_CreateMonster(D2CreateMonsterUnitStrc * pCreateData
         }
       }
     }
+    // [R89] Skeleton classes (0x16b/0x16c) have palshift.dat with sub-tables 0/1.
+    // Force ownership polarity for these classes regardless of byUtrans.
+    if (pUnit->nClassId == 0x16b || pUnit->nClassId == 0x16c) {
+      uMercType = GAME::RosterPets::ROSTER_IsUnitHostileToPlayer(pUnit);
+      nPalShiftIdx = (uint32_t)uMercType;
+    }
 
     bResult = MonUnique::CheckMonTypeForMonster(pUnit, 2);
     if (bResult) {

@@ -933,65 +933,80 @@ void __fastcall SKILLNEC_ApplySummonResistPassive(D2UnitStrc * pUnit, D2UnitStrc
 
 // Initialises a raised skeleton's visual component bytes from a mastery-level lookup table (0x741940, stride 9, level capped at 10). Writes the component bytes into the monster's unit data. If bRollComponents, advances the room RNG to randomise components [0xb]/[0xc] and refreshes the monster AI args.
 static void __stdcall SKILLNEC_SetSkeletonComponentsByMasteryLvl(D2UnitStrc * pSkeletonUnit, int32_t bHasExtraVariant, int32_t bRollComponents, D2UnitStrc * pSeedUnit, int32_t nMasteryLvl) {
-    D2AiGeneralStrc* pMonsterAi;
-    if (nMasteryLvl > 10) {
-      nMasteryLvl = 10;
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[4] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][0];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[5] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][2];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[0xc] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][3];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[0xd] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][4];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[6] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][5];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[7] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][6];
-    }
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[8] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][7];
-    }
-    if (bHasExtraVariant && pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer) {
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[0xb] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][1];
-    }
-    if (!bRollComponents) {
-      if (!(pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataPlayer)) {
-        return;
-      }
-
-      pSkeletonUnit->pUnitData.pUnitDataPlayer->szCharName[9] = gaSkeletonComponentsByMasteryLvl[nMasteryLvl][8];
-      return;
-    }
-
-    D2SeedStrc llRandState;
-    llRandState = D2_SEED_NEXT(pSeedUnit->sSeed);
+    D2AiGeneralStrc* pMonsterAi = nullptr;
     uint8_t byRandComponent;
+    D2SeedStrc llRandState;
+
+    if (nMasteryLvl > 10) {
+        nMasteryLvl = 10;
+    }
+
+    // Validate unit and get monster data pointer
+    if (!pSkeletonUnit || pSkeletonUnit->eUnitType != UNIT_MONSTER) {
+        return;
+    }
+
+    D2UnitDataMonsterStrc* pMonsterData = pSkeletonUnit->pUnitData.pUnitDataMonster;
+    if (!pMonsterData) {
+        return;
+    }
+
+    // Get skeleton's MonStats2 to read variant counts per component
+    // Clamp table indices to valid range [0, count-1] for each component
+    D2MonStats2Txt* pMonStats2 = D2Client::DataTbls::MonsterTbls::TXT_MonStats_GetMonStats2(pSkeletonUnit->nClassId);
+    uint8_t nVariantCounts[8] = {1, 1, 1, 1, 1, 1, 1, 1}; // defaults
+    if (pMonStats2) {
+        // aComponents[16] = { HDv, TRv, LGv, Rav, Lav, RHv, LHv, SHv, S1v..S8v }
+        for (int i = 0; i < 8; ++i) {
+            if (pMonStats2->aComponents[i] > 0) {
+                nVariantCounts[i] = pMonStats2->aComponents[i];
+            }
+        }
+    }
+
+    auto clampComponent = [&](int tableValue, int componentIdx) -> uint8_t {
+        int maxIdx = nVariantCounts[componentIdx] - 1;
+        if (maxIdx < 0) maxIdx = 0;
+        return (uint8_t)(tableValue > maxIdx ? maxIdx : tableValue);
+    };
+
+    // Write mastery-level components to monster's Components array (indices 0-15)
+    // Component mapping: HD=0, TR=1, LG=2, RA=3, LA=4, RH=5, LH=6, S1=7..S8=14, pad=15
+    pMonsterData->Components[0] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][0], 0); // HD
+    pMonsterData->Components[1] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][2], 1); // TR
+    pMonsterData->Components[2] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][3], 2); // LG
+    pMonsterData->Components[3] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][4], 3); // RA
+    pMonsterData->Components[4] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][5], 4); // LA
+    pMonsterData->Components[5] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][6], 5); // RH
+    pMonsterData->Components[6] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][7], 6); // LH
+    pMonsterData->Components[7] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][8], 7); // SH
+
+    // Extra variant component (index 0xb = 11)
+    if (bHasExtraVariant) {
+        pMonsterData->Components[11] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][1], 0); // HD extra
+    }
+
+    // Non-rolling case: write component index 8 (S1)
+    if (!bRollComponents) {
+        pMonsterData->Components[8] = clampComponent(gaSkeletonComponentsByMasteryLvl[nMasteryLvl][8], 7); // S1
+        return;
+    }
+
+    // Roll random components for variety
+    llRandState = D2_SEED_NEXT(pSeedUnit->sSeed);
     byRandComponent = (uint8_t)llRandState.nSeedLow & 3;
     pSeedUnit->sSeed = llRandState;
-    if (pSkeletonUnit && pSkeletonUnit->eUnitType == UNIT_MONSTER) {
-      if (pSkeletonUnit->pUnitData.pUnitDataMonster) {
-        pSkeletonUnit->pUnitData.pUnitDataMonster->Components[0xb] = byRandComponent;
-      }
-      if (pSkeletonUnit->eUnitType == UNIT_MONSTER) {
-        if (pSkeletonUnit->pUnitData.pUnitDataMonster) {
-          pSkeletonUnit->pUnitData.pUnitDataMonster->Components[0xc] = byRandComponent;
-        }
-        if (pSkeletonUnit->eUnitType == UNIT_MONSTER && pSkeletonUnit->pUnitData.pUnitDataMonster) {
-          pMonsterAi = pSkeletonUnit->pUnitData.pUnitDataMonster->pAiGeneral;
-          goto set_ai_args;
-        }
-      }
-    }
 
-    pMonsterAi = 0;
-    set_ai_args:
+    // Clamp random component to HD variant count
+    byRandComponent = (uint8_t)(byRandComponent > (nVariantCounts[0] - 1) ? (nVariantCounts[0] - 1) : byRandComponent);
+    if ((int)byRandComponent < 0) byRandComponent = 0;
+
+    // Random components at indices 11 and 12 (extra variant slots)
+    pMonsterData->Components[11] = byRandComponent;
+    pMonsterData->Components[12] = byRandComponent;
+
+    // Refresh AI args
+    pMonsterAi = pMonsterData->pAiGeneral;
     Monster::AI::SetDwArgsIfNotNeg0x29a(pMonsterAi, 1, 0, -0x29a);
 }
 
