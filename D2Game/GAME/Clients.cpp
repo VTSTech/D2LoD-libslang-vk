@@ -207,7 +207,7 @@ static void __stdcall CLIENT_SendHandshakePacket0x0B(D2ClientStrc * pClient, D2U
       return;
     }
 
-    SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0xb, (uint8_t)pUnit->eUnitType, pUnit->nUnitGUID);
+    SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0xb, pUnit->eUnitType, pUnit->nUnitGUID);
 }
 
 void __fastcall SetCientFlag0x01(D2ClientStrc * pClient) {
@@ -1488,16 +1488,16 @@ void __fastcall SERVER_PutPacketInQueueList(D2ClientStrc * pClient, D2PacketList
     pClient->pPacketList = pPacketList;
 }
 
-void __fastcall CLIENT_SetPacketList(D2ClientStrc * pClient, int32_t pPacketList) {
-    *(uint32_t*)(pPacketList + 0x204) = 0;
+void __fastcall CLIENT_SetPacketList(D2ClientStrc * pClient, D2PacketListStrc * pPacketList) {
+    pPacketList->pNext = 0;
     if (!pClient->pDispatchList) {
-      *(uint32_t*)(pPacketList + 0x204) = 0;
-      pClient->pDispatchList = (D2PacketListStrc*)pPacketList;
+      pPacketList->pNext = 0;
+      pClient->pDispatchList = pPacketList;
       return;
     }
 
-    pClient->pPacketList = (D2PacketListStrc*)pPacketList;
-    pClient->pDispatchList = (D2PacketListStrc*)pPacketList;
+    pClient->pPacketList = pPacketList;
+    pClient->pDispatchList = pPacketList;
 }
 
 D2PacketListStrc * __fastcall CLIENT_ClearDispatchList(D2ClientStrc * pClient) {
@@ -1657,7 +1657,7 @@ void __fastcall CLIENT_PlacePlayerInRoom(D2ClientStrc * pClient, D2UnitStrc * pU
     CLIENT_SetRoom(pClient, pRoom);
     UNIT::SUnit::UNITS_PlaceUnitInRoom(pUnit, (int32_t)pDrlgActSpawn, (int32_t)pGame, pGameOrig, pRoom, 0);
     pClient->fClientFlags &= -2;
-    SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', (uint8_t)pUnit->eUnitType, pUnit->nUnitGUID, (uint16_t)(uintptr_t)pDrlgActSpawn, (uint16_t)(uintptr_t)pGame, '\x01');
+    SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', pUnit->eUnitType, pUnit->nUnitGUID, (uint16_t)(uintptr_t)pDrlgActSpawn, (uint16_t)(uintptr_t)pGame, '\x01');
     SCmd::NET_D2GS_SERVER_Send_0x7E_LoadMonsterCof(pClient);
     pRoom = (D2RoomStrc*)D2Common::INVENTORY::Inventory::INVENTORY_GetCorpse(pUnit->pInventory);
     while (pRoom) {
@@ -1748,7 +1748,7 @@ int32_t __fastcall CLIENT_LoadCharacterAndSendGameData(D2ClientStrc * pClient, :
         return 0x18;
       }
 
-      bLoadError = PLAYER::PlayerSave::CLIENT_LoadOrCreatePlayerUnit(pGame, pClient, (D2ClientStrc*)pClient->szCharName, bLoadFromSave, &pPlayerUnitOut, (uint32_t)pRoom, nX, nY);
+      bLoadError = PLAYER::PlayerSave::CLIENT_LoadOrCreatePlayerUnit(pGame, pClient, pClient->szCharName, bLoadFromSave, &pPlayerUnitOut, pRoom, nX, nY);
       if (bLoadError) {
         szErrorName = "nError";
         Fog::Src::LogManager::LOGMANAGER_TraceToModuleLog("", "[PLAYER LOAD]  ClientAddPlayerToGame()  Error Loading:%s  Error:%d=%s", GetCharName(pClient), bLoadError, szErrorName);

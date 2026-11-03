@@ -1572,7 +1572,7 @@ void __stdcall ITEMMOD_ApplyEtherealBonus(D2UnitStrc * pUnit) {
 }
 
 // Returns 1 if the given automod entry (nParam points to an AutomagicTxt record) can be applied to pUnit. Rejects stackable items, throwables, items without inventory slots, and items whose type matches the automod's exclusion list; passes only if the item type matches at least one inclusion entry.
-BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t pMagicAffixTxt) {
+BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, D2MagicAffixTxt * pMagicAffixTxt) {
     uint8_t nMaxSock;
     int32_t iVar1;
     uint32_t bTypeMatch;
@@ -1593,14 +1593,14 @@ BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t pMagicAffixTx
 
     iVar1 = Items::ITEM_GetItemsTxt_bHasInv(pUnit);
     if (!iVar1 || (nMaxSock = Items::ITEM_GetMaxSockCount(pUnit) , nMaxSock <= 0)) {
-      nLoopIdx = *(int*)(pMagicAffixTxt + 0x24);
+      nLoopIdx = pMagicAffixTxt->mod[0].code;
       if (nLoopIdx >= 0 && (nLoopIdx >= sgptDataTable->nTxtPropertiesSize || !(sgptDataTable->pTxtProperties + nLoopIdx) || sgptDataTable->pTxtProperties[nLoopIdx].stat[0] == 0xc2)) {
         return 0;
       }
     }
 
     nLoopIdx = 0;
-    short int* pTypeEntry = (short int*)(pMagicAffixTxt + 0x78);
+    short int* pTypeEntry = pMagicAffixTxt->exclude_type;
     do {
       if (*pTypeEntry <= 0) {
         break;
@@ -1616,7 +1616,7 @@ BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t pMagicAffixTx
     } while (nLoopIdx < 5);
 
     nLoopIdx = 0;
-    pTypeEntry = (short int*)(pMagicAffixTxt + 0x6a);
+    pTypeEntry = pMagicAffixTxt->include_type;
     while (true) {
       if (*pTypeEntry <= 0) {
         return 0;
@@ -1638,7 +1638,7 @@ BOOL __stdcall ITEMMOD_CanApplyAutomod(D2UnitStrc * pUnit, int32_t pMagicAffixTx
 }
 
 // Returns 1 if the given affix (nParam points to affix txt record) may be applied to pUnit, 0 if blocked. Checks: classic-only affixes rejected on stackable/throwable items, expansion-only affixes rejected in classic mode, up to 4 exclusion item types (any match = fail), up to 7 inclusion types (must match at least one). Does not check group exclusion despite the name suggesting it.
-BOOL __stdcall ITEMMOD_CanApplyAffix(D2UnitStrc * pUnit, int32_t pRareAffixTxt) {
+BOOL __stdcall ITEMMOD_CanApplyAffix(D2UnitStrc * pUnit, D2RareAffixTxt * pRareAffixTxt) {
     int32_t iVar1;
     uint32_t bTypeMatch;
     uint16_t wVersion = Items::ITEM_GetItemData_wItemVersion(pUnit);
@@ -1654,7 +1654,7 @@ BOOL __stdcall ITEMMOD_CanApplyAffix(D2UnitStrc * pUnit, int32_t pRareAffixTxt) 
         return 0;
       }
     }
-    if (*(uint16_t*)(pRareAffixTxt + 0xe) >= 100) {
+    if ((uint16_t)pRareAffixTxt->version >= 100) {
       wVersion = Items::ITEM_GetItemData_wItemVersion(pUnit);
       if (wVersion < 100) {
         return 0;
@@ -1662,7 +1662,7 @@ BOOL __stdcall ITEMMOD_CanApplyAffix(D2UnitStrc * pUnit, int32_t pRareAffixTxt) 
     }
 
     int nLoopIdx = 0;
-    short int* pTypeEntry = (short int*)(pRareAffixTxt + 0x1e);
+    short int* pTypeEntry = &pRareAffixTxt->etype1;
     do {
       if (*pTypeEntry <= 0) {
         break;
@@ -1678,7 +1678,7 @@ BOOL __stdcall ITEMMOD_CanApplyAffix(D2UnitStrc * pUnit, int32_t pRareAffixTxt) 
     } while (nLoopIdx < 4);
 
     nLoopIdx = 0;
-    pTypeEntry = (short int*)(pRareAffixTxt + 0x10);
+    pTypeEntry = &pRareAffixTxt->itype1;
     while (true) {
       if (*pTypeEntry <= 0) {
         return 0;
@@ -1811,7 +1811,7 @@ int32_t __fastcall ITEMMOD_RollRandomValue(D2UnitStrc * pUnit, int32_t nMin, int
 }
 
 // Adds a stat to an item's stat list. Validates stat ID against ItemStatCost table, then calls ITEMMOD_GetOrCreateStatList to obtain or create the target stat list. Adds the shifted stat value via STATLIST_AddStatValue or D2AddStatToStatsListEx depending on nParam2. Special-cases poison (stat 0x3A) to also add/check UNITSTAT_poison_count. Returns nParam3 (the stat value) on success, 0 on invalid stat or missing stat list.
-int32_t __fastcall ITEMMOD_AddStatToItem(D2UnitStrc * pUnit2, uint32_t dwFlags, D2UnitStrc * pUnit, int32_t pProperty, int32_t bSet, int16_t nStatId, uint32_t nSubIndex, int32_t nValue, int32_t nState) {
+int32_t __fastcall ITEMMOD_AddStatToItem(D2UnitStrc * pUnit2, uint32_t dwFlags, D2UnitStrc * pUnit, D2SetsTxtFStrc * pProperty, int32_t bSet, int16_t nStatId, uint32_t nSubIndex, int32_t nValue, int32_t nState) {
     if (!pProperty) {
       return 0;
     }
@@ -1858,7 +1858,7 @@ uint32_t __fastcall ITEMPROP_AddStat_EnhancedIfItem(int32_t nType, D2UnitStrc * 
     }
 
     int32_t nValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nValue, nState);
+    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nValue, nState);
     return nResult;
 }
 
@@ -1871,7 +1871,7 @@ uint32_t __fastcall ITEMPROP_AddStat_EnhancedAlways(uint32_t nType, D2UnitStrc *
     }
 
     int32_t nValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nValue, nState);
+    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nValue, nState);
     return nResult;
 }
 
@@ -1886,7 +1886,7 @@ uint32_t __fastcall ITEMPROP_AddStat_PreserveRolledValue_EnhancedIfItem(int32_t 
       nRolledValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
     }
 
-    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nRolledValue, nState);
+    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nRolledValue, nState);
     return uRetVal;
 }
 
@@ -1901,7 +1901,7 @@ uint32_t __fastcall ITEMPROP_AddStat_PreserveRolledValue(uint32_t nType, D2UnitS
       nRolledValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
     }
 
-    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nRolledValue, nState);
+    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nRolledValue, nState);
     return uRetVal;
 }
 
@@ -1937,7 +1937,7 @@ uint32_t __fastcall ITEMPROP_AddMinDamage(uint32_t nType, D2UnitStrc * pUnit, D2
         nClassId = 1 - byBaseDam;
       }
       if (nClassId) {
-        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x15, 0, nClassId, nState);
+        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0x15, 0, nClassId, nState);
       }
     }
 
@@ -1949,7 +1949,7 @@ uint32_t __fastcall ITEMPROP_AddMinDamage(uint32_t nType, D2UnitStrc * pUnit, D2
         nClassId = 1 - byBaseDam;
       }
       if (nClassId) {
-        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x17, 0, nClassId, nState);
+        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0x17, 0, nClassId, nState);
       }
     }
 
@@ -1968,7 +1968,7 @@ uint32_t __fastcall ITEMPROP_AddMinDamage(uint32_t nType, D2UnitStrc * pUnit, D2
       nClassId = 1 - byBaseDam;
     }
     if (nClassId) {
-      ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x9f, 0, nClassId, nState);
+      ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0x9f, 0, nClassId, nState);
     }
 
     return nRolledValue;
@@ -2006,7 +2006,7 @@ uint32_t __fastcall ITEMPROP_AddMaxDamage(uint32_t nType, D2UnitStrc * pUnit, D2
         nClassId = -(uint32_t)byBaseDam;
       }
       if (nClassId) {
-        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x16, 0, nClassId, nState);
+        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0x16, 0, nClassId, nState);
       }
     }
 
@@ -2018,7 +2018,7 @@ uint32_t __fastcall ITEMPROP_AddMaxDamage(uint32_t nType, D2UnitStrc * pUnit, D2
         nClassId = -(uint32_t)byBaseDam;
       }
       if (nClassId) {
-        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x18, 0, nClassId, nState);
+        ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0x18, 0, nClassId, nState);
       }
     }
 
@@ -2037,7 +2037,7 @@ uint32_t __fastcall ITEMPROP_AddMaxDamage(uint32_t nType, D2UnitStrc * pUnit, D2
       nClassId = -(uint32_t)byBaseDam;
     }
     if (nClassId) {
-      ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, 0xa0, 0, nClassId, nState);
+      ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, 0xa0, 0, nClassId, nState);
     }
 
     return nRolledValue;
@@ -2136,14 +2136,14 @@ uint32_t __fastcall ITEMPROP_AddEnhancedDamage(uint32_t nType, D2UnitStrc * pUni
 
       nStateSaved = nState;
       nStatIdSaved = nSet;
-      ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x12, 0, nPercent, nState);
+      ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, pProperty, nSet, 0x12, 0, nPercent, nState);
       nIsWeapon = nPercent;
-      ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, (int32_t)pProperty, nStatIdSaved, 0x11, 0, nPercent, nStateSaved);
+      ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, pProperty, nStatIdSaved, 0x11, 0, nPercent, nStateSaved);
       return nIsWeapon;
     }
 
-    ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, (int32_t)pProperty, nSet, 0x12, 0, nPercent, nState);
-    ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, (int32_t)pProperty, nStatIdSaved, 0x11, 0, nPercent, nStateSaved);
+    ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, pProperty, nSet, 0x12, 0, nPercent, nState);
+    ITEMMOD_AddStatToItem(pItem, dwFlags, pUnit, pProperty, nStatIdSaved, 0x11, 0, nPercent, nStateSaved);
     return 1;
 }
 
@@ -2155,7 +2155,7 @@ uint32_t __fastcall ITEMPROP_AddStat_Simple(uint32_t nType, D2UnitStrc * pUnit, 
       nRolledValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
     }
 
-    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, 0, nRolledValue, nState);
+    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, 0, nRolledValue, nState);
     return nResult;
 }
 
@@ -2175,7 +2175,7 @@ uint32_t __fastcall ITEMPROP_AddSkillBonus(uint32_t nType, D2UnitStrc * pUnit, D
       return 0;
     }
 
-    uint32_t nSkillId = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, (uint32_t)nSubIndex, nRolledValue, nState);
+    uint32_t nSkillId = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, (uint32_t)nSubIndex, nRolledValue, nState);
     return nSkillId;
 }
 
@@ -2187,7 +2187,7 @@ uint32_t __fastcall ITEMPROP_AddStat_WithLayerFromParam4(uint32_t nType, D2UnitS
       nRolledValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
     }
 
-    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, (uint32_t)pProperty->fparam, nRolledValue, nState);
+    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, (uint32_t)pProperty->fparam, nRolledValue, nState);
     return nResult;
 }
 
@@ -2202,7 +2202,7 @@ uint32_t __fastcall ITEMPROP_AddClassSkillBonus(uint32_t nType, D2UnitStrc * pUn
       }
     }
 
-    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, (int)pProperty->fparam % 3 + (int)pProperty->fparam / 3 * 8, nRolledValue, nState);
+    uint32_t nResult = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, (int)pProperty->fparam % 3 + (int)pProperty->fparam / 3 * 8, nRolledValue, nState);
     return nResult;
 }
 
@@ -2243,7 +2243,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t nType, D2UnitStrc * pUnit,
       nReqLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
       if (nProperty >= nReqLevel) {
         nSkillLevel = D2Client::DataTbls::SKILL_GetMaxLevelForSkill(eSkill);
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (D2SetsTxtFStrc*)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
         return nPropPtr;
       }
 
@@ -2251,7 +2251,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t nType, D2UnitStrc * pUnit,
     } else {
       int nScaleDivisor;
       if (-1 < nSkillLevel) {
-        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
+        nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (D2SetsTxtFStrc*)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
         return nPropPtr;
       }
 
@@ -2274,7 +2274,7 @@ uint32_t __fastcall ITEMPROP_AddSkillOnEvent(uint32_t nType, D2UnitStrc * pUnit,
       nSkillLevel = 1;
     }
 
-    nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
+    nPropPtr = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (D2SetsTxtFStrc*)pProperty_00, nSet, (int16_t)nStatId, eSkill * 0x40 + (nSkillLevel & 0x3fU), nMaxCharges, nState);
     return nPropPtr;
 }
 
@@ -2425,7 +2425,7 @@ uint32_t __fastcall ITEMPROP_SetFixedMinDamage(uint32_t nType, D2UnitStrc * pUni
       return nRolledValue_00;
     }
 
-    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nRolledValue_00, nState);
+    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nRolledValue_00, nState);
     return nRolledValue_00;
 }
 
@@ -2440,7 +2440,7 @@ uint32_t __fastcall ITEMPROP_SetFixedMaxDamage(uint32_t nType, D2UnitStrc * pUni
       return nRolledValue_00;
     }
 
-    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, nRolledValue_00, nState);
+    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, nRolledValue_00, nState);
     return nRolledValue_00;
 }
 
@@ -2461,7 +2461,7 @@ uint32_t __fastcall ITEMPROP_AddStat_FixedOrRolledMaxDamageAware(uint32_t nType,
       return (uint32_t)nRolledValue_00;
     }
 
-    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (short int)nStatId, 0, (int32_t)nRolledValue_00, nState);
+    ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (short int)nStatId, 0, (int32_t)nRolledValue_00, nState);
     return (uint32_t)nRolledValue_00;
 }
 
@@ -2494,7 +2494,7 @@ uint32_t __fastcall ITEMPROP_AddStat_WithLayerFromParam7(uint32_t nType, D2UnitS
     }
 
     int32_t nValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, nVal, nValue, nState);
+    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, nVal, nValue, nState);
     return uRetVal;
 }
 
@@ -2504,7 +2504,7 @@ uint32_t __fastcall ITEMPROP_AddStat_LayerFromRoll_ValueFromParam7(uint32_t nTyp
     }
 
     uint32_t uRetVal = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, uRetVal, (int)(short int)nVal, nState);
+    uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, uRetVal, (int)(short int)nVal, nState);
     return uRetVal;
 }
 
@@ -2514,7 +2514,7 @@ uint32_t __fastcall ITEMPROP_AddStat_LayerFromParam4Lo(uint32_t nType, D2UnitStr
     }
 
     int32_t nValue = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, (uint32_t)*(uint16_t*)&pProperty->fparam, nValue, nState);
+    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, (uint32_t)*(uint16_t*)&pProperty->fparam, nValue, nState);
     return uRetVal;
 }
 
@@ -2524,7 +2524,7 @@ uint32_t __fastcall ITEMPROP_AddStat_RandLevelAsLayer(uint32_t nType, D2UnitStrc
     }
 
     uint32_t uRetVal = ITEMMOD_RollRandomValue(pUnit2, pProperty->fmin, pProperty->fmax);
-    uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, (int32_t)pProperty, nSet, (int16_t)nStatId, uRetVal, (int32_t)pProperty->fparam, nState);
+    uRetVal = ITEMMOD_AddStatToItem(pUnit2, dwFlags, pUnit, pProperty, nSet, (int16_t)nStatId, uRetVal, (int32_t)pProperty->fparam, nState);
     return uRetVal;
 }
 
@@ -2537,7 +2537,7 @@ uint32_t __fastcall ITEMPROP_AddStat_WithMaxDurabilityReset(int32_t nType, D2Uni
     }
 
     int32_t nMaxDurability = ITEMMOD_RollRandomValue(pUnit2, nPropPtr->fmin, nPropPtr->fmax);
-    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, nStatLayer, pUnit, (int32_t)nPropPtr, nSet, (short int)nStatId, 0, nMaxDurability, nState);
+    uint32_t uRetVal = ITEMMOD_AddStatToItem(pUnit2, nStatLayer, pUnit, nPropPtr, nSet, (short int)nStatId, 0, nMaxDurability, nState);
     if (uRetVal) {
       nMaxDurability = Stats::StatsEx::GetTxtMaxDurability(pUnit2);
       if (nMaxDurability > 0) {

@@ -2128,7 +2128,7 @@ static int32_t __fastcall _oldSaveGameLoadingPart8_part1_part1(uint16_t wHirelin
     return nLevel < 0x19 ? 100 : 0xc8;
 }
 
-uint32_t __fastcall _oldSaveGameLoadingPart8_part1(int32_t pGame, uint16_t wHirelingId, uint32_t dwExperience) {
+uint32_t __fastcall _oldSaveGameLoadingPart8_part1(::SGAMEDATA * pGame, uint16_t wHirelingId, uint32_t dwExperience) {
     int nMercLevel = 1;
     int32_t nExpPerLevel = _oldSaveGameLoadingPart8_part1_part1(wHirelingId, 2);
     uint32_t nExpThreshold = nExpPerLevel * 0x12;
@@ -2142,7 +2142,7 @@ uint32_t __fastcall _oldSaveGameLoadingPart8_part1(int32_t pGame, uint16_t wHire
       iVar1 = nLevel;
     }
 
-    D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(*(int32_t*)(pGame + 0x70), (uint32_t)wHirelingId, nMercLevel);
+    D2HirelingTxt* pHirelingTxt = D2Common::DATATBLS::MonsterTbls::GetHirelingText(pGame->bExpansion, (uint32_t)wHirelingId, nMercLevel);
     if (!(!pHirelingTxt || (nExpThreshold = D2Common::Merc::GetBaseExperience(nMercLevel, pHirelingTxt->expPerLvl) , nExpThreshold <= dwExperience))) {
       return nExpThreshold;
     }
@@ -2194,7 +2194,7 @@ static int32_t __stdcall _oldSaveGameLoadingPart8(D2UnitStrc * pUnit, uint32_t *
             return 0xe;
           }
           if (nVersion <= 0x59) {
-            nConvertedExp = _oldSaveGameLoadingPart8_part1((int32_t)pGame, (uint16_t)pdwSectionStart[3], *(uint32_t*)((int)pdwSectionStart + 0xe));
+            nConvertedExp = _oldSaveGameLoadingPart8_part1(pGame, (uint16_t)pdwSectionStart[3], *(uint32_t*)((int)pdwSectionStart + 0xe));
             *(uint32_t*)((int)pdwSectionStart + 0xe) = nConvertedExp;
           }
 
@@ -2479,7 +2479,7 @@ int32_t __fastcall SEVER_loadFrom_Old_Savegame(::SGAMEDATA * pGame, D2ClientStrc
     return iVar1;
 }
 
-int32_t __fastcall SERVER_LoadPlayerFromSaveFile(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2SaveFileHeaderStrc * pSavefile, uint32_t nSavefileSize, D2UnitStrc * * ppUnit, uint32_t pRoom, uint32_t nSpawnX, uint32_t nSpawnY) {
+int32_t __fastcall SERVER_LoadPlayerFromSaveFile(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2SaveFileHeaderStrc * pSavefile, uint32_t nSavefileSize, D2UnitStrc * * ppUnit, D2RoomStrc * pRoom, uint32_t nSpawnX, uint32_t nSpawnY) {
     int32_t nResult;
     if (nSavefileSize < 8) {
       return 9;
@@ -2488,11 +2488,11 @@ int32_t __fastcall SERVER_LoadPlayerFromSaveFile(::SGAMEDATA * pGame, D2ClientSt
       return 9;
     }
     if (pSavefile->dwFileVersion < 0x5c) {
-      nResult = SEVER_loadFrom_Old_Savegame(pGame, pClient, pSavefile, nSavefileSize, ppUnit, pRoom, nSpawnX, nSpawnY);
+      nResult = SEVER_loadFrom_Old_Savegame(pGame, pClient, pSavefile, nSavefileSize, ppUnit, (uint32_t)pRoom, nSpawnX, nSpawnY);
       return nResult;
     }
 
-    nResult = PlayerSave2::PLAYERSAVE_LoadModernFormat(pGame, pClient, pSavefile, nSavefileSize, ppUnit, pRoom, nSpawnX, nSpawnY);
+    nResult = PlayerSave2::PLAYERSAVE_LoadModernFormat(pGame, pClient, pSavefile, nSavefileSize, ppUnit, (uint32_t)pRoom, nSpawnX, nSpawnY);
     return nResult;
 }
 
@@ -2518,7 +2518,7 @@ static int32_t __fastcall CLIENT_ReadAndLoadSaveFile(D2ClientStrc * pClient, D2R
       nBytesRead = fread((D2CharSelCompStrc*)__frame0.saveBuffer, 1, 0x2000, pFile);
       fclose(pFile);
       if (nBytesRead) {
-        nLoadResult = SERVER_LoadPlayerFromSaveFile(pGame, pClient, (D2SaveFileHeaderStrc*)__frame0.saveBuffer, nBytesRead, &__frame0.pLoadedUnit, (uint32_t)pRoom, nX, nY);
+        nLoadResult = SERVER_LoadPlayerFromSaveFile(pGame, pClient, (D2SaveFileHeaderStrc*)__frame0.saveBuffer, nBytesRead, &__frame0.pLoadedUnit, pRoom, nX, nY);
         if (nLoadResult) {
           return nLoadResult;
         }
@@ -2554,7 +2554,7 @@ static int32_t __fastcall CLIENT_LoadPlayerFromDisk(::SGAMEDATA * pGame, uint32_
     return 0xe;
 }
 
-static int32_t __stdcall CLIENT_LoadPlayerFromNetworkSave(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2UnitStrc * * ppUnit, uint32_t dwParam1, uint32_t dwParam2, uint32_t dwParam3) {
+static int32_t __stdcall CLIENT_LoadPlayerFromNetworkSave(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2UnitStrc * * ppUnit, D2RoomStrc * pRoom, uint32_t nSpawnX, uint32_t nSpawnY) {
     *ppUnit = 0;
     D2SaveFileHeaderStrc* pSavegame = GAME::Clients::GetSaveGame(pClient);
     size_t nSaveGameSize = GAME::Clients::GetSaveGameSize(pClient);
@@ -2562,7 +2562,7 @@ static int32_t __stdcall CLIENT_LoadPlayerFromNetworkSave(::SGAMEDATA * pGame, D
       return 0xe;
     }
 
-    int32_t nResult = SERVER_LoadPlayerFromSaveFile(pGame, pClient, pSavegame, nSaveGameSize, ppUnit, dwParam1, dwParam2, dwParam3);
+    int32_t nResult = SERVER_LoadPlayerFromSaveFile(pGame, pClient, pSavegame, nSaveGameSize, ppUnit, pRoom, nSpawnX, nSpawnY);
     if (nResult) {
       *ppUnit = 0;
       return nResult;
@@ -2579,7 +2579,7 @@ static int32_t __stdcall CLIENT_LoadPlayerFromNetworkSave(::SGAMEDATA * pGame, D
 }
 
 // Loads player from save or creates new character. Dispatches to disk loader (SP/LAN), network loader (BNet), or fresh character creator based on game type and bLoadFromSave. After unit creation, updates passive skills and returns status. Called during join flow before placing unit in world.
-BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, D2ClientStrc * pClient, D2ClientStrc * pClientCharName, BOOL bLoadFromSave, D2UnitStrc * * ppUnitOut, uint32_t pRoomOrNull, uint32_t nX, uint32_t nY) {
+BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, D2ClientStrc * pClient, char * pClientCharName, BOOL bLoadFromSave, D2UnitStrc * * ppUnitOut, D2RoomStrc * pRoomOrNull, uint32_t nX, uint32_t nY) {
     BOOL bResult;
     /* This is the loader for battle net. unkBool is always 1 from the path of
                          ClientJoinGame */ if (pGame->nGameType == SGAMETYPE_OBNET_HOST || pGame->nGameType == SGAMETYPE_LAN_HOST || BattleNetServerService) {
@@ -2588,7 +2588,7 @@ BOOL __fastcall CLIENT_LoadOrCreatePlayerUnit(::SGAMEDATA * pGame, D2ClientStrc 
         goto finish_player_unit;
       }
     } else if (bLoadFromSave) {
-      bResult = CLIENT_LoadPlayerFromDisk(pGame, pRoomOrNull, (char*)pClientCharName, pClient, ppUnitOut, (D2RoomStrc*)pRoomOrNull, nX, nY);
+      bResult = CLIENT_LoadPlayerFromDisk(pGame, (uint32_t)pRoomOrNull, pClientCharName, pClient, ppUnitOut, pRoomOrNull, nX, nY);
       goto finish_player_unit;
     }
 

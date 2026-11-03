@@ -663,13 +663,12 @@ static int32_t QUESTLOG_HitTestQuestIcon(int32_t nX, int32_t nY) {
     return -1;
 }
 
-static int32_t QUESTLOG_HitTestOpenButton(int32_t nPanelY, int32_t nPanelX) {
-    uint32_t dwHitResult = (uint32_t)(nPanelX - 0x116U >> 8) & 0xffffffu;
-    if (nPanelX - 0x116U <= 0x23 && nPanelY >= 0x188 && nPanelY <= 0x1a9) {
-      return (uint32_t)((uint32_t)((uint32_t)dwHitResult & 0xffffffu) << 8 | (uint32_t)(uint8_t)1);
+static bool QUESTLOG_HitTestOpenButton(int32_t nPanelY, int32_t nPanelX) {
+    if (nPanelX >= 0x116 && nPanelX <= 0x139 && nPanelY >= 0x188 && nPanelY <= 0x1a9) {
+      return true;
     }
 
-    return (uint32_t)dwHitResult << 8;
+    return false;
 }
 
 int __stdcall CloseQuestLogWeird(DWORD bAdjustMouse) {
@@ -1772,9 +1771,9 @@ void __stdcall DRAW_UI_Quest() {
 // QUESTLOG_HitTestCloseButton returns a bool; only AL is tested after the call (004a3f9d).
 void __stdcall QUESTLOG_OnMouseDown(D2UIMouseMsgStrc * pMsg) {
     int nClickThresholdY;
+    int32_t nActTab;
     BOOL bIsExpansion;
     int nQuestCountCopy;
-    int32_t bHitButton;
     uint8_t* pQuestEntry;
     uint32_t uVar2;
     uVar2 = (uint32_t)pMsg->uLParam.sMousePos.nMouseX;
@@ -1807,19 +1806,19 @@ void __stdcall QUESTLOG_OnMouseDown(D2UIMouseMsgStrc * pMsg) {
     nPanelRelY = nMouseYRaw + gnPanelOffsetY - VPRES_GetWideUiOffsetY(); // VP: [resolution site-6]
     if (gQuestLog.bQuestLogButtonDown == '\0') {
       bool bVar1;
-      bHitButton = QUESTLOG_HitTestActTab(nPanelRelY, nPanelRelX);
-      if (bHitButton != -1) {
-        if (bHitButton < 5 && bHitButton != gQuestLog.nQuestLogActiveAct_b && ((bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion && (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , bIsExpansion != 0)) || bHitButton != 4)) {
+      nActTab = QUESTLOG_HitTestActTab(nPanelRelY, nPanelRelX);
+      if (nActTab != -1) {
+        if (nActTab < 5 && nActTab != gQuestLog.nQuestLogActiveAct_b && ((bIsExpansion = Fog::D2CheckExpansionGame() , bIsExpansion && (bIsExpansion = GAME::Game::CLIENT_CheckExpansion() , bIsExpansion != 0)) || nActTab != 4)) {
           QUESTLOG_AcknowledgeNewQuests();
-          QUESTLOG_SetActiveAct(bHitButton);
+          QUESTLOG_SetActiveAct(nActTab);
           QUESTLOG_LoadQuestIconsForAct(gQuestLog.nQuestLogActiveAct_b, 1);
           QUESTLOG_ResetState();
         }
       } else {
         uVar2 = QUESTLOG_HitTestQuestIcon(nPanelRelY, nPanelRelX);
         if (uVar2 == -1 || (int)uVar2 >= gQuestLog.nQuestLogQuestCount) {
-          bHitButton = QUESTLOG_HitTestOpenButton(nPanelRelY, nPanelRelX);
-          if ((char)bHitButton != '\0') {
+          bVar1 = QUESTLOG_HitTestOpenButton(nPanelRelY, nPanelRelX);
+          if (bVar1) {
             gQuestLog.bQuestLogOpenBtnPressed = 1;
           } else {
             bVar1 = QUESTLOG_HitTestCloseButton(nPanelRelY, nPanelRelX);

@@ -1670,6 +1670,7 @@ void __fastcall PLRTRADE_FreeTradeCopyInventory(::SGAMEDATA * pGame, D2UnitStrc 
 // @sourcefile .\PLAYER\PlrTrade.cpp
 void __fastcall SendRemoveItemDisplayPacket0x92(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2UnitStrc * pOtherUnit) {
     int32_t nOtherGUID;
+    uint8_t byUnk;
     if (pUnit == pOtherUnit) {
       return;
     }
@@ -1679,7 +1680,7 @@ void __fastcall SendRemoveItemDisplayPacket0x92(::SGAMEDATA * pGame, D2UnitStrc 
       nOtherGUID = pOtherUnit->nUnitGUID;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0x83b), 0x92, '\0', nOtherGUID);
+    GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0x83b), 0x92, 0, nOtherGUID);
 }
 
 void __fastcall TRADE_RestoreInventoryFromBackup(::SGAMEDATA * pGame, D2UnitStrc * pUnit) {
@@ -2245,6 +2246,7 @@ BOOL __fastcall IsInteractingWithPlayer(::SGAMEDATA * pGame, D2UnitStrc * pUnit,
 // @sourcefile .\PLAYER\PlrTrade.cpp
 void __fastcall RemoveTradeItemMabye(::SGAMEDATA * pGame, D2UnitStrc * pUnit, uint32_t dwUnused) {
     int32_t nSelfGUID;
+    uint8_t byPacketArg;
     D2UnitDataPlayerStrc* pPlayerData = D2Common::Units::GetPlayerData(pUnit);
     if (!pPlayerData->pTradeCopyInventory) {
       return;
@@ -2255,9 +2257,9 @@ void __fastcall RemoveTradeItemMabye(::SGAMEDATA * pGame, D2UnitStrc * pUnit, ui
       nSelfGUID = pUnit->nUnitGUID;
     }
 
-    uint8_t byPacketArg = '\0';
+    int nArg1 = 0;
     D2ClientStrc* pClient = UNIT::SUnit::SUNIT_GetClient(pUnit, ".\\PLAYER\\PlrTrade.cpp", 0x84f);
-    GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0x92, byPacketArg, nSelfGUID);
+    GAME::SCmd::NET_D2GS_SERVER_Send_CMD_BYTE_INT(pClient, 0x92, nArg1, nSelfGUID);
     UNIT::SUnit::IterateAllUnits(pGame, (fpSUnitIterateCallback)SendRemoveItemDisplayPacket0x92, pUnit);
     D2UnitStrc* pItemNode = D2Common::INVENTORY::Inventory::INVENTORY_GetFirstItem(pUnit->pInventory);
     while (pItemNode) {

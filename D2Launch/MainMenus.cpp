@@ -1012,22 +1012,24 @@ void __stdcall UIMENU_TCPIPOptions() {
     MAINMENU_UpdateIPAddressDisplay();
 }
 
-void __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero(int32_t pControlData) {
     if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 1);
-      return;
+      return 1;
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpAddress->sControl, 0);
+    return 1;
 }
 
-void __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData) {
+BOOL __stdcall MAINMENU_DisableControlIfDataNonZero2(int32_t pControlData) {
     if (*(int*)(pControlData + 0xc)) {
       D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 1);
-      return;
+      return 1;
     }
 
     D2Win::Src::D2WinMain::D2WINMAIN_SetControlActive(&gpCtlTcpIpPort->sControl, 0);
+    return 1;
 }
 
 // Shows BNet account creation UI. Clears gbPasswordChangeInProgress, creates form with username/password/confirmation fields. Entry point for new account flow from main menu.
@@ -1379,7 +1381,7 @@ void __stdcall LAUNCHER_SetExitAppModeResult() {
     gnSelectedCharGameState = 0;
 }
 
-void __stdcall MAINMENU_AddRealmToList(D2BNetRealmEntryStrc * pRealmEntry) {
+BOOL __stdcall MAINMENU_AddRealmToList(D2BNetRealmEntryStrc * pRealmEntry) {
     int i;
     if (!g_pBNetRealmList) {
       Fog::Src::ErrorManager::ERROR_UnrecoverableInternalError_Halt("", Fog::Src::ErrorManager::GetInstructionPointer(), 0x111f);
@@ -1389,9 +1391,11 @@ void __stdcall MAINMENU_AddRealmToList(D2BNetRealmEntryStrc * pRealmEntry) {
     for (i = 0; i < gnRealmListCount; i++) {
       if (!g_pBNetRealmList[i]) {
         g_pBNetRealmList[i] = pRealmEntry;
-        return;
+        return 1;
       }
     }
+
+    return 0;
 }
 
 // @sourcefile .\Src\MainMenus.cpp
@@ -3052,7 +3056,7 @@ BOOL __stdcall UIMENU_ShowTermsOfService() {
       goto add_line;
       find_break_point:
       while (true) {
-        bConnected = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition((int32_t)pFileBufferSrc, nLineWidth);
+        bConnected = D2Lang::Unicode::UNISYS::UNICODE_CheckLineBreakPosition(pFileBufferSrc, nLineWidth);
         if (bConnected) {
           break;
         }
@@ -3545,7 +3549,7 @@ BOOL __stdcall StorePreferedRealmAgain(D2ControlMsg * pControlMsg) {
     int32_t nSelectedLine = D2Win::Src::D2WinTextBox::D2WINTEXTBOX_GetSelectedLine(gpMainMenuGatewayListTextBox);
     if (nSelectedLine != -1) {
       char* pszRealmName;
-      Bnclient::BNGatewayAccess::SetCurGateway((int32_t)pGatewayAccess, nSelectedLine + 1);
+      Bnclient::BNGatewayAccess::SetCurGateway(pGatewayAccess, nSelectedLine + 1);
       pszRealmName = Bnclient::BNGatewayAccess::Realm(pGatewayAccess, nSelectedLine + 1);
       Storm::Source::SReg::SRegSaveString("Diablo II", "Preferred Realm", 0, pszRealmName);
     }
@@ -4892,14 +4896,12 @@ void __stdcall MAINMENU_BnetConnectionProgress() {
 }
 
 static BOOL MAINMENU_IsValidEmailAddress(char * szText) {
-    bool _bIsValidEmail;
     uint32_t nTextLen;
-    bool bIsValidEmail;
     if (!szText) {
       return 0;
     }
 
-    _bIsValidEmail = 0;
+    BOOL bIsValidEmail = 0;
     char* pszAtSign = Storm::Source::SSTR::SStrChr(szText, '@');
     if (pszAtSign) {
       char* pszDot;
@@ -4907,12 +4909,12 @@ static BOOL MAINMENU_IsValidEmailAddress(char * szText) {
       if (pszDot && pszAtSign > szText && pszDot > pszAtSign + 1) {
         nTextLen = Storm::Source::SSTR::SStrLen(szText);
         if ((int)nTextLen > (int)(pszDot + (1 - (int)szText))) {
-          _bIsValidEmail = 1;
+          bIsValidEmail = 1;
         }
       }
     }
 
-    return _bIsValidEmail;
+    return bIsValidEmail;
 }
 
 BOOL __stdcall MAINMENU_OnPressConfirmSkipEmailPopup(D2ControlMsg * pControlMsg) {

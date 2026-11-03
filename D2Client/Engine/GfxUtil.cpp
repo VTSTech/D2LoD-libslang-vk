@@ -6,6 +6,7 @@
 #include "D2Client/D2Client.h"
 #include "D2Client/D2GfxDataStrc.h"
 #include "D2Client/D2GfxInfoStrc.h"
+#include "D2Client/D2LightMapStrc.h"
 #include "D2Client/DataTbls.h"
 #include "D2Client/DataTbls/MonsterTbls.h"
 #include "D2Client/Engine/Gfx.h"
@@ -1452,23 +1453,23 @@ int32_t __fastcall GFXUTIL_CalcMaxSpriteHeight(D2UnitStrc * pUnit, uint8_t * pby
     return nLoadedCount;
 }
 
-int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, int32_t pOverlayEntry) {
+int32_t __fastcall GFXUTIL_GetOverlayFrameDelay(D2UnitStrc * pUnit, D2GfxUnknown_0xa8 * pOverlayEntry) {
     D2GfxDataStrc sGfxData;
     int nOutItemClassId;
     memset(&sGfxData, 0, 0x48);
-    sGfxData.nOverlayId = *(int*)(pOverlayEntry + 4);
-    int nBuilt = *(int*)(pOverlayEntry + 0x18);
+    sGfxData.nOverlayId = pOverlayEntry->neOverlayId;
+    uint32_t nOverlayAnimMode = pOverlayEntry->nRandomOffset;
     uint8_t byDirection = D2Common::Units::GetDirection(pUnit);
     sGfxData.nDirection = (int)byDirection;
     sGfxData.pDC6 = 0;
-    sGfxData.nFrameNumber = nBuilt;
+    sGfxData.nFrameNumber = nOverlayAnimMode;
     sGfxData.nComponentType = '\x01';
     BOOL nWeaponClass = GFXUTIL_BuildCofParams(&sGfxData, nullptr, (D2UnitStrc*)-1, &nOutItemClassId);
     if (!nWeaponClass) {
       return 1;
     }
 
-    nBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
+    int nBuilt = D2CMP::SRC::SpriteCache::SPRITECACHE_GetOrLoadSprite(&sGfxData, 0, 1);
     if (!nBuilt) {
       return 1;
     }

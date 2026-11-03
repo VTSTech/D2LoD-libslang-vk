@@ -165,7 +165,7 @@ void __fastcall SendReassignPlayer(D2UnitStrc * pUnitStrc, D2ClientStrc * pClien
       wPosX = 0;
     }
 
-    GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', (uint8_t)pUnitStrc->eUnitType, pUnitStrc->nUnitGUID, wPosX, wPosY, bWarpFade);
+    GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', pUnitStrc->eUnitType, pUnitStrc->nUnitGUID, wPosX, wPosY, bWarpFade);
 }
 
 // Broadcasts the player's current skill cast to nearby clients. If the skill has a valid target unit visible to the client, sends packet 0x4C (target-entity cast). Otherwise sends packet 0x4D (XY cast) using the caster's SP1 path coordinates. Skips if the skill has flag bit 2 set and the caster is the client's own player unit.
@@ -1240,13 +1240,13 @@ static int32_t __stdcall PlayerCanInteractWithWaypoint(::SGAMEDATA * pGame, uint
 
 // Movement-packet range validator with anti-cheat reassign. Reads target (nX, nY) from raw packet bytes, calls CheckIfCoordsAreInRange(range=0x32). If out of range and more than 25 frames have elapsed since last frame-stamp, sends packet 0x15 (ReassignPlayer) to snap the client back to the server-authoritative position. If in range, stamps nGameFrame and writes nX/nY to outNx/outNy for further processing. Returns SERVERSTATUS_OK on success.
 // Returns a FULL 32-bit value, not a one-byte enum. All four return paths write the whole of EAX - MOV EAX,0x3 at 0054970f, MOV EAX,0x2 at 00549728, XOR EAX,EAX at 005497d3 and MOV EAX,EBX at 005497b3, where EBX can be OR EBX,0xffffffff (-1) from 00549789.
-static int32_t __stdcall CheckIfInrangeAndReassign(::SGAMEDATA * pGame, D2UnitStrc * pUnit2, uint16_t * outNx, uint16_t * outNy, D2UnitStrc * pUnit, uint8_t * pPacket) {
+static int32_t __stdcall CheckIfInrangeAndReassign(::SGAMEDATA * pGame, uint32_t pUnit2, uint16_t * outNx, uint16_t * outNy, D2UnitStrc * pUnit, uint8_t * pPacket) {
     uint32_t pUnitId;
     bool bReassign;
     int32_t nServerX;
     *outNx = 0;
     *outNy = 0;
-    if (pUnit2 != (D2UnitStrc*)0x5) {
+    if (pUnit2 != 5) {
       return 3;
     }
 
@@ -1273,7 +1273,7 @@ static int32_t __stdcall CheckIfInrangeAndReassign(::SGAMEDATA * pGame, D2UnitSt
           nServerX = D2Client::Units::GetYPosFromDynamicPathUnit(pUnit);
           nY = (uint16_t)nServerX;
           nServerX = D2Client::Units::GetXPosFromDynamicPathUnit(pUnit);
-          GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', '\0', pUnitId, (uint16_t)nServerX, nY, bReassign);
+          GAME::SCmd::NET_D2GS_SERVER_Send_0x15_WarpXY(pClient, '\x15', 0, pUnitId, (uint16_t)nServerX, nY, bReassign);
         }
       }
 
@@ -1290,7 +1290,7 @@ static int32_t __stdcall CheckIfInrangeAndReassign(::SGAMEDATA * pGame, D2UnitSt
 // [op:1][x:u16][y:u16]
 // Calls MoveToLocation(mode=2).
 eD2ServerIncomingStatus __fastcall SCMD_0x01_WalkToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x01_WalkToLocation * pPacket, uint32_t nSize) {
-    int32_t nStatus = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nStatus = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (!nStatus) {
       PlayerModes::PLRMODES_MoveToLocation(pGame, pUnit, nullptr, 2, (uint32_t)pPacket & 0xffff, nSize & 0xffff, 0);
       nStatus = 0;
@@ -1337,7 +1337,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x02_WalkToEntity(::SGAMEDATA * pGame, D
 // [op:1][x:u16][y:u16]
 // Calls MoveToLocation(mode=3).
 eD2ServerIncomingStatus __fastcall SCMD_0x03_RunToLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x03_RunToLocation * pPacket, uint32_t nSize) {
-    int32_t nStatus = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nStatus = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (!nStatus) {
       PlayerModes::PLRMODES_MoveToLocation(pGame, pUnit, nullptr, 3, (uint32_t)pPacket & 0xffff, nSize & 0xffff, 0);
       nStatus = 0;
@@ -1549,7 +1549,7 @@ static void __stdcall PLAYER_ProcessSkillOnEntity(D2UnitStrc * pUnit, ::SGAMEDAT
 // [op:1][x:u16][y:u16]
 // Gets left skill, increments pierce_idx, CastSkillOnLocation.
 eD2ServerIncomingStatus __fastcall SCMD_0x05_LeftSkillOnLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x05_LeftSkillOnLocation * pPacket, uint32_t nSize) {
-    int32_t nPierceIdx = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nPierceIdx = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (nPierceIdx) {
       return (eD2ServerIncomingStatus)nPierceIdx;
     }
@@ -1622,7 +1622,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x07_LeftSkillOnEntityEx(::SGAMEDATA * p
 eD2ServerIncomingStatus __fastcall SCMD_0x08_LeftSkillOnLocationEx(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x08_LeftSkillOnLocationEx * pPacket, uint32_t nSize) {
     uint32_t nSizeCopy = nSize;
     ::SGAMEDATA* pGameCopy = pGame;
-    int32_t nStatus = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pGameCopy, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nStatus = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pGameCopy, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (nStatus) {
       return (eD2ServerIncomingStatus)nStatus;
     }
@@ -1690,7 +1690,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0B_Keepalive(::SGAMEDATA * pGame, D2Un
 // [op:1][x:u16][y:u16]
 // Gets right skill, increments pierce_idx, CastSkillOnLocation.
 eD2ServerIncomingStatus __fastcall SCMD_0x0C_RightSkillOnLocation(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x0C_RightSkillOnLocation * pPacket, uint32_t nSize) {
-    int32_t nPierceIdx = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nPierceIdx = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pPacket, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (nPierceIdx) {
       return (eD2ServerIncomingStatus)nPierceIdx;
     }
@@ -1763,7 +1763,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x0E_RightSkillOnEntityEx(::SGAMEDATA * 
 eD2ServerIncomingStatus __fastcall SCMD_0x0F_RightSkillOnLocationEx(::SGAMEDATA * pGame, D2UnitStrc * pUnit, D2GSPacketClt0x0F_RightSkillOnLocationEx * pPacket, uint32_t nSize) {
     uint32_t nSizeCopy = nSize;
     ::SGAMEDATA* pGameCopy = pGame;
-    int32_t nStatus = CheckIfInrangeAndReassign(pGame, (D2UnitStrc*)nSize, (uint16_t*)&pGameCopy, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
+    int32_t nStatus = CheckIfInrangeAndReassign(pGame, nSize, (uint16_t*)&pGameCopy, (uint16_t*)&nSize, pUnit, &pPacket->nCmd);
     if (nStatus) {
       return (eD2ServerIncomingStatus)nStatus;
     }
@@ -2112,7 +2112,7 @@ eD2ServerIncomingStatus __fastcall SCMD_0x15_ChatMessage(::SGAMEDATA * pGame, D2
 }
 
 // Builds a 0x26 chat packet inline on the stack using a D2UnitStrc as raw packet buffer, then broadcasts to all clients via ForEachClient. dwParam is packed into the locale/color byte of the 0x26 header.
-void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint8_t dwParam) {
+void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint8_t nColor) {
     int nGuardResult;
     D2GSPacketSrv0x26 aPacketBuf;
     aPacketBuf.nUnitGUID = 0;
@@ -2121,17 +2121,17 @@ void __fastcall PrepareClientMessage(::SGAMEDATA * pGame, char * szMessage, uint
     aPacketBuf.nPacketId = '&';
     aPacketBuf.nMessageType = '\x01';
     aPacketBuf.nMsgSubType = '\x02';
-    aPacketBuf.nMessageColor = dwParam;
+    aPacketBuf.nMessageColor = nColor;
     char* pMsgBufDst = aPacketBuf.szMessage;
     memcpy(pMsgBufDst, szMessage, 0x100);
     GAME::Server::ForEachClient(pGame, (fpForEachClientFn)NET_D2GS_SERVER_Send_0x26_Chat, &aPacketBuf);
 }
 
 // Broadcasts a pre-built 0x26 chat packet (pointed to by pdwParam as uint32_t array) to all clients in the game. dwParam is packed into the packet color/locale byte. Wraps ForEachClient with NET_D2GS_SERVER_Send_0x26_Chat callback.
-void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwMessage, uint32_t dwParam) {
+void __fastcall CHAT_BroadcastMessageToAllClients(::SGAMEDATA * pGame, uint32_t * pdwMessage, uint32_t nColor) {
     int nMsgWordIdx;
     D2GSPacketSrv0x26 aPacketBuf;
-    aPacketBuf.nMessageColor = (uint8_t)dwParam;
+    aPacketBuf.nMessageColor = (uint8_t)nColor;
     aPacketBuf.nPacketId = '&';
     aPacketBuf.nMessageType = '\x04';
     aPacketBuf.nUnitGUID = 0;

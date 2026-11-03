@@ -212,8 +212,9 @@ void __fastcall XSHA1(D2SHA1 * pOutput, char * szInput, size_t nInputSize) {
     pOutput->h[4] = state.state.h[4];
 }
 
-void __stdcall SID_SetReadyFlag() {
+BOOL __stdcall SID_SetReadyFlag() {
     g_bSIDProtocolReady = 1;
+    return 1;
 }
 
 BOOL __stdcall SID_GetReadyFlag() {
@@ -1618,7 +1619,7 @@ void __fastcall NET_SID_CLIENT_BigNumMultiplyAccumulate(int32_t nWords, uint32_t
     } while ((uint32_t)nWords > 0);
 }
 
-void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t pOutBase5) {
+void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(char * pCdKeyString, int32_t pOutBase5) {
     // Static local variables (originally global data)
     static uint8_t g_CdKeyCharToDigitTable[256] = {
     0xff,
@@ -1888,7 +1889,7 @@ void __fastcall NET_SID_CLIENT_ExpandCdKeyToBase5(int32_t pCdKeyString, int32_t 
       outIdx1 = (outIdx2 + 0x7b5) % 0x34;
       nextInIdx = inIdx + 1;
       outIdx2 = (outIdx1 + 0x7b5) % 0x34;
-      digitValue = g_CdKeyCharToDigitTable[*(uint8_t*)(inIdx + pCdKeyString)];
+      digitValue = g_CdKeyCharToDigitTable[(uint8_t)pCdKeyString[inIdx]];
       *(uint8_t*)(outIdx1 + pOutBase5) = digitValue / 5;
       *(uint8_t*)(outIdx2 + pOutBase5) = digitValue % 5;
       inIdx = nextInIdx;
@@ -2020,7 +2021,7 @@ void __stdcall NET_SID_CLIENT_SubstitutionBoxShuffle(int32_t pToken) {
     } while (sboxTableOffset >= 0);
 }
 
-void __fastcall NET_SID_CLIENT_TransformCdKeyToken(int32_t nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash) {
+void __fastcall NET_SID_CLIENT_TransformCdKeyToken(char * nCdKeyValue, uint32_t * pOutPublic, uint32_t * pOutProduct, uint16_t * pOutHash) {
     // Frame slots -76..-8 are ONE object: &nBigNum0 is passed out and the callee reaches the rest by byte offset.
     // Separate locals let the compiler reorder them, so the run is one struct.
     struct __frame0_t {
