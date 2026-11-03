@@ -16,6 +16,79 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R94] — 2026-11-03 (issue #26 fix round 3; self-ID `Vanilla+0.0.7-R94`)
+
+Track S follow-up. The R93 field pass came back **partially fixed** — owner:
+"with it off. both right and left individually are good. both panels, still
+black. there is a little bit of black on the bottom of the screen with
+perspective mode off. with perspective mode on, left side is ok, right side
+still has black triangles at edge. same black outside panels with both
+panels." Round 3 found the two remaining members of the family: the world
+draw pass itself is skipped for border 3, and the panel-cull family has
+**vertical** (bottom-band) members nobody had touched.
+
+### Root causes (all confirmed against the R93 field report)
+
+1. **The whole world draw is skipped with both panels open.** `Game.cpp`
+   calls `ViewDraw2` — the underfloor/floors/shadows/walls/roofs pass — only
+   when `eBorderType != 3`. Retail can afford the skip: at 640x480/800x600
+   the two panels cover the window edge to edge, so the world is invisible
+   and the pass is a pure fill-rate save. The 800-class UI floats 240 px
+   inboard at 1280x720, so the outer strips still show world — and with the
+   pass never running they rendered as the untouched black backbuffer, on
+   **every** renderer, with perspective on **and** off ("both panels, still
+   black", "same black outside panels with both panels"). R93's border-3
+   scene-list build in `GAMEVIEW_PrepareScene` was the right fix pointed at
+   the wrong layer — it fed a pass that never ran.
+2. **The bottom-band vertical cuts.** The same retail assumptions run
+   vertically: the non-perspective wall/shadow builders reject any subtile
+   anchored at `y >= h-0xf` (Direct3D `BuildShadowTileVertices` /
+   `BuildWallTileVerticesNoPerspective`, Glide `DrawShadowTileSimple` /
+   `DrawWallTileSimple`), and the perspective cull rects reserve the bottom
+   `0x2f` px for the retail full-width bottom HUD (D3D
+   `CalculateViewportRect`, Glide `CalculateScreenBounds`). At 640x480/800x600
+   the bottom HUD covers those bands; at 1280x720 the 800-class HUD floats
+   240 px inboard, the bottom corners show world, and the cuts rendered as a
+   thin black strip along the screen bottom ("a little bit of black on the
+   bottom ... with perspective mode off" — the `h-0xf` anchor cut is only
+   live in the non-perspective paths, which is why the strip reports with
+   perspective off). The perspective rect's reserved band also ate the
+   shadow/wall geometry in the bottom corners — the likely shape of the
+   perspective-ON right-margin triangles (the perspective near-field
+   expansion magnifies the band at the screen edges).
+
+### Fixed (wide layouts 1280x720/1344x700 only — retail modes byte-identical)
+
+- **`D2Client/GAME/Game/Game.cpp`** — border 3 runs `ViewDraw2` on wide
+  layouts (retail keeps the skip). The pass gates underfloor/shadows/roofs on
+  the WALL2 pass mask that R93's scene-list build now sets, so both fixes
+  land together as the both-panels world render.
+- **Bottom band opens on wide dims** (same 1280x720/1344x700 test as the
+  R92/R93 guards; the HUD/panels overdraw their own rects afterwards, and
+  D3D/Glide clip the overdraw at rasterization): `D2Direct3D`
+  `BuildShadowTileVertices` + `BuildWallTileVerticesNoPerspective` (`h-0xf`
+  → `h+0x20`) and `CalculateViewportRect` (bottom `h-0x2f` → `h+0x20`);
+  `D2Glide` `DrawShadowTileSimple` + `DrawWallTileSimple` (`h-0xf` →
+  `h+0x20`) and `CalculateScreenBounds` (bottom `h-0x2f` → `h+0x20`).
+
+Still deferred (cosmetic, unchanged from R92/R93): overhead party icons /
+unit-name labels / alt-item labels in the margins under border 3
+(`ui.cpp:1060-family`, `ShowItems.cpp` half-screen rejects), the border-3
+right-click world-interaction guard (`Game.cpp` input path), and the software
+renderers' bottom-band clears/clip table (`FillYBufferFast`, DDraw/GDI memset
+of `h-0x2f` rows — the owner's D3D build never reaches them).
+
+Verification: all 4 changed TUs compile clean under llvm-mingw i686 (clang
+link stops at the known GCC-only `__gcclibcxx_demangle_callback` — unchanged
+since R90b; the owner's MSYS2 build links it); gates **341/341** (3 new R94
+pins: border3 world draw + the D3D/Glide bottom-band triplets); self-ID →
+`Vanilla+0.0.7-R94`. Field ask: at 1280x720 — (a) both panels open: **both**
+outer margins must render the world (no black band, no triangles), units in
+the margins clickable; (b) the screen bottom (no panels, one panel, both): no
+black strip at the bottom edge with perspective off, and the bottom corners
+render world with perspective on; (c) single panels in perspective mode: both
+margins clean. Retail 640x480/800x600 byte-identical.
+
 ## [R93] — 2026-11-03 (issue #26 fix round 2; self-ID `Vanilla+0.0.7-R93`)
 
 Track S follow-up. The R92 field pass came back **half-fixed** — owner: "The
@@ -76,6 +149,18 @@ clang link stops at the known GCC-only `__gcclibcxx_demangle_callback` symbol
 inventory alone, a left panel alone, then both: **both** outer margins must
 render the world with no black band and no jagged triangles in every state,
 units in the margins clickable.
+
+Field result: **PARTIAL** — owner build + 720p test: "with it off. both right
+and left individually are good. both panels, still black. there is a little
+bit of black on the bottom of the screen with perspective mode off. with
+perspective mode on, left side is ok, right side still has black triangles at
+edge. same black outside panels with both panels." The non-perspective fixes
+landed (both single panels good with perspective off); three cases remain —
+the border-3 **world draw** pass is still skipped (the R93 scene-list build
+fed a pass that never ran), the bottom-band vertical cuts (builders cut
+wall/shadow anchors at `h-0xf`; the perspective rects reserve the bottom
+`0x2f` px for the retail full-width HUD), and the perspective-ON right-margin
+triangles — fixed in [R94].
 
 ## [R92] — 2026-11-03 (issue #26 fix round; self-ID `Vanilla+0.0.7-R92`)
 

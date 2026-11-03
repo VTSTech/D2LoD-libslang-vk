@@ -687,10 +687,10 @@ gate "escmenu: sub-count clamp (R61)"         D2Client/UI/EscMenu.cpp           
 gate "escmenu: halt tail retired at 0x501"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x501\)' 0
 gate "escmenu: halt tail retired at 0x4fe"    D2Client/UI/EscMenu.cpp           'ESCMENU_LoadLocalizedImages_HaltTail\(0x4fe\)' 0
 gate "escmenu: null sub-image draw guard"     D2Client/UI/EscMenu.cpp           'nDrawIdx' 5
-# R93: string bumped R92 -> R93 (issue #26 round 2: the R92 field pass fixed
-# the left strip only; round 2 covers the non-perspective half-cuts, the
-# border-3 scene skip and the case-2 walk pan-anchor correction)
-gate "res: self-id 0.0.7-R93"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R93' 1
+# R94: string bumped R93 -> R94 (issue #26 round 3: the R93 field pass fixed
+# both single panels with perspective OFF; round 3 covers the border-3 world
+# draw skip (ViewDraw2) and the bottom-band vertical cuts)
+gate "res: self-id 0.0.7-R94"                 D2Client/Engine/Application.cpp   'Vanilla\+0\.0\.7-R94' 1
 
 # ---- [vanilla-plus issue #26] rev 122: track S - 720p single-panel black
 # triangles. Root cause: every panel-open world cull/pan is a fraction of the
@@ -724,6 +724,23 @@ gate "issue26: ddraw clips (R93)"             D2DDraw/Renderer/DirectDraw.cpp   
 gate "issue26: gdi window clips (R93)"        D2Gdi/Renderer/Windowed.cpp       'issue #26 / R93' 7
 gate "issue26: border3 scene build (R93)"     D2Client/GAME/View.cpp            'issue #26 / R93' 1
 gate "issue26: case2 pan anchor (R93)"        D2Client/UI/Path.cpp              'issue #26 / R92\+R93' 1
+# R94 (rev 124): the R93 field pass (owner: "with it off. both right and left
+# individually are good. both panels, still black. there is a little bit of
+# black on the bottom of the screen with perspective mode off ... with
+# perspective mode on, left side is ok, right side still has black triangles
+# at edge. same black outside panels with both panels") exposed two more
+# family members: (1) Game.cpp skips the WHOLE ViewDraw2 world pass for
+# border 3 (retail fill-rate save; the 800-class UI floats 240 px inboard at
+# 720p so the outer strips still show world -> pure black backbuffer on
+# every renderer, both perspective modes - R93's scene-list build fed a pass
+# that never ran); (2) the bottom-band vertical cuts - the non-perspective
+# wall/shadow builders anchor-cut at h-0xf (a thin black strip at the screen
+# bottom with perspective OFF) and the perspective cull rects reserve the
+# bottom 0x2f px for the retail full-width HUD (bottom corners show world at
+# 720p). All opened on wide layouts only.
+gate "issue26: border3 world draw (R94)"      D2Client/GAME/Game/Game.cpp       'issue #26 / R94' 1
+gate "issue26: d3d bottom band (R94)"         D2Direct3D/Renderer/Direct3D.cpp  'issue #26 / R94' 3
+gate "issue26: glide bottom band (R94)"       D2Glide/Renderer/Glide.cpp        'issue #26 / R94' 3
 
 # ---- [vanilla-plus shared-stash] rev 82: track N round 1 - one-page shared
 # stash. Server TU D2Game/PLAYER/VanillaPlusStash.cpp materializes the shared

@@ -742,7 +742,19 @@ void __fastcall InGameDraw(int32_t bSkipCursor) {
     D2Win::Src::D2WinPalette::DRAW_SetOrReloadPalleteMain();
     UI::Path::DRAW_UpdateMouseWorldOffsets();
     uint32_t eBorderType = UI::Path::DRAW_GetTypeOfBorder();
-    if (eBorderType != 3) {
+    // VP-BEGIN [issue #26 / R94]: wide-UI layouts draw the world with both
+    // panels open too. Retail skips the whole ViewDraw2 pass for border 3
+    // because at 640x480/800x600 the two panels cover the window edge to
+    // edge - nothing of the world is visible, so the pass is a pure
+    // fill-rate save. The 800-class UI floats 240 px inboard at 1280x720,
+    // so the outer strips still show world; with the pass skipped they
+    // rendered as the untouched black backbuffer on EVERY renderer and with
+    // perspective on AND off (issue #26: "Both panels. all black outside of
+    // panel", still black after R93). R93 already made GAMEVIEW_PrepareScene
+    // build the border-3 scene list on wide layouts - this re-opens the draw
+    // pass that consumes that list (underfloor/floors/shadows/walls/roofs
+    // all gate on the pass mask the build sets). Retail modes keep the skip.
+    if (eBorderType != 3 || VPRES_IsWideLayoutMode(D2gfx::D2GFX::D2GFX_GetResolutionMode())) {
       View::ViewDraw2(D2GameView);
     }
 

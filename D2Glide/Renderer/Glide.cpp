@@ -2397,6 +2397,16 @@ static void __stdcall RENDERER_GLIDE_CalculateScreenBounds(int32_t nViewportMode
     pnBounds->right = RENDERER_nWindowWidth;
     pnBounds->top = 0;
     pnBounds->bottom = RENDERER_nWindowHeight - 0x2f;
+    // VP: [issue #26 / R94] wide-UI layouts open the bottom band (mirror of
+    // the Direct3D RENDERER_D3D_CalculateViewportRect guard): retail
+    // reserves the bottom 0x2f px for the full-width bottom HUD; at 1280x720
+    // the 800-class HUD floats 240 px inboard, the bottom corners show
+    // world, and the reserved band culled the tile geometry there (issue
+    // #26). The HUD/panels overdraw their own rects afterwards. Retail modes
+    // keep the reserved band.
+    if (RENDERER_GLIDE_IsWideUiLayout()) {
+      pnBounds->bottom = RENDERER_nWindowHeight + 0x20;
+    }
     if (!nViewportMode) {
       pnBounds->bottom += 0x20;
       pnBounds->left = -0x20;
@@ -2536,6 +2546,15 @@ BOOL __fastcall RENDERER_GLIDE_DrawShadowTileSimple(D2TileLibraryEntryStrc * pTi
     bool bDrawn;
     short int* psSubtile;
     int nWindowMaxY = RENDERER_nWindowHeight - 0xf;
+    // VP: [issue #26 / R94] wide-UI layouts keep the bottom band: the retail
+    // h-0xf subtile-anchor cut sat under the full-width bottom HUD at
+    // 640x480/800x600; at 1280x720 the bottom corners show world and the cut
+    // rendered as a thin black strip along the screen bottom (issue #26,
+    // perspective OFF). +0x20 lets the last tile row anchor past the bottom
+    // edge; the overdraw clips at rasterization. Same dims test as R92/R93.
+    if (RENDERER_GLIDE_IsWideUiLayout()) {
+      nWindowMaxY = RENDERER_nWindowHeight + 0x20;
+    }
     _bDrawn = 0;
     int nWindowMaxX = RENDERER_nWindowWidth;
     int nWindowMinX = -0x20;
@@ -2699,6 +2718,12 @@ BOOL __thiscall RENDERER_GLIDE_DrawWallTileSimple(int32_t nScreenPanels, D2TileL
     uint32_t dwColor1;
     short int* psSubtile;
     int nWindowMaxY = RENDERER_nWindowHeight - 0xf;
+    // VP: [issue #26 / R94] mirror of the DrawShadowTileSimple bottom-band
+    // guard above: wide-UI layouts anchor wall subtiles past the bottom edge
+    // so the screen-bottom strip renders world (issue #26, perspective OFF).
+    if (RENDERER_GLIDE_IsWideUiLayout()) {
+      nWindowMaxY = RENDERER_nWindowHeight + 0x20;
+    }
     BOOL bDrawn = 0;
     int nWindowMaxX = RENDERER_nWindowWidth;
     int nWindowMinX = -0x20;

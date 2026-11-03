@@ -4270,6 +4270,16 @@ static void __thiscall RENDERER_D3D_CalculateViewportRect(RECT * pRect, int nScr
       // explicit size test (no D2Client imports across the module boundary).
       BOOL bWideUiLayout = (RENDERER_nWindowWidth == 1280 && RENDERER_nWindowHeight == 720)
                         || (RENDERER_nWindowWidth == 1344 && RENDERER_nWindowHeight == 700);
+      // VP: [issue #26 / R94] wide-UI layouts open the bottom band of the
+      // perspective cull too. Retail reserves the bottom 0x2f px for the
+      // full-width bottom HUD; at 1280x720 the 800-class HUD floats 240 px
+      // inboard, the bottom corners show world, and the reserved band culled
+      // the shadow/wall geometry there (issue #26 perspective-ON margin
+      // artifacts). The HUD/panels overdraw their own rects afterwards.
+      // Retail modes keep the reserved band.
+      if (bWideUiLayout) {
+        pRect->bottom = RENDERER_nWindowHeight + 0x20;
+      }
       if (nScreenPanels == 1) {
         *pOffset = -nQuarterWidth;
         pRect->left += nQuarterWidth;
@@ -4373,6 +4383,16 @@ int32_t __fastcall RENDERER_D3D_BuildShadowTileVertices(D2TileLibraryEntryStrc *
     bool bRendered;
     short int* pSubtileCoords;
     int nSubtileIter = RENDERER_nWindowHeight - 0xf;
+    // VP: [issue #26 / R94] wide-UI layouts keep the bottom band: the retail
+    // h-0xf subtile-anchor cut sat under the full-width bottom HUD at
+    // 640x480/800x600; at 1280x720 the bottom corners show world and the cut
+    // rendered as a thin black strip along the screen bottom (issue #26,
+    // perspective OFF: "a little bit of black on the bottom"). +0x20 lets the
+    // last tile row anchor past the bottom edge; the overdraw clips at
+    // rasterization. Same dims test as the R92/R93 guards.
+    if (RENDERER_D3D_IsWideUiLayout()) {
+      nSubtileIter = RENDERER_nWindowHeight + 0x20;
+    }
     _bRendered = 0;
     int nPanelWidth = RENDERER_nWindowWidth;
     int nPanelXOffset = -0x20;
@@ -4547,6 +4567,12 @@ BOOL __thiscall RENDERER_D3D_BuildWallTileVerticesNoPerspective(void * pThis, D2
     uint32_t nTexColor0;
     uint8_t byAlpha = nParam4;
     int nSubtileScreenY = RENDERER_nWindowHeight - 0xf;
+    // VP: [issue #26 / R94] mirror of the BuildShadowTileVertices bottom-band
+    // guard above: wide-UI layouts anchor wall subtiles past the bottom edge
+    // so the screen-bottom strip renders world (issue #26, perspective OFF).
+    if (RENDERER_D3D_IsWideUiLayout()) {
+      nSubtileScreenY = RENDERER_nWindowHeight + 0x20;
+    }
     BOOL bRendered = 0;
     int nPanelWidth = RENDERER_nWindowWidth;
     int nPanelXOffset = -0x20;
