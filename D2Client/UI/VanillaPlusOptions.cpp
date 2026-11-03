@@ -312,14 +312,15 @@ static int VPLABEL_GlyphFrameHeight(int nFontId, uint16_t wCharCode) {
     // the loader result unconditionally); FONT_GetCharWidthCallback would
     // then index pGlyphs + ch against a null/garbage table - never
     // dereference that.
-    if (!gaFontCache[nFontId].pFontDC6 || !gaFontCache[nFontId].pGlyphs) {
+    const D2FontCacheEntryStrc * pFontEntry = D2Win::Src::D2WinFont::VP_GetFontCacheEntry(nFontId);
+    if (!pFontEntry->pFontDC6 || !pFontEntry->pGlyphs) {
         return 0;
     }
-    D2FontGlyphStrc* pGlyph = (*gpfnFontGetCharWidth)(wCharCode);
+    D2FontGlyphStrc* pGlyph = (*D2Win::Src::D2WinFont::VP_GetFontCharWidthFn())(wCharCode);
     if (!pGlyph) {
         return 0;
     }
-    DC6* pFontDc6 = (DC6*)gaFontCache[nFontId].pFontDC6;
+    DC6* pFontDc6 = (DC6*)pFontEntry->pFontDC6;
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, sizeof(sGfxData));
     sGfxData.pDC6 = pFontDc6;
@@ -381,9 +382,13 @@ static void VPLABEL_DecideMetrics() {
         return;
     }
 
-    int nTargetHeight = VPLABEL_MeasureRowImageHeight(&gaEscMenuOptionsTable[5]);
-    if (nTargetHeight <= 0) {
-        nTargetHeight = VPLABEL_MeasureRowImageHeight(&gaEscMenuOptionsTable[0]);
+    int nVpOptionsCount = 0;
+    D2EscMenuItemStrc * pVpOptionsTable =
+        D2Client::UI::EscMenu::VP_GetOptionsTable(&nVpOptionsCount);
+    int nTargetHeight = nVpOptionsCount > 5
+        ? VPLABEL_MeasureRowImageHeight(&pVpOptionsTable[5]) : 0;
+    if (nTargetHeight <= 0 && nVpOptionsCount > 0) {
+        nTargetHeight = VPLABEL_MeasureRowImageHeight(&pVpOptionsTable[0]);
     }
     if (nTargetHeight <= 0) {
         return; // keep Font42, nothing to measure against
@@ -437,15 +442,20 @@ void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsg
     // fpVisibilityCheck), matching the retail loop's visibility accounting.
     int nVisibleBefore = 0;
     bool bFound = false;
-    for (int i = 0; i < gaEscMenuHeaderOptions.nItemCount; i++) {
-        if (&gaEscMenuOptionsTable[i] == pItem) {
+    int nVpOptionsCount = 0;
+    D2EscMenuItemStrc * pVpOptionsTable =
+        D2Client::UI::EscMenu::VP_GetOptionsTable(&nVpOptionsCount);
+    const D2EscMenuHeaderStrc * pVpHeader =
+        D2Client::UI::EscMenu::VP_GetHeaderOptions();
+    for (int i = 0; i < pVpHeader->nItemCount; i++) {
+        if (&pVpOptionsTable[i] == pItem) {
             bFound = true;
             break;
         }
-        if (gaEscMenuOptionsTable[i].nExpansionOnly && !Fog::D2CheckExpansionGame()) {
+        if (pVpOptionsTable[i].nExpansionOnly && !Fog::D2CheckExpansionGame()) {
             continue;
         }
-        pfnEscMenuItemVisible pfnVisible = gaEscMenuOptionsTable[i].fpVisibilityCheck;
+        pfnEscMenuItemVisible pfnVisible = pVpOptionsTable[i].fpVisibilityCheck;
         if (pfnVisible && !pfnVisible()) {
             continue;
         }
@@ -456,9 +466,9 @@ void __fastcall VANILLAPLUS_DrawRowLabel(D2EscMenuItemStrc * pItem, D2UIMouseMsg
     }
 
     const int nMenuCenterY = ScreenSizeY - 0x50;
-    const int nRowTop = gaEscMenuHeaderOptions.nVerticalSpacing * nVisibleBefore
-        + (nMenuCenterY / 2 - gaEscMenuHeaderOptions.nVerticalSpacing * gaEscMenuHeaderOptions.nItemCount / 2);
-    const int nBaselineY = nRowTop + gaEscMenuHeaderOptions.nRowHeight - VPLABEL_BASELINE_INSET;
+    const int nRowTop = pVpHeader->nVerticalSpacing * nVisibleBefore
+        + (nMenuCenterY / 2 - pVpHeader->nVerticalSpacing * pVpHeader->nItemCount / 2);
+    const int nBaselineY = nRowTop + pVpHeader->nRowHeight - VPLABEL_BASELINE_INSET;
 
     static const wchar_t gwszLabel[] = L"Vanilla+ Options";
     int32_t nPrevFont = D2Win::Src::D2WinFont::SetAndReturnLastFont(gnVpLabelFontId);

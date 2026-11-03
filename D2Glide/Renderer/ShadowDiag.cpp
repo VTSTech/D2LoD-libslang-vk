@@ -134,7 +134,7 @@ void OnShadowQuad(GlideTexInfoStrc * pTexInfo, const void * pFanVerts) {
 
     // Decoded pow2 mask (pal8 indices; 0 = chroma-transparent).
     const int nArea = pTexInfo->nTexArea;
-    const uint8_t * pMask = (const uint8_t *)gpGlideSpriteBuffer;
+    const uint8_t * pMask = (const uint8_t *)Glide::VP_GetSpriteBuffer(); // VP: buffer TU-private since 962f88d5
     if (pMask && nArea > 0 && nArea <= 0x10000) {
         int nNonZero = 0;
         for (int i = 0; i < nArea; ++i) {

@@ -36,6 +36,7 @@
 #include "D2Client/UI/Dialog.h"
 #include "D2Client/UI/Draw.h"
 #include "D2Client/UI/EscMenu.h"
+#include "D2Client/UI/ui.data.h" // VP: gnUIFlagCount/gaUIFlagDescs/gUIFlagDismissModeTable decls (TU-private since 962f88d5)
 #include "D2Client/UI/Inv.h"
 #include "D2Client/UI/Panel.h"
 #include "D2Client/UI/Path.h"
@@ -745,14 +746,15 @@ static int VPRES_GlyphFrameHeight(int nFontId, uint16_t wCharCode) {
     // the loader result unconditionally); FONT_GetCharWidthCallback would
     // then index pGlyphs + ch against a null/garbage table - never
     // dereference that.
-    if (!gaFontCache[nFontId].pFontDC6 || !gaFontCache[nFontId].pGlyphs) {
+    const D2FontCacheEntryStrc * pFontEntry = D2Win::Src::D2WinFont::VP_GetFontCacheEntry(nFontId);
+    if (!pFontEntry->pFontDC6 || !pFontEntry->pGlyphs) {
         return 0;
     }
-    D2FontGlyphStrc* pGlyph = (*gpfnFontGetCharWidth)(wCharCode);
+    D2FontGlyphStrc* pGlyph = (*D2Win::Src::D2WinFont::VP_GetFontCharWidthFn())(wCharCode);
     if (!pGlyph) {
         return 0;
     }
-    DC6* pFontDc6 = (DC6*)gaFontCache[nFontId].pFontDC6;
+    DC6* pFontDc6 = (DC6*)pFontEntry->pFontDC6;
     D2GfxDataStrc sGfxData;
     memset(&sGfxData, 0, sizeof(sGfxData));
     sGfxData.pDC6 = pFontDc6;
@@ -831,9 +833,9 @@ static_assert(UI_VANILLAPLUS == 38,
 static_assert(UI_RECIPESCROLL == 37,
     "vanilla-plus: upstream inserted a UI var before UI_VANILLAPLUS; "
     "re-audit the flag-38 count bumps (docs/merge-upstream.md)");
-static_assert(sizeof(gaEscMenuOptionsTable) / sizeof(gaEscMenuOptionsTable[0]) == 6,
-    "vanilla-plus: gaEscMenuOptionsTable bounds drifted from the extern "
-    "declaration - the row-10 table edit or globals.h extern was lost in a merge");
+// VP: the gaEscMenuOptionsTable sizeof assert lived here until the row-10
+// table went TU-private (962f88d5); the self-check now runtime-checks the
+// count through EscMenu::VP_GetOptionsTable.
 static_assert(sizeof(gUIFlagDismissModeTable) / sizeof(gUIFlagDismissModeTable[0]) == 39,
     "vanilla-plus: gUIFlagDismissModeTable bounds drifted from the extern "
     "declaration - the 38 -> 39 edit or globals.h extern was lost in a merge");
@@ -855,7 +857,7 @@ void __stdcall VANILLAPLUS_SelfCheck() {
                     "likely dropped the count bumps (see docs/merge-upstream.md)");
         exit(-1);
     }
-    if (gaEscMenuHeaderOptions.nItemCount != 0x6) {
+    if (D2Client::UI::EscMenu::VP_GetHeaderOptions()->nItemCount != 0x6) {
         D2BOOT_Fail("vanilla-plus self-check: gaEscMenuHeaderOptions.nItemCount "
                     "!= 6 - the row-10 esc-menu edit was lost (see docs/merge-upstream.md)");
         exit(-1);
@@ -865,11 +867,18 @@ void __stdcall VANILLAPLUS_SelfCheck() {
     // reshuffle rows again. Scan for it instead of hardcoding an index: fail
     // only if the wired row is missing or duplicated.
     {
-        constexpr int kRow10Count =
-            sizeof(gaEscMenuOptionsTable) / sizeof(gaEscMenuOptionsTable[0]);
+        int kRow10Count = 0;
+        const D2EscMenuItemStrc * pOptionsTable =
+            D2Client::UI::EscMenu::VP_GetOptionsTable(&kRow10Count);
+        if (kRow10Count != 6) {
+            D2BOOT_Fail("vanilla-plus self-check: gaEscMenuOptionsTable count "
+                        "!= 6 - the row-10 table edit or its home moved in a "
+                        "merge (see docs/merge-upstream.md)");
+            exit(-1);
+        }
         int nWired = 0;
         for (int i = 0; i < kRow10Count; ++i) {
-            if (gaEscMenuOptionsTable[i].fpClickCallback ==
+            if (pOptionsTable[i].fpClickCallback ==
                 &D2Client::UI::VanillaPlus::ESCMENU_ShowVanillaPlusOptions) {
                 ++nWired;
             }
@@ -889,16 +898,17 @@ void __stdcall VANILLAPLUS_SelfCheck() {
     // blank placeholder) is applied by that init callback; this pins only the
     // static globals.cpp wiring a merge could drop.
     {
-        constexpr int kVidRowCount =
-            sizeof(gaEscMenuDeleteCharTable) / sizeof(gaEscMenuDeleteCharTable[0]);
+        int kVidRowCount = 0;
+        const D2EscMenuItemStrc * pDeleteCharTable =
+            D2Client::UI::EscMenu::VP_GetDeleteCharTable(&kVidRowCount);
         int nWired = 0;
         for (int i = 0; i < kVidRowCount; ++i) {
-            if (gaEscMenuDeleteCharTable[i].fpInitCallback !=
+            if (pDeleteCharTable[i].fpInitCallback !=
                 &D2Client::UI::EscMenu::UI_SLIDER_LoadAndApplyResolution) {
                 continue;
             }
             ++nWired;
-            if (gaEscMenuDeleteCharTable[i].fpDrawCallback !=
+            if (pDeleteCharTable[i].fpDrawCallback !=
                 &D2Client::UI::EscMenu::UI_SLIDER_DrawResolutionValue) {
                 D2BOOT_Fail("vanilla-plus self-check: Resolution row draw "
                             "callback not wired - the resolution-mode "

@@ -24,4 +24,10 @@ BOOL __fastcall D2WINPAL_LoadActPalette(uint8_t nAct);
 int __stdcall LoadPalette(char * szDatFile, char * szPl2File);
 void __fastcall D2WINPAL_SetGammaRamp(uint32_t bCompactLineSpacingMode);
 
+// VP-BEGIN [fix-27]: the pl2 UI-transpose buffer went TU-private in upstream's
+// 962f88d5 per-TU restructure; RENDERER_D3D_FlushTransposedTextureNodes
+// (Direct3D.cpp, vanilla-plus fix 27) needs its base for the family range check.
+uint8_t * VP_GetTransposeBase();
+// VP-END [fix-27]
+
 } // namespace D2Win::Src::D2WinPalette

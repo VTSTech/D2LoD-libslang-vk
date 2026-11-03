@@ -60019,4 +60019,19 @@ void __fastcall ESCMENU_SwitchToOptionsMenu(D2EscMenuItemStrc * pItem, D2UIMouse
     gnEscMenuSelectedIndex = gaEscMenuHeaderOptions.nItemCount - 1;
 }
 
+// VP-BEGIN [options-panel]: the fork-wired tables went TU-private in upstream's
+// 962f88d5 per-TU restructure; see VanillaPlusCore.cpp / VanillaPlusOptions.cpp.
+D2EscMenuItemStrc * VP_GetOptionsTable(int * pnCount) {
+    *pnCount = (int)(sizeof(gaEscMenuOptionsTable) / sizeof(gaEscMenuOptionsTable[0]));
+    return gaEscMenuOptionsTable;
+}
+const D2EscMenuHeaderStrc * VP_GetHeaderOptions() {
+    return &gaEscMenuHeaderOptions;
+}
+D2EscMenuItemStrc * VP_GetDeleteCharTable(int * pnCount) {
+    *pnCount = (int)(sizeof(gaEscMenuDeleteCharTable) / sizeof(gaEscMenuDeleteCharTable[0]));
+    return gaEscMenuDeleteCharTable;
+}
+// VP-END [options-panel]
+
 } // namespace D2Client::UI::EscMenu

@@ -324,4 +324,12 @@ void __fastcall D2WINPAL_SetGammaRamp(uint32_t bCompactLineSpacingMode) {
     gbCompactLineSpacingMode = bCompactLineSpacingMode;
 }
 
+// VP-BEGIN [fix-27]: the pl2 UI-transpose buffer went TU-private in upstream's
+// 962f88d5 per-TU restructure; see RENDERER_D3D_FlushTransposedTextureNodes
+// (Direct3D.cpp, vanilla-plus fix 27).
+uint8_t * VP_GetTransposeBase() {
+    return gPaletteTransposeBase;
+}
+// VP-END [fix-27]
+
 } // namespace D2Win::Src::D2WinPalette

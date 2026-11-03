@@ -149,4 +149,14 @@ void __fastcall ESCMENU_SwitchToMainMenu_alt(struct D2EscMenuItemStrc * pItem, s
 void __fastcall ESCMENU_SwitchToOptionsMenu(struct D2EscMenuItemStrc * pItem, struct D2UIMouseMsgStrc * pMsg);
 // 5 internal functions (defined in .cpp)
 
+// VP-BEGIN [options-panel]: the fork-wired tables went TU-private in upstream's
+// 962f88d5 per-TU restructure; the Vanilla+ self-check (VanillaPlusCore.cpp)
+// and the row-label/draw callbacks (VanillaPlusOptions.cpp) read them through
+// these views. The compile-time sizeof asserts they replace became runtime
+// count checks in the self-check.
+const D2EscMenuHeaderStrc * VP_GetHeaderOptions();
+D2EscMenuItemStrc * VP_GetOptionsTable(int * pnCount);
+D2EscMenuItemStrc * VP_GetDeleteCharTable(int * pnCount);
+// VP-END [options-panel]
+
 } // namespace D2Client::UI::EscMenu

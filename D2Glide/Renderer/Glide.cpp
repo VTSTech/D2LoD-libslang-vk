@@ -3920,4 +3920,11 @@ void __fastcall PlayerSmacker(D2SmackerContextStrc * pContext) {
     GLSMACK_DrawSmackerQuad(pContext, 0x3c, 0x1d4);
 }
 
+// VP-BEGIN [shadow-diag]: the sprite-cache buffer went TU-private in upstream's
+// 962f88d5 per-TU restructure; see ShadowDiag.cpp (dump-time read).
+void * VP_GetSpriteBuffer() {
+    return gpGlideSpriteBuffer;
+}
+// VP-END [shadow-diag]
+
 } // namespace D2Glide::Renderer::Glide

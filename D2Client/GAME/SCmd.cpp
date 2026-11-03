@@ -32,6 +32,7 @@
 #include "D2Client/GAME/Msg.h"
 #include "D2Client/GAME/PalShift.h"
 #include "D2Client/GAME/Roster.h"
+#include "D2Client/GAME/Roster.data.h" // VP: the [R60] roster-state mark reads gpRosterOther/pRosterPartyList (TU-private since 962f88d5)
 #include "D2Client/GAME/RosterPets.h"
 #include "D2Client/SKILLS/Skills.h"
 #include "D2Client/SKILLS/SkillsBar.h"

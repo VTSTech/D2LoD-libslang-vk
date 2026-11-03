@@ -96,4 +96,13 @@ void StaticInit_gwFontHeightDefault();
 void StaticInit_gnFontTableCharWidthCache();
 // 9 internal functions (defined in .cpp)
 
+// VP-BEGIN [labels]: the font cache + char-width function pointer went
+// TU-private in upstream's 962f88d5 per-TU restructure; the Vanilla+ label
+// metrics walk (VanillaPlusCore.cpp / VanillaPlusOptions.cpp) reads them here.
+// pfnFontGetGlyphEntry redeclared identically to globals/globals.h:518.
+typedef D2FontGlyphStrc * (__fastcall *pfnFontGetGlyphEntry)(uint16_t wCharCode);
+const D2FontCacheEntryStrc * VP_GetFontCacheEntry(int nFontId);
+pfnFontGetGlyphEntry VP_GetFontCharWidthFn();
+// VP-END [labels]
+
 } // namespace D2Win::Src::D2WinFont

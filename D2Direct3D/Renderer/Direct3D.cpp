@@ -22,6 +22,7 @@
 #include "D2Multi/OOGUtilities.h"
 #include "D2Win/DC6.h"
 #include "D2Win/DC6Block.h"
+#include "D2Win/Src/D2WinPalette.h" // VP: fix-27 transpose-base view (buffer TU-private since 962f88d5)
 #include "D2gfx/D2GFX.h"
 #include "Fog/Memory.h"
 #include "Fog/Source/SFile.h"
@@ -3174,8 +3175,9 @@ static void RENDERER_D3D_UploadHaltDump(const char* szSite, D2D3DSpriteInfoStrc*
 // from the used chain, push onto the free tail; surfaces stay allocated for
 // reuse so the re-bake costs only a decode + upload.
 static void RENDERER_D3D_FlushTransposedTextureNodes() {
-    uint8_t* pTransposeLo = (uint8_t*)gPaletteTransposeBase;
-    uint8_t* pTransposeHi = (uint8_t*)gPaletteTransposeBase + 0xD00;
+    uint8_t* pTransposeBase = D2Win::Src::D2WinPalette::VP_GetTransposeBase(); // VP: buffer TU-private since 962f88d5
+    uint8_t* pTransposeLo = pTransposeBase;
+    uint8_t* pTransposeHi = pTransposeBase + 0xD00;
     for (int nClass = 0; nClass < 3; nClass++) {
         D3DTextureCacheStrc* pCache = &gD3DGenericTextureCache.aCaches[nClass];
         D3DTextureCacheNodeStrc* pNode = pCache->pUsedHead;

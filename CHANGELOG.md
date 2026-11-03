@@ -16,6 +16,32 @@ retired in README trim #1, rev 111 — verbatim in [`HISTORY.md`](HISTORY.md) H3
 
 - Nothing yet — the next round's entry goes here.
 
+## [R104] — 2026-11-04 (per-TU restructure fallout sweep — self-ID `Vanilla+0.0.7-R104`)
+
+The `962f88d5` per-TU restructure left five fork anchors naming globals that
+went TU-private — the owner's second post-R102 build break was SCmd.cpp's
+roster-state mark (`Roster::gpRosterOther` / `pRosterPartyList`, whose
+declarations moved to `Roster.data.h`). All sites fixed and verified by a new
+full-fork-surface host sweep (`scripts/fork_surface_syntax_sweep.sh`: 90 TUs,
+fork body vs upstream body of the same TU, baseline-diffed):
+
+- `SCmd.cpp` — include `Roster.data.h` (the upstream consumer convention).
+- `VanillaPlusCore.cpp` + `VanillaPlusOptions.cpp` — the esc-menu tables
+  (`gaEscMenuOptionsTable` / `gaEscMenuHeaderOptions` /
+  `gaEscMenuDeleteCharTable`, now static in EscMenu.cpp) and the font cache
+  (`gaFontCache` / `gpfnFontGetCharWidth`, now static in D2WinFont.cpp) read
+  through new VP accessors; the options-table sizeof assert became a runtime
+  count check in the self-check; `ui.data.h` include for the UI-flag trio.
+- `Direct3D.cpp` fix-27 — the pl2 UI-transpose base via
+  `D2WinPalette::VP_GetTransposeBase()`.
+- `ShadowDiag.cpp` — the sprite-cache buffer via `Glide::VP_GetSpriteBuffer()`
+  (dump-time read, same semantics as the old global read).
+
+Each accessor block is one VP-markered append at the TU's namespace close, so
+the upstream files stay byte-minimal for the next sync. Gates 380/380; the
+sweep's six remaining flags are host-shim noise only (`__time32_t`, the Win32
+thread API — present in the upstream bodies too).
+
 ## [R103] — 2026-11-04 (diag retirement round — self-ID `Vanilla+0.0.7-R103`)
 
 `d2light-diag` and `d2drop-diag` are retired — the lights and drops defects

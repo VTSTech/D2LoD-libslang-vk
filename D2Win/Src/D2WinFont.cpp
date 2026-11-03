@@ -1485,4 +1485,15 @@ void StaticInit_gnFontTableCharWidthCache() {
     gnFontTableCharWidthCache[1] = 0;
 }
 
+// VP-BEGIN [labels]: the font cache + char-width function pointer went
+// TU-private in upstream's 962f88d5 per-TU restructure; see the Vanilla+
+// label metrics walk in VanillaPlusCore.cpp / VanillaPlusOptions.cpp.
+const D2FontCacheEntryStrc * VP_GetFontCacheEntry(int nFontId) {
+    return &gaFontCache[nFontId];
+}
+pfnFontGetGlyphEntry VP_GetFontCharWidthFn() {
+    return gpfnFontGetCharWidth;
+}
+// VP-END [labels]
+
 } // namespace D2Win::Src::D2WinFont
